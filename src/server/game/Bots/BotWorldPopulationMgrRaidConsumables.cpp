@@ -23,13 +23,13 @@ namespace
 {
 using BotWorldPopulationMgrRaidConsumables::Contract;
 using BotWorldPopulationMgrRaidConsumables::FindContract;
+using BotWorldPopulationMgrRaidConsumables::PrepotStageReady;
 using BotWorldPopulationMgrConsumables::CountNativeConsumable;
 using BotWorldPopulationMgrConsumables::FindNativeConsumable;
 
 constexpr uint64 RaidConsumableAuraWaitMs = 30000;
 constexpr uint64 RaidConsumablePendingWaitMs = 30000;
 constexpr uint64 RaidConsumableRetryMs = 500;
-constexpr float RaidPrepotWindowYards = 35.0f;
 
 uint64 RaidConsumableNowMs()
 {
@@ -95,9 +95,18 @@ void BotWorldPopulationMgr::SubmitRaidPrepullConsumableCandidate(
     candidate.RetryMaxMs = 1000;
     candidate.Attempt = [&context]()
     {
+        // Durable setup can run while Magmaw formation is moving.  The short
+        // pre-pot must wait until formation and health staging are complete;
+        // otherwise its aura can expire while those independent gates still
+        // suppress the pull.
+        bool const prepotStageReady = PrepotStageReady(
+            context.AdaptiveMagmawOwnsNode,
+            context.AdaptiveMagmawSuppressOffense,
+            context.AdaptiveMagmawSuppressReason);
         BotActionArbitration::Outcome outcome =
             context.Manager.TryRaidPrepullConsumables(
-                context.State, context.Bot, context.Target);
+                context.State, context.Bot, context.Target,
+                prepotStageReady);
         if (outcome.Result == BotActionArbitration::Disposition::Committed
             || outcome.Result == BotActionArbitration::Disposition::Terminal)
         {
@@ -225,7 +234,8 @@ void BotWorldPopulationMgr::ReconcileRaidPrepullItemSpellFinished(
 }
 
 BotActionArbitration::Outcome BotWorldPopulationMgr::TryRaidPrepullConsumables(
-    WorldBotState& state, Player* bot, Unit* target)
+    WorldBotState& state, Player* bot, Unit* target,
+    bool prepotStageReady)
 {
     RaidRuntime& raid = Cohort().Raid;
     if (!Cohort().Config.ValidationRouteEnable
@@ -510,6 +520,10 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::TryRaidPrepullConsumables(
             "raid_prepull_wait_exact_roster_setup");
     }
 
+    if (!prepotStageReady)
+        return BotActionArbitration::Outcome::Submitted(
+            "raid_prepull_wait_prepot_formation_ready");
+
     RaidPrepullConsumableMember& member = current->second;
     if (!member.PrepotEligibleAtMs)
         member.PrepotEligibleAtMs = RaidConsumableNowMs();
@@ -529,10 +543,6 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::TryRaidPrepullConsumables(
             "raid_prepull_wait_boss_target");
     if (bossTarget->IsInCombat() || bot->IsInCombat())
         return fail("raid_prepull_pull_started_before_consumables");
-    if (bot->GetExactDist(bossTarget) > RaidPrepotWindowYards)
-        return BotActionArbitration::Outcome::Submitted(
-            "raid_prepull_wait_boss_prepot_window");
-
     auto submitPrepot = [&](RaidPrepullConsumableMember& currentMember)
         -> BotActionArbitration::Outcome
     {

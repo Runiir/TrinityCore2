@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -112,7 +113,6 @@ def test_exact_roster_health_gate_and_boss_pull_gate_are_wired() -> None:
         "AliveAndHealed",
         "GetHealth() == memberBot->GetMaxHealth()",
         "raid_prepull_wait_alive_and_healed",
-        "raid_prepull_wait_boss_prepot_window",
         "raid_prepull_ready_for_pull",
     ):
         assert marker in text
@@ -125,6 +125,55 @@ def test_exact_roster_health_gate_and_boss_pull_gate_are_wired() -> None:
     assert "member->GetHealth() < member->GetMaxHealth()" in text[
         healer_gate:candidate
     ]
+
+
+def test_short_prepot_waits_for_magmaw_formation_and_health_staging(
+    tmp_path: Path,
+) -> None:
+    text = source(CORE)
+    contract = source(CONTRACT)
+    assert "prepotStageReady" in text
+    assert '== "prepull_pull_owner_wait"' in contract
+    assert "raid_prepull_wait_prepot_formation_ready" in text
+    assert "RaidPrepotWindowYards" not in text
+    assert "raid_prepull_wait_boss_prepot_window" not in text
+    durable_setup = text.index("if (!allSetupReady)")
+    prepot_gate = text.index("if (!prepotStageReady)")
+    prepot_submit = text.index("auto submitPrepot")
+    assert durable_setup < prepot_gate < prepot_submit
+
+    replay = tmp_path / "prepot_stage_replay.cpp"
+    replay.write_text(
+        r'''
+#include "Bots/BotWorldPopulationMgrRaidConsumables.h"
+#include <cassert>
+
+int main()
+{
+    using BotWorldPopulationMgrRaidConsumables::PrepotStageReady;
+    assert(PrepotStageReady(false, false, ""));
+    assert(PrepotStageReady(true, false, ""));
+    assert(!PrepotStageReady(true, true, "prepull_formation_staging"));
+    assert(!PrepotStageReady(true, true, "prepull_health_recovery"));
+    assert(PrepotStageReady(true, true, "prepull_pull_owner_wait"));
+}
+''',
+        encoding="utf-8",
+    )
+    binary = tmp_path / "prepot_stage_replay"
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-I",
+            str(ROOT / "src/server/game"),
+            str(replay),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+    )
+    subprocess.run([str(binary)], check=True)
 
 
 def test_calibration_and_completion_paths_share_inventory_scanner() -> None:

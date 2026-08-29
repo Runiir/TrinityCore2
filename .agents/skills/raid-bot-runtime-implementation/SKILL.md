@@ -86,6 +86,15 @@ the role candidate and an explicit release fact from the encounter contract;
 do not add class spell lists, choose the best boss phase, provision items, or
 run the shard in this work unit.
 
+For shared pre-pull execution, keep durable setup, encounter staging, and
+short-lived effects as separate states. The invariant is flask/food first,
+then full-health and encounter-owned formation, then every admitted member's
+ordinary native pre-pot use, then the designated pull. A generic distance
+threshold must not contradict an encounter-owned max-range bait position.
+When one member cannot satisfy a stage, emit that member and exact predicate;
+never let the first member's short aura expire behind an unexplained cohort
+wait or collapse the condition into a generic `prepull_failed` loop.
+
 Extract or reuse a deterministic C++ transition boundary when practical. Add
 focused tests for the recorded counterexample and nearby valid states. A
 source-shape test alone does not confirm native behavior.

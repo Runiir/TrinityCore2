@@ -41,6 +41,10 @@
       "invariant": "complete floor-valid native paths must be admitted by one owner-independent proof that distinguishes endpoint identity, native floor normalization, and diagnostic floor observations",
       "architecture_reviewed_through_occurrence_count": 10,
       "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary106_path_floor_architecture_stop_20260829.md"
+    },
+    "magmaw_prepot_geometry_conflicts_with_bait_formation": {
+      "owner": "shared_prepull_pipeline",
+      "invariant": "durable setup precedes encounter formation, every admitted member then uses its native pre-pot at the declared formation including max-range baiters, and the designated tank pulls before the short aura expires"
     }
   },
   "runs": [
@@ -225,6 +229,21 @@
       "report_sha256": "7f89e54443e5b10c7fa5b9af56890bdc903dd4e06686734f35c74fcbea0a12a6",
       "combat_analysis_sha256": "8098ddc597d6c31aa416e141b58609f421d50be18561d8c8f1ffeb5bf9b5b583",
       "evidence": "experiments/configs/cata_raid_magmaw_b2ab0de4f5_canary107_native_endpoint_handoff_20260829.md"
+    },
+    {
+      "run_id": "trinity-magmaw-f7581b572e-canary108.D8HVrb",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "chainwielder_future_drudge_contamination": "absent",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "not_exercised",
+        "same_level_native_endpoint_z_normalization_false_negative": "not_exercised",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "occurred"
+      },
+      "report_sha256": "29cd0e4a27e144351528a6509f2ae639915f5a5bd2334df77439eece50bc3a37",
+      "combat_analysis_sha256": "daa81abe28c391ddc51ce60ba53a0c60f970a00e95dfa40c8716382f3415c5f9",
+      "evidence": "experiments/configs/cata_raid_magmaw_f7581b572e_canary108_prepot_geometry_handoff_20260829.md"
     }
   ]
 }

@@ -23,6 +23,13 @@ struct Contract
     uint32_t CombatPotionAuraSpellId = 0;
 };
 
+inline bool PrepotStageReady(bool magmawOwnsNode, bool suppressOffense,
+    std::string_view suppressReason)
+{
+    return !magmawOwnsNode || !suppressOffense
+        || suppressReason == "prepull_pull_owner_wait";
+}
+
 Contract const* FindContract(std::string_view classSpec);
 }
 

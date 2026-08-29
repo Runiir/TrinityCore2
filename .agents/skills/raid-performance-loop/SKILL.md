@@ -232,6 +232,15 @@ Route acceptance requires two consecutive completed clears in which every
 known signature is explicitly `absent`. Passing a focused test or one clean
 canary makes a repair provisional; it does not erase its recurrence history.
 
+Treat a later failure in an already-cleared stage as a regression audit, not a
+fresh optimization opportunity. Compare the first causal edge with retained
+counterexamples and inspect adjacent module contracts for contradictory
+predicates. In particular, raid preparation has one strict order: durable
+flask/food setup, health and encounter formation, short-lived pre-pot, then
+the designated pull. Do not let an arbitrary boss-distance proxy override an
+encounter's declared max-range formation, and do not let consumable readiness
+silently become a second movement or pull-ownership policy.
+
 ## Parallelize only disjoint lanes
 
 Parallel work is useful across these boundaries:

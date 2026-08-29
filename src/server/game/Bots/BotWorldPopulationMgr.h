@@ -263,7 +263,8 @@ private:
     void PrepareValidationKernel(BotUpdateContext& context);
     void SubmitRaidPrepullConsumableCandidate(BotUpdateContext& context);
     BotActionArbitration::Outcome TryRaidPrepullConsumables(
-        WorldBotState& state, Player* bot, Unit* target);
+        WorldBotState& state, Player* bot, Unit* target,
+        bool prepotStageReady);
     bool RaidPrepullConsumablesReadyForPull() const;
     bool ApplyRaidPrepullBossPullGate(Player* bot, Unit* target,
         std::string& situation, std::string& action) const;
