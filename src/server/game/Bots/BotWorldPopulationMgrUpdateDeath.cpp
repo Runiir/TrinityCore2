@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotLongTermProgressionBrain.h"
+#include "Bots/BotWorldPopulationMgrNativeRecovery.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Creature.h"
 #include "Map.h"
@@ -124,14 +125,43 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
             : state.DeadTimer >= 5000;
         if (deathRecoveryReady)
         {
-            // Boss attempts keep the exact all-dead latch. Trash deaths are
-            // different: once native hostile activity has settled, an
-            // ordinary corpse run must be able to restore the party without
-            // requiring the surviving members to manufacture a full wipe.
+            // A fully wiped boss attempt keeps the exact all-dead latch. A
+            // partial boss death may open only after the native encounter has
+            // reset and no hostile activity remains. This is the ordinary
+            // player recovery boundary; the survivor is never killed,
+            // teleported, resurrected, or otherwise used to manufacture a
+            // wipe.
             if (Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
                 && Cohort().Config.ValidationRouteKind == "boss")
             {
                 RaidRuntime const& raid = Cohort().Raid;
+                BotWorldPopulationMgrNativeRecovery::PartialDeathObservation
+                    const partialDeathObservation{
+                        raid.Active,
+                        raid.RosterComplete,
+                        raid.EncounterInProgress,
+                        raid.NativeHostileActivityActive,
+                        raid.WipeState == "partial_deaths",
+                        Cohort().Config.TargetPopulation,
+                        raid.ExpectedSize,
+                        raid.ActiveSize,
+                        raid.AliveSize,
+                        raid.AttemptId,
+                        Cohort().AttemptId,
+                        Party().ValidationRouteGeneration,
+                        raid.NativeHostileObservationAttemptId,
+                        raid.NativeHostileObservationRouteGeneration,
+                        raid.BossResetGeneration,
+                        raid.BossResetGenerationAtWipe,
+                        raid.NativeHostileResetGeneration,
+                        raid.NativeHostileResetGenerationAtWipe,
+                        Cohort().Config.ValidationRouteNodeId,
+                        raid.NativeHostileObservationNodeId,
+                        raid.NativeHostileInactivityObserved};
+                bool const nativePartialDeathResetObserved =
+                    BotWorldPopulationMgrNativeRecovery::EvaluatePartialDeathAdmission(
+                        partialDeathObservation)
+                    == BotWorldPopulationMgrNativeRecovery::PartialDeathAdmission::ReleaseAfterNativeReset;
                 bool const exactSignalRoster = raid.RosterComplete
                     && raid.ExpectedSize == Cohort().Config.TargetPopulation
                     && raid.RosterByGuid.size() == Cohort().Config.TargetPopulation
@@ -176,7 +206,7 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
                         ++aliveMembers;
                 }
 
-                if (!nativeFullWipeLatched)
+                if (!nativeFullWipeLatched && !nativePartialDeathResetObserved)
                 {
                     std::string raw = BuildRawJson(bot, nullptr);
                     std::ostringstream gateRaw;
@@ -217,13 +247,20 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
                         << ",\"assistance\":\"none\""
                         << ",\"direct_respawn\":false"
                         << ",\"direct_state_manufacture\":false"
-                        << ",\"wipe_latched\":true"
+                        << ",\"wipe_latched\":"
+                        << (nativeFullWipeLatched ? "true" : "false")
+                        << ",\"partial_reset_observed\":"
+                        << (nativePartialDeathResetObserved ? "true" : "false")
                         << ",\"wipe_generation\":" << raid.WipeGeneration
                         << ",\"attempt_id\":" << raid.AttemptId << "}}";
                 std::string semantic = BuildSemanticJson(bot, nullptr, "native_raid_recovery");
+                char const* releaseReason = nativeFullWipeLatched
+                    ? "native_full_wipe_latched_release_allowed"
+                    : "native_partial_death_reset_release_allowed";
                 RecordEvent(state, bot, "validation_route_recovery", nullptr,
-                    "native_full_wipe_latched_release_allowed", gateRaw.str().c_str(), semantic.c_str(),
-                    float(raid.WipeGeneration), raid.ExpectedSize);
+                    releaseReason, gateRaw.str().c_str(), semantic.c_str(),
+                    nativeFullWipeLatched ? float(raid.WipeGeneration)
+                        : float(raid.BossResetGeneration), raid.ExpectedSize);
             }
 
             uint64 const recoveryNowMs = NowMs();
