@@ -33,8 +33,11 @@
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
     "occurrence_count": 13,
     "architecture_reviewed_through_occurrence_count": 12,
-    "invalidated_fixture_id": "magmaw_parasite_lane_paths_v1",
-    "invalidated_fixture_revision": 2,
+    "invalidated_fixtures": {
+      "magmaw_parasite_lane_paths_v1": 2,
+      "magmaw_parasite_lane_transition_full_replay_v1": 1,
+      "magmaw_parasite_control_full_runtime_v1": 1
+    },
     "required_replacement_fixture_revision": 3,
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
@@ -59,6 +62,13 @@
     ]
   },
   "validation": {
+    "gate_evaluated_at_commit": "f7a4e166f1664e147a4a114d79f6a3fe16c74627",
+    "regression_suite_receipt": "/tmp/magmaw-regression-suite-f7a4e166f1-canary117.json",
+    "regression_suite_receipt_sha256": "a3f38d7fd435ff7d6fa1d0fa4356420111800750811356d065f8e1d06b832ca7",
+    "recurrence_decision": "/tmp/magmaw-recurrence-f7a4e166f1-canary117.json",
+    "recurrence_decision_sha256": "216f0e71e5c1010b612be5e3b2d39331e51de6a00503126843861df6d219a8d9",
+    "immutable_bank_all_rows_passed": true,
+    "invalidated_fixture_count": 3,
     "build_admitted": false,
     "canary_admitted": false,
     "acceptance_admitted": false,
