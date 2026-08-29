@@ -45,6 +45,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 DEFAULT_MAX_REPEATED_DECISIONS = 20
 DEFAULT_MAX_DEATH_LOOPS = 3
+DEFAULT_STALLED_CANDIDATE_NO_PROGRESS_MS = 20_000
 
 # The native trace export is backed by a 128-entry per-bot ring.  A fixed
 # ten-second poll is normally cheap, but a busy bot can approach that ring's
@@ -2749,7 +2750,7 @@ def _watchdog_stalled_candidate_failure(
         stalled_ms = int(movement.get("time_since_last_progress_ms") or 0)
     except (TypeError, ValueError):
         stalled_ms = 0
-    if stalled_ms < max_repeated_decisions * 1000:
+    if stalled_ms < DEFAULT_STALLED_CANDIDATE_NO_PROGRESS_MS:
         return None
 
     decision = snapshot.get("decision") if isinstance(snapshot.get("decision"), dict) else {}
@@ -5746,6 +5747,11 @@ def main() -> int:
                 record_process_resource_sample()
                 due_commands = telemetry_scheduler.commands_due(time.monotonic())
                 if due_commands:
+                    # A diagnosis is a point-in-time snapshot, not durable
+                    # state. Only the diagnosis observed in this poll may
+                    # drive the watchdog. Retain latest_diagnosis separately
+                    # for the final report and semantic summaries.
+                    fresh_diagnosis: dict[str, Any] | None = None
                     # Diagnosis carries the exact current decision per bot;
                     # trace is an incremental export so a long raid does not
                     # replay each bot's cumulative 128-entry history every
@@ -5770,6 +5776,7 @@ def main() -> int:
                         elif action == "botauto_diagnose":
                             diagnosis_count += 1
                             latest_diagnosis = row
+                            fresh_diagnosis = row
                         elif action == "botauto_trace":
                             trace_count += 1
                             new_trace_rows.append(row)
@@ -5875,7 +5882,7 @@ def main() -> int:
                         controller_watchdog = observe_capture_watchdog(
                             controller_watchdog_state,
                             monitor_statuses[-1],
-                            latest_diagnosis,
+                            fresh_diagnosis,
                             new_trace_rows,
                             profile_name=profile_name,
                             max_repeated_decisions=args.max_repeated_decision_count,

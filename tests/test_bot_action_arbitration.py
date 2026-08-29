@@ -46,6 +46,7 @@ def test_action_and_movement_arbiters_compile_and_replay(tmp_path: Path) -> None
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/BotWorldPopulationMgrNativeFloor.h"
+#include "Bots/BotWorldPopulationMgrRaidConsumables.h"
 #include <cassert>
 #include <limits>
 #include <string>
@@ -742,6 +743,33 @@ int main()
         0.0f, std::fabs(211.581f - magmawStage.Players[2].Position.Z)));
     assert(BotWorldMovement::NativePathEndpointComponentsMatch(
         0.0f, std::fabs(211.581f - baitStageMove->Z)));
+    BotWorldMovement::NativePathProofObservation formationProof;
+    formationProof.Available = true;
+    formationProof.Calculated = true;
+    formationProof.Complete = true;
+    formationProof.EndpointX = baitStageMove->X;
+    formationProof.EndpointY = baitStageMove->Y;
+    formationProof.EndpointZ = 211.581f;
+    formationProof.EndpointHorizontalDistance = 0.0f;
+    formationProof.EndpointVerticalDistance = std::fabs(
+        formationProof.EndpointZ - baitStageMove->Z);
+    formationProof.EndpointMatched =
+        BotWorldMovement::NativePathEndpointComponentsMatch(
+            formationProof.EndpointHorizontalDistance,
+            formationProof.EndpointVerticalDistance);
+    formationProof.EndpointFloorValid = true;
+    formationProof.FloorObservation =
+        BotWorldMovement::MakeNativePathFloorObservation(
+            BotWorldMovement::NativePathFloorFailure::None,
+            0, 0, baitStageMove->X, baitStageMove->Y,
+            formationProof.EndpointZ, formationProof.EndpointZ,
+            baitStageMove->Z);
+    formationProof.Accepted =
+        BotWorldMovement::NativePathProofPassesAdmission(formationProof);
+    assert(formationProof.Accepted);
+    assert(!BotWorldPopulationMgrRaidConsumables::PrepotStageReady(
+        rangedStagePlan.OwnsNode, rangedStagePlan.SuppressOffense,
+        rangedStagePlan.SuppressReason));
     assert(tankStageWaitPlan.SuppressOffense);
     assert(!tankStageWaitPlan.Movement.has_value());
 
@@ -796,6 +824,10 @@ int main()
     assert(stagedOffTankWaitPlan.DamageTarget.IsEmpty());
     assert(stagedDpsWaitPlan.SuppressOffense);
     assert(stagedDpsWaitPlan.DamageTarget.IsEmpty());
+    assert(stagedDpsWaitPlan.SuppressReason == "prepull_pull_owner_wait");
+    assert(BotWorldPopulationMgrRaidConsumables::PrepotStageReady(
+        stagedDpsWaitPlan.OwnsNode, stagedDpsWaitPlan.SuppressOffense,
+        stagedDpsWaitPlan.SuppressReason));
 
     // A nearer immediate hazard cannot replace a pillar movement proposal,
     // while the fallback hazard candidate retains its source-relative identity.

@@ -3329,6 +3329,54 @@ def test_capture_watchdog_allows_retryable_magmaw_move_while_progressing():
     assert report["repeated_decision_count"] == 0
 
 
+def test_capture_watchdog_does_not_reuse_stale_stalled_diagnosis():
+    status = _generic_watchdog_status(
+        size=10, profile="blackwing_descent_10n", map_id=669,
+    )
+    status["validation_route"].update(
+        node_id="bwd.magmaw.encounter", generation=4, kind="boss",
+    )
+    diagnosis = _watchdog_diagnosis(
+        bot_guid=30007,
+        action="raid_prepull_consumable",
+        result="ok",
+        repeat_count=20,
+        consecutive_count=19,
+    )
+    bot = diagnosis["bots"][0]
+    bot["snapshot"]["route_progress"]["route"].update(
+        node_id="bwd.magmaw.encounter", generation=4,
+    )
+    bot["snapshot"]["movement"] = {
+        "is_moving": False,
+        "time_since_last_progress_ms": 20_000,
+    }
+    bot["diagnosis"]["decision_kernel"] = {
+        "candidates": [{
+            "source": "adaptive_magmaw",
+            "phase": "failed",
+            "status": "attempted",
+            "reason": "native_move_retryable",
+        }],
+    }
+    state = {}
+
+    first = observe_capture_watchdog(
+        state, status, diagnosis,
+        max_repeated_decisions=20, max_death_loops=3,
+    )
+    resumed_status = json.loads(json.dumps(status))
+    resumed_status["raid_runtime"]["heartbeat"] = 2
+    second = observe_capture_watchdog(
+        state, resumed_status, None,
+        max_repeated_decisions=20, max_death_loops=3,
+    )
+
+    assert first["detected"] is False
+    assert second["detected"] is False
+    assert second["repeated_decision_count"] == 0
+
+
 def test_capture_watchdog_diagnosis_counts_failed_route_decisions_per_bot():
     status = _generic_watchdog_status(size=10, profile="blackwing_descent_10n", map_id=669)
     state = {}
