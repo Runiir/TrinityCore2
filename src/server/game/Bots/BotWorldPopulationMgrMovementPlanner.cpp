@@ -127,6 +127,10 @@ bool BotWorldPopulationMgr::PlanMovementPath(
             "target_z_transition");
     float const currentGoalDistance = bot->GetExactDist(intent.X, intent.Y,
         intent.Z);
+    bool const sameLevelDeclaredMechanicRequest = std::isfinite(
+        bot->GetPositionZ()) && std::isfinite(intent.Z)
+        && std::fabs(bot->GetPositionZ() - intent.Z)
+            <= BotWorldMovement::NativeFloorTolerance;
     bool const sameLevelLocalMechanicProgress =
         BotWorldMovement::AllowsSameLevelLocalMechanicProgress(intent.Owner,
             sameLevelDeclaredFloorFallback, currentGoalDistance,
@@ -204,7 +208,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                     verifiedEndpoint.z),
                 currentGoalDistance,
                 distanceToGoal(verifiedEndpoint.x, verifiedEndpoint.y,
-                    verifiedEndpoint.z));
+                    verifiedEndpoint.z),
+                sameLevelDeclaredMechanicRequest);
         return observation.Accepted || boundedEndpoint;
     };
 
@@ -285,7 +290,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                     verifiedMainEndpoint.y, verifiedMainEndpoint.z),
                 currentGoalDistance,
                 distanceToGoal(verifiedMainEndpoint.x, verifiedMainEndpoint.y,
-                    verifiedMainEndpoint.z));
+                    verifiedMainEndpoint.z),
+                sameLevelDeclaredMechanicRequest);
         if (nativeProof.Accepted || boundedLocalMechanicEndpoint)
         {
             segmentX = verifiedMainEndpoint.x;

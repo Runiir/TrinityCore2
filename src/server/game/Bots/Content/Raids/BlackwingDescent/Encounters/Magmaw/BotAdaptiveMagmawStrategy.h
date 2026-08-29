@@ -5,13 +5,13 @@
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawEventMovementTransition.h"
 #include <algorithm>
 #include <cmath>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
-
 namespace BotEncounter
 {
 struct AdaptiveMagmawPlan
@@ -51,8 +51,8 @@ public:
     static constexpr float RangedStackTolerance = 4.0f;
     static constexpr float ParasiteKiteLeadDistance =
         MagmawParasitePolicy::KiteLeadDistance;
-    static constexpr float RangedParasiteTargetDistance =
-        RangedStackDistance + RangedStackLateralOffset +
+    static constexpr float RangedParasiteTargetDistance = RangedStackDistance
+        + RangedStackLateralOffset +
         MagmawParasitePolicy::SafeClearance;
 
     AdaptiveMagmawPlan Propose(Blackboard const& board, ObjectGuid botGuid,
@@ -60,7 +60,8 @@ public:
         BotMovementArbitration::Lease const* movementLease = nullptr,
         bool activePathValid = false, bool moving = false,
         MagmawLaneTransitionState* laneTransition = nullptr,
-        MagmawParasiteHazardState* hazardState = nullptr) const
+        MagmawParasiteHazardState* hazardState = nullptr,
+        MagmawEventMovementTransitionState* eventMovement = nullptr) const
     {
         AdaptiveMagmawPlan plan;
         if (board.Route.NodeId != "bwd.magmaw.encounter")
@@ -68,6 +69,11 @@ public:
         ActorSnapshot const* bot = board.FindActor(botGuid);
         if (!bot || !bot->Alive)
             return plan;
+        if (eventMovement)
+        {
+            eventMovement->ObserveScope(board, botGuid);
+            eventMovement->ObserveArrival(bot->Position);
+        }
         if (hazardState)
         {
             hazardState->ObserveScope(board, botGuid);
@@ -144,7 +150,7 @@ public:
             botGuid);
         plan.Movement = ProposeHazardMovement(board, *bot, *observed.Boss,
             pincerWindow, pincerWarning, movementLease, laneTransition,
-            hazardState);
+            hazardState, eventMovement);
         if (!plan.Movement)
             plan.Movement = ProposeHookPreposition(board, *bot,
                 *observed.Boss, botGuid);
@@ -445,7 +451,8 @@ private:
 
     static std::optional<BotNativeAction::Candidate> BuildPillarEvade(
         Blackboard const& board, ActorSnapshot const& bot,
-        ActorSnapshot const& pillar)
+        ActorSnapshot const& pillar,
+        MagmawEventMovementTransitionState* eventMovement)
     {
         float dx = bot.Position.X - pillar.Position.X;
         float dy = bot.Position.Y - pillar.Position.Y;
@@ -457,6 +464,19 @@ private:
                 dx = std::cos(bot.Facing);
                 dy = std::sin(bot.Facing);
                 distance = 1.0f;
+            }
+            Vector3 const destination{
+                pillar.Position.X + dx / distance * 15.0f,
+                pillar.Position.Y + dy / distance * 15.0f,
+                bot.Position.Z };
+            if (eventMovement)
+            {
+                if (auto const* episode = eventMovement->RetainLethal(
+                        pillar.Guid, bot.Guid, "pillar_evade", destination))
+                    return BuildMagmawEventMovement(board, *episode,
+                        BotActionArbitration::Priority::Survival,
+                        500.0f - distance);
+                return std::nullopt;
             }
             BotNativeAction::Candidate candidate;
             candidate.Id.ScopeKey = board.CurrentScope.CohortId + ":"
@@ -471,10 +491,8 @@ private:
             candidate.ActionPriority = BotActionArbitration::Priority::Survival;
             candidate.Utility = 500.0f - distance;
             candidate.ExpiresAtMs = board.ObservedAtMs + 750;
-            candidate.Action = BotNativeAction::Move{
-                pillar.Position.X + dx / distance * 15.0f,
-                pillar.Position.Y + dy / distance * 15.0f,
-                bot.Position.Z };
+            candidate.Action = BotNativeAction::Move{ destination.X,
+                destination.Y, destination.Z };
             return candidate;
         }
         return std::nullopt;
@@ -484,7 +502,8 @@ private:
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& boss, ActorSnapshot const& pillar,
         BotMovementArbitration::Lease const* /*movementLease*/,
-        MagmawLaneTransitionState* laneTransition)
+        MagmawLaneTransitionState* laneTransition,
+        MagmawEventMovementTransitionState* eventMovement)
     {
         if (!IsPillarBaiter(board, bot.Guid) || !laneTransition)
             return std::nullopt;
@@ -503,7 +522,7 @@ private:
             && (!destination
                 || Distance2d(*destination, pillar.Position)
                     < MagmawParasitePolicy::SafeClearance))
-            return BuildPillarEvade(board, bot, pillar);
+            return BuildPillarEvade(board, bot, pillar, eventMovement);
         laneTransition->Resume();
         if (!destination
             || Distance2d(bot.Position, *destination)
@@ -601,9 +620,23 @@ private:
         ActorSnapshot const& boss, bool pincerWindow, bool pincerWarning,
         BotMovementArbitration::Lease const* movementLease,
         MagmawLaneTransitionState* laneTransition,
-        MagmawParasiteHazardState* hazardState)
+        MagmawParasiteHazardState* hazardState,
+        MagmawEventMovementTransitionState* eventMovement)
     {
         MagmawHazardObservation const observed = ObserveHazards(board, bot);
+        if (eventMovement)
+            if (auto const* lethal = eventMovement->ActiveLethal())
+            {
+                bool const newerPillar = observed.Pillar
+                    && observed.Pillar->Guid != lethal->SourceGuid
+                    && Distance2d(bot.Position, observed.Pillar->Position) <= 12.0f;
+                bool const newerCrash = observed.NearestImmediateHazard
+                    && IsCrashHazard(*observed.NearestImmediateHazard)
+                    && observed.NearestImmediateHazard->Guid != lethal->SourceGuid;
+                if (!newerPillar && !newerCrash)
+                    return BuildMagmawEventMovement(board, *lethal,
+                        BotActionArbitration::Priority::Survival, 450.0f);
+            }
         if (observed.Pillar)
         {
             if (pincerWindow)
@@ -611,17 +644,19 @@ private:
                 if (laneTransition && laneTransition->IsBaiter(bot.Guid))
                     laneTransition->MarkPreempted();
                 if (std::optional<BotNativeAction::Candidate> const pillar =
-                        BuildPillarEvade(board, bot, *observed.Pillar))
+                        BuildPillarEvade(board, bot, *observed.Pillar,
+                            eventMovement))
                     return pillar;
             }
             else
             {
                 if (std::optional<BotNativeAction::Candidate> const bait =
                         BuildPillarBaitMove(board, bot, boss, *observed.Pillar,
-                            movementLease, laneTransition))
+                            movementLease, laneTransition, eventMovement))
                     return bait;
                 if (std::optional<BotNativeAction::Candidate> const pillar =
-                        BuildPillarEvade(board, bot, *observed.Pillar))
+                        BuildPillarEvade(board, bot, *observed.Pillar,
+                            eventMovement))
                     return pillar;
             }
         }
@@ -634,6 +669,10 @@ private:
             {
                 if (laneTransition && laneTransition->IsBaiter(bot.Guid))
                     laneTransition->MarkPreempted();
+                if (eventMovement)
+                    return RetainMagmawRadialLethalMovement(board, bot,
+                        *observed.NearestImmediateHazard,
+                        "massive_crash_evade", 16.0f, *eventMovement, 450.0f);
                 return crash;
             }
             return std::nullopt;
@@ -672,9 +711,14 @@ private:
             && observed.NearestImmediateHazardDistance <= immediateDistance)
         {
             if (IsCrashHazard(*observed.NearestImmediateHazard))
-                return MoveAway(board, bot,
-                    *observed.NearestImmediateHazard,
-                    "massive_crash_evade", 16.0f);
+                return eventMovement
+                    ? RetainMagmawRadialLethalMovement(board, bot,
+                            *observed.NearestImmediateHazard,
+                            "massive_crash_evade", 16.0f, *eventMovement,
+                            450.0f)
+                    : std::optional<BotNativeAction::Candidate>(MoveAway(
+                        board, bot, *observed.NearestImmediateHazard,
+                        "massive_crash_evade", 16.0f));
             std::optional<MagmawParasitePolicy::FormationAnchors> anchors;
             if (pillarBaiter)
                 if (std::optional<MagmawRangedAnchors> const rangedAnchors =

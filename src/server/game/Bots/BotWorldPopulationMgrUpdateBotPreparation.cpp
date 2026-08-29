@@ -184,7 +184,10 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
     context.State.MovementProgressWindowDistance += moved;
     context.State.DistanceMovedSinceLastDecision += moved;
     bool movementProgress = context.State.MovementProgressWindowDistance >= 0.2f;
-    if (movementProgress || combatOrCasting)
+    // Combat and casting are semantic activity, not movement progress.  A
+    // stationary bot can attack or cast forever while its accepted movement
+    // path remains stuck; only measured displacement may refresh this witness.
+    if (movementProgress)
         context.State.LastMovementProgressMs = NowMs();
     if (movementProgress)
     {

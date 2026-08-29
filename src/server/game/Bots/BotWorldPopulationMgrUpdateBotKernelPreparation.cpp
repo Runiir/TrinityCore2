@@ -423,7 +423,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 GetDungeonRole(context.Bot), &context.State.MovementLease,
                 context.State.ActivePathValid, context.State.IsMoving,
                 &magmawLaneOwner->MagmawLaneTransition,
-                &context.State.MagmawParasiteHazard);
+                &context.State.MagmawParasiteHazard,
+                &context.State.MagmawEventMovement);
             context.AdaptiveMagmawOwnsNode = magmawPlan.OwnsNode;
             context.State.MagmawParasiteCombat = magmawPlan.ParasiteCombat;
             context.AdaptiveMagmawSuppressOffense = magmawPlan.SuppressOffense;

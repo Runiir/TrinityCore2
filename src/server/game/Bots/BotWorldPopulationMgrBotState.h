@@ -8,6 +8,7 @@
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTypes.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeTauntConfirmation.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawEventMovementTransition.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
 #include "ObjectGuid.h"
 
@@ -431,6 +432,7 @@ namespace BotWorldPopulationMgrBotState
         // MovementLease and is retained by the stable pair owner across
         // observation churn, native retries, and lease expiry.
         BotEncounter::MagmawLaneTransitionState MagmawLaneTransition;
+        BotEncounter::MagmawEventMovementTransitionState MagmawEventMovement;
         // Adaptive ownership bypasses the generic boss-mechanics candidate;
         // carry its immutable focus-fire/area authority into profile
         // resolution on every bot instead of leaving a default-open lane.

@@ -17,6 +17,12 @@ constexpr float NativeLocalMechanicEndpointDistanceTolerance = 2.75f;
 constexpr float NativeLocalMechanicEndpointMinimumProgress = 2.0f;
 constexpr float NativeLocalMechanicEndpointMinimumTravel = 1.5f;
 constexpr float NativeLocalMechanicEndpointProgressEpsilon = 0.001f;
+// A complete native hazard path can already be at its semantic destination
+// even when MMAP misses the requested X/Y by a small amount.  This arrival
+// envelope is local to mechanic/hazard admission; the shared 0.5-yard
+// endpoint identity proof remains strict for ordinary movement.
+constexpr float NativeLocalMechanicEndpointArrivalHorizontalTolerance = 1.0f;
+constexpr float NativeLocalMechanicEndpointArrivalDistanceTolerance = 1.5f;
 
 // A complete native hazard/mechanic path can end a short distance from its
 // declared point when MMAP selects the nearest walkable polygon. Keep this
@@ -28,12 +34,14 @@ inline bool NativePathAllowsBoundedSameLevelMechanicProgress(
     bool sameLevelDeclaredFloorFallback, bool boundedLocalProgress,
     bool completeNativePath, bool forbiddenNativePath,
     NativePathProofObservation const& observation, float actorEndpointTravel,
-    float currentGoalDistance, float endpointGoalDistance)
+    float currentGoalDistance, float endpointGoalDistance,
+    bool sameLevelDeclaredRequest = false)
 {
     bool const localOwner = owner == BotMovementArbitration::Owner::Mechanic
         || owner == BotMovementArbitration::Owner::Hazard;
-    if (!localOwner || !sameLevelDeclaredFloorFallback
-        || !boundedLocalProgress || !completeNativePath
+    if (!localOwner || (!sameLevelDeclaredFloorFallback
+            && !sameLevelDeclaredRequest)
+        || !completeNativePath
         || forbiddenNativePath || !observation.Available
         || !observation.Calculated || !observation.Complete
         || observation.EndpointMatched || !observation.EndpointFloorValid
@@ -46,6 +54,26 @@ inline bool NativePathAllowsBoundedSameLevelMechanicProgress(
         || !std::isfinite(observation.EndpointVerticalDistance)
         || !std::isfinite(currentGoalDistance)
         || !std::isfinite(endpointGoalDistance))
+        return false;
+
+    // A same-level request whose complete native endpoint is already within
+    // the mechanic destination envelope is an arrival, not a progressive
+    // movement step.  Do not require the progressive 1.5-yard travel or
+    // two-yard goal-reduction thresholds for this terminal local result.
+    if (sameLevelDeclaredRequest
+        && currentGoalDistance
+            <= NativeLocalMechanicEndpointArrivalDistanceTolerance
+        && observation.EndpointHorizontalDistance
+            <= NativeLocalMechanicEndpointArrivalHorizontalTolerance
+        && observation.EndpointDistance
+            <= NativeLocalMechanicEndpointArrivalDistanceTolerance
+        && endpointGoalDistance
+            <= NativeLocalMechanicEndpointArrivalDistanceTolerance)
+        return true;
+
+    // The broader progressive exception remains restricted to the explicit
+    // declared-floor fallback and retains its original progress proof.
+    if (!sameLevelDeclaredFloorFallback || !boundedLocalProgress)
         return false;
     return actorEndpointTravel >= NativeLocalMechanicEndpointMinimumTravel
         && observation.EndpointHorizontalDistance

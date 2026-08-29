@@ -79,3 +79,29 @@ def test_update_bot_preserves_lifecycle_contracts() -> None:
     ):
         assert marker in finalization
     assert "BotUpdateContext" in HEADER.read_text(encoding="utf-8")
+
+
+def test_stationary_combat_does_not_refresh_movement_progress_witness() -> None:
+    preparation = (BOT_DIR / "BotWorldPopulationMgrUpdateBotPreparation.cpp").read_text(
+        encoding="utf-8"
+    )
+    progress_update = """
+    if (movementProgress)
+        context.State.LastMovementProgressMs = NowMs();
+"""
+    assert progress_update in preparation
+    assert "if (movementProgress || combatOrCasting)" not in preparation
+
+    # Value-level replay of the production transition. Combat/casting may be
+    # true with no displacement, but that must leave the movement witness
+    # unchanged. A nearby real displacement refreshes it.
+    def sample(last_progress_ms: int, moved: float, now_ms: int, activity: str) -> int:
+        movement_progress = moved >= 0.2
+        # The production branch deliberately does not inspect this activity
+        # bit when updating the movement witness.
+        assert activity in {"attack", "cast"}
+        return now_ms if movement_progress else last_progress_ms
+
+    assert sample(1_000, 0.0, 4_000, activity="attack") == 1_000
+    assert sample(1_000, 0.0, 4_000, activity="cast") == 1_000
+    assert sample(1_000, 0.21, 4_000, activity="attack") == 4_000

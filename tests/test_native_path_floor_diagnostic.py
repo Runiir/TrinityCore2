@@ -294,6 +294,12 @@ int main()
     assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
         Owner::Formation, true, true, true, false, canary, 3.1396f,
         4.2092304f, 2.01385f));
+
+    // The near-arrival exception cannot relax endpoint identity for a long
+    // mechanic path whose actor is still far from the requested destination.
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, true, false, true, false, canary, 20.0f,
+        20.0f, 1.41703f, true));
 }
 ''',
         encoding="utf-8",
@@ -566,6 +572,89 @@ int main()
     assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
         Owner::Formation, true, true, true, false,
         formationProof, 8.0f, currentGoalDistance, 2.0f));
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/common"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
+def test_canary121_near_arrival_endpoint_is_not_rejected(tmp_path):
+    source = tmp_path / "canary121_near_arrival_endpoint.cpp"
+    binary = tmp_path / "canary121_near_arrival_endpoint"
+    source.write_text(
+        r'''
+#include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
+
+#include <cassert>
+
+using namespace BotWorldMovement;
+using BotMovementArbitration::Owner;
+
+int main()
+{
+    NativePathProofObservation canary;
+    canary.Available = true;
+    canary.Calculated = true;
+    canary.PathType = 1; // PATHFIND_NORMAL.
+    canary.Complete = true;
+    canary.EndpointX = -309.6f;
+    canary.EndpointY = -30.9334f;
+    canary.EndpointZ = 210.268f;
+    canary.EndpointDistance = 1.41703f;
+    canary.EndpointHorizontalDistance = 0.533746f;
+    canary.EndpointVerticalDistance = 1.31267f;
+    canary.EndpointMatched = false;
+    canary.EndpointFloorValid = true;
+    canary.FloorObservation = MakeNativePathFloorObservation(
+        NativePathFloorFailure::None, 0, 0, -309.6f, -30.9334f,
+        210.268f, 210.268f, 211.581f);
+    canary.Accepted = NativePathProofPassesAdmission(canary);
+
+    // Canary121 1788013525204, bot 30007: request=(-309.457,-31.4478,
+    // 211.581), actual=(-309.6,-30.9334,210.268). The complete native
+    // endpoint is floor-valid and near enough to be arrival, but the old
+    // progressive proof rejects it because it did not travel 1.5 yards and
+    // did not prove two yards of goal reduction.
+    assert(!canary.Accepted);
+    assert(NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, true, false, true, false, canary, 1.0f,
+        1.41703f, 1.41703f, true));
+
+    // The ordinary owner remains strict even when the endpoint is close.
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Formation, true, false, true, false, canary, 1.0f,
+        1.41703f, 1.41703f, true));
+    // A real cross-floor request cannot opt into arrival merely because its
+    // endpoint is near the requested point.
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, false, false, true, false, canary, 1.0f,
+        1.41703f, 1.41703f, false));
+
+    NativePathProofObservation crossFloor = canary;
+    crossFloor.EndpointVerticalDistance = 8.0f;
+    crossFloor.EndpointDistance = 8.0f;
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, false, false, true, false, crossFloor, 1.0f,
+        8.0f, 8.0f, true));
 }
 ''',
         encoding="utf-8",
