@@ -11,9 +11,9 @@
   "observed_at_commit": "6518233c67d22f12418d5f9bf765ed027c18eb79",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_6518233c67_chainwielder_trace_transport_summary_v1.json",
-    "sha256": "0f7813beca859c487554f5e03d3ebf8a49153a19228d3d2d0c2f873bd4c483b0",
+    "sha256": "a2784575f5944b9d4054817e6b1d21ff67096bef10921faf8ccaeb70025309b9",
     "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_6518233c67_chainwielder_trace_transport_quarantine_20260830.dvc",
-    "dvc_pointer_sha256": "04918b1e1c454f28ef49eb9c0ef4b1f2c6bae8b3460ef7c0f3ada2813a44d8a4",
+    "dvc_pointer_sha256": "601094fd735339abac38925b8ca39e3a7d80517bb087ff03d4da314969e13afe",
     "dvc_directory_md5": "ca266dd38c919db04544be1ae6000b0f.dir",
     "source_report_sha256": "34f8d81134263462f30aa4b95af9946b9ce49bb2a27bc41c893ea92a42bf803b",
     "source_raw_output_sha256": "d28fabf617748a887ef0b2655df0a0dea852d7bc192fbaeceabb26228999ffa8",

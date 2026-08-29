@@ -70,7 +70,7 @@
   },
   "dvc_publication": {
     "pointer": "artifacts/cata_raid_program/phase1_foundation_6518233c67_chainwielder_trace_transport_quarantine_20260830.dvc",
-    "pointer_sha256": "04918b1e1c454f28ef49eb9c0ef4b1f2c6bae8b3460ef7c0f3ada2813a44d8a4",
+    "pointer_sha256": "601094fd735339abac38925b8ca39e3a7d80517bb087ff03d4da314969e13afe",
     "directory_md5": "ca266dd38c919db04544be1ae6000b0f.dir",
     "files": 17,
     "bytes": 261233120,
