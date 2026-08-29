@@ -21,6 +21,8 @@
       "same_level_endpoint_normalization_v1",
       "same_level_native_path_proof_v1",
       "magmaw_prepot_formation_gate_v1",
+      "magmaw_prepot_formation_endpoint_v1",
+      "magmaw_prepot_stall_watchdog_v1",
       "partial_wipe_native_reset_gate_v1",
       "phase1_capture_single_start_contract_v1",
       "deferred_candidate_capture_lifetime_v1",
@@ -125,6 +127,29 @@
           "pytest",
           "-q",
           "tests/test_bot_world_population_mgr_raid_consumables_module.py::test_short_prepot_waits_for_magmaw_formation_and_health_staging"
+        ]
+      },
+      {
+        "fixture_id": "magmaw_prepot_formation_endpoint_v1",
+        "causal_signature": "magmaw_prepot_geometry_conflicts_with_bait_formation",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_bot_action_arbitration.py::test_action_and_movement_arbiters_compile_and_replay"
+        ]
+      },
+      {
+        "fixture_id": "magmaw_prepot_stall_watchdog_v1",
+        "causal_signature": "magmaw_prepot_geometry_conflicts_with_bait_formation",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_phase1_raid_foundation_capture.py::test_capture_watchdog_stops_successful_wait_hiding_stalled_magmaw_move",
+          "tests/test_phase1_raid_foundation_capture.py::test_capture_watchdog_allows_retryable_magmaw_move_while_progressing"
         ]
       },
       {
@@ -746,6 +771,30 @@
       "worldserver_log_sha256": "7aea86d975687e6553c880fe5dd0f5a3fd5357e49e6abf528602892144f326c0",
       "evidence": "experiments/configs/cata_raid_magmaw_canary114_route_authority_architecture_stop_20260829.md",
       "note": "An alive attackable tank-owned Chainwielder remained at 99.6375% HP after generic non-tank regroup cleared the exact current target; future Magmaw fallback was rejected but current-pack authority was never restored."
+    },
+    {
+      "run_id": "trinity-magmaw-ed717e6cfb-canary115.58WDAo",
+      "route_completed": false,
+      "classification": "gameplay_failure",
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "chainwielder_future_drudge_contamination": "absent",
+        "current_route_combat_authority_preempted": "absent",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "absent",
+        "same_level_native_endpoint_z_normalization_false_negative": "occurred",
+        "same_level_native_path_proof_false_negative": "occurred",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "occurred",
+        "raid_partial_wipe_waits_for_last_survivor": "not_exercised",
+        "phase1_capture_duplicate_autostart_lifecycle": "absent",
+        "deferred_candidate_dangling_reference_capture": "absent",
+        "native_partial_death_recovery_lifecycle_failure": "not_exercised"
+      },
+      "report_sha256": "52b58694a3ec81bcb9b0cb9f36dfe21fe228b79b85e13a191f71193b5406862d",
+      "raw_jsonl_sha256": "4ad32dbeabf00a115c1700ad54d37e86599936cadb9595dedf47bf39c322fad5",
+      "worldserver_log_sha256": "75871bdc57e8ca89bff4f825d4b234afe7c093867ba666a76714ca350469e8a9",
+      "evidence": "experiments/configs/cata_raid_magmaw_canary115_formation_stall_handoff_20260829.md",
+      "note": "Chainwielder and both Drudges cleared with zero deaths. Magmaw formation then repeated successful submissions without state progress; complete floor-valid paths for GUIDs 30007 and 30010 were rejected solely because current-position Z differed 1.6441 yards from the normalized endpoint, so no member became pre-pot eligible."
     }
   ]
 }

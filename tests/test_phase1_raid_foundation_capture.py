@@ -3251,6 +3251,84 @@ def test_capture_watchdog_ignores_non_failed_diagnosis_repeated_loop():
     assert report["failure_reason"] is None
 
 
+def test_capture_watchdog_stops_successful_wait_hiding_stalled_magmaw_move():
+    status = _generic_watchdog_status(
+        size=10, profile="blackwing_descent_10n", map_id=669,
+    )
+    status["validation_route"].update(
+        node_id="bwd.magmaw.encounter", generation=4, kind="boss",
+    )
+    diagnosis = _watchdog_diagnosis(
+        bot_guid=30007,
+        action="raid_prepull_consumable",
+        result="ok",
+        repeat_count=20,
+        consecutive_count=20,
+    )
+    bot = diagnosis["bots"][0]
+    bot["snapshot"]["route_progress"]["route"].update(
+        node_id="bwd.magmaw.encounter", generation=4,
+    )
+    bot["snapshot"]["movement"] = {
+        "is_moving": False,
+        "time_since_last_progress_ms": 20_000,
+    }
+    bot["diagnosis"]["decision_kernel"] = {
+        "candidates": [{
+            "source": "adaptive_magmaw",
+            "phase": "failed",
+            "status": "attempted",
+            "reason": "native_move_retryable",
+        }],
+    }
+
+    report = observe_capture_watchdog(
+        {}, status, diagnosis,
+        max_repeated_decisions=20, max_death_loops=3,
+    )
+
+    assert report["detected"] is True
+    assert report["failure_reason"] == "repeated_decision_watchdog"
+    assert report["repeated_decision_count"] == 20
+    assert report["repeated_decision_outcome"] == "native_move_retryable"
+    assert report["last_10_repeated_decisions"][-1]["action"] \
+        == "adaptive_magmaw_movement"
+
+
+def test_capture_watchdog_allows_retryable_magmaw_move_while_progressing():
+    status = _generic_watchdog_status(
+        size=10, profile="blackwing_descent_10n", map_id=669,
+    )
+    diagnosis = _watchdog_diagnosis(
+        bot_guid=30007,
+        action="raid_prepull_consumable",
+        result="ok",
+        repeat_count=20,
+        consecutive_count=20,
+    )
+    bot = diagnosis["bots"][0]
+    bot["snapshot"]["movement"] = {
+        "is_moving": True,
+        "time_since_last_progress_ms": 1_000,
+    }
+    bot["diagnosis"]["decision_kernel"] = {
+        "candidates": [{
+            "source": "adaptive_magmaw",
+            "phase": "failed",
+            "status": "attempted",
+            "reason": "native_move_retryable",
+        }],
+    }
+
+    report = observe_capture_watchdog(
+        {}, status, diagnosis,
+        max_repeated_decisions=20, max_death_loops=3,
+    )
+
+    assert report["detected"] is False
+    assert report["repeated_decision_count"] == 0
+
+
 def test_capture_watchdog_diagnosis_counts_failed_route_decisions_per_bot():
     status = _generic_watchdog_status(size=10, profile="blackwing_descent_10n", map_id=669)
     state = {}

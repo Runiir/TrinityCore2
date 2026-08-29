@@ -100,6 +100,19 @@ plus endpoint-floor validity; do not collapse those facts into one unexplained
 3D tolerance. Retain the exact rejected endpoint deltas as a compiled
 counterexample and serialize both components for future traces.
 
+Movement producers must submit the destination's declared/navigation-floor Z,
+not the actor's transient Z, when the destination came from a route-bound
+anchor. Prove the recorded requested-versus-normalized endpoint deltas against
+the strict shared endpoint gate. Do not loosen that gate to compensate for a
+producer that discarded its destination floor.
+
+A successful wait, suppression, or consumable candidate can coexist with a
+failed movement candidate in the same kernel resolution. Do not use the
+top-level `ok` result as proof of progress. When the failed candidate repeats,
+require both its typed reason and a full window with no observed movement
+progress before terminating; retain a nearby replay where the same retry is
+allowed while movement is advancing.
+
 Shared raid cooldown reservation belongs here only when it is class-agnostic:
 reserve offensive cooldowns, offensive guardians, combat potions, and
 Bloodlust during trash, regroup, and boss staging, while leaving emergency

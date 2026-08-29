@@ -215,6 +215,16 @@ signature keeps its original counterexample as a deterministic regression
 fixture. Do not delete, weaken, or replace that fixture when a later repair
 changes the implementation or diagnostic vocabulary.
 
+Treat a recurrence after a passing fixture as proof that the fixture covered
+the wrong boundary. Stop live canaries for that signature, preserve the old
+fixture, and add a replay at the first missing policy-to-native-outcome edge.
+The replacement gate must include the recorded numeric counterexample and the
+state transition that the route actually needs. A submitted or top-level
+`ok` action is not progress unless its native postcondition changes. Require
+the watchdog to terminate a known failed candidate hidden beneath successful
+wait work after one no-progress window, while allowing the same retry during
+observed movement progress.
+
 Only a currently `occurred` signature is eligible for repair routing. An older
 open signature whose latest assessed state is `absent` remains a provisional
 acceptance gate, but it must not displace the causal edge that occurred in the

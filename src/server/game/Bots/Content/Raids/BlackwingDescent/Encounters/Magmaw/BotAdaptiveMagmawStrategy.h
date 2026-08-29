@@ -113,7 +113,7 @@ public:
                 plan.SuppressOffense = true;
                 plan.SuppressReason = "prepull_formation_staging";
                 if (role != "tank")
-                    plan.Movement = BuildPointMovement(board, *bot,
+                    plan.Movement = BuildPointMovement(board,
                         FormationAnchor(board, *anchors, botGuid),
                         "prepull_ranged_stage",
                         BotActionArbitration::Priority::Mechanic, 325.0f);
@@ -380,8 +380,7 @@ private:
     }
 
     static BotNativeAction::Candidate BuildPointMovement(
-        Blackboard const& board, ActorSnapshot const& bot,
-        Vector3 const& point, std::string mechanic,
+        Blackboard const& board, Vector3 const& point, std::string mechanic,
         BotActionArbitration::Priority priority, float utility)
     {
         BotNativeAction::Candidate candidate;
@@ -392,8 +391,7 @@ private:
         candidate.ActionPriority = priority;
         candidate.Utility = utility;
         candidate.ExpiresAtMs = board.ObservedAtMs + 750;
-        candidate.Action = BotNativeAction::Move{ point.X, point.Y,
-            bot.Position.Z };
+        candidate.Action = BotNativeAction::Move{ point.X, point.Y, point.Z };
         return candidate;
     }
 
@@ -512,7 +510,7 @@ private:
                 <= RangedStackTolerance)
             return std::nullopt;
         BotNativeAction::Candidate candidate = BuildPointMovement(
-            board, bot, *destination, "pillar_bait_switch",
+            board, *destination, "pillar_bait_switch",
             BotActionArbitration::Priority::Survival, 500.0f);
         candidate.Id.Actor = bot.Guid;
         candidate.Id.EventGeneration = laneTransition->TransitionId;
@@ -701,7 +699,7 @@ private:
                     : anchors->Support;
                 if (Distance2d(bot.Position, destination)
                     > RangedStackTolerance)
-                    return BuildPointMovement(board, bot, destination,
+                    return BuildPointMovement(board, destination,
                         observed.NearestImmediateHazard
                             && IsCrashHazard(*observed.NearestImmediateHazard)
                             ? "mangle_safe_side" : "mangle_midpoint_stage",
@@ -725,7 +723,7 @@ private:
             bot.Guid);
         if (Distance2d(bot.Position, destination) <= RangedStackTolerance)
             return std::nullopt;
-        return BuildPointMovement(board, bot, destination,
+        return BuildPointMovement(board, destination,
             "ranged_formation_restore",
             BotActionArbitration::Priority::Mechanic, 275.0f);
     }
@@ -841,7 +839,7 @@ private:
             ResolveHookApproachDestination(board, bot, boss);
         if (!destination)
             return std::nullopt;
-        return BuildPointMovement(board, bot, *destination,
+        return BuildPointMovement(board, *destination,
             "pincer_preposition", BotActionArbitration::Priority::Mechanic,
             365.0f);
     }
@@ -861,7 +859,7 @@ private:
             ResolveHookApproachDestination(board, bot, boss);
         if (!destination)
             return std::nullopt;
-        return BuildPointMovement(board, bot, *destination,
+        return BuildPointMovement(board, *destination,
             "pincer_approach", BotActionArbitration::Priority::Mechanic,
             375.0f);
     }

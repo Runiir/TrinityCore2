@@ -83,6 +83,12 @@ These shutdown and persistence duties belong to the capture controller or coordi
   detector itself caused the later wipe, and retain both the observed edge and
   the detector-induced terminal edge.
 - In uncapped mode, use channel-freshness and monotonic semantic-progress clocks. Activity churn, casting toggles, or changing victim GUIDs are not progress.
+- Inspect the resolved candidate set when a top-level decision reports `ok`.
+  A successful wait or suppression lane does not erase a failed movement or
+  interaction candidate in the same tick. After the configured repeated-action
+  window and a matching no-native-progress interval, retain that candidate as
+  the first broken edge and stop the capture; do not wait for the broader
+  semantic-stall timeout.
 - Keep controller admission predicates byte-for-byte semantic peers of the
   runtime gate. In particular, post-wipe ready-check orchestration must accept
   either the scoped boss-reset edge or the scoped native-hostile reset edge

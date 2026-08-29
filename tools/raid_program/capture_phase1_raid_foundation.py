@@ -85,6 +85,9 @@ _WATCHDOG_NO_PROGRESS_DECISIONS = frozenset({
     ("validation_route_regroup", "hold_anchor_no_focus"),
     ("validation_route_hold_anchor", "hold_anchor_no_focus"),
 })
+_WATCHDOG_STALLED_CANDIDATE_FAILURES = frozenset({
+    ("adaptive_magmaw", "native_move_retryable"),
+})
 _CONTROLLER_TERMINAL_FAILURE_REASONS = frozenset({
     "semantic_stall",
     "repeated_decision_watchdog",
@@ -2726,6 +2729,59 @@ def _watchdog_is_repeated_decision(entry: dict[str, Any]) -> bool:
     )
 
 
+def _watchdog_stalled_candidate_failure(
+    bot: dict[str, Any], *, max_repeated_decisions: int,
+) -> dict[str, Any] | None:
+    """Expose a failed movement candidate hidden by a successful wait action.
+
+    Canary115 repeatedly committed the prepull-consumable wait lane while the
+    Magmaw formation movement candidate failed. The top-level decision was
+    therefore ``ok`` for over five minutes even though the bot had not moved.
+    Require both a known failed candidate and a full watchdog window without
+    movement progress so ordinary retryable movement is never terminal.
+    """
+
+    snapshot = bot.get("snapshot") if isinstance(bot.get("snapshot"), dict) else {}
+    movement = snapshot.get("movement") if isinstance(snapshot.get("movement"), dict) else {}
+    if movement.get("is_moving") is True:
+        return None
+    try:
+        stalled_ms = int(movement.get("time_since_last_progress_ms") or 0)
+    except (TypeError, ValueError):
+        stalled_ms = 0
+    if stalled_ms < max_repeated_decisions * 1000:
+        return None
+
+    decision = snapshot.get("decision") if isinstance(snapshot.get("decision"), dict) else {}
+    native_count = _watchdog_native_consecutive_count(decision)
+    if native_count is None:
+        try:
+            native_count = int(decision.get("fingerprint_repeat_count") or 0)
+        except (TypeError, ValueError):
+            native_count = 0
+    if native_count < max_repeated_decisions:
+        return None
+
+    diagnosis = bot.get("diagnosis") if isinstance(bot.get("diagnosis"), dict) else {}
+    kernel = diagnosis.get("decision_kernel") if isinstance(diagnosis.get("decision_kernel"), dict) else {}
+    for candidate in kernel.get("candidates") or []:
+        if not isinstance(candidate, dict):
+            continue
+        source = str(candidate.get("source") or "")
+        reason = str(candidate.get("reason") or "")
+        if (source, reason) not in _WATCHDOG_STALLED_CANDIDATE_FAILURES:
+            continue
+        if candidate.get("phase") != "failed" or candidate.get("status") != "attempted":
+            continue
+        return {
+            "action": f"{source}_movement",
+            "outcome": reason,
+            "repeat_count": native_count,
+            "fingerprint_hash": int(decision.get("fingerprint_hash") or 0),
+        }
+    return None
+
+
 def _watchdog_is_local_no_progress_decision(entry: dict[str, Any]) -> bool:
     """Identify route no-progress rows whose native count is another lane.
 
@@ -3046,11 +3102,12 @@ def observe_capture_watchdog(
 ) -> dict[str, Any]:
     """Observe scoped trace/diagnosis evidence for deterministic termination.
 
-    Only route failures and explicit death events can trip this watchdog. The
-    ordinary decision heartbeat, changing victims, casts, and native
-    death/revive lifecycle rows are retained as evidence but never count as
-    semantic route progress. The first threshold crossed in trace order wins,
-    which keeps the terminal reason deterministic when both counters grow.
+    Route failures, stalled failed movement candidates, and explicit death
+    events can trip this watchdog. The ordinary decision heartbeat, changing
+    victims, casts, and native death/revive lifecycle rows are retained as
+    evidence but never count as semantic route progress. The first threshold
+    crossed in trace order wins, which keeps the terminal reason deterministic
+    when both counters grow.
     """
 
     if max_repeated_decisions <= 0 or max_death_loops <= 0:
@@ -3318,6 +3375,36 @@ def observe_capture_watchdog(
             )
             if entry_scope != current_scope:
                 continue
+            stalled_candidate = _watchdog_stalled_candidate_failure(
+                bot, max_repeated_decisions=max_repeated_decisions,
+            )
+            if stalled_candidate is not None:
+                try:
+                    bot_key = str(int(identity.get("bot_guid") or 0))
+                except (TypeError, ValueError):
+                    bot_key = "0"
+                repeat_count = int(stalled_candidate["repeat_count"])
+                outcome = str(stalled_candidate["outcome"])
+                action = str(stalled_candidate["action"])
+                report["repeated_decision_count"] = max(
+                    int(report["repeated_decision_count"]), repeat_count
+                )
+                report["repeated_decision_outcome"] = outcome
+                recent = state.setdefault("last_10_repeated_decisions", [])
+                recent.append({
+                    "route_node_id": entry_scope[0],
+                    "route_generation": entry_scope[1],
+                    "bot_guid": int(bot_key) if bot_key.isdigit() else bot_key,
+                    "action": action,
+                    "outcome": outcome,
+                    "fingerprint_hash": int(
+                        stalled_candidate["fingerprint_hash"]
+                    ),
+                })
+                del recent[:-10]
+                report["last_10_repeated_decisions"] = list(recent)
+                maybe_terminal("repeated_decision_watchdog", outcome=outcome)
+                break
             action = str(decision.get("action") or "")
             outcome = _watchdog_failure_outcome(decision)
             if not _watchdog_is_repeated_decision({"action": action, "result": outcome}):

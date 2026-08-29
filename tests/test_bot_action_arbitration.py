@@ -45,6 +45,7 @@ def test_action_and_movement_arbiters_compile_and_replay(tmp_path: Path) -> None
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/BotWorldPopulationMgrNativeFloor.h"
 #include <cassert>
 #include <limits>
 #include <string>
@@ -711,12 +712,13 @@ int main()
     magmawStage.CurrentScope.AttemptId = 3;
     magmawStage.Route.NavigationHints = {
         { magmawBoss.Position.X - 5.0f, magmawBoss.Position.Y,
-            magmawBoss.Position.Z + 1.0f } };
+            211.815f } };
     BotEncounter::ActorSnapshot stageMarks = dps;
     stageMarks.Guid = ObjectGuid(HighGuid::Player, uint32(109));
     stageMarks.ClassSpec = "marksmanship_hunter";
     magmawStage.Players.push_back(stageMarks);
     magmawStage.Players[2].Position = magmawBoss.Position;
+    magmawStage.Players[2].Position.Z = 213.225f;
     magmawStage.Players[2].HealthPct = 93.0f;
     auto rangedStagePlan = magmawStrategy.Propose(
         magmawStage, dps.Guid, "dps");
@@ -732,6 +734,14 @@ int main()
     assert(baitStageMove);
     assert(std::hypot(baitStageMove->X - magmawBoss.Position.X,
         baitStageMove->Y - magmawBoss.Position.Y) > 30.0f);
+    // Canary115: preserve the route-bound formation floor. Reusing the bot's
+    // transient Z made an otherwise complete MMAP endpoint miss the strict
+    // vertical identity gate by 1.644 yards on every tick.
+    assert(baitStageMove->Z == magmawStage.Route.NavigationHints.front().Z);
+    assert(!BotWorldMovement::NativePathEndpointComponentsMatch(
+        0.0f, std::fabs(211.581f - magmawStage.Players[2].Position.Z)));
+    assert(BotWorldMovement::NativePathEndpointComponentsMatch(
+        0.0f, std::fabs(211.581f - baitStageMove->Z)));
     assert(tankStageWaitPlan.SuppressOffense);
     assert(!tankStageWaitPlan.Movement.has_value());
 
