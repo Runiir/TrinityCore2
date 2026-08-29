@@ -2140,8 +2140,10 @@ def test_magmaw_parasite_baiters_keep_persistent_lane_paths(tmp_path: Path) -> N
     source.write_text(
         r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
 #include <cassert>
 #include <cmath>
+#include <cstring>
 
 using namespace BotEncounter;
 using BotNativeAction::Move;
@@ -2225,6 +2227,29 @@ static float Distance(Vector3 const& left, Vector3 const& right)
     return std::hypot(left.X - right.X, left.Y - right.Y);
 }
 
+static BotWorldMovement::NativePathProofObservation Canary119Proof()
+{
+    BotWorldMovement::NativePathProofObservation proof;
+    proof.Available = true;
+    proof.Calculated = true;
+    proof.PathType = 1; // PATHFIND_NORMAL, retained from the live trace.
+    proof.Complete = true;
+    proof.EndpointX = -309.333f;
+    proof.EndpointY = -33.6001f;
+    proof.EndpointZ = 210.339f;
+    proof.EndpointDistance = 2.01385f;
+    proof.EndpointHorizontalDistance = 1.58586f;
+    proof.EndpointVerticalDistance = 1.24123f;
+    proof.EndpointMatched = false;
+    proof.EndpointFloorValid = true;
+    proof.FloorObservation = BotWorldMovement::MakeNativePathFloorObservation(
+        BotWorldMovement::NativePathFloorFailure::None, 0, 0,
+        proof.EndpointX, proof.EndpointY, proof.EndpointZ,
+        proof.EndpointZ, 211.581f);
+    proof.Accepted = BotWorldMovement::NativePathProofPassesAdmission(proof);
+    return proof;
+}
+
 int main()
 {
     AdaptiveMagmawStrategy strategy;
@@ -2249,6 +2274,59 @@ int main()
         >= MagmawParasitePolicy::StackSeparation);
     assert(Distance(firstDestination, board.Hostiles[1].Position)
         >= MagmawParasitePolicy::SafeClearance);
+
+    // Canary119 seq3376: exercise the selected Magmaw parasite movement
+    // through the same Hazard-owned native-path admission boundary. The
+    // recorded actor/request pair hit a lower-floor probe at -103.448, while
+    // the complete native endpoint travelled 3.1396 yards and made about
+    // 2.195 yards of progress toward the request. Preserve the old strict
+    // endpoint mismatch as evidence, then admit only this bounded, complete,
+    // same-level mechanic result.
+    BotMovementArbitration::Lease const canaryLease = LeaseFor(
+        board, *firstMove);
+    assert(canaryLease.MovementOwner
+        == BotMovementArbitration::Owner::Hazard);
+    assert(canaryLease.MovementPriority
+        == BotMovementArbitration::Priority::Hazard);
+    Vector3 const canaryActor{ -308.91f, -36.4524f, 211.581f };
+    Vector3 const canaryRequest{ -308.477f, -32.2655f, 211.581f };
+    Vector3 const canaryEndpoint{ -309.333f, -33.6001f, 210.339f };
+    assert(std::fabs(Distance(canaryActor, canaryRequest)
+        - 4.2092304f) < 0.0001f);
+    float const nativeTravel = std::sqrt(
+        (canaryEndpoint.X - canaryActor.X)
+            * (canaryEndpoint.X - canaryActor.X)
+        + (canaryEndpoint.Y - canaryActor.Y)
+            * (canaryEndpoint.Y - canaryActor.Y)
+        + (canaryEndpoint.Z - canaryActor.Z)
+            * (canaryEndpoint.Z - canaryActor.Z));
+    assert(std::fabs(nativeTravel - 3.1396f) < 0.001f);
+    BotWorldMovement::NativeFloorResult const lowerFloor =
+        BotWorldMovement::AdmitSameLevelLocalStepFloor(
+            canaryActor.Z, canaryRequest.Z, -103.448f);
+    assert(lowerFloor.Accepted());
+    assert(lowerFloor.UsesDeclaredFallback());
+    assert(lowerFloor.Z == canaryActor.Z);
+    BotWorldMovement::NativePathProofObservation const canaryProof =
+        Canary119Proof();
+    assert(!canaryProof.Accepted);
+    assert(std::strcmp(BotWorldMovement::NativePathProofFailureReason(
+        canaryProof), "route_destination_endpoint_mismatch") == 0);
+    assert(!BotWorldMovement::NativePathEndpointComponentsMatch(
+        canaryProof.EndpointHorizontalDistance,
+        canaryProof.EndpointVerticalDistance));
+    assert(BotWorldMovement::NativePathAllowsBoundedSameLevelMechanicProgress(
+        canaryLease.MovementOwner, true, true, canaryProof.Complete, false,
+        canaryProof, 3.1396f, 4.2092304f, 2.01385f));
+
+    // The exception is not a generic movement bypass: a genuine cross-floor
+    // request and a Formation-owned movement remain rejected.
+    assert(!BotWorldMovement::AdmitSameLevelLocalStepFloor(
+        canaryActor.Z, -103.448f, -103.448f).Accepted());
+    assert(!BotWorldMovement::NativePathAllowsBoundedSameLevelMechanicProgress(
+        BotMovementArbitration::Owner::Formation, true, true,
+        canaryProof.Complete, false, canaryProof, 3.1396f,
+        4.2092304f, 2.01385f));
 
     auto hunterPlan = strategy.Propose(board, hunterGuid, "dps", nullptr,
         false, false, &transition);

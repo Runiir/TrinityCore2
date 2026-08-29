@@ -32,7 +32,7 @@
     "fixtures": [
       {
         "fixture_id": "magmaw_parasite_lane_paths_v1",
-        "revision": 4,
+        "revision": 5,
         "causal_signature": "magmaw_parasite_containment_failure",
         "command": [
           "pixi",
@@ -45,7 +45,7 @@
       },
       {
         "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
-        "revision": 3,
+        "revision": 4,
         "causal_signature": "magmaw_parasite_containment_failure",
         "command": [
           "pixi",
@@ -53,12 +53,13 @@
           "pytest",
           "-q",
           "tests/test_magmaw_parasite_policy.py::test_magmaw_lane_transition_replays_selection_to_reset",
-          "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave"
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave",
+          "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths"
         ]
       },
       {
         "fixture_id": "magmaw_parasite_control_full_runtime_v1",
-        "revision": 3,
+        "revision": 4,
         "causal_signature": "magmaw_parasite_control_allows_player_infection",
         "command": [
           "pixi",
@@ -66,7 +67,8 @@
           "pytest",
           "-q",
           "tests/test_magmaw_parasite_policy.py::test_magmaw_containment_replays_full_runtime_contract",
-          "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave"
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave",
+          "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths"
         ]
       },
       {
