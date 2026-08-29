@@ -105,6 +105,16 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 movement.UtilityScore = intent.Utility;
                 movement.RequiredResources = intent.Resources();
                 movement.ExpiresAtMs = intent.ExpiresAtMs;
+                if (intent.Id.Mechanic == "prepull_ranged_stage"
+                    || intent.Id.Mechanic == "ranged_formation_restore")
+                {
+                    if (Cohort().Raid.ValidationPrepullCheckpoint.Enabled())
+                        context.State.DecisionKernel.SetCandidateAdmission(
+                            movement.Key,
+                            BotActionArbitration::AdmissionClass::FormationMovement,
+                            Cohort().Raid.ValidationPrepullCheckpoint
+                                .CurrentScope().Key());
+                }
                 if (intent.Id.Mechanic == "pillar_bait_switch"
                     || intent.Id.Mechanic == "parasite_contact_evade")
                 {
@@ -177,6 +187,10 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             suppress.UtilityScore = 100.0f;
             suppress.RequiredResources = BotActionArbitration::Uses(
                 BotActionArbitration::Resource::Pet);
+            if (Cohort().Raid.ValidationPrepullCheckpoint.Enabled())
+                context.State.DecisionKernel.SetCandidateAdmission(suppress.Key,
+                    BotActionArbitration::AdmissionClass::OffenseSuppression,
+                    Cohort().Raid.ValidationPrepullCheckpoint.CurrentScope().Key());
             suppress.Attempt = [this, &context, suppressReason]()
             {
                 std::string const intentReason =
@@ -725,6 +739,11 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 support.RequiredResources = BotActionArbitration::Uses(
                     BotActionArbitration::Resource::GlobalCooldown,
                     BotActionArbitration::Resource::Cast);
+                if (Cohort().Raid.ValidationPrepullCheckpoint.Enabled())
+                    context.State.DecisionKernel.SetCandidateAdmission(support.Key,
+                        BotActionArbitration::AdmissionClass::FriendlyHealing,
+                        Cohort().Raid.ValidationPrepullCheckpoint
+                            .CurrentScope().Key());
                 support.Attempt = [this, &context, healTargetGuid,
                     activeNativeMovementPath]()
                 {

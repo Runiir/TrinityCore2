@@ -24,6 +24,7 @@ namespace
 using BotWorldPopulationMgrRaidConsumables::Contract;
 using BotWorldPopulationMgrRaidConsumables::FindContract;
 using BotWorldPopulationMgrRaidConsumables::PrepotStageReady;
+using BotWorldPopulationMgrRaidConsumables::ReceiptReady;
 using BotWorldPopulationMgrConsumables::CountNativeConsumable;
 using BotWorldPopulationMgrConsumables::FindNativeConsumable;
 
@@ -93,6 +94,10 @@ void BotWorldPopulationMgr::SubmitRaidPrepullConsumableCandidate(
         BotActionArbitration::Resource::Target);
     candidate.RetryBaseMs = 100;
     candidate.RetryMaxMs = 1000;
+    if (raid.ValidationPrepullCheckpoint.Enabled())
+        context.State.DecisionKernel.SetCandidateAdmission(candidate.Key,
+            BotActionArbitration::AdmissionClass::BagConsumable,
+            raid.ValidationPrepullCheckpoint.CurrentScope().Key());
     candidate.Attempt = [&context]()
     {
         // Durable setup can run while Magmaw formation is moving.  The short
@@ -135,20 +140,10 @@ bool BotWorldPopulationMgr::RaidPrepullConsumablesReadyForPull() const
         || raid.PrepullConsumablesByGuid.size() != raid.ExpectedSize)
         return false;
 
-    auto receiptReady = [](RaidPrepullConsumableReceipt const& receipt)
-    {
-        return receipt.ItemId && receipt.SpellId && receipt.AuraSpellId
-            && receipt.SuccessfulUseCount >= receipt.RequiredUses
-            && receipt.NativeUseFinishedSuccessfully
-            && !receipt.NativeUseAwaitingAura
-            && receipt.FinishedAtMs >= receipt.SubmittedAtMs
-            && receipt.PreUseItemCount > receipt.PostUseItemCount
-            && receipt.AuraObservedAtMs && receipt.CooldownObserved;
-    };
     for (auto const& [guid, member] : raid.PrepullConsumablesByGuid)
         if (!member.AliveAndHealed || member.Failed
-            || !receiptReady(member.Flask) || !receiptReady(member.Food)
-            || !receiptReady(member.Prepot)
+            || !ReceiptReady(member.Flask) || !ReceiptReady(member.Food)
+            || !ReceiptReady(member.Prepot)
             || member.CombatPotionReservedCount < 1)
             return false;
     return true;

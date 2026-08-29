@@ -9,6 +9,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotAdaptiveOmnotronStrategy.h"
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
+#include "Bots/BotWorldPopulationMgrRaidConsumables.h"
 
 #include "GossipDef.h"
 #include "ObjectAccessor.h"
@@ -24,8 +25,17 @@ using BotWorldPopulationMgrSpellSemantics::NowMs;
 void BotWorldPopulationMgr::PrepareValidationKernel(
     BotUpdateContext& context)
 {
-        context.DecisionNowMs = NowMs();
-        context.State.DecisionKernel.Begin(context.DecisionNowMs);
+    context.DecisionNowMs = NowMs();
+    context.State.DecisionKernel.Begin(context.DecisionNowMs);
+    RaidRuntime& raid = Cohort().Raid;
+    BotValidationPrepullCheckpoint::Scope const checkpointScope{
+        Cohort().Id, Cohort().AttemptId, Party().ValidationRouteGeneration,
+        Cohort().Config.ValidationRouteNodeId };
+    bool const checkpointEnabled = Cohort().Config.ValidationRouteEnable
+        && Cohort().Config.ValidationPrepullCheckpointEnable
+        && Cohort().Config.ValidationRouteKind == "boss";
+    raid.ValidationPrepullCheckpoint.Configure(checkpointEnabled,
+        checkpointScope, raid.ExpectedSize);
         // Adaptive encounter ownership is recomputed from the current
         // observation. Do not let a vanished Magmaw node retain its previous
         // parasite area/dot authority into a generic profile tick.
@@ -530,6 +540,43 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                     context.State.TargetGuid = nefarianPlan.DamageTarget;
                 }
         }
+
+        if (raid.ValidationPrepullCheckpoint.Enabled()
+            && !raid.ValidationPrepullCheckpoint.Released())
+        {
+            bool formationPending = false;
+            if (context.AdaptiveMagmawMovement)
+            {
+                std::string const& mechanic =
+                    context.AdaptiveMagmawMovement->Id.Mechanic;
+                formationPending = mechanic == "prepull_ranged_stage"
+                    || mechanic == "ranged_formation_restore";
+            }
+            BotValidationPrepullCheckpoint::MemberReceipt receipt;
+            receipt.Guid = context.Bot->GetGUID().GetCounter();
+            receipt.Alive = context.Bot->IsAlive();
+            receipt.OutOfCombat = !context.Bot->IsInCombat();
+            receipt.Formed = context.AdaptiveMagmawOwnsNode
+                && !formationPending;
+            auto const member = raid.PrepullConsumablesByGuid.find(receipt.Guid);
+            if (member != raid.PrepullConsumablesByGuid.end()
+                && member->second.AttemptId == Cohort().AttemptId
+                && member->second.RouteGeneration
+                    == Party().ValidationRouteGeneration)
+            {
+                using BotWorldPopulationMgrRaidConsumables::ReceiptReady;
+                receipt.Flask = ReceiptReady(member->second.Flask);
+                receipt.Food = ReceiptReady(member->second.Food);
+                receipt.Prepot = ReceiptReady(member->second.Prepot);
+            }
+            raid.ValidationPrepullCheckpoint.Observe(checkpointScope, receipt);
+            if (raid.ValidationPrepullCheckpoint.CurrentPhase()
+                == BotValidationPrepullCheckpoint::Phase::Ready)
+                raid.ValidationPrepullCheckpoint.Release(checkpointScope);
+        }
+        BotValidationPrepullCheckpoint::InstallAdmissionPolicy(
+            context.State.DecisionKernel,
+            raid.ValidationPrepullCheckpoint);
 
 
 }

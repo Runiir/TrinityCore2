@@ -6,6 +6,7 @@
 #include "Bots/BotWorldPopulationMgrRouteState.h"
 #include "Bots/BotWorldPopulationMgrBotState.h"
 #include "Bots/BotActionArbiter.h"
+#include "Bots/BotValidationPrepullCheckpoint.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotExperimentCoordinator.h"

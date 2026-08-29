@@ -87,6 +87,8 @@ struct BotWorldExperimentConfig
     bool CombatCalibrationReferenceConditions = false;
     bool CombatCalibrationSelfProvidedBaseline = false;
     bool ValidationRouteEnable = false;
+    // Validation-only boss-node checkpoint. Disabled for ordinary runtime.
+    bool ValidationPrepullCheckpointEnable = false;
     std::string ValidationRouteManifestPath;
     std::string ValidationRouteAdvanceMode = "disabled";
     std::string ValidationRouteScenarioId;

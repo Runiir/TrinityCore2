@@ -98,5 +98,6 @@ void BotWorldPopulationMgr::AppendRaidPrepullConsumablesJson(
         writeReceipt(member.Prepot);
         json << '}';
     }
-    json << "]}";
+    json << "],\"validation_checkpoint\":"
+         << raid.ValidationPrepullCheckpoint.ToJson() << "}";
 }

@@ -155,6 +155,9 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     Cohort().Config.CombatCalibrationSelfProvidedBaseline = sConfigMgr->GetBoolDefault(
         "BotWorld.CombatCalibration.SelfProvidedBaseline", Cohort().Config.CombatCalibrationSelfProvidedBaseline);
     Cohort().Config.ValidationRouteEnable = sConfigMgr->GetBoolDefault("BotWorld.ValidationRoute.Enable", Cohort().Config.ValidationRouteEnable);
+    Cohort().Config.ValidationPrepullCheckpointEnable = sConfigMgr->GetBoolDefault(
+        "BotWorld.ValidationRoute.PrepullCheckpointEnable",
+        Cohort().Config.ValidationPrepullCheckpointEnable);
     Cohort().Config.ValidationRouteManifestPath = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ManifestPath", Cohort().Config.ValidationRouteManifestPath);
     Cohort().Config.ValidationRouteAdvanceMode = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.AdvanceMode", Cohort().Config.ValidationRouteAdvanceMode);
     Cohort().Config.ValidationRouteScenarioId = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ScenarioId", Cohort().Config.ValidationRouteScenarioId);

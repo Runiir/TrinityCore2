@@ -418,6 +418,7 @@
         uint64 PrepullConsumablesReadyAtMs = 0;
         std::string PrepullConsumablesFailureReason;
         std::map<uint32, RaidPrepullConsumableMember> PrepullConsumablesByGuid;
+        BotValidationPrepullCheckpoint::Checkpoint ValidationPrepullCheckpoint;
         // One native Bloodlust trigger belongs to the exact Magmaw 10N raid
         // scope.  These fields are a raid latch, not per-bot cooldown state:
         // the native spell/GCD/readiness gates remain authoritative and the

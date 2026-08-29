@@ -30,6 +30,18 @@ inline bool PrepotStageReady(bool magmawOwnsNode, bool suppressOffense,
         || suppressReason == "prepull_pull_owner_wait";
 }
 
+template <typename Receipt>
+bool ReceiptReady(Receipt const& receipt)
+{
+    return receipt.ItemId && receipt.SpellId && receipt.AuraSpellId
+        && receipt.SuccessfulUseCount >= receipt.RequiredUses
+        && receipt.NativeUseFinishedSuccessfully
+        && !receipt.NativeUseAwaitingAura
+        && receipt.FinishedAtMs >= receipt.SubmittedAtMs
+        && receipt.PreUseItemCount > receipt.PostUseItemCount
+        && receipt.AuraObservedAtMs && receipt.CooldownObserved;
+}
+
 Contract const* FindContract(std::string_view classSpec);
 }
 

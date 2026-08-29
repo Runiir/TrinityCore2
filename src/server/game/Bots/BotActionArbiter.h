@@ -168,6 +168,17 @@ enum class Resource : uint16
     AutoAttackToggle = 1 << 6
 };
 
+// Optional semantic admission used by validation-only orchestration gates.
+// Ordinary candidates remain Unknown and ordinary kernels install no policy.
+enum class AdmissionClass : uint8
+{
+    Unknown,
+    FormationMovement,
+    FriendlyHealing,
+    BagConsumable,
+    OffenseSuppression
+};
+
 using ResourceMask = uint16;
 
 constexpr ResourceMask Uses(Resource resource)
@@ -207,6 +218,12 @@ struct Candidate
     {
         return UtilityScore + PolicyScore * PolicyWeight;
     }
+};
+
+struct AdmissionMetadata
+{
+    AdmissionClass Classification = AdmissionClass::Unknown;
+    std::string ScopeKey;
 };
 
 struct Lifecycle
@@ -287,7 +304,24 @@ public:
         _nowMs = nowMs;
         _nextSerial = 0;
         _candidates.clear();
+        _admissionMetadata.clear();
         _lastResolution = {};
+        _admissionPolicy = {};
+    }
+
+    using AdmissionPolicy = std::function<std::string(Candidate const&,
+        AdmissionMetadata const*)>;
+
+    void SetAdmissionPolicy(AdmissionPolicy policy)
+    {
+        _admissionPolicy = std::move(policy);
+    }
+
+    void SetCandidateAdmission(std::string const& key,
+        AdmissionClass classification, std::string scopeKey)
+    {
+        _admissionMetadata[key] = AdmissionMetadata{
+            classification, std::move(scopeKey) };
     }
 
     bool Submit(Candidate candidate)
@@ -327,6 +361,21 @@ public:
             Lifecycle& lifecycle = _lifecycles[candidate.Key];
             lifecycle.EscalateAfter = candidate.EscalateAfter;
             lifecycle.CurrentPhase = Phase::Proposed;
+
+            if (_admissionPolicy)
+            {
+                auto const metadata = _admissionMetadata.find(candidate.Key);
+                AdmissionMetadata const* admission = metadata
+                    == _admissionMetadata.end() ? nullptr : &metadata->second;
+                std::string const reason = _admissionPolicy(candidate,
+                    admission);
+                if (!reason.empty())
+                {
+                    Trace(candidate, "hard_masked", reason,
+                        Phase::Deferred);
+                    continue;
+                }
+            }
 
             if (!candidate.Allowed)
             {
@@ -528,8 +577,10 @@ private:
     uint64 _nowMs = 0;
     uint64 _nextSerial = 0;
     std::vector<QueuedCandidate> _candidates;
+    std::unordered_map<std::string, AdmissionMetadata> _admissionMetadata;
     std::unordered_map<std::string, Lifecycle> _lifecycles;
     Resolution _lastResolution;
+    AdmissionPolicy _admissionPolicy;
 };
 
 // Candidates are submitted in descending priority. A retryable, unsafe, or
