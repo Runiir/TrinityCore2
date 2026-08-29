@@ -1,0 +1,161 @@
+{
+  "schema": "cata_raid_trace_delta_all_poll_serialization_overrun_handoff_v1",
+  "work_unit_id": "runtime:trace_delta_all_poll_serialization_overrun",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "informational_only",
+  "git_commit": "f834000ca8267a9631a4dcdc2de2d7896519ebeb",
+  "input_identities": {
+    "source_commit": "f834000ca8267a9631a4dcdc2de2d7896519ebeb",
+    "immutable_runtime_smoke_handoff": {
+      "path": "experiments/configs/cata_raid_native_trace_discontinuity_runtime_smoke_handoff_v1.json",
+      "sha256": "716edcdb86b8bc4960eedc89d7041992289653f4d4d1cdb77423c497d13ded96"
+    }
+  },
+  "scope_lock": {
+    "candidate_first_broken_edge": "the production all-actor delta serializer repeats enough diagnostic payload that response delivery delays the same actor follow-up beyond another 128-entry ring window",
+    "first_observed_downstream_state_mutation": "bot 30008 advanced from cursor 158 to 794 with a second explicit missing interval 159 through 666",
+    "failure_postcondition": "a production botauto trace all 128 delta observer cannot complete a same-actor follow-up before another ring overwrite",
+    "single_hypothesis": "duplicated per-entry diagnostic fields in the production all-actor delta response are the causal owner of the follow-up delay",
+    "correlation_keys": {
+      "verified": [
+        "bot_guid_30008",
+        "same_server_epoch_4100418174833981",
+        "same_cohort_default",
+        "same_attempt_4",
+        "same_instance_8",
+        "same_runtime_profile_blackwing_descent_10n_magmaw_diagnostic"
+      ],
+      "missing": [
+        "poll_1_command_sent_at",
+        "poll_1_response_completed_at",
+        "poll_2_command_sent_at",
+        "production_controller_identity",
+        "production_scheduler_state"
+      ]
+    },
+    "owned_behavior": "the smallest shared trace delta serialization export or controller transport edge, only if the causal owner is proven",
+    "production_fixture_boundary": "the production TelemetryScheduler command path plus native cursor serialization and controller demultiplexing",
+    "allowed_files": [
+      "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp",
+      "src/server/game/Bots/BotWorldTraceExportCursor.h",
+      "tools/raid_program/capture_phase1_raid_foundation.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      "tests/test_trace_export_cursor.py",
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_trace_delta_all_poll_serialization_overrun_handoff_v1.json"
+    ],
+    "excluded": [
+      "gameplay",
+      "Magmaw_strategy",
+      "class_rotations",
+      "queue_priority",
+      "path_admission",
+      "watchdog_thresholds",
+      "database",
+      "build",
+      "live_server",
+      "DVC",
+      "fixture_promotion",
+      "acceptance"
+    ],
+    "terminal_condition": "stop without runtime code edits when the immutable evidence cannot join response size to production polling cadence"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the source identity is clean f834000ca8267a9631a4dcdc2de2d7896519ebeb",
+      "the immutable handoff SHA-256 matches 716edcdb86b8bc4960eedc89d7041992289653f4d4d1cdb77423c497d13ded96",
+      "poll 1 was 3870371 bytes and truthfully advanced bot 30008 from cursor 0 through retained sequences 31 through 158 after reporting missing 1 through 30",
+      "poll 2 was 5507676 bytes and truthfully advanced bot 30008 from cursor 158 through retained sequences 667 through 794 after reporting missing 159 through 666",
+      "all nine peer actors were gap-free in both responses",
+      "the canonical production TelemetryScheduler observes every complete trace response and changes its effective trace interval to 2.0 seconds once any actor returns at least 16 entries",
+      "the canonical controller keeps explicit actor-local discontinuities rejected while binding a later contiguous same-actor response",
+      "the native delta serializer repeats current state LastActionCategory LastRoleGoal LastRecommendedBalanceMode LastSaturationReason LastMechanicFamily LastEncounterRoleResponsibility and LastNextExpectedAction values in every serialized entry"
+    ],
+    "refuted": [
+      "a larger trace ring is required by the supplied evidence",
+      "the native cursor or explicit discontinuity transition is false",
+      "the failed two-poll smoke proves the production TelemetryScheduler cadence is too slow",
+      "the failed two-poll smoke proves any gameplay class encounter route or watchdog defect"
+    ],
+    "unproven": [
+      "the interval between the two live smoke commands",
+      "the time spent serializing poll 1",
+      "the time spent delivering or parsing poll 1",
+      "the production controller was used by the failed live smoke",
+      "duplicated diagnostic fields caused the second overflow",
+      "the production 2.0-second pressure cadence cannot obtain a gap-free same-actor follow-up",
+      "the size or cadence defect belongs to native serialization command transport or controller polling"
+    ]
+  },
+  "first_broken_edge_before": "The assigned serialization-overrun causal edge is unproven. The first verified evidence defect is the manual two-poll smoke protocol: it retained response bytes and cursor facts but no command-send response-complete or poll-interval timestamps and no production-controller identity.",
+  "implemented_hypothesis": null,
+  "no_edit_reason": "The bounded work-unit contract forbids a speculative serializer repair when the supplied evidence cannot correlate response size with production cadence. Source inspection identifies possible repeated fields but does not establish that they caused the delay.",
+  "response_bytes": {
+    "before": {
+      "poll_1_all_actor_envelope": 3870371,
+      "poll_2_all_actor_envelope": 5507676,
+      "raw_console_total": 9784224,
+      "poll_1_bot_30008_canonical_sub_envelope": 713284,
+      "poll_2_bot_30008_canonical_sub_envelope": 744068
+    },
+    "after": {
+      "poll_1_all_actor_envelope": 3870371,
+      "poll_2_all_actor_envelope": 5507676,
+      "raw_console_total": 9784224,
+      "status": "unchanged_no_runtime_edit"
+    }
+  },
+  "validation": {
+    "command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py::test_trace_scheduler_shortens_after_ring_pressure_without_accepting_gaps tests/test_phase1_raid_foundation_capture.py::test_native_trace_discontinuity_transition_resumes_through_controller_demux tests/test_phase1_raid_foundation_capture.py::test_capture_telemetry_poll_is_incremental_and_bounded tests/test_trace_export_cursor.py::test_initial_ring_overwrite_stays_explicit_and_resumes_retained_rows tests/test_trace_export_cursor.py::test_partial_batch_advances_only_through_last_emitted_row tests/test_trace_export_cursor.py::test_later_gap_stays_explicit_and_advances_only_through_emitted_rows",
+    "result": "passed",
+    "pass_count": 6,
+    "fail_count": 0,
+    "duration_seconds": 4.19,
+    "decisive_metrics": {
+      "production_pressure_watermark_entries": 16,
+      "production_pressure_interval_seconds": 2.0,
+      "explicit_discontinuity_remains_gate_failing": true,
+      "compiled_next_same_actor_delta_binds_contiguously": true
+    }
+  },
+  "changed_files": [
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_trace_delta_all_poll_serialization_overrun_handoff_v1.json"
+  ],
+  "untouched_dirty_files": [],
+  "gear_identity": {
+    "status": "not_applicable"
+  },
+  "effective_stat_parity": {
+    "status": "not_applicable",
+    "tuning_admitted": false,
+    "first_broken_edge": null
+  },
+  "dps_tuning_gate": {
+    "status": "not_applicable",
+    "tuning_admitted": false,
+    "first_broken_edge": null
+  },
+  "evidence_paths": [
+    "experiments/configs/cata_raid_native_trace_discontinuity_runtime_smoke_handoff_v1.json",
+    "experiments/configs/cata_raid_trace_delta_all_poll_serialization_overrun_handoff_v1.json"
+  ],
+  "dvc_publication": {
+    "performed": false,
+    "reason": "DVC was excluded from this bounded work unit and no generated bulk artifact was created"
+  },
+  "remaining_blocker": "No cadence-bound production-controller observation exists. The raw console was exactly evicted, and its digest cannot recover timestamps or scheduler state.",
+  "actual_owner": {
+    "proven_owner": "raid-shard-architecture",
+    "edge": "live smoke protocol and cadence evidence",
+    "runtime_size_or_transport_owner": "unproven"
+  },
+  "next_work_unit": {
+    "owner": "raid-shard-architecture",
+    "work_unit": "shard:production_controller_trace_delta_cadence_smoke",
+    "action": "run one fresh one-start smoke through the canonical TelemetryScheduler and retain command-sent response-first-byte response-complete and next-command timestamps plus scheduler state for botauto trace all 128 delta; require the pressure response to schedule its next poll at the production 2.0-second interval",
+    "success": "the same actor next response is gap=false begins at prior cursor_after plus one and preserves all peer cursors",
+    "failure_handoff": "if another truthful same-actor overflow occurs, return the exact timed response bytes and scheduler state to raid-bot-runtime-implementation so serialization command transport and parsing costs can be attributed separately",
+    "do_not_advance_to": "matched Chainwielder fixture expansion or gameplay acceptance"
+  }
+}

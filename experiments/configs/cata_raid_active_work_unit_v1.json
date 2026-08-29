@@ -1,14 +1,14 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "trace_discontinuity_runtime_smoke_live_second_poll_reoverflow_v1_20260830",
-  "work_unit": "shard:queued_build_and_trace_discontinuity_runtime_smoke",
+  "epoch_id": "trace_delta_production_cadence_evidence_required_v1_20260830",
+  "work_unit": "shard:production_controller_trace_delta_cadence_smoke",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "owner_skill": "raid-shard-architecture",
-  "classification": "runtime_smoke_failed_live_second_poll_reoverflow",
-  "gate_state": "runtime_smoke_failed_live_second_poll_reoverflow_gameplay_and_fixture_promotion_closed",
-  "observed_at_commit": "dc061cd96e60cccccf233cf0a588b70ce9238aec",
+  "classification": "runtime_repair_not_admitted_cadence_causality_unproven",
+  "gate_state": "production_cadence_smoke_required_gameplay_and_fixture_promotion_closed",
+  "observed_at_commit": "f834000ca8267a9631a4dcdc2de2d7896519ebeb",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_6518233c67_chainwielder_trace_transport_summary_v1.json",
     "sha256": "a2784575f5944b9d4054817e6b1d21ff67096bef10921faf8ccaeb70025309b9",
@@ -35,10 +35,16 @@
     "worldserver_binary_sha256": "662154787fd29953296632549306093fb02e23236dbd47dffecaa38915774838",
     "worldserver_start_count": 1
   },
-  "first_broken_edge": "At retained capture sequence 28, bot GUID 30008 alone advanced beyond the native 128-entry trace ring before its delta cursor 46 was exported. The producer truthfully returned gap=true, cursor_before=46, cursor_after=46, and no entries. Native fail-closed cursor semantics then repeated that same actor-local gap through capture sequence 433.",
+  "runtime_review_handoff": {
+    "path": "experiments/configs/cata_raid_trace_delta_all_poll_serialization_overrun_handoff_v1.json",
+    "sha256": "40d49dff1f8fe8cf3a83fedfaf6c95b72a57c089d641aee8c1fc5548358f2930",
+    "classification": "informational_only_no_runtime_edit",
+    "source_commit": "f834000ca8267a9631a4dcdc2de2d7896519ebeb"
+  },
+  "first_broken_edge": "The failed two-poll smoke retained exact response bytes and cursor facts but no command-send, response-complete, or poll-interval timestamps and no production-controller identity. It therefore cannot join multi-megabyte response size to the second actor-local ring overwrite.",
   "first_controller_defect": "The capture demultiplexer promoted one bot's real trace gap into rejection of each complete ten-bot envelope, hiding nine peers whose delta cursors and entries remained contiguous.",
-  "causal_signature": "actor_local_native_trace_loss_promoted_to_global_envelope_rejection",
-  "causal_claim_status": "native_discontinuity_transition_live_truthful_actor_local_but_contiguous_followup_unexercised_due_poll_cadence",
+  "causal_signature": "manual_trace_smoke_missing_production_cadence_correlation",
+  "causal_claim_status": "serialization_bloat_causal_owner_unproven_production_scheduler_already_uses_two_second_pressure_cadence",
   "claim_ledger": {
     "verified": [
       "source_identity_6518233c67_was_clean_and_admitted",
@@ -59,7 +65,10 @@
       "live_actor30008_first_poll_emitted_missing_1_through_30_retained_31_through_158_and_advanced_cursor_0_through_158",
       "live_actor30008_second_poll_truthfully_emitted_a_new_missing_159_through_666_retained_667_through_794_and_advanced_cursor_158_through_794",
       "both_live_discontinuities_were_actor_local_with_zero_peer_gaps",
-      "owned_cohort_server_process_ports_and_temporary_root_were_cleaned_to_zero"
+      "owned_cohort_server_process_ports_and_temporary_root_were_cleaned_to_zero",
+      "production_scheduler_switches_to_two_second_trace_polling_after_any_actor_returns_at_least_16_entries",
+      "focused_native_cursor_production_scheduler_and_controller_demux_regressions_pass_6_of_6",
+      "runtime_serializer_source_repeats_current_state_Last_diagnostic_strings_in_each_delta_entry_but_causality_is_not_bound"
     ],
     "refuted": [
       "the_241_rejected_envelopes_prove_global_trace_transport_loss",
@@ -67,14 +76,20 @@
       "this_capture_is_gate_bearing_gameplay_acceptance_evidence",
       "an_unadmitted_configure_ticket_is_a_clean_worldserver_build_receipt",
       "the_second_live_poll_was_gap_false_beginning_at_prior_cursor_after_plus_one",
-      "the_live_smoke_is_runtime_smoke_green"
+      "the_live_smoke_is_runtime_smoke_green",
+      "the_failed_manual_two_poll_smoke_proves_the_production_TelemetryScheduler_cadence_is_too_slow",
+      "a_larger_native_trace_ring_is_required"
     ],
     "unproven": [
       "lossless_native_trace_transport_for_a_busy_single_actor",
       "actor_join_for_bot30008_decisions_47_through_3120",
       "live_route_owner_state_preservation_after_a_receiptless_owner_hazard_rejection",
       "magmaw_completion_or_full_raid_acceptance",
-      "quiescence_free_contiguous_recovery_for_a_high_rate_actor_across_all_actor_trace_response_delivery"
+      "quiescence_free_contiguous_recovery_for_a_high_rate_actor_across_all_actor_trace_response_delivery",
+      "the_interval_between_the_two_live_smoke_commands",
+      "native_serialization_response_delivery_and_controller_parse_time_components",
+      "duplicated_per_entry_diagnostic_fields_caused_the_second_overflow",
+      "the_production_two_second_pressure_cadence_reoverflows_the_same_actor"
     ]
   },
   "source_capture": {
@@ -99,7 +114,7 @@
     "required_production_revision": 2,
     "production_revision_promoted": false
   },
-  "required_production_boundary": "Provide a native per-bot trace discontinuity epoch or equivalent explicit cursor recovery contract that preserves the first irrecoverable interval, resumes later actor deltas without a permanently sticky cursor, and remains actor-, attempt-, server-epoch-, route-, wipe-, assignment-, and runtime-profile-bound under a byte-faithful overflow replay.",
+  "required_production_boundary": "Run botauto trace all 128 delta through the canonical TelemetryScheduler, retain command-sent response-first-byte response-complete and next-command timestamps plus scheduler state, and distinguish native serialization console delivery and controller parsing before assigning a runtime repair.",
   "implementation": {
     "state": "fixture-green-live-explicit-gap-truthful-contiguous-followup-unexercised",
     "hypothesis": "When the first unexported sequence has fallen behind the bounded ring, emit one explicit discontinuity with the exact missing interval, export a bounded contiguous retained prefix, and advance only through the last serialized entry.",
@@ -130,10 +145,20 @@
       "poll_1": "gap_true_cursor_0_to_158_missing_1_to_30_retained_31_to_158",
       "poll_2": "gap_true_cursor_158_to_794_missing_159_to_666_retained_667_to_794",
       "failure": "second overflow occurred while the multi-megabyte all-actor first response was delivered"
+    },
+    "runtime_review": {
+      "state": "no_edit_causal_owner_unproven",
+      "single_hypothesis": "duplicated per-entry diagnostic fields cause response-size-induced same-actor reoverflow",
+      "verdict": "unproven",
+      "production_pressure_watermark_entries": 16,
+      "production_pressure_interval_seconds": 2.0,
+      "before_poll_1_bytes": 3870371,
+      "before_poll_2_bytes": 5507676,
+      "after_bytes": "unchanged_no_runtime_edit"
     }
   },
   "scope_lock": {
-    "allowed_change": "Validate only the fixture-green native trace transport through one exact clean queued build and one isolated live two-poll overflow smoke. Preserve explicit gap evidence and make no gameplay changes.",
+    "allowed_change": "Run one fresh one-start cadence-instrumented trace smoke through the canonical production controller. Preserve explicit actor-local gaps and cursor truth; do not edit runtime serialization without timed attribution.",
     "forbidden": [
       "gameplay_or_strategy_change",
       "class_rotation_or_dps_tuning",
@@ -181,19 +206,29 @@
       "binary_sha256": "662154787fd29953296632549306093fb02e23236dbd47dffecaa38915774838"
     },
     "runtime_smoke_verified": false,
-    "runtime_smoke_failure": "same_actor_second_poll_reoverflow_due_all_actor_response_delivery_cadence",
-    "runtime_smoke_failed_solely_because_polling_cadence_did_not_exercise_contiguous_recovery": true,
+    "runtime_smoke_observation": "same_actor_second_poll_reoverflow_with_response_size_and_poll_timing_causality_unbound",
+    "immutable_handoff_claimed_response_delivery_cadence_as_sole_failure": true,
+    "runtime_smoke_failed_solely_because_polling_cadence_did_not_exercise_contiguous_recovery": false,
     "runtime_smoke_cleanup_verified": true,
+    "runtime_repair_admitted": false,
+    "runtime_repair_classification": "informational_only_no_edit_causality_unproven",
+    "production_pressure_interval_seconds": 2.0,
+    "focused_validation": {
+      "result": "passed",
+      "pass_count": 6,
+      "fail_count": 0,
+      "duration_seconds": 4.19
+    },
     "gameplay_admitted": false,
     "fixture_promotion_admitted": false,
     "acceptance_admitted": false
   },
   "coordinator_followup": {
-    "next_owner": "raid-bot-runtime-implementation",
-    "next_owner_command": "bound_trace_delta_all_transport_so_a_high_rate_actor_can_be_repolled_before_another_128_entry_overflow_without_reconstructing_rows_or_increasing_the_ring",
-    "next_work_unit": "runtime:trace_delta_all_poll_serialization_overrun",
-    "return_owner_after_runtime_fix": "raid-shard-architecture",
+    "next_owner": "raid-shard-architecture",
+    "next_owner_command": "run_one_fresh_one_start_trace_smoke_through_the_canonical_TelemetryScheduler_and_retain_command_send_response_first_byte_response_complete_next_command_timestamps_and_scheduler_state",
+    "next_work_unit": "shard:production_controller_trace_delta_cadence_smoke",
+    "return_owner_if_timed_reoverflow_recurs": "raid-bot-runtime-implementation",
     "do_not_advance_to": "matched_chainwielder_fixture_expansion_until_runtime_smoke_green"
   },
-  "next_action": "Bound the all-actor trace delta transport cadence while preserving truthful actor-local discontinuities, then return to raid-shard-architecture for one fresh one-start smoke. Do not advance to Chainwielder fixture expansion or claim gameplay completion."
+  "next_action": "Run one fresh one-start cadence-instrumented smoke through the canonical production controller. If the same actor reoverflows at the verified two-second pressure cadence, return exact serialization delivery and parsing timings to raid-bot-runtime-implementation. Do not advance to Chainwielder fixture expansion or claim gameplay completion."
 }
