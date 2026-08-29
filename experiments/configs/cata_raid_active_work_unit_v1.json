@@ -27,13 +27,16 @@
   },
   "scope_lock": {
     "allowed_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrMagmawParasitePolicy.h",
-      "src/server/game/Bots/BotWorldPopulationMgrMagmawStrategy.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrMagmawStrategy.h",
-      "src/server/game/Bots/BotWorldPopulationMgrRaidRuntime.h",
-      "src/server/game/Bots/BotWorldPopulationMgrRaidMovement.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrRaidMovement.h",
-      "tests/test_magmaw_parasite_policy.py"
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h",
+      "src/server/game/Bots/BotWorldPopulationMgrBotState.h",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrValidationLifecycle.cpp",
+      "tests/test_magmaw_parasite_policy.py",
+      "tests/test_bot_action_arbitration.py"
     ],
     "allowed_change": "Introduce one typed Magmaw lane transition and replace the invalid helper-level fixture with a full multi-tick selection-to-native-outcome replay. Preserve fixed mage/hunter bait ownership and validate the entire lane corridor.",
     "forbidden": [
