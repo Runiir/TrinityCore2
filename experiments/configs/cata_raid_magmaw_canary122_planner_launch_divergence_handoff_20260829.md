@@ -59,3 +59,11 @@ No safe production hold and release control exists. `.botauto` exposes start and
 The missing interface is a validation-only route-node state machine `staging -> ready -> released`, keyed by cohort, attempt, route generation, and node. During staging it must allow formation movement, friendly healing, and ordinary bag consumables while suppressing bossward movement and hostile player or pet actions. Readback must prove all ten members alive, out of combat, formed, flasked, fed, and prepotted before a single release. The default production path must remain unchanged when the diagnostic checkpoint is disabled.
 
 This is now a narrow `raid-bot-runtime-implementation` work unit. Once its focused fixture proves the state and suppression boundary, ownership returns to `raid-shard-architecture` for one canonical checkpoint and correlated launch receipt.
+
+## Validation checkpoint implementation result
+
+Commit `da3b637159` adds the default-off validation prepull checkpoint. It is keyed by route scope, admits only typed formation movement, friendly healing, and ordinary bag consumables during staging, and suppresses unknown, offensive, pet, taunt, and bossward work until all ten frozen-roster readback rows are alive, out of combat, formed, flasked, fed, and prepotted. Release is single-shot and the ordinary runtime is unchanged while the config flag is disabled.
+
+The focused checkpoint and adjacent arbitration tests pass, and the committed worldserver rebuilt successfully with eight jobs. Binary SHA-256 is `109757f535e0a0561bfd19dcb8bac28c93d0f8bd2096a20caff432fa2e31e8aa`.
+
+This closes only the missing setup interface. It does not validate map-669 formation convergence, checkpoint release, the seq745 launch, or the physical movement outcome. Ownership returns to `raid-shard-architecture` for one canonical-route worldserver replay with `BotWorld.ValidationRoute.PrepullCheckpointEnable=1`. The replay must capture the checkpoint readback and the same correlation key through candidate, native launch, and multi-tick consumed movement state. Missing release, premature combat, missing receipt, infrastructure loss, or monotonic no-progress fail closed.

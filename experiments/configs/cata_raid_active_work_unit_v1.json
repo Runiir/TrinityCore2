@@ -1,17 +1,17 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "epoch_id": "magmaw_canary122_native_launch_replay_v1_20260829",
-  "work_unit": "runtime_implementation:validation_prepull_checkpoint_gate:canary122_seq745",
+  "work_unit": "shard_architecture:map669_native_launch_replay:canary122_seq745",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "owner_skill": "raid-shard-architecture",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "validation_prepull_checkpoint_runtime_exposure_required",
-  "observed_at_commit": "75c12a3d1f28215021aa83c3b6af099b6609a193",
+  "gate_state": "canonical_checkpoint_launch_replay_required",
+  "observed_at_commit": "da3b637159",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
-    "sha256": "a572b46a2d3000369ea44a4e2877bd7912c2c9f32d77dec82c67119874b98321"
+    "sha256": "ed49516032f9f69373a037ae0955ae8efc367035eafff887f4bc895a0b0cca67"
   },
   "first_broken_edge": "Candidate edge: Canary122 seq745 admitted and submitted Mgwhealc's complete ranged_formation_restore path despite a SampleFloorGap conflict; execution structurally regenerated an unverified path, after which the bot's source-derived live Z dropped from the Magmaw platform to 202.591 and later 6.70457. The exact launched spline and physical transition remain unproven.",
   "causal_signature": "native_planner_executor_launch_divergence",
@@ -23,7 +23,8 @@
       "production_regenerates_a_second_path_after_planner_proof",
       "actor_live_z_later_dropped_to_202_591_then_6_70457",
       "observation_only_planner_to_launch_receipt_seam_is_compiled_and_schema_tested",
-      "real_map669_worldserver_loaded_the_receipt_seam_and_frozen_roster"
+      "real_map669_worldserver_loaded_the_receipt_seam_and_frozen_roster",
+      "default_off_validation_prepull_checkpoint_is_compiled_and_focused_tests_pass"
     ],
     "refuted": [
       "seq741_was_the_first_state_infecting_edge",
@@ -74,7 +75,7 @@
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
-    "allowed_change": "Add one validation-only route-node checkpoint state machine and readback that permits formation, friendly healing, and bag consumables while suppressing bossward movement and hostile player or pet actions until a receipt-bound single release. Default gameplay must remain unchanged when disabled.",
+    "allowed_change": "Add one replay-only controller or config overlay that enables the committed validation checkpoint on the canonical Magmaw route and captures its readback plus the existing planner-to-launch receipt. No gameplay changes.",
     "forbidden": [
       "magmaw_pincer_or_exposed_head_policy_change",
       "global_z_threshold_expansion",
@@ -88,10 +89,10 @@
     ]
   },
   "validation": {
-    "focused_result": "checkpoint_interface_absent_runtime_exposure_required",
+    "focused_result": "checkpoint_runtime_implemented_and_worldserver_built",
     "immutable_bank_fixture_count": 19,
     "immutable_bank_all_rows_passed": false,
-    "build_admitted": false,
+    "build_admitted": true,
     "canary_admitted": false,
     "acceptance_admitted": false
   },
@@ -106,5 +107,5 @@
     "next_owner_after_runtime_exposure": "raid-shard-architecture",
     "next_work_unit_after_runtime_exposure": "shard_architecture:map669_native_launch_replay:canary122_seq745"
   },
-  "next_action": "Implement the validation-only staging, ready, and released checkpoint with deterministic readback and default-off behavior. Then return to shard architecture for one canonical checkpoint and correlated launch receipt. Do not change movement behavior until that receipt closes."
+  "next_action": "Run one canonical-route map-669 worldserver replay with the validation checkpoint enabled. Capture checkpoint staging/readiness/release and the identity-correlated candidate, native launch, and multi-tick movement outcome. Do not change movement behavior until that receipt closes."
 }
