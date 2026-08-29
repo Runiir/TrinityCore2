@@ -1,21 +1,21 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "epoch_id": "magmaw_canary122_native_launch_replay_v1_20260829",
-  "work_unit": "shard_architecture:receipt_tagged_progress_replay:map669",
+  "work_unit": "evidence:magmaw_tactical_replay_lite:watchdog_window",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-shard-architecture",
+  "owner_skill": "raid-evidence-lifecycle",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "fast8_v2_clean_build_and_receipt_tagged_replay_required",
+  "gate_state": "tactical_replay_lite_failure_window_required",
   "observed_at_commit": "da3b637159147c45fa49640d00e3bd86e7cfb3a8",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
     "sha256": "ed49516032f9f69373a037ae0955ae8efc367035eafff887f4bc895a0b0cca67"
   },
-  "first_broken_edge": "Candidate edge: Canary122 seq745 admitted and submitted Mgwhealc's complete ranged_formation_restore path despite a SampleFloorGap conflict; execution structurally regenerated an unverified path, after which the bot's source-derived live Z dropped from the Magmaw platform to 202.591 and later 6.70457. The exact launched spline and physical transition remain unproven.",
-  "causal_signature": "native_planner_executor_launch_divergence",
-  "causal_claim_status": "safe_production_launch_observed_exact_canary122_mechanism_unproven",
+  "first_broken_edge": "The receipt-tagged map-669 replay ended at repeated_decision_watchdog after a fully correlated safe ranged_formation_restore launch. The watchdog is terminal evidence only; no first state-infecting Magmaw policy edge is yet correlated to the terminal.",
+  "causal_signature": "magmaw_repeated_decision_terminal_without_causal_edge",
+  "causal_claim_status": "native_launch_reproduction_refuted_repeated_decision_edge_unproven",
   "claim_ledger": {
     "verified": [
       "seq741_and_seq743_were_contained_rejections_without_native_submission",
@@ -32,7 +32,9 @@
       "receipt_tagged_progress_seam_is_bounded_default_off_and_focused_tests_pass",
       "delayed_point_generator_initialization_is_correlated_by_exact_spline_id",
       "fast8_v1_aborted_at_subpercent_psi_with_memory_reserve_intact",
-      "swap_growth_per_job_limit_was_enforced_as_a_total_limit"
+      "swap_growth_per_job_limit_was_enforced_as_a_total_limit",
+      "receipt_620_is_promoted_as_a_production_boundary_regression_fixture",
+      "live_map669_consumed_position_samples_carry_launch_receipt_id_620"
     ],
     "refuted": [
       "seq741_was_the_first_state_infecting_edge",
@@ -47,7 +49,6 @@
       "second_path_type_and_direct_fallback_use",
       "exact_collision_or_fall_mechanism",
       "hazard_was_still_semantically_active_at_seq745",
-      "live_map669_consumed_position_sample_carries_the_same_launch_receipt_id",
       "canary122_exact_floor_conflicting_seq745_mechanism_recurred"
     ]
   },
@@ -58,15 +59,15 @@
     "magmaw_parasite_control_allows_player_infection"
   ],
   "live_observation": {
-    "summary_path": "experiments/configs/cata_raid_magmaw_a9b8ce5cd4_checkpoint_launch_replay_summary_v1.json",
-    "summary_sha256": "4b7b23e090da4eb49706bef1035741f6f4cdc97cb824b0d654b490c9409949dd",
-    "source_commit": "a9b8ce5cd4f4e44e671d99a8e0976ab453fa0e90",
-    "terminal": "death_loop_watchdog",
-    "party_dps": 82046.053,
-    "party_hps": 19077.545,
-    "direct_infection_events": 36,
-    "direct_infection_players": 4,
-    "raid_deaths": 4,
+    "summary_path": "experiments/configs/cata_raid_magmaw_748d63431c_receipt_tagged_progress_replay_summary_v1.json",
+    "summary_sha256": "3e3dac61dcd39c6af8c76abe9c17eb505802acf83cec617e67c33f6d6d9fbebd",
+    "source_commit": "748d63431cfcda9ea4957711b29346de287d90d9",
+    "terminal": "repeated_decision_watchdog",
+    "party_dps": 81371.425,
+    "party_hps": 12941.885,
+    "direct_infection_events": 3,
+    "direct_infection_players": 1,
+    "raid_deaths": 1,
     "boss_killed": false
   },
   "recurrence": {
@@ -80,12 +81,13 @@
       "same_level_native_path_proof_v1": 4
     },
     "required_new_fixture_id": "native_planner_executor_launch_proof_v1",
-    "required_fixture": "A clean-build map-669 replay proving that the bounded observation-only progress seam carries the exact native launch receipt ID into later multi-tick position, floor, spline-finalization, and movement-outcome samples.",
+    "required_fixture": "Production fixture revision 2 binds receipt 620 from candidate through selected_endpoint_reached. The next fixture must identify the first state-infecting edge before the repeated-decision terminal from a synchronized compact failure window.",
+    "required_new_fixture_revision": 2,
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
-    "allowed_change": "Run one exact clean-build checkpointed map-669 fixture-expansion replay and capture receipt-tagged multi-tick movement outcomes. No gameplay changes.",
+    "allowed_change": "Build one deterministic compact replay-lite reducer over existing immutable evidence, limited to a bounded Magmaw failure window joining decisions, targets, native outcomes, movement progress, combat, health, deaths, and completeness. No viewer and no gameplay changes.",
     "forbidden": [
       "magmaw_pincer_or_exposed_head_policy_change",
       "global_z_threshold_expansion",
@@ -99,7 +101,7 @@
     ]
   },
   "validation": {
-    "focused_result": "fast8_v2_policy_and_per_job_swap_guard_implemented_raid_build_coordinator_tests_pass",
+    "focused_result": "native_launch_production_fixture_revision_2_and_focused_regressions_pass",
     "immutable_bank_fixture_count": 19,
     "immutable_bank_all_rows_passed": false,
     "build_admitted": false,
@@ -115,8 +117,8 @@
     "build_jobs": 8,
     "canary_budget_before_full_bank": 0,
     "canary_budget_after_full_bank_and_exact_build": 1,
-    "next_owner_after_runtime_exposure": "raid-shard-architecture",
-    "next_work_unit_after_runtime_exposure": "shard_architecture:map669_floor_conflict_replay_if_receipt_tagged_progress_requires_it"
+    "next_owner_after_runtime_exposure": "raid-performance-loop",
+    "next_work_unit_after_runtime_exposure": "coordinator:route_first_state_infecting_magmaw_edge"
   },
-  "next_action": "Commit the versioned fast8-v2 policy, generate fresh exact configure and worldserver receipts with eight compiler jobs and one linker, then run one admitted checkpointed map-669 fixture-expansion replay. Use the correlated outcome to decide whether a closer floor-conflicting seq745 replay is required. Do not change movement behavior before that causal join exists."
+  "next_action": "Create a compact synchronized replay-lite artifact for the bounded window before the repeated-decision watchdog. Use it to classify the first state-infecting Magmaw edge, or return a precise missing telemetry field. Do not build a visual UI and do not change gameplay until the causal join exists."
 }

@@ -181,16 +181,24 @@
       },
       {
         "fixture_id": "native_planner_executor_launch_proof_v1",
-        "revision": 1,
+        "revision": 2,
         "causal_signature": "native_planner_executor_launch_divergence",
-        "evidence_boundary": "observation_only",
+        "evidence_boundary": "production",
         "required_production_boundary": "worldserver-backed map-669 planner, executor, MotionMaster, point generator, and launched spline observed over multiple ticks",
+        "production_evidence": {
+          "path": "experiments/configs/cata_raid_magmaw_748d63431c_receipt_tagged_progress_replay_summary_v1.json",
+          "sha256": "3e3dac61dcd39c6af8c76abe9c17eb505802acf83cec617e67c33f6d6d9fbebd",
+          "source_commit": "748d63431cfcda9ea4957711b29346de287d90d9",
+          "receipt_id": 620,
+          "binary_sha256": "53231b1db35101f2cf9fa1f388c72e52f92bc0126fd5b72794600703d7fde75f"
+        },
         "command": [
           "pixi",
           "run",
           "pytest",
           "-q",
-          "tests/test_native_path_launch_receipt.py::test_native_path_launch_receipt_value_and_schema"
+          "tests/test_native_path_launch_proof.py::test_map669_receipt_620_proves_identity_bound_consumed_launch",
+          "tests/test_native_path_launch_receipt.py"
         ]
       },
       {
