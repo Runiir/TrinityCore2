@@ -1,0 +1,159 @@
+{
+  "schema": "cata_raid_magmaw_receipt_history_fixture_expansion_summary_v1",
+  "purpose": "fixture_expansion_replay",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "source": {
+    "commit": "78e33e65571c50d3bc336f49b7ecbc5d900fc0dc",
+    "tree": "a040bddd189c671646153ce98ed28e36d534f192",
+    "worktree_clean_during_run": true,
+    "binary_sha256": "a8fdda50e17cd2ff2fc72db03f37db78e5b1ad6c705f1ed45b154e0aeb7f9d16",
+    "configure_ticket_id": "raid-build-6735db63978946f4985f025ffb88c8c8",
+    "configure_receipt_canonical_sha256": "ba35eb72a770257190ad5fb6375c88bb562e102e80dcbb0cf25df587888c5eb2",
+    "worldserver_build_ticket_id": "raid-build-7bceafd9517b4d50b518e34e46f6a9cd",
+    "worldserver_build_receipt_canonical_sha256": "a97b3920c5776184b7f322f24e45f2ba6ed4092aa394c8b4e336b248ba65a6ba",
+    "config_sha256": "452b53dc28577737f226fae3b1fcad7fdd41c2b88ffda40fb39bc4911eac39bc",
+    "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "canonical_identity_sha256": "3fcc1ac268f1a8cbf151fb161b7772a98f5a456557a5cdc36cb932acff4a11c0",
+    "canonical_roster_sha256": "c76f261c8ca3cd86e1f01e06537191d958c1c72ef3aa03a57afd8e803fe48424"
+  },
+  "provisioning": {
+    "strict_verifier_passed": true,
+    "strict_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "shard_readback_passed": true,
+    "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "roster_size": 10,
+    "map_id": 669,
+    "instance_id": 2
+  },
+  "admission": {
+    "regression_suite_sha256": "82771ca6f7ea3dc9933f97dd8b7f71988cafd31c80a3de65e694ea2547385fd6",
+    "recurrence_decision_sha256": "8139285e7ba89c13adbac0713524c84c024be9d1ce605af7c167d3977575b5fa",
+    "fixture_expansion_admission_sha256": "dfd505d94cdd7f284fb8da79ad4b14560815f5964fa7154547045df8b8a8f290",
+    "fixture_expansion_admitted": true,
+    "fixture_expansion_target_ids": [
+      "native_planner_executor_launch_proof_v1"
+    ],
+    "requested_revision_transition": "2_to_3",
+    "gameplay_canary_admitted": false,
+    "gameplay_mutations_allowed": false,
+    "build_admitted_by_recurrence_decision": false,
+    "fixture_revision_3_promoted": false
+  },
+  "capture": {
+    "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+    "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "attempt_id": 1,
+    "single_observation_only_attempt": true,
+    "second_attempt_run": false,
+    "classification": "gameplay_failure",
+    "terminal_reason": "repeated_decision_watchdog",
+    "terminal_scope": {
+      "route_node_id": "bwd.magmaw.chainwielder",
+      "route_generation": 2
+    },
+    "repeated_outcome": "hazard_exit_failed",
+    "repeated_decision_count": 20,
+    "death_loop_count": 0,
+    "elapsed_seconds": 78.234,
+    "final_forced_evidence_complete": true
+  },
+  "combat": {
+    "encounter": "bwd.magmaw.chainwielder",
+    "duration_seconds": 17.315,
+    "combat_duration_seconds": 18,
+    "party_damage": 761595,
+    "party_healing": 46981,
+    "active_party_dps": 42310.833,
+    "active_party_hps": 2610.056,
+    "elapsed_party_dps": 43984.695,
+    "elapsed_party_hps": 2713.312,
+    "deaths": 0,
+    "tactical_replay_window_seconds": 31.0,
+    "tactical_replay_party_dps": 33858.419,
+    "tactical_replay_party_hps": 1515.516
+  },
+  "required_production_boundary": {
+    "met": true,
+    "fixture_id": "native_planner_executor_launch_proof_v1",
+    "receipt_id": 56,
+    "bot_guid": 30009,
+    "scope": {
+      "attempt_id": 1,
+      "wipe_generation": 0,
+      "route_generation": 2,
+      "map": 669,
+      "instance": 2
+    },
+    "planner_complete": true,
+    "planner_control_count": 7,
+    "planner_control_fingerprint": "89bd419035b03dec",
+    "second_native_path_calculated": true,
+    "motion_master_observed": true,
+    "motion_master_slot": 1,
+    "motion_master_generator_type": 8,
+    "point_generator_initialized": true,
+    "spline_launch_succeeded": true,
+    "spline_id": 667,
+    "launched_control_count": 7,
+    "launched_control_fingerprint": "54f2a312330114d3",
+    "progress_sample_count": 5,
+    "progress_observation_duration_ms": 471,
+    "same_receipt_and_spline_across_samples": true,
+    "distance_improved": true,
+    "terminal": true,
+    "terminal_outcome": "superseded_by_native_launch",
+    "superseded_by_receipt_id": 58,
+    "dropped_sample_count": 0
+  },
+  "receipt_history": {
+    "global_status": "partial",
+    "snapshots_examined": 60,
+    "snapshots_with_history_field": 60,
+    "snapshots_missing_history_field": 0,
+    "dropped_sample_count": 1621,
+    "omitted_receipt_count": 32,
+    "receipts_truncated": true,
+    "identity_mismatch_count": 0,
+    "invalid_publication_count": 0,
+    "target_receipt_56_complete": true,
+    "target_receipt_56_dropped_sample_count": 0
+  },
+  "causal_classification": {
+    "status": "requested_boundary_closed_but_original_cause_not_reproduced",
+    "original_canary122_wrong_floor_mechanism_reproduced": false,
+    "original_canary122_wrong_floor_mechanism_proven": false,
+    "automatic_reducer_state_infection_accepted": false,
+    "automatic_reducer_state_infection_rejection_reason": "the_observed_entrance_to_chainwielder_vertical_transition_was_planned_nonpersistent_and_recovered_with_a_negative_sampling_gap",
+    "current_terminal_blocker": "chainwielder_hazard_exit_failed_repeated_decision_loop"
+  },
+  "checkpoint": {
+    "enabled_in_capture_config": true,
+    "reached": false,
+    "terminal_runtime_phase": "disabled",
+    "interpretation": "the_route_terminated_at_chainwielder_before_the_magmaw_boss_checkpoint_scope"
+  },
+  "cleanup": {
+    "native_stop_observed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "gate_passed": true
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_78e33e6557_magmaw_receipt_history_fixture_expansion_20260830.dvc",
+    "dvc_pointer_sha256": "5476a8ce1508d844b452b46f58a1085885044b1445a463457a50b382a7d70a98",
+    "dvc_directory_md5": "89bd320e1e23bff07936773621073310.dir",
+    "dvc_directory_size_bytes": 47437007,
+    "dvc_directory_file_count": 20,
+    "canonical_report_sha256": "0f0997248b8f3313994a01fd5b30bcae905c603bf6ca97f3aef7cf1f7f17cd45",
+    "report_file_sha256": "771a9b8027daf98cfeaa00c1a5576f5b9f152e4687e6eb819d59cc1b9fe274e1",
+    "normalized_jsonl_sha256": "08dae5a42ad51ade93be63a5eebeb4d120c42d313a735fd3046d71c8883fc264",
+    "worldserver_log_sha256": "525e138e29e770de5f0ee37ece9fc8b1ee0219555b185347ce1be8f4e575666f",
+    "tactical_replay_sha256": "cf11d8a1b9595e0394ba612bf03a11edc76f4c05ad046ee9f3d8a835e117e53b",
+    "tactical_replay_summary_sha256": "68cf003ff27fd43ab35f847065d6acbeaa7ea746f9d18ae8db5d177e50d33464",
+    "receipt_56_compact_sha256": "d98801fa796b3e7d569473b5e6493edff95febd635b0a53fb7e36da6b9ea967b",
+    "receipt_history_boundary_sha256": "868549776777b10c23bc9f00e5294f54dc747676b0689cb577306e80d15f9323"
+  },
+  "next_action": "Coordinator review may admit fixture revision 3 from receipt 56; this capture itself does not promote the fixture and does not authorize gameplay. Diagnose the distinct Chainwielder hazard-exit loop as a separate bounded work unit."
+}
