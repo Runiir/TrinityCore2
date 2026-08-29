@@ -1,0 +1,156 @@
+{
+  "schema": "cata_raid_magmaw_receipt_tagged_progress_replay_summary_v1",
+  "purpose": "fixture_expansion_replay",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "source": {
+    "commit": "748d63431cfcda9ea4957711b29346de287d90d9",
+    "tree": "67619549da6bbb45cdd5aa60d7d5e8672ea5e52a",
+    "worktree_clean_during_run": true,
+    "binary_sha256": "53231b1db35101f2cf9fa1f388c72e52f92bc0126fd5b72794600703d7fde75f",
+    "configure_receipt_canonical_sha256": "517d198af44b28b1901122a404d53fe36cc1e0f9c7434f2311b8da343b4b1dde",
+    "worldserver_build_receipt_canonical_sha256": "70ebc4373180fd6a8b6d8b22bc041ec92186e848cf56608fe88256e44aae88a5",
+    "config_sha256": "68eb70fb053867644dfa9aedb87b5c8191ade817e9e31eb293040bb0caa893cf",
+    "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"
+  },
+  "provisioning": {
+    "strict_verifier_passed": true,
+    "strict_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "shard_readback_passed": true,
+    "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "roster_size": 10
+  },
+  "admission": {
+    "regression_suite_row_count": 19,
+    "regression_suite_all_rows_passed": true,
+    "regression_suite_receipt_sha256": "47e66f2a800fd50979240c34e29cda633a2a767f0ceb7fbab12b95ab5c198391",
+    "recurrence_decision_sha256": "382f823bec8b12b02d6530124956d31a0a6e6c54a997df786825b4cf157826cf",
+    "fixture_expansion_admission_sha256": "69b42eeea778f0f14427a84fec802c375a21773691b668cff67fb0ef394daf54",
+    "fixture_expansion_target_ids": ["native_planner_executor_launch_proof_v1"],
+    "gameplay_canary_admitted": false,
+    "gameplay_mutations_allowed": false,
+    "prior_invalidations_preserved": [
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ]
+  },
+  "checkpoint": {
+    "enabled": true,
+    "scope_key": "default:1:4:bwd.magmaw.encounter",
+    "phase": "released",
+    "expected_members": 10,
+    "alive_count": 10,
+    "out_of_combat_count": 10,
+    "formed_count": 10,
+    "flask_count": 10,
+    "food_count": 10,
+    "prepot_count": 10,
+    "ready_count": 10,
+    "all_ready": true,
+    "release_count": 1,
+    "premature_boss_combat_observed": false
+  },
+  "target_observation": {
+    "bot_guid": 30010,
+    "receipt_id": 620,
+    "intent_reason": "ranged_formation_restore",
+    "intent_fingerprint": "a28e4a567e1c3f9f",
+    "scope": {"attempt_id": 1, "wipe_generation": 0, "route_generation": 4, "map": 669, "instance": 2},
+    "selected_endpoint": [-308.909851, -36.4524231, 211.580536],
+    "planner_path_type": 1,
+    "planner_complete": true,
+    "planner_control_count": 3,
+    "planner_control_fingerprint": "2fa4da3cd888846b",
+    "floor_observation_conflict": false,
+    "second_path_calculated": true,
+    "second_path_control_count": 3,
+    "second_path_control_fingerprint": "2fa4da3cd888846b",
+    "direct_two_point_selected": false,
+    "direct_two_point_fallback": false,
+    "motion_master_slot": 1,
+    "motion_master_generator_type": 8,
+    "point_generator_initialized": true,
+    "spline_launch_succeeded": true,
+    "spline_id": 7140,
+    "launched_control_count": 3,
+    "launched_control_fingerprint": "0d5f56d30456993f",
+    "sample_count": 10,
+    "sample_interval_approx_ms": 100,
+    "same_receipt_id_in_all_samples": true,
+    "same_spline_id_in_all_samples": true,
+    "endpoint_distance_start": 6.31037474,
+    "endpoint_distance_end": 0.0,
+    "terminal_position": [-308.909851, -36.4524231, 211.580536],
+    "terminal_floor_z": 211.580536,
+    "terminal_outcome": "selected_endpoint_reached",
+    "selected_platform_compatible_all_samples": true,
+    "dropped_sample_count": 0
+  },
+  "boss_scope_safety_observation": {
+    "unique_receipt_count": 25,
+    "planner_floor_conflict_count": 0,
+    "platform_incompatible_sample_count": 0,
+    "wrong_floor_drop_observed": false
+  },
+  "terminal": {
+    "classification": "gameplay_failure",
+    "failure_reason": "repeated_decision_watchdog",
+    "repeated_decision_count": 21,
+    "repeated_decision_limit": 20,
+    "death_loop_count": 0,
+    "terminal_alive_count": 10,
+    "cumulative_deaths": 1,
+    "boss_killed": false,
+    "boss_combat_duration_seconds": 87,
+    "boss_segment_duration_seconds": 115.486,
+    "active_party_dps": 81371.425,
+    "active_party_hps": 12941.885,
+    "elapsed_party_dps": 61300.192,
+    "elapsed_party_hps": 9749.615,
+    "parasitic_infection_events": 3,
+    "parasitic_infection_players": 1
+  },
+  "claims": {
+    "verified": [
+      "checkpoint_staged_all_ten_members_and_released_once_only_after_full_readiness",
+      "receipt_620_correlates_candidate_planner_executor_motionmaster_spline_and_consumed_outcome",
+      "receipt_id_620_persists_in_all_ten_multi_tick_position_floor_spline_and_outcome_samples",
+      "spline_id_7140_persists_from_native_launch_through_finalization",
+      "receipt_620_reached_its_selected_endpoint_on_the_selected_platform"
+    ],
+    "refuted_for_this_observed_reproduction": [
+      "receipt_620_used_direct_two_point_selection_or_fallback",
+      "receipt_620_had_a_planner_floor_observation_conflict",
+      "receipt_620_or_any_observed_boss_scope_receipt_produced_a_platform_incompatible_sample",
+      "the_observed_ranged_formation_restore_launch_dropped_the_actor_to_a_wrong_floor"
+    ],
+    "unproven": [
+      "canary122_exact_floor_conflicting_seq745_mechanism_recurred",
+      "the_exact_collision_or_fall_mechanism_behind_canary122"
+    ]
+  },
+  "cleanup": {
+    "native_stop_observed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "forbidden_assistance_observed": false
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_748d63431c_magmaw_receipt_tagged_progress_replay_20260829.dvc",
+    "dvc_pointer_sha256": "77f5ba8a8f2a6332c1a5b59c5bebbd4d801d8824b7e948380c4eaed4b90ed28a",
+    "dvc_directory_md5": "4eaf384b7b68cbf165f01f32bf6de353.dir",
+    "dvc_directory_size_bytes": 181320129,
+    "dvc_directory_file_count": 13,
+    "receipt_620_compact_sha256": "5681bf590de11255c087aa98728ee45345aaeddad896914719d4459758d7b46f",
+    "canonical_report_sha256": "ee6cfb2c06086f51e77ba363a776baa2d783591990083978667090e7f2a39f78",
+    "report_file_sha256": "8c5bd085df58dbc53d57866ceb69dbe48fcddb71cf316fc663a9c25d6a37bd8d",
+    "normalized_jsonl_sha256": "ce9d06a76d6dd841249212eed0fb92262080f13d37f2fef7854abf331e88955c",
+    "worldserver_log_sha256": "7617d296be95db3d70fdedb23149bc109e3a13d0e9c81bbb44874929d2832738"
+  },
+  "next_action": "Promote native_planner_executor_launch_proof_v1 from pending using receipt 620, then let the coordinator decide whether the still-unproven exact floor-conflicting Canary122 mechanism warrants one closer bounded replay."
+}
