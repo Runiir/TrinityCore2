@@ -2211,6 +2211,170 @@ def test_live_evidence_demux_rejects_lease_drift_and_trace_cursor_gap():
     assert "evidence_demux_trace_delta_gap" in reasons
 
 
+def test_native_trace_discontinuity_transition_resumes_through_controller_demux(tmp_path):
+    fixture_source = tmp_path / "trace_discontinuity_fixture.cpp"
+    fixture_binary = tmp_path / "trace_discontinuity_fixture"
+    fixture_source.write_text(r'''
+#include "src/server/game/Bots/BotWorldTraceExportCursor.h"
+
+#include <cassert>
+#include <cstdint>
+#include <iostream>
+#include <limits>
+#include <vector>
+
+using BotWorldTrace::BuildExportCursorTransition;
+using BotWorldTrace::ExportCursorTransition;
+using BotWorldTrace::WriteExportCursorFields;
+
+void Emit(std::vector<std::uint64_t> const& retained, ExportCursorTransition const& transition)
+{
+    std::cout << "{\"bot_guid\":30008,\"entries\":[";
+    for (std::size_t offset = 0; offset < transition.EntryCount; ++offset)
+    {
+        if (offset)
+            std::cout << ',';
+        std::cout << "{\"sequence\":"
+                  << retained[transition.FirstEntryIndex + offset] << '}';
+    }
+    std::cout << ']';
+    WriteExportCursorFields(std::cout, transition);
+    std::cout << "}\n";
+}
+
+int main()
+{
+    ExportCursorTransition empty = BuildExportCursorTransition({}, 0, false, 128);
+    assert(!empty.HasDiscontinuity && empty.EntryCount == 0 && empty.CursorAfter == 0);
+
+    ExportCursorTransition initial = BuildExportCursorTransition({1, 2, 3}, 0, false, 128);
+    assert(!initial.HasDiscontinuity && initial.EntryCount == 3 && initial.CursorAfter == 3);
+
+    ExportCursorTransition partial = BuildExportCursorTransition({1, 2, 3}, 0, false, 2);
+    assert(!partial.HasDiscontinuity && partial.EntryCount == 2 && partial.CursorAfter == 2);
+    ExportCursorTransition noGap = BuildExportCursorTransition({1, 2, 3}, 2, true, 128);
+    assert(!noGap.HasDiscontinuity && noGap.EntryCount == 1 && noGap.CursorAfter == 3);
+
+    std::uint64_t const maximum = std::numeric_limits<std::uint64_t>::max();
+    ExportCursorTransition atBoundary = BuildExportCursorTransition({maximum}, maximum - 1, true, 1);
+    assert(!atBoundary.HasDiscontinuity && atBoundary.EntryCount == 1 && atBoundary.CursorAfter == maximum);
+    ExportCursorTransition exhaustedBoundary = BuildExportCursorTransition({maximum}, maximum, true, 1);
+    assert(!exhaustedBoundary.HasDiscontinuity && exhaustedBoundary.EntryCount == 0
+           && exhaustedBoundary.CursorAfter == maximum);
+
+    std::vector<std::uint64_t> retained;
+    for (std::uint64_t sequence = 175; sequence <= 302; ++sequence)
+        retained.push_back(sequence);
+    ExportCursorTransition first = BuildExportCursorTransition(retained, 46, true, 64);
+    assert(first.HasDiscontinuity && first.MissingSequenceStart == 47
+           && first.MissingSequenceEnd == 174 && first.OldestRetainedSequence == 175
+           && first.NewestRetainedSequence == 302 && first.EntryCount == 64
+           && first.CursorAfter == 238);
+    Emit(retained, first);
+
+    ExportCursorTransition second = BuildExportCursorTransition(
+        retained, first.CursorAfter, true, 128);
+    assert(!second.HasDiscontinuity && second.FirstEntryIndex == 64
+           && second.EntryCount == 64 && second.CursorAfter == 302);
+    Emit(retained, second);
+}
+''', encoding="utf-8")
+    subprocess.run(
+        [
+            "g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
+            "-I", str(Path(__file__).resolve().parents[1]),
+            str(fixture_source), "-o", str(fixture_binary),
+        ],
+        check=True,
+    )
+    native_rows = [
+        json.loads(line)
+        for line in subprocess.check_output([str(fixture_binary)], text=True).splitlines()
+    ]
+    assert native_rows[0]["discontinuity"] == {
+        "missing_sequence_start": 47,
+        "missing_sequence_end": 174,
+        "oldest_retained_sequence": 175,
+        "newest_retained_sequence": 302,
+    }
+    assert native_rows[0]["cursor_before"] == 46
+    assert native_rows[0]["cursor_after"] == 238
+    assert native_rows[0]["gap"] is True
+    assert [entry["sequence"] for entry in native_rows[0]["entries"]] == list(range(175, 239))
+    assert native_rows[1]["cursor_before"] == 238
+    assert native_rows[1]["cursor_after"] == 302
+    assert native_rows[1]["gap"] is False
+    assert [entry["sequence"] for entry in native_rows[1]["entries"]] == list(range(239, 303))
+
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    for index, member in enumerate(active["raid_runtime"]["roster"], start=1):
+        member["guid"] = 30000 + index
+
+    def trace_envelope(native_row: dict, peer_cursor: int) -> dict:
+        bots = []
+        for index in range(1, 11):
+            guid = 30000 + index
+            if guid == 30008:
+                bots.append(native_row)
+            else:
+                bots.append({
+                    "bot_guid": guid,
+                    "entries": [{"sequence": peer_cursor + 1}],
+                    "delta": True,
+                    "cursor_before": peer_cursor,
+                    "cursor_after": peer_cursor + 1,
+                    "gap": False,
+                })
+        return {
+            "ok": True,
+            "action": "botauto_trace",
+            "cohort_id": "raid",
+            "raid_runtime": active["raid_runtime"],
+            "bots": bots,
+        }
+
+    rows = normalized_batch_payload(
+        b"\n".join(
+            json.dumps(row, separators=(",", ":")).encode()
+            for row in (
+                active,
+                trace_envelope(native_rows[0], 10),
+                trace_envelope(native_rows[1], 11),
+            )
+        ) + b"\n"
+    )
+    report = evidence_demux_report(rows)
+    first_binding = rows[1]["payload"]["bots"][7]["identity_binding"]
+    second_binding = rows[2]["payload"]["bots"][7]["identity_binding"]
+    assert first_binding["reasons"] == ["evidence_demux_trace_delta_gap"]
+    assert second_binding["state"] == "bound"
+    assert report["actor_binding_counts"] == {
+        "total": 20, "bound": 19, "rejected": 1, "unchecked": 0,
+    }
+    assert report["trace_discontinuities"] == [{
+        "epoch_id": "trace_discontinuity:30008:47:2",
+        "bot_guid": 30008,
+        "cursor_before": 46,
+        "missing_sequence_start": 47,
+        "missing_sequence_end": 174,
+        "oldest_retained_sequence": 175,
+        "newest_retained_sequence": 302,
+        "first_gap_capture_sequence": 2,
+        "last_gap_capture_sequence": 2,
+        "gap_envelope_count": 1,
+        "first_recovered_capture_sequence": 2,
+        "first_recovered_sequence": 175,
+        "classification": (
+            "explicit_native_discontinuity_retained_suffix_resumed_"
+            "missing_interval_rejected"
+        ),
+        "gate_passed": False,
+    }]
+    assert "evidence_demux_trace_delta_gap" in report["rejections"]
+    assert report["gate_passed"] is False
+
+
 def test_chainwielder_byte_faithful_actor_gap_does_not_reject_peer_trace_rows():
     # Exact canonical bot sub-envelope retained at capture sequences 28 and 30
     # in raw-output.log d28fabf617748a887ef0b2655df0a0dea852d7bc192fbaeceabb26228999ffa8.

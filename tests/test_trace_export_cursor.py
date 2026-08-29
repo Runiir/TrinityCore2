@@ -1,9 +1,9 @@
-"""Regression tests for lossless bounded bot trace polling.
+"""Regression tests for bounded bot trace polling with explicit loss.
 
 The production ring lives in C++, so these tests keep a small executable
 model of its cursor contract and pair it with source assertions for the
-serialization/reset seams.  The model intentionally treats a missing prefix
-as an evidence failure rather than silently accepting the retained suffix.
+serialization/reset seams.  A missing prefix remains an evidence failure,
+while the truthful retained suffix resumes the actor's cursor.
 """
 
 from dataclasses import dataclass
@@ -67,22 +67,28 @@ class TraceRing:
             (not cursor_initialized and new[0].sequence != 1)
             or (cursor_initialized and new[0].sequence != expected)
         )
-        if not gap:
-            for previous, current in zip(new, new[1:]):
-                if current.sequence != previous.sequence + 1:
-                    gap = True
-                    break
-        if gap:
-            return {"entries": [], "gap": True, "cursor_before": cursor, "cursor_after": cursor}
-        emitted = new[: min(limit, 128)]
+        contiguous = []
+        for row in new:
+            if contiguous and row.sequence != contiguous[-1].sequence + 1:
+                break
+            contiguous.append(row)
+        emitted = contiguous[: min(limit, 128)]
         if emitted:
             self.cursor = emitted[-1].sequence
-        return {
+        result = {
             "entries": emitted,
-            "gap": False,
+            "gap": gap,
             "cursor_before": cursor,
             "cursor_after": cursor if not emitted else emitted[-1].sequence,
         }
+        if gap:
+            result["discontinuity"] = {
+                "missing_sequence_start": expected,
+                "missing_sequence_end": new[0].sequence - 1,
+                "oldest_retained_sequence": new[0].sequence,
+                "newest_retained_sequence": self.rows[-1].sequence,
+            }
+        return result
 
 
 def test_trace_rows_have_a_distinct_monotonic_stream_from_decisions():
@@ -96,14 +102,21 @@ def test_trace_rows_have_a_distinct_monotonic_stream_from_decisions():
     assert "entry.DecisionSequence = state.Sequence;" in MANAGER
 
 
-def test_initial_ring_overwrite_fails_closed_without_advancing_cursor():
+def test_initial_ring_overwrite_stays_explicit_and_resumes_retained_rows():
     ring = TraceRing()
     for decision in range(129):
         ring.record(decision)
     result = ring.delta(128)
     assert result["gap"] is True
-    assert result["entries"] == []
-    assert result["cursor_before"] == result["cursor_after"] == 0
+    assert [row.sequence for row in result["entries"]] == list(range(2, 130))
+    assert result["cursor_before"] == 0
+    assert result["cursor_after"] == 129
+    assert result["discontinuity"] == {
+        "missing_sequence_start": 1,
+        "missing_sequence_end": 1,
+        "oldest_retained_sequence": 2,
+        "newest_retained_sequence": 129,
+    }
 
 
 def test_partial_batch_advances_only_through_last_emitted_row():
@@ -118,7 +131,7 @@ def test_partial_batch_advances_only_through_last_emitted_row():
     assert second["cursor_after"] == 5
 
 
-def test_later_gap_fails_closed_and_preserves_the_prior_cursor():
+def test_later_gap_stays_explicit_and_advances_only_through_emitted_rows():
     ring = TraceRing()
     for decision in range(4):
         ring.record(decision)
@@ -126,8 +139,11 @@ def test_later_gap_fails_closed_and_preserves_the_prior_cursor():
     ring.rows = [row for row in ring.rows if row.sequence != 2]
     result = ring.delta(128)
     assert result["gap"] is True
-    assert result["entries"] == []
-    assert result["cursor_before"] == result["cursor_after"] == 1
+    assert [row.sequence for row in result["entries"]] == [3, 4]
+    assert result["cursor_before"] == 1
+    assert result["cursor_after"] == 4
+    assert result["discontinuity"]["missing_sequence_start"] == 2
+    assert result["discontinuity"]["missing_sequence_end"] == 2
 
 
 def test_delta_encoder_keeps_suppressed_repeatable_event_count_and_bound():
@@ -136,7 +152,9 @@ def test_delta_encoder_keeps_suppressed_repeatable_event_count_and_bound():
     assert "coalesceRepeatable" in TRACE_MODULE
     assert "std::min<uint32>(limit, 128)" in MANAGER
     assert "TraceExportCursorByGuid.find" in MANAGER
-    assert "if (!gap && cursorAfter != cursor)" in MANAGER
+    assert "BotWorldTrace::BuildExportCursorTransition" in MANAGER
+    assert "BotWorldTrace::WriteExportCursorFields" in MANAGER
+    assert "transition.EntryCount && transition.CursorAfter != transition.CursorBefore" in MANAGER
 
 
 def test_repeatable_decisions_coalesce_without_losing_the_exact_count():

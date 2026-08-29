@@ -764,6 +764,10 @@ def _nonnegative_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
+def _uint64_int(value: Any) -> bool:
+    return _nonnegative_int(value) and value <= (1 << 64) - 1
+
+
 def _runtime_identity(runtime: dict[str, Any], *, include_strategy: bool = False) -> tuple[Any, ...] | None:
     fields = IDENTITY_FIELDS + ((STRATEGY_FIELD,) if include_strategy else ())
     if not all(field in runtime for field in fields):
@@ -4504,7 +4508,7 @@ def _trace_actor_transport_rejections(
     # Historical normalized fixtures predate cursor serialization.  Retain
     # their compatibility while requiring every current live cursor pair to
     # be internally coherent when present.
-    if not _nonnegative_int(cursor_before) or not _nonnegative_int(cursor_after):
+    if not _uint64_int(cursor_before) or not _uint64_int(cursor_after):
         if gap is True:
             reasons.append("evidence_demux_trace_delta_gap")
         elif any(field in bot_row for field in ("cursor_before", "cursor_after")):
@@ -4514,10 +4518,51 @@ def _trace_actor_transport_rejections(
         reasons.append("evidence_demux_trace_delta_gap_flag_invalid")
         return list(dict.fromkeys(reasons)), observation
     if gap:
-        if entries or cursor_after != cursor_before:
-            reasons.append("evidence_demux_trace_delta_gap_shape_invalid")
+        discontinuity = bot_row.get("discontinuity")
+        if discontinuity is None:
+            if entries or cursor_after != cursor_before:
+                reasons.append("evidence_demux_trace_delta_gap_shape_invalid")
+            if int(cursor_before) < (1 << 64) - 1:
+                observation["missing_sequence_start"] = int(cursor_before) + 1
+        else:
+            fields = (
+                "missing_sequence_start",
+                "missing_sequence_end",
+                "oldest_retained_sequence",
+                "newest_retained_sequence",
+            )
+            valid = isinstance(discontinuity, dict) and all(
+                _uint64_int(discontinuity.get(field)) for field in fields
+            )
+            if valid:
+                missing_start = int(discontinuity["missing_sequence_start"])
+                missing_end = int(discontinuity["missing_sequence_end"])
+                oldest_retained = int(discontinuity["oldest_retained_sequence"])
+                newest_retained = int(discontinuity["newest_retained_sequence"])
+                valid = (
+                    int(cursor_before) < (1 << 64) - 1
+                    and missing_start == int(cursor_before) + 1
+                    and missing_start <= missing_end
+                    and missing_end < (1 << 64) - 1
+                    and oldest_retained == missing_end + 1
+                    and oldest_retained <= newest_retained
+                    and bool(sequences)
+                    and sequences[0] == oldest_retained
+                    and sequences[-1] <= newest_retained
+                    and int(cursor_after) == sequences[-1]
+                )
+            if not valid:
+                reasons.append("evidence_demux_trace_delta_discontinuity_invalid")
+                reasons.append("evidence_demux_trace_delta_gap_shape_invalid")
+            else:
+                observation.update({
+                    "discontinuity_explicit": True,
+                    "missing_sequence_start": missing_start,
+                    "missing_sequence_end": missing_end,
+                    "oldest_retained_sequence": oldest_retained,
+                    "newest_retained_sequence": newest_retained,
+                })
         reasons.append("evidence_demux_trace_delta_gap")
-        observation["missing_sequence_start"] = int(cursor_before) + 1
         return list(dict.fromkeys(reasons)), observation
 
     expected_first = int(cursor_before) + 1
@@ -4686,6 +4731,38 @@ def _required_telemetry_envelope_report(
                             cursor = None
                         else:
                             cursor = int(cursor_before)
+                        if (
+                            cursor is not None
+                            and transport.get("discontinuity_explicit") is True
+                        ):
+                            capture_sequence = int(row.get("capture_sequence") or 0)
+                            epoch = {
+                                "epoch_id": (
+                                    f"trace_discontinuity:{guid}:"
+                                    f"{transport['missing_sequence_start']}:"
+                                    f"{capture_sequence}"
+                                ),
+                                "bot_guid": guid,
+                                "cursor_before": cursor,
+                                "missing_sequence_start": transport["missing_sequence_start"],
+                                "missing_sequence_end": transport["missing_sequence_end"],
+                                "oldest_retained_sequence": transport["oldest_retained_sequence"],
+                                "newest_retained_sequence": transport["newest_retained_sequence"],
+                                "first_gap_capture_sequence": capture_sequence,
+                                "last_gap_capture_sequence": capture_sequence,
+                                "gap_envelope_count": 1,
+                                "first_recovered_capture_sequence": capture_sequence,
+                                "first_recovered_sequence": transport["sequence_first"],
+                                "classification": (
+                                    "explicit_native_discontinuity_retained_suffix_resumed_"
+                                    "missing_interval_rejected"
+                                ),
+                                "gate_passed": False,
+                            }
+                            transport["discontinuity_epoch_id"] = epoch["epoch_id"]
+                            trace_discontinuities.append(epoch)
+                            active_trace_discontinuity_by_guid.pop(guid, None)
+                            cursor = None
                         epoch = active_trace_discontinuity_by_guid.get(guid)
                         if cursor is not None and (
                             epoch is None or epoch["cursor_before"] != cursor

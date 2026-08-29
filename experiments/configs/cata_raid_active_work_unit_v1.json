@@ -6,8 +6,8 @@
   "boss": "magmaw",
   "mode": "10N",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "telemetry_boundary_after_quarantined_failed_capture",
-  "gate_state": "gameplay_and_fixture_promotion_closed_on_real_bot30008_trace_loss",
+  "classification": "native_trace_discontinuity_recovery_fixture_green_build_pending",
+  "gate_state": "gameplay_and_fixture_promotion_closed_pending_queued_build_and_runtime_smoke",
   "observed_at_commit": "6518233c67d22f12418d5f9bf765ed027c18eb79",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_6518233c67_chainwielder_trace_transport_summary_v1.json",
@@ -22,7 +22,7 @@
   "first_broken_edge": "At retained capture sequence 28, bot GUID 30008 alone advanced beyond the native 128-entry trace ring before its delta cursor 46 was exported. The producer truthfully returned gap=true, cursor_before=46, cursor_after=46, and no entries. Native fail-closed cursor semantics then repeated that same actor-local gap through capture sequence 433.",
   "first_controller_defect": "The capture demultiplexer promoted one bot's real trace gap into rejection of each complete ten-bot envelope, hiding nine peers whose delta cursors and entries remained contiguous.",
   "causal_signature": "actor_local_native_trace_loss_promoted_to_global_envelope_rejection",
-  "causal_claim_status": "controller_demux_repaired_native_trace_loss_still_gate_blocking",
+  "causal_claim_status": "native_discontinuity_transition_and_controller_contract_fixture_green_live_unproven",
   "claim_ledger": {
     "verified": [
       "source_identity_6518233c67_was_clean_and_admitted",
@@ -34,7 +34,10 @@
       "bot30008_sequences_47_through_3120_are_absent_from_retained_trace_evidence",
       "terminal_full_snapshot_recovers_bot30008_at_sequences_3121_through_3248",
       "controller_replay_binds_all_783_envelopes_and_2749_of_2990_actor_rows",
-      "exactly_241_actor_rows_remain_rejected_for_bot30008_trace_delta_gap"
+      "exactly_241_actor_rows_remain_rejected_for_bot30008_trace_delta_gap",
+      "compiled_native_transition_reports_missing_47_through_174_and_exports_retained_175_through_238",
+      "compiled_second_poll_resumes_contiguously_at_239_and_advances_through_302",
+      "controller_keeps_the_explicit_missing_interval_gate_failing_while_binding_the_second_poll"
     ],
     "refuted": [
       "the_241_rejected_envelopes_prove_global_trace_transport_loss",
@@ -71,6 +74,32 @@
     "production_revision_promoted": false
   },
   "required_production_boundary": "Provide a native per-bot trace discontinuity epoch or equivalent explicit cursor recovery contract that preserves the first irrecoverable interval, resumes later actor deltas without a permanently sticky cursor, and remains actor-, attempt-, server-epoch-, route-, wipe-, assignment-, and runtime-profile-bound under a byte-faithful overflow replay.",
+  "implementation": {
+    "state": "fixture-green",
+    "hypothesis": "When the first unexported sequence has fallen behind the bounded ring, emit one explicit discontinuity with the exact missing interval, export a bounded contiguous retained prefix, and advance only through the last serialized entry.",
+    "native_response_contract": {
+      "gap": true,
+      "discontinuity_fields": [
+        "missing_sequence_start",
+        "missing_sequence_end",
+        "oldest_retained_sequence",
+        "newest_retained_sequence"
+      ],
+      "cursor_rule": "cursor_after_equals_last_emitted_sequence",
+      "next_poll_rule": "ordinary_gap_false_delta_starts_at_prior_cursor_after_plus_one",
+      "gate_rule": "the_explicit_missing_interval_remains_rejected"
+    },
+    "compiled_replay": {
+      "cursor_before": 46,
+      "retained_sequence_start": 175,
+      "retained_sequence_end": 302,
+      "first_poll_limit": 64,
+      "first_poll_cursor_after": 238,
+      "second_poll_sequence_start": 239,
+      "second_poll_cursor_after": 302
+    },
+    "live_verified": false
+  },
   "scope_lock": {
     "allowed_change": "Repair only native trace emission/cursor recovery or trace-event pressure at the first proven per-bot overflow. Preserve explicit gap evidence and add focused native transport tests.",
     "forbidden": [
@@ -99,15 +128,20 @@
       "missing_sequence_end": 3120,
       "gate_passed": false
     },
+    "native_transition_fixture_passed": true,
+    "explicit_discontinuity_controller_contract_passed": true,
+    "second_poll_contiguous": true,
+    "build_verified": false,
+    "runtime_smoke_verified": false,
     "gameplay_admitted": false,
     "fixture_promotion_admitted": false,
     "acceptance_admitted": false
   },
   "coordinator_followup": {
-    "next_owner": "raid-bot-runtime-implementation",
-    "next_owner_command": "repair_native_per_bot_trace_discontinuity_epoch:bot30008_cursor46_overflow",
-    "next_work_unit": "runtime:per_bot_trace_discontinuity_transport",
-    "evidence_owner_after_implementation": "raid-evidence-lifecycle"
+    "next_owner": "raid-shard-architecture",
+    "next_owner_command": "queue_build_then_run_one_completion_watchdog_trace_transport_smoke",
+    "next_work_unit": "shard:queued_build_and_trace_discontinuity_runtime_smoke",
+    "evidence_owner_after_runtime_smoke": "raid-evidence-lifecycle"
   },
-  "next_action": "Implement and replay one native per-bot trace discontinuity recovery boundary. Do not rerun Chainwielder or reopen gameplay gates until the exact overflow fixture preserves the missing interval and resumes later actor-bound deltas."
+  "next_action": "Queue one native build, then run one completion-watchdog trace transport smoke that observes an explicit actor-local discontinuity followed by an ordinary contiguous poll. Do not claim Chainwielder or gameplay completion from that smoke."
 }

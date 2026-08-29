@@ -1,0 +1,146 @@
+{
+  "work_unit_id": "runtime:per_bot_trace_discontinuity_transport",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "passed",
+  "git_commit": "self",
+  "input_identities": {
+    "source_commit": "a38c7f94ed543c0980436b47eb59ab4f539628c1",
+    "compact_summary": {
+      "path": "experiments/configs/cata_raid_magmaw_6518233c67_chainwielder_trace_transport_summary_v1.json",
+      "sha256": "a2784575f5944b9d4054817e6b1d21ff67096bef10921faf8ccaeb70025309b9"
+    },
+    "dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_foundation_6518233c67_chainwielder_trace_transport_quarantine_20260830.dvc",
+      "sha256": "601094fd735339abac38925b8ca39e3a7d80517bb087ff03d4da314969e13afe",
+      "directory_md5": "ca266dd38c919db04544be1ae6000b0f.dir"
+    },
+    "source_raw_output_sha256": "d28fabf617748a887ef0b2655df0a0dea852d7bc192fbaeceabb26228999ffa8"
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotWorldTraceExportCursor.h",
+    "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp",
+    "tools/raid_program/capture_phase1_raid_foundation.py",
+    "tests/test_phase1_raid_foundation_capture.py",
+    "tests/test_trace_export_cursor.py",
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_native_trace_discontinuity_transport_handoff_v1.json"
+  ],
+  "first_broken_edge_before": "bot 30008 cursor 46 fell behind retained ring sequence 175; gap=true suppressed all entries and left cursor_after=46 on every later poll",
+  "implemented_hypothesis": "emit one explicit missing interval, serialize a bounded contiguous retained prefix in the same actor response, and advance only through its last emitted sequence while keeping gap=true gate-failing",
+  "serialized_examples": {
+    "before": {
+      "bot_guid": 30008,
+      "entries": [],
+      "delta": true,
+      "cursor_before": 46,
+      "cursor_after": 46,
+      "gap": true
+    },
+    "after_first_poll": {
+      "bot_guid": 30008,
+      "entries_sequence_first": 175,
+      "entries_sequence_last": 238,
+      "entry_count": 64,
+      "delta": true,
+      "cursor_before": 46,
+      "cursor_after": 238,
+      "gap": true,
+      "discontinuity": {
+        "missing_sequence_start": 47,
+        "missing_sequence_end": 174,
+        "oldest_retained_sequence": 175,
+        "newest_retained_sequence": 302
+      }
+    },
+    "after_second_poll": {
+      "bot_guid": 30008,
+      "entries_sequence_first": 239,
+      "entries_sequence_last": 302,
+      "entry_count": 64,
+      "delta": true,
+      "cursor_before": 238,
+      "cursor_after": 302,
+      "gap": false
+    }
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py::test_native_trace_discontinuity_transition_resumes_through_controller_demux",
+    "focused_result": "1 passed in 4.34s",
+    "nearby_command": "pixi run pytest -q tests/test_trace_export_cursor.py tests/test_phase1_raid_foundation_capture.py::test_chainwielder_byte_faithful_actor_gap_does_not_reject_peer_trace_rows",
+    "nearby_result": "8 passed in 4.07s",
+    "python_syntax": "passed",
+    "cpp_syntax_only": "BotWorldPopulationMgrStatus.cpp passed with one pre-existing ciso646 C++20 warning",
+    "git_diff_check": "passed",
+    "decisive_metrics": {
+      "explicit_missing_interval": "47..174",
+      "first_retained_prefix": "175..238",
+      "second_contiguous_delta": "239..302",
+      "controller_gap_rejection_count": 1,
+      "controller_second_poll_bound": true,
+      "gate_passed": false
+    },
+    "ccn_branch_point_estimate": {
+      "function": "BotWorldPopulationMgr::GetBotTraceJson",
+      "before": 47,
+      "after": 34,
+      "high_ccn_threshold_exceeded": false
+    },
+    "cpp_line_counts": {
+      "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp": 779,
+      "src/server/game/Bots/BotWorldTraceExportCursor.h": 88
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_native_transition emits exact missing interval 47..174 for cursor 46 and retained 175..302",
+      "the first response exports 175..238 and advances only to 238",
+      "the second response exports 239..302 with gap=false",
+      "the real controller demux keeps the explicit missing interval rejected and binds the second response",
+      "legacy sticky-gap capture parsing remains compatible"
+    ],
+    "refuted": [
+      "the exporter must repeat the same sticky gap to remain fail-closed",
+      "resuming retained rows requires accepting or reconstructing the missing interval"
+    ],
+    "unproven": [
+      "queued worldserver build identity",
+      "live actor-local discontinuity and next-poll behavior",
+      "Chainwielder Hazard-owner boundary",
+      "Magmaw or gameplay completion"
+    ]
+  },
+  "gear_identity": {
+    "status": "not_applicable"
+  },
+  "effective_stat_parity": {
+    "status": "not_applicable",
+    "tuning_admitted": false,
+    "first_broken_edge": null
+  },
+  "dps_tuning_gate": {
+    "status": "not_applicable",
+    "tuning_admitted": false,
+    "first_broken_edge": null
+  },
+  "evidence_paths": [
+    "experiments/configs/cata_raid_magmaw_6518233c67_chainwielder_trace_transport_summary_v1.json",
+    "experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_foundation_6518233c67_chainwielder_trace_transport_quarantine_20260830.dvc",
+    "remote_verification": "not_changed_in_this_work_unit",
+    "eviction_state": "pointer_not_hydrated"
+  },
+  "remaining_blocker": "native build and one live completion-watchdog trace transport smoke are not yet executed; gameplay gates remain closed",
+  "runtime_verification_plan": {
+    "owner": "raid-shard-architecture",
+    "steps": [
+      "queue one clean native build containing this commit",
+      "run one matched completion-watchdog smoke with botauto trace all 128 delta at the configured telemetry heartbeat",
+      "require any overflow actor response to contain exact discontinuity bounds plus retained entries and cursor_after at the last entry",
+      "require the same actor next poll to use cursor_before equal to the prior cursor_after, gap=false, and first sequence cursor_before+1",
+      "retain the explicit gap as gate-failing and make no Chainwielder or gameplay completion claim"
+    ]
+  },
+  "next_work_unit": "shard:queued_build_and_trace_discontinuity_runtime_smoke"
+}

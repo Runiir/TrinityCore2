@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldTraceExportCursor.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -22,7 +23,6 @@
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
-#include <limits>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -308,42 +308,19 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                 auto const cursorItr = Party().TraceExportCursorByGuid.find(state.Guid.GetCounter());
                 bool const cursorInitialized = cursorItr != Party().TraceExportCursorByGuid.end();
                 uint64 const cursor = cursorInitialized ? cursorItr->second : 0;
-                uint64 cursorAfter = cursor;
-                bool gap = false;
-                uint64 expected = cursor == std::numeric_limits<uint64>::max() ? cursor : cursor + 1;
-                bool sawNewEntry = false;
-                // A bounded ring may overwrite the first unexported row.
-                // Fail closed even on the first delta poll instead of
-                // silently starting at the oldest retained row.
+                std::vector<std::uint64_t> retainedSequences;
+                retainedSequences.reserve(state.DecisionTrace.size());
                 for (auto const& entry : state.DecisionTrace)
-                {
-                    if (entry.Sequence <= cursor)
-                        continue;
-                    if (!sawNewEntry)
-                    {
-                        sawNewEntry = true;
-                        if ((!cursorInitialized && entry.Sequence != 1) || (cursorInitialized && entry.Sequence != expected))
-                        {
-                            gap = true;
-                            break;
-                        }
-                    }
-                    else if (entry.Sequence != expected)
-                    {
-                        gap = true;
-                        break;
-                    }
-                    expected = entry.Sequence == std::numeric_limits<uint64>::max() ? entry.Sequence : entry.Sequence + 1;
-                }
+                    retainedSequences.push_back(entry.Sequence);
+                BotWorldTrace::ExportCursorTransition const transition =
+                    BotWorldTrace::BuildExportCursorTransition(
+                        retainedSequences, cursor, cursorInitialized, normalizedLimit);
                 json << "[";
                 uint32 emitted = 0;
                 bool firstEntry = true;
-                for (auto itr = state.DecisionTrace.begin(); !gap && itr != state.DecisionTrace.end(); ++itr)
+                for (auto itr = state.DecisionTrace.begin() + transition.FirstEntryIndex;
+                     emitted < transition.EntryCount; ++itr, ++emitted)
                 {
-                    if (itr->Sequence <= cursor)
-                        continue;
-                    if (emitted >= normalizedLimit)
-                        break;
                     if (!firstEntry)
                         json << ',';
                     firstEntry = false;
@@ -431,19 +408,15 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                          << "\",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction)
                          << "\",\"combat_attempt\":" << BuildCombatAttemptJson(itr->CombatAttempt)
                          << ",\"route_progress\":" << BuildRouteProgressJson(itr->RouteProgress) << "}";
-                    cursorAfter = itr->Sequence;
-                    ++emitted;
                 }
-                json << "]"
-                     << ",\"delta\":true"
-                     << ",\"cursor_before\":" << cursor
-                     << ",\"cursor_after\":" << cursorAfter
-                     << ",\"gap\":" << (gap ? "true" : "false");
+                json << "]";
+                BotWorldTrace::WriteExportCursorFields(json, transition);
                 // A bounded poll may emit only a prefix of available rows.
-                // Advance exactly through the last emitted row, and never
-                // advance while failing closed on a gap.
-                if (!gap && cursorAfter != cursor)
-                    Party().TraceExportCursorByGuid[state.Guid.GetCounter()] = cursorAfter;
+                // A discontinuity remains explicit and gate-failing, while
+                // the cursor advances exactly through the retained rows that
+                // were truthfully emitted.
+                if (transition.EntryCount && transition.CursorAfter != transition.CursorBefore)
+                    Party().TraceExportCursorByGuid[state.Guid.GetCounter()] = transition.CursorAfter;
             }
             json << "}";
         }
