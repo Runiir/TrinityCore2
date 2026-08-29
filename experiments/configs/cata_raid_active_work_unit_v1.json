@@ -1,48 +1,40 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_canary119_native_path_recurrence_v2_20260829",
-  "work_unit": "runtime_repair:magmaw_same_level_native_path:canary119_seq3376",
+  "epoch_id": "magmaw_canary120_causal_path_recurrence_v3_20260829",
+  "work_unit": "runtime_repair:magmaw_same_level_native_path:canary120_seq",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "exact_counterexample_green_full_retained_bank_pending",
-  "observed_at_commit": "173e21af8f3d86a872559f2fb226ae1f6a9e545f",
+  "classification": "implementation_admitted_pending_live_verification",
+  "gate_state": "full_retained_bank_green_exact_build_pending",
+  "observed_at_commit": "f90cfe4cedf7d3470b5e89d8baefa729d8b34e4a",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_canary119_floor_recurrence_handoff_20260829.md",
-    "sha256": "600fb8c024ab056be90200d872fecaced2c206417508592d1d2a470066705528"
+    "path": "experiments/configs/cata_raid_magmaw_canary120_path_recurrence_handoff_20260829.md",
+    "sha256": "998462cedb5140eb1d156bc61f9d5d5749dd5f37c5ecb22904a76d3b7b9b3fc7"
   },
-  "first_broken_edge": "Canary119 sequence 3376 rejected a complete floor-valid parasite_contact_evade path as route_destination_endpoint_mismatch even though its native endpoint travelled 3.1396 yards and made about 2.195 yards of same-level progress.",
+  "first_broken_edge": "Canary120 rejected a complete same-level parasite_contact_evade path for 2.571 yards of endpoint error; the first Parasitic Infection followed about 10.6 seconds later.",
   "causal_signature": "same_level_native_path_proof_false_negative",
   "child_signatures": [
     "same_level_encounter_hazard_path_rejection",
-    "same_level_movement_path_floor_false_negative"
+    "same_level_movement_path_floor_false_negative",
+    "magmaw_parasite_control_allows_player_infection"
   ],
   "live_observation": {
-    "run_id": "trinity-magmaw-173e21af8f-canary119.C7Err2",
-    "terminal": "repeated_decision_watchdog",
-    "chainwielder_dps": 98923.0,
-    "drudges_dps": 114330.0,
-    "magmaw_party_dps": 92781.0,
-    "magmaw_party_hps": 13424.0,
-    "affliction_dps": 19099.638,
-    "affliction_pet_damage_share": 0.307,
-    "direct_infection_hits": 14,
-    "direct_infection_players": 5,
-    "trash_cleared_without_deaths": true
+    "run_id": "trinity-magmaw-f90cfe4ced-canary120.M107lc",
+    "terminal": "semantic_progress_plateau_watchdog",
+    "party_dps": 88260.582,
+    "party_hps": 27474.880,
+    "affliction_dps": 27698.721,
+    "affliction_pet_damage_share": 0.250467,
+    "direct_infection_events": 100,
+    "direct_infection_players": 8,
+    "trash_cleared_without_deaths": true,
+    "raid_deaths": 0
   },
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "invalidated_fixture_revisions": {
-      "magmaw_parasite_lane_paths_v1": 4,
-      "magmaw_parasite_lane_transition_full_replay_v1": 3,
-      "magmaw_parasite_control_full_runtime_v1": 3,
-      "same_level_hazard_path_admission_v1": 1,
-      "same_level_floor_observation_v1": 1,
-      "same_level_native_path_proof_v1": 1
-    },
-    "replacement_fixture_revisions": {
+    "failed_fixture_revisions": {
       "magmaw_parasite_lane_paths_v1": 5,
       "magmaw_parasite_lane_transition_full_replay_v1": 4,
       "magmaw_parasite_control_full_runtime_v1": 4,
@@ -50,26 +42,36 @@
       "same_level_floor_observation_v1": 2,
       "same_level_native_path_proof_v1": 2
     },
+    "replacement_fixture_revisions": {
+      "magmaw_parasite_lane_paths_v1": 6,
+      "magmaw_parasite_lane_transition_full_replay_v1": 5,
+      "magmaw_parasite_control_full_runtime_v1": 5,
+      "same_level_hazard_path_admission_v1": 3,
+      "same_level_floor_observation_v1": 3,
+      "same_level_native_path_proof_v1": 3
+    },
+    "suite_receipt": "/tmp/magmaw-regression-suite-af41ab980a-canary121.json",
+    "suite_receipt_sha256": "d30b2c9fc0fc952e6ab6346a6cb22a3f22674c91976afc1da592d27b655ebe21",
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
-    "allowed_change": "Admit only the exact class of complete, floor-valid, bounded same-level Hazard or Mechanic native endpoints that make measurable progress; preserve strict global endpoint identity and all cross-floor, incomplete, forbidden, stationary, and Formation-owner rejections.",
+    "allowed_change": "Admit complete same-level bounded Hazard or Mechanic endpoints and deterministic shorter freshly proved native steps while preserving strict global identity and cross-floor rejection.",
     "forbidden": [
       "global_endpoint_tolerance_expansion",
-      "owner_independent_partial_path_admission",
+      "unproved_partial_path_admission",
       "teleport_or_forced_position",
       "class_rotation_or_damage_tuning",
       "boss_outcome_mutation",
-      "another_live_canary_before_full_retained_bank_and_exact_build_admission"
+      "unchanged_live_rerun_after_recurrence"
     ]
   },
   "validation": {
-    "exact_fixture": "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths",
-    "focused_result": "30 passed",
-    "immutable_bank_all_rows_passed": false,
-    "build_admitted": false,
-    "canary_admitted": false,
+    "focused_result": "22 movement tests passed; 9 broadened causal tests passed",
+    "immutable_bank_fixture_count": 16,
+    "immutable_bank_all_rows_passed": true,
+    "build_admitted": true,
+    "canary_admitted": true,
     "acceptance_admitted": false
   },
   "validation_clock": {
@@ -81,5 +83,5 @@
     "canary_budget_before_full_bank": 0,
     "canary_budget_after_full_bank_and_exact_build": 1
   },
-  "next_action": "Commit the executable counterexample and scoped runtime repair, run the complete retained blocker bank at that exact clean identity, then permit one fast8 Canary120 only if recurrence admission opens."
+  "next_action": "Build the final exact clean identity, seal recurrence admission, and run one Canary121. If the same causal signature recurs, stop without an unchanged rerun; if the route clears, run one consecutive confirmation clear."
 }
