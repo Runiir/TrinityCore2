@@ -1,60 +1,64 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_canary117_parasite_recurrence_v3_20260829",
-  "work_unit": "architecture_review:magmaw_parasite_containment:revision_3_boundary",
+  "epoch_id": "magmaw_canary118_parasite_recurrence_v4_20260829",
+  "work_unit": "architecture_review:magmaw_parasite_containment:revision_4_arrived_boundary",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "revision_3_locally_repaired",
-  "gate_state": "revision_3_green_locally_exact_identity_not_yet_admitted",
-  "observed_at_commit": "1dcdd3a1add2deb268667a2765672068059a91ce",
+  "classification": "live_recurrence_quarantined",
+  "gate_state": "revision_3_invalidated_revision_4_counterexample_required",
+  "observed_at_commit": "2fdaa927b3683e72d9a32e4b62e75a7a172872c2",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_canary117_parasite_recurrence_handoff_20260829.md",
-    "sha256": "e51f05c536fe5a8e906a26d80eac5c0250e52f87f3357c1fdf7788d56a536952"
+    "path": "experiments/configs/cata_raid_magmaw_canary118_parasite_recurrence_handoff_20260829.md",
+    "sha256": "bff5a472dc2d7e6db628f91a4d9d5ea0e7a17d565bc09b15c5d74d7bad995384"
   },
   "prior_architecture_review": {
     "path": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md",
     "sha256": "5f631240e2f242d87ba48e205f34fd3fe2237f09803303789b331be59fa6fe80"
   },
-  "first_broken_edge": "revision-2 retained one local escape only until temporary pack clearance; later parasite contacts generated new radial destinations and bypassed the fixed left-right bait lane",
+  "first_broken_edge": "revision-3 returns no destination after both baiters arrive for a still-living same parasite wave, so an unsafe occupied endpoint cannot redirect the shared lane",
   "causal_signature": "magmaw_parasite_control_allows_player_infection",
   "parent_signature": "magmaw_parasite_containment_failure",
   "live_observation": {
-    "run_id": "trinity-magmaw-1dcdd3a1ad-canary117.QXkp5t",
+    "run_id": "trinity-magmaw-2fdaa927b3-canary118.GOOMkp",
     "terminal": "death_loop_watchdog",
+    "direct_infection_hits": 53,
     "direct_infection_players": 5,
-    "vomit_secondary_players": 3,
-    "magmaw_party_dps": 75979.481,
-    "magmaw_party_hps": 14086.778,
+    "vomit_hits": 27,
+    "vomit_secondary_players": 6,
+    "magmaw_party_dps": 82141.698,
+    "magmaw_party_hps": 19128.62,
+    "affliction_dps": 26974.947,
+    "affliction_pet_damage_share": 0.217131,
     "trash_cleared_without_deaths": true
   },
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "occurrence_count": 13,
-    "architecture_reviewed_through_occurrence_count": 12,
+    "occurrence_count": 14,
+    "architecture_reviewed_through_occurrence_count": 13,
     "invalidated_fixtures": {
-      "magmaw_parasite_lane_paths_v1": 2,
-      "magmaw_parasite_lane_transition_full_replay_v1": 1,
-      "magmaw_parasite_control_full_runtime_v1": 1
+      "magmaw_parasite_lane_paths_v1": 3,
+      "magmaw_parasite_lane_transition_full_replay_v1": 2,
+      "magmaw_parasite_control_full_runtime_v1": 2
     },
-    "required_replacement_fixture_revision": 3,
+    "required_replacement_fixture_revision": 4,
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
     "allowed_read_only_inputs": [
-      "/tmp/trinity-magmaw-1dcdd3a1ad-canary117.QXkp5t/canary117.report.json",
-      "/tmp/trinity-magmaw-1dcdd3a1ad-canary117.QXkp5t/canary117.raw.jsonl",
-      "/tmp/trinity-magmaw-1dcdd3a1ad-canary117.QXkp5t/canary117.worldserver.log",
+      "/tmp/trinity-magmaw-2fdaa927b3-canary118.GOOMkp/canary118.report.json",
+      "/tmp/trinity-magmaw-2fdaa927b3-canary118.GOOMkp/canary118.raw.jsonl",
+      "/tmp/trinity-magmaw-2fdaa927b3-canary118.GOOMkp/canary118.worldserver.log",
       "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw",
       "tests/test_magmaw_parasite_policy.py",
       "tests/test_bot_action_arbitration.py"
     ],
-    "allowed_change": "One revision-3 compiled replay that preserves earlier expectations and crosses repeated parasite contact, fixed lane ownership, native movement progress, and infection-free safe arrival; then the smallest trace-backed runtime repair.",
+    "allowed_change": "One revision-4 compiled replay that marks both baiters arrived while the same living wave occupies the endpoint and proves one shared opposite fixed-lane transition for both baiters; then the smallest trace-backed runtime repair.",
     "forbidden": [
-      "revision_2_rerun_as_repair",
-      "live_canary_before_revision_3_expansion",
+      "revision_3_rerun_as_repair",
+      "live_canary_before_revision_4_expansion",
       "class_rotation_or_damage_tuning",
       "boss_spell_or_instance_script_changes",
       "recovery_changes_routed_from_downstream_death_loop",
@@ -62,17 +66,17 @@
     ]
   },
   "validation": {
-    "gate_evaluated_at_commit": "f7a4e166f1664e147a4a114d79f6a3fe16c74627",
-    "regression_suite_receipt": "/tmp/magmaw-regression-suite-f7a4e166f1-canary117.json",
-    "regression_suite_receipt_sha256": "a3f38d7fd435ff7d6fa1d0fa4356420111800750811356d065f8e1d06b832ca7",
-    "recurrence_decision": "/tmp/magmaw-recurrence-f7a4e166f1-canary117.json",
-    "recurrence_decision_sha256": "216f0e71e5c1010b612be5e3b2d39331e51de6a00503126843861df6d219a8d9",
+    "gate_evaluated_at_commit": "2fdaa927b3683e72d9a32e4b62e75a7a172872c2",
+    "regression_suite_receipt": "/tmp/trinity-magmaw-2fdaa927b3-canary118.GOOMkp/admission-regression-suite.json",
+    "regression_suite_receipt_sha256": "0a0570aa29349c44363eaaa38ca0985db29d7c072fd73d4255d4cc52a1b2ffa9",
+    "recurrence_decision": "/tmp/trinity-magmaw-2fdaa927b3-canary118.GOOMkp/admission-decision.json",
+    "recurrence_decision_sha256": "11b4cd2dc1163fe1c0b7304004959ced3bc99667e0aeeb3b80da0f0dd95f4b62",
     "immutable_bank_all_rows_passed": true,
     "invalidated_fixture_count": 3,
     "build_admitted": false,
     "canary_admitted": false,
     "acceptance_admitted": false,
-    "required_next_action": "commit_revision_3_then_run_exact_immutable_bank"
+    "required_next_action": "capture_revision_4_pre_fix_failure_then_repair"
   },
   "revision_3_fixture_expansion": {
     "pre_fix_source_identity": "3c563b4113",
@@ -110,5 +114,5 @@
     "canary_budget_before_expanded_fixture": 0,
     "canary_budget_after_expanded_fixture_and_exact_build": 1
   },
-  "next_action": "Commit revision 3, run the immutable bank at that exact clean identity, and admit one fast8 build only if the recurrence gate opens."
+  "next_action": "Capture the revision-4 arrived-state counterexample before editing runtime, apply the smallest repair, then rerun the immutable bank at one clean committed identity."
 }

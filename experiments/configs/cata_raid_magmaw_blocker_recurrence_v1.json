@@ -869,6 +869,53 @@
       "worldserver_log_sha256": "f375fd1b3e2f858601adfce9e994d2bc8025d37a272c5ef261e10e130fa0cf67",
       "evidence": "experiments/configs/cata_raid_magmaw_canary117_parasite_recurrence_handoff_20260829.md",
       "note": "Entrance, Chainwielder, and Drudges cleared without deaths. During Magmaw, five players took direct Parasitic Infection and the infected restoration druid spread Infectious Vomit to three teammates. Revision-2 reduced but did not close containment; the death-loop watchdog ended the run."
+    },
+    {
+      "run_id": "trinity-magmaw-2fdaa927b3-canary118.GOOMkp",
+      "route_completed": false,
+      "classification": "gameplay_failure",
+      "admission": {
+        "source_identity": "2fdaa927b3683e72d9a32e4b62e75a7a172872c2",
+        "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+        "suite_receipt_sha256": "0a0570aa29349c44363eaaa38ca0985db29d7c072fd73d4255d4cc52a1b2ffa9",
+        "fixture_revisions": {
+          "magmaw_parasite_lane_paths_v1": 3,
+          "magmaw_parasite_lane_transition_full_replay_v1": 2,
+          "magmaw_parasite_control_full_runtime_v1": 2,
+          "chainwielder_future_drudge_guard_v1": 1,
+          "same_level_hazard_path_admission_v1": 1,
+          "same_level_floor_observation_v1": 1,
+          "same_level_endpoint_normalization_v1": 1,
+          "same_level_native_path_proof_v1": 1,
+          "magmaw_prepot_formation_gate_v1": 1,
+          "magmaw_prepot_formation_endpoint_v1": 1,
+          "magmaw_prepot_stall_watchdog_v1": 1,
+          "partial_wipe_native_reset_gate_v1": 1,
+          "phase1_capture_single_start_contract_v1": 1,
+          "deferred_candidate_capture_lifetime_v1": 1,
+          "native_bwd_partial_death_recovery_lifecycle_v1": 1,
+          "current_route_combat_authority_precedence_v1": 1
+        }
+      },
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred",
+        "chainwielder_future_drudge_contamination": "absent",
+        "current_route_combat_authority_preempted": "absent",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "absent",
+        "same_level_native_endpoint_z_normalization_false_negative": "absent",
+        "same_level_native_path_proof_false_negative": "absent",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "absent",
+        "raid_partial_wipe_waits_for_last_survivor": "not_exercised",
+        "phase1_capture_duplicate_autostart_lifecycle": "absent",
+        "deferred_candidate_dangling_reference_capture": "absent",
+        "native_partial_death_recovery_lifecycle_failure": "not_exercised"
+      },
+      "report_sha256": "c559b26a2391bb0e281d93a217df5a42235a20307ceb37ed0d38556b60661387",
+      "raw_jsonl_sha256": "419bc586afbda1048424a03cb97d1e7b282c5fad622be432ef8efeb15a847cf9",
+      "worldserver_log_sha256": "3f7149a7fe8d45919dc52f96fd42d186a359575eb83d68324b1188fc77f45a59",
+      "evidence": "experiments/configs/cata_raid_magmaw_canary118_parasite_recurrence_handoff_20260829.md",
+      "note": "Trash cleared with zero deaths. During Magmaw, 53 Parasitic Infection and 27 Infectious Vomit hits occurred; the assigned fire mage was first infected at 0.2 yards while standing on the fixed left endpoint. The revision-3 arrived-state boundary returned no destination for the still-living same wave, so fixed-lane ownership was not continuous and the raid wiped."
     }
   ]
 }
