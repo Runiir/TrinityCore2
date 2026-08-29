@@ -27,6 +27,8 @@ try:
     from tools.raid_program.capture_no_bots_baseline import process_sample as _baseline_process_sample
     from tools.raid_program.probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
     from tools.raid_program.recurrence_admission import (
+        FIXTURE_EXPANSION_PURPOSE,
+        GAMEPLAY_CANARY_PURPOSE,
         RecurrenceAdmissionError,
         verify_recurrence_admission,
     )
@@ -42,7 +44,12 @@ except ModuleNotFoundError:
     )
     from capture_no_bots_baseline import process_sample as _baseline_process_sample
     from probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
-    from recurrence_admission import RecurrenceAdmissionError, verify_recurrence_admission
+    from recurrence_admission import (
+        FIXTURE_EXPANSION_PURPOSE,
+        GAMEPLAY_CANARY_PURPOSE,
+        RecurrenceAdmissionError,
+        verify_recurrence_admission,
+    )
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -5363,6 +5370,14 @@ def main() -> int:
     parser.add_argument("--build-receipt", type=Path, required=True)
     parser.add_argument("--recurrence-admission", type=Path)
     parser.add_argument("--recurrence-admission-sha256")
+    parser.add_argument(
+        "--fixture-expansion-replay",
+        action="store_true",
+        help=(
+            "admit one evidence-only fixture expansion while the ordinary "
+            "gameplay canary gate remains closed"
+        ),
+    )
     parser.add_argument("--build-attestation", type=Path, default=None)
     parser.add_argument("--worktree", type=Path, default=ROOT)
     parser.add_argument(
@@ -5439,6 +5454,10 @@ def main() -> int:
         raise SystemExit("binary and config must exist")
     recurrence_admission: dict[str, Any] | None = None
     recurrence_required = scenario_id == "blackwing_descent_10n_magmaw_diagnostic"
+    if args.fixture_expansion_replay and not recurrence_required:
+        raise SystemExit(
+            "capture preflight rejected: fixture_expansion_route_mismatch"
+        )
     if recurrence_required and (
         args.recurrence_admission is None or not args.recurrence_admission_sha256
     ):
@@ -5458,6 +5477,11 @@ def main() -> int:
                 binary=binary,
                 build_receipt=args.build_receipt.resolve(),
                 runtime_config=config,
+                required_purpose=(
+                    FIXTURE_EXPANSION_PURPOSE
+                    if args.fixture_expansion_replay
+                    else GAMEPLAY_CANARY_PURPOSE
+                ),
             )
         except RecurrenceAdmissionError as error:
             raise SystemExit(

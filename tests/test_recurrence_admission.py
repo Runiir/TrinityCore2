@@ -8,6 +8,7 @@ import subprocess
 import pytest
 
 from tools.raid_program.recurrence_admission import (
+    FIXTURE_EXPANSION_PURPOSE,
     RecurrenceAdmissionError,
     create_recurrence_admission,
     sha256_file,
@@ -72,6 +73,7 @@ def _fixture(tmp_path: Path) -> dict[str, Path | str]:
         "invalidated_fixture_ids": [],
         "failing_fixture_ids": [],
         "missing_fixture_ids": [],
+        "pending_fixture_ids": [],
         "stale_fixture_ids": [],
     }
     _write_json(
@@ -173,6 +175,68 @@ def test_creator_seals_a_verifiable_admission(tmp_path: Path) -> None:
     assert _verify(paths)["valid"] is True
 
 
+def test_fixture_expansion_admission_is_distinct_from_gameplay_canary(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    admission = Path(paths["admission"])
+    decision = Path(paths["decision"])
+    config = Path(paths["config"])
+    admission.unlink()
+    decision_value = json.loads(decision.read_text(encoding="utf-8"))
+    decision_value.update(
+        {
+            "build_admitted": False,
+            "canary_admitted": False,
+            "fixture_expansion_admitted": True,
+            "fixture_expansion_target_ids": [
+                "native_planner_executor_launch_proof_v1"
+            ],
+            "invalidated_fixture_ids": ["same_level_native_path_proof_v1"],
+            "failing_fixture_ids": ["same_level_native_path_proof_v1"],
+            "pending_fixture_ids": [
+                "native_planner_executor_launch_proof_v1"
+            ],
+        }
+    )
+    _write_json(decision, decision_value)
+    config.write_text(
+        config.read_text(encoding="utf-8")
+        + "BotWorld.ValidationRoute.PrepullCheckpointEnable = 1\n",
+        encoding="utf-8",
+    )
+
+    create_recurrence_admission(
+        output=admission,
+        worktree=Path(paths["root"]),
+        binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        runtime_config=config,
+        route_manifest=Path(paths["route"]),
+        ledger=Path(paths["ledger"]),
+        decision=decision,
+        suite_receipt=Path(paths["suite"]),
+        purpose=FIXTURE_EXPANSION_PURPOSE,
+    )
+
+    result = verify_recurrence_admission(
+        admission_path=admission,
+        expected_sha256=sha256_file(admission),
+        worktree=Path(paths["root"]),
+        binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        runtime_config=config,
+        required_purpose=FIXTURE_EXPANSION_PURPOSE,
+    )
+    assert result["valid"] is True
+    assert result["purpose"] == FIXTURE_EXPANSION_PURPOSE
+    assert result["fixture_expansion_target_ids"] == [
+        "native_planner_executor_launch_proof_v1"
+    ]
+    with pytest.raises(RecurrenceAdmissionError, match="admission_purpose_mismatch"):
+        _verify(paths)
+
+
 def test_recurrence_admission_rejects_wrong_hash(tmp_path: Path) -> None:
     paths = _fixture(tmp_path)
 
@@ -220,6 +284,11 @@ def test_recurrence_admission_rejects_new_head(tmp_path: Path) -> None:
             "invalidated_fixture_ids",
             ["magmaw_parasite_control_full_runtime_v1"],
             "invalidated_fixture_ids_present",
+        ),
+        (
+            "pending_fixture_ids",
+            ["native_planner_executor_launch_proof_v1"],
+            "pending_fixture_ids_present",
         ),
     ],
 )

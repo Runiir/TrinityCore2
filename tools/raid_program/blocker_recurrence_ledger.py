@@ -12,6 +12,7 @@ from typing import Any, Mapping
 
 
 VALID_STATES = {"occurred", "absent", "not_exercised"}
+VALID_FIXTURE_EVIDENCE_BOUNDARIES = {"production", "observation_only"}
 REGRESSION_BANK_SCHEMA = "trinity_raid_regression_bank_v1"
 SUITE_RECEIPT_SCHEMA = "trinity_raid_regression_suite_receipt_v1"
 
@@ -270,6 +271,8 @@ def _evaluate_regression_bank(
         "schema": REGRESSION_BANK_SCHEMA,
         "admitted": True,
         "canary_admitted": True,
+        "fixture_expansion_admitted": False,
+        "fixture_expansion_target_ids": [],
         "expected_fixture_ids": [],
         "verified_fixture_ids": [],
         "suite_verified_fixture_ids": [],
@@ -277,6 +280,7 @@ def _evaluate_regression_bank(
         "stale_fixture_ids": [],
         "failing_fixture_ids": [],
         "invalidated_fixture_ids": [],
+        "pending_fixture_ids": [],
         "missing_causal_signature_ids": [],
         "invalidated_causal_signatures": {},
         "verified_after_latest_occurrence_signatures": [],
@@ -386,6 +390,7 @@ def _evaluate_regression_bank(
         for signature in missing_causal_signatures
     )
     manifest_stale: set[str] = set()
+    pending: set[str] = set()
     renamed: set[str] = set()
     for fixture_id, fixture in fixtures.items():
         if not _executable(fixture):
@@ -394,6 +399,19 @@ def _evaluate_regression_bank(
             _fixture_revision(fixture)
         except ValueError:
             route_failures.append(f"fixture:{fixture_id}:invalid_revision")
+        evidence_boundary = str(
+            fixture.get("evidence_boundary") or "production"
+        ).strip()
+        if evidence_boundary not in VALID_FIXTURE_EVIDENCE_BOUNDARIES:
+            route_failures.append(
+                f"fixture:{fixture_id}:invalid_evidence_boundary"
+            )
+        elif evidence_boundary == "observation_only":
+            pending.add(fixture_id)
+            if not str(fixture.get("required_production_boundary") or "").strip():
+                route_failures.append(
+                    f"fixture:{fixture_id}:missing_required_production_boundary"
+                )
         signature = str(fixture.get("causal_signature") or "").strip()
         if signature not in contracts:
             route_failures.append(f"fixture:{fixture_id}:unknown_causal_signature")
@@ -456,6 +474,7 @@ def _evaluate_regression_bank(
     missing_ids = set(missing)
     stale: set[str] = set(manifest_stale)
     failing: set[str] = set()
+    execution_failing: set[str] = set()
     invalidated: set[str] = set()
     verified: set[str] = set()
     current_pass: set[str] = set()
@@ -483,6 +502,7 @@ def _evaluate_regression_bank(
                 latest_pass = (boundary, record)
         if latest is not None and _failed(latest[1]):
             failing.add(fixture_id)
+            execution_failing.add(fixture_id)
         if latest_pass is None:
             if fixture_id not in failing:
                 missing_ids.add(fixture_id)
@@ -551,10 +571,14 @@ def _evaluate_regression_bank(
             ]
             invalidated_signatures.setdefault(signature, []).append(fixture_id)
         else:
-            if fixture_id in current_pass and pass_boundary > float(last_occurrence):
+            if (
+                fixture_id in current_pass
+                and fixture_id not in pending
+                and pass_boundary > float(last_occurrence)
+            ):
                 verified_after_occurrence.add(signature)
 
-    usable_passes = current_pass - stale - failing - invalidated
+    usable_passes = current_pass - stale - failing - invalidated - pending
     suite_ids = usable_passes if usable_passes == expected else set()
     missing_ids.update(expected - current_pass - stale - failing - invalidated)
     if not expected:
@@ -565,9 +589,19 @@ def _evaluate_regression_bank(
         or stale
         or failing
         or invalidated
+        or pending
         or unknown
         or missing_causal_signatures
         or suite_ids != expected
+    )
+    fixture_expansion_admitted = bool(pending) and not (
+        route_failures
+        or missing_ids
+        or stale
+        or execution_failing
+        or unknown
+        or missing_causal_signatures
+        or current_pass != expected
     )
     return {
         "enabled": True,
@@ -577,6 +611,8 @@ def _evaluate_regression_bank(
         "current_identity": {"source": current[0], "config": current[1]},
         "admitted": admitted,
         "canary_admitted": admitted,
+        "fixture_expansion_admitted": fixture_expansion_admitted,
+        "fixture_expansion_target_ids": sorted(pending),
         "expected_fixture_ids": sorted(expected),
         "verified_fixture_ids": sorted(verified),
         "suite_verified_fixture_ids": sorted(suite_ids),
@@ -584,6 +620,7 @@ def _evaluate_regression_bank(
         "stale_fixture_ids": sorted(stale),
         "failing_fixture_ids": sorted(failing),
         "invalidated_fixture_ids": sorted(invalidated),
+        "pending_fixture_ids": sorted(pending),
         "missing_causal_signature_ids": missing_causal_signatures,
         "invalidated_causal_signatures": {
             signature: sorted(ids)
@@ -600,8 +637,12 @@ def _evaluate_regression_bank(
         "required_next_action": (
             "accept"
             if admitted
+            else "run_fixture_expansion_replay"
+            if fixture_expansion_admitted
             else "expand_invalid_retained_fixture"
             if invalidated
+            else "complete_pending_production_fixture"
+            if pending
             else "verify_accumulated_regression_bank"
         ),
     }
@@ -842,7 +883,9 @@ def evaluate_ledger(
     build_admitted = regression_bank["admitted"]
     canary = canary_recurrence and build_admitted
     acceptance = recurrence_acceptance and build_admitted
-    if invalid_fixture_rows or regression_bank["invalidated_fixture_ids"]:
+    if regression_bank["fixture_expansion_admitted"]:
+        required_next_action = "run_fixture_expansion_replay"
+    elif invalid_fixture_rows or regression_bank["invalidated_fixture_ids"]:
         required_next_action = "expand_invalid_retained_fixture"
     elif effective_stop_signatures:
         required_next_action = "stop_and_summarize_last_ten_occurrences"
@@ -868,10 +911,17 @@ def evaluate_ledger(
         "canary_recurrence_admitted": canary_recurrence,
         "regression_bank": regression_bank,
         "regression_bank_admitted": regression_bank["admitted"],
+        "fixture_expansion_admitted": regression_bank[
+            "fixture_expansion_admitted"
+        ],
+        "fixture_expansion_target_ids": regression_bank[
+            "fixture_expansion_target_ids"
+        ],
         "missing_fixture_ids": regression_bank["missing_fixture_ids"],
         "stale_fixture_ids": regression_bank["stale_fixture_ids"],
         "failing_fixture_ids": regression_bank["failing_fixture_ids"],
         "invalidated_fixture_ids": regression_bank["invalidated_fixture_ids"],
+        "pending_fixture_ids": regression_bank["pending_fixture_ids"],
         "missing_causal_signature_ids": regression_bank["missing_causal_signature_ids"],
         "build_admitted": build_admitted,
         "canary_admitted": canary,

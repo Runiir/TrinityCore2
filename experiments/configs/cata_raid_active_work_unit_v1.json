@@ -7,7 +7,7 @@
   "mode": "10N",
   "owner_skill": "raid-shard-architecture",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "canonical_checkpoint_launch_replay_required",
+  "gate_state": "fixture_expansion_replay_build_and_seal_required",
   "observed_at_commit": "da3b637159147c45fa49640d00e3bd86e7cfb3a8",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
@@ -24,7 +24,8 @@
       "actor_live_z_later_dropped_to_202_591_then_6_70457",
       "observation_only_planner_to_launch_receipt_seam_is_compiled_and_schema_tested",
       "real_map669_worldserver_loaded_the_receipt_seam_and_frozen_roster",
-      "default_off_validation_prepull_checkpoint_is_compiled_and_focused_tests_pass"
+      "default_off_validation_prepull_checkpoint_is_compiled_and_focused_tests_pass",
+      "fixture_expansion_admission_is_distinct_from_gameplay_canary_and_targeted_tests_pass"
     ],
     "refuted": [
       "seq741_was_the_first_state_infecting_edge",
@@ -89,10 +90,11 @@
     ]
   },
   "validation": {
-    "focused_result": "checkpoint_runtime_implemented_and_worldserver_built",
+    "focused_result": "fixture_expansion_control_plane_implemented_and_targeted_tests_pass",
     "immutable_bank_fixture_count": 19,
     "immutable_bank_all_rows_passed": false,
-    "build_admitted": true,
+    "build_admitted": false,
+    "fixture_expansion_admitted": false,
     "canary_admitted": false,
     "acceptance_admitted": false
   },
@@ -107,5 +109,5 @@
     "next_owner_after_runtime_exposure": "raid-shard-architecture",
     "next_work_unit_after_runtime_exposure": "shard_architecture:map669_native_launch_replay:canary122_seq745"
   },
-  "next_action": "Run one canonical-route map-669 worldserver replay with the validation checkpoint enabled. Capture checkpoint staging/readiness/release and the identity-correlated candidate, native launch, and multi-tick movement outcome. Do not change movement behavior until that receipt closes."
+  "next_action": "Commit the fixture-expansion gate, regenerate the exact clean fast8 build and regression receipts, seal a fixture-expansion admission, then run one canonical-route map-669 worldserver replay with the validation checkpoint enabled. Capture checkpoint staging/readiness/release and the identity-correlated candidate, native launch, and multi-tick movement outcome. Do not change movement behavior until that receipt closes."
 }

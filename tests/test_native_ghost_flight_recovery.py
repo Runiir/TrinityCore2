@@ -192,9 +192,11 @@ int main()
     assert "bot->SetDisableGravity(true)" in executor
     assert "MoveSmoothPath" not in executor
     assert (
-        "bot->GetMotionMaster()->MovePoint(0, intent.X, intent.Y, intent.Z,\n"
-        "            false);"
+        "bot->GetMotionMaster()->MovePoint(0, x, y, z, generatePath, 0.0f,\n"
+        "            launchContext);"
     ) in executor
+    assert "submitPoint(intent.X, intent.Y, intent.Z, false);" in executor
+    assert "submitPoint(intent.X, intent.Y, intent.Z, true);" in executor
     assert "POINT_MOTION_TYPE" in executor
     assert "!bot->movespline->Finalized()" in executor
     assert '"native_aerial_point_submission"' in executor

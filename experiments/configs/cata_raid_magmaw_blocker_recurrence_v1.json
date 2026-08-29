@@ -183,12 +183,14 @@
         "fixture_id": "native_planner_executor_launch_proof_v1",
         "revision": 1,
         "causal_signature": "native_planner_executor_launch_divergence",
+        "evidence_boundary": "observation_only",
+        "required_production_boundary": "worldserver-backed map-669 planner, executor, MotionMaster, point generator, and launched spline observed over multiple ticks",
         "command": [
           "pixi",
           "run",
           "pytest",
           "-q",
-          "tests/test_native_path_launch_proof.py::test_canary122_seq745_planner_proof_matches_launched_path"
+          "tests/test_native_path_launch_receipt.py::test_native_path_launch_receipt_value_and_schema"
         ]
       },
       {

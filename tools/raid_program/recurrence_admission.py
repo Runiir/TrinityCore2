@@ -11,6 +11,16 @@ from typing import Any
 
 SCHEMA = "cata_raid_recurrence_admission_v1"
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
+GAMEPLAY_CANARY_PURPOSE = "gameplay_canary"
+FIXTURE_EXPANSION_PURPOSE = "fixture_expansion_replay"
+ADMISSION_PURPOSES = {GAMEPLAY_CANARY_PURPOSE, FIXTURE_EXPANSION_PURPOSE}
+FIXTURE_STATE_FIELDS = (
+    "invalidated_fixture_ids",
+    "failing_fixture_ids",
+    "missing_fixture_ids",
+    "pending_fixture_ids",
+    "stale_fixture_ids",
+)
 
 
 class RecurrenceAdmissionError(RuntimeError):
@@ -47,6 +57,19 @@ def _load(path: Path, label: str) -> dict[str, Any]:
     return value
 
 
+def _config_bool(path: Path, key: str, default: bool = False) -> bool:
+    value = default
+    pattern = re.compile(
+        rf"^\s*{re.escape(key)}\s*=\s*(0|1|false|true)\s*(?:#.*)?$",
+        re.IGNORECASE,
+    )
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = pattern.match(line)
+        if match:
+            value = match.group(1).lower() in {"1", "true"}
+    return value
+
+
 def _verify_binding(
     admission: dict[str, Any], name: str, actual_path: Path | None = None
 ) -> Path:
@@ -78,6 +101,7 @@ def create_recurrence_admission(
     ledger: Path,
     decision: Path,
     suite_receipt: Path,
+    purpose: str = GAMEPLAY_CANARY_PURPOSE,
 ) -> dict[str, Any]:
     if output.exists():
         raise RecurrenceAdmissionError("admission_output_exists")
@@ -89,6 +113,16 @@ def create_recurrence_admission(
     if porcelain:
         raise RecurrenceAdmissionError("source_worktree_dirty")
     decision_value = _load(decision.resolve(), "decision")
+    if purpose not in ADMISSION_PURPOSES:
+        raise RecurrenceAdmissionError("admission_purpose_invalid")
+    fixture_expansion = purpose == FIXTURE_EXPANSION_PURPOSE
+    if fixture_expansion:
+        if decision_value.get("fixture_expansion_admitted") is not True:
+            raise RecurrenceAdmissionError("fixture_expansion_not_admitted")
+        if decision_value.get("canary_admitted") is True:
+            raise RecurrenceAdmissionError("fixture_expansion_gameplay_gate_open")
+        if not decision_value.get("fixture_expansion_target_ids"):
+            raise RecurrenceAdmissionError("fixture_expansion_target_missing")
     suite = _load(suite_receipt.resolve(), "suite_receipt")
     if suite.get("source_identity") != head:
         raise RecurrenceAdmissionError("suite_receipt_source_stale")
@@ -104,17 +138,19 @@ def create_recurrence_admission(
         if not isinstance(fixture_id, str) or not isinstance(revision, int):
             raise RecurrenceAdmissionError("suite_fixture_identity_invalid")
         fixture_revisions[fixture_id] = revision
-    empty_fields = (
-        "invalidated_fixture_ids",
-        "failing_fixture_ids",
-        "missing_fixture_ids",
-        "stale_fixture_ids",
-    )
     admission = {
         "schema": SCHEMA,
+        "purpose": purpose,
         "build_admitted": decision_value.get("build_admitted") is True,
         "canary_admitted": decision_value.get("canary_admitted") is True,
-        **{key: decision_value.get(key) for key in empty_fields},
+        "fixture_expansion_admitted": (
+            decision_value.get("fixture_expansion_admitted") is True
+        ),
+        "fixture_expansion_target_ids": decision_value.get(
+            "fixture_expansion_target_ids"
+        ) or [],
+        "gameplay_mutations_allowed": False if fixture_expansion else None,
+        **{key: decision_value.get(key) for key in FIXTURE_STATE_FIELDS},
         "source": {
             "commit": head,
             "tree": tree,
@@ -149,6 +185,7 @@ def verify_recurrence_admission(
     binary: Path,
     build_receipt: Path,
     runtime_config: Path,
+    required_purpose: str = GAMEPLAY_CANARY_PURPOSE,
 ) -> dict[str, Any]:
     """Verify the immutable Magmaw recurrence gate before process startup."""
 
@@ -160,18 +197,28 @@ def verify_recurrence_admission(
         raise RecurrenceAdmissionError("admission_hash_mismatch")
     if admission.get("schema") != SCHEMA:
         raise RecurrenceAdmissionError("admission_schema_invalid")
-    if admission.get("build_admitted") is not True:
-        raise RecurrenceAdmissionError("build_not_admitted")
-    if admission.get("canary_admitted") is not True:
-        raise RecurrenceAdmissionError("canary_not_admitted")
-    for key in (
-        "invalidated_fixture_ids",
-        "failing_fixture_ids",
-        "missing_fixture_ids",
-        "stale_fixture_ids",
-    ):
-        if admission.get(key) != []:
-            raise RecurrenceAdmissionError(f"{key}_present")
+    if required_purpose not in ADMISSION_PURPOSES:
+        raise RecurrenceAdmissionError("required_purpose_invalid")
+    if admission.get("purpose", GAMEPLAY_CANARY_PURPOSE) != required_purpose:
+        raise RecurrenceAdmissionError("admission_purpose_mismatch")
+    fixture_expansion = required_purpose == FIXTURE_EXPANSION_PURPOSE
+    if fixture_expansion:
+        if admission.get("fixture_expansion_admitted") is not True:
+            raise RecurrenceAdmissionError("fixture_expansion_not_admitted")
+        if admission.get("canary_admitted") is True:
+            raise RecurrenceAdmissionError("fixture_expansion_gameplay_gate_open")
+        if admission.get("gameplay_mutations_allowed") is not False:
+            raise RecurrenceAdmissionError("fixture_expansion_gameplay_mutation_forbidden")
+        if not admission.get("fixture_expansion_target_ids"):
+            raise RecurrenceAdmissionError("fixture_expansion_target_missing")
+    else:
+        if admission.get("build_admitted") is not True:
+            raise RecurrenceAdmissionError("build_not_admitted")
+        if admission.get("canary_admitted") is not True:
+            raise RecurrenceAdmissionError("canary_not_admitted")
+        for key in FIXTURE_STATE_FIELDS:
+            if admission.get(key) != []:
+                raise RecurrenceAdmissionError(f"{key}_present")
 
     worktree = worktree.resolve()
     head = str(_git(worktree, "rev-parse", "HEAD"))
@@ -198,16 +245,30 @@ def verify_recurrence_admission(
     if str(route_path) not in config_text:
         raise RecurrenceAdmissionError("route_manifest_not_bound_by_config")
     decision = _load(decision_path, "decision")
-    if decision.get("build_admitted") is not True or decision.get("canary_admitted") is not True:
-        raise RecurrenceAdmissionError("decision_not_admitted")
-    for key in (
-        "invalidated_fixture_ids",
-        "failing_fixture_ids",
-        "missing_fixture_ids",
-        "stale_fixture_ids",
+    if fixture_expansion:
+        if decision.get("fixture_expansion_admitted") is not True:
+            raise RecurrenceAdmissionError("decision_fixture_expansion_not_admitted")
+        if decision.get("canary_admitted") is True:
+            raise RecurrenceAdmissionError("decision_fixture_expansion_gameplay_gate_open")
+        if admission.get("fixture_expansion_target_ids") != decision.get(
+            "fixture_expansion_target_ids"
+        ):
+            raise RecurrenceAdmissionError("fixture_expansion_target_mismatch")
+        if not _config_bool(
+            runtime_config, "BotWorld.ValidationRoute.PrepullCheckpointEnable"
+        ):
+            raise RecurrenceAdmissionError("fixture_expansion_checkpoint_disabled")
+        route = _load(route_path, "route_manifest")
+        if route.get("scenario_id") != "blackwing_descent_10n_magmaw_diagnostic":
+            raise RecurrenceAdmissionError("fixture_expansion_route_mismatch")
+    elif (
+        decision.get("build_admitted") is not True
+        or decision.get("canary_admitted") is not True
     ):
-        if decision.get(key) != []:
-            raise RecurrenceAdmissionError(f"decision_{key}_present")
+        raise RecurrenceAdmissionError("decision_not_admitted")
+    for key in FIXTURE_STATE_FIELDS:
+        if admission.get(key) != decision.get(key):
+            raise RecurrenceAdmissionError(f"decision_{key}_mismatch")
 
     suite = _load(suite_path, "suite_receipt")
     if suite.get("schema") != "trinity_raid_regression_suite_receipt_v1":
@@ -256,6 +317,10 @@ def verify_recurrence_admission(
         "source_commit": head,
         "source_tree": tree,
         "fixture_revisions": actual_revisions,
+        "purpose": required_purpose,
+        "fixture_expansion_target_ids": admission.get(
+            "fixture_expansion_target_ids"
+        ) or [],
     }
 
 
@@ -274,8 +339,16 @@ def main() -> int:
     create.add_argument("--decision", type=Path, required=True)
     create.add_argument("--suite-receipt", type=Path, required=True)
     create.add_argument("--output", type=Path, required=True)
+    create.add_argument(
+        "--purpose", choices=sorted(ADMISSION_PURPOSES),
+        default=GAMEPLAY_CANARY_PURPOSE,
+    )
     verify.add_argument("--admission", type=Path, required=True)
     verify.add_argument("--sha256", required=True)
+    verify.add_argument(
+        "--purpose", choices=sorted(ADMISSION_PURPOSES),
+        default=GAMEPLAY_CANARY_PURPOSE,
+    )
     args = parser.parse_args()
     try:
         if args.command == "create":
@@ -289,6 +362,7 @@ def main() -> int:
                 ledger=args.ledger,
                 decision=args.decision,
                 suite_receipt=args.suite_receipt,
+                purpose=args.purpose,
             )
             result = {
                 "created": True,
@@ -304,6 +378,7 @@ def main() -> int:
                 binary=args.binary,
                 build_receipt=args.build_receipt,
                 runtime_config=args.runtime_config,
+                required_purpose=args.purpose,
             )
     except RecurrenceAdmissionError as error:
         parser.error(str(error))

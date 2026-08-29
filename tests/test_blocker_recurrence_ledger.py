@@ -720,6 +720,48 @@ def test_post_occurrence_suite_pass_admits_next_canary_before_two_clears() -> No
     assert final["acceptance_admitted"] is True
 
 
+def test_observation_only_pass_stays_pending_without_production_boundary() -> None:
+    verification = _pass("launch_receipt", "102")
+    verification.pop("passed_before_run_id")
+    verification["passed_after_run_id"] = "102"
+    fixture = {
+        **_fixture("launch_receipt"),
+        "evidence_boundary": "observation_only",
+        "required_production_boundary": (
+            "worldserver-backed map-669 planner-to-spline multi-tick replay"
+        ),
+    }
+    decision = evaluate_ledger(
+        _bank_ledger(
+            [
+                {
+                    "run_id": "102",
+                    "route_completed": False,
+                    "blockers": {"edge": "occurred"},
+                }
+            ],
+            fixtures=[fixture],
+            verifications=[verification],
+        ),
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
+    )
+
+    assert decision["pending_fixture_ids"] == ["launch_receipt"]
+    assert decision["fixture_expansion_admitted"] is True
+    assert decision["fixture_expansion_target_ids"] == ["launch_receipt"]
+    assert decision["next_causal_signature"] == "edge"
+    assert decision["regression_bank"][
+        "verified_after_latest_occurrence_signatures"
+    ] == []
+    assert decision["regression_bank_admitted"] is False
+    assert decision["canary_admitted"] is False
+    assert decision["required_next_action"] == "run_fixture_expansion_replay"
+
+
 def test_unchanged_fixture_rerun_after_recurrence_does_not_admit_canary() -> None:
     before = _pass("original", "101")
     after = _pass("original", "102")
