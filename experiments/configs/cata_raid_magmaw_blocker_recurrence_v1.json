@@ -32,7 +32,7 @@
     "fixtures": [
       {
         "fixture_id": "magmaw_parasite_lane_paths_v1",
-        "revision": 5,
+        "revision": 6,
         "causal_signature": "magmaw_parasite_containment_failure",
         "command": [
           "pixi",
@@ -40,12 +40,14 @@
           "pytest",
           "-q",
           "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths",
-          "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave"
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_bounded_complete_mechanic_endpoint_selection",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step"
         ]
       },
       {
         "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
-        "revision": 4,
+        "revision": 5,
         "causal_signature": "magmaw_parasite_containment_failure",
         "command": [
           "pixi",
@@ -54,12 +56,14 @@
           "-q",
           "tests/test_magmaw_parasite_policy.py::test_magmaw_lane_transition_replays_selection_to_reset",
           "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave",
-          "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths"
+          "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_bounded_complete_mechanic_endpoint_selection",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step"
         ]
       },
       {
         "fixture_id": "magmaw_parasite_control_full_runtime_v1",
-        "revision": 4,
+        "revision": 5,
         "causal_signature": "magmaw_parasite_control_allows_player_infection",
         "command": [
           "pixi",
@@ -68,7 +72,9 @@
           "-q",
           "tests/test_magmaw_parasite_policy.py::test_magmaw_containment_replays_full_runtime_contract",
           "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave",
-          "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths"
+          "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_bounded_complete_mechanic_endpoint_selection",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step"
         ]
       },
       {
@@ -84,7 +90,7 @@
       },
       {
         "fixture_id": "same_level_hazard_path_admission_v1",
-        "revision": 2,
+        "revision": 3,
         "causal_signature": "same_level_encounter_hazard_path_rejection",
         "command": [
           "pixi",
@@ -92,12 +98,14 @@
           "pytest",
           "-q",
           "tests/test_same_level_hazard_path_admission.py::test_same_level_mechanic_admission_contract",
-          "tests/test_native_path_floor_diagnostic.py::test_canary119_bounded_complete_mechanic_endpoint_selection"
+          "tests/test_native_path_floor_diagnostic.py::test_canary119_bounded_complete_mechanic_endpoint_selection",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_bounded_complete_mechanic_endpoint_selection",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step"
         ]
       },
       {
         "fixture_id": "same_level_floor_observation_v1",
-        "revision": 2,
+        "revision": 3,
         "causal_signature": "same_level_movement_path_floor_false_negative",
         "command": [
           "pixi",
@@ -105,7 +113,9 @@
           "pytest",
           "-q",
           "tests/test_native_path_floor_diagnostic.py::test_native_path_floor_observation_preserves_first_failure_values",
-          "tests/test_native_path_floor_diagnostic.py::test_canary119_bounded_complete_mechanic_endpoint_selection"
+          "tests/test_native_path_floor_diagnostic.py::test_canary119_bounded_complete_mechanic_endpoint_selection",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_bounded_complete_mechanic_endpoint_selection",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step"
         ]
       },
       {
@@ -233,9 +243,9 @@
   "causal_signatures": {
     "magmaw_parasite_containment_failure": {
       "owner": "encounter_combat_and_movement_authority",
-      "invariant": "exactly the fixed Fire Mage and Marksman Hunter team owns parasite targeting, threat, damage, and stable lane movement while every other player remains outside infection range and suppresses parasite-reaching area damage",
-      "architecture_reviewed_through_occurrence_count": 13,
-      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary117_parasite_recurrence_handoff_20260829.md",
+      "invariant": "exactly the fixed Fire Mage and Marksman Hunter team owns parasite targeting, threat, damage, and stable lane movement through final native path admission while every other player remains outside infection range and suppresses parasite-reaching area damage",
+      "architecture_reviewed_through_occurrence_count": 14,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary120_path_recurrence_handoff_20260829.md",
       "fixture_verifications": [
         {
           "fixture_id": "magmaw_parasite_lane_paths_v1",
@@ -249,9 +259,9 @@
     "magmaw_parasite_control_allows_player_infection": {
       "owner": "encounter_policy_and_movement_intent",
       "parent": "magmaw_parasite_containment_failure",
-      "invariant": "the fixed mobile bait team must traverse a stable room lane without player Parasitic Infection or parasite re-entry",
-      "architecture_reviewed_through_occurrence_count": 13,
-      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary117_parasite_recurrence_handoff_20260829.md"
+      "invariant": "the fixed mobile bait team must traverse a stable room lane whose complete and incomplete movement requests reach a newly proved safe native endpoint without player Parasitic Infection or parasite re-entry",
+      "architecture_reviewed_through_occurrence_count": 14,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary120_path_recurrence_handoff_20260829.md"
     },
     "chainwielder_future_drudge_contamination": {
       "owner": "shared_route_movement_authority",
@@ -268,7 +278,7 @@
     },
     "same_level_encounter_hazard_path_rejection": {
       "owner": "shared_movement_planner",
-      "invariant": "short same-floor hazard movement cannot sample an unrelated lower map floor"
+      "invariant": "short same-floor hazard movement cannot be rejected by an unrelated lower map floor or a globally strict endpoint tolerance when a bounded progressive native endpoint is complete and locally floor-valid"
     },
     "same_level_movement_path_floor_false_negative": {
       "owner": "shared_movement_planner",
@@ -277,8 +287,8 @@
       "subsumes": [
         "same_level_encounter_hazard_path_rejection"
       ],
-      "architecture_reviewed_through_occurrence_count": 10,
-      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary106_path_floor_architecture_stop_20260829.md",
+      "architecture_reviewed_through_occurrence_count": 11,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary120_path_recurrence_handoff_20260829.md",
       "historical_unique_run_count": 15,
       "counting_note": "The ledger records the last ten gate-bearing occurrences. Five older retained reports establish that the full archive count is fifteen."
     },
@@ -290,9 +300,9 @@
     },
     "same_level_native_path_proof_false_negative": {
       "owner": "shared_movement_planner",
-      "invariant": "complete floor-valid native paths must be admitted by one owner-independent proof that distinguishes endpoint identity, native floor normalization, and diagnostic floor observations",
-      "architecture_reviewed_through_occurrence_count": 10,
-      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary106_path_floor_architecture_stop_20260829.md"
+      "invariant": "complete floor-valid native paths and deterministic shorter retries of incomplete same-level hazard paths must be admitted by one owner-independent proof that distinguishes bounded endpoint identity, native floor normalization, and diagnostic floor observations",
+      "architecture_reviewed_through_occurrence_count": 11,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary120_path_recurrence_handoff_20260829.md"
     },
     "magmaw_prepot_geometry_conflicts_with_bait_formation": {
       "owner": "shared_prepull_pipeline",
