@@ -3,7 +3,7 @@
   "epoch_id": "same_level_native_path_proof_v2_20260829",
   "work_unit": "runtime:shared_movement:complete_native_path_floor_observation_split",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "static_validated_pending_exact_build",
+  "classification": "exact_build_verified_pending_matched_canary",
   "observed_at_commit": "cb97afecbb85dbbf18ca7cdb1439c65f8f8df215",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary106_path_floor_architecture_stop_20260829.md",
@@ -70,10 +70,16 @@
   },
   "root_runtime_verification": {
     "build": "exact committed source through queued_build.py with guarded 8 compiler jobs and same-commit configure lineage",
+    "build_source_commit": "b2ab0de4f555db3f12d8fe6da1c96a2b36abfd58",
+    "configure_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_b2ab0de4f5.json",
+    "configure_receipt_sha256": "c62146f0b42fb510871b1aa78a10b833d4f886dec3aff062301ad1bde0fd9533",
+    "worldserver_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_b2ab0de4f5.json",
+    "worldserver_receipt_sha256": "547c542bc7e34b8f49f834c37c2c54c2399770d137a714dc0ed99e25bcd6c1b5",
+    "worldserver_sha256": "bcfa366deede77747c6b5598c2b3d862d6fd866b6cd37f127a021a15dcc06f1e",
     "canary_budget": 1,
     "clock": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "promotion_gate": "two consecutive current-standard Magmaw route clears before closing the causal signature"
   },
-  "next_action": "Build the exact committed repair through queued_build.py with same-commit configure lineage and guarded 8 compiler jobs, then run at most one matched autonomous Magmaw canary."
+  "next_action": "Run one matched autonomous current-standard Magmaw completion-watchdog canary and classify the persistent shared-path signature before any further change."
 }
