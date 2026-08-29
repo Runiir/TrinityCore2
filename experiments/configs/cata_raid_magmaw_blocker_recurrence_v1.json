@@ -287,10 +287,10 @@
       "blockers": {
         "magmaw_parasite_control_allows_player_infection": "occurred",
         "chainwielder_future_drudge_contamination": "absent",
-        "same_level_encounter_hazard_path_rejection": "absent",
-        "same_level_movement_path_floor_false_negative": "absent",
+        "same_level_encounter_hazard_path_rejection": "occurred",
+        "same_level_movement_path_floor_false_negative": "occurred",
         "same_level_native_endpoint_z_normalization_false_negative": "absent",
-        "same_level_native_path_proof_false_negative": "absent",
+        "same_level_native_path_proof_false_negative": "occurred",
         "magmaw_prepot_geometry_conflicts_with_bait_formation": "absent",
         "raid_partial_wipe_waits_for_last_survivor": "absent"
       },

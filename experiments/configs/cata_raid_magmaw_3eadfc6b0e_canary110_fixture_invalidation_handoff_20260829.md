@@ -45,13 +45,20 @@ non-baiters. Tank area threat then brought parasites into the boss/support
 stack. Reactive local evasion occurred only after containment had already
 failed.
 
+The downstream movement amplifier also recurred. For tank `30001`, trace
+sequence `536` preserved ordinary `combat_range` movement. Sequence `537`
+then rejected `parasite_contact_evade` with
+`route_destination_endpoint_mismatch / sample_floor_gap`. Sequence `538`
+submitted another dynamic `combat_range` chase, and Parasitic Infection
+followed at distance `0.2`. This is a recurrence of the same-level native-path
+proof failure, not a new label and not an absent edge.
+
 ## Preserved working edges
 
 - Party DPS/HPS: Chainwielder `91.2k / 3.55k`; Drudges `102.6k / 38.2k`;
   Magmaw attributable `72.5k / 11.6k`.
 - Drudge partial death recovery restored `30008` without restarting the shard
   or mutating the surviving roster.
-- The same-level native path repairs did not recur.
 - The typed lane-transition implementation remains retained; it is insufficient
   alone and must not be removed while adding combat containment.
 
@@ -69,7 +76,9 @@ same compiled counterexample through the complete sequence:
 6. prove the baiters target and damage the live parasite generation while
    moving along the retained lane;
 7. execute arbitration and native movement across multiple ticks, including
-   GUID churn, lease expiry, preemption/resume, and arrival;
+   GUID churn, lease expiry, preemption/resume, arrival, the exact
+   `sample_floor_gap` rejection, and retry of the same hazard intent without
+   replacement by `combat_range`;
 8. observe parasite threat/victim ownership, player distance, parasite death,
    and absence of spells `78941` and `78097` on every player;
 9. preserve exposed-head priority and reset exact encounter state afterward.
