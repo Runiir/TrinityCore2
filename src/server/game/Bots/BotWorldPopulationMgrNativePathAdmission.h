@@ -8,8 +8,12 @@
 
 namespace BotWorldMovement
 {
-constexpr float NativeLocalMechanicEndpointHorizontalTolerance = 2.0f;
-constexpr float NativeLocalMechanicEndpointDistanceTolerance = 2.25f;
+// Canary120's first endpoint mismatch normalized 2.57139 yards horizontally
+// (2.68444 in 3D) while retaining complete, floor-valid local progress.
+// Keep the generic 0.5-yard endpoint identity proof unchanged; this narrow
+// bounded exception is the only admission that uses the larger envelope.
+constexpr float NativeLocalMechanicEndpointHorizontalTolerance = 2.75f;
+constexpr float NativeLocalMechanicEndpointDistanceTolerance = 2.75f;
 constexpr float NativeLocalMechanicEndpointMinimumProgress = 2.0f;
 constexpr float NativeLocalMechanicEndpointMinimumTravel = 1.5f;
 constexpr float NativeLocalMechanicEndpointProgressEpsilon = 0.001f;

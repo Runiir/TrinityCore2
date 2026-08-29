@@ -191,10 +191,21 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         bool const pathOk = proofPath.CalculatePath(point.x, point.y,
             point.z, false);
         observation = diagnoseCompleteNativePath(pathOk, proofPath, point);
-        if (!observation.Accepted)
+        if (!observation.Calculated || !observation.Complete)
             return false;
         verifiedEndpoint = proofPath.GetActualEndPosition();
-        return true;
+        bool const boundedEndpoint =
+            BotWorldMovement::NativePathAllowsBoundedSameLevelMechanicProgress(
+                intent.Owner, sameLevelDeclaredFloorFallback,
+                sameLevelLocalMechanicProgress, observation.Complete,
+                BotWorldMovement::NativePathHasForbiddenAdmissionFlag(
+                    proofPath.GetPathType()), observation,
+                bot->GetExactDist(verifiedEndpoint.x, verifiedEndpoint.y,
+                    verifiedEndpoint.z),
+                currentGoalDistance,
+                distanceToGoal(verifiedEndpoint.x, verifiedEndpoint.y,
+                    verifiedEndpoint.z));
+        return observation.Accepted || boundedEndpoint;
     };
 
     auto selectProgressEndpoint = [&](PathGenerator const& candidatePath,
@@ -289,6 +300,64 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         && pathOk && (pathType & PATHFIND_INCOMPLETE))
         selectProgressEndpoint(path, "native_partial_path_backoff", 3.0f);
 
+    auto selectProgressiveLocalMechanicEndpoint = [&]()
+    {
+        if (!sameLevelLocalMechanicProgress)
+            return false;
+
+        G3D::Vector3 const actorPoint(bot->GetPositionX(),
+            bot->GetPositionY(), bot->GetPositionZ());
+        G3D::Vector3 const declaredDestination(intent.X, intent.Y,
+            bot->GetPositionZ());
+        return BotWorldMovement::SelectProgressiveLocalMechanicCandidate(
+            actorPoint, declaredDestination,
+            [&](G3D::Vector3 const& candidate, float)
+            {
+                float const resolvedCandidateZ = bot->GetMap()->GetHeight(
+                    bot->GetPhaseShift(), candidate.x, candidate.y,
+                    bot->GetPositionZ() + 2.0f, true, 8.0f);
+                if (resolvedCandidateZ <= INVALID_HEIGHT)
+                    return false;
+                BotWorldMovement::NativeFloorResult const candidateFloor =
+                    BotWorldMovement::AdmitSameLevelLocalStepFloor(
+                        bot->GetPositionZ(), intent.Z, resolvedCandidateZ);
+                if (!candidateFloor.Accepted())
+                    return false;
+
+                G3D::Vector3 const candidatePoint(candidate.x, candidate.y,
+                    candidateFloor.Z);
+                G3D::Vector3 verifiedEndpoint;
+                BotWorldMovement::NativePathProofObservation proof;
+                if (!completeNativePathToPoint(candidatePoint,
+                        verifiedEndpoint, proof))
+                    return false;
+                float const endpointTravel = bot->GetExactDist(
+                    verifiedEndpoint.x, verifiedEndpoint.y,
+                    verifiedEndpoint.z);
+                float const endpointGoalDistance = distanceToGoal(
+                    verifiedEndpoint.x, verifiedEndpoint.y,
+                    verifiedEndpoint.z);
+                if (!nativePointFloorValid(verifiedEndpoint)
+                    || endpointTravel
+                        < BotWorldMovement::NativeLocalMechanicEndpointMinimumTravel
+                    || endpointGoalDistance
+                        + BotWorldMovement::NativeLocalMechanicEndpointMinimumProgress
+                        >= currentGoalDistance)
+                    return false;
+
+                segmentX = verifiedEndpoint.x;
+                segmentY = verifiedEndpoint.y;
+                segmentZ = verifiedEndpoint.z;
+                traversalMode = "native_bounded_same_level_local_step";
+                nativeProof = proof;
+                segmentSelected = true;
+                return true;
+            });
+    };
+
+    if (!segmentSelected && progressivePathAdmission && !strictNativeDescent)
+        selectProgressiveLocalMechanicEndpoint();
+
     // An incomplete route may still make deterministic local progress.  The
     // chosen endpoint is always mmap-validated and must reduce goal distance;
     // a straight-line shortcut is never submitted.
@@ -378,11 +447,9 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                 {
                     G3D::Vector3 verifiedEndpoint;
                     BotWorldMovement::NativePathProofObservation proof;
-                    proof = diagnoseCompleteNativePath(true, stepPath,
-                        G3D::Vector3(candidateX, candidateY, candidateZ));
-                    if (proof.Accepted)
-                        verifiedEndpoint = stepPath.GetActualEndPosition();
-                    if (proof.Accepted
+                    if (completeNativePathToPoint(
+                            G3D::Vector3(candidateX, candidateY, candidateZ),
+                            verifiedEndpoint, proof)
                         && considerStepPoint(verifiedEndpoint, false))
                         nativeProof = proof;
                 }

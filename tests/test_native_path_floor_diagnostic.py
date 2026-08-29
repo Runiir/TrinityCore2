@@ -191,6 +191,10 @@ def test_planner_same_level_fallback_still_requires_native_path_proof():
     assert "EndpointMatched" in validation
     assert "NativePathEndpointComponentsMatch" in validation
     assert "NativePathAllowsBoundedSameLevelMechanicProgress" in admission
+    assert "SelectProgressiveLocalMechanicCandidate" in planner
+    assert "completeNativePathToPoint(candidatePoint" in planner
+    assert "native_bounded_same_level_local_step" in planner
+    assert "NativeLocalMechanicEndpointMinimumTravel" in planner
     assert "if (targetFloorValid && nativeProof.Calculated" in planner
     assert "&& nativeProof.Complete)" in planner
     assert "native_bounded_same_level_mechanic_endpoint" in planner
@@ -290,6 +294,278 @@ int main()
     assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
         Owner::Formation, true, true, true, false, canary, 3.1396f,
         4.2092304f, 2.01385f));
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/common"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
+def test_canary120_bounded_complete_mechanic_endpoint_selection(tmp_path):
+    source = tmp_path / "canary120_mechanic_endpoint.cpp"
+    binary = tmp_path / "canary120_mechanic_endpoint"
+    source.write_text(
+        r'''
+#include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
+
+#include <cassert>
+
+using namespace BotWorldMovement;
+using BotMovementArbitration::Owner;
+
+static NativePathProofObservation Canary120Proof()
+{
+    NativePathProofObservation proof;
+    proof.Available = true;
+    proof.Calculated = true;
+    proof.PathType = 1; // PATHFIND_NORMAL, kept lightweight for this fixture.
+    proof.Complete = true;
+    proof.EndpointX = -297.067f;
+    proof.EndpointY = -38.9334f;
+    proof.EndpointZ = 210.978f;
+    proof.EndpointDistance = 2.68444f;
+    proof.EndpointHorizontalDistance = 2.57139f;
+    proof.EndpointVerticalDistance = 0.770798f;
+    proof.EndpointMatched = false;
+    proof.EndpointFloorValid = true;
+    proof.FloorObservation = MakeNativePathFloorObservation(
+        NativePathFloorFailure::None, 0, 0, -297.067f, -38.9334f,
+        210.978f, 210.978f, 211.749f);
+    proof.Accepted = NativePathProofPassesAdmission(proof);
+    return proof;
+}
+
+int main()
+{
+    NativePathProofObservation const canary = Canary120Proof();
+    // The exact request-level probe was 325.293 yards below the declared
+    // room floor; only the same-level actor/request declaration can turn it
+    // into a reference for later native proof.
+    assert(AdmitSameLevelDeclaredFloorFallback(
+        211.749f, 211.749f, -113.545f));
+    // A later 211.815 -> 160.34 request is a real floor transition, even
+    // though its local probe resolves near the requested 157.447 floor.
+    assert(!AdmitSameLevelDeclaredFloorFallback(
+        211.815f, 160.34f, 157.447f));
+
+    // The generic endpoint identity proof remains strict and fails on the
+    // recorded 2.57139-yard horizontal normalization.
+    assert(!canary.Accepted);
+    assert(!NativePathEndpointComponentsMatch(2.57139f, 0.770798f));
+
+    // Actor=(-299.652,-40.1528,211.749), request=(-295.332,-37.0355,211.749)
+    // gives currentGoalDistance=5.32728. The complete native endpoint makes
+    // 2.96034 yards of actor travel and leaves 2.68444 yards to the goal, so
+    // the bounded local escape makes 2.64276 yards of measurable progress.
+    assert(NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, true, true, true, false, canary, 2.96034f,
+        5.32728f, 2.68444f));
+
+    // A lower-floor/cross-floor request has no same-level declaration.
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, false, true, true, false, canary, 2.96034f,
+        5.32728f, 2.68444f));
+
+    // The exception remains native-path-backed and progress-bounded.
+    NativePathProofObservation incomplete = canary;
+    incomplete.Complete = false;
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, true, true, false, false, incomplete, 2.96034f,
+        5.32728f, 2.68444f));
+    NativePathProofObservation noFloor = canary;
+    noFloor.EndpointFloorValid = false;
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, true, true, true, false, noFloor, 2.96034f,
+        5.32728f, 2.68444f));
+    NativePathProofObservation forbidden = canary;
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, true, true, true, true, forbidden, 2.96034f,
+        5.32728f, 2.68444f));
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Formation, true, true, true, false, canary, 2.96034f,
+        5.32728f, 2.68444f));
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, true, true, true, false, canary, 1.499f,
+        5.32728f, 2.68444f));
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/common"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
+def test_canary120_incomplete_path_selects_fresh_complete_local_step(tmp_path):
+    source = tmp_path / "canary120_incomplete_local_step.cpp"
+    binary = tmp_path / "canary120_incomplete_local_step"
+    source.write_text(
+        r'''
+#include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
+#include "Bots/BotWorldPopulationMgrMovementPathSelection.h"
+
+#include <cassert>
+#include <cmath>
+
+struct Point
+{
+    float x;
+    float y;
+    float z;
+};
+
+using namespace BotWorldMovement;
+using BotMovementArbitration::Owner;
+
+static float Distance(Point const& left, Point const& right)
+{
+    float const dx = left.x - right.x;
+    float const dy = left.y - right.y;
+    float const dz = left.z - right.z;
+    return std::sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+int main()
+{
+    // Canary120 seq542: the original request had PATHFIND_INCOMPLETE and
+    // repeatedly reached the same no-path/unreachable decision family.
+    Point const actor{ -289.507f, -42.9803f, 211.882f };
+    Point const request{ -295.145f, -29.8647f, 211.882f };
+    float const lowerFloor = -108.409f;
+    bool const primaryPathComplete = false;
+    bool const primaryPathForbidden = true; // no-path equivalence member.
+    assert(!primaryPathComplete && primaryPathForbidden);
+    assert(AdmitSameLevelDeclaredFloorFallback(
+        actor.z, request.z, lowerFloor));
+
+    float const currentGoalDistance = Distance(actor, request);
+    Point selected{};
+    float selectedFraction = 0.0f;
+    unsigned attempts = 0;
+    bool const found = SelectProgressiveLocalMechanicCandidate(
+        actor, request,
+        [&](Point const& candidate, float fraction)
+        {
+            ++attempts;
+            NativeFloorResult const floor = AdmitSameLevelLocalStepFloor(
+                actor.z, request.z, lowerFloor);
+            assert(floor.Accepted());
+            assert(floor.UsesDeclaredFallback());
+
+            // The first shorter point still has no complete native proof;
+            // the next point is re-planned and gets a fresh complete proof.
+            if (fraction > 0.5f)
+                return false;
+            Point const endpoint{
+                candidate.x - 0.5f, candidate.y - 1.0f,
+                candidate.z - 0.770798f
+            };
+            NativePathProofObservation proof;
+            proof.Available = true;
+            proof.Calculated = true;
+            proof.PathType = 1; // fresh PATHFIND_NORMAL proof.
+            proof.Complete = true;
+            proof.EndpointX = endpoint.x;
+            proof.EndpointY = endpoint.y;
+            proof.EndpointZ = endpoint.z;
+            // DiagnoseCompleteNativePathProof measures endpoint identity
+            // against the freshly requested candidate, not the original
+            // hazard destination.  Goal progress below remains relative to
+            // the original request.
+            proof.EndpointDistance = Distance(endpoint, candidate);
+            proof.EndpointHorizontalDistance = std::hypot(
+                endpoint.x - candidate.x, endpoint.y - candidate.y);
+            proof.EndpointVerticalDistance = std::fabs(
+                endpoint.z - candidate.z);
+            proof.EndpointMatched = false;
+            proof.EndpointFloorValid = true;
+            proof.FloorObservation = MakeNativePathFloorObservation(
+                NativePathFloorFailure::None, 0, 0, endpoint.x, endpoint.y,
+                endpoint.z, endpoint.z, actor.z);
+            proof.Accepted = NativePathProofPassesAdmission(proof);
+            assert(!proof.Accepted);
+            float const endpointTravel = Distance(actor, endpoint);
+            float const endpointGoalDistance = Distance(endpoint, request);
+            if (!NativePathAllowsBoundedSameLevelMechanicProgress(
+                    Owner::Hazard, true, true, proof.Complete, false, proof,
+                    endpointTravel, currentGoalDistance,
+                    endpointGoalDistance))
+                return false;
+            assert(endpointTravel >= NativeLocalMechanicEndpointMinimumTravel);
+            assert(currentGoalDistance - endpointGoalDistance >= 2.0f);
+            selected = endpoint;
+            selectedFraction = fraction;
+            return true;
+        });
+    assert(found);
+    assert(attempts == 2);
+    assert(selectedFraction == 0.5f);
+    assert(selected.x != request.x || selected.y != request.y);
+    assert(Distance(selected, request) < currentGoalDistance - 2.0f);
+
+    unsigned noCandidateAttempts = 0;
+    assert(!SelectProgressiveLocalMechanicCandidate(
+        actor, request,
+        [&](Point const&, float)
+        {
+            ++noCandidateAttempts;
+            return false;
+        }));
+    assert(noCandidateAttempts == 4);
+
+    // The declaration cannot turn this into cross-floor or Formation
+    // movement, and no incomplete proof can be submitted directly.
+    assert(!AdmitSameLevelLocalStepFloor(
+        actor.z, 160.34f, 157.447f).Accepted());
+    NativePathProofObservation incomplete;
+    incomplete.Available = true;
+    incomplete.Calculated = true;
+    incomplete.Complete = false;
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, true, true, false, false, incomplete, 8.0f,
+        currentGoalDistance, 2.0f));
+    NativePathProofObservation formationProof;
+    formationProof.Available = true;
+    formationProof.Calculated = true;
+    formationProof.Complete = true;
+    formationProof.EndpointFloorValid = true;
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Formation, true, true, true, false,
+        formationProof, 8.0f, currentGoalDistance, 2.0f));
 }
 ''',
         encoding="utf-8",

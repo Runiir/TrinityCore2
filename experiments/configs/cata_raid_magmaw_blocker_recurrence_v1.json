@@ -121,7 +121,7 @@
       },
       {
         "fixture_id": "same_level_native_path_proof_v1",
-        "revision": 2,
+        "revision": 3,
         "causal_signature": "same_level_native_path_proof_false_negative",
         "command": [
           "pixi",
@@ -129,7 +129,9 @@
           "pytest",
           "-q",
           "tests/test_native_path_floor_diagnostic.py::test_planner_same_level_fallback_still_requires_native_path_proof",
-          "tests/test_native_path_floor_diagnostic.py::test_canary119_bounded_complete_mechanic_endpoint_selection"
+          "tests/test_native_path_floor_diagnostic.py::test_canary119_bounded_complete_mechanic_endpoint_selection",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_bounded_complete_mechanic_endpoint_selection",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step"
         ]
       },
       {
