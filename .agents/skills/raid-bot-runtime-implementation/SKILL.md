@@ -183,6 +183,20 @@ submission/progress, preemption/resume, arrival, and reset. Preserve the old
 counterexample and record any corrected expectation in the architecture
 handoff.
 
+The replay must cross every independent action owner implicated by the live
+counterexample. For encounter movement plus class combat, execute encounter
+assignment, immutable combat constraints, class-action filtering, priority and
+resource arbitration, native movement, persistent pet/area effects, hostile
+threat or victim selection, and the observed lethal postcondition in one
+compiled sequence. A strategy-only target assertion cannot prove that a later
+class resolver, pet, totem, autoattack, or area spell obeys the assignment.
+
+Before handing back a repaired fixture, append its evidence with
+`passed_after_run_id` bound to the closed recurrence that caused the expansion,
+then run the ledger evaluator. The only admissible result is the
+fixture-expansion gate cleared for that signature; the coordinator still owns
+the single matched canary and two-clear acceptance.
+
 Use the queued build coordinator for every native build. Return a runtime
 verification plan to `raid-shard-architecture`; that coordinator runs at most
 one matched completion-watchdog shard. If the same edge remains, return a

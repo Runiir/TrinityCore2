@@ -107,6 +107,10 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
             }
         )
 
+    run_positions = {
+        run["run_id"]: index for index, run in enumerate(normalized_runs)
+    }
+
     blocker_rows: list[dict[str, Any]] = []
     stop_signatures: list[str] = []
     open_signatures: list[str] = []
@@ -144,7 +148,63 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
         )
         unreviewed_occurrence_count = occurrence_count - reviewed_through
         open_blocker = occurrence_count > 0 and clean_clear_streak < clear_streak_required
-        stop_required = unreviewed_occurrence_count >= occurrence_limit
+        fixture_verifications = list(contract.get("fixture_verifications") or [])
+        latest_fixture_verification: Mapping[str, Any] | None = None
+        latest_fixture_boundary = -1.0
+        for verification_index, verification in enumerate(fixture_verifications):
+            _require(
+                isinstance(verification, Mapping),
+                f"signature {signature} fixture verification "
+                f"{verification_index} must be an object",
+            )
+            before_run_id = str(verification.get("passed_before_run_id") or "").strip()
+            after_run_id = str(verification.get("passed_after_run_id") or "").strip()
+            _require(
+                bool(before_run_id) != bool(after_run_id),
+                f"signature {signature} fixture verification "
+                f"{verification_index} must declare exactly one of "
+                "passed_before_run_id or passed_after_run_id",
+            )
+            boundary_run_id = before_run_id or after_run_id
+            _require(
+                boundary_run_id in run_positions,
+                f"signature {signature} fixture verification "
+                f"{verification_index} has unknown boundary run_id "
+                f"{boundary_run_id!r}",
+            )
+            evidence = str(verification.get("evidence") or "").strip()
+            _require(
+                bool(evidence),
+                f"signature {signature} fixture verification "
+                f"{verification_index} is missing evidence",
+            )
+            boundary = float(run_positions[boundary_run_id])
+            boundary += 0.5 if after_run_id else -0.5
+            _require(
+                boundary >= latest_fixture_boundary,
+                f"signature {signature} fixture verifications are not "
+                "chronological",
+            )
+            latest_fixture_boundary = boundary
+            latest_fixture_verification = verification
+
+        live_occurrences_after_fixture = [
+            run["run_id"]
+            for index, run in enumerate(normalized_runs)
+            if latest_fixture_verification is not None
+            and float(index) > latest_fixture_boundary
+            and run["blockers"].get(signature) == "occurred"
+        ]
+        fixture_invalidated = bool(live_occurrences_after_fixture)
+        last_occurrence_position = (
+            run_positions[occurrences[-1]] if occurrences else -1
+        )
+        fixture_verified_after_latest_occurrence = (
+            latest_fixture_verification is not None
+            and latest_fixture_boundary > float(last_occurrence_position)
+        )
+        recurrence_limit_stop = unreviewed_occurrence_count >= occurrence_limit
+        stop_required = recurrence_limit_stop or fixture_invalidated
         if open_blocker:
             open_signatures.append(signature)
         if stop_required:
@@ -160,6 +220,17 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
                 "architecture_reviewed_through_occurrence_count": reviewed_through,
                 "unreviewed_occurrence_count": unreviewed_occurrence_count,
                 "clean_full_clear_streak": clean_clear_streak,
+                "latest_fixture_verification": (
+                    dict(latest_fixture_verification)
+                    if latest_fixture_verification is not None
+                    else None
+                ),
+                "live_occurrences_after_fixture": live_occurrences_after_fixture,
+                "retained_fixture_invalidated": fixture_invalidated,
+                "fixture_verified_after_latest_occurrence": (
+                    fixture_verified_after_latest_occurrence
+                ),
+                "recurrence_limit_stop": recurrence_limit_stop,
                 "open": open_blocker,
                 "stop_required": stop_required,
             }
@@ -168,18 +239,27 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
     last_runs = normalized_runs[-clear_streak_required:]
     open_rows = [row for row in blocker_rows if row["open"]]
     repair_rows = [
-        row for row in open_rows if row["last_observed_state"] == "occurred"
+        row for row in open_rows
+        if row["last_observed_state"] == "occurred"
+        and not row["fixture_verified_after_latest_occurrence"]
     ]
     next_signature = None
     if repair_rows:
-        run_position = {
-            run["run_id"]: index for index, run in enumerate(normalized_runs)
-        }
         next_signature = max(
             repair_rows,
             key=lambda row: (
-                run_position.get(row["last_occurrence_run_id"], -1),
+                run_positions.get(row["last_occurrence_run_id"], -1),
                 row["occurrence_count"],
+            ),
+        )["causal_signature"]
+    invalid_fixture_rows = [
+        row for row in blocker_rows if row["retained_fixture_invalidated"]
+    ]
+    if invalid_fixture_rows:
+        next_signature = max(
+            invalid_fixture_rows,
+            key=lambda row: run_positions.get(
+                row["live_occurrences_after_fixture"][-1], -1
             ),
         )["causal_signature"]
     acceptance = (
@@ -188,6 +268,16 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
         and not open_signatures
         and not stop_signatures
     )
+    if invalid_fixture_rows:
+        required_next_action = "expand_invalid_retained_fixture"
+    elif stop_signatures:
+        required_next_action = "stop_and_summarize_last_ten_occurrences"
+    elif repair_rows:
+        required_next_action = "repair_latest_recurring_causal_signature"
+    elif not acceptance:
+        required_next_action = "run_clean_full_clear"
+    else:
+        required_next_action = "accept"
     return {
         "schema": "trinity_raid_blocker_recurrence_decision_v1",
         "run_count": len(normalized_runs),
@@ -199,15 +289,7 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
         "stop_causal_signatures": stop_signatures,
         "next_causal_signature": next_signature,
         "acceptance_admitted": acceptance,
-        "required_next_action": (
-            "stop_and_summarize_last_ten_occurrences"
-            if stop_signatures
-            else "repair_latest_recurring_causal_signature"
-            if repair_rows
-            else "run_clean_full_clear"
-            if not acceptance
-            else "accept"
-        ),
+        "required_next_action": required_next_action,
     }
 
 

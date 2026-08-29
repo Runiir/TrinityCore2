@@ -6,8 +6,21 @@
   "clear_streak_required": 2,
   "closure_policy": "A causal signature remains open until its retained deterministic fixture passes and two consecutive full current-standard route clears complete with the signature absent. Renaming or replacing a diagnostic cannot count as absence.",
   "causal_signatures": {
+    "magmaw_parasite_containment_failure": {
+      "owner": "encounter_combat_and_movement_authority",
+      "invariant": "exactly the fixed Fire Mage and Marksman Hunter team owns parasite targeting, threat, damage, and stable lane movement while every other player remains outside infection range and suppresses parasite-reaching area damage",
+      "architecture_reviewed_through_occurrence_count": 10,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md",
+      "fixture_verifications": [
+        {
+          "passed_before_run_id": "trinity-magmaw-3eadfc6b0e-canary110.hz84YE",
+          "evidence": "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths"
+        }
+      ]
+    },
     "magmaw_parasite_control_allows_player_infection": {
       "owner": "encounter_policy_and_movement_intent",
+      "parent": "magmaw_parasite_containment_failure",
       "invariant": "the fixed mobile bait team must traverse a stable room lane without player Parasitic Infection or parasite re-entry",
       "architecture_reviewed_through_occurrence_count": 10,
       "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md"
@@ -267,6 +280,24 @@
       "report_sha256": "2e8a4ebe414199426b179100fdbb1dbb8989b750e7b5ba46da0a64d657cfdf02",
       "combat_analysis_sha256": "a0a7b9710ade2f8b2976db8006ba91820fcc97749d26573ba3b801b26f975142",
       "evidence": "experiments/configs/cata_raid_magmaw_d111136523_canary109_recurrence_stop_handoff_20260829.md"
+    },
+    {
+      "run_id": "trinity-magmaw-3eadfc6b0e-canary110.hz84YE",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred",
+        "chainwielder_future_drudge_contamination": "absent",
+        "same_level_encounter_hazard_path_rejection": "absent",
+        "same_level_movement_path_floor_false_negative": "absent",
+        "same_level_native_endpoint_z_normalization_false_negative": "absent",
+        "same_level_native_path_proof_false_negative": "absent",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "absent",
+        "raid_partial_wipe_waits_for_last_survivor": "absent"
+      },
+      "report_sha256": "7aba777a2bae70cd141592c2505ba7fab23caea4be56ddd17683363ec8daeb63",
+      "raw_jsonl_sha256": "d62070ba463e07302c0d8502d3e6fc6908486a2ed061bbe7fecb430c793c35f4",
+      "worldserver_log_sha256": "82f29e98743232c06aedd225f3ca68409b78dccdc581b154d27007af81050bc3",
+      "evidence": "experiments/configs/cata_raid_magmaw_3eadfc6b0e_canary110_fixture_invalidation_handoff_20260829.md"
     }
   ]
 }

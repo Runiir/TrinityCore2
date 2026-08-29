@@ -211,3 +211,85 @@ def test_completed_architecture_review_preserves_history_but_reopens_budget() ->
     assert blocker["unreviewed_occurrence_count"] == 1
     assert blocker["stop_required"] is False
     assert blocker["open"] is True
+
+
+def test_live_recurrence_after_fixture_pass_stops_repairs_and_canaries() -> None:
+    decision = evaluate_ledger(
+        _ledger(
+            [
+                {"run_id": "109", "blockers": {"parasite": "occurred"}},
+                {"run_id": "110", "blockers": {"parasite": "occurred"}},
+            ],
+            signatures={
+                "parasite": {
+                    "architecture_reviewed_through_occurrence_count": 1,
+                    "fixture_verifications": [
+                        {
+                            "passed_before_run_id": "110",
+                            "evidence": "tests/parasite_replay.cpp::full_sequence",
+                        }
+                    ],
+                }
+            },
+        )
+    )
+
+    blocker = decision["blockers"][0]
+    assert blocker["unreviewed_occurrence_count"] == 1
+    assert blocker["recurrence_limit_stop"] is False
+    assert blocker["retained_fixture_invalidated"] is True
+    assert blocker["live_occurrences_after_fixture"] == ["110"]
+    assert decision["stop_required"] is True
+    assert decision["next_causal_signature"] == "parasite"
+    assert decision["required_next_action"] == "expand_invalid_retained_fixture"
+
+
+def test_fixture_verification_must_reference_a_known_run_and_evidence() -> None:
+    with pytest.raises(ValueError, match="unknown boundary run_id"):
+        evaluate_ledger(
+            _ledger(
+                [{"run_id": "110", "blockers": {"parasite": "occurred"}}],
+                signatures={
+                    "parasite": {
+                        "fixture_verifications": [
+                            {
+                                "passed_before_run_id": "missing",
+                                "evidence": "tests/parasite_replay.cpp",
+                            }
+                        ]
+                    }
+                },
+            )
+        )
+
+
+def test_expanded_fixture_after_recurrence_reopens_only_clean_canary_gate() -> None:
+    decision = evaluate_ledger(
+        _ledger(
+            [
+                {"run_id": "109", "blockers": {"parasite": "occurred"}},
+                {"run_id": "110", "blockers": {"parasite": "occurred"}},
+            ],
+            signatures={
+                "parasite": {
+                    "fixture_verifications": [
+                        {
+                            "passed_before_run_id": "110",
+                            "evidence": "tests/endpoint_only.cpp",
+                        },
+                        {
+                            "passed_after_run_id": "110",
+                            "evidence": "tests/full_integration.cpp",
+                        },
+                    ]
+                }
+            },
+        )
+    )
+
+    blocker = decision["blockers"][0]
+    assert blocker["retained_fixture_invalidated"] is False
+    assert blocker["fixture_verified_after_latest_occurrence"] is True
+    assert decision["stop_required"] is False
+    assert decision["next_causal_signature"] is None
+    assert decision["required_next_action"] == "run_clean_full_clear"

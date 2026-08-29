@@ -249,6 +249,24 @@ changing or deleting an earlier expectation requires a hash-bound architecture
 review that preserves the old case and explains why its expectation was
 wrong.
 
+Record each promoted fixture pass in the signature's append-only
+`fixture_verifications` list with its evidence path and exact boundary. Use
+`passed_before_run_id` for a fixture qualified before an admitted run, and
+`passed_after_run_id` when an expanded fixture qualifies a repair after a
+closed recurrence. Run the recurrence evaluator after each change and after
+the next run closes. If the same signature occurs after that boundary, the
+evaluator must return `expand_invalid_retained_fixture`; this is a hard gate
+against both another patch and another canary. Do not clear the gate by editing
+the previous verification. Append a later verification only after the expanded
+end-to-end fixture passes.
+
+Maintain a compact permanent regression matrix for the active route. Each row
+binds one causal signature to its original counterexample, current fixture,
+owning layer, first causal observation, and the two-clear acceptance state.
+Run every row adjacent to a touched shared contract. A fix for a later row is
+not admissible if it breaks an earlier row, even when the latest live trace did
+not exercise that earlier mechanic.
+
 Treat a later failure in an already-cleared stage as a regression audit, not a
 fresh optimization opportunity. Compare the first causal edge with retained
 counterexamples and inspect adjacent module contracts for contradictory
