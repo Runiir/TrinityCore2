@@ -26,6 +26,10 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
 {
         context.DecisionNowMs = NowMs();
         context.State.DecisionKernel.Begin(context.DecisionNowMs);
+        // Adaptive encounter ownership is recomputed from the current
+        // observation. Do not let a vanished Magmaw node retain its previous
+        // parasite area/dot authority into a generic profile tick.
+        context.State.MagmawParasiteCombat = {};
         SubmitRaidPrepullConsumableCandidate(context);
 
         if (std::optional<BotNativeAction::Candidate> combatRes =
@@ -417,8 +421,10 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 *Cohort().EncounterSnapshot, context.Bot->GetGUID(),
                 GetDungeonRole(context.Bot), &context.State.MovementLease,
                 context.State.ActivePathValid, context.State.IsMoving,
-                &magmawLaneOwner->MagmawLaneTransition);
+                &magmawLaneOwner->MagmawLaneTransition,
+                &context.State.MagmawParasiteHazard);
             context.AdaptiveMagmawOwnsNode = magmawPlan.OwnsNode;
+            context.State.MagmawParasiteCombat = magmawPlan.ParasiteCombat;
             context.AdaptiveMagmawSuppressOffense = magmawPlan.SuppressOffense;
             context.AdaptiveMagmawSuppressReason = magmawPlan.SuppressReason;
             context.AdaptiveMagmawMovement = std::move(magmawPlan.Movement);

@@ -83,10 +83,16 @@ constexpr bool AppliesValidationRoutePatrolFutureDestinationGuard(
 // Z have already established the same-level declared-floor fallback.
 constexpr bool AllowsSameLevelLocalMechanicProgress(
     BotMovementArbitration::Owner owner, bool sameLevelDeclaredFloorFallback,
-    float distance, bool requireCompletePath, bool allowNativeLongPath)
+    float distance, bool requireCompletePath, bool allowNativeLongPath,
+    bool boundedHazardProgress = false)
 {
+    constexpr float DefaultMaxDistance = 20.0f;
+    constexpr float BoundedHazardMaxDistance = 25.0f;
+    float const maxDistance = boundedHazardProgress
+        && owner == BotMovementArbitration::Owner::Hazard
+        ? BoundedHazardMaxDistance : DefaultMaxDistance;
     return sameLevelDeclaredFloorFallback
-        && distance >= 0.0f && distance <= 20.0f
+        && distance >= 0.0f && distance <= maxDistance
         && !requireCompletePath && !allowNativeLongPath
         && (owner == BotMovementArbitration::Owner::Mechanic
             || owner == BotMovementArbitration::Owner::Hazard);
@@ -111,6 +117,9 @@ struct Intent
     // RequireCompletePath.  A caller that allows deterministic progress
     // segments sets AllowProgressiveSegments.
     bool AllowProgressiveSegments = false;
+    // A narrowly typed hazard may opt into the slightly wider same-floor
+    // local-step bound; ordinary hazards retain the 20-yard cap.
+    bool BoundedHazardProgress = false;
     bool RequireCompletePath = false;
     bool AllowRecentFailureRetry = false;
     bool AllowNativeLongPath = false;

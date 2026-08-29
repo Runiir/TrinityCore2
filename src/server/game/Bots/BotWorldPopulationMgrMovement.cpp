@@ -82,8 +82,12 @@ bool BotWorldPopulationMgr::MoveBotToPointWithReferenceFloor(
     // These are mechanical admission requirements carried by the legacy
     // route adapter.  The executor never infers them from combat, quest, or
     // encounter policy.
+    bool const boundedHazardProgress = movementOwner
+        == BotMovementArbitration::Owner::Hazard
+        && movementReason == "parasite_contact_evade";
     intent.AllowProgressiveSegments = BotWorldMovement::AllowsProgressiveSegments(
         movementOwner, nativeRecoveryEntranceRequired);
+    intent.BoundedHazardProgress = boundedHazardProgress;
     intent.RequireCompletePath = movementOwner
         == BotMovementArbitration::Owner::Route
         && intent.AllowProgressiveSegments

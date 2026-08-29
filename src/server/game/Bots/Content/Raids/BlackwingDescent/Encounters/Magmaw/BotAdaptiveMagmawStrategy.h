@@ -19,6 +19,7 @@ struct AdaptiveMagmawPlan
     bool OwnsNode = false;
     bool SuppressOffense = false;
     std::string_view SuppressReason;
+    MagmawParasiteCombatContract ParasiteCombat;
     ObjectGuid DamageTarget;
     std::optional<BotNativeAction::Candidate> Movement;
     std::optional<BotNativeAction::Candidate> Interaction;
@@ -58,7 +59,8 @@ public:
         std::string_view role,
         BotMovementArbitration::Lease const* movementLease = nullptr,
         bool activePathValid = false, bool moving = false,
-        MagmawLaneTransitionState* laneTransition = nullptr) const
+        MagmawLaneTransitionState* laneTransition = nullptr,
+        MagmawParasiteHazardState* hazardState = nullptr) const
     {
         AdaptiveMagmawPlan plan;
         if (board.Route.NodeId != "bwd.magmaw.encounter")
@@ -66,6 +68,13 @@ public:
         ActorSnapshot const* bot = board.FindActor(botGuid);
         if (!bot || !bot->Alive)
             return plan;
+        if (hazardState)
+        {
+            hazardState->ObserveScope(board, botGuid);
+            hazardState->ObserveNativeProgress(board, bot->Position,
+                MagmawParasitePolicy::DestinationTolerance,
+                MagmawParasitePolicy::SafeClearance);
+        }
 
         if (laneTransition)
         {
@@ -88,6 +97,12 @@ public:
             return plan;
 
         plan.OwnsNode = true;
+        plan.ParasiteCombat.Active = true;
+        plan.ParasiteCombat.ActorGuid = botGuid;
+        std::pair<ObjectGuid, ObjectGuid> const baiters =
+            MagmawParasitePolicy::ResolveFixedBaiters(board);
+        plan.ParasiteCombat.FireMageGuid = baiters.first;
+        plan.ParasiteCombat.MarksmanshipHunterGuid = baiters.second;
         PrepullDecision prepull = EvaluatePrepull(board, *observed.Boss);
         if (IsPrepull(board, *observed.Boss))
         {
@@ -118,7 +133,8 @@ public:
             }
         }
 
-        plan.DamageTarget = SelectDamageTarget(board, observed, botGuid, role);
+        plan.DamageTarget = SelectDamageTarget(observed, botGuid, role,
+            plan.ParasiteCombat);
         MagmawHookAssignment const hookAssignment = ResolveHookAssignment(
             board, *bot, botGuid);
         bool const pincerWarning = PincerWarningObserved(board);
@@ -127,7 +143,8 @@ public:
         plan.Interaction = ProposeHookInteraction(board, *bot, *observed.Boss,
             botGuid);
         plan.Movement = ProposeHazardMovement(board, *bot, *observed.Boss,
-            pincerWindow, pincerWarning, movementLease, laneTransition);
+            pincerWindow, pincerWarning, movementLease, laneTransition,
+            hazardState);
         if (!plan.Movement)
             plan.Movement = ProposeHookPreposition(board, *bot,
                 *observed.Boss, botGuid);
@@ -267,13 +284,13 @@ private:
         return decision;
     }
 
-    static ObjectGuid SelectDamageTarget(Blackboard const& board,
-        MagmawActorObservation const& observed, ObjectGuid botGuid,
-        std::string_view role)
+    static ObjectGuid SelectDamageTarget(MagmawActorObservation const& observed,
+        ObjectGuid botGuid,
+        std::string_view role, MagmawParasiteCombatContract const& contract)
     {
         if (observed.Head)
             return observed.Head->Guid;
-        if (role == "dps" && IsPillarBaiter(board, botGuid)
+        if (role == "dps" && contract.AllowsParasiteTarget(botGuid)
             && observed.NearestParasite
             && observed.NearestParasiteDistance <= RangedParasiteTargetDistance)
             return observed.NearestParasite->Guid;
@@ -585,7 +602,8 @@ private:
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& boss, bool pincerWindow, bool pincerWarning,
         BotMovementArbitration::Lease const* movementLease,
-        MagmawLaneTransitionState* laneTransition)
+        MagmawLaneTransitionState* laneTransition,
+        MagmawParasiteHazardState* hazardState)
     {
         MagmawHazardObservation const observed = ObserveHazards(board, bot);
         if (observed.Pillar)
@@ -623,6 +641,16 @@ private:
             return std::nullopt;
         }
 
+        // A rejected local escape remains the same native intent until its
+        // destination is observed. Do this before current parasite selection
+        // so GUID churn or a transient missing summon cannot hand control to
+        // combat-range movement.
+        if (hazardState)
+            if (std::optional<BotNativeAction::Candidate> const retained =
+                    MagmawParasitePolicy::RetainedHazardMovement(board,
+                        *hazardState))
+                return retained;
+
         bool const pillarBaiter = IsPillarBaiter(board, bot.Guid);
         if (pillarBaiter && observed.NearestImmediateHazard
             && IsParasiteEntry(observed.NearestImmediateHazard->Entry))
@@ -635,7 +663,7 @@ private:
                 if (std::optional<BotNativeAction::Candidate> const lane =
                         MagmawParasitePolicy::Propose(board, bot,
                             *observed.NearestImmediateHazard, true, anchors,
-                            movementLease, laneTransition))
+                            movementLease, laneTransition, hazardState))
                     return lane;
         }
         float const immediateDistance = observed.NearestImmediateHazard
@@ -656,7 +684,7 @@ private:
                     anchors = *rangedAnchors;
             return MagmawParasitePolicy::Propose(board, bot,
                 *observed.NearestImmediateHazard, pillarBaiter, anchors,
-                movementLease, laneTransition);
+                movementLease, laneTransition, hazardState);
         }
 
         if (pincerWarning && !HasMangleAura(bot))

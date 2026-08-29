@@ -33,23 +33,6 @@ inline bool NativePathCanProvideProgress(PathType type)
         && !NativePathHasForbiddenAdmissionFlag(type);
 }
 
-inline bool NativePathFloorObservationBlocksCompleteProof(
-    NativePathFloorObservation const& observation)
-{
-    switch (observation.Failure)
-    {
-        case NativePathFloorFailure::None:
-        case NativePathFloorFailure::SampleFloorUnavailable:
-        case NativePathFloorFailure::SampleFloorGap:
-            return false;
-        case NativePathFloorFailure::ActorUnavailable:
-        case NativePathFloorFailure::EmptyPath:
-        case NativePathFloorFailure::ActorReferenceGap:
-            return true;
-    }
-    return true;
-}
-
 inline float NativePathEndpointDistance(G3D::Vector3 const& actual,
     G3D::Vector3 const& requested)
 {
@@ -118,10 +101,7 @@ NativePathProofObservation DiagnoseCompleteNativePathProof(bool calculated,
             == NativePathFloorFailure::SampleFloorGap
         || observation.FloorObservation.Failure
             == NativePathFloorFailure::SampleFloorUnavailable;
-    observation.Accepted = observation.EndpointMatched
-        && observation.EndpointFloorValid
-        && !NativePathFloorObservationBlocksCompleteProof(
-            observation.FloorObservation);
+    observation.Accepted = NativePathProofPassesAdmission(observation);
     return observation;
 }
 

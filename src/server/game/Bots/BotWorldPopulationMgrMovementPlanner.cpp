@@ -129,7 +129,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     bool const sameLevelLocalMechanicProgress =
         BotWorldMovement::AllowsSameLevelLocalMechanicProgress(intent.Owner,
             sameLevelDeclaredFloorFallback, currentGoalDistance,
-            strictNativeDescent, intent.AllowNativeLongPath);
+            strictNativeDescent, intent.AllowNativeLongPath,
+            intent.BoundedHazardProgress);
     bool const progressivePathAdmission = progressiveStaticRoute
         || sameLevelLocalMechanicProgress;
 

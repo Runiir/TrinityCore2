@@ -423,6 +423,14 @@ namespace BotWorldPopulationMgrBotState
         // MovementLease and is retained by the stable pair owner across
         // observation churn, native retries, and lease expiry.
         BotEncounter::MagmawLaneTransitionState MagmawLaneTransition;
+        // Adaptive ownership bypasses the generic boss-mechanics candidate;
+        // carry its immutable focus-fire/area authority into profile
+        // resolution on every bot instead of leaving a default-open lane.
+        BotEncounter::MagmawParasiteCombatContract MagmawParasiteCombat;
+        // Non-bait contact evasion has its own per-bot native intent. It must
+        // survive a planner rejection without being replaced by combat-range
+        // movement while the shared bait transition remains untouched.
+        BotEncounter::MagmawParasiteHazardState MagmawParasiteHazard;
         std::string LastDecisionKernelJson = "{}";
         std::string LastActionCategory = "wait";
         std::string LastClassSpecProfile = "{}";

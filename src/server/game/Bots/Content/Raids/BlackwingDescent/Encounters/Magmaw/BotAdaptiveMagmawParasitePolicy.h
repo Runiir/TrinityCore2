@@ -118,16 +118,36 @@ public:
                 ToMovementScope(board), movementLease->MovementScope);
     }
 
+    static std::optional<BotNativeAction::Candidate> RetainedHazardMovement(
+        Blackboard const& board, MagmawParasiteHazardState const& hazardState)
+    {
+        return hazardState.HasRetainedIntent()
+            ? std::optional<BotNativeAction::Candidate>(BuildRetainedMove(
+                board, hazardState))
+            : std::nullopt;
+    }
+
     static std::optional<BotNativeAction::Candidate> Propose(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& parasite, bool pillarBaiter,
         std::optional<FormationAnchors> const& anchors,
         BotMovementArbitration::Lease const* /*movementLease*/,
-        MagmawLaneTransitionState* transition = nullptr)
+        MagmawLaneTransitionState* transition = nullptr,
+        MagmawParasiteHazardState* hazardState = nullptr)
     {
         if (!pillarBaiter)
+        {
+            if (hazardState)
+            {
+                hazardState->ObserveScope(board, bot.Guid);
+                hazardState->ObserveNativeProgress(board, bot.Position,
+                    DestinationTolerance, SafeClearance);
+                if (hazardState->HasRetainedIntent())
+                    return BuildRetainedMove(board, *hazardState);
+            }
             return BuildMoveAway(board, bot, parasite,
-                "parasite_contact_evade", SafeClearance);
+                "parasite_contact_evade", SafeClearance, hazardState);
+        }
 
         if (!anchors || !transition)
             return std::nullopt;
@@ -337,10 +357,20 @@ private:
         return candidate;
     }
 
+    static BotNativeAction::Candidate BuildRetainedMove(
+        Blackboard const& board, MagmawParasiteHazardState const& hazardState)
+    {
+        BotNativeAction::Candidate candidate = BuildPointMovement(board,
+            hazardState.Destination, "parasite_contact_evade");
+        candidate.Id.Actor = hazardState.DangerGuid;
+        candidate.Id.EventGeneration = hazardState.IntentId;
+        return candidate;
+    }
+
     static BotNativeAction::Candidate BuildMoveAway(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& danger, std::string mechanic,
-        float exitDistance)
+        float exitDistance, MagmawParasiteHazardState* hazardState = nullptr)
     {
         float dx = bot.Position.X - danger.Position.X;
         float dy = bot.Position.Y - danger.Position.Y;
@@ -351,19 +381,24 @@ private:
             dy = std::sin(bot.Facing);
             length = 1.0f;
         }
+        Vector3 const destination{
+            danger.Position.X + dx / length * exitDistance,
+            danger.Position.Y + dy / length * exitDistance,
+            bot.Position.Z };
+        if (hazardState)
+            hazardState->Begin(danger.Guid, destination);
         BotNativeAction::Candidate candidate;
         candidate.Id.ScopeKey = board.CurrentScope.Key();
         candidate.Id.Strategy = "adaptive_magmaw";
         candidate.Id.Mechanic = std::move(mechanic);
         candidate.Id.Actor = danger.Guid;
-        candidate.Id.EventGeneration = board.Revision;
+        candidate.Id.EventGeneration = hazardState
+            ? hazardState->IntentId : board.Revision;
         candidate.ActionPriority = BotActionArbitration::Priority::Survival;
         candidate.Utility = 450.0f;
         candidate.ExpiresAtMs = board.ObservedAtMs + 750;
-        candidate.Action = BotNativeAction::Move{
-            danger.Position.X + dx / length * exitDistance,
-            danger.Position.Y + dy / length * exitDistance,
-            bot.Position.Z, "parasite_contact_evade" };
+        candidate.Action = BotNativeAction::Move{ destination.X, destination.Y,
+            destination.Z, "parasite_contact_evade" };
         return candidate;
     }
 };

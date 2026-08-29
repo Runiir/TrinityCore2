@@ -1,8 +1,21 @@
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
+
 import pytest
 
-from tools.raid_program.blocker_recurrence_ledger import evaluate_ledger
+from tools.raid_program.blocker_recurrence_ledger import (
+    _command_sha256,
+    _ledger_with_suite_receipt,
+    _manifest_sha256,
+    _result_sha256,
+    _run_suite,
+    _sha256,
+    _verify_clean_source_identity,
+    evaluate_ledger,
+)
 
 
 def _ledger(
@@ -17,6 +30,50 @@ def _ledger(
     if signatures is not None:
         ledger["causal_signatures"] = signatures
     return ledger
+
+
+def _bank_ledger(
+    runs: list[dict],
+    *,
+    fixtures: list[dict],
+    verifications: list[dict],
+    history: list[str] | None = None,
+    source: str = "source-current",
+    config: str = "config-current",
+    signatures: dict | None = None,
+) -> dict:
+    ledger = _ledger(runs, signatures=signatures or {"edge": {}})
+    ledger["route"] = "route"
+    ledger["regression_bank"] = {
+        "schema": "trinity_raid_regression_bank_v1",
+        "route": "route",
+        "current_identity": {"source": source, "config": config},
+        "fixture_history": history if history is not None else [
+            row["fixture_id"] for row in fixtures
+        ],
+        "fixtures": fixtures,
+        "verifications": verifications,
+    }
+    return ledger
+
+
+def _fixture(fixture_id: str, signature: str = "edge") -> dict:
+    return {
+        "fixture_id": fixture_id,
+        "causal_signature": signature,
+        "command": ["pixi", "run", "pytest", "-q", f"tests/{fixture_id}.py"],
+    }
+
+
+def _pass(fixture_id: str, run_id: str, **identity: str) -> dict:
+    return {
+        "fixture_id": fixture_id,
+        "status": "passed",
+        "passed_before_run_id": run_id,
+        "source": identity.get("source", "source-current"),
+        "config": identity.get("config", "config-current"),
+        "evidence": f"tests/{fixture_id}.py",
+    }
 
 
 def test_intervening_absence_does_not_erase_recurring_blocker() -> None:
@@ -293,3 +350,339 @@ def test_expanded_fixture_after_recurrence_reopens_only_clean_canary_gate() -> N
     assert decision["stop_required"] is False
     assert decision["next_causal_signature"] is None
     assert decision["required_next_action"] == "run_clean_full_clear"
+
+
+def test_declared_signature_cannot_be_omitted_from_the_decision() -> None:
+    decision = evaluate_ledger(
+        _ledger(
+            [
+                {"run_id": "101", "route_completed": True, "blockers": {}},
+                {"run_id": "102", "route_completed": True, "blockers": {}},
+            ],
+            signatures={"earlier_edge": {}},
+        )
+    )
+
+    assert [row["causal_signature"] for row in decision["blockers"]] == [
+        "earlier_edge"
+    ]
+    assert decision["blockers"][0]["last_observed_state"] == "not_exercised"
+
+
+def test_accumulated_bank_reports_fixture_omitted_by_later_repair() -> None:
+    decision = evaluate_ledger(
+        _bank_ledger(
+            [
+                {"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}},
+                {"run_id": "102", "route_completed": True, "blockers": {"edge": "absent"}},
+            ],
+            fixtures=[_fixture("original"), _fixture("later_repair")],
+            history=["original", "later_repair"],
+            verifications=[_pass("later_repair", "101")],
+        ),
+        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+    )
+
+    assert decision["missing_fixture_ids"] == ["original"]
+    assert decision["regression_bank"]["expected_fixture_ids"] == [
+        "later_repair",
+        "original",
+    ]
+    assert decision["canary_admitted"] is False
+    assert decision["build_admitted"] is False
+
+
+def test_bank_requires_fixture_coverage_for_every_occurred_signature() -> None:
+    decision = evaluate_ledger(
+        _bank_ledger(
+            [
+                {
+                    "run_id": "101",
+                    "route_completed": False,
+                    "blockers": {"edge": "occurred", "uncovered_edge": "occurred"},
+                },
+            ],
+            fixtures=[_fixture("original")],
+            verifications=[_pass("original", "101")],
+            signatures={"edge": {}, "uncovered_edge": {}},
+        ),
+        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+    )
+
+    assert decision["missing_causal_signature_ids"] == ["uncovered_edge"]
+    assert decision["regression_bank"]["admitted"] is False
+    assert decision["canary_admitted"] is False
+
+
+def test_bank_rejects_pass_tied_to_stale_source_or_config_identity() -> None:
+    decision = evaluate_ledger(
+        _bank_ledger(
+            [
+                {"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}},
+                {"run_id": "102", "route_completed": True, "blockers": {"edge": "absent"}},
+            ],
+            fixtures=[_fixture("original")],
+            verifications=[
+                _pass("original", "101", source="source-old", config="config-old")
+            ],
+        ),
+        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+    )
+
+    assert decision["stale_fixture_ids"] == ["original"]
+    assert decision["missing_fixture_ids"] == []
+    assert decision["regression_bank"]["admitted"] is False
+    assert decision["canary_admitted"] is False
+
+
+def test_enabled_bank_requires_external_identity_instead_of_ledger_identity() -> None:
+    decision = evaluate_ledger(
+        _bank_ledger(
+            [
+                {"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}},
+                {"run_id": "102", "route_completed": True, "blockers": {"edge": "absent"}},
+            ],
+            fixtures=[_fixture("original")],
+            verifications=[_pass("original", "101")],
+        )
+    )
+
+    assert decision["regression_bank"]["admitted"] is False
+    assert "current_identity_external_required" in decision["regression_bank"]["route_failures"]
+    assert decision["canary_admitted"] is False
+
+
+def test_external_source_identity_does_not_require_a_self_referential_ledger_sha() -> None:
+    ledger = _bank_ledger(
+        [
+            {"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}},
+            {"run_id": "102", "route_completed": True, "blockers": {"edge": "absent"}},
+        ],
+        fixtures=[_fixture("original")],
+        verifications=[_pass("original", "101", source="external-clean-head")],
+    )
+    ledger["regression_bank"]["current_identity"].pop("source")
+    identity = {"source_identity": "external-clean-head", "config_identity": "config-current"}
+
+    decision = evaluate_ledger(ledger, current_identity=identity)
+    assert decision["regression_bank"]["admitted"] is True
+
+
+def test_source_identity_requires_exact_clean_tracked_checkout(tmp_path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Regression Test"], cwd=tmp_path, check=True)
+    tracked = tmp_path / "tracked.txt"
+    tracked.write_text("clean\n")
+    subprocess.run(["git", "add", "tracked.txt"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "fixture"], cwd=tmp_path, check=True)
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=tmp_path, check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+    _verify_clean_source_identity(tmp_path, head)
+    (tmp_path / "untracked.txt").write_text("ignored\n")
+    _verify_clean_source_identity(tmp_path, head)
+    with pytest.raises(ValueError, match="does not match current HEAD"):
+        _verify_clean_source_identity(tmp_path, "stale-source")
+
+    tracked.write_text("dirty\n")
+    with pytest.raises(ValueError, match="tracked worktree is dirty"):
+        _verify_clean_source_identity(tmp_path, head)
+
+
+def test_suite_receipt_is_bound_to_manifest_and_current_identity(tmp_path) -> None:
+    ledger = _bank_ledger(
+        [
+            {"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}},
+            {"run_id": "102", "route_completed": True, "blockers": {"edge": "absent"}},
+        ],
+        fixtures=[_fixture("original")],
+        verifications=[],
+    )
+    identity = {"source_identity": "source-current", "config_identity": "config-current"}
+    fixture = ledger["regression_bank"]["fixtures"][0]
+    command_sha256 = _command_sha256(fixture["command"])
+    stdout_sha256 = _sha256("")
+    stderr_sha256 = _sha256("")
+    verification = _pass("original", "101")
+    verification.update(
+        {
+            "passed": True,
+            "returncode": 0,
+            "timed_out": False,
+            "command_sha256": command_sha256,
+            "stdout_sha256": stdout_sha256,
+            "stderr_sha256": stderr_sha256,
+            "result_sha256": _result_sha256(0, False, stdout_sha256, stderr_sha256),
+        }
+    )
+    receipt = {
+        "schema": "trinity_raid_regression_suite_receipt_v1",
+        "manifest_sha256": _manifest_sha256(ledger["regression_bank"]),
+        **identity,
+        "fixture_ids": ["original"],
+        "verifications": [verification],
+    }
+    receipt_path = tmp_path / "suite-receipt.json"
+    receipt_path.write_text(json.dumps(receipt))
+
+    effective = _ledger_with_suite_receipt(ledger, receipt_path, identity)
+    decision = evaluate_ledger(effective, current_identity=identity)
+    assert decision["regression_bank"]["admitted"] is True
+
+    wrong_source = dict(receipt)
+    wrong_source["source_identity"] = "source-other"
+    wrong_source_path = tmp_path / "wrong-source-receipt.json"
+    wrong_source_path.write_text(json.dumps(wrong_source))
+    with pytest.raises(ValueError, match="source identity mismatch"):
+        _ledger_with_suite_receipt(ledger, wrong_source_path, identity)
+
+    ledger["regression_bank"]["fixtures"][0]["command"] = ["changed"]
+    with pytest.raises(ValueError, match="manifest identity mismatch"):
+        _ledger_with_suite_receipt(ledger, receipt_path, identity)
+
+
+def test_run_suite_executes_fixed_argv_and_emits_verifiable_receipt(tmp_path) -> None:
+    fixture = _fixture("original")
+    fixture["command"] = [sys.executable, "-c", "print('fixture-pass')"]
+    ledger = _bank_ledger(
+        [
+            {"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}},
+            {"run_id": "102", "route_completed": True, "blockers": {"edge": "absent"}},
+        ],
+        fixtures=[fixture],
+        verifications=[],
+    )
+    identity = {"source_identity": "source-current", "config_identity": "config-current"}
+    receipt_path = tmp_path / "suite-receipt.json"
+
+    _run_suite(ledger, identity, "101", "after", receipt_path)
+    receipt = json.loads(receipt_path.read_text())
+    assert receipt["fixture_ids"] == ["original"]
+    assert receipt["verifications"][0]["passed"] is True
+    effective = _ledger_with_suite_receipt(ledger, receipt_path, identity)
+    assert evaluate_ledger(effective, current_identity=identity)["canary_admitted"] is True
+
+
+def test_post_occurrence_suite_pass_admits_next_canary_before_two_clears() -> None:
+    verification = _pass("original", "101")
+    verification.pop("passed_before_run_id")
+    verification["passed_after_run_id"] = "102"
+    ledger = _bank_ledger(
+        [
+            {"run_id": "101", "route_completed": False, "blockers": {"edge": "occurred"}},
+            {"run_id": "102", "route_completed": False, "blockers": {"edge": "occurred"}},
+        ],
+        fixtures=[_fixture("original")],
+        verifications=[verification],
+    )
+    identity = {"source_identity": "source-current", "config_identity": "config-current"}
+
+    provisional = evaluate_ledger(ledger, current_identity=identity)
+    assert provisional["build_admitted"] is True
+    assert provisional["canary_admitted"] is True
+    assert provisional["acceptance_admitted"] is False
+
+    ledger["runs"].extend(
+        [
+            {"run_id": "103", "route_completed": True, "blockers": {"edge": "absent"}},
+            {"run_id": "104", "route_completed": True, "blockers": {"edge": "absent"}},
+        ]
+    )
+    final = evaluate_ledger(ledger, current_identity=identity)
+    assert final["canary_admitted"] is True
+    assert final["acceptance_admitted"] is True
+
+
+@pytest.mark.parametrize(
+    ("verification_boundary", "expected_action"),
+    [
+        ({"passed_before_run_id": "102"}, "expand_invalid_retained_fixture"),
+        ({"passed_after_run_id": "102"}, "run_clean_full_clear"),
+    ],
+)
+def test_same_run_recurrence_is_invalidated_only_before_expanded_pass(
+    verification_boundary: dict[str, str], expected_action: str
+) -> None:
+    verification = _pass("original", "101")
+    verification.pop("passed_before_run_id")
+    verification.update(verification_boundary)
+    if "passed_after_run_id" in verification_boundary:
+        verification = [
+            _pass("original", "101"),
+            verification,
+        ]
+    else:
+        verification = [verification]
+    decision = evaluate_ledger(
+        _bank_ledger(
+            [
+                {"run_id": "101", "route_completed": False, "blockers": {"edge": "occurred"}},
+                {"run_id": "102", "route_completed": False, "blockers": {"edge": "occurred"}},
+            ],
+            fixtures=[_fixture("original")],
+            verifications=verification,
+        ),
+        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+    )
+
+    if "passed_before_run_id" in verification_boundary:
+        assert decision["invalidated_fixture_ids"] == ["original"]
+        assert decision["required_next_action"] == expected_action
+    else:
+        assert decision["invalidated_fixture_ids"] == []
+        assert decision["regression_bank"]["admitted"] is True
+
+
+def test_later_recurrence_invalidates_the_latest_retained_fixture_pass() -> None:
+    decision = evaluate_ledger(
+        _bank_ledger(
+            [
+                {"run_id": "101", "route_completed": False, "blockers": {"edge": "occurred"}},
+                {"run_id": "102", "route_completed": False, "blockers": {"edge": "absent"}},
+                {"run_id": "103", "route_completed": False, "blockers": {"edge": "occurred"}},
+            ],
+            fixtures=[_fixture("original")],
+            verifications=[
+                {
+                    **{
+                        key: value
+                        for key, value in _pass("original", "101").items()
+                        if key != "passed_before_run_id"
+                    },
+                    "passed_after_run_id": "102",
+                }
+            ],
+        ),
+        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+    )
+
+    assert decision["invalidated_fixture_ids"] == ["original"]
+    assert decision["regression_bank"]["invalidation_run_ids"] == {
+        "original": ["103"]
+    }
+    assert decision["canary_admitted"] is False
+
+
+def test_all_accumulated_fixtures_pass_for_current_identity_before_canary() -> None:
+    decision = evaluate_ledger(
+        _bank_ledger(
+            [
+                {"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}},
+                {"run_id": "102", "route_completed": True, "blockers": {"edge": "absent"}},
+            ],
+            fixtures=[_fixture("original"), _fixture("later_repair")],
+            verifications=[_pass("original", "101"), _pass("later_repair", "101")],
+        ),
+        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+    )
+
+    assert decision["regression_bank"]["suite_verified_fixture_ids"] == [
+        "later_repair",
+        "original",
+    ]
+    assert decision["regression_bank"]["admitted"] is True
+    assert decision["build_admitted"] is True
+    assert decision["canary_admitted"] is True
+    assert decision["acceptance_admitted"] is True

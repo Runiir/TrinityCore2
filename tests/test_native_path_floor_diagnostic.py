@@ -94,13 +94,51 @@ int main()
 def test_drudge_uses_declared_floor_as_reference_after_endpoint_resolution():
     geometry = GEOMETRY.read_text(encoding="utf-8")
     validation = PATH_VALIDATION.read_text(encoding="utf-8")
+    floor = FLOOR.read_text(encoding="utf-8")
     assert "float const declaredReferenceZ = z;" in geometry
     assert "DiagnoseNativePathFloors(Bot, path,\n                declaredReferenceZ, true)" in geometry
     assert "NativePathFloorFailure::SampleFloorGap" in validation
     assert "NativePathFloorFailure::ActorReferenceGap" in validation
-    assert "NativePathFloorObservationBlocksCompleteProof" in validation
-    assert "case NativePathFloorFailure::SampleFloorUnavailable:" in validation
-    assert "case NativePathFloorFailure::SampleFloorGap:" in validation
+    assert "NativePathFloorObservationBlocksCompleteProof" in floor
+    assert "case NativePathFloorFailure::SampleFloorUnavailable:" in floor
+    assert "case NativePathFloorFailure::SampleFloorGap:" in floor
+
+
+def test_native_path_endpoint_z_normalization_preserves_horizontal_identity(tmp_path):
+    source = tmp_path / "native_path_endpoint_identity.cpp"
+    binary = tmp_path / "native_path_endpoint_identity"
+    source.write_text(
+        r'''
+#include "Bots/BotWorldPopulationMgrNativeFloor.h"
+#include <cassert>
+
+int main()
+{
+    assert(BotWorldMovement::NativePathEndpointComponentsMatch(0.0f, 0.882904f));
+    assert(BotWorldMovement::NativePathEndpointComponentsMatch(0.0f, 0.811676f));
+    assert(!BotWorldMovement::NativePathEndpointComponentsMatch(0.5001f, 0.0f));
+    assert(!BotWorldMovement::NativePathEndpointComponentsMatch(0.0f, 1.5001f));
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
 def test_planner_same_level_fallback_still_requires_native_path_proof():

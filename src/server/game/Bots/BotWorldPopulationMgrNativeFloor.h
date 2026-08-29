@@ -91,6 +91,48 @@ struct NativePathProofObservation
     bool Accepted = false;
 };
 
+inline bool NativePathFloorObservationBlocksCompleteProof(
+    NativePathFloorObservation const& observation)
+{
+    switch (observation.Failure)
+    {
+        case NativePathFloorFailure::None:
+        case NativePathFloorFailure::SampleFloorUnavailable:
+        case NativePathFloorFailure::SampleFloorGap:
+            return false;
+        case NativePathFloorFailure::ActorUnavailable:
+        case NativePathFloorFailure::EmptyPath:
+        case NativePathFloorFailure::ActorReferenceGap:
+            return true;
+    }
+    return true;
+}
+
+// Keep the complete-path admission order value-only so the map-bound
+// planner and replay observe the same endpoint/floor disposition.
+inline bool NativePathProofPassesAdmission(
+    NativePathProofObservation const& observation)
+{
+    return observation.EndpointMatched && observation.EndpointFloorValid
+        && !NativePathFloorObservationBlocksCompleteProof(
+            observation.FloorObservation);
+}
+
+inline char const* NativePathProofFailureReason(
+    NativePathProofObservation const& observation)
+{
+    if (NativePathProofPassesAdmission(observation))
+        return nullptr;
+    if (!observation.EndpointMatched)
+        return "route_destination_endpoint_mismatch";
+    if (!observation.EndpointFloorValid)
+        return "route_destination_endpoint_floor_invalid";
+    if (NativePathFloorObservationBlocksCompleteProof(
+            observation.FloorObservation))
+        return "route_destination_path_floor_gap";
+    return "route_destination_unreachable";
+}
+
 enum class NativeFloorAdmission
 {
     Rejected,

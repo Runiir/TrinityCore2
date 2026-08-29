@@ -23,6 +23,18 @@ using BotRaidDrudgeEntranceMovement::IsExactDrudgePositionHold;
 void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
     BotUpdateContext& context)
 {
+        auto hasRetainedMagmawHazard = [&context]()
+        {
+            if (!context.State.MagmawParasiteCombat.Active
+                || !context.AdaptiveMagmawMovement)
+                return false;
+            std::string const& mechanic =
+                context.AdaptiveMagmawMovement->Id.Mechanic;
+            return mechanic == "pillar_evade"
+                || mechanic == "pillar_bait_switch"
+                || mechanic == "massive_crash_evade"
+                || mechanic == "parasite_contact_evade";
+        };
         struct RouteAttempt
         {
             bool Attempted = false;
@@ -694,6 +706,40 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                     "no_live_combat_target");
             char const* rejectReason = nullptr;
             Creature const* targetCreature = context.Target->ToCreature();
+            BotEncounter::MagmawParasiteCombatContract const& magmawContract =
+                context.State.MagmawParasiteCombat;
+            bool const magmawContractActive = magmawContract.Active;
+            bool const hazardRetained = hasRetainedMagmawHazard();
+            BotEncounter::MagmawParasiteCombatContract::ProfileParameters
+                magmawProfile = magmawContract.ResolveProfileParameters(
+                    context.Bot->GetGUID(),
+                    targetCreature ? targetCreature->GetEntry() : 0,
+                    hazardRetained, false, false);
+            if (magmawContractActive
+                && !magmawProfile.AllowsAction(false, false, false, false,
+                    false))
+                return BotActionArbitration::Outcome::Unsafe(
+                    "magmaw_target_contract_forbidden");
+
+            if (magmawContractActive && hazardRetained
+                && targetCreature)
+            {
+                ResolvedCombatAction const preview = ResolveProfileCombatAction(
+                    context.Bot, context.Target, 0, false, 0, false, false,
+                    magmawProfile.ForbidAreaDamage,
+                    magmawProfile.AllowMultidot);
+                bool const outsideLegalMaxRange = preview.MaxRange > 0.0f
+                    && context.Bot->GetExactDist(context.Target)
+                        > preview.MaxRange;
+                bool const noLineOfSight =
+                    !context.Bot->IsWithinLOSInMap(context.Target);
+                magmawProfile = magmawContract.ResolveProfileParameters(
+                    context.Bot->GetGUID(), targetCreature->GetEntry(),
+                    hazardRetained, outsideLegalMaxRange, noLineOfSight);
+                if (magmawProfile.DeferCombatRange)
+                    return BotActionArbitration::Outcome::Retryable(
+                        "magmaw_hazard_movement_retry");
+            }
             bool const ownedNativeRouteTarget = targetCreature
                 && BotRouteCombatTargetPolicy::IsOwnedNativeEncounterTarget(
                     context.AdaptiveDrudgeOwnsNode,
@@ -718,7 +764,9 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             context.State.TargetGuid = context.Target->GetGUID();
             ResolvedCombatAction profileAction;
             BotActionResult const result = ExecuteProfileCombatAction(
-                &context.State, context.Bot, context.Target, &profileAction);
+                &context.State, context.Bot, context.Target, &profileAction,
+                0, false, 0, false, false, magmawProfile.ForbidAreaDamage,
+                magmawProfile.AllowMultidot, false);
             uint32 const spellId = profileAction.SpellId;
             context.Situation = "open_world_combat";
             context.Action = spellId ? "cast_combat_spell" : "attack";

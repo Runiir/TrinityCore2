@@ -201,8 +201,43 @@ fully exercised. A partial run, infrastructure exit, or missing observation is
 
 ```bash
 pixi run python -m tools.raid_program.blocker_recurrence_ledger \
-  --ledger <route-blocker-ledger.json> --output <recurrence-decision.json>
+  --ledger <route-blocker-ledger.json> \
+  --source-identity <exact-source-id> \
+  --config-identity <exact-route-config-id> \
+  --suite-receipt <hash-bound-suite-receipt.json> \
+  --output <recurrence-decision.json>
 ```
+
+To create the receipt in the same gate, replace `--suite-receipt` with
+`--run-suite <receipt-path> --boundary-run-id <known-run-id> --boundary
+before|after`. The bounded runner executes each manifest argv without a shell,
+captures return/timeout plus command and result hashes, writes the receipt, and
+only then evaluates it.
+
+An active route opts into the fail-closed `regression_bank` field (schema
+`trinity_raid_regression_bank_v1`). Its append-only `fixture_history` and
+`fixtures` manifest name every retained executable fixture, while each
+`fixture_verifications`/`verifications` row records its exact source/config
+identity and boundary. The CLI requires an external clean-tree source identity
+and config identity plus a `trinity_raid_regression_suite_receipt_v1` whose manifest hash and identity
+match; editing the ledger's declared identity cannot manufacture a pass. The
+Magmaw route's config identity is the `sha256:` digest of the canonical JSON
+payload `{validation_scenario: scenarios[id=blackwing_descent_10n],
+bwd_diagnostic_shard: {schema, canonical_roster, diagnostic_bot_count,
+instance_identity_policy, shard[id=bwd_magmaw_diagnostic_10n]}}` from
+`validation_scenarios_cata_001.json` and `cata_raid_bwd_diagnostic_shards_v1.json`;
+the ledger itself is intentionally excluded. The
+evaluator emits exact `missing_fixture_ids`, `stale_fixture_ids`,
+`failing_fixture_ids`, `invalidated_fixture_ids`, and `canary_admitted`/`build_admitted`.
+It also emits `missing_causal_signature_ids` when an occurred signature has no
+retained fixture. Any missing, renamed/unbound, stale, failing, or
+recurrence-invalidated fixture/signature blocks admission. Ledgers without
+`regression_bank` retain pre-gate history and compatibility until explicitly
+migrated.
+`build_admitted` is the current full-bank gate; `canary_admitted` additionally
+requires no ten-occurrence stop and a post-occurrence pass for the latest
+occurred signature (an open-but-repaired signature is allowed); only
+`acceptance_admitted` waits for the two completed clean clears.
 
 Reappearance reopens the same blocker even after clean intervening runs. At ten
 occurrences of one signature in the active investigation epoch, including
