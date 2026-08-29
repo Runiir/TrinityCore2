@@ -134,6 +134,17 @@ Extract or reuse a deterministic C++ transition boundary when practical. Add
 focused tests for the recorded counterexample and nearby valid states. A
 source-shape test alone does not confirm native behavior.
 
+When a live blocker reappears after its retained fixture passed, treat that
+fixture revision as invalidated. Before editing the runtime, add an executable
+value-level counterexample using the recorded trace inputs and prove it fails
+against the pre-fix behavior. Increment the existing fixture revision; do not
+rename, remove, weaken, or replace its causal signature. The repaired fixture
+must exercise the final admission/selection result, not merely a helper in
+isolation, and include adjacent rejection cases for other owners, cross-floor
+movement, non-progress, or forbidden native path flags as applicable. A new
+live canary is forbidden until this revised fixture and the complete retained
+regression bank pass at one clean committed identity.
+
 Before changing a live decision path, inventory every state it mutates and
 compare that list with the active admission receipt. Receipt-bound pet
 spellbook/autocast, gear, talents/glyphs, roster leases, group/difficulty, and

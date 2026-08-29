@@ -256,6 +256,11 @@ latest immutable handoff.
    binary and build receipt, generated config and route manifest, ledger,
    recurrence decision, full regression-suite receipt, and fixture revisions.
    If the seal cannot be created or verified, do not start a worldserver.
+   A live recurrence invalidates the fixture revision admitted for that run.
+   Require an incremented, value-level replacement fixture for the same causal
+   signature and a new full-bank receipt; an unchanged passing fixture, a
+   renamed fixture, or a source-shape assertion cannot authorize another
+   worldserver.
 4. Start one verified worldserver with the generated shard config.
 5. Confirm console/process readiness and active runtime identity.
 6. Only then attach the boss babysitter. The babysitter monitors; it does not silently repair or manufacture state.

@@ -147,6 +147,15 @@ uses the existing causal signature and increments it once for that run. At ten
 occurrences, return the accumulated evidence for architecture review instead of
 adding another class-policy branch.
 
+A recurrent role or pet blocker invalidates the previously passing fixture.
+Replace it with a higher revision that executes the exact observed state and
+fails against the pre-fix behavior; source-text assertions and configuration
+presence checks are insufficient. For persistent pet autocast, separately
+prove setup identity, native per-tick target eligibility, and suppression of a
+redundant beneficial recast while preserving ordinary offensive autocast. Keep
+the fixture permanently in the route bank and require the entire bank at the
+exact clean build identity before another canary.
+
 ## Validate by role
 
 Run focused unit/replay checks first. Use `queued_build.py` for every native

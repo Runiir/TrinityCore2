@@ -116,6 +116,14 @@ resource claims, stable movement intents, and observable outcomes. Require
 before/after CCN for touched high-risk functions and the repository's
 sub-1,000-line C/C++ limit.
 
+Do not schedule a rerun merely because a specialist reports green focused
+tests. If the blocker previously returned after a green run, require the same
+causal signature, an incremented retained-fixture revision, an exact recorded
+value counterexample that failed before the repair, and a full-bank receipt at
+the clean candidate identity. Reject source-presence tests as recurrence
+closure. Passing once establishes an observation; only the retained fixture
+bank prevents the next unrelated change from reintroducing it.
+
 Treat a loud admission-identity failure after an unrelated gameplay change as
 an ownership alarm, not automatically as the gameplay root cause. Before
 dispatching a fix, list every writer and observer for the failed receipt field
