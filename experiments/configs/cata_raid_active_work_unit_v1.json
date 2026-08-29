@@ -1,13 +1,13 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "trace_discontinuity_runtime_smoke_build_admission_failed_v1_20260830",
+  "epoch_id": "trace_discontinuity_runtime_smoke_live_second_poll_reoverflow_v1_20260830",
   "work_unit": "shard:queued_build_and_trace_discontinuity_runtime_smoke",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "owner_skill": "raid-shard-architecture",
-  "classification": "runtime_smoke_failed_build_admission_filesystem_reserve",
-  "gate_state": "runtime_smoke_failed_build_unverified_gameplay_and_fixture_promotion_closed",
+  "classification": "runtime_smoke_failed_live_second_poll_reoverflow",
+  "gate_state": "runtime_smoke_failed_live_second_poll_reoverflow_gameplay_and_fixture_promotion_closed",
   "observed_at_commit": "dc061cd96e60cccccf233cf0a588b70ce9238aec",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_6518233c67_chainwielder_trace_transport_summary_v1.json",
@@ -26,17 +26,19 @@
   },
   "runtime_smoke_handoff": {
     "path": "experiments/configs/cata_raid_native_trace_discontinuity_runtime_smoke_handoff_v1.json",
-    "sha256": "1f1985d303d9c0abd00be430c147d4754e9b32eb005705a03a0a1286df9bab27",
-    "classification": "failed_verification_build_admission_filesystem_reserve",
-    "build_ticket_id": "raid-build-6287ba59d60c4b2aa071e4986067c301",
-    "build_receipt_sha256": null,
-    "worldserver_binary_sha256": null,
-    "worldserver_start_count": 0
+    "sha256": "716edcdb86b8bc4960eedc89d7041992289653f4d4d1cdb77423c497d13ded96",
+    "classification": "failed_verification_live_second_poll_reoverflow",
+    "configure_ticket_id": "raid-build-073f13006b74413cbc5ca44eb50580ce",
+    "configure_receipt_sha256": "81ab6745b4425035b2ebd5d9adf6fb884ac719e7a72ea7731d8639d7896aaad3",
+    "build_ticket_id": "raid-build-425e5ad4bf7346239076b60579983bbb",
+    "build_receipt_sha256": "fba062fda79121cc20fa8085b3df1bc71fa992dd51c8f02f3530d04eb1de35b6",
+    "worldserver_binary_sha256": "662154787fd29953296632549306093fb02e23236dbd47dffecaa38915774838",
+    "worldserver_start_count": 1
   },
   "first_broken_edge": "At retained capture sequence 28, bot GUID 30008 alone advanced beyond the native 128-entry trace ring before its delta cursor 46 was exported. The producer truthfully returned gap=true, cursor_before=46, cursor_after=46, and no entries. Native fail-closed cursor semantics then repeated that same actor-local gap through capture sequence 433.",
   "first_controller_defect": "The capture demultiplexer promoted one bot's real trace gap into rejection of each complete ten-bot envelope, hiding nine peers whose delta cursors and entries remained contiguous.",
   "causal_signature": "actor_local_native_trace_loss_promoted_to_global_envelope_rejection",
-  "causal_claim_status": "native_discontinuity_transition_and_controller_contract_fixture_green_live_unproven",
+  "causal_claim_status": "native_discontinuity_transition_live_truthful_actor_local_but_contiguous_followup_unexercised_due_poll_cadence",
   "claim_ledger": {
     "verified": [
       "source_identity_6518233c67_was_clean_and_admitted",
@@ -52,20 +54,27 @@
       "compiled_native_transition_reports_missing_47_through_174_and_exports_retained_175_through_238",
       "compiled_second_poll_resumes_contiguously_at_239_and_advances_through_302",
       "controller_keeps_the_explicit_missing_interval_gate_failing_while_binding_the_second_poll",
-      "clean_isolated_fast8_v2_configure_request_was_rejected_before_admission_by_the_frozen_filesystem_reserve"
+      "clean_isolated_fast8_v2_configure_request_was_rejected_before_admission_by_the_frozen_filesystem_reserve",
+      "authorized_nvme_retry_produced_independently_verified_gate_bearing_configure_and_worldserver_build_receipts",
+      "live_actor30008_first_poll_emitted_missing_1_through_30_retained_31_through_158_and_advanced_cursor_0_through_158",
+      "live_actor30008_second_poll_truthfully_emitted_a_new_missing_159_through_666_retained_667_through_794_and_advanced_cursor_158_through_794",
+      "both_live_discontinuities_were_actor_local_with_zero_peer_gaps",
+      "owned_cohort_server_process_ports_and_temporary_root_were_cleaned_to_zero"
     ],
     "refuted": [
       "the_241_rejected_envelopes_prove_global_trace_transport_loss",
       "this_capture_promotes_chainwielder_pre_admission_rejection_isolation_v1_to_revision_2",
       "this_capture_is_gate_bearing_gameplay_acceptance_evidence",
-      "an_unadmitted_configure_ticket_is_a_clean_worldserver_build_receipt"
+      "an_unadmitted_configure_ticket_is_a_clean_worldserver_build_receipt",
+      "the_second_live_poll_was_gap_false_beginning_at_prior_cursor_after_plus_one",
+      "the_live_smoke_is_runtime_smoke_green"
     ],
     "unproven": [
       "lossless_native_trace_transport_for_a_busy_single_actor",
       "actor_join_for_bot30008_decisions_47_through_3120",
       "live_route_owner_state_preservation_after_a_receiptless_owner_hazard_rejection",
       "magmaw_completion_or_full_raid_acceptance",
-      "live_worldserver_trace_discontinuity_transport_at_dc061cd96e"
+      "quiescence_free_contiguous_recovery_for_a_high_rate_actor_across_all_actor_trace_response_delivery"
     ]
   },
   "source_capture": {
@@ -92,7 +101,7 @@
   },
   "required_production_boundary": "Provide a native per-bot trace discontinuity epoch or equivalent explicit cursor recovery contract that preserves the first irrecoverable interval, resumes later actor deltas without a permanently sticky cursor, and remains actor-, attempt-, server-epoch-, route-, wipe-, assignment-, and runtime-profile-bound under a byte-faithful overflow replay.",
   "implementation": {
-    "state": "fixture-green-live-unproven-build-admission-failed",
+    "state": "fixture-green-live-explicit-gap-truthful-contiguous-followup-unexercised",
     "hypothesis": "When the first unexported sequence has fallen behind the bounded ring, emit one explicit discontinuity with the exact missing interval, export a bounded contiguous retained prefix, and advance only through the last serialized entry.",
     "native_response_contract": {
       "gap": true,
@@ -115,7 +124,13 @@
       "second_poll_sequence_start": 239,
       "second_poll_cursor_after": 302
     },
-    "live_verified": false
+    "live_verified": false,
+    "live_observation": {
+      "bot_guid": 30008,
+      "poll_1": "gap_true_cursor_0_to_158_missing_1_to_30_retained_31_to_158",
+      "poll_2": "gap_true_cursor_158_to_794_missing_159_to_666_retained_667_to_794",
+      "failure": "second overflow occurred while the multi-megabyte all-actor first response was delivered"
+    }
   },
   "scope_lock": {
     "allowed_change": "Validate only the fixture-green native trace transport through one exact clean queued build and one isolated live two-poll overflow smoke. Preserve explicit gap evidence and make no gameplay changes.",
@@ -147,32 +162,38 @@
     },
     "native_transition_fixture_passed": true,
     "explicit_discontinuity_controller_contract_passed": true,
-    "second_poll_contiguous": true,
-    "build_verified": false,
+    "compiled_second_poll_contiguous": true,
+    "build_verified": true,
     "build_admission": {
-      "ticket_id": "raid-build-6287ba59d60c4b2aa071e4986067c301",
-      "queue_sequence": 1206,
+      "historical_unadmitted_ticket_id": "raid-build-6287ba59d60c4b2aa071e4986067c301",
+      "configure_ticket_id": "raid-build-073f13006b74413cbc5ca44eb50580ce",
+      "configure_queue_sequence": 1207,
+      "build_ticket_id": "raid-build-425e5ad4bf7346239076b60579983bbb",
+      "build_queue_sequence": 1208,
       "policy_id": "cata_raid_build_resource_policy_fast8_v2",
       "compiler_jobs": 8,
       "linker_jobs": 1,
-      "classification": "filesystem_reserve_before_admission",
-      "tmp_total_bytes": 16256860160,
-      "tmp_available_bytes": 8337698816,
+      "classification": "success_gate_bearing",
+      "temporary_filesystem": "/dev/nvme1n1p3",
       "required_available_bytes": 21474836480,
-      "receipt_sha256": null,
-      "binary_sha256": null
+      "configure_receipt_sha256": "81ab6745b4425035b2ebd5d9adf6fb884ac719e7a72ea7731d8639d7896aaad3",
+      "build_receipt_sha256": "fba062fda79121cc20fa8085b3df1bc71fa992dd51c8f02f3530d04eb1de35b6",
+      "binary_sha256": "662154787fd29953296632549306093fb02e23236dbd47dffecaa38915774838"
     },
     "runtime_smoke_verified": false,
+    "runtime_smoke_failure": "same_actor_second_poll_reoverflow_due_all_actor_response_delivery_cadence",
+    "runtime_smoke_failed_solely_because_polling_cadence_did_not_exercise_contiguous_recovery": true,
+    "runtime_smoke_cleanup_verified": true,
     "gameplay_admitted": false,
     "fixture_promotion_admitted": false,
     "acceptance_admitted": false
   },
   "coordinator_followup": {
-    "next_owner": "raid-shard-architecture",
-    "next_owner_command": "after_allowed_build_filesystem_capacity_is_available_rerun_same_queue_build_then_one_completion_watchdog_trace_transport_smoke",
-    "next_work_unit": "shard:queued_build_and_trace_discontinuity_runtime_smoke",
-    "evidence_owner_after_runtime_smoke": "raid-evidence-lifecycle",
+    "next_owner": "raid-bot-runtime-implementation",
+    "next_owner_command": "bound_trace_delta_all_transport_so_a_high_rate_actor_can_be_repolled_before_another_128_entry_overflow_without_reconstructing_rows_or_increasing_the_ring",
+    "next_work_unit": "runtime:trace_delta_all_poll_serialization_overrun",
+    "return_owner_after_runtime_fix": "raid-shard-architecture",
     "do_not_advance_to": "matched_chainwielder_fixture_expansion_until_runtime_smoke_green"
   },
-  "next_action": "Provide an allowed fresh build filesystem satisfying the unchanged fast8_v2 20 GiB reserve, then rerun this same clean queued build and one completion-watchdog trace transport smoke. Do not advance to Chainwielder fixture expansion or claim gameplay completion."
+  "next_action": "Bound the all-actor trace delta transport cadence while preserving truthful actor-local discontinuities, then return to raid-shard-architecture for one fresh one-start smoke. Do not advance to Chainwielder fixture expansion or claim gameplay completion."
 }
