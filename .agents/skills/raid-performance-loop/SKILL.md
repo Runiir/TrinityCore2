@@ -289,6 +289,27 @@ requires no ten-occurrence stop and a post-occurrence pass for the latest
 occurred signature (an open-but-repaired signature is allowed); only
 `acceptance_admitted` waits for the two completed clean clears.
 
+For the Magmaw diagnostic, evaluator output is not live authority by itself.
+After fresh provisioning creates the exact runtime config and route manifest,
+seal them with the clean source, verified build receipt/binary, ledger,
+decision, and suite receipt:
+
+```bash
+pixi run python -m tools.raid_program.recurrence_admission create \
+  --worktree <clean-worktree> --binary <worldserver> \
+  --build-receipt <verified-build-receipt.json> \
+  --runtime-config <worldserver.validation.conf> \
+  --route-manifest <validation_route_manifest.json> \
+  --ledger <recurrence-ledger.json> --decision <recurrence-decision.json> \
+  --suite-receipt <suite-receipt.json> --output <run>/recurrence-admission.json
+```
+
+Pass that file and its SHA-256 to the capture with
+`--recurrence-admission` and `--recurrence-admission-sha256`. The capture
+re-verifies every bound byte before spawning a worldserver. Missing, stale,
+dirty, failing, invalidated, or identity-mismatched admission is terminal
+preflight evidence; never bypass it with an older descriptor or `/tmp` result.
+
 Reappearance reopens the same blocker even after clean intervening runs. At ten
 occurrences of one signature in the active investigation epoch, including
 interleaved occurrences, stop implementation and new canaries. Return the ten

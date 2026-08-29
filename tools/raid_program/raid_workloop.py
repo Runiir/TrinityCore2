@@ -473,8 +473,11 @@ def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
         issues.append("active_work_unit_source_missing")
     elif _file_sha256(source_path) != expected_hash:
         issues.append("active_work_unit_source_stale")
-    if not _git_commit_exists(root, str(active.get("observed_at_commit") or "")):
+    observed_at_commit = str(active.get("observed_at_commit") or "")
+    if not _git_commit_exists(root, observed_at_commit):
         issues.append("active_work_unit_commit_missing")
+    elif observed_at_commit != _git_head(root):
+        issues.append("active_work_unit_commit_stale")
     clock = active.get("validation_clock") or {}
     if (
         clock.get("policy") != "completion_watchdog"

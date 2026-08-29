@@ -2,6 +2,8 @@ import json
 import io
 from math import hypot
 from pathlib import Path
+import subprocess
+import sys
 from types import SimpleNamespace
 
 from tools.raid_program.capture_phase1_raid_foundation import (
@@ -4037,3 +4039,36 @@ def test_capture_watchdog_fails_closed_when_attempt_identity_is_not_exact():
     )
     assert report["detected"] is False
     assert "watchdog_cohort_mismatch" in report["rejections"]
+
+
+def test_magmaw_capture_requires_recurrence_admission_before_start(tmp_path: Path):
+    config = tmp_path / "worldserver.conf"
+    receipt = tmp_path / "build.json"
+    config.write_text("BotWorld.AutoStart = 0\n", encoding="utf-8")
+    receipt.write_text("{}\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "tools.raid_program.capture_phase1_raid_foundation",
+            "--binary",
+            "/bin/true",
+            "--config",
+            str(config),
+            "--output",
+            str(tmp_path / "report.json"),
+            "--build-receipt",
+            str(receipt),
+            "--worktree",
+            str(Path(__file__).resolve().parents[1]),
+            "--scenario-id",
+            "blackwing_descent_10n_magmaw_diagnostic",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "magmaw_recurrence_admission_required" in result.stderr

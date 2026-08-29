@@ -455,7 +455,8 @@ def test_affliction_canary_exposes_pet_debug_reference_artifacts() -> None:
 def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     status = workloop.build_status()
 
-    assert status["active_work_unit"]["descriptor_valid"] is True
+    assert status["active_work_unit"]["descriptor_valid"] is False
+    assert "active_work_unit_commit_stale" in status["active_work_unit"]["issues"]
     assert status["active_work_unit"]["ready_for_bounded_repair"] is False
     assert status["active_work_unit"]["ready_for_fixture_expansion"] is False
     assert status["active_work_unit"]["ready_for_live_verification"] is False
@@ -478,9 +479,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-bot-runtime-implementation"
     )
-    assert status["current_program_next_action"] == status["active_work_unit"][
-        "next_action"
-    ]
+    assert status["current_program_next_action"] is None
     assert "revision 4" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 

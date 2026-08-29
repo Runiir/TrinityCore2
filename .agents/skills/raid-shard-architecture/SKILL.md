@@ -250,6 +250,12 @@ latest immutable handoff.
    and power seeds and no group/instance/corpse/ghost residue. A failed
    provisioning preflight is an infrastructure result and consumes no gameplay
    attempt, but the capture process and its owned server must still terminate.
+   For `blackwing_descent_10n_magmaw_diagnostic`, also create the exact
+   `tools.raid_program.recurrence_admission` receipt after preparation and pass
+   its path and SHA-256 to the capture. The seal binds the clean source/tree,
+   binary and build receipt, generated config and route manifest, ledger,
+   recurrence decision, full regression-suite receipt, and fixture revisions.
+   If the seal cannot be created or verified, do not start a worldserver.
 4. Start one verified worldserver with the generated shard config.
 5. Confirm console/process readiness and active runtime identity.
 6. Only then attach the boss babysitter. The babysitter monitors; it does not silently repair or manufacture state.

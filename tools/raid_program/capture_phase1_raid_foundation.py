@@ -26,6 +26,10 @@ try:
     )
     from tools.raid_program.capture_no_bots_baseline import process_sample as _baseline_process_sample
     from tools.raid_program.probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
+    from tools.raid_program.recurrence_admission import (
+        RecurrenceAdmissionError,
+        verify_recurrence_admission,
+    )
 except ModuleNotFoundError:
     # Direct execution places tools/raid_program, not the repository root, on
     # sys.path. Keep the CLI and imported test/module paths on the same sampler.
@@ -38,6 +42,7 @@ except ModuleNotFoundError:
     )
     from capture_no_bots_baseline import process_sample as _baseline_process_sample
     from probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
+    from recurrence_admission import RecurrenceAdmissionError, verify_recurrence_admission
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -5292,6 +5297,8 @@ def main() -> int:
     parser.add_argument("--raw-output", type=Path, default=None)
     parser.add_argument("--server-log-output", type=Path, default=None)
     parser.add_argument("--build-receipt", type=Path, required=True)
+    parser.add_argument("--recurrence-admission", type=Path)
+    parser.add_argument("--recurrence-admission-sha256")
     parser.add_argument("--build-attestation", type=Path, default=None)
     parser.add_argument("--worktree", type=Path, default=ROOT)
     parser.add_argument(
@@ -5366,6 +5373,32 @@ def main() -> int:
         raise SystemExit("server log output already exists; phase1 artifacts are immutable")
     if not binary.is_file() or not config.is_file():
         raise SystemExit("binary and config must exist")
+    recurrence_admission: dict[str, Any] | None = None
+    recurrence_required = scenario_id == "blackwing_descent_10n_magmaw_diagnostic"
+    if recurrence_required and (
+        args.recurrence_admission is None or not args.recurrence_admission_sha256
+    ):
+        raise SystemExit(
+            "capture preflight rejected: magmaw_recurrence_admission_required"
+        )
+    if args.recurrence_admission is not None or args.recurrence_admission_sha256:
+        if args.recurrence_admission is None or not args.recurrence_admission_sha256:
+            raise SystemExit(
+                "capture preflight rejected: incomplete_recurrence_admission_binding"
+            )
+        try:
+            recurrence_admission = verify_recurrence_admission(
+                admission_path=args.recurrence_admission,
+                expected_sha256=args.recurrence_admission_sha256,
+                worktree=worktree,
+                binary=binary,
+                build_receipt=args.build_receipt.resolve(),
+                runtime_config=config,
+            )
+        except RecurrenceAdmissionError as error:
+            raise SystemExit(
+                f"capture preflight rejected: recurrence_admission:{error}"
+            ) from error
     # This controller owns the single explicit native start command.  A
     # prepare-only runner hands us a config, but must not leave worldserver
     # AutoStart enabled: the resulting duplicate profile selection tears down
@@ -6236,6 +6269,7 @@ def main() -> int:
         "runtime_profile": profile_name,
         "pool_tag_filter": runtime_assets.get("pool_tag_filter"),
         "identity_stable_during_run": identity_stable,
+        "recurrence_admission": recurrence_admission,
         "build_provenance": build_provenance,
         "runtime_profile_assets": runtime_assets,
         "drudge_navmesh_preflight": drudge_navmesh_preflight,
