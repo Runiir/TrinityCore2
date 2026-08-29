@@ -1,90 +1,72 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "same_level_native_path_proof_v3_20260829",
-  "work_unit": "runtime:shared_movement:native_endpoint_floor_normalization",
+  "epoch_id": "magmaw_prepull_pipeline_v1_20260829",
+  "work_unit": "runtime:shared_prepull_pipeline:magmaw_formation_then_prepot",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "exact_build_verified_pending_matched_canary108",
-  "observed_at_commit": "b2ab0de4f555db3f12d8fe6da1c96a2b36abfd58",
+  "classification": "exact_build_verified_pending_matched_canary109",
+  "observed_at_commit": "f7581b572e8e971e121a78c8366dccbff79b6774",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_b2ab0de4f5_canary107_native_endpoint_handoff_20260829.md",
-    "sha256": "1210fbf7df9b44ba5200a7fae35d1dd79a91563bf185c6947e053aea28a34faa"
+    "path": "experiments/configs/cata_raid_magmaw_f7581b572e_canary108_prepot_geometry_handoff_20260829.md",
+    "sha256": "cfe221d23966ae50d01e6e842f9107c33bec043605972924ba960aef599c93e2"
   },
-  "first_broken_edge": "complete_floor_valid_native_path_preserves_requested_xy_but_mmap_normalizes_z_by_less_than_one_yard_and_the_3d_half_yard_gate_rejects_it",
-  "causal_signature": "same_level_native_endpoint_z_normalization_false_negative",
-  "hypothesis": "Endpoint identity requires a tight horizontal match plus a separately bounded native-floor Z delta; combining both into a 0.5-yard 3D radius rejects valid MMAP floor normalization.",
+  "first_broken_edge": "the_declared_38_4_yard_fire_mage_and_hunter_bait_formation_cannot_satisfy_the_generic_35_yard_prepot_gate_so_eight_members_wait_until_the_first_short_aura_expires",
+  "causal_signature": "magmaw_prepot_geometry_conflicts_with_bait_formation",
+  "hypothesis": "Durable setup may precede formation, but short pre-pot submission must use the encounter's completed formation contract rather than an independent boss-distance proxy.",
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "prior_epoch_gate_bearing_occurrence_count": 10,
-    "retained_archive_occurrence_count": 15,
+    "occurrence_count": 1,
     "stop_at": 10,
-    "prior_epoch_status": "architecture_stop_active_and_history_carried_into_child_signature",
-    "history_carries_forward": true
+    "history_carries_forward": true,
+    "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
     "allowed_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrNativeFloor.h",
-      "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h",
-      "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h",
-      "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateContext.h",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h",
-      "tests/test_native_path_floor_diagnostic.py",
-      "tests/test_native_runback_floor_gate.py",
-      "tests/test_movement_planner_diagnostics.py",
-      "tests/test_incomplete_path_backoff.py",
-      "tests/test_bot_action_arbitration.py",
-      "tests/test_ml_pipeline.py"
+      "src/server/game/Bots/BotWorldPopulationMgrRaidConsumables.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrRaidConsumables.h",
+      "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "tests/test_bot_world_population_mgr_raid_consumables_module.py",
+      ".agents/skills/raid-performance-loop/SKILL.md",
+      ".agents/skills/raid-bot-runtime-implementation/SKILL.md",
+      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+      "experiments/configs/cata_raid_magmaw_f7581b572e_canary108_prepot_geometry_handoff_20260829.md"
     ],
-    "allowed_change": "Split endpoint proof into tight horizontal identity and bounded native-floor vertical normalization, retain endpoint floor validity, emit both deltas, and give Magmaw formation, health, and pull-owner suppression distinct diagnostics.",
+    "allowed_change": "Order durable setup, health and encounter formation, short native pre-pot, and designated pull; remove the contradictory generic distance proxy.",
     "forbidden": [
       "class_or_spec_policy_changes",
-      "encounter_strategy_changes_beyond_diagnostic_reason_splitting",
-      "Drudge_strict_geometry_changes",
-      "owner_specific_distance_or_route_exceptions",
-      "weakening_incomplete_no_path_shortcut_off_mesh_cross_map_strict_descent_or_native_long_recovery_guards",
-      "database_DVC_build_server_or_live_run_actions",
-      "nested_agents",
-      "commits"
-    ],
-    "implementation_budget": "one implementation pass and one focused correction pass"
+      "encounter_geometry_changes",
+      "inventory_manufacture_or_direct_aura_application",
+      "teleport_force_pull_or_boss_outcome_mutation",
+      "database_or_DVC_mutation_inside_the_implementation_unit",
+      "additional_hypotheses_before_the_matched_canary"
+    ]
   },
   "required_static_proof": [
-    "Canary107 endpoint deltas 0.882904 and 0.811676 with zero horizontal displacement are accepted",
-    "horizontal displacement above 0.5 yards remains rejected",
-    "vertical displacement above 1.5 yards remains rejected",
-    "endpoint floor validity and all incomplete shortcut off-mesh cross-level strict-descent and native-long-recovery guards remain fail-closed",
-    "horizontal and vertical endpoint deltas are serialized separately",
-    "formation staging health recovery and pull-owner waiting have distinct trace actions",
+    "formation and health holds reject short pre-pot readiness",
+    "pull-owner wait admits pre-pot readiness for non-pull members",
+    "durable flask and food setup remains allowed before formation",
+    "the 35-yard boss-distance proxy is absent",
+    "native inventory use and second-potion reservation remain unchanged",
     "all touched C++ files remain below 1000 physical lines"
   ],
   "focused_validation": {
-    "command": "pixi run python -m pytest -q tests/test_native_path_floor_diagnostic.py tests/test_native_runback_floor_gate.py tests/test_movement_planner_diagnostics.py tests/test_incomplete_path_backoff.py tests/test_bot_action_arbitration.py tests/test_ml_pipeline.py -k 'native_path or movement_planner or magmaw or live_bot_validation_only_defers_exact_magmaw_formation_error'",
-    "focused_result": "30 passed including recurrence, endpoint, Magmaw, movement diagnostics, and closed-report classification",
-    "expanded_movement_result": "37 passed across the complete owned C++ harness and movement/recurrence files",
-    "plan_movement_path_ccn_before": 87,
-    "plan_movement_path_ccn_after": 82,
-    "maximum_touched_cpp_lines": 430,
-    "live_canary_allowed_for_worker": false
-  },
-  "worker_audit": {
-    "canary107_babysitter": "completed_read_only_identity_and_first_broken_edge_handoff",
-    "coordinator_action": "classified_child_signature_without_resetting_the_architecture_stop_history"
+    "command": "pixi run pytest -q tests/test_bot_world_population_mgr_raid_consumables_module.py tests/test_magmaw_bloodlust.py tests/test_magmaw_magma_spit_target_filter.py tests/test_bot_world_population_mgr_native_action_module.py",
+    "result": "19 passed including compiled prepot-stage replay",
+    "skill_validation": "raid-performance-loop and raid-bot-runtime-implementation valid",
+    "maximum_touched_cpp_lines": 642
   },
   "root_runtime_verification": {
-    "build": "exact committed source through queued_build.py with guarded 8 compiler jobs and same-commit configure lineage",
-    "build_source_commit": "f7581b572e8e971e121a78c8366dccbff79b6774",
-    "configure_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_f7581b572e.json",
-    "configure_receipt_sha256": "0911ecf21254f6b83832ec0e2d2dceda61129138d38cff6ba6268c55fdaff558",
-    "worldserver_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_f7581b572e.json",
-    "worldserver_receipt_sha256": "2f20cc892835bff1c2b0388594910b0709b067b0c852ff158f0c72160ae4a01e",
-    "worldserver_sha256": "7fa334732306c647a116d855071fef2fad43b012b680ff88854d0b26ea5da127",
-    "canary_budget": 1,
+    "build_source_commit": "d1111365238abc4fd3ccf8cd51fc58c0cdce1c95",
+    "configure_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_d111136523.json",
+    "configure_receipt_file_sha256": "11baed6992e435f2927b3aef359a8bfc3849a8fe66cfd32601fad3765bdb727c",
+    "configure_embedded_receipt_sha256": "5fadc1229bbd3e413c9858b1a7b12d08ba6ee3ae09abee534965803e5c784779",
+    "worldserver_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_d111136523.json",
+    "worldserver_receipt_file_sha256": "43a741c2ac2c6a77d5b1580d7aa5241c5d3d54094bec3055e9998c63c79db68f",
+    "worldserver_embedded_receipt_sha256": "177ad9e18a09c530ffb12b7ccaa987935b27bf06d3dd83ada6319f56d41081d7",
+    "worldserver_sha256": "5e51c6c0586e93e18997d46979a9ffcfdb1c149cf4fc8a8bd6585dde2aecac70",
+    "compiler_jobs": 8,
     "clock": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "promotion_gate": "two consecutive current-standard Magmaw route clears before closing the causal signature"
+    "canary_budget": 1
   },
-  "next_action": "Run one matched autonomous current-standard completion-watchdog Canary108. Classify every known recurrence signature; do not close any signature before two consecutive full route clears."
+  "next_action": "Run one matched autonomous current-standard completion-watchdog Canary109. Require all ten native pre-pot receipts before pull, then classify the first downstream edge without reopening cleared symptoms."
 }
