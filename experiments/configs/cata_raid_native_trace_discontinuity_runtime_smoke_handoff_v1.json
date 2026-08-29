@@ -1,0 +1,125 @@
+{
+  "schema": "cata_raid_native_trace_discontinuity_runtime_smoke_handoff_v1",
+  "work_unit_id": "shard:queued_build_and_trace_discontinuity_runtime_smoke",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_verification_build_admission_filesystem_reserve",
+  "observed_at_utc": "2026-08-29T23:16:12Z",
+  "implementation_commit": "dc061cd96e60cccccf233cf0a588b70ce9238aec",
+  "implementation_tree": "3c059ade2ed3d5ac6fb02dee68babbab352ebcfa",
+  "input_identities": {
+    "implementation_handoff": {
+      "path": "experiments/configs/cata_raid_native_trace_discontinuity_transport_handoff_v1.json",
+      "sha256": "de0b38bad5be0fa1d3d5e2cd0e39a601a52abaa289f5a12f0d5ddfada6eafa0c"
+    },
+    "source_summary": {
+      "path": "experiments/configs/cata_raid_magmaw_6518233c67_chainwielder_trace_transport_summary_v1.json",
+      "sha256": "a2784575f5944b9d4054817e6b1d21ff67096bef10921faf8ccaeb70025309b9"
+    },
+    "build_policy": {
+      "path": "experiments/configs/cata_raid_build_resource_policy_fast8_v2.json",
+      "file_sha256": "c1fab33f896db4c10137d1bbc98391b11b7b58bde45454704584f14a36e9f7bb",
+      "canonical_json_sha256": "7dd1c6cea51179acba12836677125a073f86ba400b62a8b3fe46522935bbc992",
+      "compiler_jobs": 8,
+      "linker_jobs": 1,
+      "minimum_filesystem_available_gib": 20
+    }
+  },
+  "scope_lock": {
+    "candidate_edge": "the real GetBotTraceJson exporter should turn one actor-local ring overflow into one explicit discontinuity response with retained entries, then resume that actor contiguously on the next delta poll",
+    "failure_postcondition": "sticky repeated gap=true with unchanged cursor and no entries, malformed discontinuity fields, cross-actor contamination, identity loss, or inability to naturally exercise one actor overflow",
+    "single_hypothesis": "commit dc061cd96e implements the fixture-green transition in the live worldserver exporter",
+    "owned_behavior": "one exact clean fast8 queued worldserver build, one live trace-transport smoke, server cleanup, and compact evidence",
+    "excluded": [
+      "gameplay_or_strategy_changes",
+      "class_pet_movement_encounter_or_route_changes",
+      "ring_size_or_trace_semantics_changes",
+      "fixture_promotion",
+      "Magmaw_or_gameplay_acceptance"
+    ]
+  },
+  "build_admission": {
+    "temporary_root": "/tmp/trinity-trace-smoke-dc061cd96e-lhOEGq",
+    "source_worktree": "/tmp/trinity-trace-smoke-dc061cd96e-lhOEGq/source",
+    "source_clean_at_request": true,
+    "preexisting_worldserver_binary": false,
+    "ticket_id": "raid-build-6287ba59d60c4b2aa071e4986067c301",
+    "queue_sequence": 1206,
+    "resource_class": "configure",
+    "command_sha256": "be70ed356d98ec9b6b158e6237ffb8a00fe0ab7d125862735f2df2e1e85c5d5f",
+    "ticket_canonical_json_sha256": "77d63989c1e9062a98cee7ae36b66831e19a710aee1463943dc546e09d26803c",
+    "requested_at_utc": "2026-08-29T23:12:53.604551Z",
+    "last_preflight_at_utc": "2026-08-29T23:15:29.172877Z",
+    "last_preflight_reasons": [
+      "filesystem_reserve"
+    ],
+    "tmp_filesystem_total_bytes": 16256860160,
+    "tmp_filesystem_available_bytes": 8337698816,
+    "policy_minimum_available_bytes": 21474836480,
+    "admitted": false,
+    "configure_started": false,
+    "ticket_terminal_state": "canceled",
+    "ticket_terminal_at_utc": "2026-08-29T23:15:29.511748Z",
+    "configure_receipt_sha256": null,
+    "worldserver_build_ticket_id": null,
+    "worldserver_build_receipt_sha256": null,
+    "worldserver_binary_sha256": null,
+    "stale_binary_reused": false
+  },
+  "live_smoke": {
+    "worldserver_start_count": 0,
+    "server_epoch": null,
+    "config_identity": null,
+    "cohort_identity": null,
+    "attempt_identity": null,
+    "runtime_profile_identity": null,
+    "actor_response_1": null,
+    "actor_response_1_sha256": null,
+    "actor_response_2": null,
+    "actor_response_2_sha256": null,
+    "production_boundary_exercised": false,
+    "reason": "no gate-bearing binary exists because the policy-bound clean configure could not be admitted"
+  },
+  "cleanup": {
+    "queued_ticket_active": false,
+    "queued_ticket_remaining_in_fifo": false,
+    "owned_worldserver_processes": 0,
+    "owned_bots": 0,
+    "owned_leases": 0,
+    "worldserver_stop_required": false,
+    "coordinator_active_ticket": null,
+    "coordinator_queue_depth": 0,
+    "temporary_root_removed": true,
+    "temporary_worktree_registry_removed": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "the isolated request source was clean at dc061cd96e with tree 3c059ade2e",
+      "the isolated source contained no preexisting worldserver binary",
+      "fast8_v2 requested exactly eight compiler jobs and one linker job",
+      "the coordinator kept the ticket unadmitted because /tmp cannot meet the frozen 20 GiB filesystem reserve",
+      "no configure command, compiler, linker, or worldserver was started"
+    ],
+    "refuted": [
+      "an unadmitted queued configure ticket is a clean worldserver build receipt",
+      "the fixture-green compiled transition is live worldserver proof",
+      "relocating output outside the allowed /tmp state or weakening the frozen policy is an admissible recovery"
+    ],
+    "unproven": [
+      "clean queued worldserver build identity",
+      "live actor-local discontinuity and next-poll behavior",
+      "Chainwielder Hazard-owner state preservation",
+      "Magmaw gameplay or acceptance"
+    ]
+  },
+  "gate_state": "runtime_smoke_failed_build_unverified_gameplay_closed",
+  "dvc_publication": {
+    "performed": false,
+    "reason": "the admission failure is completely represented by this compact Git handoff and produced no immutable live evidence bundle"
+  },
+  "next_owner": {
+    "owner": "raid-shard-architecture",
+    "work_unit": "shard:queued_build_and_trace_discontinuity_runtime_smoke",
+    "prerequisite": "provide an allowed fresh build filesystem that satisfies the unchanged fast8_v2 20 GiB reserve, or obtain explicit authorization to expand the allowed build-output path",
+    "action": "rerun the same clean queued build and one-start live two-poll trace smoke; do not advance to Chainwielder fixture expansion"
+  }
+}
