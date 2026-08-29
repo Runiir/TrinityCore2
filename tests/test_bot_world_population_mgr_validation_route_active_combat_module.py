@@ -30,6 +30,7 @@ def test_active_combat_moves_the_requested_contiguous_boundary_once():
         "terminalArrivalContext.RunActiveCombat"
     ) < source.index("boss_route_early_activation")
     for marker in (
+        "current_pack_authority_recovered_before_regroup",
         "regroup_anchor_no_focus",
         "ineligible_trash_target",
         "raid_mechanic_contract_fail_closed",

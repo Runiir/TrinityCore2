@@ -156,6 +156,14 @@ submission, retain the first evidence edge for certification, and allow the
 ordinary runtime to survive, reset, or recover. Audit every call to a shared
 terminal latch as an ownership boundary, not merely as a reason-code branch.
 
+Resolve current-route combat authority before generic regroup or fallback.
+If an exact current target is valid, preserve it. If the proposed target is
+stale or belongs to another encounter while an alive persisted current-pack
+target exists, recover the persisted target. Only the absence of both permits
+`hold_anchor_no_focus`. Keep this as one explicit precedence table and replay
+all three states; do not add another local target chooser or a renamed hold
+reason.
+
 Do not reuse one decision/action reason for different predicates. A health
 hold, formation wait, pull-owner wait, movement rejection, and recovery attempt
 must remain distinguishable in the candidate receipt. When a live trace exposes

@@ -24,7 +24,8 @@
       "partial_wipe_native_reset_gate_v1",
       "phase1_capture_single_start_contract_v1",
       "deferred_candidate_capture_lifetime_v1",
-      "native_bwd_partial_death_recovery_lifecycle_v1"
+      "native_bwd_partial_death_recovery_lifecycle_v1",
+      "current_route_combat_authority_precedence_v1"
     ],
     "fixtures": [
       {
@@ -174,6 +175,17 @@
           "tests/test_cata_raid_runtime_foundation.py::test_native_recovery_runback_uses_cumulative_landing_displacement_and_exact_identity",
           "tests/test_bot_world_population_mgr_update_death_module.py::test_partial_reset_release_is_native_only_and_distinct_from_full_wipe_latch"
         ]
+      },
+      {
+        "fixture_id": "current_route_combat_authority_precedence_v1",
+        "causal_signature": "current_route_combat_authority_preempted",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_current_route_combat_authority.py"
+        ]
       }
     ]
   },
@@ -202,7 +214,16 @@
     },
     "chainwielder_future_drudge_contamination": {
       "owner": "shared_route_movement_authority",
+      "parent": "current_route_combat_authority_preempted",
       "invariant": "generation-3 Drudges cannot contact the generation-2 Chainwielder pull"
+    },
+    "current_route_combat_authority_preempted": {
+      "owner": "shared_route_action_and_target_authority",
+      "invariant": "while an exact current-node target or persisted pack member is alive and attackable, current-node authority is reconstructed before stale anchors, regroup, retreat, previous or future targets, and generic fallback can own the tick",
+      "architecture_reviewed_through_occurrence_count": 10,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary114_route_authority_architecture_stop_20260829.md",
+      "historical_unique_run_count": 10,
+      "counting_note": "Eight retained pre-ledger route-authority failures, Canary102 through its child signature, and Canary114 establish ten lifetime occurrences. Stage labels remain evidence under this parent invariant."
     },
     "same_level_encounter_hazard_path_rejection": {
       "owner": "shared_movement_planner",
@@ -629,6 +650,102 @@
       "worldserver_log_sha256": "85f63cd3293521380514e639b5d0fdf681b453e1dcb7fc19416a8da1bbfe1702",
       "evidence": "experiments/configs/cata_raid_magmaw_canary113_native_recovery_architecture_stop_20260829.md",
       "note": "Chainwielder and both Drudges died. Two DPS ghosts retained accepted Recovery paths while remaining exactly at the Burning Steppes graveyard; one repath then terminal native_runback_no_progress prevented Magmaw reach."
+    },
+    {
+      "run_id": "trinity-magmaw-e75f5ba2-route-authority-history",
+      "route_completed": false,
+      "blockers": {
+        "current_route_combat_authority_preempted": "occurred"
+      },
+      "evidence": "experiments/configs/cata_raid_phase1_infrastructure_capture_e75f5ba2_summary_v1.json",
+      "note": "The Magmaw node had no explicit Drakonid prerequisite authority, so generic selection repeatedly pulled prior corridor trash."
+    },
+    {
+      "run_id": "trinity-magmaw-ef04a6f22a-route-authority-history",
+      "route_completed": false,
+      "blockers": {
+        "current_route_combat_authority_preempted": "occurred"
+      },
+      "evidence": "experiments/configs/cata_raid_progression_handoff.md",
+      "note": "The current Chainwielder pack contained only GUID 27 while 349 actions selected future Drudges and current profiles lost usable authority."
+    },
+    {
+      "run_id": "trinity-magmaw-fae9049d-route-authority-history",
+      "route_completed": false,
+      "blockers": {
+        "current_route_combat_authority_preempted": "occurred"
+      },
+      "evidence": "experiments/configs/cata_raid_phase1_infrastructure_capture_fae9049d_summary_v1.json",
+      "note": "Alive exact Drudges were retired from target authority and could not be reacquired."
+    },
+    {
+      "run_id": "trinity-magmaw-c35ead7a-route-authority-history",
+      "route_completed": false,
+      "blockers": {
+        "current_route_combat_authority_preempted": "occurred"
+      },
+      "evidence": "experiments/configs/cata_raid_phase1_infrastructure_capture_c35ead7a_summary_v1.json",
+      "note": "A generic per-bot safe-memory anchor displaced the exact live Drudge pack and split the cohort."
+    },
+    {
+      "run_id": "trinity-magmaw-476ec4c0-route-authority-history",
+      "route_completed": false,
+      "blockers": {
+        "current_route_combat_authority_preempted": "occurred"
+      },
+      "evidence": "experiments/configs/cata_raid_phase1_infrastructure_capture_476ec4c0_summary_v1.json",
+      "note": "Generic partial-wipe retreat preempted an alive attackable current-generation Drudge pack."
+    },
+    {
+      "run_id": "trinity-magmaw-9a3afe4def-route-authority-history",
+      "route_completed": false,
+      "blockers": {
+        "current_route_combat_authority_preempted": "occurred"
+      },
+      "evidence": "experiments/configs/cata_raid_phase1_infrastructure_capture_9a3afe4def_summary_v1.json",
+      "note": "Future Magmaw targets and splash escaped current Drudge authority."
+    },
+    {
+      "run_id": "trinity-magmaw-canary40-route-authority-history",
+      "route_completed": false,
+      "blockers": {
+        "current_route_combat_authority_preempted": "occurred"
+      },
+      "evidence": "experiments/configs/cata_raid_magmaw_canary40_future_encounter_handoff_20260826.md",
+      "note": "Magmaw entered combat while the current route still owned two alive Drudges."
+    },
+    {
+      "run_id": "trinity-magmaw-02e3ba1ba8-route-authority-history",
+      "route_completed": false,
+      "blockers": {
+        "current_route_combat_authority_preempted": "occurred"
+      },
+      "evidence": "experiments/configs/cata_raid_magmaw_02e3ba1ba8_contamination_handoff_20260828.md",
+      "note": "Future-encounter offense escaped current route authority through non-player action owners."
+    },
+    {
+      "run_id": "trinity-magmaw-ade3eb701d-canary114.GmnA6o",
+      "route_completed": false,
+      "classification": "gameplay_failure",
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "chainwielder_future_drudge_contamination": "absent",
+        "current_route_combat_authority_preempted": "occurred",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "not_exercised",
+        "same_level_native_endpoint_z_normalization_false_negative": "not_exercised",
+        "same_level_native_path_proof_false_negative": "not_exercised",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "not_exercised",
+        "raid_partial_wipe_waits_for_last_survivor": "not_exercised",
+        "phase1_capture_duplicate_autostart_lifecycle": "absent",
+        "deferred_candidate_dangling_reference_capture": "absent",
+        "native_partial_death_recovery_lifecycle_failure": "not_exercised"
+      },
+      "report_sha256": "7894be24accd47e0ee8eda9cdfc650ce05b259e87b3970b7c20c1e727037951d",
+      "raw_jsonl_sha256": "c162b35202cfe5932a6156607704b66d1fcbe32b0086d13634166cba98067d9e",
+      "worldserver_log_sha256": "7aea86d975687e6553c880fe5dd0f5a3fd5357e49e6abf528602892144f326c0",
+      "evidence": "experiments/configs/cata_raid_magmaw_canary114_route_authority_architecture_stop_20260829.md",
+      "note": "An alive attackable tank-owned Chainwielder remained at 99.6375% HP after generic non-tank regroup cleared the exact current target; future Magmaw fallback was rejected but current-pack authority was never restored."
     }
   ]
 }

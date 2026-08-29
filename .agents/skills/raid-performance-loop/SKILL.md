@@ -189,6 +189,20 @@ historical count, not at one. Treat an omitted historical family as a migration
 defect: stop canaries, repair the ledger and fixture coverage, and run the
 evaluator before changing runtime code.
 
+Insert the just-closed run into the recurrence ledger before accepting any
+suite receipt, build receipt, or next-run authorization. Map every terminal
+symptom to an existing causal or parent invariant first. A receipt generated
+while the latest run is absent from the ledger is stale even when all listed
+fixtures pass; it proves only that the incomplete manifest passed.
+
+When several stage-specific failures all displace the same end-to-end owner,
+retain their detail but count them under one parent invariant. For route
+combat, an alive exact current-node target or persisted pack must outrank stale
+anchors, regroup, retreat, previous/future targets, and generic fallback.
+Cover that precedence with one transition replay that includes a valid current
+target, a forbidden proposed target plus a valid current pack, and the true
+no-focus case. A collection of source-shape assertions is not that replay.
+
 Keep stage labels and terminal reasons as evidence under that one family. Do
 not give `submission_inactive`, `no_progress`, `trigger_not_crossed`, reclaim,
 or rejoin failures independent counters when they violate the same end-to-end

@@ -2,6 +2,7 @@
 
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
+#include "Bots/BotValidationRouteCombatAuthority.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrPolicyHelpers.h"
@@ -136,7 +137,39 @@ bool ObjectiveContext::RunActiveCombat(
             std::forward<decltype(args)>(args)...);
     };
 
+    bool const trashRoute = Cohort().Config.ValidationRouteKind != "boss";
+    Creature* proposedTrash = target ? target->ToCreature() : nullptr;
+    bool const proposedCurrentTrash = trashRoute && proposedTrash
+        && target->IsAlive() && bot->IsValidAttackTarget(target)
+        && isEligibleTrashClusterMob(proposedTrash);
+    Unit* activePackTarget = trashRoute && !proposedCurrentTrash
+        ? Callbacks.ActivePackTarget() : nullptr;
+    bool const activeCurrentPack = activePackTarget
+        && activePackTarget->IsAlive()
+        && bot->IsValidAttackTarget(activePackTarget)
+        && isEligibleTrashClusterMob(activePackTarget->ToCreature());
+    BotValidationRouteCombatAuthority::TargetDecision const authorityDecision =
+        BotValidationRouteCombatAuthority::Resolve(
+            trashRoute, proposedCurrentTrash, activeCurrentPack);
+    if (authorityDecision
+        == BotValidationRouteCombatAuthority::TargetDecision::RecoverActivePack)
+    {
+        target = activePackTarget;
+        state.TargetGuid = target->GetGUID();
+        rememberValidationRouteFocus(target);
+        std::string raw = BuildRawJson(bot, target);
+        std::string semantic = BuildSemanticJson(bot, target,
+            "validation_route_recovery", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_recovery", target,
+            "current_pack_authority_recovered_before_regroup", raw.c_str(),
+            semantic.c_str(), bot->GetExactDist(target),
+            Cohort().Config.ValidationRouteTargetEntry);
+    }
+
+    bool const currentTrashAuthority = authorityDecision
+        != BotValidationRouteCombatAuthority::TargetDecision::AllowRegroup;
     if (std::string(GetDungeonRole(bot)) != "tank"
+        && !currentTrashAuthority
         && (Cohort().Config.ValidationRouteKind != "boss" || routeDistance <= routeArrivalRadius))
     {
         if (Player* anchor = FindDungeonAnchor(bot))
