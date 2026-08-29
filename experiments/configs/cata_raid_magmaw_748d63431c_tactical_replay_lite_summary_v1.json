@@ -1,0 +1,103 @@
+{
+  "schema": "cata_raid_magmaw_tactical_replay_lite_summary_v1",
+  "classification": "diagnostic_causal_window_not_boss_acceptance",
+  "source": {
+    "commit": "748d63431cfcda9ea4957711b29346de287d90d9",
+    "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+    "raw_sha256": "ce9d06a76d6dd841249212eed0fb92262080f13d37f2fef7854abf331e88955c",
+    "report_sha256": "8c5bd085df58dbc53d57866ceb69dbe48fcddb71cf316fc663a9c25d6a37bd8d",
+    "canonical_identity_sha256": "a903393eabfecd7b805b0eb9a6f282e14d1bd9a016dd81a11c311710c3c2c276",
+    "canonical_roster_sha256": "c76f261c8ca3cd86e1f01e06537191d958c1c72ef3aa03a57afd8e803fe48424"
+  },
+  "window": {
+    "anchor": "repeated_decision_watchdog",
+    "start_ms": 1788031500878,
+    "terminal_at_ms": 1788031530878,
+    "end_ms": 1788031531878,
+    "duration_seconds": 31.0
+  },
+  "reduction": {
+    "raw_artifact_bytes": 181320129,
+    "replay_bytes": 1208540,
+    "replay_sha256": "184e5f7484d1e8c5217fcf7d4b37f5c4bd6171272bc8fded96f439538846d816",
+    "decision_rows": 372,
+    "diagnosis_frames": 50,
+    "movement_receipts": 59,
+    "position_samples": 539,
+    "combat_events": 852,
+    "mechanic_signals": 3
+  },
+  "window_metrics": {
+    "denominator": "fixed_31_second_replay_window",
+    "party_dps": 76601.677,
+    "party_hps": 15446.161,
+    "deaths": 0,
+    "movement_direction_reversals": 7,
+    "vertical_discontinuities": 3
+  },
+  "causal_assessment": {
+    "status": "localized_not_causally_closed",
+    "first_observed_state_infection": {
+      "bot_guid": 30007,
+      "from_ms": 1788031508028,
+      "from_xyz": [-311.824, -32.259, 210.969],
+      "to_ms": 1788031510216,
+      "to_xyz": [-311.767, -32.351, 202.374],
+      "vertical_delta": -8.595,
+      "persistent_through_window": true
+    },
+    "suspected_upstream_receipt": {
+      "receipt_id": 598,
+      "intent_reason": "ranged_formation_restore",
+      "spline_id": 6780,
+      "floor_observation_conflict": true,
+      "floor_observation_failure": "sample_floor_gap",
+      "launched_at_ms": 1788031506261,
+      "last_receipt_tagged_sample_at_ms": 1788031506663,
+      "sampling_gap_to_state_infection_ms": 3553
+    },
+    "downstream": {
+      "first_rejected_receipt_id": 599,
+      "first_rejected_at_ms": 1788031510261,
+      "first_rejected_reason": "route_destination_partial_path",
+      "first_rejected_actor_z": 202.3741,
+      "max_consecutive_backoff_decisions": 22
+    },
+    "correlation": "same_actor_temporal_predecessor_only",
+    "exact_missing_field": "continuous_receipt_tagged_actor_position_and_spline_identity_from_receipt_598_last_sample_until_terminal_outcome_or_supersession"
+  },
+  "not_established": {
+    "target_correctness": "phase_aware_expected_target_contract_and_target_lifecycle_missing",
+    "hazard_reaction": "hazard_activation_or_detection_timestamp_missing",
+    "cast_downtime": "cast_start_success_interrupt_and_cancel_lifecycle_missing",
+    "health_timeline": "current_and_max_health_samples_missing",
+    "aura_timeline": "aura_lifecycle_missing",
+    "boss_phase_and_hp_timeline": "boss_phase_and_hp_samples_missing"
+  },
+  "dvc": {
+    "pointer": "artifacts/cata_raid_program/phase1_foundation_748d63431c_magmaw_tactical_replay_lite_20260829.dvc",
+    "pointer_sha256": "07bdea7f0304b5de17f640b61361b063d0fd5bbc37bc0acafef65c96f7c25352",
+    "directory_md5": "ffc5b0724ff7dd9ce680d62381f0045e.dir",
+    "directory_size_bytes": 1212074,
+    "file_count": 2,
+    "remote_status": "in_sync"
+  },
+  "storage_cleanup": {
+    "source_workspace_evicted": true,
+    "derived_workspace_evicted": true,
+    "unique_cache_children_evicted": 4,
+    "directory_metadata_retained": true,
+    "workspace_bytes_evicted": 182532203,
+    "cache_bytes_evicted": 181329303,
+    "total_bytes_evicted": 363861506,
+    "rehydration": "targeted_dvc_pull_of_the_published_pointer"
+  },
+  "validation": {
+    "focused_tests": "2_passed",
+    "production_reduction_repeated_byte_identically": true,
+    "gameplay_changed": false,
+    "server_or_database_mutated": false
+  },
+  "conclusion": "The bounded replay localizes a persistent off-platform state before the repeated-decision terminal. Receipt 598 is the immediate same-bot launched predecessor and already records a floor-observation conflict, but the evidence does not prove that spline 6780 caused the drop because receipt-tagged sampling stops 3.553 seconds before it.",
+  "next_action": "Extend the default-off movement receipt observer so the exact receipt and spline remain sampled until terminal outcome or explicit supersession, then promote a production fixture only if that correlated replay closes causality. Do not change Magmaw gameplay or generic planner tolerances from this artifact alone."
+}

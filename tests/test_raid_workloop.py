@@ -343,22 +343,19 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "runtime_repair:magmaw_same_level_native_path:canary119_seq3376"
+        "runtime:magmaw_receipt_progress:close_receipt_598_sampling_gap"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-bot-runtime-implementation"
-    assert active["first_broken_edge"] == (
-        "Canary119 sequence 3376 rejected a complete floor-valid "
-        "parasite_contact_evade path as route_destination_endpoint_mismatch "
-        "even though its native endpoint travelled 3.1396 yards and made "
-        "about 2.195 yards of same-level progress."
-    )
+    assert "dropping from Z 210.969 to Z 202.374" in active["first_broken_edge"]
+    assert "stop 3.553 seconds before the drop" in active["first_broken_edge"]
     evidence = active["live_observation"]
-    assert evidence["direct_infection_players"] == 5
     assert evidence["terminal"] == "repeated_decision_watchdog"
-    assert evidence["trash_cleared_without_deaths"] is True
+    assert evidence["persistent_vertical_drop_bot_guid"] == 30007
+    assert evidence["suspected_receipt_id"] == 598
+    assert evidence["causal_sampling_gap_ms"] == 3553
     assert active["gate_state"] == (
-        "exact_counterexample_green_full_retained_bank_pending"
+        "persistent_vertical_drop_localized_causal_closure_required"
     )
     assert active["coordinator_followup"][
         "canary_budget_before_full_bank"
@@ -366,7 +363,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert active["validation"]["build_admitted"] is False
     assert active["validation"]["canary_admitted"] is False
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "canary120" in active["next_action"].lower()
+    assert "close the receipt 598 sampling gap" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
