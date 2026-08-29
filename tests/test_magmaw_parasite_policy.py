@@ -352,6 +352,172 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
+def test_magmaw_arrived_endpoint_replans_same_living_wave(tmp_path: Path) -> None:
+    source = tmp_path / "magmaw_arrived_endpoint_replay.cpp"
+    binary = tmp_path / "magmaw_arrived_endpoint_replay"
+    source.write_text(
+        r'''
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include <cassert>
+
+using namespace BotEncounter;
+using BotNativeAction::Move;
+
+static ActorSnapshot Player(uint32 guid, char const* spec,
+    Vector3 position)
+{
+    ActorSnapshot player;
+    player.Guid = ObjectGuid(HighGuid::Player, guid);
+    player.Alive = true;
+    player.Role = "dps";
+    player.ClassSpec = spec;
+    player.HealthPct = 100.0f;
+    player.Position = position;
+    return player;
+}
+
+static ActorSnapshot Parasite(uint32 guid, Vector3 position)
+{
+    ActorSnapshot parasite;
+    parasite.Guid = ObjectGuid(HighGuid::Unit,
+        AdaptiveMagmawStrategy::ParasiteEntry, guid);
+    parasite.Entry = AdaptiveMagmawStrategy::ParasiteEntry;
+    parasite.Alive = true;
+    parasite.Position = position;
+    return parasite;
+}
+
+static Blackboard BuildBoard()
+{
+    Blackboard board;
+    board.CurrentScope = Scope{
+        "arrived-endpoint", 7, 0, 4, "bwd.magmaw.encounter", 669, 1,
+        "magmaw" };
+    board.Revision = 21;
+    board.ObservedAtMs = 1787991388799;
+    board.NativeBossState = "in_progress";
+    board.Route.NodeId = "bwd.magmaw.encounter";
+    board.Route.NavigationHints = { { 0.0f, -1.0f, 210.0f } };
+    board.Players = {
+        Player(30006, "fire_mage", { 12.0f, -30.0f, 210.0f }),
+        Player(30009, "marksmanship_hunter", { 12.0f, -30.0f, 210.0f }) };
+
+    ActorSnapshot boss;
+    boss.Guid = ObjectGuid(HighGuid::Unit,
+        uint32(AdaptiveMagmawStrategy::BossEntry), uint32(39));
+    boss.Entry = AdaptiveMagmawStrategy::BossEntry;
+    boss.Alive = true;
+    boss.Attackable = true;
+    boss.Selectable = true;
+    boss.InCombat = true;
+    boss.Position = { 0.0f, 0.0f, 210.0f };
+    board.Hostiles = { boss, Parasite(500, { 12.0f, -26.0f, 210.0f }) };
+    return board;
+}
+
+static Move const* MoveOf(AdaptiveMagmawPlan const& plan)
+{
+    return plan.Movement
+        ? std::get_if<Move>(&plan.Movement->Action) : nullptr;
+}
+
+int main()
+{
+    AdaptiveMagmawStrategy strategy;
+    MagmawLaneTransitionState transition;
+    Blackboard board = BuildBoard();
+    ObjectGuid const mage = board.Players[0].Guid;
+    ObjectGuid const hunter = board.Players[1].Guid;
+
+    // Admit the fixed lane and carry both native paths to the same endpoint.
+    AdaptiveMagmawPlan first = strategy.Propose(board, mage, "dps", nullptr,
+        false, false, &transition);
+    Move const* firstMove = MoveOf(first);
+    assert(firstMove);
+    Vector3 const arrivedEndpoint{ firstMove->X, firstMove->Y, firstMove->Z };
+    uint64 const firstId = transition.TransitionId;
+    auto const firstLane = transition.Lane;
+
+    Blackboard arrived = board;
+    arrived.Revision += 1;
+    arrived.Players[0].Position = arrivedEndpoint;
+    arrived.Players[1].Position = arrivedEndpoint;
+    arrived.Hostiles[1] = Parasite(500, { 0.0f, -80.0f, 210.0f });
+    assert(MoveOf(strategy.Propose(arrived, mage, "dps", nullptr, false,
+        false, &transition)) == nullptr);
+    assert(MoveOf(strategy.Propose(arrived, hunter, "dps", nullptr, false,
+        false, &transition)) == nullptr);
+    assert(transition.IsArrived());
+    assert(transition.MechanicGeneration
+        == Parasite(500, arrivedEndpoint).Guid.GetRawValue());
+    assert(transition.MechanicKind == 2);
+
+    // Revision-4 counterexample: the same living wave makes the arrived
+    // endpoint unsafe. The old EnsureLaneTransition null result caused this
+    // assertion to fail, leaving both baiters at the infected endpoint.
+    Blackboard unsafe = arrived;
+    unsafe.Revision += 1;
+    unsafe.Hostiles[1] = Parasite(500, arrivedEndpoint);
+    AdaptiveMagmawPlan unsafeMage = strategy.Propose(unsafe, mage, "dps",
+        nullptr, false, false, &transition);
+    Move const* escapeMage = MoveOf(unsafeMage);
+    assert(escapeMage && "arrived living-wave endpoint must redirect");
+    assert(transition.TransitionId != firstId);
+    assert(transition.Lane != firstLane);
+    assert(escapeMage->X != arrivedEndpoint.X
+        || escapeMage->Y != arrivedEndpoint.Y);
+    assert(unsafeMage.Movement->Id.Actor == mage);
+    assert(unsafeMage.Movement->Id.EventGeneration == transition.TransitionId);
+    uint64 const redirectedId = transition.TransitionId;
+    Vector3 const redirectedEndpoint{ escapeMage->X, escapeMage->Y,
+        escapeMage->Z };
+
+    // The second fixed baiter receives the same opposite endpoint and
+    // transition identity; it cannot fall back to local radial movement.
+    AdaptiveMagmawPlan unsafeHunter = strategy.Propose(unsafe, hunter, "dps",
+        nullptr, false, false, &transition);
+    Move const* escapeHunter = MoveOf(unsafeHunter);
+    assert(escapeHunter);
+    assert(escapeHunter->X == redirectedEndpoint.X);
+    assert(escapeHunter->Y == redirectedEndpoint.Y);
+    assert(escapeHunter->Z == redirectedEndpoint.Z);
+    assert(unsafeHunter.Movement->Id.Actor == hunter);
+    assert(unsafeHunter.Movement->Id.EventGeneration == redirectedId);
+    assert(transition.TransitionId == redirectedId);
+    assert(transition.Lane != firstLane);
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "g++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/server/game/Entities/Object"),
+            "-I",
+            str(ROOT / "src/common"),
+            "-I",
+            str(ROOT / "src/common/Utilities"),
+            "-I",
+            str(ROOT / "src/common/Logging"),
+            "-I",
+            str(ROOT / "src/common/Debugging"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
 def test_magmaw_containment_replays_full_runtime_contract(tmp_path: Path) -> None:
     source = tmp_path / "magmaw_containment_runtime_replay.cpp"
     binary = tmp_path / "magmaw_containment_runtime_replay"

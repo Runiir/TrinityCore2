@@ -32,6 +32,19 @@
     "fixtures": [
       {
         "fixture_id": "magmaw_parasite_lane_paths_v1",
+        "revision": 4,
+        "causal_signature": "magmaw_parasite_containment_failure",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths",
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave"
+        ]
+      },
+      {
+        "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
         "revision": 3,
         "causal_signature": "magmaw_parasite_containment_failure",
         "command": [
@@ -39,31 +52,21 @@
           "run",
           "pytest",
           "-q",
-          "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths"
-        ]
-      },
-      {
-        "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
-        "revision": 2,
-        "causal_signature": "magmaw_parasite_containment_failure",
-        "command": [
-          "pixi",
-          "run",
-          "pytest",
-          "-q",
-          "tests/test_magmaw_parasite_policy.py::test_magmaw_lane_transition_replays_selection_to_reset"
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_lane_transition_replays_selection_to_reset",
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave"
         ]
       },
       {
         "fixture_id": "magmaw_parasite_control_full_runtime_v1",
-        "revision": 2,
+        "revision": 3,
         "causal_signature": "magmaw_parasite_control_allows_player_infection",
         "command": [
           "pixi",
           "run",
           "pytest",
           "-q",
-          "tests/test_magmaw_parasite_policy.py::test_magmaw_containment_replays_full_runtime_contract"
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_containment_replays_full_runtime_contract",
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave"
         ]
       },
       {
@@ -221,8 +224,8 @@
     "magmaw_parasite_containment_failure": {
       "owner": "encounter_combat_and_movement_authority",
       "invariant": "exactly the fixed Fire Mage and Marksman Hunter team owns parasite targeting, threat, damage, and stable lane movement while every other player remains outside infection range and suppresses parasite-reaching area damage",
-      "architecture_reviewed_through_occurrence_count": 12,
-      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md",
+      "architecture_reviewed_through_occurrence_count": 13,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary117_parasite_recurrence_handoff_20260829.md",
       "fixture_verifications": [
         {
           "fixture_id": "magmaw_parasite_lane_paths_v1",
@@ -237,8 +240,8 @@
       "owner": "encounter_policy_and_movement_intent",
       "parent": "magmaw_parasite_containment_failure",
       "invariant": "the fixed mobile bait team must traverse a stable room lane without player Parasitic Infection or parasite re-entry",
-      "architecture_reviewed_through_occurrence_count": 12,
-      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md"
+      "architecture_reviewed_through_occurrence_count": 13,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary117_parasite_recurrence_handoff_20260829.md"
     },
     "chainwielder_future_drudge_contamination": {
       "owner": "shared_route_movement_authority",

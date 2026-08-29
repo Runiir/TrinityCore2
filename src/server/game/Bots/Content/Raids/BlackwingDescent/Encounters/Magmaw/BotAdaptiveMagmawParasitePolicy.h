@@ -175,8 +175,10 @@ public:
             // the encounter's fixed left/right contract instead of opening a
             // second arbitrary radial path.  Begin() gives both baiters the
             // same destination and transition identity.
-            if (transition->Preempted && hazardState
-                && hazardState->HasCompletedIntent())
+            if ((transition->IsArrived()
+                    && transition->OwnsGeneration(generation, 2))
+                || (transition->Preempted && hazardState
+                    && hazardState->HasCompletedIntent()))
             {
                 MagmawLaneTransitionState::Direction const direction =
                     OppositeDirection(transition->Lane);
@@ -359,7 +361,7 @@ private:
                 ? std::nullopt
                 : std::optional<Vector3>(transition.Destination);
         if (transition.IsArrived())
-            return std::nullopt;
+            return transition.Destination;
         return transition.Destination;
     }
 

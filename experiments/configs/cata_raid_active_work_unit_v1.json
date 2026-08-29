@@ -6,8 +6,8 @@
   "boss": "magmaw",
   "mode": "10N",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "live_recurrence_quarantined",
-  "gate_state": "revision_3_invalidated_revision_4_counterexample_required",
+  "classification": "revision_4_locally_repaired",
+  "gate_state": "revision_4_green_locally_exact_identity_not_yet_admitted",
   "observed_at_commit": "2fdaa927b3683e72d9a32e4b62e75a7a172872c2",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary118_parasite_recurrence_handoff_20260829.md",
@@ -66,17 +66,17 @@
     ]
   },
   "validation": {
-    "gate_evaluated_at_commit": "2fdaa927b3683e72d9a32e4b62e75a7a172872c2",
-    "regression_suite_receipt": "/tmp/trinity-magmaw-2fdaa927b3-canary118.GOOMkp/admission-regression-suite.json",
-    "regression_suite_receipt_sha256": "0a0570aa29349c44363eaaa38ca0985db29d7c072fd73d4255d4cc52a1b2ffa9",
-    "recurrence_decision": "/tmp/trinity-magmaw-2fdaa927b3-canary118.GOOMkp/admission-decision.json",
-    "recurrence_decision_sha256": "11b4cd2dc1163fe1c0b7304004959ced3bc99667e0aeeb3b80da0f0dd95f4b62",
+    "gate_evaluated_at_commit": "951fbae531",
+    "regression_suite_receipt": "/tmp/magmaw-regression-suite-951fbae531-canary118-postrun.json",
+    "regression_suite_receipt_sha256": "9ed4103309769d4cfb3b285672a97e6d43bcdd29ecb398366d05bc713485ecb3",
+    "recurrence_decision": "/tmp/magmaw-recurrence-951fbae531-canary118-postrun.json",
+    "recurrence_decision_sha256": "25f1f711d7df4508713bf7f98c4a002ef91f3dc436f484544c49812053f6059a",
     "immutable_bank_all_rows_passed": true,
     "invalidated_fixture_count": 3,
     "build_admitted": false,
     "canary_admitted": false,
     "acceptance_admitted": false,
-    "required_next_action": "capture_revision_4_pre_fix_failure_then_repair"
+    "required_next_action": "commit_revision_4_then_run_expanded_immutable_bank"
   },
   "revision_3_fixture_expansion": {
     "pre_fix_source_identity": "3c563b4113",
@@ -105,6 +105,23 @@
     "broader_local_result": "65_passed",
     "required_next_result": "all_three_contracts_and_immutable_bank_pass_at_one_exact_committed_source_identity"
   },
+  "revision_4_fixture_expansion": {
+    "pre_fix_source_identity": "440d70671d",
+    "captured_before_runtime_edit": true,
+    "live_boundary": "both baiters arrived while the same living parasite generation occupied the fixed endpoint",
+    "test": "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave",
+    "test_file_sha256": "7697b57047b3bf8f8d2a18e1ab3941493393d5e194d05de6afa09fc759246b5c",
+    "runtime_file_sha256": "94f356e45562a41df3fa0895615c7ba092771d5cdbee88f57bd3961ec8507240",
+    "pre_fix_result": "failed",
+    "first_failed_assertion": "escapeMage && arrived living-wave endpoint must redirect",
+    "post_fix_result": "16 focused Magmaw policy and arbitration tests passed",
+    "fixture_revisions": {
+      "magmaw_parasite_lane_paths_v1": 4,
+      "magmaw_parasite_lane_transition_full_replay_v1": 3,
+      "magmaw_parasite_control_full_runtime_v1": 3
+    },
+    "required_next_result": "expanded fixtures and immutable bank pass at one exact clean committed source identity"
+  },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
@@ -114,5 +131,5 @@
     "canary_budget_before_expanded_fixture": 0,
     "canary_budget_after_expanded_fixture_and_exact_build": 1
   },
-  "next_action": "Capture the revision-4 arrived-state counterexample before editing runtime, apply the smallest repair, then rerun the immutable bank at one clean committed identity."
+  "next_action": "Commit revision 4, run the expanded immutable bank at that exact clean identity, and admit at most one fast8 build only if the recurrence gate opens."
 }
