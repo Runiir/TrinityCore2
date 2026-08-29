@@ -203,6 +203,52 @@ int main()
     assert(resumedMove->X == firstDestination.X);
     assert(resumedMove->Y == firstDestination.Y);
 
+    // Canary117: repeat contact inside one living parasite wave is a shared
+    // lane transition, not a new radial destination for one baiter.  Preserve
+    // the first retained local escape, then require the next contact after a
+    // temporary clearance to move both fixed baiters to the other endpoint.
+    MagmawLaneTransitionState repeatedLane = transition;
+    MagmawParasiteHazardState repeatedHazard;
+    Blackboard endpointThreat = resume;
+    endpointThreat.Revision += 1;
+    endpointThreat.Players[1].Position = {
+        firstDestination.X + 4.0f, firstDestination.Y, firstDestination.Z };
+    endpointThreat.Hostiles[1] = Parasite(1, firstDestination);
+    AdaptiveMagmawPlan localEscape = strategy.Propose(endpointThreat, mage,
+        "dps", nullptr, false, false, &repeatedLane, &repeatedHazard);
+    Move const* localEscapeMove = MoveOf(localEscape);
+    assert(localEscapeMove);
+    assert(repeatedHazard.HasRetainedIntent());
+    assert(repeatedLane.TransitionId == firstId);
+
+    Blackboard temporaryClear = endpointThreat;
+    temporaryClear.Revision += 1;
+    temporaryClear.Hostiles[1] = Parasite(1, { 0.0f, -80.0f, 210.0f });
+    AdaptiveMagmawPlan cleared = strategy.Propose(temporaryClear, mage,
+        "dps", nullptr, false, false, &repeatedLane, &repeatedHazard);
+    assert(!repeatedHazard.HasRetainedIntent());
+    assert(!cleared.Movement);
+
+    Blackboard repeatedContact = temporaryClear;
+    repeatedContact.Revision += 1;
+    repeatedContact.Hostiles[1] = Parasite(
+        1, repeatedContact.Players[1].Position);
+    AdaptiveMagmawPlan redirected = strategy.Propose(repeatedContact, mage,
+        "dps", nullptr, false, false, &repeatedLane, &repeatedHazard);
+    Move const* redirectedMove = MoveOf(redirected);
+    assert(redirectedMove);
+    assert(repeatedLane.TransitionId != firstId);
+    assert(repeatedLane.Lane != firstDirection);
+    assert(redirectedMove->X == -firstDestination.X);
+    assert(redirectedMove->Y == firstDestination.Y);
+    assert(redirected.Movement->Id.EventGeneration
+        == repeatedLane.TransitionId);
+    AdaptiveMagmawPlan redirectedHunter = strategy.Propose(repeatedContact,
+        hunter, "dps", nullptr, false, false, &repeatedLane);
+    assert(MoveOf(redirectedHunter));
+    assert(MoveOf(redirectedHunter)->X == redirectedMove->X);
+    assert(MoveOf(redirectedHunter)->Y == redirectedMove->Y);
+
     // Both native paths arrive after event A despawns. GUID churn observed
     // before arrival remains inside the admitted transition, while the empty
     // mechanic boundary is explicitly sealed as generation/kind (0, 0).
@@ -861,6 +907,68 @@ int main()
     assert(lane.TransitionId == laneId);
     assert(MoveOf(resumedPlan)->X == laneDestination.X);
     assert(MoveOf(resumedPlan)->Y == laneDestination.Y);
+
+    // Canary117's repeated-contact boundary must survive the complete native
+    // admission bridge.  After one retained local preemption clears, the same
+    // wave redirects both baiters to one opposite lane endpoint and submits
+    // that endpoint under the shared transition identity.
+    MagmawLaneTransitionState repeatedLane = lane;
+    MagmawParasiteHazardState repeatedHazard;
+    Blackboard endpointThreat = resumed;
+    endpointThreat.Revision += 1;
+    endpointThreat.Players[5].Position = {
+        laneDestination.X + 4.0f, laneDestination.Y, laneDestination.Z };
+    endpointThreat.Hostiles[1] = Parasite(9010, laneDestination);
+    AdaptiveMagmawPlan localEscape = strategy.Propose(endpointThreat,
+        PlayerGuid(30006), "dps", &expiredLease, false, false,
+        &repeatedLane, &repeatedHazard);
+    assert(MoveOf(localEscape));
+    assert(repeatedHazard.HasRetainedIntent());
+
+    Blackboard temporaryClear = endpointThreat;
+    temporaryClear.Revision += 1;
+    temporaryClear.Hostiles[1] = Parasite(
+        9010, { 0.0f, -80.0f, 210.0f });
+    AdaptiveMagmawPlan cleared = strategy.Propose(temporaryClear,
+        PlayerGuid(30006), "dps", &expiredLease, false, false,
+        &repeatedLane, &repeatedHazard);
+    assert(!repeatedHazard.HasRetainedIntent());
+    assert(!cleared.Movement);
+
+    Blackboard repeatedContact = temporaryClear;
+    repeatedContact.Revision += 1;
+    repeatedContact.Hostiles[1] = Parasite(
+        9010, repeatedContact.Players[5].Position);
+    AdaptiveMagmawPlan redirected = strategy.Propose(repeatedContact,
+        PlayerGuid(30006), "dps", &expiredLease, false, false,
+        &repeatedLane, &repeatedHazard);
+    Move const* redirectedMove = MoveOf(redirected);
+    assert(redirectedMove);
+    assert(repeatedLane.TransitionId != laneId);
+    assert(repeatedLane.Lane != laneDirection);
+    assert(redirectedMove->X == -laneDestination.X);
+    assert(redirectedMove->Y == laneDestination.Y);
+    assert(redirected.Movement->Id.EventGeneration
+        == repeatedLane.TransitionId);
+
+    BotMovementArbitration::NativePathReceipt redirectedReceipt;
+    BotActionArbitration::Kernel redirectedTick;
+    redirectedTick.Begin(repeatedContact.ObservedAtMs);
+    redirectedTick.Submit(NativeCandidate(*redirected.Movement,
+        redirectedReceipt, repeatedContact,
+        PathProof({ redirectedMove->X, redirectedMove->Y, redirectedMove->Z },
+            true, BotWorldMovement::NativePathFloorFailure::None)));
+    BotActionArbitration::Resolution const& redirectedResolution =
+        redirectedTick.Resolve();
+    assert(redirectedResolution.AnyCommitted);
+    assert(redirectedReceipt.Active);
+
+    AdaptiveMagmawPlan redirectedHunter = strategy.Propose(repeatedContact,
+        PlayerGuid(30009), "dps", &expiredLease, false, false,
+        &repeatedLane);
+    assert(MoveOf(redirectedHunter));
+    assert(MoveOf(redirectedHunter)->X == redirectedMove->X);
+    assert(MoveOf(redirectedHunter)->Y == redirectedMove->Y);
 
     Blackboard arrived = resumed;
     arrived.Revision += 1;

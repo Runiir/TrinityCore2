@@ -2322,6 +2322,47 @@ int main()
     assert(mageHazard.IntentId == escapeIntentId);
     assert(transition.Preempted);
 
+    // Canary117: temporary whole-pack clearance retires the one local
+    // preemption, but it does not retire the parasite wave.  If that same
+    // wave reaches the baiter again, the fixed team must cross to the other
+    // admitted lane endpoint.  A second radial escape recreated the live
+    // destination churn and allowed Parasitic Infection on five players.
+    Blackboard temporarilyClear = lowerGuid;
+    temporarilyClear.Revision += 1;
+    temporarilyClear.Hostiles[1].Position = { 0.0f, -80.0f, 210.0f };
+    auto clearPlan = strategy.Propose(
+        temporarilyClear, mageGuid, "dps", &advancedLease, false, false,
+        &transition, &mageHazard);
+    assert(!mageHazard.HasRetainedIntent());
+    assert(!clearPlan.Movement.has_value());
+
+    Blackboard repeatedContact = temporarilyClear;
+    repeatedContact.Revision += 1;
+    repeatedContact.Hostiles[1].Position =
+        repeatedContact.Players[1].Position;
+    auto repeatedContactPlan = strategy.Propose(
+        repeatedContact, mageGuid, "dps", &firstLease, false, false,
+        &transition, &mageHazard);
+    auto const* repeatedContactMove = repeatedContactPlan.Movement
+        ? std::get_if<Move>(&repeatedContactPlan.Movement->Action) : nullptr;
+    assert(repeatedContactMove);
+    assert(repeatedContactMove->X == -firstMove->X);
+    assert(repeatedContactMove->Y == firstMove->Y);
+    assert(transition.Destination.X == repeatedContactMove->X);
+    assert(transition.Destination.Y == repeatedContactMove->Y);
+    assert(repeatedContactPlan.Movement->Id.Actor == mageGuid);
+    assert(repeatedContactPlan.Movement->Id.EventGeneration
+        == transition.TransitionId);
+
+    auto repeatedHunterPlan = strategy.Propose(
+        repeatedContact, hunterGuid, "dps", &firstLease, false, false,
+        &transition);
+    auto const* repeatedHunterMove = repeatedHunterPlan.Movement
+        ? std::get_if<Move>(&repeatedHunterPlan.Movement->Action) : nullptr;
+    assert(repeatedHunterMove);
+    assert(repeatedHunterMove->X == repeatedContactMove->X);
+    assert(repeatedHunterMove->Y == repeatedContactMove->Y);
+
     // A remote parasite release starts the lane transition before contact;
     // the baiter does not wait until infection range.
     Blackboard remoteRelease = board;

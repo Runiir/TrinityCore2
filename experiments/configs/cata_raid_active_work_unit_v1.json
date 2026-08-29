@@ -6,8 +6,8 @@
   "boss": "magmaw",
   "mode": "10N",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "live_recurrence_quarantined",
-  "gate_state": "revision_2_invalidated_no_build_or_canary_admitted",
+  "classification": "revision_3_locally_repaired",
+  "gate_state": "revision_3_green_locally_exact_identity_not_yet_admitted",
   "observed_at_commit": "1dcdd3a1add2deb268667a2765672068059a91ce",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary117_parasite_recurrence_handoff_20260829.md",
@@ -72,7 +72,34 @@
     "build_admitted": false,
     "canary_admitted": false,
     "acceptance_admitted": false,
-    "required_next_action": "expand_invalidated_fixture_before_runtime_edit"
+    "required_next_action": "commit_revision_3_then_run_exact_immutable_bank"
+  },
+  "revision_3_fixture_expansion": {
+    "pre_fix_source_identity": "3c563b4113",
+    "captured_before_runtime_edit": true,
+    "contracts": {
+      "magmaw_parasite_lane_paths_v1": {
+        "revision": 3,
+        "test_file_sha256": "14239fffc5f163e3021c15bcedb24afdba50e563f93d89e700437355a451b68c",
+        "pre_fix_result": "failed",
+        "first_failed_assertion": "repeatedContactMove->X == -firstMove->X"
+      },
+      "magmaw_parasite_lane_transition_full_replay_v1": {
+        "revision": 2,
+        "test_file_sha256": "1a613db9bca859a44499249e3feccb7a3be9a86b09c5a20548cd443dd5f93e94",
+        "pre_fix_result": "failed",
+        "first_failed_assertion": "repeatedLane.TransitionId != firstId"
+      },
+      "magmaw_parasite_control_full_runtime_v1": {
+        "revision": 2,
+        "test_file_sha256": "1a613db9bca859a44499249e3feccb7a3be9a86b09c5a20548cd443dd5f93e94",
+        "pre_fix_result": "failed",
+        "first_failed_assertion": "repeatedLane.TransitionId != laneId"
+      }
+    },
+    "post_fix_result": "all_three_contracts_passed",
+    "broader_local_result": "65_passed",
+    "required_next_result": "all_three_contracts_and_immutable_bank_pass_at_one_exact_committed_source_identity"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -83,5 +110,5 @@
     "canary_budget_before_expanded_fixture": 0,
     "canary_budget_after_expanded_fixture_and_exact_build": 1
   },
-  "next_action": "Encode the Canary117 repeated-contact counterexample as revision 3, prove it fails before the repair, then implement only the first missing fixed-lane/native-outcome edge."
+  "next_action": "Commit revision 3, run the immutable bank at that exact clean identity, and admit one fast8 build only if the recurrence gate opens."
 }

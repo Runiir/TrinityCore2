@@ -32,7 +32,7 @@
     "fixtures": [
       {
         "fixture_id": "magmaw_parasite_lane_paths_v1",
-        "revision": 2,
+        "revision": 3,
         "causal_signature": "magmaw_parasite_containment_failure",
         "command": [
           "pixi",
@@ -44,6 +44,7 @@
       },
       {
         "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
+        "revision": 2,
         "causal_signature": "magmaw_parasite_containment_failure",
         "command": [
           "pixi",
@@ -55,6 +56,7 @@
       },
       {
         "fixture_id": "magmaw_parasite_control_full_runtime_v1",
+        "revision": 2,
         "causal_signature": "magmaw_parasite_control_allows_player_infection",
         "command": [
           "pixi",

@@ -169,10 +169,32 @@ public:
         if (destination
             && ParasiteClearance(board, *destination) < SafeClearance)
         {
-            // A parasite reaching the retained endpoint is a typed local
-            // safety preemption, not permission to choose the other lane.
-            // Preserve the cohort transition and resume it once the endpoint
-            // is clear again.
+            // The first endpoint contact keeps one retained local escape so
+            // native path/GUID churn cannot replan it.  If that escape has
+            // completed and the same wave reaches the endpoint again, resume
+            // the encounter's fixed left/right contract instead of opening a
+            // second arbitrary radial path.  Begin() gives both baiters the
+            // same destination and transition identity.
+            if (transition->Preempted && hazardState
+                && hazardState->HasCompletedIntent())
+            {
+                MagmawLaneTransitionState::Direction const direction =
+                    OppositeDirection(transition->Lane);
+                Vector3 const redirected = DestinationFor(
+                    *anchors, direction);
+                if (LaneSafe(board, *anchors, redirected))
+                {
+                    transition->Begin(generation, 2, direction, redirected);
+                    BotNativeAction::Candidate candidate = BuildPointMovement(
+                        board, redirected, "parasite_contact_evade");
+                    candidate.Id.Actor = bot.Guid;
+                    candidate.Id.EventGeneration = transition->TransitionId;
+                    return candidate;
+                }
+            }
+            // On first contact, preserve the cohort transition through one
+            // typed local safety preemption and resume it when the endpoint
+            // clears. Only a later contact may redirect the shared lane.
             transition->MarkPreempted();
             return BuildMoveAway(board, bot, parasite,
                 "parasite_contact_evade", SafeClearance, hazardState);

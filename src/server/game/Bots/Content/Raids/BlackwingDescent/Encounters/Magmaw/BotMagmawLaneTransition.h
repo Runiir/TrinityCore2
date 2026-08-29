@@ -213,6 +213,11 @@ struct MagmawParasiteHazardState
         return Active;
     }
 
+    bool HasCompletedIntent() const
+    {
+        return !Active && IntentId != 0;
+    }
+
     static float Distance2d(Vector3 const& left, Vector3 const& right)
     {
         return std::hypot(left.X - right.X, left.Y - right.Y);
