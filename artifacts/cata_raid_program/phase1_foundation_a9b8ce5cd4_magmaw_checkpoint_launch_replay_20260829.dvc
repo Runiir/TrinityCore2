@@ -1,0 +1,6 @@
+outs:
+- md5: e09c60d9ccc604e504488a99515c8299.dir
+  size: 160384563
+  nfiles: 12
+  hash: md5
+  path: phase1_foundation_a9b8ce5cd4_magmaw_checkpoint_launch_replay_20260829

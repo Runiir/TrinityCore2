@@ -1,0 +1,176 @@
+{
+  "schema": "cata_raid_magmaw_checkpoint_launch_replay_summary_v1",
+  "purpose": "fixture_expansion_replay",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "mode": "10N",
+  "source": {
+    "commit": "a9b8ce5cd4f4e44e671d99a8e0976ab453fa0e90",
+    "tree": "4e59247791221088630e9c3c6d18a160aea706ba",
+    "worktree_clean_during_run": true,
+    "binary_sha256": "6a5cf4367f958ca86e3d39784efb0e35fa12287a8d3d519e236647674c7b6727",
+    "configure_receipt_sha256": "4adbce5d8637424ef8d2a0cfc2b2836f00210a36c787d2711fd705c733f74a9b",
+    "worldserver_build_receipt_sha256": "8d5beb9dd71cc520186c9c4a9fb479c21f9e9a51b323b563a0da9c24e5660ca0",
+    "config_sha256": "8980073d06a41a1d63f9411a3af40eb189d68ed5e944d33813376fa0cec1410e",
+    "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"
+  },
+  "admission": {
+    "fixture_expansion_admission_sha256": "d3af5ad433da8e696b099e2c8419a087819ae8c0e15e8b75c04f72c2a92204f3",
+    "regression_suite_receipt_sha256": "162b5bbcf5f1e3bf67f1d56529bcbeb3fc605b2412ddf80ee9ba62e4f1c8b41b",
+    "recurrence_decision_sha256": "7d17412cb7d0f303e8f2b2b8d2de63783285befce3b64cd6c6edac4b9b122237",
+    "fixture_expansion_target_ids": [
+      "native_planner_executor_launch_proof_v1"
+    ],
+    "gameplay_mutations_allowed": false,
+    "prior_invalidations_preserved": [
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ]
+  },
+  "provisioning": {
+    "strict_verifier_passed": true,
+    "strict_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "shard_readback_passed": true,
+    "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "roster_size": 10
+  },
+  "checkpoint": {
+    "enabled": true,
+    "scope_key": "default:1:4:bwd.magmaw.encounter",
+    "phase": "released",
+    "expected_members": 10,
+    "alive_count": 10,
+    "out_of_combat_count": 10,
+    "formed_count": 10,
+    "flask_count": 10,
+    "food_count": 10,
+    "prepot_count": 10,
+    "ready_count": 10,
+    "all_ready": true,
+    "release_count": 1,
+    "premature_boss_combat_observed": false
+  },
+  "target_observation": {
+    "intent_reason": "ranged_formation_restore",
+    "intent_fingerprint": "3cccb81a03dc4cee",
+    "scope": {
+      "attempt_id": 1,
+      "wipe_generation": 0,
+      "route_generation": 4,
+      "map": 669,
+      "instance": 2
+    },
+    "primary_receipt": {
+      "receipt_id": 401,
+      "bot_guid": 30006,
+      "trace_timestamp_ms": 1788027600342,
+      "trace_sequence": 507,
+      "decision_sequence": 360,
+      "actor_before_planning": [-324.308502, -52.6447182, 211.750412],
+      "planner_path_type": 1,
+      "planner_complete": true,
+      "planner_control_count": 6,
+      "planner_control_fingerprint": "489d96fe42670da1",
+      "floor_observation_conflict": false,
+      "selected_endpoint": [-312.400757, -68.8223724, 213.079407],
+      "executor_generate_path": true,
+      "second_path_calculated": true,
+      "second_path_type": 1,
+      "second_path_control_count": 6,
+      "second_path_control_fingerprint": "489d96fe42670da1",
+      "direct_two_point_selected": false,
+      "direct_two_point_fallback": false,
+      "motion_master_slot": 1,
+      "motion_master_generator_type": 8,
+      "point_generator_initialized": true,
+      "spline_launch_succeeded": true,
+      "spline_finalized_immediately_after_launch": false,
+      "launched_control_count": 6,
+      "launched_control_fingerprint": "bf78981d18d43917",
+      "actor_immediately_after_launch": [-324.308502, -52.6447182, 211.750412]
+    },
+    "multi_tick_observation": {
+      "bot_guid": 30006,
+      "observed_at_decision_tick_ms": 1788027602342,
+      "position": [-312.401, -68.8224, 213.079],
+      "alive": true,
+      "moving": false,
+      "spline_finalized": true,
+      "selected_endpoint_reached": true,
+      "wrong_floor_drop_observed": false,
+      "receipt_id_still_present_in_snapshot": false,
+      "correlation_basis": "same bot plus ordered timestamp and selected endpoint; the later snapshot does not retain receipt_id 401"
+    },
+    "additional_receipts": {
+      "receipt_ids": [402, 403, 404, 405],
+      "bot_guid": 30009,
+      "planner_and_second_path_control_count": 4,
+      "planner_and_second_path_fingerprint": "1f2a0dae90201ac9",
+      "launched_control_fingerprint": "707727cde3eca78a",
+      "direct_two_point_fallback": false,
+      "actor_z": 212.61264,
+      "floor_observation_conflict": false
+    },
+    "fingerprint_interpretation": "The planner and independently generated second native path match exactly. The later spline-control fingerprint differs with the same control count; this alone does not prove unsafe divergence because launch applies first-vertex and coordinate normalization."
+  },
+  "terminal": {
+    "classification": "gameplay_failure",
+    "failure_reason": "death_loop_watchdog",
+    "death_loop_count": 3,
+    "repeated_decision_count": 2,
+    "terminal_alive_count": 8,
+    "terminal_death_event_count": 4,
+    "boss_killed": false,
+    "boss_combat_duration_seconds": 209,
+    "boss_segment_duration_seconds": 241.996,
+    "active_party_dps": 82046.053,
+    "active_party_hps": 19077.545,
+    "elapsed_party_dps": 70859.126,
+    "elapsed_party_hps": 16476.334,
+    "parasitic_infection_events": 36,
+    "parasitic_infection_players": 4
+  },
+  "claims": {
+    "verified": [
+      "canonical_four_node_route_reached_magmaw_after_entrance_chainwielder_and_drudges",
+      "checkpoint_staged_all_ten_members_and_released_once_only_after_full_readiness",
+      "ranged_formation_restore_observation_crossed_planner_executor_motionmaster_point_generator_and_spline_launch",
+      "planner_and_second_native_path_controls_matched_for_receipt_401",
+      "receipt_401_used_no_direct_two_point_selection_or_fallback",
+      "bot_30006_was_observed_two_seconds_later_alive_at_the_selected_endpoint_on_the_platform"
+    ],
+    "refuted_for_this_observed_reproduction": [
+      "second_native_path_controls_diverged_from_the_admitted_planner_controls",
+      "direct_two_point_fallback_was_used",
+      "the_observed_ranged_formation_restore_launch_dropped_the_actor_to_a_wrong_floor"
+    ],
+    "unproven": [
+      "canary122_exact_floor_conflicting_seq745_mechanism_recurred",
+      "the_spline_fingerprint_difference_is_unsafe_rather_than_expected_launch_normalization",
+      "receipt_identity_persists_through_multi_tick_consumed_movement_state",
+      "the_exact_collision_or_fall_mechanism_behind_canary122"
+    ]
+  },
+  "cleanup": {
+    "native_stop_observed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "forbidden_assistance_observed": false
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_a9b8ce5cd4_magmaw_checkpoint_launch_replay_20260829.dvc",
+    "dvc_directory_md5": "e09c60d9ccc604e504488a99515c8299.dir",
+    "dvc_directory_size_bytes": 160384563,
+    "dvc_directory_file_count": 12,
+    "canonical_report_sha256": "922e3e09082f3668b58802caa363bb8fc1354754d096db76cefb795c33bc1786",
+    "report_file_sha256": "a3d4de790935e32e8b84a471196f2728eff2b63aa5c4ed7a0160431d419fb903",
+    "normalized_jsonl_sha256": "cfd7196c24e6dcbd5787b1b985780d619cd173b5a14e66e1ca4ac319ba3b477b",
+    "worldserver_log_sha256": "f0b55644b9b82998ee6b6a0c831c3f9eb0fabaaeef4d0dd5458fdbb107c5ba47"
+  },
+  "next_action": "Add a bounded receipt-tagged movement progress observer so the same launch receipt ID survives through later consumed position/floor samples, then decide whether a closer floor-conflicting seq745 replay is required before any movement behavior change."
+}
