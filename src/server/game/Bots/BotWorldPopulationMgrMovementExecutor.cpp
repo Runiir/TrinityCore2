@@ -33,6 +33,8 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
     WorldBotState& state, Player* bot,
     BotWorldMovement::Intent const& intent)
 {
+    using namespace BotWorldPopulationMgrBotState::MovementRejectionIsolation;
+
     if (!bot)
         return false;
     if (!bot->IsInWorld() || !bot->GetMap())
@@ -60,6 +62,8 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         return false;
     }
 
+    uint64 const nowMs = MovementExecutorNowMs();
+
     // Every ordinary movement producer converges here before lease retention,
     // path planning, or MotionMaster submission.  Keep the future-pack mask
     // out of caller-specific route/formation/combat/hazard branches.  Native
@@ -72,11 +76,30 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         RecordMovementPlannerExecutorOutcome(MovementExecutorBotGuid(bot),
             MovementExecutorMapId(bot), intent, "future_pack_destination",
             "rejected", "route_destination_future_pack_unsafe");
+
+        // This rejection has no planner receipt and never acquired movement
+        // ownership. Keep it observable in the planner sidecar above, but do
+        // not let it destroy a different owner's admitted native path or the
+        // route hazard owner's bounded retry token. With neither state, the
+        // ordinary fail-closed rejection below remains authoritative.
+        bool const routeHazardRetryArmed = HasArmedRouteHazardRetry(
+            true,
+            !state.ValidationRouteDodgeCasterGuid.IsEmpty()
+                && state.ValidationRouteDodgeSpellId != 0,
+            state.ValidationRouteDodgeUntilMs, nowMs, state.ActivePathValid,
+            state.LastPathRejectReason);
+        if (BotWorldPopulationMgrBotState::
+                ApplyPreAdmissionMovementPathRejection(
+                    state, intent.Owner,
+                    "route_destination_future_pack_unsafe", nowMs,
+                    routeHazardRetryArmed)
+            == Disposition::ObserveOnlyPreserveExistingOwner)
+            return false;
+
         return RejectMovementPath(state, bot, intent,
             "route_destination_future_pack_unsafe");
     }
 
-    uint64 const nowMs = MovementExecutorNowMs();
     BotMovementArbitration::Request const request = BuildMovementRequest(
         bot, intent, nowMs);
     BotMovementArbitration::Decision const decision =

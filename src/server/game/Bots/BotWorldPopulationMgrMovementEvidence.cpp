@@ -19,16 +19,9 @@ bool BotWorldPopulationMgr::RejectMovementPath(
     WorldBotState& state, Player* bot,
     BotWorldMovement::Intent const& intent, char const* reason)
 {
-    state.ActivePathValid = false;
-    state.ActivePathSegmentValid = false;
-    state.ActivePathTraversalMode.clear();
-    state.ActivePathTargetGuid.Clear();
-    state.LastPathRejectReason = reason
-        ? reason : "route_destination_unreachable";
-    state.LastNoProgressReason = state.LastPathRejectReason;
-    state.LastRecoveryResult = state.LastPathRejectReason;
     uint64 const nowMs = MovementEvidenceNowMs();
-    state.LastPathChangeMs = nowMs;
+    BotWorldPopulationMgrBotState::ApplyOwnedMovementPathRejection(
+        state, reason ? reason : "route_destination_unreachable", nowMs);
 
     if (Cohort().Config.ValidationRouteEnable && bot)
     {

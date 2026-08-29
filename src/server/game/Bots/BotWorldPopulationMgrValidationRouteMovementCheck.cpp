@@ -381,13 +381,14 @@ bool BotWorldPopulationMgr::TryValidationRouteMovementCheck(
         // Honor it instead of resubmitting the same five native path requests
         // on every bot tick. The next retry rotates the deterministic bearing;
         // no destination, hazard radius, or watchdog threshold is changed.
-        if (configuredHazard
-            && state.ValidationRouteDodgeCasterGuid == caster->GetGUID()
-            && state.ValidationRouteDodgeSpellId == castSpell->Id
-            && state.ValidationRouteDodgeUntilMs > nowMs
-            && !state.ActivePathValid
-            && state.LastPathRejectReason
-                == "hazard_exit_no_union_safe_native_path")
+        bool const matchingRouteHazardRetry =
+            state.ValidationRouteDodgeCasterGuid == caster->GetGUID()
+            && state.ValidationRouteDodgeSpellId == castSpell->Id;
+        if (BotWorldPopulationMgrBotState::MovementRejectionIsolation::
+                HasArmedRouteHazardRetry(
+                    configuredHazard, matchingRouteHazardRetry,
+                    state.ValidationRouteDodgeUntilMs, nowMs,
+                    state.ActivePathValid, state.LastPathRejectReason))
         {
             situation = "validation_route_mechanic";
             action = "hold_hazard_exit_retry_backoff";

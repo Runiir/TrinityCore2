@@ -16,10 +16,44 @@
 #include <limits>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace BotWorldPopulationMgrBotState
 {
+    namespace MovementRejectionIsolation
+    {
+        enum class Disposition : uint8
+        {
+            RejectAndClear,
+            ObserveOnlyPreserveExistingOwner
+        };
+
+        constexpr bool HasArmedRouteHazardRetry(
+            bool configuredHazard, bool matchingHazardIdentity,
+            uint64 retryUntilMs, uint64 nowMs, bool activePathValid,
+            std::string_view pathRejectReason)
+        {
+            return configuredHazard && matchingHazardIdentity
+                && retryUntilMs > nowMs && !activePathValid
+                && pathRejectReason
+                    == "hazard_exit_no_union_safe_native_path";
+        }
+
+        constexpr Disposition ClassifyPreAdmissionRejection(
+            BotMovementArbitration::Owner rejectedOwner,
+            BotMovementArbitration::Owner existingOwner,
+            bool activePathValid, bool routeHazardRetryArmed)
+        {
+            bool const foreignActivePath = activePathValid
+                && existingOwner != BotMovementArbitration::Owner::None
+                && existingOwner != rejectedOwner;
+            return foreignActivePath || routeHazardRetryArmed
+                ? Disposition::ObserveOnlyPreserveExistingOwner
+                : Disposition::RejectAndClear;
+        }
+    }
+
     struct WorldBotState
     {
         enum class ValidationDescentPhase : uint8
@@ -694,6 +728,33 @@ namespace BotWorldPopulationMgrBotState
         } QuestWork;
     };
 
+    inline void ApplyOwnedMovementPathRejection(
+        WorldBotState& state, std::string_view reason, uint64 nowMs)
+    {
+        state.ActivePathValid = false;
+        state.ActivePathSegmentValid = false;
+        state.ActivePathTraversalMode.clear();
+        state.ActivePathTargetGuid.Clear();
+        state.LastPathRejectReason = reason.empty()
+            ? "route_destination_unreachable" : std::string(reason);
+        state.LastNoProgressReason = state.LastPathRejectReason;
+        state.LastRecoveryResult = state.LastPathRejectReason;
+        state.LastPathChangeMs = nowMs;
+    }
+
+    inline MovementRejectionIsolation::Disposition
+    ApplyPreAdmissionMovementPathRejection(
+        WorldBotState& state, BotMovementArbitration::Owner rejectedOwner,
+        std::string_view reason, uint64 nowMs, bool routeHazardRetryArmed)
+    {
+        using namespace MovementRejectionIsolation;
+        Disposition const disposition = ClassifyPreAdmissionRejection(
+            rejectedOwner, state.MovementLease.MovementOwner,
+            state.ActivePathValid, routeHazardRetryArmed);
+        if (disposition == Disposition::RejectAndClear)
+            ApplyOwnedMovementPathRejection(state, reason, nowMs);
+        return disposition;
+    }
 }
 
 #endif
