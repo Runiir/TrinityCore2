@@ -1,112 +1,100 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_canary122_native_launch_replay_v1_20260829",
-  "work_unit": "shard:magmaw_receipt_progress:fixture_expansion_capture",
+  "epoch_id": "magmaw_chainwielder_hazard_exit_diagnosis_v1_20260830",
+  "work_unit": "review:chainwielder_hazard_exit_failed:read_only_causal_diagnosis",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-shard-architecture",
+  "owner_skill": "raid-rotation-review",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "invalidated_fixture_replacement_evidence_request_declared_clean_suite_build_and_capture_required",
-  "observed_at_commit": "748d63431cfcda9ea4957711b29346de287d90d9",
+  "gate_state": "receipt56_fixture_boundary_promoted_gameplay_build_and_canary_closed_chainwielder_causal_diagnosis_required",
+  "observed_at_commit": "461fe737791ea714b493354281f844e985ca3117",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_748d63431c_tactical_replay_lite_summary_v1.json",
-    "sha256": "f3f54e4d2da2b17747fba8db885fc72b3920b72a44c4f642e41243a3193508bc"
+    "path": "experiments/configs/cata_raid_magmaw_78e33e6557_receipt_history_fixture_expansion_summary_v1.json",
+    "sha256": "fe58b3e470773d7ea937c8c7d8e9de5c75af9558ac19f5c319d9c3120d159f49",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_78e33e6557_magmaw_receipt_history_fixture_expansion_20260830.dvc",
+    "dvc_pointer_sha256": "5476a8ce1508d844b452b46f58a1085885044b1445a463457a50b382a7d70a98"
   },
-  "first_broken_edge": "The bounded replay localizes the first persistent corrupted state at bot 30007 dropping from Z 210.969 to Z 202.374, but receipt 598 became invisible after four samples because progress was published only through the currently selected planner observation. The diagnosis field and replay reducer now preserve bounded receipt-keyed history through terminal or supersession in deterministic fixtures. No current map-669 capture has established whether live receipt 598 continued sampling or whether spline 6780 caused the drop.",
-  "causal_signature": "magmaw_receipt_598_then_persistent_vertical_drop_then_partial_path_backoff",
-  "causal_claim_status": "state_infection_localized_launch_cause_unproven",
+  "first_broken_edge": "The observation-only run terminated at route node bwd.magmaw.chainwielder after 20 repeated hazard_exit_failed decisions. Receipt 56 independently closes the native planner-to-terminal-or-supersession fixture boundary, but neither that receipt nor this terminal identifies the first state-infecting Chainwielder decision or native outcome.",
+  "causal_signature": "chainwielder_hazard_exit_failed_repeated_decision_loop_unresolved",
+  "causal_claim_status": "terminal_localized_first_state_infecting_edge_unproven",
   "claim_ledger": {
     "verified": [
-      "receipt_598_was_submitted_for_bot_30007_with_spline_6780",
-      "receipt_598_planner_path_carried_sample_floor_gap",
-      "receipt_598_progress_samples_remained_on_platform_through_1788031506663",
-      "bot_30007_was_observed_at_z_210_969_at_1788031508028",
-      "bot_30007_was_observed_at_z_202_374_at_1788031510216",
-      "bot_30007_remained_off_platform_through_the_failure_window",
-      "receipt_599_rejected_route_destination_partial_path_from_z_202_374",
-      "bot_30007_reached_22_consecutive_wait_for_candidate_backoff_decisions",
-      "bounded_window_party_dps_was_76601_677_and_party_hps_was_15446_161",
-      "tactical_replay_lite_is_deterministic_and_dvc_remote_verified",
-      "receipt_598_had_four_samples_zero_drops_and_no_terminal_outcome_in_the_closed_capture",
-      "the_sixteen_sample_ring_did_not_stop_receipt_598_sampling",
-      "planner_selected_publication_can_hide_an_older_retained_receipt",
-      "diagnosis_now_publishes_a_bounded_independent_receipt_progress_history",
-      "fixture_preserves_last_sample_and_terminal_timestamps_separately",
-      "tactical_replay_lite_now_merges_history_only_by_matching_bot_and_receipt_identity",
-      "reducer_reports_missing_truncated_dropped_or_identity_mismatched_history_as_unavailable_or_partial",
-      "reducer_uses_last_sample_time_not_terminal_time_for_the_causal_gap",
-      "bounded_history_completeness_does_not_claim_continuous_position_or_causal_closure"
+      "native_planner_executor_launch_proof_v1_revision_3_is_bound_to_receipt_56_and_spline_667",
+      "receipt_56_has_five_same_identity_progress_samples_with_improving_distance_and_zero_drops",
+      "receipt_56_terminated_by_explicit_supersession_from_receipt_58",
+      "the_fixture_expansion_run_terminated_at_bwd_magmaw_chainwielder",
+      "the_terminal_was_repeated_decision_watchdog_after_twenty_hazard_exit_failed_decisions",
+      "the_capture_ran_no_gameplay_mutation_and_reached_no_magmaw_checkpoint"
     ],
     "refuted": [
-      "the_repeated_decision_watchdog_was_the_first_state_infecting_edge",
-      "all_observed_ranged_formation_restore_launches_remained_on_the_selected_platform",
-      "sample_ring_compaction_alone_closes_the_receipt_598_visibility_gap"
+      "receipt_56_reproduced_the_canary122_wrong_floor_mechanism",
+      "closing_the_receipt_history_boundary_closes_the_original_canary122_causal_claim",
+      "the_fixture_expansion_run_reached_the_magmaw_boss_checkpoint"
     ],
     "unproven": [
-      "spline_6780_caused_the_persistent_vertical_drop",
-      "receipt_598_stopped_receiving_live_observe_calls",
-      "the_new_receipt_history_field_closes_the_gap_in_a_real_map_669_capture",
-      "the_exact_collision_or_floor_transition_between_1788031506663_and_1788031510216",
-      "phase_aware_target_correctness_in_the_failure_window",
-      "hazard_reaction_latency_in_the_failure_window",
-      "true_cast_downtime_or_aura_lifecycle_in_the_failure_window"
+      "the_first_candidate_or_observation_that_caused_chainwielder_hazard_exit_failed",
+      "whether_the_chainwielder_loop_is_stale_hazard_state_arbitration_native_movement_or_route_lifecycle",
+      "whether_any_successful_wait_lane_masked_a_failed_movement_candidate_before_the_watchdog",
+      "the_original_canary122_wrong_floor_cause"
     ]
   },
   "live_observation": {
-    "summary_path": "experiments/configs/cata_raid_magmaw_748d63431c_tactical_replay_lite_summary_v1.json",
-    "summary_sha256": "f3f54e4d2da2b17747fba8db885fc72b3920b72a44c4f642e41243a3193508bc",
-    "source_commit": "748d63431cfcda9ea4957711b29346de287d90d9",
+    "source_commit": "78e33e65571c50d3bc336f49b7ecbc5d900fc0dc",
+    "source_tree": "a040bddd189c671646153ce98ed28e36d534f192",
+    "binary_sha256": "a8fdda50e17cd2ff2fc72db03f37db78e5b1ad6c705f1ed45b154e0aeb7f9d16",
+    "map": 669,
+    "instance": 2,
+    "attempt_id": 1,
+    "route_generation": 2,
+    "route_node_id": "bwd.magmaw.chainwielder",
     "terminal": "repeated_decision_watchdog",
-    "window_start_ms": 1788031500878,
-    "window_end_ms": 1788031531878,
-    "party_dps": 76601.677,
-    "party_hps": 15446.161,
-    "window_deaths": 0,
-    "persistent_vertical_drop_bot_guid": 30007,
-    "suspected_receipt_id": 598,
-    "causal_sampling_gap_ms": 3553
+    "repeated_outcome": "hazard_exit_failed",
+    "repeated_decision_count": 20,
+    "deaths": 0,
+    "active_party_dps": 42310.833,
+    "active_party_hps": 2610.056
   },
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "required_new_fixture_id": "native_planner_executor_launch_proof_v1",
-    "required_new_fixture_revision": 3,
-    "replacement_evidence_request": {
-      "from_revision": 2,
-      "to_revision": 3,
-      "causal_signature": "native_planner_executor_launch_divergence",
-      "required_production_boundary": "worldserver-backed map-669 planner, executor, MotionMaster, point generator, and launched spline observed over multiple ticks through terminal outcome or explicit supersession"
-    },
-    "required_fixture": "Production evidence must bind one receipt and launched spline continuously through terminal outcome or explicit supersession. A later off-platform observation may not be attributed to the launch when the receipt sampling gap remains open.",
+    "promoted_fixture_id": "native_planner_executor_launch_proof_v1",
+    "promoted_fixture_revision": 3,
+    "fixture_expansion_request_cleared": true,
+    "preserved_invalidated_fixture_ids": [
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
-    "allowed_change": "At the clean committed identity, run the complete retained regression bank, create one exact fast8 build receipt with eight compiler jobs, and run one admitted map-669 fixture-expansion capture that emits diagnosis movement_receipt_progress through terminal or supersession and reduces it with tactical_replay_lite. Publish and evict only that bounded evidence.",
+    "allowed_change": "Read only the immutable receipt-history capture and relevant current source to reconstruct the Chainwielder hazard_exit_failed loop from observed state through candidate set, arbitration, native submission, and outcome. Return the first contradictory or missing edge and its exact evidence identity. Do not implement a fix or run another server.",
     "forbidden": [
-      "magmaw_policy_or_strategy_change",
+      "gameplay_or_strategy_change",
+      "cpp_or_database_change",
       "generic_planner_tolerance_change",
-      "arbitrary_partial_path_admission",
-      "teleport_or_forced_position",
-      "class_rotation_or_damage_tuning",
-      "boss_outcome_mutation",
-      "visual_replay_ui",
-      "unchanged_live_rerun_before_the_sampling_gap_is_closed",
-      "gameplay_or_strategy_edit_during_fixture_expansion",
-      "second_live_attempt_before_the_first_capture_is_reduced_and_reviewed"
+      "fixture_revision_or_recurrence_ledger_change",
+      "build_or_worldserver_start",
+      "live_canary_or_second_capture",
+      "canary122_causal_closure_inference_from_receipt_56",
+      "visual_replay_ui"
     ]
   },
   "validation": {
-    "tactical_replay_focused_tests": "2_passed",
-    "tactical_replay_dvc_remote_verified": true,
-    "receipt_progress_publication_focused_tests": "6_passed",
-    "receipt_progress_publication_fixture_green": true,
-    "receipt_progress_reducer_focused_tests": "3_passed",
-    "receipt_progress_reducer_fixture_green": true,
-    "replacement_evidence_request_declared": true,
+    "receipt_56_fixture_boundary_met": true,
+    "native_planner_executor_launch_proof_revision": 3,
+    "original_canary122_cause_reproduced": false,
+    "original_canary122_cause_proven": false,
+    "fixture_expansion_request_cleared": true,
+    "other_invalidated_fixtures_preserved": 6,
     "build_admitted": false,
     "fixture_expansion_admitted": false,
     "canary_admitted": false,
+    "gameplay_admitted": false,
     "acceptance_admitted": false
   },
   "validation_clock": {
@@ -114,11 +102,9 @@
     "fixed_success_timer_seconds": null
   },
   "coordinator_followup": {
-    "build_jobs": 8,
-    "canary_budget_before_full_bank": 0,
-    "canary_budget_after_full_bank_and_exact_build": 1,
-    "next_owner_after_fixture_expansion_capture": "raid-performance-loop",
-    "next_work_unit_after_fixture_expansion_capture": "coordinator:review_live_receipt_history_and_route_only_a_verified_edge"
+    "next_owner": "raid-rotation-review",
+    "next_work_unit": "review:chainwielder_hazard_exit_failed:read_only_causal_diagnosis",
+    "implementation_owner_after_review": "route_only_after_first_broken_edge_is_proven"
   },
-  "next_action": "At the clean committed identity, pass the complete retained regression bank so the exact revision-2 to revision-3 replacement-evidence request is admitted, build with fast8, and run one observation-only map-669 fixture-expansion capture. Reduce and review that capture before promoting revision 3, making any gameplay edit, or starting a second attempt."
+  "next_action": "Assign one raid-rotation-review owner to the exact receipt-history capture. Correlate the repeated Chainwielder hazard_exit_failed decisions with the full candidate set, arbitration result, native movement submission, and observable progress. Stop at the first missing or contradictory edge and return a read-only causal handoff. Do not build, rerun, or change gameplay."
 }

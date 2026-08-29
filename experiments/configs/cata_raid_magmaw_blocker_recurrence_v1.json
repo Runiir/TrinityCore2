@@ -11,15 +11,7 @@
     "current_identity": {
       "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36"
     },
-    "fixture_expansion_requests": [
-      {
-        "fixture_id": "native_planner_executor_launch_proof_v1",
-        "from_revision": 2,
-        "to_revision": 3,
-        "causal_signature": "native_planner_executor_launch_divergence",
-        "required_production_boundary": "worldserver-backed map-669 planner, executor, MotionMaster, point generator, and launched spline observed over multiple ticks through terminal outcome or explicit supersession"
-      }
-    ],
+    "fixture_expansion_requests": [],
     "fixture_history": [
       "magmaw_parasite_lane_paths_v1",
       "magmaw_parasite_lane_transition_full_replay_v1",
@@ -190,16 +182,27 @@
       },
       {
         "fixture_id": "native_planner_executor_launch_proof_v1",
-        "revision": 2,
+        "revision": 3,
         "causal_signature": "native_planner_executor_launch_divergence",
         "evidence_boundary": "production",
-        "required_production_boundary": "worldserver-backed map-669 planner, executor, MotionMaster, point generator, and launched spline observed over multiple ticks",
+        "required_production_boundary": "worldserver-backed map-669 planner, executor, MotionMaster, point generator, and launched spline observed over multiple ticks through terminal outcome or explicit supersession",
         "production_evidence": {
-          "path": "experiments/configs/cata_raid_magmaw_748d63431c_receipt_tagged_progress_replay_summary_v1.json",
-          "sha256": "3e3dac61dcd39c6af8c76abe9c17eb505802acf83cec617e67c33f6d6d9fbebd",
-          "source_commit": "748d63431cfcda9ea4957711b29346de287d90d9",
-          "receipt_id": 620,
-          "binary_sha256": "53231b1db35101f2cf9fa1f388c72e52f92bc0126fd5b72794600703d7fde75f"
+          "path": "experiments/configs/cata_raid_magmaw_78e33e6557_receipt_history_fixture_expansion_summary_v1.json",
+          "sha256": "fe58b3e470773d7ea937c8c7d8e9de5c75af9558ac19f5c319d9c3120d159f49",
+          "source_commit": "78e33e65571c50d3bc336f49b7ecbc5d900fc0dc",
+          "source_tree": "a040bddd189c671646153ce98ed28e36d534f192",
+          "binary_sha256": "a8fdda50e17cd2ff2fc72db03f37db78e5b1ad6c705f1ed45b154e0aeb7f9d16",
+          "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_78e33e6557_magmaw_receipt_history_fixture_expansion_20260830.dvc",
+          "dvc_pointer_sha256": "5476a8ce1508d844b452b46f58a1085885044b1445a463457a50b382a7d70a98",
+          "dvc_directory_md5": "89bd320e1e23bff07936773621073310.dir",
+          "bot_guid": 30009,
+          "receipt_id": 56,
+          "spline_id": 667,
+          "sample_count": 5,
+          "terminal_outcome": "superseded_by_native_launch",
+          "superseded_by_receipt_id": 58,
+          "receipt_compact_sha256": "d98801fa796b3e7d569473b5e6493edff95febd635b0a53fb7e36da6b9ea967b",
+          "receipt_history_boundary_sha256": "868549776777b10c23bc9f00e5294f54dc747676b0689cb577306e80d15f9323"
         },
         "command": [
           "pixi",
@@ -207,6 +210,7 @@
           "pytest",
           "-q",
           "tests/test_native_path_launch_proof.py::test_map669_receipt_620_proves_identity_bound_consumed_launch",
+          "tests/test_native_path_launch_proof.py::test_map669_receipt_56_closes_only_terminal_or_supersession_boundary",
           "tests/test_native_path_launch_receipt.py"
         ]
       },
