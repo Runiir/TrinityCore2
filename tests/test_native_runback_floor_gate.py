@@ -5,6 +5,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PLANNER = (
     ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp"
 )
+PATH_VALIDATION = (
+    ROOT / "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h"
+)
 
 
 def _target_floor_gate(*, target_floor_valid: bool,
@@ -61,6 +64,7 @@ def test_invalid_runback_target_floor_admits_only_progressive_local_recovery() -
 
 def test_floor_gate_defers_to_the_existing_validated_local_step() -> None:
     planner = PLANNER.read_text(encoding="utf-8")
+    validation = PATH_VALIDATION.read_text(encoding="utf-8")
     gate = planner.index(
         "if (!targetFloorValid && (!progressiveStaticRoute || strictNativeDescent))"
     )
@@ -78,11 +82,35 @@ def test_floor_gate_defers_to_the_existing_validated_local_step() -> None:
         "        && (!progressiveStaticRoute || strictNativeDescent))"
     ) in planner
     assert "nativeEndpointFloorValid" in planner
-    assert "nativePathFloorsValid" in planner
-    assert "&& nativeEndpointFloorValid(path)" in planner
-    assert "&& nativePathFloorsValid(path)" in planner
-    assert "&& nativePathFloorsValid(stepPath)" in planner
+    assert "observation.EndpointFloorValid = endpointFloorValid" in validation
+    assert "diagnoseCompleteNativePath" in planner
+    assert "NativePathEndpointMatches" in validation
+    assert "segmentX = verifiedMainEndpoint.x" in planner
+    assert "FloorObservationConflict" in validation
     assert 'reject("route_destination_path_floor_gap", "path_floor")' in planner
     assert "PATHFIND_FARFROMPOLY)" in planner
     assert "MovePoint" not in planner
     assert "Resurrect" not in planner
+
+
+def test_canary106_complete_native_proof_is_owner_independent() -> None:
+    planner = PLANNER.read_text(encoding="utf-8")
+    start = planner.index("auto diagnoseCompleteNativePath")
+    end = planner.index("auto completeNativePathToPoint", start)
+    invariant = planner[start:end]
+
+    assert "DiagnoseCompleteNativePathProof" in invariant
+    assert "nativeEndpointFloorValid" in invariant
+    assert "diagnoseNativePathFloors" in invariant
+    assert "intent.Owner" not in invariant
+    assert "currentGoalDistance" not in invariant
+    assert "43.6772" not in invariant
+
+    # The recorded Canary106 values are represented by diagnostics, not by an
+    # owner or distance exception in the admission rule.
+    diagnostics_test = (
+        ROOT / "tests/test_movement_planner_diagnostics.py"
+    ).read_text(encoding="utf-8")
+    assert "0.0633392f" in diagnostics_test
+    for owner in ("Route", "CombatRange", "Hazard", "Mechanic"):
+        assert owner not in invariant

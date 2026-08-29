@@ -144,9 +144,37 @@ int main()
     success.Gate = "path_admission";
     success.Result = "accepted";
     success.Reason.clear();
+    success.NativeProof.Available = true;
+    success.NativeProof.Calculated = true;
+    success.NativeProof.PathType = 1;
+    success.NativeProof.Complete = true;
+    success.NativeProof.EndpointX = -333.0f;
+    success.NativeProof.EndpointY = -99.0f;
+    success.NativeProof.EndpointZ = 214.091f;
+    success.NativeProof.EndpointDistance = 0.0633392f;
+    success.NativeProof.EndpointMatched = true;
+    success.NativeProof.EndpointFloorValid = true;
+    success.NativeProof.FloorObservation = MakeNativePathFloorObservation(
+        NativePathFloorFailure::SampleFloorGap, 4, 7,
+        -340.0f, -105.0f, 214.1f, 219.0f, 214.154f);
+    success.NativeProof.FloorObservationConflict = true;
+    success.NativeProof.Accepted = true;
     sidecar.Record(success);
     sidecar.AssociateTrace(30001, 2);
     assert(sidecar.Latest(30001).Result == "accepted");
+    std::string proofJson = MovementPlannerObservationJson(
+        sidecar.Latest(30001));
+    assert(proofJson.find("\"native_proof\":{\"available\":true")
+        != std::string::npos);
+    assert(proofJson.find("\"endpoint\":{\"x\":-333")
+        != std::string::npos);
+    assert(proofJson.find("\"distance\":0.0633392")
+        != std::string::npos);
+    assert(proofJson.find("\"failure\":\"sample_floor_gap\"")
+        != std::string::npos);
+    assert(proofJson.find("\"floor_observation_conflict\":true")
+        != std::string::npos);
+    assert(proofJson.find("\"accepted\":true") != std::string::npos);
     assert(sidecar.ForTrace(30001, 1).Reason == "route_destination_invalid_floor");
     assert(sidecar.ForTrace(30001, 2).Result == "accepted");
     assert(sidecar.ForTrace(30002, 1).Reason == "route_destination_invalid_z_transition");
@@ -234,6 +262,10 @@ def test_planner_trace_diagnosis_and_lifecycle_wiring():
     assert "AllowProgressiveSegments" in planner
     assert "RequireCompletePath" in planner
     assert "AllowNativeLongPath" in planner
+    assert "NativePathProofObservation" in planner
+    assert "DiagnoseCompleteNativePathProof" in planner
+    assert "NativePathFloorObservationBlocksCompleteProof" in planner
+    assert "segmentX = verifiedMainEndpoint.x" in planner
     assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in trace
     assert "MovementPlannerDiagnostics().AssociateTrace" in trace
     assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in diagnosis

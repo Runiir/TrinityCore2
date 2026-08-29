@@ -11,15 +11,94 @@
 
 namespace BotWorldMovement
 {
+inline bool NativePathHasForbiddenAdmissionFlag(PathType type)
+{
+    return (type & PATHFIND_NOPATH)
+        || (type & PATHFIND_NOT_USING_PATH)
+        || (type & PATHFIND_SHORTCUT)
+        || (type & PATHFIND_FARFROMPOLY);
+}
+
 inline bool NativePathIsComplete(bool calculated, PathGenerator const& path)
 {
     PathType const type = path.GetPathType();
     return calculated && (type & PATHFIND_NORMAL)
-        && !(type & PATHFIND_NOPATH)
-        && !(type & PATHFIND_NOT_USING_PATH)
         && !(type & PATHFIND_INCOMPLETE)
-        && !(type & PATHFIND_SHORTCUT)
-        && !(type & PATHFIND_FARFROMPOLY);
+        && !NativePathHasForbiddenAdmissionFlag(type);
+}
+
+inline bool NativePathCanProvideProgress(PathType type)
+{
+    return (type & (PATHFIND_NORMAL | PATHFIND_INCOMPLETE))
+        && !NativePathHasForbiddenAdmissionFlag(type);
+}
+
+inline bool NativePathFloorObservationBlocksCompleteProof(
+    NativePathFloorObservation const& observation)
+{
+    switch (observation.Failure)
+    {
+        case NativePathFloorFailure::None:
+        case NativePathFloorFailure::SampleFloorUnavailable:
+        case NativePathFloorFailure::SampleFloorGap:
+            return false;
+        case NativePathFloorFailure::ActorUnavailable:
+        case NativePathFloorFailure::EmptyPath:
+        case NativePathFloorFailure::ActorReferenceGap:
+            return true;
+    }
+    return true;
+}
+
+inline float NativePathEndpointDistance(G3D::Vector3 const& actual,
+    G3D::Vector3 const& requested)
+{
+    float const x = actual.x - requested.x;
+    float const y = actual.y - requested.y;
+    float const z = actual.z - requested.z;
+    return std::sqrt(x * x + y * y + z * z);
+}
+
+inline bool NativePathEndpointMatches(G3D::Vector3 const& actual,
+    G3D::Vector3 const& requested, float tolerance = 0.5f)
+{
+    return NativePathEndpointDistance(actual, requested) <= tolerance;
+}
+
+template <typename EndpointFloorValidator, typename FloorObserver>
+NativePathProofObservation DiagnoseCompleteNativePathProof(bool calculated,
+    PathGenerator const& path, G3D::Vector3 const& requested,
+    EndpointFloorValidator&& endpointFloorValid,
+    FloorObserver&& observeFloors)
+{
+    NativePathProofObservation observation;
+    observation.Available = true;
+    observation.Calculated = calculated;
+    observation.PathType = static_cast<std::uint32_t>(path.GetPathType());
+    observation.Complete = NativePathIsComplete(calculated, path);
+    if (!observation.Complete)
+        return observation;
+
+    G3D::Vector3 const& endpoint = path.GetActualEndPosition();
+    observation.EndpointX = endpoint.x;
+    observation.EndpointY = endpoint.y;
+    observation.EndpointZ = endpoint.z;
+    observation.EndpointDistance = NativePathEndpointDistance(endpoint,
+        requested);
+    observation.EndpointMatched = NativePathEndpointMatches(endpoint,
+        requested);
+    observation.EndpointFloorValid = endpointFloorValid(path);
+    observation.FloorObservation = observeFloors(path);
+    observation.FloorObservationConflict =
+        observation.FloorObservation.Failure
+            == NativePathFloorFailure::SampleFloorGap
+        || observation.FloorObservation.Failure
+            == NativePathFloorFailure::SampleFloorUnavailable;
+    observation.Accepted = observation.EndpointMatched
+        && observation.EndpointFloorValid
+        && !NativePathFloorObservationBlocksCompleteProof(
+            observation.FloorObservation);
+    return observation;
 }
 
 template <typename Actor>

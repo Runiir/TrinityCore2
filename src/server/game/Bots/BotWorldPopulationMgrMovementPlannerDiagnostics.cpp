@@ -170,7 +170,8 @@ MovementPlannerDiagnosticSidecar& MovementPlannerDiagnostics()
 void RecordMovementPlannerOutcome(std::uint64_t botGuid,
     std::uint32_t requestedMapId, Intent const& intent,
     bool targetFloorSampled, float targetFloorZ, bool targetFloorValid,
-    char const* gate, bool accepted, char const* reason)
+    char const* gate, bool accepted, char const* reason,
+    NativePathProofObservation const* nativeProof)
 {
     MovementPlannerObservation observation;
     observation.BotGuid = botGuid;
@@ -190,6 +191,8 @@ void RecordMovementPlannerOutcome(std::uint64_t botGuid,
     observation.RequireCompletePath = intent.RequireCompletePath;
     observation.AllowNativeLongPath = intent.AllowNativeLongPath;
     observation.DynamicTarget = intent.DynamicTarget != nullptr;
+    if (nativeProof)
+        observation.NativeProof = *nativeProof;
     observation.PlannerGate = gate ? gate : "planner_admission";
     observation.PlannerResult = accepted ? "accepted" : "rejected";
     observation.PlannerReason = reason ? reason : "";
@@ -246,6 +249,40 @@ std::string MovementPlannerObservationJson(
          << (observation.AllowNativeLongPath ? "true" : "false")
          << ",\"dynamic_target\":"
          << (observation.DynamicTarget ? "true" : "false") << "}"
+         << ",\"native_proof\":{\"available\":"
+         << (observation.NativeProof.Available ? "true" : "false")
+         << ",\"calculated\":"
+         << (observation.NativeProof.Calculated ? "true" : "false")
+         << ",\"path_type\":" << observation.NativeProof.PathType
+         << ",\"complete\":"
+         << (observation.NativeProof.Complete ? "true" : "false")
+         << ",\"endpoint\":{\"x\":"
+         << observation.NativeProof.EndpointX << ",\"y\":"
+         << observation.NativeProof.EndpointY << ",\"z\":"
+         << observation.NativeProof.EndpointZ << ",\"distance\":"
+         << observation.NativeProof.EndpointDistance << ",\"matched\":"
+         << (observation.NativeProof.EndpointMatched ? "true" : "false")
+         << ",\"floor_valid\":"
+         << (observation.NativeProof.EndpointFloorValid ? "true" : "false")
+         << "},\"floor_observation\":{\"failure\":\""
+         << NativePathFloorFailureName(
+                observation.NativeProof.FloorObservation.Failure)
+         << "\",\"segment_index\":"
+         << observation.NativeProof.FloorObservation.SegmentIndex
+         << ",\"sample_index\":"
+         << observation.NativeProof.FloorObservation.SampleIndex
+         << ",\"x\":" << observation.NativeProof.FloorObservation.X
+         << ",\"y\":" << observation.NativeProof.FloorObservation.Y
+         << ",\"z\":" << observation.NativeProof.FloorObservation.Z
+         << ",\"resolved_floor_z\":"
+         << observation.NativeProof.FloorObservation.ResolvedFloorZ
+         << ",\"reference_z\":"
+         << observation.NativeProof.FloorObservation.ReferenceZ
+         << "},\"floor_observation_conflict\":"
+         << (observation.NativeProof.FloorObservationConflict
+                ? "true" : "false")
+         << ",\"accepted\":"
+         << (observation.NativeProof.Accepted ? "true" : "false") << "}"
          << ",\"planner\":{\"gate\":\""
          << JsonEscape(observation.PlannerGate)
          << "\",\"result\":\""

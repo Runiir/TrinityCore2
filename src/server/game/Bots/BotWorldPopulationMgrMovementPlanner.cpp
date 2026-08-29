@@ -36,13 +36,14 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     float sampledTargetFloorZ = 0.0f;
     bool targetFloorSampled = false;
     bool targetFloorValid = false;
+    BotWorldMovement::NativePathProofObservation nativeProof;
 
     auto reject = [&](char const* reason, char const* gate)
     {
         plan.RejectReason = reason ? reason : "route_destination_unreachable";
         RecordMovementPlannerOutcome(PlannerBotGuid(bot), PlannerBotMapId(bot),
             intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
-            gate, false, plan.RejectReason.c_str());
+            gate, false, plan.RejectReason.c_str(), &nativeProof);
         return false;
     };
 
@@ -161,34 +162,36 @@ bool BotWorldPopulationMgr::PlanMovementPath(
             candidatePath);
     };
 
-    auto nativePathFloorsValid = [bot, &pathReferenceFloorZ](
+    auto diagnoseNativePathFloors = [bot, &pathReferenceFloorZ](
         PathGenerator const& candidatePath)
     {
         if (pathReferenceFloorZ)
-            return BotWorldMovement::NativePathFloorsValid(bot, candidatePath,
+            return BotWorldMovement::DiagnoseNativePathFloors(bot,
+                candidatePath,
                 *pathReferenceFloorZ, true);
-        return BotWorldMovement::NativePathFloorsValid(bot, candidatePath);
+        return BotWorldMovement::DiagnoseNativePathFloors(bot, candidatePath,
+            0.0f, false);
+    };
+
+    auto diagnoseCompleteNativePath = [&](bool calculated,
+        PathGenerator const& candidatePath, G3D::Vector3 const& requested)
+    {
+        return BotWorldMovement::DiagnoseCompleteNativePathProof(calculated,
+            candidatePath, requested, nativeEndpointFloorValid,
+            diagnoseNativePathFloors);
     };
 
     auto completeNativePathToPoint = [&](G3D::Vector3 const& point,
-        G3D::Vector3& verifiedEndpoint)
+        G3D::Vector3& verifiedEndpoint,
+        BotWorldMovement::NativePathProofObservation& observation)
     {
         PathGenerator proofPath(bot);
         bool const pathOk = proofPath.CalculatePath(point.x, point.y,
             point.z, false);
-        if (!BotWorldMovement::NativePathIsComplete(pathOk, proofPath))
+        observation = diagnoseCompleteNativePath(pathOk, proofPath, point);
+        if (!observation.Accepted)
             return false;
-        if (!nativeEndpointFloorValid(proofPath)
-            || !nativePathFloorsValid(proofPath))
-            return false;
-
-        G3D::Vector3 const& endpoint = proofPath.GetActualEndPosition();
-        float const x = endpoint.x - point.x;
-        float const y = endpoint.y - point.y;
-        float const z = endpoint.z - point.z;
-        if (std::sqrt(x * x + y * y + z * z) > 0.5f)
-            return false;
-        verifiedEndpoint = endpoint;
+        verifiedEndpoint = proofPath.GetActualEndPosition();
         return true;
     };
 
@@ -196,12 +199,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         char const* candidateMode, float minimumProgress)
     {
         PathType const candidateType = candidatePath.GetPathType();
-        if ((candidateType & PATHFIND_NOPATH)
-            || (candidateType & PATHFIND_NOT_USING_PATH)
-            || (candidateType & PATHFIND_SHORTCUT)
-            || (candidateType & PATHFIND_FARFROMPOLY))
-            return false;
-        if (!(candidateType & (PATHFIND_NORMAL | PATHFIND_INCOMPLETE)))
+        if (!BotWorldMovement::NativePathCanProvideProgress(candidateType))
             return false;
 
         auto acceptPoint = [&](G3D::Vector3 const& point)
@@ -231,24 +229,43 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                 [&](G3D::Vector3 const& point, float, float)
                 {
                     G3D::Vector3 verifiedEndpoint;
-                    return completeNativePathToPoint(point, verifiedEndpoint)
-                        && acceptPoint(verifiedEndpoint);
+                    BotWorldMovement::NativePathProofObservation proof;
+                    if (!completeNativePathToPoint(point, verifiedEndpoint,
+                            proof)
+                        || !acceptPoint(verifiedEndpoint))
+                        return false;
+                    nativeProof = proof;
+                    return true;
                 });
         }
 
-        return nativeEndpointFloorValid(candidatePath)
-            && acceptPoint(candidatePath.GetActualEndPosition());
+        G3D::Vector3 verifiedEndpoint;
+        BotWorldMovement::NativePathProofObservation proof;
+        proof = diagnoseCompleteNativePath(true, candidatePath,
+            G3D::Vector3(intent.X, intent.Y, intent.Z));
+        if (!proof.Accepted)
+            return false;
+        verifiedEndpoint = candidatePath.GetActualEndPosition();
+        if (!acceptPoint(verifiedEndpoint))
+            return false;
+        nativeProof = proof;
+        return true;
     };
 
     PathGenerator path(bot);
     bool const pathOk = path.CalculatePath(intent.X, intent.Y, intent.Z,
         false);
     PathType const pathType = path.GetPathType();
-    if (targetFloorValid
-        && BotWorldMovement::NativePathIsComplete(pathOk, path)
-        && nativeEndpointFloorValid(path)
-        && nativePathFloorsValid(path))
+    nativeProof = diagnoseCompleteNativePath(pathOk, path,
+        G3D::Vector3(intent.X, intent.Y, intent.Z));
+    if (targetFloorValid && nativeProof.Accepted)
+    {
+        G3D::Vector3 const& verifiedMainEndpoint = path.GetActualEndPosition();
+        segmentX = verifiedMainEndpoint.x;
+        segmentY = verifiedMainEndpoint.y;
+        segmentZ = verifiedMainEndpoint.z;
         segmentSelected = true;
+    }
     else if (!strictNativeDescent && progressivePathAdmission
         && pathOk && (pathType & PATHFIND_INCOMPLETE))
         selectProgressEndpoint(path, "native_partial_path_backoff", 3.0f);
@@ -292,11 +309,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                     candidateZ, false))
                     continue;
                 PathType const stepType = stepPath.GetPathType();
-                if ((stepType & PATHFIND_NOPATH)
-                    || (stepType & PATHFIND_NOT_USING_PATH)
-                    || (stepType & PATHFIND_SHORTCUT)
-                    || (stepType & PATHFIND_FARFROMPOLY)
-                    || !(stepType & (PATHFIND_NORMAL | PATHFIND_INCOMPLETE)))
+                if (!BotWorldMovement::NativePathCanProvideProgress(stepType))
                     continue;
                 auto considerStepPoint = [&](G3D::Vector3 const& point,
                     bool backedOff)
@@ -328,14 +341,27 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                         [&](G3D::Vector3 const& point, float, float)
                         {
                             G3D::Vector3 verifiedEndpoint;
-                            return completeNativePathToPoint(point,
-                                verifiedEndpoint)
-                                && considerStepPoint(verifiedEndpoint, true);
+                            BotWorldMovement::NativePathProofObservation proof;
+                            if (!completeNativePathToPoint(point,
+                                    verifiedEndpoint, proof)
+                                || !considerStepPoint(verifiedEndpoint, true))
+                                return false;
+                            nativeProof = proof;
+                            return true;
                         });
                 }
-                else if (nativeEndpointFloorValid(stepPath)
-                    && nativePathFloorsValid(stepPath))
-                    considerStepPoint(stepPath.GetActualEndPosition(), false);
+                else
+                {
+                    G3D::Vector3 verifiedEndpoint;
+                    BotWorldMovement::NativePathProofObservation proof;
+                    proof = diagnoseCompleteNativePath(true, stepPath,
+                        G3D::Vector3(candidateX, candidateY, candidateZ));
+                    if (proof.Accepted)
+                        verifiedEndpoint = stepPath.GetActualEndPosition();
+                    if (proof.Accepted
+                        && considerStepPoint(verifiedEndpoint, false))
+                        nativeProof = proof;
+                }
             }
         }
         if (foundWalkableStep)
@@ -367,8 +393,16 @@ bool BotWorldPopulationMgr::PlanMovementPath(
             return reject("route_destination_shortcut_path", "path_admission");
         if (pathType & PATHFIND_FARFROMPOLY)
             return reject("route_destination_off_mesh", "path_admission");
+        if ((pathType & PATHFIND_NORMAL) && !nativeProof.EndpointMatched)
+            return reject("route_destination_endpoint_mismatch",
+                "endpoint_match");
         if ((pathType & PATHFIND_NORMAL)
-            && !nativePathFloorsValid(path))
+            && !nativeProof.EndpointFloorValid)
+            return reject("route_destination_endpoint_floor_invalid",
+                "endpoint_floor");
+        if ((pathType & PATHFIND_NORMAL)
+            && BotWorldMovement::NativePathFloorObservationBlocksCompleteProof(
+                nativeProof.FloorObservation))
             return reject("route_destination_path_floor_gap", "path_floor");
         return reject("route_destination_unreachable", "path_admission");
     }
@@ -391,6 +425,6 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     plan.Selected = true;
     RecordMovementPlannerOutcome(PlannerBotGuid(bot), PlannerBotMapId(bot),
         intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
-        "path_admission", true, nullptr);
+        "path_admission", true, nullptr, &nativeProof);
     return true;
 }

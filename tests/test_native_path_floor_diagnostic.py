@@ -90,12 +90,16 @@ def test_drudge_uses_declared_floor_as_reference_after_endpoint_resolution():
     assert "DiagnoseNativePathFloors(Bot, path,\n                declaredReferenceZ, true)" in geometry
     assert "NativePathFloorFailure::SampleFloorGap" in validation
     assert "NativePathFloorFailure::ActorReferenceGap" in validation
+    assert "NativePathFloorObservationBlocksCompleteProof" in validation
+    assert "case NativePathFloorFailure::SampleFloorUnavailable:" in validation
+    assert "case NativePathFloorFailure::SampleFloorGap:" in validation
 
 
 def test_planner_same_level_fallback_still_requires_native_path_proof():
     planner = (
         ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp"
     ).read_text(encoding="utf-8")
+    validation = PATH_VALIDATION.read_text(encoding="utf-8")
     movement = (
         ROOT / "src/server/game/Bots/"
         "BotWorldPopulationMgrValidationRouteMovementCheck.cpp"
@@ -105,7 +109,10 @@ def test_planner_same_level_fallback_still_requires_native_path_proof():
     assert "&& !sameLevelDeclaredFloorFallback" in planner
     assert "NativePathPointFloorValid(bot," in planner
     assert "*pathReferenceFloorZ,\n                true" in planner
-    assert "NativePathFloorsValid(bot, candidatePath," in planner
+    assert "DiagnoseNativePathFloors(bot," in planner
+    assert "NativePathFloorObservationBlocksCompleteProof" in planner
+    assert "FloorObservationConflict" in validation
+    assert "EndpointMatched" in validation
     assert 'action = "hold_hazard_exit_retry_backoff"' in movement
     assert '== "hazard_exit_no_union_safe_native_path"' in movement
 

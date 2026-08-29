@@ -60,6 +60,23 @@ inline NativePathFloorObservation MakeNativePathFloorObservation(
     return { failure, segment, sample, x, y, z, resolvedFloorZ, referenceZ };
 }
 
+struct NativePathProofObservation
+{
+    bool Available = false;
+    bool Calculated = false;
+    std::uint32_t PathType = 0;
+    bool Complete = false;
+    float EndpointX = 0.0f;
+    float EndpointY = 0.0f;
+    float EndpointZ = 0.0f;
+    float EndpointDistance = 0.0f;
+    bool EndpointMatched = false;
+    bool EndpointFloorValid = false;
+    NativePathFloorObservation FloorObservation;
+    bool FloorObservationConflict = false;
+    bool Accepted = false;
+};
+
 enum class NativeFloorAdmission
 {
     Rejected,

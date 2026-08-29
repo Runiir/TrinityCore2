@@ -3,6 +3,7 @@
 
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotWorldPopulationMgrMovement.h"
+#include "Bots/BotWorldPopulationMgrNativeFloor.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -37,6 +38,7 @@ struct MovementPlannerObservation
     bool RequireCompletePath = false;
     bool AllowNativeLongPath = false;
     bool DynamicTarget = false;
+    NativePathProofObservation NativeProof;
     std::string PlannerGate = "unavailable";
     std::string PlannerResult = "unavailable";
     std::string PlannerReason;
@@ -75,7 +77,8 @@ MovementPlannerDiagnosticSidecar& MovementPlannerDiagnostics();
 void RecordMovementPlannerOutcome(std::uint64_t botGuid,
     std::uint32_t requestedMapId, Intent const& intent, bool targetFloorSampled,
     float targetFloorZ, bool targetFloorValid, char const* gate, bool accepted,
-    char const* reason);
+    char const* reason,
+    NativePathProofObservation const* nativeProof = nullptr);
 
 void RecordMovementPlannerExecutorOutcome(std::uint64_t botGuid,
     std::uint32_t requestedMapId, Intent const& intent, char const* gate,

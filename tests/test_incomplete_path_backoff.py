@@ -111,7 +111,9 @@ def test_planner_requires_complete_native_proof_for_backoff_segments():
     planner = PLANNER.read_text(encoding="utf-8")
     assert "SelectIncompletePathBackoffCandidate" in planner
     assert "completeNativePathToPoint" in planner
-    assert "nativePathFloorsValid" in planner
+    assert "diagnoseCompleteNativePath" in planner
+    assert "DiagnoseCompleteNativePathProof" in planner
+    assert "NativePathFloorObservationBlocksCompleteProof" in planner
     assert '"native_partial_path_backoff"' in planner
     assert '"native_walkable_step_backoff"' in planner
     assert "PATHFIND_INCOMPLETE" in planner
