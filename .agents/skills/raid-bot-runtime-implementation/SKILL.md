@@ -166,6 +166,23 @@ destination, traversal mode, and observed native path state. Test the exact
 lease-expiry boundary at `nowMs == ExpiresAtMs`, plus one tick before and one
 tick after; a source-shape assertion is not enough.
 
+For event-owned encounter movement, retain a typed semantic transition in
+addition to the short generic lease. Bind it to encounter/attempt and mechanic
+generation, assigned actor, transition identity, direction, destination, and
+committed/arrived state. Once admitted, observation churn, changing hazard
+GUIDs/positions, ordinary lease expiry, or crossing a geometric midpoint must
+not choose a new destination. A typed lethal-safety action may preempt it, but
+the same transition resumes afterward. Retire it only on observed native
+arrival, a later mechanic generation after arrival, or exact attempt reset.
+Validate the full traversed corridor, not only endpoints.
+
+If that live signature recurs while the focused fixture passes, do not patch a
+new helper or run another canary. First replace the incomplete fixture with a
+multi-tick replay spanning selection, arbitration, semantic retention, native
+submission/progress, preemption/resume, arrival, and reset. Preserve the old
+counterexample and record any corrected expectation in the architecture
+handoff.
+
 Use the queued build coordinator for every native build. Return a runtime
 verification plan to `raid-shard-architecture`; that coordinator runs at most
 one matched completion-watchdog shard. If the same edge remains, return a

@@ -104,6 +104,48 @@ def test_next_signature_prefers_most_recurrent_edge() -> None:
     assert decision["next_causal_signature"] == "recurring_edge"
 
 
+def test_latest_absent_open_signature_does_not_steal_repair_priority() -> None:
+    decision = evaluate_ledger(
+        _ledger(
+            [
+                {"run_id": "101", "blockers": {"old_edge": "occurred"}},
+                {"run_id": "102", "blockers": {"old_edge": "occurred"}},
+                {
+                    "run_id": "103",
+                    "blockers": {"old_edge": "absent", "live_edge": "occurred"},
+                },
+            ]
+        )
+    )
+
+    old_edge = next(
+        row for row in decision["blockers"]
+        if row["causal_signature"] == "old_edge"
+    )
+    assert old_edge["open"] is True
+    assert old_edge["last_observed_state"] == "absent"
+    assert decision["next_causal_signature"] == "live_edge"
+    assert decision["required_next_action"] == "repair_latest_recurring_causal_signature"
+
+
+def test_open_signatures_latest_absent_require_clean_full_clear_not_repair() -> None:
+    decision = evaluate_ledger(
+        _ledger(
+            [
+                {"run_id": "101", "blockers": {"intermittent_edge": "occurred"}},
+                {"run_id": "102", "blockers": {"intermittent_edge": "absent"}},
+            ]
+        )
+    )
+
+    blocker = decision["blockers"][0]
+    assert blocker["open"] is True
+    assert blocker["last_observed_run_id"] == "102"
+    assert blocker["last_observed_state"] == "absent"
+    assert decision["next_causal_signature"] is None
+    assert decision["required_next_action"] == "run_clean_full_clear"
+
+
 def test_rejects_duplicate_run_identity_and_unknown_state() -> None:
     with pytest.raises(ValueError, match="duplicate run_id"):
         evaluate_ledger(

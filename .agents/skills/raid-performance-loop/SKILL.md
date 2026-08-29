@@ -187,6 +187,12 @@ signature keeps its original counterexample as a deterministic regression
 fixture. Do not delete, weaken, or replace that fixture when a later repair
 changes the implementation or diagnostic vocabulary.
 
+Only a currently `occurred` signature is eligible for repair routing. An older
+open signature whose latest assessed state is `absent` remains a provisional
+acceptance gate, but it must not displace the causal edge that occurred in the
+latest trace. If every open signature is latest-absent, run the next clean
+full-route acceptance canary instead of reopening an old implementation.
+
 An intervening successful action or run does not reset the count. Record one of
 `occurred`, `absent`, or `not_exercised` for every known signature in each
 closed canary. `absent` is closure evidence only when the relevant route was
@@ -231,6 +237,17 @@ renamed or ambiguous evidence cannot prove a signature `absent`.
 Route acceptance requires two consecutive completed clears in which every
 known signature is explicitly `absent`. Passing a focused test or one clean
 canary makes a repair provisional; it does not erase its recurrence history.
+
+When a live signature recurs while its retained fixture still passes, stop
+runtime edits and new canaries: the fixture is invalid or incomplete. Expand
+the same immutable counterexample through the missing full sequence of owner
+selection, priority/resource arbitration, semantic transition identity,
+native submission/path execution, and observed postcondition across multiple
+ticks. A helper-only, source-shape, endpoint-only, or preconstructed-lease test
+cannot certify that sequence. Counterexample expectations are append-only;
+changing or deleting an earlier expectation requires a hash-bound architecture
+review that preserves the old case and explains why its expectation was
+wrong.
 
 Treat a later failure in an already-cleared stage as a regression audit, not a
 fresh optimization opportunity. Compare the first causal edge with retained

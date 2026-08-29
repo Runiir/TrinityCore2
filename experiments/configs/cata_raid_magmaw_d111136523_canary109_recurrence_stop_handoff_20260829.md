@@ -22,21 +22,27 @@ does not close the signature because the full route did not clear twice.
 
 ## Tenth parasite-control occurrence
 
-The retained combat events directly record Parasitic Infection on five
-players:
+The retained combat analysis directly records Parasitic Infection on at least
+six players. The five rows below remain available as individual recent events;
+the encounter aggregates additionally retain the earlier second fire mage:
 
 | GUID | Player | Infection hits | Infection damage |
 | ---: | --- | ---: | ---: |
 | 30003 | Restoration druid | 2 | 14,705 |
 | 30005 | Discipline priest | 6 | 28,201 |
 | 30006 | fixed bait fire mage | 8 | 49,938 |
+| 30007 | second fire mage | 6 | 42,085 |
 | 30008 | Affliction warlock | 1 | 7,182 |
 | 30009 | fixed bait hunter | 10 | 42,347 |
 
-The first Pillar hit the hunter at `1787965280768`. Both fixed baiters were
-infected about six seconds later while moving through the declared lateral
-lane. Later parasites reached three non-bait players. The run therefore adds
-the tenth unique occurrence of
+The earliest retained causal chain is earlier than the recent-event window:
+Lava Spew at `1787965250254`, Parasitic Infection on second fire mage `30007`
+at `1787965250996`, and Infectious Vomit from that mage to tank `30001` at
+`1787965261217`. The fixed bait fire mage was infected at `1787965262623` and
+then vomited on the fixed bait hunter at `1787965270617`. Later retained
+events show both fixed baiters repeatedly infected while moving through the
+declared lateral lane, followed by infections on healers and Affliction. The
+run therefore adds the tenth unique occurrence of
 `magmaw_parasite_control_allows_player_infection`; intervening runs where the
 boss was not reached do not reset that history.
 

@@ -8,7 +8,9 @@
   "causal_signatures": {
     "magmaw_parasite_control_allows_player_infection": {
       "owner": "encounter_policy_and_movement_intent",
-      "invariant": "the fixed mobile bait team must traverse a stable room lane without player Parasitic Infection or parasite re-entry"
+      "invariant": "the fixed mobile bait team must traverse a stable room lane without player Parasitic Infection or parasite re-entry",
+      "architecture_reviewed_through_occurrence_count": 10,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md"
     },
     "chainwielder_future_drudge_contamination": {
       "owner": "shared_route_movement_authority",
@@ -258,6 +260,7 @@
         "same_level_encounter_hazard_path_rejection": "absent",
         "same_level_movement_path_floor_false_negative": "absent",
         "same_level_native_endpoint_z_normalization_false_negative": "absent",
+        "same_level_native_path_proof_false_negative": "absent",
         "magmaw_prepot_geometry_conflicts_with_bait_formation": "absent",
         "raid_partial_wipe_waits_for_last_survivor": "occurred"
       },

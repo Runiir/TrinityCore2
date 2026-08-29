@@ -1,72 +1,83 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_prepull_pipeline_v1_20260829",
-  "work_unit": "runtime:shared_prepull_pipeline:magmaw_formation_then_prepot",
+  "epoch_id": "magmaw_parasite_transition_architecture_v1_20260829",
+  "work_unit": "runtime:magmaw_lane_transition:immutable_event_owned_destination",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "exact_build_verified_pending_matched_canary109",
-  "observed_at_commit": "f7581b572e8e971e121a78c8366dccbff79b6774",
+  "classification": "failed",
+  "gate_state": "architecture_reviewed_implementation_required_canary110_blocked",
+  "observed_at_commit": "d1111365238abc4fd3ccf8cd51fc58c0cdce1c95",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_f7581b572e_canary108_prepot_geometry_handoff_20260829.md",
-    "sha256": "cfe221d23966ae50d01e6e842f9107c33bec043605972924ba960aef599c93e2"
+    "path": "experiments/configs/cata_raid_magmaw_d111136523_canary109_recurrence_stop_handoff_20260829.md",
+    "sha256": "3795d5244d399902b564d3ec24d5f80cc48ea18d9c102a400fe177575dceb96c"
   },
-  "first_broken_edge": "the_declared_38_4_yard_fire_mage_and_hunter_bait_formation_cannot_satisfy_the_generic_35_yard_prepot_gate_so_eight_members_wait_until_the_first_short_aura_expires",
-  "causal_signature": "magmaw_prepot_geometry_conflicts_with_bait_formation",
-  "hypothesis": "Durable setup may precede formation, but short pre-pot submission must use the encounter's completed formation contract rather than an independent boss-distance proxy.",
+  "architecture_review": {
+    "path": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md",
+    "sha256": "3df9d393f7911b0f4ee4b56118398bdb368bfe687e6e944732149126baa65211"
+  },
+  "first_broken_edge": "fixed_baiter_lane_direction_and_destination_are_recomputed_from_transient_position_parasite_observations_and_generic_lease_state_before_native_arrival",
+  "causal_signature": "magmaw_parasite_control_allows_player_infection",
+  "hypothesis": "A typed encounter-scoped transition that survives observation churn and short lease expiry will stop midpoint reversal and parasite re-entry.",
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "occurrence_count": 1,
+    "occurrence_count": 10,
+    "architecture_reviewed_through_occurrence_count": 10,
     "stop_at": 10,
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
     "allowed_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrRaidConsumables.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrRaidConsumables.h",
-      "src/server/game/Bots/BotWorldPopulationMgr.h",
-      "tests/test_bot_world_population_mgr_raid_consumables_module.py",
-      ".agents/skills/raid-performance-loop/SKILL.md",
-      ".agents/skills/raid-bot-runtime-implementation/SKILL.md",
-      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-      "experiments/configs/cata_raid_magmaw_f7581b572e_canary108_prepot_geometry_handoff_20260829.md"
+      "src/server/game/Bots/BotWorldPopulationMgrMagmawParasitePolicy.h",
+      "src/server/game/Bots/BotWorldPopulationMgrMagmawStrategy.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrMagmawStrategy.h",
+      "src/server/game/Bots/BotWorldPopulationMgrRaidRuntime.h",
+      "src/server/game/Bots/BotWorldPopulationMgrRaidMovement.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrRaidMovement.h",
+      "tests/test_magmaw_parasite_policy.py"
     ],
-    "allowed_change": "Order durable setup, health and encounter formation, short native pre-pot, and designated pull; remove the contradictory generic distance proxy.",
+    "allowed_change": "Introduce one typed Magmaw lane transition and replace the invalid helper-level fixture with a full multi-tick selection-to-native-outcome replay. Preserve fixed mage/hunter bait ownership and validate the entire lane corridor.",
     "forbidden": [
-      "class_or_spec_policy_changes",
-      "encounter_geometry_changes",
-      "inventory_manufacture_or_direct_aura_application",
-      "teleport_force_pull_or_boss_outcome_mutation",
-      "database_or_DVC_mutation_inside_the_implementation_unit",
-      "additional_hypotheses_before_the_matched_canary"
+      "class_rotation_or_damage_tuning",
+      "boss_spell_or_instance_script_changes",
+      "consumable_or_roster_provisioning",
+      "teleport_force_pull_resurrection_or_boss_outcome_mutation",
+      "database_DVC_build_or_live_server_mutation_inside_the_implementation_unit",
+      "another_canary_before_the_full_replay_passes"
     ]
   },
   "required_static_proof": [
-    "formation and health holds reject short pre-pot readiness",
-    "pull-owner wait admits pre-pot readiness for non-pull members",
-    "durable flask and food setup remains allowed before formation",
-    "the 35-yard boss-distance proxy is absent",
-    "native inventory use and second-potion reservation remain unchanged",
+    "only fixed mage and hunter own cohort lane transitions",
+    "transition identity direction and destination survive observation churn midpoint crossing and generic lease expiry",
+    "typed lethal preemption resumes the same transition",
+    "native rejection retries the same transition",
+    "arrival later mechanic generation and exact attempt reset are the only retirement boundaries",
+    "full corridor clears support geometry",
+    "non-bait local evasion cannot mutate the cohort transition",
     "all touched C++ files remain below 1000 physical lines"
   ],
   "focused_validation": {
-    "command": "pixi run pytest -q tests/test_bot_world_population_mgr_raid_consumables_module.py tests/test_magmaw_bloodlust.py tests/test_magmaw_magma_spit_target_filter.py tests/test_bot_world_population_mgr_native_action_module.py",
-    "result": "19 passed including compiled prepot-stage replay",
-    "skill_validation": "raid-performance-loop and raid-bot-runtime-implementation valid",
-    "maximum_touched_cpp_lines": 642
+    "command": "pixi run pytest -q tests/test_magmaw_parasite_policy.py",
+    "required_result": "multi-tick compiled replay passes the complete transition sequence",
+    "source_shape_only_is_insufficient": true
   },
-  "root_runtime_verification": {
-    "build_source_commit": "d1111365238abc4fd3ccf8cd51fc58c0cdce1c95",
-    "configure_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_d111136523.json",
-    "configure_receipt_file_sha256": "11baed6992e435f2927b3aef359a8bfc3849a8fe66cfd32601fad3765bdb727c",
-    "configure_embedded_receipt_sha256": "5fadc1229bbd3e413c9858b1a7b12d08ba6ee3ae09abee534965803e5c784779",
-    "worldserver_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_d111136523.json",
-    "worldserver_receipt_file_sha256": "43a741c2ac2c6a77d5b1580d7aa5241c5d3d54094bec3055e9998c63c79db68f",
-    "worldserver_embedded_receipt_sha256": "177ad9e18a09c530ffb12b7ccaa987935b27bf06d3dd83ada6319f56d41081d7",
-    "worldserver_sha256": "5e51c6c0586e93e18997d46979a9ffcfdb1c149cf4fc8a8bd6585dde2aecac70",
-    "compiler_jobs": 8,
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "terminal_conditions": [
+      "normal_clear",
+      "semantic_no_progress",
+      "repeated_decisions",
+      "excessive_death_loop",
+      "infrastructure_loss",
+      "contamination",
+      "explicit_interruption"
+    ]
+  },
+  "coordinator_followup": {
+    "build_jobs": 8,
     "clock": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "canary_budget": 1
+    "canary_budget_after_exact_build": 1
   },
-  "next_action": "Run one matched autonomous current-standard completion-watchdog Canary109. Require all ten native pre-pot receipts before pull, then classify the first downstream edge without reopening cleared symptoms."
+  "next_action": "Implement and review the bounded typed transition. Do not start Canary110 until its complete deterministic replay and coordinator-owned exact build pass."
 }

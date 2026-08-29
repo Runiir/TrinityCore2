@@ -126,6 +126,14 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
             break
 
         occurrence_count = len(occurrences)
+        last_observed_run_id = None
+        last_observed_state = "not_exercised"
+        for run in reversed(normalized_runs):
+            if signature not in run["blockers"]:
+                continue
+            last_observed_run_id = run["run_id"]
+            last_observed_state = run["blockers"][signature]
+            break
         contract = signature_contracts.get(signature, {})
         reviewed_through = int(
             contract.get("architecture_reviewed_through_occurrence_count", 0)
@@ -147,6 +155,8 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
                 "occurrence_count": occurrence_count,
                 "occurrence_run_ids": occurrences,
                 "last_occurrence_run_id": occurrences[-1] if occurrences else None,
+                "last_observed_run_id": last_observed_run_id,
+                "last_observed_state": last_observed_state,
                 "architecture_reviewed_through_occurrence_count": reviewed_through,
                 "unreviewed_occurrence_count": unreviewed_occurrence_count,
                 "clean_full_clear_streak": clean_clear_streak,
@@ -157,16 +167,19 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
 
     last_runs = normalized_runs[-clear_streak_required:]
     open_rows = [row for row in blocker_rows if row["open"]]
+    repair_rows = [
+        row for row in open_rows if row["last_observed_state"] == "occurred"
+    ]
     next_signature = None
-    if open_rows:
+    if repair_rows:
         run_position = {
             run["run_id"]: index for index, run in enumerate(normalized_runs)
         }
         next_signature = max(
-            open_rows,
+            repair_rows,
             key=lambda row: (
-                row["occurrence_count"],
                 run_position.get(row["last_occurrence_run_id"], -1),
+                row["occurrence_count"],
             ),
         )["causal_signature"]
     acceptance = (
@@ -189,8 +202,8 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
         "required_next_action": (
             "stop_and_summarize_last_ten_occurrences"
             if stop_signatures
-            else "repair_first_open_causal_signature"
-            if open_signatures
+            else "repair_latest_recurring_causal_signature"
+            if repair_rows
             else "run_clean_full_clear"
             if not acceptance
             else "accept"
