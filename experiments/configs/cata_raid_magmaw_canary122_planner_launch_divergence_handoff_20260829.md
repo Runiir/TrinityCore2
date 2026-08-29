@@ -43,3 +43,11 @@ Commit `75c12a3d1f28215021aa83c3b6af099b6609a193` adds an observation-only corre
 The six touched production translation units passed syntax compilation. The focused telemetry and existing movement-diagnostic tests pass. This validates the receipt schema and callback plumbing only. It does not initialize map 669, MMAP, a live player, or multiple world ticks and therefore does not prove the Canary122 mechanism.
 
 The active work unit is now the isolated worldserver-backed map-669 replay. The replay must emit the same correlation key from candidate through native launch and later consumed movement state, bind binary, config, data, and MMAP identities, and stop on a typed receipt, infrastructure loss, or bounded no-progress. Gameplay movement remains frozen until that evidence is captured.
+
+## First worldserver-backed replay result
+
+The rebuilt worldserver completed successfully with eight jobs. Binary SHA-256 is `dedef34290297a86e1776e6668f9e9205fa09ab503457371c651f9ae2d7ff0a4`. The observation seam loaded with the real map 669, MMAP, frozen ten-bot roster, planner, executor, MotionMaster, and native movement generators.
+
+The evidence-only one-node overlay did not reach the target movement edge. The initial Magmaw platform anchor body-pulled the boss before formation and prepull completed, leaving eight bots dead by 40 seconds. A single trace-backed correction moved the start to the proven rear-room staging area near `(-305.6, -65, 213)`, but the boss node still advanced tanks into body-pull range, leaving seven dead by 40 seconds and all ten dead by 85 seconds. No qualifying `ranged_formation_restore` launch receipt was emitted.
+
+Both owned servers were stopped, the disproven temporary controller and tests were removed, and no DVC evidence was published. This refutes the assumption that a one-node boss manifest plus a safe rear start can reproduce seq745. The exact missing production boundary is a post-trash, pre-pull checkpoint that keeps the boss node sealed until the roster has completed formation, consumables, and prepull readiness. The next shard-architecture unit must restore such a checkpoint or replay the canonical route into one, then release the existing boss node and receipt observer without changing boss or bot gameplay.
