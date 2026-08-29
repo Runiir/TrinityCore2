@@ -165,7 +165,7 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
-def test_planner_same_level_fallback_still_requires_native_path_proof():
+def test_planner_same_level_fallback_still_requires_native_path_proof(tmp_path):
     planner = (
         ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp"
     ).read_text(encoding="utf-8")
@@ -178,6 +178,7 @@ def test_planner_same_level_fallback_still_requires_native_path_proof():
         ROOT / "src/server/game/Bots/"
         "BotWorldPopulationMgrValidationRouteMovementCheck.cpp"
     ).read_text(encoding="utf-8")
+    normalized_movement = " ".join(movement.split())
 
     assert "AdmitSameLevelDeclaredFloorFallback" in planner
     assert "AdmitSameLevelLocalStepFloor" in planner
@@ -199,7 +200,62 @@ def test_planner_same_level_fallback_still_requires_native_path_proof():
     assert "&& nativeProof.Complete)" in planner
     assert "native_bounded_same_level_mechanic_endpoint" in planner
     assert 'action = "hold_hazard_exit_retry_backoff"' in movement
-    assert '== "hazard_exit_no_union_safe_native_path"' in movement
+    assert (
+        "HasArmedRouteHazardRetry( configuredHazard, "
+        "matchingRouteHazardRetry, state.ValidationRouteDodgeUntilMs, "
+        "nowMs, state.ActivePathValid, state.LastPathRejectReason)"
+        in normalized_movement
+    )
+
+    source = tmp_path / "route_hazard_retry_reason.cpp"
+    binary = tmp_path / "route_hazard_retry_reason"
+    source.write_text(
+        r'''
+#include "Bots/BotWorldPopulationMgrBotState.h"
+
+#include <cassert>
+
+using BotWorldPopulationMgrBotState::MovementRejectionIsolation::
+    HasArmedRouteHazardRetry;
+
+int main()
+{
+    assert(HasArmedRouteHazardRetry(
+        true, true, 1500, 1000, false,
+        "hazard_exit_no_union_safe_native_path"));
+    assert(!HasArmedRouteHazardRetry(
+        true, true, 1500, 1000, false,
+        "route_destination_future_pack_unsafe"));
+    assert(!HasArmedRouteHazardRetry(
+        true, true, 1500, 1000, true,
+        "hazard_exit_no_union_safe_native_path"));
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/server/game/Entities/Object"),
+            "-I",
+            str(ROOT / "src/common"),
+            "-I",
+            str(ROOT / "dep/g3dlite/include"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
 def test_canary119_bounded_complete_mechanic_endpoint_selection(tmp_path):

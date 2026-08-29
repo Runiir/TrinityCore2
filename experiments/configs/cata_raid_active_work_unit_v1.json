@@ -17,7 +17,8 @@
     "implementation_commit": "a75334b519a47ce85804d5d387ba6452fbc54753",
     "implementation_tree": "94a97f4a28e7daa7f4c376463e4d2b4fc7b147c7",
     "compiled_helper": "tests/test_movement_pre_admission_rejection_state.py",
-    "compiled_helper_sha256": "6d6f842ce1634ecd9a9da98d72e48900ba7b7be5a14d0581ffefb6675f4e4ccf"
+    "compiled_helper_sha256": "6d6f842ce1634ecd9a9da98d72e48900ba7b7be5a14d0581ffefb6675f4e4ccf",
+    "native_path_contract_fixture": "tests/test_native_path_floor_diagnostic.py::test_planner_same_level_fallback_still_requires_native_path_proof"
   },
   "first_broken_edge": "In the immutable map-669 Chainwielder capture, a receiptless adaptive Hazard proposal rejected by the future-pack destination guard was allowed to clear or overwrite movement state owned by an already-admitted Route path or its armed hazard retry. The route then repeated hazard_exit_failed twenty times. Commit a75334b519 isolates that state transition in a compiled helper, but no current worldserver-backed run has yet proved the fixed binary preserves the Route owner and completes the hazard exit.",
   "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state",
@@ -28,7 +29,8 @@
       "the_source_capture_stopped_at_bwd_magmaw_chainwielder_after_twenty_hazard_exit_failed_decisions",
       "the_rejected_adaptive_hazard_proposal_had_no_planner_receipt_and_did_not_own_the_existing_route_movement_state",
       "commit_a75334b519_separates_receiptless_pre_admission_rejection_observation_from_foreign_owner_state_mutation",
-      "the_compiled_helper_exercises_foreign_route_path_preservation_armed_route_hazard_retry_preservation_same_owner_fail_closed_and_unowned_fail_closed_cases"
+      "the_compiled_helper_exercises_foreign_route_path_preservation_armed_route_hazard_retry_preservation_same_owner_fail_closed_and_unowned_fail_closed_cases",
+      "the_same_level_native_path_fixture_calls_and_executes_the_shared_exact_route_hazard_retry_predicate_without_weakening_path_proof_assertions"
     ],
     "refuted": [
       "the_compiled_helper_is_a_live_map669_executor_replay",
