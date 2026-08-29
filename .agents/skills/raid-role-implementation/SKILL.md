@@ -103,6 +103,13 @@ Change one trigger, typed gate, priority, resource claim, prerequisite,
 alternative, target selector, or observed-state transition. Preserve ordinary
 native spell legality and game outcomes.
 
+Candidates are deferred until the shared kernel resolves. Role code must use
+explicit lifetime-safe captures for `Candidate::Attempt`; never use blanket
+`[&]` in a submitter that returns before resolution. If a role trace crashes or
+changes nondeterministically inside `Kernel::Resolve`, return the shared
+lifetime repair to `raid-bot-runtime-implementation` rather than compensating
+with class priorities.
+
 For long offensive cooldowns, guardians, combat potions, and Bloodlust, own
 only the class-correct native candidate, semantic category/tags, prerequisites,
 and alternatives. Do not encode trash-versus-boss route policy or an encounter

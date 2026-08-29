@@ -22,7 +22,8 @@
       "same_level_native_path_proof_v1",
       "magmaw_prepot_formation_gate_v1",
       "partial_wipe_native_reset_gate_v1",
-      "phase1_capture_single_start_contract_v1"
+      "phase1_capture_single_start_contract_v1",
+      "deferred_candidate_capture_lifetime_v1"
     ],
     "fixtures": [
       {
@@ -146,6 +147,17 @@
           "tests/test_ml_pipeline.py::test_prepare_only_config_never_autostarts_a_second_capture_cohort",
           "tests/test_phase1_raid_foundation_capture.py::test_canonical_capture_rejects_worldserver_autostart_before_spawn"
         ]
+      },
+      {
+        "fixture_id": "deferred_candidate_capture_lifetime_v1",
+        "causal_signature": "deferred_candidate_dangling_reference_capture",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_bot_world_population_mgr_candidate_capture_safety.py"
+        ]
       }
     ]
   },
@@ -215,6 +227,10 @@
     "phase1_capture_duplicate_autostart_lifecycle": {
       "owner": "capture_and_preparation_lifecycle",
       "invariant": "a preparation-only handoff disables worldserver AutoStart and the phase-1 capture controller is the sole owner of the explicit botauto start command"
+    },
+    "deferred_candidate_dangling_reference_capture": {
+      "owner": "shared_candidate_scheduling",
+      "invariant": "every deferred Candidate::Attempt explicitly owns copied values and borrows only state whose lifetime spans Kernel::Resolve; submitter stack locals are never retained by blanket reference capture"
     }
   },
   "runs": [
@@ -469,6 +485,27 @@
       "raw_jsonl_sha256": "904ffb87b450466770f5f48f228319c0d7761ec4225a0430b0e5e437232b602e",
       "worldserver_log_sha256": "98e7fc03d5896192c4f96a795e08eb7843adf2d59da7ce202c79df988ca65437",
       "note": "Preparation-only config enabled AutoStart while the capture controller also issued botauto start; attempt 1 was torn down, attempt 2 reprovisioned, and worldserver exited -11 before gameplay."
+    },
+    {
+      "run_id": "trinity-magmaw-05fdf027b9-canary112.cugdKh",
+      "route_completed": false,
+      "classification": "infrastructure_abort",
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "chainwielder_future_drudge_contamination": "not_exercised",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "not_exercised",
+        "same_level_native_endpoint_z_normalization_false_negative": "not_exercised",
+        "same_level_native_path_proof_false_negative": "not_exercised",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "not_exercised",
+        "raid_partial_wipe_waits_for_last_survivor": "not_exercised",
+        "phase1_capture_duplicate_autostart_lifecycle": "absent",
+        "deferred_candidate_dangling_reference_capture": "occurred"
+      },
+      "report_sha256": "520e419ab7b38a20c8f1f11c682dac0e6ad12fb2e767e254a216d6c89226d5e5",
+      "raw_jsonl_sha256": "46d74b656e5e13d61139091a778927f73cacc7f6704e69a595b4acc1887e8162",
+      "worldserver_log_sha256": "9054ae671f5be1ff9a18801ef18e605fdb974d8d041f7d7895b9a7bc4cb416b2",
+      "note": "Exactly one botauto start and one attempt reached Kernel::Resolve, then SIGSEGV occurred in the deferred fallback combat lambda. GDB proved a submitter-local helper and route flag were retained through blanket reference capture after the submitter returned."
     }
   ]
 }

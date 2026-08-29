@@ -70,7 +70,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             movement.UtilityScore = context.AdaptiveDrudgeMovement->Utility;
             movement.RequiredResources = context.AdaptiveDrudgeMovement->Resources();
             movement.ExpiresAtMs = context.AdaptiveDrudgeMovement->ExpiresAtMs;
-            movement.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+            movement.Attempt = [this, &context,
+                intent = BotNativeAction::WithMovementReason(
                 context.AdaptiveDrudgeMovement->Action,
                 context.AdaptiveDrudgeMovement->Id.Mechanic)]()
             {
@@ -115,7 +116,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                     movement.RetryMaxMs = 2000;
                     movement.EscalateAfter = 4;
                 }
-                movement.Attempt = [&, nativeIntent =
+                movement.Attempt = [this, &context, nativeIntent =
                     BotNativeAction::WithMovementReason(intent.Action,
                         intent.Id.Mechanic),
                     lease = *movementLease, mechanic = intent.Id.Mechanic]()
@@ -145,7 +146,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             mechanic.UtilityScore = context.AdaptiveMagmawInteraction->Utility;
             mechanic.RequiredResources = context.AdaptiveMagmawInteraction->Resources();
             mechanic.ExpiresAtMs = context.AdaptiveMagmawInteraction->ExpiresAtMs;
-            mechanic.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+            mechanic.Attempt = [this, &context,
+                intent = BotNativeAction::WithMovementReason(
                 context.AdaptiveMagmawInteraction->Action,
                 context.AdaptiveMagmawInteraction->Id.Mechanic)]()
             {
@@ -175,7 +177,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             suppress.UtilityScore = 100.0f;
             suppress.RequiredResources = BotActionArbitration::Uses(
                 BotActionArbitration::Resource::Pet);
-            suppress.Attempt = [&, suppressReason]()
+            suppress.Attempt = [this, &context, suppressReason]()
             {
                 std::string const intentReason =
                     "adaptive_magmaw_" + suppressReason;
@@ -214,7 +216,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             movement.UtilityScore = context.AdaptiveOmnotronMovement->Utility;
             movement.RequiredResources = context.AdaptiveOmnotronMovement->Resources();
             movement.ExpiresAtMs = context.AdaptiveOmnotronMovement->ExpiresAtMs;
-            movement.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+            movement.Attempt = [this, &context,
+                intent = BotNativeAction::WithMovementReason(
                 context.AdaptiveOmnotronMovement->Action,
                 context.AdaptiveOmnotronMovement->Id.Mechanic)]()
             {
@@ -242,7 +245,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             suppress.UtilityScore = 100.0f;
             suppress.RequiredResources = BotActionArbitration::Uses(
                 BotActionArbitration::Resource::Pet);
-            suppress.Attempt = [&]()
+            suppress.Attempt = [this, &context]()
             {
                 bool const submitted = SubmitMeleeAutoAttackIntent(context.State,
                     BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
@@ -281,7 +284,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 BotActionArbitration::Resource::GlobalCooldown,
                 BotActionArbitration::Resource::Cast,
                 BotActionArbitration::Resource::Target);
-            interrupt.Attempt = [&, adaptiveOmnotronInterruptTargetGuid = context.AdaptiveOmnotronInterruptTargetGuid]()
+            interrupt.Attempt = [this, &context,
+                adaptiveOmnotronInterruptTargetGuid = context.AdaptiveOmnotronInterruptTargetGuid]()
             {
                 Unit* caster = ObjectAccessor::GetUnit(*context.Bot,
                     adaptiveOmnotronInterruptTargetGuid);
@@ -319,7 +323,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             movement.UtilityScore = context.AdaptiveMaloriakMovement->Utility;
             movement.RequiredResources = context.AdaptiveMaloriakMovement->Resources();
             movement.ExpiresAtMs = context.AdaptiveMaloriakMovement->ExpiresAtMs;
-            movement.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+            movement.Attempt = [this, &context,
+                intent = BotNativeAction::WithMovementReason(
                 context.AdaptiveMaloriakMovement->Action,
                 context.AdaptiveMaloriakMovement->Id.Mechanic)]()
             {
@@ -349,7 +354,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 BotActionArbitration::Resource::GlobalCooldown,
                 BotActionArbitration::Resource::Cast,
                 BotActionArbitration::Resource::Target);
-            interrupt.Attempt = [&, adaptiveMaloriakInterruptTargetGuid = context.AdaptiveMaloriakInterruptTargetGuid]()
+            interrupt.Attempt = [this, &context,
+                adaptiveMaloriakInterruptTargetGuid = context.AdaptiveMaloriakInterruptTargetGuid]()
             {
                 Unit* caster = ObjectAccessor::GetUnit(*context.Bot,
                     adaptiveMaloriakInterruptTargetGuid);
@@ -389,7 +395,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 BotActionArbitration::Resource::GlobalCooldown,
                 BotActionArbitration::Resource::Cast,
                 BotActionArbitration::Resource::Target);
-            dispel.Attempt = [&, adaptiveMaloriakDispelTargetGuid = context.AdaptiveMaloriakDispelTargetGuid]()
+            dispel.Attempt = [this, &context,
+                adaptiveMaloriakDispelTargetGuid = context.AdaptiveMaloriakDispelTargetGuid]()
             {
                 Unit* auraTarget = ObjectAccessor::GetUnit(*context.Bot,
                     adaptiveMaloriakDispelTargetGuid);
@@ -426,7 +433,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             movement.UtilityScore = context.AdaptiveChimaeronMovement->Utility;
             movement.RequiredResources = context.AdaptiveChimaeronMovement->Resources();
             movement.ExpiresAtMs = context.AdaptiveChimaeronMovement->ExpiresAtMs;
-            movement.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+            movement.Attempt = [this, &context,
+                intent = BotNativeAction::WithMovementReason(
                 context.AdaptiveChimaeronMovement->Action,
                 context.AdaptiveChimaeronMovement->Id.Mechanic)]()
             {
@@ -444,7 +452,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             context.State.DecisionKernel.Submit(std::move(movement));
         }
 
-        auto submitAtramedesCandidate = [&](BotNativeAction::Candidate const& intent,
+        auto submitAtramedesCandidate = [this, &context](BotNativeAction::Candidate const& intent,
             char const* actionName, BotMovementArbitration::Owner movementOwner,
             BotMovementArbitration::Priority movementPriority)
         {
@@ -457,7 +465,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             candidate.UtilityScore = intent.Utility;
             candidate.RequiredResources = intent.Resources();
             candidate.ExpiresAtMs = intent.ExpiresAtMs;
-            candidate.Attempt = [&, nativeIntent =
+            candidate.Attempt = [this, &context, nativeIntent =
                 BotNativeAction::WithMovementReason(intent.Action,
                     intent.Id.Mechanic), actionName,
                 movementOwner, movementPriority]()
@@ -495,7 +503,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             movement.UtilityScore = context.AdaptiveNefarianMovement->Utility;
             movement.RequiredResources = context.AdaptiveNefarianMovement->Resources();
             movement.ExpiresAtMs = context.AdaptiveNefarianMovement->ExpiresAtMs;
-            movement.Attempt = [&, intent = BotNativeAction::WithMovementReason(
+            movement.Attempt = [this, &context,
+                intent = BotNativeAction::WithMovementReason(
                 context.AdaptiveNefarianMovement->Action,
                 context.AdaptiveNefarianMovement->Id.Mechanic)]()
             {
@@ -525,7 +534,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 BotActionArbitration::Resource::GlobalCooldown,
                 BotActionArbitration::Resource::Cast,
                 BotActionArbitration::Resource::Target);
-            interrupt.Attempt = [&, adaptiveNefarianInterruptTargetGuid = context.AdaptiveNefarianInterruptTargetGuid]()
+            interrupt.Attempt = [this, &context,
+                adaptiveNefarianInterruptTargetGuid = context.AdaptiveNefarianInterruptTargetGuid]()
             {
                 Unit* caster = ObjectAccessor::GetUnit(*context.Bot,
                     adaptiveNefarianInterruptTargetGuid);
@@ -567,7 +577,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 BotActionArbitration::Resource::GlobalCooldown,
                 BotActionArbitration::Resource::Cast,
                 BotActionArbitration::Resource::Target);
-            ownership.Attempt = [&, adaptiveDrudgeTankTargetGuid = context.AdaptiveDrudgeTankTargetGuid]()
+            ownership.Attempt = [this, &context,
+                adaptiveDrudgeTankTargetGuid = context.AdaptiveDrudgeTankTargetGuid]()
             {
                 Unit* source = ObjectAccessor::GetUnit(*context.Bot,
                     adaptiveDrudgeTankTargetGuid);
@@ -628,7 +639,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 candidate.UtilityScore = hazard->Utility;
                 candidate.RequiredResources = hazard->Resources();
                 candidate.ExpiresAtMs = hazard->ExpiresAtMs;
-                candidate.Attempt = [&, intent = hazard->Action]()
+                candidate.Attempt = [this, &context, intent = hazard->Action]()
                 {
                     BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
                         context.State, context.Bot, intent, BotMovementArbitration::Owner::Hazard,
@@ -648,7 +659,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
         // lease can expire while the admitted path is still carrying the
         // player. Keep the route scope check, but use the recorded path and
         // native movement state rather than lease expiry as the heal gate.
-        auto activeNativeMovementPath = [&]()
+        auto activeNativeMovementPath = [this, &context]()
         {
             if (!context.State.ActivePathValid)
                 return false;
@@ -714,7 +725,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 support.RequiredResources = BotActionArbitration::Uses(
                     BotActionArbitration::Resource::GlobalCooldown,
                     BotActionArbitration::Resource::Cast);
-                support.Attempt = [&, healTargetGuid, activeNativeMovementPath]()
+                support.Attempt = [this, &context, healTargetGuid,
+                    activeNativeMovementPath]()
                 {
                     Unit* healTarget = ObjectAccessor::GetUnit(*context.Bot, healTargetGuid);
                     if (!healTarget || !healTarget->IsAlive()

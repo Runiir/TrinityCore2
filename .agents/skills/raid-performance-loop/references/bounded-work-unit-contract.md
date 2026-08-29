@@ -51,6 +51,13 @@ outside the owned files is allowed only to resolve the admitted edge.
   owner. Do not copy pet, gear, roster, or instance identity logic into
   calibration, route, and runtime functions. If multiple consumers need it,
   extract a value-only helper and test all consumers against the same result.
+- Treat priority-queue candidates as deferred work. A submitter may return
+  before `Candidate::Attempt` runs, so its callable must explicitly capture
+  every value it owns and may reference only state whose lifetime spans queue
+  resolution. Do not use blanket `[&]` captures in deferred candidates. When
+  touching a submitter, audit sibling candidates in that submitter and keep a
+  source-level lifetime guard in the focused regression suite; a later stack
+  layout change must not be able to resurrect dangling-capture behavior.
 - Separate stable identity from native lifecycle state. A pet row, owner,
   entry, and persisted spellbook/autocast are identity; alive, summoned,
   in-world, current victim, and combat references are lifecycle. Death,

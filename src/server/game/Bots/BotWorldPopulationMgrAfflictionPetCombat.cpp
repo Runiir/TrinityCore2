@@ -32,7 +32,7 @@ void BotWorldPopulationMgr::SubmitAfflictionPetAttackCandidate(
     // owner's GCD, cast, or target-selection lane.
     petAttack.RequiredResources = BotActionArbitration::Uses(
         BotActionArbitration::Resource::Pet);
-    petAttack.Attempt = [&, petTargetGuid]()
+    petAttack.Attempt = [this, &context, petTargetGuid]()
     {
         Pet* pet = context.Bot->GetPet();
         Unit* target = ObjectAccessor::GetUnit(*context.Bot, petTargetGuid);

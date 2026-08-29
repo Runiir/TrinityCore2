@@ -46,8 +46,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             candidate.RetryBaseMs = 100;
             candidate.RetryMaxMs = 1000;
             ObjectGuid const combatResTarget = combatRes->Id.Actor;
-            candidate.Attempt = [&, intent = combatRes->Action,
-                                    combatResTarget]()
+            candidate.Attempt = [this, &context, intent = combatRes->Action,
+                combatResTarget]()
             {
                 BotActionArbitration::Outcome outcome =
                     ExecuteNativeActionIntent(context.State, context.Bot, intent,
@@ -230,7 +230,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                     candidate.UtilityScore = interaction.Utility;
                     candidate.RequiredResources = interaction.Resources();
                     candidate.ExpiresAtMs = interaction.ExpiresAtMs;
-                    candidate.Attempt = [&, intent = interaction.Action]()
+                    candidate.Attempt = [this, &context,
+                        intent = interaction.Action]()
                     {
                         BotActionArbitration::Outcome outcome =
                             ExecuteNativeActionIntent(context.State, context.Bot, intent,

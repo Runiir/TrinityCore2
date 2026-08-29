@@ -47,6 +47,18 @@ queue, and trace ownership, admission, execution, and outcome boundaries.
 Accept the refactor only when the effective decision graph or ownership
 overlap shrinks. Keep every C/C++ source and header below 1,000 lines.
 
+The action kernel resolves candidates after submitter helpers return. Treat
+every `Candidate::Attempt` as deferred: capture owned values explicitly and
+reference only the update context or other state that provably outlives
+resolution. Blanket `[&]` capture is forbidden in deferred submitters because
+an unrelated stack-layout change can expose old undefined behavior as an
+intermittent regression. When a trace enters a candidate lambda through
+`Kernel::Resolve`, audit every sibling candidate in that submitter, replace
+implicit captures with explicit lifetime-safe captures, and add a source-level
+guard that prevents the unsafe form from returning. Keep a compiled behavior
+test for the original transition as well; the source guard proves lifetime
+shape, not gameplay correctness.
+
 An unrelated rebuild that exposes an older failure usually changed timing; it
 does not make the newest patch the cause. Trace the first admitted owner and
 native outcome before inspecting the latest diff. Treat missing or default

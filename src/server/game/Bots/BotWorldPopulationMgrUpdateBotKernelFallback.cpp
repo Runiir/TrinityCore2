@@ -417,7 +417,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotActionArbitration::Resource::Movement,
             BotActionArbitration::Resource::Target,
             BotActionArbitration::Resource::Interaction);
-        boss.Attempt = [&]()
+        boss.Attempt = [this, &context]()
         {
             BossMechanicActionResult& bossAction = context.BossAction;
             if (context.AdaptiveDrudgeOwnsNode || context.AdaptiveMagmawOwnsNode
@@ -524,7 +524,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotActionArbitration::Resource::Cast,
             BotActionArbitration::Resource::Movement,
             BotActionArbitration::Resource::Target);
-        trash.Attempt = [&]()
+        trash.Attempt = [this, &context, typedDrudgeValidationRoute]()
         {
             if (typedDrudgeValidationRoute && context.AdaptiveDrudgeOwnsNode
                 && !context.DrudgeCombatAuthorityAllowed)
@@ -634,7 +634,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
         // support action, or threat action must be able to commit beside it.
         combatRange.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::Movement);
-        combatRange.Attempt = [&]()
+        combatRange.Attempt = [this, &context, typedDrudgeValidationRoute]()
         {
             if (typedDrudgeValidationRoute && context.AdaptiveDrudgeOwnsNode
                 && !context.DrudgeCombatAuthorityAllowed)
@@ -695,7 +695,8 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotActionArbitration::Resource::GlobalCooldown,
             BotActionArbitration::Resource::Cast,
             BotActionArbitration::Resource::Target);
-        combat.Attempt = [&]()
+        combat.Attempt = [this, &context, hasRetainedMagmawHazard,
+            typedDrudgeValidationRoute]()
         {
             if (typedDrudgeValidationRoute && context.AdaptiveDrudgeOwnsNode
                 && !context.DrudgeCombatAuthorityAllowed)
