@@ -3,7 +3,7 @@
   "epoch_id": "same_level_native_path_proof_v3_20260829",
   "work_unit": "runtime:shared_movement:native_endpoint_floor_normalization",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "canary107_trace_classified_static_repair_in_progress",
+  "classification": "exact_build_verified_pending_matched_canary108",
   "observed_at_commit": "b2ab0de4f555db3f12d8fe6da1c96a2b36abfd58",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_b2ab0de4f5_canary107_native_endpoint_handoff_20260829.md",
@@ -75,16 +75,16 @@
   },
   "root_runtime_verification": {
     "build": "exact committed source through queued_build.py with guarded 8 compiler jobs and same-commit configure lineage",
-    "build_source_commit": "b2ab0de4f555db3f12d8fe6da1c96a2b36abfd58",
-    "configure_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_b2ab0de4f5.json",
-    "configure_receipt_sha256": "c62146f0b42fb510871b1aa78a10b833d4f886dec3aff062301ad1bde0fd9533",
-    "worldserver_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_b2ab0de4f5.json",
-    "worldserver_receipt_sha256": "547c542bc7e34b8f49f834c37c2c54c2399770d137a714dc0ed99e25bcd6c1b5",
-    "worldserver_sha256": "bcfa366deede77747c6b5598c2b3d862d6fd866b6cd37f127a021a15dcc06f1e",
+    "build_source_commit": "f7581b572e8e971e121a78c8366dccbff79b6774",
+    "configure_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_f7581b572e.json",
+    "configure_receipt_sha256": "0911ecf21254f6b83832ec0e2d2dceda61129138d38cff6ba6268c55fdaff558",
+    "worldserver_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_f7581b572e.json",
+    "worldserver_receipt_sha256": "2f20cc892835bff1c2b0388594910b0709b067b0c852ff158f0c72160ae4a01e",
+    "worldserver_sha256": "7fa334732306c647a116d855071fef2fad43b012b680ff88854d0b26ea5da127",
     "canary_budget": 1,
     "clock": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "promotion_gate": "two consecutive current-standard Magmaw route clears before closing the causal signature"
   },
-  "next_action": "Complete expanded static gates, commit the bounded repair, build the exact commit with queued fast8 lineage, and run one matched autonomous completion-watchdog canary. Do not close any signature before two consecutive full route clears."
+  "next_action": "Run one matched autonomous current-standard completion-watchdog Canary108. Classify every known recurrence signature; do not close any signature before two consecutive full route clears."
 }
