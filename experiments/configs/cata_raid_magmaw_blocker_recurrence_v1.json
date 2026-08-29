@@ -82,24 +82,28 @@
       },
       {
         "fixture_id": "same_level_hazard_path_admission_v1",
+        "revision": 2,
         "causal_signature": "same_level_encounter_hazard_path_rejection",
         "command": [
           "pixi",
           "run",
           "pytest",
           "-q",
-          "tests/test_same_level_hazard_path_admission.py::test_same_level_mechanic_admission_contract"
+          "tests/test_same_level_hazard_path_admission.py::test_same_level_mechanic_admission_contract",
+          "tests/test_native_path_floor_diagnostic.py::test_canary119_bounded_complete_mechanic_endpoint_selection"
         ]
       },
       {
         "fixture_id": "same_level_floor_observation_v1",
+        "revision": 2,
         "causal_signature": "same_level_movement_path_floor_false_negative",
         "command": [
           "pixi",
           "run",
           "pytest",
           "-q",
-          "tests/test_native_path_floor_diagnostic.py::test_native_path_floor_observation_preserves_first_failure_values"
+          "tests/test_native_path_floor_diagnostic.py::test_native_path_floor_observation_preserves_first_failure_values",
+          "tests/test_native_path_floor_diagnostic.py::test_canary119_bounded_complete_mechanic_endpoint_selection"
         ]
       },
       {
@@ -115,13 +119,15 @@
       },
       {
         "fixture_id": "same_level_native_path_proof_v1",
+        "revision": 2,
         "causal_signature": "same_level_native_path_proof_false_negative",
         "command": [
           "pixi",
           "run",
           "pytest",
           "-q",
-          "tests/test_native_path_floor_diagnostic.py::test_planner_same_level_fallback_still_requires_native_path_proof"
+          "tests/test_native_path_floor_diagnostic.py::test_planner_same_level_fallback_still_requires_native_path_proof",
+          "tests/test_native_path_floor_diagnostic.py::test_canary119_bounded_complete_mechanic_endpoint_selection"
         ]
       },
       {

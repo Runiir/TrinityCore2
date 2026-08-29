@@ -195,6 +195,25 @@ inline bool AdmitSameLevelDeclaredFloorFallback(float actorZ,
         && std::fabs(actorZ - requestedZ) <= NativeFloorTolerance
         && std::fabs(resolvedFloorZ - requestedZ) > NativeFloorTolerance;
 }
+
+// Local mechanic steps are declared on the actor's current level.  A height
+// probe may nevertheless return an unrelated lower floor at the candidate
+// X/Y; preserve the declared local Z only when the original destination also
+// proved to be a same-level request.  A genuine cross-floor request remains
+// rejected instead of inheriting the actor's transient floor.
+inline NativeFloorResult AdmitSameLevelLocalStepFloor(float actorZ,
+    float requestedZ, float resolvedFloorZ)
+{
+    if (!std::isfinite(actorZ) || !std::isfinite(requestedZ)
+        || !std::isfinite(resolvedFloorZ))
+        return {};
+    if (std::fabs(resolvedFloorZ - actorZ) <= NativeFloorTolerance)
+        return { resolvedFloorZ, NativeFloorAdmission::Native };
+    if (!AdmitSameLevelDeclaredFloorFallback(actorZ, requestedZ,
+            resolvedFloorZ))
+        return {};
+    return { actorZ, NativeFloorAdmission::DeclaredFallback };
+}
 }
 
 #endif

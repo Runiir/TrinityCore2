@@ -339,30 +339,30 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "architecture_review:magmaw_parasite_containment:"
-        "revision_4_arrived_boundary"
+        "runtime_repair:magmaw_same_level_native_path:canary119_seq3376"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "revision-3 returns no destination after both baiters arrive for a "
-        "still-living same parasite wave, so an unsafe occupied endpoint "
-        "cannot redirect the shared lane"
+        "Canary119 sequence 3376 rejected a complete floor-valid "
+        "parasite_contact_evade path as route_destination_endpoint_mismatch "
+        "even though its native endpoint travelled 3.1396 yards and made "
+        "about 2.195 yards of same-level progress."
     )
     evidence = active["live_observation"]
     assert evidence["direct_infection_players"] == 5
-    assert evidence["terminal"] == "death_loop_watchdog"
+    assert evidence["terminal"] == "repeated_decision_watchdog"
     assert evidence["trash_cleared_without_deaths"] is True
     assert active["gate_state"] == (
-        "revision_4_green_locally_exact_identity_not_yet_admitted"
+        "exact_counterexample_green_full_retained_bank_pending"
     )
     assert active["coordinator_followup"][
-        "canary_budget_before_expanded_fixture"
+        "canary_budget_before_full_bank"
     ] == 0
     assert active["validation"]["build_admitted"] is False
     assert active["validation"]["canary_admitted"] is False
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "revision 4" in active["next_action"].lower()
+    assert "canary120" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -461,26 +461,26 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["active_work_unit"]["ready_for_fixture_expansion"] is False
     assert status["active_work_unit"]["ready_for_live_verification"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "revision-3 returns no destination after both baiters arrive for a "
-        "still-living same parasite wave, so an unsafe occupied endpoint "
-        "cannot redirect the shared lane"
+        "Canary119 sequence 3376 rejected a complete floor-valid "
+        "parasite_contact_evade path as route_destination_endpoint_mismatch "
+        "even though its native endpoint travelled 3.1396 yards and made "
+        "about 2.195 yards of same-level progress."
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_canary118_parasite_recurrence_handoff_20260829.md"
+            "cata_raid_magmaw_canary119_floor_recurrence_handoff_20260829.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
-        "architecture_review:magmaw_parasite_containment:"
-        "revision_4_arrived_boundary"
+        "runtime_repair:magmaw_same_level_native_path:canary119_seq3376"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-bot-runtime-implementation"
     )
     assert status["current_program_next_action"] is None
-    assert "revision 4" in status["active_work_unit"]["next_action"].lower()
+    assert "canary120" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 

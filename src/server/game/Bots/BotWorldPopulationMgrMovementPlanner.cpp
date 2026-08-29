@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotExperienceLearningPolicy.h"
+#include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
 #include "Bots/BotWorldPopulationMgrNativePathValidation.h"
 #include "Bots/BotWorldPopulationMgrMovementPathSelection.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
@@ -259,13 +260,30 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     PathType const pathType = path.GetPathType();
     nativeProof = diagnoseCompleteNativePath(pathOk, path,
         G3D::Vector3(intent.X, intent.Y, intent.Z));
-    if (targetFloorValid && nativeProof.Accepted)
+    bool boundedLocalMechanicEndpoint = false;
+    if (targetFloorValid && nativeProof.Calculated
+        && nativeProof.Complete)
     {
         G3D::Vector3 const& verifiedMainEndpoint = path.GetActualEndPosition();
-        segmentX = verifiedMainEndpoint.x;
-        segmentY = verifiedMainEndpoint.y;
-        segmentZ = verifiedMainEndpoint.z;
-        segmentSelected = true;
+        boundedLocalMechanicEndpoint =
+            BotWorldMovement::NativePathAllowsBoundedSameLevelMechanicProgress(
+                intent.Owner, sameLevelDeclaredFloorFallback,
+                sameLevelLocalMechanicProgress, nativeProof.Complete,
+                BotWorldMovement::NativePathHasForbiddenAdmissionFlag(pathType),
+                nativeProof, bot->GetExactDist(verifiedMainEndpoint.x,
+                    verifiedMainEndpoint.y, verifiedMainEndpoint.z),
+                currentGoalDistance,
+                distanceToGoal(verifiedMainEndpoint.x, verifiedMainEndpoint.y,
+                    verifiedMainEndpoint.z));
+        if (nativeProof.Accepted || boundedLocalMechanicEndpoint)
+        {
+            segmentX = verifiedMainEndpoint.x;
+            segmentY = verifiedMainEndpoint.y;
+            segmentZ = verifiedMainEndpoint.z;
+            if (boundedLocalMechanicEndpoint)
+                traversalMode = "native_bounded_same_level_mechanic_endpoint";
+            segmentSelected = true;
+        }
     }
     else if (!strictNativeDescent && progressivePathAdmission
         && pathOk && (pathType & PATHFIND_INCOMPLETE))
@@ -298,12 +316,17 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                     + std::cos(angle) * stepDistance;
                 float const candidateY = bot->GetPositionY()
                     + std::sin(angle) * stepDistance;
-                float const candidateZ = bot->GetMap()->GetHeight(
+                float const resolvedCandidateZ = bot->GetMap()->GetHeight(
                     bot->GetPhaseShift(), candidateX, candidateY,
                     bot->GetPositionZ() + 2.0f, true, 8.0f);
-                if (candidateZ <= INVALID_HEIGHT
-                    || std::fabs(candidateZ - bot->GetPositionZ()) > 4.0f)
+                if (resolvedCandidateZ <= INVALID_HEIGHT)
                     continue;
+                BotWorldMovement::NativeFloorResult const candidateFloor =
+                    BotWorldMovement::AdmitSameLevelLocalStepFloor(
+                        bot->GetPositionZ(), intent.Z, resolvedCandidateZ);
+                if (!candidateFloor.Accepted())
+                    continue;
+                float const candidateZ = candidateFloor.Z;
 
                 PathGenerator stepPath(bot);
                 if (!stepPath.CalculatePath(candidateX, candidateY,
