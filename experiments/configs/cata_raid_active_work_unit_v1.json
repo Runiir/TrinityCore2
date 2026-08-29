@@ -1,118 +1,109 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_pre_admission_rejection_fixture_expansion_v1_20260830",
-  "work_unit": "shard:magmaw_chainwielder_pre_admission_rejection:fixture_expansion_capture",
+  "epoch_id": "chainwielder_trace_discontinuity_transport_v1_20260830",
+  "work_unit": "runtime:per_bot_trace_discontinuity_transport",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "live_recurrence_quarantined",
-  "gate_state": "chainwielder_revision1_observation_only_full_bank_and_exact_matched_production_capture_required",
-  "observed_at_commit": "461fe737791ea714b493354281f844e985ca3117",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "telemetry_boundary_after_quarantined_failed_capture",
+  "gate_state": "gameplay_and_fixture_promotion_closed_on_real_bot30008_trace_loss",
+  "observed_at_commit": "6518233c67d22f12418d5f9bf765ed027c18eb79",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_78e33e6557_receipt_history_fixture_expansion_summary_v1.json",
-    "sha256": "fe58b3e470773d7ea937c8c7d8e9de5c75af9558ac19f5c319d9c3120d159f49",
-    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_78e33e6557_magmaw_receipt_history_fixture_expansion_20260830.dvc",
-    "dvc_pointer_sha256": "5476a8ce1508d844b452b46f58a1085885044b1445a463457a50b382a7d70a98",
-    "implementation_commit": "a75334b519a47ce85804d5d387ba6452fbc54753",
-    "implementation_tree": "94a97f4a28e7daa7f4c376463e4d2b4fc7b147c7",
-    "compiled_helper": "tests/test_movement_pre_admission_rejection_state.py",
-    "compiled_helper_sha256": "6d6f842ce1634ecd9a9da98d72e48900ba7b7be5a14d0581ffefb6675f4e4ccf",
-    "native_path_contract_fixture": "tests/test_native_path_floor_diagnostic.py::test_planner_same_level_fallback_still_requires_native_path_proof"
+    "path": "experiments/configs/cata_raid_magmaw_6518233c67_chainwielder_trace_transport_summary_v1.json",
+    "sha256": "0f7813beca859c487554f5e03d3ebf8a49153a19228d3d2d0c2f873bd4c483b0",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_6518233c67_chainwielder_trace_transport_quarantine_20260830.dvc",
+    "dvc_pointer_sha256": "04918b1e1c454f28ef49eb9c0ef4b1f2c6bae8b3460ef7c0f3ada2813a44d8a4",
+    "dvc_directory_md5": "ca266dd38c919db04544be1ae6000b0f.dir",
+    "source_report_sha256": "34f8d81134263462f30aa4b95af9946b9ce49bb2a27bc41c893ea92a42bf803b",
+    "source_raw_output_sha256": "d28fabf617748a887ef0b2655df0a0dea852d7bc192fbaeceabb26228999ffa8",
+    "source_worldserver_log_sha256": "bd824fa190d801326b13552c6b9a9688ece3d53a4012ea6d8319cd566e6ea6e3"
   },
-  "first_broken_edge": "In the immutable map-669 Chainwielder capture, a receiptless adaptive Hazard proposal rejected by the future-pack destination guard was allowed to clear or overwrite movement state owned by an already-admitted Route path or its armed hazard retry. The route then repeated hazard_exit_failed twenty times. Commit a75334b519 isolates that state transition in a compiled helper, but no current worldserver-backed run has yet proved the fixed binary preserves the Route owner and completes the hazard exit.",
-  "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state",
-  "causal_claim_status": "causal_edge_implemented_compiled_helper_green_production_outcome_unverified",
+  "first_broken_edge": "At retained capture sequence 28, bot GUID 30008 alone advanced beyond the native 128-entry trace ring before its delta cursor 46 was exported. The producer truthfully returned gap=true, cursor_before=46, cursor_after=46, and no entries. Native fail-closed cursor semantics then repeated that same actor-local gap through capture sequence 433.",
+  "first_controller_defect": "The capture demultiplexer promoted one bot's real trace gap into rejection of each complete ten-bot envelope, hiding nine peers whose delta cursors and entries remained contiguous.",
+  "causal_signature": "actor_local_native_trace_loss_promoted_to_global_envelope_rejection",
+  "causal_claim_status": "controller_demux_repaired_native_trace_loss_still_gate_blocking",
   "claim_ledger": {
     "verified": [
-      "the_source_capture_is_bound_to_review_commit_461fe73779_and_capture_source_78e33e6557",
-      "the_source_capture_stopped_at_bwd_magmaw_chainwielder_after_twenty_hazard_exit_failed_decisions",
-      "the_rejected_adaptive_hazard_proposal_had_no_planner_receipt_and_did_not_own_the_existing_route_movement_state",
-      "commit_a75334b519_separates_receiptless_pre_admission_rejection_observation_from_foreign_owner_state_mutation",
-      "the_compiled_helper_exercises_foreign_route_path_preservation_armed_route_hazard_retry_preservation_same_owner_fail_closed_and_unowned_fail_closed_cases",
-      "the_same_level_native_path_fixture_calls_and_executes_the_shared_exact_route_hazard_retry_predicate_without_weakening_path_proof_assertions"
+      "source_identity_6518233c67_was_clean_and_admitted",
+      "entrance_chainwielder_and_drudges_cleared_before_magmaw",
+      "terminal_edge_was_death_loop_watchdog_count_3_at_magmaw",
+      "cleanup_returned_bots_leases_and_processes_to_zero",
+      "capture_sequence_28_first_gap_is_bot30008_only_at_cursor_46",
+      "the_other_nine_trace_actors_remain_contiguous_through_the_gapped_envelopes",
+      "bot30008_sequences_47_through_3120_are_absent_from_retained_trace_evidence",
+      "terminal_full_snapshot_recovers_bot30008_at_sequences_3121_through_3248",
+      "controller_replay_binds_all_783_envelopes_and_2749_of_2990_actor_rows",
+      "exactly_241_actor_rows_remain_rejected_for_bot30008_trace_delta_gap"
     ],
     "refuted": [
-      "the_compiled_helper_is_a_live_map669_executor_replay",
-      "a_green_helper_fixture_authorizes_gameplay_or_acceptance"
+      "the_241_rejected_envelopes_prove_global_trace_transport_loss",
+      "this_capture_promotes_chainwielder_pre_admission_rejection_isolation_v1_to_revision_2",
+      "this_capture_is_gate_bearing_gameplay_acceptance_evidence"
     ],
     "unproven": [
-      "the_current_binary_preserves_the_route_owned_path_after_the_matched_receiptless_hazard_rejection_in_a_live_chainwielder_run",
-      "the_current_binary_preserves_the_armed_route_hazard_retry_across_subsequent_world_ticks",
-      "the_bot_completes_the_chainwielder_hazard_exit_without_the_twenty_decision_loop",
-      "magmaw_or_later_route_progress"
+      "lossless_native_trace_transport_for_a_busy_single_actor",
+      "actor_join_for_bot30008_decisions_47_through_3120",
+      "live_route_owner_state_preservation_after_a_receiptless_owner_hazard_rejection",
+      "magmaw_completion_or_full_raid_acceptance"
     ]
   },
-  "live_observation": {
-    "source_commit": "78e33e65571c50d3bc336f49b7ecbc5d900fc0dc",
-    "source_evidence_commit": "461fe737791ea714b493354281f844e985ca3117",
-    "map": 669,
-    "instance": 2,
+  "source_capture": {
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "map_id": 669,
+    "instance_id": 2,
     "attempt_id": 1,
-    "route_generation": 2,
-    "route_node_id": "bwd.magmaw.chainwielder",
-    "terminal": "repeated_decision_watchdog",
-    "repeated_outcome": "hazard_exit_failed",
-    "repeated_decision_count": 20,
-    "deaths": 0,
-    "active_party_dps": 42310.833,
-    "active_party_hps": 2610.056
+    "terminal": "death_loop_watchdog",
+    "terminal_count": 3,
+    "active_throughput": {
+      "chainwielder_dps": 83025.0,
+      "chainwielder_hps": 3695.054,
+      "drudges_dps": 78360.674,
+      "drudges_hps": 34847.371,
+      "magmaw_dps": 84971.551,
+      "magmaw_hps": 28555.277
+    }
   },
   "recurrence": {
-    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
     "target_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
-    "target_fixture_revision": 1,
-    "target_fixture_evidence_boundary": "observation_only",
+    "retained_fixture_revision": 1,
     "required_production_revision": 2,
-    "fixture_expansion_request_kind": "pending_observation_only_fixture",
-    "expected_fixture_expansion_target_ids": [
-      "chainwielder_pre_admission_rejection_isolation_v1"
-    ],
-    "preserved_invalidated_fixture_ids": [
-      "magmaw_parasite_control_full_runtime_v1",
-      "magmaw_parasite_lane_paths_v1",
-      "magmaw_parasite_lane_transition_full_replay_v1",
-      "same_level_floor_observation_v1",
-      "same_level_hazard_path_admission_v1",
-      "same_level_native_path_proof_v1"
-    ],
-    "closure_requires_consecutive_current_standard_clears": 2
+    "production_revision_promoted": false
   },
-  "required_production_boundary": "worldserver-backed map-669 Chainwielder replay on the exact current binary where the same bot has an admitted Route native path or an armed route-owned hazard retry, a receiptless owner=Hazard future_pack_destination rejection is observed, the rejected intent leaves the Route-owned path and retry state unchanged across subsequent ticks, and the bot then completes the Chainwielder hazard exit or reaches one typed terminal edge",
+  "required_production_boundary": "Provide a native per-bot trace discontinuity epoch or equivalent explicit cursor recovery contract that preserves the first irrecoverable interval, resumes later actor deltas without a permanently sticky cursor, and remains actor-, attempt-, server-epoch-, route-, wipe-, assignment-, and runtime-profile-bound under a byte-faithful overflow replay.",
   "scope_lock": {
-    "allowed_change": "Run the exact clean retained regression bank, acquire one queued exact build for that admitted source, and run one observation-only fixture-expansion capture targeted only at chainwielder_pre_admission_rejection_isolation_v1. Match the live rejection and existing Route owner by bot, attempt, route generation, action sequence, planner receipt zero, movement owner, and subsequent state. Stop on Chainwielder completion or the first typed watchdog edge. Publish and evict evidence through the normal DVC lifecycle. Do not change gameplay.",
+    "allowed_change": "Repair only native trace emission/cursor recovery or trace-event pressure at the first proven per-bot overflow. Preserve explicit gap evidence and add focused native transport tests.",
     "forbidden": [
       "gameplay_or_strategy_change",
-      "cpp_or_database_change",
-      "generic_planner_tolerance_change",
-      "fixture_revision_promotion_before_production_evidence",
-      "gameplay_canary_or_acceptance_run",
-      "targeting_any_of_the_six_preserved_invalidated_fixtures",
-      "magmaw_causal_or_completion_claim_from_chainwielder_evidence",
-      "second_live_attempt"
+      "class_rotation_or_dps_tuning",
+      "movement_or_encounter_policy_change",
+      "watchdog_threshold_change",
+      "fixture_revision_promotion",
+      "acceptance_claim_from_the_quarantined_capture"
     ]
   },
   "validation": {
-    "retained_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
-    "retained_fixture_revision": 1,
-    "compiled_helper_green": true,
-    "compiled_helper_is_live_executor_replay": false,
-    "production_boundary_met": false,
-    "fixture_expansion_admission_required": true,
-    "build_admitted": false,
-    "canary_admitted": false,
+    "controller_actor_demux_fixed": true,
+    "source_envelopes_bound": 783,
+    "source_envelopes_rejected": 0,
+    "telemetry_actor_rows_total": 2990,
+    "telemetry_actor_rows_bound": 2749,
+    "telemetry_actor_rows_rejected": 241,
+    "trace_discontinuity": {
+      "bot_guid": 30008,
+      "missing_sequence_start": 47,
+      "missing_sequence_end": 3120,
+      "gate_passed": false
+    },
     "gameplay_admitted": false,
+    "fixture_promotion_admitted": false,
     "acceptance_admitted": false
   },
-  "validation_clock": {
-    "policy": "completion_watchdog",
-    "fixed_success_timer_seconds": null
-  },
   "coordinator_followup": {
-    "next_owner": "raid-shard-architecture",
-    "next_owner_command": "run_fixture_expansion_replay:chainwielder_pre_admission_rejection_isolation_v1:revision1_to_production_revision2",
-    "next_work_unit": "shard:magmaw_chainwielder_pre_admission_rejection:fixture_expansion_capture",
-    "implementation_owner_after_capture": "none_unless_the_matched_production_outcome_refutes_the_implemented_invariant"
+    "next_owner": "raid-bot-runtime-implementation",
+    "next_owner_command": "repair_native_per_bot_trace_discontinuity_epoch:bot30008_cursor46_overflow",
+    "next_work_unit": "runtime:per_bot_trace_discontinuity_transport",
+    "evidence_owner_after_implementation": "raid-evidence-lifecycle"
   },
-  "next_action": "Run the full retained bank at the exact clean descriptor commit. If and only if fixture_expansion_admitted is true and the sole target is chainwielder_pre_admission_rejection_isolation_v1, acquire one exact queued build and run one observation-only matched Chainwielder fixture-expansion capture. Keep gameplay, canary, and acceptance closed."
+  "next_action": "Implement and replay one native per-bot trace discontinuity recovery boundary. Do not rerun Chainwielder or reopen gameplay gates until the exact overflow fixture preserves the missing interval and resumes later actor-bound deltas."
 }

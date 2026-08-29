@@ -1,3 +1,4 @@
+import hashlib
 import json
 import io
 from math import hypot
@@ -2208,6 +2209,123 @@ def test_live_evidence_demux_rejects_lease_drift_and_trace_cursor_gap():
     reasons = evidence_demux_rejections(rows)
     assert "evidence_demux_roster_binding_lease_invalid" in reasons
     assert "evidence_demux_trace_delta_gap" in reasons
+
+
+def test_chainwielder_byte_faithful_actor_gap_does_not_reject_peer_trace_rows():
+    # Exact canonical bot sub-envelope retained at capture sequences 28 and 30
+    # in raw-output.log d28fabf617748a887ef0b2655df0a0dea852d7bc192fbaeceabb26228999ffa8.
+    # Keeping the producer bytes here prevents the replay from starting from
+    # a pre-approved controller observation.
+    raw_gap_actor = (
+        b'{"bot_guid":30008,"bot_name":"Mgwdpsc","cursor_after":46,'
+        b'"cursor_before":46,"delta":true,"entries":[],"gap":true}'
+    )
+    assert hashlib.sha256(raw_gap_actor).hexdigest() == (
+        "37e04eeefdbb3ace7e00f9d32ef44f5db2604157d5dbcb2fafecd8b21e1a7ff8"
+    )
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    for index, member in enumerate(active["raid_runtime"]["roster"], start=1):
+        member["guid"] = 30000 + index
+
+    diagnosis = {
+        "ok": True,
+        "action": "botauto_diagnose",
+        "cohort_id": "raid",
+        "raid_runtime": active["raid_runtime"],
+        "bots": [
+            {"identity": {"bot_guid": 30000 + index}}
+            for index in range(1, 11)
+        ],
+    }
+
+    def delta_trace(peer_cursor: int) -> dict:
+        bots = []
+        for index in range(1, 11):
+            guid = 30000 + index
+            if guid == 30008:
+                bots.append(json.loads(raw_gap_actor))
+            else:
+                bots.append({
+                    "bot_guid": guid,
+                    "cursor_before": peer_cursor,
+                    "cursor_after": peer_cursor + 1,
+                    "delta": True,
+                    "entries": [{"sequence": peer_cursor + 1}],
+                    "gap": False,
+                })
+        return {
+            "ok": True,
+            "action": "botauto_trace",
+            "cohort_id": "raid",
+            "raid_runtime": active["raid_runtime"],
+            "bots": bots,
+        }
+
+    # The terminal full snapshot retained 30008 sequences 3248 down to 3121.
+    # It closes the observed missing interval at 47..3120 without claiming
+    # that the omitted decisions can be reconstructed.
+    full_trace = {
+        "ok": True,
+        "action": "botauto_trace",
+        "cohort_id": "raid",
+        "raid_runtime": active["raid_runtime"],
+        "bots": [
+            {
+                "bot_guid": 30000 + index,
+                "entries": (
+                    [{"sequence": sequence} for sequence in range(3248, 3120, -1)]
+                    if index == 8
+                    else [{"sequence": 100 + index}]
+                ),
+            }
+            for index in range(1, 11)
+        ],
+    }
+    rows = normalized_batch_payload(
+        b"\n".join(
+            json.dumps(row, separators=(",", ":")).encode()
+            for row in (
+                active, diagnosis, delta_trace(10), delta_trace(11), full_trace,
+            )
+        ) + b"\n"
+    )
+    report = evidence_demux_report(rows)
+
+    for capture_sequence in (3, 4):
+        row = rows[capture_sequence - 1]
+        assert row["identity_binding"]["state"] == "bound"
+        bindings = {
+            bot["bot_guid"]: bot["identity_binding"]
+            for bot in row["payload"]["bots"]
+        }
+        assert bindings[30008]["state"] == "rejected"
+        assert bindings[30008]["reasons"] == ["evidence_demux_trace_delta_gap"]
+        assert all(
+            binding["state"] == "bound"
+            for guid, binding in bindings.items()
+            if guid != 30008
+        )
+
+    assert report["actor_binding_counts"] == {
+        "total": 40, "bound": 38, "rejected": 2, "unchecked": 0,
+    }
+    assert report["trace_discontinuities"] == [{
+        "epoch_id": "trace_discontinuity:30008:47:3",
+        "bot_guid": 30008,
+        "cursor_before": 46,
+        "missing_sequence_start": 47,
+        "missing_sequence_end": 3120,
+        "first_gap_capture_sequence": 3,
+        "last_gap_capture_sequence": 4,
+        "gap_envelope_count": 2,
+        "first_recovered_capture_sequence": 5,
+        "first_recovered_sequence": 3121,
+        "classification": "closed_by_bounded_snapshot_missing_interval_rejected",
+        "gate_passed": False,
+    }]
+    assert "evidence_demux_trace_delta_gap" in report["rejections"]
+    assert report["gate_passed"] is False
 
 
 def test_live_evidence_demux_rejects_frozen_character_build_drift():

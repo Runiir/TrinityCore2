@@ -4411,7 +4411,9 @@ def build_policy_path_for_receipt(receipt_path: Path, worktree: Path) -> Path:
     return policy_path
 
 
-def normalized_batch_payload(log_bytes: bytes) -> list[dict[str, Any]]:
+def normalized_batch_payload(
+    log_bytes: bytes, *, profile_name: str = "blackwing_descent_10n",
+) -> list[dict[str, Any]]:
     """Return an immutable, replayable JSONL representation of parsed evidence."""
 
     channel_by_action = {
@@ -4437,7 +4439,7 @@ def normalized_batch_payload(log_bytes: bytes) -> list[dict[str, Any]]:
     # Populate diagnostic bindings for the immutable batch, but never trust
     # them during acceptance: evidence_demux_report reconstructs and replaces
     # every binding from the retained payload on every call.
-    evidence_demux_report(rows)
+    evidence_demux_report(rows, profile_name=profile_name)
     return rows
 
 
@@ -4446,8 +4448,89 @@ def _canonical_object_sha256(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _trace_actor_transport_rejections(
+    bot_row: dict[str, Any],
+) -> tuple[list[str], dict[str, Any]]:
+    """Classify one native trace actor without widening a gap to its envelope.
+
+    Delta cursors are per bot in the worldserver.  A ring overwrite for one
+    busy actor therefore says nothing about the nine peers serialized beside
+    it.  Keep the actor's exact cursor/sequence facts independently checkable;
+    callers still reject a real gap globally, but they can retain the peer
+    rows and later bounded snapshots as truthful evidence.
+    """
+
+    reasons: list[str] = []
+    entries = bot_row.get("entries")
+    if not isinstance(entries, list):
+        return ["evidence_demux_trace_entries_invalid"], {
+            "mode": "invalid",
+            "cursor_before": bot_row.get("cursor_before"),
+            "cursor_after": bot_row.get("cursor_after"),
+            "sequence_first": None,
+            "sequence_last": None,
+            "entry_count": 0,
+        }
+
+    sequences: list[int] = []
+    for entry in entries:
+        if not isinstance(entry, dict) or not _positive_int(entry.get("sequence")):
+            reasons.append("evidence_demux_trace_entry_sequence_invalid")
+            continue
+        sequences.append(int(entry["sequence"]))
+    if len(sequences) != len(entries):
+        reasons.append("evidence_demux_trace_entry_count_invalid")
+    delta = bot_row.get("delta") is True
+    expected_step = 1 if delta else -1
+    if any(
+        current != previous + expected_step
+        for previous, current in zip(sequences, sequences[1:])
+    ):
+        reasons.append("evidence_demux_trace_entry_sequence_gap")
+    observation = {
+        "mode": "delta" if delta else "bounded_full_snapshot",
+        "cursor_before": bot_row.get("cursor_before") if delta else None,
+        "cursor_after": bot_row.get("cursor_after") if delta else None,
+        "sequence_first": min(sequences) if sequences else None,
+        "sequence_last": max(sequences) if sequences else None,
+        "entry_count": len(entries),
+    }
+    if not delta:
+        return list(dict.fromkeys(reasons)), observation
+
+    cursor_before = bot_row.get("cursor_before")
+    cursor_after = bot_row.get("cursor_after")
+    gap = bot_row.get("gap")
+    # Historical normalized fixtures predate cursor serialization.  Retain
+    # their compatibility while requiring every current live cursor pair to
+    # be internally coherent when present.
+    if not _nonnegative_int(cursor_before) or not _nonnegative_int(cursor_after):
+        if gap is True:
+            reasons.append("evidence_demux_trace_delta_gap")
+        elif any(field in bot_row for field in ("cursor_before", "cursor_after")):
+            reasons.append("evidence_demux_trace_delta_cursor_invalid")
+        return list(dict.fromkeys(reasons)), observation
+    if not isinstance(gap, bool):
+        reasons.append("evidence_demux_trace_delta_gap_flag_invalid")
+        return list(dict.fromkeys(reasons)), observation
+    if gap:
+        if entries or cursor_after != cursor_before:
+            reasons.append("evidence_demux_trace_delta_gap_shape_invalid")
+        reasons.append("evidence_demux_trace_delta_gap")
+        observation["missing_sequence_start"] = int(cursor_before) + 1
+        return list(dict.fromkeys(reasons)), observation
+
+    expected_first = int(cursor_before) + 1
+    if sequences and sequences[0] != expected_first:
+        reasons.append("evidence_demux_trace_delta_first_sequence_invalid")
+    expected_after = sequences[-1] if sequences else int(cursor_before)
+    if int(cursor_after) != expected_after:
+        reasons.append("evidence_demux_trace_delta_cursor_after_invalid")
+    return list(dict.fromkeys(reasons)), observation
+
+
 def _required_telemetry_envelope_report(
-    rows: list[dict[str, Any]],
+    rows: list[dict[str, Any]], *, profile_name: str = "blackwing_descent_10n",
 ) -> dict[str, Any]:
     """Validate the complete canonical bot roster in every diagnose/trace row.
 
@@ -4484,15 +4567,32 @@ def _required_telemetry_envelope_report(
         break
 
     row_rejections: dict[int, list[str]] = {}
+    actor_rejections: dict[int, dict[int, list[str]]] = {}
+    actor_bindings: list[dict[str, Any]] = []
+    trace_discontinuities: list[dict[str, Any]] = []
+    active_trace_discontinuity_by_guid: dict[int, dict[str, Any]] = {}
     channel_counts = {"diagnosis": 0, "trace": 0}
     if canonical_identity is None or canonical_roster is None or canonical_cohort is None or canonical_guids is None:
         return {
             "rejections": ["evidence_demux_telemetry_canonical_runtime_missing"],
             "row_rejections": row_rejections,
+            "actor_rejections": actor_rejections,
+            "actor_binding_counts": {
+                "total": 0, "bound": 0, "rejected": 0, "unchecked": 0,
+            },
+            "trace_discontinuities": trace_discontinuities,
             "diagnosis_envelopes": 0,
             "trace_envelopes": 0,
             "gate_passed": False,
         }
+    canonical_roster_sha256 = _canonical_object_sha256(canonical_roster)
+    canonical_identity_sha256 = _canonical_object_sha256(
+        {
+            "cohort_id": canonical_cohort,
+            "runtime_identity": canonical_identity,
+            "roster_sha256": canonical_roster_sha256,
+        }
+    )
 
     for row in rows:
         payload = row.get("payload")
@@ -4527,15 +4627,6 @@ def _required_telemetry_envelope_report(
         elif not bot_rows:
             row_reasons.append(f"evidence_demux_{channel}_roster_empty")
         else:
-            if channel == "trace" and any(
-                isinstance(bot_row, dict) and bot_row.get("gap") is True
-                for bot_row in bot_rows
-            ):
-                # A cursor gap means the bounded server trace ring overwrote
-                # an edge before export.  Bind nothing from that envelope;
-                # current diagnose/status facts remain useful for diagnosis,
-                # but the capture must fail closed on missing edge evidence.
-                row_reasons.append("evidence_demux_trace_delta_gap")
             bot_guids: list[int] = []
             for bot_row in bot_rows:
                 if not isinstance(bot_row, dict):
@@ -4548,7 +4639,108 @@ def _required_telemetry_envelope_report(
                 if not _positive_int(bot_guid):
                     row_reasons.append(f"evidence_demux_{channel}_bot_guid_invalid")
                     continue
-                bot_guids.append(int(bot_guid))
+                guid = int(bot_guid)
+                bot_guids.append(guid)
+                binding = {
+                    "state": "rejected",
+                    "scope": "telemetry_actor",
+                    "binding_source": "retained_payload_reconstruction",
+                    "canonical_identity_sha256": canonical_identity_sha256,
+                    "roster_sha256": canonical_roster_sha256,
+                    "correlation": {
+                        "capture_sequence": int(row.get("capture_sequence") or 0),
+                        "telemetry_channel": channel,
+                        "bot_guid": guid,
+                        "scenario": profile_name,
+                        "cohort_id": canonical_cohort,
+                        "server_epoch": canonical_identity[9],
+                        "attempt_id": canonical_identity[10],
+                        "runtime_profile_generation": canonical_identity[11],
+                        "runtime_profile_hash": canonical_identity[12],
+                        "assignment_generation": canonical_identity[13],
+                        "route_generation": (
+                            (runtime.get("route_progress") or {}).get("generation")
+                            if isinstance(runtime.get("route_progress"), dict)
+                            else None
+                        ),
+                        "wipe_generation": runtime.get("wipe_generation"),
+                    },
+                    "reasons": [],
+                }
+                bot_row["identity_binding"] = binding
+                actor_bindings.append(binding)
+                actor_reasons: list[str] = []
+                if guid not in canonical_guids:
+                    actor_reasons.append(f"evidence_demux_{channel}_bot_outside_roster")
+                if channel == "trace":
+                    transport_reasons, transport = _trace_actor_transport_rejections(bot_row)
+                    actor_reasons.extend(transport_reasons)
+                    binding["trace_transport"] = transport
+                    if "evidence_demux_trace_delta_gap" in transport_reasons:
+                        cursor_before = transport.get("cursor_before")
+                        if not _nonnegative_int(cursor_before):
+                            # A legacy fixture can still prove a gap rejection,
+                            # but cannot manufacture a discontinuity interval.
+                            cursor_before = None
+                        if cursor_before is None:
+                            cursor = None
+                        else:
+                            cursor = int(cursor_before)
+                        epoch = active_trace_discontinuity_by_guid.get(guid)
+                        if cursor is not None and (
+                            epoch is None or epoch["cursor_before"] != cursor
+                        ):
+                            epoch = {
+                                "epoch_id": (
+                                    f"trace_discontinuity:{guid}:"
+                                    f"{cursor + 1}:{int(row.get('capture_sequence') or 0)}"
+                                ),
+                                "bot_guid": guid,
+                                "cursor_before": cursor,
+                                "missing_sequence_start": cursor + 1,
+                                "missing_sequence_end": None,
+                                "first_gap_capture_sequence": int(
+                                    row.get("capture_sequence") or 0
+                                ),
+                                "last_gap_capture_sequence": int(
+                                    row.get("capture_sequence") or 0
+                                ),
+                                "gap_envelope_count": 0,
+                                "first_recovered_capture_sequence": None,
+                                "first_recovered_sequence": None,
+                                "classification": "unresolved_trace_delta_gap",
+                                "gate_passed": False,
+                            }
+                            active_trace_discontinuity_by_guid[guid] = epoch
+                            trace_discontinuities.append(epoch)
+                        if cursor is not None and epoch is not None:
+                            epoch["last_gap_capture_sequence"] = int(
+                                row.get("capture_sequence") or 0
+                            )
+                            epoch["gap_envelope_count"] += 1
+                            transport["discontinuity_epoch_id"] = epoch["epoch_id"]
+                    else:
+                        epoch = active_trace_discontinuity_by_guid.get(guid)
+                        first_sequence = transport.get("sequence_first")
+                        if epoch is not None and _positive_int(first_sequence):
+                            epoch["missing_sequence_end"] = int(first_sequence) - 1
+                            epoch["first_recovered_capture_sequence"] = int(
+                                row.get("capture_sequence") or 0
+                            )
+                            epoch["first_recovered_sequence"] = int(first_sequence)
+                            epoch["classification"] = (
+                                "closed_by_bounded_snapshot_missing_interval_rejected"
+                            )
+                            transport["follows_discontinuity_epoch_id"] = epoch["epoch_id"]
+                            del active_trace_discontinuity_by_guid[guid]
+                if actor_reasons:
+                    unique_actor_reasons = list(dict.fromkeys(actor_reasons))
+                    binding["reasons"] = unique_actor_reasons
+                    actor_rejections.setdefault(
+                        int(row.get("capture_sequence") or 0), {}
+                    )[guid] = unique_actor_reasons
+                else:
+                    binding["state"] = "bound"
             counts = Counter(bot_guids)
             if any(count > 1 for count in counts.values()):
                 row_reasons.append(f"evidence_demux_{channel}_duplicate_bot_guid")
@@ -4558,6 +4750,27 @@ def _required_telemetry_envelope_report(
                 row_reasons.append(f"evidence_demux_{channel}_canonical_roster_incomplete")
             if len(bot_guids) != 10:
                 row_reasons.append(f"evidence_demux_{channel}_bot_row_count_invalid")
+            if row_reasons:
+                # Runtime/roster envelope faults invalidate every actor join;
+                # an actor-local gap alone never enters row_reasons and thus
+                # remains scoped to only the affected bot.
+                for bot_row in bot_rows:
+                    if not isinstance(bot_row, dict):
+                        continue
+                    binding = bot_row.get("identity_binding")
+                    if not isinstance(binding, dict):
+                        continue
+                    guid = (binding.get("correlation") or {}).get("bot_guid")
+                    if not _positive_int(guid):
+                        continue
+                    combined = list(dict.fromkeys(
+                        list(binding.get("reasons") or []) + row_reasons
+                    ))
+                    binding["state"] = "rejected"
+                    binding["reasons"] = combined
+                    actor_rejections.setdefault(
+                        int(row.get("capture_sequence") or 0), {}
+                    )[int(guid)] = combined
         if row_reasons:
             row_rejections[int(row.get("capture_sequence") or 0)] = list(dict.fromkeys(row_reasons))
 
@@ -4566,13 +4779,33 @@ def _required_telemetry_envelope_report(
         for reasons in row_rejections.values()
         for reason in reasons
     ]
+    rejections.extend(
+        reason
+        for by_guid in actor_rejections.values()
+        for reasons in by_guid.values()
+        for reason in reasons
+    )
     for channel, count in channel_counts.items():
         if count == 0:
             rejections.append(f"evidence_demux_{channel}_roster_envelope_missing")
     unique_rejections = list(dict.fromkeys(rejections))
+    actor_states = Counter(str(binding.get("state", "unchecked")) for binding in actor_bindings)
+    unchecked_actors = (
+        len(actor_bindings)
+        - actor_states.get("bound", 0)
+        - actor_states.get("rejected", 0)
+    )
     return {
         "rejections": unique_rejections,
         "row_rejections": row_rejections,
+        "actor_rejections": actor_rejections,
+        "actor_binding_counts": {
+            "total": len(actor_bindings),
+            "bound": actor_states.get("bound", 0),
+            "rejected": actor_states.get("rejected", 0),
+            "unchecked": unchecked_actors,
+        },
+        "trace_discontinuities": trace_discontinuities,
         "diagnosis_envelopes": channel_counts["diagnosis"],
         "trace_envelopes": channel_counts["trace"],
         "gate_passed": not unique_rejections,
@@ -4651,7 +4884,9 @@ def evidence_demux_report(
             )
             break
     if canonical_identity is None:
-        telemetry_envelopes = _required_telemetry_envelope_report(rows)
+        telemetry_envelopes = _required_telemetry_envelope_report(
+            rows, profile_name=profile_name,
+        )
         for row in rows:
             row["identity_binding"]["reasons"] = ["evidence_demux_no_active_raid_rows"]
         return {
@@ -4663,10 +4898,14 @@ def evidence_demux_report(
             "canonical_identity_sha256": None,
             "canonical_roster_sha256": None,
             "required_telemetry_envelopes": telemetry_envelopes,
+            "actor_binding_counts": telemetry_envelopes["actor_binding_counts"],
+            "trace_discontinuities": telemetry_envelopes["trace_discontinuities"],
             "gate_passed": False,
         }
 
-    telemetry_envelopes = _required_telemetry_envelope_report(rows)
+    telemetry_envelopes = _required_telemetry_envelope_report(
+        rows, profile_name=profile_name,
+    )
     controller_terminal_bound, controller_terminal_rejections = _controller_terminal_binding(
         controller_terminal,
         rows,
@@ -4881,6 +5120,8 @@ def evidence_demux_report(
         "canonical_identity_sha256": canonical_identity_sha256,
         "canonical_roster_sha256": canonical_roster_sha256,
         "required_telemetry_envelopes": telemetry_envelopes,
+        "actor_binding_counts": telemetry_envelopes["actor_binding_counts"],
+        "trace_discontinuities": telemetry_envelopes["trace_discontinuities"],
         "gate_passed": not unique_reasons and states.get("bound", 0) == len(rows) and unchecked == 0,
     }
 
@@ -6207,8 +6448,10 @@ def main() -> int:
         os.replace(log_path, server_log_output)
         log_bytes = server_log_output.read_bytes()
 
-    normalized_rows = normalized_batch_payload(log_bytes)
-    telemetry_envelopes = _required_telemetry_envelope_report(normalized_rows)
+    normalized_rows = normalized_batch_payload(log_bytes, profile_name=profile_name)
+    telemetry_envelopes = _required_telemetry_envelope_report(
+        normalized_rows, profile_name=profile_name,
+    )
     raw_payload_sha256, raw_payload_rows = write_normalized_batch(raw_output, normalized_rows)
     # The complete log was decoded once into normalized_rows above.  Project
     # final action channels from those parsed payloads instead of decoding the
@@ -6510,6 +6753,8 @@ def main() -> int:
             "canonical_identity_sha256": demux_report["canonical_identity_sha256"],
             "canonical_roster_sha256": demux_report["canonical_roster_sha256"],
             "required_telemetry_envelopes": demux_report["required_telemetry_envelopes"],
+            "actor_binding_counts": demux_report["actor_binding_counts"],
+            "trace_discontinuities": demux_report["trace_discontinuities"],
             "channels": dict(Counter(str(row.get("evidence_channel")) for row in normalized_rows)),
             "every_retained_row_demuxed": (
                 demux_report["bound_rows"] == demux_report["retained_rows"]

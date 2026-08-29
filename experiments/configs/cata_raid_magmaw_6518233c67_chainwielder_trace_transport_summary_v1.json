@@ -1,0 +1,100 @@
+{
+  "schema": "cata_raid_failed_run_summary_v1",
+  "classification": "quarantined_non_gate_bearing_controller_demux_repair",
+  "source_commit": "6518233c67d22f12418d5f9bf765ed027c18eb79",
+  "source_tree": "cf6e4fbcfebe115f3a7e8cd77630a585533d2c53",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "started_at_utc": "2026-08-29T22:14:52Z",
+  "canonical_hashes": {
+    "capture_report": "34f8d81134263462f30aa4b95af9946b9ce49bb2a27bc41c893ea92a42bf803b",
+    "raw_normalized_output": "d28fabf617748a887ef0b2655df0a0dea852d7bc192fbaeceabb26228999ffa8",
+    "raw_worldserver_log": "bd824fa190d801326b13552c6b9a9688ece3d53a4012ea6d8319cd566e6ea6e3",
+    "recurrence_admission": "ac15fad24341ce4209774f7dffd6c7ed9e12b1549e4e453bff15fff4478e0ebb",
+    "runtime_config": "b86f61f6c81a675c5d5f35a9d6a481a3f4af023986caae4f3946b85016a88128",
+    "route_manifest": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"
+  },
+  "terminal": {
+    "classification": "gameplay_failure",
+    "reason": "death_loop_watchdog",
+    "count": 3,
+    "route_node_id": "bwd.magmaw.encounter",
+    "route_generation": 4,
+    "cleanup_passed": true
+  },
+  "trace_transport_diagnosis": {
+    "first_gap_capture_sequence": 28,
+    "last_gap_capture_sequence": 433,
+    "gap_envelope_count": 241,
+    "affected_bot_guid": 30008,
+    "cursor_before": 46,
+    "cursor_after": 46,
+    "missing_sequence_start": 47,
+    "missing_sequence_end": 3120,
+    "first_recovered_capture_sequence": 434,
+    "first_recovered_sequence": 3121,
+    "native_loss_real": true,
+    "controller_global_envelope_rejection_defect": true
+  },
+  "post_repair_replay": {
+    "retained_envelopes": 783,
+    "bound_envelopes": 783,
+    "rejected_envelopes": 0,
+    "unchecked_envelopes": 0,
+    "telemetry_actor_rows": 2990,
+    "bound_telemetry_actor_rows": 2749,
+    "rejected_telemetry_actor_rows": 241,
+    "unchecked_telemetry_actor_rows": 0,
+    "remaining_rejection": "evidence_demux_trace_delta_gap",
+    "gate_passed": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "entrance_chainwielder_and_drudges_cleared",
+      "active_throughput_chainwielder_83025_dps_3695_054_hps",
+      "active_throughput_drudges_78360_674_dps_34847_371_hps",
+      "active_throughput_magmaw_84971_551_dps_28555_277_hps",
+      "one_actor_real_trace_interval_was_lost",
+      "nine_peer_actors_were_falsely_rejected_at_envelope_scope",
+      "cleanup_passed"
+    ],
+    "refuted": [
+      "production_fixture_revision_2_promotion",
+      "gate_bearing_gameplay_acceptance",
+      "global_ten_actor_trace_loss"
+    ],
+    "unproven": [
+      "bot30008_actor_join_for_sequences_47_through_3120",
+      "hazard_owner_state_preservation_boundary",
+      "magmaw_completion"
+    ]
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_foundation_6518233c67_chainwielder_trace_transport_quarantine_20260830.dvc",
+    "pointer_sha256": "04918b1e1c454f28ef49eb9c0ef4b1f2c6bae8b3460ef7c0f3ada2813a44d8a4",
+    "directory_md5": "ca266dd38c919db04544be1ae6000b0f.dir",
+    "files": 17,
+    "bytes": 261233120,
+    "push_result": "11 files pushed",
+    "remote_status": "cache_and_remote_in_sync_before_eviction",
+    "remote_reconstruction": "10_unique_files_fetched_and_17_files_reconstructed",
+    "canonical_hash_reconstruction_verified": true,
+    "global_dvc_status": "completed_with_preexisting_unrelated_pipeline_and_remote_only_output_drift",
+    "workspace_evicted": true,
+    "unique_cache_objects_evicted": 11,
+    "shared_cache_objects_retained": 5
+  },
+  "validation": {
+    "focused_pytest": "4_passed_in_4_28_seconds",
+    "focused_pytest_selection": [
+      "test_chainwielder_byte_faithful_actor_gap_does_not_reject_peer_trace_rows",
+      "test_live_evidence_demux_rejects_lease_drift_and_trace_cursor_gap",
+      "test_live_evidence_demux_rejects_missing_and_duplicate_telemetry_bot_rows",
+      "test_forced_stall_bundle_uses_full_trace_after_ring_pressure_but_keeps_gap_rejection"
+    ],
+    "full_raw_production_path_replay": "passed_783_envelopes_2990_actor_rows_one_explicit_gap_epoch",
+    "git_diff_check": "passed"
+  },
+  "current_gate": "closed_on_real_bot30008_trace_loss_and_unexercised_hazard_owner_boundary",
+  "next_owner": "raid-bot-runtime-implementation",
+  "next_work_unit": "runtime:per_bot_trace_discontinuity_transport"
+}
