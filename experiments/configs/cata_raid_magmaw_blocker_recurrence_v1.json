@@ -32,6 +32,7 @@
     "fixtures": [
       {
         "fixture_id": "magmaw_parasite_lane_paths_v1",
+        "revision": 2,
         "causal_signature": "magmaw_parasite_containment_failure",
         "command": [
           "pixi",
@@ -218,7 +219,7 @@
     "magmaw_parasite_containment_failure": {
       "owner": "encounter_combat_and_movement_authority",
       "invariant": "exactly the fixed Fire Mage and Marksman Hunter team owns parasite targeting, threat, damage, and stable lane movement while every other player remains outside infection range and suppresses parasite-reaching area damage",
-      "architecture_reviewed_through_occurrence_count": 10,
+      "architecture_reviewed_through_occurrence_count": 12,
       "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md",
       "fixture_verifications": [
         {
@@ -234,7 +235,7 @@
       "owner": "encounter_policy_and_movement_intent",
       "parent": "magmaw_parasite_containment_failure",
       "invariant": "the fixed mobile bait team must traverse a stable room lane without player Parasitic Infection or parasite re-entry",
-      "architecture_reviewed_through_occurrence_count": 10,
+      "architecture_reviewed_through_occurrence_count": 12,
       "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md"
     },
     "chainwielder_future_drudge_contamination": {

@@ -40,3 +40,19 @@ on later status polls, and the deterministic formation fixture stops before
 native admission and pre-pot readiness. Fix diagnosis freshness and extend the
 compiled replay across route destination, strict native admission, formation,
 and pre-pot readiness before admitting another live canary.
+
+## Architecture verdict
+
+The trace-backed first broken edge is baiter-local parasite escape retention,
+not class DPS or pet control. Sequences 306, 310, and 314 changed mage 30006's
+escape destination while native movement retried, and the selected parasite
+changed between entries 42321 and 41806. The endpoint-unsafe baiter branch
+dropped `MagmawParasiteHazardState`; the state then treated disappearance of
+one danger GUID as clearance and the builder recomputed a destination despite
+an active intent.
+
+Fixture `magmaw_parasite_lane_paths_v1` revision 2 now covers endpoint
+preemption plus simultaneous parasite GUID/position churn. It must preserve
+one escape destination and event identity until native arrival or clearance
+from the complete living parasite pack. This is the required deterministic
+boundary before another build or canary; Canary116 remains failed evidence.

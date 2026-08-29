@@ -172,9 +172,26 @@ struct MagmawParasiteHazardState
     {
         if (!Active)
             return;
-        ActorSnapshot const* danger = board.FindActor(DangerGuid);
-        if (!danger || !danger->Alive
-            || Distance2d(position, danger->Position) >= safeClearance
+
+        bool parasiteStillUnsafe = false;
+        auto inspect = [&](std::vector<ActorSnapshot> const& actors)
+        {
+            for (ActorSnapshot const& actor : actors)
+                if (actor.Alive && (actor.Entry == 41806 || actor.Entry == 42321)
+                    && Distance2d(position, actor.Position) < safeClearance)
+                {
+                    parasiteStillUnsafe = true;
+                    return;
+                }
+        };
+        inspect(board.Hostiles);
+        if (!parasiteStillUnsafe)
+            inspect(board.Summons);
+
+        // Parasite GUIDs and nearest-target ownership churn as the pack moves.
+        // One native escape remains active until its destination is reached or
+        // the bot is clear of the whole living pack, not merely its first GUID.
+        if (!parasiteStillUnsafe
             || Distance2d(position, Destination) <= tolerance)
             Active = false;
     }

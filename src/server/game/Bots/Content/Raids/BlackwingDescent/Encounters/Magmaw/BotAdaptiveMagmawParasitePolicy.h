@@ -175,7 +175,7 @@ public:
             // is clear again.
             transition->MarkPreempted();
             return BuildMoveAway(board, bot, parasite,
-                "parasite_contact_evade", SafeClearance);
+                "parasite_contact_evade", SafeClearance, hazardState);
         }
         if (!destination
             || Distance2d(bot.Position, *destination)
@@ -386,14 +386,16 @@ private:
             danger.Position.Y + dy / length * exitDistance,
             bot.Position.Z };
         if (hazardState)
+        {
             hazardState->Begin(danger.Guid, destination);
+            return BuildRetainedMove(board, *hazardState);
+        }
         BotNativeAction::Candidate candidate;
         candidate.Id.ScopeKey = board.CurrentScope.Key();
         candidate.Id.Strategy = "adaptive_magmaw";
         candidate.Id.Mechanic = std::move(mechanic);
         candidate.Id.Actor = danger.Guid;
-        candidate.Id.EventGeneration = hazardState
-            ? hazardState->IntentId : board.Revision;
+        candidate.Id.EventGeneration = board.Revision;
         candidate.ActionPriority = BotActionArbitration::Priority::Survival;
         candidate.Utility = 450.0f;
         candidate.ExpiresAtMs = board.ObservedAtMs + 750;

@@ -28,10 +28,40 @@ mutate the cohort transition.
 8. `trinity-magmaw-a1fff71538-canary104.G772RN`
 9. `trinity-magmaw-902ff5545e-canary105.N6HWpF`
 10. `trinity-magmaw-d111136523-canary109.5GqLp7`
+11. `trinity-magmaw-3eadfc6b0e-canary110.hz84YE`
+12. `trinity-magmaw-ae9761adb3-canary116.n0L5tX`
 
 Intervening runs that did not reach Magmaw are `not_exercised`; they do not
 reset the counter. Canary109 directly records infection on both fixed baiters
 and at least four other players, followed by Infectious Vomit into the raid.
+
+## Canary116 missing boundary
+
+Canary116 narrowed the first broken edge further. At capture sequences 306,
+310, and 314, mage 30006 proposed three different local escape destinations:
+`(-348.981, -35.6553)`, `(-348.057, -33.065)`, then
+`(-361.603, -35.1834)`. The selected parasite also changed between entries
+42321 and 41806 while native movement was retrying. Hunter 30009 retained its
+lane destination during the same interval and accumulated 2.122, 7.259,
+12.387, then 23.661 seconds without progress.
+
+The baiter endpoint-preemption branch in
+`BotAdaptiveMagmawParasitePolicy.h` did not pass the per-bot
+`MagmawParasiteHazardState` to `BuildMoveAway`. Two adjoining state semantics
+were consequently untested: `ObserveNativeProgress` retired the escape when
+the original danger GUID disappeared even if another parasite remained
+unsafe, and `BuildMoveAway` recomputed coordinates while an intent was active.
+The revision-1 fixture supplied no hazard state at this branch and changed a
+GUID without also changing position, so it could remain green without
+exercising the live failure.
+
+Revision 2 makes a baiter unsafe at its retained endpoint, records one local
+escape, changes both parasite GUID and position before native arrival, and
+requires identical destination and intent identity on retry. The repair passes
+state through the baiter branch, retains it while any living parasite remains
+within clearance, and makes the movement builder return the retained
+destination. This reviews occurrences 11 and 12; it does not itself close the
+live recurrence family.
 
 ## Why prior repairs did not hold
 

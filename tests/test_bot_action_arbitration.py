@@ -2233,6 +2233,7 @@ int main()
     ObjectGuid const mageGuid = board.Players[1].Guid;
     ObjectGuid const hunterGuid = board.Players[2].Guid;
     ObjectGuid const ordinaryGuid = board.Players[3].Guid;
+    MagmawParasiteHazardState mageHazard;
 
     auto magePlan = strategy.Propose(board, mageGuid, "dps", nullptr,
         false, false, &transition);
@@ -2279,9 +2280,11 @@ int main()
     Blackboard packAdvanced = advanced;
     packAdvanced.Hostiles[1].Position = {
         firstMove->X, firstMove->Y, firstMove->Z };
+    packAdvanced.Players[1].Position = {
+        firstMove->X + 4.0f, firstMove->Y, firstMove->Z };
     auto packAdvancedPlan = strategy.Propose(
         packAdvanced, mageGuid, "dps", &firstLease, false, false,
-        &transition);
+        &transition, &mageHazard);
     auto const* packAdvancedMove = packAdvancedPlan.Movement
         ? std::get_if<Move>(&packAdvancedPlan.Movement->Action) : nullptr;
     assert(packAdvancedMove);
@@ -2293,23 +2296,31 @@ int main()
         && transition.Destination.Y == firstMove->Y);
     assert(Distance(packAdvancedDestination, packAdvanced.Hostiles[1].Position)
         >= MagmawParasitePolicy::SafeClearance);
+    assert(mageHazard.HasRetainedIntent());
+    uint64 const escapeIntentId = mageHazard.IntentId;
 
+    // Canary116: a baiter's endpoint-unsafe local escape is one native
+    // intent. Parasite GUID/position churn before native arrival must not
+    // recompute the destination and reset movement progress.
     Blackboard lowerGuid = packAdvanced;
     lowerGuid.Hostiles[1].Guid = ObjectGuid(HighGuid::Unit,
         AdaptiveMagmawStrategy::ParasiteEntry, uint32(1));
+    lowerGuid.Hostiles[1].Position.X += 3.0f;
+    lowerGuid.Hostiles[1].Position.Y -= 2.0f;
     BotNativeAction::Move const& stableReference = *packAdvancedMove;
     BotMovementArbitration::Lease advancedLease = LeaseFor(
         packAdvanced, stableReference);
     auto lowerGuidPlan = strategy.Propose(
         lowerGuid, mageGuid, "dps", &advancedLease, false, false,
-        &transition);
+        &transition, &mageHazard);
     auto const* lowerGuidMove = lowerGuidPlan.Movement
         ? std::get_if<Move>(&lowerGuidPlan.Movement->Action) : nullptr;
     assert(lowerGuidMove);
     assert(lowerGuidMove->X == stableReference.X);
     assert(lowerGuidMove->Y == stableReference.Y);
-    assert(transition.Destination.X == stableReference.X
-        || transition.Preempted);
+    assert(lowerGuidPlan.Movement->Id.EventGeneration == escapeIntentId);
+    assert(mageHazard.IntentId == escapeIntentId);
+    assert(transition.Preempted);
 
     // A remote parasite release starts the lane transition before contact;
     // the baiter does not wait until infection range.
