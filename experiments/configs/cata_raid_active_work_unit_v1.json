@@ -3,9 +3,9 @@
   "epoch_id": "magmaw_parasite_transition_architecture_v1_20260829",
   "work_unit": "runtime:magmaw_lane_transition:immutable_event_owned_destination",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "gate_state": "architecture_reviewed_implementation_required_canary110_blocked",
-  "observed_at_commit": "d1111365238abc4fd3ccf8cd51fc58c0cdce1c95",
+  "classification": "implementation_pending_live_verification",
+  "gate_state": "typed_lane_transition_built_canary110_admitted",
+  "observed_at_commit": "3eadfc6b0e280993cb079ea4c542db8729fc26dd",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_d111136523_canary109_recurrence_stop_handoff_20260829.md",
     "sha256": "3795d5244d399902b564d3ec24d5f80cc48ea18d9c102a400fe177575dceb96c"
@@ -60,7 +60,7 @@
   ],
   "focused_validation": {
     "command": "pixi run pytest -q tests/test_magmaw_parasite_policy.py",
-    "required_result": "multi-tick compiled replay passes the complete transition sequence",
+    "result": "44 passed across the complete transition, arbitration, movement, recovery, and recurrence suite",
     "source_shape_only_is_insufficient": true
   },
   "validation_clock": {
@@ -82,5 +82,22 @@
     "fixed_success_timer_seconds": null,
     "canary_budget_after_exact_build": 1
   },
-  "next_action": "Implement and review the bounded typed transition. Do not start Canary110 until its complete deterministic replay and coordinator-owned exact build pass."
+  "root_runtime_verification": {
+    "build_source_commit": "3eadfc6b0e280993cb079ea4c542db8729fc26dd",
+    "configure_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_3eadfc6b0e.json",
+    "configure_receipt_file_sha256": "4c216f482bb868637b4ef273b263ecebbdbaa03206ef97ef344d94e2ad635375",
+    "configure_embedded_receipt_sha256": "61f1ab4acda3768402ac45119a3bb02c6b74ae8b8c3369999ff690e349025b29",
+    "first_build_attempt_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_3eadfc6b0e.json",
+    "first_build_attempt_classification": "build_resource_abort",
+    "first_build_attempt_receipt_file_sha256": "49b72aedb369cd84c20cb648a64ab96c38c7c3f8673a7fa39bdc3a92a8d90939",
+    "worldserver_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_3eadfc6b0e_retry1.json",
+    "worldserver_receipt_file_sha256": "19aef516ef758a7ead5fd72b87ec4ae0f99f0c80b4575c49c108c6a4f60f56ec",
+    "worldserver_embedded_receipt_sha256": "da8ec1c4e0af1c965e6c19472484e83f4a1c0311514d7ef74fb92e63f297c9c3",
+    "worldserver_sha256": "b4b14cdded53a6b077740b156dd7953d4b5aa107ba0ffd411fc837589e9a439f",
+    "compiler_jobs": 8,
+    "clock": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "canary_budget": 1
+  },
+  "next_action": "Run exactly one autonomous current-standard completion-watchdog Canary110 against the verified binary, classify the first causal edge, and update the recurrence ledger."
 }
