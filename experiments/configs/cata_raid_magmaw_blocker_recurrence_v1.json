@@ -825,6 +825,29 @@
       "run_id": "trinity-magmaw-1dcdd3a1ad-canary117.QXkp5t",
       "route_completed": false,
       "classification": "gameplay_failure",
+      "admission": {
+        "source_identity": "1dcdd3a1add2deb268667a2765672068059a91ce",
+        "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+        "suite_receipt_sha256": "8f13d51e355c775cc0045d8386c24311b2271c5f322838e5587ab8624e78cc8a",
+        "fixture_revisions": {
+          "magmaw_parasite_lane_paths_v1": 2,
+          "magmaw_parasite_lane_transition_full_replay_v1": 1,
+          "magmaw_parasite_control_full_runtime_v1": 1,
+          "chainwielder_future_drudge_guard_v1": 1,
+          "same_level_hazard_path_admission_v1": 1,
+          "same_level_floor_observation_v1": 1,
+          "same_level_endpoint_normalization_v1": 1,
+          "same_level_native_path_proof_v1": 1,
+          "magmaw_prepot_formation_gate_v1": 1,
+          "magmaw_prepot_formation_endpoint_v1": 1,
+          "magmaw_prepot_stall_watchdog_v1": 1,
+          "partial_wipe_native_reset_gate_v1": 1,
+          "phase1_capture_single_start_contract_v1": 1,
+          "deferred_candidate_capture_lifetime_v1": 1,
+          "native_bwd_partial_death_recovery_lifecycle_v1": 1,
+          "current_route_combat_authority_precedence_v1": 1
+        }
+      },
       "blockers": {
         "magmaw_parasite_control_allows_player_infection": "occurred",
         "chainwielder_future_drudge_contamination": "absent",

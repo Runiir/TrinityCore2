@@ -195,6 +195,13 @@ symptom to an existing causal or parent invariant first. A receipt generated
 while the latest run is absent from the ledger is stale even when all listed
 fixtures pass; it proves only that the incomplete manifest passed.
 
+Before launching a live canary, persist its exact suite admission snapshot in
+the run record: source/config identity, suite-receipt hash, and every fixture
+ID with its positive revision. Do not rely on a `/tmp` receipt or active-work
+descriptor as the only copy. The evaluator must treat those admitted revisions
+as passes before that run, so rerunning the same revision after a recurrence
+cannot masquerade as fixture expansion.
+
 When several stage-specific failures all displace the same end-to-end owner,
 retain their detail but count them under one parent invariant. For route
 combat, an alive exact current-node target or persisted pack must outrank stale

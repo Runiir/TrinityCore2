@@ -518,6 +518,20 @@ def _evaluate_regression_bank(
                 and record_boundary < float(last_occurrence)
             ):
                 prior_pass_revisions.append(_fixture_revision(record))
+        # A live run's immutable admission snapshot proves that this fixture
+        # revision passed before the run. Keep that boundary durable; otherwise
+        # an ephemeral pre-run receipt can disappear and the same revision
+        # rerun after recurrence looks like an expansion.
+        for index, run in enumerate(runs):
+            if index > last_occurrence:
+                break
+            if run["blockers"].get(signature) != "occurred":
+                continue
+            admitted_revision = run.get("admitted_fixture_revisions", {}).get(
+                fixture_id
+            )
+            if admitted_revision is not None:
+                prior_pass_revisions.append(int(admitted_revision))
         unexpanded_after_recurrence = (
             last_occurrence >= 0
             and pass_boundary > float(last_occurrence)
@@ -656,11 +670,29 @@ def evaluate_ledger(
                 for parent in ancestors(signature):
                     observations[parent] = "occurred"
                     signatures.add(parent)
+        admission = run.get("admission") or {}
+        _require(
+            isinstance(admission, Mapping),
+            f"run {run_id} admission must be an object",
+        )
+        raw_revisions = admission.get("fixture_revisions") or {}
+        _require(
+            isinstance(raw_revisions, Mapping),
+            f"run {run_id} admission fixture revisions must be an object",
+        )
+        admitted_fixture_revisions: dict[str, int] = {}
+        for raw_fixture_id, raw_revision in raw_revisions.items():
+            fixture_id = str(raw_fixture_id).strip()
+            _require(bool(fixture_id), f"run {run_id} admission has empty fixture id")
+            revision = int(raw_revision)
+            _require(revision > 0, f"run {run_id} admission fixture revision must be positive")
+            admitted_fixture_revisions[fixture_id] = revision
         normalized_runs.append(
             {
                 "run_id": run_id,
                 "route_completed": run.get("route_completed") is True,
                 "blockers": observations,
+                "admitted_fixture_revisions": admitted_fixture_revisions,
             }
         )
 

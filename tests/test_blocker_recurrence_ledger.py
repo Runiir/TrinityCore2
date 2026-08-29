@@ -748,6 +748,42 @@ def test_unchanged_fixture_rerun_after_recurrence_does_not_admit_canary() -> Non
     assert decision["required_next_action"] == "expand_invalid_retained_fixture"
 
 
+def test_run_admission_snapshot_prevents_ephemeral_receipt_from_reopening_gate() -> None:
+    after = _pass("original", "102")
+    after.pop("passed_before_run_id")
+    after["passed_after_run_id"] = "102"
+    decision = evaluate_ledger(
+        _bank_ledger(
+            [
+                {
+                    "run_id": "101",
+                    "route_completed": False,
+                    "blockers": {"edge": "absent"},
+                },
+                {
+                    "run_id": "102",
+                    "route_completed": False,
+                    "blockers": {"edge": "occurred"},
+                    "admission": {"fixture_revisions": {"original": 1}},
+                },
+            ],
+            fixtures=[_fixture("original")],
+            # The pre-run receipt was ephemeral. Only the live run's durable
+            # admission snapshot and unchanged post-run pass remain.
+            verifications=[after],
+        ),
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
+    )
+
+    assert decision["canary_admitted"] is False
+    assert decision["invalidated_fixture_ids"] == ["original"]
+    assert decision["required_next_action"] == "expand_invalid_retained_fixture"
+
+
 @pytest.mark.parametrize(
     ("verification_boundary", "expected_action"),
     [
