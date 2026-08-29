@@ -485,6 +485,8 @@ def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
         **active,
         "descriptor_valid": not issues,
         "ready_for_bounded_repair": not issues and active.get("classification") == "failed",
+        "ready_for_fixture_expansion": not issues
+        and active.get("classification") == "live_recurrence_quarantined",
         "ready_for_live_verification": not issues
         and active.get("classification") == "implementation_pending_live_verification",
         "issues": issues,
@@ -927,7 +929,12 @@ def build_boss_work_unit(
     active = active_work_unit_status(root)
     active_for_boss = (
         active
-        if str(active.get("work_unit") or "").startswith(
+        if (
+            active.get("raid") == raid
+            and active.get("boss") == boss
+            and active.get("mode") == mode
+        )
+        or str(active.get("work_unit") or "").startswith(
             f"boss:{raid}:{boss}:{mode}:"
         )
         else None

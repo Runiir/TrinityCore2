@@ -316,6 +316,16 @@ Route acceptance requires two consecutive completed clears in which every
 known signature is explicitly `absent`. Passing a focused test or one clean
 canary makes a repair provisional; it does not erase its recurrence history.
 
+Use the words `implemented`, `fixture-green`, `build-admitted`,
+`canary-provisional`, and `closed` as distinct states. Never call a blocker
+fixed before it is `closed`. A live recurrence immediately demotes every later
+state for that signature to `quarantined`, invalidates the latest retained
+fixture revision, and revokes any outstanding build or canary authorization.
+Record that demotion in the ledger and active work-unit descriptor before
+reviewing another patch or launching another run. This rule applies even when
+the recurrence is less frequent, affects fewer actors, or appears after clean
+intervening runs; improvement is not absence.
+
 When a live signature recurs while its retained fixture still passes, stop
 runtime edits and new canaries: the fixture is invalid or incomplete. Expand
 the same immutable counterexample through the missing full sequence of owner

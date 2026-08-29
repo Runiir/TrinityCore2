@@ -820,6 +820,30 @@
       "worldserver_log_sha256": "deb32f06ebf9311591b6092cc5bcfbaf7d57d835d50f075e4e0c3130dcdf34d8",
       "evidence": "experiments/configs/cata_raid_magmaw_canary116_parasite_recurrence_handoff_20260829.md",
       "note": "Entrance, Chainwielder, Drudges, route-Z formation, and Magmaw pull completed. Seven of ten players then took Infectious Vomit; active Magmaw throughput was 74,996.907 DPS and 18,012.046 HPS before the third death-loop watchdog transition."
+    },
+    {
+      "run_id": "trinity-magmaw-1dcdd3a1ad-canary117.QXkp5t",
+      "route_completed": false,
+      "classification": "gameplay_failure",
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred",
+        "chainwielder_future_drudge_contamination": "absent",
+        "current_route_combat_authority_preempted": "absent",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "absent",
+        "same_level_native_endpoint_z_normalization_false_negative": "absent",
+        "same_level_native_path_proof_false_negative": "absent",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "absent",
+        "raid_partial_wipe_waits_for_last_survivor": "not_exercised",
+        "phase1_capture_duplicate_autostart_lifecycle": "absent",
+        "deferred_candidate_dangling_reference_capture": "absent",
+        "native_partial_death_recovery_lifecycle_failure": "not_exercised"
+      },
+      "report_sha256": "df71760eefdbcf6229bdcdab4489828af8bf217696dd378cb8edc8f2d01e88e5",
+      "raw_jsonl_sha256": "5d63a2245ed51115a3d2206836f4c303db5e56fd96f5c82f642812fb7a446101",
+      "worldserver_log_sha256": "f375fd1b3e2f858601adfce9e994d2bc8025d37a272c5ef261e10e130fa0cf67",
+      "evidence": "experiments/configs/cata_raid_magmaw_canary117_parasite_recurrence_handoff_20260829.md",
+      "note": "Entrance, Chainwielder, and Drudges cleared without deaths. During Magmaw, five players took direct Parasitic Infection and the infected restoration druid spread Infectious Vomit to three teammates. Revision-2 reduced but did not close containment; the death-loop watchdog ended the run."
     }
   ]
 }

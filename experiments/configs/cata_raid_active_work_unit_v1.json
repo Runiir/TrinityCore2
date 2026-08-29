@@ -1,76 +1,68 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_canary116_parasite_recurrence_v2_20260829",
-  "work_unit": "exact_build:magmaw_parasite_escape_retention:revision_2",
+  "epoch_id": "magmaw_canary117_parasite_recurrence_v3_20260829",
+  "work_unit": "architecture_review:magmaw_parasite_containment:revision_3_boundary",
+  "raid": "blackwing_descent",
+  "boss": "magmaw",
+  "mode": "10N",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_validated_build_admitted",
-  "gate_state": "revision_2_bank_green_one_canary_admitted",
+  "classification": "live_recurrence_quarantined",
+  "gate_state": "revision_2_invalidated_no_build_or_canary_admitted",
   "observed_at_commit": "1dcdd3a1add2deb268667a2765672068059a91ce",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_canary116_parasite_recurrence_handoff_20260829.md",
-    "sha256": "bbae957e244ee48bfc804ae3238bc7155bdf0977d5ee8783cfbf3e71096b11a8"
+    "path": "experiments/configs/cata_raid_magmaw_canary117_parasite_recurrence_handoff_20260829.md",
+    "sha256": "e51f05c536fe5a8e906a26d80eac5c0250e52f87f3357c1fdf7788d56a536952"
   },
   "prior_architecture_review": {
     "path": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md",
     "sha256": "5f631240e2f242d87ba48e205f34fd3fe2237f09803303789b331be59fa6fe80"
   },
-  "first_broken_edge": "baiter endpoint preemption dropped per-bot hazard state, then danger-GUID churn retired or recomputed the native escape before arrival",
+  "first_broken_edge": "revision-2 retained one local escape only until temporary pack clearance; later parasite contacts generated new radial destinations and bypassed the fixed left-right bait lane",
   "causal_signature": "magmaw_parasite_control_allows_player_infection",
   "parent_signature": "magmaw_parasite_containment_failure",
   "live_observation": {
-    "run_id": "trinity-magmaw-ae9761adb3-canary116.n0L5tX",
+    "run_id": "trinity-magmaw-1dcdd3a1ad-canary117.QXkp5t",
     "terminal": "death_loop_watchdog",
-    "infectious_vomit_players": 7,
-    "magmaw_party_dps": 74996.907,
-    "magmaw_party_hps": 18012.046,
-    "formation_and_pull_completed": true
+    "direct_infection_players": 5,
+    "vomit_secondary_players": 3,
+    "magmaw_party_dps": 75979.481,
+    "magmaw_party_hps": 14086.778,
+    "trash_cleared_without_deaths": true
   },
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "occurrence_count": 12,
+    "occurrence_count": 13,
     "architecture_reviewed_through_occurrence_count": 12,
     "invalidated_fixture_id": "magmaw_parasite_lane_paths_v1",
-    "invalidated_fixture_revision": 1,
-    "replacement_fixture_revision": 2,
+    "invalidated_fixture_revision": 2,
+    "required_replacement_fixture_revision": 3,
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
     "allowed_read_only_inputs": [
-      "/tmp/trinity-magmaw-ae9761adb3-canary116.n0L5tX/canary116.report.json",
-      "/tmp/trinity-magmaw-ae9761adb3-canary116.n0L5tX/canary116.raw.jsonl",
-      "/tmp/trinity-magmaw-ae9761adb3-canary116.n0L5tX/canary116.worldserver.log",
+      "/tmp/trinity-magmaw-1dcdd3a1ad-canary117.QXkp5t/canary117.report.json",
+      "/tmp/trinity-magmaw-1dcdd3a1ad-canary117.QXkp5t/canary117.raw.jsonl",
+      "/tmp/trinity-magmaw-1dcdd3a1ad-canary117.QXkp5t/canary117.worldserver.log",
       "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw",
-      "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
       "tests/test_magmaw_parasite_policy.py",
       "tests/test_bot_action_arbitration.py"
     ],
-    "allowed_change": "Exact fast8 build, provisioning readback, and one coordinator-owned completion-watchdog Canary117 from commit 1dcdd3a1add2deb268667a2765672068059a91ce.",
+    "allowed_change": "One revision-3 compiled replay that preserves earlier expectations and crosses repeated parasite contact, fixed lane ownership, native movement progress, and infection-free safe arrival; then the smallest trace-backed runtime repair.",
     "forbidden": [
-      "same_revision_fixture_rerun_as_repair",
-      "more_than_one_live_canary_before_review",
+      "revision_2_rerun_as_repair",
+      "live_canary_before_revision_3_expansion",
       "class_rotation_or_damage_tuning",
       "boss_spell_or_instance_script_changes",
+      "recovery_changes_routed_from_downstream_death_loop",
       "teleport_force_pull_resurrection_or_boss_outcome_mutation"
     ]
   },
-  "completed_architecture_output": [
-    "Canary116 sequences 306, 310, and 314 prove destination churn across parasite entries 42321 and 41806",
-    "revision-1 omitted hazard state at the endpoint-unsafe baiter branch and did not combine GUID with position churn",
-    "revision-2 preserves one destination and event identity across a native retry",
-    "parasite movement remains separated from low DPS, pet control, and death-loop work units"
-  ],
   "validation": {
-    "controller_and_runtime_suite": "130 passed",
-    "recurrence_evaluator_suite": "32 passed",
-    "regression_suite_receipt": "/tmp/magmaw-regression-suite-1dcdd3a1ad-canary116.json",
-    "regression_suite_receipt_sha256": "8f13d51e355c775cc0045d8386c24311b2271c5f322838e5587ab8624e78cc8a",
-    "recurrence_decision": "/tmp/magmaw-recurrence-1dcdd3a1ad-canary116-canary.json",
-    "recurrence_decision_sha256": "817f5d3af028b61c8e1d2892bee8da862a2145be8ef3939e80890b532259db15",
-    "build_admitted": true,
-    "canary_admitted": true,
-    "required_next_action": "run_clean_full_clear"
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "required_next_action": "expand_invalidated_fixture_before_runtime_edit"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -78,7 +70,8 @@
   },
   "coordinator_followup": {
     "build_jobs": 8,
+    "canary_budget_before_expanded_fixture": 0,
     "canary_budget_after_expanded_fixture_and_exact_build": 1
   },
-  "next_action": "Build commit 1dcdd3a1add2deb268667a2765672068059a91ce with eight jobs, verify provisioning/readback, then run exactly one completion-watchdog Canary117 and review it before admitting any successor."
+  "next_action": "Encode the Canary117 repeated-contact counterexample as revision 3, prove it fails before the repair, then implement only the first missing fixed-lane/native-outcome edge."
 }

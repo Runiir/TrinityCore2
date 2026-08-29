@@ -339,37 +339,29 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "boss:blackwing_descent:magmaw:10N:"
-        "pillar_of_flame_ranged_escape"
+        "architecture_review:magmaw_parasite_containment:revision_3_boundary"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["owner_skill"] == "raid-bot-runtime-implementation"
     assert active["first_broken_edge"] == (
-        "ranged_bot_remains_inside_pillar_of_flame_until_lethal_second_hit"
+        "revision-2 retained one local escape only until temporary pack "
+        "clearance; later parasite contacts generated new radial destinations "
+        "and bypassed the fixed left-right bait lane"
     )
-    evidence = active["decisive_evidence"]
-    assert evidence["route_node_id"] == "bwd.magmaw.encounter"
-    assert evidence["first_dead_guid"] == 30009
-    assert evidence["hazard_spell_id"] == 77971
-    assert evidence["terminal_failure_reason"] == "death_loop_watchdog"
-    assert evidence["chainwielder_cleared"] is True
-    assert evidence["drudges_cleared"] is True
-    assert evidence["magmaw_reached"] is True
-    assert evidence["magmaw_killed"] is False
-    assert evidence["diagnose_includes_dps_hps"] is True
-    assert evidence["forbidden_assistance_observed"] is False
-    assert evidence["cleanup_passed"] is True
-    assert evidence["worldserver_exit_code"] == 0
-    assert active["implementation_budget"] == {
-        "hypotheses": 1,
-        "matched_live_verification_runs": 1,
-    }
-    assert (
-        "submit_existing_pillar_hazard_escape_through_priority_queue"
-        in active["repair_scope"]["allowed"]
+    evidence = active["live_observation"]
+    assert evidence["direct_infection_players"] == 5
+    assert evidence["terminal"] == "death_loop_watchdog"
+    assert evidence["trash_cleared_without_deaths"] is True
+    assert active["gate_state"] == (
+        "revision_2_invalidated_no_build_or_canary_admitted"
     )
+    assert active["coordinator_followup"][
+        "canary_budget_before_expanded_fixture"
+    ] == 0
+    assert active["validation"]["build_admitted"] is False
+    assert active["validation"]["canary_admitted"] is False
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "canary92" in active["next_action"].lower()
+    assert "revision 3" in active["next_action"].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -464,20 +456,22 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
 
     assert status["active_work_unit"]["descriptor_valid"] is True
     assert status["active_work_unit"]["ready_for_bounded_repair"] is False
-    assert status["active_work_unit"]["ready_for_live_verification"] is True
+    assert status["active_work_unit"]["ready_for_fixture_expansion"] is True
+    assert status["active_work_unit"]["ready_for_live_verification"] is False
     assert status["active_work_unit"]["first_broken_edge"] == (
-        "ranged_bot_remains_inside_pillar_of_flame_until_lethal_second_hit"
+        "revision-2 retained one local escape only until temporary pack "
+        "clearance; later parasite contacts generated new radial destinations "
+        "and bypassed the fixed left-right bait lane"
     )
     assert status["active_work_unit"]["source_handoff"]["sha256"] == (
         workloop._file_sha256(
             workloop.ROOT
             / "experiments/configs/"
-            "cata_raid_magmaw_canary91_pillar_death_handoff_20260828.md"
+            "cata_raid_magmaw_canary117_parasite_recurrence_handoff_20260829.md"
         )
     )
     assert status["required_next_work_unit"]["work_unit"] == (
-        "boss:blackwing_descent:magmaw:10N:"
-        "pillar_of_flame_ranged_escape"
+        "architecture_review:magmaw_parasite_containment:revision_3_boundary"
     )
     assert status["required_next_work_unit"]["owner_skill"] == (
         "raid-bot-runtime-implementation"
@@ -485,7 +479,7 @@ def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
     assert status["current_program_next_action"] == status["active_work_unit"][
         "next_action"
     ]
-    assert "canary92" in status["active_work_unit"]["next_action"].lower()
+    assert "revision 3" in status["active_work_unit"]["next_action"].lower()
     assert "legacy_program_next_action" not in status
 
 

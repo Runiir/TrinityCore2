@@ -209,6 +209,14 @@ destination, traversal mode, and observed native path state. Test the exact
 lease-expiry boundary at `nowMs == ExpiresAtMs`, plus one tick before and one
 tick after; a source-shape assertion is not enough.
 
+Keep repair state names exact: `implemented`, `fixture-green`,
+`build-admitted`, and `canary-provisional` are not `closed`. Never report a
+blocker as fixed until two consecutive full current-standard clears explicitly
+mark its signature absent. If it reappears at any later state, immediately
+quarantine that signature, invalidate the newest retained fixture revision,
+and revoke outstanding build/canary authorization before reading or editing
+another runtime edge. A smaller affected cohort is improvement, not absence.
+
 For event-owned encounter movement, retain a typed semantic transition in
 addition to the short generic lease. Bind it to encounter/attempt and mechanic
 generation, assigned actor, transition identity, direction, destination, and
