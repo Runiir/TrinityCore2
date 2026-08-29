@@ -1,103 +1,85 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_parasite_transition_architecture_v1_20260829",
-  "work_unit": "runtime:magmaw_lane_transition:immutable_event_owned_destination",
+  "epoch_id": "magmaw_canary116_parasite_recurrence_v2_20260829",
+  "work_unit": "architecture_review:magmaw_parasite_lane_transition:live_recurrence",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "typed_lane_transition_built_canary110_admitted",
-  "observed_at_commit": "3eadfc6b0e280993cb079ea4c542db8729fc26dd",
+  "classification": "architecture_review_in_progress",
+  "gate_state": "same_revision_fixture_invalidated_build_and_canary_closed",
+  "observed_at_commit": "1cb68b9ef10a0303b800edebb4ee24024ccaf1d5",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_d111136523_canary109_recurrence_stop_handoff_20260829.md",
-    "sha256": "3795d5244d399902b564d3ec24d5f80cc48ea18d9c102a400fe177575dceb96c"
+    "path": "experiments/configs/cata_raid_magmaw_canary116_parasite_recurrence_handoff_20260829.md",
+    "sha256": "15276c7082ca68cc16a5757bae16ad134cfe97c478d235e1575139f0613a2d2e"
   },
-  "architecture_review": {
+  "prior_architecture_review": {
     "path": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md",
     "sha256": "3df9d393f7911b0f4ee4b56118398bdb368bfe687e6e944732149126baa65211"
   },
-  "first_broken_edge": "fixed_baiter_lane_direction_and_destination_are_recomputed_from_transient_position_parasite_observations_and_generic_lease_state_before_native_arrival",
+  "first_broken_edge": "pending_trace_backed_architecture_review",
   "causal_signature": "magmaw_parasite_control_allows_player_infection",
-  "hypothesis": "A typed encounter-scoped transition that survives observation churn and short lease expiry will stop midpoint reversal and parasite re-entry.",
+  "parent_signature": "magmaw_parasite_containment_failure",
+  "live_observation": {
+    "run_id": "trinity-magmaw-ae9761adb3-canary116.n0L5tX",
+    "terminal": "death_loop_watchdog",
+    "infectious_vomit_players": 7,
+    "magmaw_party_dps": 74996.907,
+    "magmaw_party_hps": 18012.046,
+    "formation_and_pull_completed": true
+  },
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "occurrence_count": 10,
+    "occurrence_count": 12,
     "architecture_reviewed_through_occurrence_count": 10,
-    "stop_at": 10,
+    "invalidated_fixture_id": "magmaw_parasite_lane_paths_v1",
+    "invalidated_fixture_revision": 1,
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
-    "allowed_files": [
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h",
-      "src/server/game/Bots/BotWorldPopulationMgrBotState.h",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
+    "allowed_read_only_inputs": [
+      "/tmp/trinity-magmaw-ae9761adb3-canary116.n0L5tX/canary116.report.json",
+      "/tmp/trinity-magmaw-ae9761adb3-canary116.n0L5tX/canary116.raw.jsonl",
+      "/tmp/trinity-magmaw-ae9761adb3-canary116.n0L5tX/canary116.worldserver.log",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw",
       "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrValidationLifecycle.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
       "tests/test_magmaw_parasite_policy.py",
       "tests/test_bot_action_arbitration.py"
     ],
-    "allowed_change": "Introduce one typed Magmaw lane transition and replace the invalid helper-level fixture with a full multi-tick selection-to-native-outcome replay. Preserve fixed mage/hunter bait ownership and validate the entire lane corridor.",
+    "allowed_change": "None until the first missing policy-to-native-outcome edge and the required fixture expansion are identified.",
     "forbidden": [
+      "runtime_or_class_policy_edits_before_architecture_verdict",
+      "same_revision_fixture_rerun_as_repair",
+      "build_or_live_canary",
       "class_rotation_or_damage_tuning",
       "boss_spell_or_instance_script_changes",
-      "consumable_or_roster_provisioning",
-      "teleport_force_pull_resurrection_or_boss_outcome_mutation",
-      "database_DVC_build_or_live_server_mutation_inside_the_implementation_unit",
-      "another_canary_before_the_full_replay_passes"
+      "teleport_force_pull_resurrection_or_boss_outcome_mutation"
     ]
   },
-  "required_static_proof": [
-    "only fixed mage and hunter own cohort lane transitions",
-    "transition identity direction and destination survive observation churn midpoint crossing and generic lease expiry",
-    "typed lethal preemption resumes the same transition",
-    "native rejection retries the same transition",
-    "arrival later mechanic generation and exact attempt reset are the only retirement boundaries",
-    "full corridor clears support geometry",
-    "non-bait local evasion cannot mutate the cohort transition",
-    "all touched C++ files remain below 1000 physical lines"
+  "required_architecture_output": [
+    "first causal edge with exact trace and file-line evidence",
+    "why revision-1 lane tests passed while seven players were infected",
+    "smallest deterministic multi-tick counterexample spanning every implicated owner",
+    "explicit retirement preemption resume and native-outcome boundaries",
+    "separation of parasite cause from low DPS pet and death-loop symptoms"
   ],
-  "focused_validation": {
-    "command": "pixi run pytest -q tests/test_magmaw_parasite_policy.py",
-    "result": "44 passed across the complete transition, arbitration, movement, recovery, and recurrence suite",
-    "source_shape_only_is_insufficient": true
+  "validation": {
+    "controller_and_runtime_suite": "142 passed",
+    "recurrence_evaluator_suite": "32 passed",
+    "regression_suite_receipt": "/tmp/magmaw-regression-suite-1cb68b9ef1-canary116.json",
+    "regression_suite_receipt_sha256": "17776cbe2a8e25f5fc12d8ac95eb9a6ba4e38d13b6f44061b51b97ec4042cd12",
+    "recurrence_decision": "/tmp/magmaw-recurrence-1cb68b9ef1-canary116-canary.json",
+    "recurrence_decision_sha256": "d94a668defa0c19972896485fc74b69d1241d9444b605fcd996c999204470af5",
+    "build_admitted": false,
+    "canary_admitted": false,
+    "required_next_action": "expand_invalid_retained_fixture"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
-    "fixed_success_timer_seconds": null,
-    "terminal_conditions": [
-      "normal_clear",
-      "semantic_no_progress",
-      "repeated_decisions",
-      "excessive_death_loop",
-      "infrastructure_loss",
-      "contamination",
-      "explicit_interruption"
-    ]
+    "fixed_success_timer_seconds": null
   },
   "coordinator_followup": {
     "build_jobs": 8,
-    "clock": "completion_watchdog",
-    "fixed_success_timer_seconds": null,
-    "canary_budget_after_exact_build": 1
+    "canary_budget_after_expanded_fixture_and_exact_build": 1
   },
-  "root_runtime_verification": {
-    "build_source_commit": "3eadfc6b0e280993cb079ea4c542db8729fc26dd",
-    "configure_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_3eadfc6b0e.json",
-    "configure_receipt_file_sha256": "4c216f482bb868637b4ef273b263ecebbdbaa03206ef97ef344d94e2ad635375",
-    "configure_embedded_receipt_sha256": "61f1ab4acda3768402ac45119a3bb02c6b74ae8b8c3369999ff690e349025b29",
-    "first_build_attempt_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_3eadfc6b0e.json",
-    "first_build_attempt_classification": "build_resource_abort",
-    "first_build_attempt_receipt_file_sha256": "49b72aedb369cd84c20cb648a64ab96c38c7c3f8673a7fa39bdc3a92a8d90939",
-    "worldserver_receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_3eadfc6b0e_retry1.json",
-    "worldserver_receipt_file_sha256": "19aef516ef758a7ead5fd72b87ec4ae0f99f0c80b4575c49c108c6a4f60f56ec",
-    "worldserver_embedded_receipt_sha256": "da8ec1c4e0af1c965e6c19472484e83f4a1c0311514d7ef74fb92e63f297c9c3",
-    "worldserver_sha256": "b4b14cdded53a6b077740b156dd7953d4b5aa107ba0ffd411fc837589e9a439f",
-    "compiler_jobs": 8,
-    "clock": "completion_watchdog",
-    "fixed_success_timer_seconds": null,
-    "canary_budget": 1
-  },
-  "next_action": "Run exactly one autonomous current-standard completion-watchdog Canary110 against the verified binary, classify the first causal edge, and update the recurrence ledger."
+  "next_action": "Complete the bounded Luna-max architecture review, add the missing deterministic boundary as fixture revision 2, rerun the fail-closed recurrence gate, and only then authorize one exact-build autonomous canary."
 }
