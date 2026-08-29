@@ -5,6 +5,7 @@
 #include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
+#include "Spell.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -103,6 +104,11 @@ std::string BotWorldPopulationMgr::BuildCombatAttemptJson(WorldBotState::CombatA
          << ",\"uptime\":{\"melee_auto_attacking\":" << (diagnostic.MeleeAutoAttacking ? "true" : "false")
          << ",\"ranged_auto_active\":" << (diagnostic.RangedAutoActive ? "true" : "false")
          << ",\"pet_attacking\":" << (diagnostic.PetAttacking ? "true" : "false") << "}"
+         << ",\"pet\":{\"guid\":" << diagnostic.PetGuid
+         << ",\"entry\":" << diagnostic.PetEntry
+         << ",\"current_generic_spell_id\":"
+         << diagnostic.PetCurrentGenericSpellId
+         << ",\"victim_guid\":" << diagnostic.PetVictimGuid << "}"
          << ",\"summary\":\"" << JsonEscape(diagnostic.Summary) << "\"}";
     return json.str();
 }
@@ -176,7 +182,16 @@ void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bo
     diagnostic.RangedAutoActive = bot && bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
     if (bot)
         if (Pet* pet = bot->GetPet())
+        {
             diagnostic.PetAttacking = pet->IsAlive() && pet->GetVictim();
+            diagnostic.PetGuid = pet->GetGUID().GetCounter();
+            diagnostic.PetEntry = pet->GetEntry();
+            diagnostic.PetVictimGuid = pet->GetVictim()
+                ? pet->GetVictim()->GetGUID().GetCounter() : 0;
+            if (Spell* current = pet->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                if (SpellInfo const* currentInfo = current->GetSpellInfo())
+                    diagnostic.PetCurrentGenericSpellId = currentInfo->Id;
+        }
     if (reason && *reason)
         diagnostic.Reason = reason;
     else if (!spellInfo && diagnostic.SpellId)

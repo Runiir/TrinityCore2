@@ -55,6 +55,14 @@ namespace BotWorldPopulationMgrBotState
             bool MeleeAutoAttacking = false;
             bool RangedAutoActive = false;
             bool PetAttacking = false;
+            // Keep pet identity beside an owner combat attempt so a spell seen
+            // in combat can be attributed to this pet instead of an NPC with
+            // a similarly named ability. This is observation-only; native
+            // PetAI remains the sole owner of the persistent autocast list.
+            uint32 PetGuid = 0;
+            uint32 PetEntry = 0;
+            uint32 PetCurrentGenericSpellId = 0;
+            uint32 PetVictimGuid = 0;
             std::string Reason;
             std::string Summary;
         };
