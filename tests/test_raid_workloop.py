@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import hashlib
+import json
+import subprocess
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -452,36 +456,77 @@ def test_affliction_canary_exposes_pet_debug_reference_artifacts() -> None:
     assert artifacts["debug_raid_sim_result"]
 
 
-def test_status_uses_hash_bound_active_work_unit_not_legacy_prose() -> None:
-    status = workloop.build_status()
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.check_output(["git", "-C", str(repo), *args], text=True).strip()
 
-    assert status["active_work_unit"]["descriptor_valid"] is False
-    assert "active_work_unit_commit_stale" in status["active_work_unit"]["issues"]
-    assert status["active_work_unit"]["ready_for_bounded_repair"] is False
-    assert status["active_work_unit"]["ready_for_fixture_expansion"] is False
-    assert status["active_work_unit"]["ready_for_live_verification"] is False
-    assert status["active_work_unit"]["first_broken_edge"] == (
-        "Canary119 sequence 3376 rejected a complete floor-valid "
-        "parasite_contact_evade path as route_destination_endpoint_mismatch "
-        "even though its native endpoint travelled 3.1396 yards and made "
-        "about 2.195 yards of same-level progress."
-    )
-    assert status["active_work_unit"]["source_handoff"]["sha256"] == (
-        workloop._file_sha256(
-            workloop.ROOT
-            / "experiments/configs/"
-            "cata_raid_magmaw_canary119_floor_recurrence_handoff_20260829.md"
-        )
-    )
-    assert status["required_next_work_unit"]["work_unit"] == (
-        "runtime_repair:magmaw_same_level_native_path:canary119_seq3376"
-    )
-    assert status["required_next_work_unit"]["owner_skill"] == (
-        "raid-bot-runtime-implementation"
-    )
-    assert status["current_program_next_action"] is None
-    assert "canary120" in status["active_work_unit"]["next_action"].lower()
-    assert "legacy_program_next_action" not in status
+
+def _active_work_unit_repo(tmp_path: Path) -> tuple[Path, Path]:
+    repo = tmp_path / "repo"
+    source = repo / "evidence.md"
+    active_path = repo / workloop.ACTIVE_WORK_UNIT_PATH
+    active_path.parent.mkdir(parents=True)
+    _git(repo.parent, "init", "repo")
+    _git(repo, "config", "user.email", "tests@example.invalid")
+    _git(repo, "config", "user.name", "Raid Workloop Tests")
+    source.write_text("immutable evidence\n", encoding="utf-8")
+    _git(repo, "add", "evidence.md")
+    _git(repo, "commit", "-m", "evidence")
+    observed = _git(repo, "rev-parse", "HEAD")
+    active = {
+        "schema": "cata_raid_active_work_unit_v1",
+        "work_unit": "fixture:test",
+        "owner_skill": "raid-shard-architecture",
+        "classification": "live_recurrence_quarantined",
+        "observed_at_commit": observed,
+        "source_handoff": {
+            "path": "evidence.md",
+            "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        },
+        "validation_clock": {
+            "policy": "completion_watchdog",
+            "fixed_success_timer_seconds": None,
+        },
+    }
+    active_path.write_text(json.dumps(active, indent=2) + "\n", encoding="utf-8")
+    _git(repo, "add", active_path.relative_to(repo).as_posix())
+    _git(repo, "commit", "-m", "route work unit")
+    return repo, active_path
+
+
+def test_active_work_unit_uses_descriptor_commit_and_observed_provenance(
+    tmp_path: Path,
+) -> None:
+    repo, _ = _active_work_unit_repo(tmp_path)
+
+    status = workloop.active_work_unit_status(repo)
+
+    assert status["descriptor_valid"] is True
+    assert status["issues"] == []
+    assert status["descriptor_commit"] == _git(repo, "rev-parse", "HEAD")
+
+
+def test_active_work_unit_rejects_later_commit_without_descriptor_update(
+    tmp_path: Path,
+) -> None:
+    repo, _ = _active_work_unit_repo(tmp_path)
+    (repo / "later.txt").write_text("later\n", encoding="utf-8")
+    _git(repo, "add", "later.txt")
+    _git(repo, "commit", "-m", "later change")
+
+    status = workloop.active_work_unit_status(repo)
+
+    assert status["descriptor_valid"] is False
+    assert "active_work_unit_descriptor_stale" in status["issues"]
+
+
+def test_active_work_unit_rejects_dirty_descriptor(tmp_path: Path) -> None:
+    repo, active_path = _active_work_unit_repo(tmp_path)
+    active_path.write_text(active_path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+
+    status = workloop.active_work_unit_status(repo)
+
+    assert status["descriptor_valid"] is False
+    assert "active_work_unit_descriptor_dirty" in status["issues"]
 
 
 def test_script_readiness_uses_source_tree_identity() -> None:

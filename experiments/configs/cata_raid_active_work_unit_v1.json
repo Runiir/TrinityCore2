@@ -8,7 +8,7 @@
   "owner_skill": "raid-shard-architecture",
   "classification": "live_recurrence_quarantined",
   "gate_state": "canonical_checkpoint_launch_replay_required",
-  "observed_at_commit": "da3b637159",
+  "observed_at_commit": "da3b637159147c45fa49640d00e3bd86e7cfb3a8",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
     "sha256": "ed49516032f9f69373a037ae0955ae8efc367035eafff887f4bc895a0b0cca67"

@@ -125,6 +125,60 @@ def _git_commit_exists(root: Path, commit: str) -> bool:
     return completed.returncode == 0
 
 
+def _git_is_ancestor(root: Path, ancestor: str, descendant: str) -> bool:
+    if not _git_commit_exists(root, ancestor) or not _git_commit_exists(root, descendant):
+        return False
+    completed = subprocess.run(
+        ["git", "-C", str(root), "merge-base", "--is-ancestor", ancestor, descendant],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return completed.returncode == 0
+
+
+def _git_path_commit(root: Path, relative: Path) -> str | None:
+    completed = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(root),
+            "log",
+            "-1",
+            "--format=%H",
+            "--",
+            relative.as_posix(),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    value = completed.stdout.strip()
+    return (
+        value
+        if completed.returncode == 0 and re.fullmatch(r"[0-9a-f]{40}", value)
+        else None
+    )
+
+
+def _git_path_matches_head(root: Path, relative: Path) -> bool:
+    tracked = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "--error-unmatch", "--", relative.as_posix()],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if tracked.returncode != 0:
+        return False
+    unchanged = subprocess.run(
+        ["git", "-C", str(root), "diff", "--quiet", "HEAD", "--", relative.as_posix()],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return unchanged.returncode == 0
+
+
 def _dvc_digest(path: Path) -> str | None:
     if not path.is_file():
         return None
@@ -473,11 +527,25 @@ def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
         issues.append("active_work_unit_source_missing")
     elif _file_sha256(source_path) != expected_hash:
         issues.append("active_work_unit_source_stale")
+    head = _git_head(root)
+    descriptor_commit = _git_path_commit(root, ACTIVE_WORK_UNIT_PATH)
+    if not _git_path_matches_head(root, ACTIVE_WORK_UNIT_PATH):
+        issues.append("active_work_unit_descriptor_dirty")
+    if not head or descriptor_commit != head:
+        issues.append("active_work_unit_descriptor_stale")
+
+    # This field records the source revision whose evidence selected the work
+    # unit. It cannot name the commit containing this tracked descriptor,
+    # because a commit cannot contain its own hash. Descriptor freshness is
+    # therefore derived from Git above; the embedded revision is provenance
+    # and must be an ancestor of the descriptor commit.
     observed_at_commit = str(active.get("observed_at_commit") or "")
     if not _git_commit_exists(root, observed_at_commit):
         issues.append("active_work_unit_commit_missing")
-    elif observed_at_commit != _git_head(root):
-        issues.append("active_work_unit_commit_stale")
+    elif not descriptor_commit or not _git_is_ancestor(
+        root, observed_at_commit, descriptor_commit
+    ):
+        issues.append("active_work_unit_commit_not_ancestor")
     clock = active.get("validation_clock") or {}
     if (
         clock.get("policy") != "completion_watchdog"
@@ -494,6 +562,7 @@ def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
         and active.get("classification") == "implementation_pending_live_verification",
         "issues": issues,
         "descriptor_path": ACTIVE_WORK_UNIT_PATH.as_posix(),
+        "descriptor_commit": descriptor_commit,
     }
 
 
