@@ -728,6 +728,16 @@ def test_canonical_capture_explicitly_starts_the_frozen_bwd_10n_profile():
     assert '"botauto_profile": "profile_selection"' in source
 
 
+def test_canonical_capture_rejects_worldserver_autostart_before_spawn():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    assert 'trinity_config_bool(config, "BotWorld.AutoStart", False)' in source
+    assert "config_autostart_enabled" in source
+    assert "phase1 capture owns the single botauto start command" in source
+
+
 def accepted_status() -> dict:
     frozen_roster = expected_bwd_10n_roster()
     frozen_identity = _expected_identity_by_slot()

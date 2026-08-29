@@ -21,7 +21,8 @@
       "same_level_endpoint_normalization_v1",
       "same_level_native_path_proof_v1",
       "magmaw_prepot_formation_gate_v1",
-      "partial_wipe_native_reset_gate_v1"
+      "partial_wipe_native_reset_gate_v1",
+      "phase1_capture_single_start_contract_v1"
     ],
     "fixtures": [
       {
@@ -133,6 +134,18 @@
           "-q",
           "tests/test_bot_world_population_mgr_update_death_module.py::test_partial_reset_release_is_native_only_and_distinct_from_full_wipe_latch"
         ]
+      },
+      {
+        "fixture_id": "phase1_capture_single_start_contract_v1",
+        "causal_signature": "phase1_capture_duplicate_autostart_lifecycle",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_ml_pipeline.py::test_prepare_only_config_never_autostarts_a_second_capture_cohort",
+          "tests/test_phase1_raid_foundation_capture.py::test_canonical_capture_rejects_worldserver_autostart_before_spawn"
+        ]
       }
     ]
   },
@@ -198,6 +211,10 @@
     "raid_partial_wipe_waits_for_last_survivor": {
       "owner": "shared_native_recovery",
       "invariant": "partial deaths wait while a native boss encounter remains active, but after an authoritative native reset with no combat or engaged hostiles dead members may begin ordinary release and corpse-run recovery without killing or teleporting survivors"
+    },
+    "phase1_capture_duplicate_autostart_lifecycle": {
+      "owner": "capture_and_preparation_lifecycle",
+      "invariant": "a preparation-only handoff disables worldserver AutoStart and the phase-1 capture controller is the sole owner of the explicit botauto start command"
     }
   },
   "runs": [
@@ -432,6 +449,26 @@
       "raw_jsonl_sha256": "d62070ba463e07302c0d8502d3e6fc6908486a2ed061bbe7fecb430c793c35f4",
       "worldserver_log_sha256": "82f29e98743232c06aedd225f3ca68409b78dccdc581b154d27007af81050bc3",
       "evidence": "experiments/configs/cata_raid_magmaw_3eadfc6b0e_canary110_fixture_invalidation_handoff_20260829.md"
+    },
+    {
+      "run_id": "trinity-magmaw-bdf8824249-canary111.xOA0BV",
+      "route_completed": false,
+      "classification": "infrastructure_abort",
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "chainwielder_future_drudge_contamination": "not_exercised",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "not_exercised",
+        "same_level_native_endpoint_z_normalization_false_negative": "not_exercised",
+        "same_level_native_path_proof_false_negative": "not_exercised",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "not_exercised",
+        "raid_partial_wipe_waits_for_last_survivor": "not_exercised",
+        "phase1_capture_duplicate_autostart_lifecycle": "occurred"
+      },
+      "report_sha256": "dfc9155dbde8e8fc03b7f09640c6aa354c25d13895a7e98f87629b1632014a92",
+      "raw_jsonl_sha256": "904ffb87b450466770f5f48f228319c0d7761ec4225a0430b0e5e437232b602e",
+      "worldserver_log_sha256": "98e7fc03d5896192c4f96a795e08eb7843adf2d59da7ce202c79df988ca65437",
+      "note": "Preparation-only config enabled AutoStart while the capture controller also issued botauto start; attempt 1 was torn down, attempt 2 reprovisioned, and worldserver exited -11 before gameplay."
     }
   ]
 }

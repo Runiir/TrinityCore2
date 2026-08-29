@@ -22,6 +22,7 @@ try:
     from tools.bot_ml.run_live_bot_validation import (
         combined_combat_log,
         combat_log_transport_status,
+        trinity_config_bool,
     )
     from tools.raid_program.capture_no_bots_baseline import process_sample as _baseline_process_sample
     from tools.raid_program.probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
@@ -33,6 +34,7 @@ except ModuleNotFoundError:
     from tools.bot_ml.run_live_bot_validation import (
         combined_combat_log,
         combat_log_transport_status,
+        trinity_config_bool,
     )
     from capture_no_bots_baseline import process_sample as _baseline_process_sample
     from probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
@@ -5276,6 +5278,17 @@ def main() -> int:
         raise SystemExit("server log output already exists; phase1 artifacts are immutable")
     if not binary.is_file() or not config.is_file():
         raise SystemExit("binary and config must exist")
+    # This controller owns the single explicit native start command.  A
+    # prepare-only runner hands us a config, but must not leave worldserver
+    # AutoStart enabled: the resulting duplicate profile selection tears down
+    # the first cohort while the server is still completing startup and can
+    # dereference invalid lifecycle state.  Reject the mismatch before a
+    # process is spawned so a stale preparation fails deterministically.
+    if trinity_config_bool(config, "BotWorld.AutoStart", False):
+        raise SystemExit(
+            "capture preflight rejected: config_autostart_enabled; "
+            "phase1 capture owns the single botauto start command"
+        )
     if (
         args.observe_sec < 0
         or 0 < args.observe_sec < 30

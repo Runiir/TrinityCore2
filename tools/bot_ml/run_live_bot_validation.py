@@ -791,6 +791,22 @@ def trinity_config_bool(path: Path, key: str, default: bool = False) -> bool:
     return default
 
 
+def validation_config_should_autostart(
+    *, prepare_only: bool, transport: str, calibration_only: bool,
+    no_start: bool,
+) -> bool:
+    """Return whether the generated config owns the initial bot start.
+
+    Preparation-only is a handoff to another process (the phase-1 capture
+    controller), so its config must never start a cohort during worldserver
+    boot.  Otherwise the capture's explicit ``botauto start`` races with or
+    restarts the automatically started cohort.
+    """
+    if prepare_only or transport == "session":
+        return False
+    return calibration_only or not no_start
+
+
 def load_validation_route(scenario_dir: Path, context: dict[str, Any]) -> dict[str, Any]:
     scenario_id = str(context.get("scenario_id") or "")
     route_node_id = str(context.get("route_node_id") or "")
@@ -7078,7 +7094,12 @@ def main() -> int:
             pool_tag_filter,
             validation_route,
             validation_route_manifest_path,
-            autostart=False if args.transport == "session" else (True if args.calibration_only else not args.no_start),
+            autostart=validation_config_should_autostart(
+                prepare_only=args.prepare_only,
+                transport=args.transport,
+                calibration_only=args.calibration_only,
+                no_start=args.no_start,
+            ),
             calibration_only=args.calibration_only,
             calibration_reference_conditions=args.calibration_reference_conditions,
             calibration_self_provided_baseline=args.calibration_self_provided_baseline,

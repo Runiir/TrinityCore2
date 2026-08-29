@@ -72,7 +72,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, WatchdogOutputBuffer, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_combat_progress_advanced, live_combat_progress_snapshot, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, preflight_calibration_reference_binding, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, should_defer_active_combat_bot_diagnosis, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, terminal_catchup_progress_advanced, terminal_catchup_progress_snapshot, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, WatchdogOutputBuffer, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, calibration_pre_scoring_blocker, command_script, heartbeat_commands_from_script, live_combat_progress_advanced, live_combat_progress_snapshot, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, preflight_calibration_reference_binding, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, should_defer_active_combat_bot_diagnosis, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, terminal_catchup_progress_advanced, terminal_catchup_progress_snapshot, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, validation_config_should_autostart, wait_for_bot_status_state, wait_for_heroic_admission_status, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -8480,6 +8480,27 @@ def test_live_bot_validation_config_can_disable_autostart_for_calibration_only(t
     config_text = generated.read_text(encoding="utf-8")
     assert "BotWorld.AutoStart = 0" in config_text
     assert 'BotWorld.PoolTagFilter = "combat_calibration"' in config_text
+
+
+def test_prepare_only_config_never_autostarts_a_second_capture_cohort():
+    assert validation_config_should_autostart(
+        prepare_only=True,
+        transport="process",
+        calibration_only=False,
+        no_start=False,
+    ) is False
+    assert validation_config_should_autostart(
+        prepare_only=False,
+        transport="process",
+        calibration_only=False,
+        no_start=False,
+    ) is True
+    assert validation_config_should_autostart(
+        prepare_only=False,
+        transport="session",
+        calibration_only=False,
+        no_start=False,
+    ) is False
 
 
 def test_live_bot_validation_config_calibration_only_starts_empty_controller(tmp_path):

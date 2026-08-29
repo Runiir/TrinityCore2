@@ -8,6 +8,8 @@ import pytest
 
 from tools.raid_program.blocker_recurrence_ledger import (
     _command_sha256,
+    _canonical_config_identity,
+    _evaluate_regression_bank,
     _ledger_with_suite_receipt,
     _manifest_sha256,
     _result_sha256,
@@ -16,6 +18,9 @@ from tools.raid_program.blocker_recurrence_ledger import (
     _verify_clean_source_identity,
     evaluate_ledger,
 )
+
+
+CANONICAL_CONFIG_IDENTITY = _canonical_config_identity()
 
 
 def _ledger(
@@ -39,7 +44,7 @@ def _bank_ledger(
     verifications: list[dict],
     history: list[str] | None = None,
     source: str = "source-current",
-    config: str = "config-current",
+    config: str = CANONICAL_CONFIG_IDENTITY,
     signatures: dict | None = None,
 ) -> dict:
     ledger = _ledger(runs, signatures=signatures or {"edge": {}})
@@ -71,7 +76,7 @@ def _pass(fixture_id: str, run_id: str, **identity: str) -> dict:
         "status": "passed",
         "passed_before_run_id": run_id,
         "source": identity.get("source", "source-current"),
-        "config": identity.get("config", "config-current"),
+        "config": identity.get("config", CANONICAL_CONFIG_IDENTITY),
         "evidence": f"tests/{fixture_id}.py",
     }
 
@@ -380,7 +385,8 @@ def test_accumulated_bank_reports_fixture_omitted_by_later_repair() -> None:
             history=["original", "later_repair"],
             verifications=[_pass("later_repair", "101")],
         ),
-        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+        current_identity={"source_identity": "source-current", "config_identity": CANONICAL_CONFIG_IDENTITY},
+        suite_receipt_verified=True,
     )
 
     assert decision["missing_fixture_ids"] == ["original"]
@@ -406,7 +412,8 @@ def test_bank_requires_fixture_coverage_for_every_occurred_signature() -> None:
             verifications=[_pass("original", "101")],
             signatures={"edge": {}, "uncovered_edge": {}},
         ),
-        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+        current_identity={"source_identity": "source-current", "config_identity": CANONICAL_CONFIG_IDENTITY},
+        suite_receipt_verified=True,
     )
 
     assert decision["missing_causal_signature_ids"] == ["uncovered_edge"]
@@ -426,7 +433,8 @@ def test_bank_rejects_pass_tied_to_stale_source_or_config_identity() -> None:
                 _pass("original", "101", source="source-old", config="config-old")
             ],
         ),
-        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+        current_identity={"source_identity": "source-current", "config_identity": CANONICAL_CONFIG_IDENTITY},
+        suite_receipt_verified=True,
     )
 
     assert decision["stale_fixture_ids"] == ["original"]
@@ -462,10 +470,82 @@ def test_external_source_identity_does_not_require_a_self_referential_ledger_sha
         verifications=[_pass("original", "101", source="external-clean-head")],
     )
     ledger["regression_bank"]["current_identity"].pop("source")
-    identity = {"source_identity": "external-clean-head", "config_identity": "config-current"}
+    identity = {"source_identity": "external-clean-head", "config_identity": CANONICAL_CONFIG_IDENTITY}
+
+    decision = evaluate_ledger(
+        ledger, current_identity=identity, suite_receipt_verified=True
+    )
+    assert decision["regression_bank"]["admitted"] is True
+
+
+def test_enabled_bank_direct_api_requires_explicit_suite_verification() -> None:
+    ledger = _bank_ledger(
+        [
+            {"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}},
+            {"run_id": "102", "route_completed": True, "blockers": {"edge": "absent"}},
+        ],
+        fixtures=[_fixture("original")],
+        verifications=[_pass("original", "101")],
+    )
+    identity = {
+        "source_identity": "source-current",
+        "config_identity": CANONICAL_CONFIG_IDENTITY,
+    }
 
     decision = evaluate_ledger(ledger, current_identity=identity)
-    assert decision["regression_bank"]["admitted"] is True
+
+    assert decision["regression_bank"]["admitted"] is False
+    assert "suite_receipt_verification_required" in decision["regression_bank"]["route_failures"]
+    assert decision["build_admitted"] is False
+
+
+def test_direct_regression_bank_api_requires_explicit_suite_verification() -> None:
+    ledger = _bank_ledger(
+        [
+            {"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}},
+            {"run_id": "102", "route_completed": True, "blockers": {"edge": "absent"}},
+        ],
+        fixtures=[_fixture("original")],
+        verifications=[_pass("original", "101")],
+    )
+    result = _evaluate_regression_bank(
+        ledger,
+        {"edge": {}},
+        ledger["runs"],
+        {"101": 0, "102": 1},
+        supplied_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+    )
+
+    assert result["admitted"] is False
+    assert "suite_receipt_verification_required" in result["route_failures"]
+
+
+def test_direct_api_rejects_arbitrary_config_identity() -> None:
+    ledger = _bank_ledger(
+        [
+            {"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}},
+            {"run_id": "102", "route_completed": True, "blockers": {"edge": "absent"}},
+        ],
+        fixtures=[_fixture("original")],
+        verifications=[_pass("original", "101", config="forged-config")],
+        config="forged-config",
+    )
+    identity = {
+        "source_identity": "source-current",
+        "config_identity": "forged-config",
+    }
+
+    decision = evaluate_ledger(
+        ledger,
+        current_identity=identity,
+        suite_receipt_verified=True,
+    )
+
+    assert decision["regression_bank"]["admitted"] is False
+    assert "current_identity_config_not_canonical" in decision["regression_bank"]["route_failures"]
 
 
 def test_source_identity_requires_exact_clean_tracked_checkout(tmp_path) -> None:
@@ -500,36 +580,32 @@ def test_suite_receipt_is_bound_to_manifest_and_current_identity(tmp_path) -> No
         fixtures=[_fixture("original")],
         verifications=[],
     )
-    identity = {"source_identity": "source-current", "config_identity": "config-current"}
+    identity = {"source_identity": "source-current", "config_identity": CANONICAL_CONFIG_IDENTITY}
     fixture = ledger["regression_bank"]["fixtures"][0]
-    command_sha256 = _command_sha256(fixture["command"])
-    stdout_sha256 = _sha256("")
-    stderr_sha256 = _sha256("")
-    verification = _pass("original", "101")
-    verification.update(
-        {
-            "passed": True,
-            "returncode": 0,
-            "timed_out": False,
-            "command_sha256": command_sha256,
-            "stdout_sha256": stdout_sha256,
-            "stderr_sha256": stderr_sha256,
-            "result_sha256": _result_sha256(0, False, stdout_sha256, stderr_sha256),
-        }
-    )
-    receipt = {
-        "schema": "trinity_raid_regression_suite_receipt_v1",
-        "manifest_sha256": _manifest_sha256(ledger["regression_bank"]),
-        **identity,
-        "fixture_ids": ["original"],
-        "verifications": [verification],
-    }
+    fixture["command"] = [sys.executable, "-c", "print('fixture-pass')"]
     receipt_path = tmp_path / "suite-receipt.json"
-    receipt_path.write_text(json.dumps(receipt))
+    _run_suite(ledger, identity, "101", "after", receipt_path)
+    receipt = json.loads(receipt_path.read_text())
 
     effective = _ledger_with_suite_receipt(ledger, receipt_path, identity)
-    decision = evaluate_ledger(effective, current_identity=identity)
+    decision = evaluate_ledger(
+        effective, current_identity=identity, suite_receipt_verified=True
+    )
     assert decision["regression_bank"]["admitted"] is True
+
+    forged = json.loads(receipt_path.read_text())
+    forged_row = forged["verifications"][0]
+    forged_row["stdout_sha256"] = _sha256("forged-output\n")
+    forged_row["result_sha256"] = _result_sha256(
+        forged_row["returncode"],
+        forged_row["timed_out"],
+        forged_row["stdout_sha256"],
+        forged_row["stderr_sha256"],
+    )
+    forged_path = tmp_path / "forged-output-receipt.json"
+    forged_path.write_text(json.dumps(forged))
+    with pytest.raises(ValueError, match="independently observed result/output"):
+        _ledger_with_suite_receipt(ledger, forged_path, identity)
 
     wrong_source = dict(receipt)
     wrong_source["source_identity"] = "source-other"
@@ -554,7 +630,7 @@ def test_run_suite_executes_fixed_argv_and_emits_verifiable_receipt(tmp_path) ->
         fixtures=[fixture],
         verifications=[],
     )
-    identity = {"source_identity": "source-current", "config_identity": "config-current"}
+    identity = {"source_identity": "source-current", "config_identity": CANONICAL_CONFIG_IDENTITY}
     receipt_path = tmp_path / "suite-receipt.json"
 
     _run_suite(ledger, identity, "101", "after", receipt_path)
@@ -562,7 +638,9 @@ def test_run_suite_executes_fixed_argv_and_emits_verifiable_receipt(tmp_path) ->
     assert receipt["fixture_ids"] == ["original"]
     assert receipt["verifications"][0]["passed"] is True
     effective = _ledger_with_suite_receipt(ledger, receipt_path, identity)
-    assert evaluate_ledger(effective, current_identity=identity)["canary_admitted"] is True
+    assert evaluate_ledger(
+        effective, current_identity=identity, suite_receipt_verified=True
+    )["canary_admitted"] is True
 
 
 def test_post_occurrence_suite_pass_admits_next_canary_before_two_clears() -> None:
@@ -577,9 +655,11 @@ def test_post_occurrence_suite_pass_admits_next_canary_before_two_clears() -> No
         fixtures=[_fixture("original")],
         verifications=[verification],
     )
-    identity = {"source_identity": "source-current", "config_identity": "config-current"}
+    identity = {"source_identity": "source-current", "config_identity": CANONICAL_CONFIG_IDENTITY}
 
-    provisional = evaluate_ledger(ledger, current_identity=identity)
+    provisional = evaluate_ledger(
+        ledger, current_identity=identity, suite_receipt_verified=True
+    )
     assert provisional["build_admitted"] is True
     assert provisional["canary_admitted"] is True
     assert provisional["acceptance_admitted"] is False
@@ -590,7 +670,9 @@ def test_post_occurrence_suite_pass_admits_next_canary_before_two_clears() -> No
             {"run_id": "104", "route_completed": True, "blockers": {"edge": "absent"}},
         ]
     )
-    final = evaluate_ledger(ledger, current_identity=identity)
+    final = evaluate_ledger(
+        ledger, current_identity=identity, suite_receipt_verified=True
+    )
     assert final["canary_admitted"] is True
     assert final["acceptance_admitted"] is True
 
@@ -624,7 +706,11 @@ def test_same_run_recurrence_is_invalidated_only_before_expanded_pass(
             fixtures=[_fixture("original")],
             verifications=verification,
         ),
-        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
     )
 
     if "passed_before_run_id" in verification_boundary:
@@ -655,7 +741,11 @@ def test_later_recurrence_invalidates_the_latest_retained_fixture_pass() -> None
                 }
             ],
         ),
-        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
     )
 
     assert decision["invalidated_fixture_ids"] == ["original"]
@@ -675,7 +765,11 @@ def test_all_accumulated_fixtures_pass_for_current_identity_before_canary() -> N
             fixtures=[_fixture("original"), _fixture("later_repair")],
             verifications=[_pass("original", "101"), _pass("later_repair", "101")],
         ),
-        current_identity={"source_identity": "source-current", "config_identity": "config-current"},
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
     )
 
     assert decision["regression_bank"]["suite_verified_fixture_ids"] == [

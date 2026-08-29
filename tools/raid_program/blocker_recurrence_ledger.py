@@ -117,6 +117,51 @@ def _result_sha256(returncode: int, timed_out: bool, stdout_sha256: str, stderr_
     )
 
 
+def _execute_argv(command: list[str], cwd: Path) -> dict[str, Any]:
+    """Execute one manifest argv and return independently observed results."""
+
+    def output_text(value: Any) -> str:
+        if isinstance(value, bytes):
+            return value.decode(errors="replace")
+        return str(value or "")
+
+    try:
+        result = subprocess.run(
+            command,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=300,
+            check=False,
+        )
+        stdout = output_text(result.stdout)
+        stderr = output_text(result.stderr)
+        returncode = result.returncode
+        timed_out = False
+    except subprocess.TimeoutExpired as error:
+        stdout = output_text(error.stdout)
+        stderr = output_text(error.stderr)
+        returncode = 124
+        timed_out = True
+    except OSError as error:
+        stdout = ""
+        stderr = str(error)
+        returncode = 127
+        timed_out = False
+
+    stdout_sha256 = _sha256(stdout)
+    stderr_sha256 = _sha256(stderr)
+    return {
+        "returncode": returncode,
+        "timed_out": timed_out,
+        "stdout_sha256": stdout_sha256,
+        "stderr_sha256": stderr_sha256,
+        "result_sha256": _result_sha256(
+            returncode, timed_out, stdout_sha256, stderr_sha256
+        ),
+    }
+
+
 def _manifest_sha256(bank: Mapping[str, Any]) -> str:
     payload = {
         "schema": bank.get("schema", REGRESSION_BANK_SCHEMA),
@@ -149,6 +194,18 @@ def _derived_config_identity(repo_root: Path) -> str:
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return f"sha256:{_sha256(encoded)}"
+
+
+def _canonical_config_identity() -> str:
+    """Derive the active route identity from checked-in canonical inputs.
+
+    The caller may supply the source commit identity, but it must never be
+    allowed to choose the route/config digest.  Keeping the root anchored to
+    this module also makes the direct Python API use the same authority as the
+    command-line gate.
+    """
+
+    return _derived_config_identity(Path(__file__).resolve().parents[2])
 
 
 def _verify_clean_source_identity(repo_root: Path, supplied: str) -> None:
@@ -230,7 +287,9 @@ def _evaluate_regression_bank(
     route_failures: list[str] = []
     if not route:
         route_failures.append("route_missing")
-    if suite_receipt_verified is False:
+    if suite_receipt_verified is None:
+        route_failures.append("suite_receipt_verification_required")
+    elif suite_receipt_verified is not True:
         route_failures.append("suite_receipt_external_required")
     if bank.get("schema", REGRESSION_BANK_SCHEMA) != REGRESSION_BANK_SCHEMA:
         route_failures.append(f"schema:{bank.get('schema')}")
@@ -246,6 +305,14 @@ def _evaluate_regression_bank(
         route_failures.append("declared_current_config_identity_missing")
     elif current[1] not in (None, "") and not _same(declared[1], current[1]):
         route_failures.append("current_identity_declared_mismatch")
+    if current[1] not in (None, ""):
+        try:
+            canonical_config = _canonical_config_identity()
+        except (OSError, KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError):
+            route_failures.append("canonical_config_identity_unavailable")
+        else:
+            if not _same(current[1], canonical_config):
+                route_failures.append("current_identity_config_not_canonical")
 
     raw_fixtures = bank.get("fixtures", bank.get("fixture_manifest"))
     if not isinstance(raw_fixtures, list):
@@ -756,6 +823,14 @@ def _ledger_with_suite_receipt(
     source, config = _identity(identity)
     _require(_same(receipt_source, source), "suite receipt source identity mismatch")
     _require(_same(receipt_config, config), "suite receipt config identity mismatch")
+    try:
+        canonical_config = _canonical_config_identity()
+    except (OSError, KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise ValueError("canonical config identity unavailable") from error
+    _require(
+        _same(config, canonical_config),
+        "suite receipt config identity is not derived from canonical route inputs",
+    )
     rows = receipt.get("verifications")
     fixtures = bank.get("fixtures")
     _require(isinstance(fixtures, list), "ledger fixture manifest must be a list")
@@ -800,6 +875,23 @@ def _ledger_with_suite_receipt(
             f"suite receipt fixture {fixture_id} result identity mismatch",
         )
         _require(row["passed"] is (returncode == 0 and not timed_out), f"suite receipt fixture {fixture_id} pass result mismatch")
+        actual_result = _execute_argv(command, Path(__file__).resolve().parents[2])
+        _require(
+            all(row.get(field) == actual_result[field] for field in (
+                "returncode",
+                "timed_out",
+                "stdout_sha256",
+                "stderr_sha256",
+                "result_sha256",
+            )),
+            f"suite receipt fixture {fixture_id} does not match independently observed result/output",
+        )
+        _require(
+            row["passed"] is (
+                actual_result["returncode"] == 0 and not actual_result["timed_out"]
+            ),
+            f"suite receipt fixture {fixture_id} pass result does not match independently observed result",
+        )
     _require(observed == expected, "suite receipt fixture set is not exact")
     existing = bank.get("verifications", [])
     _require(isinstance(existing, list), "ledger verifications must be a list")
@@ -823,6 +915,14 @@ def _run_suite(
     _require(isinstance(fixtures, list) and fixtures, "fixture manifest must be a non-empty list")
     source, config = _identity(identity)
     _require(source not in (None, "") and config not in (None, ""), "suite identity must include source and config")
+    try:
+        canonical_config = _canonical_config_identity()
+    except (OSError, KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise ValueError("canonical config identity unavailable") from error
+    _require(
+        _same(config, canonical_config),
+        "suite identity config must be derived from canonical route inputs",
+    )
     _require(boundary in {"before", "after"}, "suite boundary must be before or after")
     _require(boundary_run_id in {str(run.get("run_id") or "") for run in ledger.get("runs") or []}, "suite boundary run_id is unknown")
     rows: list[dict[str, Any]] = []
@@ -830,31 +930,11 @@ def _run_suite(
         _require(isinstance(fixture, Mapping), "fixture manifest row must be an object")
         fixture_id = str(fixture.get("fixture_id") or "").strip()
         command = _command_argv(fixture)
-        try:
-            result = subprocess.run(
-                command,
-                cwd=Path(__file__).resolve().parents[2],
-                capture_output=True,
-                text=True,
-                timeout=300,
-                check=False,
-            )
-            stdout = result.stdout or ""
-            stderr = result.stderr or ""
-            returncode = result.returncode
-            timed_out = False
-        except subprocess.TimeoutExpired as error:
-            stdout = error.stdout.decode() if isinstance(error.stdout, bytes) else (error.stdout or "")
-            stderr = error.stderr.decode() if isinstance(error.stderr, bytes) else (error.stderr or "")
-            returncode = 124
-            timed_out = True
-        except OSError as error:
-            stdout = ""
-            stderr = str(error)
-            returncode = 127
-            timed_out = False
-        stdout_sha256 = _sha256(stdout)
-        stderr_sha256 = _sha256(stderr)
+        observed = _execute_argv(command, Path(__file__).resolve().parents[2])
+        returncode = observed["returncode"]
+        timed_out = observed["timed_out"]
+        stdout_sha256 = observed["stdout_sha256"]
+        stderr_sha256 = observed["stderr_sha256"]
         row = {
             "fixture_id": fixture_id,
             "passed": returncode == 0 and not timed_out,
@@ -863,7 +943,7 @@ def _run_suite(
             "command_sha256": _command_sha256(command),
             "stdout_sha256": stdout_sha256,
             "stderr_sha256": stderr_sha256,
-            "result_sha256": _result_sha256(returncode, timed_out, stdout_sha256, stderr_sha256),
+            "result_sha256": observed["result_sha256"],
             "source_identity": source,
             "config_identity": config,
             f"passed_{boundary}_run_id": boundary_run_id,
@@ -896,13 +976,25 @@ def main() -> int:
     ledger = json.loads(args.ledger.read_text())
     bank_enabled = "regression_bank" in ledger or "permanent_regression_bank" in ledger
     identity = None
+    repo_root = Path(__file__).resolve().parents[2]
+    canonical_config_identity = None
     if args.source_identity:
-        repo_root = Path(__file__).resolve().parents[2]
         _verify_clean_source_identity(repo_root, args.source_identity)
+        try:
+            canonical_config_identity = _canonical_config_identity()
+        except (OSError, KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError) as error:
+            raise ValueError("canonical config identity unavailable") from error
+        if args.config_identity is not None:
+            _require(
+                _same(args.config_identity, canonical_config_identity),
+                "config identity does not match canonical route inputs",
+            )
         identity = {
             "source_identity": args.source_identity,
-            "config_identity": args.config_identity or _derived_config_identity(repo_root),
+            "config_identity": canonical_config_identity,
         }
+    elif args.config_identity is not None:
+        parser.error("--config-identity requires --source-identity")
     receipt_verified = None
     if bank_enabled:
         receipt_verified = False
