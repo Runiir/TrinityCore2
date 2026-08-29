@@ -82,6 +82,10 @@
       "acceptance_claim_from_the_quarantined_capture"
     ]
   },
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
   "validation": {
     "controller_actor_demux_fixed": true,
     "source_envelopes_bound": 783,
