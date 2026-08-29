@@ -3489,6 +3489,54 @@ def observe_monotonic_semantic_progress(
             advanced = True
             high_water[key] = value
 
+    # Combat metrics are useful semantic activity only when the producer has
+    # explicitly scoped originated damage to the route generation currently
+    # under observation.  Do not substitute healing, recovery churn, or raw
+    # callback totals: those can move while the encounter is stalled, and the
+    # raw callback stream may duplicate the same originated event.
+    combat_metrics = (
+        diagnosis.get("combat_metrics")
+        if isinstance(diagnosis, dict)
+        and isinstance(diagnosis.get("combat_metrics"), dict)
+        else {}
+    )
+    route_generation = route.get("generation")
+    route_node_id = route.get("node_id")
+    metric_generation = combat_metrics.get("route_generation")
+    metric_node_id = combat_metrics.get("route_node_id")
+    party_damage = combat_metrics.get("party_damage")
+    damage_scope_valid = (
+        isinstance(route_generation, int)
+        and not isinstance(route_generation, bool)
+        and route_generation > 0
+        and isinstance(route_node_id, str)
+        and bool(route_node_id)
+        and combat_metrics.get("schema") == "bot_combat_metrics_v2"
+        and combat_metrics.get("measurement_basis") == "originated_damage"
+        and isinstance(metric_generation, int)
+        and not isinstance(metric_generation, bool)
+        and metric_generation == route_generation
+        and isinstance(metric_node_id, str)
+        and metric_node_id == route_node_id
+        and isinstance(party_damage, (int, float))
+        and not isinstance(party_damage, bool)
+        and isfinite(float(party_damage))
+        and party_damage >= 0
+    )
+    if damage_scope_valid:
+        damage_high_water = state.setdefault("originated_party_damage_high_water", {})
+        damage_key = f"{route_generation}:{route_node_id}"
+        previous_damage = damage_high_water.get(damage_key)
+        if previous_damage is None:
+            damage_high_water[damage_key] = party_damage
+            # A positive first scoped observation is evidence of activity even
+            # when the controller did not capture the initial zero baseline.
+            if party_damage > 0:
+                advanced = True
+        elif party_damage > previous_damage:
+            damage_high_water[damage_key] = party_damage
+            advanced = True
+
     # Wipe/reset counters and aggregate native booleans are lifecycle churn,
     # not objective progress.  Record an exact-roster, per-member, ordered
     # native recovery proof for evidence, but never let death/revive churn

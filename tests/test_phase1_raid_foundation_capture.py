@@ -2921,6 +2921,103 @@ def test_monotonic_semantic_progress_rejects_cast_victim_and_hp_oscillation():
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
 
 
+def test_monotonic_semantic_progress_uses_increasing_originated_party_damage_only():
+    status = accepted_status()
+    status["validation_route"] = {
+        "node_id": "bwd.magmaw.encounter",
+        "generation": 4,
+        "manifest_index": 3,
+    }
+
+    def diagnosis_for(
+        party_damage: int,
+        *,
+        route_generation: int = 4,
+        route_node_id: str = "bwd.magmaw.encounter",
+        measurement_basis: str = "originated_damage",
+        party_healing: int = 0,
+        raw_event_damage: int = 0,
+    ) -> dict:
+        return {
+            "combat_metrics": {
+                "schema": "bot_combat_metrics_v2",
+                "measurement_basis": measurement_basis,
+                "route_generation": route_generation,
+                "route_node_id": route_node_id,
+                "party_damage": party_damage,
+                "party_healing": party_healing,
+                "raw_event_damage": raw_event_damage,
+            },
+        }
+
+    state = {}
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(0),
+    ) is True
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(50),
+    ) is True
+    # Healing, recovery counters, and duplicated/raw callback totals do not
+    # reset the watchdog when originated damage is unchanged.
+    status["raid_runtime"]["recovery_generation"] += 1
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(
+            50, party_healing=10000, raw_event_damage=100000,
+        ),
+    ) is False
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(40),
+    ) is False
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(0),
+    ) is False
+
+
+def test_monotonic_semantic_progress_rejects_unscoped_or_raw_party_damage():
+    status = accepted_status()
+    status["validation_route"] = {
+        "node_id": "bwd.magmaw.encounter",
+        "generation": 4,
+        "manifest_index": 3,
+    }
+
+    def diagnosis_for(
+        party_damage: int,
+        *,
+        route_generation: int = 4,
+        route_node_id: str = "bwd.magmaw.encounter",
+        measurement_basis: str = "originated_damage",
+    ) -> dict:
+        return {
+            "combat_metrics": {
+                "schema": "bot_combat_metrics_v2",
+                "measurement_basis": measurement_basis,
+                "route_generation": route_generation,
+                "route_node_id": route_node_id,
+                "party_damage": party_damage,
+            },
+        }
+
+    state = {}
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(0),
+    ) is True
+    # A value from another route generation/node, or a raw-event metric, must
+    # never become this route's high-water mark.
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(1000, route_generation=3),
+    ) is False
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(1000, route_node_id="bwd.magmaw.drudges"),
+    ) is False
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(1000, measurement_basis="raw_event_damage"),
+    ) is False
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(25),
+    ) is True
+
+
 def _watchdog_status() -> dict:
     status = accepted_status()
     runtime = status["raid_runtime"]
