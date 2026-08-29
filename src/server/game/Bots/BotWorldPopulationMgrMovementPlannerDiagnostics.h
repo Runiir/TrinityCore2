@@ -4,6 +4,7 @@
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotWorldPopulationMgrMovement.h"
 #include "Bots/BotWorldPopulationMgrNativeFloor.h"
+#include "Movement/NativePathLaunchObserver.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -11,9 +12,81 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace BotWorldMovement
 {
+constexpr std::uint32_t NativePathLaunchReceiptVersion = 1;
+
+using NativePathControl = G3D::Vector3;
+
+struct NativePathControlSequence
+{
+    bool Available = false;
+    std::string CoordinateSpace = "unavailable";
+    std::size_t ControlCount = 0;
+    std::uint64_t Fingerprint = 0;
+};
+
+struct NativePathPosition
+{
+    bool Available = false;
+    std::string CoordinateSpace = "world";
+    float X = 0.0f;
+    float Y = 0.0f;
+    float Z = 0.0f;
+};
+
+struct NativeSplineLaunchObservation
+{
+    bool SecondPathAttempted = false;
+    bool SecondPathCalculated = false;
+    std::uint32_t SecondPathType = 0;
+    NativePathControlSequence SecondPathControls;
+    bool DirectTwoPointSelected = false;
+    bool DirectTwoPointFallback = false;
+    bool LaunchAttempted = false;
+    bool LaunchSucceeded = false;
+    bool SplineFinalizedAfterLaunch = true;
+    NativePathControlSequence LaunchedControls;
+    NativePathPosition ActorAfterLaunch;
+};
+
+struct NativePathLaunchReceipt
+{
+    static constexpr std::size_t MaxLaunchAttempts = 4;
+
+    std::uint32_t Version = NativePathLaunchReceiptVersion;
+    std::uint64_t Id = 0;
+    std::uint64_t IntentFingerprint = 0;
+    BotMovementArbitration::Scope Scope;
+    std::uint64_t DynamicTargetGuid = 0;
+    NativePathPosition ActorBeforePlanning;
+    NativePathPosition ActorBeforeNativeSubmission;
+    NativePathControlSequence PlannerControls;
+    bool PlannerSelectedEndpointAvailable = false;
+    float PlannerSelectedX = 0.0f;
+    float PlannerSelectedY = 0.0f;
+    float PlannerSelectedZ = 0.0f;
+    bool ExecutorDestinationAvailable = false;
+    float ExecutorSelectedX = 0.0f;
+    float ExecutorSelectedY = 0.0f;
+    float ExecutorSelectedZ = 0.0f;
+    bool PointGeneratePath = false;
+    bool MotionMasterSubmissionObserved = false;
+    std::uint32_t MotionMasterSlot = 0;
+    std::uint32_t MotionMasterGeneratorType = 0;
+    bool PointGeneratorInitialized = false;
+    std::vector<NativeSplineLaunchObservation> Launches;
+    std::size_t LaunchAttemptOverflowCount = 0;
+};
+
+std::uint64_t NativePathControlsFingerprint(
+    Movement::NativePathLaunchControls const& controls);
+NativePathControlSequence ObserveNativePathControls(
+    Movement::NativePathLaunchControls const& controls,
+    char const* coordinateSpace);
+
 // This is deliberately outside WorldBotState.  Planner admission is a
 // process-local diagnostic concern, while the authoritative movement state
 // remains owned by the bot runtime.
@@ -45,17 +118,71 @@ struct MovementPlannerObservation
     std::string Gate = "unavailable";
     std::string Result = "unavailable";
     std::string Reason;
+    NativePathLaunchReceipt LaunchReceipt;
 };
 
-class MovementPlannerDiagnosticSidecar
+class MovementPlannerDiagnosticSidecar final
+    : public Movement::NativePathLaunchObserver
 {
 public:
     static constexpr std::size_t MaxTraceHistory = 128;
 
+    std::uint64_t BeginReceipt(std::uint64_t botGuid,
+        std::uint32_t requestedMapId, Intent const& intent,
+        BotMovementArbitration::Scope const& scope,
+        std::uint64_t dynamicTargetGuid, float actorX, float actorY,
+        float actorZ);
     void Record(MovementPlannerObservation observation);
+    Movement::NativePathLaunchContext LaunchContext(
+        std::uint64_t receiptId, std::uint64_t botGuid,
+        std::uint32_t mapId);
     void FinalizeExecutor(std::uint64_t botGuid,
         std::uint32_t requestedMapId, Intent const& intent, char const* gate,
-        char const* result, char const* reason);
+        char const* result, char const* reason,
+        std::uint64_t receiptId = 0);
+    void RecordPlannerOutcome(std::uint64_t receiptId,
+        std::uint64_t botGuid, std::uint32_t requestedMapId,
+        Intent const& intent,
+        bool targetFloorSampled, float targetFloorZ, bool targetFloorValid,
+        char const* gate, bool accepted, char const* reason,
+        PathPlan const& plan, NativePathProofObservation const* nativeProof,
+        NativePathControlSequence const* plannedControls);
+    void RecordNativeSubmission(std::uint64_t receiptId,
+        std::uint64_t botGuid, std::uint32_t mapId, float actorX,
+        float actorY, float actorZ, float selectedX, float selectedY,
+        float selectedZ, bool generatePath);
+    void RecordMotionMasterSubmission(std::uint64_t receiptId,
+        std::uint64_t botGuid, std::uint32_t mapId, std::uint32_t slot,
+        std::uint32_t generatorType);
+    void RecordPointGeneratorInitialize(std::uint64_t receiptId,
+        std::uint64_t botGuid, std::uint32_t mapId);
+    void RecordSplinePreparation(std::uint64_t receiptId,
+        std::uint64_t botGuid, std::uint32_t mapId,
+        bool secondPathAttempted, bool secondPathCalculated,
+        std::uint32_t secondPathType,
+        Movement::NativePathLaunchControls const& secondPathControls,
+        bool directTwoPointSelected, bool directTwoPointFallback);
+    void RecordSplineLaunch(std::uint64_t receiptId,
+        std::uint64_t botGuid, std::uint32_t mapId,
+        Movement::NativePathLaunchControls const& launchedControls,
+        char const* coordinateSpace, bool succeeded, bool finalized,
+        float actorX, float actorY, float actorZ);
+    void OnMotionMasterSubmission(
+        Movement::NativePathLaunchContext const& context, std::uint32_t slot,
+        std::uint32_t generatorType) override;
+    void OnPointGeneratorInitialize(
+        Movement::NativePathLaunchContext const& context) override;
+    void OnSplinePreparation(
+        Movement::NativePathLaunchContext const& context,
+        bool secondPathAttempted, bool secondPathCalculated,
+        std::uint32_t secondPathType,
+        Movement::NativePathLaunchControls const& secondPathControls,
+        bool directTwoPointSelected, bool directTwoPointFallback) override;
+    void OnSplineLaunch(Movement::NativePathLaunchContext const& context,
+        Movement::NativePathLaunchControls const& launchedControls,
+        Movement::NativePathLaunchCoordinateSpace coordinateSpace,
+        bool succeeded, bool finalized, float actorX, float actorY,
+        float actorZ) override;
     void AssociateTrace(std::uint64_t botGuid, std::uint64_t traceSequence);
     MovementPlannerObservation Latest(std::uint64_t botGuid) const;
     MovementPlannerObservation ForTrace(std::uint64_t botGuid,
@@ -67,13 +194,38 @@ private:
     using TraceObservation = std::pair<std::uint64_t,
         MovementPlannerObservation>;
 
+    MovementPlannerObservation* MutableReceipt(std::uint64_t receiptId,
+        std::uint64_t botGuid, std::uint32_t mapId);
+    bool MatchesContext(Movement::NativePathLaunchContext const& context) const;
+    void PublishReceiptUpdate(MovementPlannerObservation const& observation);
+
     std::map<std::uint64_t, MovementPlannerObservation> _latestByGuid;
     std::map<std::uint64_t, bool> _pendingByGuid;
     std::map<std::uint64_t, std::deque<TraceObservation>> _traceByGuid;
+    std::map<std::uint64_t, MovementPlannerObservation> _receiptById;
+    std::map<std::uint64_t, std::deque<std::uint64_t>> _receiptIdsByGuid;
+    std::uint64_t _nextReceiptId = 1;
 };
 
 MovementPlannerDiagnosticSidecar& MovementPlannerDiagnostics();
 
+std::uint64_t BeginMovementPlannerReceipt(std::uint64_t botGuid,
+    std::uint32_t requestedMapId, Intent const& intent,
+    BotMovementArbitration::Scope const& scope,
+    std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ);
+Movement::NativePathLaunchContext NativePathLaunchContextForReceipt(
+    std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId);
+
+void RecordMovementPlannerOutcome(std::uint64_t receiptId,
+    std::uint64_t botGuid,
+    std::uint32_t requestedMapId, Intent const& intent, bool targetFloorSampled,
+    float targetFloorZ, bool targetFloorValid, char const* gate, bool accepted,
+    char const* reason, PathPlan const& plan,
+    NativePathProofObservation const* nativeProof = nullptr,
+    NativePathControlSequence const* plannedControls = nullptr);
+
+// Compatibility overload for value fixtures and callers that do not own a
+// native-launch correlation token.
 void RecordMovementPlannerOutcome(std::uint64_t botGuid,
     std::uint32_t requestedMapId, Intent const& intent, bool targetFloorSampled,
     float targetFloorZ, bool targetFloorValid, char const* gate, bool accepted,
@@ -82,7 +234,12 @@ void RecordMovementPlannerOutcome(std::uint64_t botGuid,
 
 void RecordMovementPlannerExecutorOutcome(std::uint64_t botGuid,
     std::uint32_t requestedMapId, Intent const& intent, char const* gate,
-    char const* result, char const* reason);
+    char const* result, char const* reason, std::uint64_t receiptId = 0);
+
+void RecordNativePathSubmission(std::uint64_t receiptId,
+    std::uint64_t botGuid, std::uint32_t mapId, float actorX, float actorY,
+    float actorZ, float selectedX, float selectedY, float selectedZ,
+    bool generatePath);
 
 // Serializers return an explicit unavailable object when no planner outcome
 // belongs to a diagnosis or trace sequence. They never turn a zero-valued

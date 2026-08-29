@@ -27,6 +27,17 @@ edge, and one implementation hypothesis. Shared examples include corpse
 release/runback/rejoin, movement-owner arbitration, decision scheduling,
 cohort lifecycle, native action submission, and completion observation.
 
+Before accepting the named edge, classify the ordered observations with the
+bounded contract. A rejected plan with no native submission and no later
+control-state consumer is contained. An accepted or submitted plan may be the
+first state-infecting edge, but its exact mechanism remains unproven until the
+launched generator, spline, or recovery transition is observed. Later position,
+death, recovery, or watchdog events are downstream symptoms unless they add the
+first wrong state. Do not infer a launch, collision, or fall mechanism from a
+later position alone. Require one correlated receipt chain from candidate and
+native execution identity to the later consumed mutation. Actor identity and
+timestamp proximity alone do not establish that chain.
+
 Return the work when the trace instead identifies:
 
 - class priority, resource, pet, form, or stance policy: `raid-role-implementation`;
@@ -132,7 +143,14 @@ wait or collapse the condition into a generic `prepull_failed` loop.
 
 Extract or reuse a deterministic C++ transition boundary when practical. Add
 focused tests for the recorded counterexample and nearby valid states. A
-source-shape test alone does not confirm native behavior.
+source-shape or helper-only test does not confirm native behavior. Before
+recommending build or canary, the focused fixture must enter through the
+production planner/admission path, cross native submission, observe the actual
+generator or spline over multiple ticks, and assert the required movement or
+recovery postcondition. If the claim depends on map/MMAP, collision, DBC,
+database, or world lifecycle state, use those initialized production
+dependencies; a preconstructed path proof or mocked successful observation is
+not the production fixture.
 
 When a live blocker reappears after its retained fixture passed, treat that
 fixture revision as invalidated. Before editing the runtime, add an executable

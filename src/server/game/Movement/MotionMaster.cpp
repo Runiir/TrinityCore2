@@ -309,18 +309,25 @@ void MotionMaster::MoveFleeing(Unit* enemy, uint32 time)
         Mutate(new FleeingMovementGenerator<Player>(enemy->GetGUID()), MOTION_SLOT_CONTROLLED);
 }
 
-void MotionMaster::MovePoint(uint32 id, float x, float y, float z, bool generatePath, float speed)
+void MotionMaster::MovePoint(uint32 id, float x, float y, float z,
+    bool generatePath, float speed,
+    Movement::NativePathLaunchContext launchContext)
 {
     if (_owner->GetTypeId() == TYPEID_PLAYER)
     {
         TC_LOG_DEBUG("movement.motionmaster", "MotionMaster::MovePoint: '%s', targeted point Id: %u (X: %f, Y: %f, Z: %f)", _owner->GetGUID().ToString().c_str(), id, x, y, z);
-        Mutate(new PointMovementGenerator<Player>(id, x, y, z, generatePath, speed), MOTION_SLOT_ACTIVE);
+        Mutate(new PointMovementGenerator<Player>(id, x, y, z, generatePath,
+            speed, launchContext), MOTION_SLOT_ACTIVE);
     }
     else
     {
         TC_LOG_DEBUG("movement.motionmaster", "MotionMaster::MovePoint: '%s', targeted point Id: %u (X: %f, Y: %f, Z: %f)", _owner->GetGUID().ToString().c_str(), id, x, y, z);
-        Mutate(new PointMovementGenerator<Creature>(id, x, y, z, generatePath, speed), MOTION_SLOT_ACTIVE);
+        Mutate(new PointMovementGenerator<Creature>(id, x, y, z, generatePath,
+            speed, launchContext), MOTION_SLOT_ACTIVE);
     }
+    if (launchContext)
+        launchContext.Observer->OnMotionMasterSubmission(launchContext,
+            MOTION_SLOT_ACTIVE, GetMotionSlotType(MOTION_SLOT_ACTIVE));
 }
 
 void MotionMaster::MoveCloserAndStop(uint32 id, Unit* target, float distance)

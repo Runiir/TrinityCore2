@@ -239,6 +239,8 @@ def test_sidecar_state_and_json_contract(tmp_path):
             str(ROOT / "src/server/game/Entities/Object"),
             "-I",
             str(ROOT / "src/common"),
+            "-I",
+            str(ROOT / "dep/g3dlite/include"),
             str(harness),
             str(SOURCE),
             "-o",

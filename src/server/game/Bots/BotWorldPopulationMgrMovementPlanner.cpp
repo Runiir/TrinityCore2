@@ -26,25 +26,31 @@ uint32 PlannerBotMapId(Player* bot)
 {
     return bot ? bot->GetMapId() : 0;
 }
+
 }
 
 bool BotWorldPopulationMgr::PlanMovementPath(
     Player* bot, BotWorldMovement::Intent const& intent,
     BotWorldMovement::PathPlan& plan) const
 {
+    std::uint64_t const launchReceiptId = plan.LaunchReceiptId;
     plan = {};
+    plan.LaunchReceiptId = launchReceiptId;
 
     float sampledTargetFloorZ = 0.0f;
     bool targetFloorSampled = false;
     bool targetFloorValid = false;
     BotWorldMovement::NativePathProofObservation nativeProof;
+    BotWorldMovement::NativePathControlSequence plannerControls;
 
     auto reject = [&](char const* reason, char const* gate)
     {
         plan.RejectReason = reason ? reason : "route_destination_unreachable";
-        RecordMovementPlannerOutcome(PlannerBotGuid(bot), PlannerBotMapId(bot),
+        RecordMovementPlannerOutcome(plan.LaunchReceiptId,
+            PlannerBotGuid(bot), PlannerBotMapId(bot),
             intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
-            gate, false, plan.RejectReason.c_str(), &nativeProof);
+            gate, false, plan.RejectReason.c_str(), plan, &nativeProof,
+            plannerControls.Available ? &plannerControls : nullptr);
         return false;
     };
 
@@ -65,9 +71,10 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         plan.SegmentZ = intent.Z;
         plan.TraversalMode = "native_target_chase";
         plan.Selected = true;
-        RecordMovementPlannerOutcome(PlannerBotGuid(bot), PlannerBotMapId(bot),
+        RecordMovementPlannerOutcome(plan.LaunchReceiptId,
+            PlannerBotGuid(bot), PlannerBotMapId(bot),
             intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
-            "dynamic_target_chase", true, nullptr);
+            "dynamic_target_chase", true, nullptr, plan);
         return true;
     }
 
@@ -87,9 +94,10 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         plan.TraversalMode = "native_long_path";
         plan.NativeLongPath = true;
         plan.Selected = true;
-        RecordMovementPlannerOutcome(PlannerBotGuid(bot), PlannerBotMapId(bot),
+        RecordMovementPlannerOutcome(plan.LaunchReceiptId,
+            PlannerBotGuid(bot), PlannerBotMapId(bot),
             intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
-            "native_long_path", true, nullptr);
+            "native_long_path", true, nullptr, plan);
         return true;
     }
 
@@ -189,11 +197,14 @@ bool BotWorldPopulationMgr::PlanMovementPath(
 
     auto completeNativePathToPoint = [&](G3D::Vector3 const& point,
         G3D::Vector3& verifiedEndpoint,
-        BotWorldMovement::NativePathProofObservation& observation)
+        BotWorldMovement::NativePathProofObservation& observation,
+        BotWorldMovement::NativePathControlSequence& controls)
     {
         PathGenerator proofPath(bot);
         bool const pathOk = proofPath.CalculatePath(point.x, point.y,
             point.z, false);
+        controls = BotWorldMovement::ObserveNativePathControls(
+            proofPath.GetPath(), "world");
         observation = diagnoseCompleteNativePath(pathOk, proofPath, point);
         if (!observation.Calculated || !observation.Complete)
             return false;
@@ -248,11 +259,13 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                 {
                     G3D::Vector3 verifiedEndpoint;
                     BotWorldMovement::NativePathProofObservation proof;
+                    BotWorldMovement::NativePathControlSequence controls;
                     if (!completeNativePathToPoint(point, verifiedEndpoint,
-                            proof)
+                            proof, controls)
                         || !acceptPoint(verifiedEndpoint))
                         return false;
                     nativeProof = proof;
+                    plannerControls = controls;
                     return true;
                 });
         }
@@ -267,6 +280,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         if (!acceptPoint(verifiedEndpoint))
             return false;
         nativeProof = proof;
+        plannerControls = BotWorldMovement::ObserveNativePathControls(
+            candidatePath.GetPath(), "world");
         return true;
     };
 
@@ -274,6 +289,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     bool const pathOk = path.CalculatePath(intent.X, intent.Y, intent.Z,
         false);
     PathType const pathType = path.GetPathType();
+    plannerControls = BotWorldMovement::ObserveNativePathControls(
+        path.GetPath(), "world");
     nativeProof = diagnoseCompleteNativePath(pathOk, path,
         G3D::Vector3(intent.X, intent.Y, intent.Z));
     bool boundedLocalMechanicEndpoint = false;
@@ -334,8 +351,9 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                     candidateFloor.Z);
                 G3D::Vector3 verifiedEndpoint;
                 BotWorldMovement::NativePathProofObservation proof;
+                BotWorldMovement::NativePathControlSequence controls;
                 if (!completeNativePathToPoint(candidatePoint,
-                        verifiedEndpoint, proof))
+                        verifiedEndpoint, proof, controls))
                     return false;
                 float const endpointTravel = bot->GetExactDist(
                     verifiedEndpoint.x, verifiedEndpoint.y,
@@ -356,6 +374,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                 segmentZ = verifiedEndpoint.z;
                 traversalMode = "native_bounded_same_level_local_step";
                 nativeProof = proof;
+                plannerControls = controls;
                 segmentSelected = true;
                 return true;
             });
@@ -441,11 +460,13 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                         {
                             G3D::Vector3 verifiedEndpoint;
                             BotWorldMovement::NativePathProofObservation proof;
+                            BotWorldMovement::NativePathControlSequence controls;
                             if (!completeNativePathToPoint(point,
-                                    verifiedEndpoint, proof)
+                                    verifiedEndpoint, proof, controls)
                                 || !considerStepPoint(verifiedEndpoint, true))
                                 return false;
                             nativeProof = proof;
+                            plannerControls = controls;
                             return true;
                         });
                 }
@@ -453,11 +474,15 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                 {
                     G3D::Vector3 verifiedEndpoint;
                     BotWorldMovement::NativePathProofObservation proof;
+                    BotWorldMovement::NativePathControlSequence controls;
                     if (completeNativePathToPoint(
                             G3D::Vector3(candidateX, candidateY, candidateZ),
-                            verifiedEndpoint, proof)
+                            verifiedEndpoint, proof, controls)
                         && considerStepPoint(verifiedEndpoint, false))
+                    {
                         nativeProof = proof;
+                        plannerControls = controls;
+                    }
                 }
             }
         }
@@ -520,8 +545,10 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     plan.SegmentZ = segmentZ;
     plan.TraversalMode = traversalMode;
     plan.Selected = true;
-    RecordMovementPlannerOutcome(PlannerBotGuid(bot), PlannerBotMapId(bot),
+    RecordMovementPlannerOutcome(plan.LaunchReceiptId, PlannerBotGuid(bot),
+        PlannerBotMapId(bot),
         intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
-        "path_admission", true, nullptr, &nativeProof);
+        "path_admission", true, nullptr, plan, &nativeProof,
+        plannerControls.Available ? &plannerControls : nullptr);
     return true;
 }

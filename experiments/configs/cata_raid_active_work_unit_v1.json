@@ -1,67 +1,83 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_canary121_lethal_movement_recurrence_v4_20260829",
-  "work_unit": "runtime_repair:magmaw_lethal_movement_lifecycle:canary121_seq",
+  "epoch_id": "magmaw_canary122_native_launch_replay_v1_20260829",
+  "work_unit": "runtime_telemetry:planner_to_launch_receipt:canary122_seq745",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "fixture_expansion_in_progress",
-  "gate_state": "recurrence_quarantined_exact_build_pending",
-  "observed_at_commit": "8160610929cdcac6d0f96afe9bd27a076345200f",
+  "classification": "live_recurrence_quarantined",
+  "gate_state": "production_launch_telemetry_required",
+  "observed_at_commit": "2bfbd48bdafae41950fbfcaaf26df6f70a3784a3",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_canary121_movement_lifecycle_recurrence_handoff_20260829.md",
-    "sha256": "104f8ab9a161d374b1ac4cb75f14b2aa9c9f00e37c01659e6eb441ec53e44cf8"
+    "path": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
+    "sha256": "e3fe861a986ce78efac14c05b1cbad0f97082b171d2950c0eac0ff9d7d64354d"
   },
-  "first_broken_edge": "Canary121 rejected a complete, floor-valid parasite_contact_evade endpoint for a 0.533746-yard horizontal delta while already within semantic arrival distance; lethal movement identity and its progress witness then churned while the actor remained stationary.",
-  "causal_signature": "same_level_native_path_proof_false_negative",
+  "first_broken_edge": "Candidate edge: Canary122 seq745 admitted and submitted Mgwhealc's complete ranged_formation_restore path despite a SampleFloorGap conflict; execution structurally regenerated an unverified path, after which the bot's source-derived live Z dropped from the Magmaw platform to 202.591 and later 6.70457. The exact launched spline and physical transition remain unproven.",
+  "causal_signature": "native_planner_executor_launch_divergence",
+  "causal_claim_status": "candidate_state_infecting_edge_requires_launch_receipt",
+  "claim_ledger": {
+    "verified": [
+      "seq741_and_seq743_were_contained_rejections_without_native_submission",
+      "seq745_was_accepted_and_submitted_with_floor_observation_conflict",
+      "production_regenerates_a_second_path_after_planner_proof",
+      "actor_live_z_later_dropped_to_202_591_then_6_70457"
+    ],
+    "refuted": [
+      "seq741_was_the_first_state_infecting_edge",
+      "cross_bot_candidate_key_collision_caused_canary122",
+      "canary122_exercised_an_exposed_head_regression"
+    ],
+    "unproven": [
+      "exact_launched_spline_controls",
+      "second_path_type_and_direct_fallback_use",
+      "exact_collision_or_fall_mechanism",
+      "hazard_was_still_semantically_active_at_seq745"
+    ]
+  },
   "child_signatures": [
+    "same_level_native_path_proof_false_negative",
+    "same_level_movement_path_floor_false_negative",
     "same_level_encounter_hazard_path_rejection",
-    "magmaw_lethal_movement_identity_churn",
-    "stationary_combat_masks_movement_nonprogress",
     "magmaw_parasite_control_allows_player_infection"
   ],
   "live_observation": {
-    "run_id": "trinity-magmaw-8160610929-canary121.VQKh3P",
-    "terminal": "death_loop_watchdog",
-    "party_dps": 87447.878,
-    "party_hps": 17805.757,
-    "affliction_dps": 25974.725,
-    "affliction_pet_damage_share": 0.261386,
-    "direct_infection_events": 37,
-    "direct_infection_players": 8,
+    "run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+    "terminal": "repeated_decision_watchdog",
+    "party_dps": 73300.517,
+    "party_hps": 19076.322,
+    "affliction_dps": 31644.215,
+    "affliction_pet_damage_share": 0.258122,
+    "direct_infection_events": 39,
+    "direct_infection_players": 5,
     "trash_cleared_without_deaths": true,
-    "raid_deaths": 3,
-    "exposed_head_target_samples": 24
+    "raid_deaths": 1,
+    "exposed_head_target_samples": 0,
+    "exposed_head_exercised": false
   },
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "failed_fixture_revisions": {
-      "magmaw_parasite_lane_paths_v1": 6,
-      "magmaw_parasite_lane_transition_full_replay_v1": 5,
-      "magmaw_parasite_control_full_runtime_v1": 5,
-      "same_level_hazard_path_admission_v1": 3,
-      "same_level_native_path_proof_v1": 3
-    },
-    "replacement_fixture_revisions": {
+    "invalidated_fixture_revisions": {
       "magmaw_parasite_lane_paths_v1": 7,
       "magmaw_parasite_lane_transition_full_replay_v1": 6,
       "magmaw_parasite_control_full_runtime_v1": 6,
-      "magmaw_lethal_movement_transition_v1": 1,
-      "movement_progress_witness_v1": 1,
       "same_level_hazard_path_admission_v1": 4,
+      "same_level_floor_observation_v1": 3,
       "same_level_native_path_proof_v1": 4
     },
-    "suite_receipt": null,
-    "suite_receipt_sha256": null,
+    "required_new_fixture_id": "native_planner_executor_launch_proof_v1",
+    "required_fixture": "An isolated worldserver-backed seq745 replay on map 669 that executes the production planner, executor, MotionMaster, point generator, and launched spline over multiple ticks and emits one identity-bound launch receipt.",
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
-    "allowed_change": "Retain one stable Crash or Pillar escape through same-floor arrival, use displacement-only movement progress, and admit only complete floor-valid same-level mechanic endpoints already inside a bounded arrival envelope.",
+    "allowed_change": "Add observation-only planner-to-launch diagnostics and a compact receipt schema without changing path admission, selection, generator behavior, fallback behavior, or movement outcomes.",
     "forbidden": [
-      "global_endpoint_tolerance_expansion",
-      "unproved_partial_path_admission",
+      "magmaw_pincer_or_exposed_head_policy_change",
+      "global_z_threshold_expansion",
+      "arbitrary_partial_path_admission",
+      "helper_only_or_source_string_acceptance_test",
+      "gameplay_behavior_change_before_launch_receipt",
       "teleport_or_forced_position",
       "class_rotation_or_damage_tuning",
       "boss_outcome_mutation",
@@ -69,8 +85,8 @@
     ]
   },
   "validation": {
-    "focused_result": "16 focused movement and source-contract tests passed",
-    "immutable_bank_fixture_count": 18,
+    "focused_result": "unit_harness_rejected_requires_worldserver_backed_replay",
+    "immutable_bank_fixture_count": 19,
     "immutable_bank_all_rows_passed": false,
     "build_admitted": false,
     "canary_admitted": false,
@@ -83,7 +99,9 @@
   "coordinator_followup": {
     "build_jobs": 8,
     "canary_budget_before_full_bank": 0,
-    "canary_budget_after_full_bank_and_exact_build": 1
+    "canary_budget_after_full_bank_and_exact_build": 1,
+    "next_owner_after_telemetry": "raid-shard-architecture",
+    "next_work_unit_after_telemetry": "shard_architecture:map669_native_launch_replay:canary122_seq745"
   },
-  "next_action": "Commit the bounded repair and expanded recurrence bank, run the complete bank at that clean identity, build with eight jobs, and authorize one matched Canary122. If the same causal signature recurs, stop without an unchanged rerun; if the route clears, run one consecutive confirmation clear."
+  "next_action": "Implement observation-only planner-to-launch telemetry first. Then hand the exact receipt schema to shard architecture for the isolated map-669 replay. Do not change movement behavior until that replay closes."
 }

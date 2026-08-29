@@ -1,6 +1,9 @@
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 
 #include <cmath>
+#include <cstring>
+#include <iomanip>
+#include <limits>
 #include <sstream>
 #include <utility>
 
@@ -39,10 +42,182 @@ std::string JsonEscape(std::string const& value)
     }
     return escaped.str();
 }
+
+void AppendPositionJson(std::ostringstream& json,
+    BotWorldMovement::NativePathPosition const& position)
+{
+    json << "{\"available\":" << (position.Available ? "true" : "false")
+         << ",\"coordinate_space\":\""
+         << JsonEscape(position.CoordinateSpace) << "\",\"x\":";
+    if (position.Available)
+        json << position.X;
+    else
+        json << "null";
+    json << ",\"y\":";
+    if (position.Available)
+        json << position.Y;
+    else
+        json << "null";
+    json << ",\"z\":";
+    if (position.Available)
+        json << position.Z;
+    else
+        json << "null";
+    json << "}";
+}
+
+void AppendControlsJson(std::ostringstream& json,
+    BotWorldMovement::NativePathControlSequence const& sequence)
+{
+    json << "{\"available\":" << (sequence.Available ? "true" : "false")
+         << ",\"coordinate_space\":\""
+         << JsonEscape(sequence.CoordinateSpace) << "\",\"count\":"
+         << sequence.ControlCount << ",\"fingerprint\":\"" << std::hex
+         << std::setw(16) << std::setfill('0') << sequence.Fingerprint
+         << std::dec << std::setfill(' ') << "\"}";
+}
+
+std::uint64_t MovementIntentFingerprint(
+    BotWorldMovement::Intent const& intent, std::uint32_t mapId,
+    std::uint64_t dynamicTargetGuid)
+{
+    constexpr std::uint64_t OffsetBasis = 14695981039346656037ULL;
+    constexpr std::uint64_t Prime = 1099511628211ULL;
+    std::uint64_t hash = OffsetBasis;
+    auto appendByte = [&](std::uint8_t value)
+    {
+        hash ^= value;
+        hash *= Prime;
+    };
+    auto appendUint64 = [&](std::uint64_t value)
+    {
+        for (unsigned shift = 0; shift < 64; shift += 8)
+            appendByte(std::uint8_t((value >> shift) & 0xffU));
+    };
+    auto appendFloat = [&](float value)
+    {
+        std::uint32_t bits = 0;
+        std::memcpy(&bits, &value, sizeof(bits));
+        for (unsigned shift = 0; shift < 32; shift += 8)
+            appendByte(std::uint8_t((bits >> shift) & 0xffU));
+    };
+
+    appendUint64(mapId);
+    appendUint64(std::uint8_t(intent.Owner));
+    appendUint64(std::uint8_t(intent.Priority));
+    appendFloat(intent.X);
+    appendFloat(intent.Y);
+    appendFloat(intent.Z);
+    appendByte(intent.ReferenceFloorZ.has_value());
+    if (intent.ReferenceFloorZ)
+        appendFloat(*intent.ReferenceFloorZ);
+    appendUint64(dynamicTargetGuid);
+    appendFloat(intent.DynamicTargetRange);
+    appendByte(intent.TerminalOnFailure);
+    appendByte(intent.AllowProgressiveSegments);
+    appendByte(intent.BoundedHazardProgress);
+    appendByte(intent.RequireCompletePath);
+    appendByte(intent.AllowRecentFailureRetry);
+    appendByte(intent.AllowNativeLongPath);
+    appendByte(intent.NativeRecoveryCrossMapPending);
+    appendUint64(intent.IntentReason.size());
+    for (char value : intent.IntentReason)
+        appendByte(std::uint8_t(value));
+    return hash;
+}
 }
 
 namespace BotWorldMovement
 {
+std::uint64_t NativePathControlsFingerprint(
+    Movement::NativePathLaunchControls const& controls)
+{
+    constexpr std::uint64_t OffsetBasis = 14695981039346656037ULL;
+    constexpr std::uint64_t Prime = 1099511628211ULL;
+    std::uint64_t hash = OffsetBasis;
+    auto appendByte = [&](std::uint8_t value)
+    {
+        hash ^= value;
+        hash *= Prime;
+    };
+    auto appendUint64 = [&](std::uint64_t value)
+    {
+        for (unsigned shift = 0; shift < 64; shift += 8)
+            appendByte(std::uint8_t((value >> shift) & 0xffU));
+    };
+    auto appendFloat = [&](float value)
+    {
+        static_assert(std::numeric_limits<float>::is_iec559);
+        std::uint32_t bits = 0;
+        std::memcpy(&bits, &value, sizeof(bits));
+        for (unsigned shift = 0; shift < 32; shift += 8)
+            appendByte(std::uint8_t((bits >> shift) & 0xffU));
+    };
+
+    appendUint64(controls.size());
+    for (G3D::Vector3 const& control : controls)
+    {
+        appendFloat(control.x);
+        appendFloat(control.y);
+        appendFloat(control.z);
+    }
+    return hash;
+}
+
+NativePathControlSequence ObserveNativePathControls(
+    Movement::NativePathLaunchControls const& controls,
+    char const* coordinateSpace)
+{
+    NativePathControlSequence sequence;
+    sequence.Available = true;
+    sequence.CoordinateSpace = coordinateSpace
+        ? coordinateSpace : "unavailable";
+    sequence.ControlCount = controls.size();
+    sequence.Fingerprint = NativePathControlsFingerprint(controls);
+    return sequence;
+}
+
+std::uint64_t MovementPlannerDiagnosticSidecar::BeginReceipt(
+    std::uint64_t botGuid, std::uint32_t requestedMapId, Intent const& intent,
+    BotMovementArbitration::Scope const& scope,
+    std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ)
+{
+    if (!botGuid)
+        return 0;
+
+    std::uint64_t const receiptId = _nextReceiptId++;
+    MovementPlannerObservation observation;
+    observation.BotGuid = botGuid;
+    observation.RequestedMapId = requestedMapId;
+    observation.RequestedX = intent.X;
+    observation.RequestedY = intent.Y;
+    observation.RequestedZ = intent.Z;
+    observation.MovementOwner = intent.Owner;
+    observation.IntentReason = intent.IntentReason;
+    observation.AllowProgressiveSegments = intent.AllowProgressiveSegments;
+    observation.RequireCompletePath = intent.RequireCompletePath;
+    observation.AllowNativeLongPath = intent.AllowNativeLongPath;
+    observation.DynamicTarget = intent.DynamicTarget != nullptr;
+    observation.LaunchReceipt.Id = receiptId;
+    observation.LaunchReceipt.IntentFingerprint = MovementIntentFingerprint(
+        intent, requestedMapId, dynamicTargetGuid);
+    observation.LaunchReceipt.Scope = scope;
+    observation.LaunchReceipt.DynamicTargetGuid = dynamicTargetGuid;
+    observation.LaunchReceipt.ActorBeforePlanning = {
+        true, "world", actorX, actorY, actorZ
+    };
+
+    auto& receiptIds = _receiptIdsByGuid[botGuid];
+    receiptIds.push_back(receiptId);
+    while (receiptIds.size() > MaxTraceHistory)
+    {
+        _receiptById.erase(receiptIds.front());
+        receiptIds.pop_front();
+    }
+    Record(std::move(observation));
+    return receiptId;
+}
+
 void MovementPlannerDiagnosticSidecar::Record(
     MovementPlannerObservation observation)
 {
@@ -50,8 +225,85 @@ void MovementPlannerDiagnosticSidecar::Record(
         return;
 
     observation.Available = true;
+    if (observation.LaunchReceipt.Id)
+        _receiptById[observation.LaunchReceipt.Id] = observation;
     _latestByGuid[observation.BotGuid] = std::move(observation);
     _pendingByGuid[observation.BotGuid] = true;
+}
+
+Movement::NativePathLaunchContext
+MovementPlannerDiagnosticSidecar::LaunchContext(std::uint64_t receiptId,
+    std::uint64_t botGuid, std::uint32_t mapId)
+{
+    auto receipt = _receiptById.find(receiptId);
+    if (!receiptId || receipt == _receiptById.end()
+        || receipt->second.BotGuid != botGuid
+        || receipt->second.RequestedMapId != mapId)
+        return {};
+    NativePathLaunchReceipt const& launch = receipt->second.LaunchReceipt;
+    return {
+        launch.Version,
+        launch.Id,
+        botGuid,
+        mapId,
+        launch.IntentFingerprint,
+        launch.Scope.AttemptId,
+        launch.Scope.WipeGeneration,
+        launch.Scope.RouteGeneration,
+        launch.Scope.InstanceId,
+        this
+    };
+}
+
+MovementPlannerObservation* MovementPlannerDiagnosticSidecar::MutableReceipt(
+    std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId)
+{
+    auto receipt = _receiptById.find(receiptId);
+    if (!receiptId || receipt == _receiptById.end()
+        || receipt->second.BotGuid != botGuid
+        || receipt->second.RequestedMapId != mapId)
+        return nullptr;
+    return &receipt->second;
+}
+
+bool MovementPlannerDiagnosticSidecar::MatchesContext(
+    Movement::NativePathLaunchContext const& context) const
+{
+    auto receipt = _receiptById.find(context.ReceiptId);
+    if (!context || receipt == _receiptById.end())
+        return false;
+    MovementPlannerObservation const& observation = receipt->second;
+    NativePathLaunchReceipt const& launch = observation.LaunchReceipt;
+    return context.Version == launch.Version
+        && context.ActorGuid == observation.BotGuid
+        && context.MapId == observation.RequestedMapId
+        && context.IntentFingerprint == launch.IntentFingerprint
+        && context.AttemptId == launch.Scope.AttemptId
+        && context.WipeGeneration == launch.Scope.WipeGeneration
+        && context.RouteGeneration == launch.Scope.RouteGeneration
+        && context.InstanceId == launch.Scope.InstanceId
+        && context.Observer == this;
+}
+
+void MovementPlannerDiagnosticSidecar::PublishReceiptUpdate(
+    MovementPlannerObservation const& observation)
+{
+    std::uint64_t const receiptId = observation.LaunchReceipt.Id;
+    if (!receiptId)
+        return;
+    _receiptById[receiptId] = observation;
+    auto latest = _latestByGuid.find(observation.BotGuid);
+    if (latest != _latestByGuid.end()
+        && latest->second.LaunchReceipt.Id == receiptId)
+        latest->second = observation;
+    auto history = _traceByGuid.find(observation.BotGuid);
+    if (history != _traceByGuid.end())
+        for (auto& [sequence, traced] : history->second)
+        {
+            (void)sequence;
+            if (traced.LaunchReceipt.Id == receiptId)
+                traced = observation;
+        }
 }
 
 namespace
@@ -76,16 +328,30 @@ bool MatchesRequest(MovementPlannerObservation const& observation,
 
 void MovementPlannerDiagnosticSidecar::FinalizeExecutor(
     std::uint64_t botGuid, std::uint32_t requestedMapId, Intent const& intent,
-    char const* gate, char const* result, char const* reason)
+    char const* gate, char const* result, char const* reason,
+    std::uint64_t receiptId)
 {
     if (!botGuid)
         return;
 
-    MovementPlannerObservation observation = Latest(botGuid);
+    MovementPlannerObservation observation;
+    bool receiptFound = false;
+    if (receiptId)
+    {
+        if (MovementPlannerObservation* receipt = MutableReceipt(receiptId,
+                botGuid, requestedMapId))
+        {
+            observation = *receipt;
+            receiptFound = true;
+        }
+    }
+    else
+        observation = Latest(botGuid);
     auto pending = _pendingByGuid.find(botGuid);
     bool const hasPendingPlanner = pending != _pendingByGuid.end()
         && pending->second;
-    if (!hasPendingPlanner
+    if ((receiptId && !receiptFound)
+        || (!receiptId && !hasPendingPlanner)
         || !MatchesRequest(observation, botGuid, requestedMapId, intent))
         observation = {};
     observation.Available = true;
@@ -104,6 +370,205 @@ void MovementPlannerDiagnosticSidecar::FinalizeExecutor(
     observation.Result = result ? result : "unavailable";
     observation.Reason = reason ? reason : "";
     Record(std::move(observation));
+}
+
+void MovementPlannerDiagnosticSidecar::RecordPlannerOutcome(
+    std::uint64_t receiptId, std::uint64_t botGuid,
+    std::uint32_t requestedMapId, Intent const& intent,
+    bool targetFloorSampled, float targetFloorZ, bool targetFloorValid,
+    char const* gate, bool accepted, char const* reason,
+    PathPlan const& plan, NativePathProofObservation const* nativeProof,
+    NativePathControlSequence const* plannedControls)
+{
+    auto receipt = _receiptById.find(receiptId);
+    if (receipt == _receiptById.end()
+        || !MatchesRequest(receipt->second, botGuid, requestedMapId, intent))
+        return;
+    MovementPlannerObservation observation = receipt->second;
+    observation.TargetFloorSampled = targetFloorSampled;
+    observation.TargetFloorZ = targetFloorZ;
+    observation.TargetFloorValid = targetFloorSampled && targetFloorValid;
+    observation.ZDeltaAvailable = observation.TargetFloorValid;
+    observation.AbsoluteZDelta = observation.ZDeltaAvailable
+        ? std::fabs(targetFloorZ - observation.RequestedZ) : 0.0f;
+    if (nativeProof)
+        observation.NativeProof = *nativeProof;
+    observation.PlannerGate = gate ? gate : "planner_admission";
+    observation.PlannerResult = accepted ? "accepted" : "rejected";
+    observation.PlannerReason = reason ? reason : "";
+    observation.Gate = observation.PlannerGate;
+    observation.Result = observation.PlannerResult;
+    observation.Reason = observation.PlannerReason;
+    observation.LaunchReceipt.PlannerSelectedEndpointAvailable = plan.Selected;
+    observation.LaunchReceipt.PlannerSelectedX = plan.SegmentX;
+    observation.LaunchReceipt.PlannerSelectedY = plan.SegmentY;
+    observation.LaunchReceipt.PlannerSelectedZ = plan.SegmentZ;
+    if (plannedControls)
+        observation.LaunchReceipt.PlannerControls = *plannedControls;
+    PublishReceiptUpdate(observation);
+}
+
+void MovementPlannerDiagnosticSidecar::RecordNativeSubmission(
+    std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId,
+    float actorX, float actorY, float actorZ, float selectedX,
+    float selectedY, float selectedZ, bool generatePath)
+{
+    MovementPlannerObservation* receipt = MutableReceipt(receiptId, botGuid,
+        mapId);
+    if (!receipt)
+        return;
+    MovementPlannerObservation observation = *receipt;
+    observation.LaunchReceipt.ActorBeforeNativeSubmission = {
+        true, "world", actorX, actorY, actorZ
+    };
+    observation.LaunchReceipt.ExecutorDestinationAvailable = true;
+    observation.LaunchReceipt.ExecutorSelectedX = selectedX;
+    observation.LaunchReceipt.ExecutorSelectedY = selectedY;
+    observation.LaunchReceipt.ExecutorSelectedZ = selectedZ;
+    observation.LaunchReceipt.PointGeneratePath = generatePath;
+    PublishReceiptUpdate(observation);
+}
+
+void MovementPlannerDiagnosticSidecar::RecordMotionMasterSubmission(
+    std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId,
+    std::uint32_t slot, std::uint32_t generatorType)
+{
+    MovementPlannerObservation* receipt = MutableReceipt(receiptId, botGuid,
+        mapId);
+    if (!receipt)
+        return;
+    MovementPlannerObservation observation = *receipt;
+    observation.LaunchReceipt.MotionMasterSubmissionObserved = true;
+    observation.LaunchReceipt.MotionMasterSlot = slot;
+    observation.LaunchReceipt.MotionMasterGeneratorType = generatorType;
+    PublishReceiptUpdate(observation);
+}
+
+void MovementPlannerDiagnosticSidecar::RecordPointGeneratorInitialize(
+    std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId)
+{
+    MovementPlannerObservation* receipt = MutableReceipt(receiptId, botGuid,
+        mapId);
+    if (!receipt)
+        return;
+    MovementPlannerObservation observation = *receipt;
+    observation.LaunchReceipt.PointGeneratorInitialized = true;
+    PublishReceiptUpdate(observation);
+}
+
+void MovementPlannerDiagnosticSidecar::RecordSplinePreparation(
+    std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId,
+    bool secondPathAttempted, bool secondPathCalculated,
+    std::uint32_t secondPathType,
+    Movement::NativePathLaunchControls const& secondPathControls,
+    bool directTwoPointSelected, bool directTwoPointFallback)
+{
+    MovementPlannerObservation* receipt = MutableReceipt(receiptId, botGuid,
+        mapId);
+    if (!receipt)
+        return;
+    MovementPlannerObservation observation = *receipt;
+    NativeSplineLaunchObservation launch;
+    launch.SecondPathAttempted = secondPathAttempted;
+    launch.SecondPathCalculated = secondPathCalculated;
+    launch.SecondPathType = secondPathType;
+    if (secondPathAttempted)
+        launch.SecondPathControls = ObserveNativePathControls(
+            secondPathControls, "world");
+    launch.DirectTwoPointSelected = directTwoPointSelected;
+    launch.DirectTwoPointFallback = directTwoPointFallback;
+    if (observation.LaunchReceipt.Launches.size()
+        < NativePathLaunchReceipt::MaxLaunchAttempts)
+        observation.LaunchReceipt.Launches.push_back(std::move(launch));
+    else
+    {
+        ++observation.LaunchReceipt.LaunchAttemptOverflowCount;
+        observation.LaunchReceipt.Launches.back() = std::move(launch);
+    }
+    PublishReceiptUpdate(observation);
+}
+
+void MovementPlannerDiagnosticSidecar::RecordSplineLaunch(
+    std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId,
+    Movement::NativePathLaunchControls const& launchedControls,
+    char const* coordinateSpace, bool succeeded, bool finalized,
+    float actorX, float actorY, float actorZ)
+{
+    MovementPlannerObservation* receipt = MutableReceipt(receiptId, botGuid,
+        mapId);
+    if (!receipt)
+        return;
+    MovementPlannerObservation observation = *receipt;
+    if (observation.LaunchReceipt.Launches.empty()
+        || observation.LaunchReceipt.Launches.back().LaunchAttempted)
+    {
+        if (observation.LaunchReceipt.Launches.size()
+            < NativePathLaunchReceipt::MaxLaunchAttempts)
+            observation.LaunchReceipt.Launches.emplace_back();
+        else
+        {
+            ++observation.LaunchReceipt.LaunchAttemptOverflowCount;
+            observation.LaunchReceipt.Launches.back() = {};
+        }
+    }
+    NativeSplineLaunchObservation& launch =
+        observation.LaunchReceipt.Launches.back();
+    launch.LaunchAttempted = true;
+    launch.LaunchSucceeded = succeeded;
+    launch.SplineFinalizedAfterLaunch = finalized;
+    launch.LaunchedControls = ObserveNativePathControls(launchedControls,
+        coordinateSpace);
+    launch.ActorAfterLaunch = { true, "world", actorX, actorY, actorZ };
+    PublishReceiptUpdate(observation);
+}
+
+void MovementPlannerDiagnosticSidecar::OnMotionMasterSubmission(
+    Movement::NativePathLaunchContext const& context, std::uint32_t slot,
+    std::uint32_t generatorType)
+{
+    if (!MatchesContext(context))
+        return;
+    RecordMotionMasterSubmission(context.ReceiptId, context.ActorGuid,
+        context.MapId, slot, generatorType);
+}
+
+void MovementPlannerDiagnosticSidecar::OnPointGeneratorInitialize(
+    Movement::NativePathLaunchContext const& context)
+{
+    if (!MatchesContext(context))
+        return;
+    RecordPointGeneratorInitialize(context.ReceiptId, context.ActorGuid,
+        context.MapId);
+}
+
+void MovementPlannerDiagnosticSidecar::OnSplinePreparation(
+    Movement::NativePathLaunchContext const& context,
+    bool secondPathAttempted, bool secondPathCalculated,
+    std::uint32_t secondPathType,
+    Movement::NativePathLaunchControls const& secondPathControls,
+    bool directTwoPointSelected, bool directTwoPointFallback)
+{
+    if (!MatchesContext(context))
+        return;
+    RecordSplinePreparation(context.ReceiptId, context.ActorGuid,
+        context.MapId, secondPathAttempted, secondPathCalculated,
+        secondPathType, secondPathControls, directTwoPointSelected,
+        directTwoPointFallback);
+}
+
+void MovementPlannerDiagnosticSidecar::OnSplineLaunch(
+    Movement::NativePathLaunchContext const& context,
+    Movement::NativePathLaunchControls const& launchedControls,
+    Movement::NativePathLaunchCoordinateSpace coordinateSpace,
+    bool succeeded, bool finalized, float actorX, float actorY, float actorZ)
+{
+    if (!MatchesContext(context))
+        return;
+    RecordSplineLaunch(context.ReceiptId, context.ActorGuid, context.MapId,
+        launchedControls,
+        coordinateSpace == Movement::NativePathLaunchCoordinateSpace::World
+            ? "world" : "transport_offset",
+        succeeded, finalized, actorX, actorY, actorZ);
 }
 
 void MovementPlannerDiagnosticSidecar::AssociateTrace(
@@ -149,6 +614,13 @@ MovementPlannerObservation MovementPlannerDiagnosticSidecar::ForTrace(
 
 void MovementPlannerDiagnosticSidecar::ClearBot(std::uint64_t botGuid)
 {
+    auto receiptIds = _receiptIdsByGuid.find(botGuid);
+    if (receiptIds != _receiptIdsByGuid.end())
+    {
+        for (std::uint64_t receiptId : receiptIds->second)
+            _receiptById.erase(receiptId);
+        _receiptIdsByGuid.erase(receiptIds);
+    }
     _latestByGuid.erase(botGuid);
     _pendingByGuid.erase(botGuid);
     _traceByGuid.erase(botGuid);
@@ -159,12 +631,44 @@ void MovementPlannerDiagnosticSidecar::ClearAll()
     _latestByGuid.clear();
     _pendingByGuid.clear();
     _traceByGuid.clear();
+    _receiptById.clear();
+    _receiptIdsByGuid.clear();
+    _nextReceiptId = 1;
 }
 
 MovementPlannerDiagnosticSidecar& MovementPlannerDiagnostics()
 {
     static MovementPlannerDiagnosticSidecar sidecar;
     return sidecar;
+}
+
+std::uint64_t BeginMovementPlannerReceipt(std::uint64_t botGuid,
+    std::uint32_t requestedMapId, Intent const& intent,
+    BotMovementArbitration::Scope const& scope,
+    std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ)
+{
+    return MovementPlannerDiagnostics().BeginReceipt(botGuid, requestedMapId,
+        intent, scope, dynamicTargetGuid, actorX, actorY, actorZ);
+}
+
+Movement::NativePathLaunchContext NativePathLaunchContextForReceipt(
+    std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId)
+{
+    return MovementPlannerDiagnostics().LaunchContext(receiptId, botGuid,
+        mapId);
+}
+
+void RecordMovementPlannerOutcome(std::uint64_t receiptId,
+    std::uint64_t botGuid, std::uint32_t requestedMapId,
+    Intent const& intent, bool targetFloorSampled, float targetFloorZ,
+    bool targetFloorValid, char const* gate, bool accepted, char const* reason,
+    PathPlan const& plan, NativePathProofObservation const* nativeProof,
+    NativePathControlSequence const* plannedControls)
+{
+    MovementPlannerDiagnostics().RecordPlannerOutcome(receiptId,
+        botGuid, requestedMapId, intent, targetFloorSampled, targetFloorZ,
+        targetFloorValid, gate, accepted, reason, plan, nativeProof,
+        plannedControls);
 }
 
 void RecordMovementPlannerOutcome(std::uint64_t botGuid,
@@ -204,16 +708,27 @@ void RecordMovementPlannerOutcome(std::uint64_t botGuid,
 
 void RecordMovementPlannerExecutorOutcome(std::uint64_t botGuid,
     std::uint32_t requestedMapId, Intent const& intent, char const* gate,
-    char const* result, char const* reason)
+    char const* result, char const* reason, std::uint64_t receiptId)
 {
     MovementPlannerDiagnostics().FinalizeExecutor(botGuid, requestedMapId,
-        intent, gate, result, reason);
+        intent, gate, result, reason, receiptId);
+}
+
+void RecordNativePathSubmission(std::uint64_t receiptId,
+    std::uint64_t botGuid, std::uint32_t mapId, float actorX, float actorY,
+    float actorZ, float selectedX, float selectedY, float selectedZ,
+    bool generatePath)
+{
+    MovementPlannerDiagnostics().RecordNativeSubmission(receiptId, botGuid,
+        mapId, actorX, actorY, actorZ, selectedX, selectedY, selectedZ,
+        generatePath);
 }
 
 std::string MovementPlannerObservationJson(
     MovementPlannerObservation const& observation)
 {
     std::ostringstream json;
+    json << std::setprecision(std::numeric_limits<float>::max_digits10);
     json << "{\"available\":" << (observation.Available ? "true" : "false")
          << ",\"bot_guid\":" << observation.BotGuid
          << ",\"owner\":\"" << JsonEscape(
@@ -297,6 +812,121 @@ std::string MovementPlannerObservationJson(
          << JsonEscape(observation.PlannerResult)
          << "\",\"reason\":\""
          << JsonEscape(observation.PlannerReason) << "\"}"
+         << ",\"launch_receipt\":{\"version\":"
+         << observation.LaunchReceipt.Version << ",\"id\":"
+         << observation.LaunchReceipt.Id
+         << ",\"identity\":{\"bot_guid\":" << observation.BotGuid
+         << ",\"map\":" << observation.RequestedMapId
+         << ",\"owner\":\""
+         << JsonEscape(MovementOwnerName(observation.MovementOwner))
+         << "\",\"intent_reason\":\""
+         << JsonEscape(observation.IntentReason)
+         << "\",\"intent_fingerprint\":\"" << std::hex
+         << std::setw(16) << std::setfill('0')
+         << observation.LaunchReceipt.IntentFingerprint << std::dec
+         << std::setfill(' ')
+         << "\",\"dynamic_target_guid\":"
+         << observation.LaunchReceipt.DynamicTargetGuid
+         << ",\"scope\":{\"attempt_id\":"
+         << observation.LaunchReceipt.Scope.AttemptId
+         << ",\"wipe_generation\":"
+         << observation.LaunchReceipt.Scope.WipeGeneration
+         << ",\"route_generation\":"
+         << observation.LaunchReceipt.Scope.RouteGeneration
+         << ",\"map\":" << observation.LaunchReceipt.Scope.MapId
+         << ",\"instance\":"
+         << observation.LaunchReceipt.Scope.InstanceId << "}}"
+         << ",\"actor_before_planning\":";
+    AppendPositionJson(json, observation.LaunchReceipt.ActorBeforePlanning);
+    json << ",\"planner_path\":{\"calculated\":"
+         << (observation.NativeProof.Calculated ? "true" : "false")
+         << ",\"type\":" << observation.NativeProof.PathType
+         << ",\"complete\":"
+         << (observation.NativeProof.Complete ? "true" : "false")
+         << ",\"controls\":";
+    AppendControlsJson(json, observation.LaunchReceipt.PlannerControls);
+    json << ",\"selected_endpoint\":{\"available\":"
+         << (observation.LaunchReceipt.PlannerSelectedEndpointAvailable
+                ? "true" : "false")
+         << ",\"x\":" << observation.LaunchReceipt.PlannerSelectedX
+         << ",\"y\":" << observation.LaunchReceipt.PlannerSelectedY
+         << ",\"z\":" << observation.LaunchReceipt.PlannerSelectedZ
+         << "},\"floor_observation\":{\"failure\":\""
+         << NativePathFloorFailureName(
+                observation.NativeProof.FloorObservation.Failure)
+         << "\",\"segment_index\":"
+         << observation.NativeProof.FloorObservation.SegmentIndex
+         << ",\"sample_index\":"
+         << observation.NativeProof.FloorObservation.SampleIndex
+         << ",\"x\":" << observation.NativeProof.FloorObservation.X
+         << ",\"y\":" << observation.NativeProof.FloorObservation.Y
+         << ",\"z\":" << observation.NativeProof.FloorObservation.Z
+         << ",\"resolved_floor_z\":"
+         << observation.NativeProof.FloorObservation.ResolvedFloorZ
+         << ",\"reference_z\":"
+         << observation.NativeProof.FloorObservation.ReferenceZ
+         << "},\"floor_observation_conflict\":"
+         << (observation.NativeProof.FloorObservationConflict
+                ? "true" : "false") << "}"
+         << ",\"executor\":{\"requested\":{\"x\":"
+         << observation.RequestedX << ",\"y\":"
+         << observation.RequestedY << ",\"z\":"
+         << observation.RequestedZ << "},\"selected\":{\"available\":"
+         << (observation.LaunchReceipt.ExecutorDestinationAvailable
+                ? "true" : "false")
+         << ",\"x\":" << observation.LaunchReceipt.ExecutorSelectedX
+         << ",\"y\":" << observation.LaunchReceipt.ExecutorSelectedY
+         << ",\"z\":" << observation.LaunchReceipt.ExecutorSelectedZ
+         << "},\"generate_path\":"
+         << (observation.LaunchReceipt.PointGeneratePath ? "true" : "false")
+         << ",\"actor_before_submission\":";
+    AppendPositionJson(json,
+        observation.LaunchReceipt.ActorBeforeNativeSubmission);
+    json << "},\"motion_master\":{\"observed\":"
+         << (observation.LaunchReceipt.MotionMasterSubmissionObserved
+                ? "true" : "false")
+         << ",\"slot\":" << observation.LaunchReceipt.MotionMasterSlot
+         << ",\"generator_type\":"
+         << observation.LaunchReceipt.MotionMasterGeneratorType
+         << ",\"point_generator_initialized\":"
+         << (observation.LaunchReceipt.PointGeneratorInitialized
+                ? "true" : "false")
+         << "},\"launches\":[";
+    for (std::size_t index = 0;
+        index < observation.LaunchReceipt.Launches.size(); ++index)
+    {
+        if (index)
+            json << ',';
+        NativeSplineLaunchObservation const& launch =
+            observation.LaunchReceipt.Launches[index];
+        json << "{\"ordinal\":" << (index + 1)
+             << ",\"second_path\":{\"attempted\":"
+             << (launch.SecondPathAttempted ? "true" : "false")
+             << ",\"calculated\":"
+             << (launch.SecondPathCalculated ? "true" : "false")
+             << ",\"type\":" << launch.SecondPathType
+             << ",\"controls\":";
+        AppendControlsJson(json, launch.SecondPathControls);
+        json << "},\"direct_two_point_selected\":"
+             << (launch.DirectTwoPointSelected ? "true" : "false")
+             << ",\"direct_two_point_fallback\":"
+             << (launch.DirectTwoPointFallback ? "true" : "false")
+             << ",\"spline_launch\":{\"attempted\":"
+             << (launch.LaunchAttempted ? "true" : "false")
+             << ",\"succeeded\":"
+             << (launch.LaunchSucceeded ? "true" : "false")
+             << ",\"finalized_after_launch\":"
+             << (launch.SplineFinalizedAfterLaunch ? "true" : "false")
+             << ",\"controls\":";
+        AppendControlsJson(json, launch.LaunchedControls);
+        json << ",\"actor_after_launch\":";
+        AppendPositionJson(json, launch.ActorAfterLaunch);
+        json << "}}";
+    }
+    json << "],\"launch_attempt_capacity\":"
+         << NativePathLaunchReceipt::MaxLaunchAttempts
+         << ",\"launch_attempt_overflow_count\":"
+         << observation.LaunchReceipt.LaunchAttemptOverflowCount << "}"
          << ",\"gate\":\"" << JsonEscape(observation.Gate)
          << "\",\"result\":\"" << JsonEscape(observation.Result)
          << "\",\"reason\":\"" << JsonEscape(observation.Reason)

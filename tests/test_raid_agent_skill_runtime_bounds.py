@@ -6,6 +6,7 @@ BABYSITTER = ROOT / ".agents/skills/raid-boss-babysitter/SKILL.md"
 PERFORMANCE_LOOP = ROOT / ".agents/skills/raid-performance-loop/SKILL.md"
 BOUNDED_CONTRACT = ROOT / ".agents/skills/raid-performance-loop/references/bounded-work-unit-contract.md"
 RUNTIME_IMPLEMENTATION = ROOT / ".agents/skills/raid-bot-runtime-implementation/SKILL.md"
+ORCHESTRATOR = ROOT / ".agents/skills/trinity-orchestrator/SKILL.md"
 
 
 def test_babysitter_stops_after_owned_terminal_report() -> None:
@@ -34,3 +35,30 @@ def test_runtime_skills_keep_receipt_bound_state_pre_admission() -> None:
     assert "ObserveActiveOrdinaryHunterPet" in runtime
     assert "Separate stable identity from native lifecycle state" in contract
     assert "Do not make an immutable identity observer also require transient liveness" in runtime
+
+
+def test_runtime_repair_requires_causal_mutation_and_native_outcome_coverage() -> None:
+    contract = BOUNDED_CONTRACT.read_text(encoding="utf-8")
+    runtime = RUNTIME_IMPLEMENTATION.read_text(encoding="utf-8")
+    orchestrator = ORCHESTRATOR.read_text(encoding="utf-8")
+
+    for causal_role in (
+        "contained rejection",
+        "first state-infecting edge",
+        "downstream symptom",
+        "terminal watchdog",
+    ):
+        assert causal_role in contract
+    for claim_state in ("`verified`", "`refuted`", "`unproven`"):
+        assert claim_state in contract
+    assert "must fail before the fix and pass after it" in contract
+    assert "owner-to-owner receipt joins the candidate" in contract
+    assert "Injected path proofs" in contract
+    assert "cross native submission" in runtime
+    assert "observe the actual\ngenerator or spline over multiple ticks" in runtime
+    assert "Actor identity and\ntimestamp proximity alone" in runtime
+    assert "do not dispatch a Luna implementation worker" in PERFORMANCE_LOOP.read_text(
+        encoding="utf-8"
+    )
+    assert "Use `gpt-5.6-luna` only when" in orchestrator
+    assert "injected observations instead of required live" in orchestrator

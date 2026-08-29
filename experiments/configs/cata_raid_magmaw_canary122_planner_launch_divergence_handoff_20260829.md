@@ -1,0 +1,37 @@
+# Magmaw Canary122 planner-to-launch divergence handoff
+
+Canary122 ran clean source `2bfbd48bdafae41950fbfcaaf26df6f70a3784a3`. Entrance regroup, Chainwielder, and Drudges completed with all ten bots alive. All ten used their ordinary flask, food, and pre-pot from inventory. Magmaw remained active until the completion watchdog stopped the run after 27 repeated decisions. One tank died and nine members remained alive.
+
+The earlier seq741 diagnosis was wrong. Mgwhealc, bot `30005`, rejected `parasite_contact_evade` at seq741 and seq743 without submitting movement. Those failures were contained. Do not widen partial-path admission for path type `132` from this evidence.
+
+The first observed state-infecting edge is seq745 at `1788016935018`. The planner accepted a complete path for `ranged_formation_restore` and the executor submitted it. The planned endpoint was `(-308.91, -36.4524, 211.581)`. The same proof recorded `floor_observation_conflict=true` and `sample_floor_gap` at `(-311.814, -32.2758, 209.392)`, where the resolved floor was `211.39`. `SampleFloorGap` is deliberately nonblocking for complete-path proof.
+
+Production then loses the proved route. `PathPlan` retains endpoint metadata but not the planner's ordered path controls. The executor calls `MovePoint(..., generatePath=true)`, which creates a second `PathGenerator`; on failure, that layer can use a direct two-point fallback. The bot-specific admission and floor invariant are not applied to this launched path. Canary122 did not serialize the launched spline, second path type, or fallback decision, so the exact physical mechanism remains unproven.
+
+The resulting live-position contamination is proven. At seq749, a new parasite movement was built from the bot's live Z of `202.591`. The later Massive Crash movement was built from its live Z of `6.70457`. Both producers copy the actor snapshot Z, and the blackboard obtains that value from `GetPositionZ()`. State only supports the statement that the actor's live Z dropped after seq745. It does not identify the exact spline, collision, or falling transition.
+
+The required fixture must cross the production planner-to-launch boundary. It must capture actor XYZ before planning and after launch; planner path type, endpoint, floor observation, and ordered-control fingerprint; launched spline controls and fingerprint; the second path type; and whether direct fallback was used. It must replay seq745 and require the launched path to satisfy the same path and floor invariant as the admitted proof. A helper-only executable, source-string assertion, widened tolerance, or special case for path type `132` is not sufficient.
+
+The bounded implementation hypothesis is to bind execution to the planner-proved path controls, or fail closed after immediate launched-spline revalidation when the launched path diverges from the proof. Preserve ordinary set-and-forget movement. Do not change global Z thresholds, pincer behavior, Exposed Head targeting, class rotations, or encounter strategy in this work unit.
+
+Queue ordering was not the first failure. Cross-bot candidate-key collision is refuted because every bot owns a separate decision kernel and lifecycle map. Candidate-key correctness under parasite GUID replacement is underdetermined and requires semantic-transition telemetry before modification. Canary122 did not exercise Exposed Head entry `42347`; Canary121 remains the latest evidence for successful pincer interaction.
+
+Magmaw throughput was `73,300.517` active party DPS and `19,076.322` active party HPS. Affliction contributed `31,644.215` active DPS and its Felhunter contributed `1,023,930` damage, or `25.8122%`. The encounter recorded 39 direct Parasitic Infection damage events across five players. These are diagnostic values because the route did not clear.
+
+Evidence identities:
+
+- recurrence admission: `444aa8dfc41fafe3f0c40b7d21eabc407551a30779335eb72cab00084d10b09c`
+- report: `724383fa20ff93bd70ab167a65cfadf8c5922b2d740a98420b6cee6dcdc415ac`
+- normalized JSONL: `0f04777b7365cbe8ddf692ddda83815a3595c94244542914689732523e337ab0`
+- worldserver log: `54ec23a36121324905bc34eef32d5cd7994fe962541a0390ffda383fbcc02870`
+- binary: `e9dd1be550fab2e0b7d8a195e795965b28257a937906466f9504eb16a5dd9584`
+
+No unchanged canary is authorized. First add the compiled planner-to-launch replay, pass it against the production seam, increment the invalidated fixture revision, and pass the complete retained regression bank at one clean committed identity.
+
+## Fixture-feasibility result
+
+A Sol-high implementation pass proved that the existing unit-test harness cannot construct the required boundary. It syntax-compiled a proposed planner-control handoff, but no test could initialize a populated map-669 `Map`, MMAP, live `Player`, `BotWorldPopulationMgr`, `MotionMaster`, and launched spline without world/DBC/DB singleton startup. The proposal and its surrogate test were rejected and removed. Syntax-only compilation is not fixture evidence.
+
+The next work unit belongs to shard architecture, not gameplay implementation. Add one isolated worldserver-backed replay profile that provisions the exact map-669 bot identity and invokes the production planner, executor, `MotionMaster`, point generator, and launched spline. It must stop on a typed replay receipt, infrastructure loss, or bounded no-progress. It is an evidence capture, not a raid canary, and it cannot certify boss completion.
+
+The replay receipt must bind the exact binary/config/data/MMAP identities and record actor XYZ before planning and after launch, planner path type and ordered-control fingerprint, executor destination, active generator type, launched spline controls and fingerprint, direct-fallback or no-replan state, and multi-tick displacement/floor outcome. Missing assets or any unobserved boundary fail closed. Only after this receipt exposes the actual launch may a runtime implementation hypothesis be admitted.

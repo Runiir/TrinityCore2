@@ -104,6 +104,15 @@ Before dispatch, create the worker's scope lock using
 [references/bounded-work-unit-contract.md](references/bounded-work-unit-contract.md).
 Include that lock verbatim in the worker prompt. Reject changed files, commands,
 or extra fixes outside it; useful adjacent findings become a new work unit.
+For a failure repair, include the contract's compact ordered causal receipt and
+fixture production boundary. `required_next_work_unit` is routing authority,
+not proof that its causal interpretation is correct. If the first downstream
+state mutation or production fixture boundary is unproven, route one evidence,
+telemetry, or fixture-expansion unit rather than an implementation or canary.
+Reject a causal receipt that connects a candidate to a later mutation only by
+actor and time proximity. It must carry an owner-to-owner execution correlation
+key through the consumed mutation. If that join is absent, route a Sol-level
+causal/telemetry unit and do not dispatch a Luna implementation worker.
 
 Use decision complexity as a routing signal when a trace shows ownership
 conflicts, oscillation, or opaque fallback behavior. The 2026-08-28 native bot

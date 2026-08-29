@@ -129,13 +129,17 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
     }
 
     BotWorldMovement::PathPlan plan;
+    plan.LaunchReceiptId = BeginMovementPlannerReceipt(
+        MovementExecutorBotGuid(bot), MovementExecutorMapId(bot), intent,
+        request.MovementScope, request.DynamicTargetGuid,
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
     if (!PlanMovementPath(bot, intent, plan))
     {
         char const* reason = plan.RejectReason.empty()
             ? "route_destination_unreachable" : plan.RejectReason.c_str();
         RecordMovementPlannerExecutorOutcome(MovementExecutorBotGuid(bot),
             MovementExecutorMapId(bot), intent, "planner_admission", "rejected",
-            reason);
+            reason, plan.LaunchReceiptId);
         return RejectMovementPath(state, bot, intent,
             reason);
     }
@@ -155,6 +159,19 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
     // The caller may continue submitting combat or support intents while this
     // generator advances between decision ticks.
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    auto submitPoint = [&](float x, float y, float z, bool generatePath)
+    {
+        BotWorldMovement::RecordNativePathSubmission(plan.LaunchReceiptId,
+            MovementExecutorBotGuid(bot), MovementExecutorMapId(bot),
+            bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(),
+            x, y, z, generatePath);
+        Movement::NativePathLaunchContext const launchContext =
+            BotWorldMovement::NativePathLaunchContextForReceipt(
+                plan.LaunchReceiptId,
+                MovementExecutorBotGuid(bot), MovementExecutorMapId(bot));
+        bot->GetMotionMaster()->MovePoint(0, x, y, z, generatePath, 0.0f,
+            launchContext);
+    };
     if (plan.DynamicTarget)
     {
         if (intent.DynamicTargetRange > 0.0f)
@@ -178,8 +195,7 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         // it as an active path, leaving a ghost stationary at the graveyard.
         // Flight and gravity flags make this a direct native aerial spline;
         // generatePath=false avoids asking the ground navmesh to route it.
-        bot->GetMotionMaster()->MovePoint(0, intent.X, intent.Y, intent.Z,
-            false);
+        submitPoint(intent.X, intent.Y, intent.Z, false);
         bool const pointGeneratorActive =
             bot->GetMotionMaster()->GetMotionSlotType(MOTION_SLOT_ACTIVE)
                 == POINT_MOTION_TYPE
@@ -189,29 +205,27 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
             RecordMovementPlannerExecutorOutcome(
                 MovementExecutorBotGuid(bot), MovementExecutorMapId(bot), intent,
                 "native_aerial_point_submission", "rejected",
-                "native_aerial_point_generator_inactive");
+                "native_aerial_point_generator_inactive",
+                plan.LaunchReceiptId);
             return RejectMovementPath(state, bot, intent,
                 "native_aerial_point_generator_inactive");
         }
         RecordMovementPlannerExecutorOutcome(
             MovementExecutorBotGuid(bot), MovementExecutorMapId(bot), intent,
             "native_aerial_point_submission", "submitted",
-            "native_aerial_point_movement_submitted");
+            "native_aerial_point_movement_submitted", plan.LaunchReceiptId);
         return true;
     }
     else if (plan.NativeLongPath)
-        bot->GetMotionMaster()->MovePoint(0, intent.X, intent.Y, intent.Z,
-            true);
+        submitPoint(intent.X, intent.Y, intent.Z, true);
     else if (std::fabs(plan.SegmentX - intent.X) > 0.1f
         || std::fabs(plan.SegmentY - intent.Y) > 0.1f
         || std::fabs(plan.SegmentZ - intent.Z) > 0.1f)
-        bot->GetMotionMaster()->MovePoint(0, plan.SegmentX, plan.SegmentY,
-            plan.SegmentZ, true);
+        submitPoint(plan.SegmentX, plan.SegmentY, plan.SegmentZ, true);
     else
-        bot->GetMotionMaster()->MovePoint(0, intent.X, intent.Y, intent.Z,
-            true);
+        submitPoint(intent.X, intent.Y, intent.Z, true);
     RecordMovementPlannerExecutorOutcome(MovementExecutorBotGuid(bot),
         MovementExecutorMapId(bot), intent, "native_path_submission", "submitted",
-        "native_movement_submitted");
+        "native_movement_submitted", plan.LaunchReceiptId);
     return true;
 }

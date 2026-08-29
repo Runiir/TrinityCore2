@@ -28,6 +28,8 @@
 template<class T>
 void PointMovementGenerator<T>::DoInitialize(T* owner)
 {
+    if (_launchContext)
+        _launchContext.Observer->OnPointGeneratorInitialize(_launchContext);
     if (_movementId == EVENT_CHARGE_PREPATH)
     {
         owner->AddUnitState(UNIT_STATE_ROAMING | UNIT_STATE_ROAMING_MOVE);
@@ -45,7 +47,7 @@ void PointMovementGenerator<T>::DoInitialize(T* owner)
 
     owner->AddUnitState(UNIT_STATE_ROAMING_MOVE);
 
-    Movement::MoveSplineInit init(owner);
+    Movement::MoveSplineInit init(owner, _launchContext);
     init.MoveTo(_x, _y, _z, _generatePath);
     if (_speed > 0.0f)
         init.SetVelocity(_speed);
@@ -79,7 +81,7 @@ bool PointMovementGenerator<T>::DoUpdate(T* owner, uint32 /*diff*/)
 
         owner->AddUnitState(UNIT_STATE_ROAMING_MOVE);
 
-        Movement::MoveSplineInit init(owner);
+        Movement::MoveSplineInit init(owner, _launchContext);
         init.MoveTo(_x, _y, _z, _generatePath);
         if (_speed > 0.0f) // Default value for point motion type is 0.0, if 0.0 spline will use GetSpeed on unit
             init.SetVelocity(_speed);

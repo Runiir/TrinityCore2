@@ -19,6 +19,7 @@
 #define TRINITYSERVER_MOVESPLINEINIT_H
 
 #include "MoveSplineInitArgs.h"
+#include "NativePathLaunchObserver.h"
 
 class Unit;
 
@@ -45,7 +46,8 @@ namespace Movement
     {
     public:
 
-        explicit MoveSplineInit(Unit* m);
+        explicit MoveSplineInit(Unit* m,
+            NativePathLaunchContext launchContext = {});
         MoveSplineInit(MoveSplineInit&& init) = default;
 
         ~MoveSplineInit();
@@ -160,6 +162,7 @@ namespace Movement
 
         MoveSplineInitArgs args;
         Unit*  unit;
+        NativePathLaunchContext _launchContext;
     };
 
     inline void MoveSplineInit::SetFly() { args.flags.Flying = true; }

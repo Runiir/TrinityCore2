@@ -63,6 +63,17 @@ namespace Movement
         MoveSpline& move_spline = *unit->movespline;
 
         bool transport = !unit->GetTransGUID().IsEmpty();
+        auto recordLaunch = [&](bool succeeded)
+        {
+            if (!_launchContext)
+                return;
+            _launchContext.Observer->OnSplineLaunch(_launchContext,
+                args.path, transport
+                    ? NativePathLaunchCoordinateSpace::TransportOffset
+                    : NativePathLaunchCoordinateSpace::World,
+                succeeded, move_spline.Finalized(), unit->GetPositionX(),
+                unit->GetPositionY(), unit->GetPositionZ());
+        };
         Location real_position;
         // there is a big chance that current position is unknown if current state is not finalized, need compute it
         // this also allows calculate spline position and update map position in much greater intervals
@@ -85,7 +96,10 @@ namespace Movement
 
         // should i do the things that user should do? - no.
         if (args.path.empty())
+        {
+            recordLaunch(false);
             return 0;
+        }
 
         // correct first vertex
         args.path[0] = real_position;
@@ -119,7 +133,10 @@ namespace Movement
         }
 
         if (!args.Validate(unit))
+        {
+            recordLaunch(false);
             return 0;
+        }
 
         unit->m_movementInfo.SetMovementFlags(moveFlags);
         move_spline.Initialize(args);
@@ -139,6 +156,8 @@ namespace Movement
         }
 
         unit->SendMessageToSet(packet.Write(), true);
+
+        recordLaunch(true);
 
         return move_spline.Duration();
     }
@@ -188,7 +207,9 @@ namespace Movement
         unit->SendMessageToSet(packet.Write(), true);
     }
 
-    MoveSplineInit::MoveSplineInit(Unit* m) : unit(m)
+    MoveSplineInit::MoveSplineInit(Unit* m,
+        NativePathLaunchContext launchContext) : unit(m),
+        _launchContext(launchContext)
     {
         args.splineId = splineIdGen.NewId();
         // Elevators also use MOVEMENTFLAG_ONTRANSPORT but we do not keep track of their position changes
@@ -251,12 +272,21 @@ namespace Movement
         {
             PathGenerator path(unit);
             bool result = path.CalculatePath(start, dest, forceDestination);
-            if (result && !(path.GetPathType() & PATHFIND_NOPATH))
+            bool const useSecondPath = result
+                && !(path.GetPathType() & PATHFIND_NOPATH);
+            if (_launchContext)
+                _launchContext.Observer->OnSplinePreparation(_launchContext,
+                    true, result, path.GetPathType(),
+                    path.GetPath(), !useSecondPath, !useSecondPath);
+            if (useSecondPath)
             {
                 MovebyPath(path.GetPath());
                 return;
             }
         }
+        else if (_launchContext)
+            _launchContext.Observer->OnSplinePreparation(_launchContext,
+                false, false, 0, {}, true, false);
 
         args.path_Idx_offset = 0;
         args.path.resize(2);

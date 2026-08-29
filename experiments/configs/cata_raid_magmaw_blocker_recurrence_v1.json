@@ -22,6 +22,7 @@
       "same_level_floor_observation_v1",
       "same_level_endpoint_normalization_v1",
       "same_level_native_path_proof_v1",
+      "native_planner_executor_launch_proof_v1",
       "magmaw_prepot_formation_gate_v1",
       "magmaw_prepot_formation_endpoint_v1",
       "magmaw_prepot_stall_watchdog_v1",
@@ -179,6 +180,18 @@
         ]
       },
       {
+        "fixture_id": "native_planner_executor_launch_proof_v1",
+        "revision": 1,
+        "causal_signature": "native_planner_executor_launch_divergence",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_native_path_launch_proof.py::test_canary122_seq745_planner_proof_matches_launched_path"
+        ]
+      },
+      {
         "fixture_id": "magmaw_prepot_formation_gate_v1",
         "causal_signature": "magmaw_prepot_geometry_conflicts_with_bait_formation",
         "command": [
@@ -278,8 +291,8 @@
     "magmaw_parasite_containment_failure": {
       "owner": "encounter_combat_and_movement_authority",
       "invariant": "exactly the fixed Fire Mage and Marksman Hunter team owns parasite targeting, threat, damage, and stable lane movement through final native path admission while every other player remains outside infection range and suppresses parasite-reaching area damage",
-      "architecture_reviewed_through_occurrence_count": 17,
-      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary121_movement_lifecycle_recurrence_handoff_20260829.md",
+      "architecture_reviewed_through_occurrence_count": 18,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
       "fixture_verifications": [
         {
           "fixture_id": "magmaw_parasite_lane_paths_v1",
@@ -294,8 +307,8 @@
       "owner": "encounter_policy_and_movement_intent",
       "parent": "magmaw_parasite_containment_failure",
       "invariant": "the fixed mobile bait team must traverse a stable room lane whose complete and incomplete movement requests reach a newly proved safe native endpoint without player Parasitic Infection or parasite re-entry",
-      "architecture_reviewed_through_occurrence_count": 17,
-      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary121_movement_lifecycle_recurrence_handoff_20260829.md"
+      "architecture_reviewed_through_occurrence_count": 18,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md"
     },
     "magmaw_lethal_movement_identity_churn": {
       "owner": "encounter_movement_transition",
@@ -334,10 +347,10 @@
       "subsumes": [
         "same_level_encounter_hazard_path_rejection"
       ],
-      "architecture_reviewed_through_occurrence_count": 11,
-      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary120_path_recurrence_handoff_20260829.md",
-      "historical_unique_run_count": 15,
-      "counting_note": "The ledger records the last ten gate-bearing occurrences. Five older retained reports establish that the full archive count is fifteen."
+      "architecture_reviewed_through_occurrence_count": 12,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
+      "historical_unique_run_count": 16,
+      "counting_note": "The ledger records the recent gate-bearing occurrences. Older retained reports plus Canary122 establish sixteen unique runs under this parent invariant."
     },
     "same_level_native_endpoint_z_normalization_false_negative": {
       "owner": "shared_movement_planner",
@@ -348,8 +361,14 @@
     "same_level_native_path_proof_false_negative": {
       "owner": "shared_movement_planner",
       "invariant": "complete floor-valid native paths and deterministic shorter retries of incomplete same-level hazard paths must be admitted by one owner-independent proof that distinguishes bounded endpoint identity, native floor normalization, and diagnostic floor observations",
-      "architecture_reviewed_through_occurrence_count": 12,
-      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary121_movement_lifecycle_recurrence_handoff_20260829.md"
+      "architecture_reviewed_through_occurrence_count": 13,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md"
+    },
+    "native_planner_executor_launch_divergence": {
+      "owner": "shared_movement_execution",
+      "invariant": "native movement execution must launch the planner-proved path controls or fail closed after validating the launched spline against the same path and floor proof before movement can contaminate live actor position",
+      "architecture_reviewed_through_occurrence_count": 1,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md"
     },
     "magmaw_prepot_geometry_conflicts_with_bait_formation": {
       "owner": "shared_prepull_pipeline",
@@ -1132,6 +1151,59 @@
       "worldserver_log_sha256": "1f5caf2c4a8ff62318847547c1b2700c216648e8f8aae8590fb2559fa6b5afe9",
       "evidence": "experiments/configs/cata_raid_magmaw_canary121_movement_lifecycle_recurrence_handoff_20260829.md",
       "note": "Trash cleared with zero deaths and all ten members consumed native flask, food, and pre-pot. Magmaw failed the death-loop watchdog after three deaths. The first causal edge was a complete floor-valid parasite-contact path rejected for a 0.533746-yard horizontal endpoint delta despite already being within semantic arrival distance. Event movement identity then changed with blackboard revisions and stationary combat refreshed movement progress. Thirty-seven infections across eight players spread Vomit to all ten; active raid DPS was 87,447.878, active HPS 17,805.757, Affliction active DPS 25,974.725, and its Felhunter dealt 26.1386 percent of its damage."
+    },
+    {
+      "run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+      "route_completed": false,
+      "classification": "gameplay_failure",
+      "admission": {
+        "source_identity": "2bfbd48bdafae41950fbfcaaf26df6f70a3784a3",
+        "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+        "suite_receipt_sha256": "7b827ebc091b8f2f60c77108f7ec327c72b47efc59c3c1008d996ee0e4870eac",
+        "recurrence_admission_sha256": "444aa8dfc41fafe3f0c40b7d21eabc407551a30779335eb72cab00084d10b09c",
+        "fixture_revisions": {
+          "magmaw_parasite_lane_paths_v1": 7,
+          "magmaw_parasite_lane_transition_full_replay_v1": 6,
+          "magmaw_parasite_control_full_runtime_v1": 6,
+          "magmaw_lethal_movement_transition_v1": 1,
+          "movement_progress_witness_v1": 1,
+          "chainwielder_future_drudge_guard_v1": 1,
+          "same_level_hazard_path_admission_v1": 4,
+          "same_level_floor_observation_v1": 3,
+          "same_level_endpoint_normalization_v1": 1,
+          "same_level_native_path_proof_v1": 4,
+          "magmaw_prepot_formation_gate_v1": 1,
+          "magmaw_prepot_formation_endpoint_v1": 1,
+          "magmaw_prepot_stall_watchdog_v1": 1,
+          "partial_wipe_native_reset_gate_v1": 1,
+          "phase1_capture_single_start_contract_v1": 1,
+          "deferred_candidate_capture_lifetime_v1": 1,
+          "native_bwd_partial_death_recovery_lifecycle_v1": 1,
+          "current_route_combat_authority_precedence_v1": 1
+        }
+      },
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred",
+        "magmaw_lethal_movement_identity_churn": "absent",
+        "stationary_combat_masks_movement_nonprogress": "absent",
+        "chainwielder_future_drudge_contamination": "absent",
+        "current_route_combat_authority_preempted": "absent",
+        "same_level_encounter_hazard_path_rejection": "occurred",
+        "same_level_movement_path_floor_false_negative": "occurred",
+        "same_level_native_endpoint_z_normalization_false_negative": "absent",
+        "same_level_native_path_proof_false_negative": "occurred",
+        "native_planner_executor_launch_divergence": "occurred",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "absent",
+        "raid_partial_wipe_waits_for_last_survivor": "absent",
+        "phase1_capture_duplicate_autostart_lifecycle": "absent",
+        "deferred_candidate_dangling_reference_capture": "absent",
+        "native_partial_death_recovery_lifecycle_failure": "not_exercised"
+      },
+      "report_sha256": "724383fa20ff93bd70ab167a65cfadf8c5922b2d740a98420b6cee6dcdc415ac",
+      "raw_jsonl_sha256": "0f04777b7365cbe8ddf692ddda83815a3595c94244542914689732523e337ab0",
+      "worldserver_log_sha256": "54ec23a36121324905bc34eef32d5cd7994fe962541a0390ffda383fbcc02870",
+      "evidence": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
+      "note": "Entrance, Chainwielder, and Drudges cleared with zero deaths and all ten members consumed native flask, food, and pre-pot. Magmaw failed the repeated-decision watchdog with one death. Seq741 and seq743 were contained rejections. Seq745 admitted and submitted a complete formation path despite a SampleFloorGap conflict, but execution regenerated an unverified path; the bot's source-derived live Z then dropped to 202.591 and later 6.70457. The exact launched spline was not captured. Thirty-nine direct infection events reached five players; active raid DPS was 73,300.517, active HPS 19,076.322, and Affliction active DPS was 31,644.215. Exposed Head entry 42347 was not exercised."
     }
   ]
 }

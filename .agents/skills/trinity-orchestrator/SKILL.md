@@ -68,6 +68,16 @@ If the harness cannot prevent a worker from delegating or invoking fan-out skill
 - `medium`: normal implementation tasks that require several files, local tests, or moderate debugging.
 - `large`: broad, ambiguous, high-risk, or long-running investigations and changes.
 
+Bounded scope does not make an evidence judgment simple. Classify a worker as
+`large` when it must challenge a handoff's causal verdict, reconcile conflicting
+trace and source claims, find the first downstream state mutation across
+multiple owners, or design a fixture that crosses a native production boundary.
+Use `gpt-5.6-luna` only when an immutable receipt already proves both the causal
+edge and the observable fixture boundary and the remaining work is mechanical.
+A candidate linked to a later mutation only by actor/time proximity, or a
+fixture boundary represented by injected observations instead of required live
+map/MMAP/world dependencies, remains `large` and requires `gpt-5.6-sol`.
+
 ## Model Selection
 
 Use the lowest-cost model and reasoning effort that can reliably complete the task. Current model characteristics:

@@ -3,6 +3,7 @@
 
 #include "Bots/BotMovementArbiter.h"
 
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -129,6 +130,9 @@ struct Intent
 
 struct PathPlan
 {
+    // Diagnostic-only correlation token. It is never consulted for path
+    // selection, admission, or native movement behavior.
+    std::uint64_t LaunchReceiptId = 0;
     bool Selected = false;
     bool DynamicTarget = false;
     float SegmentX = 0.0f;

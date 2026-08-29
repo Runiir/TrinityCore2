@@ -19,6 +19,7 @@
 #define TRINITY_POINTMOVEMENTGENERATOR_H
 
 #include "MovementGenerator.h"
+#include "NativePathLaunchObserver.h"
 
 class Creature;
 
@@ -26,7 +27,13 @@ template<class T>
 class PointMovementGenerator : public MovementGeneratorMedium< T, PointMovementGenerator<T> >
 {
     public:
-        PointMovementGenerator(uint32 id, float x, float y, float z, bool generatePath, float speed = 0.0f) : _movementId(id), _x(x), _y(y), _z(z), _speed(speed), _generatePath(generatePath), _recalculateSpeed(false), _interrupt(false) { }
+        PointMovementGenerator(uint32 id, float x, float y, float z,
+            bool generatePath, float speed = 0.0f,
+            Movement::NativePathLaunchContext launchContext = {}) :
+            _movementId(id), _x(x), _y(y), _z(z), _speed(speed),
+            _launchContext(launchContext),
+            _generatePath(generatePath), _recalculateSpeed(false),
+            _interrupt(false) { }
 
         MovementGeneratorType GetMovementGeneratorType() const override { return POINT_MOTION_TYPE; }
 
@@ -42,6 +49,7 @@ class PointMovementGenerator : public MovementGeneratorMedium< T, PointMovementG
         uint32 _movementId;
         float _x, _y, _z;
         float _speed;
+        Movement::NativePathLaunchContext _launchContext;
         bool _generatePath;
         bool _recalculateSpeed;
         bool _interrupt;
