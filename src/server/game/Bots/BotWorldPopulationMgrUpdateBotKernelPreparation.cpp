@@ -393,11 +393,31 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                         break;
                     }
 
+            // The bait pair must read and write one encounter-scoped
+            // transition. Keep that state on the deterministic fire-mage
+            // owner (or the hunter when the mage is absent); per-bot
+            // MovementLease remains only the short native arbitration lease.
+            WorldBotState* magmawLaneOwner = &context.State;
+            std::pair<ObjectGuid, ObjectGuid> const magmawBaiters =
+                BotEncounter::MagmawParasitePolicy::ResolveFixedBaiters(
+                    *Cohort().EncounterSnapshot);
+            ObjectGuid const magmawLaneOwnerGuid =
+                magmawBaiters.first.IsEmpty() ? magmawBaiters.second
+                    : magmawBaiters.first;
+            if (!magmawLaneOwnerGuid.IsEmpty())
+                for (WorldBotState& candidate : Party().Bots)
+                    if (candidate.Guid == magmawLaneOwnerGuid)
+                    {
+                        magmawLaneOwner = &candidate;
+                        break;
+                    }
+
             BotEncounter::AdaptiveMagmawStrategy magmawStrategy;
             BotEncounter::AdaptiveMagmawPlan magmawPlan = magmawStrategy.Propose(
                 *Cohort().EncounterSnapshot, context.Bot->GetGUID(),
                 GetDungeonRole(context.Bot), &context.State.MovementLease,
-                context.State.ActivePathValid, context.State.IsMoving);
+                context.State.ActivePathValid, context.State.IsMoving,
+                &magmawLaneOwner->MagmawLaneTransition);
             context.AdaptiveMagmawOwnsNode = magmawPlan.OwnsNode;
             context.AdaptiveMagmawSuppressOffense = magmawPlan.SuppressOffense;
             context.AdaptiveMagmawSuppressReason = magmawPlan.SuppressReason;

@@ -891,8 +891,9 @@ int main()
     magmawRangedPillar.Summons.front().Position =
         magmawRangedPillar.Players[2].Position;
 
-    // A scoped hazard lease retains one safe lane endpoint while the pack
-    // moves; it is replaced only after that endpoint becomes unsafe.
+    // A typed lane transition retains one safe lane endpoint while the pack
+    // moves; the generic lease is only native arbitration.
+    BotEncounter::MagmawLaneTransitionState parasiteTransition;
     BotEncounter::Blackboard parasiteLeaseBoard = magmawRangedPillar;
     parasiteLeaseBoard.Summons.clear();
     parasiteLeaseBoard.Players[2].Position = { 0.0f, 0.0f, 0.0f };
@@ -911,16 +912,21 @@ int main()
     parasiteLease.X = -10.0f;
     parasiteLease.Y = 24.0f;
     auto retainedParasitePlan = magmawStrategy.Propose(
-        parasiteLeaseBoard, dps.Guid, "dps", &parasiteLease);
+        parasiteLeaseBoard, dps.Guid, "dps", &parasiteLease, false, false,
+        &parasiteTransition);
     auto const* retainedParasiteMove = retainedParasitePlan.Movement
         ? std::get_if<Move>(&retainedParasitePlan.Movement->Action) : nullptr;
     assert(retainedParasiteMove);
-    assert(retainedParasiteMove->X == parasiteLease.X);
-    assert(retainedParasiteMove->Y == parasiteLease.Y);
+    assert(retainedParasiteMove->X == parasiteTransition.Destination.X);
+    assert(retainedParasiteMove->Y == parasiteTransition.Destination.Y);
+    assert(retainedParasitePlan.Movement->Id.Actor == dps.Guid);
+    assert(retainedParasitePlan.Movement->Id.EventGeneration
+        == parasiteTransition.TransitionId);
     BotEncounter::Blackboard movedParasiteBoard = parasiteLeaseBoard;
     movedParasiteBoard.Hostiles[1].Position = { 8.0f, 8.0f, 0.0f };
     auto movedParasitePlan = magmawStrategy.Propose(
-        movedParasiteBoard, dps.Guid, "dps", &parasiteLease);
+        movedParasiteBoard, dps.Guid, "dps", &parasiteLease, false, false,
+        &parasiteTransition);
     auto const* movedParasiteMove = movedParasitePlan.Movement
         ? std::get_if<Move>(&movedParasitePlan.Movement->Action) : nullptr;
     assert(movedParasiteMove);
@@ -928,56 +934,65 @@ int main()
     assert(movedParasiteMove->Y == retainedParasiteMove->Y);
     BotEncounter::Blackboard unsafeParasiteBoard = movedParasiteBoard;
     unsafeParasiteBoard.Players[2].Position = {
-        parasiteLease.X - 3.0f, parasiteLease.Y - 4.0f, 0.0f };
+        parasiteTransition.Destination.X - 3.0f,
+        parasiteTransition.Destination.Y - 4.0f, 0.0f };
     unsafeParasiteBoard.Hostiles[1].Position = {
-        parasiteLease.X, parasiteLease.Y, parasiteLease.Z };
+        parasiteTransition.Destination.X, parasiteTransition.Destination.Y,
+        parasiteTransition.Destination.Z };
     auto unsafeParasitePlan = magmawStrategy.Propose(
-        unsafeParasiteBoard, dps.Guid, "dps", &parasiteLease);
+        unsafeParasiteBoard, dps.Guid, "dps", &parasiteLease, false, false,
+        &parasiteTransition);
     auto const* unsafeParasiteMove = unsafeParasitePlan.Movement
         ? std::get_if<Move>(&unsafeParasitePlan.Movement->Action) : nullptr;
     assert(unsafeParasiteMove);
-    assert(unsafeParasiteMove->X != parasiteLease.X
-        || unsafeParasiteMove->Y != parasiteLease.Y);
+    assert(unsafeParasiteMove->X != parasiteTransition.Destination.X
+        || unsafeParasiteMove->Y != parasiteTransition.Destination.Y);
+    assert(parasiteTransition.Preempted);
 
     // A live parasite pack starts the fixed baiter's lane transition before
     // contact. An in-flight hazard path owns movement until arrival;
     // formation restore resumes afterwards.
     BotEncounter::Blackboard parasiteRestore = parasiteLeaseBoard;
+    BotEncounter::MagmawLaneTransitionState restoreTransition;
     parasiteRestore.Players[2].Position = magmawBoss.Position;
     BotEncounter::ActorSnapshot remoteParasite = leaseParasite;
     remoteParasite.Position = { 80.0f, 0.0f, 0.0f };
     parasiteRestore.Hostiles = { magmawBoss, remoteParasite };
     auto parasiteRestorePlan = magmawStrategy.Propose(
-        parasiteRestore, dps.Guid, "dps");
+        parasiteRestore, dps.Guid, "dps", nullptr, false, false,
+        &restoreTransition);
     assert(parasiteRestorePlan.Movement.has_value());
     assert(parasiteRestorePlan.Movement->Id.Mechanic
         == "parasite_contact_evade");
     BotEncounter::Blackboard inFlightRestore = parasiteRestore;
     inFlightRestore.Hostiles = { magmawBoss };
     auto inFlightRestorePlan = magmawStrategy.Propose(
-        inFlightRestore, dps.Guid, "dps", &parasiteLease, true, true);
+        inFlightRestore, dps.Guid, "dps", &parasiteLease, true, true,
+        &restoreTransition);
     assert(!inFlightRestorePlan.Movement.has_value());
     auto completedRestorePlan = magmawStrategy.Propose(
-        inFlightRestore, dps.Guid, "dps", &parasiteLease, false, false);
+        inFlightRestore, dps.Guid, "dps", &parasiteLease, false, false,
+        &restoreTransition);
     assert(completedRestorePlan.Movement.has_value());
     assert(completedRestorePlan.Movement->Id.Mechanic
         == "ranged_formation_restore");
 
+    BotEncounter::MagmawLaneTransitionState pillarTransition;
     auto rangedPillarPlan = magmawStrategy.Propose(
-        magmawRangedPillar, dps.Guid, "dps");
+        magmawRangedPillar, dps.Guid, "dps", nullptr, false, false,
+        &pillarTransition);
     assert(rangedPillarPlan.Movement.has_value());
     assert(rangedPillarPlan.Movement->Id.Mechanic
         == "pillar_bait_switch");
     auto const* rangedPillarMove = std::get_if<Move>(
         &rangedPillarPlan.Movement->Action);
     assert(rangedPillarMove);
-    // The summon identity, not the observation revision, owns this survival
-    // lease. A later observation must refresh the same candidate so a native
-    // path rejection receives bounded kernel retry instead of profile churn.
-    assert(rangedPillarPlan.Movement->Id.Actor
-        == magmawRangedPillar.Summons.front().Guid);
+    // The fixed baiter and typed transition identity own this survival path.
+    // A later observation must refresh the same candidate so a native path
+    // rejection receives bounded kernel retry instead of profile churn.
+    assert(rangedPillarPlan.Movement->Id.Actor == dps.Guid);
     assert(rangedPillarPlan.Movement->Id.EventGeneration
-        == magmawRangedPillar.Summons.front().Guid.GetRawValue());
+        == pillarTransition.TransitionId);
     assert(std::hypot(rangedPillarMove->X
             - magmawRangedPillar.Summons.front().Position.X,
         rangedPillarMove->Y
@@ -990,7 +1005,8 @@ int main()
     BotEncounter::Blackboard rangedPillarAltitude = magmawRangedPillar;
     rangedPillarAltitude.Players[2].Position.Z -= 1.5f;
     auto rangedPillarAltitudePlan = magmawStrategy.Propose(
-        rangedPillarAltitude, dps.Guid, "dps");
+        rangedPillarAltitude, dps.Guid, "dps", nullptr, false, false,
+        &pillarTransition);
     assert(rangedPillarAltitudePlan.Movement.has_value());
     auto const* rangedPillarAltitudeMove = std::get_if<Move>(
         &rangedPillarAltitudePlan.Movement->Action);
@@ -1013,7 +1029,8 @@ int main()
     laterPillarObservation.Revision += 100;
     laterPillarObservation.ObservedAtMs += 250;
     auto laterPillarPlan = magmawStrategy.Propose(
-        laterPillarObservation, dps.Guid, "dps");
+        laterPillarObservation, dps.Guid, "dps", nullptr, false, false,
+        &pillarTransition);
     assert(laterPillarPlan.Movement.has_value());
     assert(laterPillarPlan.Movement->Id.ScopeKey
         == rangedPillarPlan.Movement->Id.ScopeKey);
@@ -1051,7 +1068,8 @@ int main()
     pillarLease.Y = rangedPillarMove->Y;
     pillarLease.Z = rangedPillarMove->Z;
     auto rangedPillarStablePlan = magmawStrategy.Propose(
-        magmawRangedPillar, dps.Guid, "dps", &pillarLease);
+        magmawRangedPillar, dps.Guid, "dps", &pillarLease, false, false,
+        &pillarTransition);
     assert(!rangedPillarStablePlan.Movement.has_value());
 
     // Bait ownership is fixed from the full roster, so a dead baiter does not
@@ -1097,6 +1115,7 @@ int main()
     // the mobile bait lane. Affliction, Elemental, and the second Fire mage
     // remain on the boss unless their own position becomes lethal.
     BotEncounter::Blackboard mobileBaiters = magmawRangedPillar;
+    BotEncounter::MagmawLaneTransitionState mobileTransition;
     BotEncounter::ActorSnapshot secondFire = dps;
     secondFire.Guid = ObjectGuid(HighGuid::Player, uint32(104));
     BotEncounter::ActorSnapshot affliction = dps;
@@ -1113,15 +1132,20 @@ int main()
     for (BotEncounter::ActorSnapshot& member : mobileBaiters.Players)
         member.Position = mobileBaiters.Summons.front().Position;
     auto firstFireBait = magmawStrategy.Propose(
-        mobileBaiters, dps.Guid, "dps");
+        mobileBaiters, dps.Guid, "dps", nullptr, false, false,
+        &mobileTransition);
     auto secondFireBoss = magmawStrategy.Propose(
-        mobileBaiters, secondFire.Guid, "dps");
+        mobileBaiters, secondFire.Guid, "dps", nullptr, false, false,
+        &mobileTransition);
     auto marksBait = magmawStrategy.Propose(
-        mobileBaiters, marks.Guid, "dps");
+        mobileBaiters, marks.Guid, "dps", nullptr, false, false,
+        &mobileTransition);
     auto afflictionBoss = magmawStrategy.Propose(
-        mobileBaiters, affliction.Guid, "dps");
+        mobileBaiters, affliction.Guid, "dps", nullptr, false, false,
+        &mobileTransition);
     auto elementalBoss = magmawStrategy.Propose(
-        mobileBaiters, elemental.Guid, "dps");
+        mobileBaiters, elemental.Guid, "dps", nullptr, false, false,
+        &mobileTransition);
     assert(firstFireBait.Movement.has_value());
     assert(firstFireBait.Movement->Id.Mechanic == "pillar_bait_switch");
     assert(marksBait.Movement.has_value());
@@ -1139,15 +1163,20 @@ int main()
     parasite.Position = mobileAddOwnership.Players[2].Position;
     mobileAddOwnership.Hostiles = { magmawBoss, parasite };
     auto firstFireAdd = magmawStrategy.Propose(
-        mobileAddOwnership, dps.Guid, "dps");
+        mobileAddOwnership, dps.Guid, "dps", nullptr, false, false,
+        &mobileTransition);
     auto marksAdd = magmawStrategy.Propose(
-        mobileAddOwnership, marks.Guid, "dps");
+        mobileAddOwnership, marks.Guid, "dps", nullptr, false, false,
+        &mobileTransition);
     auto secondFireKeepsBoss = magmawStrategy.Propose(
-        mobileAddOwnership, secondFire.Guid, "dps");
+        mobileAddOwnership, secondFire.Guid, "dps", nullptr, false, false,
+        &mobileTransition);
     auto afflictionKeepsBoss = magmawStrategy.Propose(
-        mobileAddOwnership, affliction.Guid, "dps");
+        mobileAddOwnership, affliction.Guid, "dps", nullptr, false, false,
+        &mobileTransition);
     auto elementalKeepsBoss = magmawStrategy.Propose(
-        mobileAddOwnership, elemental.Guid, "dps");
+        mobileAddOwnership, elemental.Guid, "dps", nullptr, false, false,
+        &mobileTransition);
     assert(firstFireAdd.DamageTarget == parasite.Guid);
     assert(marksAdd.DamageTarget == parasite.Guid);
     assert(secondFireKeepsBoss.DamageTarget == magmawBoss.Guid);
@@ -1358,8 +1387,8 @@ int main()
     // must leave all actors on normal formation from the start of the fight.
     BotEncounter::Blackboard persistentCrash = magmawPincerPreposition;
     persistentCrash.Players[2].Auras.clear();
-    persistentCrash.Players[0].Position = { 10.0f, 0.0f, 0.0f };
-    persistentCrash.Players[1].Position = { 10.0f, 0.0f, 0.0f };
+    persistentCrash.Players[0].Position = { 30.0f, 0.0f, 0.0f };
+    persistentCrash.Players[1].Position = { 30.0f, 0.0f, 0.0f };
     BotEncounter::ActorSnapshot persistentCrashActor = magmawBoss;
     persistentCrashActor.Guid = ObjectGuid(HighGuid::Unit, uint32(47330),
         uint32(108));
@@ -1426,7 +1455,7 @@ int main()
     // prepositioning and never turns into a mechanic-owned move.
     BotEncounter::Blackboard noPincerWarning = magmawPincerPreposition;
     noPincerWarning.Players[2].Auras.clear();
-    noPincerWarning.Players[1].Position = { 10.0f, 0.0f, 0.0f };
+    noPincerWarning.Players[1].Position = { 0.0f, 0.0f, 0.0f };
     auto noWarningPlan = magmawStrategy.Propose(
         noPincerWarning, hookBot.Guid, "dps");
     assert(noWarningPlan.Movement.has_value());
@@ -2021,9 +2050,10 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
     )
     bait_end = strategy.index("static bool HasActivePillar", bait_start)
     bait = strategy[bait_start:bait_end]
-    assert "candidate.Id.Actor = pillar.Guid;" in bait
-    assert "candidate.Id.EventGeneration = pillar.Guid.GetRawValue();" in bait
-    assert "candidate.Id.EventGeneration = board.Revision;" not in bait
+    assert "candidate.Id.Actor = bot.Guid;" in bait
+    assert "candidate.Id.EventGeneration = laneTransition->TransitionId;" in bait
+    assert "laneTransition->MarkPreempted();" in bait
+    assert "MagmawParasitePolicy::EnsureLaneDestination" in bait
     assert "BuildPointMovement(" in bait
 
     candidates = bot_source("BotWorldPopulationMgrUpdateBotKernelCandidates.cpp")
@@ -2050,11 +2080,13 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
     parasite_end = parasite_policy.index("private:", parasite_start)
     parasite = parasite_policy[parasite_start:parasite_end]
     assert "candidate.Id.Actor = bot.Guid;" in parasite
-    assert "candidate.Id.EventGeneration = bot.Guid.GetRawValue();" in parasite
+    assert "candidate.Id.EventGeneration = transition->TransitionId;" in parasite
     assert '"parasite_contact_evade"' in parasite
-    assert "RetainedLaneDestination" in parasite
-    assert "BuildLaneDestination" in parasite
-    assert "OppositeLaneEndpoint" in parasite_policy
+    assert "EnsureLaneTransition" in parasite
+    assert "transition->TransitionId" in parasite
+    assert "RetainedLaneDestination" not in parasite_policy
+    assert "BuildLaneDestination" not in parasite_policy
+    assert "OppositeLaneEndpoint" not in parasite_policy
     assert "if (!pillarBaiter)" in parasite
     assert "pillarBaiter && observed.NearestImmediateHazard" in strategy
     assert '|| intent.Id.Mechanic == "parasite_contact_evade"' in candidates
@@ -2154,17 +2186,19 @@ static float Distance(Vector3 const& left, Vector3 const& right)
 int main()
 {
     AdaptiveMagmawStrategy strategy;
+    MagmawLaneTransitionState transition;
     Blackboard board = BuildBoard();
     ObjectGuid const mageGuid = board.Players[1].Guid;
     ObjectGuid const hunterGuid = board.Players[2].Guid;
     ObjectGuid const ordinaryGuid = board.Players[3].Guid;
 
-    auto magePlan = strategy.Propose(board, mageGuid, "dps");
+    auto magePlan = strategy.Propose(board, mageGuid, "dps", nullptr,
+        false, false, &transition);
     assert(magePlan.Movement.has_value());
     auto const* firstMove = std::get_if<Move>(&magePlan.Movement->Action);
     assert(firstMove);
     assert(magePlan.Movement->Id.Actor == mageGuid);
-    assert(magePlan.Movement->Id.EventGeneration == mageGuid.GetRawValue());
+    assert(magePlan.Movement->Id.EventGeneration == transition.TransitionId);
     assert(firstMove->IntentReason == "parasite_contact_evade");
     Vector3 const firstDestination{ firstMove->X, firstMove->Y, firstMove->Z };
     Vector3 const support{ 0.0f, -22.0f, 210.0f };
@@ -2173,7 +2207,8 @@ int main()
     assert(Distance(firstDestination, board.Hostiles[1].Position)
         >= MagmawParasitePolicy::SafeClearance);
 
-    auto hunterPlan = strategy.Propose(board, hunterGuid, "dps");
+    auto hunterPlan = strategy.Propose(board, hunterGuid, "dps", nullptr,
+        false, false, &transition);
     assert(hunterPlan.Movement.has_value());
     auto const* hunterMove = std::get_if<Move>(&hunterPlan.Movement->Action);
     assert(hunterMove);
@@ -2188,7 +2223,7 @@ int main()
     advanced.Revision += 1;
     advanced.Hostiles[1].Position = { 13.0f, -27.0f, 210.0f };
     auto advancedPlan = strategy.Propose(
-        advanced, mageGuid, "dps", &firstLease);
+        advanced, mageGuid, "dps", &firstLease, false, false, &transition);
     auto const* advancedMove = advancedPlan.Movement
         ? std::get_if<Move>(&advancedPlan.Movement->Action) : nullptr;
     assert(advancedMove);
@@ -2196,13 +2231,15 @@ int main()
     assert(advancedMove->Y == firstMove->Y);
     assert(advancedPlan.Movement->Id.Actor == mageGuid);
 
-    // If the pack reaches the old point, switch to the opposite endpoint. A
-    // new lower GUID cannot pull the fixed team back into that pack.
+    // If the pack reaches the old point, the admitted transition remains
+    // immutable. A new lower GUID cannot pull the fixed team back into that
+    // pack or select another endpoint before native arrival.
     Blackboard packAdvanced = advanced;
     packAdvanced.Hostiles[1].Position = {
         firstMove->X, firstMove->Y, firstMove->Z };
     auto packAdvancedPlan = strategy.Propose(
-        packAdvanced, mageGuid, "dps", &firstLease);
+        packAdvanced, mageGuid, "dps", &firstLease, false, false,
+        &transition);
     auto const* packAdvancedMove = packAdvancedPlan.Movement
         ? std::get_if<Move>(&packAdvancedPlan.Movement->Action) : nullptr;
     assert(packAdvancedMove);
@@ -2210,6 +2247,8 @@ int main()
         packAdvancedMove->Y, packAdvancedMove->Z };
     assert(packAdvancedMove->X != firstMove->X
         || packAdvancedMove->Y != firstMove->Y);
+    assert(transition.Destination.X == firstMove->X
+        && transition.Destination.Y == firstMove->Y);
     assert(Distance(packAdvancedDestination, packAdvanced.Hostiles[1].Position)
         >= MagmawParasitePolicy::SafeClearance);
 
@@ -2220,20 +2259,22 @@ int main()
     BotMovementArbitration::Lease advancedLease = LeaseFor(
         packAdvanced, stableReference);
     auto lowerGuidPlan = strategy.Propose(
-        lowerGuid, mageGuid, "dps", &advancedLease);
+        lowerGuid, mageGuid, "dps", &advancedLease, false, false,
+        &transition);
     auto const* lowerGuidMove = lowerGuidPlan.Movement
         ? std::get_if<Move>(&lowerGuidPlan.Movement->Action) : nullptr;
     assert(lowerGuidMove);
     assert(lowerGuidMove->X == stableReference.X);
     assert(lowerGuidMove->Y == stableReference.Y);
-    assert(lowerGuidPlan.Movement->Id.Actor == mageGuid);
+    assert(transition.Destination.X == stableReference.X
+        || transition.Preempted);
 
     // A remote parasite release starts the lane transition before contact;
     // the baiter does not wait until infection range.
     Blackboard remoteRelease = board;
     remoteRelease.Hostiles[1].Position = { 0.0f, -80.0f, 210.0f };
     auto remoteReleasePlan = strategy.Propose(
-        remoteRelease, mageGuid, "dps");
+        remoteRelease, mageGuid, "dps", nullptr, false, false, &transition);
     auto const* remoteReleaseMove = remoteReleasePlan.Movement
         ? std::get_if<Move>(&remoteReleasePlan.Movement->Action) : nullptr;
     assert(remoteReleaseMove);
@@ -2250,7 +2291,8 @@ int main()
     remoteAtEndpoint.Players[1].Position = {
         remoteReleaseMove->X, remoteReleaseMove->Y, remoteReleaseMove->Z };
     auto remoteAtEndpointPlan = strategy.Propose(
-        remoteAtEndpoint, mageGuid, "dps", &remoteReleaseLease);
+        remoteAtEndpoint, mageGuid, "dps", &remoteReleaseLease, false, false,
+        &transition);
     assert(!remoteAtEndpointPlan.Movement.has_value());
 
     // Ordinary ranged DPS keeps only local contact escape; a remote parasite
@@ -2258,12 +2300,14 @@ int main()
     Blackboard ordinaryRemote = board;
     ordinaryRemote.Hostiles[1].Position = { 40.0f, 0.0f, 210.0f };
     auto ordinaryRemotePlan = strategy.Propose(
-        ordinaryRemote, ordinaryGuid, "dps");
+        ordinaryRemote, ordinaryGuid, "dps", nullptr, false, false,
+        &transition);
     assert(!ordinaryRemotePlan.Movement.has_value());
     Blackboard ordinaryContact = board;
     ordinaryContact.Hostiles[1].Position = ordinaryContact.Players[3].Position;
     auto ordinaryContactPlan = strategy.Propose(
-        ordinaryContact, ordinaryGuid, "dps");
+        ordinaryContact, ordinaryGuid, "dps", nullptr, false, false,
+        &transition);
     assert(ordinaryContactPlan.Movement.has_value());
     assert(ordinaryContactPlan.Movement->Id.Mechanic
         == "parasite_contact_evade");
@@ -2285,7 +2329,8 @@ int main()
         AdaptiveMagmawStrategy::SpikeEntry, uint32(701));
     spike.Entry = AdaptiveMagmawStrategy::SpikeEntry;
     pincer.Summons = { pincerVehicle, spike };
-    auto pincerPlan = strategy.Propose(pincer, mageGuid, "dps");
+    auto pincerPlan = strategy.Propose(pincer, mageGuid, "dps", nullptr,
+        false, false, &transition);
     assert(pincerPlan.Movement.has_value());
     assert(pincerPlan.Movement->Id.Mechanic == "pincer_approach");
     assert(pincerPlan.Movement->Id.Mechanic != "parasite_contact_evade");

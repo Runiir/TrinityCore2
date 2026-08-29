@@ -39,7 +39,11 @@ public:
     static constexpr uint32 SpikeEntry = 41767;
     static constexpr float HookInteractionDistance = 5.0f;
     static constexpr float RangedStackDistance = 30.0f;
-    static constexpr float SupportStackDistance = 22.0f;
+    // Keep the fixed bait corridor outside the support/boss stack.  The
+    // support anchor is intentionally close to Magmaw; with a 30-yard lane
+    // center and 24-yard lateral offset this leaves 22 yards of clearance
+    // across the complete left/right chord instead of only at its endpoints.
+    static constexpr float SupportStackDistance = 8.0f;
     // The two bait endpoints must be outside the support stack while still
     // leaving a full left/right lane for the mobile team to cross.
     static constexpr float RangedStackLateralOffset = 24.0f;
@@ -53,7 +57,8 @@ public:
     AdaptiveMagmawPlan Propose(Blackboard const& board, ObjectGuid botGuid,
         std::string_view role,
         BotMovementArbitration::Lease const* movementLease = nullptr,
-        bool activePathValid = false, bool moving = false) const
+        bool activePathValid = false, bool moving = false,
+        MagmawLaneTransitionState* laneTransition = nullptr) const
     {
         AdaptiveMagmawPlan plan;
         if (board.Route.NodeId != "bwd.magmaw.encounter")
@@ -61,6 +66,22 @@ public:
         ActorSnapshot const* bot = board.FindActor(botGuid);
         if (!bot || !bot->Alive)
             return plan;
+
+        if (laneTransition)
+        {
+            laneTransition->ObserveScope(board);
+            std::pair<ObjectGuid, ObjectGuid> const baiters =
+                MagmawParasitePolicy::ResolveFixedBaiters(board);
+            laneTransition->AssignBaiters(baiters.first, baiters.second);
+            laneTransition->ObserveArrival(botGuid, bot->Position,
+                MagmawParasitePolicy::DestinationTolerance, board.Revision);
+            if (!HasLivingParasite(board) && !HasActivePillar(board))
+                // Event A may despawn between the native arrival and this
+                // observation. Seal that boundary explicitly as (0, 0), so
+                // the first later event is retired instead of being captured
+                // as if it were the arrival generation.
+                laneTransition->SealNoMechanicArrival(board.Revision);
+        }
 
         MagmawActorObservation const observed = ObserveMagmawActors(board, *bot);
         if (!observed.Boss)
@@ -106,7 +127,7 @@ public:
         plan.Interaction = ProposeHookInteraction(board, *bot, *observed.Boss,
             botGuid);
         plan.Movement = ProposeHazardMovement(board, *bot, *observed.Boss,
-            pincerWindow, pincerWarning, movementLease);
+            pincerWindow, pincerWarning, movementLease, laneTransition);
         if (!plan.Movement)
             plan.Movement = ProposeHookPreposition(board, *bot,
                 *observed.Boss, botGuid);
@@ -195,43 +216,12 @@ private:
         return observed;
     }
 
-    static std::optional<size_t> PillarBaiterRank(
-        Blackboard const& board, ObjectGuid botGuid)
-    {
-        std::vector<ActorSnapshot const*> dps;
-        for (ActorSnapshot const& member : board.Players)
-            if (member.Role == "dps")
-                dps.push_back(&member);
-        std::sort(dps.begin(), dps.end(), [](ActorSnapshot const* left,
-            ActorSnapshot const* right)
-        {
-            return left->Guid.GetRawValue() < right->Guid.GetRawValue();
-        });
-
-        std::vector<ObjectGuid> baiters;
-        for (std::string_view const spec : {
-                std::string_view("marksmanship_hunter"),
-                std::string_view("fire_mage") })
-        {
-            auto const preferred = std::find_if(dps.begin(), dps.end(),
-                [spec](ActorSnapshot const* member)
-                {
-                    return member->ClassSpec == spec;
-                });
-            if (preferred == dps.end())
-                return std::nullopt;
-            baiters.push_back((*preferred)->Guid);
-        }
-
-        auto const baiter = std::find(baiters.begin(), baiters.end(), botGuid);
-        if (baiter == baiters.end())
-            return std::nullopt;
-        return size_t(std::distance(baiters.begin(), baiter));
-    }
-
     static bool IsPillarBaiter(Blackboard const& board, ObjectGuid botGuid)
     {
-        return PillarBaiterRank(board, botGuid).has_value();
+        std::pair<ObjectGuid, ObjectGuid> const baiters =
+            MagmawParasitePolicy::ResolveFixedBaiters(board);
+        return !baiters.first.IsEmpty() && !baiters.second.IsEmpty()
+            && (botGuid == baiters.first || botGuid == baiters.second);
     }
 
     static bool IsDesignatedPullTank(Blackboard const& board,
@@ -478,34 +468,28 @@ private:
     static std::optional<BotNativeAction::Candidate> BuildPillarBaitMove(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& boss, ActorSnapshot const& pillar,
-        BotMovementArbitration::Lease const* movementLease)
+        BotMovementArbitration::Lease const* /*movementLease*/,
+        MagmawLaneTransitionState* laneTransition)
     {
-        if (!IsPillarBaiter(board, bot.Guid))
+        if (!IsPillarBaiter(board, bot.Guid) || !laneTransition)
             return std::nullopt;
         std::optional<MagmawRangedAnchors> const anchors =
             ResolveRangedAnchors(board, boss);
         if (!anchors)
             return std::nullopt;
-        std::optional<Vector3> destination =
-            MagmawParasitePolicy::RetainedLaneDestination(
-                board, *anchors, movementLease);
+        std::optional<Vector3> const destination =
+            MagmawParasitePolicy::EnsureLaneDestination(board, bot, *anchors,
+                *laneTransition, pillar.Guid.GetRawValue(), 1);
         if (destination
             && Distance2d(*destination, pillar.Position)
                 < MagmawParasitePolicy::SafeClearance)
-            destination.reset();
-        if (!destination)
-        {
-            Vector3 const preferred =
-                MagmawParasitePolicy::OppositeLaneEndpoint(
-                    board, bot, *anchors);
-            Vector3 const alternate = Distance2d(preferred, anchors->Left)
-                    <= Distance2d(preferred, anchors->Right)
-                ? anchors->Right : anchors->Left;
-            destination = Distance2d(preferred, pillar.Position)
-                    >= MagmawParasitePolicy::SafeClearance
-                ? std::optional<Vector3>(preferred)
-                : std::optional<Vector3>(alternate);
-        }
+            laneTransition->MarkPreempted();
+        if (laneTransition->Preempted
+            && (!destination
+                || Distance2d(*destination, pillar.Position)
+                    < MagmawParasitePolicy::SafeClearance))
+            return BuildPillarEvade(board, bot, pillar);
+        laneTransition->Resume();
         if (!destination
             || Distance2d(bot.Position, *destination)
                 <= RangedStackTolerance)
@@ -513,8 +497,8 @@ private:
         BotNativeAction::Candidate candidate = BuildPointMovement(
             board, bot, *destination, "pillar_bait_switch",
             BotActionArbitration::Priority::Survival, 500.0f);
-        candidate.Id.Actor = pillar.Guid;
-        candidate.Id.EventGeneration = pillar.Guid.GetRawValue();
+        candidate.Id.Actor = bot.Guid;
+        candidate.Id.EventGeneration = laneTransition->TransitionId;
         if (BotNativeAction::Move* move =
                 std::get_if<BotNativeAction::Move>(&candidate.Action))
         {
@@ -600,13 +584,16 @@ private:
     static std::optional<BotNativeAction::Candidate> ProposeHazardMovement(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& boss, bool pincerWindow, bool pincerWarning,
-        BotMovementArbitration::Lease const* movementLease)
+        BotMovementArbitration::Lease const* movementLease,
+        MagmawLaneTransitionState* laneTransition)
     {
         MagmawHazardObservation const observed = ObserveHazards(board, bot);
         if (observed.Pillar)
         {
             if (pincerWindow)
             {
+                if (laneTransition && laneTransition->IsBaiter(bot.Guid))
+                    laneTransition->MarkPreempted();
                 if (std::optional<BotNativeAction::Candidate> const pillar =
                         BuildPillarEvade(board, bot, *observed.Pillar))
                     return pillar;
@@ -615,7 +602,7 @@ private:
             {
                 if (std::optional<BotNativeAction::Candidate> const bait =
                         BuildPillarBaitMove(board, bot, boss, *observed.Pillar,
-                            movementLease))
+                            movementLease, laneTransition))
                     return bait;
                 if (std::optional<BotNativeAction::Candidate> const pillar =
                         BuildPillarEvade(board, bot, *observed.Pillar))
@@ -628,7 +615,11 @@ private:
             if (std::optional<BotNativeAction::Candidate> const crash =
                     ProposeImmediateCrashDuringPincer(board, bot, boss,
                         observed))
+            {
+                if (laneTransition && laneTransition->IsBaiter(bot.Guid))
+                    laneTransition->MarkPreempted();
                 return crash;
+            }
             return std::nullopt;
         }
 
@@ -644,7 +635,7 @@ private:
                 if (std::optional<BotNativeAction::Candidate> const lane =
                         MagmawParasitePolicy::Propose(board, bot,
                             *observed.NearestImmediateHazard, true, anchors,
-                            movementLease))
+                            movementLease, laneTransition))
                     return lane;
         }
         float const immediateDistance = observed.NearestImmediateHazard
@@ -665,7 +656,7 @@ private:
                     anchors = *rangedAnchors;
             return MagmawParasitePolicy::Propose(board, bot,
                 *observed.NearestImmediateHazard, pillarBaiter, anchors,
-                movementLease);
+                movementLease, laneTransition);
         }
 
         if (pincerWarning && !HasMangleAura(bot))

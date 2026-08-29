@@ -8,6 +8,7 @@
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTypes.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeTauntConfirmation.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
 #include "ObjectGuid.h"
 
 #include <deque>
@@ -417,6 +418,11 @@ namespace BotWorldPopulationMgrBotState
         std::string LastDecisionHandler = "none";
         BotActionArbitration::Kernel DecisionKernel;
         BotMovementArbitration::Lease MovementLease;
+        // The fixed Magmaw mage/hunter bait pair shares one semantic lane
+        // transition.  It is deliberately separate from the short generic
+        // MovementLease and is retained by the stable pair owner across
+        // observation churn, native retries, and lease expiry.
+        BotEncounter::MagmawLaneTransitionState MagmawLaneTransition;
         std::string LastDecisionKernelJson = "{}";
         std::string LastActionCategory = "wait";
         std::string LastClassSpecProfile = "{}";

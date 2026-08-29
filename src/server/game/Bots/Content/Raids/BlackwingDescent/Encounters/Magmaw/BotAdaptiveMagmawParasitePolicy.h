@@ -4,8 +4,10 @@
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -36,46 +38,58 @@ public:
         return pillarBaiter ? KiteLeadDistance : LocalContactRange;
     }
 
-    // A lane transition always crosses the room-side line.  Choosing the
-    // endpoint opposite the bot's current side is deterministic and does not
-    // depend on which parasite GUID happened to be observed first.
-    static Vector3 OppositeLaneEndpoint(Blackboard const& board,
-        ActorSnapshot const& bot, FormationAnchors const& anchors)
+    static std::pair<ObjectGuid, ObjectGuid> ResolveFixedBaiters(
+        Blackboard const& board)
     {
-        float const leftDistance = Distance2d(bot.Position, anchors.Left);
-        float const rightDistance = Distance2d(bot.Position, anchors.Right);
-        if (leftDistance + DestinationTolerance < rightDistance)
-            return anchors.Right;
-        if (rightDistance + DestinationTolerance < leftDistance)
-            return anchors.Left;
-
-        // Match the deterministic prepull side: an odd attempt starts Left,
-        // so its first transition goes Right, and vice versa.
-        return board.CurrentScope.AttemptId % 2
-            ? anchors.Right : anchors.Left;
+        ObjectGuid mage;
+        ObjectGuid hunter;
+        for (ActorSnapshot const& member : board.Players)
+            if (member.Role == "dps")
+            {
+                if (member.ClassSpec == "fire_mage"
+                    && (mage.IsEmpty() || member.Guid.GetRawValue()
+                        < mage.GetRawValue()))
+                    mage = member.Guid;
+                else if (member.ClassSpec == "marksmanship_hunter"
+                    && (hunter.IsEmpty() || member.Guid.GetRawValue()
+                        < hunter.GetRawValue()))
+                    hunter = member.Guid;
+            }
+        return { mage, hunter };
     }
 
-    // MovementLease is the only already-available per-attempt persistence for
-    // point movement.  Retain only an admitted lane endpoint; old outward or
-    // radial hazard destinations must not become the new parasite route.
-    static std::optional<Vector3> RetainedLaneDestination(
-        Blackboard const& board, FormationAnchors const& anchors,
-        BotMovementArbitration::Lease const* movementLease)
+    // The entire fixed bait lane must remain outside the support stack. An
+    // endpoint-only check accepts a chord that cuts through the stack, which
+    // was the geometry behind the previous live oscillation.
+    static bool FullLaneCorridorSafe(FormationAnchors const& anchors)
     {
-        if (!movementLease
-            || movementLease->MovementOwner
-                != BotMovementArbitration::Owner::Hazard
-            || movementLease->MovementPriority
-                != BotMovementArbitration::Priority::Hazard
-            || movementLease->DynamicTargetGuid
-            || !BotMovementArbitration::SameScope(
-                ToMovementScope(board), movementLease->MovementScope))
-            return std::nullopt;
+        return DistanceToSegment(anchors.Support, anchors.Left,
+            anchors.Right) >= StackSeparation;
+    }
 
-        Vector3 const destination{ movementLease->X, movementLease->Y,
-            movementLease->Z };
-        return LaneSafe(board, anchors, destination)
-            ? std::optional<Vector3>(destination) : std::nullopt;
+    static std::optional<Vector3> EnsureLaneDestination(
+        Blackboard const& board, ActorSnapshot const& bot,
+        FormationAnchors const& anchors, MagmawLaneTransitionState& transition,
+        uint64 generation, uint8 kind)
+    {
+        return EnsureLaneTransition(board, bot, anchors, transition,
+            generation, kind);
+    }
+
+    static uint64 ParasiteGeneration(Blackboard const& board)
+    {
+        uint64 generation = std::numeric_limits<uint64>::max();
+        auto inspect = [&generation](std::vector<ActorSnapshot> const& actors)
+        {
+            for (ActorSnapshot const& actor : actors)
+                if (actor.Alive && IsParasiteEntry(actor.Entry))
+                    generation = std::min(generation,
+                        actor.Guid.GetRawValue());
+        };
+        inspect(board.Hostiles);
+        inspect(board.Summons);
+        return generation == std::numeric_limits<uint64>::max()
+            ? 0 : generation;
     }
 
     static bool HasLivingParasite(Blackboard const& board)
@@ -108,32 +122,54 @@ public:
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& parasite, bool pillarBaiter,
         std::optional<FormationAnchors> const& anchors,
-        BotMovementArbitration::Lease const* movementLease)
+        BotMovementArbitration::Lease const* /*movementLease*/,
+        MagmawLaneTransitionState* transition = nullptr)
     {
         if (!pillarBaiter)
             return BuildMoveAway(board, bot, parasite,
                 "parasite_contact_evade", SafeClearance);
 
-        if (!anchors)
+        if (!anchors || !transition)
+            return std::nullopt;
+
+        transition->ObserveScope(board);
+        std::pair<ObjectGuid, ObjectGuid> const baiters =
+            ResolveFixedBaiters(board);
+        transition->AssignBaiters(baiters.first, baiters.second);
+        if (!transition->IsBaiter(bot.Guid))
+            return std::nullopt;
+
+        transition->ObserveArrival(bot.Guid, bot.Position,
+            DestinationTolerance, board.Revision);
+        uint64 const generation = ParasiteGeneration(board);
+        if (!generation)
+            return std::nullopt;
+        std::optional<Vector3> const destination = EnsureLaneTransition(board,
+            bot, *anchors, *transition, generation, 2);
+        if (destination
+            && ParasiteClearance(board, *destination) < SafeClearance)
+        {
+            // A parasite reaching the retained endpoint is a typed local
+            // safety preemption, not permission to choose the other lane.
+            // Preserve the cohort transition and resume it once the endpoint
+            // is clear again.
+            transition->MarkPreempted();
             return BuildMoveAway(board, bot, parasite,
                 "parasite_contact_evade", SafeClearance);
-
-        std::optional<Vector3> destination = RetainedLaneDestination(
-            board, *anchors, movementLease);
-        if (!destination)
-            destination = BuildLaneDestination(board, bot, *anchors);
+        }
         if (!destination
             || Distance2d(bot.Position, *destination)
                 <= DestinationTolerance)
             return std::nullopt;
 
+        transition->Resume();
         BotNativeAction::Candidate candidate = BuildPointMovement(board,
             *destination, "parasite_contact_evade");
         // A baiter owns one point path for the scope.  Pack GUIDs are inputs
         // to safety validation only; replacing the lowest GUID must not
         // replace the native movement owner or restart its path.
         candidate.Id.Actor = bot.Guid;
-        candidate.Id.EventGeneration = bot.Guid.GetRawValue();
+        candidate.Id.EventGeneration = transition->TransitionId;
         return candidate;
     }
 
@@ -159,6 +195,23 @@ private:
         float const dx = left.X - right.X;
         float const dy = left.Y - right.Y;
         return std::sqrt(dx * dx + dy * dy);
+    }
+
+    static float DistanceToSegment(Vector3 const& point,
+        Vector3 const& start, Vector3 const& end)
+    {
+        float const dx = end.X - start.X;
+        float const dy = end.Y - start.Y;
+        float const lengthSquared = dx * dx + dy * dy;
+        if (lengthSquared < 0.0001f)
+            return Distance2d(point, start);
+        float const projection = std::clamp(((point.X - start.X) * dx
+            + (point.Y - start.Y) * dy) / lengthSquared, 0.0f, 1.0f);
+        Vector3 const closest{
+            start.X + projection * dx,
+            start.Y + projection * dy,
+            start.Z + projection * (end.Z - start.Z) };
+        return Distance2d(point, closest);
     }
 
     static float ParasiteClearance(Blackboard const& board,
@@ -188,24 +241,84 @@ private:
     static bool LaneSafe(Blackboard const& board,
         FormationAnchors const& anchors, Vector3 const& destination)
     {
-        return LaneEndpoint(anchors, destination)
+        return FullLaneCorridorSafe(anchors)
+            && LaneEndpoint(anchors, destination)
             && Distance2d(destination, anchors.Support) >= StackSeparation
             && ParasiteClearance(board, destination) >= SafeClearance;
     }
 
-    static std::optional<Vector3> BuildLaneDestination(
+    static MagmawLaneTransitionState::Direction InitialDirection(
         Blackboard const& board, ActorSnapshot const& bot,
         FormationAnchors const& anchors)
     {
-        Vector3 const preferred = OppositeLaneEndpoint(board, bot, anchors);
-        if (LaneSafe(board, anchors, preferred))
-            return preferred;
+        float const leftDistance = Distance2d(bot.Position, anchors.Left);
+        float const rightDistance = Distance2d(bot.Position, anchors.Right);
+        if (leftDistance + DestinationTolerance < rightDistance)
+            return MagmawLaneTransitionState::Direction::Right;
+        if (rightDistance + DestinationTolerance < leftDistance)
+            return MagmawLaneTransitionState::Direction::Left;
+        return board.CurrentScope.AttemptId % 2
+            ? MagmawLaneTransitionState::Direction::Right
+            : MagmawLaneTransitionState::Direction::Left;
+    }
 
-        Vector3 const alternate = Distance2d(preferred, anchors.Left)
-                <= Distance2d(preferred, anchors.Right)
-            ? anchors.Right : anchors.Left;
-        return LaneSafe(board, anchors, alternate)
-            ? std::optional<Vector3>(alternate) : std::nullopt;
+    static MagmawLaneTransitionState::Direction OppositeDirection(
+        MagmawLaneTransitionState::Direction direction)
+    {
+        return direction == MagmawLaneTransitionState::Direction::Left
+            ? MagmawLaneTransitionState::Direction::Right
+            : MagmawLaneTransitionState::Direction::Left;
+    }
+
+    static Vector3 DestinationFor(FormationAnchors const& anchors,
+        MagmawLaneTransitionState::Direction direction)
+    {
+        return direction == MagmawLaneTransitionState::Direction::Left
+            ? anchors.Left : anchors.Right;
+    }
+
+    static std::optional<Vector3> EnsureLaneTransition(
+        Blackboard const& board, ActorSnapshot const& bot,
+        FormationAnchors const& anchors, MagmawLaneTransitionState& transition,
+        uint64 generation, uint8 kind)
+    {
+        if (!FullLaneCorridorSafe(anchors))
+            return std::nullopt;
+
+        transition.RecordArrivalGeneration(generation, kind,
+            board.Revision);
+        if (transition.IsArrived()
+            && transition.GenerationRetired(generation, kind))
+        {
+            MagmawLaneTransitionState::Direction const direction =
+                OppositeDirection(transition.Lane);
+            Vector3 const destination = DestinationFor(anchors, direction);
+            if (!LaneSafe(board, anchors, destination))
+                return std::nullopt;
+            transition.Begin(generation, kind, direction, destination);
+        }
+        else if (!transition.Committed)
+        {
+            MagmawLaneTransitionState::Direction direction = InitialDirection(
+                board, bot, anchors);
+            Vector3 destination = DestinationFor(anchors, direction);
+            if (!LaneSafe(board, anchors, destination))
+            {
+                direction = OppositeDirection(direction);
+                destination = DestinationFor(anchors, direction);
+                if (!LaneSafe(board, anchors, destination))
+                    return std::nullopt;
+            }
+            transition.Begin(generation, kind, direction, destination);
+        }
+
+        if (!transition.OwnsGeneration(generation, kind))
+            return transition.IsArrived()
+                ? std::nullopt
+                : std::optional<Vector3>(transition.Destination);
+        if (transition.IsArrived())
+            return std::nullopt;
+        return transition.Destination;
     }
 
     static BotNativeAction::Candidate BuildPointMovement(
