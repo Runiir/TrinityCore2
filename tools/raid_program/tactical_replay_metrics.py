@@ -293,7 +293,8 @@ def causal_assessment(
             "exact_missing_field": "receipt_tagged_native_movement_preceding_the_position_discontinuity",
         }
     progress = receipt["progress"]
-    gap_ms = edge["to_ms"] - _integer(progress.get("last_observed_at_ms"))
+    last_sample_at_ms = _integer(progress.get("last_sample_at_ms"))
+    gap_ms = edge["to_ms"] - last_sample_at_ms if last_sample_at_ms else None
     rejected = [
         row
         for row in receipts
@@ -328,7 +329,12 @@ def causal_assessment(
             ],
             "spline_id": receipt["executor"]["spline_id"],
             "launched_at_ms": progress["armed_at_ms"],
-            "last_receipt_tagged_sample_at_ms": progress["last_observed_at_ms"],
+            "last_receipt_tagged_sample_at_ms": last_sample_at_ms,
+            "terminal_at_ms": progress.get("terminal_at_ms"),
+            "terminal_outcome": progress.get("terminal_outcome"),
+            "superseded_by_receipt_id": progress.get(
+                "superseded_by_receipt_id"
+            ),
             "sampling_gap_to_infection_ms": gap_ms,
         },
         "correlation": "same_actor_temporal_predecessor_only",

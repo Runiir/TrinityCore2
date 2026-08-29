@@ -228,21 +228,182 @@ def _compact_decision(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _receipt_richness(receipt: dict[str, Any]) -> tuple[int, int, int]:
+def _last_sample_timestamp(progress: dict[str, Any]) -> tuple[int, str]:
+    if "last_sample_at_ms" in progress:
+        return _integer(progress.get("last_sample_at_ms")), "last_sample_at_ms"
+    return _integer(progress.get("last_observed_at_ms")), "legacy_last_observed_at_ms"
+
+
+def _receipt_richness(receipt: dict[str, Any]) -> tuple[int, int, int, int, int]:
     progress = receipt.get("progress") or {}
     return (
         len(progress.get("samples") or []),
-        len(receipt.get("launches") or []),
         1 if progress.get("terminal") else 0,
+        _last_sample_timestamp(progress)[0],
+        _integer(progress.get("terminal_at_ms")),
+        len(receipt.get("launches") or []),
     )
 
 
-def _collect_receipts(
-    trace: list[dict[str, Any]], diagnosis_payloads: list[dict[str, Any]], start_ms: int, end_ms: int
+def _progress_richness(progress: dict[str, Any]) -> tuple[int, int, int, int]:
+    return (
+        len(progress.get("samples") or []),
+        _last_sample_timestamp(progress)[0],
+        1 if progress.get("terminal") else 0,
+        _integer(progress.get("terminal_at_ms")),
+    )
+
+
+def _compact_progress_samples(
+    progress: dict[str, Any], receipt_id: int
 ) -> list[dict[str, Any]]:
-    found: dict[
+    compact: list[dict[str, Any]] = []
+    for sample in progress.get("samples") or []:
+        if not isinstance(sample, dict):
+            continue
+        sample_receipt_id = _integer(sample.get("receipt_id"))
+        if sample_receipt_id and sample_receipt_id != receipt_id:
+            continue
+        actor = sample.get("actor") or {}
+        floor = sample.get("floor") or {}
+        motion = sample.get("native_motion") or {}
+        compact.append(
+            {
+                "timestamp_ms": _integer(sample.get("observed_at_ms")),
+                "position": _point(actor),
+                "alive": actor.get("alive"),
+                "floor_z": floor.get("z"),
+                "floor_valid": floor.get("valid"),
+                "platform_compatible": floor.get("selected_platform_compatible"),
+                "spline_id": _integer(motion.get("spline_id")),
+                "spline_matches": motion.get("matches_launched_spline"),
+                "moving": motion.get("moving"),
+                "outcome": str(sample.get("outcome") or ""),
+                "terminal": bool(sample.get("terminal")),
+            }
+        )
+    return sorted(
+        compact,
+        key=lambda row: (
+            row["timestamp_ms"],
+            row["spline_id"],
+            row["outcome"],
+        ),
+    )
+
+
+def _merge_progress(
+    receipt_id: int, candidates: list[tuple[dict[str, Any], str]]
+) -> dict[str, Any]:
+    progress, _source = max(
+        candidates,
+        key=lambda candidate: (
+            _progress_richness(candidate[0]),
+            candidate[1] == "movement_receipt_progress",
+            json.dumps(candidate[0], sort_keys=True, separators=(",", ":")),
+        ),
+    )
+    samples = _compact_progress_samples(progress, receipt_id)
+    terminal_candidates = [
+        (candidate, source)
+        for candidate, source in candidates
+        if candidate.get("terminal")
+    ]
+    terminal_progress = (
+        max(
+            terminal_candidates,
+            key=lambda candidate: (
+                _integer(candidate[0].get("terminal_at_ms")),
+                _integer(candidate[0].get("superseded_by_receipt_id")),
+                len(candidate[0].get("samples") or []),
+                candidate[1] == "movement_receipt_progress",
+                json.dumps(candidate[0], sort_keys=True, separators=(",", ":")),
+            ),
+        )[0]
+        if terminal_candidates
+        else progress
+    )
+    last_sample_at_ms, last_sample_timestamp_basis = max(
+        (_last_sample_timestamp(candidate) for candidate, _source in candidates),
+        key=lambda value: (value[0], value[1] == "last_sample_at_ms"),
+        default=(0, "unavailable"),
+    )
+    if not last_sample_at_ms:
+        last_sample_at_ms = max(
+            (_integer(sample.get("timestamp_ms")) for sample in samples), default=0
+        )
+        if last_sample_at_ms:
+            last_sample_timestamp_basis = "derived_from_retained_sample"
+    armed_at_ms = min(
+        (
+            _integer(candidate.get("armed_at_ms"))
+            for candidate, _source in candidates
+            if _integer(candidate.get("armed_at_ms"))
+        ),
+        default=0,
+    )
+    first_sample_ms = min(
+        (_integer(sample.get("timestamp_ms")) for sample in samples if sample.get("timestamp_ms")),
+        default=0,
+    )
+    sources = sorted({source for _candidate, source in candidates})
+    return {
+        "available": any(bool(candidate.get("available")) for candidate, _ in candidates),
+        "source": "+".join(sources),
+        "history_present": "movement_receipt_progress" in sources,
+        "armed_at_ms": armed_at_ms,
+        "first_sample_at_ms": first_sample_ms,
+        "submission_to_first_progress_latency_ms": (
+            first_sample_ms - armed_at_ms
+            if first_sample_ms and armed_at_ms
+            else None
+        ),
+        "last_observed_at_ms": max(
+            (_integer(candidate.get("last_observed_at_ms")) for candidate, _ in candidates),
+            default=0,
+        ),
+        "last_sample_at_ms": last_sample_at_ms,
+        "last_sample_timestamp_basis": last_sample_timestamp_basis,
+        "terminal_at_ms": _integer(terminal_progress.get("terminal_at_ms")),
+        "sample_count": len(samples),
+        "dropped_sample_count": max(
+            (_integer(candidate.get("dropped_sample_count")) for candidate, _ in candidates),
+            default=0,
+        ),
+        "history_drop_count_available": any(
+            source == "movement_receipt_progress"
+            and "dropped_sample_count" in candidate
+            for candidate, source in candidates
+        ),
+        "terminal": bool(terminal_progress.get("terminal")),
+        "terminal_outcome": str(terminal_progress.get("terminal_outcome") or ""),
+        "superseded_by_receipt_id": _integer(
+            terminal_progress.get("superseded_by_receipt_id")
+        ),
+        "samples": samples,
+    }
+
+
+def _collect_receipts(
+    trace: list[dict[str, Any]],
+    diagnosis_payloads: list[dict[str, Any]],
+    start_ms: int,
+    end_ms: int,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    planner_found: dict[
         tuple[int, int], tuple[dict[str, Any], dict[str, Any], int, str, str]
     ] = {}
+    history_found: dict[tuple[int, int], list[dict[str, Any]]] = {}
+    history_snapshot_count = 0
+    history_present_count = 0
+    history_missing_count = 0
+    history_invalid_count = 0
+    history_missing_completeness_count = 0
+    identity_mismatch_count = 0
+    receipts_truncated = False
+    omitted_receipts_by_bot: dict[int, int] = {}
+    dropped_samples_by_bot: dict[int, int] = {}
+    payload_incomplete = False
 
     def consider(
         bot_guid: int,
@@ -251,18 +412,33 @@ def _collect_receipts(
         action: str,
         movement_planner: Any,
     ) -> None:
+        nonlocal identity_mismatch_count
         if not isinstance(movement_planner, dict):
             return
         receipt = movement_planner.get("launch_receipt") or {}
         if not isinstance(receipt, dict):
             return
         receipt_id = _integer(receipt.get("id"))
-        if not receipt_id or not (start_ms <= timestamp_ms <= end_ms):
+        if not bot_guid or not receipt_id or not (start_ms <= timestamp_ms <= end_ms):
+            return
+        receipt_bot_guid = _integer((receipt.get("identity") or {}).get("bot_guid"))
+        if receipt_bot_guid and receipt_bot_guid != bot_guid:
+            identity_mismatch_count += 1
             return
         key = (bot_guid, receipt_id)
-        current = found.get(key)
-        if current is None or _receipt_richness(receipt) > _receipt_richness(current[0]):
-            found[key] = (
+        current = planner_found.get(key)
+        if current is None or (
+            _receipt_richness(receipt),
+            timestamp_ms,
+            timestamp_basis,
+            action,
+        ) > (
+            _receipt_richness(current[0]),
+            current[2],
+            current[3],
+            current[4],
+        ):
+            planner_found[key] = (
                 receipt,
                 movement_planner,
                 timestamp_ms,
@@ -286,53 +462,148 @@ def _collect_receipts(
                 continue
             snapshot = bot.get("snapshot") or {}
             timestamp_ms = _integer((snapshot.get("combat_attempt") or {}).get("recorded_at_ms"))
+            bot_guid = _integer((bot.get("identity") or {}).get("bot_guid"))
             consider(
-                _integer((bot.get("identity") or {}).get("bot_guid")),
+                bot_guid,
                 timestamp_ms,
                 "diagnosis_last_native_combat_attempt",
                 str((snapshot.get("decision") or {}).get("action") or ""),
                 snapshot.get("movement_planner"),
             )
+            if not (start_ms <= timestamp_ms <= end_ms):
+                continue
+            history_snapshot_count += 1
+            if "movement_receipt_progress" not in snapshot:
+                history_missing_count += 1
+                continue
+            history_present_count += 1
+            publication = snapshot.get("movement_receipt_progress")
+            if not isinstance(publication, dict):
+                history_invalid_count += 1
+                continue
+            publication_bot_guid = _integer(publication.get("bot_guid"))
+            if not bot_guid or publication_bot_guid != bot_guid:
+                identity_mismatch_count += 1
+                continue
+            publication_receipts = publication.get("receipts") or []
+            if not isinstance(publication_receipts, list):
+                history_invalid_count += 1
+                continue
+            publication_drop_count = sum(
+                _integer(receipt.get("dropped_sample_count"))
+                for receipt in publication_receipts
+                if isinstance(receipt, dict)
+            )
+            required_completeness_fields = {
+                "receipts_truncated",
+                "omitted_receipt_count",
+                "dropped_sample_count",
+                "payload_complete",
+            }
+            if not required_completeness_fields.issubset(publication):
+                history_missing_completeness_count += 1
+            receipts_truncated = receipts_truncated or bool(
+                publication.get("receipts_truncated")
+            )
+            omitted_receipts_by_bot[bot_guid] = max(
+                omitted_receipts_by_bot.get(bot_guid, 0),
+                _integer(publication.get("omitted_receipt_count")),
+            )
+            dropped_samples_by_bot[bot_guid] = max(
+                dropped_samples_by_bot.get(bot_guid, 0),
+                _integer(publication.get("dropped_sample_count")),
+                publication_drop_count,
+            )
+            payload_incomplete = payload_incomplete or publication.get(
+                "payload_complete"
+            ) is not True
+            for receipt in publication_receipts:
+                if not isinstance(receipt, dict):
+                    history_invalid_count += 1
+                    continue
+                receipt_id = _integer(receipt.get("receipt_id"))
+                receipt_bot_guid = _integer(receipt.get("bot_guid"))
+                if (
+                    not receipt_id
+                    or receipt_bot_guid != bot_guid
+                ):
+                    identity_mismatch_count += 1
+                    continue
+                invalid_samples = sum(
+                    1
+                    for sample in receipt.get("samples") or []
+                    if not isinstance(sample, dict)
+                    or _integer(sample.get("receipt_id")) != receipt_id
+                )
+                if invalid_samples:
+                    identity_mismatch_count += invalid_samples
+                required_receipt_completeness_fields = {
+                    "dropped_sample_count",
+                    "last_sample_at_ms",
+                    "terminal_at_ms",
+                    "superseded_by_receipt_id",
+                }
+                if not required_receipt_completeness_fields.issubset(receipt):
+                    history_missing_completeness_count += 1
+                lifecycle_times = [
+                    _integer(receipt.get("armed_at_ms")),
+                    _integer(receipt.get("last_sample_at_ms")),
+                    _integer(receipt.get("terminal_at_ms")),
+                    timestamp_ms,
+                ]
+                if not any(start_ms <= value <= end_ms for value in lifecycle_times if value):
+                    continue
+                history_found.setdefault((bot_guid, receipt_id), []).append(receipt)
 
     compact: list[dict[str, Any]] = []
-    for (bot_guid, receipt_id), (
-        receipt,
-        movement_planner,
-        observed_at_ms,
-        timestamp_basis,
-        action,
-    ) in found.items():
+    keys = sorted(set(planner_found) | set(history_found))
+    for bot_guid, receipt_id in keys:
+        planner_record = planner_found.get((bot_guid, receipt_id))
+        receipt = planner_record[0] if planner_record else {}
+        movement_planner = planner_record[1] if planner_record else {}
+        history_candidates = history_found.get((bot_guid, receipt_id), [])
+        history_receipt = (
+            max(
+                history_candidates,
+                key=lambda candidate: (
+                    _progress_richness(candidate),
+                    json.dumps(candidate, sort_keys=True, separators=(",", ":")),
+                ),
+            )
+            if history_candidates
+            else {}
+        )
+        observed_at_ms = (
+            planner_record[2]
+            if planner_record
+            else _integer(history_receipt.get("armed_at_ms"))
+        )
+        timestamp_basis = (
+            planner_record[3]
+            if planner_record
+            else "movement_receipt_progress_armed_at_ms"
+        )
+        action = planner_record[4] if planner_record else ""
         identity = receipt.get("identity") or {}
         planner = receipt.get("planner_path") or {}
-        progress = receipt.get("progress") or {}
         launches = receipt.get("launches") or []
         launch = launches[-1] if launches else {}
         spline = launch.get("spline_launch") or {}
-        native_samples = []
-        for sample in progress.get("samples") or []:
-            actor = sample.get("actor") or {}
-            floor = sample.get("floor") or {}
-            motion = sample.get("native_motion") or {}
-            native_samples.append(
-                {
-                    "timestamp_ms": _integer(sample.get("observed_at_ms")),
-                    "position": _point(actor),
-                    "alive": actor.get("alive"),
-                    "floor_z": floor.get("z"),
-                    "floor_valid": floor.get("valid"),
-                    "platform_compatible": floor.get("selected_platform_compatible"),
-                    "spline_id": _integer(motion.get("spline_id")),
-                    "spline_matches": motion.get("matches_launched_spline"),
-                    "moving": motion.get("moving"),
-                    "outcome": str(sample.get("outcome") or ""),
-                    "terminal": bool(sample.get("terminal")),
-                }
-            )
-        first_sample_ms = min(
-            (_integer(row.get("timestamp_ms")) for row in native_samples if row.get("timestamp_ms")),
-            default=0,
+        launched_spline = history_receipt.get("launched_spline") or {}
+        progress_candidates: list[tuple[dict[str, Any], str]] = []
+        planner_progress = receipt.get("progress") or {}
+        if isinstance(planner_progress, dict) and planner_progress:
+            progress_candidates.append((planner_progress, "movement_planner"))
+        progress_candidates.extend(
+            (candidate, "movement_receipt_progress")
+            for candidate in history_candidates
         )
-        armed_at_ms = _integer(progress.get("armed_at_ms"))
+        if not progress_candidates:
+            progress_candidates.append(({}, "movement_planner"))
+        progress = _merge_progress(receipt_id, progress_candidates)
+        actor_at_launch = _point(history_receipt.get("actor_at_launch"))
+        selected_endpoint = _point(history_receipt.get("selected_endpoint"))
+        planner_available = bool(planner_record)
         compact.append(
             {
                 "receipt_id": receipt_id,
@@ -342,13 +613,16 @@ def _collect_receipts(
                 "decision_action": action,
                 "intent_reason": str(identity.get("intent_reason") or ""),
                 "owner": str(identity.get("owner") or ""),
-                "scope": identity.get("scope") or {},
-                "actor_before_planning": _point(receipt.get("actor_before_planning")),
+                "scope": identity.get("scope") or history_receipt.get("scope") or {},
+                "actor_before_planning": (
+                    _point(receipt.get("actor_before_planning")) or actor_at_launch
+                ),
                 "request": _point((receipt.get("executor") or {}).get("requested")),
-                "selected_endpoint": _point(planner.get("selected_endpoint")),
+                "selected_endpoint": _point(planner.get("selected_endpoint")) or selected_endpoint,
                 "planner": {
-                    "calculated": bool(planner.get("calculated")),
-                    "complete": bool(planner.get("complete")),
+                    "available": planner_available,
+                    "calculated": bool(planner.get("calculated")) if planner_available else None,
+                    "complete": bool(planner.get("complete")) if planner_available else None,
                     "path_type": _integer(planner.get("type")),
                     "control_count": _integer((planner.get("controls") or {}).get("count")),
                     "control_fingerprint": str(
@@ -360,20 +634,32 @@ def _collect_receipts(
                     "floor_observation": planner.get("floor_observation") or {},
                 },
                 "admission": {
+                    "available": planner_available,
                     "gate": str(movement_planner.get("gate") or ""),
                     "result": str(movement_planner.get("result") or ""),
                     "reason": str(movement_planner.get("reason") or ""),
                     "planner": movement_planner.get("planner") or {},
                 },
                 "executor": {
-                    "generate_path": bool((receipt.get("executor") or {}).get("generate_path")),
+                    "available": planner_available or bool(history_receipt),
+                    "generate_path": (
+                        bool((receipt.get("executor") or {}).get("generate_path"))
+                        if planner_available
+                        else None
+                    ),
                     "submission_position": _point(
                         (receipt.get("executor") or {}).get("actor_before_submission")
                     ),
-                    "launch_attempts": len(launches),
-                    "spline_launch_attempted": bool(spline.get("attempted")),
-                    "spline_launch_succeeded": bool(spline.get("succeeded")),
-                    "spline_id": _integer(spline.get("spline_id")),
+                    "launch_attempts": len(launches) if planner_available else None,
+                    "spline_launch_attempted": (
+                        bool(spline.get("attempted")) if planner_available else None
+                    ),
+                    "spline_launch_succeeded": (
+                        bool(spline.get("succeeded"))
+                        if planner_available
+                        else bool(launched_spline.get("initialized"))
+                    ),
+                    "spline_id": _integer(spline.get("spline_id") or launched_spline.get("id")),
                     "spline_control_count": _integer(
                         (spline.get("controls") or {}).get("count")
                     ),
@@ -381,25 +667,56 @@ def _collect_receipts(
                         (spline.get("controls") or {}).get("fingerprint") or ""
                     ),
                 },
-                "progress": {
-                    "available": bool(progress.get("available")),
-                    "armed_at_ms": armed_at_ms,
-                    "first_sample_at_ms": first_sample_ms,
-                    "submission_to_first_progress_latency_ms": (
-                        first_sample_ms - armed_at_ms
-                        if first_sample_ms and armed_at_ms
-                        else None
-                    ),
-                    "last_observed_at_ms": _integer(progress.get("last_observed_at_ms")),
-                    "sample_count": len(native_samples),
-                    "dropped_sample_count": _integer(progress.get("dropped_sample_count")),
-                    "terminal": bool(progress.get("terminal")),
-                    "terminal_outcome": str(progress.get("terminal_outcome") or ""),
-                    "samples": native_samples,
-                },
+                "progress": progress,
             }
         )
-    return sorted(compact, key=lambda row: (row["observed_at_ms"], row["bot_guid"], row["receipt_id"]))
+    history_missing = not history_present_count or bool(history_missing_count)
+    omitted_receipt_count = sum(omitted_receipts_by_bot.values())
+    dropped_sample_count = sum(dropped_samples_by_bot.values())
+    if not history_present_count:
+        history_status = "unavailable"
+        history_receipts_truncated: bool | None = None
+        history_omitted_receipt_count: int | None = None
+        history_dropped_sample_count: int | None = None
+    else:
+        partial = bool(
+            history_missing_count
+            or history_invalid_count
+            or history_missing_completeness_count
+            or identity_mismatch_count
+            or receipts_truncated
+            or omitted_receipt_count
+            or dropped_sample_count
+            or payload_incomplete
+        )
+        history_status = "partial" if partial else "complete"
+        history_receipts_truncated = receipts_truncated
+        history_omitted_receipt_count = omitted_receipt_count
+        history_dropped_sample_count = dropped_sample_count
+    completeness = {
+        "status": history_status,
+        "missing_history_field": history_missing,
+        "snapshots_examined": history_snapshot_count,
+        "snapshots_with_history_field": history_present_count,
+        "snapshots_missing_history_field": history_missing_count,
+        "invalid_publication_count": history_invalid_count,
+        "missing_completeness_field_count": history_missing_completeness_count,
+        "identity_mismatch_count": identity_mismatch_count,
+        "receipts_truncated": history_receipts_truncated,
+        "omitted_receipt_count": history_omitted_receipt_count,
+        "dropped_sample_count": history_dropped_sample_count,
+    }
+    return (
+        sorted(
+            compact,
+            key=lambda row: (
+                row["observed_at_ms"],
+                row["bot_guid"],
+                row["receipt_id"],
+            ),
+        ),
+        completeness,
+    )
 
 
 def _evidence_map(diagnosis: dict[str, Any]) -> dict[str, Any]:
@@ -584,6 +901,62 @@ def _position_samples(
     return sorted(samples.values(), key=lambda row: (row["timestamp_ms"], row["bot_guid"], row["basis"]))
 
 
+def _causal_receipt_lifecycle_completeness(
+    history: dict[str, Any],
+    causal: dict[str, Any],
+    receipts: list[dict[str, Any]],
+) -> dict[str, Any]:
+    suspected = causal.get("suspected_upstream_receipt") or {}
+    receipt_id = _integer(suspected.get("receipt_id"))
+    bot_guid = _integer(suspected.get("bot_guid"))
+    identity = {
+        "bot_guid": bot_guid or None,
+        "receipt_id": receipt_id or None,
+        "completeness_scope": "bounded_receipt_publication_only",
+        "continuous_actor_position": "unavailable",
+        "causal_closure": False,
+    }
+    if not receipt_id or not bot_guid:
+        return {"status": "unavailable", "complete": None, **identity}
+    receipt = next(
+        (
+            row
+            for row in receipts
+            if row["bot_guid"] == bot_guid and row["receipt_id"] == receipt_id
+        ),
+        None,
+    )
+    if history["status"] == "unavailable" or not receipt:
+        return {"status": "unavailable", "complete": None, **identity}
+    progress = receipt.get("progress") or {}
+    if not progress.get("history_present"):
+        return {"status": "partial", "complete": False, **identity}
+    terminal_outcome = str(progress.get("terminal_outcome") or "")
+    supersession_complete = (
+        terminal_outcome != "superseded_by_native_launch"
+        or _integer(progress.get("superseded_by_receipt_id")) > 0
+    )
+    complete = bool(
+        history["status"] == "complete"
+        and not history["receipts_truncated"]
+        and history["omitted_receipt_count"] == 0
+        and history["dropped_sample_count"] == 0
+        and _integer(progress.get("dropped_sample_count")) == 0
+        and progress.get("history_drop_count_available")
+        and progress.get("terminal")
+        and progress.get("last_sample_timestamp_basis") == "last_sample_at_ms"
+        and _integer(progress.get("last_sample_at_ms")) > 0
+        and _integer(progress.get("terminal_at_ms"))
+        >= _integer(progress.get("last_sample_at_ms"))
+        and supersession_complete
+    )
+    return {
+        "status": "complete" if complete else "partial",
+        "complete": complete,
+        **identity,
+    }
+
+
 def build_replay(
     raw_path: Path,
     report_path: Path,
@@ -617,7 +990,9 @@ def build_replay(
         if start_ms <= _integer(row.get("timestamp_ms")) <= end_ms
     ]
     decisions = [_compact_decision(row) for row in trace_window]
-    receipts = _collect_receipts(trace, diagnosis_payloads, start_ms, end_ms)
+    receipts, receipt_history_completeness = _collect_receipts(
+        trace, diagnosis_payloads, start_ms, end_ms
+    )
     diagnoses = _diagnosis_frames(diagnosis_payloads, start_ms, end_ms)
     positions = _position_samples(combat_window, receipts)
     movement = movement_diagnostics(positions, receipts)
@@ -693,6 +1068,12 @@ def build_replay(
         "deaths": {"count": len(deaths), "events": deaths},
     }
     causal = causal_assessment(movement, receipts, diagnoses)
+    receipt_history_completeness["causal_receipt_lifecycle"] = (
+        _causal_receipt_lifecycle_completeness(
+            receipt_history_completeness, causal, receipts
+        )
+    )
+    completeness["movement_receipt_progress"] = receipt_history_completeness
     replay = {
         "schema": SCHEMA,
         "source": {
@@ -749,11 +1130,15 @@ def build_replay(
         "hazard_reaction": derived["hazard_reaction"]["status"],
         "cast_downtime": derived["cast_downtime"]["status"],
         "causal_assessment": causal,
+        "movement_receipt_progress_completeness": receipt_history_completeness,
         "missing_field_ledger": {
             key: value
             for key, value in completeness.items()
-            if value in {"missing", "periodic_diagnosis_only_not_every_tick"}
-            or (isinstance(value, str) and value.startswith("sparse_"))
+            if isinstance(value, str)
+            and (
+                value in {"missing", "periodic_diagnosis_only_not_every_tick"}
+                or value.startswith("sparse_")
+            )
         },
     }
     return replay, summary

@@ -343,19 +343,19 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "runtime:magmaw_receipt_progress:close_receipt_598_sampling_gap"
+        "shard:magmaw_receipt_progress:fixture_expansion_capture"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-bot-runtime-implementation"
+    assert active["owner_skill"] == "raid-shard-architecture"
     assert "dropping from Z 210.969 to Z 202.374" in active["first_broken_edge"]
-    assert "stop 3.553 seconds before the drop" in active["first_broken_edge"]
+    assert "currently selected planner observation" in active["first_broken_edge"]
     evidence = active["live_observation"]
     assert evidence["terminal"] == "repeated_decision_watchdog"
     assert evidence["persistent_vertical_drop_bot_guid"] == 30007
     assert evidence["suspected_receipt_id"] == 598
     assert evidence["causal_sampling_gap_ms"] == 3553
     assert active["gate_state"] == (
-        "persistent_vertical_drop_localized_causal_closure_required"
+        "receipt_progress_reducer_fixture_green_exact_build_and_capture_required"
     )
     assert active["coordinator_followup"][
         "canary_budget_before_full_bank"
@@ -363,7 +363,9 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert active["validation"]["build_admitted"] is False
     assert active["validation"]["canary_admitted"] is False
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "close the receipt 598 sampling gap" in active["next_action"].lower()
+    assert "run one admitted map-669 fixture-expansion capture" in active[
+        "next_action"
+    ].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False

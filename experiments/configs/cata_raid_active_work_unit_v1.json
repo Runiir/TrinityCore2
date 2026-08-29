@@ -1,19 +1,19 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "epoch_id": "magmaw_canary122_native_launch_replay_v1_20260829",
-  "work_unit": "evidence:magmaw_tactical_replay:ingest_receipt_progress_history",
+  "work_unit": "shard:magmaw_receipt_progress:fixture_expansion_capture",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-evidence-lifecycle",
+  "owner_skill": "raid-shard-architecture",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "receipt_progress_publication_fixture_green_reducer_ingestion_required",
+  "gate_state": "receipt_progress_reducer_fixture_green_exact_build_and_capture_required",
   "observed_at_commit": "748d63431cfcda9ea4957711b29346de287d90d9",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_748d63431c_tactical_replay_lite_summary_v1.json",
     "sha256": "f3f54e4d2da2b17747fba8db885fc72b3920b72a44c4f642e41243a3193508bc"
   },
-  "first_broken_edge": "The bounded replay localizes the first persistent corrupted state at bot 30007 dropping from Z 210.969 to Z 202.374, but receipt 598 becomes invisible after four samples because progress was published only through the currently selected planner observation. A fixture-green diagnosis field now publishes active and recent receipt-keyed progress independently; the tactical replay reducer does not yet ingest that field, and no live capture has established whether spline 6780 caused the drop.",
+  "first_broken_edge": "The bounded replay localizes the first persistent corrupted state at bot 30007 dropping from Z 210.969 to Z 202.374, but receipt 598 became invisible after four samples because progress was published only through the currently selected planner observation. The diagnosis field and replay reducer now preserve bounded receipt-keyed history through terminal or supersession in deterministic fixtures. No current map-669 capture has established whether live receipt 598 continued sampling or whether spline 6780 caused the drop.",
   "causal_signature": "magmaw_receipt_598_then_persistent_vertical_drop_then_partial_path_backoff",
   "causal_claim_status": "state_infection_localized_launch_cause_unproven",
   "claim_ledger": {
@@ -32,7 +32,11 @@
       "the_sixteen_sample_ring_did_not_stop_receipt_598_sampling",
       "planner_selected_publication_can_hide_an_older_retained_receipt",
       "diagnosis_now_publishes_a_bounded_independent_receipt_progress_history",
-      "fixture_preserves_last_sample_and_terminal_timestamps_separately"
+      "fixture_preserves_last_sample_and_terminal_timestamps_separately",
+      "tactical_replay_lite_now_merges_history_only_by_matching_bot_and_receipt_identity",
+      "reducer_reports_missing_truncated_dropped_or_identity_mismatched_history_as_unavailable_or_partial",
+      "reducer_uses_last_sample_time_not_terminal_time_for_the_causal_gap",
+      "bounded_history_completeness_does_not_claim_continuous_position_or_causal_closure"
     ],
     "refuted": [
       "the_repeated_decision_watchdog_was_the_first_state_infecting_edge",
@@ -72,7 +76,7 @@
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
-    "allowed_change": "Extend tactical_replay_lite to ingest the bounded diagnosis movement_receipt_progress history, preserve receipt and spline identity plus last-sample and terminal timestamps, report truncation and dropped-sample completeness, and add a deterministic displaced-receipt reducer fixture. Do not build or run a shard until the reducer proves it retains that production schema.",
+    "allowed_change": "At the clean committed identity, run the complete retained regression bank, create one exact fast8 build receipt with eight compiler jobs, and run one admitted map-669 fixture-expansion capture that emits diagnosis movement_receipt_progress through terminal or supersession and reduces it with tactical_replay_lite. Publish and evict only that bounded evidence.",
     "forbidden": [
       "magmaw_policy_or_strategy_change",
       "generic_planner_tolerance_change",
@@ -82,7 +86,8 @@
       "boss_outcome_mutation",
       "visual_replay_ui",
       "unchanged_live_rerun_before_the_sampling_gap_is_closed",
-      "worldserver_build_or_capture_before_reducer_ingestion_is_tested"
+      "gameplay_or_strategy_edit_during_fixture_expansion",
+      "second_live_attempt_before_the_first_capture_is_reduced_and_reviewed"
     ]
   },
   "validation": {
@@ -90,6 +95,8 @@
     "tactical_replay_dvc_remote_verified": true,
     "receipt_progress_publication_focused_tests": "6_passed",
     "receipt_progress_publication_fixture_green": true,
+    "receipt_progress_reducer_focused_tests": "3_passed",
+    "receipt_progress_reducer_fixture_green": true,
     "build_admitted": false,
     "fixture_expansion_admitted": false,
     "canary_admitted": false,
@@ -103,8 +110,8 @@
     "build_jobs": 8,
     "canary_budget_before_full_bank": 0,
     "canary_budget_after_full_bank_and_exact_build": 1,
-    "next_owner_after_reducer_ingestion": "raid-performance-loop",
-    "next_work_unit_after_reducer_ingestion": "coordinator:build_and_run_one_receipt_history_fixture_expansion_capture"
+    "next_owner_after_fixture_expansion_capture": "raid-performance-loop",
+    "next_work_unit_after_fixture_expansion_capture": "coordinator:review_live_receipt_history_and_route_only_a_verified_edge"
   },
-  "next_action": "Teach tactical_replay_lite to consume the bounded diagnosis receipt-progress history and prove displaced receipt recovery deterministically. Then return to the coordinator for one exact build and fixture-expansion capture. Do not change gameplay until a live receipt and spline are correlated to the consumed mutation."
+  "next_action": "Commit the fixture-green observer and reducer, pass the complete retained regression bank, build with fast8, and run one admitted map-669 fixture-expansion capture. Reduce and review that capture before any gameplay edit or second attempt."
 }
