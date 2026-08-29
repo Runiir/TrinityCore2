@@ -1,17 +1,17 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "epoch_id": "magmaw_canary122_native_launch_replay_v1_20260829",
-  "work_unit": "shard_architecture:post_trash_pre_pull_checkpoint:canary122_seq745",
+  "work_unit": "runtime_implementation:validation_prepull_checkpoint_gate:canary122_seq745",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-shard-architecture",
+  "owner_skill": "raid-bot-runtime-implementation",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "post_trash_pre_pull_checkpoint_required",
+  "gate_state": "validation_prepull_checkpoint_runtime_exposure_required",
   "observed_at_commit": "75c12a3d1f28215021aa83c3b6af099b6609a193",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
-    "sha256": "7526b61cd53946878c34b5fb6a0697be0be7893f9416063026f35e85003bae70"
+    "sha256": "a572b46a2d3000369ea44a4e2877bd7912c2c9f32d77dec82c67119874b98321"
   },
   "first_broken_edge": "Candidate edge: Canary122 seq745 admitted and submitted Mgwhealc's complete ranged_formation_restore path despite a SampleFloorGap conflict; execution structurally regenerated an unverified path, after which the bot's source-derived live Z dropped from the Magmaw platform to 202.591 and later 6.70457. The exact launched spline and physical transition remain unproven.",
   "causal_signature": "native_planner_executor_launch_divergence",
@@ -74,7 +74,7 @@
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
-    "allowed_change": "Add one production setup or checkpoint interface that reaches the canonical post-trash, pre-pull Magmaw state, holds the boss node until formation and prepull are complete, then releases the existing receipt observer without changing gameplay behavior.",
+    "allowed_change": "Add one validation-only route-node checkpoint state machine and readback that permits formation, friendly healing, and bag consumables while suppressing bossward movement and hostile player or pet actions until a receipt-bound single release. Default gameplay must remain unchanged when disabled.",
     "forbidden": [
       "magmaw_pincer_or_exposed_head_policy_change",
       "global_z_threshold_expansion",
@@ -88,10 +88,10 @@
     ]
   },
   "validation": {
-    "focused_result": "one_node_replay_refuted_post_trash_pre_pull_checkpoint_required",
+    "focused_result": "checkpoint_interface_absent_runtime_exposure_required",
     "immutable_bank_fixture_count": 19,
     "immutable_bank_all_rows_passed": false,
-    "build_admitted": true,
+    "build_admitted": false,
     "canary_admitted": false,
     "acceptance_admitted": false
   },
@@ -103,8 +103,8 @@
     "build_jobs": 8,
     "canary_budget_before_full_bank": 0,
     "canary_budget_after_full_bank_and_exact_build": 1,
-    "next_owner_after_checkpoint": "raid-shard-architecture",
-    "next_work_unit_after_checkpoint": "shard_architecture:map669_native_launch_replay:canary122_seq745"
+    "next_owner_after_runtime_exposure": "raid-shard-architecture",
+    "next_work_unit_after_runtime_exposure": "shard_architecture:map669_native_launch_replay:canary122_seq745"
   },
-  "next_action": "Implement or restore a production post-trash, pre-pull Magmaw checkpoint that keeps the boss node sealed until formation, consumables, and prepull readiness complete. Then rerun the isolated receipt capture. Do not change movement behavior until that receipt closes."
+  "next_action": "Implement the validation-only staging, ready, and released checkpoint with deterministic readback and default-off behavior. Then return to shard architecture for one canonical checkpoint and correlated launch receipt. Do not change movement behavior until that receipt closes."
 }
