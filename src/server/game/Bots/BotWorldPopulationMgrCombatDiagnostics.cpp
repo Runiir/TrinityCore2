@@ -189,8 +189,9 @@ void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bo
             diagnostic.PetVictimGuid = pet->GetVictim()
                 ? pet->GetVictim()->GetGUID().GetCounter() : 0;
             if (Spell* current = pet->GetCurrentSpell(CURRENT_GENERIC_SPELL))
-                if (SpellInfo const* currentInfo = current->GetSpellInfo())
-                    diagnostic.PetCurrentGenericSpellId = currentInfo->Id;
+                if (current->getState() != SPELL_STATE_FINISHED)
+                    if (SpellInfo const* currentInfo = current->GetSpellInfo())
+                        diagnostic.PetCurrentGenericSpellId = currentInfo->Id;
         }
     if (reason && *reason)
         diagnostic.Reason = reason;
