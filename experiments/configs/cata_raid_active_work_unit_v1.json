@@ -1,48 +1,49 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_hazard_exit_diagnosis_v1_20260830",
-  "work_unit": "review:chainwielder_hazard_exit_failed:read_only_causal_diagnosis",
+  "epoch_id": "magmaw_chainwielder_pre_admission_rejection_fixture_expansion_v1_20260830",
+  "work_unit": "shard:magmaw_chainwielder_pre_admission_rejection:fixture_expansion_capture",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-rotation-review",
+  "owner_skill": "raid-shard-architecture",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "receipt56_fixture_boundary_promoted_gameplay_build_and_canary_closed_chainwielder_causal_diagnosis_required",
+  "gate_state": "chainwielder_revision1_observation_only_full_bank_and_exact_matched_production_capture_required",
   "observed_at_commit": "461fe737791ea714b493354281f844e985ca3117",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_78e33e6557_receipt_history_fixture_expansion_summary_v1.json",
     "sha256": "fe58b3e470773d7ea937c8c7d8e9de5c75af9558ac19f5c319d9c3120d159f49",
     "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_78e33e6557_magmaw_receipt_history_fixture_expansion_20260830.dvc",
-    "dvc_pointer_sha256": "5476a8ce1508d844b452b46f58a1085885044b1445a463457a50b382a7d70a98"
+    "dvc_pointer_sha256": "5476a8ce1508d844b452b46f58a1085885044b1445a463457a50b382a7d70a98",
+    "implementation_commit": "a75334b519a47ce85804d5d387ba6452fbc54753",
+    "implementation_tree": "94a97f4a28e7daa7f4c376463e4d2b4fc7b147c7",
+    "compiled_helper": "tests/test_movement_pre_admission_rejection_state.py",
+    "compiled_helper_sha256": "6d6f842ce1634ecd9a9da98d72e48900ba7b7be5a14d0581ffefb6675f4e4ccf"
   },
-  "first_broken_edge": "The observation-only run terminated at route node bwd.magmaw.chainwielder after 20 repeated hazard_exit_failed decisions. Receipt 56 independently closes the native planner-to-terminal-or-supersession fixture boundary, but neither that receipt nor this terminal identifies the first state-infecting Chainwielder decision or native outcome.",
-  "causal_signature": "chainwielder_hazard_exit_failed_repeated_decision_loop_unresolved",
-  "causal_claim_status": "terminal_localized_first_state_infecting_edge_unproven",
+  "first_broken_edge": "In the immutable map-669 Chainwielder capture, a receiptless adaptive Hazard proposal rejected by the future-pack destination guard was allowed to clear or overwrite movement state owned by an already-admitted Route path or its armed hazard retry. The route then repeated hazard_exit_failed twenty times. Commit a75334b519 isolates that state transition in a compiled helper, but no current worldserver-backed run has yet proved the fixed binary preserves the Route owner and completes the hazard exit.",
+  "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state",
+  "causal_claim_status": "causal_edge_implemented_compiled_helper_green_production_outcome_unverified",
   "claim_ledger": {
     "verified": [
-      "native_planner_executor_launch_proof_v1_revision_3_is_bound_to_receipt_56_and_spline_667",
-      "receipt_56_has_five_same_identity_progress_samples_with_improving_distance_and_zero_drops",
-      "receipt_56_terminated_by_explicit_supersession_from_receipt_58",
-      "the_fixture_expansion_run_terminated_at_bwd_magmaw_chainwielder",
-      "the_terminal_was_repeated_decision_watchdog_after_twenty_hazard_exit_failed_decisions",
-      "the_capture_ran_no_gameplay_mutation_and_reached_no_magmaw_checkpoint"
+      "the_source_capture_is_bound_to_review_commit_461fe73779_and_capture_source_78e33e6557",
+      "the_source_capture_stopped_at_bwd_magmaw_chainwielder_after_twenty_hazard_exit_failed_decisions",
+      "the_rejected_adaptive_hazard_proposal_had_no_planner_receipt_and_did_not_own_the_existing_route_movement_state",
+      "commit_a75334b519_separates_receiptless_pre_admission_rejection_observation_from_foreign_owner_state_mutation",
+      "the_compiled_helper_exercises_foreign_route_path_preservation_armed_route_hazard_retry_preservation_same_owner_fail_closed_and_unowned_fail_closed_cases"
     ],
     "refuted": [
-      "receipt_56_reproduced_the_canary122_wrong_floor_mechanism",
-      "closing_the_receipt_history_boundary_closes_the_original_canary122_causal_claim",
-      "the_fixture_expansion_run_reached_the_magmaw_boss_checkpoint"
+      "the_compiled_helper_is_a_live_map669_executor_replay",
+      "a_green_helper_fixture_authorizes_gameplay_or_acceptance"
     ],
     "unproven": [
-      "the_first_candidate_or_observation_that_caused_chainwielder_hazard_exit_failed",
-      "whether_the_chainwielder_loop_is_stale_hazard_state_arbitration_native_movement_or_route_lifecycle",
-      "whether_any_successful_wait_lane_masked_a_failed_movement_candidate_before_the_watchdog",
-      "the_original_canary122_wrong_floor_cause"
+      "the_current_binary_preserves_the_route_owned_path_after_the_matched_receiptless_hazard_rejection_in_a_live_chainwielder_run",
+      "the_current_binary_preserves_the_armed_route_hazard_retry_across_subsequent_world_ticks",
+      "the_bot_completes_the_chainwielder_hazard_exit_without_the_twenty_decision_loop",
+      "magmaw_or_later_route_progress"
     ]
   },
   "live_observation": {
     "source_commit": "78e33e65571c50d3bc336f49b7ecbc5d900fc0dc",
-    "source_tree": "a040bddd189c671646153ce98ed28e36d534f192",
-    "binary_sha256": "a8fdda50e17cd2ff2fc72db03f37db78e5b1ad6c705f1ed45b154e0aeb7f9d16",
+    "source_evidence_commit": "461fe737791ea714b493354281f844e985ca3117",
     "map": 669,
     "instance": 2,
     "attempt_id": 1,
@@ -57,9 +58,14 @@
   },
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "promoted_fixture_id": "native_planner_executor_launch_proof_v1",
-    "promoted_fixture_revision": 3,
-    "fixture_expansion_request_cleared": true,
+    "target_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+    "target_fixture_revision": 1,
+    "target_fixture_evidence_boundary": "observation_only",
+    "required_production_revision": 2,
+    "fixture_expansion_request_kind": "pending_observation_only_fixture",
+    "expected_fixture_expansion_target_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1"
+    ],
     "preserved_invalidated_fixture_ids": [
       "magmaw_parasite_control_full_runtime_v1",
       "magmaw_parasite_lane_paths_v1",
@@ -68,31 +74,30 @@
       "same_level_hazard_path_admission_v1",
       "same_level_native_path_proof_v1"
     ],
-    "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
   },
+  "required_production_boundary": "worldserver-backed map-669 Chainwielder replay on the exact current binary where the same bot has an admitted Route native path or an armed route-owned hazard retry, a receiptless owner=Hazard future_pack_destination rejection is observed, the rejected intent leaves the Route-owned path and retry state unchanged across subsequent ticks, and the bot then completes the Chainwielder hazard exit or reaches one typed terminal edge",
   "scope_lock": {
-    "allowed_change": "Read only the immutable receipt-history capture and relevant current source to reconstruct the Chainwielder hazard_exit_failed loop from observed state through candidate set, arbitration, native submission, and outcome. Return the first contradictory or missing edge and its exact evidence identity. Do not implement a fix or run another server.",
+    "allowed_change": "Run the exact clean retained regression bank, acquire one queued exact build for that admitted source, and run one observation-only fixture-expansion capture targeted only at chainwielder_pre_admission_rejection_isolation_v1. Match the live rejection and existing Route owner by bot, attempt, route generation, action sequence, planner receipt zero, movement owner, and subsequent state. Stop on Chainwielder completion or the first typed watchdog edge. Publish and evict evidence through the normal DVC lifecycle. Do not change gameplay.",
     "forbidden": [
       "gameplay_or_strategy_change",
       "cpp_or_database_change",
       "generic_planner_tolerance_change",
-      "fixture_revision_or_recurrence_ledger_change",
-      "build_or_worldserver_start",
-      "live_canary_or_second_capture",
-      "canary122_causal_closure_inference_from_receipt_56",
-      "visual_replay_ui"
+      "fixture_revision_promotion_before_production_evidence",
+      "gameplay_canary_or_acceptance_run",
+      "targeting_any_of_the_six_preserved_invalidated_fixtures",
+      "magmaw_causal_or_completion_claim_from_chainwielder_evidence",
+      "second_live_attempt"
     ]
   },
   "validation": {
-    "receipt_56_fixture_boundary_met": true,
-    "native_planner_executor_launch_proof_revision": 3,
-    "original_canary122_cause_reproduced": false,
-    "original_canary122_cause_proven": false,
-    "fixture_expansion_request_cleared": true,
-    "other_invalidated_fixtures_preserved": 6,
+    "retained_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+    "retained_fixture_revision": 1,
+    "compiled_helper_green": true,
+    "compiled_helper_is_live_executor_replay": false,
+    "production_boundary_met": false,
+    "fixture_expansion_admission_required": true,
     "build_admitted": false,
-    "fixture_expansion_admitted": false,
     "canary_admitted": false,
     "gameplay_admitted": false,
     "acceptance_admitted": false
@@ -102,9 +107,10 @@
     "fixed_success_timer_seconds": null
   },
   "coordinator_followup": {
-    "next_owner": "raid-rotation-review",
-    "next_work_unit": "review:chainwielder_hazard_exit_failed:read_only_causal_diagnosis",
-    "implementation_owner_after_review": "route_only_after_first_broken_edge_is_proven"
+    "next_owner": "raid-shard-architecture",
+    "next_owner_command": "run_fixture_expansion_replay:chainwielder_pre_admission_rejection_isolation_v1:revision1_to_production_revision2",
+    "next_work_unit": "shard:magmaw_chainwielder_pre_admission_rejection:fixture_expansion_capture",
+    "implementation_owner_after_capture": "none_unless_the_matched_production_outcome_refutes_the_implemented_invariant"
   },
-  "next_action": "Assign one raid-rotation-review owner to the exact receipt-history capture. Correlate the repeated Chainwielder hazard_exit_failed decisions with the full candidate set, arbitration result, native movement submission, and observable progress. Stop at the first missing or contradictory edge and return a read-only causal handoff. Do not build, rerun, or change gameplay."
+  "next_action": "Run the full retained bank at the exact clean descriptor commit. If and only if fixture_expansion_admitted is true and the sole target is chainwielder_pre_admission_rejection_isolation_v1, acquire one exact queued build and run one observation-only matched Chainwielder fixture-expansion capture. Keep gameplay, canary, and acceptance closed."
 }

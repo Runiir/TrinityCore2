@@ -343,29 +343,48 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "review:chainwielder_hazard_exit_failed:read_only_causal_diagnosis"
+        "shard:magmaw_chainwielder_pre_admission_rejection:"
+        "fixture_expansion_capture"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["owner_skill"] == "raid-rotation-review"
-    assert "20 repeated hazard_exit_failed decisions" in active["first_broken_edge"]
-    assert "neither that receipt nor this terminal identifies" in active[
-        "first_broken_edge"
-    ]
+    assert active["owner_skill"] == "raid-shard-architecture"
+    assert "receiptless adaptive Hazard proposal" in active["first_broken_edge"]
+    assert "no current worldserver-backed run" in active["first_broken_edge"]
     evidence = active["live_observation"]
     assert evidence["terminal"] == "repeated_decision_watchdog"
     assert evidence["route_node_id"] == "bwd.magmaw.chainwielder"
     assert evidence["repeated_outcome"] == "hazard_exit_failed"
     assert evidence["repeated_decision_count"] == 20
     assert active["gate_state"] == (
-        "receipt56_fixture_boundary_promoted_gameplay_build_and_canary_closed_"
-        "chainwielder_causal_diagnosis_required"
+        "chainwielder_revision1_observation_only_full_bank_and_exact_matched_"
+        "production_capture_required"
     )
-    assert active["coordinator_followup"]["next_owner"] == "raid-rotation-review"
+    assert active["causal_signature"] == (
+        "chainwielder_receiptless_hazard_rejection_displaces_"
+        "route_movement_state"
+    )
+    recurrence = active["recurrence"]
+    assert recurrence["target_fixture_id"] == (
+        "chainwielder_pre_admission_rejection_isolation_v1"
+    )
+    assert recurrence["target_fixture_revision"] == 1
+    assert recurrence["target_fixture_evidence_boundary"] == "observation_only"
+    assert recurrence["expected_fixture_expansion_target_ids"] == [
+        "chainwielder_pre_admission_rejection_isolation_v1"
+    ]
+    assert active["coordinator_followup"]["next_owner"] == (
+        "raid-shard-architecture"
+    )
+    assert active["validation"]["compiled_helper_is_live_executor_replay"] is False
+    assert active["validation"]["production_boundary_met"] is False
     assert active["validation"]["build_admitted"] is False
     assert active["validation"]["canary_admitted"] is False
     assert active["validation"]["gameplay_admitted"] is False
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert "do not build, rerun, or change gameplay" in active["next_action"].lower()
+    assert "sole target" in active["next_action"].lower()
+    assert "keep gameplay, canary, and acceptance closed" in active[
+        "next_action"
+    ].lower()
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
