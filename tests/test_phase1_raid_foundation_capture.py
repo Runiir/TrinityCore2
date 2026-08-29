@@ -38,6 +38,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     _terminal_evidence_incomplete,
     _capture_classification,
     bounded_native_shutdown,
+    build_policy_path_for_receipt,
     _frozen_drudge_member_anchors,
     process_resource_sample,
     summarize_process_resource_samples,
@@ -2513,14 +2514,49 @@ def test_live_evidence_demux_reconstructs_bindings_and_rejects_missing_lifecycle
     assert rows[0]["identity_binding"]["canonical_identity_sha256"] != "0" * 64
 
 
-def test_canonical_capture_owns_tracked_v8_policy_and_has_no_policy_override():
+def test_canonical_capture_uses_receipt_bound_tracked_policy_without_an_override():
     source = (
         Path(__file__).resolve().parents[1]
         / "tools/raid_program/capture_phase1_raid_foundation.py"
     ).read_text(encoding="utf-8")
     assert 'parser.add_argument("--build-policy"' not in source
-    assert "cata_raid_build_resource_policy_degraded_v8.json" in source
+    assert "build_policy_path_for_receipt" in source
     assert 'parser.add_argument("--build-attestation"' in source
+
+
+def test_build_policy_path_is_bound_to_receipt_identity(tmp_path):
+    worktree = tmp_path / "worktree"
+    policies = worktree / "experiments/configs"
+    policies.mkdir(parents=True)
+    policy_id = "cata_raid_build_resource_policy_fast8_v1"
+    policy_path = policies / f"{policy_id}.json"
+    policy_path.write_text(json.dumps({"policy_id": policy_id}), encoding="utf-8")
+    receipt = tmp_path / "receipt.json"
+    receipt.write_text(json.dumps({"policy_id": policy_id}), encoding="utf-8")
+
+    assert build_policy_path_for_receipt(receipt, worktree) == policy_path.resolve()
+
+
+def test_build_policy_path_rejects_untracked_or_unsafe_receipt_identity(tmp_path):
+    worktree = tmp_path / "worktree"
+    (worktree / "experiments/configs").mkdir(parents=True)
+    receipt = tmp_path / "receipt.json"
+
+    receipt.write_text(json.dumps({"policy_id": "../../outside"}), encoding="utf-8")
+    try:
+        build_policy_path_for_receipt(receipt, worktree)
+    except RuntimeError as error:
+        assert "policy ID is invalid" in str(error)
+    else:
+        raise AssertionError("unsafe policy identity was accepted")
+
+    receipt.write_text(json.dumps({"policy_id": "cata_raid_build_resource_policy_missing_v1"}), encoding="utf-8")
+    try:
+        build_policy_path_for_receipt(receipt, worktree)
+    except RuntimeError as error:
+        assert "not tracked" in str(error)
+    else:
+        raise AssertionError("untracked policy identity was accepted")
 
 
 def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap():

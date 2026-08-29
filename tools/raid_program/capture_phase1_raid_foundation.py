@@ -4218,6 +4218,33 @@ def validate_build_receipt(
         }
 
 
+def build_policy_path_for_receipt(receipt_path: Path, worktree: Path) -> Path:
+    """Resolve the tracked policy named by a receipt without accepting an override."""
+
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError(f"build receipt is unreadable: {error}") from error
+    policy_id = receipt.get("policy_id")
+    if not isinstance(policy_id, str) or not re.fullmatch(
+        r"cata_raid_build_resource_policy_[a-z0-9_]+", policy_id
+    ):
+        raise RuntimeError("build receipt policy ID is invalid")
+    policy_path = (
+        worktree / "experiments/configs" / f"{policy_id}.json"
+    ).resolve()
+    policy_root = (worktree / "experiments/configs").resolve()
+    if policy_path.parent != policy_root or not policy_path.is_file():
+        raise RuntimeError("build receipt policy is not tracked by the worktree")
+    try:
+        policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError(f"build policy is unreadable: {error}") from error
+    if policy.get("policy_id") != policy_id:
+        raise RuntimeError("build policy content does not match its receipt identity")
+    return policy_path
+
+
 def normalized_batch_payload(log_bytes: bytes) -> list[dict[str, Any]]:
     """Return an immutable, replayable JSONL representation of parsed evidence."""
 
@@ -5312,9 +5339,15 @@ def main() -> int:
     if (profile_name == "blackwing_descent_10n" or profile_name.endswith("_magmaw_diagnostic")) \
             and set(drudge_frozen_anchors) != set(range(1, 11)):
         raise SystemExit("runtime profile assets rejected: drudge_frozen_member_anchors_missing")
+    try:
+        build_policy_path = build_policy_path_for_receipt(
+            args.build_receipt.resolve(), worktree,
+        )
+    except RuntimeError as error:
+        raise SystemExit(f"build receipt rejected: {error}") from error
     build_provenance = validate_build_receipt(
         args.build_receipt.resolve(),
-        (worktree / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").resolve(),
+        build_policy_path,
         worktree, binary, config,
         args.build_attestation.resolve() if args.build_attestation is not None else None,
     )
