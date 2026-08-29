@@ -853,7 +853,14 @@ def _ledger_with_suite_receipt(
         and all(isinstance(row, Mapping) for row in rows),
         "suite receipt fixture set is incomplete",
     )
+    runs = ledger.get("runs")
+    _require(isinstance(runs, list) and runs, "suite receipt requires ledger runs")
+    latest_run = runs[-1]
+    _require(isinstance(latest_run, Mapping), "latest ledger run must be an object")
+    verification_run_id = str(latest_run.get("run_id") or "").strip()
+    _require(verification_run_id, "latest ledger run_id is missing")
     observed: set[str] = set()
+    verified_rows: list[dict[str, Any]] = []
     for row in rows:
         fixture_id = str(row.get("fixture_id") or "").strip()
         _require(fixture_id in expected and fixture_id not in observed, "suite receipt fixture set is not exact")
@@ -875,29 +882,26 @@ def _ledger_with_suite_receipt(
             f"suite receipt fixture {fixture_id} result identity mismatch",
         )
         _require(row["passed"] is (returncode == 0 and not timed_out), f"suite receipt fixture {fixture_id} pass result mismatch")
+        # A receipt identifies the immutable suite, but its claimed result is
+        # never admission authority. Re-run the fixed argv and bind the gate to
+        # that new observation. This both defeats forged result hashes and
+        # avoids requiring byte-identical pytest timing text across valid runs.
         actual_result = _execute_argv(command, Path(__file__).resolve().parents[2])
-        _require(
-            all(row.get(field) == actual_result[field] for field in (
-                "returncode",
-                "timed_out",
-                "stdout_sha256",
-                "stderr_sha256",
-                "result_sha256",
-            )),
-            f"suite receipt fixture {fixture_id} does not match independently observed result/output",
-        )
-        _require(
-            row["passed"] is (
-                actual_result["returncode"] == 0 and not actual_result["timed_out"]
-            ),
-            f"suite receipt fixture {fixture_id} pass result does not match independently observed result",
-        )
+        verified_rows.append({
+            "fixture_id": fixture_id,
+            "passed": actual_result["returncode"] == 0 and not actual_result["timed_out"],
+            **actual_result,
+            "command_sha256": _command_sha256(command),
+            "source_identity": source,
+            "config_identity": config,
+            "passed_after_run_id": verification_run_id,
+        })
     _require(observed == expected, "suite receipt fixture set is not exact")
     existing = bank.get("verifications", [])
     _require(isinstance(existing, list), "ledger verifications must be a list")
     effective = dict(ledger)
     effective_bank = dict(bank)
-    effective_bank["verifications"] = [*existing, *[dict(row) for row in rows]]
+    effective_bank["verifications"] = [*existing, *verified_rows]
     effective[bank_key] = effective_bank
     return effective
 

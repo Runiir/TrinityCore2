@@ -604,8 +604,10 @@ def test_suite_receipt_is_bound_to_manifest_and_current_identity(tmp_path) -> No
     )
     forged_path = tmp_path / "forged-output-receipt.json"
     forged_path.write_text(json.dumps(forged))
-    with pytest.raises(ValueError, match="independently observed result/output"):
-        _ledger_with_suite_receipt(ledger, forged_path, identity)
+    forged_effective = _ledger_with_suite_receipt(ledger, forged_path, identity)
+    verified = forged_effective["regression_bank"]["verifications"][-1]
+    assert verified["stdout_sha256"] == _sha256("fixture-pass\n")
+    assert verified["stdout_sha256"] != forged_row["stdout_sha256"]
 
     wrong_source = dict(receipt)
     wrong_source["source_identity"] = "source-other"
@@ -617,6 +619,45 @@ def test_suite_receipt_is_bound_to_manifest_and_current_identity(tmp_path) -> No
     ledger["regression_bank"]["fixtures"][0]["command"] = ["changed"]
     with pytest.raises(ValueError, match="manifest identity mismatch"):
         _ledger_with_suite_receipt(ledger, receipt_path, identity)
+
+
+def test_external_receipt_cannot_forge_a_failing_fixture_pass(tmp_path) -> None:
+    fixture = _fixture("original")
+    fixture["command"] = [sys.executable, "-c", "raise SystemExit(7)"]
+    ledger = _bank_ledger(
+        [{"run_id": "101", "route_completed": False, "blockers": {"edge": "occurred"}}],
+        fixtures=[fixture],
+        verifications=[],
+    )
+    identity = {
+        "source_identity": "source-current",
+        "config_identity": CANONICAL_CONFIG_IDENTITY,
+    }
+    receipt_path = tmp_path / "failing-receipt.json"
+    _run_suite(ledger, identity, "101", "after", receipt_path)
+    forged = json.loads(receipt_path.read_text())
+    row = forged["verifications"][0]
+    row.update({
+        "passed": True,
+        "returncode": 0,
+        "timed_out": False,
+        "stdout_sha256": _sha256("forged-pass"),
+        "stderr_sha256": _sha256(""),
+    })
+    row["result_sha256"] = _result_sha256(
+        row["returncode"], row["timed_out"], row["stdout_sha256"], row["stderr_sha256"]
+    )
+    receipt_path.write_text(json.dumps(forged))
+
+    effective = _ledger_with_suite_receipt(ledger, receipt_path, identity)
+    verified = effective["regression_bank"]["verifications"][-1]
+    decision = evaluate_ledger(
+        effective, current_identity=identity, suite_receipt_verified=True
+    )
+
+    assert verified["passed"] is False
+    assert verified["returncode"] == 7
+    assert decision["regression_bank"]["admitted"] is False
 
 
 def test_run_suite_executes_fixed_argv_and_emits_verifiable_receipt(tmp_path) -> None:
