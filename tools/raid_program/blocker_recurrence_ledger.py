@@ -94,6 +94,22 @@ def _command_argv(row: Mapping[str, Any]) -> list[str]:
     return list(command)
 
 
+def _fixture_revision(row: Mapping[str, Any]) -> int:
+    """Return the explicit fixture-contract revision.
+
+    Revision 1 is the compatibility baseline. A live recurrence cannot be
+    closed by rerunning that same revision after the failed run; the fixture
+    must be materially expanded and its revision incremented.
+    """
+
+    value = row.get("fixture_revision", row.get("revision", 1))
+    _require(
+        isinstance(value, int) and not isinstance(value, bool) and value > 0,
+        "fixture revision must be a positive integer",
+    )
+    return value
+
+
 def _sha256(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
 
@@ -374,6 +390,10 @@ def _evaluate_regression_bank(
     for fixture_id, fixture in fixtures.items():
         if not _executable(fixture):
             route_failures.append(f"fixture:{fixture_id}:missing_command")
+        try:
+            _fixture_revision(fixture)
+        except ValueError:
+            route_failures.append(f"fixture:{fixture_id}:invalid_revision")
         signature = str(fixture.get("causal_signature") or "").strip()
         if signature not in contracts:
             route_failures.append(f"fixture:{fixture_id}:unknown_causal_signature")
@@ -469,32 +489,54 @@ def _evaluate_regression_bank(
             continue
         verified.add(fixture_id)
         pass_boundary, pass_record = latest_pass
+        fixture_revision = _fixture_revision(fixture)
+        pass_revision = _fixture_revision(pass_record)
         source, config = _identity(pass_record)
         if (
             source in (None, "")
             or config in (None, "")
             or not _same(source, current[0])
             or not _same(config, current[1])
+            or pass_revision != fixture_revision
         ):
             stale.add(fixture_id)
         else:
             current_pass.add(fixture_id)
         signature = str(fixture.get("causal_signature") or "")
+        last_occurrence = max(
+            (index for index, run in enumerate(runs)
+             if run["blockers"].get(signature) == "occurred"),
+            default=-1,
+        )
+        prior_pass_revisions: list[int] = []
+        for record in records:
+            record_boundary, boundary_error = _boundary(record, positions)
+            if (
+                _passed(record)
+                and boundary_error is None
+                and record_boundary is not None
+                and record_boundary < float(last_occurrence)
+            ):
+                prior_pass_revisions.append(_fixture_revision(record))
+        unexpanded_after_recurrence = (
+            last_occurrence >= 0
+            and pass_boundary > float(last_occurrence)
+            and bool(prior_pass_revisions)
+            and pass_revision <= max(prior_pass_revisions)
+        )
         occurrences = [
             run["run_id"]
             for index, run in enumerate(runs)
             if index > pass_boundary and run["blockers"].get(signature) == "occurred"
         ]
-        if occurrences:
+        if occurrences or unexpanded_after_recurrence:
             invalidated.add(fixture_id)
             failing.add(fixture_id)
-            invalidation_runs[fixture_id] = occurrences
+            invalidation_runs[fixture_id] = occurrences or [
+                runs[last_occurrence]["run_id"]
+            ]
             invalidated_signatures.setdefault(signature, []).append(fixture_id)
         else:
-            last_occurrence = max(
-                (index for index, run in enumerate(runs) if run["blockers"].get(signature) == "occurred"),
-                default=-1,
-            )
             if fixture_id in current_pass and pass_boundary > float(last_occurrence):
                 verified_after_occurrence.add(signature)
 
@@ -869,6 +911,11 @@ def _ledger_with_suite_receipt(
         row_source, row_config = _identity(row)
         _require(_same(row_source, source) and _same(row_config, config), f"suite receipt fixture {fixture_id} identity mismatch")
         command = _command_argv(fixture_map[fixture_id])
+        fixture_revision = _fixture_revision(fixture_map[fixture_id])
+        _require(
+            _fixture_revision(row) == fixture_revision,
+            f"suite receipt fixture {fixture_id} revision mismatch",
+        )
         _require(row.get("command_sha256") == _command_sha256(command), f"suite receipt fixture {fixture_id} command identity mismatch")
         returncode = row.get("returncode")
         _require(isinstance(row.get("timed_out"), bool), f"suite receipt fixture {fixture_id} has invalid timeout result")
@@ -892,6 +939,7 @@ def _ledger_with_suite_receipt(
             "passed": actual_result["returncode"] == 0 and not actual_result["timed_out"],
             **actual_result,
             "command_sha256": _command_sha256(command),
+            "fixture_revision": fixture_revision,
             "source_identity": source,
             "config_identity": config,
             "passed_after_run_id": verification_run_id,
@@ -934,6 +982,7 @@ def _run_suite(
         _require(isinstance(fixture, Mapping), "fixture manifest row must be an object")
         fixture_id = str(fixture.get("fixture_id") or "").strip()
         command = _command_argv(fixture)
+        fixture_revision = _fixture_revision(fixture)
         observed = _execute_argv(command, Path(__file__).resolve().parents[2])
         returncode = observed["returncode"]
         timed_out = observed["timed_out"]
@@ -945,6 +994,7 @@ def _run_suite(
             "returncode": returncode,
             "timed_out": timed_out,
             "command_sha256": _command_sha256(command),
+            "fixture_revision": fixture_revision,
             "stdout_sha256": stdout_sha256,
             "stderr_sha256": stderr_sha256,
             "result_sha256": observed["result_sha256"],

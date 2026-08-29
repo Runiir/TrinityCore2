@@ -218,6 +218,11 @@ changes the implementation or diagnostic vocabulary.
 Treat a recurrence after a passing fixture as proof that the fixture covered
 the wrong boundary. Stop live canaries for that signature, preserve the old
 fixture, and add a replay at the first missing policy-to-native-outcome edge.
+Rerunning the unchanged fixture after the failed run is not a repair. Every
+fixture has a positive contract revision; increment it only when its exercised
+boundary or counterexample materially expands. The recurrence evaluator must
+keep the canary gate closed when a post-run pass has the same revision as the
+last pre-recurrence pass, even if the Git source identity changed.
 The replacement gate must include the recorded numeric counterexample and the
 state transition that the route actually needs. A submitted or top-level
 `ok` action is not progress unless its native postcondition changes. Require
@@ -256,7 +261,7 @@ An active route opts into the fail-closed `regression_bank` field (schema
 `trinity_raid_regression_bank_v1`). Its append-only `fixture_history` and
 `fixtures` manifest name every retained executable fixture, while each
 `fixture_verifications`/`verifications` row records its exact source/config
-identity and boundary. The CLI requires an external clean-tree source identity
+identity, positive fixture revision, and boundary. The CLI requires an external clean-tree source identity
 and config identity plus a `trinity_raid_regression_suite_receipt_v1` whose manifest hash and identity
 match; editing the ledger's declared identity cannot manufacture a pass. The
 Magmaw route's config identity is the `sha256:` digest of the canonical JSON

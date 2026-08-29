@@ -226,6 +226,11 @@ submission/progress, preemption/resume, arrival, and reset. Preserve the old
 counterexample and record any corrected expectation in the architecture
 handoff.
 
+An unchanged replay rerun after the recurrence is not fixture expansion. Keep
+the old fixture and its revision, add the missing live boundary, then increment
+the fixture-contract revision. The recurrence gate must reject a same-revision
+post-run pass regardless of a newer source commit or another green result.
+
 The replay must cross every independent action owner implicated by the live
 counterexample. For encounter movement plus class combat, execute encounter
 assignment, immutable combat constraints, class-action filtering, priority and

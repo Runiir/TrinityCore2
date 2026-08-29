@@ -65,14 +65,16 @@ def _bank_ledger(
 def _fixture(fixture_id: str, signature: str = "edge") -> dict:
     return {
         "fixture_id": fixture_id,
+        "revision": 1,
         "causal_signature": signature,
         "command": ["pixi", "run", "pytest", "-q", f"tests/{fixture_id}.py"],
     }
 
 
-def _pass(fixture_id: str, run_id: str, **identity: str) -> dict:
+def _pass(fixture_id: str, run_id: str, revision: int = 1, **identity: str) -> dict:
     return {
         "fixture_id": fixture_id,
+        "fixture_revision": revision,
         "status": "passed",
         "passed_before_run_id": run_id,
         "source": identity.get("source", "source-current"),
@@ -685,7 +687,7 @@ def test_run_suite_executes_fixed_argv_and_emits_verifiable_receipt(tmp_path) ->
 
 
 def test_post_occurrence_suite_pass_admits_next_canary_before_two_clears() -> None:
-    verification = _pass("original", "101")
+    verification = _pass("original", "101", revision=2)
     verification.pop("passed_before_run_id")
     verification["passed_after_run_id"] = "102"
     ledger = _bank_ledger(
@@ -693,7 +695,7 @@ def test_post_occurrence_suite_pass_admits_next_canary_before_two_clears() -> No
             {"run_id": "101", "route_completed": False, "blockers": {"edge": "occurred"}},
             {"run_id": "102", "route_completed": False, "blockers": {"edge": "occurred"}},
         ],
-        fixtures=[_fixture("original")],
+        fixtures=[{**_fixture("original"), "revision": 2}],
         verifications=[verification],
     )
     identity = {"source_identity": "source-current", "config_identity": CANONICAL_CONFIG_IDENTITY}
@@ -718,6 +720,34 @@ def test_post_occurrence_suite_pass_admits_next_canary_before_two_clears() -> No
     assert final["acceptance_admitted"] is True
 
 
+def test_unchanged_fixture_rerun_after_recurrence_does_not_admit_canary() -> None:
+    before = _pass("original", "101")
+    after = _pass("original", "102")
+    after.pop("passed_before_run_id")
+    after["passed_after_run_id"] = "102"
+    decision = evaluate_ledger(
+        _bank_ledger(
+            [
+                {"run_id": "101", "route_completed": False,
+                 "blockers": {"edge": "occurred"}},
+                {"run_id": "102", "route_completed": False,
+                 "blockers": {"edge": "occurred"}},
+            ],
+            fixtures=[_fixture("original")],
+            verifications=[before, after],
+        ),
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
+    )
+
+    assert decision["canary_admitted"] is False
+    assert decision["invalidated_fixture_ids"] == ["original"]
+    assert decision["required_next_action"] == "expand_invalid_retained_fixture"
+
+
 @pytest.mark.parametrize(
     ("verification_boundary", "expected_action"),
     [
@@ -734,7 +764,7 @@ def test_same_run_recurrence_is_invalidated_only_before_expanded_pass(
     if "passed_after_run_id" in verification_boundary:
         verification = [
             _pass("original", "101"),
-            verification,
+            {**verification, "fixture_revision": 2},
         ]
     else:
         verification = [verification]
@@ -744,7 +774,10 @@ def test_same_run_recurrence_is_invalidated_only_before_expanded_pass(
                 {"run_id": "101", "route_completed": False, "blockers": {"edge": "occurred"}},
                 {"run_id": "102", "route_completed": False, "blockers": {"edge": "occurred"}},
             ],
-            fixtures=[_fixture("original")],
+            fixtures=[{
+                **_fixture("original"),
+                "revision": 2 if "passed_after_run_id" in verification_boundary else 1,
+            }],
             verifications=verification,
         ),
         current_identity={
