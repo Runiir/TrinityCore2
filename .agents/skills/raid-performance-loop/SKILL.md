@@ -245,6 +245,15 @@ the watchdog to terminate a known failed candidate hidden beneath successful
 wait work after one no-progress window, while allowing the same retry during
 observed movement progress.
 
+Before promoting the replacement, name the causal invariant and enumerate the
+adjacent execution variants that can reach it. The fixture must exercise that
+equivalence class at the final policy-to-native outcome boundary, not only the
+single path type or coordinate tuple seen in the latest run. For movement this
+normally includes complete versus incomplete native paths, retained versus new
+submissions, plausible same-floor probes, unrelated lower-geometry probes, and
+a legitimate cross-floor rejection. Missing one of these variants keeps the
+signature open and blocks another live canary.
+
 Only a currently `occurred` signature is eligible for repair routing. An older
 open signature whose latest assessed state is `absent` remains a provisional
 acceptance gate, but it must not displace the causal edge that occurred in the

@@ -145,6 +145,14 @@ movement, non-progress, or forbidden native path flags as applicable. A new
 live canary is forbidden until this revised fixture and the complete retained
 regression bank pass at one clean committed identity.
 
+Do not encode only the one native path shape that happened to fail. State the
+causal invariant and cover its live equivalence class: complete and incomplete
+paths, direct and retained submissions, plausible same-level floor samples,
+implausible lower-geometry samples, and the nearest legitimate cross-floor
+negative when those variants can reach the same decision. A later recurrence
+through an untested adjacent path variant means the fixture was still too
+narrow, even when the recorded coordinates themselves remain green.
+
 Before changing a live decision path, inventory every state it mutates and
 compare that list with the active admission receipt. Receipt-bound pet
 spellbook/autocast, gear, talents/glyphs, roster leases, group/difficulty, and

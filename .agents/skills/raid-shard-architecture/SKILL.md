@@ -260,7 +260,10 @@ latest immutable handoff.
    Require an incremented, value-level replacement fixture for the same causal
    signature and a new full-bank receipt; an unchanged passing fixture, a
    renamed fixture, or a source-shape assertion cannot authorize another
-   worldserver.
+   worldserver. The replacement must cover the causal equivalence class at the
+   final native outcome boundary, including adjacent complete/incomplete and
+   same-floor/cross-floor path variants where applicable; replaying only the
+   latest coordinates is not sufficient admission evidence.
 4. Start one verified worldserver with the generated shard config.
 5. Confirm console/process readiness and active runtime identity.
 6. Only then attach the boss babysitter. The babysitter monitors; it does not silently repair or manufacture state.
