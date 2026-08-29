@@ -71,7 +71,13 @@ namespace Movement
                 args.path, transport
                     ? NativePathLaunchCoordinateSpace::TransportOffset
                     : NativePathLaunchCoordinateSpace::World,
-                succeeded, move_spline.Finalized(), unit->GetPositionX(),
+                succeeded, move_spline.Finalized(),
+                succeeded && move_spline.Initialized(),
+                succeeded ? move_spline.GetId() : 0,
+                succeeded ? move_spline.FinalDestination().x : 0.0f,
+                succeeded ? move_spline.FinalDestination().y : 0.0f,
+                succeeded ? move_spline.FinalDestination().z : 0.0f,
+                unit->GetPositionX(),
                 unit->GetPositionY(), unit->GetPositionZ());
         };
         Location real_position;

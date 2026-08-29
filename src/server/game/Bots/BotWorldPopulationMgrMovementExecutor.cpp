@@ -132,7 +132,8 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
     plan.LaunchReceiptId = BeginMovementPlannerReceipt(
         MovementExecutorBotGuid(bot), MovementExecutorMapId(bot), intent,
         request.MovementScope, request.DynamicTargetGuid,
-        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(),
+        Cohort().Config.ValidationRouteEnable);
     if (!PlanMovementPath(bot, intent, plan))
     {
         char const* reason = plan.RejectReason.empty()
@@ -171,6 +172,18 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
                 MovementExecutorBotGuid(bot), MovementExecutorMapId(bot));
         bot->GetMotionMaster()->MovePoint(0, x, y, z, generatePath, 0.0f,
             launchContext);
+        if (Cohort().Config.ValidationRouteEnable)
+        {
+            bool const splineInitialized = bot->movespline
+                && bot->movespline->Initialized();
+            G3D::Vector3 const splineFinal = splineInitialized
+                ? bot->movespline->FinalDestination() : G3D::Vector3();
+            BotWorldMovement::ArmMovementProgressReceipt(plan.LaunchReceiptId,
+                MovementExecutorBotGuid(bot), MovementExecutorMapId(bot),
+                splineInitialized,
+                splineInitialized ? bot->movespline->GetId() : 0,
+                splineFinal.x, splineFinal.y, splineFinal.z, nowMs);
+        }
     };
     if (plan.DynamicTarget)
     {

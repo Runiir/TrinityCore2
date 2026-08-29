@@ -58,7 +58,9 @@ public:
     virtual void OnSplineLaunch(NativePathLaunchContext const& context,
         NativePathLaunchControls const& launchedControls,
         NativePathLaunchCoordinateSpace coordinateSpace, bool succeeded,
-        bool finalized, float actorX, float actorY, float actorZ) = 0;
+        bool finalized, bool splineInitialized, uint32 splineId,
+        float splineFinalX, float splineFinalY, float splineFinalZ,
+        float actorX, float actorY, float actorZ) = 0;
 };
 }
 

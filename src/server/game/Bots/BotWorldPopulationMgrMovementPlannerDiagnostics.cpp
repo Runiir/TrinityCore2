@@ -1,12 +1,11 @@
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
-
+#include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 #include <cmath>
 #include <cstring>
 #include <iomanip>
 #include <limits>
 #include <sstream>
 #include <utility>
-
 namespace
 {
 char const* MovementOwnerName(BotMovementArbitration::Owner owner)
@@ -24,7 +23,6 @@ char const* MovementOwnerName(BotMovementArbitration::Owner owner)
     }
     return "unknown";
 }
-
 std::string JsonEscape(std::string const& value)
 {
     std::ostringstream escaped;
@@ -42,7 +40,6 @@ std::string JsonEscape(std::string const& value)
     }
     return escaped.str();
 }
-
 void AppendPositionJson(std::ostringstream& json,
     BotWorldMovement::NativePathPosition const& position)
 {
@@ -65,7 +62,6 @@ void AppendPositionJson(std::ostringstream& json,
         json << "null";
     json << "}";
 }
-
 void AppendControlsJson(std::ostringstream& json,
     BotWorldMovement::NativePathControlSequence const& sequence)
 {
@@ -76,7 +72,6 @@ void AppendControlsJson(std::ostringstream& json,
          << std::setw(16) << std::setfill('0') << sequence.Fingerprint
          << std::dec << std::setfill(' ') << "\"}";
 }
-
 std::uint64_t MovementIntentFingerprint(
     BotWorldMovement::Intent const& intent, std::uint32_t mapId,
     std::uint64_t dynamicTargetGuid)
@@ -126,7 +121,6 @@ std::uint64_t MovementIntentFingerprint(
     return hash;
 }
 }
-
 namespace BotWorldMovement
 {
 std::uint64_t NativePathControlsFingerprint(
@@ -163,7 +157,6 @@ std::uint64_t NativePathControlsFingerprint(
     }
     return hash;
 }
-
 NativePathControlSequence ObserveNativePathControls(
     Movement::NativePathLaunchControls const& controls,
     char const* coordinateSpace)
@@ -176,11 +169,11 @@ NativePathControlSequence ObserveNativePathControls(
     sequence.Fingerprint = NativePathControlsFingerprint(controls);
     return sequence;
 }
-
 std::uint64_t MovementPlannerDiagnosticSidecar::BeginReceipt(
     std::uint64_t botGuid, std::uint32_t requestedMapId, Intent const& intent,
     BotMovementArbitration::Scope const& scope,
-    std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ)
+    std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ,
+    bool progressCaptureEnabled)
 {
     if (!botGuid)
         return 0;
@@ -203,6 +196,7 @@ std::uint64_t MovementPlannerDiagnosticSidecar::BeginReceipt(
         intent, requestedMapId, dynamicTargetGuid);
     observation.LaunchReceipt.Scope = scope;
     observation.LaunchReceipt.DynamicTargetGuid = dynamicTargetGuid;
+    observation.LaunchReceipt.ProgressCaptureEnabled = progressCaptureEnabled;
     observation.LaunchReceipt.ActorBeforePlanning = {
         true, "world", actorX, actorY, actorZ
     };
@@ -492,7 +486,9 @@ void MovementPlannerDiagnosticSidecar::RecordSplineLaunch(
     std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId,
     Movement::NativePathLaunchControls const& launchedControls,
     char const* coordinateSpace, bool succeeded, bool finalized,
-    float actorX, float actorY, float actorZ)
+    bool splineInitialized, std::uint32_t splineId, float splineFinalX,
+    float splineFinalY, float splineFinalZ, float actorX, float actorY,
+    float actorZ)
 {
     MovementPlannerObservation* receipt = MutableReceipt(receiptId, botGuid,
         mapId);
@@ -516,10 +512,50 @@ void MovementPlannerDiagnosticSidecar::RecordSplineLaunch(
     launch.LaunchAttempted = true;
     launch.LaunchSucceeded = succeeded;
     launch.SplineFinalizedAfterLaunch = finalized;
+    launch.SplineInitialized = splineInitialized;
+    launch.SplineId = splineId;
+    launch.SplineFinalX = splineFinalX;
+    launch.SplineFinalY = splineFinalY;
+    launch.SplineFinalZ = splineFinalZ;
     launch.LaunchedControls = ObserveNativePathControls(launchedControls,
         coordinateSpace);
     launch.ActorAfterLaunch = { true, "world", actorX, actorY, actorZ };
     PublishReceiptUpdate(observation);
+    if (succeeded && observation.LaunchReceipt.ProgressCaptureEnabled)
+        ArmProgress(receiptId, botGuid, mapId, splineInitialized, splineId,
+            splineFinalX, splineFinalY, splineFinalZ, 0);
+}
+
+void MovementPlannerDiagnosticSidecar::ArmProgress(std::uint64_t receiptId,
+    std::uint64_t botGuid, std::uint32_t mapId,
+    bool splineInitialized, std::uint32_t splineId, float splineFinalX,
+    float splineFinalY, float splineFinalZ, std::uint64_t observedAtMs)
+{
+    MovementPlannerObservation* receipt = MutableReceipt(receiptId, botGuid,
+        mapId);
+    if (!receipt || !receipt->LaunchReceipt.ProgressCaptureEnabled
+        || !receipt->LaunchReceipt.ExecutorDestinationAvailable
+        || !receipt->LaunchReceipt.MotionMasterSubmissionObserved
+        || !receipt->LaunchReceipt.PointGeneratorInitialized)
+        return;
+    NativeSplineLaunchObservation const* launched = nullptr;
+    for (NativeSplineLaunchObservation const& launch
+        : receipt->LaunchReceipt.Launches)
+        if (launch.LaunchSucceeded && launch.ActorAfterLaunch.Available)
+            launched = &launch;
+    if (!launched)
+        return;
+    if (!splineInitialized || !launched->SplineInitialized
+        || splineId != launched->SplineId)
+        return;
+    NativePathLaunchReceipt const& identity = receipt->LaunchReceipt;
+    MovementProgressDiagnostics().Arm(identity.Id, botGuid, mapId,
+        identity.Scope.InstanceId, identity.Scope,
+        identity.ExecutorSelectedX, identity.ExecutorSelectedY,
+        identity.ExecutorSelectedZ, launched->ActorAfterLaunch.X,
+        launched->ActorAfterLaunch.Y, launched->ActorAfterLaunch.Z,
+        splineInitialized, splineId, splineFinalX, splineFinalY, splineFinalZ,
+        observedAtMs);
 }
 
 void MovementPlannerDiagnosticSidecar::OnMotionMasterSubmission(
@@ -560,7 +596,9 @@ void MovementPlannerDiagnosticSidecar::OnSplineLaunch(
     Movement::NativePathLaunchContext const& context,
     Movement::NativePathLaunchControls const& launchedControls,
     Movement::NativePathLaunchCoordinateSpace coordinateSpace,
-    bool succeeded, bool finalized, float actorX, float actorY, float actorZ)
+    bool succeeded, bool finalized, bool splineInitialized,
+    std::uint32_t splineId, float splineFinalX, float splineFinalY,
+    float splineFinalZ, float actorX, float actorY, float actorZ)
 {
     if (!MatchesContext(context))
         return;
@@ -568,7 +606,8 @@ void MovementPlannerDiagnosticSidecar::OnSplineLaunch(
         launchedControls,
         coordinateSpace == Movement::NativePathLaunchCoordinateSpace::World
             ? "world" : "transport_offset",
-        succeeded, finalized, actorX, actorY, actorZ);
+        succeeded, finalized, splineInitialized, splineId, splineFinalX,
+        splineFinalY, splineFinalZ, actorX, actorY, actorZ);
 }
 
 void MovementPlannerDiagnosticSidecar::AssociateTrace(
@@ -614,6 +653,7 @@ MovementPlannerObservation MovementPlannerDiagnosticSidecar::ForTrace(
 
 void MovementPlannerDiagnosticSidecar::ClearBot(std::uint64_t botGuid)
 {
+    MovementProgressDiagnostics().ClearBot(botGuid);
     auto receiptIds = _receiptIdsByGuid.find(botGuid);
     if (receiptIds != _receiptIdsByGuid.end())
     {
@@ -628,6 +668,7 @@ void MovementPlannerDiagnosticSidecar::ClearBot(std::uint64_t botGuid)
 
 void MovementPlannerDiagnosticSidecar::ClearAll()
 {
+    MovementProgressDiagnostics().ClearAll();
     _latestByGuid.clear();
     _pendingByGuid.clear();
     _traceByGuid.clear();
@@ -645,10 +686,12 @@ MovementPlannerDiagnosticSidecar& MovementPlannerDiagnostics()
 std::uint64_t BeginMovementPlannerReceipt(std::uint64_t botGuid,
     std::uint32_t requestedMapId, Intent const& intent,
     BotMovementArbitration::Scope const& scope,
-    std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ)
+    std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ,
+    bool progressCaptureEnabled)
 {
     return MovementPlannerDiagnostics().BeginReceipt(botGuid, requestedMapId,
-        intent, scope, dynamicTargetGuid, actorX, actorY, actorZ);
+        intent, scope, dynamicTargetGuid, actorX, actorY, actorZ,
+        progressCaptureEnabled);
 }
 
 Movement::NativePathLaunchContext NativePathLaunchContextForReceipt(
@@ -722,6 +765,16 @@ void RecordNativePathSubmission(std::uint64_t receiptId,
     MovementPlannerDiagnostics().RecordNativeSubmission(receiptId, botGuid,
         mapId, actorX, actorY, actorZ, selectedX, selectedY, selectedZ,
         generatePath);
+}
+
+void ArmMovementProgressReceipt(std::uint64_t receiptId,
+    std::uint64_t botGuid, std::uint32_t mapId, bool splineInitialized,
+    std::uint32_t splineId, float splineFinalX, float splineFinalY,
+    float splineFinalZ, std::uint64_t observedAtMs)
+{
+    MovementPlannerDiagnostics().ArmProgress(receiptId, botGuid, mapId,
+        splineInitialized, splineId, splineFinalX, splineFinalY, splineFinalZ,
+        observedAtMs);
 }
 
 std::string MovementPlannerObservationJson(
@@ -827,6 +880,9 @@ std::string MovementPlannerObservationJson(
          << std::setfill(' ')
          << "\",\"dynamic_target_guid\":"
          << observation.LaunchReceipt.DynamicTargetGuid
+         << ",\"progress_capture_enabled\":"
+         << (observation.LaunchReceipt.ProgressCaptureEnabled
+                ? "true" : "false")
          << ",\"scope\":{\"attempt_id\":"
          << observation.LaunchReceipt.Scope.AttemptId
          << ",\"wipe_generation\":"
@@ -915,6 +971,7 @@ std::string MovementPlannerObservationJson(
              << (launch.LaunchAttempted ? "true" : "false")
              << ",\"succeeded\":"
              << (launch.LaunchSucceeded ? "true" : "false")
+             << ",\"spline_id\":" << launch.SplineId
              << ",\"finalized_after_launch\":"
              << (launch.SplineFinalizedAfterLaunch ? "true" : "false")
              << ",\"controls\":";
@@ -926,7 +983,11 @@ std::string MovementPlannerObservationJson(
     json << "],\"launch_attempt_capacity\":"
          << NativePathLaunchReceipt::MaxLaunchAttempts
          << ",\"launch_attempt_overflow_count\":"
-         << observation.LaunchReceipt.LaunchAttemptOverflowCount << "}"
+         << observation.LaunchReceipt.LaunchAttemptOverflowCount
+         << ",\"progress\":"
+         << MovementProgressObservationJson(
+                MovementProgressDiagnostics().ForReceipt(
+                    observation.LaunchReceipt.Id)) << "}"
          << ",\"gate\":\"" << JsonEscape(observation.Gate)
          << "\",\"result\":\"" << JsonEscape(observation.Result)
          << "\",\"reason\":\"" << JsonEscape(observation.Reason)

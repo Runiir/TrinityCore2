@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrScopeGuard.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 
@@ -7,6 +8,9 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     Player* bot = GetBot(state);
     if (!bot)
         return;
+
+    if (Cohort().Config.ValidationRouteEnable)
+        BotWorldMovement::ObserveReceiptTaggedMovementProgress(bot);
 
     BeginMeleeAutoAttackDecision(state, bot);
     BotWorldPopulationMgrInternal::ReconcileOnScopeExit meleeAutoAttackReconcile{

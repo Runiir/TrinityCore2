@@ -1,13 +1,13 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "epoch_id": "magmaw_canary122_native_launch_replay_v1_20260829",
-  "work_unit": "runtime:receipt_tagged_movement_progress:map669",
+  "work_unit": "shard_architecture:receipt_tagged_progress_replay:map669",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "owner_skill": "raid-shard-architecture",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "receipt_tagged_progress_observation_required",
+  "gate_state": "receipt_tagged_progress_clean_build_and_replay_required",
   "observed_at_commit": "da3b637159147c45fa49640d00e3bd86e7cfb3a8",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
@@ -28,7 +28,9 @@
       "fixture_expansion_admission_is_distinct_from_gameplay_canary_and_targeted_tests_pass",
       "checkpoint_released_once_after_all_ten_bots_were_ready",
       "planner_and_second_native_path_controls_matched_for_receipt_401",
-      "bot_30006_reached_the_selected_platform_endpoint_two_seconds_after_launch"
+      "bot_30006_reached_the_selected_platform_endpoint_two_seconds_after_launch",
+      "receipt_tagged_progress_seam_is_bounded_default_off_and_focused_tests_pass",
+      "delayed_point_generator_initialization_is_correlated_by_exact_spline_id"
     ],
     "refuted": [
       "seq741_was_the_first_state_infecting_edge",
@@ -43,7 +45,7 @@
       "second_path_type_and_direct_fallback_use",
       "exact_collision_or_fall_mechanism",
       "hazard_was_still_semantically_active_at_seq745",
-      "later_consumed_position_sample_belongs_to_launch_receipt_401_by_identity",
+      "live_map669_consumed_position_sample_carries_the_same_launch_receipt_id",
       "canary122_exact_floor_conflicting_seq745_mechanism_recurred"
     ]
   },
@@ -76,12 +78,12 @@
       "same_level_native_path_proof_v1": 4
     },
     "required_new_fixture_id": "native_planner_executor_launch_proof_v1",
-    "required_fixture": "A bounded observation-only progress seam that carries the exact native launch receipt ID into later multi-tick position, floor, spline-finalization, and movement-outcome samples.",
+    "required_fixture": "A clean-build map-669 replay proving that the bounded observation-only progress seam carries the exact native launch receipt ID into later multi-tick position, floor, spline-finalization, and movement-outcome samples.",
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
-    "allowed_change": "Add one bounded observation-only receipt-tagged movement-progress seam and its production-boundary regression coverage. No gameplay changes.",
+    "allowed_change": "Run one exact clean-build checkpointed map-669 fixture-expansion replay and capture receipt-tagged multi-tick movement outcomes. No gameplay changes.",
     "forbidden": [
       "magmaw_pincer_or_exposed_head_policy_change",
       "global_z_threshold_expansion",
@@ -95,7 +97,7 @@
     ]
   },
   "validation": {
-    "focused_result": "checkpoint_launch_replay_published_safe_launch_observed_exact_failure_not_reproduced",
+    "focused_result": "receipt_tagged_progress_seam_implemented_focused_tests_and_production_syntax_checks_pass",
     "immutable_bank_fixture_count": 19,
     "immutable_bank_all_rows_passed": false,
     "build_admitted": false,
@@ -114,5 +116,5 @@
     "next_owner_after_runtime_exposure": "raid-shard-architecture",
     "next_work_unit_after_runtime_exposure": "shard_architecture:map669_floor_conflict_replay_if_receipt_tagged_progress_requires_it"
   },
-  "next_action": "Add a bounded observation-only seam that retains the launch receipt ID through multi-tick consumed position and floor samples. Then decide from correlated evidence whether a closer floor-conflicting seq745 replay is required. Do not change movement behavior before that causal join exists."
+  "next_action": "Commit and build the receipt-tagged progress seam with eight jobs, then run one admitted checkpointed map-669 fixture-expansion replay. Use the correlated outcome to decide whether a closer floor-conflicting seq745 replay is required. Do not change movement behavior before that causal join exists."
 }

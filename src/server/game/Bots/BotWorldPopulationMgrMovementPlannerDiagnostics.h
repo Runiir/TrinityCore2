@@ -48,6 +48,11 @@ struct NativeSplineLaunchObservation
     bool LaunchAttempted = false;
     bool LaunchSucceeded = false;
     bool SplineFinalizedAfterLaunch = true;
+    bool SplineInitialized = false;
+    std::uint32_t SplineId = 0;
+    float SplineFinalX = 0.0f;
+    float SplineFinalY = 0.0f;
+    float SplineFinalZ = 0.0f;
     NativePathControlSequence LaunchedControls;
     NativePathPosition ActorAfterLaunch;
 };
@@ -61,6 +66,7 @@ struct NativePathLaunchReceipt
     std::uint64_t IntentFingerprint = 0;
     BotMovementArbitration::Scope Scope;
     std::uint64_t DynamicTargetGuid = 0;
+    bool ProgressCaptureEnabled = false;
     NativePathPosition ActorBeforePlanning;
     NativePathPosition ActorBeforeNativeSubmission;
     NativePathControlSequence PlannerControls;
@@ -131,7 +137,7 @@ public:
         std::uint32_t requestedMapId, Intent const& intent,
         BotMovementArbitration::Scope const& scope,
         std::uint64_t dynamicTargetGuid, float actorX, float actorY,
-        float actorZ);
+        float actorZ, bool progressCaptureEnabled = false);
     void Record(MovementPlannerObservation observation);
     Movement::NativePathLaunchContext LaunchContext(
         std::uint64_t receiptId, std::uint64_t botGuid,
@@ -166,7 +172,13 @@ public:
         std::uint64_t botGuid, std::uint32_t mapId,
         Movement::NativePathLaunchControls const& launchedControls,
         char const* coordinateSpace, bool succeeded, bool finalized,
-        float actorX, float actorY, float actorZ);
+        bool splineInitialized, std::uint32_t splineId, float splineFinalX,
+        float splineFinalY, float splineFinalZ, float actorX, float actorY,
+        float actorZ);
+    void ArmProgress(std::uint64_t receiptId, std::uint64_t botGuid,
+        std::uint32_t mapId, bool splineInitialized,
+        std::uint32_t splineId, float splineFinalX, float splineFinalY,
+        float splineFinalZ, std::uint64_t observedAtMs);
     void OnMotionMasterSubmission(
         Movement::NativePathLaunchContext const& context, std::uint32_t slot,
         std::uint32_t generatorType) override;
@@ -181,8 +193,9 @@ public:
     void OnSplineLaunch(Movement::NativePathLaunchContext const& context,
         Movement::NativePathLaunchControls const& launchedControls,
         Movement::NativePathLaunchCoordinateSpace coordinateSpace,
-        bool succeeded, bool finalized, float actorX, float actorY,
-        float actorZ) override;
+        bool succeeded, bool finalized, bool splineInitialized,
+        std::uint32_t splineId, float splineFinalX, float splineFinalY,
+        float splineFinalZ, float actorX, float actorY, float actorZ) override;
     void AssociateTrace(std::uint64_t botGuid, std::uint64_t traceSequence);
     MovementPlannerObservation Latest(std::uint64_t botGuid) const;
     MovementPlannerObservation ForTrace(std::uint64_t botGuid,
@@ -212,7 +225,8 @@ MovementPlannerDiagnosticSidecar& MovementPlannerDiagnostics();
 std::uint64_t BeginMovementPlannerReceipt(std::uint64_t botGuid,
     std::uint32_t requestedMapId, Intent const& intent,
     BotMovementArbitration::Scope const& scope,
-    std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ);
+    std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ,
+    bool progressCaptureEnabled = false);
 Movement::NativePathLaunchContext NativePathLaunchContextForReceipt(
     std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId);
 
@@ -240,6 +254,11 @@ void RecordNativePathSubmission(std::uint64_t receiptId,
     std::uint64_t botGuid, std::uint32_t mapId, float actorX, float actorY,
     float actorZ, float selectedX, float selectedY, float selectedZ,
     bool generatePath);
+
+void ArmMovementProgressReceipt(std::uint64_t receiptId,
+    std::uint64_t botGuid, std::uint32_t mapId, bool splineInitialized,
+    std::uint32_t splineId, float splineFinalX, float splineFinalY,
+    float splineFinalZ, std::uint64_t observedAtMs);
 
 // Serializers return an explicit unavailable object when no planner outcome
 // belongs to a diagnosis or trace sequence. They never turn a zero-valued

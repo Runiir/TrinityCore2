@@ -10,14 +10,34 @@ SOURCE = (
     ROOT
     / "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.cpp"
 )
+PROGRESS_SOURCE = (
+    ROOT
+    / "src/server/game/Bots/BotWorldPopulationMgrMovementProgressDiagnostics.cpp"
+)
+PROGRESS_HEADER = (
+    ROOT
+    / "src/server/game/Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
+)
+PROGRESS_SAMPLER = (
+    ROOT
+    / "src/server/game/Bots/BotWorldPopulationMgrMovementProgressSampler.cpp"
+)
+UPDATE_BOT = ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBot.cpp"
+MOVEMENT_EXECUTOR = (
+    ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp"
+)
+MOTION_MASTER = ROOT / "src/server/game/Movement/MotionMaster.cpp"
+BOT_CONFIG = ROOT / "src/server/game/Bots/BotWorldPopulationMgrConfig.h"
 
 
 HARNESS = r"""
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 
 #include <cassert>
 #include <iostream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace BotWorldMovement;
@@ -36,7 +56,7 @@ int main()
     BotMovementArbitration::Scope scope{77, 3, 19, 669, 42};
 
     std::uint64_t const receiptId = BeginMovementPlannerReceipt(
-        30005, 669, intent, scope, 0, -311.814f, -32.2758f, 211.39f);
+        30005, 669, intent, scope, 0, -311.814f, -32.2758f, 211.39f, true);
     assert(receiptId != 0);
 
     PathPlan plan;
@@ -97,8 +117,14 @@ int main()
         planned, false, false);
     launchContext.Observer->OnSplineLaunch(launchContext, planned,
         Movement::NativePathLaunchCoordinateSpace::World, true, false,
+        true, 44, intent.X, intent.Y, intent.Z,
         -311.814f, -32.2758f, 211.39f);
     launchContext.Observer->OnMotionMasterSubmission(launchContext, 1, 8);
+    ArmMovementProgressReceipt(receiptId, 30005, 669, true, 44,
+        intent.X, intent.Y, intent.Z, 1000);
+    assert(MovementProgressDiagnostics().ActiveReceipt(30005) == receiptId);
+    assert(!MovementProgressDiagnostics().ObservationDue(30005, 1099));
+    assert(MovementProgressDiagnostics().ObservationDue(30005, 1100));
     RecordMovementPlannerExecutorOutcome(30005, 669, intent,
         "native_path_submission", "submitted", "native_movement_submitted",
         receiptId);
@@ -122,6 +148,78 @@ int main()
     assert(traced.LaunchReceipt.Launches[0].LaunchSucceeded);
     assert(!traced.LaunchReceipt.Launches[0].SplineFinalizedAfterLaunch);
 
+    NativeMovementProgressProbe progress;
+    progress.ObservedAtMs = 1100;
+    progress.BotGuid = 30005;
+    progress.ActorAvailable = true;
+    progress.ActorInWorld = true;
+    progress.ActorAlive = true;
+    progress.MapId = 669;
+    progress.InstanceId = 42;
+    progress.X = -310.5f;
+    progress.Y = -34.0f;
+    progress.Z = 211.5f;
+    progress.Moving = true;
+    progress.FloorSampled = true;
+    progress.FloorValid = true;
+    progress.FloorZ = 211.5f;
+    progress.CurrentMotionType = 8;
+    progress.ActiveMotionType = 8;
+    progress.PointGeneratorActive = true;
+    progress.SplineInitialized = true;
+    progress.SplineId = 44;
+    progress.SplineFinalized = false;
+    NativeMovementProgressProbe const unchanged = progress;
+    static_assert(std::is_same_v<decltype(
+        MovementProgressDiagnostics().Observe(progress)), void>);
+    MovementProgressDiagnostics().Observe(progress);
+    assert(progress.ObservedAtMs == unchanged.ObservedAtMs);
+    assert(progress.X == unchanged.X);
+    NativeMovementProgressObservation progressObservation =
+        MovementProgressDiagnostics().ForReceipt(receiptId);
+    assert(progressObservation.ReceiptId == receiptId);
+    assert(progressObservation.Samples.size() == 1);
+    assert(progressObservation.Samples.front().ReceiptId == receiptId);
+    assert(progressObservation.Samples.front().EndpointProgressed);
+    assert(progressObservation.Samples.front().SelectedPlatformCompatible);
+    assert(!progressObservation.Terminal);
+
+    // A different actor cannot consume or overwrite this receipt's samples.
+    MovementProgressDiagnostics().Arm(900, 30006, 669, 42, scope,
+        -100.0f, -100.0f, 211.0f, -110.0f, -110.0f, 211.0f,
+        true, 90, -100.0f, -100.0f, 211.0f, 1000);
+    NativeMovementProgressProbe other = progress;
+    other.BotGuid = 30006;
+    other.X = -101.0f;
+    other.Y = -101.0f;
+    other.SplineId = 90;
+    MovementProgressDiagnostics().Observe(other);
+    assert(MovementProgressDiagnostics().ForReceipt(900).Samples.size() == 1);
+    assert(MovementProgressDiagnostics().ForReceipt(receiptId).Samples.size()
+        == 1);
+    other.ObservedAtMs = 1200;
+    other.SplineId = 91;
+    MovementProgressDiagnostics().Observe(other);
+    NativeMovementProgressObservation const replaced =
+        MovementProgressDiagnostics().ForReceipt(900);
+    assert(replaced.Terminal);
+    assert(replaced.TerminalOutcome == "native_spline_replaced");
+    assert(replaced.Samples.back().ReceiptId == 900);
+
+    progress.ObservedAtMs = 1200;
+    progress.X = intent.X;
+    progress.Y = intent.Y;
+    progress.Z = intent.Z;
+    progress.Moving = false;
+    progress.PointGeneratorActive = false;
+    progress.SplineFinalized = true;
+    MovementProgressDiagnostics().Observe(progress);
+    progressObservation = MovementProgressDiagnostics().ForReceipt(receiptId);
+    assert(progressObservation.Samples.size() == 2);
+    assert(progressObservation.Terminal);
+    assert(progressObservation.TerminalOutcome == "selected_endpoint_reached");
+    assert(MovementProgressDiagnostics().ActiveReceipt(30005) == 0);
+
     // A newer receipt must remain latest while a delayed native launch updates
     // the already-associated trace row for the exact older receipt.
     Intent newerIntent = intent;
@@ -133,6 +231,7 @@ int main()
         {}, true, true);
     launchContext.Observer->OnSplineLaunch(launchContext, reordered,
         Movement::NativePathLaunchCoordinateSpace::World, true, false,
+        true, 46, intent.X, intent.Y, intent.Z,
         -311.0f, -33.0f, 211.4f);
     assert(MovementPlannerDiagnostics().Latest(30005).LaunchReceipt.Id
         == newerId);
@@ -151,6 +250,7 @@ int main()
             1, planned, false, false);
         newerContext.Observer->OnSplineLaunch(newerContext, planned,
             Movement::NativePathLaunchCoordinateSpace::World, true, false,
+            true, 50 + index, newerIntent.X, newerIntent.Y, newerIntent.Z,
             -310.0f, -33.0f, 211.4f);
     }
     MovementPlannerObservation bounded =
@@ -159,7 +259,161 @@ int main()
         == NativePathLaunchReceipt::MaxLaunchAttempts);
     assert(bounded.LaunchReceipt.LaunchAttemptOverflowCount == 2);
 
-    std::cout << MovementPlannerObservationJson(traced);
+    // Re-arm the fully launched newer receipt and prove bounded multi-tick
+    // retention plus the exact lifetime boundary.
+    newerContext.Observer->OnPointGeneratorInitialize(newerContext);
+    newerContext.Observer->OnMotionMasterSubmission(newerContext, 1, 8);
+    MovementProgressDiagnostics().Arm(newerId, 30005, 669, 42, scope,
+        newerIntent.X, newerIntent.Y, newerIntent.Z,
+        -450.0f, -150.0f, 211.4f, true, 45,
+        newerIntent.X, newerIntent.Y, newerIntent.Z, 2000);
+    NativeMovementProgressProbe boundedProbe = progress;
+    boundedProbe.X = -400.0f;
+    boundedProbe.Y = -100.0f;
+    boundedProbe.Z = 211.4f;
+    boundedProbe.Moving = true;
+    boundedProbe.PointGeneratorActive = true;
+    boundedProbe.SplineFinalized = false;
+    boundedProbe.SplineId = 45;
+    for (std::uint64_t tick = 1; tick <= 20; ++tick)
+    {
+        boundedProbe.ObservedAtMs = 2000 + tick;
+        MovementProgressDiagnostics().Observe(boundedProbe);
+    }
+    NativeMovementProgressObservation boundedProgress =
+        MovementProgressDiagnostics().ForReceipt(newerId);
+    assert(boundedProgress.Samples.size()
+        == NativeMovementProgressObservation::MaxSamples);
+    assert(boundedProgress.DroppedSampleCount == 4);
+    boundedProbe.ObservedAtMs = 32000;
+    MovementProgressDiagnostics().Observe(boundedProbe);
+    assert(!MovementProgressDiagnostics().ForReceipt(newerId).Terminal);
+    boundedProbe.ObservedAtMs = 32001;
+    MovementProgressDiagnostics().Observe(boundedProbe);
+    boundedProgress = MovementProgressDiagnostics().ForReceipt(newerId);
+    assert(boundedProgress.Terminal);
+    assert(boundedProgress.TerminalOutcome == "observation_expired");
+    assert(boundedProgress.Samples.back().ReceiptId == newerId);
+    assert(boundedProgress.DroppedSampleCount == 6);
+
+    // MotionMaster can accept the generator while a higher slot is active,
+    // then initialize the point generator and launch its spline later. The
+    // successful delayed callback must arm the receipt without a second
+    // executor attempt and must bind the callback's exact spline ID.
+    Intent delayedIntent = intent;
+    delayedIntent.IntentReason = "delayed_point_initialize";
+    std::uint64_t const delayedId = BeginMovementPlannerReceipt(
+        30007, 669, delayedIntent, scope, 0,
+        -320.0f, -40.0f, 211.0f, true);
+    PathPlan delayedPlan;
+    delayedPlan.LaunchReceiptId = delayedId;
+    delayedPlan.Selected = true;
+    delayedPlan.SegmentX = delayedIntent.X;
+    delayedPlan.SegmentY = delayedIntent.Y;
+    delayedPlan.SegmentZ = delayedIntent.Z;
+    RecordMovementPlannerOutcome(delayedId, 30007, 669, delayedIntent,
+        true, 211.0f, true, "path_admission", true, nullptr, delayedPlan,
+        &proof, &plannedSummary);
+    RecordNativePathSubmission(delayedId, 30007, 669,
+        -320.0f, -40.0f, 211.0f, delayedIntent.X, delayedIntent.Y,
+        delayedIntent.Z, true);
+    Movement::NativePathLaunchContext const delayedContext =
+        NativePathLaunchContextForReceipt(delayedId, 30007, 669);
+    delayedContext.Observer->OnMotionMasterSubmission(delayedContext, 1, 8);
+    ArmMovementProgressReceipt(delayedId, 30007, 669, true, 66,
+        delayedIntent.X, delayedIntent.Y, delayedIntent.Z, 4000);
+    assert(MovementProgressDiagnostics().ActiveReceipt(30007) == 0);
+    delayedContext.Observer->OnPointGeneratorInitialize(delayedContext);
+    delayedContext.Observer->OnSplinePreparation(delayedContext, true, true,
+        1, planned, false, false);
+    delayedContext.Observer->OnSplineLaunch(delayedContext, planned,
+        Movement::NativePathLaunchCoordinateSpace::World, true, false,
+        true, 77, delayedIntent.X, delayedIntent.Y, delayedIntent.Z,
+        -320.0f, -40.0f, 211.0f);
+    assert(MovementProgressDiagnostics().ActiveReceipt(30007) == delayedId);
+    NativeMovementProgressObservation delayed =
+        MovementProgressDiagnostics().ForReceipt(delayedId);
+    assert(delayed.LaunchedSplineId == 77);
+    assert(delayed.ArmedAtMs == 0);
+    ArmMovementProgressReceipt(delayedId, 30007, 669, true, 78,
+        delayedIntent.X, delayedIntent.Y, delayedIntent.Z, 4500);
+    delayed = MovementProgressDiagnostics().ForReceipt(delayedId);
+    assert(delayed.LaunchedSplineId == 77);
+    assert(delayed.ArmedAtMs == 0);
+    NativeMovementProgressProbe delayedProbe = progress;
+    delayedProbe.ObservedAtMs = 5000;
+    delayedProbe.BotGuid = 30007;
+    delayedProbe.X = -315.0f;
+    delayedProbe.Y = -38.0f;
+    delayedProbe.Z = 211.2f;
+    delayedProbe.SplineId = 77;
+    delayedProbe.PointGeneratorActive = true;
+    delayedProbe.SplineFinalized = false;
+    MovementProgressDiagnostics().Observe(delayedProbe);
+    delayed = MovementProgressDiagnostics().ForReceipt(delayedId);
+    assert(delayed.ArmedAtMs == 5000);
+    assert(delayed.Samples.size() == 1);
+    assert(delayed.Samples.front().ReceiptId == delayedId);
+    assert(delayed.Samples.front().MatchesLaunchedSpline);
+
+    // The same full native launch chain is inert for progress capture unless
+    // the caller explicitly enables the validation-only diagnostic.
+    Intent disabledIntent = intent;
+    disabledIntent.IntentReason = "default_off_progress_capture";
+    std::uint64_t const disabledId = BeginMovementPlannerReceipt(
+        30008, 669, disabledIntent, scope, 0,
+        -330.0f, -45.0f, 211.0f);
+    PathPlan disabledPlan;
+    disabledPlan.LaunchReceiptId = disabledId;
+    disabledPlan.Selected = true;
+    disabledPlan.SegmentX = disabledIntent.X;
+    disabledPlan.SegmentY = disabledIntent.Y;
+    disabledPlan.SegmentZ = disabledIntent.Z;
+    RecordMovementPlannerOutcome(disabledId, 30008, 669, disabledIntent,
+        true, 211.0f, true, "path_admission", true, nullptr, disabledPlan,
+        &proof, &plannedSummary);
+    RecordNativePathSubmission(disabledId, 30008, 669,
+        -330.0f, -45.0f, 211.0f, disabledIntent.X, disabledIntent.Y,
+        disabledIntent.Z, true);
+    Movement::NativePathLaunchContext const disabledContext =
+        NativePathLaunchContextForReceipt(disabledId, 30008, 669);
+    disabledContext.Observer->OnMotionMasterSubmission(disabledContext, 1, 8);
+    disabledContext.Observer->OnPointGeneratorInitialize(disabledContext);
+    disabledContext.Observer->OnSplinePreparation(disabledContext, true,
+        true, 1, planned, false, false);
+    disabledContext.Observer->OnSplineLaunch(disabledContext, planned,
+        Movement::NativePathLaunchCoordinateSpace::World, true, false,
+        true, 88, disabledIntent.X, disabledIntent.Y, disabledIntent.Z,
+        -330.0f, -45.0f, 211.0f);
+    ArmMovementProgressReceipt(disabledId, 30008, 669, true, 88,
+        disabledIntent.X, disabledIntent.Y, disabledIntent.Z, 6000);
+    assert(MovementProgressDiagnostics().ActiveReceipt(30008) == 0);
+    assert(!MovementPlannerDiagnostics().Latest(30008)
+        .LaunchReceipt.ProgressCaptureEnabled);
+
+    std::string const serialized = MovementPlannerObservationJson(traced);
+
+    // Idempotent re-arming must not duplicate the bounded retention queue or
+    // overwrite an existing receipt identity.
+    MovementProgressDiagnostics().ClearAll();
+    MovementProgressDiagnostics().Arm(1, 40001, 669, 42, scope,
+        10.0f, 10.0f, 10.0f, 0.0f, 0.0f, 10.0f,
+        true, 1, 10.0f, 10.0f, 10.0f, 1);
+    MovementProgressDiagnostics().Arm(1, 40001, 669, 42, scope,
+        10.0f, 10.0f, 10.0f, 0.0f, 0.0f, 10.0f,
+        true, 1, 10.0f, 10.0f, 10.0f, 2);
+    for (std::uint64_t id = 2;
+        id <= MovementProgressDiagnosticSidecar::MaxReceiptsPerBot; ++id)
+        MovementProgressDiagnostics().Arm(id, 40001, 669, 42, scope,
+            float(id), 10.0f, 10.0f, 0.0f, 0.0f, 10.0f,
+            true, std::uint32_t(id), float(id), 10.0f, 10.0f, id);
+    assert(MovementProgressDiagnostics().ForReceipt(1).Available);
+    MovementProgressDiagnostics().Arm(129, 40001, 669, 42, scope,
+        129.0f, 10.0f, 10.0f, 0.0f, 0.0f, 10.0f,
+        true, 129, 129.0f, 10.0f, 10.0f, 129);
+    assert(!MovementProgressDiagnostics().ForReceipt(1).Available);
+
+    std::cout << serialized;
 }
 """
 
@@ -185,6 +439,7 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
             str(ROOT / "dep/g3dlite/include"),
             str(harness),
             str(SOURCE),
+            str(PROGRESS_SOURCE),
             "-o",
             str(binary),
         ],
@@ -205,6 +460,7 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
         "intent_reason": "ranged_formation_restore",
         "intent_fingerprint": "d9b154fc91572d50",
         "dynamic_target_guid": 0,
+        "progress_capture_enabled": True,
         "scope": {
             "attempt_id": 77,
             "wipe_generation": 3,
@@ -233,4 +489,67 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
         "coordinate_space"
     ] == "world"
     assert receipt["launches"][1]["direct_two_point_fallback"] is True
+    assert receipt["progress"]["receipt_id"] == receipt["id"]
+    assert receipt["progress"]["terminal"] is True
+    assert receipt["progress"]["terminal_outcome"] == "selected_endpoint_reached"
+    assert [sample["receipt_id"] for sample in receipt["progress"]["samples"]] == [
+        receipt["id"],
+        receipt["id"],
+    ]
+    assert receipt["progress"]["samples"][0]["floor"][
+        "selected_platform_compatible"
+    ] is True
+    assert receipt["progress"]["samples"][0]["native_motion"] == {
+        "moving": True,
+        "current_type": 8,
+        "active_type": 8,
+        "point_generator_active": True,
+        "spline_initialized": True,
+        "spline_id": 44,
+        "matches_launched_spline": True,
+        "spline_finalized": False,
+    }
+    assert receipt["progress"]["samples"][1]["endpoint_progress"][
+        "reached"
+    ] is True
     assert "ordered_controls" not in json.dumps(receipt)
+
+
+def test_receipt_progress_sampler_is_observation_only():
+    header = PROGRESS_HEADER.read_text(encoding="utf-8")
+    sampler = PROGRESS_SAMPLER.read_text(encoding="utf-8")
+    update = UPDATE_BOT.read_text(encoding="utf-8")
+    executor = MOVEMENT_EXECUTOR.read_text(encoding="utf-8")
+    config = BOT_CONFIG.read_text(encoding="utf-8")
+
+    assert "void ObserveReceiptTaggedMovementProgress(Player const* bot);" in header
+    assert "WorldBotState&" not in header
+    assert "WorldBotState&" not in sampler
+    for forbidden_mutator in (
+        "MovePoint(",
+        "MoveChase(",
+        "Clear(",
+        "SetPosition(",
+        "NearTeleportTo(",
+        "InterruptNonMeleeSpells(",
+        "Apply(state",
+    ):
+        assert forbidden_mutator not in sampler
+    assert "BotWorldMovement::ObserveReceiptTaggedMovementProgress(bot);" in update
+    assert "if (Cohort().Config.ValidationRouteEnable)" in update
+    arm = executor.index("BotWorldMovement::ArmMovementProgressReceipt")
+    assert "if (Cohort().Config.ValidationRouteEnable)" in executor[
+        max(0, arm - 600) : arm
+    ]
+    assert "bool ValidationRouteEnable = false;" in config
+
+
+def test_motion_master_supports_delayed_point_generator_initialization():
+    motion_master = MOTION_MASTER.read_text(encoding="utf-8")
+    mutate = motion_master[
+        motion_master.index("void MotionMaster::Mutate") :
+        motion_master.index("void MotionMaster::DirectClean")
+    ]
+    assert "if (_top > slot)" in mutate
+    assert "_initialize[slot] = true;" in mutate
+    assert "m->Initialize(_owner);" in mutate
