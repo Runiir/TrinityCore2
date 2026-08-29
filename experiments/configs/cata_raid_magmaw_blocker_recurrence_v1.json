@@ -45,6 +45,10 @@
     "magmaw_prepot_geometry_conflicts_with_bait_formation": {
       "owner": "shared_prepull_pipeline",
       "invariant": "durable setup precedes encounter formation, every admitted member then uses its native pre-pot at the declared formation including max-range baiters, and the designated tank pulls before the short aura expires"
+    },
+    "raid_partial_wipe_waits_for_last_survivor": {
+      "owner": "shared_native_recovery",
+      "invariant": "partial deaths wait while a native boss encounter remains active, but after an authoritative native reset with no combat or engaged hostiles dead members may begin ordinary release and corpse-run recovery without killing or teleporting survivors"
     }
   },
   "runs": [
@@ -244,6 +248,22 @@
       "report_sha256": "29cd0e4a27e144351528a6509f2ae639915f5a5bd2334df77439eece50bc3a37",
       "combat_analysis_sha256": "daa81abe28c391ddc51ce60ba53a0c60f970a00e95dfa40c8716382f3415c5f9",
       "evidence": "experiments/configs/cata_raid_magmaw_f7581b572e_canary108_prepot_geometry_handoff_20260829.md"
+    },
+    {
+      "run_id": "trinity-magmaw-d111136523-canary109.5GqLp7",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "occurred",
+        "chainwielder_future_drudge_contamination": "absent",
+        "same_level_encounter_hazard_path_rejection": "absent",
+        "same_level_movement_path_floor_false_negative": "absent",
+        "same_level_native_endpoint_z_normalization_false_negative": "absent",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "absent",
+        "raid_partial_wipe_waits_for_last_survivor": "occurred"
+      },
+      "report_sha256": "2e8a4ebe414199426b179100fdbb1dbb8989b750e7b5ba46da0a64d657cfdf02",
+      "combat_analysis_sha256": "a0a7b9710ade2f8b2976db8006ba91820fcc97749d26573ba3b801b26f975142",
+      "evidence": "experiments/configs/cata_raid_magmaw_d111136523_canary109_recurrence_stop_handoff_20260829.md"
     }
   ]
 }
