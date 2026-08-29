@@ -1,20 +1,20 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "epoch_id": "magmaw_canary116_parasite_recurrence_v2_20260829",
-  "work_unit": "architecture_review:magmaw_parasite_lane_transition:live_recurrence",
+  "work_unit": "exact_build:magmaw_parasite_escape_retention:revision_2",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "architecture_review_in_progress",
-  "gate_state": "same_revision_fixture_invalidated_build_and_canary_closed",
-  "observed_at_commit": "1cb68b9ef10a0303b800edebb4ee24024ccaf1d5",
+  "classification": "implementation_validated_build_admitted",
+  "gate_state": "revision_2_bank_green_one_canary_admitted",
+  "observed_at_commit": "1dcdd3a1add2deb268667a2765672068059a91ce",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary116_parasite_recurrence_handoff_20260829.md",
-    "sha256": "15276c7082ca68cc16a5757bae16ad134cfe97c478d235e1575139f0613a2d2e"
+    "sha256": "bbae957e244ee48bfc804ae3238bc7155bdf0977d5ee8783cfbf3e71096b11a8"
   },
   "prior_architecture_review": {
     "path": "experiments/configs/cata_raid_magmaw_parasite_architecture_stop_20260829.md",
-    "sha256": "3df9d393f7911b0f4ee4b56118398bdb368bfe687e6e944732149126baa65211"
+    "sha256": "5f631240e2f242d87ba48e205f34fd3fe2237f09803303789b331be59fa6fe80"
   },
-  "first_broken_edge": "pending_trace_backed_architecture_review",
+  "first_broken_edge": "baiter endpoint preemption dropped per-bot hazard state, then danger-GUID churn retired or recomputed the native escape before arrival",
   "causal_signature": "magmaw_parasite_control_allows_player_infection",
   "parent_signature": "magmaw_parasite_containment_failure",
   "live_observation": {
@@ -28,9 +28,10 @@
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
     "occurrence_count": 12,
-    "architecture_reviewed_through_occurrence_count": 10,
+    "architecture_reviewed_through_occurrence_count": 12,
     "invalidated_fixture_id": "magmaw_parasite_lane_paths_v1",
     "invalidated_fixture_revision": 1,
+    "replacement_fixture_revision": 2,
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
   },
@@ -45,33 +46,31 @@
       "tests/test_magmaw_parasite_policy.py",
       "tests/test_bot_action_arbitration.py"
     ],
-    "allowed_change": "None until the first missing policy-to-native-outcome edge and the required fixture expansion are identified.",
+    "allowed_change": "Exact fast8 build, provisioning readback, and one coordinator-owned completion-watchdog Canary117 from commit 1dcdd3a1add2deb268667a2765672068059a91ce.",
     "forbidden": [
-      "runtime_or_class_policy_edits_before_architecture_verdict",
       "same_revision_fixture_rerun_as_repair",
-      "build_or_live_canary",
+      "more_than_one_live_canary_before_review",
       "class_rotation_or_damage_tuning",
       "boss_spell_or_instance_script_changes",
       "teleport_force_pull_resurrection_or_boss_outcome_mutation"
     ]
   },
-  "required_architecture_output": [
-    "first causal edge with exact trace and file-line evidence",
-    "why revision-1 lane tests passed while seven players were infected",
-    "smallest deterministic multi-tick counterexample spanning every implicated owner",
-    "explicit retirement preemption resume and native-outcome boundaries",
-    "separation of parasite cause from low DPS pet and death-loop symptoms"
+  "completed_architecture_output": [
+    "Canary116 sequences 306, 310, and 314 prove destination churn across parasite entries 42321 and 41806",
+    "revision-1 omitted hazard state at the endpoint-unsafe baiter branch and did not combine GUID with position churn",
+    "revision-2 preserves one destination and event identity across a native retry",
+    "parasite movement remains separated from low DPS, pet control, and death-loop work units"
   ],
   "validation": {
-    "controller_and_runtime_suite": "142 passed",
+    "controller_and_runtime_suite": "130 passed",
     "recurrence_evaluator_suite": "32 passed",
-    "regression_suite_receipt": "/tmp/magmaw-regression-suite-1cb68b9ef1-canary116.json",
-    "regression_suite_receipt_sha256": "17776cbe2a8e25f5fc12d8ac95eb9a6ba4e38d13b6f44061b51b97ec4042cd12",
-    "recurrence_decision": "/tmp/magmaw-recurrence-1cb68b9ef1-canary116-canary.json",
-    "recurrence_decision_sha256": "d94a668defa0c19972896485fc74b69d1241d9444b605fcd996c999204470af5",
-    "build_admitted": false,
-    "canary_admitted": false,
-    "required_next_action": "expand_invalid_retained_fixture"
+    "regression_suite_receipt": "/tmp/magmaw-regression-suite-1dcdd3a1ad-canary116.json",
+    "regression_suite_receipt_sha256": "8f13d51e355c775cc0045d8386c24311b2271c5f322838e5587ab8624e78cc8a",
+    "recurrence_decision": "/tmp/magmaw-recurrence-1dcdd3a1ad-canary116-canary.json",
+    "recurrence_decision_sha256": "817f5d3af028b61c8e1d2892bee8da862a2145be8ef3939e80890b532259db15",
+    "build_admitted": true,
+    "canary_admitted": true,
+    "required_next_action": "run_clean_full_clear"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -81,5 +80,5 @@
     "build_jobs": 8,
     "canary_budget_after_expanded_fixture_and_exact_build": 1
   },
-  "next_action": "Complete the bounded Luna-max architecture review, add the missing deterministic boundary as fixture revision 2, rerun the fail-closed recurrence gate, and only then authorize one exact-build autonomous canary."
+  "next_action": "Build commit 1dcdd3a1add2deb268667a2765672068059a91ce with eight jobs, verify provisioning/readback, then run exactly one completion-watchdog Canary117 and review it before admitting any successor."
 }
