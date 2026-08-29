@@ -3,6 +3,7 @@
 
 #include "GameTime.h"
 #include "MotionMaster.h"
+#include "Movement/Spline/MoveSpline.h"
 #include "Player.h"
 #include "Unit.h"
 
@@ -171,19 +172,31 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
             bot->SetDisableGravity(true);
             state.NativeRecoveryGhostGravityDisabled = true;
         }
-        Position const aerialPath[2]{
-            Position(bot->GetPositionX(), bot->GetPositionY(),
-                bot->GetPositionZ(), bot->GetOrientation()),
-            Position(intent.X, intent.Y, intent.Z, bot->GetOrientation())
-        };
-        // The typed recovery flight uses Trinity's native spline protocol,
-        // but explicitly marks the spline as flying.  A ground PointMovement
-        // generator would silently ignore the ghost's aerial capability.
-        bot->GetMotionMaster()->MoveSmoothPath(0, aerialPath, 2, false, true);
+        // Use the same persistent point generator used by ordinary playerbot
+        // movement.  The previous two-point GenericMovementGenerator could
+        // finalize immediately while the recovery state continued to retain
+        // it as an active path, leaving a ghost stationary at the graveyard.
+        // Flight and gravity flags make this a direct native aerial spline;
+        // generatePath=false avoids asking the ground navmesh to route it.
+        bot->GetMotionMaster()->MovePoint(0, intent.X, intent.Y, intent.Z,
+            false);
+        bool const pointGeneratorActive =
+            bot->GetMotionMaster()->GetMotionSlotType(MOTION_SLOT_ACTIVE)
+                == POINT_MOTION_TYPE
+            && !bot->movespline->Finalized();
+        if (!pointGeneratorActive)
+        {
+            RecordMovementPlannerExecutorOutcome(
+                MovementExecutorBotGuid(bot), MovementExecutorMapId(bot), intent,
+                "native_aerial_point_submission", "rejected",
+                "native_aerial_point_generator_inactive");
+            return RejectMovementPath(state, bot, intent,
+                "native_aerial_point_generator_inactive");
+        }
         RecordMovementPlannerExecutorOutcome(
             MovementExecutorBotGuid(bot), MovementExecutorMapId(bot), intent,
-            "native_aerial_path_submission", "submitted",
-            "native_aerial_movement_submitted");
+            "native_aerial_point_submission", "submitted",
+            "native_aerial_point_movement_submitted");
         return true;
     }
     else if (plan.NativeLongPath)

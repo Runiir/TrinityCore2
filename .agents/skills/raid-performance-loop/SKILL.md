@@ -181,6 +181,20 @@ never key it by a later watchdog, receipt, recovery, or shutdown symptom. Count
 at most one occurrence of a signature per run after deduplicating repeated
 trace snapshots.
 
+Before creating or extending that ledger, audit the retained Git handoffs, DVC
+pointers, compact reports, and prior canary summaries for the same invariant.
+Import the lifetime history, including occurrences that predate the current
+ledger and clean runs between failures. A newly added ledger row starts at the
+historical count, not at one. Treat an omitted historical family as a migration
+defect: stop canaries, repair the ledger and fixture coverage, and run the
+evaluator before changing runtime code.
+
+Keep stage labels and terminal reasons as evidence under that one family. Do
+not give `submission_inactive`, `no_progress`, `trigger_not_crossed`, reclaim,
+or rejoin failures independent counters when they violate the same end-to-end
+lifecycle invariant. A renamed or downstream symptom must inherit the family's
+occurrence count and architecture stop.
+
 Run the ledger evaluator before authorizing either a repair or another canary;
 its `required_next_action` is a gate, not a report-only field. Every repaired
 signature keeps its original counterexample as a deterministic regression
@@ -283,6 +297,13 @@ cannot certify that sequence. Counterexample expectations are append-only;
 changing or deleting an earlier expectation requires a hash-bound architecture
 review that preserves the old case and explains why its expectation was
 wrong.
+
+Submission is not an outcome. For native movement and recovery, an accepted
+intent or retained lease proves only arbitration. The fixture and live receipt
+must separately prove a live native generator, multi-tick position progress,
+the required world/area-trigger transition, and the final reclaim/rejoin or
+arrival postcondition. One successful bot or one successful run does not close
+an intermittent family.
 
 Record each promoted fixture pass in the signature's append-only
 `fixture_verifications` list with its evidence path and exact boundary. Use

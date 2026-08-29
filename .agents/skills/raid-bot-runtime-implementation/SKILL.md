@@ -75,6 +75,16 @@ release, graveyard, entrance, resurrection, spell, threat, and encounter
 rules. Never teleport, manufacture a wipe, revive, force a target, or mutate a
 boss outcome.
 
+For dead-player movement, distinguish policy admission, native generator
+creation, spline activity, coordinate progress, entrance/worldport, corpse
+reclaim, and roster rejoin in both traces and tests. Do not report a void
+MotionMaster call as committed movement without verifying that the expected
+generator exists and its spline is active. Prefer the ordinary persistent
+playerbot point generator; if flight is authorized, carry flight/gravity as
+scoped execution state instead of substituting a short-lived generic spline.
+Expose current/active motion type, spline-finalized state, flight/gravity
+flags, actual position, requested destination, and exact recovery episode.
+
 For shared movement admission, do not repair one owner or distance band at a
 time when route, combat-range, hazard, and mechanic receipts fail at the same
 native path or floor-proof gate. Define the invariant once below the owners,

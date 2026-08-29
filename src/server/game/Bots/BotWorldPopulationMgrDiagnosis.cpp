@@ -9,6 +9,7 @@
 #include "Group.h"
 #include "Map.h"
 #include "MotionMaster.h"
+#include "Movement/Spline/MoveSpline.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Pet.h"
 #include "Player.h"
@@ -544,6 +545,9 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"movement\":{\"is_moving\":" << (state.IsMoving ? "true" : "false")
          << ",\"native_current_motion_type\":" << (nativeMotion ? uint32(nativeMotion->GetCurrentMovementGeneratorType()) : uint32(MAX_MOTION_TYPE))
          << ",\"native_active_motion_type\":" << (nativeMotion ? uint32(nativeMotion->GetMotionSlotType(MOTION_SLOT_ACTIVE)) : uint32(MAX_MOTION_TYPE))
+         << ",\"native_spline_finalized\":" << (bot && bot->movespline->Finalized() ? "true" : "false")
+         << ",\"can_fly\":" << (bot && bot->CanFly() ? "true" : "false")
+         << ",\"gravity_disabled\":" << (bot && bot->IsGravityDisabled() ? "true" : "false")
          << ",\"active_path_target_guid\":" << (state.ActivePathValid ? state.ActivePathTargetGuid.GetCounter() : 0)
          << ",\"stuck_timer_ms\":" << state.StuckTimer
          << ",\"distance_moved_since_last_decision\":" << state.LastDecisionDistanceMoved
@@ -553,6 +557,8 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << BotWorldMovement::MovementPlannerObservationJson(
                 BotWorldMovement::MovementPlannerDiagnostics().Latest(
                     state.Guid.GetCounter()))
+         << ",\"native_recovery_episode\":"
+         << BuildNativeRecoveryEpisodeJson(&state)
          << ",\"validation_cohort\":{\"locked\":" << (state.ValidationCohortLocked ? "true" : "false")
          << ",\"leader_guid\":" << state.ValidationCohortLeaderGuid.GetCounter()
          << ",\"group_guid\":" << state.ValidationCohortGroupGuid.GetCounter()

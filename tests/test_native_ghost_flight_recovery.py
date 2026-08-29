@@ -190,9 +190,31 @@ int main()
     assert "intent.AllowNativeLongPath" in executor
     assert "state.NativeRecoveryGhostFlightEnabled" in executor
     assert "bot->SetDisableGravity(true)" in executor
-    assert "MoveSmoothPath(0, aerialPath, 2, false, true)" in executor
-    assert '"native_aerial_path_submission"' in executor
-    assert '"native_aerial_movement_submitted"' in executor
+    assert "MoveSmoothPath" not in executor
+    assert (
+        "bot->GetMotionMaster()->MovePoint(0, intent.X, intent.Y, intent.Z,\n"
+        "            false);"
+    ) in executor
+    assert "POINT_MOTION_TYPE" in executor
+    assert "!bot->movespline->Finalized()" in executor
+    assert '"native_aerial_point_submission"' in executor
+    assert '"native_aerial_point_movement_submitted"' in executor
+    assert '"native_aerial_point_generator_inactive"' in executor
     aerial = executor.index("aerialGhostRecovery")
     ground = executor.index("else if (plan.NativeLongPath)")
     assert aerial < ground
+
+
+def test_recovery_diagnosis_exposes_executor_and_episode_state():
+    diagnosis = (ROOT / (
+        "src/server/game/Bots/BotWorldPopulationMgrDiagnosis.cpp"
+    )).read_text(encoding="utf-8")
+
+    for field in (
+        '"native_spline_finalized"',
+        '"can_fly"',
+        '"gravity_disabled"',
+        '"native_recovery_episode"',
+    ):
+        assert field.replace('"', '\\\"') in diagnosis
+    assert "BuildNativeRecoveryEpisodeJson(&state)" in diagnosis
