@@ -3952,6 +3952,7 @@ class TelemetryScheduler:
     _trace_interval_override_sec: float | None = None
     _trace_pressure_entries: int = 0
     _trace_gap_observed: bool = False
+    _trace_full_forced: bool = False
 
     def __post_init__(self) -> None:
         if self.status_interval_sec <= 0 or self.diagnose_interval_sec <= 0 or self.trace_interval_sec <= 0:
@@ -3973,6 +3974,15 @@ class TelemetryScheduler:
         self._diagnose_forced = True
         if include_trace:
             self._trace_forced = True
+            # A delta request cannot recover a cursor that has already fallen
+            # behind the bounded native ring.  Use one bounded full snapshot
+            # for the terminal bundle in that case.  The response validator
+            # still rejects an explicit native gap, so this is not an evidence
+            # waiver; it is the only capture-side recovery after pressure.
+            self._trace_full_forced = (
+                self._trace_gap_observed
+                or self._trace_pressure_entries >= TRACE_PRESSURE_WATERMARK
+            )
 
     def observe_trace(
         self,
@@ -4025,10 +4035,15 @@ class TelemetryScheduler:
             commands.append("botauto status")
             self._next_status_at = now + self.status_interval_sec
         if now >= self._next_trace_at or self._trace_forced:
-            commands.append("botauto trace all 128 delta")
+            commands.append(
+                "botauto trace all 128"
+                if self._trace_full_forced
+                else "botauto trace all 128 delta"
+            )
             trace_interval = self._trace_interval_override_sec or self.trace_interval_sec
             self._next_trace_at = now + trace_interval
             self._trace_forced = False
+            self._trace_full_forced = False
         if now >= self._next_diagnose_at or self._diagnose_forced:
             commands.append("botauto diagnose all")
             self._next_diagnose_at = now + self.diagnose_interval_sec
@@ -4049,6 +4064,7 @@ class TelemetryScheduler:
             ),
             "trace_pressure_entries": self._trace_pressure_entries,
             "trace_gap_observed": self._trace_gap_observed,
+            "trace_full_forced": self._trace_full_forced,
             "diagnose_forced": self._diagnose_forced,
             "trace_forced": self._trace_forced,
         }
@@ -5657,8 +5673,13 @@ def main() -> int:
                 telemetry_scheduler.force_diagnosis(include_trace=True)
                 request_started = time.monotonic()
                 commands = telemetry_scheduler.commands_due(request_started)
+                trace_command = (
+                    "botauto trace all 128"
+                    if "botauto trace all 128" in commands
+                    else "botauto trace all 128 delta"
+                )
                 required_commands = {
-                    "botauto diagnose all", "botauto trace all 128 delta",
+                    "botauto diagnose all", trace_command,
                 }
                 if not required_commands.issubset(commands):
                     return {
@@ -5668,7 +5689,7 @@ def main() -> int:
                             channel for channel in ("diagnosis", "trace")
                             if {
                                 "diagnosis": "botauto diagnose all",
-                                "trace": "botauto trace all 128 delta",
+                                "trace": trace_command,
                             }[channel] not in commands
                         ],
                         "rejections": ["forced_request_commands_not_scheduled"],
@@ -5679,7 +5700,10 @@ def main() -> int:
                         telemetry_command_counts["status"] += 1
                     elif command == "botauto diagnose all":
                         telemetry_command_counts["diagnose"] += 1
-                    elif command == "botauto trace all 128 delta":
+                    elif command in {
+                        "botauto trace all 128",
+                        "botauto trace all 128 delta",
+                    }:
                         telemetry_command_counts["trace"] += 1
                 process.stdin.write(("\n".join(commands) + "\n").encode())
                 process.stdin.flush()
@@ -5795,7 +5819,10 @@ def main() -> int:
                             telemetry_command_counts["status"] += 1
                         elif command == "botauto diagnose all":
                             telemetry_command_counts["diagnose"] += 1
-                        elif command == "botauto trace all 128 delta":
+                        elif command in {
+                            "botauto trace all 128",
+                            "botauto trace all 128 delta",
+                        }:
                             telemetry_command_counts["trace"] += 1
                     process.stdin.write(("\n".join(due_commands) + "\n").encode())
                     process.stdin.flush()

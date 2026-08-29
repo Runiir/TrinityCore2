@@ -363,6 +363,47 @@ def test_forced_stall_bundle_contains_diagnose_and_lossless_trace_delta():
     ]
 
 
+def test_forced_stall_bundle_uses_full_trace_after_ring_pressure_but_keeps_gap_rejection():
+    scheduler = TelemetryScheduler(
+        status_interval_sec=5, diagnose_interval_sec=15, trace_interval_sec=10,
+    )
+    scheduler.commands_due(0.0)
+    scheduler.observe_trace(
+        [{"bots": [{"entries": [{}] * 16, "gap": False}]}],
+        observed_at=1.0,
+    )
+    scheduler.force_diagnosis(include_trace=True)
+    assert scheduler.commands_due(2.0) == [
+        "botauto trace all 128", "botauto diagnose all",
+    ]
+
+    status = accepted_status()
+    status["cohort_id"] = "raid"
+    full_trace = _forced_response(status, "botauto_trace")
+    for bot_row in full_trace["bots"]:
+        bot_row.pop("gap")
+        bot_row["entries"] = [{"sequence": 1}]
+    accepted = validate_forced_evidence_bundle(
+        [(_forced_response(status, "botauto_diagnose"), 10.1), (full_trace, 10.2)],
+        status,
+        requested_at_monotonic=10.0,
+        freshness_timeout_seconds=5.0,
+    )
+    assert accepted["gate_passed"] is True
+
+    missing = json.loads(json.dumps(full_trace))
+    missing["bots"][0]["gap"] = True
+    missing["bots"][0]["entries"] = []
+    rejected = validate_forced_evidence_bundle(
+        [(_forced_response(status, "botauto_diagnose"), 10.1), (missing, 10.2)],
+        status,
+        requested_at_monotonic=10.0,
+        freshness_timeout_seconds=5.0,
+    )
+    assert rejected["gate_passed"] is False
+    assert "trace:forced_response_trace_delta_gap" in rejected["rejections"]
+
+
 def _forced_response(status: dict, action: str, *, ok: bool = True) -> dict:
     response = {
         "ok": ok,
