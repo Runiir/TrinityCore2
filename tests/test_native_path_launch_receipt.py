@@ -393,6 +393,72 @@ int main()
 
     std::string const serialized = MovementPlannerObservationJson(traced);
 
+    // Planner selection has moved to newerId, so its selected observation no
+    // longer publishes the retained terminal progress for receiptId.
+    std::string const latestSelected = MovementPlannerObservationJson(
+        MovementPlannerDiagnostics().Latest(30005));
+    assert(latestSelected.find("\"receipt_id\":"
+        + std::to_string(receiptId)) == std::string::npos);
+    NativeMovementProgressPublication displacedHistory =
+        MovementProgressDiagnostics().RecentForBot(30005);
+    std::string const displacedHistoryJson =
+        MovementProgressPublicationJson(displacedHistory);
+    assert(displacedHistoryJson.find("\"receipt_id\":"
+        + std::to_string(receiptId)) != std::string::npos);
+
+    // Receipt-598-like timing: four retained samples stop before a later
+    // native receipt explicitly supersedes the launch. Publication must keep
+    // the old exact receipt/spline and separate its sample and terminal times.
+    MovementProgressDiagnostics().ClearAll();
+    MovementProgressDiagnostics().Arm(598, 30007, 669, 42, scope,
+        intent.X, intent.Y, intent.Z, -311.814f, -32.2758f, 211.39f,
+        true, 6780, intent.X, intent.Y, intent.Z, 1788031505000ULL);
+    NativeMovementProgressProbe receipt598Probe = progress;
+    receipt598Probe.BotGuid = 30007;
+    receipt598Probe.X = -310.5f;
+    receipt598Probe.Y = -34.0f;
+    receipt598Probe.Z = 211.5f;
+    receipt598Probe.Moving = true;
+    receipt598Probe.PointGeneratorActive = true;
+    receipt598Probe.SplineId = 6780;
+    receipt598Probe.SplineFinalized = false;
+    for (std::uint64_t observedAtMs : {1788031505100ULL, 1788031505500ULL,
+        1788031506000ULL, 1788031506663ULL})
+    {
+        receipt598Probe.ObservedAtMs = observedAtMs;
+        MovementProgressDiagnostics().Observe(receipt598Probe);
+    }
+    MovementProgressDiagnostics().Arm(599, 30007, 669, 42, scope,
+        intent.X + 1.0f, intent.Y, intent.Z, receipt598Probe.X,
+        receipt598Probe.Y, receipt598Probe.Z, true, 6781,
+        intent.X + 1.0f, intent.Y, intent.Z, 1788031509261ULL);
+    NativeMovementProgressObservation const retained598 =
+        MovementProgressDiagnostics().ForReceipt(598);
+    assert(retained598.Terminal);
+    assert(retained598.TerminalOutcome == "superseded_by_native_launch");
+    assert(retained598.LastObservedAtMs == 1788031506663ULL);
+    assert(retained598.LastSampleAtMs == 1788031506663ULL);
+    assert(retained598.TerminalAtMs == 1788031509261ULL);
+    assert(retained598.SupersededByReceiptId == 599);
+    NativeMovementProgressPublication receipt598History =
+        MovementProgressDiagnostics().RecentForBot(30007);
+    assert(receipt598History.ActiveReceiptId == 599);
+    assert(receipt598History.Receipts.size() == 2);
+    std::string const receipt598HistoryJson =
+        MovementProgressPublicationJson(receipt598History);
+    assert(receipt598HistoryJson.find("\"receipt_id\":598")
+        != std::string::npos);
+    assert(receipt598HistoryJson.find("\"id\":6780")
+        != std::string::npos);
+    assert(receipt598HistoryJson.find(
+        "\"last_observed_at_ms\":1788031506663") != std::string::npos);
+    assert(receipt598HistoryJson.find(
+        "\"last_sample_at_ms\":1788031506663") != std::string::npos);
+    assert(receipt598HistoryJson.find(
+        "\"terminal_at_ms\":1788031509261") != std::string::npos);
+    assert(receipt598HistoryJson.find(
+        "\"superseded_by_receipt_id\":599") != std::string::npos);
+
     // Idempotent re-arming must not duplicate the bounded retention queue or
     // overwrite an existing receipt identity.
     MovementProgressDiagnostics().ClearAll();
@@ -412,8 +478,29 @@ int main()
         129.0f, 10.0f, 10.0f, 0.0f, 0.0f, 10.0f,
         true, 129, 129.0f, 10.0f, 10.0f, 129);
     assert(!MovementProgressDiagnostics().ForReceipt(1).Available);
+    NativeMovementProgressPublication boundedPublication =
+        MovementProgressDiagnostics().RecentForBot(40001);
+    assert(boundedPublication.ActiveReceiptId == 129);
+    assert(boundedPublication.RetainedReceiptCount
+        == MovementProgressDiagnosticSidecar::MaxReceiptsPerBot);
+    assert(boundedPublication.Receipts.size()
+        == NativeMovementProgressPublication::MaxReceipts);
+    assert(boundedPublication.OmittedReceiptCount == 124);
+    std::string const boundedPublicationJson =
+        MovementProgressPublicationJson(boundedPublication);
+    assert(boundedPublicationJson.find("\"receipt_capacity\":4")
+        != std::string::npos);
+    assert(boundedPublicationJson.find(
+        "\"sample_capacity_per_receipt\":16") != std::string::npos);
+    assert(boundedPublicationJson.find("\"receipts_truncated\":true")
+        != std::string::npos);
+    assert(boundedPublicationJson.find("\"max_published_sample_count\":64")
+        != std::string::npos);
+    assert(boundedPublicationJson.find("\"payload_complete\":false")
+        != std::string::npos);
 
-    std::cout << serialized;
+    std::cout << "{\"planner\":" << serialized
+        << ",\"receipt_progress\":" << receipt598HistoryJson << "}";
 }
 """
 
@@ -446,11 +533,13 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
         check=True,
         cwd=ROOT,
     )
-    receipt = json.loads(
+    output = json.loads(
         subprocess.run(
             [str(binary)], check=True, cwd=ROOT, capture_output=True, text=True
         ).stdout
-    )["launch_receipt"]
+    )
+    receipt = output["planner"]["launch_receipt"]
+    receipt_progress = output["receipt_progress"]
 
     assert receipt["version"] == 1
     assert receipt["identity"] == {
@@ -513,6 +602,33 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
         "reached"
     ] is True
     assert "ordered_controls" not in json.dumps(receipt)
+    assert receipt_progress["bot_guid"] == 30007
+    assert receipt_progress["active_receipt_id"] == 599
+    assert receipt_progress["ordering"] == "active_then_newest"
+    assert receipt_progress["retained_receipt_count"] == 2
+    assert receipt_progress["published_receipt_count"] == 2
+    assert receipt_progress["receipt_capacity"] == 4
+    assert receipt_progress["sample_capacity_per_receipt"] == 16
+    assert receipt_progress["max_published_sample_count"] == 64
+    assert receipt_progress["receipts_truncated"] is False
+    assert receipt_progress["payload_complete"] is True
+    receipt_598 = next(
+        item for item in receipt_progress["receipts"] if item["receipt_id"] == 598
+    )
+    assert receipt_598["bot_guid"] == 30007
+    assert receipt_598["map"] == 669
+    assert receipt_598["instance"] == 42
+    assert receipt_598["scope"] == {
+        "attempt_id": 77,
+        "wipe_generation": 3,
+        "route_generation": 19,
+    }
+    assert receipt_598["launched_spline"]["id"] == 6780
+    assert receipt_598["last_sample_at_ms"] == 1788031506663
+    assert receipt_598["terminal_at_ms"] == 1788031509261
+    assert receipt_598["terminal_outcome"] == "superseded_by_native_launch"
+    assert receipt_598["superseded_by_receipt_id"] == 599
+    assert len(receipt_598["samples"]) == 4
 
 
 def test_receipt_progress_sampler_is_observation_only():

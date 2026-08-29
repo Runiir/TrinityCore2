@@ -1,19 +1,19 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "epoch_id": "magmaw_canary122_native_launch_replay_v1_20260829",
-  "work_unit": "runtime:magmaw_receipt_progress:close_receipt_598_sampling_gap",
+  "work_unit": "evidence:magmaw_tactical_replay:ingest_receipt_progress_history",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "owner_skill": "raid-evidence-lifecycle",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "persistent_vertical_drop_localized_causal_closure_required",
+  "gate_state": "receipt_progress_publication_fixture_green_reducer_ingestion_required",
   "observed_at_commit": "748d63431cfcda9ea4957711b29346de287d90d9",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_748d63431c_tactical_replay_lite_summary_v1.json",
     "sha256": "f3f54e4d2da2b17747fba8db885fc72b3920b72a44c4f642e41243a3193508bc"
   },
-  "first_broken_edge": "The bounded replay localizes the first persistent corrupted state at bot 30007 dropping from Z 210.969 to Z 202.374. Receipt 598 is the immediate same-bot launched predecessor, uses spline 6780, and carries sample_floor_gap, but its receipt-tagged samples stop 3.553 seconds before the drop. Receipt 599 then rejects route_destination_partial_path from Z 202.374 and the bot reaches 22 consecutive backoff decisions.",
+  "first_broken_edge": "The bounded replay localizes the first persistent corrupted state at bot 30007 dropping from Z 210.969 to Z 202.374, but receipt 598 becomes invisible after four samples because progress was published only through the currently selected planner observation. A fixture-green diagnosis field now publishes active and recent receipt-keyed progress independently; the tactical replay reducer does not yet ingest that field, and no live capture has established whether spline 6780 caused the drop.",
   "causal_signature": "magmaw_receipt_598_then_persistent_vertical_drop_then_partial_path_backoff",
   "causal_claim_status": "state_infection_localized_launch_cause_unproven",
   "claim_ledger": {
@@ -27,14 +27,22 @@
       "receipt_599_rejected_route_destination_partial_path_from_z_202_374",
       "bot_30007_reached_22_consecutive_wait_for_candidate_backoff_decisions",
       "bounded_window_party_dps_was_76601_677_and_party_hps_was_15446_161",
-      "tactical_replay_lite_is_deterministic_and_dvc_remote_verified"
+      "tactical_replay_lite_is_deterministic_and_dvc_remote_verified",
+      "receipt_598_had_four_samples_zero_drops_and_no_terminal_outcome_in_the_closed_capture",
+      "the_sixteen_sample_ring_did_not_stop_receipt_598_sampling",
+      "planner_selected_publication_can_hide_an_older_retained_receipt",
+      "diagnosis_now_publishes_a_bounded_independent_receipt_progress_history",
+      "fixture_preserves_last_sample_and_terminal_timestamps_separately"
     ],
     "refuted": [
       "the_repeated_decision_watchdog_was_the_first_state_infecting_edge",
-      "all_observed_ranged_formation_restore_launches_remained_on_the_selected_platform"
+      "all_observed_ranged_formation_restore_launches_remained_on_the_selected_platform",
+      "sample_ring_compaction_alone_closes_the_receipt_598_visibility_gap"
     ],
     "unproven": [
       "spline_6780_caused_the_persistent_vertical_drop",
+      "receipt_598_stopped_receiving_live_observe_calls",
+      "the_new_receipt_history_field_closes_the_gap_in_a_real_map_669_capture",
       "the_exact_collision_or_floor_transition_between_1788031506663_and_1788031510216",
       "phase_aware_target_correctness_in_the_failure_window",
       "hazard_reaction_latency_in_the_failure_window",
@@ -64,7 +72,7 @@
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
-    "allowed_change": "Extend the existing default-off receipt-tagged movement progress observer only enough to retain the exact receipt ID, spline ID, actor XYZ/floor, progress, and terminal or supersession outcome continuously across the 3.553-second causal gap. Add a production-bound regression around that lifecycle.",
+    "allowed_change": "Extend tactical_replay_lite to ingest the bounded diagnosis movement_receipt_progress history, preserve receipt and spline identity plus last-sample and terminal timestamps, report truncation and dropped-sample completeness, and add a deterministic displaced-receipt reducer fixture. Do not build or run a shard until the reducer proves it retains that production schema.",
     "forbidden": [
       "magmaw_policy_or_strategy_change",
       "generic_planner_tolerance_change",
@@ -73,12 +81,15 @@
       "class_rotation_or_damage_tuning",
       "boss_outcome_mutation",
       "visual_replay_ui",
-      "unchanged_live_rerun_before_the_sampling_gap_is_closed"
+      "unchanged_live_rerun_before_the_sampling_gap_is_closed",
+      "worldserver_build_or_capture_before_reducer_ingestion_is_tested"
     ]
   },
   "validation": {
     "tactical_replay_focused_tests": "2_passed",
     "tactical_replay_dvc_remote_verified": true,
+    "receipt_progress_publication_focused_tests": "6_passed",
+    "receipt_progress_publication_fixture_green": true,
     "build_admitted": false,
     "fixture_expansion_admitted": false,
     "canary_admitted": false,
@@ -92,8 +103,8 @@
     "build_jobs": 8,
     "canary_budget_before_full_bank": 0,
     "canary_budget_after_full_bank_and_exact_build": 1,
-    "next_owner_after_causal_closure": "raid-performance-loop",
-    "next_work_unit_after_causal_closure": "coordinator:route_verified_magmaw_first_state_infecting_edge"
+    "next_owner_after_reducer_ingestion": "raid-performance-loop",
+    "next_work_unit_after_reducer_ingestion": "coordinator:build_and_run_one_receipt_history_fixture_expansion_capture"
   },
-  "next_action": "Close the receipt 598 sampling gap with default-off observation only, then run one bounded fixture-expansion replay. Do not change gameplay until the same receipt and spline are correlated to terminal movement or explicit supersession."
+  "next_action": "Teach tactical_replay_lite to consume the bounded diagnosis receipt-progress history and prove displaced receipt recovery deterministically. Then return to the coordinator for one exact build and fixture-expansion capture. Do not change gameplay until a live receipt and spline are correlated to the consumed mutation."
 }

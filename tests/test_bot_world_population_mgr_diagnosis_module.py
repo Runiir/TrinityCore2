@@ -49,6 +49,7 @@ def test_diagnosis_module_preserves_state_codes_and_evidence() -> None:
         "combat_attempt",
         "route_progress",
         "decision_kernel",
+        "movement_receipt_progress",
     ):
         assert evidence in module
 

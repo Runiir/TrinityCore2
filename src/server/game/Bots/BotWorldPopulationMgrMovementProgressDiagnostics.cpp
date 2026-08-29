@@ -41,7 +41,7 @@ void MovementProgressDiagnosticSidecar::Finish(
 {
     observation.Terminal = true;
     observation.TerminalOutcome = outcome ? outcome : "unavailable";
-    observation.LastObservedAtMs = observedAtMs;
+    observation.TerminalAtMs = observedAtMs;
     observation.SupersededByReceiptId = supersededByReceiptId;
     auto active = _activeReceiptByGuid.find(observation.BotGuid);
     if (active != _activeReceiptByGuid.end()
@@ -233,6 +233,7 @@ void MovementProgressDiagnosticSidecar::Observe(
         observation.BestEndpointDistanceAvailable = true;
     }
     observation.LastObservedAtMs = probe.ObservedAtMs;
+    observation.LastSampleAtMs = probe.ObservedAtMs;
     if (observation.Samples.size()
         == NativeMovementProgressObservation::MaxSamples)
     {
@@ -269,6 +270,43 @@ MovementProgressDiagnosticSidecar::ForReceipt(std::uint64_t receiptId) const
     auto receipt = _byReceipt.find(receiptId);
     return receipt == _byReceipt.end()
         ? NativeMovementProgressObservation() : receipt->second;
+}
+
+NativeMovementProgressPublication
+MovementProgressDiagnosticSidecar::RecentForBot(std::uint64_t botGuid) const
+{
+    NativeMovementProgressPublication publication;
+    publication.BotGuid = botGuid;
+    auto retained = _receiptIdsByGuid.find(botGuid);
+    if (!botGuid || retained == _receiptIdsByGuid.end()
+        || retained->second.empty())
+        return publication;
+
+    publication.Available = true;
+    publication.ActiveReceiptId = ActiveReceipt(botGuid);
+    publication.RetainedReceiptCount = retained->second.size();
+    auto append = [this, &publication](std::uint64_t receiptId)
+    {
+        auto observation = _byReceipt.find(receiptId);
+        if (observation != _byReceipt.end())
+            publication.Receipts.push_back(observation->second);
+    };
+
+    if (publication.ActiveReceiptId)
+        append(publication.ActiveReceiptId);
+    for (auto receipt = retained->second.rbegin();
+        receipt != retained->second.rend()
+            && publication.Receipts.size()
+                < NativeMovementProgressPublication::MaxReceipts;
+        ++receipt)
+    {
+        if (*receipt != publication.ActiveReceiptId)
+            append(*receipt);
+    }
+    publication.OmittedReceiptCount = publication.RetainedReceiptCount
+        > publication.Receipts.size()
+        ? publication.RetainedReceiptCount - publication.Receipts.size() : 0;
+    return publication;
 }
 
 void MovementProgressDiagnosticSidecar::ClearBot(std::uint64_t botGuid)
@@ -324,6 +362,8 @@ std::string MovementProgressObservationJson(
          << observation.LaunchedSplineFinalZ << "}}"
          << ",\"armed_at_ms\":" << observation.ArmedAtMs
          << ",\"last_observed_at_ms\":" << observation.LastObservedAtMs
+         << ",\"last_sample_at_ms\":" << observation.LastSampleAtMs
+         << ",\"terminal_at_ms\":" << observation.TerminalAtMs
          << ",\"best_endpoint_distance\":";
     if (observation.BestEndpointDistanceAvailable)
         json << observation.BestEndpointDistance;
@@ -392,6 +432,54 @@ std::string MovementProgressObservationJson(
          << ",\"dropped_sample_count\":" << observation.DroppedSampleCount
          << ",\"max_lifetime_ms\":"
          << NativeMovementProgressObservation::MaxLifetimeMs << "}";
+    return json.str();
+}
+
+std::string MovementProgressPublicationJson(
+    NativeMovementProgressPublication const& publication)
+{
+    std::size_t publishedSampleCount = 0;
+    std::size_t droppedSampleCount = 0;
+    for (NativeMovementProgressObservation const& observation
+        : publication.Receipts)
+    {
+        publishedSampleCount += observation.Samples.size();
+        droppedSampleCount += observation.DroppedSampleCount;
+    }
+
+    std::ostringstream json;
+    json << "{\"available\":"
+         << (publication.Available ? "true" : "false")
+         << ",\"bot_guid\":" << publication.BotGuid
+         << ",\"active_receipt_id\":" << publication.ActiveReceiptId
+         << ",\"ordering\":\"active_then_newest\""
+         << ",\"receipts\":[";
+    for (std::size_t index = 0; index < publication.Receipts.size(); ++index)
+    {
+        if (index)
+            json << ',';
+        json << MovementProgressObservationJson(publication.Receipts[index]);
+    }
+    json << "],\"retained_receipt_count\":"
+         << publication.RetainedReceiptCount
+         << ",\"published_receipt_count\":"
+         << publication.Receipts.size()
+         << ",\"receipt_capacity\":"
+         << NativeMovementProgressPublication::MaxReceipts
+         << ",\"omitted_receipt_count\":"
+         << publication.OmittedReceiptCount
+         << ",\"receipts_truncated\":"
+         << (publication.OmittedReceiptCount ? "true" : "false")
+         << ",\"published_sample_count\":" << publishedSampleCount
+         << ",\"sample_capacity_per_receipt\":"
+         << NativeMovementProgressPublication::MaxSamplesPerReceipt
+         << ",\"max_published_sample_count\":"
+         << NativeMovementProgressPublication::MaxReceipts
+                * NativeMovementProgressPublication::MaxSamplesPerReceipt
+         << ",\"dropped_sample_count\":" << droppedSampleCount
+         << ",\"payload_complete\":"
+         << (!publication.OmittedReceiptCount && !droppedSampleCount
+                ? "true" : "false") << "}";
     return json.str();
 }
 }

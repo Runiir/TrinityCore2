@@ -72,6 +72,8 @@ struct NativeMovementProgressObservation
     float LaunchedSplineFinalZ = 0.0f;
     std::uint64_t ArmedAtMs = 0;
     std::uint64_t LastObservedAtMs = 0;
+    std::uint64_t LastSampleAtMs = 0;
+    std::uint64_t TerminalAtMs = 0;
     float BestEndpointDistance = 0.0f;
     bool BestEndpointDistanceAvailable = false;
     bool Terminal = false;
@@ -79,6 +81,20 @@ struct NativeMovementProgressObservation
     std::uint64_t SupersededByReceiptId = 0;
     std::deque<NativeMovementProgressSample> Samples;
     std::size_t DroppedSampleCount = 0;
+};
+
+struct NativeMovementProgressPublication
+{
+    static constexpr std::size_t MaxReceipts = 4;
+    static constexpr std::size_t MaxSamplesPerReceipt =
+        NativeMovementProgressObservation::MaxSamples;
+
+    bool Available = false;
+    std::uint64_t BotGuid = 0;
+    std::uint64_t ActiveReceiptId = 0;
+    std::size_t RetainedReceiptCount = 0;
+    std::size_t OmittedReceiptCount = 0;
+    std::deque<NativeMovementProgressObservation> Receipts;
 };
 
 struct NativeMovementProgressProbe
@@ -124,6 +140,8 @@ public:
         std::uint64_t observedAtMs) const;
     NativeMovementProgressObservation ForReceipt(
         std::uint64_t receiptId) const;
+    NativeMovementProgressPublication RecentForBot(
+        std::uint64_t botGuid) const;
     void ClearBot(std::uint64_t botGuid);
     void ClearAll();
 
@@ -147,6 +165,8 @@ void ObserveReceiptTaggedMovementProgress(Player const* bot);
 
 std::string MovementProgressObservationJson(
     NativeMovementProgressObservation const& observation);
+std::string MovementProgressPublicationJson(
+    NativeMovementProgressPublication const& publication);
 }
 
 #endif

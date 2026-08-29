@@ -11,6 +11,7 @@
 #include "MotionMaster.h"
 #include "Movement/Spline/MoveSpline.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
@@ -556,6 +557,10 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"movement_planner\":"
          << BotWorldMovement::MovementPlannerObservationJson(
                 BotWorldMovement::MovementPlannerDiagnostics().Latest(
+                    state.Guid.GetCounter()))
+         << ",\"movement_receipt_progress\":"
+         << BotWorldMovement::MovementProgressPublicationJson(
+                BotWorldMovement::MovementProgressDiagnostics().RecentForBot(
                     state.Guid.GetCounter()))
          << ",\"native_recovery_episode\":"
          << BuildNativeRecoveryEpisodeJson(&state)
