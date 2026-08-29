@@ -7,7 +7,7 @@
   "mode": "10N",
   "owner_skill": "raid-shard-architecture",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "receipt_tagged_progress_clean_build_and_replay_required",
+  "gate_state": "fast8_v2_clean_build_and_receipt_tagged_replay_required",
   "observed_at_commit": "da3b637159147c45fa49640d00e3bd86e7cfb3a8",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
@@ -30,7 +30,9 @@
       "planner_and_second_native_path_controls_matched_for_receipt_401",
       "bot_30006_reached_the_selected_platform_endpoint_two_seconds_after_launch",
       "receipt_tagged_progress_seam_is_bounded_default_off_and_focused_tests_pass",
-      "delayed_point_generator_initialization_is_correlated_by_exact_spline_id"
+      "delayed_point_generator_initialization_is_correlated_by_exact_spline_id",
+      "fast8_v1_aborted_at_subpercent_psi_with_memory_reserve_intact",
+      "swap_growth_per_job_limit_was_enforced_as_a_total_limit"
     ],
     "refuted": [
       "seq741_was_the_first_state_infecting_edge",
@@ -97,7 +99,7 @@
     ]
   },
   "validation": {
-    "focused_result": "receipt_tagged_progress_seam_implemented_focused_tests_and_production_syntax_checks_pass",
+    "focused_result": "fast8_v2_policy_and_per_job_swap_guard_implemented_raid_build_coordinator_tests_pass",
     "immutable_bank_fixture_count": 19,
     "immutable_bank_all_rows_passed": false,
     "build_admitted": false,
@@ -116,5 +118,5 @@
     "next_owner_after_runtime_exposure": "raid-shard-architecture",
     "next_work_unit_after_runtime_exposure": "shard_architecture:map669_floor_conflict_replay_if_receipt_tagged_progress_requires_it"
   },
-  "next_action": "Commit and build the receipt-tagged progress seam with eight jobs, then run one admitted checkpointed map-669 fixture-expansion replay. Use the correlated outcome to decide whether a closer floor-conflicting seq745 replay is required. Do not change movement behavior before that causal join exists."
+  "next_action": "Commit the versioned fast8-v2 policy, generate fresh exact configure and worldserver receipts with eight compiler jobs and one linker, then run one admitted checkpointed map-669 fixture-expansion replay. Use the correlated outcome to decide whether a closer floor-conflicting seq745 replay is required. Do not change movement behavior before that causal join exists."
 }

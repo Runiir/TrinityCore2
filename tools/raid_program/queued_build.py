@@ -252,7 +252,12 @@ def pressure_reasons(policy: dict, snapshot: dict, initial_swap_used: int | None
     if int(snapshot["filesystem_available_bytes"]) < minimum_disk:
         reasons.append("filesystem_reserve")
     if initial_swap_used is not None:
-        allowed_growth = int(thresholds["maximum_swap_growth_mib_per_job"]) * 1024**2
+        compiler_jobs = int(policy["parallelism"]["maximum_compiler_jobs"])
+        allowed_growth = (
+            int(thresholds["maximum_swap_growth_mib_per_job"])
+            * compiler_jobs
+            * 1024**2
+        )
         if int(snapshot["swap_used_bytes"]) - initial_swap_used > allowed_growth:
             reasons.append("swap_growth")
     return reasons

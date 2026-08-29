@@ -19,11 +19,18 @@ from tools.raid_program import privileged_build_attestation as pba
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "experiments/configs/cata_raid_build_resource_policy_v1.json"
+FAST8_V2_POLICY_PATH = (
+    ROOT / "experiments/configs/cata_raid_build_resource_policy_fast8_v2.json"
+)
 SCRIPT = ROOT / "tools/raid_program/queued_build.py"
 
 
 def policy() -> dict:
     return json.loads(POLICY_PATH.read_text(encoding="utf-8"))
+
+
+def fast8_v2_policy() -> dict:
+    return json.loads(FAST8_V2_POLICY_PATH.read_text(encoding="utf-8"))
 
 
 def state_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> qb.Paths:
@@ -32,14 +39,18 @@ def state_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> qb.Paths:
     return qb.Paths.for_worktree(ROOT)
 
 
-def synthetic_snapshot(*, available_gib: float = 24.0, load: float = 0.1) -> dict:
+def synthetic_snapshot(
+    *, available_gib: float = 24.0, load: float = 0.1,
+    swap_used_bytes: int = 0, psi_some: float = 0.0,
+    psi_full: float = 0.0,
+) -> dict:
     return {
         "captured_at_utc": qb.utc_now(),
         "memory_total_bytes": 31 * 1024**3,
         "memory_available_bytes": int(available_gib * 1024**3),
-        "swap_used_bytes": 0,
-        "memory_psi_some_avg10": 0.0,
-        "memory_psi_full_avg10": 0.0,
+        "swap_used_bytes": swap_used_bytes,
+        "memory_psi_some_avg10": psi_some,
+        "memory_psi_full_avg10": psi_full,
         "load_average_1m": load,
         "load_average_5m": load,
         "load_average_15m": load,
@@ -168,6 +179,49 @@ def test_policy_preserves_host_reserve_and_caps_fanout() -> None:
         qb.validate_command(["ninja", "-j12"], 3)
     with pytest.raises(qb.CoordinatorError):
         qb.validate_command(["bash", "-c", "make -j12"], 3)
+
+
+def test_fast8_v2_preserves_jobs_linker_and_reserve() -> None:
+    frozen = fast8_v2_policy()
+    assert frozen["parallelism"]["maximum_compiler_jobs"] == 8
+    assert frozen["parallelism"]["maximum_linker_jobs"] == 1
+    assert qb.reserve_bytes(frozen, synthetic_snapshot()) == int(
+        31 * 0.30 * 1024**3
+    )
+    assert frozen["admission_thresholds"]["maximum_memory_psi_some_avg10"] == 10.0
+    assert frozen["admission_thresholds"]["maximum_memory_psi_full_avg10"] == 5.0
+
+
+def test_fast8_v2_pressure_uses_raw_psi_percent() -> None:
+    frozen = fast8_v2_policy()
+    assert qb.pressure_reasons(
+        frozen, synthetic_snapshot(psi_some=0.90, psi_full=0.90)
+    ) == []
+    assert qb.pressure_reasons(
+        frozen, synthetic_snapshot(psi_some=10.0, psi_full=5.0)
+    ) == []
+    assert qb.pressure_reasons(
+        frozen, synthetic_snapshot(psi_some=10.01)
+    ) == ["memory_psi_some"]
+    assert qb.pressure_reasons(
+        frozen, synthetic_snapshot(psi_full=5.01)
+    ) == ["memory_psi_full"]
+
+
+def test_swap_growth_limit_scales_per_compiler_job() -> None:
+    frozen = fast8_v2_policy()
+    initial = 2 * 1024**3
+    allowed = 512 * 8 * 1024**2
+    assert qb.pressure_reasons(
+        frozen,
+        synthetic_snapshot(swap_used_bytes=initial + allowed),
+        initial,
+    ) == []
+    assert qb.pressure_reasons(
+        frozen,
+        synthetic_snapshot(swap_used_bytes=initial + allowed + 1),
+        initial,
+    ) == ["swap_growth"]
 
 
 def test_fifo_single_admission_and_cancel_waiter(
