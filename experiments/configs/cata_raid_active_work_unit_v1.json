@@ -3,8 +3,8 @@
   "epoch_id": "same_level_native_path_proof_v2_20260829",
   "work_unit": "runtime:shared_movement:complete_native_path_floor_observation_split",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "ready_for_bounded_repair",
-  "observed_at_commit": "47d30e0937b9e93c10a265a174dd0cede13c79da",
+  "classification": "static_validated_pending_exact_build",
+  "observed_at_commit": "cb97afecbb85dbbf18ca7cdb1439c65f8f8df215",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary106_path_floor_architecture_stop_20260829.md",
     "sha256": "f9d24f6949e61ee897f42e660eeac814855e67aadd3dbdadbfd2e610804dc165"
@@ -56,7 +56,17 @@
   ],
   "focused_validation": {
     "command": "pixi run python -m pytest -q tests/test_native_path_floor_diagnostic.py tests/test_native_runback_floor_gate.py tests/test_movement_planner_diagnostics.py tests/test_incomplete_path_backoff.py",
+    "focused_result": "16 passed",
+    "expanded_movement_result": "72 passed",
+    "plan_movement_path_ccn_before": 87,
+    "plan_movement_path_ccn_after": 82,
+    "maximum_touched_cpp_lines": 430,
     "live_canary_allowed_for_worker": false
+  },
+  "worker_audit": {
+    "implementation_worker": "interrupted_after_missing_bounded_checkpoint_without_diff",
+    "review_worker": "interrupted_after_missing_bounded_checkpoint_without_verdict",
+    "coordinator_action": "continued_from_committed_architecture_review_and_enforced_deterministic_static_gates"
   },
   "root_runtime_verification": {
     "build": "exact committed source through queued_build.py with guarded 8 compiler jobs and same-commit configure lineage",
@@ -65,5 +75,5 @@
     "fixed_success_timer_seconds": null,
     "promotion_gate": "two consecutive current-standard Magmaw route clears before closing the causal signature"
   },
-  "next_action": "Delegate this exact scope lock to one Luna max runtime specialist, review its focused diff, then let the root agent build and run at most one matched canary."
+  "next_action": "Build the exact committed repair through queued_build.py with same-commit configure lineage and guarded 8 compiler jobs, then run at most one matched autonomous Magmaw canary."
 }
