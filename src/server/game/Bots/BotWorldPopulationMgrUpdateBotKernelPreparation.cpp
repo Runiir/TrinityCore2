@@ -400,6 +400,7 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 context.State.ActivePathValid, context.State.IsMoving);
             context.AdaptiveMagmawOwnsNode = magmawPlan.OwnsNode;
             context.AdaptiveMagmawSuppressOffense = magmawPlan.SuppressOffense;
+            context.AdaptiveMagmawSuppressReason = magmawPlan.SuppressReason;
             context.AdaptiveMagmawMovement = std::move(magmawPlan.Movement);
             context.AdaptiveMagmawInteraction = std::move(magmawPlan.Interaction);
             if (!magmawPlan.DamageTarget.IsEmpty())

@@ -18,6 +18,7 @@ struct AdaptiveMagmawPlan
 {
     bool OwnsNode = false;
     bool SuppressOffense = false;
+    std::string_view SuppressReason;
     ObjectGuid DamageTarget;
     std::optional<BotNativeAction::Candidate> Movement;
     std::optional<BotNativeAction::Candidate> Interaction;
@@ -74,6 +75,7 @@ public:
             if (anchors && !RangedGroupStaged(board, *anchors))
             {
                 plan.SuppressOffense = true;
+                plan.SuppressReason = "prepull_formation_staging";
                 if (role != "tank")
                     plan.Movement = BuildPointMovement(board, *bot,
                         FormationAnchor(board, *anchors, botGuid),
@@ -84,11 +86,13 @@ public:
             if (prepull.Disposition == PrepullDisposition::HoldOffense)
             {
                 plan.SuppressOffense = true;
+                plan.SuppressReason = "prepull_health_recovery";
                 return plan;
             }
             if (!IsDesignatedPullTank(board, botGuid, role))
             {
                 plan.SuppressOffense = true;
+                plan.SuppressReason = "prepull_pull_owner_wait";
                 return plan;
             }
         }

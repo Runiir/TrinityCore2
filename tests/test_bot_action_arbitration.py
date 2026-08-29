@@ -663,6 +663,7 @@ int main()
         magmawPrepull, dps.Guid, "dps");
     assert(magmawPrepullPlan.OwnsNode);
     assert(magmawPrepullPlan.SuppressOffense);
+    assert(!magmawPrepullPlan.SuppressReason.empty());
     assert(magmawPrepullPlan.DamageTarget.IsEmpty());
 
     // Magmaw can be pulled by a full-health tank from range.  Melee closure
@@ -688,6 +689,8 @@ int main()
         magmawInjuredRangedTank, tankA.Guid, "tank");
     assert(magmawInjuredRangedTankPlan.OwnsNode);
     assert(magmawInjuredRangedTankPlan.SuppressOffense);
+    assert(magmawInjuredRangedTankPlan.SuppressReason
+        == "prepull_health_recovery");
     assert(magmawInjuredRangedTankPlan.DamageTarget.IsEmpty());
     assert(!magmawInjuredRangedTankPlan.Movement.has_value());
 
@@ -696,6 +699,8 @@ int main()
     auto magmawDeadMemberPlan = magmawStrategy.Propose(
         magmawDeadMember, tankA.Guid, "tank");
     assert(magmawDeadMemberPlan.SuppressOffense);
+    assert(magmawDeadMemberPlan.SuppressReason
+        == "prepull_health_recovery");
     assert(magmawDeadMemberPlan.DamageTarget.IsEmpty());
     assert(!magmawDeadMemberPlan.Movement.has_value());
 
@@ -1951,9 +1956,17 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
 
     hazard_start = helper.index('if (mechanic == "pillar_evade"')
     hazard = helper[hazard_start:]
-    assert "prepull_health_suppress" in bot_source(
-        "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp"
+    assert "AdaptiveMagmawSuppressReason" in candidates
+    strategy = bot_source(
+        "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
+        "BotAdaptiveMagmawStrategy.h"
     )
+    for suppress_reason in (
+        "prepull_formation_staging",
+        "prepull_health_recovery",
+        "prepull_pull_owner_wait",
+    ):
+        assert f'plan.SuppressReason = "{suppress_reason}"' in strategy
     for mechanic in (
         "pillar_evade",
         "pillar_bait_switch",

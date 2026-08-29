@@ -71,6 +71,13 @@ against the same deterministic proof. If the parent causal signature reaches
 the route recurrence limit, return an architecture review with no edit and no
 live rerun.
 
+Keep destination identity separate from native floor normalization. A complete
+path may preserve the requested horizontal endpoint while MMAP resolves its Z
+to the walkable polygon. Use explicit bounded horizontal and vertical evidence
+plus endpoint-floor validity; do not collapse those facts into one unexplained
+3D tolerance. Retain the exact rejected endpoint deltas as a compiled
+counterexample and serialize both components for future traces.
+
 Shared raid cooldown reservation belongs here only when it is class-agnostic:
 reserve offensive cooldowns, offensive guardians, combat potions, and
 Bloodlust during trash, regroup, and boss staging, while leaving emergency
@@ -117,6 +124,12 @@ trash target is still alive. Block the forbidden target or splash at native
 submission, retain the first evidence edge for certification, and allow the
 ordinary runtime to survive, reset, or recover. Audit every call to a shared
 terminal latch as an ownership boundary, not merely as a reason-code branch.
+
+Do not reuse one decision/action reason for different predicates. A health
+hold, formation wait, pull-owner wait, movement rejection, and recovery attempt
+must remain distinguishable in the candidate receipt. When a live trace exposes
+an ambiguous label, repair the reason at the policy-to-runtime boundary and add
+a focused fixture before using that label in recurrence or acceptance logic.
 
 Do not make an immutable identity observer also require transient liveness.
 For ordinary pets, reconcile the stable owner/pet row/entry/persisted

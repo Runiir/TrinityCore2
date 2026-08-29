@@ -165,21 +165,25 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
 
         if (context.AdaptiveMagmawSuppressOffense)
         {
+            std::string const& suppressReason =
+                context.AdaptiveMagmawSuppressReason;
             BotActionArbitration::Candidate suppress;
-            suppress.Key = "adaptive_magmaw:prepull_health_suppress:"
+            suppress.Key = "adaptive_magmaw:" + suppressReason + ":"
                 + std::to_string(Party().ValidationRouteGeneration);
             suppress.Source = "adaptive_magmaw";
             suppress.ActionPriority = BotActionArbitration::Priority::Mechanic;
             suppress.UtilityScore = 100.0f;
             suppress.RequiredResources = BotActionArbitration::Uses(
                 BotActionArbitration::Resource::Pet);
-            suppress.Attempt = [&]()
+            suppress.Attempt = [&, suppressReason]()
             {
+                std::string const intentReason =
+                    "adaptive_magmaw_" + suppressReason;
                 bool const submitted = SubmitMeleeAutoAttackIntent(context.State,
                     BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
                     BotMeleeAutoAttack::Owner::Mechanic,
                     BotActionArbitration::Priority::Mechanic,
-                    "adaptive_magmaw_prepull_health_suppress");
+                    intentReason.c_str());
                 if (Pet* pet = context.Bot->GetPet(); pet && pet->GetCharmInfo())
                     ExecuteNativeActionIntent(context.State, context.Bot,
                         BotNativeAction::PetCommand{ pet->GetGUID(),
@@ -189,7 +193,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 context.State.TargetGuid.Clear();
                 context.Target = nullptr;
                 context.Situation = "adaptive_magmaw";
-                context.Action = "prepull_health_recovery";
+                context.Action = suppressReason;
                 context.State.LastDecisionHandler = "adaptive_magmaw";
                 return submitted
                     ? BotActionArbitration::Outcome::Committed(

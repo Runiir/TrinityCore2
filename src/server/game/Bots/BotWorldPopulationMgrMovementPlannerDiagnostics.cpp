@@ -260,7 +260,15 @@ std::string MovementPlannerObservationJson(
          << observation.NativeProof.EndpointX << ",\"y\":"
          << observation.NativeProof.EndpointY << ",\"z\":"
          << observation.NativeProof.EndpointZ << ",\"distance\":"
-         << observation.NativeProof.EndpointDistance << ",\"matched\":"
+         << observation.NativeProof.EndpointDistance
+         << ",\"horizontal_distance\":"
+         << observation.NativeProof.EndpointHorizontalDistance
+         << ",\"vertical_distance\":"
+         << observation.NativeProof.EndpointVerticalDistance
+         << ",\"horizontal_tolerance\":"
+         << NativePathEndpointHorizontalTolerance
+         << ",\"vertical_tolerance\":"
+         << NativePathEndpointVerticalTolerance << ",\"matched\":"
          << (observation.NativeProof.EndpointMatched ? "true" : "false")
          << ",\"floor_valid\":"
          << (observation.NativeProof.EndpointFloorValid ? "true" : "false")

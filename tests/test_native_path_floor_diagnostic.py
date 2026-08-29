@@ -60,6 +60,14 @@ int main()
     // A normal valid native sample does not need declared fallback.
     assert(!AdmitSameLevelDeclaredFloorFallback(
         213.939f, 213.665f, 213.7f));
+
+    // Canary107: MMAP kept the requested X/Y and normalized the endpoint to
+    // its walkable Z.  This is the same destination, not an endpoint miss.
+    assert(NativePathEndpointComponentsMatch(0.0f, 0.882904f));
+    assert(NativePathEndpointComponentsMatch(0.0f, 0.811676f));
+    // A horizontal miss or a cross-level endpoint remains rejected.
+    assert(!NativePathEndpointComponentsMatch(0.5001f, 0.0f));
+    assert(!NativePathEndpointComponentsMatch(0.0f, 1.5001f));
 }
 ''',
         encoding="utf-8",
@@ -113,6 +121,7 @@ def test_planner_same_level_fallback_still_requires_native_path_proof():
     assert "NativePathFloorObservationBlocksCompleteProof" in planner
     assert "FloorObservationConflict" in validation
     assert "EndpointMatched" in validation
+    assert "NativePathEndpointComponentsMatch" in validation
     assert 'action = "hold_hazard_exit_retry_backoff"' in movement
     assert '== "hazard_exit_no_union_safe_native_path"' in movement
 

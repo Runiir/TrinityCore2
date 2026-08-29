@@ -5,13 +5,18 @@ import pytest
 from tools.raid_program.blocker_recurrence_ledger import evaluate_ledger
 
 
-def _ledger(runs: list[dict], *, limit: int = 10) -> dict:
-    return {
+def _ledger(
+    runs: list[dict], *, limit: int = 10, signatures: dict | None = None
+) -> dict:
+    ledger = {
         "schema": "trinity_raid_blocker_recurrence_v1",
         "occurrence_limit": limit,
         "clear_streak_required": 2,
         "runs": runs,
     }
+    if signatures is not None:
+        ledger["causal_signatures"] = signatures
+    return ledger
 
 
 def test_intervening_absence_does_not_erase_recurring_blocker() -> None:
@@ -115,3 +120,52 @@ def test_rejects_duplicate_run_identity_and_unknown_state() -> None:
                 [{"run_id": "one", "blockers": {"edge": "fixed"}}]
             )
         )
+
+
+def test_child_recurrence_rolls_up_to_parent_once_per_run() -> None:
+    decision = evaluate_ledger(
+        _ledger(
+            [
+                {
+                    "run_id": "101",
+                    "blockers": {"floor_probe": "occurred", "endpoint_z": "occurred"},
+                },
+                {"run_id": "102", "blockers": {"endpoint_z": "occurred"}},
+            ],
+            signatures={
+                "native_path_proof": {},
+                "floor_probe": {"parent": "native_path_proof"},
+                "endpoint_z": {"parent": "native_path_proof"},
+            },
+        )
+    )
+
+    parent = next(
+        row for row in decision["blockers"]
+        if row["causal_signature"] == "native_path_proof"
+    )
+    assert parent["occurrence_count"] == 2
+    assert parent["occurrence_run_ids"] == ["101", "102"]
+
+
+def test_completed_architecture_review_preserves_history_but_reopens_budget() -> None:
+    decision = evaluate_ledger(
+        _ledger(
+            [
+                {"run_id": str(index), "blockers": {"shared_edge": "occurred"}}
+                for index in range(1, 12)
+            ],
+            signatures={
+                "shared_edge": {
+                    "architecture_reviewed_through_occurrence_count": 10,
+                }
+            },
+        )
+    )
+
+    blocker = decision["blockers"][0]
+    assert blocker["occurrence_count"] == 11
+    assert blocker["architecture_reviewed_through_occurrence_count"] == 10
+    assert blocker["unreviewed_occurrence_count"] == 1
+    assert blocker["stop_required"] is False
+    assert blocker["open"] is True

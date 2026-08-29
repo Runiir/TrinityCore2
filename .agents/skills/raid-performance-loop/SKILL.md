@@ -181,6 +181,12 @@ never key it by a later watchdog, receipt, recovery, or shutdown symptom. Count
 at most one occurrence of a signature per run after deduplicating repeated
 trace snapshots.
 
+Run the ledger evaluator before authorizing either a repair or another canary;
+its `required_next_action` is a gate, not a report-only field. Every repaired
+signature keeps its original counterexample as a deterministic regression
+fixture. Do not delete, weaken, or replace that fixture when a later repair
+changes the implementation or diagnostic vocabulary.
+
 An intervening successful action or run does not reset the count. Record one of
 `occurred`, `absent`, or `not_exercised` for every known signature in each
 closed canary. `absent` is closure evidence only when the relevant route was
@@ -207,6 +213,20 @@ or distance band does not create a fresh blocker when the same admission gate
 and failure invariant are unchanged. Record the narrow signatures as
 subsumed, retain their counts, and apply the occurrence limit to the parent
 before authorizing another patch or canary.
+
+Represent that relationship with `causal_signatures.<child>.parent`; the
+deterministic evaluator rolls child occurrences into the parent once per run.
+After a hash-bound architecture review, record
+`architecture_reviewed_through_occurrence_count` and its evidence on every
+reviewed child and parent. This preserves total history while counting only new
+post-review recurrences toward the next architecture stop. Never add that
+acknowledgement merely to unblock a run.
+
+One action label must not represent different causal waits. Formation staging,
+health recovery, pull ownership, path admission, and native execution need
+distinct reasons in closed evidence. If old telemetry conflates them, classify
+from the underlying candidate and native outcome, then repair the diagnostic;
+renamed or ambiguous evidence cannot prove a signature `absent`.
 
 Route acceptance requires two consecutive completed clears in which every
 known signature is explicitly `absent`. Passing a focused test or one clean

@@ -4,6 +4,7 @@
   "investigation_epoch": "magmaw_current_standard_20260829",
   "occurrence_limit": 10,
   "clear_streak_required": 2,
+  "closure_policy": "A causal signature remains open until its retained deterministic fixture passes and two consecutive full current-standard route clears complete with the signature absent. Renaming or replacing a diagnostic cannot count as absence.",
   "causal_signatures": {
     "magmaw_parasite_control_allows_player_infection": {
       "owner": "encounter_policy_and_movement_intent",
@@ -19,12 +20,27 @@
     },
     "same_level_movement_path_floor_false_negative": {
       "owner": "shared_movement_planner",
+      "parent": "same_level_native_path_proof_false_negative",
       "invariant": "a valid same-floor native movement must use one owner-independent floor proof and bounded progressive segmentation instead of rejecting the request from an unrelated sampled floor",
       "subsumes": [
         "same_level_encounter_hazard_path_rejection"
       ],
+      "architecture_reviewed_through_occurrence_count": 10,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary106_path_floor_architecture_stop_20260829.md",
       "historical_unique_run_count": 15,
       "counting_note": "The ledger records the last ten gate-bearing occurrences. Five older retained reports establish that the full archive count is fifteen."
+    },
+    "same_level_native_endpoint_z_normalization_false_negative": {
+      "owner": "shared_movement_planner",
+      "parent": "same_level_native_path_proof_false_negative",
+      "invariant": "a complete floor-valid native path that preserves the requested horizontal endpoint may normalize Z within the native point-floor tolerance without becoming an endpoint mismatch",
+      "architecture_stop_history_carries_forward": true
+    },
+    "same_level_native_path_proof_false_negative": {
+      "owner": "shared_movement_planner",
+      "invariant": "complete floor-valid native paths must be admitted by one owner-independent proof that distinguishes endpoint identity, native floor normalization, and diagnostic floor observations",
+      "architecture_reviewed_through_occurrence_count": 10,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary106_path_floor_architecture_stop_20260829.md"
     }
   },
   "runs": [
@@ -196,6 +212,19 @@
       "report_sha256": "8165bf57470d0aac82b9881bd1e881448f8ad479c4ec224da95e5938f8f3b437",
       "combat_analysis_sha256": "121baddfc2d6b75c3661a38c1fdfcd6db86a7a3e02d60fcc4c02da5c1d140944",
       "evidence": "experiments/configs/cata_raid_magmaw_canary106_path_floor_architecture_stop_20260829.md"
+    },
+    {
+      "run_id": "trinity-magmaw-b2ab0de4f5-canary107.iRBFeQ",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "chainwielder_future_drudge_contamination": "absent",
+        "same_level_movement_path_floor_false_negative": "absent",
+        "same_level_native_endpoint_z_normalization_false_negative": "occurred"
+      },
+      "report_sha256": "7f89e54443e5b10c7fa5b9af56890bdc903dd4e06686734f35c74fcbea0a12a6",
+      "combat_analysis_sha256": "8098ddc597d6c31aa416e141b58609f421d50be18561d8c8f1ffeb5bf9b5b583",
+      "evidence": "experiments/configs/cata_raid_magmaw_b2ab0de4f5_canary107_native_endpoint_handoff_20260829.md"
     }
   ]
 }

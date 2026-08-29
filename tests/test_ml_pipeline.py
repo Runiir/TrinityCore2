@@ -4278,11 +4278,11 @@ def test_live_bot_validation_suppresses_stale_error_during_mixed_kernel_trash_ha
 @pytest.mark.parametrize(
     ("in_combat", "candidate_source", "candidate_key", "candidate_reason", "action", "expected_transition_errors"),
     [
-        (False, "adaptive_magmaw", "adaptive_magmaw:prepull_health_suppress:4", "", "prepull_health_recovery", 1),
-        (False, "adaptive_magmaw", "adaptive_magmaw:prepull_health_suppress:4", "", "trained_heal", 1),
+        (False, "adaptive_magmaw", "adaptive_magmaw:prepull_formation_staging:4", "", "prepull_formation_staging", 1),
+        (False, "adaptive_magmaw", "adaptive_magmaw:prepull_health_recovery:4", "", "trained_heal", 1),
         (False, "validation_route_adapter", "world.validation_route_action", "adaptive_magmaw_owns_live_encounter", "cast_combat_spell", 1),
-        (True, "adaptive_magmaw", "adaptive_magmaw:prepull_health_suppress:4", "", "prepull_health_recovery", 0),
-        (False, "validation_route_adapter", "adaptive_magmaw:prepull_health_suppress:4", "", "prepull_health_recovery", 0),
+        (True, "adaptive_magmaw", "adaptive_magmaw:prepull_formation_staging:4", "", "prepull_formation_staging", 0),
+        (False, "validation_route_adapter", "adaptive_magmaw:prepull_formation_staging:4", "", "prepull_formation_staging", 0),
     ],
 )
 def test_live_bot_validation_only_defers_exact_magmaw_formation_error(

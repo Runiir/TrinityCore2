@@ -34,6 +34,39 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
     _require(occurrence_limit > 0, "occurrence_limit must be positive")
     _require(clear_streak_required > 0, "clear_streak_required must be positive")
 
+    signature_contracts = dict(ledger.get("causal_signatures") or {})
+    parents: dict[str, str] = {}
+    for signature, contract in signature_contracts.items():
+        _require(
+            isinstance(contract, Mapping),
+            f"signature {signature} contract must be an object",
+        )
+        parent = str(contract.get("parent") or "").strip()
+        if parent:
+            _require(
+                parent != signature,
+                f"signature {signature} cannot parent itself",
+            )
+            _require(
+                parent in signature_contracts,
+                f"signature {signature} has unknown parent {parent}",
+            )
+            parents[str(signature)] = parent
+
+    def ancestors(signature: str) -> list[str]:
+        result: list[str] = []
+        seen = {signature}
+        current = signature
+        while current in parents:
+            current = parents[current]
+            _require(
+                current not in seen,
+                f"causal signature parent cycle at {current}",
+            )
+            seen.add(current)
+            result.append(current)
+        return result
+
     runs = list(ledger.get("runs") or [])
     seen_run_ids: set[str] = set()
     signatures: set[str] = set()
@@ -54,6 +87,17 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
                 f"run {run_id} signature {signature} has invalid state {state!r}",
             )
             signatures.add(str(signature))
+
+        # A child occurrence is also one occurrence of every owning parent.
+        # Deduplicate at run scope so sibling symptoms cannot inflate the
+        # architecture-stop counter. Explicit absence never overrides a child
+        # occurrence from the same trace.
+        for signature, state in list(observations.items()):
+            if state != "occurred":
+                continue
+            for parent in ancestors(str(signature)):
+                observations[parent] = "occurred"
+                signatures.add(parent)
 
         normalized_runs.append(
             {
@@ -82,8 +126,17 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
             break
 
         occurrence_count = len(occurrences)
+        contract = signature_contracts.get(signature, {})
+        reviewed_through = int(
+            contract.get("architecture_reviewed_through_occurrence_count", 0)
+        )
+        _require(
+            0 <= reviewed_through <= occurrence_count,
+            f"signature {signature} has invalid architecture review count",
+        )
+        unreviewed_occurrence_count = occurrence_count - reviewed_through
         open_blocker = occurrence_count > 0 and clean_clear_streak < clear_streak_required
-        stop_required = occurrence_count >= occurrence_limit
+        stop_required = unreviewed_occurrence_count >= occurrence_limit
         if open_blocker:
             open_signatures.append(signature)
         if stop_required:
@@ -94,6 +147,8 @@ def evaluate_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
                 "occurrence_count": occurrence_count,
                 "occurrence_run_ids": occurrences,
                 "last_occurrence_run_id": occurrences[-1] if occurrences else None,
+                "architecture_reviewed_through_occurrence_count": reviewed_through,
+                "unreviewed_occurrence_count": unreviewed_occurrence_count,
                 "clean_full_clear_streak": clean_clear_streak,
                 "open": open_blocker,
                 "stop_required": stop_required,

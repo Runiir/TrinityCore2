@@ -50,6 +50,7 @@ struct BotWorldPopulationMgr::BotUpdateContext
     bool AdaptiveChimaeronHealingDisabled = false;
     bool AdaptiveMagmawOwnsNode = false;
     bool AdaptiveMagmawSuppressOffense = false;
+    std::string AdaptiveMagmawSuppressReason = "prepull_offense_suppressed";
     bool AdaptiveMaloriakOwnsNode = false;
     bool AdaptiveNefarianOwnsNode = false;
     bool AdaptiveOmnotronOwnsNode = false;

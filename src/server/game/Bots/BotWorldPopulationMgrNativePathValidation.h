@@ -59,10 +59,30 @@ inline float NativePathEndpointDistance(G3D::Vector3 const& actual,
     return std::sqrt(x * x + y * y + z * z);
 }
 
-inline bool NativePathEndpointMatches(G3D::Vector3 const& actual,
-    G3D::Vector3 const& requested, float tolerance = 0.5f)
+inline float NativePathEndpointHorizontalDistance(G3D::Vector3 const& actual,
+    G3D::Vector3 const& requested)
 {
-    return NativePathEndpointDistance(actual, requested) <= tolerance;
+    float const x = actual.x - requested.x;
+    float const y = actual.y - requested.y;
+    return std::sqrt(x * x + y * y);
+}
+
+inline float NativePathEndpointVerticalDistance(G3D::Vector3 const& actual,
+    G3D::Vector3 const& requested)
+{
+    return std::fabs(actual.z - requested.z);
+}
+
+inline bool NativePathEndpointMatches(G3D::Vector3 const& actual,
+    G3D::Vector3 const& requested)
+{
+    // MMAP normalizes the endpoint Z to its walkable polygon.  Horizontal
+    // displacement proves destination identity; the separately bounded Z
+    // delta permits that native floor normalization without admitting a
+    // different level.
+    return NativePathEndpointComponentsMatch(
+        NativePathEndpointHorizontalDistance(actual, requested),
+        NativePathEndpointVerticalDistance(actual, requested));
 }
 
 template <typename EndpointFloorValidator, typename FloorObserver>
@@ -85,6 +105,10 @@ NativePathProofObservation DiagnoseCompleteNativePathProof(bool calculated,
     observation.EndpointZ = endpoint.z;
     observation.EndpointDistance = NativePathEndpointDistance(endpoint,
         requested);
+    observation.EndpointHorizontalDistance =
+        NativePathEndpointHorizontalDistance(endpoint, requested);
+    observation.EndpointVerticalDistance =
+        NativePathEndpointVerticalDistance(endpoint, requested);
     observation.EndpointMatched = NativePathEndpointMatches(endpoint,
         requested);
     observation.EndpointFloorValid = endpointFloorValid(path);

@@ -152,6 +152,8 @@ int main()
     success.NativeProof.EndpointY = -99.0f;
     success.NativeProof.EndpointZ = 214.091f;
     success.NativeProof.EndpointDistance = 0.0633392f;
+    success.NativeProof.EndpointHorizontalDistance = 0.0f;
+    success.NativeProof.EndpointVerticalDistance = 0.0633392f;
     success.NativeProof.EndpointMatched = true;
     success.NativeProof.EndpointFloorValid = true;
     success.NativeProof.FloorObservation = MakeNativePathFloorObservation(
@@ -169,6 +171,12 @@ int main()
     assert(proofJson.find("\"endpoint\":{\"x\":-333")
         != std::string::npos);
     assert(proofJson.find("\"distance\":0.0633392")
+        != std::string::npos);
+    assert(proofJson.find("\"horizontal_distance\":0")
+        != std::string::npos);
+    assert(proofJson.find("\"vertical_distance\":0.0633392")
+        != std::string::npos);
+    assert(proofJson.find("\"vertical_tolerance\":1.5")
         != std::string::npos);
     assert(proofJson.find("\"failure\":\"sample_floor_gap\"")
         != std::string::npos);

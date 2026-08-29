@@ -8,6 +8,18 @@ namespace BotWorldMovement
 {
 constexpr float NativeFloorTolerance = 4.0f;
 constexpr float NativePathPointFloorTolerance = 1.5f;
+constexpr float NativePathEndpointHorizontalTolerance = 0.5f;
+constexpr float NativePathEndpointVerticalTolerance =
+    NativePathPointFloorTolerance;
+
+inline bool NativePathEndpointComponentsMatch(float horizontalDistance,
+    float verticalDistance)
+{
+    return std::isfinite(horizontalDistance)
+        && std::isfinite(verticalDistance)
+        && horizontalDistance <= NativePathEndpointHorizontalTolerance
+        && verticalDistance <= NativePathEndpointVerticalTolerance;
+}
 
 enum class NativePathFloorFailure
 {
@@ -70,6 +82,8 @@ struct NativePathProofObservation
     float EndpointY = 0.0f;
     float EndpointZ = 0.0f;
     float EndpointDistance = 0.0f;
+    float EndpointHorizontalDistance = 0.0f;
+    float EndpointVerticalDistance = 0.0f;
     bool EndpointMatched = false;
     bool EndpointFloorValid = false;
     NativePathFloorObservation FloorObservation;
