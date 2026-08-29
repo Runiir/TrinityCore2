@@ -83,6 +83,20 @@ def _pass(fixture_id: str, run_id: str, revision: int = 1, **identity: str) -> d
     }
 
 
+def _expansion_request(
+    fixture_id: str, *, from_revision: int = 1, signature: str = "edge"
+) -> dict:
+    return {
+        "fixture_id": fixture_id,
+        "from_revision": from_revision,
+        "to_revision": from_revision + 1,
+        "causal_signature": signature,
+        "required_production_boundary": (
+            "worldserver-backed planner-to-spline progress through terminal outcome"
+        ),
+    }
+
+
 def test_intervening_absence_does_not_erase_recurring_blocker() -> None:
     decision = evaluate_ledger(
         _ledger(
@@ -788,6 +802,143 @@ def test_unchanged_fixture_rerun_after_recurrence_does_not_admit_canary() -> Non
     assert decision["canary_admitted"] is False
     assert decision["invalidated_fixture_ids"] == ["original"]
     assert decision["required_next_action"] == "expand_invalid_retained_fixture"
+
+
+def test_explicit_replacement_evidence_request_admits_only_exact_invalidated_target() -> None:
+    before = _pass("original", "101")
+    after = _pass("original", "102")
+    after.pop("passed_before_run_id")
+    after["passed_after_run_id"] = "102"
+    ledger = _bank_ledger(
+        [
+            {"run_id": "101", "route_completed": False,
+             "blockers": {"edge": "occurred"}},
+            {"run_id": "102", "route_completed": False,
+             "blockers": {"edge": "occurred"}},
+        ],
+        fixtures=[_fixture("original")],
+        verifications=[before, after],
+    )
+    ledger["regression_bank"]["fixture_expansion_requests"] = [
+        _expansion_request("original")
+    ]
+
+    decision = evaluate_ledger(
+        ledger,
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
+    )
+
+    assert decision["build_admitted"] is False
+    assert decision["canary_admitted"] is False
+    assert decision["fixture_expansion_admitted"] is True
+    assert decision["fixture_expansion_target_ids"] == ["original"]
+    assert decision["fixture_expansion_requests"] == [
+        _expansion_request("original")
+    ]
+    assert decision["required_next_action"] == "run_fixture_expansion_replay"
+
+
+@pytest.mark.parametrize(
+    ("mutation", "failure"),
+    [
+        ({"from_revision": 2, "to_revision": 3}, "from_revision_mismatch"),
+        ({"to_revision": 3}, "to_revision_not_incremented"),
+        ({"causal_signature": "other"}, "causal_signature_mismatch"),
+        ({"required_production_boundary": ""}, "missing_required_production_boundary"),
+    ],
+)
+def test_replacement_evidence_request_seals_revision_signature_and_boundary(
+    mutation: dict[str, object], failure: str
+) -> None:
+    before = _pass("original", "101")
+    after = _pass("original", "102")
+    after.pop("passed_before_run_id")
+    after["passed_after_run_id"] = "102"
+    ledger = _bank_ledger(
+        [
+            {"run_id": "101", "blockers": {"edge": "occurred"}},
+            {"run_id": "102", "blockers": {"edge": "occurred"}},
+        ],
+        fixtures=[_fixture("original")],
+        verifications=[before, after],
+    )
+    request = _expansion_request("original")
+    request.update(mutation)
+    ledger["regression_bank"]["fixture_expansion_requests"] = [request]
+
+    decision = evaluate_ledger(
+        ledger,
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
+    )
+
+    assert decision["fixture_expansion_admitted"] is False
+    assert decision["canary_admitted"] is False
+    assert any(failure in row for row in decision["regression_bank"]["route_failures"])
+
+
+def test_replacement_evidence_request_can_expand_post_occurrence_pass() -> None:
+    verification = _pass("original", "101", revision=2)
+    verification.pop("passed_before_run_id")
+    verification["passed_after_run_id"] = "101"
+    ledger = _bank_ledger(
+        [{"run_id": "101", "route_completed": False,
+          "blockers": {"edge": "occurred"}}],
+        fixtures=[{**_fixture("original"), "revision": 2}],
+        verifications=[verification],
+    )
+    ledger["regression_bank"]["fixture_expansion_requests"] = [
+        _expansion_request("original", from_revision=2)
+    ]
+
+    decision = evaluate_ledger(
+        ledger,
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
+    )
+
+    assert decision["invalidated_fixture_ids"] == []
+    assert decision["fixture_expansion_admitted"] is True
+    assert decision["fixture_expansion_target_ids"] == ["original"]
+    assert decision["build_admitted"] is False
+    assert decision["canary_admitted"] is False
+
+
+def test_replacement_evidence_request_requires_observed_causal_signature() -> None:
+    ledger = _bank_ledger(
+        [{"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}}],
+        fixtures=[_fixture("original")],
+        verifications=[_pass("original", "101")],
+    )
+    ledger["regression_bank"]["fixture_expansion_requests"] = [
+        _expansion_request("original")
+    ]
+
+    decision = evaluate_ledger(
+        ledger,
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
+    )
+
+    assert decision["fixture_expansion_admitted"] is False
+    assert decision["build_admitted"] is False
+    assert decision["canary_admitted"] is False
+    assert "fixture_expansion_request:original:causal_signature_not_observed" in decision[
+        "regression_bank"
+    ]["route_failures"]
 
 
 def test_run_admission_snapshot_prevents_ephemeral_receipt_from_reopening_gate() -> None:

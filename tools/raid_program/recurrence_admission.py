@@ -23,6 +23,54 @@ FIXTURE_STATE_FIELDS = (
 )
 
 
+def _fixture_expansion_contract(
+    value: dict[str, Any], *, label: str
+) -> list[dict[str, Any]]:
+    targets = value.get("fixture_expansion_target_ids")
+    requests = value.get("fixture_expansion_requests", [])
+    pending = value.get("pending_fixture_ids", [])
+    if not isinstance(targets, list) or not targets or any(
+        not isinstance(fixture_id, str) or not fixture_id for fixture_id in targets
+    ):
+        raise RecurrenceAdmissionError(f"{label}_target_invalid")
+    if len(targets) != len(set(targets)):
+        raise RecurrenceAdmissionError(f"{label}_target_duplicate")
+    if not isinstance(pending, list) or any(
+        not isinstance(fixture_id, str) or not fixture_id for fixture_id in pending
+    ):
+        raise RecurrenceAdmissionError(f"{label}_pending_invalid")
+    if not isinstance(requests, list):
+        raise RecurrenceAdmissionError(f"{label}_request_invalid")
+    request_ids: list[str] = []
+    for request in requests:
+        if not isinstance(request, dict):
+            raise RecurrenceAdmissionError(f"{label}_request_invalid")
+        fixture_id = request.get("fixture_id")
+        from_revision = request.get("from_revision")
+        to_revision = request.get("to_revision")
+        if (
+            not isinstance(fixture_id, str)
+            or not fixture_id
+            or not isinstance(from_revision, int)
+            or isinstance(from_revision, bool)
+            or from_revision <= 0
+            or not isinstance(to_revision, int)
+            or isinstance(to_revision, bool)
+            or to_revision != from_revision + 1
+            or not isinstance(request.get("causal_signature"), str)
+            or not request["causal_signature"].strip()
+            or not isinstance(request.get("required_production_boundary"), str)
+            or not request["required_production_boundary"].strip()
+        ):
+            raise RecurrenceAdmissionError(f"{label}_request_invalid")
+        request_ids.append(fixture_id)
+    if len(request_ids) != len(set(request_ids)):
+        raise RecurrenceAdmissionError(f"{label}_request_duplicate")
+    if set(targets) != set(pending) | set(request_ids):
+        raise RecurrenceAdmissionError(f"{label}_request_target_mismatch")
+    return requests
+
+
 class RecurrenceAdmissionError(RuntimeError):
     pass
 
@@ -121,8 +169,11 @@ def create_recurrence_admission(
             raise RecurrenceAdmissionError("fixture_expansion_not_admitted")
         if decision_value.get("canary_admitted") is True:
             raise RecurrenceAdmissionError("fixture_expansion_gameplay_gate_open")
-        if not decision_value.get("fixture_expansion_target_ids"):
-            raise RecurrenceAdmissionError("fixture_expansion_target_missing")
+        expansion_requests = _fixture_expansion_contract(
+            decision_value, label="fixture_expansion"
+        )
+    else:
+        expansion_requests = []
     suite = _load(suite_receipt.resolve(), "suite_receipt")
     if suite.get("source_identity") != head:
         raise RecurrenceAdmissionError("suite_receipt_source_stale")
@@ -149,6 +200,7 @@ def create_recurrence_admission(
         "fixture_expansion_target_ids": decision_value.get(
             "fixture_expansion_target_ids"
         ) or [],
+        "fixture_expansion_requests": expansion_requests,
         "gameplay_mutations_allowed": False if fixture_expansion else None,
         **{key: decision_value.get(key) for key in FIXTURE_STATE_FIELDS},
         "source": {
@@ -209,8 +261,9 @@ def verify_recurrence_admission(
             raise RecurrenceAdmissionError("fixture_expansion_gameplay_gate_open")
         if admission.get("gameplay_mutations_allowed") is not False:
             raise RecurrenceAdmissionError("fixture_expansion_gameplay_mutation_forbidden")
-        if not admission.get("fixture_expansion_target_ids"):
-            raise RecurrenceAdmissionError("fixture_expansion_target_missing")
+        expansion_requests = _fixture_expansion_contract(
+            admission, label="fixture_expansion"
+        )
     else:
         if admission.get("build_admitted") is not True:
             raise RecurrenceAdmissionError("build_not_admitted")
@@ -254,6 +307,8 @@ def verify_recurrence_admission(
             "fixture_expansion_target_ids"
         ):
             raise RecurrenceAdmissionError("fixture_expansion_target_mismatch")
+        if expansion_requests != decision.get("fixture_expansion_requests", []):
+            raise RecurrenceAdmissionError("fixture_expansion_request_mismatch")
         if not _config_bool(
             runtime_config, "BotWorld.ValidationRoute.PrepullCheckpointEnable"
         ):
@@ -289,6 +344,12 @@ def verify_recurrence_admission(
         actual_revisions[fixture_id] = revision
     if admission.get("fixture_revisions") != actual_revisions:
         raise RecurrenceAdmissionError("fixture_revision_map_mismatch")
+    if fixture_expansion:
+        for request in expansion_requests:
+            if actual_revisions.get(request["fixture_id"]) != request["from_revision"]:
+                raise RecurrenceAdmissionError(
+                    "fixture_expansion_from_revision_mismatch"
+                )
 
     # Loading the ledger is deliberate: its hash is already checked above, and
     # invalid JSON must not be accepted merely because a stale digest matches.
@@ -320,6 +381,9 @@ def verify_recurrence_admission(
         "purpose": required_purpose,
         "fixture_expansion_target_ids": admission.get(
             "fixture_expansion_target_ids"
+        ) or [],
+        "fixture_expansion_requests": admission.get(
+            "fixture_expansion_requests"
         ) or [],
     }
 

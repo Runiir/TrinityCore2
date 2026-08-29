@@ -7,7 +7,7 @@
   "mode": "10N",
   "owner_skill": "raid-shard-architecture",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "receipt_progress_reducer_fixture_green_exact_build_and_capture_required",
+  "gate_state": "invalidated_fixture_replacement_evidence_request_declared_clean_suite_build_and_capture_required",
   "observed_at_commit": "748d63431cfcda9ea4957711b29346de287d90d9",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_748d63431c_tactical_replay_lite_summary_v1.json",
@@ -71,6 +71,12 @@
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
     "required_new_fixture_id": "native_planner_executor_launch_proof_v1",
     "required_new_fixture_revision": 3,
+    "replacement_evidence_request": {
+      "from_revision": 2,
+      "to_revision": 3,
+      "causal_signature": "native_planner_executor_launch_divergence",
+      "required_production_boundary": "worldserver-backed map-669 planner, executor, MotionMaster, point generator, and launched spline observed over multiple ticks through terminal outcome or explicit supersession"
+    },
     "required_fixture": "Production evidence must bind one receipt and launched spline continuously through terminal outcome or explicit supersession. A later off-platform observation may not be attributed to the launch when the receipt sampling gap remains open.",
     "history_carries_forward": true,
     "closure_requires_consecutive_current_standard_clears": 2
@@ -97,6 +103,7 @@
     "receipt_progress_publication_fixture_green": true,
     "receipt_progress_reducer_focused_tests": "3_passed",
     "receipt_progress_reducer_fixture_green": true,
+    "replacement_evidence_request_declared": true,
     "build_admitted": false,
     "fixture_expansion_admitted": false,
     "canary_admitted": false,
@@ -113,5 +120,5 @@
     "next_owner_after_fixture_expansion_capture": "raid-performance-loop",
     "next_work_unit_after_fixture_expansion_capture": "coordinator:review_live_receipt_history_and_route_only_a_verified_edge"
   },
-  "next_action": "Commit the fixture-green observer and reducer, pass the complete retained regression bank, build with fast8, and run one admitted map-669 fixture-expansion capture. Reduce and review that capture before any gameplay edit or second attempt."
+  "next_action": "At the clean committed identity, pass the complete retained regression bank so the exact revision-2 to revision-3 replacement-evidence request is admitted, build with fast8, and run one observation-only map-669 fixture-expansion capture. Reduce and review that capture before promoting revision 3, making any gameplay edit, or starting a second attempt."
 }

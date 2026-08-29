@@ -11,6 +11,15 @@
     "current_identity": {
       "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36"
     },
+    "fixture_expansion_requests": [
+      {
+        "fixture_id": "native_planner_executor_launch_proof_v1",
+        "from_revision": 2,
+        "to_revision": 3,
+        "causal_signature": "native_planner_executor_launch_divergence",
+        "required_production_boundary": "worldserver-backed map-669 planner, executor, MotionMaster, point generator, and launched spline observed over multiple ticks through terminal outcome or explicit supersession"
+      }
+    ],
     "fixture_history": [
       "magmaw_parasite_lane_paths_v1",
       "magmaw_parasite_lane_transition_full_replay_v1",

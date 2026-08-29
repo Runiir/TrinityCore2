@@ -239,6 +239,18 @@ signature keeps its original counterexample as a deterministic regression
 fixture. Do not delete, weaken, or replace that fixture when a later repair
 changes the implementation or diagnostic vocabulary.
 
+When a live recurrence or its evidence review proves a retained production
+fixture's boundary insufficient, do not mark the replacement revision pending
+or passed before its evidence exists. Declare one target-bound replacement-
+evidence request with the fixture ID, current and next revisions, previously
+observed causal signature, and required production boundary. This also applies
+when the inadequate fixture was first added after the occurrence and therefore
+is not yet listed as invalidated. The request may admit only an observation-
+only `fixture_expansion_replay`; build, gameplay canary, and gameplay mutation
+remain closed. Seal the request into the suite manifest and recurrence
+admission, then promote the incremented fixture revision only after the
+captured production evidence satisfies the boundary.
+
 Treat a recurrence after a passing fixture as proof that the fixture covered
 the wrong boundary. Stop live canaries for that signature, preserve the old
 fixture, and add a replay at the first missing policy-to-native-outcome edge.

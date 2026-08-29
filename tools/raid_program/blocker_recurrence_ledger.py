@@ -185,6 +185,7 @@ def _manifest_sha256(bank: Mapping[str, Any]) -> str:
         "route": bank.get("route"),
         "fixture_history": bank.get("fixture_history", bank.get("retained_fixture_ids")),
         "fixtures": bank.get("fixtures", bank.get("fixture_manifest")),
+        "fixture_expansion_requests": bank.get("fixture_expansion_requests", []),
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode()
     return hashlib.sha256(encoded).hexdigest()
@@ -273,6 +274,7 @@ def _evaluate_regression_bank(
         "canary_admitted": True,
         "fixture_expansion_admitted": False,
         "fixture_expansion_target_ids": [],
+        "fixture_expansion_requests": [],
         "expected_fixture_ids": [],
         "verified_fixture_ids": [],
         "suite_verified_fixture_ids": [],
@@ -352,6 +354,76 @@ def _evaluate_regression_bank(
             route_failures.append(f"fixture:{fixture_id}:duplicate_fixture_id")
             continue
         fixtures[fixture_id] = fixture
+
+    raw_expansion_requests = bank.get("fixture_expansion_requests", [])
+    if not isinstance(raw_expansion_requests, list):
+        route_failures.append("fixture_expansion_requests_not_list")
+        raw_expansion_requests = []
+    expansion_requests: dict[str, dict[str, Any]] = {}
+    for index, raw_request in enumerate(raw_expansion_requests):
+        if not isinstance(raw_request, Mapping):
+            route_failures.append(f"fixture_expansion_request:{index}:not_object")
+            continue
+        request = dict(raw_request)
+        fixture_id = str(request.get("fixture_id") or "").strip()
+        if not fixture_id:
+            route_failures.append(
+                f"fixture_expansion_request:{index}:missing_fixture_id"
+            )
+            continue
+        if fixture_id in expansion_requests:
+            route_failures.append(
+                f"fixture_expansion_request:{fixture_id}:duplicate_fixture_id"
+            )
+            continue
+        fixture = fixtures.get(fixture_id)
+        if fixture is None:
+            route_failures.append(
+                f"fixture_expansion_request:{fixture_id}:unknown_fixture_id"
+            )
+            continue
+        from_revision = request.get("from_revision")
+        to_revision = request.get("to_revision")
+        if (
+            not isinstance(from_revision, int)
+            or isinstance(from_revision, bool)
+            or from_revision <= 0
+            or from_revision != _fixture_revision(fixture)
+        ):
+            route_failures.append(
+                f"fixture_expansion_request:{fixture_id}:from_revision_mismatch"
+            )
+            continue
+        if (
+            not isinstance(to_revision, int)
+            or isinstance(to_revision, bool)
+            or to_revision != from_revision + 1
+        ):
+            route_failures.append(
+                f"fixture_expansion_request:{fixture_id}:to_revision_not_incremented"
+            )
+            continue
+        causal_signature = str(request.get("causal_signature") or "").strip()
+        if causal_signature != str(fixture.get("causal_signature") or "").strip():
+            route_failures.append(
+                f"fixture_expansion_request:{fixture_id}:causal_signature_mismatch"
+            )
+            continue
+        required_boundary = str(
+            request.get("required_production_boundary") or ""
+        ).strip()
+        if not required_boundary:
+            route_failures.append(
+                f"fixture_expansion_request:{fixture_id}:missing_required_production_boundary"
+            )
+            continue
+        expansion_requests[fixture_id] = {
+            "fixture_id": fixture_id,
+            "from_revision": from_revision,
+            "to_revision": to_revision,
+            "causal_signature": causal_signature,
+            "required_production_boundary": required_boundary,
+        }
 
     if "fixture_history" not in bank and "retained_fixture_ids" not in bank:
         route_failures.append("fixture_history_missing")
@@ -583,6 +655,18 @@ def _evaluate_regression_bank(
     missing_ids.update(expected - current_pass - stale - failing - invalidated)
     if not expected:
         route_failures.append("fixture_manifest_missing")
+    requested_replacements = set(expansion_requests)
+    for fixture_id in sorted(requested_replacements):
+        signature = str(fixtures[fixture_id].get("causal_signature") or "").strip()
+        if signature not in occurred_signatures:
+            route_failures.append(
+                f"fixture_expansion_request:{fixture_id}:causal_signature_not_observed"
+            )
+        if fixture_id in pending:
+            route_failures.append(
+                f"fixture_expansion_request:{fixture_id}:fixture_already_pending"
+            )
+    fixture_expansion_targets = pending | requested_replacements
     admitted = not (
         route_failures
         or missing_ids
@@ -592,9 +676,10 @@ def _evaluate_regression_bank(
         or pending
         or unknown
         or missing_causal_signatures
+        or expansion_requests
         or suite_ids != expected
     )
-    fixture_expansion_admitted = bool(pending) and not (
+    fixture_expansion_admitted = bool(fixture_expansion_targets) and not (
         route_failures
         or missing_ids
         or stale
@@ -612,7 +697,11 @@ def _evaluate_regression_bank(
         "admitted": admitted,
         "canary_admitted": admitted,
         "fixture_expansion_admitted": fixture_expansion_admitted,
-        "fixture_expansion_target_ids": sorted(pending),
+        "fixture_expansion_target_ids": sorted(fixture_expansion_targets),
+        "fixture_expansion_requests": [
+            expansion_requests[fixture_id]
+            for fixture_id in sorted(requested_replacements)
+        ],
         "expected_fixture_ids": sorted(expected),
         "verified_fixture_ids": sorted(verified),
         "suite_verified_fixture_ids": sorted(suite_ids),
@@ -917,6 +1006,9 @@ def evaluate_ledger(
         "fixture_expansion_target_ids": regression_bank[
             "fixture_expansion_target_ids"
         ],
+        "fixture_expansion_requests": regression_bank[
+            "fixture_expansion_requests"
+        ],
         "missing_fixture_ids": regression_bank["missing_fixture_ids"],
         "stale_fixture_ids": regression_bank["stale_fixture_ids"],
         "failing_fixture_ids": regression_bank["failing_fixture_ids"],
@@ -1106,7 +1198,11 @@ def main() -> int:
     parser.add_argument("--run-suite", type=Path, help="run the fixed fixture argv and write this receipt")
     parser.add_argument("--boundary-run-id")
     parser.add_argument("--boundary", choices=("before", "after"), default="after")
-    parser.add_argument("--gate", choices=("build", "canary", "acceptance"), default="canary")
+    parser.add_argument(
+        "--gate",
+        choices=("build", "canary", "acceptance", "fixture_expansion"),
+        default="canary",
+    )
     args = parser.parse_args()
 
     ledger = json.loads(args.ledger.read_text())

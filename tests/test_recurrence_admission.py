@@ -149,6 +149,19 @@ def _verify(paths: dict[str, Path | str]) -> dict[str, object]:
     )
 
 
+def _replacement_request() -> dict[str, object]:
+    return {
+        "fixture_id": "native_planner_executor_launch_proof_v1",
+        "from_revision": 2,
+        "to_revision": 3,
+        "causal_signature": "native_planner_executor_launch_divergence",
+        "required_production_boundary": (
+            "worldserver-backed map-669 planner, executor, MotionMaster, "
+            "point generator, and launched spline observed over multiple ticks"
+        ),
+    }
+
+
 def test_exact_recurrence_admission_passes(tmp_path: Path) -> None:
     paths = _fixture(tmp_path)
 
@@ -235,6 +248,180 @@ def test_fixture_expansion_admission_is_distinct_from_gameplay_canary(
     ]
     with pytest.raises(RecurrenceAdmissionError, match="admission_purpose_mismatch"):
         _verify(paths)
+
+
+def test_invalidated_replacement_request_seals_target_and_revisions(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    admission = Path(paths["admission"])
+    decision = Path(paths["decision"])
+    suite = Path(paths["suite"])
+    config = Path(paths["config"])
+    admission.unlink()
+    decision_value = json.loads(decision.read_text(encoding="utf-8"))
+    decision_value.update(
+        {
+            "build_admitted": False,
+            "canary_admitted": False,
+            "fixture_expansion_admitted": True,
+            "fixture_expansion_target_ids": [
+                "native_planner_executor_launch_proof_v1"
+            ],
+            "fixture_expansion_requests": [_replacement_request()],
+            "invalidated_fixture_ids": [
+                "native_planner_executor_launch_proof_v1"
+            ],
+            "failing_fixture_ids": [
+                "native_planner_executor_launch_proof_v1"
+            ],
+            "pending_fixture_ids": [],
+        }
+    )
+    _write_json(decision, decision_value)
+    suite_value = json.loads(suite.read_text(encoding="utf-8"))
+    suite_value["verifications"] = [
+        {
+            "fixture_id": "native_planner_executor_launch_proof_v1",
+            "fixture_revision": 2,
+            "passed": True,
+        }
+    ]
+    _write_json(suite, suite_value)
+    config.write_text(
+        config.read_text(encoding="utf-8")
+        + "BotWorld.ValidationRoute.PrepullCheckpointEnable = 1\n",
+        encoding="utf-8",
+    )
+
+    create_recurrence_admission(
+        output=admission,
+        worktree=Path(paths["root"]),
+        binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        runtime_config=config,
+        route_manifest=Path(paths["route"]),
+        ledger=Path(paths["ledger"]),
+        decision=decision,
+        suite_receipt=suite,
+        purpose=FIXTURE_EXPANSION_PURPOSE,
+    )
+
+    result = verify_recurrence_admission(
+        admission_path=admission,
+        expected_sha256=sha256_file(admission),
+        worktree=Path(paths["root"]),
+        binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        runtime_config=config,
+        required_purpose=FIXTURE_EXPANSION_PURPOSE,
+    )
+    assert result["fixture_expansion_target_ids"] == [
+        "native_planner_executor_launch_proof_v1"
+    ]
+    assert result["fixture_expansion_requests"] == [_replacement_request()]
+
+
+@pytest.mark.parametrize(
+    "target_ids",
+    [[], ["native_planner_executor_launch_proof_v1", "extra"]],
+)
+def test_fixture_expansion_rejects_missing_or_extra_request_target(
+    tmp_path: Path, target_ids: list[str]
+) -> None:
+    paths = _fixture(tmp_path)
+    admission = Path(paths["admission"])
+    decision = Path(paths["decision"])
+    admission.unlink()
+    decision_value = json.loads(decision.read_text(encoding="utf-8"))
+    decision_value.update(
+        {
+            "build_admitted": False,
+            "canary_admitted": False,
+            "fixture_expansion_admitted": True,
+            "fixture_expansion_target_ids": target_ids,
+            "fixture_expansion_requests": [_replacement_request()],
+            "invalidated_fixture_ids": [
+                "native_planner_executor_launch_proof_v1"
+            ],
+            "failing_fixture_ids": [
+                "native_planner_executor_launch_proof_v1"
+            ],
+            "pending_fixture_ids": [],
+        }
+    )
+    _write_json(decision, decision_value)
+
+    with pytest.raises(
+        RecurrenceAdmissionError,
+        match="fixture_expansion_(target_invalid|request_target_mismatch)",
+    ):
+        create_recurrence_admission(
+            output=admission,
+            worktree=Path(paths["root"]),
+            binary=Path(paths["binary"]),
+            build_receipt=Path(paths["build_receipt"]),
+            runtime_config=Path(paths["config"]),
+            route_manifest=Path(paths["route"]),
+            ledger=Path(paths["ledger"]),
+            decision=decision,
+            suite_receipt=Path(paths["suite"]),
+            purpose=FIXTURE_EXPANSION_PURPOSE,
+        )
+
+
+def test_fixture_expansion_creator_rejects_stale_suite_and_dirty_source(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    admission = Path(paths["admission"])
+    decision = Path(paths["decision"])
+    suite = Path(paths["suite"])
+    admission.unlink()
+    decision_value = json.loads(decision.read_text(encoding="utf-8"))
+    decision_value.update(
+        {
+            "build_admitted": False,
+            "canary_admitted": False,
+            "fixture_expansion_admitted": True,
+            "fixture_expansion_target_ids": [
+                "native_planner_executor_launch_proof_v1"
+            ],
+            "fixture_expansion_requests": [_replacement_request()],
+            "invalidated_fixture_ids": [
+                "native_planner_executor_launch_proof_v1"
+            ],
+            "failing_fixture_ids": [
+                "native_planner_executor_launch_proof_v1"
+            ],
+            "pending_fixture_ids": [],
+        }
+    )
+    _write_json(decision, decision_value)
+    suite_value = json.loads(suite.read_text(encoding="utf-8"))
+    suite_value["source_identity"] = "stale"
+    _write_json(suite, suite_value)
+
+    kwargs = {
+        "output": admission,
+        "worktree": Path(paths["root"]),
+        "binary": Path(paths["binary"]),
+        "build_receipt": Path(paths["build_receipt"]),
+        "runtime_config": Path(paths["config"]),
+        "route_manifest": Path(paths["route"]),
+        "ledger": Path(paths["ledger"]),
+        "decision": decision,
+        "suite_receipt": suite,
+        "purpose": FIXTURE_EXPANSION_PURPOSE,
+    }
+    with pytest.raises(RecurrenceAdmissionError, match="suite_receipt_source_stale"):
+        create_recurrence_admission(**kwargs)
+
+    suite_value["source_identity"] = _git(Path(paths["root"]), "rev-parse", "HEAD")
+    _write_json(suite, suite_value)
+    (Path(paths["root"]) / "tracked.txt").write_text("dirty\n", encoding="utf-8")
+    with pytest.raises(RecurrenceAdmissionError, match="source_worktree_dirty"):
+        create_recurrence_admission(**kwargs)
 
 
 def test_recurrence_admission_rejects_wrong_hash(tmp_path: Path) -> None:
