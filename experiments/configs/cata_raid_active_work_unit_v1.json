@@ -1,27 +1,28 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "epoch_id": "magmaw_canary122_native_launch_replay_v1_20260829",
-  "work_unit": "runtime_telemetry:planner_to_launch_receipt:canary122_seq745",
+  "work_unit": "shard_architecture:map669_native_launch_replay:canary122_seq745",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "owner_skill": "raid-shard-architecture",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "production_launch_telemetry_required",
-  "observed_at_commit": "2bfbd48bdafae41950fbfcaaf26df6f70a3784a3",
+  "gate_state": "worldserver_backed_launch_replay_required",
+  "observed_at_commit": "75c12a3d1f28215021aa83c3b6af099b6609a193",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
-    "sha256": "e3fe861a986ce78efac14c05b1cbad0f97082b171d2950c0eac0ff9d7d64354d"
+    "sha256": "838949c95afaadfc709b0df391c4a0ea52842847d9b109676c32fbb1eaf49355"
   },
   "first_broken_edge": "Candidate edge: Canary122 seq745 admitted and submitted Mgwhealc's complete ranged_formation_restore path despite a SampleFloorGap conflict; execution structurally regenerated an unverified path, after which the bot's source-derived live Z dropped from the Magmaw platform to 202.591 and later 6.70457. The exact launched spline and physical transition remain unproven.",
   "causal_signature": "native_planner_executor_launch_divergence",
-  "causal_claim_status": "candidate_state_infecting_edge_requires_launch_receipt",
+  "causal_claim_status": "observation_seam_verified_production_launch_receipt_pending",
   "claim_ledger": {
     "verified": [
       "seq741_and_seq743_were_contained_rejections_without_native_submission",
       "seq745_was_accepted_and_submitted_with_floor_observation_conflict",
       "production_regenerates_a_second_path_after_planner_proof",
-      "actor_live_z_later_dropped_to_202_591_then_6_70457"
+      "actor_live_z_later_dropped_to_202_591_then_6_70457",
+      "observation_only_planner_to_launch_receipt_seam_is_compiled_and_schema_tested"
     ],
     "refuted": [
       "seq741_was_the_first_state_infecting_edge",
@@ -71,7 +72,7 @@
     "closure_requires_consecutive_current_standard_clears": 2
   },
   "scope_lock": {
-    "allowed_change": "Add observation-only planner-to-launch diagnostics and a compact receipt schema without changing path admission, selection, generator behavior, fallback behavior, or movement outcomes.",
+    "allowed_change": "Add and run one isolated worldserver-backed map-669 replay profile that captures the existing planner-to-launch receipt and multi-tick movement outcome without changing gameplay behavior.",
     "forbidden": [
       "magmaw_pincer_or_exposed_head_policy_change",
       "global_z_threshold_expansion",
@@ -85,10 +86,10 @@
     ]
   },
   "validation": {
-    "focused_result": "unit_harness_rejected_requires_worldserver_backed_replay",
+    "focused_result": "telemetry_schema_and_six_production_translation_units_passed_worldserver_replay_pending",
     "immutable_bank_fixture_count": 19,
     "immutable_bank_all_rows_passed": false,
-    "build_admitted": false,
+    "build_admitted": true,
     "canary_admitted": false,
     "acceptance_admitted": false
   },
@@ -100,8 +101,8 @@
     "build_jobs": 8,
     "canary_budget_before_full_bank": 0,
     "canary_budget_after_full_bank_and_exact_build": 1,
-    "next_owner_after_telemetry": "raid-shard-architecture",
-    "next_work_unit_after_telemetry": "shard_architecture:map669_native_launch_replay:canary122_seq745"
+    "next_owner_after_replay": "raid-bot-runtime-implementation",
+    "next_work_unit_after_replay": "runtime_implementation:first_receipt_proven_launch_divergence"
   },
-  "next_action": "Implement observation-only planner-to-launch telemetry first. Then hand the exact receipt schema to shard architecture for the isolated map-669 replay. Do not change movement behavior until that replay closes."
+  "next_action": "Build the committed telemetry source with 8 jobs and run one isolated worldserver-backed map-669 replay. Capture the correlated planner, native launch, and multi-tick movement outcome. Do not change movement behavior until that receipt closes."
 }
