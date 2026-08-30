@@ -1,0 +1,82 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:audit_regression_bank_equal_boundary_precedence_v81",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "evaluator_bug_fixed_ledger_schema_correction_required",
+  "source": {
+    "input_commit": "ada08904fde16aa9d4de2ef17c740c7215509988",
+    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "ledger_sha256": "1fdeb2a02db1c6629e16772fde67b8a24de0946a2d770512894d6ae6b62d4488"
+  },
+  "first_broken_edge": {
+    "location": "tools/raid_program/blocker_recurrence_ledger.py::_evaluate_regression_bank",
+    "ordering": "regression_bank.verifications and suite_verifications are collected before causal_signatures.*.fixture_verifications compatibility rows",
+    "failure": "latest and latest_pass used >=, so an equal-boundary compatibility row appended later replaced the current suite row",
+    "counterexample": "the V70 compatibility rows share the Canary122 after-boundary with the current suite but retain source acaeaf9f2682b18765ec357121b38d0efbccaa8a and omit config_identity",
+    "effect": "magmaw_parasite_lane_paths_v1, magmaw_parasite_lane_transition_full_replay_v1, and magmaw_parasite_control_full_runtime_v1 were classified stale despite a current identity-bound pass, making current_pass differ from the full bank and fixture_expansion_admitted false"
+  },
+  "implemented_change": {
+    "production": "equal route-boundary ties retain the earlier authoritative bank or suite row; only a strictly later boundary replaces it",
+    "test": "test_current_suite_pass_wins_equal_boundary_compatibility_tie",
+    "scope": "evaluator precedence only; no admission predicate, fixture revision, gameplay, workflow, build, or server change"
+  },
+  "v70_revision_verdict": {
+    "fixture_expansion_replay": "revisions 7/6/6 do not require expansion merely to authorize the separately requested observation-only map-669 fixture replay; their current suite rows must not be shadowed by compatibility history",
+    "build_or_canary": "revisions 7/6/6 remain invalidated for build or gameplay-canary admission because Canary122 admitted those same revisions and the parasite signatures occurred; a later same-revision pass cannot close that recurrence"
+  },
+  "independent_ledger_schema_mismatch": {
+    "parser_contract": [
+      "production",
+      "observation_only"
+    ],
+    "verdict": "the parser is correct and must not be broadened; these unclosed fixtures belong in observation_only",
+    "rows": [
+      {
+        "fixture_id": "same_level_floor_observation_v1",
+        "current_value": "value_only",
+        "required_value": "observation_only"
+      },
+      {
+        "fixture_id": "same_level_hazard_path_admission_v1",
+        "current_value": "value_only_and_source_shape",
+        "required_value": "observation_only"
+      },
+      {
+        "fixture_id": "same_level_native_path_proof_v1",
+        "current_value": "value_only_and_source_shape",
+        "required_value": "observation_only"
+      }
+    ],
+    "current_effect": "three invalid_evidence_boundary route_failures independently keep fixture_expansion_admitted false after the evaluator precedence repair"
+  },
+  "validation": {
+    "command": [
+      "pixi",
+      "run",
+      "pytest",
+      "-q",
+      "tests/test_blocker_recurrence_ledger.py::test_current_suite_pass_wins_equal_boundary_compatibility_tie",
+      "tests/test_blocker_recurrence_ledger.py::test_bank_rejects_pass_tied_to_stale_source_or_config_identity",
+      "tests/test_blocker_recurrence_ledger.py::test_explicit_replacement_evidence_request_admits_only_exact_invalidated_target"
+    ],
+    "result": "3 passed in 0.08s",
+    "full_fixture_suite_rerun": false,
+    "tool_sha256": "59d05c21048fd4494905fa049e06cf0d5ad5d6768b16d71aefcb59e5f9465e18",
+    "test_sha256": "96cdafcce2d1095c4353eab966dc89449a82ef1c7bd2b9f657b050c4834649f2"
+  },
+  "preserved_map669_replay": {
+    "status": "closed_until_ledger_schema_correction_and_fresh_decision",
+    "requested_fixture_revisions": {
+      "same_level_floor_observation_v1": 4,
+      "same_level_hazard_path_admission_v1": 5,
+      "same_level_native_path_proof_v1": 5
+    },
+    "gameplay_canary_admitted": false,
+    "build_admitted": false
+  },
+  "next_work_unit": {
+    "id": "evidence:normalize_shared_planner_observation_boundaries_v82",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Change only the three invalid evidence_boundary values to observation_only, preserve their revisions, expansion requests, required production boundaries, V70 rows, and pending Chainwielder target, then run one exact clean-identity regression suite/evaluator. Reactivate the unchanged V71b map-669 replay only if fixture_expansion_admitted becomes true."
+  }
+}

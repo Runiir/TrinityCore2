@@ -1,75 +1,98 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "v80_v70_temporal_binding_evaluator_terminal_20260830",
-  "work_unit": "evidence:bind_v70_fixture_verifications_to_runs_v80",
+  "epoch_id": "v82_shared_planner_observation_boundary_normalization_20260830",
+  "work_unit": "evidence:normalize_shared_planner_observation_boundaries_v82",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed_closed_prestart_review_required",
-  "gate_state": "temporal_binding_valid_complete_decision_rejected_missing_evidence",
-  "observed_at_commit": "3b73247ed8634d43ff3f7931c16ddd74d4cb1ee2",
-  "immutable_input_commit": "3b73247ed8634d43ff3f7931c16ddd74d4cb1ee2",
+  "classification": "failed",
+  "gate_state": "evaluator_precedence_repaired_ledger_evidence_boundary_invalid",
+  "observed_at_commit": "ada08904fde16aa9d4de2ef17c740c7215509988",
+  "immutable_input_commit": "ada08904fde16aa9d4de2ef17c740c7215509988",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v80_v70_temporal_binding_evaluator_handoff_v1.json",
-    "sha256": "ae52c1322f4a2f82fb2621447fb4996acaf93879ff5d902ee7f5275f2184d16c",
-    "source_commit": "3b73247ed8634d43ff3f7931c16ddd74d4cb1ee2"
+    "path": "experiments/configs/cata_raid_v81_regression_bank_equal_boundary_precedence_handoff_v1.json",
+    "sha256": "f3a8be65b58ce6f19c1f205911fc02d923029ff1dd1edb3cf4923a44231e0e88",
+    "source_commit": "ada08904fde16aa9d4de2ef17c740c7215509988"
   },
   "program_scope": {
-    "operation": "closed evidence-only V80 temporal correction and exact evaluator terminal",
+    "operation": "normalize exactly three shared-planner fixture evidence-boundary enum values and evaluate once",
     "gameplay_canary_admitted": false,
     "fixture_expansion_replay_admitted": false,
     "build_admitted": false,
-    "worldserver_start_admitted": false
+    "worldserver_start_admitted": false,
+    "runtime_implementation_allowed": false
   },
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "ready_for_bounded_repair": false,
+  "evidence_contract_change": true,
+  "ready_for_bounded_repair": true,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "No further change is authorized by V80. Retain the exact evaluator terminal and report it.",
+    "allowed_change": "In experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json only, change same_level_floor_observation_v1 evidence_boundary from value_only to observation_only and change same_level_hazard_path_admission_v1 plus same_level_native_path_proof_v1 from value_only_and_source_shape to observation_only. Preserve every revision, command, status, required production boundary, expansion request, V70 verification, run, and causal interpretation. Commit that ledger correction cleanly, then execute one exact clean-identity 20-fixture suite/evaluator and record one compact V82 handoff plus routing descriptor.",
+    "allowed_files": [
+      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+      "one_compact_v82_handoff",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
+    ],
+    "exact_rows": [
+      {
+        "fixture_id": "same_level_floor_observation_v1",
+        "from": "value_only",
+        "to": "observation_only"
+      },
+      {
+        "fixture_id": "same_level_hazard_path_admission_v1",
+        "from": "value_only_and_source_shape",
+        "to": "observation_only"
+      },
+      {
+        "fixture_id": "same_level_native_path_proof_v1",
+        "from": "value_only_and_source_shape",
+        "to": "observation_only"
+      }
+    ],
     "forbidden": [
-      "new evidence-field hypothesis or ledger mutation",
-      "another suite or evaluator invocation",
-      "fixture expansion replay build bundle database or worldserver",
-      "gameplay runtime planner encounter class route threshold tolerance or test edit",
-      "workflow feature"
+      "parser enum broadening or evaluator change",
+      "fixture revision, command, threshold, tolerance, comparison, required-boundary, expansion-request, run, V70, or Chainwielder change",
+      "gameplay, runtime, planner, executor, encounter, class, route, test, or workflow edit",
+      "configure, build, runtime-config, bundle, database, worldserver, live replay, DVC publication, or fixed timer"
     ]
   },
-  "v80_result": {
-    "ledger_commit": "3b73247ed8634d43ff3f7931c16ddd74d4cb1ee2",
-    "ledger_sha256": "cf07be2b0679dddcf7c132b92d3f73d052aa36d9c4a3bee58270df076d08dcf7",
-    "boundary_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
-    "boundary_side": "after",
-    "changed_temporal_fields": 3,
-    "preserved_fixture_revisions": [7, 6, 6],
-    "fresh_suite_result": "20 passed, 0 failed",
-    "fresh_suite_receipt_sha256": "ba222c366e4a097dcb2f598c913330ac8b1ef6e840d7446f1ae6ba66100d1400",
-    "decision_created": false,
-    "exact_evaluator_terminal": "signature magmaw_parasite_containment_failure fixture verification 1 is missing evidence"
+  "verification_budget": {
+    "ledger_field_change_count": 3,
+    "regression_suite_invocation_count_maximum": 1,
+    "recurrence_evaluator_count_maximum": 1,
+    "configure_count_maximum": 0,
+    "worldserver_build_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
+    "database_mutation": "forbidden",
+    "dvc_mutation": "forbidden"
   },
-  "preserved_v71b": {
-    "recurrence_boundary": {
-      "run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
-      "side": "after"
-    },
+  "preserved_map669_replay": {
+    "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
+    "owner_skill": "raid-shard-architecture",
     "requested_fixture_revisions": {
       "same_level_floor_observation_v1": 4,
       "same_level_hazard_path_admission_v1": 5,
       "same_level_native_path_proof_v1": 5
     },
-    "runtime_config_authority": "tracked_derived_runtime_config_v1 accepted by V77",
-    "status": "not_started_unproven"
+    "status": "closed_pending_fixture_expansion_admitted_decision"
+  },
+  "preserved_pending": {
+    "chainwielder_expansion": "chainwielder_pre_admission_rejection_isolation_v1 remains pending and out of this correction",
+    "v70": "revisions 7/6/6 and their Canary122 after-boundary evidence remain unchanged",
+    "v68_runtime_config": "tracked_snapshot_source_invalid remains preserved"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": ["evaluator_rejected_missing_evidence"]
+    "terminal_edges": [
+      "fixture_expansion_decision_created",
+      "ledger_schema_correction_rejected",
+      "suite_or_evaluator_failure",
+      "identity_mismatch"
+    ]
   },
-  "remaining_unproven": [
-    "a complete fixture-expansion-admitted recurrence decision",
-    "shared-planner revisions 4/5/5 map-669 production evidence"
-  ],
-  "next_work_unit": "evidence:bind_v70_fixture_verifications_to_runs_v80",
+  "next_work_unit": "evidence:normalize_shared_planner_observation_boundaries_v82",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Stop and report the exact evaluator terminal; V80 authorizes no further hypothesis or replay."
+  "next_action": "Normalize only the three invalid evidence-boundary enums, run one clean-identity suite/evaluator, and route the preserved V71b replay only if the complete decision reports fixture_expansion_admitted true."
 }

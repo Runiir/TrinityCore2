@@ -566,11 +566,12 @@ def _evaluate_regression_bank(
             if error:
                 stale.add(fixture_id)
                 continue
-            # Ledger history may append an older compatibility row after a
-            # newer suite receipt; choose by route boundary, never list order.
-            if latest is None or boundary >= latest[0]:
+            # Bank/suite rows precede compatibility history.  Preserve that
+            # authority on an equal route boundary so an older identity-poor
+            # compatibility row cannot shadow the current suite observation.
+            if latest is None or boundary > latest[0]:
                 latest = (boundary, record)
-            if _passed(record) and (latest_pass is None or boundary >= latest_pass[0]):
+            if _passed(record) and (latest_pass is None or boundary > latest_pass[0]):
                 latest_pass = (boundary, record)
         if latest is not None and _failed(latest[1]):
             failing.add(fixture_id)

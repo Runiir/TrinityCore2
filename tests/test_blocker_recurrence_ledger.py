@@ -459,6 +459,41 @@ def test_bank_rejects_pass_tied_to_stale_source_or_config_identity() -> None:
     assert decision["canary_admitted"] is False
 
 
+def test_current_suite_pass_wins_equal_boundary_compatibility_tie() -> None:
+    current = _pass("original", "102", revision=2)
+    current.pop("passed_before_run_id")
+    current["passed_after_run_id"] = "102"
+    compatibility = {
+        "fixture_id": "original",
+        "revision": 2,
+        "passed_after_run_id": "102",
+        "evidence": "tests/original.py",
+        "source_identity": "source-old",
+    }
+    ledger = _bank_ledger(
+        [{"run_id": "102", "blockers": {"edge": "occurred"}}],
+        fixtures=[{**_fixture("original"), "revision": 2}],
+        verifications=[current],
+        signatures={"edge": {"fixture_verifications": [compatibility]}},
+    )
+    ledger["regression_bank"]["fixture_expansion_requests"] = [
+        _expansion_request("original", from_revision=2)
+    ]
+
+    decision = evaluate_ledger(
+        ledger,
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
+    )
+
+    assert decision["stale_fixture_ids"] == []
+    assert decision["fixture_expansion_admitted"] is True
+    assert decision["required_next_action"] == "run_fixture_expansion_replay"
+
+
 def test_enabled_bank_requires_external_identity_instead_of_ledger_identity() -> None:
     decision = evaluate_ledger(
         _bank_ledger(
