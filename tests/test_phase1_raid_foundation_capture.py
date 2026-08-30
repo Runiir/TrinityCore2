@@ -1860,7 +1860,53 @@ def _generic_hold_identity() -> ControllerRouteHoldLaunchIdentity:
     )
 
 
+def _generic_route_snapshot() -> dict:
+    return {
+        "movement_owner": "route",
+        "active_path_valid": True,
+        "active_path_segment_valid": True,
+        "active_path_traversal_mode": "native_route",
+        "active_path_target_guid": 0,
+        "active_path_attempt_id": 9,
+        "active_path_wipe_generation": 2,
+        "active_path_route_generation": 1,
+        "active_path_route_node_id": "raid.node.a",
+        "active_path_destination": {"x": 1.0, "y": 2.0, "z": 3.0},
+        "dodge_caster_guid": 0,
+        "dodge_spell_id": 0,
+        "dodge_until_ms": 0,
+        "dodge_bearing_attempt": 0,
+        "last_path_reject_reason": "",
+    }
+
+
+def _generic_checkpoint_lifecycle(*, terminal: bool) -> dict:
+    return {
+        "stage": "completed" if terminal else "armed",
+        "terminal": terminal,
+        "injection_count": 1 if terminal else 0,
+        "triggered_by_active_route_path": terminal,
+        "triggered_by_armed_route_hazard_retry": False,
+        "rejection": {
+            "owner": "hazard",
+            "gate": "future_pack_destination" if terminal else "",
+            "reason": (
+                "route_destination_future_pack_unsafe" if terminal else ""
+            ),
+            "planner_receipt_id": 0,
+        },
+        "before_after_identity_preserved": terminal,
+        "before": _generic_route_snapshot(),
+        "after": _generic_route_snapshot() if terminal else {},
+        "outcome": (
+            "route_identity_preserved_after_receiptless_hazard_rejection"
+            if terminal else "awaiting_real_route_owner"
+        ),
+    }
+
+
 def _generic_hold(*, phase: str = "held", route_generation: int = 1) -> dict:
+    terminal = phase in {"checkpoint_terminal", "released"}
     return {
         "ok": phase != "failed",
         "phase": phase,
@@ -1879,8 +1925,11 @@ def _generic_hold(*, phase: str = "held", route_generation: int = 1) -> dict:
         "acquire_count": 1,
         "arm_ack_count": 1 if phase in {"armed", "checkpoint_terminal", "released"} else 0,
         "checkpoint_stage": "disabled" if phase == "held" else "armed",
-        "checkpoint_terminal": phase in {"checkpoint_terminal", "released"},
-        "checkpoint_identity_preserved": phase in {"checkpoint_terminal", "released"},
+        "checkpoint_terminal": terminal,
+        "checkpoint_identity_preserved": terminal,
+        "checkpoint_lifecycle": _generic_checkpoint_lifecycle(
+            terminal=terminal
+        ),
         "release_count": 1 if phase == "released" else 0,
         "suppressed_route_action_count": 4,
         "suppressed_route_advance_count": 1,
@@ -1974,7 +2023,79 @@ def test_generic_controller_route_hold_scheduler_exact_production_transcript():
     assert receipt["arm_ack_count"] == 1
     assert receipt["checkpoint_terminal_count"] == 1
     assert receipt["checkpoint_terminal_stage"] == "completed"
+    assert receipt["checkpoint_terminal_lifecycle"] == (
+        _generic_checkpoint_lifecycle(terminal=True)
+    )
     assert receipt["release_ack_count"] == 1
+
+
+def test_generic_controller_route_hold_rejects_inexact_terminal_lifecycle():
+    direct_mutations = (
+        ("injection_count", 2),
+        ("triggered_by_active_route_path", False),
+        ("triggered_by_armed_route_hazard_retry", True),
+        ("outcome", "hazard_exit_completed"),
+    )
+    for field, value in direct_mutations:
+        scheduler = ControllerRouteHoldScheduler(_generic_hold_identity())
+        _advance_generic_hold_to_terminal(scheduler)
+        row = _generic_hold_status(
+            phase="checkpoint_terminal", checkpoint_stage="completed",
+        )
+        row["raid_runtime"]["controller_route_hold"][
+            "checkpoint_lifecycle"
+        ][field] = value
+        scheduler.observe(row)
+        assert scheduler.failure_reason == (
+            "controller_route_hold_checkpoint_lifecycle_invalid"
+        )
+
+    for field, value in (
+        ("owner", "route"),
+        ("gate", "movement_launch"),
+        ("reason", "different_reason"),
+        ("planner_receipt_id", 1),
+    ):
+        scheduler = ControllerRouteHoldScheduler(_generic_hold_identity())
+        _advance_generic_hold_to_terminal(scheduler)
+        row = _generic_hold_status(
+            phase="checkpoint_terminal", checkpoint_stage="completed",
+        )
+        row["raid_runtime"]["controller_route_hold"][
+            "checkpoint_lifecycle"
+        ]["rejection"][field] = value
+        scheduler.observe(row)
+        assert scheduler.failure_reason == (
+            "controller_route_hold_checkpoint_rejection_invalid"
+        )
+
+    changed = ControllerRouteHoldScheduler(_generic_hold_identity())
+    _advance_generic_hold_to_terminal(changed)
+    changed_row = _generic_hold_status(
+        phase="checkpoint_terminal", checkpoint_stage="completed",
+    )
+    changed_row["raid_runtime"]["controller_route_hold"][
+        "checkpoint_lifecycle"
+    ]["after"]["active_path_destination"]["x"] = 99.0
+    changed.observe(changed_row)
+    assert changed.failure_reason == (
+        "controller_route_hold_checkpoint_route_identity_changed"
+    )
+
+    invalid = ControllerRouteHoldScheduler(_generic_hold_identity())
+    _advance_generic_hold_to_terminal(invalid)
+    invalid_row = _generic_hold_status(
+        phase="checkpoint_terminal", checkpoint_stage="completed",
+    )
+    lifecycle = invalid_row["raid_runtime"]["controller_route_hold"][
+        "checkpoint_lifecycle"
+    ]
+    lifecycle["before"]["movement_owner"] = "hazard"
+    lifecycle["after"]["movement_owner"] = "hazard"
+    invalid.observe(invalid_row)
+    assert invalid.failure_reason == (
+        "controller_route_hold_checkpoint_route_identity_invalid"
+    )
 
 
 def test_generic_controller_route_hold_scheduler_extraction_is_bounded():
@@ -2007,10 +2128,11 @@ def test_generic_controller_route_hold_scheduler_extraction_is_bounded():
         for node in ast.walk(tree)
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
     }
-    assert len(metrics) == 22
-    assert sum(metrics.values()) == 100
-    assert max(metrics.values()) == 26
-    assert metrics["_observe_status"] == 26
+    assert len(metrics) == 23
+    assert sum(metrics.values()) == 109
+    assert max(metrics.values()) == 27
+    assert metrics["_observe_status"] == 27
+    assert metrics["_checkpoint_lifecycle_rejections"] == 8
 
 
 def test_generic_controller_route_hold_scheduler_rejects_old_poll_race():
@@ -2082,7 +2204,7 @@ def test_generic_controller_route_hold_scheduler_negative_protocol_edges():
     missing_release = fresh()
     _advance_generic_hold_to_terminal(missing_release)
     missing_release.observe(_generic_hold_status(
-        phase="checkpoint_terminal", checkpoint_stage="failed",
+        phase="checkpoint_terminal", checkpoint_stage="completed",
     ))
     missing_release.finish()
     assert missing_release.failure_reason == "controller_route_hold_release_ack_missing"

@@ -258,6 +258,33 @@ void WriteSnapshot(std::ostringstream& json, OwnerSnapshot const& snapshot)
          << "\"}";
 }
 
+void WriteCheckpointLifecycle(std::ostringstream& json,
+    BotChainwielderOwnerCheckpoint::State const& checkpoint)
+{
+    json << "{\"stage\":\"" << StageName(checkpoint.CurrentStage) << "\""
+         << ",\"terminal\":"
+         << (checkpoint.CurrentStage == Stage::Completed
+                || checkpoint.CurrentStage == Stage::Failed
+                ? "true" : "false")
+         << ",\"injection_count\":" << checkpoint.InjectionCount
+         << ",\"triggered_by_active_route_path\":"
+         << (checkpoint.TriggeredByActiveRoutePath ? "true" : "false")
+         << ",\"triggered_by_armed_route_hazard_retry\":"
+         << (checkpoint.TriggeredByArmedRouteHazardRetry ? "true" : "false")
+         << ",\"rejection\":{\"owner\":\"hazard\",\"gate\":\""
+         << EscapeJson(checkpoint.RejectionGate)
+         << "\",\"reason\":\"" << EscapeJson(checkpoint.RejectionReason)
+         << "\",\"planner_receipt_id\":"
+         << checkpoint.RejectionReceiptId << "}"
+         << ",\"before_after_identity_preserved\":"
+         << (checkpoint.BeforeAfterIdentityPreserved ? "true" : "false")
+         << ",\"before\":";
+    WriteSnapshot(json, checkpoint.Before);
+    json << ",\"after\":";
+    WriteSnapshot(json, checkpoint.After);
+    json << ",\"outcome\":\"" << EscapeJson(checkpoint.Outcome) << "\"}";
+}
+
 void SyncControllerTerminal(
     BotControllerRouteHold::State& controller,
     BotControllerRouteHold::Identity const& identity,
@@ -485,6 +512,10 @@ std::string BotWorldPopulationMgr::BuildControllerRouteHoldJson() const
          << (hold.CheckpointTerminal ? "true" : "false")
          << ",\"checkpoint_identity_preserved\":"
          << (hold.CheckpointIdentityPreserved ? "true" : "false")
+         << ",\"checkpoint_lifecycle\":";
+    WriteCheckpointLifecycle(json,
+        Cohort().ChainwielderOwnerCheckpoint);
+    json
          << ",\"release_count\":" << hold.ReleaseCount
          << ",\"suppressed_route_action_count\":"
          << hold.SuppressedRouteActionCount
@@ -645,26 +676,16 @@ void BotWorldPopulationMgr::MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
         || Cohort().AttemptId != checkpoint.AttemptId)
         return;
 
-    bool const matchingHazardIdentity =
-        !state.ValidationRouteDodgeCasterGuid.IsEmpty()
-        && state.ValidationRouteDodgeSpellId
-            == Cohort().Config.ValidationRouteHazardDetectionSpellId;
-    bool const routeRetryArmed = state.MovementLease.MovementOwner
-            == BotMovementArbitration::Owner::Route
-        && HasArmedRouteHazardRetry(
-            Cohort().Config.ValidationRouteHazardSourceEntry != 0,
-            matchingHazardIdentity, state.ValidationRouteDodgeUntilMs, NowMs(),
-            state.ActivePathValid, state.LastPathRejectReason);
     MotionMaster* motion = bot->GetMotionMaster();
     MovementGeneratorType motionType = motion
         ? motion->GetMotionSlotType(MOTION_SLOT_ACTIVE) : MAX_MOTION_TYPE;
     OwnerSnapshot const triggerSnapshot = CaptureOwnerSnapshot(state);
     InjectionTriggerDecision const trigger = SelectInjectionTrigger(
-        true, triggerSnapshot, Cohort().AttemptId,
+        state.Guid.GetCounter(), checkpoint.ActorGuid, triggerSnapshot,
+        Cohort().AttemptId,
         Cohort().Raid.WipeGeneration, Party().ValidationRouteGeneration,
         NodeId,
-        motionType == POINT_MOTION_TYPE || motionType == CHASE_MOTION_TYPE,
-        routeRetryArmed);
+        motionType == POINT_MOTION_TYPE || motionType == CHASE_MOTION_TYPE);
     if (!trigger)
         return;
 
@@ -714,10 +735,6 @@ void BotWorldPopulationMgr::MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
         return;
     }
 
-    checkpoint.Before = triggerSnapshot;
-    checkpoint.TriggeredByActiveRoutePath = trigger.ActiveRoutePath;
-    checkpoint.TriggeredByArmedRouteHazardRetry =
-        trigger.ArmedRouteHazardRetry;
     RecordDecisionTrace(state, "fixture_observation",
         "chainwielder_owner_checkpoint_before", nullptr, 0, "ok",
         Authority, false);
@@ -733,27 +750,19 @@ void BotWorldPopulationMgr::MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
     BotWorldMovement::MovementPlannerObservation observation =
         BotWorldMovement::MovementPlannerDiagnostics().Latest(
             state.Guid.GetCounter());
-    ++checkpoint.InjectionCount;
-    checkpoint.RejectionObservedAtMs = NowMs();
-    checkpoint.RejectionReceiptId = observation.LaunchReceipt.Id;
-    checkpoint.RejectionGate = observation.Gate;
-    checkpoint.RejectionReason = observation.Reason;
     OwnerSnapshot const immediateAfter = CaptureOwnerSnapshot(state);
-    bool const exactRejection = observation.Available
-        && IsExactReceiptlessHazardRejection({
-            submitted, observation.MovementOwner, observation.Gate,
-            observation.Result, observation.Reason,
-            observation.LaunchReceipt.Id });
-    bool const immediatePreserved = SameRouteIdentity(
-        checkpoint.Before, immediateAfter);
-    if (!exactRejection || !immediatePreserved
-        || checkpoint.InjectionCount != 1)
+    HazardRejectionObservation const rejection{
+        submitted, observation.MovementOwner, observation.Gate,
+        observation.Result, observation.Reason, observation.LaunchReceipt.Id };
+    if (!observation.Available || !ObserveInjectionBoundary(checkpoint,
+            trigger, triggerSnapshot, rejection, immediateAfter, NowMs()))
     {
-        checkpoint.CurrentStage = Stage::Failed;
-        checkpoint.Outcome = exactRejection
-            ? "foreign_route_identity_changed_during_rejection"
-            : "exact_receiptless_hazard_rejection_not_observed";
-        checkpoint.BeforeAfterIdentityPreserved = immediatePreserved;
+        if (!observation.Available)
+        {
+            checkpoint.CurrentStage = Stage::Failed;
+            checkpoint.Outcome =
+                "exact_receiptless_hazard_rejection_not_observed";
+        }
         SyncControllerTerminal(checkpoint.ControllerRouteHold,
             CurrentControllerRouteHoldIdentity(checkpoint.ActorGuid),
             checkpoint, NowMs());
@@ -763,8 +772,6 @@ void BotWorldPopulationMgr::MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
         return;
     }
 
-    checkpoint.CurrentStage = Stage::RejectionObserved;
-    checkpoint.Outcome = "awaiting_subsequent_tick";
     RecordDecisionTrace(state, "fixture_observation",
         "chainwielder_owner_checkpoint_rejection", nullptr, 0, "rejected",
         "route_destination_future_pack_unsafe", false);
@@ -781,15 +788,9 @@ void BotWorldPopulationMgr::ObserveChainwielderOwnerCheckpointBeforeUpdate(
 
     if (checkpoint.CurrentStage == Stage::RejectionObserved)
     {
-        checkpoint.After = CaptureOwnerSnapshot(state);
-        checkpoint.AfterObservedAtMs = NowMs();
-        checkpoint.BeforeAfterIdentityPreserved = SameRouteIdentity(
-            checkpoint.Before, checkpoint.After);
-        if (!checkpoint.BeforeAfterIdentityPreserved)
+        if (!ObserveSubsequentTickBoundary(
+                checkpoint, CaptureOwnerSnapshot(state), NowMs()))
         {
-            checkpoint.CurrentStage = Stage::Failed;
-            checkpoint.Outcome =
-                "foreign_route_identity_changed_before_subsequent_tick";
             SyncControllerTerminal(checkpoint.ControllerRouteHold,
                 CurrentControllerRouteHoldIdentity(checkpoint.ActorGuid),
                 checkpoint, NowMs());
@@ -798,10 +799,6 @@ void BotWorldPopulationMgr::ObserveChainwielderOwnerCheckpointBeforeUpdate(
                 checkpoint.Outcome.c_str(), false);
             return;
         }
-        checkpoint.CurrentStage = Stage::Completed;
-        checkpoint.Outcome =
-            "route_identity_preserved_after_receiptless_hazard_rejection";
-        checkpoint.OutcomeObservedAtMs = checkpoint.AfterObservedAtMs;
         SyncControllerTerminal(checkpoint.ControllerRouteHold,
             CurrentControllerRouteHoldIdentity(checkpoint.ActorGuid),
             checkpoint, checkpoint.OutcomeObservedAtMs);

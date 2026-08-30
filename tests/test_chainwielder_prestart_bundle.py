@@ -802,6 +802,15 @@ def test_launch_contract_is_exact_one_start_completion_watchdog(tmp_path: Path) 
     assert launch["completion_watchdog"]["duration_policy"] == "completion-watchdog"
     assert launch["fixed_success_timer_seconds"] is None
     assert launch["expected_arm_predicates"]["emission_count"] == 1
+    assert launch["expected_lifecycle_predicates"]["trigger"] == (
+        "active_route_path"
+    )
+    assert launch["expected_lifecycle_predicates"][
+        "triggered_by_active_route_path"
+    ] is True
+    assert launch["expected_lifecycle_predicates"][
+        "triggered_by_armed_route_hazard_retry"
+    ] is False
     assert launch["expected_lifecycle_predicates"]["outcome"] == (
         "route_identity_preserved_after_receiptless_hazard_rejection"
     )

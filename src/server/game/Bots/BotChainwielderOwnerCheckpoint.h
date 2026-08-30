@@ -597,20 +597,20 @@ inline bool SameRouteIdentity(
 struct InjectionTriggerDecision
 {
     bool ActiveRoutePath = false;
-    bool ArmedRouteHazardRetry = false;
 
     explicit operator bool() const
     {
-        return ActiveRoutePath || ArmedRouteHazardRetry;
+        return ActiveRoutePath;
     }
 };
 
 inline InjectionTriggerDecision SelectInjectionTrigger(
-    bool actorMatches, OwnerSnapshot const& current, uint64 attemptId,
+    uint32 actorGuid, uint32 expectedActorGuid,
+    OwnerSnapshot const& current, uint64 attemptId,
     uint32 wipeGeneration, uint64 routeGeneration, std::string_view routeNodeId,
-    bool nativeRouteMotion, bool armedRouteHazardRetry)
+    bool nativeRouteMotion)
 {
-    if (!actorMatches)
+    if (!actorGuid || actorGuid != expectedActorGuid)
         return {};
 
     bool const activeRoutePath = current.ActivePathValid
@@ -620,7 +620,7 @@ inline InjectionTriggerDecision SelectInjectionTrigger(
         && current.ActivePathRouteGeneration == routeGeneration
         && current.ActivePathRouteNodeId == routeNodeId
         && nativeRouteMotion;
-    return { activeRoutePath, armedRouteHazardRetry };
+    return { activeRoutePath };
 }
 
 struct State
@@ -645,6 +645,65 @@ struct State
     OwnerSnapshot Before;
     OwnerSnapshot After;
 };
+
+inline bool ObserveInjectionBoundary(State& checkpoint,
+    InjectionTriggerDecision const& trigger, OwnerSnapshot const& before,
+    HazardRejectionObservation const& rejection,
+    OwnerSnapshot const& immediateAfter, uint64 nowMs)
+{
+    if (!trigger.ActiveRoutePath)
+        return false;
+
+    checkpoint.Before = before;
+    checkpoint.TriggeredByActiveRoutePath = true;
+    checkpoint.TriggeredByArmedRouteHazardRetry = false;
+    ++checkpoint.InjectionCount;
+    checkpoint.RejectionObservedAtMs = nowMs;
+    checkpoint.RejectionReceiptId = rejection.LaunchReceiptId;
+    checkpoint.RejectionGate = rejection.Gate;
+    checkpoint.RejectionReason = rejection.Reason;
+    bool const exactRejection = IsExactReceiptlessHazardRejection(rejection);
+    bool const immediatePreserved = SameRouteIdentity(before, immediateAfter);
+    checkpoint.BeforeAfterIdentityPreserved = immediatePreserved;
+    if (!exactRejection || !immediatePreserved
+        || checkpoint.InjectionCount != 1)
+    {
+        checkpoint.CurrentStage = Stage::Failed;
+        checkpoint.Outcome = exactRejection
+            ? "foreign_route_identity_changed_during_rejection"
+            : "exact_receiptless_hazard_rejection_not_observed";
+        return false;
+    }
+
+    checkpoint.CurrentStage = Stage::RejectionObserved;
+    checkpoint.Outcome = "awaiting_subsequent_tick";
+    return true;
+}
+
+inline bool ObserveSubsequentTickBoundary(State& checkpoint,
+    OwnerSnapshot const& after, uint64 nowMs)
+{
+    if (checkpoint.CurrentStage != Stage::RejectionObserved)
+        return false;
+
+    checkpoint.After = after;
+    checkpoint.AfterObservedAtMs = nowMs;
+    checkpoint.BeforeAfterIdentityPreserved =
+        SameRouteIdentity(checkpoint.Before, checkpoint.After);
+    if (!checkpoint.BeforeAfterIdentityPreserved)
+    {
+        checkpoint.CurrentStage = Stage::Failed;
+        checkpoint.Outcome =
+            "foreign_route_identity_changed_before_subsequent_tick";
+        return false;
+    }
+
+    checkpoint.CurrentStage = Stage::Completed;
+    checkpoint.Outcome =
+        "route_identity_preserved_after_receiptless_hazard_rejection";
+    checkpoint.OutcomeObservedAtMs = checkpoint.AfterObservedAtMs;
+    return true;
+}
 }
 
 #endif
