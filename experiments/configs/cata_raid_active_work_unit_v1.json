@@ -6,7 +6,7 @@
   "boss": "magmaw_chainwielder",
   "mode": "10N",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "implementation_required",
+  "classification": "failed",
   "gate_state": "live_arm_not_emitted_route_advanced_before_generation_one_checkpoint_handshake",
   "observed_at_commit": "e5f240c510794c658a85290539397001b3dc6b29",
   "source_handoff": {
@@ -64,6 +64,16 @@
     "longer_poll_interval_or_tolerance",
     "treating_the_later_magmaw_watchdog_as_the_first_edge"
   ],
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "terminal_conditions": [
+      "focused_contract_pass",
+      "typed_handshake_failure",
+      "test_infrastructure_loss",
+      "explicit_interruption"
+    ]
+  },
   "next_action": "Repair the production controller boundary with an explicit route hold, sealed arm, accepted lifecycle receipt, and release sequence; prove ordering in focused no-server tests without consuming any live budget.",
   "next_terminal_handoff": "Return changed-file hashes, the typed handshake states and failure modes, focused test receipts, and a bounded one-build/one-start architecture unit only if the production ordering proof passes."
 }
