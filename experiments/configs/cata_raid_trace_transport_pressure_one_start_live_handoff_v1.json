@@ -1,0 +1,414 @@
+{
+  "schema": "cata_raid_trace_transport_pressure_one_start_live_handoff_v1",
+  "work_unit_id": "shard:queued_build_and_trace_transport_pressure_one_start",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "trace_transport_smoke_passed",
+  "observed_at_utc": "2026-08-30T01:17:47Z",
+  "source": {
+    "commit": "b4edf43c0837e1263295aaa4a3de6a09180ec22b",
+    "tree": "50f09a75b3cdcc20aa880be0ccdd51fb7afedb06",
+    "clean_before_build_provisioning_and_start": true,
+    "implementation_handoff": {
+      "path": "experiments/configs/cata_raid_trace_transport_test_pressure_and_generic_identity_handoff_v1.json",
+      "sha256": "7966ef4da0ba7854cf3f6ecfd3ad6665e481e810c296232eec6787308bf41962"
+    },
+    "active_descriptor_matched_before_start": true
+  },
+  "scope_lock": {
+    "owned_behavior": "one transport-only trace_transport_10 production-controller smoke",
+    "production_boundary": "botautotracepressure 129 followed by production botauto trace all 128 delta scheduling and demultiplexing",
+    "excluded": [
+      "gameplay",
+      "route",
+      "fixture",
+      "canary",
+      "boss_fidelity",
+      "acceptance",
+      "trace_ring_capacity_change",
+      "cursor_reconstruction",
+      "second_worldserver_start"
+    ],
+    "worldserver_start_budget": 1,
+    "worldserver_start_count": 1,
+    "terminal_condition": "transport_gate_passed"
+  },
+  "claim_scope": {
+    "authority": "trace_transport_test_only_not_gameplay",
+    "transport_admitted": true,
+    "gameplay_admitted": false,
+    "route_admitted": false,
+    "fixture_admitted": false,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "boss_fidelity_admitted": false
+  },
+  "build": {
+    "policy_id": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "configure": {
+      "ticket_id": "raid-build-6640bcf5dc314125b8eebc40d0fda905",
+      "queue_sequence": 1213,
+      "admitted_at_utc": "2026-08-30T01:14:07.385106Z",
+      "ended_at_utc": "2026-08-30T01:14:12.543912Z",
+      "semantic_receipt_sha256": "1e7d7ec5d25b795b1cb0cf627d8987cebdc43905029ef442f916a80bd42e3614",
+      "receipt_file_sha256": "c3ec9a2307f3e911fcbc73c0494cd5bbbb29d9785f271ac64b22383303e1e281",
+      "receipt_file_bytes": 13117,
+      "classification": "success",
+      "exit_code": 0,
+      "source_identity_stable": true,
+      "build_configuration_stable": true,
+      "gate_bearing": true
+    },
+    "worldserver": {
+      "ticket_id": "raid-build-e4dd4d736f1c46959986d313c46c7fab",
+      "queue_sequence": 1214,
+      "admitted_at_utc": "2026-08-30T01:14:24.957282Z",
+      "ended_at_utc": "2026-08-30T01:16:07.230374Z",
+      "semantic_receipt_sha256": "7ceb58e9a46c7f7125f950c994ef1aa7152749ebe8abafe398cc975f94d6b524",
+      "receipt_file_sha256": "c5691b2a7701ac1c4059fa68e716274a8e098133a9f122ef0bca5e28b0df71bf",
+      "receipt_file_bytes": 14374,
+      "classification": "success",
+      "exit_code": 0,
+      "source_identity_stable": true,
+      "build_configuration_stable": true,
+      "gate_bearing": true,
+      "binary_sha256": "458a128397003f8d0fe4bb3d1fb3458a9f444c41075da7348d004368cbf2df83",
+      "binary_size_bytes": 63772840,
+      "binary_mtime_ns": 1788052567077889248,
+      "produced_by_ticket": true
+    }
+  },
+  "provisioning": {
+    "scenario_id": "blackwing_descent_10n",
+    "pool_tag": "blackwing_descent_10n",
+    "config_sha256": "25d9fa126d1116543ddf778bdbc40cae3c7fda43feb93055ea8f23de002aae6a",
+    "config_bytes": 155666,
+    "strict_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "strict_verifier_bytes": 148006,
+    "strict_verifier_all_passed": true,
+    "initial_readback_sha256": "5b96cbe220178b794d43144f1087e2662f0e6a8bb404c21e28aeea094017a75d",
+    "initial_readback_bytes": 11620,
+    "initial_readback_passed": true,
+    "actor_count": 10,
+    "all_offline": true,
+    "all_unleased": true,
+    "at_login_zero": true,
+    "initial_residue": {
+      "groups": 0,
+      "group_members": 0,
+      "group_instances": 0,
+      "character_instances": 0,
+      "corpses": 0,
+      "corpse_phases": 0,
+      "ghost_auras": 0
+    }
+  },
+  "live_smoke": {
+    "capture_id": "cata_raid_phase1_trace_transport_10_v1",
+    "runtime_profile": "trace_transport_10",
+    "scenario_id": "trace_transport_10",
+    "pool_tag": "blackwing_descent_10n",
+    "emergency_wall_cap_seconds": 90,
+    "cap_expiry_is_success": false,
+    "worldserver_start_count": 1,
+    "one_start_owned_by_capture": true,
+    "classification": "trace_transport_smoke_passed",
+    "worldserver_exit_code": 0,
+    "pressure_command_count": 1,
+    "trace_command_count": 2,
+    "pressure_receipt": {
+      "action": "botauto_trace_pressure",
+      "ok": true,
+      "authority": "trace_transport_test_only_not_gameplay",
+      "cohort_id": "default",
+      "server_epoch": 4427924255954838,
+      "attempt_id": 1,
+      "profile_generation": 1,
+      "profile_content_hash": "551F369D459DFA0C01544B93FFAF57A35AA5F681BCE67D6FAB9E8CBA92E626AD",
+      "active_profile": "trace_transport_10",
+      "actor_guid": 1271,
+      "actor_name": "Bwdtanka",
+      "requested_count": 129,
+      "emitted_count": 129,
+      "sequence_before": 5,
+      "sequence_after": 134,
+      "failure_reason": null
+    },
+    "transport_gate": {
+      "gate_passed": true,
+      "state": "passed",
+      "terminal": true,
+      "transport_admitted": true,
+      "gap_actor_guid": 1271,
+      "actor_count": 10,
+      "pressure_entries": 128,
+      "effective_trace_interval_seconds": 2.0,
+      "gap_command_sequence": 1,
+      "followup_command_sequence": 2,
+      "response_complete_to_next_send_seconds": 2.990853,
+      "rejections": []
+    },
+    "controller_demux_gate": {
+      "gate_passed": true,
+      "actor_binding_counts": {
+        "total": 20,
+        "bound": 19,
+        "rejected": 1,
+        "unchecked": 0
+      },
+      "expected_gap_actor_guid": 1271,
+      "native_gap_remains_rejected": true,
+      "peer_and_followup_rows_bound": true,
+      "rejections": []
+    },
+    "generic_runtime_identity": {
+      "cohort_id": "default",
+      "server_epoch": 4427924255954838,
+      "attempt_id": 1,
+      "profile_generation": 1,
+      "profile_content_hash": "551F369D459DFA0C01544B93FFAF57A35AA5F681BCE67D6FAB9E8CBA92E626AD",
+      "active_profile": "trace_transport_10",
+      "stable_across_pressure_gap_and_followup": true
+    },
+    "identity_equality": {
+      "pressure_equals_gap_delta": true,
+      "gap_delta_equals_followup_delta": true,
+      "tuple": [
+        "default",
+        4427924255954838,
+        1,
+        1,
+        "551F369D459DFA0C01544B93FFAF57A35AA5F681BCE67D6FAB9E8CBA92E626AD",
+        "trace_transport_10"
+      ]
+    },
+    "trace_transport_receipts": [
+      {
+        "association_state": "bound_in_serial_command_order",
+        "command": "botauto trace all 128 delta",
+        "command_sequence": 1,
+        "command_sent_at_monotonic": 718903.427857559,
+        "response_first_byte_observed_at_monotonic": 718903.437947679,
+        "response_complete_observed_at_monotonic": 718903.437947679,
+        "send_to_first_byte_observed_seconds": 0.01009,
+        "observed_response_delivery_seconds": 0.0,
+        "parse_duration_seconds": 0.006811271,
+        "response_bytes": 902299,
+        "response_sha256": "4016f93eaedb8ae9d7570029fc9448485ba172d4215c7180bff839e21a897748",
+        "next_command_sent_at_monotonic": 718906.428800784,
+        "next_command_delay_seconds": 3.000943,
+        "response_complete_to_next_send_seconds": 2.990853,
+        "observation_poll_interval_seconds": 0.01,
+        "scheduler_state_at_send": {
+          "trace_interval_seconds": 10.0,
+          "effective_trace_interval_seconds": 10.0,
+          "trace_pressure_entries": 0,
+          "trace_gap_observed": false,
+          "next_trace_at": 718913.427844023,
+          "next_status_at": 718908.427844023,
+          "next_diagnose_at": 718933.427844023,
+          "status_interval_seconds": 5.0,
+          "diagnose_interval_seconds": 30.0,
+          "trace_forced": false,
+          "trace_full_forced": false,
+          "diagnose_forced": false
+        },
+        "scheduler_state_after_response": {
+          "trace_interval_seconds": 10.0,
+          "effective_trace_interval_seconds": 2.0,
+          "trace_pressure_entries": 128,
+          "trace_gap_observed": true,
+          "next_trace_at": 718906.428055168,
+          "next_status_at": 718908.427844023,
+          "next_diagnose_at": 718933.427844023,
+          "status_interval_seconds": 5.0,
+          "diagnose_interval_seconds": 30.0,
+          "trace_forced": false,
+          "trace_full_forced": false,
+          "diagnose_forced": false
+        },
+        "actors": [
+          {"bot_guid": 1271, "cursor_before": 0, "cursor_after": 135, "entry_count": 128, "first_sequence": 8, "last_sequence": 135, "gap": true, "missing_sequence_start": 1, "missing_sequence_end": 7, "oldest_retained_sequence": 8, "newest_retained_sequence": 135},
+          {"bot_guid": 1272, "cursor_before": 0, "cursor_after": 6, "entry_count": 6, "first_sequence": 1, "last_sequence": 6, "gap": false},
+          {"bot_guid": 1273, "cursor_before": 0, "cursor_after": 6, "entry_count": 6, "first_sequence": 1, "last_sequence": 6, "gap": false},
+          {"bot_guid": 1274, "cursor_before": 0, "cursor_after": 5, "entry_count": 5, "first_sequence": 1, "last_sequence": 5, "gap": false},
+          {"bot_guid": 1275, "cursor_before": 0, "cursor_after": 5, "entry_count": 5, "first_sequence": 1, "last_sequence": 5, "gap": false},
+          {"bot_guid": 1276, "cursor_before": 0, "cursor_after": 6, "entry_count": 6, "first_sequence": 1, "last_sequence": 6, "gap": false},
+          {"bot_guid": 1277, "cursor_before": 0, "cursor_after": 5, "entry_count": 5, "first_sequence": 1, "last_sequence": 5, "gap": false},
+          {"bot_guid": 1278, "cursor_before": 0, "cursor_after": 6, "entry_count": 6, "first_sequence": 1, "last_sequence": 6, "gap": false},
+          {"bot_guid": 1279, "cursor_before": 0, "cursor_after": 5, "entry_count": 5, "first_sequence": 1, "last_sequence": 5, "gap": false},
+          {"bot_guid": 1280, "cursor_before": 0, "cursor_after": 6, "entry_count": 6, "first_sequence": 1, "last_sequence": 6, "gap": false}
+        ]
+      },
+      {
+        "association_state": "bound_in_serial_command_order",
+        "command": "botauto trace all 128 delta",
+        "command_sequence": 2,
+        "command_sent_at_monotonic": 718906.428800784,
+        "response_first_byte_observed_at_monotonic": 718906.438936772,
+        "response_complete_observed_at_monotonic": 718906.438936772,
+        "send_to_first_byte_observed_seconds": 0.010136,
+        "observed_response_delivery_seconds": 0.0,
+        "parse_duration_seconds": 0.00046764,
+        "response_bytes": 61406,
+        "response_sha256": "e6fbf4f27d44f18e5365dbdd7eaebf78c40e30e75c49bb3a98687e9584cdfdab",
+        "next_command_sent_at_monotonic": null,
+        "response_complete_to_next_send_seconds": null,
+        "observation_poll_interval_seconds": 0.01,
+        "scheduler_state_at_send": {
+          "trace_interval_seconds": 10.0,
+          "effective_trace_interval_seconds": 2.0,
+          "trace_pressure_entries": 128,
+          "trace_gap_observed": true,
+          "next_trace_at": 718908.428775947,
+          "next_status_at": 718908.427844023,
+          "next_diagnose_at": 718933.427844023,
+          "status_interval_seconds": 5.0,
+          "diagnose_interval_seconds": 30.0,
+          "trace_forced": false,
+          "trace_full_forced": false,
+          "diagnose_forced": false
+        },
+        "scheduler_state_after_response": {
+          "trace_interval_seconds": 10.0,
+          "effective_trace_interval_seconds": 2.0,
+          "trace_pressure_entries": 128,
+          "trace_gap_observed": true,
+          "next_trace_at": 718908.428775947,
+          "next_status_at": 718908.427844023,
+          "next_diagnose_at": 718933.427844023,
+          "status_interval_seconds": 5.0,
+          "diagnose_interval_seconds": 30.0,
+          "trace_forced": false,
+          "trace_full_forced": false,
+          "diagnose_forced": false
+        },
+        "actors": [
+          {"bot_guid": 1271, "cursor_before": 135, "cursor_after": 136, "entry_count": 1, "first_sequence": 136, "last_sequence": 136, "gap": false},
+          {"bot_guid": 1272, "cursor_before": 6, "cursor_after": 7, "entry_count": 1, "first_sequence": 7, "last_sequence": 7, "gap": false},
+          {"bot_guid": 1273, "cursor_before": 6, "cursor_after": 7, "entry_count": 1, "first_sequence": 7, "last_sequence": 7, "gap": false},
+          {"bot_guid": 1274, "cursor_before": 5, "cursor_after": 6, "entry_count": 1, "first_sequence": 6, "last_sequence": 6, "gap": false},
+          {"bot_guid": 1275, "cursor_before": 5, "cursor_after": 6, "entry_count": 1, "first_sequence": 6, "last_sequence": 6, "gap": false},
+          {"bot_guid": 1276, "cursor_before": 6, "cursor_after": 7, "entry_count": 1, "first_sequence": 7, "last_sequence": 7, "gap": false},
+          {"bot_guid": 1277, "cursor_before": 5, "cursor_after": 6, "entry_count": 1, "first_sequence": 6, "last_sequence": 6, "gap": false},
+          {"bot_guid": 1278, "cursor_before": 6, "cursor_after": 7, "entry_count": 1, "first_sequence": 7, "last_sequence": 7, "gap": false},
+          {"bot_guid": 1279, "cursor_before": 5, "cursor_after": 6, "entry_count": 1, "first_sequence": 6, "last_sequence": 6, "gap": false},
+          {"bot_guid": 1280, "cursor_before": 6, "cursor_after": 7, "entry_count": 1, "first_sequence": 7, "last_sequence": 7, "gap": false}
+        ]
+      }
+    ],
+    "resource_sampling": {
+      "interval_seconds": 5.0,
+      "samples": [
+        {"sample_sequence": 0, "monotonic_sec": 718903.427816911, "process_pid": 647445, "process_cpu_ticks": 415, "process_rss_bytes": 1419726848},
+        {"sample_sequence": 1, "monotonic_sec": 718907.680022556, "process_pid": 647445, "process_cpu_ticks": 452, "process_rss_bytes": 1406877696}
+      ],
+      "summary": {
+        "sample_count": 2,
+        "elapsed_seconds": 4.252,
+        "cpu_ticks_delta": 37,
+        "mean_cpu_percent_one_core": 8.701,
+        "minimum_rss_bytes": 1406877696,
+        "maximum_rss_bytes": 1419726848,
+        "sampling_error_count": 0,
+        "pid_consistent": true,
+        "tick_rate": 100
+      }
+    }
+  },
+  "evidence_hashes_before_eviction": {
+    "capture_report_file_sha256": "200279cf906ada2b656182a9d60bbcaa0c2f3d81f2626a44bc1556e6da4859e7",
+    "capture_report_canonical_sha256": "c03957272185e44cca93de03946431d1d0991f096e8813bcb45d86d4bc3e13c5",
+    "capture_report_bytes": 26999,
+    "raw_normalized_sha256": "89d7df8a1003bd95574ce41087697f18d604731b41b149e4de5526579b339731",
+    "raw_normalized_bytes": 1192343,
+    "raw_normalized_rows": 9,
+    "worldserver_log_sha256": "ffdf4dcd6e4ca4077f57550ae18a38123c62c24090683953761a0bf2152a828b",
+    "worldserver_log_bytes": 1244092,
+    "post_run_readback_sha256": "8fb90169676fc9935127569d22dec21d58b3a59276c1732fa1ec13120e21087b",
+    "post_run_readback_bytes": 11937,
+    "final_readback_sha256": "5b96cbe220178b794d43144f1087e2662f0e6a8bb404c21e28aeea094017a75d",
+    "final_readback_bytes": 11620
+  },
+  "cleanup": {
+    "controller_cleanup_gate_passed": true,
+    "botauto_stop_observed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "controller_process_absent": true,
+    "zero_runtime_bots": true,
+    "zero_runtime_leases": true,
+    "intermediate_readback": {
+      "passed": false,
+      "character_instance_rows": 10,
+      "groups": 0,
+      "group_members": 0,
+      "group_instances": 0,
+      "corpses": 0,
+      "corpse_phases": 0,
+      "ghost_auras": 0
+    },
+    "ordinary_reversible_provisioning_reset_applied": true,
+    "final_readback": {
+      "passed": true,
+      "selected_actor_count": 10,
+      "online_count": 0,
+      "leased_count": 0,
+      "groups": 0,
+      "group_members": 0,
+      "group_instances": 0,
+      "character_instances": 0,
+      "corpses": 0,
+      "corpse_phases": 0,
+      "ghost_auras": 0,
+      "at_login_nonzero": 0
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact clean fast8_v2 configure and worldserver receipts are gate-bearing with eight compiler jobs and one linker job",
+      "one botautotracepressure 129 receipt emitted 129 inert actor-local records with generic runtime identity",
+      "the first production delta reported exactly one explicit gap for actor 1271 with missing sequence interval 1 through 7 and retained interval 8 through 135",
+      "the next pressure-cadence delta retained the same generic runtime identity and actor 1271 resumed gap-free from cursor 135 at sequence 136",
+      "all nine peer actors remained independent gap-free and cursor-contiguous across both deltas",
+      "the transport-only controller demultiplexer passed with 19 bound rows one native gap rejection and zero unchecked rows",
+      "the sole worldserver exited zero and cleanup plus ordinary provisioning reset returned the cohort and database residue to zero"
+    ],
+    "refuted": [
+      "the explicit gap requires reconstruction or cursor clearing",
+      "the prior zero-start preflight consumed this one-start budget",
+      "this transport-only smoke admits gameplay route fixture canary boss-fidelity or acceptance claims"
+    ],
+    "unproven": [
+      "Chainwielder fixture correctness",
+      "Magmaw gameplay completion",
+      "boss fidelity or raid acceptance"
+    ]
+  },
+  "publication": {
+    "dvc": "excluded_transport_only_compact_handoff",
+    "raw_payload_retention": "evicted_after_hash_and_handoff_verification",
+    "tracked_payload": "this compact handoff only",
+    "eviction": {
+      "verified_absent": true,
+      "target_count": 5,
+      "bytes_removed": 10061526,
+      "targets": [
+        "trace-pressure-prep-b4edf43c-WeE79O",
+        "trace-pressure-run-b4edf43c-Gda8UK",
+        "trace-pressure-reset-b4edf43c-XkXT94",
+        "trace-pressure-b4edf43c-configure.json",
+        "trace-pressure-b4edf43c-worldserver.json"
+      ],
+      "broad_dvc_gc_used": false
+    }
+  },
+  "next_owner": {
+    "owner": "raid-performance-loop",
+    "work_unit": "coordination:admit_matched_chainwielder_fixture_expansion",
+    "action": "review deterministic readiness and assign the previously blocked matched Chainwielder fixture expansion as a separate bounded work unit",
+    "prohibited": "this handoff grants no gameplay live start recurrence promotion boss-fidelity or acceptance authority"
+  }
+}

@@ -1,46 +1,51 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "trace_transport_pressure_live_admission_repaired_v1_20260830",
-  "work_unit": "shard:queued_build_and_trace_transport_pressure_one_start",
+  "epoch_id": "trace_transport_pressure_live_gate_passed_v1_20260830",
+  "work_unit": "coordination:admit_matched_chainwielder_fixture_expansion",
   "raid": "blackwing_descent",
-  "boss": null,
-  "mode": "telemetry_only",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "live_admission_descriptor_repaired_build_and_one_start_pending",
-  "gate_state": "transport_only_one_start_authorized_no_gameplay_admission",
-  "observed_at_commit": "a6fde68694b211f164c80439351bbf66acb3f818",
+  "boss": "magmaw",
+  "mode": "coordination_only",
+  "owner_skill": "raid-performance-loop",
+  "classification": "transport_gate_passed_fixture_expansion_coordination_pending",
+  "gate_state": "transport_admitted_no_gameplay_or_live_recurrence_authority",
+  "observed_at_commit": "b4edf43c0837e1263295aaa4a3de6a09180ec22b",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_trace_transport_test_pressure_and_generic_identity_handoff_v1.json",
-    "sha256": "7966ef4da0ba7854cf3f6ecfd3ad6665e481e810c296232eec6787308bf41962"
+    "path": "experiments/configs/cata_raid_trace_transport_pressure_one_start_live_handoff_v1.json",
+    "sha256": "4ea7ee87126cbf8234cb67d506dd3b12fa3696c596998c2517a8410c74b6a91c"
   },
-  "preflight_failure_history": {
-    "path": "experiments/configs/cata_raid_trace_transport_pressure_one_start_preflight_handoff_v1.json",
-    "sha256": "3917b1667533b6338a62d93adc5474ccdac2f7daf3ad6ba0543669a9fad7d8a2",
-    "worldserver_start_count": 0,
-    "classification": "descriptor_did_not_bind_assigned_implementation_handoff"
+  "resolved_work_unit": {
+    "work_unit": "shard:queued_build_and_trace_transport_pressure_one_start",
+    "worldserver_start_count": 1,
+    "classification": "trace_transport_smoke_passed",
+    "transport_gate_passed": true,
+    "controller_demux_gate_passed": true,
+    "cleanup_passed": true
   },
-  "first_broken_edge": "The prior live assignment descriptor omitted the tested implementation handoff binding. This descriptor repairs only that control-plane identity and preserves the unused one-start budget.",
+  "first_broken_edge": "The matched Chainwielder fixture expansion remains pending. Its scope and admission belong to a separate bounded work unit.",
   "claim_ledger": {
     "verified": [
-      "the implementation handoff is tracked and has SHA-256 7966ef4da0ba7854cf3f6ecfd3ad6665e481e810c296232eec6787308bf41962",
-      "the implementation focused tests passed before this coordination unit",
-      "the prior live worker created zero build tickets and started zero worldservers",
-      "the latest ordinary ten-actor readback had zero online leased group instance corpse and ghost residue"
+      "the clean fast8_v2 build was gate-bearing with eight compiler jobs and one linker job",
+      "ordinary ten-actor provisioning and zero-residue readback passed before the sole start",
+      "one successful 129-row pressure receipt produced one actor-local explicit gap",
+      "the next pressure-cadence delta was gap-free and cursor-contiguous for the same actor and generic runtime identity",
+      "all nine peer actors remained independent and contiguous",
+      "the transport-only controller demultiplexer passed",
+      "worldserver controller cohort lease and ordinary provisioning cleanup passed"
     ],
     "refuted": [
-      "the prior zero-start preflight result consumed the one-start transport budget",
-      "this telemetry-only assignment admits gameplay route fixture canary boss-fidelity or acceptance claims"
+      "a second transport start is required",
+      "the actor-local gap should be reconstructed or accepted by the demultiplexer",
+      "this transport result admits gameplay route canary boss-fidelity or acceptance claims"
     ],
     "unproven": [
-      "the gated pressure command executes in a live worldserver",
-      "the first normal delta reports one actor-local explicit discontinuity",
-      "the next pressure-scheduled delta resumes the same actor contiguously",
-      "the transport-only generic identity and demultiplexing gates pass live"
+      "matched Chainwielder fixture correctness",
+      "Magmaw recurrence promotion",
+      "Magmaw gameplay completion or fidelity"
     ]
   },
   "claim_scope": {
     "authority": "trace_transport_test_only_not_gameplay",
-    "transport_admitted": false,
+    "transport_admitted": true,
     "gameplay_admitted": false,
     "route_admitted": false,
     "fixture_admitted": false,
@@ -56,29 +61,27 @@
     "cap_expiry_is_success": false
   },
   "scope_lock": {
-    "allowed": "one exact clean fast8_v2 build and one transport-only trace_transport_10 worldserver start through the production controller",
-    "required_observation": "one successful pressure receipt followed by one explicit actor-local gap and the exact next same-actor gap-free contiguous delta with peer isolation",
+    "allowed": "coordinate and assign one matched Chainwielder fixture-expansion work unit after reviewing deterministic readiness",
+    "required_observation": "a separate bounded fixture must cross the exact production owner and recorded causal boundary before any recurrence admission",
     "forbidden": [
-      "gameplay_or_route_change",
-      "fixture_or_recurrence_change",
-      "class_or_encounter_change",
-      "trace_ring_capacity_or_cursor_semantics_change",
-      "second_worldserver_start",
-      "gameplay_or_acceptance_claim"
+      "reuse_or_restart_trace_transport_smoke",
+      "gameplay_live_start_without_new_descriptor",
+      "fixture_promotion_without_value_level_evidence",
+      "boss_fidelity_or_acceptance_claim"
     ]
   },
   "validation": {
     "implementation_commit": "ac653a53dd54b9cd01713ae66d75e7460d3e3c5b",
-    "focused_tests_passed": true,
-    "build_pending": true,
-    "worldserver_start_count": 0,
-    "live_transport_verified": false,
-    "cleanup_required_after_run": true
+    "build_commit": "b4edf43c0837e1263295aaa4a3de6a09180ec22b",
+    "build_pending": false,
+    "worldserver_start_count": 1,
+    "live_transport_verified": true,
+    "cleanup_verified": true
   },
-  "next_action": "Create one gate-bearing fast8_v2 build receipt for the current clean source, verify ordinary ten-actor zero-residue provisioning, and run the single transport-only production-controller smoke. Stop after any preflight or sole-run failure.",
+  "next_action": "Review deterministic readiness and assign the previously blocked matched Chainwielder fixture expansion as a separate bounded work unit. This descriptor does not authorize a gameplay worldserver start.",
   "next_owner": {
-    "owner": "raid-shard-architecture",
-    "work_unit": "shard:queued_build_and_trace_transport_pressure_one_start",
-    "do_not_advance_to": "Chainwielder fixture expansion until the transport gate passes"
+    "owner": "raid-performance-loop",
+    "work_unit": "coordination:admit_matched_chainwielder_fixture_expansion",
+    "live_start_authorized": false
   }
 }
