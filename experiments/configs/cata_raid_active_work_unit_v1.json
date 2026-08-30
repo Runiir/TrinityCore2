@@ -1,122 +1,88 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "chainwielder_checkpoint_real_route_owner_under_hold_v59_20260830",
-  "work_unit": "runtime:chainwielder_checkpoint_real_route_owner_under_hold_v59",
+  "epoch_id": "generic_controller_route_hold_route_owner_independent_review_v60_20260830",
+  "work_unit": "runtime:generic_controller_route_hold_route_owner_independent_review_v60",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "gate_state": "v58_live_arm_acknowledged_then_failed_real_route_owner_not_observed",
-  "observed_at_commit": "3f0c93a9c57d10e37ffbf874422e76487d1992e7",
-  "immutable_input_commit": "3f0c93a9c57d10e37ffbf874422e76487d1992e7",
+  "classification": "implementation_unverified",
+  "gate_state": "v59_runtime_patch_committed_focused_budget_exhausted_no_live_authorization",
+  "observed_at_commit": "6b9a327998c00f680cd413ecfef7ff75ea1c1dca",
+  "immutable_input_commit": "6b9a327998c00f680cd413ecfef7ff75ea1c1dca",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_real_route_owner_not_observed_handoff_v58.json",
-    "sha256": "62aa9c059a218ef00f0bf6c516b5931f04f9ed5f30b4963214f6a0f13c587a2a",
-    "source_commit": "3f0c93a9c57d10e37ffbf874422e76487d1992e7"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_route_owner_implementation_handoff_v59.json",
+    "sha256": "a5e8f1ac63ed74d07fb79a3ee33cee72f2ca1263429835c9ad8bc80970547759",
+    "source_commit": "6b9a327998c00f680cd413ecfef7ff75ea1c1dca"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "V59 repairs one shared production checkpoint/route-hold ownership edge. It does not certify Chainwielder, Drudges, Magmaw, throughput, or universal runtime closure."
+    "canary_only": "Chainwielder naming remains legacy fixture debt. The admission and route-owner semantics are actor, class, spec, encounter, raid-size, and difficulty independent."
   },
-  "behavior_change": true,
+  "behavior_change": false,
   "evidence_contract_change": false,
   "ready_for_bounded_repair": true,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "ordered_claim_ledger": {
     "verified": [
-      "V58 retained one start-held acknowledgement, two stable generation-one held statuses, one arm command, and one arm acknowledgement",
-      "the immutable runtime profile identity remained exact and the prior V50 arm rejection did not recur",
-      "actor 30008 never acquired the real Route owner or armed Route hazard retry required by MaybeInjectChainwielderOwnerCheckpointAfterUpdate",
-      "actor 30008 later started and completed a combat_range-owned hazard exit, which is not Route ownership",
-      "the native checkpoint terminalized real_route_owner_not_observed with checkpoint_identity_preserved=false; the controller emitted no release and route generation stayed one"
+      "V59 committed one generic admission repair at 6b9a327998c00f680cd413ecfef7ff75ea1c1dca",
+      "the final post-budget source passes py_compile and git diff --check",
+      "all touched C/C++ files remain below 1000 physical lines"
     ],
     "refuted": [
-      "another configure build live retry status poll cadence change mutable-profile fix or reporting-only identity change is the next work",
-      "the combat_range hazard exit proves preservation of the checkpoint's required Route identity"
+      "V59 has a green focused contract",
+      "V59 authorizes configure build server database DVC or live work"
     ],
     "unproven": [
-      "a real node-scoped Route owner can be established while the controller hold still prevents route node index and generation advancement",
-      "one exact receipt-zero Hazard rejection preserves that Route identity through a typed checkpoint terminal release and post-release advance"
+      "the final explicitly-qualified compiled replay is green",
+      "the patch satisfies the full generic route-owner contract",
+      "any live gameplay or throughput outcome"
     ]
   },
-  "first_broken_edge": {
-    "candidate": "after exact arm acknowledgement under the generation-one hold, the actor never establishes the real node-scoped Route movement owner or armed Route hazard retry required by the production checkpoint",
-    "first_consumed_mutation": "an unrelated combat_range-owned hazard exit is executed and completed while the checkpoint remains awaiting_real_route_owner",
-    "failure_postcondition": "MaximumAwaitTicks terminalizes real_route_owner_not_observed, checkpoint_identity_preserved remains false, and the controller correctly withholds release",
-    "correlation_keys": {
-      "actor_guid": 30008,
-      "attempt_id": 1,
-      "route_generation": 1,
-      "route_node_id": "bwd.magmaw.chainwielder",
-      "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
-      "checkpoint_seal_sha256": "f665d3be64b1d7ba5740cac61167fb0cc6f5f60022d68847d16f3a3d8ff6377e",
-      "source_commit": "3f0c93a9c57d10e37ffbf874422e76487d1992e7"
-    }
-  },
-  "implementation_hypothesis": "Separate suppression of route node index and generation advancement from execution of the armed actor's real node-scoped Route movement. Under the hold, permit only the exact generation-one Route owner or armed Route hazard retry needed by the production checkpoint; keep all route advancement fail-closed until the identity-preserved terminal and controller release.",
-  "expected_observable_change": "The fail-before production scheduler terminalizes real_route_owner_not_observed. The pass-after observes one real generation-one Route identity, injects exactly one receipt-zero Hazard rejection, preserves the same Route identity through hazard_exit_completed, emits one typed terminal, accepts one release, and only then permits route advancement.",
   "scope_lock": {
-    "allowed_change": "Repair only the shared native boundary that currently suppresses or fails to establish the armed actor's real Route owner while the controller-owned generation-one hold is active.",
+    "allowed_change": "Independently inspect the exact V59 diff and run one fresh focused checkpoint suite. Change only tests/test_chainwielder_owner_checkpoint.py if the final explicit namespace qualification still fails to compile; otherwise make no source change.",
     "allowed_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
-      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
-      "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp",
       "tests/test_chainwielder_owner_checkpoint.py",
-      "one_compact_implementation_handoff",
+      "one_compact_independent_review_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
-    "required_production_boundary": [
-      "execute the real controller route-hold scheduler and native checkpoint owners",
-      "reproduce the V58 held and armed state with no real Route owner before the change",
-      "after the change observe a real actor-owned generation-one Route movement identity rather than a synthetic proof",
-      "execute the production receipt-zero Hazard rejection and hazard-exit outcome",
-      "prove route node index and generation cannot advance before terminal-gated release"
-    ],
-    "required_negative_cases": [
-      "route generation or manifest index advances before release",
-      "ownership is synthetic reporting-only or injected outside the native route path",
-      "combat_range Hazard or another owner is accepted as Route",
-      "duplicate arm terminal or release",
-      "actor attempt route fixture seal source or runtime-profile identity drift",
-      "terminal or release occurs without the exact receipt-zero rejection and preserved Route identity"
-    ],
     "forbidden": [
+      "production runtime admission identity route movement gameplay encounter class pet priority threshold or controller changes",
       "configure build worldserver start database or DVC mutation",
-      "capture controller route content encounter class pet DPS HPS consumable or skill edit",
-      "polling cadence watchdog timeout threshold or fixed raid timer change",
-      "identity comparison weakening synthetic Route ownership or direct movement bypass",
-      "fixture promotion canary acceptance or adjacent Magmaw repair"
+      "polling watchdog timeout or live canary",
+      "fixture promotion or acceptance claim"
+    ]
+  },
+  "required_review": {
+    "implementation_commit": "6b9a327998c00f680cd413ecfef7ff75ea1c1dca",
+    "causal_invariant": "while Armed, an unrelated Survival movement is suppressed; the exact actor/scope validation route pair crosses the real Kernel and movement lease arbiter; route mutation remains blocked until an identity-preserved typed terminal and release",
+    "negative_cases": [
+      "unrelated Hazard movement",
+      "synthetic non-route checkpoint source",
+      "foreign actor or scope",
+      "pre-release route mutation",
+      "duplicate arm terminal or release",
+      "missing terminal and immutable identity drift"
     ]
   },
   "focused_validation": {
     "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
     "run_count_maximum": 1,
-    "correction_rerun_maximum": 1,
-    "required_fail_before": "the exact held and armed production scheduler reaches real_route_owner_not_observed because no real Route owner or armed retry appears",
-    "required_pass_after": "one real generation-one Route owner reaches the production receipt-zero Hazard rejection, remains identity-preserved through the typed terminal, then one release permits post-release advance"
+    "correction_rerun_count_maximum": 0,
+    "required_result": "all focused tests pass at the exact immutable implementation commit"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": ["focused_contract_passed", "focused_contract_failed", "out_of_scope_owner_identified"]
-  },
-  "verification_budget": {
-    "configure_count_maximum": 0,
-    "worldserver_build_count": 0,
-    "worldserver_start_count_maximum": 0,
-    "database_mutation": 0,
-    "dvc_mutation": 0,
-    "focused_test_run_count_maximum": 1,
-    "correction_rerun_count_maximum": 1
+    "terminal_edges": ["independent_review_passed", "independent_review_failed"]
   },
   "remaining_unproven": [
-    "a real Route owner under the hold without early route advancement",
-    "one identity-preserved checkpoint terminal followed by one release and post-release advance",
-    "Chainwielder clear Drudges advancement Magmaw progression DPS HPS or pet-share quality"
+    "focused replay green after the final namespace qualification",
+    "native build and live route-owner lifecycle",
+    "Chainwielder Drudges Magmaw DPS HPS or pet quality"
   ],
-  "next_work_unit": "runtime:chainwielder_checkpoint_real_route_owner_under_hold_v59",
+  "next_work_unit": "runtime:generic_controller_route_hold_route_owner_independent_review_v60",
   "next_owner_skill": "raid-bot-runtime-implementation",
-  "next_action": "Implement and focus-test the single real Route-owner-under-hold production edge. Do not build or start a worldserver in V59."
+  "next_action": "Run one independent focused review at the exact V59 implementation commit. No build or live authorization exists."
 }

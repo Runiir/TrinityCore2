@@ -1,0 +1,80 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:chainwielder_checkpoint_real_route_owner_under_hold_v59",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "implementation_unverified",
+  "source_commit": "594b9e8c0dd3ba1028720e44fa8540f70898de9e",
+  "implementation_commit": "6b9a327998c00f680cd413ecfef7ff75ea1c1dca",
+  "input_handoff": {
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_real_route_owner_not_observed_handoff_v58.json",
+    "sha256": "62aa9c059a218ef00f0bf6c516b5931f04f9ed5f30b4963214f6a0f13c587a2a"
+  },
+  "causal_edge": {
+    "verified_source_order": "State::AdmitCandidate admitted every Priority::Survival candidate, including unrelated movement hazards; those candidates sort above the paired Mechanic route views and can claim Movement before the validation_route_adapter runs",
+    "live_observation": "V58 observed an unrelated Hazard lifecycle and no real Route owner before real_route_owner_not_observed",
+    "repair": "raw Survival priority now admits only candidates without Movement; explicitly classified defensive survival and formation remain admitted; the armed actor's exact held-scope validation_route_adapter pair remains admitted",
+    "route_mutation": "PermitRouteAdvance and the manifest index/generation mutation boundary are unchanged and remain fail-closed until terminal-gated release"
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "tests/test_chainwielder_owner_checkpoint.py"
+  ],
+  "compiled_replay_contract": {
+    "scheduler": "real BotActionArbitration::Kernel plus production InstallAdmissionPolicy and MarkCheckpointObservationCandidate",
+    "native_owner": "real BotMovementArbitration::Evaluate and Apply from an expired CombatRange lease to the exact generation-one Route lease",
+    "rejection": "production IsExactReceiptlessHazardRejection predicate plus production pre-admission rejection classification preserving the Route owner",
+    "terminal_order": "hazard_exit_completed then terminal-gated release then route mutation",
+    "negative_cases": [
+      "unrelated Survival Hazard movement",
+      "synthetic exact-scope checkpoint metadata from a non-route source",
+      "foreign actor and wrong scope",
+      "pre-release route mutation",
+      "duplicate arm terminal and release",
+      "missing terminal",
+      "all immutable identity-field drifts"
+    ]
+  },
+  "verification": {
+    "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "run_1": "2 failed, 4 passed; fixture-only unqualified checkpoint evidence types and stale supplemental inline-source assertion",
+    "correction_rerun": "1 failed, 5 passed; fixture-only State ambiguity caused by importing both checkpoint namespaces",
+    "post_budget_correction": "removed the ambiguous namespace import and explicitly qualified the four checkpoint evidence types/helpers",
+    "post_budget_checks": [
+      "pixi run python -m py_compile tests/test_chainwielder_owner_checkpoint.py: passed",
+      "git diff --check: passed"
+    ],
+    "focused_green": false,
+    "correction_budget_exhausted": true,
+    "worldserver_build": "forbidden_not_run",
+    "live_run": "forbidden_not_run"
+  },
+  "line_counts": {
+    "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h": 621,
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 912,
+    "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp": 779
+  },
+  "complexity": "no high-CCN function was expanded; the admission change adds one resource predicate and the executor predicate was extracted into a value-only helper",
+  "claim_ledger": {
+    "verified": [
+      "the production admission policy had a raw-priority Survival movement bypass",
+      "the patch preserves exact actor/scope route admission and leaves manifest mutation suppression unchanged",
+      "all touched C/C++ files remain below 1000 physical lines",
+      "the final source passes py_compile and diff-check"
+    ],
+    "refuted": [
+      "V59 achieved a green focused contract",
+      "V59 authorizes a build live canary or acceptance claim"
+    ],
+    "unproven": [
+      "the final namespace-qualified replay compiles and passes",
+      "the repaired runtime produces a real Route owner and identity-preserved terminal in a live shard"
+    ]
+  },
+  "next_work_unit": {
+    "id": "runtime:generic_controller_route_hold_route_owner_independent_review_v60",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_action": "Independently inspect commit 6b9a327998c00f680cd413ecfef7ff75ea1c1dca and run one fresh focused checkpoint suite. Do not edit unless the final namespace qualification still fails. If green, review the causal and genericity contract and return a no-live review handoff.",
+    "ready_for_live_verification": false
+  }
+}
