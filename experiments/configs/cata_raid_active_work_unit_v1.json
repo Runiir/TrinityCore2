@@ -1,87 +1,171 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "v87_fast8_v3_load_guard_prestart_failed_20260830",
-  "work_unit": "evidence:review_v87_fast8_v3_load_guard_abort_v88",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed_closed_prestart_infrastructure_review_required",
-  "gate_state": "fixture_expansion_admitted_build_load_guard_abort_no_current_binary",
-  "observed_at_commit": "dc836d39ca3f5d05d68e05e666b527628c3676ba",
-  "immutable_input_commit": "dc836d39ca3f5d05d68e05e666b527628c3676ba",
+  "epoch_id": "shared_planner_map669_fast8_v4_retry_v89_20260830",
+  "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v89",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "live_recurrence_quarantined",
+  "gate_state": "fixture_expansion_admitted_one_hysteresis_bound_clean_identity_retry",
+  "observed_at_commit": "a0e0b75a92e6e4d7d9721fb357ff64a2b2569020",
+  "immutable_input_commit": "a0e0b75a92e6e4d7d9721fb357ff64a2b2569020",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v87_fast8_v3_load_guard_prestart_failed_handoff_v88.json",
-    "sha256": "a30bc77b5d007b6cb26ff6bbf2042b1c3ba1c4d3b15aca03391f9852e7e9865f",
-    "source_commit": "dc836d39ca3f5d05d68e05e666b527628c3676ba"
+    "path": "experiments/configs/cata_raid_v88_fast8_load_hysteresis_policy_decision_handoff_v89.json",
+    "sha256": "71cb211b7d57b4d40375fe2ef7e40247d0c27b825ceb8fb1e3520b7d7ce4d93c",
+    "source_commit": "a0e0b75a92e6e4d7d9721fb357ff64a2b2569020"
   },
   "program_scope": {
-    "operation": "review the V87 fast8_v3 load-average resource abort before any successor replay authority",
+    "operation": "one fresh clean-identity attempt of the observation-only worldserver-backed map-669 correlated fixture-expansion replay",
+    "admission_scope": "fixture_expansion_replay",
     "gameplay_canary_admitted": false,
-    "fixture_expansion_replay_admitted": false,
-    "build_admitted": false,
-    "worldserver_start_admitted": false,
     "gameplay_mutations_allowed": false,
+    "runtime_implementation_allowed": false,
     "database_mutations_allowed": false
   },
   "behavior_change": false,
   "evidence_contract_change": false,
   "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": false,
+  "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
+  "recurrence_boundary": {
+    "ledger_path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "ledger_sha256": "2997dc762e11767ce665f6f7e49ea8ae37a07b88939c548ab65d43185ed72223",
+    "run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+    "side": "after",
+    "admitted_revisions_at_boundary": {
+      "same_level_floor_observation_v1": 3,
+      "same_level_hazard_path_admission_v1": 4,
+      "same_level_native_path_proof_v1": 4
+    },
+    "ledger_append_allowed": false,
+    "fixture_promotion_before_replay_allowed": false
+  },
   "scope_lock": {
-    "allowed_change": "Review the retained V87 load samples and fast8_v3 policy semantics, then separately decide whether a successor clean-identity replay is warranted.",
+    "allowed_change": "At the exact clean descriptor commit, run the fixed recurrence suite once at the Canary122 after-boundary, perform one fast8_v4 configure and one worldserver build, then one no-retry completion-watchdog map-669 production fixture replay for shared-planner revisions 4/5/5. Publish the bounded evidence only.",
+    "requested_fixtures": [
+      {
+        "fixture_id": "same_level_floor_observation_v1",
+        "from_revision": 3,
+        "requested_revision": 4,
+        "causal_signature": "same_level_movement_path_floor_false_negative"
+      },
+      {
+        "fixture_id": "same_level_hazard_path_admission_v1",
+        "from_revision": 4,
+        "requested_revision": 5,
+        "causal_signature": "same_level_encounter_hazard_path_rejection"
+      },
+      {
+        "fixture_id": "same_level_native_path_proof_v1",
+        "from_revision": 4,
+        "requested_revision": 5,
+        "causal_signature": "same_level_native_path_proof_false_negative"
+      }
+    ],
+    "required_production_boundary": [
+      "one same-level SampleFloorGap receipt continuously correlated from PlanMovementPath through native submission and terminal outcome or explicit supersession",
+      "one Hazard-owner complete-path receipt through selected endpoint MotionMaster point generator launched spline and consumed multi-tick outcome",
+      "one Hazard-owner incomplete-path receipt whose shorter endpoint receives a fresh complete native proof and reaches a consumed multi-tick outcome",
+      "one legitimate cross-floor negative and one forbidden-path negative each rejected before MotionMaster launch",
+      "continuous receipt_id bot_guid owner intent_reason scope actor XYZ spline_id floor compatibility and outcome correlation without sampling gaps"
+    ],
+    "required_order": [
+      "verify clean descriptor HEAD policy hash ledger hash and fixture-expansion admission",
+      "run the fixed suite exactly once at the bound Canary122 after-boundary",
+      "configure once and build the exact worldserver target once under fast8_v4",
+      "require a gate-bearing exact-current binary receipt before any bundle or server action",
+      "derive and verify the V77 tracked runtime config and create one authenticated atomic bundle",
+      "perform one strict retained-roster readback without database mutation",
+      "start one completion-watchdog map-669 replay with no retry",
+      "publish remotely reconstruct verify and exactly evict the bounded replay evidence"
+    ],
     "forbidden": [
-      "retrying the consumed V87 configure build suite bundle or server budget",
-      "reusing the stale pre-V87 worldserver binary",
-      "starting worldserver or authserver",
-      "database provisioning mutation or gameplay canary",
-      "planner executor encounter class route threshold tolerance comparison test or workflow change"
+      "second V89 configure build fixture-suite invocation worldserver start or retry",
+      "reuse of the non-gate-bearing V87 receipt or any stale binary",
+      "changing fast8_v4 or lowering compiler jobs below eight during execution",
+      "gameplay canary boss completion build admission canary admission or acceptance claim",
+      "runtime planner executor encounter class route Chainwielder test threshold tolerance comparison or workflow edit",
+      "database mutation roster reprovisioning teleport forced boss outcome or gameplay mutation",
+      "fixed 300-second raid timer"
     ]
   },
-  "v87_result": {
-    "recurrence_boundary_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
-    "recurrence_boundary_side": "after",
-    "fixture_count": 20,
-    "passing_fixture_count": 20,
-    "route_failures": [],
-    "fixture_expansion_admitted": true,
-    "requested_fixture_revisions": {
-      "same_level_floor_observation_v1": 4,
-      "same_level_hazard_path_admission_v1": 5,
-      "same_level_native_path_proof_v1": 5
-    },
-    "build_policy": "cata_raid_build_resource_policy_fast8_v3",
-    "build_classification": "build_resource_abort",
-    "build_exit_code": -15,
-    "build_signal": 15,
-    "build_pressure_reasons": [
-      "load_average"
-    ],
-    "maximum_load_average_1m": 9.00537109375,
-    "configured_maximum_load_average_1m": 9.0,
-    "build_gate_bearing": false,
-    "worldserver_starts": 0,
-    "retries": 0
+  "build_authority": {
+    "policy_path": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+    "policy_file_sha256": "06847f4cc78b6b3b2e13dd6ecb60e7a2810a44adc35e4107cb9b7cd611286d74",
+    "policy_sha256": "5a29ebfbcd3d56b0a8c04f2634dd570a2edd5668f4f6e4b7243d79b36646151a",
+    "policy_id": "cata_raid_build_resource_policy_fast8_v4",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "maximum_load_average_1m": 13.0,
+    "sustained_unsafe_sample_count": 3,
+    "sample_interval_seconds": 0.5,
+    "reuse_authorized": false,
+    "v87_abort_preserved": {
+      "classification": "build_resource_abort",
+      "pressure_reasons": [
+        "load_average"
+      ],
+      "maximum_load_average_1m": 9.00537109375,
+      "worldserver_starts": 0
+    }
   },
-  "evidence": {
-    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_dc836d39ca_v87_fast8_v3_load_guard_prestart_failed_20260830.dvc",
-    "dvc_pointer_sha256": "fc0da096069850da2fd2db5fb74ec442b5cc9dbba17840625c48aecb4db63948",
-    "dvc_directory_md5": "6e9eefe6cc765bc368cf843ad94fb70e.dir",
-    "remote_reconstruction": "verified"
+  "runtime_config_authority": {
+    "authority": "tracked_derived_runtime_config_v1",
+    "review_handoff": "experiments/configs/cata_raid_derived_runtime_config_bundle_independent_review_handoff_v77.json",
+    "review_handoff_sha256": "9c99d7fc86bfe663708d64f28207aa483963496c9d739334fbf8da833314ff0b",
+    "contract_path": "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json",
+    "contract_sha256": "f62e93e740981b255adacd49311abe195f9c254cc15afe078a71e274244d8972",
+    "expected_output_length": 156488,
+    "expected_output_sha256": "1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8"
+  },
+  "preserved_pending": {
+    "chainwielder_expansion": "chainwielder_pre_admission_rejection_isolation_v1 remains separate and is not part of this replay",
+    "v70": "revisions 7/6/6 and Canary122 after-boundary history remain unchanged",
+    "v87": "the consumed fast8_v3 load_average abort remains immutable and non-gate-bearing"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
+    "emergency_wall_clock_is_success": false,
     "terminal_edges": [
-      "build_resource_abort"
+      "all_requested_fixture_receipts_captured",
+      "build_resource_abort",
+      "production_boundary_incomplete",
+      "semantic_or_no_progress_stall",
+      "repeated_decision_terminal",
+      "identity_or_runtime_config_mismatch",
+      "infrastructure_loss",
+      "explicit_interruption"
     ]
   },
+  "execution_budget": {
+    "v87_retry_ordinal": 1,
+    "fresh_attempt_count_maximum": 1,
+    "recurrence_suite_invocation_count_maximum": 1,
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "runtime_config_derivation_count_maximum": 1,
+    "canonical_route_stage_count_maximum": 1,
+    "prepared_route_object_count_maximum": 1,
+    "atomic_bundle_create_count_maximum": 1,
+    "atomic_bundle_verify_count_maximum": 1,
+    "strict_retained_roster_readback_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_after_attempt_count_maximum": 0,
+    "database_mutation": "forbidden",
+    "dvc_checkpoint_count_maximum": 1,
+    "dvc_push_count_maximum": 1,
+    "dvc_remote_reconstruction_count_maximum": 1,
+    "dvc_exact_eviction_count_maximum": 1
+  },
   "remaining_unproven": [
-    "shared-planner revisions 4/5/5 map-669 production evidence",
-    "complete and incomplete Hazard-owner movement outcomes",
+    "fast8_v4 produces a gate-bearing current worldserver binary",
+    "same_level_floor_observation_v1 revision 4 production boundary",
+    "same_level_hazard_path_admission_v1 revision 5 production boundary",
+    "same_level_native_path_proof_v1 revision 5 production boundary",
     "cross-floor and forbidden-path no-launch negatives",
     "any gameplay canary or boss outcome"
   ],
-  "next_work_unit": "evidence:review_v87_fast8_v3_load_guard_abort_v88",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Review the V87 load-guard termination and issue any successor replay descriptor separately; preserve the exact no-retry terminal."
+  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v89",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run one clean-identity fast8_v4 8-compiler/1-linker build and one no-retry completion-watchdog map-669 fixture replay for revisions 4/5/5."
 }

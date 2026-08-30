@@ -1,0 +1,98 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:review_v87_fast8_v3_load_guard_abort_v88",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "robust_fast8_load_policy_selected",
+  "source": {
+    "commit": "a0e0b75a92e6e4d7d9721fb357ff64a2b2569020",
+    "tree": "d0b0dfc29b4522fb01b6afac08c783de111f1227",
+    "v87_handoff": "experiments/configs/cata_raid_v87_fast8_v3_load_guard_prestart_failed_handoff_v88.json",
+    "v87_handoff_sha256": "a30bc77b5d007b6cb26ff6bbf2042b1c3ba1c4d3b15aca03391f9852e7e9865f"
+  },
+  "authenticated_v87_evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_dc836d39ca_v87_fast8_v3_load_guard_prestart_failed_20260830.dvc",
+    "dvc_pointer_sha256": "fc0da096069850da2fd2db5fb74ec442b5cc9dbba17840625c48aecb4db63948",
+    "dvc_directory_md5": "6e9eefe6cc765bc368cf843ad94fb70e.dir",
+    "worldserver_build_receipt_sha256": "3c37567917509181c8737d8c6affcf83a8bc432ab0dc457cee115fc940ce3826",
+    "summary_sha256": "0b4c70fec88955ae5594474b144ddbe33effa3788d0ed00fda46cb79995d1da8",
+    "remote_reconstruction": "verified_by_v87_and_rehydrated_for_v88_review",
+    "workspace_eviction": "verified_after_v88_review"
+  },
+  "resource_findings": {
+    "logical_cpu_count": 12,
+    "compiler_job_ceiling": 8,
+    "active_compiler_outputs_at_termination": 8,
+    "maximum_load_average_1m": 9.00537109375,
+    "configured_maximum_load_average_1m": 9.0,
+    "load_fraction_of_logical_cpu_count": 0.7504475911458334,
+    "minimum_memory_available_bytes": 8732643328,
+    "hard_memory_reserve_bytes": 8589934592,
+    "memory_headroom_above_reserve_bytes": 142708736,
+    "maximum_memory_psi_some_avg10": 0.18,
+    "maximum_memory_psi_full_avg10": 0.18,
+    "swap_growth_bytes": 469549056,
+    "allowed_swap_growth_bytes": 4294967296,
+    "sample_count": 311,
+    "pressure_reasons": [
+      "load_average"
+    ]
+  },
+  "queued_build_semantics": {
+    "load_comparison": "abort reason begins only when load_average_1m is strictly greater than the configured threshold",
+    "temporal_hysteresis": "the same nonempty pressure condition must persist for three consecutive 0.5-second samples; a safe sample resets the streak",
+    "v87_diagnosis": "The 9.005371 edge reflected eight expected compiler jobs plus scheduler/build bookkeeping on a 12-CPU host. It was not accompanied by memory PSI, swap-growth, or memory-reserve rejection."
+  },
+  "policy_decision": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+    "file_sha256": "06847f4cc78b6b3b2e13dd6ecb60e7a2810a44adc35e4107cb9b7cd611286d74",
+    "semantic_sha256": "5a29ebfbcd3d56b0a8c04f2634dd570a2edd5668f4f6e4b7243d79b36646151a",
+    "policy_id": "cata_raid_build_resource_policy_fast8_v4",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "maximum_load_average_1m": 13.0,
+    "sustained_unsafe_sample_count": 3,
+    "sample_interval_seconds": 0.5,
+    "hysteresis_basis": "The threshold is one runnable unit above the 12-CPU host capacity and five above the compiler ceiling; the existing three-sample streak remains the temporal hysteresis.",
+    "only_operational_change_from_fast8_v3": "maximum_load_average_1m 9.0 to 13.0",
+    "preserved_real_pressure_guards": [
+      "hard 8 GiB memory reserve and 25% fractional floor",
+      "512 MiB swap growth per compiler job",
+      "10 percent memory PSI some avg10",
+      "5 percent memory PSI full avg10",
+      "20 GiB filesystem reserve",
+      "three sustained unsafe samples at 0.5-second cadence",
+      "single-linker lock, Release -O1, no unity build, no PCH, low-memory linking"
+    ]
+  },
+  "successor_budget": {
+    "fresh_attempt_count_maximum": 1,
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_after_attempt_count_maximum": 0,
+    "exact_clean_identity_required": true,
+    "stale_v87_binary_reuse": false
+  },
+  "operations": {
+    "configure_or_build": 0,
+    "worldserver_start": 0,
+    "database_mutation": 0,
+    "gameplay_mutation": 0,
+    "dvc_publication": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "V87 terminated on a 0.005371 load-threshold excess while all eight compiler slots were active",
+      "the observed load was below the 12-CPU host capacity and had no accompanying real pressure rejection",
+      "fast8_v4 preserves eight compilers, one linker, and every fast8_v3 real pressure guard",
+      "fast8_v4 combines a 13.0 load threshold with the existing three-sample temporal hysteresis"
+    ],
+    "unproven": [
+      "fast8_v4 produces a gate-bearing binary at the successor clean identity",
+      "the map-669 fixture replay and requested revisions 4/5/5",
+      "any gameplay canary or boss outcome"
+    ]
+  },
+  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v89",
+  "next_owner_skill": "raid-shard-architecture"
+}
