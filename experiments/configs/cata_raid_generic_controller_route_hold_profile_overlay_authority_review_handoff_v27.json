@@ -1,0 +1,156 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_profile_overlay_authority_review_v27",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_expected_runtime_profile_authority_required",
+  "source_state": {
+    "commit": "38c860b4673c9211b2dd2253dd3ce6c95275bef8",
+    "tree": "fe09dbeafebeca7e313db0e32692742361fece4c",
+    "parent_commit": "a4cfbf11aea7220f49bc0354c05a3c1805427ce1",
+    "clean_before_review": true,
+    "v25_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_profile_manifest_suffix_review_handoff_v25.json",
+    "v25_handoff_sha256": "0d1fc0ad4823859c81f897c6d046a11ce327e195f93248fb5bfa2584db412787"
+  },
+  "scope_lock": {
+    "reviewed_boundary": "bundle-local selected-profile construction, recurrence creation and verification, checkpoint seal, config profile selection, capture-setup verified-result consumption, and generic scheduler identity",
+    "implementation_or_test_edits": false,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false,
+    "native_or_gameplay_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "profile_manifest and runtime_profile_overlay are first-class create_recurrence_admission inputs, are written by creation rather than appended afterward, and are independently re-verified by verify_recurrence_admission",
+      "the exact runtime profile file SHA-256 and canonical runtime profile overlay SHA-256 enter the checkpoint seal before recurrence admission",
+      "the authoritative verifier reads the clean tracked source profile catalog, compares it byte-for-byte with git show HEAD, reconstructs a one-profile runtime manifest for the effective suffix, and verifies selected-profile, envelope, source-catalog, runtime-profile-file, and route-file identities",
+      "config BotWorld.ProfileManifest, BotWorld.ValidationRoute.ManifestPath, and BotWorld.RuntimeProfile are compared with the verified recurrence bindings and overlay",
+      "capture setup passes the profile file to verify_recurrence_admission and consumes the verifier result rather than reparsing an unauthenticated admission overlay",
+      "the committed coherent-drift cases reject selected payload, isolated source/runtime semantic hashes, source catalog identity, effective suffix path/hash, nonexistent foreign selection, and envelope mutation",
+      "commit 38c860b4 changes only the five V26-allowed recurrence, bundle, setup, and focused-test files",
+      "controller_route_hold.py and native/gameplay sources are unchanged; no actor 30008 or canary122 constant and no generic scheduler comparison loosening was added",
+      "all reviewed production files remain below 1000 lines"
+    ],
+    "refuted": [
+      "a coherent substitution to another valid profile in the clean committed source catalog is rejected at recurrence creation, authoritative verification, or checkpoint seal",
+      "the committed foreign_selection regression represents the production catalog, which contains twelve valid profiles",
+      "the runtime_profile_id is independently authorized by the admitted scenario rather than selected from the admission overlay itself"
+    ],
+    "unproven": [
+      "the expected Magmaw diagnostic runtime profile cannot be coherently replaced by another committed profile before capture setup",
+      "native ApplyRuntimeProfile consumes the suffix as Chainwielder generation one",
+      "one identity-preserved checkpoint lifecycle reaches a typed terminal",
+      "release advances exactly once to retained Drudges"
+    ]
+  },
+  "first_broken_edge": {
+    "owner": "recurrence_admission_expected_runtime_profile_authority",
+    "edge": "_verified_runtime_profile_overlay obtains runtime_profile_id from overlay.get and uses that self-asserted value to select the otherwise clean committed source profile",
+    "first_state_infecting_mutation": "an admission producer can select a different valid committed profile, rebuild the selected-only profile file for the admitted suffix, update config selection, overlay identities, profile binding, checkpoint seal, and outer admission hash, and remain internally coherent",
+    "failure_postcondition": "create_recurrence_admission and verify_recurrence_admission accept foreign_valid_profile while the bound route scenario remains blackwing_descent_10n_magmaw_diagnostic, so V27 cannot authorize a live start",
+    "correlation_keys": {
+      "runtime_profile_source_line": "tools/raid_program/recurrence_admission.py:142",
+      "source_selection_line": "tools/raid_program/recurrence_admission.py:164",
+      "config_self_consistency_line": "tools/raid_program/recurrence_admission.py:650",
+      "weak_foreign_fixture_line": "tests/test_recurrence_admission.py:370",
+      "production_catalog_profile_count": 12,
+      "probe_result": "accepted=true; accepted_runtime_profile_id=foreign_valid_profile; route_scenario=blackwing_descent_10n_magmaw_diagnostic"
+    }
+  },
+  "binding_audit": {
+    "profile_manifest_first_class_create_input": true,
+    "profile_manifest_first_class_verify_input": true,
+    "runtime_profile_overlay_first_class_create_input": true,
+    "profile_file_hash_bound_in_checkpoint_seal": true,
+    "overlay_semantic_hash_bound_in_checkpoint_seal": true,
+    "clean_committed_source_catalog_verified": true,
+    "effective_suffix_path_and_hash_verified": true,
+    "capture_setup_consumes_verified_result": true,
+    "expected_runtime_profile_independent_of_overlay": false,
+    "coherent_valid_foreign_profile_rejected": false,
+    "live_admission_complete": false
+  },
+  "changed_file_audit": {
+    "changed_files": [
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_recurrence_admission.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/recurrence_admission.py"
+    ],
+    "all_changes_within_v26_allowlist": true,
+    "controller_source_changed": false,
+    "native_or_gameplay_source_changed": false,
+    "reviewed_files": {
+      "tools/raid_program/recurrence_admission.py": {
+        "sha256": "c93c30159ab3e8acb6c16b2a65de52c03aaf8a0f3bc5c9acc327fac1552c7e62",
+        "lines": 866
+      },
+      "tools/raid_program/chainwielder_prestart_bundle.py": {
+        "sha256": "62b611c8ff8a0f6c552654439e4d4bdb6406b58beeea747e96d8d69f58d44d8f",
+        "lines": 954
+      },
+      "tools/raid_program/capture_setup.py": {
+        "sha256": "0ae202188b886f2b217e0d8ae2c2bdc1be0188f092a69d9158ee71210ece0915",
+        "lines": 495
+      },
+      "tools/raid_program/controller_route_hold.py": {
+        "sha256": "44a2712700b4b797dedd822058424505147585d9d0b836a0758c5205c22e2968",
+        "lines": 491,
+        "changed": false
+      },
+      "tests/test_recurrence_admission.py": {
+        "sha256": "4fda6fda774400f4ba04d9dd145ee8204854b7629db0d91f5f110fc9c5a55107",
+        "lines": 772
+      },
+      "tests/test_chainwielder_prestart_bundle.py": {
+        "sha256": "414802304e221e2350571347a2b3560b401325e4f9e30ccef5624bbc17e0ee35",
+        "lines": 829
+      }
+    },
+    "production_line_limit_passed": true
+  },
+  "deterministic_review": {
+    "independent_boundary_test": "pixi run pytest -q tests/test_recurrence_admission.py::test_chainwielder_checkpoint_uses_precomputed_non_circular_seal tests/test_recurrence_admission.py::test_profile_overlay_authority_rejects_coherent_drift tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity",
+    "independent_boundary_result": "9 passed in 0.68s",
+    "independent_coherent_foreign_profile_probe": "temporary two-valid-profile committed source catalog; rebuild foreign selected-only manifest, overlay, config profile selection, checkpoint seal, admission bindings, and outer hash; call real create_recurrence_admission and verify_recurrence_admission",
+    "independent_coherent_foreign_profile_result": "accepted=true; accepted_runtime_profile_id=foreign_valid_profile; route_scenario=blackwing_descent_10n_magmaw_diagnostic",
+    "interpretation": "The V25 post-append/seal gap is closed, but profile-name authority is still circular and permits a coherent substitution to another valid committed profile."
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_expected_runtime_profile_authority_v28",
+    "owner_skill": "raid-evidence-lifecycle",
+    "hypothesis": "Supplying the expected runtime_profile_id from the caller/capture contract to recurrence creation and verification, then comparing it before accepting the overlay-selected profile, will close the coherent valid-profile substitution without changing generic scheduling behavior.",
+    "owned_files": [
+      "tools/raid_program/recurrence_admission.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_setup.py",
+      "tests/test_recurrence_admission.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "required_change": [
+      "make expected runtime_profile_id an explicit caller/capture-contract input to recurrence creation and verification, independent of runtime_profile_overlay",
+      "reject before overlay reconstruction unless overlay runtime_profile_id, config BotWorld.RuntimeProfile, selected committed source row, and the explicit expected runtime profile are identical",
+      "add a two-valid-profile committed-catalog regression that coherently rebuilds the foreign profile manifest, overlay, config selection, checkpoint seal, admission binding, and outer hash and proves rejection at the authoritative create/verify boundary"
+    ],
+    "validation": "pixi run pytest -q tests/test_recurrence_admission.py tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py -k 'profile_manifest or profile_overlay or expected_runtime_profile or target_suffix'",
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "worldserver_start_count": 0,
+      "retry_count_maximum": 1,
+      "database_mutation_allowed": false,
+      "dvc_mutation_allowed": false
+    },
+    "forbidden": [
+      "native_runtime_gameplay_class_pet_encounter_or_route_strategy_change",
+      "generic_controller_change_or_identity_comparison_loosening",
+      "priority_polling_watchdog_threshold_change",
+      "configure_build_worldserver_start_database_or_dvc_mutation",
+      "fixture_promotion_or_acceptance_claim"
+    ]
+  }
+}

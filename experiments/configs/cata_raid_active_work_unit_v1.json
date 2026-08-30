@@ -1,16 +1,16 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_profile_overlay_authority_binding_v26_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_profile_overlay_authority_binding_v26",
+  "epoch_id": "generic_controller_route_hold_expected_runtime_profile_authority_v28_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_expected_runtime_profile_authority_v28",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
-  "gate_state": "v25_refuted_checkpoint_seal_and_authoritative_recurrence_profile_binding",
-  "observed_at_commit": "f90a054e5d4d38d690463cbdf943260ed781f8f6",
-  "immutable_input_commit": "f90a054e5d4d38d690463cbdf943260ed781f8f6",
+  "gate_state": "v27_refuted_independent_expected_runtime_profile_authority",
+  "observed_at_commit": "38c860b4673c9211b2dd2253dd3ce6c95275bef8",
+  "immutable_input_commit": "38c860b4673c9211b2dd2253dd3ce6c95275bef8",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_profile_manifest_suffix_review_handoff_v25.json",
-    "sha256": "0d1fc0ad4823859c81f897c6d046a11ce327e195f93248fb5bfa2584db412787",
-    "source_commit": "f90a054e5d4d38d690463cbdf943260ed781f8f6"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_profile_overlay_authority_review_handoff_v27.json",
+    "sha256": "4e6d4af3cf1d37b6f6053503a03144c18bd18d8396f577aeba11ec211973b150",
+    "source_commit": "38c860b4673c9211b2dd2253dd3ce6c95275bef8"
   },
   "evidence_pointer": {
     "path": "artifacts/cata_raid_program/phase1_raid_foundation_7483e72717_generic_controller_route_hold_profile_overlay_mismatch_v23_20260830.dvc",
@@ -18,7 +18,7 @@
     "remote_verified": true,
     "remote_reconstruction_verified": true,
     "local_output_evicted": true,
-    "hydrated_for_v25": false
+    "hydrated_for_v27": false
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
@@ -29,7 +29,7 @@
       "25N",
       "25H"
     ],
-    "canary_only": "Affliction actor 30008 and the Chainwielder suffix identify the retained V23 counterexample; V26 owns only generic profile identity authority."
+    "canary_only": "Affliction actor 30008 and the Chainwielder suffix identify the retained V23 counterexample; V28 owns only independent expected runtime-profile authority."
   },
   "behavior_change": false,
   "evidence_contract_change": true,
@@ -37,7 +37,7 @@
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Make the bundle-local selected-profile file and canonical overlay semantic identity first-class recurrence-admission inputs, bind their exact hashes into the checkpoint seal, verify them authoritatively against the committed source profile and effective suffix, and make capture setup consume only the verified result.",
+    "allowed_change": "Supply the expected runtime_profile_id from the caller/capture contract to recurrence create and verify, compare it before accepting the overlay, and reject a coherent substitution to another valid committed profile.",
     "allowed_files": [
       "tools/raid_program/recurrence_admission.py",
       "tools/raid_program/chainwielder_prestart_bundle.py",
@@ -62,29 +62,27 @@
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "verified_v24_local_contract": {
-    "fail_before_profile_precedence_reproduced": true,
-    "bundle_profile_contains_exactly_selected_profile": true,
-    "only_validation_route_manifest_path_differs_semantically": true,
-    "config_points_to_bundle_profile_manifest": true,
-    "payload_bundle_manifest_and_launch_bind_profile": true,
-    "capture_setup_projects_effective_suffix": true,
+  "verified_v26_local_contract": {
+    "profile_and_overlay_are_first_class_recurrence_inputs": true,
+    "profile_and_overlay_hashes_enter_checkpoint_seal": true,
+    "clean_committed_source_catalog_verified": true,
+    "selected_envelope_source_runtime_and_suffix_hashes_verified": true,
+    "config_profile_path_route_and_selection_compared": true,
+    "capture_setup_consumes_verified_result": true,
     "generic_controller_or_setup_canary_constant_added": false,
     "identity_comparison_loosened": false,
-    "all_changes_within_v24_allowlist": true,
+    "all_changes_within_v26_allowlist": true,
     "production_line_limit_passed": true
   },
   "failed_authority_contract": {
-    "checkpoint_seal_binds_profile_manifest_sha256": false,
-    "checkpoint_seal_binds_overlay_semantic_sha256": false,
-    "recurrence_admission_creation_accepts_profile_binding": false,
-    "profile_fields_appended_after_admission_creation": true,
-    "verify_recurrence_admission_validates_profile_binding": false,
-    "capture_setup_overlay_identity_is_independently_authenticated": false,
+    "expected_runtime_profile_supplied_independently": false,
+    "overlay_runtime_profile_matches_independent_expectation": false,
+    "coherent_valid_foreign_profile_rejected": false,
+    "two_valid_profile_regression_present": false,
     "live_authorization_revoked": true
   },
   "remaining_unproven": [
-    "the full coherent-drift matrix fails at the authoritative recurrence and real capture-setup boundary",
+    "a coherent valid committed foreign-profile substitution fails at authoritative recurrence creation and verification",
     "native ApplyRuntimeProfile consumes Chainwielder generation one with the exact suffix hash",
     "one identity-preserved checkpoint lifecycle reaches a typed terminal",
     "release advances exactly once to retained Drudges"
@@ -95,13 +93,12 @@
     "raid_success_timer_seconds": null
   },
   "focused_validation": {
-    "coordinator_command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py",
-    "coordinator_result": "34 passed in 2.10s",
-    "independent_command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity tests/test_chainwielder_prestart_bundle.py::test_profile_suffix_rejects_ambiguous_selection_and_non_route_mutation",
-    "independent_result": "2 passed in 0.25s",
-    "interpretation": "Local bundle consistency passes, but checkpoint-seal and authoritative recurrence-verifier closure is absent."
+    "independent_command": "pixi run pytest -q tests/test_recurrence_admission.py::test_chainwielder_checkpoint_uses_precomputed_non_circular_seal tests/test_recurrence_admission.py::test_profile_overlay_authority_rejects_coherent_drift tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity",
+    "independent_result": "9 passed in 0.68s",
+    "coherent_foreign_profile_probe_result": "accepted=true; accepted_runtime_profile_id=foreign_valid_profile; route_scenario=blackwing_descent_10n_magmaw_diagnostic",
+    "interpretation": "Existing tamper cases pass, but the real two-valid-profile coherent substitution is accepted because expected profile authority is circular."
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_profile_overlay_authority_binding_v26",
+  "next_work_unit": "evidence:generic_controller_route_hold_expected_runtime_profile_authority_v28",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Bind the exact profile manifest and overlay semantics into the checkpoint seal and standard recurrence create/verify path, add coherent-drift production-boundary regressions, and return for independent no-live review."
+  "next_action": "Pass an independent expected runtime_profile_id into recurrence create/verify, compare it before accepting overlay selection, and add a coherent two-valid-profile production-boundary rejection test."
 }
