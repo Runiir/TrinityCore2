@@ -208,15 +208,19 @@ same first-broken edge and source-handoff hash. A stale or missing active
 descriptor blocks live mutation until the coordinator repairs it from the
 latest immutable handoff.
 
-Before consuming a live shard's sole atomic-create budget, stage its canonical
-route with `chainwielder_prestart_bundle.stage_canonical_route`. Supply the
-exact caller-bound SHA-256 and a new explicit run root outside the worktree.
-Validate the returned receipt against the clean source commit, source path and
-hash, staged path and hash, and receipt hash, then pass that staged path
-unchanged to the atomic creator. The preflight authenticates the materialized
-route through the HEAD-bound DVC stage and cache manifest; any missing,
-conflicting, worktree-contained, symlinked, stale, or hash-drifted input stops
-before the atomic create is invoked or counted.
+When an authoritative shard bundle rejects worktree-contained inputs, use
+`tools.raid_program.canonical_route_staging` to authenticate the exact DVC
+stage/member and copy it to a new explicit run root outside the worktree.
+Validate the receipt's clean source commit, source/staged paths and hashes, and
+receipt hash before passing the staged path unchanged to that bundle. Any
+missing, conflicting, symlinked, stale, or hash-drifted input stops before its
+atomic create is invoked or counted.
+
+The current Chainwielder/Magmaw atomic-bundle flow is such a consumer. It uses
+the compatibility export in `chainwielder_prestart_bundle` with the
+`validation_scenarios` route member, and must validate that staging receipt
+before consuming its sole create budget. This requirement does not route other
+shards through the Chainwielder module.
 
 1. Reproduce the route assets before building or provisioning:
 

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -12,7 +11,13 @@ import shutil
 import subprocess
 import tempfile
 from typing import Any
-import yaml
+
+from tools.raid_program.canonical_route_staging import (
+    CanonicalRouteStagingError as BundleError,
+    STAGING_RECEIPT_SCHEMA,
+    atomic_write_new,
+    stage_canonical_route,
+)
 from tools.raid_program.queued_build import (
     CoordinatorError,
     load_json as load_build_json,
@@ -36,7 +41,6 @@ SCHEMA = "cata_raid_chainwielder_prestart_bundle_v1"
 LAUNCH_SCHEMA = "cata_raid_chainwielder_launch_contract_v1"
 MANIFEST_SCHEMA = "cata_raid_chainwielder_bundle_manifest_v1"
 FAILURE_SCHEMA = "cata_raid_chainwielder_prestart_failure_v1"
-STAGING_RECEIPT_SCHEMA = "cata_raid_external_route_staging_receipt_v1"
 SCENARIO_ID = "blackwing_descent_10n_magmaw_diagnostic"
 NODE_ID = "bwd.magmaw.chainwielder"
 ACTOR_GUID = 30008
@@ -63,6 +67,7 @@ BUNDLE_NAMES = {
     "launch_contract": "launch_contract.json",
     "bundle_manifest": "bundle_manifest.json",
 }
+
 REQUIRED_SUFFIX_NODE_IDS = (
     NODE_ID,
     "bwd.magmaw.drudges",
@@ -79,6 +84,7 @@ ROUTE_INVARIANT_FIELDS = (
     "diagnostic_parent_scenario_id",
     "diagnostic_prerequisite_state",
 )
+
 CONFIG_VALUES = {
     "BotWorld.AutoStart": "0",
     "BotWorld.RuntimeProfile": f'"{SCENARIO_ID}"',
@@ -99,8 +105,6 @@ CONFIG_VALUES = {
 }
 
 
-class BundleError(RuntimeError):
-    pass
 def _git(worktree: Path, *args: str, binary: bool = False) -> str | bytes:
     result = subprocess.run(
         ["git", "-C", str(worktree), *args],
@@ -109,6 +113,7 @@ def _git(worktree: Path, *args: str, binary: bool = False) -> str | bytes:
         stderr=subprocess.PIPE,
     )
     return result.stdout if binary else result.stdout.decode().strip()
+
 
 def _json(path: Path, label: str) -> dict[str, Any]:
     if not path.is_file():
@@ -121,13 +126,16 @@ def _json(path: Path, label: str) -> dict[str, Any]:
         raise BundleError(f"{label}_invalid")
     return value
 
+
 def _write_json(path: Path, value: object) -> None:
     path.write_text(
         json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
 
+
 def _canonical_pretty_json(value: object) -> bytes:
     return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
 
 def _is_within(path: Path, parent: Path) -> bool:
     try:
@@ -136,6 +144,7 @@ def _is_within(path: Path, parent: Path) -> bool:
         return False
     return True
 
+
 def _require_hash(path: Path, expected: str, label: str) -> None:
     if not SHA256_RE.fullmatch(expected):
         raise BundleError(f"{label}_sha256_invalid")
@@ -143,6 +152,7 @@ def _require_hash(path: Path, expected: str, label: str) -> None:
         raise BundleError(f"{label}_missing")
     if sha256_file(path) != expected:
         raise BundleError(f"{label}_hash_mismatch")
+
 
 def _source_identity(
     worktree: Path, expected_commit: str, expected_tree: str
@@ -157,6 +167,7 @@ def _source_identity(
         raise BundleError("source_worktree_dirty")
     return head, tree
 
+
 def _tracked_profile_manifest(worktree: Path) -> tuple[Path, dict[str, Any]]:
     path = worktree.resolve() / PROFILE_MANIFEST_RELATIVE_PATH
     try:
@@ -170,6 +181,7 @@ def _tracked_profile_manifest(worktree: Path) -> tuple[Path, dict[str, Any]]:
     if payload != committed:
         raise BundleError("source_profile_manifest_commit_mismatch")
     return path, _json(path, "source_profile_manifest")
+
 
 def _validate_locations(
     *, worktree: Path, output_dir: Path, material_inputs: dict[str, Path],
@@ -212,11 +224,15 @@ def _validate_locations(
             raise BundleError("capture_output_location_invalid")
     if not binary.resolve().is_file():
         raise BundleError("binary_missing")
+
+
 def _config_assignments(text: str, key: str) -> list[re.Match[str]]:
     pattern = re.compile(
         rf"^(?!\s*[#;])\s*{re.escape(key)}\s*=.*$", re.MULTILINE
     )
     return list(pattern.finditer(text))
+
+
 def _set_config(text: str, key: str, value: str) -> str:
     matches = _config_assignments(text, key)
     if len(matches) > 1:
@@ -226,12 +242,16 @@ def _set_config(text: str, key: str, value: str) -> str:
         match = matches[0]
         return text[:match.start()] + line + text[match.end():]
     return text.rstrip() + "\n" + line + "\n"
+
+
 def _config_value(text: str, key: str) -> str:
     matches = _config_assignments(text, key)
     if len(matches) != 1:
         reason = "missing" if not matches else "duplicate"
         raise BundleError(f"config_{reason}_key:{key}")
     return matches[0].group(0).split("=", 1)[1].strip()
+
+
 def _render_config(
     base: Path, *, route_path: Path, profile_manifest_path: Path,
     seal: dict[str, str], source_commit: str,
@@ -257,6 +277,8 @@ def _render_config(
         if _config_value(text, key) != value:
             raise BundleError(f"config_binding_mismatch:{key}")
     return text.encode("utf-8")
+
+
 def _validate_route(path: Path, scenario: str, profile: str) -> dict[str, Any]:
     route = _json(path, "route_manifest")
     if route.get("scenario_id") != scenario:
@@ -278,6 +300,8 @@ def _validate_route(path: Path, scenario: str, profile: str) -> dict[str, Any]:
     ):
         raise BundleError("route_checkpoint_identity_mismatch")
     return route
+
+
 def _target_route_suffix(
     source: dict[str, Any], scenario: str, profile: str,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -338,6 +362,8 @@ def _target_route_suffix(
         "checkpoint_target_node_id": NODE_ID,
         "retained_node_ids": suffix_node_ids,
     }
+
+
 def _verify_gate_bearing_build_receipt(receipt: Path, policy: Path) -> dict[str, Any]:
     try:
         report = verify_receipt(receipt, load_build_json(policy))
@@ -346,101 +372,22 @@ def _verify_gate_bearing_build_receipt(receipt: Path, policy: Path) -> dict[str,
     if report.get("gate_bearing") is not True:
         raise BundleError("build_receipt_not_gate_bearing")
     return report
-def _write_new(destination: Path, payload: bytes) -> None:
-    temporary: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as stream:
-            temporary = Path(stream.name)
-            stream.write(payload)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.link(temporary, destination)
-    except FileExistsError as error:
-        raise BundleError(f"copy_destination_exists:{destination.name}") from error
-    finally:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
+
 
 def _copy_exact(source: Path, destination: Path) -> None:
-    _write_new(destination, source.read_bytes())
+    atomic_write_new(destination, source.read_bytes())
     if sha256_file(source) != sha256_file(destination):
         destination.unlink(missing_ok=True)
         raise BundleError(f"copy_hash_mismatch:{destination.name}")
 
 
-def stage_canonical_route(
-    *, worktree: Path, source_route: Path, expected_sha256: str,
-    external_run_root: Path,
-) -> dict[str, Any]:
-    worktree = worktree.resolve()
-    source, root = source_route.resolve(), external_run_root.resolve()
-    if (
-        Path(os.path.abspath(source_route)) != source
-        or not source.is_file()
-        or not _is_within(source, worktree)
-    ):
-        raise BundleError("source_route_location_invalid")
-    if (
-        Path(os.path.abspath(external_run_root)) != root
-        or not root.is_dir()
-        or _is_within(root, worktree)
-    ):
-        raise BundleError("external_staging_root_invalid")
-    head = str(_git(worktree, "rev-parse", "HEAD"))
-    tree = str(_git(worktree, "rev-parse", "HEAD^{tree}"))
-    _source_identity(worktree, head, tree)
-    try:
-        for authority in ("dvc.yaml", "dvc.lock"):
-            committed = _git(worktree, "show", f"HEAD:{authority}", binary=True)
-            if (worktree / authority).read_bytes() != committed:
-                raise BundleError("dvc_authority_commit_mismatch")
-        lock = yaml.safe_load((worktree / "dvc.lock").read_text(encoding="utf-8"))
-        relative = source.relative_to(worktree).as_posix()
-        outputs = lock["stages"]["validation_scenarios"]["outs"]
-        owners = [
-            row for row in outputs
-            if relative.startswith(f'{str(row["path"]).rstrip("/")}/')
-        ]
-        if len(owners) != 1 or not str(owners[0].get("md5", "")).endswith(".dir"):
-            raise BundleError("source_route_dvc_output_identity_invalid")
-        owner, digest = owners[0], str(owners[0]["md5"])
-        cache = worktree / ".dvc/cache/files/md5" / digest[:2] / digest[2:]
-        cache_bytes = cache.read_bytes()
-        if hashlib.md5(cache_bytes, usedforsecurity=False).hexdigest() != digest[:-4]:
-            raise BundleError("dvc_directory_manifest_hash_mismatch")
-        member_name = source.relative_to(worktree / str(owner["path"])).as_posix()
-        members = [row for row in json.loads(cache_bytes) if row.get("relpath") == member_name]
-        if len(members) != 1 or not re.fullmatch(r"[0-9a-f]{32}", str(members[0].get("md5", ""))):
-            raise BundleError("source_route_dvc_member_identity_invalid")
-    except BundleError:
-        raise
-    except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError, yaml.YAMLError) as error:
-        raise BundleError("source_route_dvc_authority_invalid") from error
-    source_bytes = source.read_bytes()
-    if hashlib.md5(source_bytes, usedforsecurity=False).hexdigest() != members[0]["md5"]:
-        raise BundleError("source_route_dvc_member_hash_mismatch")
-    if not SHA256_RE.fullmatch(expected_sha256) or sha256_file(source) != expected_sha256:
-        raise BundleError("source_route_sha256_mismatch")
-    name = f"{source.stem}-{expected_sha256}{source.suffix}"
-    destination, receipt_path = root / name, root / f"{name}.receipt.json"
-    if destination.exists() or destination.is_symlink() or receipt_path.exists() or receipt_path.is_symlink():
-        raise BundleError("external_staging_destination_conflict")
-    _copy_exact(source, destination)
-    if sha256_file(destination) != expected_sha256 or sha256_file(source) != expected_sha256:
-        destination.unlink(missing_ok=True)
-        raise BundleError("external_staging_copy_hash_mismatch")
-    receipt = {
-        "schema": STAGING_RECEIPT_SCHEMA, "source_commit": head,
-        "source_path": str(source), "source_sha256": expected_sha256,
-        "staged_path": str(destination), "staged_sha256": expected_sha256,
-    }
-    _write_new(receipt_path, _canonical_pretty_json(receipt))
-    return {**receipt, "receipt_path": str(receipt_path), "receipt_sha256": sha256_file(receipt_path)}
 def _file_rows(root: Path, names: list[str]) -> list[dict[str, str]]:
     return [
         {"path": name, "sha256": sha256_file(root / name)}
         for name in sorted(names)
     ]
+
+
 def _logical_bindings(root: Path) -> dict[str, Path]:
     return {
         key: root / BUNDLE_NAMES[key]
@@ -450,6 +397,8 @@ def _logical_bindings(root: Path) -> dict[str, Path]:
             "decision", "suite_receipt",
         )
     }
+
+
 def _verify_config(
     path: Path, *, route_path: Path, profile_manifest_path: Path,
     seal: dict[str, Any], source_commit: str,
@@ -469,6 +418,8 @@ def _verify_config(
     for key, value in expected.items():
         if _config_value(text, key) != value:
             raise BundleError(f"config_binding_mismatch:{key}")
+
+
 def verify_bundle(
     output_dir: Path, *, materialized_root: Path | None = None,
 ) -> dict[str, Any]:
@@ -689,6 +640,8 @@ def verify_bundle(
         "route_identity": expected_route_identity,
         "launch_argv": argv,
     }
+
+
 def _failure_receipt(output_dir: Path, reason: str, worktree: Path) -> None:
     destination = output_dir.resolve().with_name(output_dir.name + ".failure.json")
     if _is_within(destination, worktree.resolve()):
@@ -703,6 +656,8 @@ def _failure_receipt(output_dir: Path, reason: str, worktree: Path) -> None:
         "reason": reason,
     })
     os.replace(temporary, destination)
+
+
 def create_bundle(
     *, worktree: Path, output_dir: Path, source_commit: str, source_tree: str,
     binary: Path, binary_sha256: str, build_receipt: Path,
@@ -955,8 +910,12 @@ def create_bundle(
         if isinstance(error, BundleError):
             raise
         raise BundleError(reason) from error
+
+
 def _add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     commands = result.add_subparsers(dest="command", required=True)
@@ -979,6 +938,8 @@ def parser() -> argparse.ArgumentParser:
     create.add_argument("--actor-guid", type=int, required=True)
     create.add_argument("--checkpoint-fixture-id", required=True)
     return result
+
+
 def main() -> int:
     args = parser().parse_args()
     try:
