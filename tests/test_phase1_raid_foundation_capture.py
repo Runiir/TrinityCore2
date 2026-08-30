@@ -80,6 +80,8 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     CaptureSetup,
     build_capture_parser,
     prepare_capture_setup,
+    CaptureRunResult,
+    execute_capture_run,
 )
 
 
@@ -299,6 +301,181 @@ def test_prepare_capture_setup_returns_typed_admitted_state(tmp_path: Path, monk
     assert setup.controller_route_hold_scheduler is None
     assert setup.drudge_observed is False
     assert setup.drudge_required is False
+
+
+def test_capture_live_run_uses_focused_production_module():
+    run_module = "tools.raid_program.capture_live_run"
+    assert CaptureRunResult.__module__ == run_module
+    assert execute_capture_run.__module__ == run_module
+    controller_source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    assert controller_source.index('demux_rejections = demux_report["rejections"]') < (
+        controller_source.index(
+            "default_trace_transport_gate = trace_transport_smoke.evaluate([])"
+        )
+    ) < controller_source.index("trace_transport_demux = trace_transport_smoke.demux_report")
+
+
+def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, monkeypatch):
+    binary = tmp_path / "worldserver"
+    config = tmp_path / "worldserver.conf"
+    server_log = tmp_path / "worldserver.log"
+    binary.write_bytes(b"fixture")
+    config.write_bytes(b"fixture")
+    args = SimpleNamespace(
+        trace_transport_smoke=False,
+        telemetry_timeout_sec=60,
+        observe_sec=0,
+        status_interval_sec=5.0,
+        diagnose_interval_sec=30.0,
+        trace_interval_sec=10.0,
+        required_stable_statuses=2,
+        resource_sample_interval_sec=5.0,
+        max_repeated_decision_count=20,
+        max_death_loop_count=3,
+        semantic_stall_min_samples=12,
+        semantic_stall_sec=300,
+        startup_timeout_sec=180,
+        chainwielder_checkpoint_actor_guid=None,
+    )
+    setup = CaptureSetup(
+        args=args,
+        binary=binary,
+        config=config,
+        output=tmp_path / "capture.json",
+        worktree=tmp_path,
+        profile_name="stonecore_5n",
+        scenario_id="stonecore_5n",
+        raw_output=tmp_path / "capture.raw.jsonl",
+        server_log_output=server_log,
+        recurrence_admission=None,
+        checkpoint_arm_command=None,
+        preflight={"passed": True, "reasons": []},
+        identity_before={"clean": True},
+        runtime_assets={"route_partition": "stonecore_5n"},
+        controller_route_hold_scheduler=None,
+        drudge_observed=False,
+        drudge_required=False,
+        drudge_navmesh_preflight={"required": False, "all_passed": None},
+        drudge_frozen_anchors={},
+        build_provenance={"valid": True},
+    )
+
+    class FakeProcess:
+        pid = 4321
+
+        def __init__(self):
+            self.stdin = io.BytesIO()
+            self.returncode = None
+
+        def poll(self):
+            return self.returncode
+
+        def wait(self, timeout=None):
+            self.returncode = 0
+            return 0
+
+    process = FakeProcess()
+    statuses = [
+        SimpleNamespace(row={"action": "botauto_status", "sequence": sequence})
+        for sequence in (1, 2)
+    ]
+    observation_batches = iter([statuses])
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.subprocess.Popen",
+        lambda *args, **kwargs: process,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.wait_for_prompt",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.time.sleep",
+        lambda seconds: None,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.collect_log_observations",
+        lambda *args, **kwargs: next(observation_batches, []),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.process_resource_sample",
+        lambda pid, **kwargs: {"pid": pid, **kwargs},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.terminal_preflight_failure_reason",
+        lambda status, **kwargs: (None, []),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.accepted_foundation_status",
+        lambda status, **kwargs: (True, []),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.terminal_runtime_failure_reason",
+        lambda status, **kwargs: (None, []),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.observe_capture_watchdog",
+        lambda *args, **kwargs: {"detected": False},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.observe_telemetry_freshness",
+        lambda *args, **kwargs: [],
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.semantic_progress_signature",
+        lambda *args, **kwargs: ("progress",),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.observe_monotonic_semantic_progress",
+        lambda *args, **kwargs: True,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.ready_for_native_readycheck",
+        lambda status: False,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.validate_forced_evidence_bundle",
+        lambda *args, **kwargs: {
+            "gate_passed": True,
+            "missing_channels": [],
+            "rejections": [],
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.validate_forced_combat_log_bundle",
+        lambda *args, **kwargs: {
+            "gate_passed": True,
+            "rejections": [],
+        },
+    )
+
+    def fake_shutdown(child, timeout_seconds):
+        child.returncode = 0
+        return {
+            "commands_sent": ["botauto stop", "botauto status", "server exit"],
+            "error": None,
+            "operator_interrupted": False,
+        }
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.bounded_native_shutdown",
+        fake_shutdown,
+    )
+
+    result = execute_capture_run(setup)
+
+    assert isinstance(result, CaptureRunResult)
+    assert result.process_return_code == 0
+    assert len(result.stable) == 2
+    assert result.last_rejections == []
+    assert result.forced_evidence_report["gate_passed"] is True
+    assert result.stop_commands_sent is True
+    assert result.log_bytes == b""
+    assert process.stdin.getvalue().startswith(b"botauto start stonecore_5n\n")
+    assert b"botauto status\n" in process.stdin.getvalue()
 
 
 def _verified_checkpoint_admission() -> dict:
