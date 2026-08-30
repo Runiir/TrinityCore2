@@ -1,0 +1,117 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:queued_build_and_chainwielder_checkpoint_one_observation_start_v4",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed",
+  "failure_classification": "configure_preflight_source_dirty_from_in_tree_evidence_staging",
+  "input_identities": {
+    "source_commit": "410c7d60c2ec9453d22111891426832ab4479d1a",
+    "source_tree": "3db15d3f16956a0ab90a9f4a98931bf7b9ad650e",
+    "source_clean_before_evidence_staging": true,
+    "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json",
+    "implementation_handoff_file_sha256": "7ded06b94def8aa51b6ce78897ef88cce54495db3ce28cc9cd870f942631d0df",
+    "prior_failed_live_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_7a03aeebfb_live_unarmed_handoff_v1.json",
+    "prior_failed_live_handoff_file_sha256": "86b0583948e187084bfd49ffb349f3fb281993b9285b76d900f7697060d4c484"
+  },
+  "scope_lock": {
+    "owned_behavior": "one exact queued fast8_v2 configure/build and at most one observation-only actor-30008 Chainwielder checkpoint completion-watchdog start",
+    "configure_count": 1,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "second_configure_run": false,
+    "gameplay_or_fixture_changes": false,
+    "fixture_revision_promoted": false,
+    "gameplay_canary_or_acceptance_claimed": false
+  },
+  "validation": {
+    "focused_test_command": "pixi run pytest -q tests/test_recurrence_admission.py tests/test_chainwielder_owner_checkpoint.py tests/test_phase1_raid_foundation_capture.py -k 'chainwielder_checkpoint or recurrence_admission or checkpoint_arm_gate or checkpoint_arm_emits'",
+    "focused_test_result": "27 passed, 126 deselected",
+    "recurrence_result": "20 of 20 passed; fixture_expansion_admitted=true; sole target chainwielder_pre_admission_rejection_isolation_v1",
+    "configure": {
+      "classification": "build_provenance_abort",
+      "error": "source_identity_changed_or_dirty_before_admission",
+      "exit_code": 76,
+      "ticket_id": "raid-build-79b3a2d1d11f468981f4838f18e04623",
+      "queue_sequence": 1223,
+      "command_sha256": "be70ed356d98ec9b6b158e6237ffb8a00fe0ab7d125862735f2df2e1e85c5d5f",
+      "receipt_canonical_sha256": "13fcff11478bcb98364392391ab1042dabf29edfea9dc41b7c8ca0b003e031b7",
+      "receipt_file_sha256": "eafbad086d0361865f5a151266467e4724b3072eaa9b60d04058367e2153a109",
+      "policy_sha256": "42cbf415f828574c1ee90f4273a945a2c9369670e4789b21592e962a070e8e40",
+      "pressure_reasons": [],
+      "provenance_reasons": [
+        "source_identity_changed_or_dirty_before_admission",
+        "source_identity_changed_or_dirty_before_completion",
+        "build_configuration_changed_or_mismatched_at_completion"
+      ],
+      "dirty_paths": [
+        "artifacts/cata_raid_program/phase1_foundation_410c7d60c_chainwielder_checkpoint_armed_20260830/configure_build_receipt.json",
+        "artifacts/cata_raid_program/phase1_foundation_410c7d60c_chainwielder_checkpoint_armed_20260830/recurrence_decision.json",
+        "artifacts/cata_raid_program/phase1_foundation_410c7d60c_chainwielder_checkpoint_armed_20260830/recurrence_suite_receipt.json"
+      ]
+    },
+    "checkpoint_observation": {
+      "controller_gate": "not_run",
+      "controller_command_sent": null,
+      "controller_emission_count": null,
+      "native_checkpoint_lifecycle_count": 0,
+      "terminal": "configure_preflight_failed",
+      "party_dps": null,
+      "party_hps": null,
+      "actor_30008_dps": null,
+      "actor_30008_hps": null
+    },
+    "cleanup": {
+      "strict_provisioning_verifier_passed": true,
+      "shard_readback_passed": true,
+      "map_id": 669,
+      "roster_size": 10,
+      "zero_online_bots": true,
+      "zero_leases": true,
+      "zero_group_instance_corpse_ghost_residue": true,
+      "worldserver_process_absent": true,
+      "build_queue_active": false,
+      "build_queue_depth": 0
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_focused_checkpoint_controller_suite_passed_twenty_seven_tests",
+      "the_full_fixed_recurrence_bank_passed_twenty_of_twenty",
+      "the_single_authorized_configure_used_the_exact_fast8_v2_policy_tokens",
+      "the_configure_failed_before_compilation_because_in_tree_untracked_evidence_made_the_source_dirty",
+      "no_worldserver_build_or_worldserver_start_occurred",
+      "cleanup_readback_found_the_exact_offline_unleased_map_669_roster_with_zero_residue"
+    ],
+    "refuted": [
+      "the_v4_unit_reached_a_gate_bearing_clean_configure",
+      "the_v4_unit_exercised_the_live_controller_arm_gate_or_native_checkpoint"
+    ],
+    "unproven": [
+      "the_live_controller_report_has_command_sent_true_and_emission_count_one",
+      "the_native_checkpoint_reaches_a_real_Route_owner_trigger",
+      "the_native_checkpoint_preserves_Route_identity_and_completes_the_hazard_exit"
+    ]
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_foundation_410c7d60c_chainwielder_checkpoint_armed_20260830.dvc",
+    "pointer_file_sha256_before_commit": "1fb2303ec239e725d2ed300a3464b332fddd1dd7053db4df0e9098386bffe7b8",
+    "directory_md5": "4bc1c7f1ac237b69ff47457ca76d8b91.dir",
+    "directory_size_bytes": 235367,
+    "directory_file_count": 6,
+    "evidence_manifest_sha256": "a191aa68f0078053d3a521d30614d8e71977d343d675f97496350ae9cb2cd0ea",
+    "push_result": "5 files pushed",
+    "remote_verification": "cache_and_remote_object_in_sync_before_eviction",
+    "workspace_evicted": true,
+    "unique_cache_objects_evicted": 4,
+    "shared_cache_objects_retained": 2,
+    "directory_metadata_retained": true,
+    "broad_dvc_gc_run": false
+  },
+  "remaining_blocker": "The run staged pre-build evidence under an unignored Git path. The queued coordinator therefore observed a dirty source identity and aborted before compilation.",
+  "next_work_unit": {
+    "id": "shard:external_prebuild_staging_then_chainwielder_checkpoint_one_start_v5",
+    "owner_skill": "raid-shard-architecture",
+    "action": "Authorize a fresh bounded unit that writes focused and recurrence receipts outside the Git worktree until the exact clean configure and worldserver build receipts exist. Only then copy the complete bundle into its DVC output, perform admission and provisioning, and use at most one observation-only completion-watchdog start.",
+    "forbidden": "No retry under v4, gameplay change, route change, fixture promotion, acceptance claim, or more than one worldserver start in the fresh unit."
+  }
+}

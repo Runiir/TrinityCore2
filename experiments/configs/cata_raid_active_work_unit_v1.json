@@ -1,34 +1,36 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_checkpoint_observation_v4_20260830",
-  "work_unit": "shard:queued_build_and_chainwielder_checkpoint_one_observation_start_v4",
+  "epoch_id": "magmaw_chainwielder_checkpoint_observation_v5_20260830",
+  "work_unit": "shard:external_prebuild_staging_then_chainwielder_checkpoint_one_start_v5",
   "raid": "blackwing_descent",
   "boss": "magmaw_chainwielder",
   "mode": "10N",
   "owner_skill": "raid-shard-architecture",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "pre_route_arm_gate_passed_static_only_live_checkpoint_unproven",
-  "observed_at_commit": "55dc4be668eeb7a5f88f83670c0d5cca4836950c",
+  "classification": "configure_preflight_failed_pending_fresh_unit",
+  "gate_state": "v4_configure_aborted_dirty_source_no_build_no_live_start",
+  "observed_at_commit": "410c7d60c2ec9453d22111891426832ab4479d1a",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json",
-    "sha256": "7ded06b94def8aa51b6ce78897ef88cce54495db3ce28cc9cd870f942631d0df",
-    "implementation_commit": "55dc4be668eeb7a5f88f83670c0d5cca4836950c",
-    "implementation_tree": "82a200ba3e5952b4241019751df8f73d2434e7aa",
-    "clean": true
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_410c7d60c_configure_preflight_failed_handoff_v1.json",
+    "sha256": "06f69fa5442dca56fac6d8ee96417b0354f63cf9af1acc3c12d8fb0fb7f5c08b",
+    "source_commit": "410c7d60c2ec9453d22111891426832ab4479d1a",
+    "source_tree": "3db15d3f16956a0ab90a9f4a98931bf7b9ad650e",
+    "clean_before_evidence_staging": true
   },
   "source": {
-    "commit": "55dc4be668eeb7a5f88f83670c0d5cca4836950c",
-    "tree": "82a200ba3e5952b4241019751df8f73d2434e7aa",
-    "clean": true,
-    "failed_live_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_7a03aeebfb_live_unarmed_handoff_v1.json",
-    "failed_live_handoff_sha256": "86b0583948e187084bfd49ffb349f3fb281993b9285b76d900f7697060d4c484",
-    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_7a03aeebfb_chainwielder_checkpoint_unarmed_20260830.dvc",
-    "dvc_pointer_sha256": "1c97ae3ab072925cd3d98ecd4d3c6e05dc2b2bd0c9dc0773f137015932a4a287",
+    "commit": "410c7d60c2ec9453d22111891426832ab4479d1a",
+    "tree": "3db15d3f16956a0ab90a9f4a98931bf7b9ad650e",
+    "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json",
+    "implementation_handoff_sha256": "7ded06b94def8aa51b6ce78897ef88cce54495db3ce28cc9cd870f942631d0df",
+    "failed_preflight_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_410c7d60c_configure_preflight_failed_handoff_v1.json",
+    "failed_preflight_handoff_sha256": "06f69fa5442dca56fac6d8ee96417b0354f63cf9af1acc3c12d8fb0fb7f5c08b",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_410c7d60c_chainwielder_checkpoint_armed_20260830.dvc",
+    "dvc_pointer_sha256": "1fb2303ec239e725d2ed300a3464b332fddd1dd7053db4df0e9098386bffe7b8",
     "dvc_workspace_state": "remote_only_verified_eviction"
   },
   "scope_lock": {
-    "allowed_change": "Queue one clean build of the exact descriptor HEAD, regenerate and verify the exact source-bound checkpoint seal and recurrence admission, verify the frozen ten-player actor-30008 shard readback, then run at most one observation-only completion-watchdog start.",
+    "allowed_change": "In a fresh unit, stage all pre-build evidence outside the Git worktree, queue one exact clean fast8_v2 configure/build, then run exact admission/provisioning and at most one actor-30008 observation-only completion-watchdog start.",
     "forbidden": [
+      "retry_under_completed_v4",
       "second_worldserver_start",
       "gameplay_cpp_or_strategy_change",
       "class_pet_boss_route_or_database_change",
@@ -40,19 +42,19 @@
   },
   "claim_ledger": {
     "verified": [
-      "the_failed_capture_required_actor_30008_checkpoint_arming_but_sent_zero_commands",
-      "the_controller_pre_route_arm_gate_passed_27_focused_tests",
-      "two_matching_exact_generation_1_admission_statuses_emit_one_verified_arm_command",
-      "material_identity_admission_actor_seal_and_source_tampering_emit_zero_commands",
-      "full_terminal_foundation_acceptance_and_gameplay_admission_are_unchanged"
+      "the_controller_pre_route_arm_gate_passed_twenty_seven_focused_tests",
+      "the_fixed_recurrence_bank_passed_twenty_of_twenty",
+      "the_v4_configure_used_the_exact_required_policy_argv",
+      "the_v4_configure_failed_closed_on_untracked_in_tree_evidence",
+      "v4_ran_zero_worldserver_builds_and_zero_worldserver_starts",
+      "cleanup_readback_found_zero_online_bots_leases_groups_instances_corpses_and_ghosts"
     ],
     "refuted": [
-      "full_terminal_route_acceptance_is_required_to_emit_the_checkpoint_arm_command",
-      "one_ready_status_is_sufficient_to_emit_the_checkpoint_arm_command",
-      "static_controller_tests_prove_the_live_Route_owner_invariant"
+      "the_v4_unit_reached_a_gate_bearing_clean_configure",
+      "the_v4_unit_exercised_the_live_controller_arm_gate_or_native_checkpoint"
     ],
     "unproven": [
-      "the_next_live_controller_report_has_command_sent_true_and_emission_count_1",
+      "the_next_live_controller_report_has_command_sent_true_and_emission_count_one",
       "the_native_checkpoint_reaches_a_real_Route_owner_trigger",
       "the_native_checkpoint_preserves_Route_identity_and_completes_the_hazard_exit"
     ]
@@ -64,13 +66,14 @@
     "duration_policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "required_prestart": [
+      "stage_focused_and_recurrence_receipts_outside_git_worktree",
       "build_exact_clean_descriptor_HEAD_once",
       "regenerate_and_verify_exact_source_bound_recurrence_admission",
       "bind_the_exact_checkpoint_seal_source_runtime_config_route_and_actor",
       "verify_prestart_roster_map_attempt_profile_cohort_and_zero_residue"
     ]
   },
-  "required_production_boundary": "One worldserver-backed map-669 Chainwielder observation on the exact clean built descriptor HEAD where the controller reports command_sent=true and emission_count=1 at route generation 1, actor 30008 reaches one real Route-owner checkpoint, the receipt-zero Hazard future_pack_destination rejection preserves Route identity, and the hazard exit completes or reaches one typed checkpoint terminal.",
+  "required_production_boundary": "One worldserver-backed map-669 Chainwielder observation on an exact clean built descriptor HEAD where the controller reports command_sent=true and emission_count=1 at route generation 1, actor 30008 reaches one real Route-owner checkpoint, the receipt-zero Hazard future_pack_destination rejection preserves Route identity, and the hazard exit completes or reaches one typed checkpoint terminal.",
   "required_observation": {
     "controller_arm_command_sent": true,
     "controller_arm_emission_count": 1,
@@ -81,7 +84,10 @@
   },
   "validation": {
     "focused_result": "27_passed_126_deselected",
-    "build_run": false,
+    "recurrence_bank_result": "20_passed_0_failed",
+    "configure_attempts": 1,
+    "configure_result": "build_provenance_abort_source_dirty_before_admission",
+    "worldserver_build_attempts": 0,
     "worldserver_start_count": 0,
     "fixture_revision_promoted": false,
     "gameplay_admitted": false,
@@ -91,6 +97,6 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "next_action": "Queue one build of the exact clean descriptor HEAD, regenerate and verify the exact source-bound recurrence admission and checkpoint seal, then run at most one actor-30008 observation-only completion-watchdog start and retain the typed checkpoint lifecycle.",
-  "next_terminal_handoff": "Publish and review the single observation bundle, then report the first typed checkpoint terminal without broadening into gameplay repair."
+  "next_action": "Start a fresh bounded v5 unit. Keep every pre-build receipt outside the Git worktree until the exact clean configure/build complete, then perform the sealed admission and at most one actor-30008 observation start.",
+  "next_terminal_handoff": "Publish the next single-attempt bundle and report the first typed preflight or checkpoint terminal without gameplay repair."
 }
