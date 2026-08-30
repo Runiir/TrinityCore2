@@ -1,0 +1,151 @@
+{
+  "schema": "cata_raid_trace_transport_pressure_one_start_preflight_handoff_v1",
+  "work_unit_id": "shard:queued_build_and_trace_transport_pressure_one_start",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "preflight_failed_descriptor_did_not_bind_assigned_implementation_handoff",
+  "scope_lock": {
+    "assigned_clean_head": "ac653a53dd54b9cd01713ae66d75e7460d3e3c5b",
+    "assigned_immutable_handoff": "experiments/configs/cata_raid_trace_transport_test_pressure_and_generic_identity_handoff_v1.json",
+    "owned_behavior": "one transport-only trace_transport_10 live smoke through the production capture controller",
+    "allowed_mutations": [
+      "ordinary ten-actor provisioning before the sole start",
+      "one gated botautotracepressure 129 command in the sole server attempt",
+      "compact evidence descriptor and handoff"
+    ],
+    "excluded_lanes": [
+      "gameplay",
+      "route",
+      "fixture",
+      "canary",
+      "boss fidelity",
+      "acceptance",
+      "class policy",
+      "encounter implementation",
+      "trace ring capacity",
+      "cursor recovery semantics"
+    ],
+    "terminal_conditions": {
+      "success": "one exact clean build-bound start proves the required pressure receipt, actor-local gap, next gap-free cursor transition, peer continuity, and transport-only demultiplexing gate",
+      "failed_preflight": "any clean-source, descriptor, handoff, build, test, provisioning, or readback gate fails before the sole start",
+      "failed_run": "the sole start fails any required transport observation",
+      "retry_policy": "no second start"
+    }
+  },
+  "preflight": {
+    "repository_clean": true,
+    "head_observed": "ac653a53dd54b9cd01713ae66d75e7460d3e3c5b",
+    "head_matches_assignment": true,
+    "active_descriptor_path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "active_descriptor_sha256_before": "fbe8174ccdc9ff164e8879801eb9b8d4313ef3f04a82eb1494261edfe16861bb",
+    "assigned_implementation_handoff_path": "experiments/configs/cata_raid_trace_transport_test_pressure_and_generic_identity_handoff_v1.json",
+    "assigned_implementation_handoff_observed_sha256": "7966ef4da0ba7854cf3f6ecfd3ad6665e481e810c296232eec6787308bf41962",
+    "descriptor_bound_source_handoff": {
+      "path": "experiments/configs/cata_raid_trace_transport_10_one_start_live_smoke_handoff_v1.json",
+      "sha256": "af4b21453eee012e8d96761daef4814e20cab983074bd60a5f585612f6146764",
+      "observed_sha256": "af4b21453eee012e8d96761daef4814e20cab983074bd60a5f585612f6146764"
+    },
+    "assigned_handoff_bound_by_active_descriptor": false,
+    "raid_workloop_descriptor_valid": false,
+    "raid_workloop_issues": [
+      "active_work_unit_commit_missing",
+      "active_work_unit_validation_clock"
+    ],
+    "result": "terminal_preflight_failure"
+  },
+  "causal_receipt": [
+    {
+      "claim": "the assigned source identity is clean and exact",
+      "state": "verified",
+      "observation": "git rev-parse HEAD returned ac653a53dd54b9cd01713ae66d75e7460d3e3c5b and git status --short was empty"
+    },
+    {
+      "claim": "the named implementation handoff has SHA-256 7966ef4da0ba7854cf3f6ecfd3ad6665e481e810c296232eec6787308bf41962",
+      "state": "verified",
+      "observation": "sha256sum over the tracked handoff returned the recorded digest"
+    },
+    {
+      "claim": "the active descriptor binds the named implementation handoff and its SHA",
+      "state": "refuted",
+      "observation": "the descriptor source_handoff instead names the prior one-start smoke handoff with SHA-256 af4b21453eee012e8d96761daef4814e20cab983074bd60a5f585612f6146764; repository search found no descriptor reference to the assigned path or observed SHA"
+    },
+    {
+      "claim": "the pressure receipt and required live gap transition pass",
+      "state": "unproven",
+      "observation": "the descriptor preflight failed before build, provisioning, server start, or native command submission"
+    }
+  ],
+  "first_broken_edge": {
+    "candidate": "active descriptor to immutable implementation handoff identity binding",
+    "first_observed_downstream_state_mutation": null,
+    "failure_postcondition": "live admission cannot prove that the coordinator-selected work unit and implementation handoff are the same immutable assignment",
+    "correlation_keys": [
+      "work_unit_id",
+      "handoff_path",
+      "handoff_sha256",
+      "source_head"
+    ],
+    "causal_classification": "verified_preflight_identity_failure_before_mutation"
+  },
+  "execution": {
+    "focused_tests_run": false,
+    "focused_tests_reason": "descriptor admission failed first",
+    "build_ticket_count": 0,
+    "build_receipt": null,
+    "provisioning_apply_count": 0,
+    "worldserver_start_count": 0,
+    "pressure_command_count": 0,
+    "pressure_receipt_count": 0,
+    "trace_response_count": 0,
+    "transport_gate_evaluated": false,
+    "result": "not_run"
+  },
+  "cleanup": {
+    "worldserver_process_absent": true,
+    "capture_controller_process_absent": true,
+    "ordinary_roster_readback": {
+      "scenario_id": "blackwing_descent_10n",
+      "passed": true,
+      "selected_actor_count": 10,
+      "online_count": 0,
+      "leased_count": 0,
+      "group_rows": 0,
+      "group_member_rows": 0,
+      "group_instance_rows": 0,
+      "character_instance_rows": 0,
+      "corpse_rows": 0,
+      "corpse_phase_rows": 0,
+      "ghost_aura_rows": 0,
+      "raw_file_sha256": "5b96cbe220178b794d43144f1087e2662f0e6a8bb404c21e28aeea094017a75d",
+      "raw_file_size_bytes": 11620
+    },
+    "cleanup_mutation_required": false,
+    "raw_readback_retained": false,
+    "temporary_directory_evicted": true
+  },
+  "publication": {
+    "dvc_required": false,
+    "reason": "no accepted transport receipt and no gameplay evidence",
+    "published": false
+  },
+  "claim_scope": {
+    "authority": "trace_transport_test_only_not_gameplay",
+    "transport_admitted": false,
+    "gameplay_admitted": false,
+    "route_admitted": false,
+    "fixture_admitted": false,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "boss_fidelity_admitted": false
+  },
+  "next_owner": {
+    "owner": "raid-performance-loop",
+    "work_unit": "coordination:repair_trace_transport_live_admission_descriptor",
+    "action": "issue a fresh active descriptor that explicitly binds the implementation handoff path and SHA-256 7966ef4da0ba7854cf3f6ecfd3ad6665e481e810c296232eec6787308bf41962, names an existing observed_at_commit ancestor, carries completion-watchdog validation_clock, and then assign a new one-start work unit",
+    "prohibited": "do not treat this zero-start preflight result as transport admission, reuse it as a build receipt, or claim gameplay, route, fixture, canary, boss fidelity, or acceptance"
+  },
+  "changed_files": [
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_trace_transport_pressure_one_start_preflight_handoff_v1.json"
+  ]
+}

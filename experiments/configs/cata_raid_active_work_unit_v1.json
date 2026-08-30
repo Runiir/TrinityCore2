@@ -1,46 +1,24 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "trace_transport_test_pressure_and_generic_identity_v1_20260830",
-  "work_unit": "runtime:trace_transport_test_pressure_and_generic_identity",
+  "epoch_id": "trace_transport_pressure_one_start_preflight_failure_v1_20260830",
+  "work_unit": "shard:queued_build_and_trace_transport_pressure_one_start",
   "raid": "blackwing_descent",
   "boss": null,
   "mode": "telemetry_only",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implemented_focused_green_build_and_live_unproven",
-  "gate_state": "runtime_implementation_complete_build_not_admitted",
-  "source_head": "03c7c6cd177444a99e4bcdc544509c9589b6c6b5",
-  "implementation_commit": "self",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "preflight_failed_descriptor_did_not_bind_assigned_implementation_handoff",
+  "gate_state": "no_build_no_provision_no_start",
+  "observed_at_commit": "ac653a53dd54b9cd01713ae66d75e7460d3e3c5b",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_trace_transport_10_one_start_live_smoke_handoff_v1.json",
-    "sha256": "af4b21453eee012e8d96761daef4814e20cab983074bd60a5f585612f6146764"
+    "path": "experiments/configs/cata_raid_trace_transport_pressure_one_start_preflight_handoff_v1.json",
+    "sha256": "3917b1667533b6338a62d93adc5474ccdac2f7daf3ad6ba0543669a9fad7d8a2"
   },
-  "claim_ledger": {
-    "path": "experiments/configs/cata_raid_trace_transport_test_pressure_and_generic_identity_claim_ledger_v1.json"
+  "immutable_implementation_handoff": {
+    "path": "experiments/configs/cata_raid_trace_transport_test_pressure_and_generic_identity_handoff_v1.json",
+    "observed_sha256": "7966ef4da0ba7854cf3f6ecfd3ad6665e481e810c296232eec6787308bf41962",
+    "bound_by_failed_descriptor": false
   },
-  "before": {
-    "maximum_natural_entries_per_actor_per_poll": 6,
-    "pressure_watermark_entries": 16,
-    "explicit_gap_count": 0,
-    "trace_generic_identity_bound": false
-  },
-  "after": {
-    "native_command": "botautotracepressure 129",
-    "native_count_bounds": [129, 192],
-    "one_shot_scope": "same server attempt",
-    "authority": "trace_transport_test_only_not_gameplay",
-    "generic_trace_identity_fields": [
-      "cohort_id",
-      "server_epoch",
-      "attempt_id",
-      "profile_generation",
-      "profile_content_hash",
-      "active_profile"
-    ],
-    "controller_command_count": 1,
-    "controller_command_position": "before_first_production_delta_poll",
-    "gap_recovery_semantics_changed": false,
-    "raid_demultiplexing_changed": false
-  },
+  "first_broken_edge": "The active descriptor did not bind the assigned immutable implementation handoff path and SHA, and raid_workloop reported the descriptor invalid before build admission.",
   "claim_scope": {
     "authority": "trace_transport_test_only_not_gameplay",
     "transport_admitted": false,
@@ -52,21 +30,27 @@
     "acceptance_admitted": false,
     "boss_fidelity_admitted": false
   },
-  "validation": {
-    "focused_tests": "12_passed_after_one_correction",
-    "direct_adapter_postcheck": "4_passed",
-    "compiled_gate_exercised": true,
-    "controller_gap_then_gap_free_exercised": true,
-    "build_receipt": null,
-    "live_transport_verified": false
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "emergency_wall_cap_seconds": 90,
+    "cap_expiry_is_success": false
   },
-  "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": false,
+  "validation": {
+    "source_commit": "ac653a53dd54b9cd01713ae66d75e7460d3e3c5b",
+    "focused_tests_run": false,
+    "build_ticket_count": 0,
+    "worldserver_start_count": 0,
+    "pressure_command_count": 0,
+    "live_transport_verified": false,
+    "cleanup_verified": true,
+    "final_zero_residue_readback": true,
+    "final_readback_sha256": "5b96cbe220178b794d43144f1087e2662f0e6a8bb404c21e28aeea094017a75d"
+  },
   "next_owner": {
-    "owner": "raid-shard-architecture",
-    "work_unit": "shard:queued_build_and_trace_transport_pressure_one_start",
-    "action": "queue one clean build for this commit, then own one completion-watchdog trace_transport_10 start and require the pressure receipt, the ordinary first actor-local gap, and the next pressure-scheduled same-actor gap=false transition",
-    "do_not_do": "do not send pressure outside trace_transport_10 or twice, clear cursors, weaken raid demultiplexing, or make gameplay, fixture, boss-fidelity, or acceptance claims"
+    "owner": "raid-performance-loop",
+    "work_unit": "coordination:repair_trace_transport_live_admission_descriptor",
+    "action": "issue a fresh active descriptor that explicitly binds the assigned implementation handoff path and SHA, has valid source provenance and completion-watchdog timing, then assign a new one-start transport work unit",
+    "do_not_do": "do not treat this zero-start preflight result as transport admission or make gameplay, route, fixture, canary, boss-fidelity, or acceptance claims"
   }
 }
