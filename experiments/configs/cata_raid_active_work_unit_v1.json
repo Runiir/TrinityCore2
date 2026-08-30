@@ -1,22 +1,22 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_authenticated_prepared_object_bundle_fixture_v44_20260830",
-  "work_unit": "shard:generic_controller_route_hold_authenticated_prepared_object_bundle_fixture_v44",
+  "epoch_id": "generic_controller_route_hold_fixture_build_gate_path_semantics_v45_20260830",
+  "work_unit": "shard:generic_controller_route_hold_fixture_build_gate_path_semantics_v45",
   "owner_skill": "raid-shard-architecture",
   "classification": "live_recurrence_quarantined",
-  "gate_state": "v43_snapshot_authority_verified_fixture_only_bundle_check_authorized",
-  "observed_at_commit": "631379aff0c9c7e2fe6670c1f053bad4ead37a0b",
-  "immutable_input_commit": "631379aff0c9c7e2fe6670c1f053bad4ead37a0b",
+  "gate_state": "v44_prepared_object_green_fixture_stub_rejected_atomic_sibling_staging_path",
+  "observed_at_commit": "8ef24ce16988d119f0838c10b0b3263948c5f9c6",
+  "immutable_input_commit": "8ef24ce16988d119f0838c10b0b3263948c5f9c6",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_receipt_locator_snapshot_authority_review_handoff_v43.json",
-    "sha256": "678cc27df9adccec4b0836ee92400512f93e6903acd52b11ebada2dee4c20a44",
-    "source_commit": "631379aff0c9c7e2fe6670c1f053bad4ead37a0b"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_build_gate_staging_path_failure_handoff_v44.json",
+    "sha256": "2c3b315484f1a60626f4fe3dbe13d900e9f18000fa58dd2b21e44207c5470273",
+    "source_commit": "8ef24ce16988d119f0838c10b0b3263948c5f9c6"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "V44 is one fixture-only Chainwielder consumer check of the generic authenticated prepared-object contract. It authorizes no live or gameplay claim."
+    "canary_only": "V45 is a fixture-only correction of the external stub's atomic-path semantics. It authorizes no live or gameplay claim."
   },
   "behavior_change": false,
   "evidence_contract_change": false,
@@ -24,7 +24,7 @@
   "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Execute exactly one fixture-only authenticated stage, scenario materialize/verify, and Chainwielder atomic bundle create/verify using the exact prepared object and SHA-256; record only compact fixture evidence and the next descriptor.",
+    "allowed_change": "Run one fresh external fixture chain whose build-gate stub validates exact content hashes and accepts the original, sibling atomic-staging, and final bundle locations. Production stage/materialize/create/verify functions remain unchanged.",
     "allowed_files": [
       "one_compact_fixture_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
@@ -35,23 +35,35 @@
       "live_binary_worldserver_or_launch_execution",
       "gameplay_native_controller_route_content_identity_comparison_polling_watchdog_or_threshold_change",
       "configure_build_database_mutation_or_dvc_mutation",
-      "retry_or_live_authorization"
+      "retry_within_v45_or_live_authorization"
     ]
   },
-  "verified_input_contract": [
-    "opened receipt bytes and external SHA-256 are authoritative; locator is diagnostic only",
-    "embedded snapshot is canonical and later verification does not reopen locator",
-    "all nine committed scenario payloads match the runtime loader exactly",
-    "raw canonical JSONL fails and authenticated prepared Magmaw object passes the unchanged consumer"
-  ],
+  "closed_v44_evidence": {
+    "canonical_stage_count": 1,
+    "staging_receipt_sha256": "58b66172992315e2c1880fd599349a76b2f9d0bb449aa1cda384f380bc539567",
+    "catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "prepared_object_materialize_count": 1,
+    "prepared_object_verify_count": 1,
+    "prepared_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "prepared_receipt_sha256": "554a2c028b8fffa2cf961daad2038d434236607389b288380245da2e74574468",
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_create_success_count": 0,
+    "atomic_bundle_explicit_verify_count": 0,
+    "fixture_build_gate_call_count": 2,
+    "worldserver_start_count": 0,
+    "launch_contract_execution_count": 0,
+    "retry_count": 0,
+    "first_edge": "fixture_stub_rejected_legitimate_atomic_sibling_staging_copy_path"
+  },
   "required_fixture_proof": [
-    "one canonical stage receipt verifies from exact clean fixture source and DVC authority",
-    "one prepared Magmaw object and scenario receipt verify with exact embedded staging snapshot and hashes",
-    "the unchanged Chainwielder create receives exactly the verified prepared-object path and SHA-256",
-    "one atomic bundle create and one verify succeed with no retry",
-    "no launch contract is executed and no worldserver, build, database, DVC, gameplay, or production mutation occurs"
+    "one fresh canonical stage and prepared-object materialize/verify pass",
+    "the exact verified prepared-object path and SHA feed one unchanged create",
+    "the external fixture gate validates equal receipt/policy bytes at original, atomic-staging, and final paths",
+    "one create and one explicit verify return valid with no retry",
+    "the launch contract is inspected but never executed"
   ],
   "remaining_unproven": [
+    "one fixture-only atomic create and explicit verify both return valid",
     "a fresh native worldserver consumes the profile-bound suffix",
     "Held, arm, terminal, release, retained Drudges, and throughput evidence"
   ],
@@ -74,7 +86,7 @@
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "shard:generic_controller_route_hold_authenticated_prepared_object_bundle_fixture_v44",
+  "next_work_unit": "shard:generic_controller_route_hold_fixture_build_gate_path_semantics_v45",
   "next_owner_skill": "raid-shard-architecture",
-  "next_action": "Run one fixture-only authenticated prepared-object Chainwielder bundle create and verify. Do not build or start a worldserver."
+  "next_action": "Run one fresh fixture-only chain with hash-based external build-gate validation that accepts the bundle's atomic sibling staging copy. Do not build or execute the launch contract."
 }

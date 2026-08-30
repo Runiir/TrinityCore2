@@ -1,0 +1,127 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:generic_controller_route_hold_authenticated_prepared_object_bundle_fixture_v44",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed_fixture_harness",
+  "source_state": {
+    "commit": "8ef24ce16988d119f0838c10b0b3263948c5f9c6",
+    "tree": "b4c500a1fac1b272de69ea8a6a1372c1d1134aaf",
+    "clean_before_fixture": true,
+    "v43_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_receipt_locator_snapshot_authority_review_handoff_v43.json",
+    "v43_handoff_sha256": "678cc27df9adccec4b0836ee92400512f93e6903acd52b11ebada2dee4c20a44"
+  },
+  "consumed_budget": {
+    "canonical_stage_count": 1,
+    "prepared_object_materialize_count": 1,
+    "prepared_object_verify_count": 1,
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_create_success_count": 0,
+    "atomic_bundle_internal_pre_rename_verify_count": 1,
+    "atomic_bundle_explicit_verify_count": 0,
+    "fixture_build_gate_call_count": 2,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "launch_contract_execution_count": 0,
+    "database_mutation_count": 0,
+    "dvc_mutation_count": 0,
+    "retry_count": 0
+  },
+  "authenticated_catalog": {
+    "source_path": "/home/runiir/Games/trinity-cata/dataset/validation_scenarios/validation_routes.jsonl",
+    "source_and_staged_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "staging_receipt_sha256": "58b66172992315e2c1880fd599349a76b2f9d0bb449aa1cda384f380bc539567",
+    "catalog_row_count": 77,
+    "source_commit": "8ef24ce16988d119f0838c10b0b3263948c5f9c6"
+  },
+  "prepared_scenario_object": {
+    "selected_scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "materialize_passed": true,
+    "verify_passed": true,
+    "output_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "receipt_sha256": "554a2c028b8fffa2cf961daad2038d434236607389b288380245da2e74574468",
+    "selected_row_count": 4,
+    "selected_rows_sha256": "b47a63e9a45ea351da40e4a53b7df0cef7e3f9092f1b965aa2dc506bb2e85cda",
+    "selected_rows": [
+      {"line_number": 35, "step": 1, "route_node_id": "bwd.entry.regroup", "row_sha256": "503615be5af84607bf84487f613e51993c51e436da8c5af86dde714813f7cf06"},
+      {"line_number": 36, "step": 2, "route_node_id": "bwd.magmaw.chainwielder", "row_sha256": "8f120181b9cb7cde2b5e3884778164b8226ca5966e8394391fd60e02bca32a07"},
+      {"line_number": 37, "step": 3, "route_node_id": "bwd.magmaw.drudges", "row_sha256": "fa92da0c0f255086d66a802960ee29f41338538e7881a2a8c3773db2aadcd83a"},
+      {"line_number": 38, "step": 4, "route_node_id": "bwd.magmaw.encounter", "row_sha256": "e5be1885bc7ce3c8f42228e9e289acea68622e119155e861955383f493ce2011"}
+    ],
+    "exact_path_and_sha_passed_to_create": true
+  },
+  "partial_atomic_staging": {
+    "final_bundle_published": false,
+    "bundle_manifest_sha256": "b2aaf90514d1403cd832f51962c81fc7effdb84bacd6d48d26a44dcabe28a7cd",
+    "launch_contract_sha256": "07fb683d07e7052c519323ffc66183755f4ec883b21f674f1f27fcabb42f3fa9",
+    "launch_contract_executed": false,
+    "source_route_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "runtime_route_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+    "retained_node_ids": [
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ],
+    "runtime_initial_node_id": "bwd.magmaw.chainwielder",
+    "profile_identity": {
+      "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "source_profile_manifest_sha256": "d774828316837aa5c67095d3615db90341799cb1de668f1f607d105493027647",
+      "source_selected_profile_sha256": "6020c094bbd9e59ee66aecebbb03a61d5012c2b0e1348e36bf745eadf06adae0",
+      "profile_manifest_envelope_sha256": "f4a7f7fa2123062cbfaa226d16fd36a6066a09149a8caa46098c070c1ccc535c",
+      "runtime_selected_profile_sha256": "4b92644937a54a5aaa787e325dfaf80f490dbfd2befbe5d35bda71f3b2d55049",
+      "runtime_profile_manifest_sha256": "38409fc6617c219b6ce1b7eadecf66ed418e33c4fa2edeccd16e34bbe691dcb9",
+      "runtime_route_manifest_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2"
+    }
+  },
+  "first_broken_edge": {
+    "owner": "v44_external_fixture_build_gate_stub",
+    "edge": "stub_compared_build_receipt_path_identity_instead_of_accepting_the_atomic_sibling_staging_copy",
+    "first_observed_mutation": "none in production or repository; the fixture raised AssertionError during create's mandatory pre-rename verify",
+    "failure_postcondition": "create did not return, atomic rename did not publish the bundle, explicit verify was withheld, and launch was not executed",
+    "implementation_hypothesis": "A new bounded fixture harness must validate the copied build receipt by expected content hash and permitted original/staging/final atomic locations, not require only the original or final path. Production create and verify remain unchanged.",
+    "correlation_keys": {
+      "fixture_build_receipt_sha256": "0729d4446c8212b42ed190d640a4b73c847e8a64ae0072f758390f5a2d94526f",
+      "fixture_build_policy_sha256": "a7537d58e3e3a037679f54fd653fe56305353348f725146d9905a08513bc2d2a",
+      "prepared_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+      "internal_verify_call": 1,
+      "stub_call": 2
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "one authenticated canonical stage passed at the exact clean source",
+      "one Magmaw scenario object materialize and one receipt verify passed",
+      "the exact verified prepared-object path and SHA were passed to the sole unchanged create call",
+      "create generated the expected Chainwielder/Drudges/Magmaw suffix and profile overlay before its mandatory internal verify",
+      "the fixture stub, not production bundle semantics, rejected the legitimate sibling staging copy path",
+      "no explicit bundle verify, launch execution, server, build, database, DVC, production, test, skill, gameplay, or controller mutation occurred"
+    ],
+    "refuted": [
+      "V44 completed one atomic bundle create and explicit verify",
+      "V44 can authorize live verification"
+    ],
+    "unproven": [
+      "one fixture-only atomic create and explicit verify both return valid",
+      "any native Held, arm, terminal, release, Drudges, or throughput claim"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:generic_controller_route_hold_fixture_build_gate_path_semantics_v45",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Run one fresh fixture-only stage/materialize/verify/create/verify chain with a bounded external build-gate stub that checks receipt and policy content hashes while accepting the original, atomic sibling staging, and final bundle locations. Do not edit or execute production launch code.",
+    "budget": {
+      "canonical_stage_count": 1,
+      "prepared_object_materialize_count": 1,
+      "prepared_object_verify_count": 1,
+      "atomic_bundle_create_count": 1,
+      "atomic_bundle_verify_count": 1,
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "worldserver_start_count": 0,
+      "database_mutation_count": 0,
+      "dvc_mutation_count": 0,
+      "retry_count": 0
+    },
+    "forbidden": "No production, skill, test, gameplay, native, controller, route, comparison, build, database, DVC, launch, or worldserver change."
+  }
+}
