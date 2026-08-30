@@ -1,0 +1,132 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:generic_controller_route_hold_fixture_build_gate_path_semantics_v45",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "fixture_create_verify_pass_pending_independent_review",
+  "source_state": {
+    "commit": "1e6c7b59d55379878d5915dcab94bd68d97f66e2",
+    "tree": "134d44382a9af0c9446ca0d65fedc41667932de2",
+    "clean_before_fixture": true,
+    "v44_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_build_gate_staging_path_failure_handoff_v44.json",
+    "v44_handoff_sha256": "2c3b315484f1a60626f4fe3dbe13d900e9f18000fa58dd2b21e44207c5470273"
+  },
+  "consumed_budget": {
+    "canonical_stage_count": 1,
+    "prepared_object_materialize_count": 1,
+    "prepared_object_verify_count": 1,
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_create_success_count": 1,
+    "atomic_bundle_explicit_verify_count": 1,
+    "fixture_build_gate_call_count": 3,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "launch_contract_execution_count": 0,
+    "database_mutation_count": 0,
+    "dvc_mutation_count": 0,
+    "retry_count": 0
+  },
+  "authenticated_catalog": {
+    "source_and_staged_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "staging_receipt_sha256": "27ce77914ad38d954f8633ed5429a0300a171020de9028bbd035ec3eb77234a0",
+    "catalog_row_count": 77,
+    "source_commit": "1e6c7b59d55379878d5915dcab94bd68d97f66e2"
+  },
+  "prepared_scenario_object": {
+    "selected_scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "materialize_passed": true,
+    "verify_passed": true,
+    "output_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "receipt_sha256": "5747bba026b83eb69c22c1a46949cb85b6269df7fcbe31858c63fad8a9a8f393",
+    "selected_row_count": 4,
+    "selected_rows_sha256": "b47a63e9a45ea351da40e4a53b7df0cef7e3f9092f1b965aa2dc506bb2e85cda",
+    "selected_node_ids": [
+      "bwd.entry.regroup",
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ],
+    "exact_verified_path_and_sha_passed_to_create": true
+  },
+  "fixture_build_gate": {
+    "fixture_only": true,
+    "live_binary": false,
+    "receipt_sha256": "449cef39c74b544805643fb457084edd8a7b379ba8d70040183d4f2dc70c6f9e",
+    "policy_sha256": "4fd23e374b9022319370a773dfcd8dbeb8f875048b30ff054f443c4f1c2951b9",
+    "exact_receipt_and_policy_bytes_equal_at_every_phase": true,
+    "observed_phases": [
+      "original",
+      "atomic_sibling_staging",
+      "final_bundle"
+    ],
+    "path_semantics": "location is classified structurally; authority is exact bytes plus SHA-256, never one fixed absolute path"
+  },
+  "atomic_bundle": {
+    "create_valid": true,
+    "pre_rename_verified": true,
+    "explicit_verify_valid": true,
+    "fixture_result_sha256": "3b6f65a390d1a3dd5b3e285f7b0f134a27d2aa703e81001be1cb3d9418a7e8d2",
+    "bundle_manifest_sha256": "fb413a2a45ac02620c6b45f671812bfa98f3d3be77b7a1af368962f9657794bd",
+    "admission_sha256": "4c92b14f317048303587763d13f3ec603861c2e86903c01325095207757bde5a",
+    "checkpoint_seal_sha256": "de1e7ad4c35f7cc095c2fd1cda1cbbc674d683ab1cc23cc5dc3555e0bf0211da",
+    "source_route_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "runtime_route_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+    "runtime_initial_node_id": "bwd.magmaw.chainwielder",
+    "retained_node_ids": [
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ]
+  },
+  "profile_identity": {
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "source_profile_manifest_sha256": "d774828316837aa5c67095d3615db90341799cb1de668f1f607d105493027647",
+    "source_selected_profile_sha256": "6020c094bbd9e59ee66aecebbb03a61d5012c2b0e1348e36bf745eadf06adae0",
+    "profile_manifest_envelope_sha256": "f4a7f7fa2123062cbfaa226d16fd36a6066a09149a8caa46098c070c1ccc535c",
+    "runtime_selected_profile_sha256": "ccf57ca88b8c69e7534d67b347c22620999ee4111f21be54610f8824ef8dd074",
+    "runtime_profile_manifest_sha256": "b6bc4a0d3fb4b623cfe8d1fd6548200c0b5b8cb2b317c9be4c1cf41e469d4085",
+    "runtime_route_manifest_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2"
+  },
+  "launch_contract": {
+    "sha256": "7b0f219c6acfe9e1e43fa20a01367b12da273631385032a6410d475667d234f9",
+    "launch_argv_sha256": "a30f61b66e31f9cbda075de3a8862a763e6c736b23a1bb0b486542d5b3a14cb3",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008,
+    "executed": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "one authenticated stage and one prepared Magmaw materialize/verify passed",
+      "the sole unchanged create consumed the exact verified prepared-object path and SHA",
+      "the fixture gate observed byte-identical receipt and policy payloads at original, sibling atomic-staging, and final bundle phases",
+      "one create passed its mandatory pre-rename verify and one explicit final verify returned valid",
+      "the bundle retained exactly Chainwielder, Drudges, and Magmaw with the sealed profile identity",
+      "the launch contract was inspected but never executed",
+      "no production, test, skill, configure, build, server, database, DVC, gameplay, or controller mutation occurred"
+    ],
+    "refuted": [
+      "the V44 path-bound stub failure was a production bundle failure",
+      "the fixture result alone proves any native or gameplay outcome"
+    ],
+    "unproven": [
+      "a gate-bearing current-source native binary and retained roster reach the same verified bundle",
+      "native Held, arm, terminal, release, Drudges, DPS, HPS, or pet-share evidence"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_authenticated_bundle_fixture_review_v46",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Independently review V45's exact source, counts, authenticated catalog/prepared receipts, hash-based three-phase fixture gate, unchanged create/verify results, suffix/profile identities, and launch non-execution. Decide whether the next unit requires a fresh gate-bearing build or can reuse an exact current binary identity; do not run live.",
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "worldserver_start_count": 0,
+      "database_mutation_count": 0,
+      "dvc_mutation_count": 0,
+      "retry_count": 0
+    },
+    "forbidden": "No production, test, skill, gameplay, native, controller, route, comparison, build, database, DVC, launch execution, or worldserver change."
+  }
+}
