@@ -1,14 +1,14 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_checkpoint_admission_binding_repair_v1_20260830",
-  "work_unit": "evidence:chainwielder_checkpoint_non_self_referential_admission_binding_v1",
+  "epoch_id": "magmaw_chainwielder_checkpoint_sealed_observation_v2_20260830",
+  "work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start_v2",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "checkpoint_admission_preflight_failed",
-  "gate_state": "non_self_referential_checkpoint_admission_binding_required_before_any_start",
-  "observed_at_commit": "1036d427af3e7568dc15510ac783a610f72cc8a9",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "checkpoint_admission_binding_repaired_static_only",
+  "gate_state": "queued_build_and_single_observation_start_required",
+  "observed_at_commit": "68913254b135407971de849f71dcdb94a64d5370",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_chainwielder_checkpoint_1036d427af_admission_preflight_handoff_v1.json",
     "sha256": "c234eb1d9f2ec8c89c8c996326ae0e172a62a2cd30c3e5f07874f9ff1b248879",
@@ -20,18 +20,18 @@
     "worldserver_start_count": 0
   },
   "checkpoint_implementation_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_owner_checkpoint_implementation_handoff_v1.json",
-    "file_sha256": "dff554a15747b386211902f489e937d5ac09ac5e27e0352b10b2ad98431151b4",
-    "implementation_commit": "5346269e2e9d2b617936f0351efc9a9f83627289",
-    "implementation_tree": "9decba2242fea6852619e6d0ceca67ec93d3da96",
-    "focused_test": "tests/test_chainwielder_owner_checkpoint.py",
-    "focused_test_sha256": "75dd94ef10149a1042225a6bb72797b326a0a35d1b9b31a4ae13816cc7fb0f4d",
-    "focused_test_result": "4_passed",
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_seal_implementation_handoff_v1.json",
+    "file_sha256": "93b26442ad380f00630a3bd5580016cf23163990cd84e32d59b7e5ae634f12dc",
+    "implementation_commit": "68913254b135407971de849f71dcdb94a64d5370",
+    "implementation_tree": "ab68b8b93d45055feb06407e9ae7e67429bbea69",
+    "focused_test": "tests/test_recurrence_admission.py tests/test_chainwielder_owner_checkpoint.py tests/test_phase1_raid_foundation_capture.py",
+    "focused_test_sha256": "f8768fb30ce6c9b5d9bfb4aaf38ce395b927a391744af64a89616c323c3bf184",
+    "focused_test_result": "24_passed_126_deselected",
     "runtime_verdict": "unverified"
   },
-  "first_broken_edge": "The fixture-expansion admission hashes the runtime config before its own final file SHA exists, while the observation checkpoint requires that same runtime config to contain the final admission file SHA. Adding the required SHA changes the bound config hash and the official verifier rejects runtime_config_hash_mismatch before process start.",
-  "causal_signature": "chainwielder_checkpoint_admission_runtime_config_self_reference",
-  "causal_claim_status": "verified_preflight_contract_failure_no_worldserver_start",
+  "first_broken_edge": "The circular admission/config binding is repaired statically. The next unresolved edge is whether the exact clean built runtime reaches and completes the live Route-owner/Hazard-rejection checkpoint.",
+  "causal_signature": "chainwielder_checkpoint_live_route_owner_join_unverified",
+  "causal_claim_status": "static_admission_contract_verified_live_boundary_unproven",
   "claim_ledger": {
     "verified": [
       "the_source_capture_is_bound_to_review_commit_461fe73779_and_capture_source_78e33e6557",
@@ -53,14 +53,20 @@
       "the_final_retained_bank_passed_twenty_of_twenty_and_admitted_only_chainwielder_pre_admission_rejection_isolation_v1",
       "the_exact_ten_player_Magmaw_diagnostic_roster_and_route_passed_strict_readback",
       "the_fresh_admission_bound_runtime_config_f7a728b7_but_adding_its_final_SHA_changed_the_config_hash_to_ea997a6c",
-      "the_official_admission_verifier_rejected_runtime_config_hash_mismatch_before_any_worldserver_start"
+      "the_official_admission_verifier_rejected_runtime_config_hash_mismatch_before_any_worldserver_start",
+      "commit_68913254b1_replaces_the_circular_admission_SHA_with_a_precomputed_checkpoint_seal",
+      "the_checkpoint_seal_binds_fixture_source_binary_build_receipt_and_recurrence_decision_before_config_creation",
+      "the_final_recurrence_admission_independently_hash_binds_the_config_and_the_seal_inputs",
+      "the_controller_constructs_the_arm_command_only_from_the_verified_seal_and_source_commit",
+      "the_focused_seal_admission_controller_and_runtime_contract_tests_passed_24_cases"
     ],
     "refuted": [
       "the_compiled_helper_is_a_live_map669_executor_replay",
       "a_green_helper_fixture_authorizes_gameplay_or_acceptance",
       "a_successful_chainwielder_value_outcome_without_the_exact_route_owner_join_authorizes_fixture_revision_2_promotion",
       "the_current_checkpoint_admission_contract_can_bind_its_own_final_file_SHA_inside_the_same_runtime_config_it_hashes",
-      "the_current_work_unit_authorized_a_worldserver_start"
+      "the_current_work_unit_authorized_a_worldserver_start",
+      "the_repaired_checkpoint_contract_contains_its_own_final_admission_file_SHA"
     ],
     "unproven": [
       "the_current_binary_preserves_the_route_owned_path_after_the_matched_receiptless_hazard_rejection_in_a_live_chainwielder_run",
@@ -127,7 +133,7 @@
   },
   "required_production_boundary": "worldserver-backed map-669 Chainwielder replay on the exact current binary where the same bot has an admitted Route native path or an armed route-owned hazard retry, a receiptless owner=Hazard future_pack_destination rejection is observed, the rejected intent leaves the Route-owned path and retry state unchanged across subsequent ticks, and the bot then completes the Chainwielder hazard exit or reaches one typed terminal edge",
   "scope_lock": {
-    "allowed_change": "Define one non-self-referential immutable checkpoint seal that is present in the runtime config before recurrence admission creation, bind the same seal into the admission receipt and arm command, and test that changing the config, admission, fixture target, source commit, binary, or build receipt fails closed. Do not change gameplay or run a worldserver in this work unit.",
+    "allowed_change": "Build the exact clean descriptor commit through the queued fast8 coordinator, regenerate the exact-source recurrence decision, compute the checkpoint seal before config creation, create and independently verify the final admission, provision/read back the exact ten-player Magmaw diagnostic shard, and run at most one observation-only completion-watchdog worldserver start with actor 30008. No gameplay mutation or fixture promotion.",
     "forbidden": [
       "gameplay_or_strategy_change",
       "gameplay_cpp_or_database_change",
@@ -136,7 +142,7 @@
       "gameplay_canary_or_acceptance_run",
       "targeting_any_of_the_six_preserved_invalidated_fixtures",
       "magmaw_causal_or_completion_claim_from_chainwielder_evidence",
-      "any_live_attempt",
+      "second_live_attempt",
       "checkpoint_config_in_gameplay_canary_or_acceptance_mode",
       "claiming_the_checkpoint_is_live_confirmed_from_static_tests"
     ]
@@ -151,7 +157,7 @@
     "checkpoint_compiled_contract_green": true,
     "checkpoint_live_executor_confirmed": false,
     "build_admitted": false,
-    "checkpoint_admission_contract_repair_required": true,
+    "checkpoint_admission_contract_repair_required": false,
     "worldserver_start_count": 0,
     "canary_admitted": false,
     "gameplay_admitted": false,
@@ -162,10 +168,10 @@
     "fixed_success_timer_seconds": null
   },
   "coordinator_followup": {
-    "next_owner": "raid-evidence-lifecycle",
-    "next_owner_command": "repair_chainwielder_checkpoint_non_self_referential_admission_binding",
-    "next_work_unit": "evidence:chainwielder_checkpoint_non_self_referential_admission_binding_v1",
-    "implementation_owner_after_capture": "raid-shard-architecture_after_the_repaired_admission_preflight_passes"
+    "next_owner": "raid-shard-architecture",
+    "next_owner_command": "queued_build_and_chainwielder_owner_checkpoint_one_start_v2",
+    "next_work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start_v2",
+    "implementation_owner_after_capture": "raid-bot-runtime-implementation_only_after_the_single_live_receipt_is_reviewed"
   },
-  "next_action": "Replace the self-referential final-admission-file-SHA checkpoint binding with one independently computed immutable seal that can be written into the config before admission creation and is included in the admission receipt. Verify the exact config/admission/arm seal join and all tamper negatives without starting a worldserver. Then return one fresh shard work unit for the single observation-only completion-watchdog start."
+  "next_action": "Run one queued fast8 build from the exact clean descriptor commit, regenerate the exact-source recurrence decision, compute and insert the pre-admission checkpoint seal into the temporary config, create and independently verify the final recurrence admission SHA, then run exactly one actor-30008 observation-only completion-watchdog start and retain the typed checkpoint receipt."
 }

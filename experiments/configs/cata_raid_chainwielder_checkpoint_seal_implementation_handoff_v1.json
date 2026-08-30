@@ -1,0 +1,130 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:chainwielder_checkpoint_non_self_referential_admission_binding_v1",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "passed_static_only",
+  "git_commit": "68913254b135407971de849f71dcdb94a64d5370",
+  "git_tree": "ab68b8b93d45055feb06407e9ae7e67429bbea69",
+  "scope_lock": {
+    "hypothesis": "A checkpoint seal computed before runtime-config creation can bind the fixture, clean source, binary, build receipt, and recurrence decision without referring to the final admission file that later binds the config.",
+    "owned_behavior": "recurrence admission creation and verification, checkpoint config/runtime naming, and capture-controller arm-command construction",
+    "excluded": [
+      "gameplay_or_strategy_change",
+      "class_or_pet_change",
+      "boss_or_database_change",
+      "planner_or_priority_change",
+      "build_or_worldserver_start",
+      "dvc_mutation",
+      "fixture_revision_promotion",
+      "gameplay_canary_or_acceptance"
+    ]
+  },
+  "implemented_contract": {
+    "seal_schema": "cata_raid_checkpoint_seal_v1",
+    "seal_inputs": [
+      "fixture_id",
+      "fixture_expansion_purpose",
+      "source_commit",
+      "source_tree",
+      "worldserver_binary_sha256",
+      "build_receipt_sha256",
+      "recurrence_decision_sha256"
+    ],
+    "creation_order": [
+      "produce_exact_build_receipt_binary_and_recurrence_decision",
+      "compute_checkpoint_seal",
+      "write_seal_fixture_and_source_into_temporary_runtime_config",
+      "create_recurrence_admission_that_hash_binds_the_final_config_and_all_inputs",
+      "verify_the_final_admission_file_sha_before_process_creation",
+      "construct_the_arm_command_only_from_the_verified_seal_and_source_identity"
+    ],
+    "runtime_config_key": "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.SealSha256",
+    "seal_command": "pixi run python -m tools.raid_program.recurrence_admission checkpoint-seal --worktree <root> --binary <worldserver> --build-receipt <receipt> --decision <decision>",
+    "arm_command_shape": "botautochaincheckpoint arm <actor_guid> <verified_seal_sha256> <verified_source_commit>"
+  },
+  "first_broken_edge_before": "The runtime config was required to contain the SHA of the final admission file even though that admission file also hash-bound the runtime config, making a stable fixed point impossible.",
+  "first_broken_edge_after": "The cycle is removed statically. The live Route-owner/Hazard-rejection observation remains unverified until the next authorized single start.",
+  "changed_files": [
+    "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+    "src/server/game/Bots/BotWorldPopulationMgr.h",
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrConfig.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrConfig.h",
+    "src/server/scripts/Commands/cs_chainwielder_owner_checkpoint.cpp",
+    "tools/raid_program/recurrence_admission.py",
+    "tools/raid_program/capture_phase1_raid_foundation.py",
+    "tests/test_recurrence_admission.py",
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "tests/test_phase1_raid_foundation_capture.py"
+  ],
+  "validation": {
+    "command": "pixi run pytest -q tests/test_recurrence_admission.py tests/test_chainwielder_owner_checkpoint.py tests/test_phase1_raid_foundation_capture.py -k 'chainwielder_checkpoint or recurrence_admission'",
+    "result": "24 passed, 126 deselected",
+    "test_files": {
+      "tests/test_recurrence_admission.py": "f8768fb30ce6c9b5d9bfb4aaf38ce395b927a391744af64a89616c323c3bf184",
+      "tests/test_chainwielder_owner_checkpoint.py": "243011cdcdf1cefdee834cd650c080017766ba9b4e39169c9a43393c82f9cdd2",
+      "tests/test_phase1_raid_foundation_capture.py": "57b70da077e2a604f7b3825832b200c329a01b70ad19da8215210518e8ec7f30"
+    },
+    "tamper_negatives": [
+      "runtime_config_modified",
+      "final_admission_modified",
+      "fixture_target_modified",
+      "source_identity_modified",
+      "binary_modified",
+      "build_receipt_modified",
+      "seal_modified",
+      "arm_actor_or_seal_modified"
+    ],
+    "worldserver_build_run": false,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_checkpoint_seal_has_no_runtime_config_or_final_admission_file_input",
+      "the_final_admission_independently_hash_binds_the_runtime_config_binary_build_receipt_decision_suite_route_and_ledger",
+      "the_controller_verifies_the_final_admission_sha_before_process_creation",
+      "the_controller_constructs_the_arm_command_from_the_verified_seal_and_source_commit_only",
+      "runtime_rejects_a_config_seal_that_differs_from_the_arm_seal",
+      "all_requested_static_tamper_cases_fail_closed",
+      "all_touched_cpp_files_remain_below_1000_lines"
+    ],
+    "refuted": [
+      "the_checkpoint_requires_or_contains_its_final_admission_file_sha",
+      "static_tests_confirm_the_live_route_owner_checkpoint"
+    ],
+    "unproven": [
+      "the_final_clean_built_binary_emits_a_completed_chainwielder_owner_checkpoint_receipt",
+      "the_live_checkpoint_reaches_a_real_route_owner_trigger",
+      "the_live_checkpoint_preserves_route_identity_and_completes_the_hazard_exit"
+    ]
+  },
+  "runtime_verification_plan": {
+    "next_work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start_v2",
+    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "worldserver_start_budget": 1,
+    "duration_policy": "completion-watchdog",
+    "fixed_success_timer_seconds": null,
+    "recommended_actor_guid": 30008,
+    "required_prestart_order": [
+      "build_exact_clean_descriptor_commit",
+      "regenerate_exact_source_bound_suite_and_recurrence_decision",
+      "compute_checkpoint_seal_from_the_built_binary_build_receipt_and_decision",
+      "write_and_hash_the_final_temporary_runtime_config",
+      "create_and_verify_the_final_recurrence_admission",
+      "pass_the_same_verified_seal_through_chainwielder_checkpoint_actor_guid"
+    ],
+    "required_live_receipt": "injection_count=1; real Route path or armed Route hazard retry trigger; Hazard future_pack_destination rejection; planner_receipt_id=0; identical before/after Route identity; hazard_exit_completed or one typed failed terminal",
+    "forbidden_claims": [
+      "gameplay_canary",
+      "magmaw_progress",
+      "acceptance",
+      "fixture_revision_2_promotion_before_live_receipt_review"
+    ]
+  },
+  "runtime_verdict": "unverified",
+  "next_work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start_v2"
+}
