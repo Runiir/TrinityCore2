@@ -1,42 +1,38 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_atomic_tracked_ledger_input_repair_v9_20260830",
-  "work_unit": "evidence:chainwielder_atomic_bundle_tracked_ledger_input_v9",
+  "epoch_id": "magmaw_chainwielder_atomic_live_checkpoint_v9_20260830",
+  "work_unit": "shard:chainwielder_checkpoint_atomic_bundle_one_build_one_start_v9",
   "raid": "blackwing_descent",
   "boss": "magmaw_chainwielder",
   "mode": "10N",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "gate_state": "atomic_bundle_rejected_tracked_ledger_before_live_start",
-  "observed_at_commit": "805828e4e7a12d977c2b98a985ede8aed3dcf539",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
+  "gate_state": "tracked_ledger_input_repaired_atomic_bundle_and_live_checkpoint_pending",
+  "observed_at_commit": "afc85d23f149bacbd0340047a86f40e28d8c1a90",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_805828e4_prestart_bundle_failed_handoff_v8.json",
-    "sha256": "14cc72ec161045a45f3d0ced0583ddce645f2349950fa0026e8bcab71d0277bf",
-    "source_commit": "805828e4e7a12d977c2b98a985ede8aed3dcf539",
-    "source_tree": "de7d924501ad1c18d674ed23fe67d5e77c9929b8"
+    "path": "experiments/configs/cata_raid_chainwielder_tracked_ledger_input_repair_handoff_v9.json",
+    "sha256": "298ecf4ded068bfa47117de802610e24153ca7427b9c3568f5c65e7bc4366265",
+    "source_commit": "220276435dcfd0e8f1eb3d7895dda0bcc2e81ba4",
+    "source_tree": "afc024998e586e6dcce1db1dbb48713af697c968"
   },
   "scope_lock": {
-    "allowed_change": "Permit the exact clean Git-tracked recurrence ledger as a read-only source input to the atomic Chainwielder bundle generator, with its explicit hash and all existing clean-source, tracked-file, alias, and tamper gates retained.",
-    "owned_files": [
-      "tools/raid_program/chainwielder_prestart_bundle.py",
-      "tests/test_chainwielder_prestart_bundle.py"
-    ],
+    "allowed_change": "Create and independently verify one atomic Chainwielder bundle using the exact canonical tracked ledger, then execute only its emitted completion-watchdog launch contract once.",
+    "owned_files": [],
     "forbidden": [
-      "configure_or_worldserver_build",
-      "database_mutation_or_worldserver_start",
-      "gameplay_class_pet_boss_route_movement_or_priority_change",
+      "source_or_gameplay_change",
       "manual_bundle_config_seal_admission_or_launch_contract_edit",
+      "second_configure_build_or_worldserver_start",
       "fixture_revision_promotion",
       "gameplay_canary_or_acceptance_claim"
     ]
   },
   "admitted_actions": {
-    "configure_count_maximum": 0,
-    "worldserver_build_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
-    "database_mutation": false,
-    "dvc_mutation": false,
-    "focused_test_command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py"
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "database_mutation": "bounded_exact_shard_preparation_only",
+    "dvc_mutation": "publish_and_evict_final_evidence_only",
+    "launch_source": "atomic_bundle_launch_contract_only"
   },
   "required_identity": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
@@ -47,23 +43,36 @@
     "ledger_path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
     "ledger_sha256": "c02d27c6ff62d20aa5a31d463b9cdef68513fa67f74b3068ae7d236e061a1830"
   },
+  "required_prestart": {
+    "clean_exact_descriptor_HEAD": true,
+    "gate_bearing_build": true,
+    "strict_provisioning_and_readback": true,
+    "atomic_bundle_created": true,
+    "atomic_bundle_independently_verified": true,
+    "manual_bundle_bytes": false
+  },
   "required_terminal": {
-    "clean_tracked_ledger_accepted": true,
-    "ledger_copied_exactly": true,
-    "untracked_or_wrong_hash_ledger_rejected": true,
-    "dirty_source_rejected": true,
-    "existing_bundle_tamper_suite_passed": true,
-    "worldserver_start_count": 0
+    "checkpoint_command_sent": true,
+    "checkpoint_emission_count": 1,
+    "emission_route_generation": 1,
+    "route_generation_two_before_emission": false,
+    "accepted_actor_checkpoint_lifecycle_count": 1,
+    "lifecycle_terminal": "completed_or_one_typed_checkpoint_failure",
+    "worldserver_start_count_maximum": 1
   },
   "validation_clock": {
-    "policy": "completion_watchdog",
+    "policy": "completion-watchdog",
     "fixed_success_timer_seconds": null,
     "terminal_conditions": [
-      "focused_fixture_pass",
-      "hypothesis_refuted",
-      "out_of_scope_failure"
+      "normal_clear",
+      "monotonic_semantic_or_no_progress_stall",
+      "repeated_decisions",
+      "excessive_death_loops",
+      "infrastructure_loss",
+      "contamination",
+      "explicit_interruption"
     ]
   },
-  "next_action": "Repair only the atomic generator's tracked recurrence-ledger input boundary and run its focused test file once. Do not build or start a server.",
-  "next_terminal_handoff": "Return the exact source change, before/after ledger-location signal, focused tests, claim ledger, and authorize one new shard build/start unit only if every existing bundle integrity gate remains green."
+  "next_action": "Use one external staged build and the atomic prestart generator. If independent bundle verification passes, run only the emitted argv once under its completion watchdog, then publish and evict the evidence.",
+  "next_terminal_handoff": "Return prestart identities, arm and lifecycle receipts, route-stage DPS/HPS, cleanup, DVC remote verification, and the exact first broken edge without a second start."
 }
