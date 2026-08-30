@@ -1,16 +1,16 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_expected_runtime_profile_authority_v28_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_expected_runtime_profile_authority_v28",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "gate_state": "v27_refuted_independent_expected_runtime_profile_authority",
-  "observed_at_commit": "38c860b4673c9211b2dd2253dd3ce6c95275bef8",
-  "immutable_input_commit": "38c860b4673c9211b2dd2253dd3ce6c95275bef8",
+  "epoch_id": "generic_controller_route_hold_expected_runtime_profile_live_verification_v30_20260830",
+  "work_unit": "shard:generic_controller_route_hold_expected_runtime_profile_one_build_one_start_v30",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
+  "gate_state": "v29_verified_expected_runtime_profile_authority_and_exact_suffix_live_unverified",
+  "observed_at_commit": "b05e4018c10bd5be34991c96a1cb7d5fe8f8c0a4",
+  "immutable_input_commit": "b05e4018c10bd5be34991c96a1cb7d5fe8f8c0a4",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_profile_overlay_authority_review_handoff_v27.json",
-    "sha256": "4e6d4af3cf1d37b6f6053503a03144c18bd18d8396f577aeba11ec211973b150",
-    "source_commit": "38c860b4673c9211b2dd2253dd3ce6c95275bef8"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_expected_runtime_profile_authority_review_handoff_v29.json",
+    "sha256": "b62f298ec51ecc8f96826b33d25fdbc6127f23c54acef185fef2a6587b282ee8",
+    "source_commit": "b05e4018c10bd5be34991c96a1cb7d5fe8f8c0a4"
   },
   "evidence_pointer": {
     "path": "artifacts/cata_raid_program/phase1_raid_foundation_7483e72717_generic_controller_route_hold_profile_overlay_mismatch_v23_20260830.dvc",
@@ -18,7 +18,7 @@
     "remote_verified": true,
     "remote_reconstruction_verified": true,
     "local_output_evicted": true,
-    "hydrated_for_v27": false
+    "hydrated_for_v29": false
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
@@ -29,76 +29,102 @@
       "25N",
       "25H"
     ],
-    "canary_only": "Affliction actor 30008 and the Chainwielder suffix identify the retained V23 counterexample; V28 owns only independent expected runtime-profile authority."
+    "canary_only": "Affliction actor 30008, Chainwielder, and Magmaw identify the immutable observation-only counterexample. Runtime profile and scheduler identity authority remain generic and exact."
   },
   "behavior_change": false,
   "evidence_contract_change": true,
-  "ready_for_bounded_repair": true,
-  "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": false,
+  "ready_for_bounded_repair": false,
+  "ready_for_fixture_expansion": true,
+  "ready_for_live_verification": true,
   "scope_lock": {
-    "allowed_change": "Supply the expected runtime_profile_id from the caller/capture contract to recurrence create and verify, compare it before accepting the overlay, and reject a coherent substitution to another valid committed profile.",
+    "allowed_change": "At immutable source b05e4018c1, run exactly one clean fast8_v2 configure, one queued fast8 worldserver build, one strict frozen-roster provisioning/readback and atomic profile-bound target-suffix bundle create/verify, then exactly one no-retry completion-watchdog worldserver capture. Publish, remotely verify, and exactly evict the closed evidence through DVC.",
     "allowed_files": [
-      "tools/raid_program/recurrence_admission.py",
-      "tools/raid_program/chainwielder_prestart_bundle.py",
-      "tools/raid_program/capture_setup.py",
-      "tests/test_recurrence_admission.py",
-      "tests/test_chainwielder_prestart_bundle.py",
-      "tests/test_phase1_raid_foundation_capture.py"
+      "external_build_receipt_and_attestation",
+      "external_atomic_bundle_and_capture_outputs",
+      "one_compact_tracked_closed_run_summary",
+      "one_tracked_dvc_pointer"
     ],
     "forbidden": [
-      "native_runtime_gameplay_class_pet_encounter_or_route_strategy_change",
-      "generic_controller_change_or_identity_comparison_loosening",
-      "priority_polling_watchdog_threshold_change",
-      "configure_build_worldserver_start_database_or_dvc_mutation",
-      "fixture_promotion_or_acceptance_claim"
+      "gameplay_native_controller_bundle_setup_or_test_edit",
+      "canary_constant_or_identity_comparison_loosening",
+      "route_strategy_checkpoint_gate_priority_polling_or_watchdog_change",
+      "second_configure_build_worldserver_start_or_retry",
+      "manual_bundle_config_admission_or_launch_mutation",
+      "fixture_promotion_or_route_acceptance_claim",
+      "local_evidence_eviction_before_verified_dvc_remote_reconstruction"
     ]
   },
   "verification_budget": {
-    "configure_count_maximum": 0,
-    "worldserver_build_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
-    "retry_count_maximum": 1,
-    "database_mutation": "forbidden",
-    "dvc_mutation": "forbidden"
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_count_maximum": 0,
+    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "database_mutation": "one_owned_frozen_roster_provision_and_strict_readback_only",
+    "dvc_mutation": "required_after_capture_closure_for_publish_remote_verify_and_exact_evict"
   },
-  "verified_v26_local_contract": {
-    "profile_and_overlay_are_first_class_recurrence_inputs": true,
-    "profile_and_overlay_hashes_enter_checkpoint_seal": true,
-    "clean_committed_source_catalog_verified": true,
-    "selected_envelope_source_runtime_and_suffix_hashes_verified": true,
-    "config_profile_path_route_and_selection_compared": true,
-    "capture_setup_consumes_verified_result": true,
+  "admitted_contract": {
+    "expected_runtime_profile_is_caller_supplied_at_bundle_create": true,
+    "expected_runtime_profile_is_caller_supplied_at_bundle_verify": true,
+    "expected_runtime_profile_is_caller_supplied_at_capture_preflight": true,
+    "expected_runtime_profile_is_not_derived_from_mutable_overlay_config_or_admission": true,
+    "expected_runtime_profile_is_compared_before_catalog_reconstruction": true,
+    "expected_runtime_profile_is_bound_in_seal_admission_and_verified_result": true,
+    "coherent_valid_foreign_profile_rejected_at_create_and_verify": true,
+    "positive_original_profile_create_and_verify_pass": true,
+    "non_checkpoint_compatibility_explicit_and_fail_closed": true,
+    "source_route_initial_node": "bwd.entry.regroup",
+    "runtime_suffix_node_ids": [
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ],
+    "runtime_suffix_initial_node_is_unique_checkpoint_target": true,
+    "runtime_suffix_preserves_entrance_bot_start": true,
+    "runtime_suffix_preserves_frozen_roster": true,
+    "runtime_suffix_preserves_diagnostic_prerequisite_state": true,
+    "runtime_suffix_preserves_retained_node_payloads_except_steps": true,
+    "profile_path_hash_overlay_and_suffix_are_seal_closed": true,
+    "capture_setup_consumes_verified_recurrence_result": true,
     "generic_controller_or_setup_canary_constant_added": false,
     "identity_comparison_loosened": false,
-    "all_changes_within_v26_allowlist": true,
     "production_line_limit_passed": true
   },
-  "failed_authority_contract": {
-    "expected_runtime_profile_supplied_independently": false,
-    "overlay_runtime_profile_matches_independent_expectation": false,
-    "coherent_valid_foreign_profile_rejected": false,
-    "two_valid_profile_regression_present": false,
-    "live_authorization_revoked": true
-  },
   "remaining_unproven": [
-    "a coherent valid committed foreign-profile substitution fails at authoritative recurrence creation and verification",
-    "native ApplyRuntimeProfile consumes Chainwielder generation one with the exact suffix hash",
-    "one identity-preserved checkpoint lifecycle reaches a typed terminal",
-    "release advances exactly once to retained Drudges"
+    "a fresh native worldserver consumes the generated profile-bound suffix as Chainwielder generation one",
+    "one completion-watchdog start reaches a typed identity-preserved checkpoint terminal",
+    "release advances exactly once to the retained Drudges node",
+    "the new closed evidence is remotely reconstructible before exact local eviction"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "raid_success_timer_seconds": null
+    "raid_success_timer_seconds": null,
+    "terminal_edges": [
+      "normal_clear",
+      "monotonic_semantic_or_no_progress_stall",
+      "repeated_decisions",
+      "excessive_death_loops",
+      "infrastructure_loss",
+      "contamination",
+      "explicit_interruption"
+    ]
   },
   "focused_validation": {
-    "independent_command": "pixi run pytest -q tests/test_recurrence_admission.py::test_chainwielder_checkpoint_uses_precomputed_non_circular_seal tests/test_recurrence_admission.py::test_profile_overlay_authority_rejects_coherent_drift tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity",
-    "independent_result": "9 passed in 0.68s",
-    "coherent_foreign_profile_probe_result": "accepted=true; accepted_runtime_profile_id=foreign_valid_profile; route_scenario=blackwing_descent_10n_magmaw_diagnostic",
-    "interpretation": "Existing tamper cases pass, but the real two-valid-profile coherent substitution is accepted because expected profile authority is circular."
+    "command": "pixi run pytest -q tests/test_recurrence_admission.py::test_chainwielder_checkpoint_uses_precomputed_non_circular_seal tests/test_recurrence_admission.py::test_expected_runtime_profile_rejects_coherent_valid_profile_substitution tests/test_recurrence_admission.py::test_expected_runtime_profile_is_absent_for_non_checkpoint_admission tests/test_recurrence_admission.py::test_profile_overlay_authority_rejects_coherent_drift tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity",
+    "result": "11 passed in 0.78s",
+    "review_commit": "b05e4018c10bd5be34991c96a1cb7d5fe8f8c0a4"
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_expected_runtime_profile_authority_v28",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Pass an independent expected runtime_profile_id into recurrence create/verify, compare it before accepting overlay selection, and add a coherent two-valid-profile production-boundary rejection test."
+  "completion_evidence_lifecycle": {
+    "compact_summary_required": true,
+    "dvc_add_and_push_required": true,
+    "remote_pointer_and_reconstruction_verification_required": true,
+    "exact_local_output_and_unique_cache_eviction_after_verification": true,
+    "post_eviction_git_dvc_process_and_disk_status_required": true
+  },
+  "next_work_unit": "shard:generic_controller_route_hold_expected_runtime_profile_one_build_one_start_v30",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "From the exact clean descriptor commit, perform one fast8 configure/build and one no-retry completion-watchdog live start using the unmodified atomic bundle launch contract; close, DVC-publish, remotely verify, and exactly evict the evidence regardless of typed terminal outcome."
 }

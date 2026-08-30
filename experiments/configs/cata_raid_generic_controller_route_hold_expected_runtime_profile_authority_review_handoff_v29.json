@@ -1,0 +1,152 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_expected_runtime_profile_authority_review_v29",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_green_pending_live_verification",
+  "source_state": {
+    "commit": "b05e4018c10bd5be34991c96a1cb7d5fe8f8c0a4",
+    "tree": "81ab6e5069b8b74e536b0473f3bc230a8c0e334e",
+    "parent_commit": "8deba0a7339c782aef3896355647a2f4881abf80",
+    "clean_before_review": true,
+    "v27_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_profile_overlay_authority_review_handoff_v27.json",
+    "v27_handoff_sha256": "4e6d4af3cf1d37b6f6053503a03144c18bd18d8396f577aeba11ec211973b150"
+  },
+  "scope_lock": {
+    "reviewed_boundary": "caller-owned expected runtime profile through bundle create/verify, recurrence create/verify, checkpoint seal, capture preflight, config-then-profile suffix projection, and generic scheduler identity",
+    "implementation_or_test_edits": false,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false,
+    "native_or_gameplay_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "bundle creation supplies runtime_profile_id as expected_runtime_profile_id, after the existing exact scenario/profile/pool/actor/fixture input gate, and bundle verification supplies the fixed Magmaw diagnostic scenario ID",
+      "capture preflight derives expected_runtime_profile_id from its caller-owned runtime-profile/scenario partition and supplies it to verify_recurrence_admission only for the fixture-expansion boundary; it is not read from config, admission, or runtime_profile_overlay",
+      "_verified_runtime_profile_overlay compares overlay.runtime_profile_id with the caller-supplied expected_runtime_profile_id before reading or selecting from the committed source catalog",
+      "the expected runtime profile ID is included in the checkpoint seal, recurrence admission, and verified recurrence result",
+      "verify_recurrence_admission compares the admission-recorded expected profile with the caller expectation before profile binding and catalog reconstruction, then compares config BotWorld.RuntimeProfile with that same caller expectation",
+      "with two valid profiles in the clean committed source catalog, a coherent foreign-profile payload, overlay, config, seal, binding, and outer admission is rejected by create with the original expectation and rejected by verify with the original expectation",
+      "the original selected profile passes real recurrence creation and verification and returns the expected profile identity",
+      "non-checkpoint recurrence compatibility returns expected_runtime_profile_id null, while supplying unexpected profile authority fails closed",
+      "the V23 config-then-profile fail-before remains reproduced, the bundle-local selected profile still changes only validation_route.manifest_path semantically, and the effective suffix begins at unique Chainwielder then retains Drudges and Magmaw",
+      "the exact profile path/hash, canonical overlay hash, source catalog identity, effective suffix path/hash, and expected profile identity remain closed through checkpoint seal and authoritative recurrence verification",
+      "capture setup consumes only the verified recurrence result for scheduler projection",
+      "commit b05e4018 changes only the five V28-allowed recurrence, bundle, setup, and focused-test files",
+      "controller_route_hold.py and native/gameplay sources are unchanged; recurrence and generic setup add no actor 30008, canary122, spec, or class constant and do not loosen identity comparisons",
+      "all reviewed production files remain below 1000 lines"
+    ],
+    "refuted": [
+      "the V27 coherent substitution to another valid committed runtime profile remains accepted when create or verify receives the original external expected_runtime_profile_id",
+      "the expected runtime profile identity is derived from mutable overlay, admission, or config state"
+    ],
+    "unproven": [
+      "a fresh native worldserver consumes the generated profile-bound suffix as Chainwielder generation one",
+      "one completion-watchdog start reaches a typed identity-preserved checkpoint terminal",
+      "release advances exactly once to the retained Drudges node",
+      "the new closed evidence is remotely reconstructible before exact local eviction"
+    ]
+  },
+  "closed_edge": {
+    "owner": "recurrence_admission_expected_runtime_profile_authority",
+    "prior_edge": "runtime_profile_id was selected from the mutable admission overlay and could be coherently replaced with another valid committed profile",
+    "first_fail_closed_observation": "create and verify now compare the supplied expected_runtime_profile_id before catalog reconstruction; both reject the coherent foreign_valid_profile substitution with expected_runtime_profile_mismatch",
+    "pass_postcondition": "the original test_profile create/verify result carries expected_runtime_profile_id=test_profile, while the exact Magmaw bundle verifier supplies its fixed scenario identity",
+    "correlation_keys": {
+      "source_commit": "b05e4018c10bd5be34991c96a1cb7d5fe8f8c0a4",
+      "caller_compare": "tools/raid_program/recurrence_admission.py:146",
+      "admission_compare": "tools/raid_program/recurrence_admission.py:649",
+      "bundle_create_boundary": "tools/raid_program/chainwielder_prestart_bundle.py:759",
+      "bundle_verify_boundary": "tools/raid_program/chainwielder_prestart_bundle.py:565",
+      "capture_boundary": "tools/raid_program/capture_setup.py:330",
+      "two_valid_profile_fixture": "tests/test_recurrence_admission.py:413"
+    }
+  },
+  "binding_audit": {
+    "expected_profile_caller_owned_at_bundle_create": true,
+    "expected_profile_caller_owned_at_bundle_verify": true,
+    "expected_profile_caller_owned_at_capture_preflight": true,
+    "expected_profile_not_derived_from_overlay_config_or_admission": true,
+    "expected_profile_compared_before_catalog_selection": true,
+    "expected_profile_bound_in_checkpoint_seal": true,
+    "expected_profile_bound_in_admission_and_verified_result": true,
+    "coherent_valid_foreign_profile_rejected_at_create": true,
+    "coherent_valid_foreign_profile_rejected_at_verify": true,
+    "positive_original_profile_passes": true,
+    "non_checkpoint_compatibility_preserved": true,
+    "unexpected_non_checkpoint_authority_rejected": true,
+    "profile_and_suffix_hash_closure_preserved": true,
+    "capture_setup_consumes_verified_result": true,
+    "live_admission_complete": true
+  },
+  "changed_file_audit": {
+    "changed_files": [
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_recurrence_admission.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/recurrence_admission.py"
+    ],
+    "all_changes_within_v28_allowlist": true,
+    "controller_source_changed": false,
+    "native_or_gameplay_source_changed": false,
+    "reviewed_files": {
+      "tools/raid_program/recurrence_admission.py": {
+        "sha256": "d77c6173424017a87013b089a3095690647933ea61494b82fa8b55ae8745b9a9",
+        "lines": 898
+      },
+      "tools/raid_program/chainwielder_prestart_bundle.py": {
+        "sha256": "c0331e4012eb9c0b322f68698a1bafee6fe472f228742325e796707673df4685",
+        "lines": 957
+      },
+      "tools/raid_program/capture_setup.py": {
+        "sha256": "5131b40499e0259e8a9f44179e8eeab23938669627e4772514319457820755c1",
+        "lines": 498
+      },
+      "tools/raid_program/controller_route_hold.py": {
+        "sha256": "44a2712700b4b797dedd822058424505147585d9d0b836a0758c5205c22e2968",
+        "lines": 491,
+        "changed": false
+      },
+      "tests/test_recurrence_admission.py": {
+        "sha256": "9e1e3347dba43f2342c2e0d239e4767073e0caa7a829a8781bcace0ded4f8e10",
+        "lines": 877
+      },
+      "tests/test_chainwielder_prestart_bundle.py": {
+        "sha256": "0df5be76a1e5265cdcc5a38bcf1b9cc34609696af1116ce23837f4809078df12",
+        "lines": 839
+      }
+    },
+    "production_line_limit_passed": true
+  },
+  "deterministic_review": {
+    "independent_boundary_test": "pixi run pytest -q tests/test_recurrence_admission.py::test_chainwielder_checkpoint_uses_precomputed_non_circular_seal tests/test_recurrence_admission.py::test_expected_runtime_profile_rejects_coherent_valid_profile_substitution tests/test_recurrence_admission.py::test_expected_runtime_profile_is_absent_for_non_checkpoint_admission tests/test_recurrence_admission.py::test_profile_overlay_authority_rejects_coherent_drift tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity",
+    "independent_boundary_result": "11 passed in 0.78s",
+    "production_boundary": "real checkpoint recurrence create and verify with two valid committed profiles, positive original identity, coherent foreign payload/config/seal/admission substitution, non-checkpoint compatibility, real atomic suffix bundle verification, and scheduler projection",
+    "interpretation": "The V27 circular profile-name authority is closed at both authoritative boundaries without weakening profile, suffix, config, seal, or scheduler identity checks."
+  },
+  "next_work_unit": {
+    "id": "shard:generic_controller_route_hold_expected_runtime_profile_one_build_one_start_v30",
+    "owner_skill": "raid-shard-architecture",
+    "allowed_action": "At the exact clean reviewed commit, perform exactly one fast8_v2 configure, one queued fast8 worldserver build, one strict frozen-roster provisioning/readback and atomic bundle create/verify, then exactly one no-retry completion-watchdog live start. Close, DVC-publish, remotely verify, and exactly evict the evidence.",
+    "budget": {
+      "configure_count": 1,
+      "worldserver_build_count": 1,
+      "worldserver_start_count": 1,
+      "retry_count": 0,
+      "database_mutation": "one_owned_frozen_roster_provision_and_strict_readback_only",
+      "dvc_mutation": "required_after_capture_closure_for_publish_remote_verify_and_exact_evict"
+    },
+    "forbidden": [
+      "gameplay_native_controller_bundle_setup_or_test_edit",
+      "canary_constant_or_identity_comparison_loosening",
+      "route_strategy_checkpoint_gate_priority_polling_or_watchdog_change",
+      "second_configure_build_worldserver_start_or_retry",
+      "manual_bundle_config_admission_or_launch_mutation",
+      "fixture_promotion_or_route_acceptance_claim",
+      "local_evidence_eviction_before_verified_dvc_remote_reconstruction"
+    ]
+  }
+}
