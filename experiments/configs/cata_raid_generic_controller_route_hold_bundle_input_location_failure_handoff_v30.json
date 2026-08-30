@@ -1,0 +1,188 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:generic_controller_route_hold_expected_runtime_profile_one_build_one_start_v30",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed_prestart",
+  "failure_classification": "route_manifest_inside_mutable_worktree",
+  "source_state": {
+    "commit": "6aff25af465cda7a8670cabe0e7a8c358c8c7473",
+    "tree": "d4f9048328c85205bdee1413f453ca9e60ae64f5",
+    "clean_before_configure": true,
+    "clean_before_build": true,
+    "clean_before_bundle": true,
+    "source_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_expected_runtime_profile_authority_review_handoff_v29.json",
+    "source_handoff_sha256": "b62f298ec51ecc8f96826b33d25fdbc6127f23c54acef185fef2a6587b282ee8"
+  },
+  "scope_lock": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "provisioning_transaction_count": 1,
+    "recurrence_suite_execution_count": 1,
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_verify_count": 0,
+    "worldserver_start_count": 0,
+    "retry_count": 0,
+    "source_gameplay_native_controller_bundle_setup_or_test_edits": false,
+    "manual_bundle_config_admission_or_launch_mutation": false,
+    "gameplay_canary_or_acceptance_claimed": false
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v2.json",
+    "policy_sha256": "c1fab33f896db4c10137d1bbc98391b11b7b58bde45454704584f14a36e9f7bb",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "configure": {
+      "classification": "success",
+      "ticket_id": "raid-build-f408cbb2e7df4f78919648bb8c81b1ee",
+      "queue_sequence": 1242,
+      "receipt_sha256": "3a7a5bf153732d4a241b085713dea5bd814734044a467afa294224c91293980a",
+      "receipt_file_sha256": "b3d3a0784b41f3501aca59d902c8eb71bb8164867e8fa75bd3c9baa1bcb38fdd",
+      "command_sha256": "be70ed356d98ec9b6b158e6237ffb8a00fe0ab7d125862735f2df2e1e85c5d5f",
+      "gate_bearing": true
+    },
+    "worldserver": {
+      "classification": "success",
+      "ticket_id": "raid-build-b6f6417d974e4ac583c737a5c7e3f75f",
+      "queue_sequence": 1243,
+      "receipt_sha256": "7a855d2284d13a22838903207b76697dace3ad5df21cbd61f987e624d0ce9bc1",
+      "receipt_file_sha256": "39fb4a4fbd86ffd2f8d6900ec54e12d4cd1064c7746a089ca9a198ea6fd3c3f8",
+      "command_sha256": "852873daa29036c72e1d920be4d0669835fde59faa0cd9fb00b5ae8627f53ecc",
+      "gate_bearing": true,
+      "binary_sha256": "500f139c346f565efd45c168fd6fa3d1c4ccf021273084db27961b76dbec3437",
+      "binary_size_bytes": 63886256
+    }
+  },
+  "provisioning": {
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008,
+    "prepared": true,
+    "preparation_report_sha256": "2c5b8615753767ff389405c053473145d963224748366a3efb946a85e93d9d58",
+    "base_runtime_config_sha256": "07ecc82aa106916e9cd0b3138cc6ddb59c9c7afde2c3a2b04ef137b39439c9ea",
+    "strict_verifier_invocation_omitted_outer_provisioning_report": true,
+    "strict_verifier_passed": true,
+    "strict_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "exact_ten_actor_readback_passed": true,
+    "readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "offline_unleased_zero_group_instance_corpse_ghost_residue": true
+  },
+  "recurrence": {
+    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "ledger_sha256": "c02d27c6ff62d20aa5a31d463b9cdef68513fa67f74b3068ae7d236e061a1830",
+    "source_identity": "6aff25af465cda7a8670cabe0e7a8c358c8c7473",
+    "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+    "fixture_execution_count": 20,
+    "fixture_pass_count": 20,
+    "suite_receipt_sha256": "def2d58e24622f8f77307394c8a7166e5afa5a5d2ff91a64086c8b5956bee3bb",
+    "decision_sha256": "0224d9bece6dcb1cc6829bb7c509dca2d701ff934c5ec31e358d781d4decc702",
+    "fixture_expansion_admitted": true,
+    "fixture_expansion_target_ids": ["chainwielder_pre_admission_rejection_isolation_v1"],
+    "non_mutating_cli_preflight_rejection_count": 1,
+    "non_mutating_cli_preflight_reason": "suite boundary run_id is unknown; rejected before any fixture command or receipt write"
+  },
+  "atomic_bundle": {
+    "create_count": 1,
+    "create_passed": false,
+    "verify_count": 0,
+    "launch_contract_created": false,
+    "failure_receipt_sha256": "ff8bbac1618f940378e9973269cb82e1e1010d4fd6c6312931df671877c3dfc8",
+    "failure_reason": "route_manifest_inside_mutable_worktree",
+    "supplied_route_manifest": "dataset/validation_scenarios/validation_routes.jsonl",
+    "supplied_route_manifest_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "required_external_staging_missing": true,
+    "worldserver_start_withheld": true
+  },
+  "controller_native_transcript": {
+    "start_held": 0,
+    "status": 0,
+    "arm": 0,
+    "release": 0,
+    "held_ack": 0,
+    "checkpoint_terminal": 0,
+    "route_advance": 0,
+    "reason": "no launch contract was produced and no worldserver was started"
+  },
+  "throughput": {
+    "route_dps": null,
+    "route_hps": null,
+    "actor_30008_dps": null,
+    "actor_30008_hps": null,
+    "actor_30008_pet_share": null,
+    "reason": "prestart atomic-bundle input-location rejection"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact clean V30 source passed descriptor, route-stage, configure, build, strict provisioning, and exact ten-actor readback gates",
+      "the sole fast8_v2 configure and worldserver build were gate-bearing with eight compiler jobs and one linker",
+      "all twenty recurrence fixtures executed successfully and the exact Chainwielder fixture-expansion boundary was admitted",
+      "the atomic generator rejects a route manifest located inside the mutable Git worktree",
+      "the sole create emitted a typed failed-closed receipt and no launch contract",
+      "no controller command, native Held receipt, bot action, combat, or worldserver process existed",
+      "cleanup readback retained ten offline unleased actors with zero group, instance, corpse, ghost, and lease residue",
+      "a fresh isolated DVC repository reconstructed all ten published files and matched every SHA-256"
+    ],
+    "refuted": [
+      "the V30 create invocation supplied an admissible externally staged route manifest",
+      "V30 reached bundle verification, native Held generation one, arm, terminal, release, Drudges, or combat"
+    ],
+    "unproven": [
+      "the profile-bound suffix reaches native Chainwielder generation one",
+      "two stable Held statuses precede one sealed arm",
+      "one identity-preserved checkpoint lifecycle reaches a typed terminal",
+      "release advances exactly once to retained Drudges",
+      "route DPS, HPS, actor throughput, and pet share"
+    ]
+  },
+  "first_broken_edge": {
+    "owner": "raid_shard_external_input_preparation",
+    "edge": "canonical_route_was_passed_directly_from_the_mutable_worktree_to_the_atomic_bundle_generator",
+    "first_observed_mutation": "none; the generator rejected the path before staging, sealing, admission, launch construction, or server start",
+    "failure_postcondition": "bundle.failure.json is failed_closed and launchable=false with reason route_manifest_inside_mutable_worktree",
+    "implementation_hypothesis": "No production implementation change is required. A fresh bounded shard must copy the exact canonical route bytes to a new external run root, verify the copied SHA before create, and supply only that external path to the unchanged atomic generator.",
+    "correlation_keys": {
+      "source_commit": "6aff25af465cda7a8670cabe0e7a8c358c8c7473",
+      "bundle_create_count": 1,
+      "source_route_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+      "failure_receipt_sha256": "ff8bbac1618f940378e9973269cb82e1e1010d4fd6c6312931df671877c3dfc8"
+    }
+  },
+  "cleanup": {
+    "worldserver_process_absent": true,
+    "worldserver_start_count": 0,
+    "zero_online_bots": true,
+    "zero_leases": true,
+    "zero_group_instance_corpse_ghost_residue": true,
+    "cleanup_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0"
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_6aff25af46_generic_controller_route_hold_bundle_input_location_failure_v30_20260830.dvc",
+    "pointer_sha256": "141d0f3f004d473b2c6edb9bc9167a7aa9d76e35eca44e755a02e107a01311e2",
+    "directory_md5": "10e4f9f3a939c4a689926f062b5cdbff.dir",
+    "directory_size_bytes": 431097,
+    "directory_file_count": 10,
+    "push_result": "8 files pushed",
+    "remote_status": "in_sync",
+    "remote_reconstruction_file_manifest_sha256": "973f209737cdf8bb4d59693a3d7452f445026a6d1cb7b0da8e41ab9d4887f44a",
+    "remote_reconstruction_file_count": 10,
+    "remote_reconstruction_size_bytes": 431097,
+    "unique_cache_objects_to_evict": 7,
+    "shared_cache_objects_to_retain": 2,
+    "directory_manifest_to_retain": true
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_external_route_staging_preflight_v31",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Add and test a deterministic no-live preflight/staging boundary that copies the exact canonical route bytes into the external run root, verifies source and staged SHA-256 equality, rejects worktree-contained authoritative inputs, and must pass before the sole atomic create is counted or invoked.",
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "provisioning_transaction_count": 0,
+      "atomic_bundle_create_count": 0,
+      "atomic_bundle_verify_count": 0,
+      "worldserver_start_count": 0,
+      "retry_count": 0
+    },
+    "forbidden": "No gameplay, native, controller, route-content, identity-comparison, polling, watchdog, threshold, fixture, database, build, worldserver start, DVC, or acceptance change."
+  }
+}
