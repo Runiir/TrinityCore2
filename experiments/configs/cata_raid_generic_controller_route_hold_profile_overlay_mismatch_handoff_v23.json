@@ -1,0 +1,261 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:generic_controller_route_hold_target_suffix_one_build_one_start_v23",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed",
+  "failure_classification": "controller_route_hold_route_manifest_sha256_mismatch",
+  "input_identities": {
+    "source_commit": "7483e727179bbbf1c7890d518f309f8da1a1ee29",
+    "source_tree": "c9ca3533fc38eb49c0b998048061e488499a60ce",
+    "source_clean_before_configure": true,
+    "source_clean_before_build": true,
+    "source_clean_before_start": true,
+    "source_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_target_suffix_review_handoff_v22.json",
+    "source_handoff_sha256": "6c3130cfdfdd24ee5fd9bcbecff800a210117e44e4685691ce6de2cfba611b7f",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008,
+    "checkpoint_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1"
+  },
+  "scope_lock": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 1,
+    "bundle_create_count": 1,
+    "bundle_verify_count": 1,
+    "second_configure_run": false,
+    "second_worldserver_build": false,
+    "second_worldserver_start": false,
+    "manual_bundle_or_launch_mutation": false,
+    "gameplay_native_controller_setup_or_test_changes": false,
+    "fixture_revision_promoted": false,
+    "gameplay_canary_or_acceptance_claimed": false
+  },
+  "validation": {
+    "configure": {
+      "classification": "success",
+      "ticket_id": "raid-build-6faae3868dc948fe9c3d09effe3e620d",
+      "queue_sequence": 1240,
+      "receipt_canonical_sha256": "3ef847ae235c3cc09f1f779e37d2ac72ff708c7dcce046dfed8b0d87d49b8cc5",
+      "receipt_file_sha256": "f69190b44fba10a8bd9b978a36226bac776dc4217f2f6bf7843fb256af1734ce",
+      "command_sha256": "be70ed356d98ec9b6b158e6237ffb8a00fe0ab7d125862735f2df2e1e85c5d5f",
+      "gate_bearing": true,
+      "compiler_job_ceiling": 8,
+      "linker_job_ceiling": 1
+    },
+    "worldserver_build": {
+      "classification": "success",
+      "ticket_id": "raid-build-298cbf6387c3490b992d668e955dd063",
+      "queue_sequence": 1241,
+      "receipt_canonical_sha256": "3fefcb50a88bcaf00c9c650a39569d5d6bceb3251c4fe40d35970a6e4bb92d8c",
+      "receipt_file_sha256": "34d1117c8cb3872f9e45136950ca2fc9eb4f28d2d3060dc7a6d876e56d83f911",
+      "command_sha256": "852873daa29036c72e1d920be4d0669835fde59faa0cd9fb00b5ae8627f53ecc",
+      "gate_bearing": true,
+      "compiler_job_ceiling": 8,
+      "linker_job_ceiling": 1,
+      "binary_sha256": "0eb3db771e9a7dc03f294d3218cc28018c48884b2e5b2c477a44880aa7c5f5a9",
+      "binary_size_bytes": 63886256
+    },
+    "provisioning": {
+      "owned_transaction_count": 1,
+      "prepared": true,
+      "prepare_report_sha256": "9b148e6f5c8958bdc1b53070965df51da1c3998e5cbbe26718209e0eec0b4fd1",
+      "strict_verifier_invocation_omitted_outer_provisioning_report": true,
+      "strict_failure_count": 0,
+      "strict_report_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+      "exact_ten_actor_readback_passed": true,
+      "zero_prestart_group_instance_corpse_ghost_residue": true,
+      "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+      "source_route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+      "prepared_config_sha256": "5ff2a870dec90f68b56628d35df6da6f49737b97ce5418383ef93fb11eac8afc"
+    },
+    "recurrence_bank": {
+      "verification_count": 20,
+      "passed_count": 20,
+      "source_identity": "7483e727179bbbf1c7890d518f309f8da1a1ee29",
+      "fixture_expansion_admitted": true,
+      "fixture_expansion_target_ids": [
+        "chainwielder_pre_admission_rejection_isolation_v1"
+      ],
+      "suite_receipt_sha256": "6dc20c42b9ca8b87c72284217f4bb34be6cf7029d11fbfe3d4b2ddf985c881eb",
+      "decision_sha256": "a08214ece7d905fcb81dcb425cbaea6e301f9afef51f302902ffa27072d71645",
+      "ledger_sha256": "c02d27c6ff62d20aa5a31d463b9cdef68513fa67f74b3068ae7d236e061a1830"
+    },
+    "atomic_bundle": {
+      "create_count": 1,
+      "create_passed": true,
+      "pre_rename_verified": true,
+      "independent_verify_count": 1,
+      "independent_verify_passed": true,
+      "bundle_manifest_sha256": "7cd3cd9f9ed0d6d5d05787d5cf1ce6f332d7270fe319c8922564bcab707f86f6",
+      "launch_contract_sha256": "1827f14b3d58ad227aa28fd4ac8870afee649abcab91c19db7fe113204ab754c",
+      "recurrence_admission_sha256": "31b4981f559dce5ae1b47106c29d9f7e6652cf0abb3845dab7e1fefaf57b62f1",
+      "checkpoint_seal_sha256": "be0d8b860ab9460944eafe2771eccdb0990dde21e5134ea0df57c26c61de0d62",
+      "checkpoint_seal_file_sha256": "2191e2664607a99342acd156c877a7406560df18a5a43b2f97ada01361707434",
+      "source_route_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+      "runtime_suffix_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+      "runtime_suffix_node_ids": [
+        "bwd.magmaw.chainwielder",
+        "bwd.magmaw.drudges",
+        "bwd.magmaw.encounter"
+      ],
+      "launch_argv_executed_directly": true,
+      "duration_policy": "completion-watchdog",
+      "fixed_success_timer_seconds": null
+    },
+    "controller_transcript": {
+      "schema": "generic_controller_route_hold_scheduler_v1",
+      "phase": "failed",
+      "failure_reason": "controller_route_hold_route_manifest_sha256_mismatch",
+      "command_counts": {
+        "start_held": 1,
+        "status": 0,
+        "arm": 0,
+        "release": 0
+      },
+      "start_ack_count": 0,
+      "held_status_count": 0,
+      "arm_ack_count": 0,
+      "checkpoint_terminal_count": 0,
+      "release_ack_count": 0,
+      "launch_identity": {
+        "route_generation": 1,
+        "route_node_id": "bwd.magmaw.chainwielder",
+        "route_manifest_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2"
+      }
+    },
+    "native_cleanup_receipt": {
+      "phase": "held",
+      "route_generation": 1,
+      "route_node_id": "bwd.entry.regroup",
+      "route_manifest_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+      "admission_route_manifest_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+      "profile_content_hash": "551F369D459DFA0C01544B93FFAF57A35AA5F681BCE67D6FAB9E8CBA92E626AD",
+      "actor_guid": 30008,
+      "acquire_count": 1,
+      "arm_ack_count": 0,
+      "release_count": 0,
+      "suppressed_route_action_count": 14,
+      "suppressed_route_advance_count": 111,
+      "config_identity_comparison": {
+        "accepted": true,
+        "failure_field": "none",
+        "configured_source_length": 40,
+        "requested_source_length": 40,
+        "binary_revision_length": 12
+      }
+    },
+    "throughput": {
+      "route_dps": null,
+      "route_hps": null,
+      "actor_30008_dps": null,
+      "actor_30008_hps": null,
+      "actor_30008_pet_share": null,
+      "reason": "controller rejected the native Held receipt before status collection or combat"
+    },
+    "terminal": {
+      "classification": "infrastructure_abort",
+      "startup_error": "RuntimeError:controller route hold bootstrap rejected: controller_route_hold_route_manifest_sha256_mismatch",
+      "capture_process_exit_code": 2,
+      "worldserver_exit_code": 0,
+      "capture_report_file_sha256": "46078760a46df8c2b8ebcdf15db2429e8d5da373af14b3698ac8978fc6a02d81",
+      "capture_report_canonical_sha256": "c41783cb5e39eb4d78c225af01719432abe75227bc618e34ab07e46a6d882514",
+      "normalized_raw_sha256": "21924804ac9345a9119d35602f005a66632a339f25f0333703dc279d1abc878e",
+      "worldserver_log_sha256": "0617e3d19f2a6631fbd6c20aa3765493c1da6cd06f4033076e9306a456711474"
+    },
+    "cleanup": {
+      "gate_passed": true,
+      "stop_observed": true,
+      "worldserver_process_absent": true,
+      "zero_online_bots": true,
+      "zero_leases": true
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the sole configure, build, frozen-roster provision/readback, bundle create/verify, and completion-watchdog start respected the V23 budget",
+      "the atomic bundle generated and admitted a three-node target suffix beginning at Chainwielder with SHA-256 f6ee01216d",
+      "capture setup projected the suffix hash and Chainwielder generation one into the controller launch identity",
+      "the native runtime instead admitted the canonical four-node profile route with hash 406527cc6e and entrance regroup generation one",
+      "the selected runtime profile asset names dataset/bot_runtime_profiles/profiles.json and dataset/validation_scenarios/validation_routes.jsonl with the same canonical 406527cc6e partition hash",
+      "native acquisition and full40/full40/short12 config identity passed; only route manifest identity diverged",
+      "the controller failed closed before status, arm, release, route progress, or combat",
+      "cleanup left no worldserver process, bots, or leases",
+      "a fresh isolated DVC repository reconstructed all 25 published files from the object remote and matched every SHA-256 before eviction"
+    ],
+    "refuted": [
+      "setting BotWorld.ValidationRoute.ManifestPath in the generated config is sufficient to make the selected runtime profile consume the suffix",
+      "the native worldserver consumed Chainwielder as generation one",
+      "V23 reached stable Held statuses, arm, checkpoint terminal, release, or Drudges advance"
+    ],
+    "unproven": [
+      "a bundle-local selected profile manifest can bind the suffix through native profile application",
+      "one identity-preserved checkpoint lifecycle reaches a typed terminal",
+      "release advances exactly once to retained Drudges",
+      "route DPS, HPS, actor throughput, and pet share"
+    ]
+  },
+  "first_broken_edge": {
+    "owner": "atomic_bundle_and_capture_setup_profile_binding",
+    "edge": "selected_runtime_profile_overlays_the_suffix_manifest_path_with_the_canonical_four_node_route_before_native_admission",
+    "first_observed_state_mutation": "after StartAutonomyForCohort selected blackwing_descent_10n_magmaw_diagnostic, native admission carried route hash 406527cc6e and entrance regroup generation one even though the generated config, recurrence admission, and controller launch identity carried suffix hash f6ee01216d and Chainwielder generation one",
+    "failure_postcondition": "the controller rejected the native Held receipt on route_manifest_sha256 before recording a start acknowledgement; no status, arm, release, or combat command followed",
+    "implementation_hypothesis": "ApplyRuntimeProfile overwrites the config-level ValidationRouteManifestPath from the canonical selected profile. The atomic bundle must provide a bundle-local profile manifest whose selected profile binds the exact suffix, and capture setup must verify the effective selected-profile overlay rather than config text alone.",
+    "correlation_keys": {
+      "actor_guid": 30008,
+      "attempt_id": 1,
+      "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+      "profile_content_hash": "551F369D459DFA0C01544B93FFAF57A35AA5F681BCE67D6FAB9E8CBA92E626AD",
+      "expected_runtime_suffix_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+      "actual_native_route_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+      "expected_node_id": "bwd.magmaw.chainwielder",
+      "actual_node_id": "bwd.entry.regroup"
+    }
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_7483e72717_generic_controller_route_hold_profile_overlay_mismatch_v23_20260830.dvc",
+    "pointer_file_sha256_before_commit": "20004e089409621b5869afe1ff62e267ce00693c224d23ec3797df320494753a",
+    "directory_md5": "ddb8877e23844d02fa78f8c237e216f9.dir",
+    "directory_size_bytes": 1391515,
+    "directory_file_count": 25,
+    "push_result": "16 files pushed",
+    "remote_verification": "separate fresh DVC repository fetched 21 objects and reconstructed 25 files with identical file list and SHA-256 manifest",
+    "workspace_output_evicted_after_remote_verification": true,
+    "external_run_root_evicted_after_remote_verification": true,
+    "remote_reconstruction_root_evicted_after_verification": true,
+    "cache_directory_manifest_retained": true,
+    "unique_cache_objects_evicted": 15,
+    "shared_cache_objects_retained": 5,
+    "broad_dvc_gc_run": false
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_profile_manifest_suffix_binding_v24",
+    "owner_skill": "raid-evidence-lifecycle",
+    "hypothesis": "The selected runtime profile overwrites the config-level suffix path with its canonical validation_routes.jsonl path during ApplyRuntimeProfile, so bundle and capture setup validate an identity that native start does not consume.",
+    "required_change": "Generate one bundle-local profile manifest preserving the selected profile payload except rebinding its validation route manifest path to the exact generated suffix. Bind that profile manifest and suffix through the seal, recurrence admission, launch contract, and config BotWorld.ProfileManifest. Make capture setup resolve the selected profile overlay and verify its effective route path/hash before start.",
+    "required_tests": [
+      "fail-before replay of V23 where config points to suffix but selected profile points to canonical full route",
+      "atomic bundle emits one profile manifest containing exactly one selected profile and an exact suffix manifest path",
+      "all non-route selected-profile fields are preserved byte-semantically and foreign profiles cannot be selected",
+      "seal, admission, launch contract, config, profile manifest, and suffix file carry one consistent path/hash closure",
+      "capture setup applies the same config-then-selected-profile precedence and rejects canonical-path overlay before server start",
+      "scheduler receives Chainwielder generation one and suffix SHA only after the effective profile binding passes",
+      "full-route entrance receipt and any profile/config/admission path drift remain fail-closed"
+    ],
+    "owned_files": [
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_setup.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "worldserver_start_count": 0,
+      "database_mutation_allowed": false,
+      "dvc_mutation_allowed": false
+    },
+    "forbidden": "No native runtime, gameplay, class, pet, encounter, route strategy, priority, polling, watchdog, ledger, provisioning, build, worldserver start, fixture promotion, or acceptance change."
+  }
+}

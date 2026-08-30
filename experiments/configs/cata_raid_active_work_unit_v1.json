@@ -1,122 +1,93 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_target_suffix_live_verification_v23_20260830",
-  "work_unit": "shard:generic_controller_route_hold_target_suffix_one_build_one_start_v23",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "v22_verified_exact_target_suffix_bundle_admission_and_setup_boundary_live_unverified",
-  "observed_at_commit": "75bca7e08bcd5f7539285fa276c3a2ce4f0e9f5d",
-  "immutable_input_commit": "75bca7e08bcd5f7539285fa276c3a2ce4f0e9f5d",
+  "epoch_id": "generic_controller_route_hold_profile_manifest_suffix_binding_v24_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_profile_manifest_suffix_binding_v24",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed",
+  "gate_state": "v23_native_profile_overlay_replaced_admitted_target_suffix_before_held_ack",
+  "observed_at_commit": "7483e727179bbbf1c7890d518f309f8da1a1ee29",
+  "immutable_input_commit": "7483e727179bbbf1c7890d518f309f8da1a1ee29",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_target_suffix_review_handoff_v22.json",
-    "sha256": "6c3130cfdfdd24ee5fd9bcbecff800a210117e44e4685691ce6de2cfba611b7f",
-    "source_commit": "75bca7e08bcd5f7539285fa276c3a2ce4f0e9f5d"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_profile_overlay_mismatch_handoff_v23.json",
+    "sha256": "37605ae9289d656c3dd7caaa89050120c9c2b827841ce8cc3a7257723adcb92a",
+    "source_commit": "7483e727179bbbf1c7890d518f309f8da1a1ee29"
   },
   "evidence_pointer": {
-    "path": "artifacts/cata_raid_program/phase1_raid_foundation_a808104af9_generic_controller_route_hold_route_node_mismatch_v19_20260830.dvc",
-    "sha256": "69c44663492ba66b0411972f6effa394196eacfc153703e5a675549b0beccf28",
+    "path": "artifacts/cata_raid_program/phase1_raid_foundation_7483e72717_generic_controller_route_hold_profile_overlay_mismatch_v23_20260830.dvc",
+    "sha256": "20004e089409621b5869afe1ff62e267ce00693c224d23ec3797df320494753a",
     "remote_verified": true,
-    "local_output_evicted": true,
-    "hydrated_for_v22": false
+    "remote_reconstruction_verified": true,
+    "local_output_evicted": true
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
-    "supported_modes": [
-      "10N",
-      "10H",
-      "25N",
-      "25H"
-    ],
-    "canary_only": "Affliction actor 30008, Chainwielder, and Magmaw identify the immutable observation-only counterexample. The controller acquisition rule remains generic to the exact admission-bound runtime manifest."
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_only": "Affliction actor 30008 and the Chainwielder target suffix remain observation identities; the required repair is generic profile-manifest binding."
   },
   "behavior_change": false,
   "evidence_contract_change": true,
-  "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": true,
-  "ready_for_live_verification": true,
+  "ready_for_bounded_repair": true,
+  "ready_for_fixture_expansion": false,
+  "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "At immutable source 75bca7e08, run exactly one clean fast8_v2 configure, one queued fast8 worldserver build, one strict frozen-roster provisioning/readback and atomic target-suffix bundle create/verify, then exactly one no-retry completion-watchdog worldserver capture. Publish, remotely verify, and exactly evict the closed evidence through DVC.",
+    "allowed_change": "Generate and seal one bundle-local selected-profile manifest whose validation route path binds the exact generated suffix, then make capture setup resolve and verify the same config-then-profile precedence before start.",
     "allowed_files": [
-      "external_build_receipt_and_attestation",
-      "external_atomic_bundle_and_capture_outputs",
-      "one_compact_tracked_closed_run_summary",
-      "one_tracked_dvc_pointer"
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_setup.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      "one_compact_tracked_review_handoff"
     ],
     "forbidden": [
-      "gameplay_native_controller_bundle_setup_or_test_edit",
-      "canary_constant_or_identity_comparison_loosening",
-      "route_strategy_checkpoint_gate_priority_polling_or_watchdog_change",
-      "second_configure_build_worldserver_start_or_retry",
-      "manual_bundle_config_admission_or_launch_mutation",
-      "fixture_promotion_or_route_acceptance_claim",
-      "local_evidence_eviction_before_verified_dvc_remote_reconstruction"
+      "native_runtime_gameplay_class_pet_encounter_or_route_strategy_change",
+      "priority_polling_watchdog_threshold_or_identity_comparison_loosening",
+      "configure_build_worldserver_start_or_database_mutation",
+      "dvc_mutation_fixture_promotion_or_acceptance_claim"
     ]
   },
   "verification_budget": {
-    "configure_count_maximum": 1,
-    "worldserver_build_count_maximum": 1,
-    "worldserver_start_count_maximum": 1,
+    "configure_count_maximum": 0,
+    "worldserver_build_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
     "retry_count_maximum": 0,
-    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
-    "compiler_jobs": 8,
-    "linker_jobs": 1,
-    "database_mutation": "one_owned_frozen_roster_provision_and_strict_readback_only",
-    "dvc_mutation": "required_after_capture_closure_for_publish_remote_verify_and_exact_evict"
+    "database_mutation": "forbidden",
+    "dvc_mutation": "forbidden"
   },
-  "admitted_contract": {
-    "source_route_initial_node": "bwd.entry.regroup",
-    "runtime_suffix_node_ids": [
-      "bwd.magmaw.chainwielder",
-      "bwd.magmaw.drudges",
-      "bwd.magmaw.encounter"
-    ],
-    "runtime_suffix_initial_node_is_unique_checkpoint_target": true,
-    "runtime_suffix_preserves_entrance_bot_start": true,
-    "runtime_suffix_preserves_frozen_roster": true,
-    "runtime_suffix_preserves_diagnostic_prerequisite_state": true,
-    "runtime_suffix_preserves_retained_node_payloads_except_steps": true,
-    "source_and_runtime_route_hashes_are_separately_named": true,
-    "config_and_recurrence_admission_bind_exact_runtime_suffix": true,
-    "capture_setup_rehashes_admission_and_runtime_suffix": true,
-    "generic_scheduler_uses_exact_runtime_suffix_first_node_and_hash": true,
-    "full_route_entrance_held_receipt_remains_rejected": true,
-    "generic_controller_or_setup_canary_constant_added": false,
-    "identity_comparison_loosened": false
+  "observed_failure": {
+    "expected_runtime_suffix_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+    "actual_native_route_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "expected_generation_one_node": "bwd.magmaw.chainwielder",
+    "actual_generation_one_node": "bwd.entry.regroup",
+    "first_edge": "ApplyRuntimeProfile selected the canonical profile route after config admission, so native Held identity diverged before controller acknowledgement.",
+    "transcript_counts": {
+      "start_held": 1,
+      "status": 0,
+      "arm": 0,
+      "release": 0,
+      "held_ack": 0,
+      "checkpoint_terminal": 0
+    }
+  },
+  "required_repair": {
+    "profile_binding": "The atomic bundle emits a bundle-local manifest containing only the selected profile, preserving its non-route payload while rebinding its validation route path to the exact suffix.",
+    "identity_closure": "Config, selected profile manifest, suffix file, seal, recurrence admission, launch contract, and capture setup must carry one consistent path and hash closure.",
+    "precedence_gate": "Capture setup applies config then selected-profile precedence and rejects any canonical-route overlay before starting a server.",
+    "comparison_policy": "Keep strict full40/full40/short12 and route-node/hash equality; do not loosen comparisons."
   },
   "remaining_unproven": [
-    "a fresh native worldserver consumes the generated suffix as Chainwielder generation one",
-    "one completion-watchdog start reaches a typed identity-preserved checkpoint terminal",
-    "release advances exactly once to the retained Drudges node",
-    "the new closed evidence is remotely reconstructible before exact local eviction"
+    "the bundle-local selected profile binds the target suffix through native ApplyRuntimeProfile",
+    "native Held generation one is Chainwielder with suffix SHA f6ee01216d",
+    "one identity-preserved checkpoint lifecycle reaches a typed terminal",
+    "release advances exactly once to retained Drudges",
+    "route DPS HPS and Affliction pet share"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "raid_success_timer_seconds": null,
-    "terminal_edges": [
-      "normal_clear",
-      "monotonic_semantic_or_no_progress_stall",
-      "repeated_decisions",
-      "excessive_death_loops",
-      "infrastructure_loss",
-      "contamination",
-      "explicit_interruption"
-    ]
+    "raid_success_timer_seconds": null
   },
-  "focused_validation": {
-    "command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py -k 'target_suffix or controller_route_hold_runtime_manifest_binding'",
-    "result": "5 passed, 176 deselected in 0.36s",
-    "review_commit": "75bca7e08bcd5f7539285fa276c3a2ce4f0e9f5d"
-  },
-  "completion_evidence_lifecycle": {
-    "compact_summary_required": true,
-    "dvc_add_and_push_required": true,
-    "remote_pointer_and_reconstruction_verification_required": true,
-    "exact_local_output_and_unique_cache_eviction_after_verification": true,
-    "post_eviction_git_dvc_process_and_disk_status_required": true
-  },
-  "next_work_unit": "shard:generic_controller_route_hold_target_suffix_one_build_one_start_v23",
-  "next_owner_skill": "raid-shard-architecture",
-  "next_action": "From the exact clean descriptor commit, perform one fast8 configure/build and one no-retry completion-watchdog live start using the unmodified atomic bundle launch contract; close, DVC-publish, remotely verify, and exactly evict the evidence regardless of typed terminal outcome."
+  "next_work_unit": "evidence:generic_controller_route_hold_profile_manifest_suffix_binding_v24",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Implement and review only the sealed bundle-local selected-profile suffix binding and the effective-precedence prestart gate; do not build or start a worldserver."
 }
