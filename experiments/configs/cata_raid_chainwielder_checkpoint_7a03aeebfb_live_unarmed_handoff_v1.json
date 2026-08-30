@@ -1,0 +1,181 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start_v3",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed",
+  "failure_classification": "checkpoint_verification_unproven_arm_command_not_sent",
+  "git_commit": "7a03aeebfba391a83ce973da47fe5ae90f6b2db5",
+  "input_identities": {
+    "source_commit": "7a03aeebfba391a83ce973da47fe5ae90f6b2db5",
+    "source_tree": "435660993f24fde1ec45d7350b22b6c2f4f199c2",
+    "source_clean_during_build_and_capture": true,
+    "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_seal_implementation_handoff_v1.json",
+    "implementation_handoff_file_sha256": "93b26442ad380f00630a3bd5580016cf23163990cd84e32d59b7e5ae634f12dc",
+    "prior_failure_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_97190ea429_configure_preflight_failed_handoff_v1.json",
+    "prior_failure_handoff_file_sha256": "454171be4675be66f73ada57b8b8f8d83908e4c041613868546eed1417ecd6ef",
+    "worldserver_binary_sha256": "c22cae2bc980f0667ea69ab57a8be09883b5ec4daf922e2af1386ab7d7e6d7c2",
+    "runtime_config_sha256": "eec93999cfd952a6c24185d4281731bd5acb1f7bd93f1ed0c6417c794e5bf52b",
+    "checkpoint_seal_sha256": "9dcb3123785e14106f46c6017444aab7fdef352c323e3d314a4fdaf545a21bde",
+    "final_recurrence_admission_sha256": "f2e6e7493dbbb8ad5e8b1b7b470ddaa8c5fcc776c12c5d1f3a3f1b1dd28648ea"
+  },
+  "changed_files": [
+    "artifacts/cata_raid_program/.gitignore",
+    "artifacts/cata_raid_program/phase1_foundation_7a03aeebfb_chainwielder_checkpoint_unarmed_20260830.dvc",
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_chainwielder_checkpoint_7a03aeebfb_live_unarmed_handoff_v1.json"
+  ],
+  "scope_lock": {
+    "owned_behavior": "one exact queued fast8_v2 configure/build and one observation-only actor-30008 Chainwielder checkpoint completion-watchdog start",
+    "build_count": 1,
+    "worldserver_start_count": 1,
+    "second_start_run": false,
+    "gameplay_or_fixture_changes": false,
+    "fixture_revision_promoted": false,
+    "gameplay_canary_or_acceptance_claimed": false
+  },
+  "first_broken_edge_before": "The capture controller emits checkpoint_arm_command only inside the full accepted_foundation_status branch at tools/raid_program/capture_phase1_raid_foundation.py:6638. That predicate requires the diagnostic partition terminal generation/index at lines 1194-1196, so actor 30008 cannot be armed before the generation-2 Chainwielder checkpoint; later terminal-state failures also kept accepted_stable_statuses at zero.",
+  "implemented_hypothesis": {
+    "hypothesis": "The non-circular checkpoint seal and observation-only production checkpoint will emit one completed actor-bound Route-owner to receipt-0 Hazard rejection to preserved Route identity to hazard-exit outcome.",
+    "runtime_verdict": "inconclusive",
+    "reason": "The controller never sent the arm command, so no checkpoint lifecycle or causal boundary was exercised. The native invariant is neither verified nor refuted."
+  },
+  "validation": {
+    "focused_test_command": "pixi run pytest -q tests/test_recurrence_admission.py tests/test_chainwielder_owner_checkpoint.py tests/test_phase1_raid_foundation_capture.py -k 'chainwielder_checkpoint or recurrence_admission'",
+    "focused_test_result": "24 passed, 126 deselected",
+    "recurrence_command": "pixi run python -m tools.raid_program.blocker_recurrence_ledger --ledger experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json --source-identity 7a03aeebfba391a83ce973da47fe5ae90f6b2db5 --run-suite <artifact>/recurrence_suite_receipt.json --boundary-run-id trinity-magmaw-78e33e6557-receipt-history-expansion.attempt1 --boundary after --gate fixture_expansion --output <artifact>/recurrence_decision.json",
+    "recurrence_result": "20 of 20 passed; fixture_expansion_admitted=true; sole target chainwielder_pre_admission_rejection_isolation_v1",
+    "configure_result": {
+      "classification": "success",
+      "ticket_id": "raid-build-449880264b2143c3ba33853567f6a00a",
+      "receipt_canonical_sha256": "02d977e0f843c544f1083edafefd10f9e2cb8d179473ff8644af48882215c1db",
+      "receipt_file_sha256": "77e35c852bfd5f3731c5c2d82bc30b899f248e8104985c47a6ea8465a84732cf"
+    },
+    "worldserver_build_result": {
+      "classification": "success",
+      "ticket_id": "raid-build-e196aafbf13b4fd88255b35474bf26fa",
+      "receipt_canonical_sha256": "058f70487d5664d5fe1f41affac9c498f86dcf12ae472c235920c35067834917",
+      "receipt_file_sha256": "b091cc9ece19fd14b112f30c3de25ae45072ece20e58c002e42003e217da27a1"
+    },
+    "prestart": {
+      "strict_provisioning_verifier_passed": true,
+      "strict_provisioning_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+      "shard_readback_passed": true,
+      "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+      "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+      "map_id": 669,
+      "roster_size": 10,
+      "checkpoint_actor_guid": 30008,
+      "checkpoint_actor_name": "Mgwdpsc",
+      "checkpoint_actor_spec": "affliction_warlock"
+    },
+    "decisive_metrics": {
+      "capture_report_classification": "gameplay_failure",
+      "worldserver_exit_code": 0,
+      "chainwielder_checkpoint_arm_required": true,
+      "chainwielder_checkpoint_arm_command_sent": false,
+      "accepted_stable_statuses": 0,
+      "last_foundation_rejections": [
+        "alive_size_10",
+        "strategy_owned",
+        "ready_check_satisfied"
+      ],
+      "checkpoint_lifecycle_event_count": 0,
+      "chainwielder_terminal": "trash_cluster_cleared",
+      "drudges_terminal": "trash_cluster_cleared",
+      "terminal_route_node_id": "bwd.magmaw.encounter",
+      "terminal_failure_reason": "repeated_decision_watchdog",
+      "terminal_repeated_decision_count": 22,
+      "terminal_repeated_decision_threshold": 20,
+      "terminal_repeated_outcome": "native_move_retryable",
+      "capture_elapsed_seconds": 528.34
+    },
+    "chainwielder_combat": {
+      "duration_seconds": 56.716,
+      "combat_duration_seconds": 53,
+      "party_damage": 4649400,
+      "party_healing": 184508,
+      "party_dps": 87724.528,
+      "party_hps": 3481.283,
+      "elapsed_party_dps": 81976.867,
+      "elapsed_party_hps": 3253.191,
+      "actor_30008_damage": 1136791,
+      "actor_30008_healing": 0,
+      "actor_30008_dps": 21448.887,
+      "actor_30008_hps": 0.0,
+      "actor_30008_elapsed_dps": 20043.568,
+      "actor_30008_elapsed_hps": 0.0
+    },
+    "cleanup": {
+      "capture_cleanup_gate_passed": true,
+      "worldserver_process_absent": true,
+      "zero_bots": true,
+      "zero_leases": true,
+      "pre_restore_readback_passed": false,
+      "pre_restore_readback_reasons": "persisted combat health_position_power_seed drift for all ten characters plus ghost_aura_rows",
+      "deterministic_provisioning_baseline_restored": true,
+      "post_restore_strict_verifier_passed": true,
+      "post_restore_shard_readback_passed": true
+    }
+  },
+  "gear_identity": {
+    "status": "not_applicable",
+    "reason": "This work unit validates a capture-controller checkpoint lifecycle, not simulator or gear parity."
+  },
+  "effective_stat_parity": {
+    "status": "not_applicable",
+    "tuning_admitted": false,
+    "first_broken_edge": "checkpoint_arm_command_not_sent"
+  },
+  "dps_tuning_gate": {
+    "status": "not_applicable",
+    "tuning_admitted": false,
+    "first_broken_edge": "checkpoint_arm_command_not_sent"
+  },
+  "evidence_paths": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_7a03aeebfb_chainwielder_checkpoint_unarmed_20260830.dvc",
+    "evidence_manifest": "phase1_foundation_7a03aeebfb_chainwielder_checkpoint_unarmed_20260830/evidence_manifest.json",
+    "capture_report": "phase1_foundation_7a03aeebfb_chainwielder_checkpoint_unarmed_20260830/run/capture_report.json",
+    "recurrence_decision": "phase1_foundation_7a03aeebfb_chainwielder_checkpoint_unarmed_20260830/recurrence_decision.json",
+    "build_receipt": "phase1_foundation_7a03aeebfb_chainwielder_checkpoint_unarmed_20260830/worldserver_build_receipt.json"
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_foundation_7a03aeebfb_chainwielder_checkpoint_unarmed_20260830.dvc",
+    "pointer_file_sha256": "1c97ae3ab072925cd3d98ecd4d3c6e05dc2b2bd0c9dc0773f137015932a4a287",
+    "directory_md5": "b0bccd6af98730e1cd74274ece860ec4.dir",
+    "directory_size_bytes": 20756292,
+    "directory_file_count": 22,
+    "push_result": "17 files pushed",
+    "remote_verification": "cache_and_remote_object_in_sync_before_eviction",
+    "workspace_evicted": true,
+    "unique_cache_objects_evicted": 17,
+    "shared_cache_objects_retained": 4,
+    "broad_dvc_gc_run": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_exact_policy_derived_configure_and_worldserver_build_passed_once_on_the_clean_source",
+      "the_full_recurrence_bank_passed_twenty_of_twenty_and_admitted_only_the_requested_fixture",
+      "the_checkpoint_seal_and_final_admission_passed_the_required_tamper_gates",
+      "the_single_observation_only_worldserver_start_cleared_chainwielder_and_drudges_then_stopped_on_a_typed_magmaw_watchdog",
+      "the_capture_controller_never_sent_the_actor_30008_checkpoint_arm_command",
+      "the_single_start_was_cleaned_up_and_the_deterministic_shard_baseline_was_restored"
+    ],
+    "refuted": [
+      "the_single_authorized_start_emitted_a_completed_actor_bound_checkpoint_receipt",
+      "a_chainwielder_clear_without_an_armed_checkpoint_proves_the_route_owner_preservation_invariant"
+    ],
+    "unproven": [
+      "the_live_checkpoint_reaches_a_real_Route_owner_trigger",
+      "the_live_checkpoint_observes_the_receipt_zero_Hazard_future_pack_destination_rejection",
+      "the_live_checkpoint_preserves_the_same_Route_identity_and_completes_the_hazard_exit"
+    ]
+  },
+  "remaining_blocker": "The evidence controller's checkpoint arm emission is coupled to the full terminal foundation acceptance gate, so no pre-Chainwielder checkpoint can arm.",
+  "next_work_unit": {
+    "id": "evidence:chainwielder_checkpoint_pre_route_arm_gate_v1",
+    "owner_skill": "raid-evidence-lifecycle",
+    "action": "Repair and test capture_phase1_raid_foundation so an exact verified admission, profile, roster, map, attempt, actor, seal, and source can emit the one arm command before route generation 2 without weakening the independent terminal foundation acceptance gate. Do not build or start a worldserver in this controller-only work unit.",
+    "runtime_verification_after_static_repair": "A separately authorized one-start shard must show command_sent=true followed by exactly one actor-30008 checkpoint lifecycle ending in completed or a typed checkpoint terminal before any native invariant verdict or fixture promotion.",
+    "forbidden": "No gameplay, route, planner, fixture revision, canary, acceptance, or second start under the completed v3 work unit."
+  }
+}
