@@ -1,56 +1,74 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_scheduler_extraction_v12_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_scheduler_extraction_v12",
+  "epoch_id": "generic_controller_route_hold_one_build_one_start_v13_20260830",
+  "work_unit": "evidence:capture_controller_decomposition_v1",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "implementation_complete",
-  "gate_state": "generic_scheduler_extracted_focused_tests_green_live_unverified",
-  "immutable_input_commit": "3873ed6510d4d1c298fc826ddf4f9598932a1eac",
+  "classification": "implementation_pending_live_verification",
+  "gate_state": "controller_decomposition_green_generic_route_hold_native_build_and_live_transcript_unverified",
+  "observed_at_commit": "875dfc3a9f19461db1a0c9fd65056c41aa6622c4",
+  "immutable_input_commit": "875dfc3a9f19461db1a0c9fd65056c41aa6622c4",
+  "source_handoff": {
+    "path": "experiments/configs/cata_raid_capture_controller_decomposition_handoff_v1.json",
+    "sha256": "dcedb85281f935bc51b62166f328ffe1b1e8590adaff4c4de590a61fdd96b01e"
+  },
+  "implementation_source": {
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_implementation_handoff_v1.json",
+    "sha256": "9643b7f1645fc37de47340bde383b0cefc1beab8624872bfcedc547a031e4a54"
+  },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canaries_only": ["Affliction", "actor 30008", "Chainwielder", "Magmaw", "BWD 10N"]
+    "canaries_only": ["Affliction", "Magmaw"]
   },
-  "extraction": {
-    "module": "tools/raid_program/controller_route_hold.py",
-    "module_sha256": "44a2712700b4b797dedd822058424505147585d9d0b836a0758c5205c22e2968",
-    "module_physical_lines": 491,
-    "controller": "tools/raid_program/capture_phase1_raid_foundation.py",
-    "controller_sha256": "d030761583d9deb381be624219d7b96160dc8fcdb84e95bd02c10df7f22ff6d6",
-    "controller_lines_before": 8239,
-    "controller_lines_after": 7767,
-    "controller_lines_removed": 472,
-    "tests_sha256": "80416618216d329f7d8d1a5a1d52b972e17f8f4553df238d5eca3826e711b281",
-    "production_integration": "capture imports and invokes the extracted scheduler and response parser directly"
-  },
-  "deterministic_complexity": {
-    "tool": "Python stdlib ast in focused production-controller test",
-    "protocol_function_count": 22,
-    "aggregate_branch_nodes": 100,
-    "maximum_branch_nodes": 26,
-    "maximum_function": "ControllerRouteHoldScheduler._observe_status",
-    "module_line_limit": 1000,
-    "module_line_limit_passed": true
-  },
-  "validation": {
-    "command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py -k 'generic_controller_route_hold_scheduler'",
-    "result": "4 passed, 129 deselected in 0.36s",
-    "collection_correction": "the first extraction attempt left the former class decorator attached to the following function; removed before the passing correction run",
-    "py_compile": "passed",
-    "git_diff_check": "passed",
-    "configure_count": 0,
+  "behavior_change": false,
+  "decomposition_receipt": {
+    "controller_lines_before": 7767,
+    "controller_lines_after": 410,
+    "all_extracted_modules_below_1000_lines": true,
+    "capture_suite": "149 passed in 23.15s",
     "build_count": 0,
     "worldserver_start_count": 0,
     "database_mutated": false,
     "dvc_mutated": false
   },
-  "behavior_change": false,
   "remaining_unproven": [
-    "native build success at the extraction commit",
-    "one live start-held through post-release-generation transcript"
+    "native build success at 875dfc3a9f19461db1a0c9fd65056c41aa6622c4",
+    "one live start-held, arm, checkpoint-terminal, release transcript"
   ],
+  "verification_budget": {
+    "configure_count_max": 1,
+    "build_count_max": 1,
+    "worldserver_start_count_max": 1,
+    "compiler_jobs": 8,
+    "linker_jobs": 1
+  },
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "raid_success_timer_seconds": null,
+    "terminal_edges": [
+      "normal_clear",
+      "monotonic_semantic_stall",
+      "repeated_decisions",
+      "excessive_death_loops",
+      "infrastructure_loss",
+      "explicit_interruption"
+    ]
+  },
+  "required_live_evidence": {
+    "protocol": "generic_controller_route_hold",
+    "transcript": [
+      "start-held acknowledged at the initial route generation",
+      "two identity-stable held status receipts",
+      "sealed checkpoint arm acknowledged exactly once",
+      "one identity-preserved checkpoint terminal",
+      "release acknowledged exactly once",
+      "ordinary route progress observed only after release"
+    ],
+    "success_timer_policy": "no fixed 300 second raid success timer"
+  },
   "next_work_unit": "shard:generic_controller_route_hold_one_build_one_start_v13",
-  "next_action": "One separate clean build and at most one completion-watchdog worldserver start remain proposed but unauthorized by this extraction unit.",
-  "next_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_scheduler_extraction_handoff_v1.json"
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run one clean native build with eight compiler jobs and one linker, then at most one worldserver start governed by the completion watchdog to capture the generic start-held/arm/terminal/release transcript."
 }

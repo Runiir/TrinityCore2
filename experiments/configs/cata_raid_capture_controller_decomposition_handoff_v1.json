@@ -1,0 +1,90 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:capture_controller_decomposition_v1",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "passed",
+  "source_commit": "875dfc3a9f19461db1a0c9fd65056c41aa6622c4",
+  "scope": {
+    "universal": true,
+    "specs": "all configured DPS, tank, and healer specs",
+    "encounters": "all route-manifest nodes",
+    "modes": ["10N", "10H", "25N", "25H"],
+    "canaries_only": ["Affliction", "Magmaw"],
+    "canary_semantics": "Affliction and Magmaw supplied bounded evidence only; the decomposed controller and generic route-hold protocol contain no spec- or boss-specific acceptance widening."
+  },
+  "behavior_change": false,
+  "maintainability_receipt": {
+    "controller": "tools/raid_program/capture_phase1_raid_foundation.py",
+    "controller_lines_before": 7767,
+    "controller_lines_after": 410,
+    "controller_sha256": "156ce6ddf2e46642ef3d21dfb57bb10781c1c548ae73088e0f3750910a39ab0b",
+    "module_line_limit": 1000,
+    "all_listed_modules_below_limit": true,
+    "extracted_modules": [
+      {"path": "tools/raid_program/controller_route_hold.py", "lines": 491, "sha256": "44a2712700b4b797dedd822058424505147585d9d0b836a0758c5205c22e2968"},
+      {"path": "tools/raid_program/capture_progress.py", "lines": 287, "sha256": "386d38636276e45bc90b66797d7c6077e828e5fb0e733485145a4fd2cb3b5aae"},
+      {"path": "tools/raid_program/capture_watchdog.py", "lines": 875, "sha256": "448b4dd17987947aca7b2bd94781723e45c43a2198de59f24179de39e33dfa14"},
+      {"path": "tools/raid_program/capture_evidence_demux.py", "lines": 954, "sha256": "9973a0ff5480520c1f1fe887b42f8e0914ba5260f4a151b430ece372fe9b7542"},
+      {"path": "tools/raid_program/capture_drudge_geometry.py", "lines": 417, "sha256": "58f76aef77a8c8b5669b0eb53bd4e2b8b881671f939f919cbe88cf5fc6a9be5b"},
+      {"path": "tools/raid_program/capture_drudge_contract.py", "lines": 811, "sha256": "094a80e0a7677693fa702bd63bd394afe4d3823e266ab88ca064511df5e3dd4d"},
+      {"path": "tools/raid_program/capture_environment_validation.py", "lines": 721, "sha256": "f1c2e5bc00451a359c460d44496f99263c9c589ca8ac06a1de0e6c0ac7a49671"},
+      {"path": "tools/raid_program/capture_telemetry_transport.py", "lines": 586, "sha256": "d6b07eeda0b5e014ace5a2f19967771a7c8c2f4ce69145560dd5d3810089f510"},
+      {"path": "tools/raid_program/capture_runtime_acceptance.py", "lines": 769, "sha256": "6ea99ec8b225d78635a7ccac9c839178f0b6e6dcd8be5e6a630e5fe62e4d2d16"},
+      {"path": "tools/raid_program/capture_forced_evidence.py", "lines": 294, "sha256": "5bf12ef473bfc7e80a06e2170bbafe7ea4b78b114c40837140151583d5c449cd"},
+      {"path": "tools/raid_program/capture_checkpoint_controller.py", "lines": 262, "sha256": "9ee73cb77292d41600017bde17de748f536c6bd667728f37aa3b3ac01f72827e"},
+      {"path": "tools/raid_program/capture_run_outcome.py", "lines": 176, "sha256": "7fc54ae21e409e9ce0764a330e973cc6629d167c4579d23ad860c32598c6a166"},
+      {"path": "tools/raid_program/capture_runtime_io.py", "lines": 78, "sha256": "1839979657bd404a3fbb2071bf2e0bb19e40b52470a4437d0179d8ccacb54034"},
+      {"path": "tools/raid_program/capture_setup.py", "lines": 376, "sha256": "f37117af651fd079638db0f5dde12cd67b35a4085213104a61723cf10ec64955"},
+      {"path": "tools/raid_program/capture_live_run.py", "lines": 955, "sha256": "b9209edc8e7927e6d29b198729e03e94febd9c0b778068a84bde020ea87bf7a3"},
+      {"path": "tools/raid_program/capture_finalization.py", "lines": 572, "sha256": "06e9366fa33672fb87db960f089db5b69f5ce4d0e79540972bdcbe0552f88a9f"}
+    ]
+  },
+  "validation": {
+    "command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py",
+    "result": "149 passed in 23.15s",
+    "tests_sha256": "f2dcfdf46c0974a035b0729faf01724b22224b241838c5f90b8429fc934b2648",
+    "configure_count": 0,
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the controller delegates setup, live process ownership, and immutable finalization through explicit typed results",
+      "the existing generic controller-route-hold implementation remains production-owned and behavior preserving",
+      "all listed extracted modules are below 1000 physical lines",
+      "the full capture suite passes at the recorded source commit"
+    ],
+    "unproven": [
+      "native build success at source commit 875dfc3a9f19461db1a0c9fd65056c41aa6622c4",
+      "one live start-held, arm, checkpoint-terminal, release transcript under the completion watchdog"
+    ]
+  },
+  "mutations": {
+    "native_or_gameplay": false,
+    "build_or_server": false,
+    "database": false,
+    "dvc": false
+  },
+  "live_verification_plan": {
+    "next_work_unit": "shard:generic_controller_route_hold_one_build_one_start_v13",
+    "build_budget": 1,
+    "worldserver_start_budget": 1,
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "validation_clock": {
+      "policy": "completion_watchdog",
+      "fixed_success_timer_seconds": null,
+      "raid_success_timer_seconds": null
+    },
+    "required_transcript": [
+      "start-held acknowledged at the initial route generation",
+      "two identity-stable held status receipts",
+      "sealed checkpoint arm acknowledged exactly once",
+      "one identity-preserved checkpoint terminal",
+      "release acknowledged exactly once",
+      "ordinary route progress observed only after release"
+    ]
+  }
+}
