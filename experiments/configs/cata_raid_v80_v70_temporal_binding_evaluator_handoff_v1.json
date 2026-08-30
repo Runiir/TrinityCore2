@@ -117,10 +117,6 @@
     "worldserver_start": 0,
     "dvc_publication": 0
   },
-  "next_work_unit": {
-    "id": "evidence:bind_v70_fixture_verification_evidence_v81",
-    "owner_skill": "raid-evidence-lifecycle",
-    "required_action": "Bind each of the same three V70 rows to its exact immutable V70 receipt or selector evidence without altering chronology revisions receipt IDs source identities commands results or causal interpretation, then evaluate once and reactivate the same requested 4/5/5 map replay only if the complete decision admits fixture expansion.",
-    "live_authorized": false
-  }
+  "next_work_unit": null,
+  "terminal_action": "Stop at the exact evaluator terminal and report it. V80 does not authorize an evidence-field hypothesis, another evaluator, or a map replay."
 }
