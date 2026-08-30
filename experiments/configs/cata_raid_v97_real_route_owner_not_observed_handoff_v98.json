@@ -1,0 +1,114 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v97",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed_real_route_owner_not_observed",
+  "source": {
+    "commit": "c35fa964011ba7b10b5ff6f942bb38a8c7697c18",
+    "tree": "6ccdc38ade85ac1d42c4606b6016693bff72fe9a",
+    "binary_sha256": "a954af6daf69180c0929621862e427e113fa34559cfcb206aa131f683f99c4c0",
+    "v96_handoff": "experiments/configs/cata_raid_v96_verified_checkpoint_fixture_route_hold_handoff_v97.json",
+    "v96_handoff_sha256": "ff69e7df50680fe88233ae51981b6f6f838c2558174e20b9338df2c01e78f7bb"
+  },
+  "passed_gates": {
+    "recurrence_suite": "20/20",
+    "fixture_expansion_admitted": true,
+    "fresh_fast8_v4_build_gate_bearing": true,
+    "binary_build_receipt_file_sha256": "fc7ac8436926146c9316368a1a58516058184d3552f14bc35db19a9bde2148e8",
+    "binary_build_receipt_sha256": "62f58cca96bb9f74d9f1efd0e452c528512ffe263a570cd20ecf59b0de505d2e",
+    "tracked_runtime_config_verified": true,
+    "canonical_catalog_and_selector_verified": true,
+    "route_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "atomic_bundle_verified": true,
+    "recurrence_admission_sha256": "07be19325df8d8a0425810dd4238c7ea63c60d635fe3881dc09ae5ac6ae08585",
+    "strict_retained_roster_readback": true
+  },
+  "operations": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 1,
+    "authserver_start_count": 0,
+    "retry_count": 0,
+    "database_mutation_count": 0,
+    "gameplay_mutation_count": 0
+  },
+  "ordered_native_result": {
+    "actor_guid": 30008,
+    "attempt_id": 1,
+    "map_id": 669,
+    "instance_id": 8,
+    "route_generation": 1,
+    "route_node_id": "bwd.magmaw.chainwielder",
+    "arm_timestamp_ms": 1788124491073,
+    "hazard_start_timestamp_ms": 1788124562976,
+    "hazard_completion_timestamp_ms": 1788124568893,
+    "checkpoint_failure_timestamp_ms": 1788124569893,
+    "hazard_movement_receipt_id": 2,
+    "hazard_movement_owner": "combat_range",
+    "hazard_movement_spline_id": 461,
+    "hazard_movement_terminal": "selected_endpoint_reached",
+    "native_terminal_reason": "real_route_owner_not_observed",
+    "controller_surface_failure": "controller_route_hold_checkpoint_identity_not_preserved",
+    "release_ack_count": 0,
+    "post_release_route_advance": false
+  },
+  "first_broken_edge": {
+    "stage": "native_chainwielder_checkpoint_route_owner",
+    "result": "real_route_owner_not_observed",
+    "cause": "TryValidationRouteMovementCheck invokes MoveBotToPoint without an explicit movement owner; for the live in-combat actor the compatibility adapter attributed the successful hazard exit to CombatRange, so the Route-only checkpoint correctly did not arm activeRoutePath or routeRetryArmed",
+    "later_wrapper_symptom": "the pre-injection failure retained a false BeforeAfterIdentityPreserved value and the generic hold surfaced checkpoint_identity_not_preserved after the native failure",
+    "invalidated_fixture_revision": "the V59-V62 synthetic claim that the Armed validation-route pair establishes the required live Route owner is refuted by the production receipt"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the V96 composite checkpoint identity repair reached and armed the production fixture once",
+      "the live hazard exit launched receipt 2 and spline 461 and reached its endpoint under CombatRange ownership",
+      "the checkpoint correctly rejected CombatRange as Route ownership and failed real_route_owner_not_observed",
+      "the route hold remained fail closed with no release or route advance",
+      "the sole worldserver cleaned up with zero bots, zero leases, and no surviving process"
+    ],
+    "refuted": [
+      "V97 failed at recurrence admission, checkpoint identity selection, seal verification, held acquisition, arm acknowledgement, build identity, or server startup",
+      "checkpoint_identity_not_preserved is the earliest causal failure",
+      "the V59-V62 synthetic Route-owner replay validates the live in-combat movement-owner boundary",
+      "V97 produced any requested revision 4/5/5 correlated outcome"
+    ],
+    "unproven": [
+      "same-level floor observation revision 4",
+      "same-level hazard path admission revision 5",
+      "same-level native path proof revision 5",
+      "the requested Route-owned planner-to-MotionMaster-to-point-generator-to-spline terminal and no-launch negatives",
+      "any gameplay canary or boss result"
+    ]
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_c35fa96401_v97_real_route_owner_not_observed_20260831.dvc",
+    "dvc_pointer_sha256": "5172b89ecd174013086a46bef57ee16d77328ced7195a7faa307b02c729b4e6f",
+    "dvc_directory_md5": "7888f8b9776436706a6e8264118cbe62.dir",
+    "file_count": 37,
+    "size_bytes": 14745278,
+    "remote_reconstruction": "verified",
+    "remote_reconstruction_manifest_sha256": "2773fafd2b59114afa7422cfdb03105d6b54f32abf5d45116cc0a941595f7885"
+  },
+  "cleanup": {
+    "capture_cleanup_gate_passed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "next_work_unit": {
+    "id": "runtime:chainwielder_live_combat_movement_owner_v98",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "build_worldserver_database_dvc_budget": 0,
+    "required_fail_before": "the V97 production ordering launches and completes the configured hazard exit as CombatRange, after which the Route-only checkpoint fails real_route_owner_not_observed",
+    "required_change": "at the narrow TryValidationRouteMovementCheck production boundary, make the configured validation-route hazard movement carry its truthful explicit typed owner through the real movement planner; do not alter geometry, destination, admission, priority ordering, path tolerance, or gameplay mechanics",
+    "required_pass_after": "a production-bound replay of the V97 ordering proves the configured hazard movement is admitted with the exact actor/attempt/wipe/route identity and the checkpoint reaches one receipt-zero Hazard rejection plus one identity-preserved subsequent-tick terminal",
+    "required_negative_cases": [
+      "ordinary in-combat class, encounter, formation, recovery, and range movement retains its existing owner",
+      "stale actor, attempt, wipe, route generation, route node, seal, source, or runtime profile cannot arm the fixture",
+      "missing configured hazard identity cannot trigger injection",
+      "duplicate injection, terminal, release, or pre-terminal route advance remains rejected"
+    ]
+  }
+}
