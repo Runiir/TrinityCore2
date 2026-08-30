@@ -1,19 +1,19 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "v82_shared_planner_observation_boundary_normalization_20260830",
-  "work_unit": "evidence:normalize_shared_planner_observation_boundaries_v82",
+  "epoch_id": "v84_pending_expansion_overlap_clean_identity_evaluation_20260830",
+  "work_unit": "evidence:verify_pending_expansion_overlap_v84",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
-  "gate_state": "evaluator_precedence_repaired_ledger_evidence_boundary_invalid",
-  "observed_at_commit": "ada08904fde16aa9d4de2ef17c740c7215509988",
-  "immutable_input_commit": "ada08904fde16aa9d4de2ef17c740c7215509988",
+  "gate_state": "evaluator_fixed_fresh_clean_identity_decision_required",
+  "observed_at_commit": "1dddf07a639614cbff21e55aebee6e15b2ff7781",
+  "immutable_input_commit": "1dddf07a639614cbff21e55aebee6e15b2ff7781",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v81_regression_bank_equal_boundary_precedence_handoff_v1.json",
-    "sha256": "f3a8be65b58ce6f19c1f205911fc02d923029ff1dd1edb3cf4923a44231e0e88",
-    "source_commit": "ada08904fde16aa9d4de2ef17c740c7215509988"
+    "path": "experiments/configs/cata_raid_v83_pending_expansion_overlap_evaluator_handoff_v1.json",
+    "sha256": "24735f08a12c11a606562f4e612d546501d41b92cb3a17af4f231a69cb76c466",
+    "source_commit": "1dddf07a639614cbff21e55aebee6e15b2ff7781"
   },
   "program_scope": {
-    "operation": "normalize exactly three shared-planner fixture evidence-boundary enum values and evaluate once",
+    "operation": "one exact clean-identity regression suite and fixture-expansion evaluator",
     "gameplay_canary_admitted": false,
     "fixture_expansion_replay_admitted": false,
     "build_admitted": false,
@@ -21,43 +21,37 @@
     "runtime_implementation_allowed": false
   },
   "behavior_change": false,
-  "evidence_contract_change": true,
+  "evidence_contract_change": false,
   "ready_for_bounded_repair": true,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "In experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json only, change same_level_floor_observation_v1 evidence_boundary from value_only to observation_only and change same_level_hazard_path_admission_v1 plus same_level_native_path_proof_v1 from value_only_and_source_shape to observation_only. Preserve every revision, command, status, required production boundary, expansion request, V70 verification, run, and causal interpretation. Commit that ledger correction cleanly, then execute one exact clean-identity 20-fixture suite/evaluator and record one compact V82 handoff plus routing descriptor.",
+    "allowed_change": "At the exact clean V83 evaluator-fix commit, run the checked-in 20-fixture regression bank once with exact source identity, canonical config identity, and the Canary122 after-boundary, then evaluate gate fixture_expansion once. Retain one compact V84 handoff and update this descriptor. Do not modify the ledger, evaluator, tests, fixture commands, revisions, requests, gameplay, or workflow.",
+    "boundary": {
+      "run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+      "side": "after"
+    },
+    "required_result": {
+      "fixture_count": 20,
+      "passing_fixture_count": 20,
+      "route_failures": [],
+      "fixture_expansion_admitted": true,
+      "build_admitted": false,
+      "canary_admitted": false,
+      "acceptance_admitted": false
+    },
     "allowed_files": [
-      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-      "one_compact_v82_handoff",
+      "one_compact_v84_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
-    "exact_rows": [
-      {
-        "fixture_id": "same_level_floor_observation_v1",
-        "from": "value_only",
-        "to": "observation_only"
-      },
-      {
-        "fixture_id": "same_level_hazard_path_admission_v1",
-        "from": "value_only_and_source_shape",
-        "to": "observation_only"
-      },
-      {
-        "fixture_id": "same_level_native_path_proof_v1",
-        "from": "value_only_and_source_shape",
-        "to": "observation_only"
-      }
-    ],
     "forbidden": [
-      "parser enum broadening or evaluator change",
-      "fixture revision, command, threshold, tolerance, comparison, required-boundary, expansion-request, run, V70, or Chainwielder change",
-      "gameplay, runtime, planner, executor, encounter, class, route, test, or workflow edit",
-      "configure, build, runtime-config, bundle, database, worldserver, live replay, DVC publication, or fixed timer"
+      "ledger, evaluator, test, fixture, request, revision, threshold, tolerance, comparison, or workflow edit",
+      "gameplay, runtime, planner, executor, encounter, class, route, or Chainwielder edit",
+      "configure, build, runtime-config, bundle, database, worldserver, live replay, DVC publication, or fixed timer",
+      "reuse of a receipt whose source identity does not equal the clean evaluator-fix commit"
     ]
   },
   "verification_budget": {
-    "ledger_field_change_count": 3,
     "regression_suite_invocation_count_maximum": 1,
     "recurrence_evaluator_count_maximum": 1,
     "configure_count_maximum": 0,
@@ -74,11 +68,11 @@
       "same_level_hazard_path_admission_v1": 5,
       "same_level_native_path_proof_v1": 5
     },
-    "status": "closed_pending_fixture_expansion_admitted_decision"
+    "status": "closed_until_v84_fixture_expansion_admitted"
   },
   "preserved_pending": {
-    "chainwielder_expansion": "chainwielder_pre_admission_rejection_isolation_v1 remains pending and out of this correction",
-    "v70": "revisions 7/6/6 and their Canary122 after-boundary evidence remain unchanged",
+    "chainwielder_expansion": "chainwielder_pre_admission_rejection_isolation_v1 remains a separate pending target",
+    "v70": "revisions 7/6/6 and Canary122 after-boundary history remain unchanged",
     "v68_runtime_config": "tracked_snapshot_source_invalid remains preserved"
   },
   "validation_clock": {
@@ -86,13 +80,13 @@
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "fixture_expansion_decision_created",
-      "ledger_schema_correction_rejected",
-      "suite_or_evaluator_failure",
+      "fixture_expansion_decision_admitted",
+      "suite_failure",
+      "evaluator_failure",
       "identity_mismatch"
     ]
   },
-  "next_work_unit": "evidence:normalize_shared_planner_observation_boundaries_v82",
+  "next_work_unit": "evidence:verify_pending_expansion_overlap_v84",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Normalize only the three invalid evidence-boundary enums, run one clean-identity suite/evaluator, and route the preserved V71b replay only if the complete decision reports fixture_expansion_admitted true."
+  "next_action": "Run one fresh clean-identity suite/evaluator and reactivate the unchanged V71b map-669 replay only if fixture expansion is admitted while build and canary remain false."
 }

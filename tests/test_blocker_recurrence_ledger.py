@@ -811,6 +811,54 @@ def test_observation_only_pass_stays_pending_without_production_boundary() -> No
     assert decision["required_next_action"] == "run_fixture_expansion_replay"
 
 
+def test_observation_only_replacement_request_admits_only_fixture_expansion() -> None:
+    verification = _pass("launch_receipt", "102", revision=2)
+    verification.pop("passed_before_run_id")
+    verification["passed_after_run_id"] = "102"
+    fixture = {
+        **_fixture("launch_receipt"),
+        "revision": 2,
+        "evidence_boundary": "observation_only",
+        "required_production_boundary": (
+            "worldserver-backed map-669 planner-to-spline multi-tick replay"
+        ),
+    }
+    ledger = _bank_ledger(
+        [
+            {
+                "run_id": "102",
+                "route_completed": False,
+                "blockers": {"edge": "occurred"},
+            }
+        ],
+        fixtures=[fixture],
+        verifications=[verification],
+    )
+    ledger["regression_bank"]["fixture_expansion_requests"] = [
+        _expansion_request("launch_receipt", from_revision=2)
+    ]
+
+    decision = evaluate_ledger(
+        ledger,
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
+    )
+
+    assert decision["pending_fixture_ids"] == ["launch_receipt"]
+    assert decision["fixture_expansion_target_ids"] == ["launch_receipt"]
+    assert decision["fixture_expansion_requests"] == [
+        _expansion_request("launch_receipt", from_revision=2)
+    ]
+    assert decision["fixture_expansion_admitted"] is True
+    assert decision["build_admitted"] is False
+    assert decision["canary_admitted"] is False
+    assert decision["acceptance_admitted"] is False
+    assert decision["required_next_action"] == "run_fixture_expansion_replay"
+
+
 def test_unchanged_fixture_rerun_after_recurrence_does_not_admit_canary() -> None:
     before = _pass("original", "101")
     after = _pass("original", "102")

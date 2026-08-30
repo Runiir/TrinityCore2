@@ -1,0 +1,79 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:audit_pending_expansion_overlap_v83",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "evaluator_bug_fixed_fresh_identity_evaluation_required",
+  "source": {
+    "input_commit": "1dddf07a639614cbff21e55aebee6e15b2ff7781",
+    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "ledger_sha256": "2997dc762e11767ce665f6f7e49ea8ae37a07b88939c548ab65d43185ed72223"
+  },
+  "first_broken_edge": {
+    "location": "tools/raid_program/blocker_recurrence_ledger.py::_evaluate_regression_bank",
+    "contradiction": "The evaluator defined fixture_expansion_targets as pending union requested replacements, then emitted fixture_already_pending for every requested fixture in pending.",
+    "v82_route_failures": [
+      "fixture_expansion_request:same_level_floor_observation_v1:fixture_already_pending",
+      "fixture_expansion_request:same_level_hazard_path_admission_v1:fixture_already_pending",
+      "fixture_expansion_request:same_level_native_path_proof_v1:fixture_already_pending"
+    ],
+    "effect": "The exact observation-only fixtures carrying explicit 3-to-4, 4-to-5, and 4-to-5 production-boundary requests were selected as expansion targets and simultaneously rejected solely for being those targets."
+  },
+  "intended_semantics": {
+    "pending": "the current fixture remains observation_only and cannot satisfy the production bank",
+    "requested_replacement": "the current fixture has a sealed next revision, causal signature, and required production boundary",
+    "overlap": "valid and necessary when an observation-only fixture is the retained predecessor of an explicit production expansion request",
+    "fail_closed": "pending and expansion requests continue to block regression-bank, build, canary, and acceptance admission; fixture expansion still requires the complete current suite, valid identities, observed causal signatures, and no execution failure"
+  },
+  "implemented_change": {
+    "production": "remove only fixture_already_pending from requested-replacement validation",
+    "preserved_validation": [
+      "request fixture exists and is unique",
+      "from_revision equals retained revision",
+      "to_revision increments exactly once",
+      "causal signature matches and has occurred",
+      "required production boundary is nonempty",
+      "current suite covers every retained fixture without identity, execution, or manifest failures"
+    ],
+    "test": "test_observation_only_replacement_request_admits_only_fixture_expansion"
+  },
+  "validation": {
+    "command": [
+      "pixi",
+      "run",
+      "pytest",
+      "-q",
+      "tests/test_blocker_recurrence_ledger.py::test_observation_only_replacement_request_admits_only_fixture_expansion",
+      "tests/test_blocker_recurrence_ledger.py::test_observation_only_pass_stays_pending_without_production_boundary",
+      "tests/test_blocker_recurrence_ledger.py::test_explicit_replacement_evidence_request_admits_only_exact_invalidated_target",
+      "tests/test_blocker_recurrence_ledger.py::test_replacement_evidence_request_seals_revision_signature_and_boundary"
+    ],
+    "result": "7 passed in 0.10s",
+    "full_fixture_suite_rerun": false,
+    "tool_sha256": "74e38f2986e7a7b466491fb3bac2bc73f8e41ee3427532bd6bdfe770a0550f33",
+    "test_sha256": "94b2a886551a89582823336bb60d8c61a8984f86401489dd72f5aafd5d808d19"
+  },
+  "logic_replay": {
+    "authority": "in-memory evaluator counterexample only; not a clean-source suite receipt",
+    "fixture_expansion_admitted": true,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "route_failures": [],
+    "required_next_action": "run_fixture_expansion_replay"
+  },
+  "preserved_targets": {
+    "shared_planner": {
+      "same_level_floor_observation_v1": 4,
+      "same_level_hazard_path_admission_v1": 5,
+      "same_level_native_path_proof_v1": 5
+    },
+    "chainwielder": "chainwielder_pre_admission_rejection_isolation_v1 remains a separate pending target",
+    "gameplay_canary_admitted": false,
+    "build_admitted": false
+  },
+  "next_work_unit": {
+    "id": "evidence:verify_pending_expansion_overlap_v84",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "At the clean evaluator-fix commit, run one exact 20-fixture suite and recurrence evaluator at the Canary122 after-boundary. If and only if fixture_expansion_admitted is true with build and canary false, reactivate the unchanged V71b shared-planner map-669 replay while preserving the separate Chainwielder target."
+  }
+}

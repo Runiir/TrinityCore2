@@ -663,10 +663,6 @@ def _evaluate_regression_bank(
             route_failures.append(
                 f"fixture_expansion_request:{fixture_id}:causal_signature_not_observed"
             )
-        if fixture_id in pending:
-            route_failures.append(
-                f"fixture_expansion_request:{fixture_id}:fixture_already_pending"
-            )
     fixture_expansion_targets = pending | requested_replacements
     admitted = not (
         route_failures
