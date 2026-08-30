@@ -1,24 +1,43 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "trace_transport_pressure_one_start_preflight_failure_v1_20260830",
+  "epoch_id": "trace_transport_pressure_live_admission_repaired_v1_20260830",
   "work_unit": "shard:queued_build_and_trace_transport_pressure_one_start",
   "raid": "blackwing_descent",
   "boss": null,
   "mode": "telemetry_only",
   "owner_skill": "raid-shard-architecture",
-  "classification": "preflight_failed_descriptor_did_not_bind_assigned_implementation_handoff",
-  "gate_state": "no_build_no_provision_no_start",
-  "observed_at_commit": "ac653a53dd54b9cd01713ae66d75e7460d3e3c5b",
+  "classification": "live_admission_descriptor_repaired_build_and_one_start_pending",
+  "gate_state": "transport_only_one_start_authorized_no_gameplay_admission",
+  "observed_at_commit": "a6fde68694b211f164c80439351bbf66acb3f818",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_trace_transport_pressure_one_start_preflight_handoff_v1.json",
-    "sha256": "3917b1667533b6338a62d93adc5474ccdac2f7daf3ad6ba0543669a9fad7d8a2"
-  },
-  "immutable_implementation_handoff": {
     "path": "experiments/configs/cata_raid_trace_transport_test_pressure_and_generic_identity_handoff_v1.json",
-    "observed_sha256": "7966ef4da0ba7854cf3f6ecfd3ad6665e481e810c296232eec6787308bf41962",
-    "bound_by_failed_descriptor": false
+    "sha256": "7966ef4da0ba7854cf3f6ecfd3ad6665e481e810c296232eec6787308bf41962"
   },
-  "first_broken_edge": "The active descriptor did not bind the assigned immutable implementation handoff path and SHA, and raid_workloop reported the descriptor invalid before build admission.",
+  "preflight_failure_history": {
+    "path": "experiments/configs/cata_raid_trace_transport_pressure_one_start_preflight_handoff_v1.json",
+    "sha256": "3917b1667533b6338a62d93adc5474ccdac2f7daf3ad6ba0543669a9fad7d8a2",
+    "worldserver_start_count": 0,
+    "classification": "descriptor_did_not_bind_assigned_implementation_handoff"
+  },
+  "first_broken_edge": "The prior live assignment descriptor omitted the tested implementation handoff binding. This descriptor repairs only that control-plane identity and preserves the unused one-start budget.",
+  "claim_ledger": {
+    "verified": [
+      "the implementation handoff is tracked and has SHA-256 7966ef4da0ba7854cf3f6ecfd3ad6665e481e810c296232eec6787308bf41962",
+      "the implementation focused tests passed before this coordination unit",
+      "the prior live worker created zero build tickets and started zero worldservers",
+      "the latest ordinary ten-actor readback had zero online leased group instance corpse and ghost residue"
+    ],
+    "refuted": [
+      "the prior zero-start preflight result consumed the one-start transport budget",
+      "this telemetry-only assignment admits gameplay route fixture canary boss-fidelity or acceptance claims"
+    ],
+    "unproven": [
+      "the gated pressure command executes in a live worldserver",
+      "the first normal delta reports one actor-local explicit discontinuity",
+      "the next pressure-scheduled delta resumes the same actor contiguously",
+      "the transport-only generic identity and demultiplexing gates pass live"
+    ]
+  },
   "claim_scope": {
     "authority": "trace_transport_test_only_not_gameplay",
     "transport_admitted": false,
@@ -36,21 +55,30 @@
     "emergency_wall_cap_seconds": 90,
     "cap_expiry_is_success": false
   },
-  "validation": {
-    "source_commit": "ac653a53dd54b9cd01713ae66d75e7460d3e3c5b",
-    "focused_tests_run": false,
-    "build_ticket_count": 0,
-    "worldserver_start_count": 0,
-    "pressure_command_count": 0,
-    "live_transport_verified": false,
-    "cleanup_verified": true,
-    "final_zero_residue_readback": true,
-    "final_readback_sha256": "5b96cbe220178b794d43144f1087e2662f0e6a8bb404c21e28aeea094017a75d"
+  "scope_lock": {
+    "allowed": "one exact clean fast8_v2 build and one transport-only trace_transport_10 worldserver start through the production controller",
+    "required_observation": "one successful pressure receipt followed by one explicit actor-local gap and the exact next same-actor gap-free contiguous delta with peer isolation",
+    "forbidden": [
+      "gameplay_or_route_change",
+      "fixture_or_recurrence_change",
+      "class_or_encounter_change",
+      "trace_ring_capacity_or_cursor_semantics_change",
+      "second_worldserver_start",
+      "gameplay_or_acceptance_claim"
+    ]
   },
+  "validation": {
+    "implementation_commit": "ac653a53dd54b9cd01713ae66d75e7460d3e3c5b",
+    "focused_tests_passed": true,
+    "build_pending": true,
+    "worldserver_start_count": 0,
+    "live_transport_verified": false,
+    "cleanup_required_after_run": true
+  },
+  "next_action": "Create one gate-bearing fast8_v2 build receipt for the current clean source, verify ordinary ten-actor zero-residue provisioning, and run the single transport-only production-controller smoke. Stop after any preflight or sole-run failure.",
   "next_owner": {
-    "owner": "raid-performance-loop",
-    "work_unit": "coordination:repair_trace_transport_live_admission_descriptor",
-    "action": "issue a fresh active descriptor that explicitly binds the assigned implementation handoff path and SHA, has valid source provenance and completion-watchdog timing, then assign a new one-start transport work unit",
-    "do_not_do": "do not treat this zero-start preflight result as transport admission or make gameplay, route, fixture, canary, boss-fidelity, or acceptance claims"
+    "owner": "raid-shard-architecture",
+    "work_unit": "shard:queued_build_and_trace_transport_pressure_one_start",
+    "do_not_advance_to": "Chainwielder fixture expansion until the transport gate passes"
   }
 }
