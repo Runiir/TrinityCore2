@@ -1,0 +1,121 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_bundle_error_compatibility_review_v36",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_green_pending_live_verification",
+  "source_state": {
+    "commit": "fddef943c4d63e439eade0563f41dbd8a56dcbbe",
+    "tree": "12ab5db0d15858f2858d1b0fb417f6478f95e899",
+    "parent_commit": "5b368ad2c99b5c433f1844e77ecb3694005b413c",
+    "clean_before_review": true,
+    "v34_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_canonical_route_staging_final_review_handoff_v34.json",
+    "v34_handoff_sha256": "d5bc7e605939b13c98782b58435bee0c686711744aeb1a2e0ef047ea16b61f4f"
+  },
+  "scope_lock": {
+    "reviewed_boundary": "local Chainwielder BundleError identity, same-signature generic staging wrapper, translated failure chaining, zero-create failure behavior, unchanged bundle create/verify surface, and unchanged generic staging/skill authority",
+    "implementation_or_test_edits": false,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "staging_preflight_count": 0,
+    "atomic_bundle_create_count": 0,
+    "atomic_bundle_verify_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "tools.raid_program.chainwielder_prestart_bundle.BundleError is again a concrete local RuntimeError subclass with module tools.raid_program.chainwielder_prestart_bundle and name BundleError",
+      "the public stage_canonical_route wrapper retains the original four keyword-only arguments: worktree, source_route, expected_sha256, and external_run_root",
+      "the wrapper calls the generic canonical_route_staging owner with the fixed validation_scenarios stage/member identities and translates CanonicalRouteStagingError to local BundleError while preserving the exact reason and exception cause",
+      "the real missing-source failure regression observes the local concrete BundleError, a chained generic cause, the exact source_route_location_invalid reason, and zero create_bundle calls",
+      "the bundle-local atomic copy helper also translates generic exclusive-write failures back to local BundleError",
+      "create_bundle and verify_bundle function ASTs are unchanged from the V34 candidate and therefore retain the local exception surface after the restored global class binding",
+      "canonical_route_staging.py and raid-shard-architecture/SKILL.md are byte-for-byte unchanged from V34; the prior DVC authority, external copy, receipt, filesystem rejection, and narrow skill-routing contracts remain intact",
+      "only the two V35-allowed files changed",
+      "chainwielder_prestart_bundle.py remains readable and below 1000 lines at 984",
+      "the independent focused suite passed all 18 real staging, wrapper-failure, and bundle create/verify cases"
+    ],
+    "refuted": [],
+    "unproven": [
+      "an authenticated externally staged exact route reaches one authoritative atomic bundle create and verify",
+      "a fresh native worldserver consumes the profile-bound suffix as Chainwielder generation one",
+      "two stable Held statuses precede one sealed arm",
+      "one identity-preserved checkpoint lifecycle reaches a typed terminal",
+      "release advances exactly once to retained Drudges",
+      "the new closed evidence is remotely reconstructed before exact local eviction"
+    ]
+  },
+  "closed_edge": {
+    "owner": "chainwielder_staging_compatibility_wrapper",
+    "prior_edge": "BundleError aliased the generic CanonicalRouteStagingError and changed every bundle failure's concrete module and class name",
+    "pass_postcondition": "the wrapper failure is exactly tools.raid_program.chainwielder_prestart_bundle.BundleError, chains CanonicalRouteStagingError as its cause, retains the reason, and invokes no create",
+    "correlation_keys": {
+      "source_commit": "fddef943c4d63e439eade0563f41dbd8a56dcbbe",
+      "bundle_error_module": "tools.raid_program.chainwielder_prestart_bundle",
+      "bundle_error_name": "BundleError",
+      "wrapper_signature": "(*, worktree, source_route, expected_sha256, external_run_root)",
+      "focused_result": "18 passed in 0.66s"
+    }
+  },
+  "changed_file_audit": {
+    "changed_files": [
+      "tests/test_canonical_route_staging.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py"
+    ],
+    "all_changes_within_v35_allowlist": true,
+    "unchanged_authority_files": {
+      "tools/raid_program/canonical_route_staging.py": {
+        "sha256": "459417a9c2c1ac10fc52d20bedb6450f387f21718dff4aec80cda33676aeb7f2",
+        "lines": 249
+      },
+      ".agents/skills/raid-shard-architecture/SKILL.md": {
+        "sha256": "ae96718084c127287cd2d266e27ee54956b6d8c680132cbac1985eaedbf7f2ea",
+        "lines": 400
+      }
+    },
+    "reviewed_files": {
+      "tools/raid_program/chainwielder_prestart_bundle.py": {
+        "sha256": "4de020a2a42428e8d9da91dee9cf37b6a45c28b51a73e422ef4cb17db3a8db4c",
+        "lines": 984
+      },
+      "tests/test_canonical_route_staging.py": {
+        "sha256": "3eb4a6180b0410445405848d7adf29a7858832c2f822027a8f922fba8a102557",
+        "lines": 304
+      }
+    },
+    "production_under_1000_and_readable": true
+  },
+  "deterministic_review": {
+    "independent_boundary_command": "pixi run pytest -q tests/test_canonical_route_staging.py tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity tests/test_chainwielder_prestart_bundle.py::test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged",
+    "independent_boundary_result": "18 passed in 0.66s",
+    "original_wrapper_signature_preserved": true,
+    "create_bundle_body_unchanged": true,
+    "verify_bundle_body_unchanged": true,
+    "interpretation": "The final compatibility defect is closed without changing generic staging, skill routing, or authoritative bundle semantics."
+  },
+  "next_work_unit": {
+    "id": "shard:generic_controller_route_hold_authenticated_staging_one_build_one_start_v37",
+    "owner_skill": "raid-shard-architecture",
+    "allowed_action": "At the exact clean reviewed commit, perform exactly one fast8 configure/build, one authenticated generic canonical-route staging preflight with full receipt validation, one authoritative atomic bundle create and verify, then one no-retry completion-watchdog live start. Publish, remotely reconstruct, and exactly evict the closed evidence through DVC.",
+    "budget": {
+      "configure_count": 1,
+      "worldserver_build_count": 1,
+      "staging_preflight_count": 1,
+      "atomic_bundle_create_count": 1,
+      "atomic_bundle_verify_count": 1,
+      "worldserver_start_count": 1,
+      "retry_count": 0,
+      "database_mutation": "forbidden; require fresh strict readback of the retained frozen roster before create",
+      "dvc_mutation": "required after capture closure for publish, remote reconstruction verification, and exact eviction"
+    },
+    "forbidden": [
+      "implementation_gameplay_native_controller_route_content_skill_or_test_edit",
+      "identity_comparison_polling_watchdog_or_threshold_change",
+      "second_configure_build_staging_create_verify_worldserver_start_or_retry",
+      "manual_staged_route_receipt_bundle_config_admission_or_launch_mutation",
+      "fixture_promotion_or_route_acceptance_claim",
+      "local_evidence_eviction_before_verified_dvc_remote_reconstruction"
+    ]
+  }
+}
