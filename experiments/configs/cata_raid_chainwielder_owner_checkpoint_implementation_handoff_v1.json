@@ -1,0 +1,157 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:chainwielder_pre_admission_rejection_production_checkpoint_v1",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "passed",
+  "git_commit": "5346269e2e9d2b617936f0351efc9a9f83627289",
+  "git_tree": "9decba2242fea6852619e6d0ceca67ec93d3da96",
+  "input_identities": {
+    "no_promotion_summary": {
+      "path": "experiments/configs/cata_raid_magmaw_fba1434e0a_chainwielder_pre_admission_fixture_expansion_summary_v1.json",
+      "file_sha256": "44dcc75c40e8ac5ce8a9a83a86342cdd2fa7d7483d91242c78f52169653b2544"
+    },
+    "dvc_pointer": {
+      "path": "artifacts/cata_raid_program/phase1_foundation_fba1434e0a_chainwielder_pre_admission_fixture_expansion_20260830.dvc",
+      "file_sha256": "4c7e38d2380e7e47341036bb341264db87e49cc094fa13d14ec1a921bc3a72f5",
+      "directory_md5": "238c408f2fcde1e1fd982d2e5431861f.dir"
+    },
+    "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+    "fixture_revision": 1,
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "map_id": 669,
+    "route_node_id": "bwd.magmaw.chainwielder",
+    "target_entry": 42649
+  },
+  "scope_lock": {
+    "hypothesis": "A default-off observation seam can wait for one real Route-owned native path or armed Route-owned hazard retry, submit one real owner=Hazard intent to a discovered future-pack source through ExecuteMovementIntent, and observe the central receiptless rejection without changing the foreign owner state.",
+    "owned_behavior": "one admission-hash/source-bound Chainwielder checkpoint command and attempt-scoped observation lifecycle",
+    "excluded": [
+      "gameplay_strategy",
+      "class_or_pet_behavior",
+      "boss_or_instance_script",
+      "database_or_dvc_mutation",
+      "route_geometry",
+      "planner_tolerance",
+      "movement_priority",
+      "fixture_revision_promotion",
+      "gameplay_canary_or_acceptance"
+    ]
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_prior_one-start_capture_cleared_Chainwielder_but_did_not_observe_the_required_Route-owner_join",
+      "the_new_gate_is_default_off_and_requires_exact_fixture_profile_pool_scenario_node_map_roster_attempt_admission_sha_and_binary_source_commit",
+      "the_checkpoint_discovers_a_real_future_route_pack_source_and_calls_the_real_ExecuteMovementIntent_boundary",
+      "the_checkpoint_requires_a_real_active_MotionMaster_route_path_or_the_production_HasArmedRouteHazardRetry_predicate",
+      "the_checkpoint_accepts_exactly_one_Hazard_future_pack_destination_rejection_with_planner_receipt_id_zero",
+      "the_checkpoint_serializes_before_rejection_after_and_typed_outcome_state",
+      "the_compiled_counterexample_fails_when_the_foreign_Route_identity_is_cleared_and_passes_when_it_is_preserved"
+    ],
+    "refuted": [
+      "the_prior_successful_Chainwielder_clear_proved_the_exact_Route-owner_checkpoint_boundary",
+      "the_new_compiled_test_is_itself_a_live_map_669_executor_confirmation"
+    ],
+    "unproven": [
+      "the_exact_clean_built_binary_reaches_the_armed_checkpoint_on_map_669",
+      "the_live_before_and_after_snapshots_preserve_the_same_Route_path_or_retry_identity",
+      "the_chosen_bot_observes_hazard_exit_completed_after_the_checkpoint"
+    ]
+  },
+  "first_broken_edge_before": "The retained live recurrence alleges that a receiptless Hazard future-pack rejection displaced an existing Route-owned path or retry, but the admitted follow-up capture never produced the exact same-bot Route-owner/Hazard-rejection join.",
+  "implemented_hypothesis": "Add a non-gameplay checkpoint that deterministically creates only the missing observation after real Route ownership exists, while the existing production future-pack guard and pre-admission rejection mutation remain authoritative.",
+  "changed_files": [
+    "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgr.h",
+    "src/server/game/Bots/BotWorldPopulationMgrConfig.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrConfig.h",
+    "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBot.cpp",
+    "src/server/scripts/CMakeLists.txt",
+    "src/server/scripts/Commands/cs_chainwielder_owner_checkpoint.cpp",
+    "src/server/scripts/Commands/cs_script_loader.cpp",
+    "tests/test_chainwielder_owner_checkpoint.py"
+  ],
+  "implementation_files": {
+    "module_sha256": "96c6da1d2ac36c72ac905a1f0decd7bc952f1419e7936ed4cc856979af227b83",
+    "contract_header_sha256": "d00f5e84b1513a328a5602670af8a42cbe0bd041773d0955a1f3ff503e0a1ee8",
+    "focused_test_sha256": "75dd94ef10149a1042225a6bb72797b326a0a35d1b9b31a4ae13816cc7fb0f4d",
+    "module_lines": 497,
+    "contract_header_lines": 167,
+    "command_lines": 78
+  },
+  "validation": {
+    "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "result": "passed",
+    "passed": 4,
+    "failed": 0,
+    "duration_seconds": 0.28,
+    "build_run": false,
+    "worldserver_started": false
+  },
+  "gear_identity": {
+    "status": "not_applicable"
+  },
+  "effective_stat_parity": {
+    "status": "not_applicable",
+    "tuning_admitted": false
+  },
+  "dps_tuning_gate": {
+    "status": "not_applicable",
+    "tuning_admitted": false
+  },
+  "evidence_paths": [
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_magmaw_fba1434e0a_chainwielder_pre_admission_fixture_expansion_summary_v1.json",
+    "artifacts/cata_raid_program/phase1_foundation_fba1434e0a_chainwielder_pre_admission_fixture_expansion_20260830.dvc"
+  ],
+  "dvc_publication": {
+    "produced_artifacts": false,
+    "pointer": null,
+    "remote_verification": "not_applicable",
+    "eviction_state": "not_applicable"
+  },
+  "runtime_verification_plan": {
+    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "worldserver_start_budget": 1,
+    "duration_policy": "completion-watchdog",
+    "fixed_success_timer_seconds": null,
+    "config_keys": {
+      "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.Enable": true,
+      "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.FixtureId": "chainwielder_pre_admission_rejection_isolation_v1",
+      "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.AdmissionSha256": "use_the_exact_new_fixture_expansion_admission_receipt_sha256",
+      "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.SourceCommit": "use_the_exact_clean_commit_built_into_GitRevision"
+    },
+    "arm_command": "botautochaincheckpoint arm <chosen_actor_guid> <exact_admission_sha256> <exact_built_source_commit>",
+    "poll_command": "botautochaincheckpoint status",
+    "required_receipt": {
+      "authority": "chainwielder_fixture_observation_only_not_gameplay",
+      "injection_count": 1,
+      "trigger_owner_any_of": [
+        "active_route_path",
+        "armed_route_hazard_retry"
+      ],
+      "rejection_owner": "hazard",
+      "rejection_gate": "future_pack_destination",
+      "rejection_reason": "route_destination_future_pack_unsafe",
+      "planner_receipt_id": 0,
+      "before_after_identity_preserved": true,
+      "terminal_stage": "completed",
+      "outcome": "hazard_exit_completed"
+    },
+    "permitted_failed_outcome": "one typed failed terminal receipt with the exact first failing predicate; no second start",
+    "forbidden_claims": [
+      "gameplay_canary",
+      "Magmaw_progress",
+      "acceptance",
+      "fixture_revision_2_promotion_before_live_receipt_review"
+    ]
+  },
+  "runtime_verdict": "unverified",
+  "remaining_blocker": "One exact clean queued build and one map-669 observation-only start must produce and review the checkpoint receipt. Static validation cannot promote fixture revision 2.",
+  "next_work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start"
+}

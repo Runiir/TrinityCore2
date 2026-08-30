@@ -1,13 +1,13 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_pre_admission_rejection_fixture_expansion_v1_20260830",
-  "work_unit": "shard:magmaw_chainwielder_pre_admission_rejection:fixture_expansion_capture",
+  "epoch_id": "magmaw_chainwielder_owner_checkpoint_production_capture_v1_20260830",
+  "work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "owner_skill": "raid-shard-architecture",
-  "classification": "live_recurrence_quarantined",
-  "gate_state": "chainwielder_revision1_observation_only_full_bank_and_exact_matched_production_capture_required",
+  "classification": "fixture_checkpoint_implemented_live_verification_pending",
+  "gate_state": "chainwielder_revision1_exact_checkpoint_build_and_one_observation_start_required",
   "observed_at_commit": "461fe737791ea714b493354281f844e985ca3117",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_78e33e6557_receipt_history_fixture_expansion_summary_v1.json",
@@ -19,6 +19,16 @@
     "compiled_helper": "tests/test_movement_pre_admission_rejection_state.py",
     "compiled_helper_sha256": "6d6f842ce1634ecd9a9da98d72e48900ba7b7be5a14d0581ffefb6675f4e4ccf",
     "native_path_contract_fixture": "tests/test_native_path_floor_diagnostic.py::test_planner_same_level_fallback_still_requires_native_path_proof"
+  },
+  "checkpoint_implementation_handoff": {
+    "path": "experiments/configs/cata_raid_chainwielder_owner_checkpoint_implementation_handoff_v1.json",
+    "file_sha256": "dff554a15747b386211902f489e937d5ac09ac5e27e0352b10b2ad98431151b4",
+    "implementation_commit": "5346269e2e9d2b617936f0351efc9a9f83627289",
+    "implementation_tree": "9decba2242fea6852619e6d0ceca67ec93d3da96",
+    "focused_test": "tests/test_chainwielder_owner_checkpoint.py",
+    "focused_test_sha256": "75dd94ef10149a1042225a6bb72797b326a0a35d1b9b31a4ae13816cc7fb0f4d",
+    "focused_test_result": "4_passed",
+    "runtime_verdict": "unverified"
   },
   "first_broken_edge": "In the immutable map-669 Chainwielder capture, a receiptless adaptive Hazard proposal rejected by the future-pack destination guard was allowed to clear or overwrite movement state owned by an already-admitted Route path or its armed hazard retry. The route then repeated hazard_exit_failed twenty times. Commit a75334b519 isolates that state transition in a compiled helper, but no current worldserver-backed run has yet proved the fixed binary preserves the Route owner and completes the hazard exit.",
   "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state",
@@ -34,7 +44,11 @@
       "the_exact_clean_fba1434e0a_binary_completed_chainwielder_with_trash_cluster_cleared_zero_deaths_and_no_repeated_decision_watchdog",
       "bot_30008_completed_two_chainwielder_hazard_exits_with_zero_hazard_exit_failed_events",
       "the_only_receiptless_hazard_future_pack_rejection_was_bot_30001_sequence_186_and_was_bracketed_by_combat_range_not_route_owner_submissions",
-      "the_single_observation_only_start_was_stopped_after_chainwielder_completion_and_cleanup_reached_zero_bots_and_leases"
+      "the_single_observation_only_start_was_stopped_after_chainwielder_completion_and_cleanup_reached_zero_bots_and_leases",
+      "commit_5346269e2e_adds_a_default_off_exact_admission_and_binary_source_bound_production_checkpoint",
+      "the_checkpoint_waits_for_a_real_Route_MotionMaster_path_or_the_production_armed_Route_hazard_retry_predicate_before_crossing_ExecuteMovementIntent",
+      "the_checkpoint_requires_exactly_one_Hazard_future_pack_destination_rejection_with_planner_receipt_zero_and_compares_the_foreign_owner_identity_on_the_next_production_tick",
+      "the_focused_compiled_checkpoint_contract_passed_four_tests"
     ],
     "refuted": [
       "the_compiled_helper_is_a_live_map669_executor_replay",
@@ -45,7 +59,8 @@
       "the_current_binary_preserves_the_route_owned_path_after_the_matched_receiptless_hazard_rejection_in_a_live_chainwielder_run",
       "the_current_binary_preserves_the_armed_route_hazard_retry_across_subsequent_world_ticks",
       "the_current_binary_preserves_route_owned_state_across_the_exact_matched_rejection_because_that_route_owner_join_was_not_observed",
-      "magmaw_or_later_route_progress"
+      "magmaw_or_later_route_progress",
+      "the_exact_clean_built_binary_emits_a_completed_chainwielder_owner_checkpoint_receipt"
     ]
   },
   "live_observation": {
@@ -103,16 +118,18 @@
   },
   "required_production_boundary": "worldserver-backed map-669 Chainwielder replay on the exact current binary where the same bot has an admitted Route native path or an armed route-owned hazard retry, a receiptless owner=Hazard future_pack_destination rejection is observed, the rejected intent leaves the Route-owned path and retry state unchanged across subsequent ticks, and the bot then completes the Chainwielder hazard exit or reaches one typed terminal edge",
   "scope_lock": {
-    "allowed_change": "Run the exact clean retained regression bank, acquire one queued exact build for that admitted source, and run one observation-only fixture-expansion capture targeted only at chainwielder_pre_admission_rejection_isolation_v1. Match the live rejection and existing Route owner by bot, attempt, route generation, action sequence, planner receipt zero, movement owner, and subsequent state. Stop on Chainwielder completion or the first typed watchdog edge. Publish and evict evidence through the normal DVC lifecycle. Do not change gameplay.",
+    "allowed_change": "Review commit 5346269e2e and its hash-bound handoff, run the exact retained regression bank, acquire one queued clean build with eight compiler jobs and one linker, provision/read back the exact ten-player Magmaw diagnostic shard, create one new fixture-expansion admission receipt, generate a config whose checkpoint admission SHA and source commit match that exact run, arm one chosen bot with botautochaincheckpoint only after the Chainwielder node is active, and run one observation-only completion-watchdog start. Poll the typed checkpoint until completed or failed, stop at Chainwielder completion or the first typed watchdog edge, then publish and evict evidence. Do not change gameplay.",
     "forbidden": [
       "gameplay_or_strategy_change",
-      "cpp_or_database_change",
+      "additional_cpp_or_database_change",
       "generic_planner_tolerance_change",
       "fixture_revision_promotion_before_production_evidence",
       "gameplay_canary_or_acceptance_run",
       "targeting_any_of_the_six_preserved_invalidated_fixtures",
       "magmaw_causal_or_completion_claim_from_chainwielder_evidence",
-      "second_live_attempt"
+      "second_live_attempt",
+      "checkpoint_config_in_gameplay_canary_or_acceptance_mode",
+      "claiming_the_checkpoint_is_live_confirmed_from_static_tests"
     ]
   },
   "validation": {
@@ -122,7 +139,9 @@
     "compiled_helper_is_live_executor_replay": false,
     "production_boundary_met": false,
     "fixture_expansion_admission_required": true,
-    "build_admitted": false,
+    "checkpoint_compiled_contract_green": true,
+    "checkpoint_live_executor_confirmed": false,
+    "build_admitted": true,
     "canary_admitted": false,
     "gameplay_admitted": false,
     "acceptance_admitted": false
@@ -133,9 +152,9 @@
   },
   "coordinator_followup": {
     "next_owner": "raid-shard-architecture",
-    "next_owner_command": "run_fixture_expansion_replay:chainwielder_pre_admission_rejection_isolation_v1:revision1_to_production_revision2",
-    "next_work_unit": "shard:magmaw_chainwielder_pre_admission_rejection:fixture_expansion_capture",
+    "next_owner_command": "run_chainwielder_owner_checkpoint_one_start:chainwielder_pre_admission_rejection_isolation_v1:revision1_to_production_revision2",
+    "next_work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start",
     "implementation_owner_after_capture": "none_unless_the_matched_production_outcome_refutes_the_implemented_invariant"
   },
-  "next_action": "The sole target remains chainwielder_pre_admission_rejection_isolation_v1 revision 1 because the one admitted capture cleared Chainwielder but did not observe the exact Route-owner/Hazard-rejection join. Coordinator review must decide a new bounded observation boundary or close the fixture as non-reproducible; no second attempt belongs to this completed work unit. Keep gameplay, canary, and acceptance closed."
+  "next_action": "Build the exact clean checkpoint source once through the queued fast8_v2 coordinator, provision and read back the exact Magmaw diagnostic shard, bind a new fixture-expansion admission SHA and the built GitRevision into the default-off checkpoint config, then run exactly one observation-only completion-watchdog start. Require injection_count=1, a real Route path or armed Route hazard retry trigger, owner=Hazard future_pack_destination rejection with planner_receipt_id=0, identical before/after Route identity, and hazard_exit_completed or one typed failed terminal. Keep gameplay, canary, acceptance, and fixture revision 2 promotion closed until independent receipt review."
 }
