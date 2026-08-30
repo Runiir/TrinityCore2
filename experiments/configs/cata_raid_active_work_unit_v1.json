@@ -1,8 +1,8 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "epoch_id": "generic_controller_route_hold_one_build_one_start_v13_20260830",
-  "work_unit": "evidence:capture_controller_decomposition_v1",
-  "owner_skill": "raid-evidence-lifecycle",
+  "work_unit": "shard:generic_controller_route_hold_one_build_one_start_v13",
+  "owner_skill": "raid-shard-architecture",
   "classification": "implementation_pending_live_verification",
   "gate_state": "controller_decomposition_green_generic_route_hold_native_build_and_live_transcript_unverified",
   "observed_at_commit": "875dfc3a9f19461db1a0c9fd65056c41aa6622c4",
