@@ -235,6 +235,26 @@ def chainwielder_checkpoint_pre_route_readiness(
     return not reasons, list(dict.fromkeys(reasons)), facts
 
 
+def _initialize_chainwielder_checkpoint_arm_gate(
+    state: dict[str, Any],
+) -> None:
+    defaults = {
+        "schema": "chainwielder_checkpoint_pre_route_arm_gate_v1",
+        "required_stable_statuses": 2,
+        "consecutive_stable_statuses": 0,
+        "last_identity_sha256": None,
+        "last_readiness": None,
+        "pre_route_probe_batches": 0,
+        "pre_route_probe_command_count": 0,
+        "gate_open": False,
+        "command_sent": False,
+        "emission_count": 0,
+        "emission": None,
+    }
+    for key, value in defaults.items():
+        state.setdefault(key, value)
+
+
 def observe_chainwielder_checkpoint_arm_gate(
     state: dict[str, Any],
     status: dict[str, Any],
@@ -249,6 +269,7 @@ def observe_chainwielder_checkpoint_arm_gate(
 ) -> dict[str, Any]:
     """Observe two stable pre-route statuses and emit the arm command once."""
 
+    _initialize_chainwielder_checkpoint_arm_gate(state)
     ready, rejections, facts = chainwielder_checkpoint_pre_route_readiness(
         status,
         recurrence_admission=recurrence_admission,
@@ -258,17 +279,6 @@ def observe_chainwielder_checkpoint_arm_gate(
         scenario_id=scenario_id,
         expected_route_manifest_sha256=expected_route_manifest_sha256,
     )
-    if not state:
-        state.update({
-            "schema": "chainwielder_checkpoint_pre_route_arm_gate_v1",
-            "required_stable_statuses": 2,
-            "consecutive_stable_statuses": 0,
-            "last_identity_sha256": None,
-            "gate_open": False,
-            "command_sent": False,
-            "emission_count": 0,
-            "emission": None,
-        })
     if ready:
         if facts["identity_sha256"] == state["last_identity_sha256"]:
             state["consecutive_stable_statuses"] += 1
@@ -298,6 +308,41 @@ def observe_chainwielder_checkpoint_arm_gate(
             "route_generation": facts["route_generation"],
         }
     return state
+
+
+def chainwielder_checkpoint_monitor_commands(
+    scheduled_commands: list[str],
+    *,
+    checkpoint_arm_command: str | None,
+    checkpoint_arm_gate: dict[str, Any],
+) -> list[str]:
+    """Add one adjacent status probe while the pre-route arm gate is pending.
+
+    The normal five-second heartbeat allowed the validation route to advance
+    from generation one to generation two between the two identity receipts
+    required by the arm gate. In fixture-expansion mode, issue the second
+    status in the same console batch as the scheduled heartbeat. The existing
+    readiness gate still validates both responses independently and remains
+    the only authority that can emit the sealed arm command.
+    """
+
+    commands = list(scheduled_commands)
+    if (
+        checkpoint_arm_command is None
+        or checkpoint_arm_gate.get("command_sent") is True
+        or "botauto status" not in commands
+    ):
+        return commands
+    _initialize_chainwielder_checkpoint_arm_gate(checkpoint_arm_gate)
+    status_index = commands.index("botauto status")
+    commands.insert(status_index + 1, "botauto status")
+    checkpoint_arm_gate["pre_route_probe_batches"] = int(
+        checkpoint_arm_gate.get("pre_route_probe_batches") or 0
+    ) + 1
+    checkpoint_arm_gate["pre_route_probe_command_count"] = int(
+        checkpoint_arm_gate.get("pre_route_probe_command_count") or 0
+    ) + 1
+    return commands
 
 
 def _primary_gameplay_terminal(*terminals: dict[str, Any] | None) -> bool:
@@ -6377,6 +6422,8 @@ def main() -> int:
         "consecutive_stable_statuses": 0,
         "last_identity_sha256": None,
         "last_readiness": None,
+        "pre_route_probe_batches": 0,
+        "pre_route_probe_command_count": 0,
         "gate_open": False,
         "command_sent": False,
         "emission_count": 0,
@@ -6698,6 +6745,11 @@ def main() -> int:
                 record_process_resource_sample()
                 due_commands = telemetry_scheduler.commands_due(time.monotonic())
                 if due_commands:
+                    due_commands = chainwielder_checkpoint_monitor_commands(
+                        due_commands,
+                        checkpoint_arm_command=checkpoint_arm_command,
+                        checkpoint_arm_gate=checkpoint_arm_gate,
+                    )
                     # A diagnosis is a point-in-time snapshot, not durable
                     # state. Only the diagnosis observed in this poll may
                     # drive the watchdog. Retain latest_diagnosis separately

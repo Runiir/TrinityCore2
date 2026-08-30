@@ -49,6 +49,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     native_readycheck_request_identity,
     ready_for_native_readycheck,
     chainwielder_checkpoint_arm_command,
+    chainwielder_checkpoint_monitor_commands,
     observe_chainwielder_checkpoint_arm_gate,
 )
 
@@ -1101,6 +1102,49 @@ def test_checkpoint_arm_gate_requires_two_matching_ready_identities():
     assert state["consecutive_stable_statuses"] == 1
     _observe_checkpoint_gate(state, process, drifted, admission)
     assert state["emission_count"] == 1
+
+
+def test_checkpoint_controller_pre_route_probe_closes_live_ordering_race():
+    admission = _verified_checkpoint_admission()
+    command = chainwielder_checkpoint_arm_command(admission, 30008)
+    assert command is not None
+
+    def run_controller(*, immediate_probe: bool) -> tuple[dict, bytes]:
+        state: dict = {}
+        process = _CheckpointProcess()
+        for route_generation in (1, 2):
+            scheduled = ["botauto status"]
+            if immediate_probe:
+                scheduled = chainwielder_checkpoint_monitor_commands(
+                    scheduled,
+                    checkpoint_arm_command=command,
+                    checkpoint_arm_gate=state,
+                )
+            process.stdin.write(("\n".join(scheduled) + "\n").encode())
+            status = checkpoint_pre_route_status()
+            status["raid_runtime"]["route_progress"]["generation"] = (
+                route_generation
+            )
+            for scheduled_command in scheduled:
+                if scheduled_command == "botauto status":
+                    _observe_checkpoint_gate(state, process, status, admission)
+            if state.get("command_sent") is True:
+                break
+        return state, process.stdin.getvalue()
+
+    fail_before, fail_before_bytes = run_controller(immediate_probe=False)
+    assert fail_before["command_sent"] is False
+    assert fail_before["emission_count"] == 0
+    assert command.encode() not in fail_before_bytes
+
+    pass_after, pass_after_bytes = run_controller(immediate_probe=True)
+    assert pass_after["command_sent"] is True
+    assert pass_after["emission_count"] == 1
+    assert pass_after["emission"]["actor_guid"] == 30008
+    assert pass_after["emission"]["route_generation"] == 1
+    assert pass_after["pre_route_probe_batches"] == 1
+    assert pass_after["pre_route_probe_command_count"] == 1
+    assert pass_after_bytes.count((command + "\n").encode()) == 1
 
 
 def accepted_drudge_status() -> dict:
