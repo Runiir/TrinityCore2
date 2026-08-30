@@ -1,3 +1,5 @@
+import hashlib
+import json
 from pathlib import Path
 import subprocess
 
@@ -13,6 +15,20 @@ DIAGNOSIS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrDiagnosis.cpp"
 STATUS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp"
 DECISION_TRACE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrDecisionTrace.cpp"
 BOT_STATE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrBotState.h"
+TACTICAL_REPLAY_SUMMARY = ROOT / (
+    "experiments/configs/"
+    "cata_raid_magmaw_748d63431c_tactical_replay_lite_summary_v1.json"
+)
+TACTICAL_REPLAY_SUMMARY_SHA256 = (
+    "f3f54e4d2da2b17747fba8db885fc72b3920b72a44c4f642e41243a3193508bc"
+)
+CONSUMED_LAUNCH_SUMMARY = ROOT / (
+    "experiments/configs/"
+    "cata_raid_magmaw_748d63431c_receipt_tagged_progress_replay_summary_v1.json"
+)
+CONSUMED_LAUNCH_SUMMARY_SHA256 = (
+    "3e3dac61dcd39c6af8c76abe9c17eb505802acf83cec617e67c33f6d6d9fbebd"
+)
 
 
 def test_native_path_floor_observation_preserves_first_failure_values(tmp_path):
@@ -760,3 +776,59 @@ def test_native_path_floor_observation_reaches_diagnose_and_trace_json():
         assert '\\"sample_index\\"' in source
         assert '\\"resolved_floor_z\\"' in source
         assert '\\"reference_z\\"' in source
+
+
+def test_v71_canary122_production_boundary_remains_explicitly_unclosed():
+    tactical_bytes = TACTICAL_REPLAY_SUMMARY.read_bytes()
+    assert hashlib.sha256(tactical_bytes).hexdigest() == (
+        TACTICAL_REPLAY_SUMMARY_SHA256
+    )
+    tactical = json.loads(tactical_bytes)
+    suspected = tactical["causal_assessment"]["suspected_upstream_receipt"]
+    assert suspected == {
+        "receipt_id": 598,
+        "intent_reason": "ranged_formation_restore",
+        "spline_id": 6780,
+        "floor_observation_conflict": True,
+        "floor_observation_failure": "sample_floor_gap",
+        "launched_at_ms": 1788031506261,
+        "last_receipt_tagged_sample_at_ms": 1788031506663,
+        "sampling_gap_to_state_infection_ms": 3553,
+    }
+    assert tactical["causal_assessment"]["correlation"] == (
+        "same_actor_temporal_predecessor_only"
+    )
+    assert tactical["causal_assessment"]["exact_missing_field"] == (
+        "continuous_receipt_tagged_actor_position_and_spline_identity_from_"
+        "receipt_598_last_sample_until_terminal_outcome_or_supersession"
+    )
+
+    consumed_bytes = CONSUMED_LAUNCH_SUMMARY.read_bytes()
+    assert hashlib.sha256(consumed_bytes).hexdigest() == (
+        CONSUMED_LAUNCH_SUMMARY_SHA256
+    )
+    consumed = json.loads(consumed_bytes)
+    receipt = consumed["target_observation"]
+    assert receipt["receipt_id"] == 620
+    assert receipt["intent_reason"] == "ranged_formation_restore"
+    assert receipt["planner_complete"] is True
+    assert receipt["planner_path_type"] == 1
+    assert receipt["floor_observation_conflict"] is False
+    assert receipt["same_receipt_id_in_all_samples"] is True
+    assert receipt["same_spline_id_in_all_samples"] is True
+    assert receipt["terminal_outcome"] == "selected_endpoint_reached"
+    assert receipt["selected_platform_compatible_all_samples"] is True
+    assert "canary122_exact_floor_conflicting_seq745_mechanism_recurred" in (
+        consumed["claims"]["unproven"]
+    )
+
+    # Receipt 598 contains the recorded floor-conflict shape but loses the
+    # identity-bound native outcome. Receipt 620 closes the native outcome but
+    # contains neither a floor conflict nor a Hazard-owner complete/incomplete
+    # counterexample. No one production receipt therefore verifies the three
+    # invalidated shared-planner fixture contracts.
+    assert suspected["floor_observation_conflict"] is True
+    assert tactical["causal_assessment"]["status"] == (
+        "localized_not_causally_closed"
+    )
+    assert receipt["floor_observation_conflict"] is False

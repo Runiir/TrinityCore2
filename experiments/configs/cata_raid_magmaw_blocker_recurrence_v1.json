@@ -73,7 +73,29 @@
         "live_canary_admitted": false
       }
     ],
-    "fixture_expansion_requests": [],
+    "fixture_expansion_requests": [
+      {
+        "fixture_id": "same_level_floor_observation_v1",
+        "from_revision": 3,
+        "to_revision": 4,
+        "causal_signature": "same_level_movement_path_floor_false_negative",
+        "required_production_boundary": "one identity-bound worldserver-backed map-669 receipt for the recorded same-level SampleFloorGap equivalence class must cross PlanMovementPath, native submission, MotionMaster, point-generator initialization, and launched-spline observation through terminal outcome or explicit supersession while retaining continuous actor XYZ and floor compatibility samples"
+      },
+      {
+        "fixture_id": "same_level_hazard_path_admission_v1",
+        "from_revision": 4,
+        "to_revision": 5,
+        "causal_signature": "same_level_encounter_hazard_path_rejection",
+        "required_production_boundary": "one worldserver-backed map-669 Hazard-owner replay must preserve the recorded complete and incomplete same-level counterexamples through PlanMovementPath final selection and native submission, prove the selected shorter retry with a fresh complete path, observe generator and spline progress to terminal outcome, and retain cross-floor and forbidden-path no-launch negatives"
+      },
+      {
+        "fixture_id": "same_level_native_path_proof_v1",
+        "from_revision": 4,
+        "to_revision": 5,
+        "causal_signature": "same_level_native_path_proof_false_negative",
+        "required_production_boundary": "one correlated worldserver-backed map-669 replay must exercise complete and incomplete same-level Hazard paths through the current shared planner proof, executor, MotionMaster, point generator, launched spline, and consumed multi-tick outcome; helper-created NativePathProofObservation values and source assertions are insufficient"
+      }
+    ],
     "fixture_history": [
       "magmaw_parasite_lane_paths_v1",
       "magmaw_parasite_lane_transition_full_replay_v1",
@@ -224,6 +246,10 @@
         "fixture_id": "same_level_hazard_path_admission_v1",
         "revision": 4,
         "causal_signature": "same_level_encounter_hazard_path_rejection",
+        "evidence_boundary": "value_only_and_source_shape",
+        "verification_status": "invalidated_pending_production_boundary",
+        "boundary_audit": "tests/test_native_path_floor_diagnostic.py::test_v71_canary122_production_boundary_remains_explicitly_unclosed",
+        "required_production_boundary": "worldserver-backed map-669 Hazard-owner complete and incomplete same-level counterexamples crossing PlanMovementPath final selection, executor submission, MotionMaster, point generator, launched spline, and terminal outcome, with cross-floor and forbidden-path no-launch negatives",
         "command": [
           "pixi",
           "run",
@@ -240,6 +266,10 @@
         "fixture_id": "same_level_floor_observation_v1",
         "revision": 3,
         "causal_signature": "same_level_movement_path_floor_false_negative",
+        "evidence_boundary": "value_only",
+        "verification_status": "invalidated_pending_production_boundary",
+        "boundary_audit": "tests/test_native_path_floor_diagnostic.py::test_v71_canary122_production_boundary_remains_explicitly_unclosed",
+        "required_production_boundary": "one identity-bound worldserver-backed map-669 same-level SampleFloorGap receipt crossing planner admission and native launch with continuous actor XYZ, spline identity, floor compatibility, and terminal outcome or explicit supersession",
         "command": [
           "pixi",
           "run",
@@ -266,6 +296,10 @@
         "fixture_id": "same_level_native_path_proof_v1",
         "revision": 4,
         "causal_signature": "same_level_native_path_proof_false_negative",
+        "evidence_boundary": "value_only_and_source_shape",
+        "verification_status": "invalidated_pending_production_boundary",
+        "boundary_audit": "tests/test_native_path_floor_diagnostic.py::test_v71_canary122_production_boundary_remains_explicitly_unclosed",
+        "required_production_boundary": "one correlated worldserver-backed map-669 complete and incomplete same-level Hazard replay crossing the current planner proof, executor, MotionMaster, point generator, launched spline, and consumed multi-tick outcome",
         "command": [
           "pixi",
           "run",

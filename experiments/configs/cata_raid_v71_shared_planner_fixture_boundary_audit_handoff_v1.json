@@ -1,0 +1,209 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:restore_three_invalidated_shared_planner_recurrence_fixtures_v71",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "failed",
+  "git_commit": "d1e152bf95cf951b7096934a823a755483877f2e",
+  "input_identities": {
+    "work_unit_source_commit": "d1e152bf95cf951b7096934a823a755483877f2e",
+    "work_unit_source_tree": "6587e918012f7bd1ab23aa38b3773c1f8083c8aa",
+    "invalidating_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+    "invalidating_source_identity": "2bfbd48bdafae41950fbfcaaf26df6f70a3784a3",
+    "canary122_architecture_handoff": {
+      "path": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
+      "file_sha256": "ed49516032f9f69373a037ae0955ae8efc367035eafff887f4bc895a0b0cca67"
+    },
+    "floor_conflict_replay_summary": {
+      "path": "experiments/configs/cata_raid_magmaw_748d63431c_tactical_replay_lite_summary_v1.json",
+      "file_sha256": "f3f54e4d2da2b17747fba8db885fc72b3920b72a44c4f642e41243a3193508bc"
+    },
+    "consumed_launch_replay_summary": {
+      "path": "experiments/configs/cata_raid_magmaw_748d63431c_receipt_tagged_progress_replay_summary_v1.json",
+      "file_sha256": "3e3dac61dcd39c6af8c76abe9c17eb505802acf83cec617e67c33f6d6d9fbebd"
+    },
+    "v70_handoff": {
+      "path": "experiments/configs/cata_raid_v70_parasite_fixture_post_occurrence_verification_handoff_v1.json",
+      "file_sha256": "8a3966be116794cba424748d286317bd28b7b0dacc8e2dd539eabadde2f0f7e0"
+    },
+    "v69_handoff": {
+      "path": "experiments/configs/cata_raid_v68_prestart_gate_order_review_handoff_v69.json",
+      "file_sha256": "a3c3709728d9ec6076265a5c7886e988a8e241495c8ed2e3571117081abefe6d"
+    }
+  },
+  "scope_lock": {
+    "owned_fixtures": {
+      "same_level_floor_observation_v1": 3,
+      "same_level_hazard_path_admission_v1": 4,
+      "same_level_native_path_proof_v1": 4
+    },
+    "first_broken_edge_before": "All three post-Canary122 verification candidates stopped at value-only helpers or source-shape assertions and therefore did not cross their claimed current shared-planner production boundary.",
+    "first_downstream_state_mutation": "No gameplay state was mutated. The recurrence ledger lacked an explicit failed-closed production-boundary disposition for these invalidated revisions.",
+    "failure_postcondition": "Re-running and binding the existing selectors would authenticate revisions 3/4/4 without a correlated planner-to-native-outcome receipt.",
+    "implemented_hypothesis": "Preserve the three original counterexample selectors and revisions, add one immutable evidence audit that distinguishes the unclosed floor-conflicting receipt from the closed non-conflicting receipt, and register only the exact missing production expansion boundaries.",
+    "correlation_keys": [
+      "fixture_id",
+      "fixture_revision",
+      "receipt_id",
+      "bot_guid",
+      "owner",
+      "intent_reason",
+      "planner_path_type",
+      "floor_observation_conflict",
+      "spline_id",
+      "terminal_outcome"
+    ],
+    "excluded": [
+      "shared runtime production behavior",
+      "encounter, class, route, Chainwielder, runtime-config, snapshot-stage, and live-lane edits",
+      "configure, build, database, DVC, snapshot, bundle, worldserver, and live-run operations",
+      "threshold or tolerance changes"
+    ]
+  },
+  "changed_files": [
+    "tests/test_native_path_floor_diagnostic.py",
+    "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "experiments/configs/cata_raid_v71_shared_planner_fixture_boundary_audit_handoff_v1.json",
+    "experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "first_broken_edge_before": "post-occurrence shared-planner fixture evidence stopped before one correlated production planner, native submission, generator, spline, and consumed outcome boundary",
+  "implemented_hypothesis": "Make the missing boundary executable and explicit without binding a false verification receipt or changing production gameplay.",
+  "fixture_disposition": {
+    "same_level_floor_observation_v1": {
+      "revision": 3,
+      "status": "invalidated_pending_revision_4_production_expansion",
+      "reason": "Receipt 598 has SampleFloorGap and a launched spline but loses receipt-tagged actor/spline continuity 3.553 seconds before the observed Z mutation; receipt 620 is identity-bound through arrival but has no floor conflict."
+    },
+    "same_level_hazard_path_admission_v1": {
+      "revision": 4,
+      "status": "invalidated_pending_revision_5_production_expansion",
+      "reason": "The retained selector uses value-only Hazard-owner inputs, while both later production receipts are ranged_formation_restore and do not replay the recorded complete/incomplete Hazard final selection and launch."
+    },
+    "same_level_native_path_proof_v1": {
+      "revision": 4,
+      "status": "invalidated_pending_revision_5_production_expansion",
+      "reason": "The retained selector hand-constructs NativePathProofObservation values or checks source text; no correlated production receipt exercises its complete and incomplete Hazard equivalence class through consumed native outcome."
+    }
+  },
+  "validation": {
+    "verified_at_utc": "2026-08-30T17:21:41Z",
+    "command_json_sha256": "3fb1516be5bd1245c3ae9f26464a009505fc3267ce7fec709b0adbfb5a56b442",
+    "command": [
+      "pixi",
+      "run",
+      "pytest",
+      "-q",
+      "tests/test_same_level_hazard_path_admission.py::test_same_level_mechanic_admission_contract",
+      "tests/test_native_path_floor_diagnostic.py::test_native_path_floor_observation_preserves_first_failure_values",
+      "tests/test_native_path_floor_diagnostic.py::test_planner_same_level_fallback_still_requires_native_path_proof",
+      "tests/test_native_path_floor_diagnostic.py::test_canary119_bounded_complete_mechanic_endpoint_selection",
+      "tests/test_native_path_floor_diagnostic.py::test_canary120_bounded_complete_mechanic_endpoint_selection",
+      "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step",
+      "tests/test_native_path_floor_diagnostic.py::test_canary121_near_arrival_endpoint_is_not_rejected",
+      "tests/test_native_path_floor_diagnostic.py::test_v71_canary122_production_boundary_remains_explicitly_unclosed"
+    ],
+    "result": "passed",
+    "passed": 8,
+    "failed": 0,
+    "duration_seconds": 1.51,
+    "decisive_metrics": {
+      "current_fixture_selector_count": 7,
+      "production_boundary_audit_count": 1,
+      "verified_fixture_count": 0,
+      "fixture_expansion_request_count": 3,
+      "production_behavior_changes": 0,
+      "focused_validation_runs": 1
+    },
+    "admission_scope": "diagnostic_fixture_boundary_only",
+    "fixture_expansion_admitted": false,
+    "build_admitted": false,
+    "live_canary_admitted": false
+  },
+  "fixture_file_sha256": {
+    "tests/test_same_level_hazard_path_admission.py": "e713e84b127c05e8788a800f1913b226b2aa3a74cd2790e33c509ea31ee592b0",
+    "tests/test_native_path_floor_diagnostic.py": "7db4763df07e4cc6e8c5b6143eb80caac32facd97e86aebe0c061d9c5e52bb7c"
+  },
+  "production_boundary_sha256": {
+    "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp": "05b6b55c4a4e39549ee56372c6adb3d6417751467f5dd40f8970e20ecf2292be",
+    "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp": "5678bdb563ea2c3d70288398aea7905eaff50ddce05f57464c7b30c08f44a04d",
+    "src/server/game/Bots/BotWorldPopulationMgrNativeFloor.h": "ec050bfe5e39702d38e1335d5b1a792df47550e683f33b49a6d29992a3b8fa93",
+    "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h": "e9cbebde5e920bc5a07424556e308a4f633ea827e90953eeeba93c8425633262",
+    "src/server/game/Bots/BotWorldPopulationMgrNativePathAdmission.h": "aea41fcf799272d185be70821ab7cb95c8b9dff16c18c55044f3f55a71601364"
+  },
+  "gear_identity": {
+    "status": "not_applicable",
+    "reason": "fixture evidence boundary audit"
+  },
+  "effective_stat_parity": {
+    "status": "not_applicable",
+    "tuning_admitted": false,
+    "first_broken_edge": null
+  },
+  "dps_tuning_gate": {
+    "status": "not_applicable",
+    "tuning_admitted": false,
+    "first_broken_edge": null
+  },
+  "claim_ledger": {
+    "verified": [
+      "all seven retained value-level and source-shape selectors pass at source d1e152bf95",
+      "receipt 598 is a same-bot ranged_formation_restore floor-conflicting launched predecessor but lacks continuous receipt and spline correlation through outcome",
+      "receipt 620 is continuously identity-bound through selected_endpoint_reached but has no floor conflict and is not a Hazard-owner complete/incomplete replay",
+      "the current revisions remain 3/4/4 and have no V71 verification receipt",
+      "pending Chainwielder expansion and V68 tracked_snapshot_source_invalid remain unchanged"
+    ],
+    "refuted": [
+      "an unchanged post-Canary122 rerun of the current selectors verifies their claimed production boundary",
+      "receipt 598 alone proves that its spline caused the later actor-Z mutation",
+      "receipt 620 exercises the floor-conflicting or Hazard-owner counterexample equivalence class",
+      "this diagnostic boundary audit admits a build or live canary"
+    ],
+    "unproven": [
+      "same_level_floor_observation_v1 revision 4 production expansion",
+      "same_level_hazard_path_admission_v1 revision 5 production expansion",
+      "same_level_native_path_proof_v1 revision 5 production expansion",
+      "the complete regression bank admits build or live execution",
+      "an authenticated tracked derivation reproduces the V68 rejected runtime config bytes",
+      "the pending Chainwielder production replay"
+    ]
+  },
+  "evidence_paths": [
+    "tests/test_native_path_floor_diagnostic.py",
+    "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "experiments/configs/cata_raid_v71_shared_planner_fixture_boundary_audit_handoff_v1.json"
+  ],
+  "evidence_identities": {
+    "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json": "27439db79d9fe4310dabe6f2481f6773b33dd7c8b7a06640ca122c363f9beb08",
+    "tests/test_native_path_floor_diagnostic.py": "7db4763df07e4cc6e8c5b6143eb80caac32facd97e86aebe0c061d9c5e52bb7c"
+  },
+  "dvc_publication": {
+    "pointer": null,
+    "remote_verification": "not_run_forbidden_by_scope",
+    "eviction_state": "no_artifact_created"
+  },
+  "preserved_pending": {
+    "chainwielder_expansion": "chainwielder_pre_admission_rejection_isolation_v1 pending_out_of_scope",
+    "v68_rejection": "tracked_snapshot_source_invalid",
+    "v72_evidence_owner": "pending_after_live_recurrence_admission"
+  },
+  "remaining_blocker": "No one immutable receipt currently combines the recorded same-level floor-conflict or Hazard complete/incomplete planner branch with continuous identity-bound native submission, generator, spline, and consumed terminal outcome. Revisions 3/4/4 therefore remain invalidated.",
+  "runtime_verification_plan": {
+    "owner_skill": "raid-shard-architecture",
+    "operation": "one fixture-expansion-only map-669 replay, not a gameplay canary",
+    "required_receipts": [
+      "one SampleFloorGap same-level receipt continuously correlated from planner admission through native terminal outcome or explicit supersession",
+      "one Hazard-owner complete-path counterexample through selected endpoint and consumed launch",
+      "one Hazard-owner incomplete-path counterexample whose selected shorter endpoint receives a fresh complete proof and reaches a consumed launch",
+      "cross-floor and forbidden-path negative receipts with no MotionMaster launch"
+    ],
+    "required_fields": [
+      "source commit/tree and binary/config/data/MMAP identities",
+      "receipt_id, bot_guid, owner, intent_reason, scope, and requested destination",
+      "actor XYZ before planning, before submission, and across every progress sample",
+      "planner path type, complete/forbidden disposition, floor observation, selected endpoint, and control fingerprint",
+      "MotionMaster generator type, spline_id, launched controls/fingerprint, direct-fallback disposition",
+      "continuous same-receipt/same-spline floor compatibility and terminal outcome"
+    ]
+  },
+  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
+  "next_owner_skill": "raid-shard-architecture"
+}

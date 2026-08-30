@@ -3,8 +3,8 @@
   "epoch_id": "restore_three_invalidated_shared_planner_recurrence_fixtures_v71_20260830",
   "work_unit": "runtime:restore_three_invalidated_shared_planner_recurrence_fixtures_v71",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "live_recurrence_quarantined",
-  "gate_state": "shared_planner_fixture_verification_pending",
+  "classification": "shared_planner_fixture_expansion_failed_closed",
+  "gate_state": "shared_planner_production_boundary_unproven",
   "observed_at_commit": "c8f3edd7d4483a43b1ee01bdae0c2183414e4655",
   "immutable_input_commit": "c8f3edd7d4483a43b1ee01bdae0c2183414e4655",
   "source_handoff": {
@@ -31,7 +31,7 @@
     "canary_only": "V71 restores only the three shared-movement-planner invalidated recurrence fixtures and evaluates their focused verification. It does not authorize a build, snapshot, bundle, database mutation, or live worldserver."
   },
   "behavior_change": false,
-  "evidence_contract_change": false,
+  "evidence_contract_change": true,
   "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
@@ -88,16 +88,40 @@
       "status": "pending_after_live_recurrence_admission"
     }
   },
+  "v71_disposition": {
+    "handoff": "experiments/configs/cata_raid_v71_shared_planner_fixture_boundary_audit_handoff_v1.json",
+    "result": "failed",
+    "verified_fixture_count": 0,
+    "retained_invalidated_revisions": {
+      "same_level_floor_observation_v1": 3,
+      "same_level_hazard_path_admission_v1": 4,
+      "same_level_native_path_proof_v1": 4
+    },
+    "requested_expansions": {
+      "same_level_floor_observation_v1": 4,
+      "same_level_hazard_path_admission_v1": 5,
+      "same_level_native_path_proof_v1": 5
+    },
+    "reason": "The current selectors are value-only or source-shape checks. Production receipt 598 carries the floor-conflict shape but loses continuous receipt/spline correlation before outcome; receipt 620 closes the consumed native outcome but has no floor conflict and no Hazard-owner complete/incomplete counterexample."
+  },
   "ordered_followups": [
     {
       "order": 3,
+      "active": true,
+      "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
+      "owner_skill": "raid-shard-architecture"
+    },
+    {
+      "order": 4,
       "active": false,
       "work_unit": "evidence:tracked_base_runtime_config_exact_derivation_v72",
       "owner_skill": "raid-evidence-lifecycle"
     }
   ],
   "remaining_unproven": [
-    "the three shared-planner fixtures have current post-occurrence verification",
+    "same_level_floor_observation_v1 revision 4 crosses a correlated map-669 production boundary",
+    "same_level_hazard_path_admission_v1 revision 5 crosses a correlated map-669 Hazard-owner production boundary",
+    "same_level_native_path_proof_v1 revision 5 crosses its complete and incomplete Hazard production equivalence class",
     "the complete regression bank admits a build and live canary",
     "a tracked deterministic derivation reproduces the exact V68-rejected runtime config bytes",
     "the live Held Route-owner receipt-zero rejection terminal release and Drudges sequence"
@@ -110,7 +134,7 @@
   },
   "verification_budget": {
     "focused_fixture_run_count_maximum": 1,
-    "focused_fixture_run_count_used": 0,
+    "focused_fixture_run_count_used": 1,
     "configure_count_maximum": 0,
     "worldserver_build_count": 0,
     "tracked_snapshot_stage_count_maximum": 0,
@@ -119,7 +143,7 @@
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "runtime:restore_three_invalidated_shared_planner_recurrence_fixtures_v71",
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "next_action": "Run one focused post-occurrence verification for same_level_floor_observation_v1 revision 3, same_level_hazard_path_admission_v1 revision 4, and same_level_native_path_proof_v1 revision 4 after Canary122. Preserve the pending Chainwielder expansion and V68 tracked_snapshot_source_invalid, and do not claim build or live admission from fixture expansion."
+  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run one fixture-expansion-only map-669 replay that continuously correlates the recorded SampleFloorGap and Hazard-owner complete/incomplete counterexamples from planner receipt through native submission, MotionMaster, point generator, spline, and terminal outcome or explicit supersession. Preserve Chainwielder and V68 tracked_snapshot_source_invalid; this is not build or gameplay-canary admission."
 }
