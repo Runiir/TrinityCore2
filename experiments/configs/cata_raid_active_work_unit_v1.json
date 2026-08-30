@@ -6,30 +6,71 @@
   "boss": "magmaw_chainwielder",
   "mode": "10N",
   "owner_skill": "raid-shard-architecture",
-  "classification": "ready_for_queued_build_and_observation",
+  "classification": "implementation_pending_live_verification",
   "gate_state": "pre_route_arm_gate_passed_static_only_live_checkpoint_unproven",
-  "source_selection": "exact_clean_HEAD_containing_this_descriptor_and_implementation_handoff",
-  "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json",
-  "immutable_failed_capture": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_7a03aeebfb_live_unarmed_handoff_v1.json",
-    "sha256": "86b0583948e187084bfd49ffb349f3fb281993b9285b76d900f7697060d4c484",
+  "observed_at_commit": "55dc4be668eeb7a5f88f83670c0d5cca4836950c",
+  "source_handoff": {
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json",
+    "sha256": "7ded06b94def8aa51b6ce78897ef88cce54495db3ce28cc9cd870f942631d0df",
+    "implementation_commit": "55dc4be668eeb7a5f88f83670c0d5cca4836950c",
+    "implementation_tree": "82a200ba3e5952b4241019751df8f73d2434e7aa",
+    "clean": true
+  },
+  "source": {
+    "commit": "55dc4be668eeb7a5f88f83670c0d5cca4836950c",
+    "tree": "82a200ba3e5952b4241019751df8f73d2434e7aa",
+    "clean": true,
+    "failed_live_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_7a03aeebfb_live_unarmed_handoff_v1.json",
+    "failed_live_handoff_sha256": "86b0583948e187084bfd49ffb349f3fb281993b9285b76d900f7697060d4c484",
     "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_7a03aeebfb_chainwielder_checkpoint_unarmed_20260830.dvc",
     "dvc_pointer_sha256": "1c97ae3ab072925cd3d98ecd4d3c6e05dc2b2bd0c9dc0773f137015932a4a287",
-    "workspace_state": "remote_only_verified_eviction"
+    "dvc_workspace_state": "remote_only_verified_eviction"
+  },
+  "scope_lock": {
+    "allowed_change": "Queue one clean build of the exact descriptor HEAD, regenerate and verify the exact source-bound checkpoint seal and recurrence admission, verify the frozen ten-player actor-30008 shard readback, then run at most one observation-only completion-watchdog start.",
+    "forbidden": [
+      "second_worldserver_start",
+      "gameplay_cpp_or_strategy_change",
+      "class_pet_boss_route_or_database_change",
+      "planner_priority_or_tolerance_change",
+      "fixture_revision_promotion_before_receipt_review",
+      "gameplay_canary_or_acceptance",
+      "native_invariant_claim_from_static_tests"
+    ]
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_failed_capture_required_actor_30008_checkpoint_arming_but_sent_zero_commands",
+      "the_controller_pre_route_arm_gate_passed_27_focused_tests",
+      "two_matching_exact_generation_1_admission_statuses_emit_one_verified_arm_command",
+      "material_identity_admission_actor_seal_and_source_tampering_emit_zero_commands",
+      "full_terminal_foundation_acceptance_and_gameplay_admission_are_unchanged"
+    ],
+    "refuted": [
+      "full_terminal_route_acceptance_is_required_to_emit_the_checkpoint_arm_command",
+      "one_ready_status_is_sufficient_to_emit_the_checkpoint_arm_command",
+      "static_controller_tests_prove_the_live_Route_owner_invariant"
+    ],
+    "unproven": [
+      "the_next_live_controller_report_has_command_sent_true_and_emission_count_1",
+      "the_native_checkpoint_reaches_a_real_Route_owner_trigger",
+      "the_native_checkpoint_preserves_Route_identity_and_completes_the_hazard_exit"
+    ]
   },
   "admitted_actions": {
+    "checkpoint_actor_guid": 30008,
     "queued_clean_build_count": 1,
     "observation_only_worldserver_start_count_maximum": 1,
     "duration_policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "checkpoint_actor_guid": 30008,
     "required_prestart": [
-      "build_exact_clean_HEAD_once",
+      "build_exact_clean_descriptor_HEAD_once",
       "regenerate_and_verify_exact_source_bound_recurrence_admission",
       "bind_the_exact_checkpoint_seal_source_runtime_config_route_and_actor",
       "verify_prestart_roster_map_attempt_profile_cohort_and_zero_residue"
     ]
   },
+  "required_production_boundary": "One worldserver-backed map-669 Chainwielder observation on the exact clean built descriptor HEAD where the controller reports command_sent=true and emission_count=1 at route generation 1, actor 30008 reaches one real Route-owner checkpoint, the receipt-zero Hazard future_pack_destination rejection preserves Route identity, and the hazard exit completes or reaches one typed checkpoint terminal.",
   "required_observation": {
     "controller_arm_command_sent": true,
     "controller_arm_emission_count": 1,
@@ -38,12 +79,18 @@
     "terminal": "completed_or_one_typed_checkpoint_failure",
     "required_causal_join": "actor_30008_route_owner_to_receipt_zero_hazard_rejection_to_preserved_route_identity_to_hazard_exit"
   },
-  "forbidden": [
-    "second_worldserver_start",
-    "gameplay_or_fixture_mutation",
-    "database_or_provisioning_mutation_outside_the_frozen_run_plan",
-    "fixture_revision_promotion_before_receipt_review",
-    "gameplay_canary_or_acceptance_claim_from_static_tests"
-  ],
+  "validation": {
+    "focused_result": "27_passed_126_deselected",
+    "build_run": false,
+    "worldserver_start_count": 0,
+    "fixture_revision_promoted": false,
+    "gameplay_admitted": false,
+    "acceptance_admitted": false
+  },
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
+  "next_action": "Queue one build of the exact clean descriptor HEAD, regenerate and verify the exact source-bound recurrence admission and checkpoint seal, then run at most one actor-30008 observation-only completion-watchdog start and retain the typed checkpoint lifecycle.",
   "next_terminal_handoff": "Publish and review the single observation bundle, then report the first typed checkpoint terminal without broadening into gameplay repair."
 }
