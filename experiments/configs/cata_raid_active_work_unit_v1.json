@@ -1,24 +1,29 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_checkpoint_atomic_live_verification_v8_20260830",
-  "work_unit": "shard:chainwielder_checkpoint_atomic_bundle_one_build_one_start_v8",
+  "epoch_id": "magmaw_chainwielder_atomic_tracked_ledger_input_repair_v9_20260830",
+  "work_unit": "evidence:chainwielder_atomic_bundle_tracked_ledger_input_v9",
   "raid": "blackwing_descent",
   "boss": "magmaw_chainwielder",
   "mode": "10N",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "checkpoint_arm_polling_race_repaired_pending_one_live_verification",
-  "observed_at_commit": "e4d44eb1fe1bf9e021bea3bca1936e921656deae",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed",
+  "gate_state": "atomic_bundle_rejected_tracked_ledger_before_live_start",
+  "observed_at_commit": "805828e4e7a12d977c2b98a985ede8aed3dcf539",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_arm_emission_race_repair_handoff_v8.json",
-    "sha256": "030d660fb802d5836cde6d58e412cc7694388c7351fdef73a9e117a0d4291e3f",
-    "source_commit": "e4d44eb1fe1bf9e021bea3bca1936e921656deae",
-    "source_tree": "b17c1ee642b34112678c89492bcb8c7f43e89975"
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_805828e4_prestart_bundle_failed_handoff_v8.json",
+    "sha256": "14cc72ec161045a45f3d0ced0583ddce645f2349950fa0026e8bcab71d0277bf",
+    "source_commit": "805828e4e7a12d977c2b98a985ede8aed3dcf539",
+    "source_tree": "de7d924501ad1c18d674ed23fe67d5e77c9929b8"
   },
   "scope_lock": {
-    "allowed_change": "No gameplay change. Build and execute the exact clean descriptor HEAD once through the atomic Chainwielder prestart bundle and retain the checkpoint arm plus actor-30008 native lifecycle evidence.",
+    "allowed_change": "Permit the exact clean Git-tracked recurrence ledger as a read-only source input to the atomic Chainwielder bundle generator, with its explicit hash and all existing clean-source, tracked-file, alias, and tamper gates retained.",
+    "owned_files": [
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tests/test_chainwielder_prestart_bundle.py"
+    ],
     "forbidden": [
-      "second_worldserver_start",
+      "configure_or_worldserver_build",
+      "database_mutation_or_worldserver_start",
       "gameplay_class_pet_boss_route_movement_or_priority_change",
       "manual_bundle_config_seal_admission_or_launch_contract_edit",
       "fixture_revision_promotion",
@@ -26,11 +31,12 @@
     ]
   },
   "admitted_actions": {
-    "configure_count_maximum": 1,
-    "worldserver_build_count_maximum": 1,
-    "worldserver_start_count_maximum": 1,
-    "database_mutation": "only the exact atomic prestart provisioning and verified readback required by the launch contract",
-    "dvc_mutation": "publish verify and evict the one immutable live evidence bundle"
+    "configure_count_maximum": 0,
+    "worldserver_build_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
+    "database_mutation": false,
+    "dvc_mutation": false,
+    "focused_test_command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py"
   },
   "required_identity": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
@@ -38,32 +44,26 @@
     "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
     "actor_guid": 30008,
     "checkpoint_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
-    "checkpoint_seal_sha256": "24610162e150f6e9ca9c6b5961d9969c27ce8dfccdf4ec95b417f2edd9be978e"
+    "ledger_path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "ledger_sha256": "c02d27c6ff62d20aa5a31d463b9cdef68513fa67f74b3068ae7d236e061a1830"
   },
   "required_terminal": {
-    "checkpoint_command_sent": true,
-    "checkpoint_emission_count": 1,
-    "checkpoint_emission_route_generation": 1,
-    "route_generation_two_before_emission": false,
-    "accepted_actor_checkpoint_lifecycle_count": 1,
-    "accepted_actor_checkpoint_terminal": "completed_or_one_typed_checkpoint_failure",
-    "cleanup_required": true,
-    "dvc_remote_verification_required": true,
-    "local_raw_evidence_eviction_required": true
+    "clean_tracked_ledger_accepted": true,
+    "ledger_copied_exactly": true,
+    "untracked_or_wrong_hash_ledger_rejected": true,
+    "dirty_source_rejected": true,
+    "existing_bundle_tamper_suite_passed": true,
+    "worldserver_start_count": 0
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "terminal_conditions": [
-      "normal route completion",
-      "typed checkpoint failure",
-      "monotonic semantic stall",
-      "repeated decision watchdog",
-      "excessive death loop",
-      "infrastructure loss",
-      "explicit_interruption"
+      "focused_fixture_pass",
+      "hypothesis_refuted",
+      "out_of_scope_failure"
     ]
   },
-  "next_action": "Use the atomic prestart generator and launch contract from this exact clean HEAD. Run one build and at most one completion-watchdog worldserver. Fail closed unless the controller emits the sealed command once at route generation one and retains exactly one accepted actor-30008 checkpoint lifecycle.",
-  "next_terminal_handoff": "Return exact source/build/config/provisioning/admission hashes, the ordered two-generation-one arm receipt, the accepted native checkpoint lifecycle or its first typed failure, cleanup, DVC remote verification, and local eviction facts."
+  "next_action": "Repair only the atomic generator's tracked recurrence-ledger input boundary and run its focused test file once. Do not build or start a server.",
+  "next_terminal_handoff": "Return the exact source change, before/after ledger-location signal, focused tests, claim ledger, and authorize one new shard build/start unit only if every existing bundle integrity gate remains green."
 }

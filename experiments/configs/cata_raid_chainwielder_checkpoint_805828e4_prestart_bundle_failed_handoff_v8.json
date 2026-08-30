@@ -1,0 +1,215 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:chainwielder_checkpoint_atomic_bundle_one_build_one_start_v8",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed",
+  "failure_classification": "atomic_bundle_input_not_externally_staged",
+  "input_identities": {
+    "source_commit": "805828e4e7a12d977c2b98a985ede8aed3dcf539",
+    "source_tree": "de7d924501ad1c18d674ed23fe67d5e77c9929b8",
+    "implementation_commit": "e4d44eb1fe1bf9e021bea3bca1936e921656deae",
+    "implementation_tree": "b17c1ee642b34112678c89492bcb8c7f43e89975",
+    "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_arm_emission_race_repair_handoff_v8.json",
+    "implementation_handoff_sha256": "030d660fb802d5836cde6d58e412cc7694388c7351fdef73a9e117a0d4291e3f",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008,
+    "checkpoint_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1"
+  },
+  "scope_lock": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 0,
+    "bundle_create_attempt_count": 1,
+    "bundle_verify_count": 0,
+    "second_configure_run": false,
+    "second_worldserver_build": false,
+    "second_worldserver_start": false,
+    "manual_bundle_mutation": false,
+    "gameplay_or_fixture_changes": false,
+    "fixture_revision_promoted": false,
+    "gameplay_canary_or_acceptance_claimed": false
+  },
+  "validation": {
+    "configure": {
+      "classification": "success",
+      "ticket_id": "raid-build-e6fb0b17b1844e4fb49709b33179f9c0",
+      "queue_sequence": 1230,
+      "receipt_canonical_sha256": "37a13d5d4a1f9686f7272372c76abc0132581a1320dc6203c570e0cb1df56e9d",
+      "receipt_file_sha256": "f11746313632c45d53321a747b6a16da352116a03160a7dac364377fa311a931",
+      "gate_bearing": true,
+      "compiler_job_ceiling": 8,
+      "linker_job_ceiling": 1
+    },
+    "worldserver_build": {
+      "classification": "success",
+      "ticket_id": "raid-build-c8d81515907949e69a2b3af450d992d8",
+      "queue_sequence": 1231,
+      "receipt_canonical_sha256": "0f337f41a253f23e96f01f776c3643d078eb754d0f70fbeea7663643afd7f268",
+      "receipt_file_sha256": "05d59ba6d54c2fd9bcb028a3a5bffe4a97f15f29c938aebec5448f95e2a14cd2",
+      "gate_bearing": true,
+      "compiler_job_ceiling": 8,
+      "linker_job_ceiling": 1,
+      "binary_sha256": "2f5885ae978af9a6f2086f368ae336d433868da61ba330e8b5a6d40cce345614"
+    },
+    "provisioning": {
+      "prepared": true,
+      "worldserver_started": false,
+      "preparation_invocation_count": 2,
+      "first_invocation_defect": "validation_route_manifest_flag_omitted",
+      "second_invocation_corrected_before_bundle_creation": true,
+      "strict_verifier_invocation_omitted_provisioning_report": true,
+      "strict_failure_count": 0,
+      "provisioning_all_ready": true,
+      "database_valid": true,
+      "payload_valid": true,
+      "strict_report_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+      "shard_readback_passed": true,
+      "selected_name_count": 10,
+      "zero_prestart_group_instance_corpse_ghost_residue": true,
+      "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0"
+    },
+    "recurrence_bank": {
+      "verification_count": 20,
+      "passed_count": 20,
+      "source_identity": "805828e4e7a12d977c2b98a985ede8aed3dcf539",
+      "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+      "fixture_expansion_admitted": true,
+      "fixture_expansion_target_ids": [
+        "chainwielder_pre_admission_rejection_isolation_v1"
+      ],
+      "canary_admitted": false,
+      "acceptance_admitted": false,
+      "suite_receipt_sha256": "4f6c5d99067aab273b000d57dedfd67a86903a5a7a5b35ac4d341a059edd15f6",
+      "decision_sha256": "e3dfc6d514eced80fe3d9325bcdfe566c4344c653dedc6e628f8be768cf5a176",
+      "ledger_sha256": "c02d27c6ff62d20aa5a31d463b9cdef68513fa67f74b3068ae7d236e061a1830"
+    },
+    "bundle_inputs": {
+      "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+      "base_runtime_config_sha256": "4fafa04d382a7ab8565edab2ada7df7f49e38fb37f491fcabb816db0f71050a3",
+      "build_policy_sha256": "c1fab33f896db4c10137d1bbc98391b11b7b58bde45454704584f14a36e9f7bb"
+    },
+    "atomic_bundle": {
+      "create_attempted": true,
+      "create_passed": false,
+      "verify_attempted": false,
+      "failure_schema": "cata_raid_chainwielder_prestart_failure_v1",
+      "failure_reason": "ledger_inside_mutable_worktree",
+      "failure_receipt_sha256": "b63db9c4b156c9d893cd250427ddf790be179eba0f5231e277b4decd7a085eed",
+      "launchable": false,
+      "bundle_manifest_sha256": null,
+      "launch_contract_sha256": null,
+      "recurrence_admission_sha256": null,
+      "checkpoint_seal_sha256": null
+    },
+    "causal_receipt": {
+      "v7_fail_before": {
+        "source": "experiments/configs/cata_raid_chainwielder_checkpoint_arm_not_emitted_live_handoff_v7.json",
+        "ordered_statuses": [
+          {
+            "capture_sequence": 2,
+            "route_generation": 1
+          },
+          {
+            "capture_sequence": 3,
+            "route_generation": 2
+          }
+        ],
+        "command_sent": false,
+        "emission_count": 0,
+        "state": "verified_prior_evidence"
+      },
+      "repaired_controller_fixture": {
+        "source": "experiments/configs/cata_raid_chainwielder_checkpoint_arm_emission_race_repair_handoff_v8.json",
+        "ordered_route_generations": [
+          1,
+          1
+        ],
+        "actor_guid": 30008,
+        "command_sent": true,
+        "emission_count": 1,
+        "state": "verified_offline_fixture"
+      },
+      "v8_live": {
+        "worldserver_start_count": 0,
+        "route_generation_two_before_emission": null,
+        "checkpoint_command_sent": null,
+        "checkpoint_emission_count": null,
+        "accepted_actor_checkpoint_lifecycle_count": null,
+        "state": "unproven_prestart_failed_closed"
+      }
+    },
+    "throughput": {
+      "chainwielder": null,
+      "drudges": null,
+      "magmaw": null,
+      "actor_30008": null,
+      "pet_share": null,
+      "reason": "no_worldserver_start"
+    },
+    "watchdog": {
+      "terminal": null,
+      "duration_policy": "completion-watchdog",
+      "fixed_success_timer_seconds": null,
+      "reason": "no_worldserver_start"
+    },
+    "cleanup": {
+      "worldserver_process_absent": true,
+      "worldserver_start_count": 0,
+      "build_queue_active": false,
+      "build_queue_depth": 0,
+      "database_state": "exact_final_prestart_rows_retained_no_post_admission_lifecycle_mutation"
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_exact_clean_fast8_v2_configure_and_worldserver_build_each_ran_once_and_are_gate_bearing",
+      "the_final_strict_provisioning_and_exact_ten_actor_readback_passed",
+      "the_source_bound_regression_bank_passed_twenty_of_twenty_and_admitted_only_the_checkpoint_fixture_expansion",
+      "the_atomic_generator_rejected_the_tracked_ledger_path_before_creating_a_bundle",
+      "no_worldserver_was_started_and_no_live_checkpoint_or_gameplay_claim_was_made",
+      "the_first_prestart_edge_was_preserved_without_a_second_bundle_attempt"
+    ],
+    "refuted": [
+      "the_v8_atomic_prestart_bundle_was_created_and_verified",
+      "v8_executed_a_launch_contract_or_started_a_worldserver"
+    ],
+    "unproven": [
+      "the_live_controller_emits_once_at_route_generation_one",
+      "route_generation_two_does_not_precede_the_live_emission",
+      "one_actor_30008_native_checkpoint_lifecycle_preserves_Route_identity_and_reaches_completed_or_one_typed_failure",
+      "route_stage_dps_hps_and_actor_30008_pet_share"
+    ]
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_805828e4_chainwielder_checkpoint_atomic_prestart_failed_v8_20260830.dvc",
+    "pointer_file_sha256_before_commit": "089020635849ac1e4e59b58054ba7b6a5878374a4a3777705c18955cf80af99b",
+    "directory_md5": "2a154e33ef47906454dfbfaaa329f1c9.dir",
+    "directory_size_bytes": 451685,
+    "directory_file_count": 10,
+    "push_result": "8 files pushed",
+    "remote_verification": "cache_and_remote_object_in_sync_before_eviction",
+    "workspace_output_evicted_after_remote_verification": true,
+    "unique_cache_children_evicted": 7,
+    "shared_cache_children_retained": 3,
+    "cache_directory_manifest_evicted": true
+  },
+  "next_work_unit": {
+    "id": "evidence:chainwielder_atomic_bundle_tracked_ledger_input_v9",
+    "owner_skill": "raid-evidence-lifecycle",
+    "hypothesis": "The recurrence ledger is a clean Git-tracked read-only source input with an explicit SHA-256, so the atomic generator can safely treat it like the already admitted tracked build policy and copy it into external staging itself.",
+    "owned_files": [
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tests/test_chainwielder_prestart_bundle.py"
+    ],
+    "required_change": "Add ledger to the generator's tracked read-only source-input allowlist while retaining the existing tracked-file, clean-source, explicit-hash, output-alias, and tamper gates.",
+    "required_tests": [
+      "clean_tracked_ledger_is_accepted_and_copied_exactly",
+      "untracked_or_wrong_hash_ledger_is_rejected",
+      "dirty_source_is_rejected",
+      "existing_bundle_tamper_suite_remains_green"
+    ],
+    "forbidden": "No configure, build, database mutation, worldserver start, gameplay change, fixture promotion, canary, or acceptance claim."
+  }
+}
