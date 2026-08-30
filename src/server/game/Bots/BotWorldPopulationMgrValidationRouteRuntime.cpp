@@ -1,3 +1,55 @@
+#include "Bots/BotChainwielderOwnerCheckpoint.h"
+
+namespace BotControllerRouteHold
+{
+enum class InitialRouteBindingDecision : uint8
+{
+    NotApplicable,
+    Admitted,
+    Rejected
+};
+
+InitialRouteBindingDecision AdmitCanonicalInitialRouteBinding(
+    State& hold, Identity const& admittedIdentity,
+    uint64 prospectiveGeneration)
+{
+    if (hold.CurrentPhase != Phase::Acquiring
+        || admittedIdentity.RouteGeneration == 0)
+        return InitialRouteBindingDecision::NotApplicable;
+
+    bool const exactInitialGeneration = prospectiveGeneration == 1
+        && admittedIdentity.RouteGeneration == prospectiveGeneration;
+    if (!exactInitialGeneration)
+        return InitialRouteBindingDecision::NotApplicable;
+
+    bool const routeIdentityAbsent = admittedIdentity.ScenarioId.empty()
+        && admittedIdentity.RuntimeProfile.empty()
+        && admittedIdentity.RouteManifestSha256.empty()
+        && admittedIdentity.RouteNodeId.empty();
+    if (routeIdentityAbsent)
+    {
+        ++hold.SuppressedRouteAdvanceCount;
+        hold.Reject("controller_route_hold_admission_identity_missing");
+        return InitialRouteBindingDecision::Rejected;
+    }
+    if (!admittedIdentity.ValidComplete())
+    {
+        ++hold.SuppressedRouteAdvanceCount;
+        hold.Reject("controller_route_hold_bootstrap_identity_partial");
+        return InitialRouteBindingDecision::Rejected;
+    }
+    if (!hold.Scope.SameCore(admittedIdentity))
+    {
+        ++hold.SuppressedRouteAdvanceCount;
+        hold.Reject("controller_route_hold_acquire_identity_drift");
+        return InitialRouteBindingDecision::Rejected;
+    }
+    return InitialRouteBindingDecision::Admitted;
+}
+}
+
+#ifndef BOT_CONTROLLER_ROUTE_HOLD_BOOTSTRAP_ADAPTER_ONLY
+
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrValidationCohortReadiness.h"
@@ -25,7 +77,18 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
 {
     if (index >= Party().ValidationRouteManifest.size())
         return false;
-    if (!PermitControllerRouteAdvance(index + 1))
+    BotControllerRouteHold::State& controllerHold =
+        Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
+    BotControllerRouteHold::Identity const controllerIdentity =
+        CurrentControllerRouteHoldIdentity(controllerHold.Scope.ActorGuid);
+    BotControllerRouteHold::InitialRouteBindingDecision const initialBinding =
+        BotControllerRouteHold::AdmitCanonicalInitialRouteBinding(
+            controllerHold, controllerIdentity, index + 1);
+    if (initialBinding
+            == BotControllerRouteHold::InitialRouteBindingDecision::Rejected
+        || (initialBinding
+                == BotControllerRouteHold::InitialRouteBindingDecision::NotApplicable
+            && !PermitControllerRouteAdvance(index + 1)))
         return false;
 
     // Flush route-local repeatable-event tails before installing the next
@@ -712,3 +775,5 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
 
     return ApplyValidationRouteManifestNode(nextIndex, terminalReason.empty() ? "validation_route_terminal" : terminalReason.c_str());
 }
+
+#endif

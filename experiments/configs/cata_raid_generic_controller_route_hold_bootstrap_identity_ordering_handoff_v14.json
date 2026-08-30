@@ -1,0 +1,129 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:generic_controller_route_hold_bootstrap_identity_ordering_v14",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "passed",
+  "git_commit": "self",
+  "input_identities": {
+    "immutable_clean_head": "1355b1841fbca46274dc0581fe220fb4494eaabe",
+    "failed_runtime_handoff_path": "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_drift_handoff_v13.json",
+    "failed_runtime_handoff_sha256": "05b0b968521744ef63fa89a73517afde39b78ed0a483ec440f3af9ea6ebf446f",
+    "dvc_pointer_path": "artifacts/cata_raid_program/phase1_raid_foundation_e2f7b4cb2c_generic_controller_route_hold_bootstrap_drift_v13_20260830.dvc",
+    "dvc_pointer_file_sha256": "48eaa8175fc836feaf721c7a8789391a28c2a76044813d1d5f30929970520f2e",
+    "dvc_directory_md5": "300bfd765b2b9a41a14b203ada87020f.dir"
+  },
+  "program_scope": {
+    "supported_specs": "all_configured_dps_tank_and_healer_specs",
+    "supported_encounters": "all_route_manifest_nodes",
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_semantics": "Affliction, actor 30008, Chainwielder, and Magmaw remain evidence inputs only; the bootstrap adapter contains no class, actor, encounter, instance, size, difficulty, geometry, or route-node constant."
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp",
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_identity_ordering_handoff_v14.json"
+  ],
+  "implementation_files": {
+    "BotWorldPopulationMgrValidationRouteRuntime.cpp_sha256": "431f90cef0f9a6d3021041c028eee2c655413173ac222bf3db30d9af43d24548",
+    "test_chainwielder_owner_checkpoint.py_sha256": "7545e758e135867823874dc3fe3826f4f1db305d4ffb10138e1d02b8cf07663a"
+  },
+  "first_broken_edge_before": "Start-held entered Acquiring with a generation-zero bootstrap scope. LoadConfig then seeded Party.ValidationRouteGeneration from the admitted launch configuration at generation one before LoadValidationRouteManifest called ApplyValidationRouteManifestNode(0). The old gate recognized only 0-to-1 bootstrap and rejected the canonical idempotent 1-to-1 initial bind as controller_route_hold_bootstrap_route_drift.",
+  "implemented_hypothesis": "At the actual initial-node apply owner, admit only an Acquiring-phase, complete, core-identity-matched, canonical generation-one to generation-one initial binding. Preserve the existing zero-to-one bootstrap and send every incomplete, drifted, later-generation, held, or ordinary mutation through a typed rejection or the existing route gate.",
+  "production_boundary": {
+    "bootstrap_adapter": "BotControllerRouteHold::AdmitCanonicalInitialRouteBinding",
+    "route_owner": "BotWorldPopulationMgr::ApplyValidationRouteManifestNode",
+    "hold_completion_owner": "BotWorldPopulationMgr::StartAutonomyHeldForCohort",
+    "candidate_admission_owner": "BotControllerRouteHold::InstallAdmissionPolicy",
+    "status_object": "raid_runtime.controller_route_hold"
+  },
+  "validation": {
+    "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "result": "6 passed in 1.31s",
+    "focused_run_count": 2,
+    "correction_budget_used": 1,
+    "correction": "Qualified the compiled fixture's controller Phase enum after the first compile found an ambiguity with BotActionArbitration::Phase; production code was unchanged by the correction.",
+    "compiled_boundary": [
+      "exact production AdmitCanonicalInitialRouteBinding implementation included from its owned translation unit",
+      "production BotControllerRouteHold state transitions",
+      "real BotActionArbitration::Kernel and production admission adapter",
+      "production GateRouteMutation for held and post-release behavior"
+    ],
+    "decisive_observations": {
+      "fail_before_phase": "failed",
+      "fail_before_route_generation": 0,
+      "fail_before_acquire_count": 0,
+      "fail_before_suppressed_route_advance_count": 1,
+      "fail_before_reason": "controller_route_hold_bootstrap_route_drift",
+      "pass_after_phase": "held",
+      "pass_after_route_generation": 1,
+      "pass_after_acquire_count": 1,
+      "pass_after_pre_ack_generation_change": 0,
+      "pass_after_pre_ack_ordinary_action_attempts": 0,
+      "missing_identity_reason": "controller_route_hold_admission_identity_missing",
+      "partial_identity_reason": "controller_route_hold_bootstrap_identity_partial",
+      "drift_reason": "controller_route_hold_acquire_identity_drift"
+    },
+    "build_run": false,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false,
+    "cpp_line_counts": {
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 735,
+      "cs_chainwielder_owner_checkpoint.cpp": 123,
+      "BotWorldPopulationMgrValidationRouteRuntime.cpp": 779
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the v13 failure was caused by configuration seeding generation one before the initial manifest-node apply reached the zero-to-one-only acquiring gate",
+      "the production adapter admits only the complete identity-matched initial generation-one idempotent bind",
+      "the pass-after state acknowledges Held with the full scenario, profile, manifest, generation, node, actor, fixture, seal, and source identity",
+      "missing admission identity, partial bootstrap identity, core drift, duplicate acquire, early or duplicate arm/release, missing terminal, and held generation mutation fail closed with typed reasons",
+      "ordinary candidates remain suppressed by the real action kernel while held and route mutation is admitted only after terminal-gated release",
+      "all in-scope C++ files remain below 1000 physical lines"
+    ],
+    "refuted": [
+      "the route had ordinarily advanced before v13 failed; generation one was seeded by launch configuration and the initial node apply was suppressed before its body",
+      "a generic same-generation exception is required",
+      "the Python controller must synthesize or loosen route identity"
+    ],
+    "unproven": [
+      "the native worldserver builds at this commit",
+      "a live start-held command returns the exact generation-one Held receipt",
+      "two live held receipts remain identity-stable",
+      "the live sealed arm, checkpoint terminal, release, and post-release advance sequence completes"
+    ]
+  },
+  "gear_identity": {"status": "not_applicable"},
+  "effective_stat_parity": {"status": "not_applicable", "tuning_admitted": false, "first_broken_edge": null},
+  "dps_tuning_gate": {"status": "not_applicable", "tuning_admitted": false, "first_broken_edge": null},
+  "evidence_paths": [
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_identity_ordering_handoff_v14.json"
+  ],
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_e2f7b4cb2c_generic_controller_route_hold_bootstrap_drift_v13_20260830.dvc",
+    "remote_verification": "inherited_remote_verified_immutable_v13_input",
+    "eviction_state": "raw_workspace_evidence_already_evicted",
+    "mutation_performed": false
+  },
+  "remaining_blocker": "Static production-boundary repair is fixture-green but has no native build or runtime receipt. This handoff authorizes neither a worldserver start nor a live acceptance claim.",
+  "runtime_verification_plan": {
+    "next_owner": "raid-evidence-lifecycle",
+    "next_work_unit": "evidence:generic_controller_route_hold_bootstrap_revalidation_admission_v15",
+    "worldserver_start_budget": 0,
+    "fixed_success_timer_seconds": null,
+    "required_receipt_order": [
+      "start-held returns Held at exact admitted generation-one identity",
+      "two identity-stable held status receipts",
+      "one sealed arm acknowledgement",
+      "one identity-preserved typed checkpoint terminal",
+      "one terminal-gated release acknowledgement",
+      "ordinary route advance only after release"
+    ],
+    "required_followup": "Independently validate the implementation handoff and issue a separate hash-bound build/live shard admission; do not run a server from this descriptor."
+  },
+  "runtime_verdict": "unverified",
+  "next_work_unit": "evidence:generic_controller_route_hold_bootstrap_revalidation_admission_v15"
+}

@@ -120,6 +120,8 @@ def test_generic_controller_route_hold_crosses_kernel_and_route_gate(
 r'''
 #include "Bots/BotChainwielderOwnerCheckpoint.h"
 #include "Bots/BotActionArbiter.h"
+#define BOT_CONTROLLER_ROUTE_HOLD_BOOTSTRAP_ADAPTER_ONLY
+#include "Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp"
 
 #include <cassert>
 
@@ -175,8 +177,43 @@ int main()
     Identity const identity = CompleteIdentity();
     Identity const bootstrap = BootstrapIdentity();
 
-    // Recorded fail-before boundary: no stateful hold means both the generic
-    // route candidate and the next generation are admitted before arm.
+    // Exact v13 fail-before: configuration has already admitted generation
+    // one, but the old 0 -> 1-only gate rejects that canonical 1 -> 1 bind.
+    State recordedFailure;
+    assert(recordedFailure.BeginAcquire(bootstrap, 10).Accepted);
+    assert(!GateRouteMutation(recordedFailure, identity, 1));
+    assert(recordedFailure.CurrentPhase == BotControllerRouteHold::Phase::Failed);
+    assert(recordedFailure.Scope.ScenarioId.empty());
+    assert(recordedFailure.Scope.RuntimeProfile.empty());
+    assert(recordedFailure.Scope.RouteManifestSha256.empty());
+    assert(recordedFailure.Scope.RouteGeneration == 0);
+    assert(recordedFailure.Scope.RouteNodeId.empty());
+    assert(recordedFailure.AcquireCount == 0);
+    assert(recordedFailure.SuppressedRouteAdvanceCount == 1);
+    assert(recordedFailure.FailureReason
+        == "controller_route_hold_bootstrap_route_drift");
+
+    // Production bootstrap adapter admits only the complete, identity-matched
+    // initial bind. Applying node zero keeps the already admitted generation
+    // unchanged and no ordinary action can execute before acknowledgement.
+    State hold;
+    assert(hold.BeginAcquire(bootstrap, 20).Accepted);
+    uint64 routeGeneration = 1;
+    int ordinaryBeforeAckAttempts = 0;
+    assert(AdmitCanonicalInitialRouteBinding(hold, identity, 1)
+        == InitialRouteBindingDecision::Admitted);
+    routeGeneration = 1;
+    assert(routeGeneration == 1);
+    assert(ordinaryBeforeAckAttempts == 0);
+    assert(hold.SuppressedRouteActionCount == 0);
+    assert(hold.SuppressedRouteAdvanceCount == 0);
+    assert(hold.CompleteAcquire(identity, 21).Accepted);
+    assert(hold.CurrentPhase == BotControllerRouteHold::Phase::Held);
+    assert(hold.Scope == identity);
+    assert(hold.AcquireCount == 1);
+
+    // Without a hold, the generic route candidate and later route mutation
+    // remain ordinary runtime behavior.
     State before;
     assert(GateRouteMutation(before, identity, 2));
     Kernel beforeKernel;
@@ -186,11 +223,6 @@ int main()
         beforeAttempts, beforeKernel));
     beforeKernel.Resolve();
     assert(beforeAttempts == 1);
-
-    State hold;
-    assert(hold.BeginAcquire(bootstrap, 20).Accepted);
-    assert(GateRouteMutation(hold, bootstrap, 1));
-    assert(hold.CompleteAcquire(identity, 21).Accepted);
 
     // Held production kernel: setup/safety remains executable while ordinary
     // route work and an early checkpoint path are both suppressed and counted.
@@ -342,6 +374,43 @@ int main()
         == BotControllerRouteHold::Phase::Released);
     assert(duplicateRelease.FailureReason
         == "controller_route_hold_duplicate_release");
+
+    State missingAdmission;
+    assert(missingAdmission.BeginAcquire(bootstrap, 1).Accepted);
+    Identity missing = identity;
+    missing.ScenarioId.clear();
+    missing.RuntimeProfile.clear();
+    missing.RouteManifestSha256.clear();
+    missing.RouteNodeId.clear();
+    assert(AdmitCanonicalInitialRouteBinding(missingAdmission, missing, 1)
+        == InitialRouteBindingDecision::Rejected);
+    assert(missingAdmission.FailureReason
+        == "controller_route_hold_admission_identity_missing");
+
+    State partialBootstrap;
+    assert(partialBootstrap.BeginAcquire(bootstrap, 1).Accepted);
+    Identity partial = identity;
+    partial.RouteNodeId.clear();
+    assert(AdmitCanonicalInitialRouteBinding(partialBootstrap, partial, 1)
+        == InitialRouteBindingDecision::Rejected);
+    assert(partialBootstrap.FailureReason
+        == "controller_route_hold_bootstrap_identity_partial");
+
+    State bootstrapDrift;
+    assert(bootstrapDrift.BeginAcquire(bootstrap, 1).Accepted);
+    Identity wrongActor = identity;
+    wrongActor.ActorGuid = 78;
+    assert(AdmitCanonicalInitialRouteBinding(bootstrapDrift, wrongActor, 1)
+        == InitialRouteBindingDecision::Rejected);
+    assert(bootstrapDrift.FailureReason
+        == "controller_route_hold_acquire_identity_drift");
+
+    // Generation-zero manifests retain the existing exact 0 -> 1 bootstrap.
+    State zeroGeneration;
+    assert(zeroGeneration.BeginAcquire(bootstrap, 1).Accepted);
+    assert(AdmitCanonicalInitialRouteBinding(zeroGeneration, bootstrap, 1)
+        == InitialRouteBindingDecision::NotApplicable);
+    assert(GateRouteMutation(zeroGeneration, bootstrap, 1));
 }
 ''',
         encoding="utf-8",
@@ -381,6 +450,8 @@ def test_generic_controller_hold_is_wired_to_production_boundaries() -> None:
     assert "InstallAdmissionPolicy(" in MODULE.read_text(encoding="utf-8")
     assert "GateRouteMutation(" in MODULE.read_text(encoding="utf-8")
     assert "PermitControllerRouteAdvance(index + 1)" in route_runtime
+    assert "AdmitCanonicalInitialRouteBinding(" in route_runtime
+    assert "InitialRouteBindingDecision::Rejected" in route_runtime
     assert "PermitControllerRouteAdvance(prospectiveGeneration)" in route_runtime
     assert "controller_route_hold" in raid_runtime
     assert 'action == "start-held"' in command
