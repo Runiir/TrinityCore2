@@ -2004,9 +2004,16 @@ def test_generic_controller_route_hold_scheduler_exact_production_transcript():
     assert scheduler.observe(_generic_hold_status(
         phase="released", route_generation=2,
     )) == []
+    # V105 retained two post-release generation-2 statuses in one collection
+    # batch (capture sequences 69 and 73).  The first completes the protocol;
+    # the second is the same already-acknowledged progress observation.
+    assert scheduler.observe(_generic_hold_status(
+        phase="released", route_generation=2,
+    )) == []
 
     receipt = scheduler.receipt()
     assert receipt["gate_passed"] is True
+    assert receipt["failure_reason"] is None
     assert receipt["command_transcript"] == [
         "botautochaincheckpoint start-held 77 fixture-a " + "b" * 64 + " " + "c" * 40,
         "botauto status",
@@ -2147,6 +2154,16 @@ def test_generic_controller_route_hold_scheduler_rejects_old_poll_race():
     )
     assert scheduler.command_counts["arm"] == 0
     assert scheduler.command_counts["release"] == 0
+
+    armed = ControllerRouteHoldScheduler(_generic_hold_identity())
+    _advance_generic_hold_to_terminal(armed)
+    armed.observe(_generic_hold_status(
+        phase="armed", route_generation=2,
+    ))
+    assert armed.failure_reason == (
+        "controller_route_hold_route_advanced_before_release"
+    )
+    assert armed.command_counts["release"] == 0
 
 
 def test_generic_controller_route_hold_scheduler_negative_protocol_edges():

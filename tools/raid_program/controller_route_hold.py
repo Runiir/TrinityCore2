@@ -396,7 +396,7 @@ class ControllerRouteHoldScheduler:
             return self._fail(rejections[0])
         assert route_generation is not None
         if route_generation > self.identity.route_generation and \
-                self.phase != "awaiting_post_release_advance":
+                self._release_ack_count != 1:
             return self._fail("controller_route_hold_route_advanced_before_release")
         self._record("status", row, hold)
         if self.phase == "collecting_held_status":
