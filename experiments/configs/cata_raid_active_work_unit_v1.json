@@ -17,6 +17,8 @@
   "next_action": "Correct the checkpoint fixture seam so its receipt-zero Hazard rejection is observed against an already active real Route path independently of the later accepted configured-hazard exit; do not relabel that accepted exit as Route or start a live canary.",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_v98_truthful_hazard_owner_handoff_v99.json",
+    "sha256": "5fae42cfd65b87ac591fa63a69b58be1ef708db2a905b5bd6aa35bf4d1a6c7b4",
+    "source_commit": "13368547cfa617fd98311e1fdeeb047fd8908a8e",
     "implementation_commit": "13368547cfa617fd98311e1fdeeb047fd8908a8e",
     "implementation_tree": "bea80cffcf2ac75a5eb8e5aa40e8ab95d8304bba"
   },
