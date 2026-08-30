@@ -1,0 +1,106 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_review_v41",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_receipt_locator_snapshot_authority_required",
+  "source_state": {
+    "commit": "41a9b356db84c38173fb28aaf8251a7f37db2b4e",
+    "tree": "18f1904b7632cb87a087790ef29ee99aee1cd5c9",
+    "parent_commit": "63e6c550e822af049f3b7441992b4063bc1b8ae5",
+    "clean_before_review": true,
+    "v39_handoff_sha256": "23adf0fa2731317bd6b5faaa2e0acf2137c76f46cf8ffb8f4bb1b6215c210960",
+    "v40_handoff_sha256": "af4071571d46560d986c343ce58536870aa485c6ffd29e7d9014884c3f8511fd"
+  },
+  "claim_ledger": {
+    "verified": [
+      "all nine scenario IDs in the committed canonical catalog exactly match load_validation_routes_for_scenario for selected route objects, step ordering, route generations, payload bytes, and expected segments",
+      "the four mixed-kind scenarios exclude all fourteen interaction rows from selected_row_order, selected_rows_sha256, routes, expected_segments, and output bytes; those rows remain correctly authenticated only through the whole-catalog row count and source/staged catalog hashes",
+      "duplicate admitted step/node checks occur after canonical filtering, while malformed rows and empty admitted selections remain fail closed",
+      "the opened receipt descriptor binds hashing, parsing, and canonical validation to one byte snapshot and detects replacement between open/read and the current inode check",
+      "clean HEAD, committed DVC authority, directory/member hashes, source/staged hashes, external path checks, exclusive writes, symlink/collision rejection, and the unchanged consumer contract are preserved",
+      "the exact raw JSONL remains rejected and the prepared four-route Magmaw object remains accepted by the unchanged consumer",
+      "the focused suite passed 28 tests; py_compile and diff-check passed; all production modules remain below 1000 lines and the generic owners contain no encounter/canary constants"
+    ],
+    "refuted": [
+      "the final inode/path check rejects every two-valid-receipt path replacement before verify_staging_receipt returns",
+      "receipt_path can be treated as still naming the opened authenticated snapshot after verification returns",
+      "V40 is ready for an atomic bundle create/verify fixture"
+    ],
+    "unproven": [
+      "an authoritative selection receipt remains reconstructible when the original staging-receipt locator changes after its last path check",
+      "one authenticated prepared object reaches atomic bundle create and verify",
+      "any native Held, arm, terminal, release, Drudges, or throughput claim"
+    ]
+  },
+  "parity_audit": {
+    "catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "scenario_count": 9,
+    "selected_route_counts": {
+      "blackwing_descent_10n": 16,
+      "blackwing_descent_10n_atramedes_diagnostic": 4,
+      "blackwing_descent_10n_chimaeron_diagnostic": 2,
+      "blackwing_descent_10n_magmaw_diagnostic": 4,
+      "blackwing_descent_10n_maloriak_diagnostic": 3,
+      "blackwing_descent_10n_nefarian_diagnostic": 3,
+      "blackwing_descent_10n_omnotron_diagnostic": 3,
+      "stonecore_5h": 14,
+      "stonecore_5n": 14
+    },
+    "all_route_object_equal": true,
+    "all_generation_equal": true,
+    "all_payload_bytes_equal": true,
+    "all_expected_segments_equal": true,
+    "excluded_selected_identity_count": 0
+  },
+  "first_broken_edge": {
+    "owner": "canonical_route_staging_receipt_locator_authority",
+    "edge": "_stable_regular_file_snapshot performs its final os.stat and then returns; replacing the pathname immediately after that stat is invisible to the completed comparisons",
+    "reproduction": "replace receipt one with independently valid receipt two after os.stat returns its receipt-one state but before _stable_regular_file_snapshot compares and returns",
+    "result": "verify_staging_receipt accepted receipt-one bytes/hash/staged path while the returned receipt_path already contained receipt-two bytes",
+    "accepted_receipt_sha256": "3660ddd90fae2a1cfd64b4af7ec03059d07dceb896ac2fc4bc09dc21b6256edb",
+    "current_locator_sha256": "b674f511fdc45b2bc68d7d10d5af50948330632357cfc0754fe2704727df68de"
+  },
+  "independent_validation": {
+    "focused_command": "pixi run pytest -q tests/test_canonical_route_staging.py",
+    "focused_result": "28 passed in 1.00s",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "changed_files_within_v40_allowlist": true,
+    "bundle_create_count": 0,
+    "bundle_verify_count": 0,
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutation_count": 0,
+    "dvc_mutation_count": 0
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_receipt_locator_snapshot_authority_v42",
+    "owner_skill": "raid-evidence-lifecycle",
+    "owned_files": [
+      "tools/raid_program/canonical_route_staging.py",
+      "tools/raid_program/canonical_route_catalog.py",
+      "tests/test_canonical_route_staging.py"
+    ],
+    "required_change": [
+      "make the opened canonical receipt bytes and expected SHA-256 the sole authority; do not represent a post-verification pathname as the authenticated snapshot",
+      "embed or atomically preserve the exact staging-receipt snapshot in the scenario receipt so later verification reconstructs it without trusting the mutable original locator",
+      "add a behavioral replacement after the final pathname stat and prove it cannot yield a published or verified scenario receipt with mismatched locator/snapshot identity",
+      "freeze the now-verified catalog filtering, ordering, generation, segment, payload, DVC, path, and collision semantics"
+    ],
+    "budget": {
+      "atomic_bundle_create_count": 0,
+      "atomic_bundle_verify_count": 0,
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "worldserver_start_count": 0,
+      "database_mutation_allowed": false,
+      "dvc_mutation_allowed": false
+    },
+    "forbidden": [
+      "catalog_selection_semantic_change",
+      "bundle_create_or_verify_edit_or_execution",
+      "gameplay_native_controller_route_content_or_comparison_change",
+      "configure_build_worldserver_start_database_dvc_or_live_action"
+    ]
+  }
+}
