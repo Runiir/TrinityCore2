@@ -1,104 +1,89 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_checkpoint_observation_v6_20260830",
-  "work_unit": "shard:external_prebuild_staging_then_chainwielder_checkpoint_one_start_v6",
+  "epoch_id": "magmaw_chainwielder_atomic_prestart_tooling_v1_20260830",
+  "work_unit": "evidence:chainwielder_checkpoint_atomic_prestart_bundle_generator_v1",
   "raid": "blackwing_descent",
   "boss": "magmaw_chainwielder",
   "mode": "10N",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "prestart_gate_failed_pending_fresh_unit",
-  "gate_state": "v5_strict_provisioning_verifier_invocation_failed_no_live_start",
-  "observed_at_commit": "41234266c1fe6630865b30b2860df9e83b546991",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed",
+  "gate_state": "v6_final_recurrence_admission_failed_no_live_start",
+  "observed_at_commit": "3af269cdc89a2f5f60243bf980a11105d7e5a6d0",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_41234266c_prestart_gate_failed_handoff_v5.json",
-    "sha256": "4ef7f45c1527fb0fb3fe6b3ecc37b1f0f388eacc069ccb468ec8f9846812c97d",
-    "source_commit": "41234266c1fe6630865b30b2860df9e83b546991",
-    "source_tree": "5afc692a7098bf3ef85e46828f3348a84b3b3279",
-    "clean_before_evidence_staging": true
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_3af269cdc8_final_admission_failed_handoff_v6.json",
+    "sha256": "404481d4b7180362e36a7aa67f4e477cdb35b4ba84ecc92804ed0f2e31497bce",
+    "source_commit": "3af269cdc89a2f5f60243bf980a11105d7e5a6d0",
+    "source_tree": "8364cee7108cb5f1766510fcde1fe2c07c253fc1"
   },
   "source": {
-    "commit": "41234266c1fe6630865b30b2860df9e83b546991",
-    "tree": "5afc692a7098bf3ef85e46828f3348a84b3b3279",
-    "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json",
-    "implementation_handoff_sha256": "7ded06b94def8aa51b6ce78897ef88cce54495db3ce28cc9cd870f942631d0df",
-    "failed_preflight_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_41234266c_prestart_gate_failed_handoff_v5.json",
-    "failed_preflight_handoff_sha256": "4ef7f45c1527fb0fb3fe6b3ecc37b1f0f388eacc069ccb468ec8f9846812c97d",
-    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_41234266c_chainwielder_checkpoint_prestart_gate_failed_v5_20260830.dvc",
-    "dvc_pointer_sha256": "1f0aed169fa64864b3ec3409c674157e57bc6b16b064369ca6f7b242846b3eb8",
+    "commit": "3af269cdc89a2f5f60243bf980a11105d7e5a6d0",
+    "tree": "8364cee7108cb5f1766510fcde1fe2c07c253fc1",
+    "failed_prestart_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_3af269cdc8_final_admission_failed_handoff_v6.json",
+    "failed_prestart_handoff_sha256": "404481d4b7180362e36a7aa67f4e477cdb35b4ba84ecc92804ed0f2e31497bce",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_3af269cdc8_chainwielder_checkpoint_final_admission_failed_v6_20260830.dvc",
+    "dvc_pointer_sha256": "5b1ba1134b4ead3b983ae47ddcd4261f4d25fdde4324e4e40de3f76d5c9de4a2",
     "dvc_workspace_state": "remote_only_verified_eviction"
   },
   "scope_lock": {
-    "allowed_change": "In a fresh unit, stage all prebuild evidence outside the Git worktree, queue one exact clean fast8_v2 configure/build, provision the frozen roster, invoke the strict verifier without --provisioning-report, then run exact admission and at most one actor-30008 observation-only completion-watchdog start.",
+    "allowed_change": "Implement one deterministic prestart bundle generator and focused tests so one invocation owns route manifest/config generation, pre-pull checkpoint enablement, checkpoint seal insertion, final recurrence admission creation, and independent verification before emitting launch arguments.",
     "forbidden": [
-      "retry_under_completed_v5",
-      "second_worldserver_start",
+      "prose_only_live_retry",
+      "configure_or_worldserver_build",
+      "provisioning_or_database_mutation",
+      "worldserver_start",
       "gameplay_cpp_or_strategy_change",
-      "class_pet_boss_route_or_database_change",
-      "planner_priority_or_tolerance_change",
-      "fixture_revision_promotion_before_receipt_review",
-      "gameplay_canary_or_acceptance",
-      "native_invariant_claim_from_static_tests"
+      "class_pet_boss_or_route_change",
+      "fixture_revision_promotion",
+      "gameplay_canary_or_acceptance"
     ]
   },
   "claim_ledger": {
     "verified": [
-      "the_controller_pre_route_arm_gate_passed_twenty_seven_focused_tests",
-      "the_fixed_recurrence_bank_passed_twenty_of_twenty",
-      "the_v5_configure_and_worldserver_build_were_gate_bearing_on_the_exact_clean_source",
-      "the_v5_strict_verifier_failed_closed_on_the_wrong_provisioning_report_binding",
-      "v5_ran_zero_worldserver_starts",
-      "cleanup_readback_found_zero_online_bots_leases_groups_instances_corpses_and_ghosts"
+      "v6_strict_provisioning_passed_with_the_correct_no_provisioning_report_invocation",
+      "v6_final_admission_failed_closed_on_fixture_expansion_checkpoint_disabled",
+      "v6_ran_zero_worldserver_starts",
+      "v6_cleanup_readback_found_zero_online_bots_leases_groups_instances_corpses_and_ghosts"
     ],
     "refuted": [
-      "the_v5_unit_completed_strict_prestart_admission",
-      "the_v5_unit_exercised_the_live_controller_arm_gate_or_native_checkpoint"
+      "manual_operator_staging_currently_produces_a_complete_launchable_checkpoint_bundle",
+      "v6_exercised_the_live_controller_arm_gate_or_native_checkpoint"
     ],
     "unproven": [
-      "the_next_live_controller_report_has_command_sent_true_and_emission_count_one",
+      "the_live_controller_report_has_command_sent_true_and_emission_count_one",
       "the_native_checkpoint_reaches_a_real_Route_owner_trigger",
       "the_native_checkpoint_preserves_Route_identity_and_completes_the_hazard_exit"
     ]
   },
   "admitted_actions": {
-    "checkpoint_actor_guid": 30008,
-    "queued_clean_build_count": 1,
-    "observation_only_worldserver_start_count_maximum": 1,
-    "duration_policy": "completion_watchdog",
-    "fixed_success_timer_seconds": null,
-    "required_prestart": [
-      "stage_focused_and_recurrence_receipts_outside_git_worktree",
-      "build_exact_clean_descriptor_HEAD_once",
-      "regenerate_and_verify_exact_source_bound_recurrence_admission",
-      "bind_the_exact_checkpoint_seal_source_runtime_config_route_and_actor",
-      "verify_prestart_roster_map_attempt_profile_cohort_and_zero_residue"
+    "tooling_only": true,
+    "worldserver_start_count_maximum": 0,
+    "build_count_maximum": 0,
+    "database_mutation_count_maximum": 0,
+    "required_static_output": [
+      "one_atomic_prestart_bundle_generator",
+      "one_fail_before_fixture_for_missing_prepull_checkpoint_enable",
+      "one_pass_after_fixture_for_seal_config_and_final_admission_verification",
+      "no_launch_argv_until_all_prestart_verifiers_pass"
     ]
   },
-  "required_production_boundary": "One worldserver-backed map-669 Chainwielder observation on an exact clean built descriptor HEAD where the controller reports command_sent=true and emission_count=1 at route generation 1, actor 30008 reaches one real Route-owner checkpoint, the receipt-zero Hazard future_pack_destination rejection preserves Route identity, and the hazard exit completes or reaches one typed checkpoint terminal.",
+  "required_production_boundary": "The deterministic tooling must execute the repository's real route/config generation and recurrence-admission owners, insert BotWorld.ValidationRoute.PrepullCheckpointEnable=1 before final config hashing, preserve the verified checkpoint seal, and return a verified bundle without any operator-authored intermediate config edits.",
   "required_observation": {
-    "controller_arm_command_sent": true,
-    "controller_arm_emission_count": 1,
-    "controller_gate_route_generation": 1,
-    "native_checkpoint_lifecycle_count": 1,
-    "terminal": "completed_or_one_typed_checkpoint_failure",
-    "required_causal_join": "actor_30008_route_owner_to_receipt_zero_hazard_rejection_to_preserved_route_identity_to_hazard_exit"
+    "fail_before": "fixture_expansion_checkpoint_disabled",
+    "pass_after": "final recurrence admission verification succeeds and the emitted config binds the same seal, source, route, binary, receipt, decision, suite, and ledger",
+    "live_result_required": false
   },
   "validation": {
-    "focused_result": "27_passed_126_deselected",
-    "recurrence_bank_result": "20_passed_0_failed",
-    "configure_attempts": 1,
-    "configure_result": "success_gate_bearing",
-    "worldserver_build_attempts": 1,
-    "worldserver_build_result": "success_gate_bearing",
-    "strict_provisioning_verifier_result": "failed_wrong_provisioning_report_binding",
-    "worldserver_start_count": 0,
-    "fixture_revision_promoted": false,
-    "gameplay_admitted": false,
-    "acceptance_admitted": false
+    "v6_configure_attempts": 1,
+    "v6_worldserver_build_attempts": 1,
+    "v6_worldserver_start_count": 0,
+    "v6_strict_provisioning_failure_count": 0,
+    "v6_final_admission_verified": false,
+    "v6_terminal": "fixture_expansion_checkpoint_disabled"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "next_action": "Start a fresh bounded v6 unit. Keep every prebuild receipt outside the Git worktree, repeat the exact clean configure/build, then invoke the strict provisioning verifier exactly without --provisioning-report before seal creation, final recurrence admission, and at most one actor-30008 observation start.",
-  "next_terminal_handoff": "Publish the next single-attempt bundle and report the first typed preflight or checkpoint terminal without gameplay repair."
+  "next_action": "Implement and focus-test the atomic prestart bundle generator. Do not build, provision, or start a worldserver in this tooling work unit.",
+  "next_terminal_handoff": "Return the deterministic generator's fail-before/pass-after evidence and exact changed files; only a later fresh shard work unit may request another build or live start."
 }

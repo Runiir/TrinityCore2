@@ -1,0 +1,140 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:external_prebuild_staging_then_chainwielder_checkpoint_one_start_v6",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed",
+  "failure_classification": "prestart_final_recurrence_admission_verification_failed",
+  "input_identities": {
+    "source_commit": "3af269cdc89a2f5f60243bf980a11105d7e5a6d0",
+    "source_tree": "8364cee7108cb5f1766510fcde1fe2c07c253fc1",
+    "source_clean_before_configure": true,
+    "source_clean_before_worldserver_build": true,
+    "v5_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_41234266c_prestart_gate_failed_handoff_v5.json",
+    "v5_handoff_file_sha256": "4ef7f45c1527fb0fb3fe6b3ecc37b1f0f388eacc069ccb468ec8f9846812c97d",
+    "static_arm_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json",
+    "static_arm_handoff_file_sha256": "7ded06b94def8aa51b6ce78897ef88cce54495db3ce28cc9cd870f942631d0df",
+    "worldserver_binary_sha256": "0f2380380510393b01b86bf82b791a3b507a372f72742c9494a5b4c482678318",
+    "runtime_config_sha256": "be6ef68dbd3fc3f94b4e47c11cc08f01743f62a17ac372055d1a9a872afbc961",
+    "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"
+  },
+  "scope_lock": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 0,
+    "second_configure_run": false,
+    "second_worldserver_start": false,
+    "gameplay_or_fixture_changes": false,
+    "fixture_revision_promoted": false,
+    "gameplay_canary_or_acceptance_claimed": false
+  },
+  "validation": {
+    "focused_tests": "27 passed, 126 deselected",
+    "recurrence_bank": "20 of 20 passed; fixture_expansion_admitted=true; sole target chainwielder_pre_admission_rejection_isolation_v1",
+    "configure": {
+      "ticket_id": "raid-build-0215c1ea3d314556918a222cc3912434",
+      "queue_sequence": 1226,
+      "receipt_canonical_sha256": "6096f56c05c0c70dbbc20a5d508db27f5ec9e1261c54f2258b3d2854dbfaeacd",
+      "receipt_file_sha256": "6034e154b33f325b80fe7b7a1c2d1a4c0cd8f2a781f8a1cd1ff79c72f6846bc6",
+      "gate_bearing": true
+    },
+    "worldserver_build": {
+      "ticket_id": "raid-build-fe1ffbaff18d4d69869e42a42b5fc003",
+      "queue_sequence": 1227,
+      "receipt_canonical_sha256": "ec3d968239ae76ea81f14407d07fc177670fe805292af388411579885bb169cd",
+      "receipt_file_sha256": "0ee872d3316114cdddd7b346a42621ff8551c994c6d461657a5c21c658ce8baf",
+      "gate_bearing": true,
+      "binary_sha256": "0f2380380510393b01b86bf82b791a3b507a372f72742c9494a5b4c482678318"
+    },
+    "strict_provisioning": {
+      "invocation_omitted_provisioning_report": true,
+      "process_exit_code": 0,
+      "failure_count": 0,
+      "provisioning_all_ready": true,
+      "database_valid": true,
+      "payload_valid": true,
+      "report_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f"
+    },
+    "shard_readback": {
+      "passed": true,
+      "selected_name_count": 10,
+      "map_id": 669,
+      "zero_group_instance_corpse_ghost_residue": true,
+      "report_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0"
+    },
+    "checkpoint_seal": {
+      "seal_sha256": "8a114bfb7280db82a73b071ab23b6da59a386dcba666f906f1d18447ae192633",
+      "file_sha256": "dc3a6e08c14d509a5ea87f1ad2386e1d7aed171fd90c9d5ab7ddd8716c68239b",
+      "source_config_bound": true
+    },
+    "final_admission": {
+      "created": true,
+      "file_sha256": "3c10113fe6c616779d887b8b1853ee6f700e6c1dc68b8754d708b529e15b4c58",
+      "verified": false,
+      "verification_process_exit_code": 2,
+      "failure": "fixture_expansion_checkpoint_disabled",
+      "missing_required_config": "BotWorld.ValidationRoute.PrepullCheckpointEnable = 1"
+    },
+    "checkpoint_observation": {
+      "controller_gate": "not_run",
+      "controller_command_sent": null,
+      "controller_emission_count": null,
+      "native_checkpoint_lifecycle_count": 0,
+      "terminal": "prestart_final_recurrence_admission_verification_failed",
+      "party_dps": null,
+      "party_hps": null,
+      "actor_30008_dps": null,
+      "actor_30008_hps": null
+    },
+    "cleanup": {
+      "worldserver_process_absent": true,
+      "zero_online_bots": true,
+      "zero_leases": true,
+      "build_queue_active": false,
+      "build_queue_depth": 0
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_exact_clean_fast8_v2_configure_and_worldserver_build_each_ran_once_and_are_gate_bearing",
+      "the_corrected_strict_provisioning_verifier_invocation_passed_without_provisioning_report",
+      "independent_readback_proved_the_exact_offline_unleased_ten_with_zero_residue",
+      "the_preconfig_checkpoint_seal_was_created_and_written_into_the_runtime_config",
+      "the_final_admission_was_created_and_failed_closed_before_process_creation",
+      "no_worldserver_start_or_checkpoint_arm_occurred"
+    ],
+    "refuted": [
+      "the_v6_runtime_config_satisfied_the_entire_fixture_expansion_prestart_contract",
+      "the_v6_unit_exercised_the_live_controller_arm_gate_or_native_checkpoint"
+    ],
+    "unproven": [
+      "the_live_controller_report_has_command_sent_true_and_emission_count_one",
+      "the_native_checkpoint_reaches_a_real_Route_owner_trigger",
+      "the_native_checkpoint_preserves_Route_identity_and_completes_the_hazard_exit"
+    ]
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_foundation_3af269cdc8_chainwielder_checkpoint_final_admission_failed_v6_20260830.dvc",
+    "pointer_file_sha256_before_commit": "5b1ba1134b4ead3b983ae47ddcd4261f4d25fdde4324e4e40de3f76d5c9de4a2",
+    "directory_md5": "0e5a68f15ab5370d6f715d0835b8dd59.dir",
+    "directory_size_bytes": 4212182,
+    "directory_file_count": 24,
+    "push_result": "15 files pushed",
+    "remote_verification": "cache_and_remote_object_in_sync_before_eviction",
+    "workspace_evicted": true,
+    "unique_cache_objects_evicted": 14,
+    "shared_cache_objects_retained": 10,
+    "directory_metadata_retained": true,
+    "prior_hydrated_v3_and_v5_workspaces_evicted": true,
+    "remote_only_union_cache_objects_evicted": 44,
+    "remote_only_union_shared_objects_retained": 8,
+    "broad_dvc_gc_run": false
+  },
+  "remaining_blocker": "The prestart steps were assembled by separate operator commands, and the final runtime config omitted BotWorld.ValidationRoute.PrepullCheckpointEnable=1. The independent admission verifier rejected it before process creation.",
+  "next_work_unit": {
+    "id": "evidence:chainwielder_checkpoint_atomic_prestart_bundle_generator_v1",
+    "owner_skill": "raid-evidence-lifecycle",
+    "action": "Implement and test one deterministic prestart tool that owns manifest/config generation, enables the pre-pull checkpoint, computes and writes the verified checkpoint seal, creates the final recurrence admission, and verifies the complete bundle before returning any launch argv.",
+    "live_start_authorized": false,
+    "forbidden": "No prose-only retry, build, provisioning mutation, worldserver start, gameplay or route change, fixture promotion, canary, or acceptance claim in the tooling work unit."
+  }
+}
