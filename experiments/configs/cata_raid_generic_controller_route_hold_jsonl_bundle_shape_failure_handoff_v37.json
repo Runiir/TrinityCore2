@@ -1,0 +1,167 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:generic_controller_route_hold_authenticated_staging_one_build_one_start_v37",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed_prestart",
+  "failure_classification": "authenticated_route_input_shape_incompatible_with_atomic_bundle",
+  "source_state": {
+    "commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db",
+    "tree": "923fa49b1051e58b01b1f71a78911758877cbb05",
+    "clean_before_run": true,
+    "source_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_bundle_error_compatibility_review_handoff_v36.json",
+    "source_handoff_sha256": "a13418ea393c90ba9764f44a86c72c640ca61a8624f68d84427e708b22f9d3b9"
+  },
+  "consumed_budget": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "database_mutation_count": 0,
+    "strict_readback_count": 2,
+    "recurrence_suite_execution_count": 1,
+    "staging_preflight_count": 1,
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_verify_count": 0,
+    "worldserver_start_count": 0,
+    "retry_count": 0,
+    "source_or_gameplay_edits": false,
+    "manual_staged_route_or_bundle_mutation": false
+  },
+  "build": {
+    "policy": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "configure_ticket_id": "raid-build-8ec0e5119282461b9a3261b5bd85ef1b",
+    "configure_receipt_sha256": "cd3e0183171a62201f6f65a9ff01929a88fbd5d5d51ca36b26daa13885d2fe54",
+    "configure_receipt_file_sha256": "017f1f1839c50dfc2de045a1fe83066f42e7777e35222213206b2496d112937f",
+    "build_ticket_id": "raid-build-3ea9a7fb5ae1425cb9feb962713723a5",
+    "build_receipt_sha256": "ac36766a0544dc170361fa8359bc3f8331d23a953bb14c7d63a71e1fd808bda3",
+    "build_receipt_file_sha256": "e06d545c05ea26abf3db28bf0108fde6f241ff62286bb52f6b83f003c9866df7",
+    "binary_sha256": "04a9ad083f4623e7adde5b44d20d93f15e9c98c53b5bc4d77fd6ec33aa0d50b0",
+    "binary_size_bytes": 63886256,
+    "gate_bearing": true
+  },
+  "retained_roster": {
+    "database_mutated": false,
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "strict_verifier_passed": true,
+    "strict_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "exact_ten_actor_readback_passed": true,
+    "initial_and_cleanup_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "offline_unleased_zero_group_instance_corpse_ghost_residue": true
+  },
+  "recurrence": {
+    "ledger_sha256": "c02d27c6ff62d20aa5a31d463b9cdef68513fa67f74b3068ae7d236e061a1830",
+    "source_identity": "245a30593b80cbd223a2a39a4a3f98ef52cf12db",
+    "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+    "fixture_execution_count": 20,
+    "fixture_pass_count": 20,
+    "suite_receipt_sha256": "2086e115cec11ca52e5f12e424806ef4d0122a6bd9de67a900dad003f439ea07",
+    "decision_sha256": "b5375692d6241702f912910db5e4893887d65c70620ac33276527e62a587f2d7",
+    "fixture_expansion_admitted": true
+  },
+  "canonical_staging": {
+    "invocation_count": 1,
+    "passed": true,
+    "schema": "cata_raid_external_route_staging_receipt_v1",
+    "source_path": "/home/runiir/Games/trinity-cata/dataset/validation_scenarios/validation_routes.jsonl",
+    "source_commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db",
+    "source_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "staged_path": "/tmp/generic_route_hold_v37.ZBRRBIW2/validation_routes-406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5.jsonl",
+    "staged_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "receipt_sha256": "b4d1d9be63571733fc0f72c61f7038baa167d33b99f7dcf46f044a32d523840f",
+    "receipt_recomputed_and_typed": true,
+    "staged_path_passed_unchanged_to_create": true,
+    "jsonl_row_count": 77
+  },
+  "atomic_bundle": {
+    "create_count": 1,
+    "create_passed": false,
+    "verify_count": 0,
+    "failure_receipt_sha256": "7903d02b5baa0595e7928d6eaf805e8856ff0c4d782be14b51b8fd7ddfd00e47",
+    "failure_reason": "route_manifest_invalid",
+    "launch_contract_created": false,
+    "worldserver_start_withheld": true
+  },
+  "first_broken_edge": {
+    "owner": "raid_shard_bundle_input_shape_contract",
+    "edge": "authenticated_canonical_route_is_jsonl_but_atomic_bundle_requires_one_json_object",
+    "first_observed_mutation": "none; create rejected before bundle publication, verification, admission, launch construction, or server start",
+    "failure_postcondition": "bundle.failure.json is failed_closed and launchable=false with reason route_manifest_invalid",
+    "implementation_hypothesis": "A production-owned authenticated scenario-selection boundary must transform the canonical DVC JSONL catalog into the single-scenario JSON object expected by the suffix builder and bind both identities in a typed receipt. Do not manually convert the file or loosen comparison semantics.",
+    "correlation_keys": {
+      "source_commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db",
+      "canonical_catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+      "staging_receipt_sha256": "b4d1d9be63571733fc0f72c61f7038baa167d33b99f7dcf46f044a32d523840f",
+      "catalog_row_count": 77,
+      "bundle_failure_receipt_sha256": "7903d02b5baa0595e7928d6eaf805e8856ff0c4d782be14b51b8fd7ddfd00e47"
+    }
+  },
+  "controller_native_transcript": {
+    "start_held": 0,
+    "held_status": 0,
+    "arm": 0,
+    "checkpoint_terminal": 0,
+    "release": 0,
+    "route_advance": 0,
+    "reason": "no launch contract and no worldserver start"
+  },
+  "throughput": {
+    "route_dps": null,
+    "route_hps": null,
+    "actor_30008_dps": null,
+    "actor_30008_hps": null,
+    "actor_30008_pet_share": null,
+    "reason": "no combat"
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_245a30593b_generic_controller_route_hold_jsonl_bundle_shape_failure_v37_20260830.dvc",
+    "pointer_sha256": "722d82370070542c3f32ee6aca03df7ad108f5697b63ff31c5147b62d47b94b4",
+    "directory_md5": "04b7be47dc30901d48d97d62a32ca2aa.dir",
+    "directory_size_bytes": 279552,
+    "directory_file_count": 10,
+    "push_result": "8 files pushed",
+    "remote_status": "in_sync",
+    "remote_reconstruction_file_manifest_sha256": "d50e60b9433c423928f23ccb19135c188f822f28c20b3e861d3e114d3462f575",
+    "remote_reconstruction_file_count": 10,
+    "remote_reconstruction_size_bytes": 279552,
+    "unique_cache_objects_to_evict": 7,
+    "shared_cache_rows_to_retain": 3,
+    "directory_manifest_to_retain": true,
+    "local_output_evicted_after_remote_verification": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "one configure and one fast8_v2 build passed under the exact 8/1 policy",
+      "the retained roster passed strict verification and exact readback without database mutation",
+      "all twenty recurrence fixtures passed",
+      "one generic staging call authenticated clean commit, DVC member identity, source/staged hashes, and receipt hash",
+      "the staged path was passed unchanged to the sole atomic create",
+      "the create rejected the 77-row JSONL catalog as route_manifest_invalid before launch",
+      "no worldserver or combat occurred and cleanup remained clean",
+      "a fresh isolated DVC repository reconstructed all ten evidence files byte-for-byte before eviction"
+    ],
+    "refuted": [
+      "generic canonical staging alone produces the single JSON object consumed by chainwielder_prestart_bundle",
+      "V37 reached bundle verification, native Chainwielder generation one, arm, release, Drudges, or combat"
+    ],
+    "unproven": [
+      "an authenticated scenario-shaped route object reaches one atomic create and verify",
+      "the native Held/arm/terminal/release/Drudges transcript",
+      "route DPS, HPS, actor throughput, and pet share"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_v38",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Boundedly define and fixture-review one production-owned authenticated transformation or parsing contract from canonical DVC JSONL to the exact single-scenario JSON object consumed by the Chainwielder suffix builder. Bind source commit, catalog/member hashes, selected scenario/rows, output hash, and typed receipt.",
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "database_mutation_count": 0,
+      "atomic_bundle_create_count": 0,
+      "atomic_bundle_verify_count": 0,
+      "worldserver_start_count": 0,
+      "retry_count": 0
+    },
+    "forbidden": "No live start, build, database mutation, gameplay, native, controller, route content, polling, watchdog, threshold, manual JSONL conversion, DVC publication, or acceptance claim."
+  }
+}

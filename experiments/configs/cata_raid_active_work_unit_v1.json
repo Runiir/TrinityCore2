@@ -1,124 +1,110 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_authenticated_staging_live_verification_v37_20260830",
-  "work_unit": "shard:generic_controller_route_hold_authenticated_staging_one_build_one_start_v37",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "v36_verified_generic_staging_and_chainwielder_error_compatibility_live_unverified",
-  "observed_at_commit": "fddef943c4d63e439eade0563f41dbd8a56dcbbe",
-  "immutable_input_commit": "fddef943c4d63e439eade0563f41dbd8a56dcbbe",
+  "epoch_id": "generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_v38_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_v38",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed",
+  "gate_state": "v37_authenticated_catalog_staging_green_atomic_bundle_input_shape_rejected",
+  "observed_at_commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db",
+  "immutable_input_commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_bundle_error_compatibility_review_handoff_v36.json",
-    "sha256": "a13418ea393c90ba9764f44a86c72c640ca61a8624f68d84427e708b22f9d3b9",
-    "source_commit": "fddef943c4d63e439eade0563f41dbd8a56dcbbe"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_jsonl_bundle_shape_failure_handoff_v37.json",
+    "sha256": "7777e8adbe5f55371dc65e4c514d08ce19de10a57fda282a0c2c81844fc96304",
+    "source_commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db"
   },
   "evidence_pointer": {
-    "path": "artifacts/cata_raid_program/phase1_raid_foundation_6aff25af46_generic_controller_route_hold_bundle_input_location_failure_v30_20260830.dvc",
-    "sha256": "141d0f3f004d473b2c6edb9bc9167a7aa9d76e35eca44e755a02e107a01311e2",
+    "path": "artifacts/cata_raid_program/phase1_raid_foundation_245a30593b_generic_controller_route_hold_jsonl_bundle_shape_failure_v37_20260830.dvc",
+    "sha256": "722d82370070542c3f32ee6aca03df7ad108f5697b63ff31c5147b62d47b94b4",
+    "directory_md5": "04b7be47dc30901d48d97d62a32ca2aa.dir",
     "remote_verified": true,
     "remote_reconstruction_verified": true,
-    "local_output_evicted": true,
-    "hydrated_for_v36": false
+    "remote_reconstruction_manifest_sha256": "d50e60b9433c423928f23ccb19135c188f822f28c20b3e861d3e114d3462f575",
+    "local_output_evicted": true
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "The generic DVC staging contract applies only to bundles that reject worktree-contained inputs. Chainwielder/Magmaw remains the current exact consumer and observation-only counterexample."
+    "canary_only": "The generic catalog-to-scenario input-shape contract applies to authenticated route catalogs. Chainwielder/Magmaw remains the exact current consumer and no gameplay claim was made."
   },
   "behavior_change": false,
   "evidence_contract_change": true,
-  "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": true,
-  "ready_for_live_verification": true,
+  "ready_for_bounded_repair": true,
+  "ready_for_fixture_expansion": false,
+  "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "At immutable source fddef943c4, run exactly one clean fast8 configure/build, one authenticated generic canonical-route staging preflight with receipt validation, one authoritative atomic bundle create and verify, and one no-retry completion-watchdog worldserver capture. Publish, remotely reconstruct, and exactly evict the closed evidence through DVC.",
+    "allowed_change": "Define and fixture-review one production-owned authenticated transformation or parsing boundary from canonical DVC validation_routes.jsonl to the exact single-scenario JSON object required by chainwielder_prestart_bundle. Bind clean commit, DVC member/hash, selected scenario/rows, output object hash, and typed receipt.",
     "allowed_files": [
-      "external_build_receipt_and_attestation",
-      "external_authenticated_staging_receipt",
-      "external_atomic_bundle_and_capture_outputs",
-      "one_compact_tracked_closed_run_summary",
-      "one_tracked_dvc_pointer"
+      "tools/raid_program/canonical_route_staging.py_or_one_narrow_owned_companion",
+      "tools/raid_program/chainwielder_prestart_bundle.py_only_if_required_for_the_typed_contract",
+      "tests/test_canonical_route_staging.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      ".agents/skills/raid-evidence-lifecycle/SKILL.md_only_if_generic_contract_clarification_is_required",
+      "one_compact_handoff_and_active_descriptor"
     ],
     "forbidden": [
-      "implementation_gameplay_native_controller_route_content_skill_or_test_edit",
-      "identity_comparison_polling_watchdog_or_threshold_change",
-      "second_configure_build_staging_create_verify_worldserver_start_or_retry",
-      "manual_staged_route_receipt_bundle_config_admission_or_launch_mutation",
-      "fixture_promotion_or_route_acceptance_claim",
-      "local_evidence_eviction_before_verified_dvc_remote_reconstruction"
+      "manual_jsonl_conversion_or_live_bundle_retry",
+      "gameplay_native_controller_route_content_identity_comparison_polling_watchdog_or_threshold_change",
+      "configure_build_database_mutation_worldserver_start_or_dvc_publication",
+      "comparison_loosening_or_acceptance_claim"
     ]
   },
-  "verification_budget": {
-    "configure_count_maximum": 1,
-    "worldserver_build_count_maximum": 1,
-    "staging_preflight_count_maximum": 1,
-    "atomic_bundle_create_count_maximum": 1,
-    "atomic_bundle_verify_count_maximum": 1,
-    "worldserver_start_count_maximum": 1,
-    "retry_count_maximum": 0,
-    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
-    "compiler_jobs": 8,
-    "linker_jobs": 1,
-    "database_mutation": "forbidden; require fresh strict readback of the retained frozen roster before create",
-    "dvc_mutation": "required after capture closure for publish, remote reconstruction verification, and exact eviction"
+  "closed_v37_evidence": {
+    "source_commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db",
+    "binary_sha256": "04a9ad083f4623e7adde5b44d20d93f15e9c98c53b5bc4d77fd6ec33aa0d50b0",
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "database_mutation_count": 0,
+    "recurrence_fixture_count": 20,
+    "recurrence_fixture_pass_count": 20,
+    "staging_preflight_count": 1,
+    "staging_receipt_sha256": "b4d1d9be63571733fc0f72c61f7038baa167d33b99f7dcf46f044a32d523840f",
+    "canonical_catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "canonical_catalog_row_count": 77,
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_verify_count": 0,
+    "worldserver_start_count": 0,
+    "retry_count": 0,
+    "failure_reason": "route_manifest_invalid",
+    "failure_receipt_sha256": "7903d02b5baa0595e7928d6eaf805e8856ff0c4d782be14b51b8fd7ddfd00e47"
   },
-  "admitted_contract": {
-    "generic_staging_authenticates_clean_head_dvc_stage_directory_and_member": true,
-    "generic_staging_binds_caller_source_and_staged_sha256": true,
-    "generic_staging_rejects_worktree_external_root_symlink_conflict_and_hash_drift": true,
-    "staging_copy_and_receipt_are_exclusive_non_overwrite": true,
-    "staging_does_not_invoke_or_consume_bundle_create": true,
-    "chainwielder_wrapper_signature_preserved": true,
-    "chainwielder_wrapper_translates_and_chains_generic_error": true,
-    "chainwielder_bundle_error_concrete_identity_preserved": true,
-    "wrapper_failure_invokes_zero_create_calls": true,
-    "bundle_create_and_verify_bodies_unchanged": true,
-    "generic_skill_rule_is_conditional_and_chainwielder_consumer_is_narrow": true,
-    "generic_staging_and_bundle_modules_readable_and_under_1000": true,
-    "runtime_suffix_node_ids": [
-      "bwd.magmaw.chainwielder",
-      "bwd.magmaw.drudges",
-      "bwd.magmaw.encounter"
-    ],
-    "profile_suffix_and_expected_runtime_profile_identity_remain_seal_closed": true,
-    "identity_comparison_loosened": false
+  "first_broken_edge": {
+    "owner": "raid_shard_bundle_input_shape_contract",
+    "edge": "authenticated_canonical_route_is_jsonl_but_atomic_bundle_requires_one_json_object",
+    "first_observed_mutation": "none",
+    "failure_postcondition": "failed_closed prestart; no launch contract and no worldserver start"
   },
   "remaining_unproven": [
-    "an authenticated externally staged exact route reaches one authoritative atomic bundle create and verify",
+    "an authenticated scenario-shaped route object reaches one atomic create and verify",
     "a fresh native worldserver consumes the profile-bound suffix as Chainwielder generation one",
     "two stable Held statuses precede one sealed arm",
     "one identity-preserved checkpoint lifecycle reaches a typed terminal",
     "release advances exactly once to retained Drudges",
-    "the new closed evidence is remotely reconstructed before exact local eviction"
+    "route DPS, HPS, actor throughput, and pet share"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "normal_clear",
-      "monotonic_semantic_or_no_progress_stall",
-      "repeated_decisions",
-      "excessive_death_loops",
-      "infrastructure_loss",
-      "contamination",
-      "explicit_interruption"
+      "typed_contract_fixture_pass",
+      "typed_contract_fixture_failure",
+      "source_identity_mismatch",
+      "scope_violation"
     ]
   },
-  "focused_validation": {
-    "command": "pixi run pytest -q tests/test_canonical_route_staging.py tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity tests/test_chainwielder_prestart_bundle.py::test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged",
-    "result": "18 passed in 0.66s",
-    "review_commit": "fddef943c4d63e439eade0563f41dbd8a56dcbbe"
+  "verification_budget": {
+    "configure_count_maximum": 0,
+    "worldserver_build_count_maximum": 0,
+    "staging_preflight_count_maximum": 0,
+    "atomic_bundle_create_count_maximum": 0,
+    "atomic_bundle_verify_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
+    "retry_count_maximum": 0,
+    "database_mutation": "forbidden",
+    "dvc_mutation": "forbidden"
   },
-  "completion_evidence_lifecycle": {
-    "compact_summary_required": true,
-    "dvc_add_and_push_required": true,
-    "remote_pointer_and_reconstruction_verification_required": true,
-    "exact_local_output_and_unique_cache_eviction_after_verification": true,
-    "post_eviction_git_dvc_process_and_disk_status_required": true
-  },
-  "next_work_unit": "shard:generic_controller_route_hold_authenticated_staging_one_build_one_start_v37",
-  "next_owner_skill": "raid-shard-architecture",
-  "next_action": "From the exact clean descriptor commit, perform one fast8 configure/build, validate one generic staging receipt, consume one atomic create/verify, and run one no-retry completion-watchdog start; DVC-publish, remotely reconstruct, and exactly evict the closed evidence."
+  "next_work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_v38",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Implement and fixture-review the bounded authenticated catalog-to-scenario object contract. Do not build, start, mutate the database, manually transform an input, or retry V37."
 }

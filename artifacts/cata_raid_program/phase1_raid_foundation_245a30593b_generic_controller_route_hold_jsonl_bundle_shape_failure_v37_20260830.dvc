@@ -1,0 +1,7 @@
+outs:
+- md5: 04b7be47dc30901d48d97d62a32ca2aa.dir
+  size: 279552
+  nfiles: 10
+  hash: md5
+  path:
+    phase1_raid_foundation_245a30593b_generic_controller_route_hold_jsonl_bundle_shape_failure_v37_20260830
