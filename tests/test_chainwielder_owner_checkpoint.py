@@ -1042,7 +1042,7 @@ def test_generic_controller_hold_is_wired_to_production_boundaries() -> None:
     assert "Cohort().Config.Name," not in MODULE.read_text(encoding="utf-8")
 
 
-def test_checkpoint_crosses_real_executor_and_production_tick_boundary() -> None:
+def test_checkpoint_source_wires_executor_and_production_tick_boundary() -> None:
     header = HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     update = UPDATE.read_text(encoding="utf-8")

@@ -66,7 +66,7 @@
     "map-669 or Magmaw gameplay outcome"
   ],
   "validation_clock": {
-    "policy": "completion-watchdog",
+    "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
