@@ -1,33 +1,38 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_pre_route_hold_arm_release_v10_20260830",
-  "work_unit": "runtime:chainwielder_checkpoint_pre_route_native_hold_control_v1",
+  "epoch_id": "generic_controller_route_hold_scope_expansion_v11_20260830",
+  "work_unit": "runtime:generic_controller_route_hold_control_v2",
   "raid": "blackwing_descent",
   "boss": "magmaw_chainwielder",
   "mode": "10N",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "gate_state": "python_controller_blocked_no_native_start_held_or_terminal_gated_release_boundary",
-  "observed_at_commit": "0bf705ffedec1ce399eae7b0b13620a728fdcfc2",
+  "classification": "scope_expansion_required",
+  "gate_state": "native_implementation_blocked_owned_files_do_not_cross_action_generation_or_status_boundaries",
+  "observed_at_commit": "d819037d1d65b7e7a5024a39066cd564555a8ddc",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_native_hold_required_handoff_v10.json",
-    "sha256": "ad52b5b1b1277244020d67aca35f82eb5345f6ba80d3a8c11efc1afe8d47c3d5",
-    "source_commit": "0bf705ffedec1ce399eae7b0b13620a728fdcfc2"
+    "path": "experiments/configs/cata_raid_controller_route_hold_scope_expansion_required_handoff_v11.json",
+    "sha256": "bb46ff3e53a2da97ef69e1ca641a4fd13182fc84d806ca4d099c04a31840e2a4",
+    "source_commit": "d819037d1d65b7e7a5024a39066cd564555a8ddc"
   },
   "scope_lock": {
-    "allowed_change": "Implement and unit-test one native start-held, checkpoint-only arm transition, status receipt, and terminal-gated release primitive so generation one cannot advance before the sealed checkpoint lifecycle is observed.",
+    "allowed_change": "Implement and unit-test one generic native controller route hold across the actual candidate admission, route-generation, and raid-status boundaries.",
     "owned_files": [
       "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
       "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
       "src/server/scripts/Commands/cs_chainwielder_owner_checkpoint.cpp",
       "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "src/server/game/Bots/BotActionArbiter.h",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrRaidRuntime.cpp",
       "tests/test_chainwielder_owner_checkpoint.py"
     ],
     "forbidden": [
       "configure_build_or_worldserver_start",
       "database_or_dvc_mutation",
       "gameplay_route_movement_class_pet_encounter_or_priority_change",
-      "python capture controller edits before the native primitive exists",
+      "python capture controller edits",
       "polling_tolerance_or_cadence repair",
       "fixture_revision_promotion",
       "gameplay_canary_or_acceptance_claim"
@@ -77,6 +82,6 @@
       "explicit_interruption"
     ]
   },
-  "next_action": "Implement the exact native control primitive in the source handoff. Do not simulate the hold in Python and do not authorize a build or live start.",
+  "next_action": "Authorize the minimum production-boundary file expansion recorded in the v11 handoff, then implement the generic native control primitive. Do not simulate the hold in Python and do not authorize a build or live start.",
   "next_terminal_handoff": "Return native changed-file hashes, typed hold-arm-release states, focused unit-test receipts, and authorization to resume the evidence-controller production-boundary replay only after the native primitive passes static review."
 }

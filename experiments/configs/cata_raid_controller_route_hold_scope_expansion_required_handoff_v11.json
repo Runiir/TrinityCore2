@@ -1,0 +1,147 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:controller_route_hold_scope_expansion_v11",
+  "classification": "blocked_owned_files_cannot_intercept_production_route_actions_or_generation",
+  "source_base": {
+    "commit": "d819037d1d65b7e7a5024a39066cd564555a8ddc",
+    "clean_before_inspection": true
+  },
+  "source_handoff": {
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_native_hold_required_handoff_v10.json",
+    "sha256": "ad52b5b1b1277244020d67aca35f82eb5345f6ba80d3a8c11efc1afe8d47c3d5"
+  },
+  "claim_ledger": [
+    {
+      "claim": "The existing owned checkpoint module can store identity, expose control commands, and observe its diagnostic lifecycle.",
+      "status": "verified",
+      "evidence": "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp and cs_chainwielder_owner_checkpoint.cpp"
+    },
+    {
+      "claim": "The owned files can reject every ordinary route action while retaining formation, healing, consumable, status, diagnosis, trace, and checkpoint observation.",
+      "status": "refuted",
+      "evidence": "Candidate admission is installed in BotWorldPopulationMgrUpdateBotKernelPreparation.cpp; ordinary route candidates are submitted in BotWorldPopulationMgrUpdateBotKernelFallback.cpp. Neither file is owned."
+    },
+    {
+      "claim": "The owned files can prevent and count every route-generation mutation.",
+      "status": "refuted",
+      "evidence": "ApplyValidationRouteManifestNode and MaybeAdvanceValidationRouteManifest mutate or admit route generation in BotWorldPopulationMgrValidationRouteRuntime.cpp, which is not owned."
+    },
+    {
+      "claim": "The owned files can expose raid_runtime.controller_route_hold in normal status receipts.",
+      "status": "refuted",
+      "evidence": "BuildRaidRuntimeJson serializes raid_runtime in BotWorldPopulationMgrRaidRuntime.cpp, which is not owned."
+    },
+    {
+      "claim": "A start-held command can activate autonomy and install the hold before a later world update tick.",
+      "status": "verified",
+      "evidence": "Commands and StartAutonomyForCohort execute synchronously on the world thread; the checkpoint manager can reject reuse of an already-active attempt and bind the loaded profile immediately after start returns."
+    },
+    {
+      "claim": "The existing checkpoint observation can be admitted as the only route path without touching the generic route candidate boundary.",
+      "status": "refuted",
+      "evidence": "The diagnostic injection requires an active Route-owner path or armed route-hazard retry, both produced by the generic validation route candidates. An untyped allow-all tick would also admit unrelated offense and movement."
+    }
+  ],
+  "first_broken_edge": {
+    "owner": "shared_native_runtime",
+    "edge": "controller route hold is absent before the first validation-kernel and route-generation transitions",
+    "consumed_mutation": "route generation changes from 1 to 2 before arm acknowledgement",
+    "failure_postcondition": "command_sent=false, checkpoint emission count zero, accepted checkpoint lifecycle count zero",
+    "correlation": "cohort, attempt, server epoch, scenario, profile, route manifest sha256, generation, node, actor, fixture, seal, source commit"
+  },
+  "no_partial_edit": {
+    "runtime_files_changed": [],
+    "reason": "A state-only or reporting-only hold in the original owned files would pass a helper test while leaving the production action and generation writers live. That repair is explicitly forbidden."
+  },
+  "minimum_scope_expansion": {
+    "retain_original_owned_files": [
+      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "src/server/scripts/Commands/cs_chainwielder_owner_checkpoint.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "tests/test_chainwielder_owner_checkpoint.py"
+    ],
+    "add_files": [
+      {
+        "path": "src/server/game/Bots/BotActionArbiter.h",
+        "purpose": "Add a typed controller-checkpoint-observation admission class instead of reusing formation or unknown semantics."
+      },
+      {
+        "path": "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
+        "purpose": "Install the attempt-scoped hold admission policy while preserving explicitly classified formation, friendly healing, bag consumables, offense suppression, and the one checkpoint observation path."
+      },
+      {
+        "path": "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+        "purpose": "Tag the generic validation route action and movement pair as checkpoint observation only for the held actor and armed identity; do not add encounter, spec, raid-size, or difficulty conditions."
+      },
+      {
+        "path": "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp",
+        "purpose": "Call the shared hold transition before ApplyValidationRouteManifestNode and MaybeAdvanceValidationRouteManifest, reject/count held generation mutations, and permit them only after one valid release."
+      },
+      {
+        "path": "src/server/game/Bots/BotWorldPopulationMgrRaidRuntime.cpp",
+        "purpose": "Serialize the required raid_runtime.controller_route_hold object in ordinary compact and full status receipts."
+      }
+    ]
+  },
+  "genericity_contract": {
+    "required_parameters": [
+      "cohort_id",
+      "attempt_id",
+      "server_epoch",
+      "scenario_id",
+      "runtime_profile",
+      "route_manifest_sha256",
+      "route_generation",
+      "route_node_id",
+      "actor_guid",
+      "fixture_id",
+      "seal_sha256",
+      "source_commit"
+    ],
+    "forbidden_constants": [
+      "actor_30008",
+      "chainwielder_target_entry",
+      "magmaw_or_bwd_geometry",
+      "class_or_spec",
+      "raid_size",
+      "difficulty"
+    ],
+    "naming_debt": "Existing Chainwielder filenames may temporarily host the generic controller-route-hold primitive, but behavior and state transitions must be encounter-agnostic. A later rename is separate architecture work."
+  },
+  "required_transition": [
+    "inactive_attempt",
+    "atomic_start_held_identity_bound",
+    "ordinary_route_candidates_and_generation_mutations_suppressed_and_counted",
+    "sealed_arm_acknowledged_once",
+    "only_typed_checkpoint_observation_candidate_admitted_for_designated_actor",
+    "identity_preserved_checkpoint_completed_or_typed_failed_terminal",
+    "release_acknowledged_once",
+    "ordinary_route_candidates_and_generation_advance_admitted"
+  ],
+  "focused_validation": {
+    "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "requirements": [
+      "Compile and execute the exact generic hold transition methods used by production command, admission, and route-generation gates.",
+      "Fail-before evidence: an active unheld start admits a route candidate and generation advance before arm.",
+      "Pass-after evidence: held route action and generation advance are suppressed and counted; setup actions remain admitted; arm, terminal, and release each acknowledge once; route advance is admitted after release.",
+      "Negative cases: scope drift, active-attempt acquire, early release, duplicate acquire, arm, or release, stale or rejected lifecycle, identity mutation, and missing terminal.",
+      "Source-shape assertions may supplement but cannot replace the compiled transition fixture."
+    ],
+    "maximum_runs": 2,
+    "configure_or_server_required": false
+  },
+  "forbidden": [
+    "configure_build_or_worldserver",
+    "database_or_dvc_mutation",
+    "python_controller_change",
+    "gameplay_route_strategy_movement_class_pet_encounter_or_priority_change",
+    "polling_or_tolerance_change",
+    "fixture_promotion_or_live_acceptance_claim"
+  ],
+  "next_work_unit": {
+    "id": "runtime:generic_controller_route_hold_control_v2",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "return_to_controller": "Only after the expanded production-boundary fixture is green and the generic primitive is committed."
+  }
+}
