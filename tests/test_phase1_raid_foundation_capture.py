@@ -46,6 +46,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     _required_telemetry_envelope_report,
     _trace_actor_transport_rejections,
     evidence_demux_rejections,
+    write_normalized_batch,
     semantic_progress_signature,
     observe_monotonic_semantic_progress,
     observe_capture_watchdog,
@@ -82,6 +83,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     prepare_capture_setup,
     CaptureRunResult,
     execute_capture_run,
+    finalize_capture,
 )
 
 
@@ -476,6 +478,225 @@ def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, mon
     assert result.log_bytes == b""
     assert process.stdin.getvalue().startswith(b"botauto start stonecore_5n\n")
     assert b"botauto status\n" in process.stdin.getvalue()
+
+
+def test_capture_finalization_uses_focused_production_module():
+    finalization_module = "tools.raid_program.capture_finalization"
+    for owner in (
+        finalize_capture,
+        normalized_batch_payload,
+        evidence_demux_report,
+        evidence_demux_rejections,
+        write_normalized_batch,
+    ):
+        assert owner.__module__ == finalization_module
+
+
+def test_finalize_capture_writes_canonical_golden_report(tmp_path: Path, monkeypatch, capsys):
+    from tools.raid_program import capture_finalization
+
+    config = tmp_path / "worldserver.conf"
+    output = tmp_path / "capture.json"
+    raw_output = tmp_path / "capture.raw.jsonl"
+    server_log = tmp_path / "capture.worldserver.log"
+    config.write_bytes(b"fixture-config")
+    server_log.write_bytes(b"fixture-log")
+    args = SimpleNamespace(
+        trace_transport_smoke=False,
+        chainwielder_checkpoint_actor_guid=None,
+        resource_sample_interval_sec=5.0,
+        required_stable_statuses=2,
+        status_interval_sec=5.0,
+        diagnose_interval_sec=30.0,
+        trace_interval_sec=10.0,
+        observe_sec=0,
+        startup_timeout_sec=180,
+        semantic_stall_sec=300,
+        semantic_stall_min_samples=12,
+        max_repeated_decision_count=20,
+        max_death_loop_count=3,
+        telemetry_timeout_sec=60,
+    )
+    identity = {"clean": True, "commit": "a" * 40}
+    setup = CaptureSetup(
+        args=args,
+        binary=tmp_path / "worldserver",
+        config=config,
+        output=output,
+        worktree=tmp_path,
+        profile_name="stonecore_5n",
+        scenario_id="stonecore_5n",
+        raw_output=raw_output,
+        server_log_output=server_log,
+        recurrence_admission=None,
+        checkpoint_arm_command=None,
+        preflight={"passed": True, "reasons": []},
+        identity_before=identity,
+        runtime_assets={"passed": True, "pool_tag_filter": None},
+        controller_route_hold_scheduler=None,
+        drudge_observed=False,
+        drudge_required=False,
+        drudge_navmesh_preflight={"required": False, "all_passed": None},
+        drudge_frozen_anchors={},
+        build_provenance={"valid": True, "binary_sha256": "b" * 64},
+    )
+    stable_statuses = [
+        {"raid_runtime": {"active": True, "sequence": sequence}}
+        for sequence in (1, 2)
+    ]
+    run = CaptureRunResult(
+        started_utc="2026-08-30T12:00:00Z",
+        recovery_required=False,
+        stable=stable_statuses,
+        last_rejections=[],
+        startup_error=None,
+        process_return_code=0,
+        telemetry_scheduler=None,
+        telemetry_transport_ledger=TelemetryTransportLedger(),
+        telemetry_command_counts={
+            "status": 1,
+            "diagnose": 1,
+            "trace": 1,
+            "trace_pressure": 0,
+            "combat_log": 1,
+        },
+        trace_transport_pressure_gate={"gate_passed": None},
+        operator_interrupt=False,
+        shutdown_error=None,
+        stop_commands_sent=True,
+        checkpoint_arm_command_sent=False,
+        checkpoint_arm_gate={"required": False, "gate_open": False},
+        resource_samples=[],
+        resource_sampling_errors=[],
+        resource_sampling_error_count=0,
+        resource_tick_rate=100,
+        forced_evidence_report={"requested": True, "gate_passed": True},
+        terminal_failure={"detected": False},
+        semantic_stall={"detected": False},
+        controller_watchdog={"detected": False},
+        trace_transport_gate=None,
+        telemetry_abort={"detected": False},
+        log_bytes=b"fixture-log",
+    )
+    normalized_rows = [
+        {"action": "first", "payload": {"sequence": 1}, "evidence_channel": "status"},
+        {
+            "action": "botauto_combatlog_complete",
+            "payload": {"sequence": 2},
+            "evidence_channel": "combat_log",
+        },
+    ]
+    action_rows = {
+        "botauto_status": [{"bots": 0, "lease_count": 0}],
+        "botauto_diagnose": [{"ok": True}],
+        "botauto_trace": [{"ok": True}],
+        "botauto_profile": [{
+            "ok": True,
+            "cohort_id": "default",
+            "active_profile": "stonecore_5n",
+        }],
+        "botauto_stop": [{"ok": True}],
+    }
+    monkeypatch.setattr(
+        capture_finalization,
+        "normalized_batch_payload",
+        lambda log_bytes, **kwargs: normalized_rows,
+    )
+    monkeypatch.setattr(
+        capture_finalization,
+        "_required_telemetry_envelope_report",
+        lambda *args, **kwargs: {"gate_passed": True, "rejections": []},
+    )
+    monkeypatch.setattr(
+        capture_finalization,
+        "action_payloads",
+        lambda rows, action: action_rows.get(action, []),
+    )
+    monkeypatch.setattr(
+        capture_finalization,
+        "combat_log_transport_status",
+        lambda payloads: {"complete_marker": True, "reassembled": True},
+    )
+    monkeypatch.setattr(
+        capture_finalization,
+        "combined_combat_log",
+        lambda payloads: "combat-log",
+    )
+    monkeypatch.setattr(
+        capture_finalization,
+        "analyze_combat_log",
+        lambda combat_log: {"damage": 1, "healing": 1},
+    )
+    monkeypatch.setattr(
+        capture_finalization,
+        "preflight_runtime_exclusions",
+        lambda worktree: {"passed": True, "process_overlap": []},
+    )
+    monkeypatch.setattr(
+        capture_finalization,
+        "_forbidden_assistance_entries",
+        lambda rows: [],
+    )
+    monkeypatch.setattr(capture_finalization, "git_identity", lambda worktree: identity)
+    monkeypatch.setattr(
+        capture_finalization,
+        "evidence_demux_report",
+        lambda *args, **kwargs: {
+            "rejections": [],
+            "retained_rows": 2,
+            "bound_rows": 2,
+            "rejected_rows": 0,
+            "unchecked_rows": 0,
+            "canonical_identity_sha256": "c" * 64,
+            "canonical_roster_sha256": "d" * 64,
+            "required_telemetry_envelopes": {"gate_passed": True},
+            "actor_binding_counts": {},
+            "trace_discontinuities": [],
+            "gate_passed": True,
+        },
+    )
+    monkeypatch.setattr(
+        capture_finalization.trace_transport_smoke,
+        "evaluate",
+        lambda receipts: {"gate_passed": False, "terminal": False},
+    )
+    monkeypatch.setattr(capture_finalization.signal, "signal", lambda *args: None)
+    artifact_observations = []
+    real_artifact_record = capture_finalization._artifact_record
+
+    def observed_artifact_record(path, kind):
+        artifact_observations.append((kind, raw_output.exists(), output.exists()))
+        return real_artifact_record(path, kind)
+
+    monkeypatch.setattr(capture_finalization, "_artifact_record", observed_artifact_record)
+
+    exit_code = finalize_capture(setup, run)
+
+    stdout_report = json.loads(capsys.readouterr().out)
+    stored_report = json.loads(output.read_text(encoding="utf-8"))
+    assert exit_code == 0
+    assert stdout_report == stored_report
+    assert stored_report["classification"] == "success"
+    assert stored_report["raw_normalized_batch"]["row_count"] == 2
+    assert [json.loads(line) for line in raw_output.read_text().splitlines()] == normalized_rows
+    assert artifact_observations == [
+        ("raw_normalized_jsonl", True, False),
+        ("raw_worldserver_log", True, False),
+    ]
+    hash_payload = json.loads(json.dumps(stored_report))
+    expected_hash = hash_payload["report_sha256"]
+    hash_payload["report_sha256"] = None
+    hash_payload["artifact_inventory"][-1]["sha256"] = None
+    assert hashlib.sha256(
+        json.dumps(hash_payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest() == expected_hash
+
+    try:
+        finalize_capture(setup, run)
+    except RuntimeError as error:
+        assert str(error) == "raw normalized batch output already exists; artifacts are immutable"
+    else:
+        raise AssertionError("second finalization overwrote immutable evidence")
 
 
 def _verified_checkpoint_admission() -> dict:
