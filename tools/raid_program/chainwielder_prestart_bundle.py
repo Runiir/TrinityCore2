@@ -20,7 +20,13 @@ from tools.raid_program.canonical_route_staging import (
     git_output,
     is_within,
     stage_canonical_route as _stage_canonical_route,
-    verify_tracked_snapshot,
+)
+from tools.raid_program.chainwielder_runtime_config_authority import (
+    LEGACY_TRACKED_SNAPSHOT_AUTHORITY,
+    RuntimeConfigAuthorityError,
+    render_runtime_config,
+    resolve_runtime_config_authority,
+    runtime_config_value,
 )
 from tools.raid_program.queued_build import (
     CoordinatorError,
@@ -201,40 +207,10 @@ def _validate_locations(
         raise BundleError("binary_missing")
 
 
-def _config_assignments(text: str, key: str) -> list[re.Match[str]]:
-    pattern = re.compile(
-        rf"^(?!\s*[#;])\s*{re.escape(key)}\s*=.*$", re.MULTILINE
-    )
-    return list(pattern.finditer(text))
-
-
-def _set_config(text: str, key: str, value: str) -> str:
-    matches = _config_assignments(text, key)
-    if len(matches) > 1:
-        raise BundleError(f"config_duplicate_key:{key}")
-    line = f"{key} = {value}"
-    if matches:
-        match = matches[0]
-        return text[:match.start()] + line + text[match.end():]
-    return text.rstrip() + "\n" + line + "\n"
-
-
-def _config_value(text: str, key: str) -> str:
-    matches = _config_assignments(text, key)
-    if len(matches) != 1:
-        reason = "missing" if not matches else "duplicate"
-        raise BundleError(f"config_{reason}_key:{key}")
-    return matches[0].group(0).split("=", 1)[1].strip()
-
-
 def _render_config(
-    base: Path, *, route_path: Path, profile_manifest_path: Path,
+    base: bytes, *, route_path: Path, profile_manifest_path: Path,
     seal: dict[str, str], source_commit: str,
 ) -> bytes:
-    try:
-        text = base.read_text(encoding="utf-8")
-    except (OSError, UnicodeError) as error:
-        raise BundleError("base_runtime_config_invalid") from error
     values = {
         **CONFIG_VALUES,
         "BotWorld.ValidationRoute.ManifestPath": f'"{route_path}"',
@@ -246,12 +222,7 @@ def _render_config(
             f'"{source_commit}"'
         ),
     }
-    for key, value in values.items():
-        text = _set_config(text, key, value)
-    for key, value in values.items():
-        if _config_value(text, key) != value:
-            raise BundleError(f"config_binding_mismatch:{key}")
-    return text.encode("utf-8")
+    return render_runtime_config(base, values, BundleError)
 
 
 def _validate_route(path: Path, scenario: str, profile: str) -> dict[str, Any]:
@@ -394,7 +365,7 @@ def _verify_config(
         ),
     }
     for key, value in expected.items():
-        if _config_value(text, key) != value:
+        if runtime_config_value(text, key, BundleError) != value:
             raise BundleError(f"config_binding_mismatch:{key}")
 
 
@@ -526,7 +497,7 @@ def verify_bundle(
         seal=seal, source_commit=commit,
     )
     reconstructed = _render_config(
-        root / BUNDLE_NAMES["base_runtime_config"],
+        (root / BUNDLE_NAMES["base_runtime_config"]).read_bytes(),
         route_path=logical["route_manifest"],
         profile_manifest_path=logical["profile_manifest"],
         seal=seal, source_commit=commit,
@@ -646,6 +617,8 @@ def create_bundle(
     base_runtime_config_receipt_sha256: str, ledger: Path,
     ledger_sha256: str, scenario_id: str, runtime_profile_id: str,
     pool_tag: str, actor_guid: int, checkpoint_fixture_id: str,
+    base_runtime_config_authority: object = LEGACY_TRACKED_SNAPSHOT_AUTHORITY,
+    base_runtime_config_contract_relative_path: str | None = None,
 ) -> dict[str, Any]:
     output_dir = output_dir.resolve()
     staging: Path | None = None
@@ -670,16 +643,15 @@ def create_bundle(
             },
         }
         _validate_locations(material_inputs=copied_inputs, **location_args)
-        try:
-            base_snapshot = verify_tracked_snapshot(
-                worktree=worktree, receipt_path=base_runtime_config_receipt,
-                expected_receipt_sha256=base_runtime_config_receipt_sha256,
-            )
-        except CanonicalRouteStagingError as error:
-            raise BundleError(str(error)) from error
-        base_runtime_config = Path(base_snapshot["snapshot_path"])
-        base_runtime_config_sha256 = str(base_snapshot["snapshot_sha256"])
-        copied_inputs["base_runtime_config"] = base_runtime_config
+        runtime_config_authority = resolve_runtime_config_authority(
+            authority_type=base_runtime_config_authority,
+            worktree=worktree,
+            receipt_path=base_runtime_config_receipt,
+            expected_receipt_sha256=base_runtime_config_receipt_sha256,
+            contract_relative_path=base_runtime_config_contract_relative_path,
+            expected_source_commit=source_commit,
+            expected_source_tree=source_tree,
+        )
         if (
             scenario_id != SCENARIO_ID or runtime_profile_id != SCENARIO_ID
             or pool_tag != SCENARIO_ID or actor_guid != ACTOR_GUID
@@ -695,7 +667,6 @@ def create_bundle(
             "decision": (decision, decision_sha256),
             "suite_receipt": (suite_receipt, suite_receipt_sha256),
             "route_manifest": (route_manifest, route_manifest_sha256),
-            "base_runtime_config": (base_runtime_config, base_runtime_config_sha256),
             "ledger": (ledger, ledger_sha256),
         }
         for label, (path, digest) in hashes.items():
@@ -713,9 +684,12 @@ def create_bundle(
         )
         for key in (
             "build_receipt", "build_policy", "decision", "suite_receipt",
-            "base_runtime_config", "ledger",
+            "ledger",
         ):
             copy_exact_file(copied_inputs[key], staging / BUNDLE_NAMES[key])
+        (staging / BUNDLE_NAMES["base_runtime_config"]).write_bytes(
+            runtime_config_authority.payload
+        )
         copy_exact_file(
             route_manifest, staging / BUNDLE_NAMES["source_route_manifest"]
         )
@@ -753,7 +727,7 @@ def create_bundle(
         logical = _logical_bindings(output_dir)
         (staging / BUNDLE_NAMES["runtime_config"]).write_bytes(
             _render_config(
-                staging / BUNDLE_NAMES["base_runtime_config"],
+                runtime_config_authority.payload,
                 route_path=logical["route_manifest"],
                 profile_manifest_path=logical["profile_manifest"],
                 seal=seal, source_commit=commit,
@@ -890,7 +864,7 @@ def create_bundle(
         }
     except (
         BundleError, CanonicalRouteStagingError, RecurrenceAdmissionError,
-        OSError, subprocess.SubprocessError,
+        RuntimeConfigAuthorityError, OSError, subprocess.SubprocessError,
     ) as error:
         if staging is not None and staging.exists():
             shutil.rmtree(staging)
@@ -926,6 +900,11 @@ def parser() -> argparse.ArgumentParser:
     create.add_argument("--pool-tag", required=True)
     create.add_argument("--actor-guid", type=int, required=True)
     create.add_argument("--checkpoint-fixture-id", required=True)
+    create.add_argument(
+        "--base-runtime-config-authority",
+        default=LEGACY_TRACKED_SNAPSHOT_AUTHORITY,
+    )
+    create.add_argument("--base-runtime-config-contract-relative-path")
     return result
 
 
