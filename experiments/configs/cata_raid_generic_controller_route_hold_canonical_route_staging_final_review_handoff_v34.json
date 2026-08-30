@@ -1,0 +1,141 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_canonical_route_staging_final_review_v34",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_chainwielder_error_compatibility_required",
+  "source_state": {
+    "commit": "8d3ad822a1dc73df45327b0fa4dd331f0f379aef",
+    "tree": "49179e8e635b5af4938f13d964e29175b90087e0",
+    "parent_commit": "520936c595a6d6a3a47f90d28db57b1c709006e7",
+    "clean_before_review": true,
+    "v32_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_external_route_staging_final_review_handoff_v32.json",
+    "v32_handoff_sha256": "b24c72a36d2c061013f646be7a4b7f7b78defc86272a749c1430749c6f31d86a"
+  },
+  "scope_lock": {
+    "reviewed_boundary": "generic canonical-route staging ownership, Chainwielder compatibility export, DVC/filesystem failure matrix, unchanged bundle create/verify behavior, shard-skill routing, and production readability",
+    "implementation_skill_or_test_edits": false,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "staging_preflight_count": 0,
+    "atomic_bundle_create_count": 0,
+    "atomic_bundle_verify_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "canonical_route_staging.py is a focused readable 249-line generic owner for clean HEAD DVC authority, exact directory/member identity, caller SHA-256, external resolution, exclusive copy, and typed receipt publication",
+      "the generic API accepts explicit DVC stage and output-member identities and is not coupled to Magmaw, Chainwielder, validation_scenarios, actor 30008, or bundle creation",
+      "the Chainwielder compatibility export preserves the stage_canonical_route call signature/default behavior and invokes neither create_bundle nor verify_bundle",
+      "chainwielder_prestart_bundle.py is restored to readable top-level separation and remains below 1000 lines at 960",
+      "the shard skill applies the generic staging rule only when an authoritative bundle rejects worktree-contained inputs, names canonical_route_staging as the generic owner, and scopes the Chainwielder module to the current Magmaw consumer",
+      "behavioral tests directly cover dirty dvc.lock, a hash-consistent manifest missing the requested member, destination symlink, symlink root, missing cache/source, directory/member/caller/copy hash drift, regular destination conflict, successful receipt hashes, and zero create invocation",
+      "the independent focused suite passed all 17 real staging and bundle create/verify cases and skill quick_validate reports Skill is valid",
+      "the create_bundle and verify_bundle function ASTs are identical before and after commit 8d3ad822",
+      "commit 8d3ad822 changes only the five V33-allowed skill, production, and focused-test files",
+      "no gameplay, native, controller, recurrence, capture, route-content, build, database, worldserver, or DVC mutation was introduced"
+    ],
+    "refuted": [
+      "the Chainwielder compatibility export preserves the former concrete BundleError type",
+      "bundle create and verify have no semantic error-contract change merely because their function-body ASTs are identical"
+    ],
+    "unproven": [
+      "an externally staged exact route reaches the unchanged atomic bundle create and verify boundary in the next bounded shard",
+      "native Held generation one is Chainwielder with the profile-bound suffix hash",
+      "two stable Held statuses precede one sealed arm",
+      "one identity-preserved checkpoint lifecycle reaches a typed terminal",
+      "release advances exactly once to retained Drudges"
+    ]
+  },
+  "first_broken_edge": {
+    "owner": "chainwielder_staging_compatibility_wrapper",
+    "edge": "chainwielder_prestart_bundle imports CanonicalRouteStagingError as BundleError rather than retaining its local BundleError class and translating generic staging failures",
+    "first_state_infecting_mutation": "every create_bundle and verify_bundle raise expression now resolves to tools.raid_program.canonical_route_staging.CanonicalRouteStagingError",
+    "failure_postcondition": "the concrete exception module/name changes from tools.raid_program.chainwielder_prestart_bundle.BundleError to tools.raid_program.canonical_route_staging.CanonicalRouteStagingError, and the success-only wrapper regression does not detect it",
+    "correlation_keys": {
+      "compatibility_import": "tools/raid_program/chainwielder_prestart_bundle.py:16",
+      "identity_is_generic_error": true,
+      "actual_error_module": "tools.raid_program.canonical_route_staging",
+      "actual_error_name": "CanonicalRouteStagingError",
+      "focused_result": "17 passed in 0.66s",
+      "skill_validation": "Skill is valid!"
+    }
+  },
+  "changed_file_audit": {
+    "changed_files": [
+      ".agents/skills/raid-shard-architecture/SKILL.md",
+      "tests/test_canonical_route_staging.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tools/raid_program/canonical_route_staging.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py"
+    ],
+    "all_changes_within_v33_allowlist": true,
+    "reviewed_files": {
+      ".agents/skills/raid-shard-architecture/SKILL.md": {
+        "sha256": "ae96718084c127287cd2d266e27ee54956b6d8c680132cbac1985eaedbf7f2ea",
+        "lines": 400
+      },
+      "tools/raid_program/canonical_route_staging.py": {
+        "sha256": "459417a9c2c1ac10fc52d20bedb6450f387f21718dff4aec80cda33676aeb7f2",
+        "lines": 249
+      },
+      "tools/raid_program/chainwielder_prestart_bundle.py": {
+        "sha256": "d8e5c0d07e7d8375b83723d03fd4c42d54d5a3ebdfd9c1603ea32b9544d78306",
+        "lines": 960
+      },
+      "tests/test_canonical_route_staging.py": {
+        "sha256": "6d1691169e1a3a44c203f42944f12ab0787d55c987f3172d32be88f36fdcefeb",
+        "lines": 266
+      },
+      "tests/test_chainwielder_prestart_bundle.py": {
+        "sha256": "0df5be76a1e5265cdcc5a38bcf1b9cc34609696af1116ce23837f4809078df12",
+        "lines": 839
+      }
+    },
+    "production_under_1000_and_readable": true
+  },
+  "deterministic_review": {
+    "independent_boundary_command": "pixi run pytest -q tests/test_canonical_route_staging.py tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity tests/test_chainwielder_prestart_bundle.py::test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged",
+    "independent_boundary_result": "17 passed in 0.66s",
+    "skill_validation_command": "pixi run python /home/runiir/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/raid-shard-architecture",
+    "skill_validation_result": "Skill is valid!",
+    "create_verify_ast_comparison": "create_bundle=true; verify_bundle=true",
+    "error_identity_probe": "BundleError is CanonicalRouteStagingError=true; module=tools.raid_program.canonical_route_staging; name=CanonicalRouteStagingError",
+    "interpretation": "The generic staging and skill/readability repairs are sound, but the compatibility wrapper changes the concrete error type for both staging and all existing bundle failures."
+  },
+  "next_work_unit": {
+    "id": "evidence:chainwielder_staging_error_compatibility_v35",
+    "owner_skill": "raid-evidence-lifecycle",
+    "hypothesis": "Restoring the local BundleError class and translating CanonicalRouteStagingError only at a small Chainwielder stage_canonical_route wrapper will preserve the generic owner and the historical bundle exception contract without changing create/verify behavior.",
+    "owned_files": [
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tests/test_canonical_route_staging.py"
+    ],
+    "required_change": [
+      "restore tools.raid_program.chainwielder_prestart_bundle.BundleError as the local RuntimeError subclass",
+      "replace the direct stage_canonical_route import with a same-signature local wrapper that calls the generic owner and translates CanonicalRouteStagingError to BundleError with the exact reason and exception chaining",
+      "add a real wrapper failure-path regression proving the concrete exception module/name is the local BundleError and create_bundle remains uncalled",
+      "prove create_bundle and verify_bundle bodies remain semantically unchanged and rerun the focused staging/bundle tests once"
+    ],
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "staging_preflight_count": 0,
+      "atomic_bundle_create_count": 0,
+      "atomic_bundle_verify_count": 0,
+      "worldserver_start_count": 0,
+      "retry_count_maximum": 1,
+      "database_mutation_allowed": false,
+      "dvc_mutation_allowed": false
+    },
+    "forbidden": [
+      "generic_canonical_route_staging_semantic_change",
+      "gameplay_native_controller_route_content_or_identity_comparison_change",
+      "bundle_create_or_verify_semantic_change",
+      "skill_polling_watchdog_threshold_fixture_or_acceptance_change",
+      "configure_build_worldserver_start_database_or_dvc_mutation",
+      "live_authorization"
+    ]
+  }
+}

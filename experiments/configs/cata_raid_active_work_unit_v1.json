@@ -1,16 +1,16 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "external_route_staging_scope_readability_finalization_v33_20260830",
-  "work_unit": "evidence:external_route_staging_scope_readability_finalization_v33",
+  "epoch_id": "chainwielder_staging_error_compatibility_v35_20260830",
+  "work_unit": "evidence:chainwielder_staging_error_compatibility_v35",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
-  "gate_state": "v32_refuted_narrow_skill_scope_and_production_readability",
-  "observed_at_commit": "a5bb5f25f8fd1315cad490d42c454e5a4a8cd6cc",
-  "immutable_input_commit": "a5bb5f25f8fd1315cad490d42c454e5a4a8cd6cc",
+  "gate_state": "v34_refuted_chainwielder_bundle_error_type_compatibility",
+  "observed_at_commit": "8d3ad822a1dc73df45327b0fa4dd331f0f379aef",
+  "immutable_input_commit": "8d3ad822a1dc73df45327b0fa4dd331f0f379aef",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_external_route_staging_final_review_handoff_v32.json",
-    "sha256": "b24c72a36d2c061013f646be7a4b7f7b78defc86272a749c1430749c6f31d86a",
-    "source_commit": "a5bb5f25f8fd1315cad490d42c454e5a4a8cd6cc"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_canonical_route_staging_final_review_handoff_v34.json",
+    "sha256": "d5bc7e605939b13c98782b58435bee0c686711744aeb1a2e0ef047ea16b61f4f",
+    "source_commit": "8d3ad822a1dc73df45327b0fa4dd331f0f379aef"
   },
   "evidence_pointer": {
     "path": "artifacts/cata_raid_program/phase1_raid_foundation_6aff25af46_generic_controller_route_hold_bundle_input_location_failure_v30_20260830.dvc",
@@ -22,13 +22,8 @@
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
-    "supported_modes": [
-      "10N",
-      "10H",
-      "25N",
-      "25H"
-    ],
-    "canary_only": "The retained V30 counterexample is Magmaw/Chainwielder-specific. V33 owns staging skill scope, module readability, and adjacent staging regressions only."
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_only": "V35 owns only the Chainwielder compatibility wrapper error type; generic staging, bundle semantics, skill routing, and gameplay remain frozen."
   },
   "behavior_change": false,
   "evidence_contract_change": true,
@@ -36,18 +31,16 @@
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Scope the shard instruction to the Chainwielder/Magmaw atomic-bundle flow, separate DVC route staging into a focused readable module while preserving the public contract, and add direct dirty-lock, missing-member, and destination-symlink regressions.",
+    "allowed_change": "Restore the local Chainwielder BundleError class, translate generic staging failures in a same-signature wrapper, and add one real failure-path compatibility regression with zero create calls.",
     "allowed_files": [
-      ".agents/skills/raid-shard-architecture/SKILL.md",
       "tools/raid_program/chainwielder_prestart_bundle.py",
-      "tools/raid_program/canonical_route_staging.py",
-      "tests/test_chainwielder_prestart_bundle.py",
       "tests/test_canonical_route_staging.py"
     ],
     "forbidden": [
+      "generic_canonical_route_staging_semantic_change",
       "gameplay_native_controller_route_content_or_identity_comparison_change",
       "bundle_create_or_verify_semantic_change",
-      "polling_watchdog_threshold_fixture_or_acceptance_change",
+      "skill_polling_watchdog_threshold_fixture_or_acceptance_change",
       "configure_build_worldserver_start_database_or_dvc_mutation",
       "live_authorization"
     ]
@@ -63,24 +56,21 @@
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "verified_v31_behavior": {
-    "clean_head_dvc_authority_checked": true,
-    "locked_output_directory_digest_not_hardcoded": true,
-    "directory_manifest_and_exact_member_md5_checked": true,
-    "caller_source_and_staged_sha256_checked": true,
-    "worktree_and_external_location_boundaries_checked": true,
-    "exclusive_non_overwrite_copy_and_receipt": true,
-    "typed_receipt_commit_paths_and_hashes": true,
-    "preflight_does_not_invoke_bundle_create_or_verify": true,
+  "verified_v33_contract": {
+    "generic_staging_owner_readable_and_under_1000": true,
+    "chainwielder_bundle_readable_and_under_1000": true,
+    "dirty_lock_missing_member_destination_symlink_and_hash_matrix_green": true,
+    "success_receipt_and_zero_create_green": true,
+    "skill_generic_rule_is_conditional": true,
+    "chainwielder_skill_paragraph_is_current_consumer_only": true,
+    "create_and_verify_function_asts_unchanged": true,
     "focused_tests_green": true,
     "skill_quick_validate_green": true
   },
-  "failed_review_contract": {
-    "skill_rule_is_narrow_to_magmaw_chainwielder_flow": false,
-    "chainwielder_prestart_bundle_readability_preserved": false,
-    "dirty_dvc_lock_direct_regression_present": false,
-    "missing_hash_consistent_member_direct_regression_present": false,
-    "destination_symlink_direct_regression_present": false,
+  "failed_compatibility_contract": {
+    "local_bundle_error_class_preserved": false,
+    "generic_staging_error_translated_at_wrapper": false,
+    "real_wrapper_failure_type_regression_present": false,
     "live_authorization_revoked": true
   },
   "remaining_unproven": [
@@ -96,12 +86,13 @@
     "raid_success_timer_seconds": null
   },
   "focused_validation": {
-    "command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py -k external_route_staging",
-    "result": "11 passed, 34 deselected in 0.41s",
+    "command": "pixi run pytest -q tests/test_canonical_route_staging.py tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity tests/test_chainwielder_prestart_bundle.py::test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged",
+    "result": "17 passed in 0.66s",
     "skill_quick_validate": "Skill is valid!",
-    "interpretation": "Local staging behavior passes; live remains closed until skill scope and production readability are corrected and the direct boundary regressions are retained."
+    "error_identity": "BundleError aliases CanonicalRouteStagingError; module and name are not preserved",
+    "interpretation": "All V33 staging and skill behavior passes, but the Chainwielder error type contract requires one local translation wrapper before live promotion."
   },
-  "next_work_unit": "evidence:external_route_staging_scope_readability_finalization_v33",
+  "next_work_unit": "evidence:chainwielder_staging_error_compatibility_v35",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Narrow the skill rule, extract a readable staging concern without changing its public behavior, add the three direct regressions, and return for one independent no-live review."
+  "next_action": "Restore local BundleError, translate CanonicalRouteStagingError at the compatibility wrapper, add the failure-path type regression, and return for one independent no-live review."
 }
