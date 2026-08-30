@@ -1,0 +1,128 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:chainwielder_checkpoint_immutable_profile_identity_independent_review_v52",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "failed_closed_fixture_does_not_execute_exact_owner_sequence",
+  "source_state": {
+    "reviewed_commit": "fc26f4cdf854dc0e214dc84c17b6dd1c7c48a765",
+    "reviewed_tree": "a4505cf916d2aae34e6804db17eca627715740dd",
+    "implementation_base_commit": "2e699a60d78428aa0686233888870de2cde5b0ee",
+    "clean_before_review": true,
+    "v50_handoff_sha256": "e9f88c0eded9ba34325360930d1c81f19247a0b8c17927dca1707bf1385b7053",
+    "v51_handoff_sha256": "a913dc4a73c93572dc53b6e372b54faba1c207a93a50d71efdee5e2f95d30f81"
+  },
+  "scope_lock": {
+    "candidate_first_broken_edge": "MaybeStartAutoRecordingWindow mutates mutable Config.Name after the controller hold admits the selected runtime profile; the pre-V51 arm path consumed that mutable alias as immutable profile authority.",
+    "expected_observable_change": "the arm gate consumes the immutable held-scope RuntimeProfile while Config.Name and Metrics.Name remain mutable recording-window labels",
+    "owned_files_reviewed": [
+      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrRecordingWindow.cpp",
+      "tests/test_chainwielder_owner_checkpoint.py"
+    ],
+    "excluded": "build, live shard, database, DVC, gameplay, route, controller timing, polling, watchdog, threshold, class, encounter, and comparison weakening"
+  },
+  "source_review": {
+    "recording_config_name_remains_mutable": true,
+    "recording_metrics_name_remains_mutable": true,
+    "held_scope_runtime_profile_is_written_by_complete_acquire": true,
+    "arm_gate_uses_controller_hold_scope_runtime_profile": true,
+    "current_selected_profile_is_still_compared_separately": true,
+    "hold_acknowledge_arm_still_compares_all_frozen_identity_fields": true,
+    "scenario_pool_route_actor_fixture_seal_source_and_binary_checks_preserved": true,
+    "new_production_special_case_count": 0,
+    "comparison_weakening": false,
+    "complexity_change": "BuildNameTransition is straight-line; ArmChainwielderOwnerCheckpoint adds one const reference and no branch"
+  },
+  "independent_validation": {
+    "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "result": "6 passed in 1.40s",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "file_hashes_match_v51": true,
+    "cpp_line_counts": {
+      "BotChainwielderOwnerCheckpoint.h": 591,
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 912,
+      "BotWorldPopulationMgrRecordingWindow.cpp": 89
+    },
+    "negative_gate_coverage": [
+      "selected_profile",
+      "admitted_runtime_profile",
+      "pool",
+      "scenario",
+      "route_node",
+      "map",
+      "target_entry",
+      "route_enabled",
+      "raid_enabled",
+      "target_population",
+      "active_actor_count",
+      "attempt",
+      "fixture",
+      "seal",
+      "configured_and_requested_source",
+      "binary_revision"
+    ],
+    "negative_hold_identity_coverage": [
+      "cohort_id",
+      "server_epoch",
+      "attempt_id",
+      "scenario_id",
+      "runtime_profile",
+      "route_manifest_sha256",
+      "route_generation",
+      "route_node_id",
+      "actor_guid",
+      "fixture_id",
+      "seal_sha256",
+      "source_commit"
+    ]
+  },
+  "fixture_defect": {
+    "first_broken_test_edge": "the compiled V50 replay invokes BuildNameTransition before CompleteAcquire instead of mutating the recording name after the immutable hold scope is admitted",
+    "second_gap": "the replay manually assigns GateInput.AdmittedRuntimeProfile; the production ArmChainwielderOwnerCheckpoint selection of controllerHold.Scope.RuntimeProfile is asserted only by source-string inspection",
+    "held_status_gap": "heldStatusOne and heldStatusTwo are immediate copies of hold.Scope with no intervening recording-window mutation or production status boundary",
+    "effect": "the local gate predicate, negative matrix, arm acknowledgement, terminal-gated release, and no-recording path are green, but the exact owner-to-owner V50 sequence remains unexecuted",
+    "build_live_decision": "rejected until the compiled replay executes the corrected causal order and the production arm profile-selection boundary"
+  },
+  "claim_ledger": {
+    "verified": [
+      "V50's first edge is correctly localized to mutable recording naming being supplied to an immutable profile gate",
+      "the V51 source reads held-scope RuntimeProfile at arm without removing or loosening the current selected-profile or adjacent frozen-identity checks",
+      "the compiled local state-machine replay rejects the mutable name, accepts the immutable profile, acknowledges one arm, rejects early release, releases only after an identity-preserved terminal, and keeps the no-recording path green",
+      "typed negatives cover every GateInput authority and every BotControllerRouteHold Identity field",
+      "the V51 diff contains no unrelated production file, special-case branch, complexity increase, or file over 1000 lines"
+    ],
+    "refuted": [
+      "the V51 replay executes the exact acquire then recording mutation then two Held status then production arm owner sequence",
+      "source-string assertions alone prove the corrected production arm value boundary"
+    ],
+    "unproven": [
+      "the corrected production owner sequence acknowledges an arm with recording enabled",
+      "a native build and one live identity-preserved terminal, release, and post-release route advance",
+      "Chainwielder, Drudges, Magmaw, DPS, HPS, or pet outcomes"
+    ]
+  },
+  "next_work_unit": {
+    "id": "runtime:chainwielder_checkpoint_exact_owner_sequence_fixture_v53",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_change": "Expand only the compiled fixture boundary so it admits the hold first, applies the real recording-name transition afterward, observes two stable held projections across that mutation, and crosses a compiled value boundary used by production ArmChainwielderOwnerCheckpoint to select held-scope RuntimeProfile. Preserve the existing fail-before, pass-after, no-recording, terminal-release order, and full negative matrix. Extract a tiny value-only arm-profile selector only if required to make the production callsite executable by the replay; do not alter comparisons or gameplay.",
+    "allowed_files": [
+      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrRecordingWindow.cpp",
+      "tests/test_chainwielder_owner_checkpoint.py",
+      "one_compact_handoff",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
+    ],
+    "budget": {
+      "focused_test_run_count_maximum": 1,
+      "correction_rerun_count_maximum": 1,
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "worldserver_start_count": 0,
+      "database_mutation_count": 0,
+      "dvc_mutation_count": 0
+    }
+  }
+}

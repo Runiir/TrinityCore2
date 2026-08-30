@@ -1,69 +1,100 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "chainwielder_checkpoint_immutable_profile_identity_independent_review_v52_20260830",
-  "work_unit": "evidence:chainwielder_checkpoint_immutable_profile_identity_independent_review_v52",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "implementation_complete_runtime_unverified",
-  "gate_state": "v51_recording_profile_identity_fixture_green_no_live_authorization",
-  "observed_at_commit": "2e699a60d78428aa0686233888870de2cde5b0ee",
+  "epoch_id": "chainwielder_checkpoint_exact_owner_sequence_fixture_v53_20260830",
+  "work_unit": "runtime:chainwielder_checkpoint_exact_owner_sequence_fixture_v53",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "failed",
+  "gate_state": "v52_rejected_inexact_compiled_owner_sequence",
+  "observed_at_commit": "fc26f4cdf854dc0e214dc84c17b6dd1c7c48a765",
+  "immutable_input_commit": "fc26f4cdf854dc0e214dc84c17b6dd1c7c48a765",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_immutable_profile_identity_handoff_v51.json",
-    "sha256": "a913dc4a73c93572dc53b6e372b54faba1c207a93a50d71efdee5e2f95d30f81",
-    "source_commit": "self"
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_immutable_profile_identity_review_handoff_v52.json",
+    "sha256": "1de5231283dd1ae7640880c4b35377f3cba537b53801f324661c2dc1fdd49d6c",
+    "source_commit": "fc26f4cdf854dc0e214dc84c17b6dd1c7c48a765"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
-    "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "Actor 30008 and Chainwielder are evidence inputs only. No downstream reviewer or controller may branch on the canary identity."
+    "supported_modes": [
+      "10N",
+      "10H",
+      "25N",
+      "25H"
+    ],
+    "canary_only": "V53 repairs the compiled causal replay only. Actor 30008 and Chainwielder remain evidence identities, never production branch conditions."
   },
   "behavior_change": false,
   "evidence_contract_change": false,
-  "ready_for_bounded_repair": false,
+  "ready_for_bounded_repair": true,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Independently verify the V51 immutable runtime-profile source boundary and focused replay, then emit a separate hash-bound build/live admission or a typed rejection; do not change native runtime or gameplay.",
+    "allowed_change": "Make the compiled replay execute the exact acquire, later recording-name mutation, two stable Held observations, production-used immutable arm-profile selection, one arm acknowledgement, identity-preserved terminal, release, and post-release order. Preserve no-recording and all frozen-identity negatives.",
+    "allowed_files": [
+      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrRecordingWindow.cpp",
+      "tests/test_chainwielder_owner_checkpoint.py",
+      "one_compact_specialist_handoff",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
+    ],
+    "implementation_limit": "Prefer a test-only causal-order correction. Extract at most one tiny value-only arm-profile selector shared by the production callsite and compiled replay if source-string wiring is otherwise unavoidable.",
     "forbidden": [
-      "native_runtime_or_gameplay_change",
-      "profile_fixture_seal_source_or_binary_comparison_weakening",
-      "python_controller_polling_timeout_retry_or_threshold_change",
-      "configure_build_or_worldserver_start",
-      "database_or_dvc_mutation",
-      "fixture_or_canary_promotion"
+      "scenario_pool_route_actor_fixture_seal_source_binary_or_hold_identity_comparison_weakening",
+      "gameplay_route_polling_watchdog_timeout_retry_or_threshold_change",
+      "new actor class encounter raid-size difficulty or canary special case",
+      "configure_build_worldserver_database_or_dvc_action",
+      "adjacent refactor or second hypothesis"
     ]
   },
-  "admitted_actions": {
-    "validation": "handoff_hash_source_boundary_and_focused_fixture_review_only",
-    "configure_count_maximum": 0,
-    "worldserver_build_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
-    "database_mutation": "forbidden",
-    "dvc_mutation": "forbidden"
-  },
-  "required_contract": {
-    "recording_window_name": "autonomy_window_0",
-    "immutable_runtime_profile_source": "controller_route_hold_scope",
-    "stable_held_status_count": 2,
-    "checkpoint_arm_acknowledgement_count": 1,
-    "checkpoint_terminal_count": 1,
-    "release_acknowledgement_count": 1,
-    "ordinary_route_advance_before_release": false,
-    "ordinary_route_advance_after_release": true,
-    "comparison_weakening": false
-  },
-  "remaining_unproven": [
-    "native build at the V51 implementation commit",
-    "one live recording-enabled Held and accepted arm sequence",
-    "identity-preserved terminal, release, and post-release route advance",
-    "gameplay and throughput outcomes"
+  "required_fixture_sequence": [
+    "CompleteAcquire freezes the selected RuntimeProfile in held scope",
+    "BuildNameTransition then changes a mutable Config.Name-equivalent and Metrics.Name-equivalent to autonomy_window_0",
+    "two held identity/status projections separated by the recording transition remain equal and retain the admitted RuntimeProfile",
+    "the legacy mutable-name GateInput reproduces chainwielder_checkpoint_profile_identity_mismatch",
+    "the production-used arm-profile selector supplies held-scope RuntimeProfile and the gate accepts",
+    "AcknowledgeArm succeeds exactly once",
+    "Release fails before terminal",
+    "identity-preserved terminal precedes exactly one release and ordinary post-release advance",
+    "no-recording path remains accepted",
+    "every GateInput and controller-hold Identity drift remains typed fail-closed"
   ],
+  "closed_v52_source_review": {
+    "implementation_hypothesis_supported": true,
+    "comparison_weakening": false,
+    "new_special_case_count": 0,
+    "focused_result": "6 passed in 1.40s",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "all_cpp_files_below_1000_lines": true,
+    "exact_production_owner_sequence_fixture_green": false
+  },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "raid_success_timer_seconds": null
+    "raid_success_timer_seconds": null,
+    "terminal_edges": [
+      "fixture_sequence_green",
+      "fixture_sequence_rejected",
+      "scope_or_identity_mismatch"
+    ]
   },
-  "next_work_unit": "evidence:chainwielder_checkpoint_immutable_profile_identity_independent_review_v52",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Verify V51 without starting a server and issue a separate immutable admission or typed rejection for the build/live owner."
+  "verification_budget": {
+    "focused_test_run_count_maximum": 1,
+    "correction_rerun_count_maximum": 1,
+    "configure_count_maximum": 0,
+    "worldserver_build_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
+    "retry_count_maximum": 0,
+    "database_mutation": "forbidden",
+    "dvc_mutation": "forbidden"
+  },
+  "remaining_unproven": [
+    "the exact recording-enabled production owner sequence acknowledges an arm",
+    "a native build and one live identity-preserved terminal release and post-release route advance",
+    "Chainwielder, Drudges, Magmaw, DPS, HPS, or pet outcomes"
+  ],
+  "next_work_unit": "runtime:chainwielder_checkpoint_exact_owner_sequence_fixture_v53",
+  "next_owner_skill": "raid-bot-runtime-implementation",
+  "next_action": "Correct only the compiled causal sequence and production-used arm-profile value boundary, run the focused replay once, and return for independent review. Do not build or run live."
 }
