@@ -1,67 +1,107 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "chainwielder_checkpoint_conflicting_local_declaration_independent_review_v57_20260830",
-  "work_unit": "evidence:chainwielder_checkpoint_conflicting_local_declaration_independent_review_v57",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "production_translation_unit_compile_green_pending_independent_review",
-  "gate_state": "v56_exact_production_object_compile_green_no_live_authorization",
-  "observed_at_commit": "b1436441875b00388546002b3e374b3c7b3b5945",
+  "epoch_id": "chainwielder_checkpoint_post_compile_one_build_one_live_v58_20260830",
+  "work_unit": "shard:chainwielder_checkpoint_post_compile_one_build_one_live_v58",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
+  "gate_state": "v57_exact_identifier_repair_and_production_translation_unit_independently_verified",
+  "observed_at_commit": "19a264fc54fa00add6e5aa3c2dace5edbea67196",
+  "immutable_input_commit": "19a264fc54fa00add6e5aa3c2dace5edbea67196",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_conflicting_local_declaration_handoff_v56.json",
-    "sha256": "1690e0377fab93cadf0fd67a4f5731e8849afa7a305fa521a1d4f2075da74f0e",
-    "source_commit": "self"
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_conflicting_local_declaration_review_handoff_v57.json",
+    "sha256": "cf22e7b9a949f1dcb7f355989307c16cf0506c2f89ba762c5e92d9c55eae0469",
+    "source_commit": "19a264fc54fa00add6e5aa3c2dace5edbea67196"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "The Chainwielder actor is a retained compile-evidence identity only; no production or review branch may depend on it."
+    "canary_only": "V58 is one bounded recording-enabled Magmaw diagnostic recurrence; it cannot promote one result to universal runtime or gameplay closure."
   },
   "behavior_change": false,
   "evidence_contract_change": false,
   "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": false,
+  "ready_for_live_verification": true,
   "scope_lock": {
-    "allowed_change": "Independently verify V56 source hashes, exact production compile command/object receipt, identifier-only diff, unchanged move lifecycle, and focused result; emit a separate build/live admission or typed rejection.",
+    "allowed_change": "At the exact clean descriptor commit, perform at most one queued fast8_v2 configure and exactly one queued fast8_v2 worldserver build, one authenticated bundle create/verify, and at most one no-retry completion-watchdog live start. Close through verified DVC publication, remote reconstruction, and exact eviction.",
+    "allowed_files": [
+      "one_compact_live_handoff",
+      "exact_dvc_evidence_pointer_and_required_lock_update",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
+    ],
+    "required_before_start": [
+      "exact clean descriptor commit and tree",
+      "one successful gate-bearing fast8_v2 build receipt with equal clean request admission and completion source identities",
+      "fresh strict readback of the retained frozen roster and zero prestart residue",
+      "one authenticated prepared-route bundle create and explicit verify binding the exact new binary config route profile seal admission and completion-watchdog launch contract"
+    ],
+    "required_live_sequence": [
+      "two stable recording-enabled Held status projections retain the admitted runtime profile",
+      "exactly one arm command receives exactly one arm acknowledgement",
+      "ordinary route advance remains suppressed before an identity-preserved terminal",
+      "exactly one release acknowledgement follows the terminal",
+      "ordinary post-release route advance occurs or a typed earlier fail-closed edge is retained",
+      "completion ends on a typed completion-watchdog edge rather than a fixed raid timer"
+    ],
+    "required_after_terminal": [
+      "retain raw lifecycle bytes before normalization and classify every row",
+      "preserve first broken edge separately from terminal edge",
+      "DVC-publish the immutable evidence and compact handoff",
+      "verify remote reconstruction exact counts sizes hashes and targeted DVC status",
+      "exactly evict only published local payloads after remote reconstruction succeeds",
+      "recheck zero worldserver and capture processes Git status DVC status and disk cleanup"
+    ],
     "forbidden": [
-      "native_runtime_identity_lifecycle_gameplay_or_comparison_change",
-      "configure_worldserver_build_or_worldserver_start",
-      "python_controller_polling_timeout_retry_or_threshold_change",
-      "database_or_dvc_mutation",
-      "fixture_or_canary_promotion"
+      "implementation_gameplay_controller_route_content_skill_or_test edit",
+      "profile_scenario_pool_route_actor_fixture_seal_source_binary_or_hold_identity comparison weakening",
+      "second_configure_build_bundle_create_verify_worldserver_start_or_retry",
+      "polling_watchdog_timeout_or_threshold change",
+      "fixed_300_second_raid_success_timer",
+      "local_evidence_eviction_before_verified_remote_reconstruction",
+      "fixture_or_single_live_result_promotion_to_closed"
     ]
   },
-  "admitted_actions": {
-    "validation": "handoff_hash_source_diff_compile_receipt_and_focused_fixture_review_only",
-    "configure_count_maximum": 0,
-    "worldserver_build_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
-    "database_mutation": "forbidden",
-    "dvc_mutation": "forbidden"
-  },
-  "required_contract": {
-    "production_translation_unit_compile": true,
-    "identifier_only_change": true,
-    "const_admitted_identity_reference_preserved": true,
-    "move_out_preserved": true,
-    "checkpoint_reset_preserved": true,
-    "move_back_preserved": true,
-    "identity_comparison_changed": false,
-    "lifecycle_changed": false,
-    "gameplay_changed": false
+  "closed_v57_evidence": {
+    "production_diff": "two identifier substitutions for the later mutable local only",
+    "v55_fail_before": "exit 1 with conflicting declaration at lines 606 and 543",
+    "v56_pass_after": "exit 0 with byte-identical 170400-byte production object",
+    "object_sha256": "4db218d5a153c03f7508c9042cb9e0219a21a2cb2ea880fa19b71f87494856fb",
+    "only_warning": "pre-existing C++20 ciso646 deprecation warning",
+    "focused_result": "6 passed in 1.40s",
+    "identity_lifecycle_or_gameplay_change": false,
+    "current_source_binary_available": false
   },
   "remaining_unproven": [
-    "full worldserver link at the V56 commit",
+    "the exact reviewed source builds and links the full worldserver",
     "one live recording-enabled Held, arm, terminal, release, and post-release route advance",
-    "gameplay and throughput outcomes"
+    "Chainwielder, Drudges, Magmaw, DPS, HPS, or pet outcomes"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "raid_success_timer_seconds": null
+    "raid_success_timer_seconds": null,
+    "terminal_edges": [
+      "normal_clear",
+      "monotonic_semantic_or_no_progress_stall",
+      "repeated_decisions",
+      "excessive_death_loops",
+      "infrastructure_loss",
+      "contamination",
+      "explicit_interruption"
+    ]
   },
-  "next_work_unit": "evidence:chainwielder_checkpoint_conflicting_local_declaration_independent_review_v57",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Review V56 without building or starting a server, then issue a separate immutable full-build/live admission or typed rejection."
+  "verification_budget": {
+    "configure_count_maximum": 1,
+    "worldserver_build_count": 1,
+    "atomic_bundle_create_count_maximum": 1,
+    "atomic_bundle_verify_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_count_maximum": 0,
+    "database_mutation": "forbidden; fresh strict retained-roster readback only",
+    "dvc_mutation": "required after closure for publication remote reconstruction verification and exact eviction"
+  },
+  "next_work_unit": "shard:chainwielder_checkpoint_post_compile_one_build_one_live_v58",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run one exact fast8 configure/build and at most one no-retry recording-enabled completion-watchdog recurrence, then DVC-publish, remotely reconstruct, verify, and exactly evict its evidence."
 }

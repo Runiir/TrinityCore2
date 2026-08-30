@@ -1,0 +1,84 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:chainwielder_checkpoint_conflicting_local_declaration_independent_review_v57",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "verified_build_live_admission_authorized",
+  "source_state": {
+    "reviewed_commit": "19a264fc54fa00add6e5aa3c2dace5edbea67196",
+    "reviewed_tree": "71936cb81109cdf34f1103d56f89863f4f2abadc",
+    "implementation_base_commit": "b1436441875b00388546002b3e374b3c7b3b5945",
+    "v55_source_commit": "e67b132eb8637a09afa95826d2fda1f4ae8e03d1",
+    "v55_handoff_sha256": "fea4a14712b47e8f6bfe0abbd1f62d6a9d9945188c37a6bc7d20ce609b44d3bc",
+    "v56_handoff_sha256": "1690e0377fab93cadf0fd67a4f5731e8849afa7a305fa521a1d4f2075da74f0e",
+    "clean_before_review": true
+  },
+  "independent_diff_review": {
+    "production_change": "only the two uses of the later mutable local identifier change from controllerHold to preservedControllerHold",
+    "const_admitted_identity_reference_changed": false,
+    "gate_input_or_identity_comparison_changed": false,
+    "move_out_changed": false,
+    "checkpoint_reset_changed": false,
+    "move_back_changed": false,
+    "lifecycle_changed": false,
+    "gameplay_changed": false,
+    "source_sha256": "392cabea96a970668a2b8f44c12aedf4cfae32f838ded0979db4c0e1a555ed97",
+    "test_sha256": "c97e246daa750d6a14c56dac6133ba34c7d516739a0966557b3832135f9047c0"
+  },
+  "production_compile_review": {
+    "translation_unit": "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "compile_database_sha256": "1b29043874e01760b02d99f6613c3fd1512dfd1683f19d413deaa3b84008afbc",
+    "compile_command_sha256_with_terminal_newline": "54b38850923e7884fd5a485634de829d1a8c38078523abf0846071032a811872",
+    "fail_before": "exit 1 at V55 lines 606 and 543: conflicting mutable controllerHold declaration and prior const-reference controllerHold declaration; no object emitted",
+    "pass_after": "exit 0 at reviewed source; 170400-byte object emitted outside the production target",
+    "pass_after_object_sha256": "4db218d5a153c03f7508c9042cb9e0219a21a2cb2ea880fa19b71f87494856fb",
+    "matches_v56_object_receipt": true,
+    "warnings": [
+      "pre-existing C++20 ciso646 deprecation warning"
+    ],
+    "other_warnings_or_errors": false,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "focused_result": "6 passed in 1.40s",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "cpp_line_count": 913,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "V55 fails at the exact retained same-scope conflicting declarations under the production compile command",
+      "V56 changes only the later mutable local identifier and preserves the immutable admitted reference, all comparisons, move-out, reset, and move-back",
+      "the reviewed source compiles through the real production translation-unit command and reproduces the exact V56 object hash",
+      "the focused lifecycle and negative suite is green and the touched C++ file remains below 1000 lines"
+    ],
+    "refuted": [
+      "the identifier repair changes runtime identity, checkpoint lifecycle, comparisons, routing, or gameplay",
+      "the retained production-object receipt is irreproducible"
+    ],
+    "unproven": [
+      "the full worldserver links at the reviewed descriptor commit",
+      "one live recording-enabled Held, arm, terminal, release, and post-release route advance completes",
+      "any Chainwielder, Drudges, Magmaw, DPS, HPS, or pet outcome"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:chainwielder_checkpoint_post_compile_one_build_one_live_v58",
+    "owner_skill": "raid-shard-architecture",
+    "allowed_action": "At the exact clean descriptor commit, perform at most one queued fast8_v2 configure and exactly one queued fast8_v2 worldserver build, then one authenticated bundle create/verify and at most one no-retry completion-watchdog live start. Publish, remotely reconstruct, verify, and exactly evict the closed evidence through DVC.",
+    "budget": {
+      "configure_count_maximum": 1,
+      "worldserver_build_count": 1,
+      "atomic_bundle_create_count": 1,
+      "atomic_bundle_verify_count": 1,
+      "worldserver_start_count_maximum": 1,
+      "retry_count": 0,
+      "database_mutation": "forbidden; fresh strict retained-roster readback only",
+      "dvc_mutation": "required after closure for publication remote reconstruction verification and exact eviction"
+    }
+  }
+}
