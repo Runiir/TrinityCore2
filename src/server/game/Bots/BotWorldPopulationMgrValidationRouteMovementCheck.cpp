@@ -446,6 +446,8 @@ bool BotWorldPopulationMgr::TryValidationRouteMovementCheck(
         bool moved = false;
         bool feralHazardHandoffBiased = false;
         bool feralHazardCurrentClusterBiased = false;
+        auto const movementLease = BotWorldPopulationMgrValidationRoute::
+            SelectValidationRouteMovementOwner(configuredHazard, bot->IsInCombat());
         std::vector<Position> dodgeCandidates;
         // A direct radial exit can land outside the local navmesh beside lava
         // cracks, walls, or shelf edges.  Try a small deterministic fan of
@@ -593,7 +595,9 @@ bool BotWorldPopulationMgr::TryValidationRouteMovementCheck(
         }
         for (Position const& dodge : dodgeCandidates)
         {
-            if (MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ()))
+            if (MoveBotToPoint(state, bot, dodge.GetPositionX(),
+                    dodge.GetPositionY(), dodge.GetPositionZ(), false,
+                    movementLease.Owner, movementLease.Priority))
             {
                 moved = true;
                 break;
