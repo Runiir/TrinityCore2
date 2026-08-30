@@ -311,7 +311,7 @@ def test_capture_live_run_uses_focused_production_module():
     assert execute_capture_run.__module__ == run_module
     controller_source = (
         Path(__file__).resolve().parents[1]
-        / "tools/raid_program/capture_phase1_raid_foundation.py"
+        / "tools/raid_program/capture_finalization.py"
     ).read_text(encoding="utf-8")
     assert controller_source.index('demux_rejections = demux_report["rejections"]') < (
         controller_source.index(
@@ -1431,7 +1431,7 @@ def test_capture_preflight_rejects_dirty_dvc_lineage(tmp_path: Path, monkeypatch
     _write_runtime_profile_assets(worktree, route)
     _write_runtime_profile_assets(reference, route)
     monkeypatch.setattr(
-        "tools.raid_program.capture_phase1_raid_foundation.subprocess.run",
+        "tools.raid_program.capture_environment_validation.subprocess.run",
         lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout="validation_scenarios:\n\tchanged deps:\n"),
     )
 
@@ -1442,12 +1442,16 @@ def test_capture_preflight_rejects_dirty_dvc_lineage(tmp_path: Path, monkeypatch
 
 
 def test_canonical_capture_explicitly_starts_the_frozen_bwd_10n_profile():
-    source = (
+    live_source = (
         Path(__file__).resolve().parents[1]
-        / "tools/raid_program/capture_phase1_raid_foundation.py"
+        / "tools/raid_program/capture_live_run.py"
     ).read_text(encoding="utf-8")
-    assert 'process.stdin.write(b"botauto start blackwing_descent_10n\\n")' in source
-    assert '"botauto_profile": "profile_selection"' in source
+    demux_source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_evidence_demux.py"
+    ).read_text(encoding="utf-8")
+    assert 'process.stdin.write(b"botauto start blackwing_descent_10n\\n")' in live_source
+    assert '"botauto_profile": "profile_selection"' in demux_source
 
 
 def test_canonical_capture_rejects_worldserver_autostart_before_spawn():
@@ -1903,16 +1907,21 @@ def test_generic_controller_route_hold_scheduler_exact_production_transcript():
 
 def test_generic_controller_route_hold_scheduler_extraction_is_bounded():
     module_path = Path("tools/raid_program/controller_route_hold.py")
-    controller_path = Path(
-        "tools/raid_program/capture_phase1_raid_foundation.py"
-    )
     module_source = module_path.read_text(encoding="utf-8")
-    controller_lines = len(
-        controller_path.read_text(encoding="utf-8").splitlines()
+    bounded_paths = (
+        module_path,
+        Path("tools/raid_program/capture_phase1_raid_foundation.py"),
+        Path("tools/raid_program/capture_setup.py"),
+        Path("tools/raid_program/capture_live_run.py"),
+        Path("tools/raid_program/capture_finalization.py"),
     )
-    assert len(module_source.splitlines()) == 491
-    assert controller_lines == 7767
-    assert 8239 - controller_lines == 472
+    assert all(
+        len(path.read_text(encoding="utf-8").splitlines()) < 1000
+        for path in bounded_paths
+    )
+    assert ControllerRouteHoldScheduler.__module__ == (
+        "tools.raid_program.controller_route_hold"
+    )
 
     tree = ast.parse(module_source)
     branch_nodes = (
@@ -2758,7 +2767,7 @@ def test_enchant_reforge_talent_and_glyph_comparisons_stay_strict():
 def test_gem_gate_canonicalization_is_boundary_only_text_contract():
     source = (
         Path(__file__).resolve().parents[1]
-        / "tools/raid_program/capture_phase1_raid_foundation.py"
+        / "tools/raid_program/capture_runtime_acceptance.py"
     ).read_text(encoding="utf-8")
     assert (
         '_compact_trailing_zero_gems(actual[4]) != _compact_trailing_zero_gems(item["gem_item_ids"])'
@@ -3809,7 +3818,7 @@ def test_live_evidence_demux_rejects_frozen_character_build_drift():
 
 def test_capture_telemetry_poll_is_incremental_and_bounded():
     root = Path(__file__).resolve().parents[1]
-    capture_source = (root / "tools/raid_program/capture_phase1_raid_foundation.py").read_text(encoding="utf-8")
+    capture_source = (root / "tools/raid_program/capture_live_run.py").read_text(encoding="utf-8")
     bot_root = root / "src/server/game/Bots"
     manager_source = (bot_root / "BotWorldPopulationMgrStatus.cpp").read_text(encoding="utf-8")
     header_source = (bot_root / "BotWorldPopulationMgrRuntimeContracts.h").read_text(encoding="utf-8")
@@ -3825,16 +3834,17 @@ def test_capture_telemetry_poll_is_incremental_and_bounded():
 
 
 def test_drudge_lane_contract_is_diagnostic_while_route_outcome_gates_success():
-    source = (
-        Path(__file__).resolve().parents[1]
-        / "tools/raid_program/capture_phase1_raid_foundation.py"
-    ).read_text(encoding="utf-8")
-    assert 'drudge_observed = profile_name == "blackwing_descent_10n"' in source
-    assert "drudge_required = False" in source
-    assert '"acceptance_role": "diagnostic_only"' in source
-    assert "if drudge_observed" in source
-    assert "and (not drudge_required or drudge_accepted)" in source
-    assert '"alive_size_10": runtime.get("alive_size") == 10' in source
+    root = Path(__file__).resolve().parents[1] / "tools/raid_program"
+    setup_source = (root / "capture_setup.py").read_text(encoding="utf-8")
+    finalization_source = (root / "capture_finalization.py").read_text(encoding="utf-8")
+    contract_source = (root / "capture_runtime_acceptance.py").read_text(encoding="utf-8")
+    assert "drudge_observed = not args.trace_transport_smoke and (" in setup_source
+    assert 'profile_name.endswith("_magmaw_diagnostic")' in setup_source
+    assert "drudge_required = False" in setup_source
+    assert '"acceptance_role": "diagnostic_only"' in finalization_source
+    assert "if drudge_observed" in finalization_source
+    assert "and (not drudge_required or drudge_accepted)" in finalization_source
+    assert '"alive_size_10": runtime.get("alive_size") == 10' in contract_source
 
 
 def test_live_evidence_demux_rejects_strategy_drift():
@@ -3870,9 +3880,20 @@ def test_live_evidence_demux_binds_readycheck_stop_and_inactive_cleanup():
         "ok": True, "action": "botauto_diagnose", "cohort_id": "raid",
         "raid_runtime": active["raid_runtime"], "bots": bot_rows,
     }
+    trace_bot_rows = [
+        {
+            "bot_guid": 1001 + index,
+            "entries": [],
+            "delta": True,
+            "cursor_before": 0,
+            "cursor_after": 0,
+            "gap": False,
+        }
+        for index in range(10)
+    ]
     trace = {
         "ok": True, "action": "botauto_trace", "cohort_id": "raid",
-        "raid_runtime": active["raid_runtime"], "bots": bot_rows,
+        "raid_runtime": active["raid_runtime"], "bots": trace_bot_rows,
     }
     readycheck = {
         "ok": True, "action": "botauto_readycheck", "cohort_id": "raid",
@@ -4036,9 +4057,20 @@ def test_live_evidence_demux_accepts_controller_gameplay_terminals_without_ready
             "ok": True, "action": "botauto_diagnose", "cohort_id": "default",
             "raid_runtime": active["raid_runtime"], "bots": bots,
         }
+        trace_bots = [
+            {
+                "bot_guid": 1001 + index,
+                "entries": [],
+                "delta": True,
+                "cursor_before": 0,
+                "cursor_after": 0,
+                "gap": False,
+            }
+            for index in range(10)
+        ]
         trace = {
             "ok": True, "action": "botauto_trace", "cohort_id": "default",
-            "raid_runtime": active["raid_runtime"], "bots": bots,
+            "raid_runtime": active["raid_runtime"], "bots": trace_bots,
         }
         stop = {
             "ok": True, "action": "botauto_stop", "cohort_id": "default",
@@ -4151,7 +4183,7 @@ def test_live_evidence_demux_reconstructs_bindings_and_rejects_missing_lifecycle
 def test_canonical_capture_uses_receipt_bound_tracked_policy_without_an_override():
     source = (
         Path(__file__).resolve().parents[1]
-        / "tools/raid_program/capture_phase1_raid_foundation.py"
+        / "tools/raid_program/capture_setup.py"
     ).read_text(encoding="utf-8")
     assert 'parser.add_argument("--build-policy"' not in source
     assert "build_policy_path_for_receipt" in source
@@ -4194,38 +4226,38 @@ def test_build_policy_path_rejects_untracked_or_unsafe_receipt_identity(tmp_path
 
 
 def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap():
-    source = (
-        Path(__file__).resolve().parents[1]
-        / "tools/raid_program/capture_phase1_raid_foundation.py"
-    ).read_text(encoding="utf-8")
-    assert '"--observe-sec", type=int, default=0' in source
-    assert "deadline = time.monotonic() + args.observe_sec if args.observe_sec else None" in source
-    assert "deadline is None or time.monotonic() < deadline" in source
-    assert '"wall_clock_mode": "uncapped" if args.observe_sec == 0' in source
-    assert '"policy": "capture-process-heartbeat-terminal-gate-driven"' in source
-    assert 'parser.add_argument("--semantic-stall-sec", type=int, default=300)' in source
-    assert 'parser.add_argument("--telemetry-timeout-sec", type=int, default=60)' in source
-    assert '"--diagnose-interval-sec", type=float, default=30.0,' in source
-    assert '"--trace-interval-sec", type=float, default=10.0,' in source
-    assert "capture_classification = _capture_classification(" in source
+    root = Path(__file__).resolve().parents[1] / "tools/raid_program"
+    setup_source = (root / "capture_setup.py").read_text(encoding="utf-8")
+    live_source = (root / "capture_live_run.py").read_text(encoding="utf-8")
+    finalization_source = (root / "capture_finalization.py").read_text(encoding="utf-8")
+    assert '"--observe-sec", type=int, default=0' in setup_source
+    assert 'parser.add_argument("--semantic-stall-sec", type=int, default=300)' in setup_source
+    assert 'parser.add_argument("--telemetry-timeout-sec", type=int, default=60)' in setup_source
+    assert '"--diagnose-interval-sec", type=float, default=30.0,' in setup_source
+    assert '"--trace-interval-sec", type=float, default=10.0,' in setup_source
+    assert "deadline = time.monotonic() + args.observe_sec if args.observe_sec else None" in live_source
+    assert "deadline is None or time.monotonic() < deadline" in live_source
+    assert '"wall_clock_mode": "uncapped" if args.observe_sec == 0' in finalization_source
+    assert '"policy": "capture-process-heartbeat-terminal-gate-driven"' in finalization_source
+    assert "capture_classification = _capture_classification(" in finalization_source
 
 
 def test_phase1_capture_uses_approved_fail_closed_taxonomy():
-    source = (
-        Path(__file__).resolve().parents[1]
-        / "tools/raid_program/capture_phase1_raid_foundation.py"
-    ).read_text(encoding="utf-8")
-    assert 'return "incomplete_evidence"' in source
-    assert 'return "diagnostic_only"' in source
-    assert 'return "infrastructure_abort"' in source
+    root = Path(__file__).resolve().parents[1] / "tools/raid_program"
+    taxonomy_source = (root / "capture_run_outcome.py").read_text(encoding="utf-8")
+    finalization_source = (root / "capture_finalization.py").read_text(encoding="utf-8")
+    assert 'return "incomplete_evidence"' in taxonomy_source
+    assert 'return "diagnostic_only"' in taxonomy_source
+    assert 'return "infrastructure_abort"' in taxonomy_source
     for condition in (
         "process_return_code != 0",
         "not identity_stable",
-        "or demux_rejections",
-        'telemetry_envelopes.get("gate_passed") is not True',
     ):
-        assert condition in source
-    assert '"foundation_gate_failed"' not in source
+        assert condition in finalization_source
+    assert "or demux_rejections" in taxonomy_source
+    assert 'telemetry_envelopes.get("gate_passed") is not True' in taxonomy_source
+    assert '"foundation_gate_failed"' not in taxonomy_source
+    assert '"foundation_gate_failed"' not in finalization_source
 
 
 def test_gameplay_terminal_preserves_primary_classification_when_trace_evidence_is_incomplete():
@@ -4295,12 +4327,9 @@ def test_gameplay_terminal_preserves_primary_classification_when_trace_evidence_
 
     source = (
         Path(__file__).resolve().parents[1]
-        / "tools/raid_program/capture_phase1_raid_foundation.py"
+        / "tools/raid_program/capture_finalization.py"
     ).read_text(encoding="utf-8")
-    success = source[
-        source.index("success = ("):
-        source.index("report = {", source.index("success = ("))
-    ]
+    success = source[source.index("common_success = ("):source.index("report = {")]
     assert "capture_classification = _capture_classification(" in source
     assert '"terminal_evidence_incomplete": terminal_evidence_incomplete' in source
     assert "and not demux_rejections" in success
@@ -4309,29 +4338,28 @@ def test_gameplay_terminal_preserves_primary_classification_when_trace_evidence_
 
 
 def test_capture_interrupt_is_native_cleanup_backed_and_classified_without_traceback():
-    source = (
-        Path(__file__).resolve().parents[1]
-        / "tools/raid_program/capture_phase1_raid_foundation.py"
-    ).read_text(encoding="utf-8")
-    assert "except KeyboardInterrupt:" in source
-    assert 'startup_error = "KeyboardInterrupt:operator_interrupt"' in source
-    assert 'process.stdin.write(b"botauto stop\\nbotauto status\\nserver exit\\n")' in source
-    assert '"operator_interrupt": operator_interrupt' in source
-    assert '"operator_reason": "operator_interrupt" if operator_interrupt else None' in source
-    assert 'forced_evidence_report = request_final_evidence("operator_interrupt")' in source
-    assert 'signal.signal(signal.SIGINT, signal.SIG_IGN)' in source
+    root = Path(__file__).resolve().parents[1] / "tools/raid_program"
+    live_source = (root / "capture_live_run.py").read_text(encoding="utf-8")
+    shutdown_source = (root / "capture_runtime_io.py").read_text(encoding="utf-8")
+    finalization_source = (root / "capture_finalization.py").read_text(encoding="utf-8")
+    assert "except KeyboardInterrupt:" in live_source
+    assert 'startup_error = "KeyboardInterrupt:operator_interrupt"' in live_source
+    assert 'process.stdin.write(b"botauto stop\\nbotauto status\\nserver exit\\n")' in shutdown_source
+    assert '"operator_interrupt": operator_interrupt' in finalization_source
+    assert '"operator_reason": "operator_interrupt" if operator_interrupt else None' in finalization_source
+    assert 'forced_evidence_report = request_final_evidence("operator_interrupt")' in live_source
+    assert 'signal.signal(signal.SIGINT, signal.SIG_IGN)' in live_source
     # The explicit handler must appear before the generic Exception handler;
     # otherwise Ctrl-C remains an uncaught BaseException.
-    assert source.index("except KeyboardInterrupt:") < source.index(
+    assert live_source.index("except KeyboardInterrupt:") < live_source.index(
         "except Exception as error:  # captured as infrastructure evidence below"
     )
 
 
 def test_every_terminal_capture_path_requests_a_fresh_full_evidence_bundle():
-    source = (
-        Path(__file__).resolve().parents[1]
-        / "tools/raid_program/capture_phase1_raid_foundation.py"
-    ).read_text(encoding="utf-8")
+    root = Path(__file__).resolve().parents[1] / "tools/raid_program"
+    source = (root / "capture_live_run.py").read_text(encoding="utf-8")
+    finalization_source = (root / "capture_finalization.py").read_text(encoding="utf-8")
     for reason in (
         '"telemetry_channel_stale"',
         '"terminal_gate_or_process_exit"',
@@ -4340,20 +4368,28 @@ def test_every_terminal_capture_path_requests_a_fresh_full_evidence_bundle():
     ):
         assert reason in source
     assert source.count("request_final_evidence(") >= 5
-    success = source[source.index("success = ("):source.index("report = {", source.index("success = ("))]
+    success = finalization_source[
+        finalization_source.index("common_success = ("):
+        finalization_source.index("report = {")
+    ]
     assert "operator_interrupt is False" in success
     assert 'forced_evidence_report.get("gate_passed") is True' in success
-    assert "capture_classification = _capture_classification(" in source
-    assert "operational_infrastructure_abort = bool(" in source
-    assert "evidence_incomplete = bool(" in source
-    post_capture = source[source.index("def defer_post_capture_interrupt"):source.index("success = (")]
+    assert "capture_classification = _capture_classification(" in finalization_source
+    assert "operational_infrastructure_abort = bool(" in finalization_source
+    assert "evidence_incomplete = bool(" in finalization_source
+    post_capture = source[source.index("def defer_post_capture_interrupt"):]
     assert "nonlocal operator_interrupt, startup_error" in post_capture
     assert 'startup_error = "KeyboardInterrupt:operator_interrupt"' in post_capture
     assert "signal.signal(signal.SIGINT, defer_post_capture_interrupt)" in post_capture
-    assert post_capture.rindex("signal.signal(signal.SIGINT, signal.SIG_IGN)") > post_capture.index(
-        "normalized_rows = normalized_batch_payload(log_bytes)"
+    assert finalization_source.index("signal.signal(signal.SIGINT, signal.SIG_IGN)") > (
+        finalization_source.index(
+            "normalized_rows = normalized_batch_payload(log_bytes, profile_name=profile_name)"
+        )
     )
-    watchdog = source[source.index('"watchdog": {'):source.index('"preflight": preflight')]
+    watchdog = finalization_source[
+        finalization_source.index('"watchdog": {'):
+        finalization_source.index('"preflight": preflight')
+    ]
     assert "operator_interrupt is False" in watchdog
     assert 'forced_evidence_report.get("gate_passed") is True' in watchdog
 
