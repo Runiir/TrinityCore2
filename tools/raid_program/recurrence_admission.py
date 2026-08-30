@@ -28,6 +28,7 @@ CHAINWIELDER_CHECKPOINT_FIXTURE_ID = (
 CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX = (
     "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint"
 )
+PROFILE_MANIFEST_RELATIVE_PATH = Path("dataset/bot_runtime_profiles/profiles.json")
 
 
 def _fixture_expansion_contract(
@@ -90,6 +91,94 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _canonical_object_sha256(value: object) -> str:
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def build_runtime_profile_suffix_manifest(
+    *, source_manifest: dict[str, Any], runtime_profile: str,
+    route_manifest_path: Path,
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Create a one-profile overlay while changing only its route path."""
+
+    rows = source_manifest.get("profiles")
+    if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+        raise ValueError("runtime_profile_source_profiles_invalid")
+    selected = [row for row in rows if row.get("name") == runtime_profile]
+    if len(selected) != 1:
+        raise ValueError("runtime_profile_source_selection_missing_or_duplicate")
+    source_profile = json.loads(json.dumps(selected[0]))
+    route = source_profile.get("validation_route")
+    if not isinstance(route, dict) or not isinstance(route.get("manifest_path"), str) \
+            or not route["manifest_path"]:
+        raise ValueError("runtime_profile_source_route_manifest_missing")
+    source_route_path = route["manifest_path"]
+    runtime_profile_payload = json.loads(json.dumps(source_profile))
+    runtime_profile_payload["validation_route"]["manifest_path"] = str(
+        route_manifest_path.resolve()
+    )
+    envelope = {key: json.loads(json.dumps(value))
+                for key, value in source_manifest.items() if key != "profiles"}
+    runtime_manifest = {**envelope, "profiles": [runtime_profile_payload]}
+    return runtime_manifest, {
+        "runtime_profile_id": runtime_profile,
+        "source_validation_route_manifest_path": source_route_path,
+        "runtime_validation_route_manifest_path": str(route_manifest_path.resolve()),
+        "source_selected_profile_sha256": _canonical_object_sha256(source_profile),
+        "runtime_selected_profile_sha256": _canonical_object_sha256(
+            runtime_profile_payload
+        ),
+        "profile_manifest_envelope_sha256": _canonical_object_sha256(envelope),
+    }
+
+
+def _verified_runtime_profile_overlay(
+    *, worktree: Path, profile_manifest: Path, route_manifest: Path,
+    overlay: object, atomic_bundle_roots: tuple[Path, Path] | None = None,
+) -> dict[str, str]:
+    if not isinstance(overlay, dict):
+        raise RecurrenceAdmissionError("runtime_profile_overlay_missing")
+    runtime_profile = overlay.get("runtime_profile_id")
+    if not isinstance(runtime_profile, str) or not runtime_profile:
+        raise RecurrenceAdmissionError("runtime_profile_overlay_profile_invalid")
+    source_path = worktree.resolve() / PROFILE_MANIFEST_RELATIVE_PATH
+    try:
+        source_bytes = source_path.read_bytes()
+        committed = _git(
+            worktree, "show", f"HEAD:{PROFILE_MANIFEST_RELATIVE_PATH.as_posix()}",
+            binary=True,
+        )
+        source = json.loads(source_bytes.decode("utf-8"))
+        runtime_bytes = profile_manifest.read_bytes()
+        runtime = json.loads(runtime_bytes.decode("utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, subprocess.SubprocessError) \
+            as error:
+        raise RecurrenceAdmissionError("runtime_profile_overlay_asset_invalid") from error
+    if source_bytes != committed or not isinstance(source, dict):
+        raise RecurrenceAdmissionError("source_profile_manifest_identity_mismatch")
+    if not isinstance(runtime, dict):
+        raise RecurrenceAdmissionError("runtime_profile_manifest_invalid")
+    recorded_route = _atomic_recorded_path(route_manifest, atomic_bundle_roots)
+    try:
+        expected_manifest, expected = build_runtime_profile_suffix_manifest(
+            source_manifest=source, runtime_profile=runtime_profile,
+            route_manifest_path=recorded_route,
+        )
+    except ValueError as error:
+        raise RecurrenceAdmissionError(str(error)) from error
+    expected.update({
+        "source_profile_manifest_sha256": hashlib.sha256(source_bytes).hexdigest(),
+        "runtime_profile_manifest_sha256": hashlib.sha256(runtime_bytes).hexdigest(),
+        "runtime_route_manifest_sha256": sha256_file(route_manifest),
+    })
+    if overlay != expected:
+        raise RecurrenceAdmissionError("runtime_profile_overlay_identity_mismatch")
+    if runtime != expected_manifest:
+        raise RecurrenceAdmissionError("runtime_profile_overlay_semantic_mismatch")
+    return expected
+
+
 def _git(worktree: Path, *args: str, binary: bool = False) -> str | bytes:
     result = subprocess.run(
         ["git", "-C", str(worktree), *args],
@@ -143,6 +232,8 @@ def chainwielder_checkpoint_seal(
     binary: Path,
     build_receipt: Path,
     decision: Path,
+    profile_manifest: Path | None = None,
+    runtime_profile_overlay: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     """Return the immutable seal that must exist before config admission.
 
@@ -164,6 +255,15 @@ def chainwielder_checkpoint_seal(
         "build_receipt_sha256": sha256_file(build_receipt.resolve()),
         "decision_sha256": sha256_file(decision.resolve()),
     }
+    if (profile_manifest is None) != (runtime_profile_overlay is None):
+        raise RecurrenceAdmissionError("checkpoint_profile_authority_incomplete")
+    if profile_manifest is not None and runtime_profile_overlay is not None:
+        payload.update({
+            "profile_manifest_sha256": sha256_file(profile_manifest.resolve()),
+            "runtime_profile_overlay_sha256": _canonical_object_sha256(
+                runtime_profile_overlay
+            ),
+        })
     canonical = json.dumps(
         payload, sort_keys=True, separators=(",", ":"),
     ).encode("utf-8")
@@ -178,6 +278,8 @@ def _verify_chainwielder_checkpoint_seal(
     build_receipt: Path,
     decision: Path,
     runtime_config: Path,
+    profile_manifest: Path,
+    runtime_profile_overlay: dict[str, Any],
 ) -> dict[str, str]:
     if not isinstance(seal, dict):
         raise RecurrenceAdmissionError("checkpoint_seal_missing")
@@ -186,6 +288,8 @@ def _verify_chainwielder_checkpoint_seal(
         binary=binary,
         build_receipt=build_receipt,
         decision=decision,
+        profile_manifest=profile_manifest,
+        runtime_profile_overlay=runtime_profile_overlay,
     )
     if seal != expected:
         raise RecurrenceAdmissionError("checkpoint_seal_identity_mismatch")
@@ -290,6 +394,8 @@ def create_recurrence_admission(
     ledger: Path,
     decision: Path,
     suite_receipt: Path,
+    profile_manifest: Path | None = None,
+    runtime_profile_overlay: dict[str, Any] | None = None,
     purpose: str = GAMEPLAY_CANARY_PURPOSE,
     atomic_bundle_roots: tuple[Path, Path] | None = None,
 ) -> dict[str, Any]:
@@ -336,20 +442,54 @@ def create_recurrence_admission(
             raise RecurrenceAdmissionError("suite_fixture_identity_invalid")
         fixture_revisions[fixture_id] = revision
     checkpoint_seal = None
+    verified_overlay: dict[str, str] | None = None
     if checkpoint_targeted:
+        if profile_manifest is None or runtime_profile_overlay is None:
+            raise RecurrenceAdmissionError("checkpoint_profile_authority_missing")
+        profile_manifest = profile_manifest.resolve()
+        verified_overlay = _verified_runtime_profile_overlay(
+            worktree=worktree, profile_manifest=profile_manifest,
+            route_manifest=route_manifest.resolve(),
+            overlay=runtime_profile_overlay,
+            atomic_bundle_roots=atomic_bundle_roots,
+        )
+        recorded_profile = _atomic_recorded_path(
+            profile_manifest, atomic_bundle_roots
+        )
+        recorded_route = _atomic_recorded_path(
+            route_manifest.resolve(), atomic_bundle_roots
+        )
+        if _config_string(runtime_config, "BotWorld.ProfileManifest") != str(
+            recorded_profile
+        ):
+            raise RecurrenceAdmissionError("profile_manifest_not_bound_by_config")
+        if _config_string(
+            runtime_config, "BotWorld.ValidationRoute.ManifestPath"
+        ) != str(recorded_route):
+            raise RecurrenceAdmissionError("route_manifest_not_bound_by_config")
+        if _config_string(runtime_config, "BotWorld.RuntimeProfile") != (
+            verified_overlay["runtime_profile_id"]
+        ):
+            raise RecurrenceAdmissionError("runtime_profile_not_bound_by_config")
         checkpoint_seal = _verify_chainwielder_checkpoint_seal(
             seal=chainwielder_checkpoint_seal(
                 worktree=worktree,
                 binary=binary,
                 build_receipt=build_receipt,
                 decision=decision,
+                profile_manifest=profile_manifest,
+                runtime_profile_overlay=verified_overlay,
             ),
             worktree=worktree,
             binary=binary,
             build_receipt=build_receipt,
             decision=decision,
             runtime_config=runtime_config,
+            profile_manifest=profile_manifest,
+            runtime_profile_overlay=verified_overlay,
         )
+    elif profile_manifest is not None or runtime_profile_overlay is not None:
+        raise RecurrenceAdmissionError("profile_authority_unexpected")
     admission = {
         "schema": SCHEMA,
         "purpose": purpose,
@@ -364,6 +504,7 @@ def create_recurrence_admission(
         "fixture_expansion_requests": expansion_requests,
         "gameplay_mutations_allowed": False if fixture_expansion else None,
         "checkpoint_seal": checkpoint_seal,
+        "runtime_profile_overlay": verified_overlay,
         **{key: decision_value.get(key) for key in FIXTURE_STATE_FIELDS},
         "source": {
             "commit": head,
@@ -385,6 +526,8 @@ def create_recurrence_admission(
                 "ledger": ledger,
                 "decision": decision,
                 "suite_receipt": suite_receipt,
+                **({"profile_manifest": profile_manifest}
+                   if profile_manifest is not None else {}),
             }.items()
         },
         "fixture_revisions": fixture_revisions,
@@ -404,6 +547,7 @@ def verify_recurrence_admission(
     binary: Path,
     build_receipt: Path,
     runtime_config: Path,
+    profile_manifest: Path | None = None,
     required_purpose: str = GAMEPLAY_CANARY_PURPOSE,
     atomic_bundle_roots: tuple[Path, Path] | None = None,
 ) -> dict[str, Any]:
@@ -472,6 +616,44 @@ def verify_recurrence_admission(
     route_path = _verify_binding(
         admission, "route_manifest", atomic_bundle_roots=atomic_bundle_roots,
     )
+    verified_overlay: dict[str, str] | None = None
+    profile_path: Path | None = None
+    if checkpoint_targeted:
+        if profile_manifest is None:
+            raise RecurrenceAdmissionError("checkpoint_profile_authority_missing")
+        profile_path = _verify_binding(
+            admission, "profile_manifest", profile_manifest,
+            atomic_bundle_roots=atomic_bundle_roots,
+        )
+        verified_overlay = _verified_runtime_profile_overlay(
+            worktree=worktree, profile_manifest=profile_path,
+            route_manifest=route_path,
+            overlay=admission.get("runtime_profile_overlay"),
+            atomic_bundle_roots=atomic_bundle_roots,
+        )
+        recorded_profile = str(
+            ((admission.get("bindings") or {}).get("profile_manifest") or {}).get(
+                "path"
+            ) or ""
+        )
+        if _config_string(runtime_config, "BotWorld.ProfileManifest") != recorded_profile:
+            raise RecurrenceAdmissionError("profile_manifest_not_bound_by_config")
+        recorded_route = str(
+            ((admission.get("bindings") or {}).get("route_manifest") or {}).get(
+                "path"
+            ) or ""
+        )
+        if _config_string(
+            runtime_config, "BotWorld.ValidationRoute.ManifestPath"
+        ) != recorded_route:
+            raise RecurrenceAdmissionError("route_manifest_not_bound_by_config")
+        if _config_string(runtime_config, "BotWorld.RuntimeProfile") != (
+            verified_overlay["runtime_profile_id"]
+        ):
+            raise RecurrenceAdmissionError("runtime_profile_not_bound_by_config")
+    elif (admission.get("runtime_profile_overlay") is not None
+          or (admission.get("bindings") or {}).get("profile_manifest") is not None):
+        raise RecurrenceAdmissionError("profile_authority_unexpected")
     ledger_path = _verify_binding(
         admission, "ledger", atomic_bundle_roots=atomic_bundle_roots,
     )
@@ -518,6 +700,7 @@ def verify_recurrence_admission(
             raise RecurrenceAdmissionError(f"decision_{key}_mismatch")
     checkpoint_seal = admission.get("checkpoint_seal")
     if checkpoint_targeted:
+        assert profile_path is not None and verified_overlay is not None
         checkpoint_seal = _verify_chainwielder_checkpoint_seal(
             seal=checkpoint_seal,
             worktree=worktree,
@@ -525,6 +708,8 @@ def verify_recurrence_admission(
             build_receipt=build_receipt_path,
             decision=decision_path,
             runtime_config=runtime_config,
+            profile_manifest=profile_path,
+            runtime_profile_overlay=verified_overlay,
         )
     elif checkpoint_seal is not None:
         raise RecurrenceAdmissionError("checkpoint_seal_unexpected")
@@ -593,6 +778,13 @@ def verify_recurrence_admission(
             checkpoint_seal["seal_sha256"]
             if isinstance(checkpoint_seal, dict) else None
         ),
+        "bindings": {
+            "route_manifest": (admission.get("bindings") or {})["route_manifest"],
+            **({"profile_manifest": (admission.get("bindings") or {})[
+                "profile_manifest"
+            ]} if profile_path is not None else {}),
+        },
+        "runtime_profile_overlay": verified_overlay,
     }
 
 

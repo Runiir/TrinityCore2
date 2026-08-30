@@ -17,16 +17,14 @@ from tools.raid_program.queued_build import (
     load_json as load_build_json,
     verify_receipt,
 )
-from tools.raid_program.capture_setup import (
-    _validate_runtime_profile_suffix_manifest,
-    build_runtime_profile_suffix_manifest,
-)
 from tools.raid_program.recurrence_admission import (
     CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX,
     CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
     FIXTURE_EXPANSION_PURPOSE,
+    PROFILE_MANIFEST_RELATIVE_PATH,
     RecurrenceAdmissionError,
     chainwielder_checkpoint_seal,
+    build_runtime_profile_suffix_manifest,
     create_recurrence_admission,
     sha256_file,
     verify_recurrence_admission,
@@ -47,8 +45,6 @@ SHA256_RE = re.compile(r"[0-9a-f]{64}")
 TRACKED_LEDGER_RELATIVE_PATH = Path(
     "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json"
 )
-PROFILE_MANIFEST_RELATIVE_PATH = Path("dataset/bot_runtime_profiles/profiles.json")
-
 BUNDLE_NAMES = {
     "source_route_manifest": "source_route_manifest.json",
     "route_manifest": "route_manifest.json",
@@ -524,13 +520,6 @@ def verify_bundle(
             source_manifest=source_profile, runtime_profile=SCENARIO_ID,
             route_manifest_path=logical["route_manifest"],
         )
-        _validate_runtime_profile_suffix_manifest(
-            runtime_manifest=_json(
-                root / BUNDLE_NAMES["profile_manifest"], "profile_manifest"
-            ),
-            runtime_profile=SCENARIO_ID,
-            route_manifest_path=logical["route_manifest"], identity=profile_identity,
-        )
     except ValueError as error:
         raise BundleError(str(error)) from error
     if (root / BUNDLE_NAMES["profile_manifest"]).read_bytes() != (
@@ -542,6 +531,9 @@ def verify_bundle(
     )
     profile_identity["source_profile_manifest_sha256"] = sha256_file(
         source_profile_path
+    )
+    profile_identity["runtime_route_manifest_sha256"] = sha256_file(
+        runtime_route_path
     )
     if launch.get("runtime_profile_overlay") != profile_identity:
         raise BundleError("launch_profile_overlay_identity_mismatch")
@@ -569,6 +561,7 @@ def verify_bundle(
             binary=binary,
             build_receipt=root / BUNDLE_NAMES["build_receipt"],
             runtime_config=root / BUNDLE_NAMES["runtime_config"],
+            profile_manifest=root / BUNDLE_NAMES["profile_manifest"],
             required_purpose=FIXTURE_EXPANSION_PURPOSE,
             atomic_bundle_roots=(logical_root, root) if root != logical_root else None,
         )
@@ -576,14 +569,13 @@ def verify_bundle(
         raise BundleError(f"recurrence_admission:{error}") from error
     if verified.get("checkpoint_seal_sha256") != seal.get("seal_sha256"):
         raise BundleError("checkpoint_seal_verification_mismatch")
-    verified_admission = _json(root / BUNDLE_NAMES["admission"], "admission")
-    admission_profile = (verified_admission.get("bindings") or {}).get(
+    admission_profile = (verified.get("bindings") or {}).get(
         "profile_manifest"
     )
     if admission_profile != {
         "path": str(logical["profile_manifest"]),
         "sha256": profile_identity["runtime_profile_manifest_sha256"],
-    } or verified_admission.get("runtime_profile_overlay") != profile_identity:
+    } or verified.get("runtime_profile_overlay") != profile_identity:
         raise BundleError("recurrence_admission_profile_overlay_mismatch")
     watchdog = launch.get("completion_watchdog") or {}
     if (
@@ -753,11 +745,16 @@ def create_bundle(
         profile_identity["source_profile_manifest_sha256"] = sha256_file(
             source_profile_path
         )
+        profile_identity["runtime_route_manifest_sha256"] = sha256_file(
+            staging / BUNDLE_NAMES["route_manifest"]
+        )
         seal = chainwielder_checkpoint_seal(
             worktree=worktree,
             binary=binary,
             build_receipt=staging / BUNDLE_NAMES["build_receipt"],
             decision=staging / BUNDLE_NAMES["decision"],
+            profile_manifest=staging / BUNDLE_NAMES["profile_manifest"],
+            runtime_profile_overlay=profile_identity,
         )
         if seal.get("fixture_id") != checkpoint_fixture_id:
             raise BundleError("checkpoint_seal_fixture_mismatch")
@@ -782,16 +779,11 @@ def create_bundle(
             ledger=materialized["ledger"],
             decision=materialized["decision"],
             suite_receipt=materialized["suite_receipt"],
+            profile_manifest=materialized["profile_manifest"],
+            runtime_profile_overlay=profile_identity,
             purpose=FIXTURE_EXPANSION_PURPOSE,
             atomic_bundle_roots=(output_dir, staging),
         )
-        admission = _json(staging / BUNDLE_NAMES["admission"], "admission")
-        admission["bindings"]["profile_manifest"] = {
-            "path": str(logical["profile_manifest"]),
-            "sha256": profile_identity["runtime_profile_manifest_sha256"],
-        }
-        admission["runtime_profile_overlay"] = profile_identity
-        _write_json(staging / BUNDLE_NAMES["admission"], admission)
         admission_sha = sha256_file(staging / BUNDLE_NAMES["admission"])
         payload_names = [
             BUNDLE_NAMES[key] for key in (

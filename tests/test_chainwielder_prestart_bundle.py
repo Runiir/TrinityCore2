@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -17,11 +18,7 @@ from tools.raid_program.chainwielder_prestart_bundle import (
     create_bundle,
     verify_bundle,
 )
-from tools.raid_program.capture_setup import (
-    _validate_runtime_profile_suffix_manifest,
-    build_runtime_profile_suffix_manifest,
-    controller_route_hold_runtime_manifest_identity,
-)
+from tools.raid_program.capture_setup import controller_route_hold_runtime_manifest_identity
 from tools.raid_program.controller_route_hold import (
     ControllerRouteHoldScheduler,
     controller_route_hold_launch_identity,
@@ -31,6 +28,7 @@ from tools.raid_program.recurrence_admission import (
     FIXTURE_EXPANSION_PURPOSE,
     RecurrenceAdmissionError,
     chainwielder_checkpoint_seal,
+    build_runtime_profile_suffix_manifest,
     create_recurrence_admission,
     sha256_file,
     verify_recurrence_admission,
@@ -50,6 +48,24 @@ def _write_json(path: Path, value: object) -> None:
 
 def _gate(_receipt: Path, _policy: Path) -> dict[str, object]:
     return {"valid": True, "gate_bearing": True}
+
+
+def _profile_authority(
+    root: Path, route: Path, profile_path: Path, *, recorded_route: Path | None = None,
+) -> dict[str, str]:
+    source_path = root / prestart_bundle.PROFILE_MANIFEST_RELATIVE_PATH
+    source = json.loads(source_path.read_text(encoding="utf-8"))
+    runtime, overlay = build_runtime_profile_suffix_manifest(
+        source_manifest=source, runtime_profile=SCENARIO_ID,
+        route_manifest_path=recorded_route or route,
+    )
+    _write_json(profile_path, runtime)
+    overlay.update({
+        "source_profile_manifest_sha256": sha256_file(source_path),
+        "runtime_profile_manifest_sha256": sha256_file(profile_path),
+        "runtime_route_manifest_sha256": sha256_file(route),
+    })
+    return overlay
 
 
 @pytest.fixture(autouse=True)
@@ -257,12 +273,17 @@ def test_v6_manual_missing_flag_fails_before_atomic_bundle_passes_after(
     route = manual / "route.json"
     shutil.copyfile(paths["route_manifest"], route)
     config = manual / "worldserver.conf"
+    profile = manual / "runtime_profiles.json"
+    overlay = _profile_authority(root, route, profile)
     seal = chainwielder_checkpoint_seal(
         worktree=root, binary=paths["binary"],
         build_receipt=paths["build_receipt"], decision=paths["decision"],
+        profile_manifest=profile, runtime_profile_overlay=overlay,
     )
     config.write_text(
         f'BotWorld.ValidationRoute.ManifestPath = "{route.resolve()}"\n'
+        f'BotWorld.ProfileManifest = "{profile.resolve()}"\n'
+        f'BotWorld.RuntimeProfile = "{SCENARIO_ID}"\n'
         "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.Enable = 1\n"
         f'BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.FixtureId = "{CHAINWIELDER_CHECKPOINT_FIXTURE_ID}"\n'
         f'BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.SealSha256 = "{seal["seal_sha256"]}"\n'
@@ -275,6 +296,7 @@ def test_v6_manual_missing_flag_fails_before_atomic_bundle_passes_after(
         build_receipt=paths["build_receipt"], runtime_config=config,
         route_manifest=route, ledger=paths["ledger"], decision=paths["decision"],
         suite_receipt=paths["suite_receipt"], purpose=FIXTURE_EXPANSION_PURPOSE,
+        profile_manifest=profile, runtime_profile_overlay=overlay,
     )
     with pytest.raises(
         RecurrenceAdmissionError, match="fixture_expansion_checkpoint_disabled"
@@ -282,8 +304,9 @@ def test_v6_manual_missing_flag_fails_before_atomic_bundle_passes_after(
         verify_recurrence_admission(
             admission_path=admission, expected_sha256=sha256_file(admission),
             worktree=root, binary=paths["binary"],
-            build_receipt=paths["build_receipt"], runtime_config=config,
-            required_purpose=FIXTURE_EXPANSION_PURPOSE,
+                build_receipt=paths["build_receipt"], runtime_config=config,
+                profile_manifest=profile,
+                required_purpose=FIXTURE_EXPANSION_PURPOSE,
         )
 
     result = _create(fixture)
@@ -411,32 +434,37 @@ def test_target_suffix_reproduces_v19_and_binds_runtime_identity(
         "path": str(canonical_profiles.resolve()),
         "sha256": sha256_file(canonical_profiles),
     }
+    admission_payload["bindings"]["runtime_config"] = {
+        "path": str(canonical_config.resolve()),
+        "sha256": sha256_file(canonical_config),
+    }
     _write_json(canonical_admission, admission_payload)
     with pytest.raises(
-        ValueError, match="runtime_profile_manifest_route_path_mismatch"
+        RecurrenceAdmissionError, match="runtime_profile_overlay_identity_mismatch"
     ):
-        controller_route_hold_runtime_manifest_identity(
-            config=canonical_config, admission_path=canonical_admission,
-            scenario_id=SCENARIO_ID, runtime_profile=SCENARIO_ID,
-            expected_admission_sha256=sha256_file(canonical_admission),
+        verify_recurrence_admission(
+            admission_path=canonical_admission,
+            expected_sha256=sha256_file(canonical_admission),
+            worktree=fixture["root"], binary=fixture["paths"]["binary"],
+            build_receipt=output / BUNDLE_NAMES["build_receipt"],
+            runtime_config=canonical_config, profile_manifest=canonical_profiles,
+            required_purpose=FIXTURE_EXPANSION_PURPOSE,
         )
 
-    projected = controller_route_hold_runtime_manifest_identity(
-        config=output / BUNDLE_NAMES["runtime_config"],
-        admission_path=output / BUNDLE_NAMES["admission"],
-        scenario_id=SCENARIO_ID,
-        runtime_profile=SCENARIO_ID,
-        expected_admission_sha256=sha256_file(
-            output / BUNDLE_NAMES["admission"]
-        ),
-    )
     admission = verify_recurrence_admission(
         admission_path=output / BUNDLE_NAMES["admission"],
         expected_sha256=sha256_file(output / BUNDLE_NAMES["admission"]),
         worktree=fixture["root"], binary=fixture["paths"]["binary"],
         build_receipt=output / BUNDLE_NAMES["build_receipt"],
         runtime_config=output / BUNDLE_NAMES["runtime_config"],
+        profile_manifest=output / BUNDLE_NAMES["profile_manifest"],
         required_purpose=FIXTURE_EXPANSION_PURPOSE,
+    )
+    projected = controller_route_hold_runtime_manifest_identity(
+        config=output / BUNDLE_NAMES["runtime_config"],
+        recurrence_admission=admission,
+        scenario_id=SCENARIO_ID,
+        runtime_profile=SCENARIO_ID,
     )
     identity = controller_route_hold_launch_identity(
         recurrence_admission=admission,
@@ -553,13 +581,11 @@ def test_profile_suffix_rejects_ambiguous_selection_and_non_route_mutation(
         )
 
     runtime["profiles"][0]["target_population"] = 9
-    with pytest.raises(
-        ValueError, match="runtime_profile_manifest_selected_profile_mutated"
-    ):
-        _validate_runtime_profile_suffix_manifest(
-            runtime_manifest=runtime, runtime_profile="selected",
-            route_manifest_path=route_path, identity=identity,
-        )
+    assert identity["runtime_selected_profile_sha256"] != hashlib.sha256(
+        json.dumps(
+            runtime["profiles"][0], sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
 
 
 def test_exact_clean_tracked_ledger_is_copied_byte_identically(
@@ -746,13 +772,21 @@ def test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged(
         "suite_receipt": "suite.json",
     }.items():
         shutil.copyfile(paths[key], staging / name)
+    overlay = _profile_authority(
+        root, staging / "route.json", staging / "runtime_profiles.json",
+        recorded_route=final / "route.json",
+    )
     seal = chainwielder_checkpoint_seal(
+        profile_manifest=staging / "runtime_profiles.json",
+        runtime_profile_overlay=overlay,
         worktree=root, binary=paths["binary"], build_receipt=staging / "build.json",
         decision=staging / "decision.json",
     )
     config = staging / "config.conf"
     config.write_text(
         f'BotWorld.ValidationRoute.ManifestPath = "{final / "route.json"}"\n'
+        f'BotWorld.ProfileManifest = "{final / "runtime_profiles.json"}"\n'
+        f'BotWorld.RuntimeProfile = "{SCENARIO_ID}"\n'
         "BotWorld.ValidationRoute.PrepullCheckpointEnable = 1\n"
         "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.Enable = 1\n"
         f'BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.FixtureId = "{CHAINWIELDER_CHECKPOINT_FIXTURE_ID}"\n'
@@ -767,6 +801,8 @@ def test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged(
         route_manifest=staging / "route.json", ledger=staging / "ledger.json",
         decision=staging / "decision.json", suite_receipt=staging / "suite.json",
         purpose=FIXTURE_EXPANSION_PURPOSE,
+        profile_manifest=staging / "runtime_profiles.json",
+        runtime_profile_overlay=overlay,
         atomic_bundle_roots=(final, staging),
     )
     with pytest.raises(RecurrenceAdmissionError, match="build_receipt_path_mismatch"):
@@ -774,11 +810,13 @@ def test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged(
             admission_path=admission, expected_sha256=sha256_file(admission),
             worktree=root, binary=paths["binary"], build_receipt=staging / "build.json",
             runtime_config=config, required_purpose=FIXTURE_EXPANSION_PURPOSE,
+            profile_manifest=staging / "runtime_profiles.json",
         )
     assert verify_recurrence_admission(
         admission_path=admission, expected_sha256=sha256_file(admission),
         worktree=root, binary=paths["binary"], build_receipt=staging / "build.json",
         runtime_config=config, required_purpose=FIXTURE_EXPANSION_PURPOSE,
+        profile_manifest=staging / "runtime_profiles.json",
         atomic_bundle_roots=(final, staging),
     )["valid"] is True
     with pytest.raises(RecurrenceAdmissionError, match="atomic_bundle_roots_invalid"):
@@ -786,5 +824,6 @@ def test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged(
             admission_path=admission, expected_sha256=sha256_file(admission),
             worktree=root, binary=paths["binary"], build_receipt=staging / "build.json",
             runtime_config=config, required_purpose=FIXTURE_EXPANSION_PURPOSE,
+            profile_manifest=staging / "runtime_profiles.json",
             atomic_bundle_roots=(final, tmp_path / "arbitrary" / "stage"),
         )

@@ -12,6 +12,7 @@ from tools.raid_program.recurrence_admission import (
     FIXTURE_EXPANSION_PURPOSE,
     RecurrenceAdmissionError,
     chainwielder_checkpoint_seal,
+    build_runtime_profile_suffix_manifest,
     create_recurrence_admission,
     sha256_file,
     verify_recurrence_admission,
@@ -39,7 +40,20 @@ def _fixture(tmp_path: Path) -> dict[str, Path | str]:
     _git(root, "config", "user.name", "Test")
     tracked = root / "tracked.txt"
     tracked.write_text("identity\n", encoding="utf-8")
-    _git(root, "add", "tracked.txt")
+    source_profiles = root / "dataset/bot_runtime_profiles/profiles.json"
+    source_profiles.parent.mkdir(parents=True)
+    _write_json(source_profiles, {
+        "schema": "bot_world_runtime_profiles_v1",
+        "profiles": [{
+            "name": "test_profile",
+            "target_population": 10,
+            "validation_route": {
+                "enable": True,
+                "manifest_path": "canonical/routes.jsonl",
+            },
+        }],
+    })
+    _git(root, "add", ".")
     _git(root, "commit", "-m", "identity")
 
     binary = tmp_path / "worldserver"
@@ -49,6 +63,7 @@ def _fixture(tmp_path: Path) -> dict[str, Path | str]:
     ledger = tmp_path / "ledger.json"
     decision = tmp_path / "decision.json"
     suite = tmp_path / "suite.json"
+    profile_manifest = tmp_path / "runtime_profiles.json"
     binary.write_bytes(b"\x7fELFtest")
     _write_json(
         build_receipt,
@@ -136,6 +151,7 @@ def _fixture(tmp_path: Path) -> dict[str, Path | str]:
         "ledger": ledger,
         "decision": decision,
         "suite": suite,
+        "profile_manifest": profile_manifest,
     }
 
 
@@ -195,15 +211,36 @@ def _create_chainwielder_checkpoint_admission(
         }
     ]
     _write_json(suite, suite_value)
+    source_profiles = json.loads(
+        (Path(paths["root"]) / "dataset/bot_runtime_profiles/profiles.json")
+        .read_text(encoding="utf-8")
+    )
+    profile_manifest = Path(paths["profile_manifest"])
+    runtime_profiles, overlay = build_runtime_profile_suffix_manifest(
+        source_manifest=source_profiles, runtime_profile="test_profile",
+        route_manifest_path=Path(paths["route"]),
+    )
+    _write_json(profile_manifest, runtime_profiles)
+    overlay.update({
+        "source_profile_manifest_sha256": sha256_file(
+            Path(paths["root"]) / "dataset/bot_runtime_profiles/profiles.json"
+        ),
+        "runtime_profile_manifest_sha256": sha256_file(profile_manifest),
+        "runtime_route_manifest_sha256": sha256_file(Path(paths["route"])),
+    })
     seal = chainwielder_checkpoint_seal(
         worktree=Path(paths["root"]),
         binary=Path(paths["binary"]),
         build_receipt=Path(paths["build_receipt"]),
         decision=decision,
+        profile_manifest=profile_manifest,
+        runtime_profile_overlay=overlay,
     )
     source_commit = _git(Path(paths["root"]), "rev-parse", "HEAD")
     config.write_text(
         config.read_text(encoding="utf-8")
+        + 'BotWorld.RuntimeProfile = "test_profile"\n'
+        + f'BotWorld.ProfileManifest = "{profile_manifest.resolve()}"\n'
         + "BotWorld.ValidationRoute.PrepullCheckpointEnable = 1\n"
         + "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.Enable = 1\n"
         + "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint."
@@ -224,6 +261,8 @@ def _create_chainwielder_checkpoint_admission(
         ledger=Path(paths["ledger"]),
         decision=decision,
         suite_receipt=suite,
+        profile_manifest=profile_manifest,
+        runtime_profile_overlay=overlay,
         purpose=FIXTURE_EXPANSION_PURPOSE,
     )
     return seal
@@ -240,6 +279,7 @@ def _verify_chainwielder(
         binary=Path(paths["binary"]),
         build_receipt=Path(paths["build_receipt"]),
         runtime_config=Path(paths["config"]),
+        profile_manifest=Path(paths["profile_manifest"]),
         required_purpose=FIXTURE_EXPANSION_PURPOSE,
     )
 
@@ -287,6 +327,77 @@ def test_chainwielder_checkpoint_uses_precomputed_non_circular_seal(
     assert admission["bindings"]["runtime_config"]["sha256"] == sha256_file(
         Path(paths["config"])
     )
+    assert seal["profile_manifest_sha256"] == sha256_file(
+        Path(paths["profile_manifest"])
+    )
+    assert seal["runtime_profile_overlay_sha256"] == hashlib.sha256(
+        json.dumps(
+            admission["runtime_profile_overlay"],
+            sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    assert result["runtime_profile_overlay"] == admission["runtime_profile_overlay"]
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["selected", "overlay_hash", "source_identity", "suffix_path",
+     "suffix_hash", "foreign_selection", "envelope"],
+)
+def test_profile_overlay_authority_rejects_coherent_drift(
+    tmp_path: Path, mutation: str,
+) -> None:
+    paths = _fixture(tmp_path)
+    _create_chainwielder_checkpoint_admission(paths)
+    admission_path = Path(paths["admission"])
+    profile_path = Path(paths["profile_manifest"])
+    admission = json.loads(admission_path.read_text(encoding="utf-8"))
+    profile = json.loads(profile_path.read_text(encoding="utf-8"))
+    overlay = admission["runtime_profile_overlay"]
+
+    if mutation == "selected":
+        profile["profiles"][0]["target_population"] = 9
+    elif mutation == "overlay_hash":
+        overlay["runtime_selected_profile_sha256"] = "0" * 64
+    elif mutation == "source_identity":
+        overlay["source_profile_manifest_sha256"] = "0" * 64
+    elif mutation == "suffix_path":
+        overlay["runtime_validation_route_manifest_path"] = str(
+            tmp_path / "other-route.json"
+        )
+    elif mutation == "suffix_hash":
+        overlay["runtime_route_manifest_sha256"] = "0" * 64
+    elif mutation == "foreign_selection":
+        profile["profiles"][0]["name"] = "foreign"
+        overlay["runtime_profile_id"] = "foreign"
+    else:
+        profile["schema"] = "mutated"
+        overlay["profile_manifest_envelope_sha256"] = hashlib.sha256(
+            json.dumps(
+                {"schema": "mutated"}, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
+
+    if mutation in {"selected", "foreign_selection", "envelope"}:
+        _write_json(profile_path, profile)
+        overlay["runtime_profile_manifest_sha256"] = sha256_file(profile_path)
+        overlay["runtime_selected_profile_sha256"] = hashlib.sha256(
+            json.dumps(
+                profile["profiles"][0],
+                sort_keys=True, separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        admission["bindings"]["profile_manifest"]["sha256"] = sha256_file(
+            profile_path
+        )
+    admission["runtime_profile_overlay"] = overlay
+    _write_json(admission_path, admission)
+
+    with pytest.raises(
+        RecurrenceAdmissionError,
+        match="runtime_profile_(overlay|source)|source_profile_manifest|checkpoint_seal",
+    ):
+        _verify_chainwielder(paths)
 
 
 @pytest.mark.parametrize(
