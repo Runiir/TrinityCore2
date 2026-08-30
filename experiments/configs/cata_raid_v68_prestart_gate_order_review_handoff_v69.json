@@ -1,0 +1,115 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:v68_live_admission_and_runtime_config_source_review_v69",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed",
+  "reviewed_commit": "587282117982cac06bbfe6806babb08bdc318905",
+  "reviewed_handoff": {
+    "path": "experiments/configs/cata_raid_external_base_runtime_config_prestart_rejected_handoff_v68.json",
+    "sha256": "340ca34ae349d66ca50f317dfc9a0f556d89284d6b6c3058920f2ab8ddfc5bb6"
+  },
+  "authenticated_tracked_evidence": {
+    "source_tree": "5f90a7389503f0f939dc6762b75f8a6a0237a179",
+    "v68_input_descriptor_sha256": "8efe85b9a2e7506b09d8a0497b5f075842e186ed82c2b9e247c5fefcba14ae7c",
+    "v67_source_handoff_sha256": "198437e6a452eb52efd4ad59c7197b99e1ab5245c887f0eeca85f37cfb45f462",
+    "v68_dvc_pointer_sha256": "65deaa9a06331b6b42d66b1e8ae7238106ed5b58dc3220a2d5117d657593d811",
+    "note": "These tracked bytes and the rejected runtime config hash were independently recomputed. V68 explicitly evicted the DVC payload after remote reconstruction, so its internal receipt hashes remain authenticated by the committed V68 handoff and pointer rather than by a prohibited V69 reconstruction."
+  },
+  "ordered_gate_verdict": {
+    "first_disqualifying_edge": "live_recurrence_admission_false",
+    "fixture_expansion_admitted": true,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "reason": "fixture_expansion_admitted authorizes repair evidence only; the evaluator defines build admission from the complete regression bank and conjuncts canary recurrence with build admission, so it cannot override either false live gate",
+    "later_preserved_edge": "tracked_snapshot_source_invalid",
+    "live_authorized": false
+  },
+  "invalidated_fixtures": [
+    {
+      "fixture_id": "magmaw_parasite_control_full_runtime_v1",
+      "causal_owner": "encounter_policy_and_movement_intent",
+      "specialist_owner": "raid-encounter-implementation"
+    },
+    {
+      "fixture_id": "magmaw_parasite_lane_paths_v1",
+      "causal_owner": "encounter_combat_and_movement_authority",
+      "specialist_owner": "raid-encounter-implementation"
+    },
+    {
+      "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
+      "causal_owner": "encounter_combat_and_movement_authority",
+      "specialist_owner": "raid-encounter-implementation"
+    },
+    {
+      "fixture_id": "same_level_floor_observation_v1",
+      "causal_owner": "shared_movement_planner",
+      "specialist_owner": "raid-bot-runtime-implementation"
+    },
+    {
+      "fixture_id": "same_level_hazard_path_admission_v1",
+      "causal_owner": "shared_movement_planner",
+      "specialist_owner": "raid-bot-runtime-implementation"
+    },
+    {
+      "fixture_id": "same_level_native_path_proof_v1",
+      "causal_owner": "shared_movement_planner",
+      "specialist_owner": "raid-bot-runtime-implementation"
+    }
+  ],
+  "runtime_config_authority": {
+    "rejected_runtime_path": "trinity-worldserver-test.conf",
+    "rejected_runtime_sha256": "8b20b393839886bfe9d5906dd198a6f56eeaadcf7d220b5f1d83d044dd7ea449",
+    "git_tracked": false,
+    "ignore_proof": ".gitignore:36:trinity-worldserver-test.conf",
+    "tracked_canonical_template": "src/server/worldserver/worldserver.conf.dist",
+    "tracked_canonical_template_sha256": "944b69d1a22e0a55c88800ac73233aa3de75ede0058f6e2ebf96615ca285dfef",
+    "tracked_recipe": "Makefile:test-configs",
+    "tracked_recipe_file_sha256": "76c854e1c4e7dcbc4fc9f5a2444ede512ca65a7d1ff6e2514be8941641ea918a",
+    "current_recipe_observed_values_output_sha256": "a4820b7f1cffef45f366517a40bd96a5be19cef61d30fc3c34b2df0304fdbfae",
+    "derivation_status": "not_exact",
+    "required_derivation": "read the canonical template with git-show bytes from the clean immutable source, bind the tracked transformation recipe and every explicit substitution input, derive in a fresh exclusive destination, and require the derived SHA256 to equal 8b20b393839886bfe9d5906dd198a6f56eeaadcf7d220b5f1d83d044dd7ea449 before snapshot staging; neither the ignored runtime pathname nor the raw template may be substituted"
+  },
+  "claim_ledger": {
+    "verified": [
+      "V68 stopped before snapshot receipt, route staging, bundle creation, database mutation, or worldserver start",
+      "fixture_expansion_admitted true did not and cannot make build_admitted or canary_admitted true",
+      "all six invalidated fixture IDs and their causal owners are present in the tracked recurrence ledger",
+      "trinity-worldserver-test.conf is ignored, absent from git ls-files, and has the V68-declared SHA256",
+      "src/server/worldserver/worldserver.conf.dist and Makefile are tracked and their worktree bytes equal git-show bytes"
+    ],
+    "refuted": [
+      "V68 possessed live recurrence authority",
+      "the ignored test config is an admissible tracked snapshot source",
+      "the current tracked template and current test-configs recipe with values observed in the rejected runtime reproduce its exact bytes"
+    ],
+    "unproven": [
+      "a complete post-occurrence regression bank admits build and live canary execution",
+      "an authenticated tracked derivation reproduces the rejected runtime bytes exactly",
+      "the preserved later snapshot stage can accept the exact derived base runtime config"
+    ]
+  },
+  "next_work_units": [
+    {
+      "order": 1,
+      "active": true,
+      "id": "encounter:restore_three_invalidated_parasite_recurrence_fixtures_v70",
+      "owner_skill": "raid-encounter-implementation",
+      "required_action": "Obtain post-occurrence verification for magmaw_parasite_control_full_runtime_v1, magmaw_parasite_lane_paths_v1, and magmaw_parasite_lane_transition_full_replay_v1 at their exact current production boundaries; update only their recurrence evidence and emit a bounded handoff."
+    },
+    {
+      "order": 2,
+      "active": false,
+      "id": "runtime:restore_three_invalidated_shared_planner_recurrence_fixtures_v71",
+      "owner_skill": "raid-bot-runtime-implementation",
+      "required_action": "After the encounter-owned fixture handoff, obtain post-occurrence verification for same_level_floor_observation_v1, same_level_hazard_path_admission_v1, and same_level_native_path_proof_v1 at their exact current production boundaries, run the complete accumulated bank, and require regression_bank_admitted, build_admitted, and canary_admitted all true. Do not count the pending Chainwielder expansion as closure of these six fixtures."
+    },
+    {
+      "order": 3,
+      "active": false,
+      "id": "evidence:tracked_base_runtime_config_exact_derivation_v72",
+      "owner_skill": "raid-evidence-lifecycle",
+      "required_action": "After live recurrence admission is restored, implement or evidence an authenticated deterministic derivation from git-show canonical template bytes plus tracked recipe and explicit inputs to the exact runtime SHA256, then feed only those derived verified bytes to snapshot staging. Preserve V68 tracked_snapshot_source_invalid as the fail-before."
+    }
+  ],
+  "forbidden": "live execution, configure/build, database or DVC mutation, snapshot or bundle operation, mutable runtime-path acceptance, raw-template substitution, or comparison weakening"
+}

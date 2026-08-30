@@ -1,78 +1,82 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "v68_live_admission_and_runtime_config_source_review_v69_20260830",
-  "work_unit": "evidence:v68_live_admission_and_runtime_config_source_review_v69",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "gate_state": "v68_failed_closed_before_snapshot_bundle_or_start",
-  "observed_at_commit": "587282117982cac06bbfe6806babb08bdc318905",
+  "epoch_id": "restore_three_invalidated_parasite_recurrence_fixtures_v70_20260830",
+  "work_unit": "encounter:restore_three_invalidated_parasite_recurrence_fixtures_v70",
+  "owner_skill": "raid-encounter-implementation",
+  "classification": "live_recurrence_quarantined",
+  "gate_state": "live_recurrence_admission_false_first_ordered_gate",
+  "observed_at_commit": "50d4cc498b4498407ab3ccb15a6ede68be0ba347",
   "immutable_input_commit": "587282117982cac06bbfe6806babb08bdc318905",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_external_base_runtime_config_prestart_rejected_handoff_v68.json",
-    "sha256": "340ca34ae349d66ca50f317dfc9a0f556d89284d6b6c3058920f2ab8ddfc5bb6",
-    "source_commit": "587282117982cac06bbfe6806babb08bdc318905"
+    "path": "experiments/configs/cata_raid_v68_prestart_gate_order_review_handoff_v69.json",
+    "sha256": "a3c3709728d9ec6076265a5c7886e988a8e241495c8ed2e3571117081abefe6d",
+    "source_commit": "50d4cc498b4498407ab3ccb15a6ede68be0ba347"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
-    "supported_encounters": "all_route_manifest_nodes",
-    "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "V69 is a read-only evidence review that must split two independent V68 prestart failures; it cannot authorize or execute a live run."
+    "supported_encounters": "blackwing_descent_10n_magmaw_diagnostic",
+    "supported_modes": ["10N"],
+    "canary_only": "V70 restores only the three encounter-owned invalidated recurrence fixtures; it does not authorize a build, snapshot, bundle, database mutation, or live worldserver."
   },
   "behavior_change": false,
   "evidence_contract_change": false,
-  "ready_for_bounded_repair": true,
-  "ready_for_fixture_expansion": false,
+  "ready_for_bounded_repair": false,
+  "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Review the immutable V68 recurrence decision, snapshot rejection, V67 authority contract, and exact repository source identities. Establish the ordered first broken edge and emit separate non-overlapping next owners for live-admission restoration and tracked canonical runtime-config derivation.",
+    "allowed_change": "Reproduce and obtain post-occurrence production-bound verification for exactly the three encounter-owned invalidated fixtures: magmaw_parasite_control_full_runtime_v1, magmaw_parasite_lane_paths_v1, and magmaw_parasite_lane_transition_full_replay_v1. Update only their focused fixture evidence, recurrence ledger binding, compact handoff, and this descriptor.",
     "allowed_files": [
-      "one_compact_review_handoff",
+      "tests/test_magmaw_parasite_policy.py",
+      "tests/test_bot_action_arbitration.py",
+      "tests/test_native_path_floor_diagnostic.py",
+      "tests/test_magmaw_event_movement_transition.py",
+      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+      "one_compact_v70_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
     "required_findings": [
-      "record that fixture_expansion_admitted true does not override build_admitted false or canary_admitted false",
-      "identify all six invalidated fixture IDs and the exact owner needed to restore live admission",
-      "record that trinity-worldserver-test.conf is ignored and absent from git ls-files",
-      "identify the tracked canonical source and deterministic derivation required to reproduce the exact runtime config without accepting a mutable or unrelated substitute",
-      "preserve the recurrence non-admission as the first disqualifying gate and tracked_snapshot_source_invalid as a separate later prestart rejection"
+      "each of the three named fixtures is verified after the last invalidating occurrence against its exact current production boundary",
+      "fixture revisions and verification identities are evidence-derived rather than mechanically incremented",
+      "the three shared-movement-planner invalidations remain explicitly pending for raid-bot-runtime-implementation",
+      "fixture_expansion admission is never represented as build or live-canary admission",
+      "the V68 tracked_snapshot_source_invalid rejection remains preserved for the later evidence owner"
     ],
     "forbidden": [
-      "implementation test gameplay controller route class encounter pet skill threshold or runtime-config edit",
+      "shared movement planner production edit or ownership of its three invalidated fixtures",
+      "Chainwielder pending-fixture expansion",
+      "runtime config derivation or snapshot-stage correction",
       "configure build database DVC snapshot route bundle worldserver or live-run operation",
-      "manual config substitution or identity-comparison weakening",
-      "fixture-expansion admission represented as live admission",
-      "fixed 300-second raid timer"
+      "gameplay threshold tuning, comparison weakening, or fixed 300-second raid timer"
     ]
   },
-  "closed_v68_evidence": {
-    "configure_count": 1,
-    "worldserver_build_count": 1,
-    "binary_sha256": "e0cd50062dd6c2d70d0d6d3f9c5ccff681bc97b8f9d7d03705063c782430d4aa",
-    "retained_roster_readback_passed": true,
-    "recurrence_verifications": "20/20 passed",
-    "build_admitted": false,
-    "canary_admitted": false,
-    "invalidated_fixture_count": 6,
-    "tracked_snapshot_stage_terminal": "tracked_snapshot_source_invalid",
-    "worldserver_start_count": 0,
-    "database_mutation_count": 0,
-    "dvc_remote_reconstruction_verified": true,
-    "exact_local_payload_evicted": true
-  },
+  "ordered_followups": [
+    {
+      "order": 2,
+      "active": false,
+      "work_unit": "runtime:restore_three_invalidated_shared_planner_recurrence_fixtures_v71",
+      "owner_skill": "raid-bot-runtime-implementation"
+    },
+    {
+      "order": 3,
+      "active": false,
+      "work_unit": "evidence:tracked_base_runtime_config_exact_derivation_v72",
+      "owner_skill": "raid-evidence-lifecycle"
+    }
+  ],
   "remaining_unproven": [
-    "a current recurrence bank admits a live canary",
-    "a tracked canonical source deterministically derives the exact runtime config accepted by snapshot staging",
-    "the live Held Route-owner receipt-zero rejection terminal release and Drudges sequence",
-    "Chainwielder Drudges Magmaw DPS HPS or pet-share outcomes"
+    "all six invalidated fixtures have current post-occurrence verification",
+    "the complete regression bank admits a build and live canary",
+    "a tracked deterministic derivation reproduces the exact rejected runtime config bytes",
+    "the live Held Route-owner receipt-zero rejection terminal release and Drudges sequence"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": ["review_complete", "identity_conflict", "owner_unresolved"]
+    "terminal_edges": ["three_fixture_verifications_recorded", "fixture_failure", "identity_conflict"]
   },
   "verification_budget": {
-    "read_only_review_count": 1,
+    "focused_fixture_run_count_maximum": 1,
     "configure_count_maximum": 0,
     "worldserver_build_count": 0,
     "tracked_snapshot_stage_count_maximum": 0,
@@ -81,7 +85,7 @@
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "evidence:v68_live_admission_and_runtime_config_source_review_v69",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Perform one immutable read-only review and split the live-admission and tracked-runtime-config-source failures into separate bounded implementation owners."
+  "next_work_unit": "encounter:restore_three_invalidated_parasite_recurrence_fixtures_v70",
+  "next_owner_skill": "raid-encounter-implementation",
+  "next_action": "Verify only the three encounter-owned invalidated fixtures after their last invalidating occurrence and hand off the remaining shared-planner fixtures without claiming live admission."
 }
