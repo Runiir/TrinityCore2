@@ -1,0 +1,6 @@
+outs:
+- md5: 75b79f1ac869ba0a84f8c2c69a8aee45.dir
+  size: 71752120
+  nfiles: 32
+  hash: md5
+  path: phase1_raid_foundation_6c0fb8b5a6_v105_controller_hold_abort_20260831
