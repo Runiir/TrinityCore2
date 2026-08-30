@@ -19,6 +19,28 @@
       }
     },
     {
+      "name": "trace_transport_10",
+      "description": "Ten provisioned actors producing decision-trace pressure with every gameplay lane disabled.",
+      "target_population": 10,
+      "pool_tag_filter": "blackwing_descent_10n",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_combat": false,
+      "allow_grinding": false,
+      "allow_questing": false,
+      "allow_dungeons": false,
+      "allow_raids": false,
+      "enable_progression": false,
+      "record_decisions": false,
+      "record_perception": false,
+      "smart_sampling": false,
+      "auto_start_recording": false,
+      "validation_route": {
+        "enable": false
+      }
+    },
+    {
       "name": "stonecore_5n",
       "description": "Five prepared validation bots running the Stonecore normal route manifest.",
       "target_population": 5,

@@ -32,6 +32,7 @@ try:
         RecurrenceAdmissionError,
         verify_recurrence_admission,
     )
+    from tools.raid_program import trace_transport_smoke
 except ModuleNotFoundError:
     # Direct execution places tools/raid_program, not the repository root, on
     # sys.path. Keep the CLI and imported test/module paths on the same sampler.
@@ -50,6 +51,7 @@ except ModuleNotFoundError:
         RecurrenceAdmissionError,
         verify_recurrence_admission,
     )
+    import trace_transport_smoke
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -66,8 +68,8 @@ DEFAULT_STALLED_CANDIDATE_NO_PROGRESS_MS = 20_000
 # headroom.  This only changes collection frequency; a native ``gap`` is still
 # retained and rejected by the evidence gates.
 TRACE_RING_CAPACITY = 128
-TRACE_PRESSURE_WATERMARK = TRACE_RING_CAPACITY // 8
-TRACE_PRESSURE_INTERVAL_SEC = 2.0
+TRACE_PRESSURE_WATERMARK = trace_transport_smoke.PRESSURE_WATERMARK
+TRACE_PRESSURE_INTERVAL_SEC = trace_transport_smoke.PRESSURE_INTERVAL_SECONDS
 
 _WATCHDOG_DEATH_ACTIONS = {
     "death",
@@ -829,6 +831,18 @@ class TelemetryTransportLedger:
                 "entry_count": len(entries),
                 "first_sequence": sequences[0] if sequences else None,
                 "last_sequence": sequences[-1] if sequences else None,
+                **({
+                    field: bot_row.get(field)
+                    for field in (
+                        "missing_sequence_start", "missing_sequence_end",
+                        "oldest_retained_sequence", "newest_retained_sequence",
+                    )
+                } if any(
+                    field in bot_row for field in (
+                        "missing_sequence_start", "missing_sequence_end",
+                        "oldest_retained_sequence", "newest_retained_sequence",
+                    )
+                ) else {}),
             })
         identity["actors"] = actors
         return identity
@@ -5907,6 +5921,14 @@ def main() -> int:
             "gameplay canary gate remains closed"
         ),
     )
+    parser.add_argument(
+        "--trace-transport-smoke",
+        action="store_true",
+        help=(
+            "run the typed ten-actor production trace-transport lane; this "
+            "mode can never admit route, gameplay, fixture, or acceptance claims"
+        ),
+    )
     parser.add_argument("--build-attestation", type=Path, default=None)
     parser.add_argument("--worktree", type=Path, default=ROOT)
     parser.add_argument(
@@ -5981,6 +6003,22 @@ def main() -> int:
         raise SystemExit("server log output already exists; phase1 artifacts are immutable")
     if not binary.is_file() or not config.is_file():
         raise SystemExit("binary and config must exist")
+    trace_transport_admission_rejections = trace_transport_smoke.admission_rejections(
+        profile=profile_name,
+        scenario=scenario_id,
+        pool_tag=args.pool_tag,
+        recurrence_supplied=(
+            args.recurrence_admission is not None
+            or bool(args.recurrence_admission_sha256)
+        ),
+        fixture_expansion=args.fixture_expansion_replay,
+        observe_seconds=args.observe_sec,
+    ) if args.trace_transport_smoke else []
+    if trace_transport_admission_rejections:
+        raise SystemExit(
+            "capture preflight rejected: "
+            + ",".join(trace_transport_admission_rejections)
+        )
     recurrence_admission: dict[str, Any] | None = None
     recurrence_required = scenario_id == "blackwing_descent_10n_magmaw_diagnostic"
     if args.fixture_expansion_replay and not recurrence_required:
@@ -6057,17 +6095,23 @@ def main() -> int:
     identity_before = git_identity(worktree)
     if not identity_before["clean"]:
         raise SystemExit("canonical phase1 capture requires a clean worktree")
-    runtime_assets = validate_runtime_profile_assets(
-        worktree,
-        profile_name=profile_name,
-        scenario_id=scenario_id,
-        pool_tag=args.pool_tag,
+    runtime_assets = (
+        trace_transport_smoke.validate_profile_assets(worktree)
+        if args.trace_transport_smoke
+        else validate_runtime_profile_assets(
+            worktree,
+            profile_name=profile_name,
+            scenario_id=scenario_id,
+            pool_tag=args.pool_tag,
+        )
     )
     if not runtime_assets["passed"]:
         raise SystemExit("runtime profile assets rejected: " + ",".join(runtime_assets["reasons"]))
     route_manifest = runtime_assets.get("route_manifest")
-    drudge_observed = profile_name == "blackwing_descent_10n" \
+    drudge_observed = not args.trace_transport_smoke and (
+        profile_name == "blackwing_descent_10n"
         or profile_name.endswith("_magmaw_diagnostic")
+    )
     # The exact lane/re-separation contract is retained as diagnostic evidence.
     # Trash acceptance is outcome-based: the route must clear the pack and
     # recover without a wipe, semantic stall, or forbidden assistance.
@@ -6106,7 +6150,10 @@ def main() -> int:
         raise SystemExit("build receipt rejected: " + ",".join(build_provenance.get("rejections", [])))
 
     started_utc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    recovery_required = profile_name == "blackwing_descent_10n"
+    recovery_required = (
+        profile_name == "blackwing_descent_10n"
+        and not args.trace_transport_smoke
+    )
     stable: list[dict[str, Any]] = []
     last_rejections: list[str] = ["no_status_observed"]
     startup_error: str | None = None
@@ -6193,6 +6240,11 @@ def main() -> int:
                 process.stdin.write((f"botauto start {profile_name}\n").encode())
             process.stdin.flush()
             time.sleep(1.0)
+            if args.trace_transport_smoke:
+                # Produce one bounded native decision-history backlog before
+                # the unchanged production scheduler begins polling. The
+                # transport gate, not this warmup duration, decides success.
+                time.sleep(trace_transport_smoke.PRESSURE_WARMUP_SECONDS)
             # Canonical raid validation is terminal-gate driven. Raid and boss
             # duration alone must never end an otherwise healthy run. A
             # positive limit remains available only for explicitly bounded
@@ -6229,6 +6281,7 @@ def main() -> int:
             monitor_started_at = time.monotonic()
             telemetry_freshness: dict[str, dict[str, float | int]] = {}
             telemetry_abort: dict[str, Any] = {"detected": False}
+            trace_transport_gate = trace_transport_smoke.evaluate([])
 
             next_resource_sample_at = monitor_started_at
 
@@ -6398,8 +6451,12 @@ def main() -> int:
             flush_forced_evidence_callback = flush_forced_evidence
 
             while (deadline is None or time.monotonic() < deadline) and not (
-                len(stable) >= args.required_stable_statuses
-                and recovery_accepted and drudge_accepted
+                trace_transport_gate.get("terminal") is True
+                if args.trace_transport_smoke
+                else (
+                    len(stable) >= args.required_stable_statuses
+                    and recovery_accepted and drudge_accepted
+                )
             ):
                 if process.poll() is not None:
                     break
@@ -6463,9 +6520,15 @@ def main() -> int:
                     telemetry_transport_ledger.finalize_responses(
                         trace_receipt_indexes, telemetry_scheduler.state(),
                     )
+                    if args.trace_transport_smoke:
+                        trace_transport_gate = trace_transport_smoke.evaluate(
+                            telemetry_transport_ledger.receipts()
+                        )
                     monitor_statuses.extend(new_statuses)
                     for status in new_statuses:
                         telemetry_scheduler.observe_status(status)
+                        if args.trace_transport_smoke:
+                            continue
                         preflight_failure_reason, preflight_rejections = (
                             terminal_preflight_failure_reason(
                                 status, profile_name=profile_name,
@@ -6558,7 +6621,7 @@ def main() -> int:
                             break
                     if terminal_failure.get("detected") is True:
                         break
-                    if monitor_statuses:
+                    if monitor_statuses and not args.trace_transport_smoke:
                         controller_watchdog = observe_capture_watchdog(
                             controller_watchdog_state,
                             monitor_statuses[-1],
@@ -6631,7 +6694,7 @@ def main() -> int:
                             "channel_state": telemetry_freshness,
                         }
                         break
-                    if monitor_statuses:
+                    if monitor_statuses and not args.trace_transport_smoke:
                         signature = semantic_progress_signature(
                             monitor_statuses[-1], latest_diagnosis,
                         )
@@ -6682,7 +6745,7 @@ def main() -> int:
                         drudge_accepted, _ = accepted_drudge_contract(
                             monitor_statuses, frozen_anchors=drudge_frozen_anchors,
                         )
-                    if monitor_statuses:
+                    if monitor_statuses and not args.trace_transport_smoke:
                         runtime = monitor_statuses[-1].get("raid_runtime") or {}
                         status = monitor_statuses[-1]
                         request_identity = native_readycheck_request_identity(status)
@@ -6698,7 +6761,10 @@ def main() -> int:
             # Capture one last live process sample before native shutdown so
             # the final CPU/RSS interval includes the terminal polling work.
             record_process_resource_sample(force=True)
-            if forced_evidence_report.get("requested") is not True:
+            if (
+                not args.trace_transport_smoke
+                and forced_evidence_report.get("requested") is not True
+            ):
                 forced_evidence_report = request_final_evidence(
                     "terminal_gate_or_process_exit"
                 )
@@ -6835,11 +6901,20 @@ def main() -> int:
         controller_terminal=controller_terminal,
     )
     demux_rejections = demux_report["rejections"]
+    trace_transport_gate = locals().get(
+        "trace_transport_gate", trace_transport_smoke.evaluate([]),
+    )
+    trace_transport_demux = trace_transport_smoke.demux_report(
+        normalized_rows, trace_transport_gate,
+    ) if args.trace_transport_smoke else {
+        "gate_passed": None,
+        "rejections": ["trace_transport_smoke_not_requested"],
+    }
     telemetry_abort = locals().get("telemetry_abort", {"detected": False})
     primary_gameplay_failure = _primary_gameplay_terminal(
         terminal_failure, semantic_stall,
     )
-    terminal_evidence_incomplete = _terminal_evidence_incomplete(
+    terminal_evidence_incomplete = False if args.trace_transport_smoke else _terminal_evidence_incomplete(
         primary_gameplay_failure=primary_gameplay_failure,
         forced_evidence_report=forced_evidence_report,
         telemetry_abort=telemetry_abort,
@@ -6856,39 +6931,59 @@ def main() -> int:
     # interrupt. Any prior deferred interrupt is already reflected in the
     # variables used to construct the report and success classification.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    success = (
+    common_success = (
         startup_error is None
         and operator_interrupt is False
         and process_return_code == 0
-        and len(stable) >= args.required_stable_statuses
-        and recovery_accepted
-        and (not drudge_required or drudge_accepted)
         and cleanup_ok
         and bool(stop_rows and stop_rows[-1].get("ok") is True)
         and process_absent
         and postflight["passed"]
         and not forbidden_entries
-        and not demux_rejections
-        and telemetry_envelopes["gate_passed"]
         and len(profiles) == 1
         and profiles[0].get("ok") is True
         and profiles[0].get("cohort_id") == "default"
         and profiles[0].get("active_profile") == profile_name
         and identity_stable
         and terminal_failure.get("detected") is not True
-        and semantic_stall.get("detected") is not True
         and telemetry_abort.get("detected") is not True
-        and forced_evidence_report.get("gate_passed") is True
         and bool(diagnoses)
         and bool(traces)
-        and combat_log_transport["gate_passed"] is True
+    )
+    success = common_success and (
+        (
+            trace_transport_gate.get("gate_passed") is True
+            and trace_transport_demux.get("gate_passed") is True
+            and recurrence_admission is None
+        )
+        if args.trace_transport_smoke
+        else (
+            len(stable) >= args.required_stable_statuses
+            and recovery_accepted
+            and (not drudge_required or drudge_accepted)
+            and telemetry_envelopes["gate_passed"]
+            and not demux_rejections
+            and semantic_stall.get("detected") is not True
+            and forced_evidence_report.get("gate_passed") is True
+            and combat_log_transport["gate_passed"] is True
+        )
     )
     evidence_incomplete = bool(
         telemetry_abort.get("detected") is True
-        or demux_rejections
-        or telemetry_envelopes.get("gate_passed") is not True
-        or forced_evidence_report.get("gate_passed") is not True
-        or combat_log_transport.get("gate_passed") is not True
+        or (
+            not args.trace_transport_smoke
+            and telemetry_envelopes.get("gate_passed") is not True
+        )
+        or (
+            trace_transport_gate.get("gate_passed") is not True
+            or trace_transport_demux.get("gate_passed") is not True
+            if args.trace_transport_smoke
+            else (
+                bool(demux_rejections)
+                or forced_evidence_report.get("gate_passed") is not True
+                or combat_log_transport.get("gate_passed") is not True
+            )
+        )
     )
     operational_infrastructure_abort = bool(
         startup_error
@@ -6900,17 +6995,43 @@ def main() -> int:
         or not identity_stable
         or terminal_failure.get("classification") == "infrastructure_abort"
     )
-    capture_classification = _capture_classification(
-        success=success,
-        forbidden_entries=forbidden_entries,
-        primary_gameplay_failure=primary_gameplay_failure,
-        operational_infrastructure_abort=operational_infrastructure_abort,
-        evidence_incomplete=evidence_incomplete,
-    )
+    if args.trace_transport_smoke:
+        if success:
+            capture_classification = "trace_transport_smoke_passed"
+        elif operational_infrastructure_abort:
+            capture_classification = "trace_transport_smoke_infrastructure_abort"
+        elif trace_transport_gate.get("terminal") is True:
+            capture_classification = "trace_transport_smoke_failed_verification"
+        else:
+            capture_classification = "trace_transport_smoke_noncompletion"
+    else:
+        capture_classification = _capture_classification(
+            success=success,
+            forbidden_entries=forbidden_entries,
+            primary_gameplay_failure=primary_gameplay_failure,
+            operational_infrastructure_abort=operational_infrastructure_abort,
+            evidence_incomplete=evidence_incomplete,
+        )
     report = {
         "schema_version": 1,
         "capture_id": f"cata_raid_phase1_{profile_name}_v1",
         "classification": capture_classification,
+        "claim_scope": {
+            **trace_transport_smoke.claim_scope(),
+            "transport_admitted": (
+                success if args.trace_transport_smoke else None
+            ),
+        } if args.trace_transport_smoke else None,
+        "trace_transport_smoke": {
+            "requested": args.trace_transport_smoke,
+            "pressure_warmup_seconds": (
+                trace_transport_smoke.PRESSURE_WARMUP_SECONDS
+                if args.trace_transport_smoke else None
+            ),
+            "transport_gate": trace_transport_gate,
+            "controller_demux_gate": trace_transport_demux,
+            "one_start_owned_by_capture": True,
+        },
         "terminal_evidence_incomplete": terminal_evidence_incomplete,
         "started_at_utc": started_utc,
         "identity": identity_before,
@@ -6966,7 +7087,10 @@ def main() -> int:
             ),
             "final_forced_evidence": forced_evidence_report,
         },
-        "accepted_raid_runtime": stable[-1].get("raid_runtime") if stable else None,
+        "accepted_raid_runtime": (
+            None if args.trace_transport_smoke
+            else (stable[-1].get("raid_runtime") if stable else None)
+        ),
         "diagnose_observed": bool(diagnoses),
         "trace_observed": bool(traces),
         "combat_log_transport": combat_log_transport,
