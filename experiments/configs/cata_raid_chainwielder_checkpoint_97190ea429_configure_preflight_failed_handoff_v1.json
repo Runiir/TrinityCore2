@@ -1,0 +1,81 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start_v2",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "configure_command_contract_rejected",
+  "source": {
+    "commit": "97190ea42902aa9db1945c17bdaf2660fdec57e0",
+    "tree": "6c1e0c556c8744d24669babcadb0897c88828041",
+    "clean": true,
+    "implementation_commit": "68913254b135407971de849f71dcdb94a64d5370",
+    "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_seal_implementation_handoff_v1.json",
+    "implementation_handoff_sha256": "93b26442ad380f00630a3bd5580016cf23163990cd84e32d59b7e5ae634f12dc"
+  },
+  "scope_lock": {
+    "owned_behavior": "one exact fast8_v2 build and at most one observation-only actor-30008 Chainwielder checkpoint start",
+    "excluded": [
+      "gameplay_or_strategy_change",
+      "class_or_pet_change",
+      "boss_or_database_change",
+      "planner_priority_or_tolerance_change",
+      "fixture_revision_promotion",
+      "gameplay_canary_or_acceptance",
+      "second_worldserver_start"
+    ]
+  },
+  "preflight": {
+    "active_descriptor_valid": true,
+    "required_next_work_unit_matched": true,
+    "full_fixture_bank": "20_of_20_passed",
+    "sole_pending_target": "chainwielder_pre_admission_rejection_isolation_v1",
+    "build_queue_idle": true,
+    "worldserver_running_before": false
+  },
+  "terminal_boundary": {
+    "reason": "configure_command_contract_rejected",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ticket_created": false,
+        "receipt_created": false,
+        "error": "policy-bound configure must use -S . -B build"
+      },
+      {
+        "attempt": 2,
+        "ticket_created": false,
+        "receipt_created": false,
+        "error": "configure command does not explicitly bind policy CMake settings: CMAKE_GENERATOR"
+      }
+    ],
+    "coordinator_source_fact": "validate_configure_command requires the generator both as '-G', 'Unix Makefiles' and as the exact policy-owned '-DCMAKE_GENERATOR=Unix Makefiles' definition because CMAKE_GENERATOR is included in expected_build_configuration",
+    "build_count": 0,
+    "provisioning_count": 0,
+    "database_mutation_count": 0,
+    "worldserver_start_count": 0,
+    "fixture_promotion_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_exact_source_descriptor_and_implementation_handoff_identities_match",
+      "the_full_fixture_bank_reports_twenty_of_twenty_with_one_pending_target",
+      "both_configure_invocations_were_rejected_before_ticket_or_receipt_creation",
+      "no_build_provisioning_database_or_worldserver_mutation_occurred"
+    ],
+    "refuted": [
+      "the_second_configure_invocation_exactly_matched_the_policy_owned_command"
+    ],
+    "unproven": [
+      "the_exact_clean_built_binary_emits_a_completed_chainwielder_owner_checkpoint_receipt",
+      "the_live_checkpoint_reaches_a_real_Route_owner_trigger",
+      "the_live_checkpoint_preserves_the_Route_identity_and_completes_the_hazard_exit"
+    ]
+  },
+  "validation": {
+    "focused_test_rerun": false,
+    "reason": "no_source_or_behavior_change",
+    "dvc_artifact_produced": false,
+    "reason_no_dvc_artifact": "the_coordinator_rejected_both_commands_before_a_ticket_receipt_build_or_live_capture_existed"
+  },
+  "next_work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start_v3",
+  "next_action": "Retry from the same exact clean source with the coordinator-generated exact configure argv, including both '-G', 'Unix Makefiles' and '-DCMAKE_GENERATOR=Unix Makefiles'; retain the one-build and one-start budgets because neither was consumed."
+}

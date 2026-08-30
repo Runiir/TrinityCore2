@@ -1,13 +1,13 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_checkpoint_sealed_observation_v2_20260830",
-  "work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start_v2",
+  "epoch_id": "magmaw_chainwielder_checkpoint_sealed_observation_v3_20260830",
+  "work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start_v3",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "owner_skill": "raid-shard-architecture",
-  "classification": "checkpoint_admission_binding_repaired_static_only",
-  "gate_state": "queued_build_and_single_observation_start_required",
+  "classification": "configure_command_contract_rejected_before_build",
+  "gate_state": "queued_build_command_correction_required",
   "observed_at_commit": "68913254b135407971de849f71dcdb94a64d5370",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_chainwielder_checkpoint_1036d427af_admission_preflight_handoff_v1.json",
@@ -28,6 +28,14 @@
     "focused_test_sha256": "f8768fb30ce6c9b5d9bfb4aaf38ce395b927a391744af64a89616c323c3bf184",
     "focused_test_result": "24_passed_126_deselected",
     "runtime_verdict": "unverified"
+  },
+  "latest_failed_handoff": {
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_97190ea429_configure_preflight_failed_handoff_v1.json",
+    "file_sha256": "454171be4675be66f73ada57b8b8f8d83908e4c041613868546eed1417ecd6ef",
+    "source_commit": "97190ea42902aa9db1945c17bdaf2660fdec57e0",
+    "classification": "configure_command_contract_rejected",
+    "build_count": 0,
+    "worldserver_start_count": 0
   },
   "first_broken_edge": "The circular admission/config binding is repaired statically. The next unresolved edge is whether the exact clean built runtime reaches and completes the live Route-owner/Hazard-rejection checkpoint.",
   "causal_signature": "chainwielder_checkpoint_live_route_owner_join_unverified",
@@ -58,7 +66,10 @@
       "the_checkpoint_seal_binds_fixture_source_binary_build_receipt_and_recurrence_decision_before_config_creation",
       "the_final_recurrence_admission_independently_hash_binds_the_config_and_the_seal_inputs",
       "the_controller_constructs_the_arm_command_only_from_the_verified_seal_and_source_commit",
-      "the_focused_seal_admission_controller_and_runtime_contract_tests_passed_24_cases"
+      "the_focused_seal_admission_controller_and_runtime_contract_tests_passed_24_cases",
+      "the_v2_worker_confirmed_the_exact_clean_descriptor_and_handoff_identities",
+      "the_v2_coordinator_rejected_two_noncanonical_configure_argv_values_before_ticket_or_receipt_creation",
+      "the_v2_worker_consumed_zero_builds_zero_provisioning_mutations_and_zero_worldserver_starts"
     ],
     "refuted": [
       "the_compiled_helper_is_a_live_map669_executor_replay",
@@ -169,9 +180,9 @@
   },
   "coordinator_followup": {
     "next_owner": "raid-shard-architecture",
-    "next_owner_command": "queued_build_and_chainwielder_owner_checkpoint_one_start_v2",
-    "next_work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start_v2",
+    "next_owner_command": "queued_build_and_chainwielder_owner_checkpoint_one_start_v3",
+    "next_work_unit": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start_v3",
     "implementation_owner_after_capture": "raid-bot-runtime-implementation_only_after_the_single_live_receipt_is_reviewed"
   },
-  "next_action": "Run one queued fast8 build from the exact clean descriptor commit, regenerate the exact-source recurrence decision, compute and insert the pre-admission checkpoint seal into the temporary config, create and independently verify the final recurrence admission SHA, then run exactly one actor-30008 observation-only completion-watchdog start and retain the typed checkpoint receipt."
+  "next_action": "Retry the still-unconsumed fast8 build budget with the exact coordinator-owned configure argv, including both '-G', 'Unix Makefiles' and '-DCMAKE_GENERATOR=Unix Makefiles'; if admitted, continue the sealed one-start observation contract unchanged."
 }
