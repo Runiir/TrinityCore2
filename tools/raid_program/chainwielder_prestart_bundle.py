@@ -13,10 +13,10 @@ import tempfile
 from typing import Any
 
 from tools.raid_program.canonical_route_staging import (
-    CanonicalRouteStagingError as BundleError,
+    CanonicalRouteStagingError,
     STAGING_RECEIPT_SCHEMA,
     atomic_write_new,
-    stage_canonical_route,
+    stage_canonical_route as _stage_canonical_route,
 )
 from tools.raid_program.queued_build import (
     CoordinatorError,
@@ -103,6 +103,10 @@ CONFIG_VALUES = {
         f'"{CHAINWIELDER_CHECKPOINT_FIXTURE_ID}"'
     ),
 }
+
+
+class BundleError(RuntimeError):
+    pass
 
 
 def _git(worktree: Path, *args: str, binary: bool = False) -> str | bytes:
@@ -375,10 +379,30 @@ def _verify_gate_bearing_build_receipt(receipt: Path, policy: Path) -> dict[str,
 
 
 def _copy_exact(source: Path, destination: Path) -> None:
-    atomic_write_new(destination, source.read_bytes())
+    try:
+        atomic_write_new(destination, source.read_bytes())
+    except CanonicalRouteStagingError as error:
+        raise BundleError(str(error)) from error
     if sha256_file(source) != sha256_file(destination):
         destination.unlink(missing_ok=True)
         raise BundleError(f"copy_hash_mismatch:{destination.name}")
+
+
+def stage_canonical_route(
+    *, worktree: Path, source_route: Path, expected_sha256: str,
+    external_run_root: Path,
+) -> dict[str, Any]:
+    try:
+        return _stage_canonical_route(
+            worktree=worktree,
+            source_route=source_route,
+            expected_sha256=expected_sha256,
+            external_run_root=external_run_root,
+            dvc_stage_name="validation_scenarios",
+            output_relative_member="validation_routes.jsonl",
+        )
+    except CanonicalRouteStagingError as error:
+        raise BundleError(str(error)) from error
 
 
 def _file_rows(root: Path, names: list[str]) -> list[dict[str, str]]:

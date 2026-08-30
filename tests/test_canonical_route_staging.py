@@ -166,6 +166,44 @@ def test_chainwielder_public_staging_wrapper_preserves_contract(
     assert receipt["schema"] == prestart_bundle.STAGING_RECEIPT_SCHEMA
 
 
+def test_chainwielder_wrapper_failure_is_local_bundle_error_before_create(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _fixture(
+        tmp_path,
+        stage_name="validation_scenarios",
+        output_path="dataset/validation_scenarios",
+        member="validation_routes.jsonl",
+    )
+    fixture["route"] = (
+        fixture["root"]
+        / "dataset/validation_scenarios/missing.jsonl"
+    )
+    create_calls = 0
+
+    def counted_create(**_values: object) -> dict[str, object]:
+        nonlocal create_calls
+        create_calls += 1
+        return {}
+
+    monkeypatch.setattr(prestart_bundle, "create_bundle", counted_create)
+    with pytest.raises(prestart_bundle.BundleError) as caught:
+        prestart_bundle.stage_canonical_route(
+            worktree=fixture["root"],
+            source_route=fixture["route"],
+            expected_sha256=fixture["sha256"],
+            external_run_root=fixture["external"],
+        )
+
+    error_type = type(caught.value)
+    assert error_type is prestart_bundle.BundleError
+    assert error_type.__module__ == prestart_bundle.__name__
+    assert error_type.__name__ == "BundleError"
+    assert str(caught.value) == "source_route_location_invalid"
+    assert isinstance(caught.value.__cause__, staging.CanonicalRouteStagingError)
+    assert create_calls == 0
+
+
 @pytest.mark.parametrize(
     ("mutation", "reason"),
     [
