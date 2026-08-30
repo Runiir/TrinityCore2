@@ -1,0 +1,95 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_bootstrap_revalidation_admission_v15",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "passed",
+  "input_identities": {
+    "reviewed_source_commit": "9a8d86f7d1e712c301c3c15c6476714a7b851cb9",
+    "reviewed_source_tree": "430eaec4a9a062ba22fe5d510e044c2ceaea2b21",
+    "v13_failed_handoff_path": "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_drift_handoff_v13.json",
+    "v13_failed_handoff_sha256": "05b0b968521744ef63fa89a73517afde39b78ed0a483ec440f3af9ea6ebf446f",
+    "v14_implementation_handoff_path": "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_identity_ordering_handoff_v14.json",
+    "v14_implementation_handoff_sha256": "c312595e4eb2164e8c1609a443fad0b198848f053878ff5b1b0d99a2a8101eb3",
+    "native_owner_sha256": "431f90cef0f9a6d3021041c028eee2c655413173ac222bf3db30d9af43d24548",
+    "production_boundary_fixture_sha256": "7545e758e135867823874dc3fe3826f4f1db305d4ffb10138e1d02b8cf07663a"
+  },
+  "program_scope": {
+    "supported_specs": "all_configured_dps_tank_and_healer_specs",
+    "supported_encounters": "all_route_manifest_nodes",
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_semantics": "Affliction, actor 30008, Chainwielder, and Magmaw are evidence inputs only. The reviewed native change has no class, actor, encounter, instance, raid-size, difficulty, geometry, or route-node branch."
+  },
+  "behavior_change": false,
+  "independent_review": {
+    "owned_diff": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_identity_ordering_handoff_v14.json",
+      "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp",
+      "tests/test_chainwielder_owner_checkpoint.py"
+    ],
+    "native_boundary": "The only native change admits an acquiring-phase canonical initial binding when the complete admitted identity is core-equal and both admitted and prospective generations are exactly one; all missing, partial, drifted, later-generation, held, and ordinary mutations retain typed fail-closed handling.",
+    "focused_test": {
+      "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+      "result": "6 passed in 1.29s",
+      "run_count": 1,
+      "correction_count": 0,
+      "production_boundary": "The compiled fixture includes the exact production bootstrap adapter and uses the production hold state, action arbiter, admission adapter, and route-mutation gate."
+    },
+    "cpp_line_counts": {
+      "BotChainwielderOwnerCheckpoint.h": 534,
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 735,
+      "cs_chainwielder_owner_checkpoint.cpp": 123,
+      "BotActionArbiter.h": 637,
+      "BotWorldPopulationMgrUpdateBotKernelPreparation.cpp": 583,
+      "BotWorldPopulationMgrUpdateBotKernelFallback.cpp": 823,
+      "BotWorldPopulationMgrValidationRouteRuntime.cpp": 779,
+      "BotWorldPopulationMgrRaidRuntime.cpp": 999
+    },
+    "all_listed_cpp_below_1000_lines": true,
+    "configure_count": 0,
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "V13 failed before any held status, arm, terminal, release, route progress, or combat and preserved cleanup",
+      "all recorded source, handoff, implementation, fixture, and inherited DVC pointer hashes independently match",
+      "the V14 owned diff is bounded and its native branch is universal rather than canary-specific",
+      "the production-boundary fixture reproduces the V13 drift and proves the exact typed V14 admission and negative transitions",
+      "all listed C++ owners remain below 1000 physical lines"
+    ],
+    "refuted": [],
+    "unproven": [
+      "the native worldserver builds at source commit 9a8d86f7d1e712c301c3c15c6476714a7b851cb9",
+      "one live generation-one Held acknowledgement and two identity-stable held statuses",
+      "one live sealed arm, identity-preserved terminal, terminal-gated release, and post-release ordinary route advance"
+    ]
+  },
+  "admission": {
+    "next_work_unit": "shard:generic_controller_route_hold_bootstrap_revalidation_one_build_one_start_v15",
+    "next_owner_skill": "raid-shard-architecture",
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_count_maximum": 0,
+    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "database_mutation": "forbidden",
+    "dvc_mutation": "forbidden",
+    "duration_policy": "completion-watchdog",
+    "fixed_success_timer_seconds": null,
+    "raid_success_timer_seconds": null
+  },
+  "required_live_transcript": [
+    "start-held returns exactly one Held acknowledgement at admitted route generation one",
+    "two identity-stable Held status receipts",
+    "one sealed checkpoint arm acknowledgement",
+    "one identity-preserved typed checkpoint terminal",
+    "one terminal-gated release acknowledgement",
+    "ordinary route advance occurs only after release"
+  ],
+  "forbidden": "No second configure, build, start, or retry; no native, test, controller, gameplay, class, pet, encounter, route-strategy, database, DVC, fixture-promotion, canary-acceptance, or fixed-duration raid-success change."
+}

@@ -1,44 +1,53 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_bootstrap_revalidation_admission_v15_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_bootstrap_revalidation_admission_v15",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "implementation_complete_runtime_unverified",
-  "gate_state": "v14_native_bootstrap_ordering_fixture_green_no_build_or_live_authorization",
-  "observed_at_commit": "1355b1841fbca46274dc0581fe220fb4494eaabe",
+  "epoch_id": "generic_controller_route_hold_bootstrap_revalidation_one_build_one_start_v15_20260830",
+  "work_unit": "shard:generic_controller_route_hold_bootstrap_revalidation_one_build_one_start_v15",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
+  "gate_state": "v15_hash_bound_admission_green_native_build_and_live_transcript_unverified",
+  "observed_at_commit": "9a8d86f7d1e712c301c3c15c6476714a7b851cb9",
+  "immutable_input_commit": "9a8d86f7d1e712c301c3c15c6476714a7b851cb9",
   "source_handoff": {
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_revalidation_admission_handoff_v15.json",
+    "sha256": "6d60ce0dc92e375eb24692bf0d185f64425f61e090e5e321acb4cbd326a6a228",
+    "source_commit": "9a8d86f7d1e712c301c3c15c6476714a7b851cb9"
+  },
+  "implementation_source": {
     "path": "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_identity_ordering_handoff_v14.json",
-    "sha256": "c312595e4eb2164e8c1609a443fad0b198848f053878ff5b1b0d99a2a8101eb3",
-    "source_commit": "self"
+    "sha256": "c312595e4eb2164e8c1609a443fad0b198848f053878ff5b1b0d99a2a8101eb3"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "Affliction, actor 30008, Chainwielder, and Magmaw are evidence inputs only. No downstream controller may branch on these canary identities."
+    "canary_only": "Affliction, actor 30008, Chainwielder, and Magmaw are evidence inputs only. No live owner may branch on these identities outside the sealed observation fixture."
   },
   "behavior_change": false,
   "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": false,
+  "ready_for_live_verification": true,
   "scope_lock": {
-    "allowed_change": "Independently verify the v14 native implementation handoff and produce one hash-bound build/live admission or a typed rejection; do not change native runtime or gameplay.",
+    "allowed_change": "Configure and build the exact admitted source once with fast8, then start exactly one completion-watchdog worldserver to capture the controller-route-hold transcript.",
     "forbidden": [
       "native_runtime_or_gameplay_change",
+      "test_controller_or_fixture_change",
       "class_spec_pet_encounter_route_strategy_or_priority_change",
       "polling_or_identity_comparison_loosening",
       "database_or_dvc_mutation",
-      "configure_build_or_worldserver_start",
-      "fixture_promotion_or_canary_acceptance_claim"
+      "second_configure_build_start_or_retry",
+      "canary_acceptance_or_fixture_promotion_claim"
     ]
   },
-  "admitted_actions": {
-    "configure_count_maximum": 0,
-    "worldserver_build_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
+  "verification_budget": {
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_count_maximum": 0,
+    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
     "database_mutation": "forbidden",
-    "dvc_mutation": "forbidden",
-    "validation": "handoff_integrity_and_capture_contract_review_only"
+    "dvc_mutation": "forbidden"
   },
   "required_contract": {
     "native_start_held_acknowledgement_count": 1,
@@ -51,7 +60,7 @@
     "ordinary_route_advance_after_release": true
   },
   "remaining_unproven": [
-    "native build at the v14 implementation commit",
+    "native build at source commit 9a8d86f7d1e712c301c3c15c6476714a7b851cb9",
     "exact live generation-one Held start acknowledgement",
     "two identity-stable Held status receipts",
     "sealed arm, identity-preserved terminal, release, and post-release route advance"
@@ -59,9 +68,17 @@
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "raid_success_timer_seconds": null
+    "raid_success_timer_seconds": null,
+    "terminal_edges": [
+      "normal_clear",
+      "monotonic_semantic_stall",
+      "repeated_decisions",
+      "excessive_death_loops",
+      "infrastructure_loss",
+      "explicit_interruption"
+    ]
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_bootstrap_revalidation_admission_v15",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Verify the v14 handoff without starting a server, then emit the separate build/live admission required for runtime verification."
+  "next_work_unit": "shard:generic_controller_route_hold_bootstrap_revalidation_one_build_one_start_v15",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run one clean fast8 configure/build and one no-retry completion-watchdog worldserver start; accept only the exact Held, two held statuses, arm, terminal, release, post-release advance transcript."
 }
