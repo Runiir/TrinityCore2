@@ -1,90 +1,69 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "chainwielder_checkpoint_immutable_profile_identity_v51_20260830",
-  "work_unit": "runtime:chainwielder_checkpoint_immutable_profile_identity_v51",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_pending",
-  "gate_state": "v50_live_arm_profile_identity_mismatch_verified",
-  "observed_at_commit": "1d669d29b8957de9fdf92f5a5b7e324e134d2eca",
-  "immutable_input_commit": "1d669d29b8957de9fdf92f5a5b7e324e134d2eca",
+  "epoch_id": "chainwielder_checkpoint_immutable_profile_identity_independent_review_v52_20260830",
+  "work_unit": "evidence:chainwielder_checkpoint_immutable_profile_identity_independent_review_v52",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_complete_runtime_unverified",
+  "gate_state": "v51_recording_profile_identity_fixture_green_no_live_authorization",
+  "observed_at_commit": "2e699a60d78428aa0686233888870de2cde5b0ee",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_profile_identity_mismatch_handoff_v50.json",
-    "sha256": "e9f88c0eded9ba34325360930d1c81f19247a0b8c17927dca1707bf1385b7053",
-    "source_commit": "1d669d29b8957de9fdf92f5a5b7e324e134d2eca"
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_immutable_profile_identity_handoff_v51.json",
+    "sha256": "a913dc4a73c93572dc53b6e372b54faba1c207a93a50d71efdee5e2f95d30f81",
+    "source_commit": "self"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "Actor 30008 and Chainwielder identify the evidence boundary only; the repair must be runtime-profile lifecycle infrastructure with no class, encounter, actor, or route special case."
+    "canary_only": "Actor 30008 and Chainwielder are evidence inputs only. No downstream reviewer or controller may branch on the canary identity."
   },
-  "behavior_change": true,
+  "behavior_change": false,
   "evidence_contract_change": false,
-  "ready_for_bounded_repair": true,
+  "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "first_broken_edge": "AutoStartRecording changes Cohort().Config.Name to autonomy_window_0 before the native arm gate compares Config.Name to the frozen selected runtime profile.",
-    "allowed_change": "Preserve a distinct immutable selected runtime-profile identity through recording-window naming and use that exact admitted identity in the checkpoint arm gate without loosening any other identity check.",
-    "allowed_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrRecordingWindow.cpp",
-      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
-      "tests/test_chainwielder_owner_checkpoint.py",
-      "one_compact_implementation_handoff",
-      "experiments/configs/cata_raid_active_work_unit_v1.json"
-    ],
-    "required_tests": [
-      "compiled fail-before production-boundary replay with AutoStartRecording enabled and autonomy_window_0 observed",
-      "pass-after exact hold, two stable statuses, one arm acknowledgement, terminal-gated release ordering",
-      "typed negative coverage for every immutable identity field",
-      "no-recording regression path"
-    ],
+    "allowed_change": "Independently verify the V51 immutable runtime-profile source boundary and focused replay, then emit a separate hash-bound build/live admission or a typed rejection; do not change native runtime or gameplay.",
     "forbidden": [
-      "comparison_removal_or_weakening",
-      "polling_cadence_timeout_or_retry_change",
-      "gameplay_route_movement_class_pet_encounter_or_priority_change",
-      "configure_build_worldserver_database_or_dvc_action",
+      "native_runtime_or_gameplay_change",
+      "profile_fixture_seal_source_or_binary_comparison_weakening",
+      "python_controller_polling_timeout_retry_or_threshold_change",
+      "configure_build_or_worldserver_start",
+      "database_or_dvc_mutation",
       "fixture_or_canary_promotion"
     ]
   },
-  "closed_v50_evidence": {
-    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_1d669d29b8_generic_controller_route_hold_profile_identity_mismatch_v50_20260830.dvc",
-    "capture_report_canonical_sha256": "9be335f62f924013d48fac8c76bfd32ca76b52a0fbb1aa6c1819c0c61198cbfa",
-    "normalized_raw_sha256": "dc9810a71ebca0bd3a5c6d9ba52eceb0030e287d7a3b6371cea2da7864248760",
-    "worldserver_log_sha256": "ea2efb9087adf759e9d971965728929e1ef3de85f0562bd43bc2bed4faa3ecc7",
-    "start_held_ack_count": 1,
-    "stable_held_status_count": 2,
-    "suppressed_route_action_count": 14,
-    "suppressed_route_advance_count": 0,
-    "arm_command_count": 1,
-    "arm_ack_count": 0,
-    "release_count": 0,
-    "combat_observed": false,
-    "cleanup_gate_passed": true
-  },
-  "verification_budget": {
-    "focused_test_run_count_maximum": 1,
-    "correction_rerun_count_maximum": 1,
+  "admitted_actions": {
+    "validation": "handoff_hash_source_boundary_and_focused_fixture_review_only",
     "configure_count_maximum": 0,
     "worldserver_build_count_maximum": 0,
     "worldserver_start_count_maximum": 0,
-    "retry_count_maximum": 0,
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
+  "required_contract": {
+    "recording_window_name": "autonomy_window_0",
+    "immutable_runtime_profile_source": "controller_route_hold_scope",
+    "stable_held_status_count": 2,
+    "checkpoint_arm_acknowledgement_count": 1,
+    "checkpoint_terminal_count": 1,
+    "release_acknowledgement_count": 1,
+    "ordinary_route_advance_before_release": false,
+    "ordinary_route_advance_after_release": true,
+    "comparison_weakening": false
+  },
+  "remaining_unproven": [
+    "native build at the V51 implementation commit",
+    "one live recording-enabled Held and accepted arm sequence",
+    "identity-preserved terminal, release, and post-release route advance",
+    "gameplay and throughput outcomes"
+  ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "scope": "fixture_only",
     "fixed_success_timer_seconds": null,
-    "raid_success_timer_seconds": null,
-    "terminal_edges": [
-      "focused_fixture_pass",
-      "typed_fixture_failure",
-      "identity_or_scope_mismatch"
-    ]
+    "raid_success_timer_seconds": null
   },
-  "next_work_unit": "runtime:chainwielder_checkpoint_immutable_profile_identity_v51",
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "next_action": "Implement and review the immutable runtime-profile identity boundary using the exact V50 fail-before replay; do not build or start a server."
+  "next_work_unit": "evidence:chainwielder_checkpoint_immutable_profile_identity_independent_review_v52",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Verify V51 without starting a server and issue a separate immutable admission or typed rejection for the build/live owner."
 }

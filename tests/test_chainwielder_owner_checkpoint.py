@@ -19,6 +19,7 @@ PREPARATION = BOT_DIR / "BotWorldPopulationMgrUpdateBotKernelPreparation.cpp"
 FALLBACK = BOT_DIR / "BotWorldPopulationMgrUpdateBotKernelFallback.cpp"
 ROUTE_RUNTIME = BOT_DIR / "BotWorldPopulationMgrValidationRouteRuntime.cpp"
 RAID_RUNTIME = BOT_DIR / "BotWorldPopulationMgrRaidRuntime.cpp"
+RECORDING_WINDOW = BOT_DIR / "BotWorldPopulationMgrRecordingWindow.cpp"
 
 
 def test_checkpoint_gate_and_foreign_owner_counterexample_compile(
@@ -29,6 +30,8 @@ def test_checkpoint_gate_and_foreign_owner_counterexample_compile(
     source.write_text(
         r'''
 #include "Bots/BotChainwielderOwnerCheckpoint.h"
+#define BOT_RECORDING_WINDOW_IDENTITY_ADAPTER_ONLY
+#include "Bots/BotWorldPopulationMgrRecordingWindow.cpp"
 
 #include <cassert>
 
@@ -62,6 +65,120 @@ int main()
     assert(sourceIdentity.RequestedLength == 40);
     assert(sourceIdentity.BinaryRevisionLength == 12);
     assert(RejectionReason(valid) == nullptr);
+
+    // Exact V50 fail-before: recording changes only the mutable experiment
+    // name. The previously admitted runtime-profile identity remains exact.
+    auto const recording = BotRecordingWindowIdentity::BuildNameTransition(
+        ProfileId, "autonomy_window_0");
+    assert(recording.ExperimentName == "autonomy_window_0");
+    assert(recording.MetricsName == "autonomy_window_0");
+    assert(recording.ImmutableSelectedRuntimeProfile == ProfileId);
+    GateInput staleConfigGate = valid;
+    staleConfigGate.AdmittedRuntimeProfile = recording.ExperimentName;
+    assert(RejectionReason(staleConfigGate) == std::string_view(
+        "chainwielder_checkpoint_profile_identity_mismatch"));
+
+    BotControllerRouteHold::Identity admitted;
+    admitted.CohortId = "cohort-v50";
+    admitted.ServerEpoch = 51;
+    admitted.AttemptId = valid.AttemptId;
+    admitted.ScenarioId = valid.ScenarioId;
+    admitted.RuntimeProfile =
+        std::string(recording.ImmutableSelectedRuntimeProfile);
+    admitted.RouteManifestSha256 = admission;
+    admitted.RouteGeneration = 1;
+    admitted.RouteNodeId = valid.RouteNodeId;
+    admitted.ActorGuid = 30008;
+    admitted.FixtureId = valid.ConfigFixtureId;
+    admitted.SealSha256 = valid.ConfigSealSha256;
+    admitted.SourceCommit = valid.ConfigSourceCommit;
+    BotControllerRouteHold::Identity bootstrap = admitted;
+    bootstrap.ScenarioId.clear();
+    bootstrap.RuntimeProfile.clear();
+    bootstrap.RouteManifestSha256.clear();
+    bootstrap.RouteGeneration = 0;
+    bootstrap.RouteNodeId.clear();
+
+    BotControllerRouteHold::State hold;
+    assert(hold.BeginAcquire(bootstrap, 1).Accepted);
+    assert(hold.CompleteAcquire(admitted, 2).Accepted);
+    BotControllerRouteHold::Identity const heldStatusOne = hold.Scope;
+    BotControllerRouteHold::Identity const heldStatusTwo = hold.Scope;
+    assert(heldStatusOne == heldStatusTwo);
+    assert(heldStatusOne.RuntimeProfile
+        == recording.ImmutableSelectedRuntimeProfile);
+
+    GateInput recordingGate = valid;
+    recordingGate.AdmittedRuntimeProfile = hold.Scope.RuntimeProfile;
+    assert(RejectionReason(recordingGate) == nullptr);
+    BotControllerRouteHold::State earlyRelease = hold;
+    assert(!earlyRelease.Release(admitted, 3).Accepted);
+    assert(earlyRelease.FailureReason
+        == "controller_route_hold_release_before_terminal");
+    assert(hold.AcknowledgeArm(admitted, 4).Accepted);
+    assert(hold.ArmAckCount == 1);
+    assert(hold.ObserveCheckpointTerminal(
+        admitted, "completed", true, true, 5).Accepted);
+    assert(hold.Release(admitted, 6).Accepted);
+    assert(hold.ReleaseCount == 1);
+
+    // No-recording remains the same exact admitted-profile path.
+    GateInput noRecordingGate = valid;
+    noRecordingGate.AdmittedRuntimeProfile = ProfileId;
+    assert(RejectionReason(noRecordingGate) == nullptr);
+
+    auto expectRejected = [](GateInput input, std::string_view reason)
+    {
+        assert(RejectionReason(input) == reason);
+    };
+    GateInput negative = valid;
+    negative.SelectedProfile = "wrong-profile";
+    expectRejected(negative,
+        "chainwielder_checkpoint_profile_identity_mismatch");
+    negative = valid;
+    negative.AdmittedRuntimeProfile = "wrong-admitted-profile";
+    expectRejected(negative,
+        "chainwielder_checkpoint_profile_identity_mismatch");
+    negative = valid;
+    negative.PoolTagFilter = "wrong-pool";
+    expectRejected(negative,
+        "chainwielder_checkpoint_profile_identity_mismatch");
+    negative = valid;
+    negative.ScenarioId = "wrong-scenario";
+    expectRejected(negative,
+        "chainwielder_checkpoint_profile_identity_mismatch");
+    negative = valid;
+    negative.RouteNodeId = "wrong-node";
+    expectRejected(negative,
+        "chainwielder_checkpoint_route_identity_mismatch");
+    negative = valid;
+    negative.RuntimeMapId = 0;
+    expectRejected(negative,
+        "chainwielder_checkpoint_route_identity_mismatch");
+    negative = valid;
+    negative.TargetEntry = 0;
+    expectRejected(negative,
+        "chainwielder_checkpoint_route_identity_mismatch");
+    negative = valid;
+    negative.ValidationRouteEnabled = false;
+    expectRejected(negative,
+        "chainwielder_checkpoint_route_identity_mismatch");
+    negative = valid;
+    negative.AllowRaids = false;
+    expectRejected(negative,
+        "chainwielder_checkpoint_route_identity_mismatch");
+    negative = valid;
+    negative.TargetPopulation = 0;
+    expectRejected(negative,
+        "chainwielder_checkpoint_actor_contract_mismatch");
+    negative = valid;
+    negative.ActiveActorCount = 0;
+    expectRejected(negative,
+        "chainwielder_checkpoint_actor_contract_mismatch");
+    negative = valid;
+    negative.AttemptId = 0;
+    expectRejected(negative,
+        "chainwielder_checkpoint_attempt_identity_missing");
 
     valid.ConfigFixtureId = "wrong-fixture";
     assert(RejectionReason(valid) == std::string_view(
@@ -446,13 +563,51 @@ int main()
     assert(missingTerminal.FailureReason
         == "controller_route_hold_checkpoint_terminal_missing");
 
-    State drift;
-    assert(drift.BeginAcquire(bootstrap, 1).Accepted);
-    assert(drift.CompleteAcquire(identity, 2).Accepted);
+    auto expectIdentityDrift = [&](Identity changed)
+    {
+        State drift;
+        assert(drift.BeginAcquire(bootstrap, 1).Accepted);
+        assert(drift.CompleteAcquire(identity, 2).Accepted);
+        assert(!GateRouteMutation(drift, changed, 2));
+        assert(drift.FailureReason
+            == "controller_route_hold_identity_drift");
+    };
     Identity changed = identity;
+    changed.CohortId = "cohort-changed";
+    expectIdentityDrift(changed);
+    changed = identity;
+    ++changed.ServerEpoch;
+    expectIdentityDrift(changed);
+    changed = identity;
+    ++changed.AttemptId;
+    expectIdentityDrift(changed);
+    changed = identity;
+    changed.ScenarioId = "scenario-changed";
+    expectIdentityDrift(changed);
+    changed = identity;
+    changed.RuntimeProfile = "runtime-changed";
+    expectIdentityDrift(changed);
+    changed = identity;
+    changed.RouteManifestSha256 = std::string(64, 'd');
+    expectIdentityDrift(changed);
+    changed = identity;
+    ++changed.RouteGeneration;
+    expectIdentityDrift(changed);
+    changed = identity;
     changed.RouteNodeId = "route.node.changed";
-    assert(!GateRouteMutation(drift, changed, 2));
-    assert(drift.FailureReason == "controller_route_hold_identity_drift");
+    expectIdentityDrift(changed);
+    changed = identity;
+    ++changed.ActorGuid;
+    expectIdentityDrift(changed);
+    changed = identity;
+    changed.FixtureId = "fixture-changed";
+    expectIdentityDrift(changed);
+    changed = identity;
+    changed.SealSha256 = std::string(64, 'd');
+    expectIdentityDrift(changed);
+    changed = identity;
+    changed.SourceCommit = std::string(40, 'd');
+    expectIdentityDrift(changed);
 
     State duplicateRelease = hold;
     assert(!duplicateRelease.Release(identity, 27).Accepted);
@@ -589,6 +744,7 @@ def test_generic_controller_hold_is_wired_to_production_boundaries() -> None:
     route_runtime = ROUTE_RUNTIME.read_text(encoding="utf-8")
     raid_runtime = RAID_RUNTIME.read_text(encoding="utf-8")
     command = COMMAND.read_text(encoding="utf-8")
+    recording = RECORDING_WINDOW.read_text(encoding="utf-8")
 
     assert "InstallControllerRouteHoldAdmissionPolicy(context)" in preparation
     assert fallback.count("MarkCheckpointObservationCandidate(") == 2
@@ -606,6 +762,11 @@ def test_generic_controller_hold_is_wired_to_production_boundaries() -> None:
     assert "controller_route_hold" in raid_runtime
     assert 'action == "start-held"' in command
     assert 'action == "release"' in command
+    assert "BuildNameTransition(" in recording
+    assert "controllerHold.Scope.RuntimeProfile" in MODULE.read_text(
+        encoding="utf-8"
+    )
+    assert "Cohort().Config.Name," not in MODULE.read_text(encoding="utf-8")
 
 
 def test_checkpoint_crosses_real_executor_and_production_tick_boundary() -> None:
@@ -663,5 +824,6 @@ def test_checkpoint_cpp_files_remain_below_repository_limit() -> None:
         FALLBACK,
         ROUTE_RUNTIME,
         RAID_RUNTIME,
+        RECORDING_WINDOW,
     ):
         assert len(path.read_text(encoding="utf-8").splitlines()) < 1000

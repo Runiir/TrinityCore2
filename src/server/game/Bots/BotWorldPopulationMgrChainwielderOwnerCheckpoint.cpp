@@ -540,11 +540,13 @@ std::string BotWorldPopulationMgr::ArmChainwielderOwnerCheckpoint(
         });
     Player* actorPlayer = actor == Party().Bots.end()
         ? nullptr : GetLoadedBot(*actor);
+    BotControllerRouteHold::State const& controllerHold =
+        Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
     GateInput const gate{
         Cohort().Config.ChainwielderOwnerCheckpointEnable,
         Cohort().Active,
         Cohort().SelectedProfileName,
-        Cohort().Config.Name,
+        controllerHold.Scope.RuntimeProfile,
         Cohort().Config.PoolTagFilter,
         Cohort().Config.ValidationRouteScenarioId,
         Cohort().Config.ValidationRouteNodeId,

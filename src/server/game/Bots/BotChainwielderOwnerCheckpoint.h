@@ -446,7 +446,7 @@ struct GateInput
     bool Enabled = false;
     bool CohortActive = false;
     std::string_view SelectedProfile;
-    std::string_view ConfigName;
+    std::string_view AdmittedRuntimeProfile;
     std::string_view PoolTagFilter;
     std::string_view ScenarioId;
     std::string_view RouteNodeId;
@@ -482,7 +482,8 @@ inline char const* RejectionReason(GateInput const& input)
         return "chainwielder_checkpoint_disabled";
     if (!input.CohortActive)
         return "chainwielder_checkpoint_runtime_inactive";
-    if (input.SelectedProfile != ProfileId || input.ConfigName != ProfileId
+    if (input.SelectedProfile != ProfileId
+        || input.AdmittedRuntimeProfile != ProfileId
         || input.PoolTagFilter != PoolTag || input.ScenarioId != ProfileId)
         return "chainwielder_checkpoint_profile_identity_mismatch";
     if (!input.ValidationRouteEnabled || !input.AllowRaids

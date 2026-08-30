@@ -1,0 +1,120 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:chainwielder_checkpoint_immutable_profile_identity_v51",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "implementation_complete_runtime_unverified",
+  "git_commit": "self",
+  "input_identities": {
+    "implementation_base_commit": "2e699a60d78428aa0686233888870de2cde5b0ee",
+    "v50_source_commit": "1d669d29b8957de9fdf92f5a5b7e324e134d2eca",
+    "v50_handoff_path": "experiments/configs/cata_raid_generic_controller_route_hold_profile_identity_mismatch_handoff_v50.json",
+    "v50_handoff_sha256": "e9f88c0eded9ba34325360930d1c81f19247a0b8c17927dca1707bf1385b7053",
+    "v50_recording_window_name": "autonomy_window_0"
+  },
+  "program_scope": {
+    "supported_specs": "all_configured_dps_tank_and_healer_specs",
+    "supported_encounters": "all_route_manifest_nodes",
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_semantics": "Actor 30008 and Chainwielder identify only the retained evidence boundary; the implementation contains no actor, class, encounter, route, raid-size, or difficulty branch."
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrRecordingWindow.cpp",
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_chainwielder_checkpoint_immutable_profile_identity_handoff_v51.json",
+    "experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "implementation_files": {
+    "BotChainwielderOwnerCheckpoint.h_sha256": "ea37a68de421ea72ee8b9542b6b7da986448a0f1548c52b6c20b26eca8f76da4",
+    "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp_sha256": "6712a4ea07df5719fe83446831da69c0170cc2dcdda2bb01282486dfcd1fd802",
+    "BotWorldPopulationMgrRecordingWindow.cpp_sha256": "bde178ab9673600c357d14b3f0dbee27198fe4678bc6263af11a8a96241be07a",
+    "test_chainwielder_owner_checkpoint.py_sha256": "2e3855ad0c6852f06bffd9d893100c2394079870fc7f0dd102bccf75dd3afec3"
+  },
+  "causal_receipt": {
+    "verified_first_broken_edge": "MaybeStartAutoRecordingWindow changed mutable Cohort().Config.Name to autonomy_window_0 after the controller hold had admitted the selected runtime profile; ArmChainwielderOwnerCheckpoint then supplied that mutable experiment name to the immutable profile gate.",
+    "verified_downstream_state": "the arm gate returned chainwielder_checkpoint_profile_identity_mismatch while two Held status projections and every other exposed identity remained stable",
+    "verified_failure_postcondition": "arm acknowledgement, terminal, release, route advance, and gameplay did not occur",
+    "implemented_hypothesis": "keep recording-window names mutable, retain the selected profile in the admitted controller-hold scope, and compare arm against that immutable scope identity"
+  },
+  "production_boundary": {
+    "recording_owner": "BotRecordingWindowIdentity::BuildNameTransition used by MaybeStartAutoRecordingWindow and rotation",
+    "admission_owner": "BotControllerRouteHold::State::CompleteAcquire",
+    "arm_owner": "BotWorldPopulationMgr::ArmChainwielderOwnerCheckpoint",
+    "gate_owner": "BotChainwielderOwnerCheckpoint::RejectionReason",
+    "before": "the exact autonomy_window_0 mutable name supplied as the admitted profile is rejected",
+    "after": "the same recording transition preserves the held runtime profile, two Held projections are stable, one arm is acknowledged, and release requires an identity-preserved terminal",
+    "comparison_weakening": false
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "focused_result": "6 passed in 1.43s",
+    "focused_run_count": 1,
+    "correction_rerun_count": 1,
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "negative_coverage": [
+      "selected_profile",
+      "admitted_runtime_profile",
+      "cohort_id",
+      "server_epoch",
+      "route_manifest_sha256",
+      "route_generation",
+      "actor_guid",
+      "pool_tag",
+      "scenario",
+      "route_node",
+      "map",
+      "target_entry",
+      "route_enabled",
+      "raid_enabled",
+      "target_population",
+      "active_actor_count",
+      "attempt",
+      "fixture",
+      "seal",
+      "configured_and_requested_source",
+      "binary_revision"
+    ],
+    "no_recording_regression": "passed",
+    "complexity_effect": "the arm function adds no branch; the recording name transition is straight-line and replaces duplicated assignments without moving a decision tree",
+    "cpp_line_counts": {
+      "BotChainwielderOwnerCheckpoint.h": 591,
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 912,
+      "BotWorldPopulationMgrRecordingWindow.cpp": 89
+    },
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the compiled replay reproduces the V50 mutable-name rejection",
+      "recording changes the experiment and metrics names without becoming the admitted runtime-profile identity",
+      "the production arm gate now consumes the immutable held-scope runtime profile",
+      "two Held identities remain stable before exactly one arm acknowledgement",
+      "release remains terminal-gated and the no-recording path remains green",
+      "all other immutable identity comparisons remain fail-closed",
+      "all touched C++ files remain below 1000 physical lines"
+    ],
+    "refuted": [
+      "the recording-window experiment name is the selected runtime-profile authority",
+      "profile comparison, polling, route behavior, or gameplay policy must be weakened to admit the arm"
+    ],
+    "unproven": [
+      "the native worldserver builds at the V51 implementation commit",
+      "one live recording-enabled arm acknowledgement succeeds",
+      "one live identity-preserved terminal, release, and post-release route advance completes",
+      "any Chainwielder, Drudges, Magmaw, DPS, HPS, or pet outcome"
+    ]
+  },
+  "remaining_blocker": "V51 is fixture-green but unbuilt and has no live recording-enabled arm receipt; this handoff authorizes no build or worldserver start.",
+  "next_work_unit": {
+    "id": "evidence:chainwielder_checkpoint_immutable_profile_identity_independent_review_v52",
+    "owner_skill": "raid-evidence-lifecycle",
+    "allowed_action": "Independently verify the V51 source hashes, compiled boundary, and unchanged authority comparisons; emit a separate build/live admission or typed rejection without changing runtime behavior.",
+    "worldserver_start_budget": 0
+  }
+}

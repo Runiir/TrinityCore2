@@ -1,3 +1,30 @@
+#include <string>
+#include <string_view>
+#include <utility>
+
+namespace BotRecordingWindowIdentity
+{
+struct NameTransition
+{
+    std::string_view ImmutableSelectedRuntimeProfile;
+    std::string ExperimentName;
+    std::string MetricsName;
+};
+
+NameTransition BuildNameTransition(
+    std::string_view immutableSelectedRuntimeProfile,
+    std::string recordingWindowName)
+{
+    return {
+        immutableSelectedRuntimeProfile,
+        recordingWindowName,
+        std::move(recordingWindowName),
+    };
+}
+}
+
+#ifndef BOT_RECORDING_WINDOW_IDENTITY_ADAPTER_ONLY
+
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include <sstream>
@@ -6,8 +33,11 @@ void BotWorldPopulationMgr::MaybeStartAutoRecordingWindow()
     if (!Cohort().Active || Cohort().RuntimeMode != BotWorldRuntimeMode::AlwaysOnAutonomy || !Cohort().Config.AutoStartRecording || Cohort().RunId)
         return;
 
-    Cohort().Config.Name = BuildAutoRecordingWindowName();
-    Cohort().Metrics.Name = Cohort().Config.Name;
+    BotRecordingWindowIdentity::NameTransition const names =
+        BotRecordingWindowIdentity::BuildNameTransition(
+            Cohort().SelectedProfileName, BuildAutoRecordingWindowName());
+    Cohort().Config.Name = names.ExperimentName;
+    Cohort().Metrics.Name = names.MetricsName;
     Cohort().Metrics.TargetBots = Cohort().Config.TargetPopulation;
     Cohort().RecordingWindowElapsedMs = 0;
     RecordRunStart();
@@ -32,11 +62,14 @@ void BotWorldPopulationMgr::RotateAutoRecordingWindowIfNeeded(uint32 diff)
     Cohort().TelemetryBuffer.FlushOpenClips(Cohort().ExperimentId, Cohort().RunId, Cohort().Config.BrainVersion);
     RecordRunStop();
     ++Cohort().RecordingWindowIndex;
-    Cohort().Config.Name = BuildAutoRecordingWindowName();
+    BotRecordingWindowIdentity::NameTransition const names =
+        BotRecordingWindowIdentity::BuildNameTransition(
+            Cohort().SelectedProfileName, BuildAutoRecordingWindowName());
+    Cohort().Config.Name = names.ExperimentName;
     Cohort().Metrics = BotWorldStatus();
     Cohort().Metrics.Active = true;
     Cohort().Metrics.Mode = BotWorldRuntimeMode::AlwaysOnAutonomy;
-    Cohort().Metrics.Name = Cohort().Config.Name;
+    Cohort().Metrics.Name = names.MetricsName;
     Cohort().Metrics.TargetBots = Cohort().Config.TargetPopulation;
     Cohort().Metrics.ActiveBots = uint32(Party().Bots.size());
     Cohort().ElapsedMs = 0;
@@ -53,3 +86,4 @@ std::string BotWorldPopulationMgr::BuildAutoRecordingWindowName() const
     return name.str();
 }
 
+#endif
