@@ -1,84 +1,149 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:chainwielder_checkpoint_full_recurrence_bank_v102",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "evidence_refresh_required",
-  "epoch_id": "v102_checkpoint_full_recurrence_bank_20260831",
-  "observed_at_commit": "fa283824964573ca12aabd8a827d4413cf754fd1",
-  "immutable_input_commit": "fa283824964573ca12aabd8a827d4413cf754fd1",
-  "gate_state": "exact_current_full_recurrence_bank_receipt_required",
+  "work_unit": "shard:composite_map669_production_boundary_replay_v103",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "live_recurrence_quarantined",
+  "epoch_id": "v103_composite_map669_production_boundary_replay_20260831",
+  "observed_at_commit": "71766a73883e583997a95ca3b127d5cabad804dc",
+  "immutable_input_commit": "71766a73883e583997a95ca3b127d5cabad804dc",
+  "gate_state": "fixture_expansion_admitted_build_and_gameplay_gates_closed",
   "behavior_change": false,
   "evidence_contract_change": false,
   "ready_for_bounded_repair": false,
+  "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
-  "ready_for_fixture_expansion": false,
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:chainwielder_checkpoint_full_recurrence_bank_v102",
-  "next_action": "Run the immutable Magmaw full recurrence bank once at the exact clean current identity, verify its receipt and build-gate decision, and return the exact failing fixtures or a green current receipt.",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_work_unit": "shard:composite_map669_production_boundary_replay_v103",
+  "next_action": "Run one exact-current, no-retry, completion-watchdog map-669 fixture-expansion replay for exactly the four admitted production-bound targets. Publish and verify bounded evidence; do not claim a gameplay canary.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v101_checkpoint_production_boundary_independent_review_handoff_v102.json",
-    "sha256": "45499ef178448037a49d049fc070e12b94f447c6e89c3909b89ec949f0aba853",
-    "source_commit": "fa283824964573ca12aabd8a827d4413cf754fd1",
-    "implementation_commit": "a6c997324e76920f415d821a15ff8af0d5c7a261",
-    "implementation_tree": "6ee25a2214c71184654eec649259c1cfef052398"
+    "path": "experiments/configs/cata_raid_v102_exact_current_recurrence_bank_handoff_v103.json",
+    "sha256": "2ced680bf6bf1dee1b2a709a556be9f0485bc14be59ab722ad3c21b1198d7625",
+    "source_commit": "71766a73883e583997a95ca3b127d5cabad804dc",
+    "source_tree": "c6e4dd4219d68fabe87118679d59160046238983"
+  },
+  "completed_predecessor": {
+    "work_unit": "evidence:chainwielder_checkpoint_full_recurrence_bank_v102",
+    "source_identity": "71766a73883e583997a95ca3b127d5cabad804dc",
+    "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+    "manifest_sha256": "1a9ca91c8cbed6c947e85a1211abff519e1c92b1948610e18bd11353efeedf28",
+    "fixture_commands": "20/20 passed",
+    "fixture_expansion_admitted": true,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "decision_sha256": "058c48d4e5be9cf6ddb6ae25518dfe0ca5aae761c2758ce828b5853ffd4ddc05"
   },
   "program_scope": {
-    "operation": "exact-current full Magmaw recurrence-bank receipt and deterministic evaluator decision",
+    "operation": "one observation-only worldserver-backed map-669 composite production-bound fixture-expansion replay",
     "recurrence_bank_run_admitted": true,
+    "fixture_expansion_replay_admitted": true,
+    "fixture_prerequisite_build_authorized": true,
+    "worldserver_start_admitted": true,
     "build_admitted": false,
-    "worldserver_start_admitted": false,
-    "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
-    "database_mutations_allowed": false,
+    "acceptance_admitted": false,
+    "runtime_implementation_allowed": false,
     "gameplay_mutations_allowed": false,
-    "dvc_mutations_allowed": false
+    "database_mutations_allowed": false,
+    "dvc_mutations_allowed": true
   },
-  "scope_lock": {
-    "allowed_change": "Execute the existing append-only regression-bank manifest once at the exact clean current identity, verify the generated suite receipt and recurrence decision, then track only a compact evidence handoff and next descriptor.",
-    "forbidden": [
-      "runtime, fixture, test-expectation, gameplay, geometry, planner, priority, encounter, class, DPS, or ledger edits",
-      "configure, build, worldserver, authserver, provisioning, database, DVC publication, gameplay canary, or live claims",
-      "partial fixture selection or replacing the immutable full-bank runner with an ad hoc pytest command"
-    ]
-  },
-  "execution_budget": {
-    "full_bank_run_count_maximum": 1,
-    "full_bank_correction_rerun_count_maximum": 1,
-    "focused_test_run_count_maximum": 0,
-    "configure_count": 0,
-    "worldserver_build_count": 0,
-    "worldserver_start_count": 0,
-    "authserver_start_count": 0,
-    "database_mutation_count": 0,
-    "dvc_mutation_count": 0
-  },
-  "validation": {
+  "recurrence_boundary": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+    "ledger_sha256": "2997dc762e11767ce665f6f7e49ea8ae37a07b88939c548ab65d43185ed72223",
     "boundary_run_id": "trinity-magmaw-78e33e6557-receipt-history-expansion.attempt1",
     "boundary": "after",
-    "gate": "build",
-    "command_template": "pixi run python -m tools.raid_program.blocker_recurrence_ledger --ledger experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json --source-identity <exact-clean-head> --config-identity sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36 --run-suite <external-empty-output-dir>/recurrence_suite_receipt.json --boundary-run-id trinity-magmaw-78e33e6557-receipt-history-expansion.attempt1 --boundary after --gate build --output <external-empty-output-dir>/recurrence_decision.json"
+    "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+    "gate": "fixture_expansion"
+  },
+  "scope_lock": {
+    "allowed_change": "At exact clean descriptor HEAD, refresh the immutable full bank once for fixture-expansion admission, obtain one fast8 build, then run one no-retry map-669 replay for the four listed production boundaries. Publish, remotely reconstruct, and exactly evict only that evidence.",
+    "requested_fixtures": [
+      {
+        "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+        "current_revision": 1,
+        "requested_revision": 1,
+        "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state",
+        "boundary": "A real actor-bound Route path receives one receipt-zero Hazard future-pack rejection, preserves Route path and retry state across the next tick, then reaches one typed terminal."
+      },
+      {
+        "fixture_id": "same_level_floor_observation_v1",
+        "current_revision": 3,
+        "requested_revision": 4,
+        "causal_signature": "same_level_movement_path_floor_false_negative",
+        "boundary": "An identity-bound same-level SampleFloorGap receipt crosses planner, native submission, MotionMaster, point generator, launched spline, and terminal or supersession with continuous actor and floor samples."
+      },
+      {
+        "fixture_id": "same_level_hazard_path_admission_v1",
+        "current_revision": 4,
+        "requested_revision": 5,
+        "causal_signature": "same_level_encounter_hazard_path_rejection",
+        "boundary": "Complete and incomplete same-level Hazard paths reach consumed outcomes; incomplete gets a fresh complete shorter retry; cross-floor and forbidden paths do not launch."
+      },
+      {
+        "fixture_id": "same_level_native_path_proof_v1",
+        "current_revision": 4,
+        "requested_revision": 5,
+        "causal_signature": "same_level_native_path_proof_false_negative",
+        "boundary": "One correlated replay exercises complete and incomplete same-level Hazard paths through current shared planner proof, executor, MotionMaster, point generator, spline, and multi-tick outcome."
+      }
+    ],
+    "required_order": [
+      "verify clean descriptor HEAD, source handoff, ledger, and canonical config identity",
+      "run the fixed full bank once and require the exact four-target fixture-expansion admission",
+      "obtain one exact-current build with 8 compiler jobs and 1 linker job",
+      "verify tracked runtime config, selected route object, atomic bundle, and retained roster readback",
+      "start one completion-watchdog worldserver replay with no retry and no authserver",
+      "publish, remotely reconstruct, verify, and exactly evict the bounded evidence"
+    ],
+    "forbidden": [
+      "runtime, fixture, test-expectation, ledger, gameplay, geometry, planner, priority, encounter, class, or DPS edits",
+      "gameplay canary, boss completion, build-gate, canary-gate, or acceptance claim",
+      "partial target selection, invented boundary run ID, ledger append, or pre-replay fixture promotion",
+      "second configure, build, full-bank invocation, worldserver start, or replay retry",
+      "authserver start, database mutation, roster reprovisioning, teleport, or forced gameplay outcome",
+      "fixed 300-second raid timer"
+    ]
+  },
+  "preserved_invalidated_fixtures": [
+    "magmaw_parasite_control_full_runtime_v1",
+    "magmaw_parasite_lane_paths_v1",
+    "magmaw_parasite_lane_transition_full_replay_v1"
+  ],
+  "execution_budget": {
+    "recurrence_suite_invocation_count_maximum": 1,
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "authserver_start_count_maximum": 0,
+    "retry_count_maximum": 0,
+    "database_mutation_count_maximum": 0,
+    "dvc_checkpoint_count_maximum": 1,
+    "dvc_push_count_maximum": 1,
+    "dvc_remote_reconstruction_count_maximum": 1,
+    "dvc_exact_eviction_count_maximum": 1
   },
   "required_terminal_evidence": {
-    "pass": "the immutable full bank executes once; the suite receipt binds the exact clean source and canonical config identities, manifest hash, every fixture ID/revision/command/result, and the evaluator returns build_admitted=true with no missing, stale, failing, or invalidated fixtures",
-    "fail": "retain the complete suite receipt and evaluator decision and report the exact missing, stale, failing, or invalidated fixture IDs without changing implementation, fixtures, ledger, or acceptance rules",
-    "correction_rerun": "allowed once only when the first invocation or generated receipt is malformed because of a command/output-contract mistake; fixture failure is terminal and does not authorize a rerun"
+    "pass": "All four production boundaries are correlated through consumed native observations, bounded evidence is remotely reconstructible, cleanup is complete, and no gameplay claim is made.",
+    "fail": "Stop on the first missing, stale, mismatched, or terminal production edge and retain it without changing runtime or fixtures."
   },
   "remaining_unproven": [
-    "an exact-current green full recurrence-bank receipt",
-    "native ExecuteMovementIntent, MovementPlannerDiagnostics, and MotionMaster execution under a built worldserver",
-    "map-669 or Magmaw gameplay outcome"
+    "the four pending fixtures satisfy their production boundaries",
+    "the three preserved invalidated parasite fixtures represent repaired live behavior",
+    "any gameplay canary, Magmaw completion, or acceptance result"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "full_bank_receipt_and_build_gate_pass",
-      "full_bank_fixture_or_identity_failure",
-      "malformed_receipt_after_one_correction_rerun",
-      "scope_or_identity_violation"
+      "all_four_production_boundaries_captured",
+      "production_boundary_incomplete",
+      "semantic_or_no_progress_stall",
+      "repeated_decision_terminal",
+      "death_loop_terminal",
+      "identity_or_runtime_config_mismatch",
+      "infrastructure_loss",
+      "explicit_interruption"
     ]
   }
 }

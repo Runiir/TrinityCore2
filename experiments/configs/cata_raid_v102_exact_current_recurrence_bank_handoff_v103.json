@@ -1,0 +1,126 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:chainwielder_checkpoint_full_recurrence_bank_v102",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_expansion_admitted_build_gate_closed",
+  "source": {
+    "commit": "71766a73883e583997a95ca3b127d5cabad804dc",
+    "tree": "c6e4dd4219d68fabe87118679d59160046238983",
+    "clean": true,
+    "ledger_path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "ledger_sha256": "2997dc762e11767ce665f6f7e49ea8ae37a07b88939c548ab65d43185ed72223",
+    "evaluator_path": "tools/raid_program/blocker_recurrence_ledger.py",
+    "evaluator_sha256": "74e38f2986e7a7b466491fb3bac2bc73f8e41ee3427532bd6bdfe770a0550f33"
+  },
+  "receipt": {
+    "schema": "trinity_raid_regression_suite_receipt_v1",
+    "sha256": "53ced289b82a190a120226ca9294f980b3683074441baf53aa35e251779475f9",
+    "manifest_sha256": "1a9ca91c8cbed6c947e85a1211abff519e1c92b1948610e18bd11353efeedf28",
+    "source_identity": "71766a73883e583997a95ca3b127d5cabad804dc",
+    "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+    "boundary_run_id": "trinity-magmaw-78e33e6557-receipt-history-expansion.attempt1",
+    "boundary": "after",
+    "fixture_count": 20,
+    "passing_command_count": 20,
+    "failing_command_count": 0,
+    "timed_out_command_count": 0,
+    "fixture_results": [
+      {"fixture_id": "magmaw_parasite_lane_paths_v1", "revision": 7, "result": "passed", "returncode": 0, "result_sha256": "28936bf78b522308f36ca0327eb7baa1c6009718a441300455f71c80023932f5"},
+      {"fixture_id": "magmaw_parasite_lane_transition_full_replay_v1", "revision": 6, "result": "passed", "returncode": 0, "result_sha256": "64382f3a1d183b76919d02b3197e3ff1df397ec18736dac5044700311446b217"},
+      {"fixture_id": "magmaw_parasite_control_full_runtime_v1", "revision": 6, "result": "passed", "returncode": 0, "result_sha256": "931fff4ae723a33ab49cb02f70afedf6165badf9ca9f2420e4deaca25d3a5344"},
+      {"fixture_id": "magmaw_lethal_movement_transition_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "a8e756964ebec654a00006250f53622faa0041baf62872b3432dab41d49c5e01"},
+      {"fixture_id": "movement_progress_witness_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "a211deaaee5eaf03d9a4e842c507034a652abbbd04494ca87d6c508adad9dd19"},
+      {"fixture_id": "chainwielder_future_drudge_guard_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "a211deaaee5eaf03d9a4e842c507034a652abbbd04494ca87d6c508adad9dd19"},
+      {"fixture_id": "chainwielder_pre_admission_rejection_isolation_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "2c946ba8fbbf2076c73e1924ecb52f2a295de1559af0b77734c5035bb0f39513"},
+      {"fixture_id": "same_level_hazard_path_admission_v1", "revision": 4, "result": "passed", "returncode": 0, "result_sha256": "713843eeca71e1a043f4307815a0c86973aa7779e0a230e114a21e43c98c1882"},
+      {"fixture_id": "same_level_floor_observation_v1", "revision": 3, "result": "passed", "returncode": 0, "result_sha256": "ea466a89d3d978a94e2c729236382f737088e7c3e043ca601788fe788c078c76"},
+      {"fixture_id": "same_level_endpoint_normalization_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "a98f7f96ea0f385154b6d7acabfdc75abfee01c669636ba76bf298ec3341a0c9"},
+      {"fixture_id": "same_level_native_path_proof_v1", "revision": 4, "result": "passed", "returncode": 0, "result_sha256": "15d0e5fbb7d6d9897f69587b54dd96daddc0cf6376f19ff12e235f551de8ee16"},
+      {"fixture_id": "native_planner_executor_launch_proof_v1", "revision": 3, "result": "passed", "returncode": 0, "result_sha256": "494dc929fef014717f917ea93cafe7098a1ab2ac49ac5f2de6fe09aa3130d3ed"},
+      {"fixture_id": "magmaw_prepot_formation_gate_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "3eb6e97d1df83804d99d5990957f67d1991b661d668918a37fe88ce49240dcf0"},
+      {"fixture_id": "magmaw_prepot_formation_endpoint_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "cd39b8c8dd4a238b41305e7900fbd2c371e95259db9706291bde21241ddc788f"},
+      {"fixture_id": "magmaw_prepot_stall_watchdog_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "8e95bbce8b45b39426ad0595377e3052e8ff3dc9bcf3f74918c5e140602697c2"},
+      {"fixture_id": "partial_wipe_native_reset_gate_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "a211deaaee5eaf03d9a4e842c507034a652abbbd04494ca87d6c508adad9dd19"},
+      {"fixture_id": "phase1_capture_single_start_contract_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "4e2e5a0736ddd504241ef14f3e414a66d9b859165e132d112283980b87820770"},
+      {"fixture_id": "deferred_candidate_capture_lifetime_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "875e0ff61a122cb495d6ed65323405312bd7f00c3d3488897f6f9d4d57808449"},
+      {"fixture_id": "native_bwd_partial_death_recovery_lifecycle_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "a4dbb401f510017c1742c6dce13c17ad74de6b7585bec290a8942fd4c68eac43"},
+      {"fixture_id": "current_route_combat_authority_precedence_v1", "revision": 1, "result": "passed", "returncode": 0, "result_sha256": "802cc7b6b8205c76a4cd74f5710dcdc0a5b59cf6b21da29f84b64e92c3edc6f7"}
+    ]
+  },
+  "independent_evaluation": {
+    "invocation": "the evaluator reopened the saved receipt with --suite-receipt and did not execute fixture commands",
+    "initial_decision_sha256": "058c48d4e5be9cf6ddb6ae25518dfe0ca5aae761c2758ce828b5853ffd4ddc05",
+    "verified_decision_sha256": "058c48d4e5be9cf6ddb6ae25518dfe0ca5aae761c2758ce828b5853ffd4ddc05",
+    "decisions_byte_identical": true,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "fixture_expansion_admitted": true,
+    "required_next_action": "run_fixture_expansion_replay",
+    "route_failures": [],
+    "missing_fixture_ids": [],
+    "stale_fixture_ids": [],
+    "missing_causal_signature_ids": [],
+    "evaluator_failing_fixture_ids": [
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "invalidated_fixture_ids": [
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "pending_fixture_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "fixture_expansion_target_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "classification_note": "All 20 commands passed. The evaluator's failing labels mean later live Canary122 occurrences invalidated six retained fixtures; they are not command or pytest failures. Four observation-only fixtures require a worldserver-backed production boundary, so only fixture expansion is admitted."
+  },
+  "operations": {
+    "fixed_suite_invocations": 1,
+    "correction_reruns": 0,
+    "independent_receipt_verifier_invocations": 1,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "database_mutation_count": 0,
+    "dvc_mutation_count": 0,
+    "gameplay_mutation_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "all 20 fixed fixture commands pass at exact clean source and canonical config identity",
+      "the independent evaluator reproduces the initial decision byte for byte",
+      "fixture expansion is admitted for exactly four production-bound targets",
+      "build, gameplay canary, and acceptance remain closed"
+    ],
+    "unproven": [
+      "the four pending fixtures satisfy their required worldserver-backed boundaries",
+      "the three invalidated parasite fixtures represent repaired live behavior",
+      "any gameplay canary, Magmaw completion, or acceptance result"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:composite_map669_production_boundary_replay_v103",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Run one no-retry completion-watchdog map-669 fixture-expansion replay for exactly the four admitted targets. Obtain production-consumed movement outcomes, publish and verify bounded evidence, and make no gameplay repair or gameplay-canary claim.",
+    "build_authorization": "one exact-current gate-bearing build only as a fixture-expansion prerequisite",
+    "live_authorization": "one worldserver start for the fixture-expansion replay; no authserver"
+  }
+}
