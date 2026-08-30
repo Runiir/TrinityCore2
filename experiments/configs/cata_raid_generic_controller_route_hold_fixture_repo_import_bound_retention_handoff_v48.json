@@ -1,0 +1,108 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_fixture_repo_import_bound_retention_v48",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_packet_verified_pending_independent_review",
+  "source_state": {
+    "commit": "2cadc3937fc162df3f7d3e71e4b3b46605dec630",
+    "tree": "3602cb4c5f096394484c11bc1fd548423567ff1f",
+    "clean_before_fixture": true,
+    "repository_import_preflight_command": "pixi run python -c 'import tools; print(tools.__path__)'",
+    "repository_import_preflight_output": "_NamespacePath(['/home/runiir/Games/trinity-cata/tools'])",
+    "repository_import_preflight_passed": true
+  },
+  "retained_packet": {
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_typed_evidence_packet_v48.json",
+    "sha256": "830e5a3c9893fa6b6753990678603a18c7334adb5e4799eab8baff660569e44e",
+    "pre_eviction_packet_sha256": "c3c00a8a571a5825b18258037c1da153984f095ba2414a0170578483f545104f",
+    "canonical_json_verified": true,
+    "pre_eviction_independent_verification": true,
+    "ordered_event_count_before_closure": 15,
+    "ordered_event_count_after_closure": 17
+  },
+  "consumed_budget": {
+    "targeted_validation_scenarios_checkout_count": 1,
+    "canonical_stage_count": 1,
+    "prepared_object_materialize_count": 1,
+    "prepared_object_verify_count": 1,
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_internal_verify_count": 1,
+    "atomic_bundle_publish_count": 1,
+    "atomic_bundle_explicit_verify_count": 1,
+    "build_gate_observation_count": 3,
+    "targeted_temporary_payload_evict_count": 1,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "launch_contract_execution_count": 0,
+    "database_mutation_count": 0,
+    "non_target_dvc_action_count": 0,
+    "retry_count": 0
+  },
+  "authenticated_route": {
+    "catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "catalog_row_count": 77,
+    "selected_row_count": 4,
+    "selected_rows_sha256": "b47a63e9a45ea351da40e4a53b7df0cef7e3f9092f1b965aa2dc506bb2e85cda",
+    "prepared_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "prepared_object_canonical_bytes_retained": true,
+    "runtime_route_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+    "runtime_node_ids": [
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ]
+  },
+  "bundle_identity": {
+    "bundle_manifest_sha256": "61351a9622efd2804d6b7f3d6325b21cd56b1fac9ce39b396dbfcd7844707c8e",
+    "runtime_profile_manifest_sha256": "6e3295bcbee6b6161ad35eef51aadaa3e1aecfcd311f197744ae724d16d2e5f6",
+    "launch_contract_sha256": "637d628f3c50c9715bd3b096a48aedf921f788c3d3f4bc83c06f5e8777d71f6d",
+    "launch_argv_sha256": "23c9cf0a88a2a2fd067289768506b5feeb5b1667fae5506846e4e51e705b7cc4",
+    "scenario_profile_pool": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008,
+    "launch_executed": false
+  },
+  "build_gate_identity": {
+    "phases": ["original", "atomic_sibling_staging", "final_bundle"],
+    "receipt_sha256": "90bf0931af25e1ca1207e16ae925a8fdeee62da95eb0ed2bd2553b3e14ea1852",
+    "policy_sha256": "c8ba4aebd3f5457b9f75a73854e970c3bc303cbb9bcd9ed83aa4c8dd83928093",
+    "exact_receipt_and_policy_bytes_retained": true,
+    "exact_bytes_equal_at_all_phases": true
+  },
+  "cleanup": {
+    "external_root": "/tmp/generic_route_hold_v48.Mp885t",
+    "external_root_evicted": true,
+    "targeted_hydrated_workspace": "dataset/validation_scenarios",
+    "targeted_hydrated_workspace_evicted": true,
+    "whole_bundle_retained": false,
+    "worldserver_or_capture_process_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "repository-root import authority passed before any budgeted operation",
+      "all operation counts derive from 17 ordered retained events",
+      "one unchanged create passed internal pre-rename verify, atomic publish, and one explicit final verify",
+      "three build-gate events authenticate identical receipt and policy bytes at original, sibling staging, and final paths",
+      "canonical prepared bytes and compact manifest, route, profile, and launch identities remain in the tracked packet",
+      "the packet and all bundle members were independently hash-verified before exact payload eviction",
+      "the launch contract was inspected but never executed"
+    ],
+    "unproven": [
+      "a gate-bearing current-source native binary reaches the retained verified bundle",
+      "native Held, arm, terminal, release, retained Drudges, DPS, HPS, or pet-share evidence"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_fixture_packet_independent_review_v49",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Independently reconstruct V48 solely from the tracked canonical packet: verify canonical bytes, ordered counts, prepared bytes, gate payload bytes and three-phase bindings, typed results, compact identities, non-execution ledger, and eviction closure. Do not hydrate the deleted bundle or run live.",
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "worldserver_start_count": 0,
+      "database_mutation_count": 0,
+      "dvc_mutation_count": 0,
+      "retry_count": 0
+    }
+  }
+}

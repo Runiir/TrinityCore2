@@ -1,95 +1,86 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_fixture_repo_import_bound_retention_v48_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_fixture_repo_import_bound_retention_v48",
+  "epoch_id": "generic_controller_route_hold_fixture_packet_independent_review_v49_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_fixture_packet_independent_review_v49",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "gate_state": "v47_external_driver_import_failed_before_fixture_chain",
-  "observed_at_commit": "1c6a838495e2620645fec4745ff17a429c6a7a80",
-  "immutable_input_commit": "1c6a838495e2620645fec4745ff17a429c6a7a80",
+  "classification": "live_recurrence_quarantined",
+  "gate_state": "v48_fixture_packet_verified_pending_independent_review",
+  "observed_at_commit": "2cadc3937fc162df3f7d3e71e4b3b46605dec630",
+  "immutable_input_commit": "2cadc3937fc162df3f7d3e71e4b3b46605dec630",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_receipt_retention_failure_handoff_v47.json",
-    "sha256": "7ce49fc118c107aba21133b1c0e3207c7db1b2e0ac50c43faa1cc9bd04c0063d",
-    "source_commit": "1c6a838495e2620645fec4745ff17a429c6a7a80"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_repo_import_bound_retention_handoff_v48.json",
+    "sha256": "d5284a5c857cb28931ea13a7ff1b2a3b0e0888ebef6e6c97439dcd43501bed24",
+    "source_commit": "2cadc3937fc162df3f7d3e71e4b3b46605dec630"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "V48 repairs only the no-live fixture invocation and evidence retention boundary. It authorizes no live or gameplay claim."
+    "canary_only": "V49 independently reviews the tracked no-live fixture packet. It authorizes no build, launch, live, native, or gameplay claim."
   },
   "behavior_change": false,
   "evidence_contract_change": false,
-  "ready_for_bounded_repair": true,
+  "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "From the exact repository root, prove the repository tools package is importable before consuming any fixture budget, then run one no-live V47-equivalent chain through a repository-root Python invocation and retain one canonical typed event/result packet.",
-    "mandatory_import_preflight": "pixi run python -c 'from pathlib import Path; import tools.raid_program.chainwielder_prestart_bundle as m; assert Path(m.__file__).resolve().is_relative_to(Path.cwd().resolve())'",
-    "allowed_files": [
-      "one_compact_canonical_fixture_evidence_packet",
-      "one_compact_specialist_handoff",
-      "experiments/configs/cata_raid_active_work_unit_v1.json"
-    ],
+    "allowed_change": "Reconstruct V48 solely from the tracked canonical packet and route one evidence-backed next unit.",
+    "allowed_files": ["one_compact_review_handoff", "experiments/configs/cata_raid_active_work_unit_v1.json"],
     "forbidden": [
-      "external_script_direct_execution_before_or_instead_of_repository_root_import_binding",
       "production_skill_or_test_edit",
       "configure_build_worldserver_or_launch_execution",
-      "database_or_gameplay_mutation",
-      "native_controller_route_comparison_polling_watchdog_or_threshold_change",
-      "whole_temporary_bundle_retention",
-      "broad_dvc_gc_or_unbounded_hydration",
-      "retry_within_v48"
+      "database_or_dvc_mutation",
+      "temporary_bundle_or_validation_scenarios_hydration",
+      "gameplay_native_controller_route_comparison_polling_watchdog_or_threshold_change",
+      "live_authorization_without_exact_current_binary_identity"
     ]
   },
-  "closed_v47_evidence": {
-    "typed_packet_sha256": "adb526dc8c4420d099c7324eb7e869a58a895310f91d1d86b187ccec271f792e",
-    "pre_eviction_packet_sha256": "0d62ac232ce523be461a19e402441961efa140294e993e2cde0abedde29c52ad",
-    "targeted_validation_scenarios_checkout_count": 1,
-    "canonical_stage_count": 0,
-    "prepared_object_materialize_count": 0,
-    "prepared_object_verify_count": 0,
-    "atomic_bundle_create_count": 0,
-    "atomic_bundle_explicit_verify_count": 0,
-    "worldserver_start_count": 0,
+  "closed_v48_evidence": {
+    "typed_packet_path": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_typed_evidence_packet_v48.json",
+    "typed_packet_sha256": "830e5a3c9893fa6b6753990678603a18c7334adb5e4799eab8baff660569e44e",
+    "pre_eviction_packet_sha256": "c3c00a8a571a5825b18258037c1da153984f095ba2414a0170578483f545104f",
+    "ordered_event_count": 17,
+    "canonical_stage_count": 1,
+    "prepared_object_materialize_count": 1,
+    "prepared_object_verify_count": 1,
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_internal_verify_count": 1,
+    "atomic_bundle_publish_count": 1,
+    "atomic_bundle_explicit_verify_count": 1,
+    "build_gate_observation_count": 3,
     "retry_count": 0,
-    "first_edge": "external_fixture_driver_repository_module_path_unbound",
+    "worldserver_start_count": 0,
+    "fixture_result": "pass",
     "exact_payload_eviction_complete": true
   },
-  "required_repair_proof": [
-    "the exact repository-root import assertion passes before hydration, staging, or any other budgeted operation",
-    "one ordered retained packet derives stage, materialize, prepared verify, create, internal verify, publish, and explicit verify counts",
-    "the three build-gate events authenticate exact receipt and policy bytes at original, sibling atomic-staging, and final paths",
-    "the packet retains canonical prepared bytes plus compact manifest, route, profile, and launch identities",
-    "the packet is independently hash verified before exact targeted payload eviction"
+  "required_review_proof": [
+    "the tracked packet is canonical and matches its handoff SHA-256",
+    "all operation counts derive from the ordered event types and sequence",
+    "retained canonical prepared bytes reproduce the prepared SHA-256 and create binding",
+    "retained receipt and policy bytes reproduce all three ordered gate observations",
+    "typed create, internal verify, publish, and explicit verify results are mutually consistent",
+    "compact manifest, route, profile, and launch identities agree with the typed results",
+    "zero execution ledger and exact eviction closure are internally consistent"
   ],
   "remaining_unproven": [
-    "one complete import-bound fixture chain produces the required retained packet",
-    "a gate-bearing current-source native binary reaches the verified bundle",
+    "a gate-bearing current-source native binary reaches the retained verified bundle",
     "native Held, arm, terminal, release, retained Drudges, DPS, HPS, or pet-share evidence"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": ["fixture_packet_verified", "fixture_reconstruction_failure", "identity_or_scope_mismatch"]
+    "terminal_edges": ["review_pass", "review_reject", "identity_or_scope_mismatch"]
   },
   "verification_budget": {
-    "targeted_validation_scenarios_checkout_count_maximum": 1,
-    "canonical_stage_count_maximum": 1,
-    "prepared_object_materialize_count_maximum": 1,
-    "prepared_object_verify_count_maximum": 1,
-    "atomic_bundle_create_count_maximum": 1,
-    "atomic_bundle_explicit_verify_count_maximum": 1,
-    "targeted_temporary_payload_evict_count_maximum": 1,
     "configure_count_maximum": 0,
     "worldserver_build_count_maximum": 0,
     "worldserver_start_count_maximum": 0,
     "retry_count_maximum": 0,
     "database_mutation": "forbidden",
-    "dvc_mutation": "targeted_validation_scenarios_hydration_and_exact_workspace_eviction_only"
+    "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_fixture_repo_import_bound_retention_v48",
+  "next_work_unit": "evidence:generic_controller_route_hold_fixture_packet_independent_review_v49",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Run the repository-root import assertion first; only if it passes, run one no-live chain through a repository-root Python invocation and retain the independently verified typed packet."
+  "next_action": "Review V48 solely from the tracked packet; do not hydrate the deleted bundle or run live."
 }
