@@ -3,7 +3,7 @@
   "epoch_id": "shared_planner_map669_correlated_fixture_expansion_v71b_20260830",
   "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
   "owner_skill": "raid-shard-architecture",
-  "classification": "fixture_expansion_replay_authorized",
+  "classification": "live_recurrence_quarantined",
   "gate_state": "fixture_expansion_replay_only_build_and_gameplay_canary_closed",
   "observed_at_commit": "ef8065a5f4bd81c5a46ea04b14bad03849e9992e",
   "immutable_input_commit": "ef8065a5f4bd81c5a46ea04b14bad03849e9992e",
