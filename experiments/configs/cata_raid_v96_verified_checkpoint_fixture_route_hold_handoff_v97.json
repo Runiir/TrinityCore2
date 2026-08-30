@@ -1,0 +1,81 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:bind_verified_checkpoint_fixture_to_route_hold_v96",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_pending_live_verification",
+  "source": {
+    "commit": "2d70ae696f0877a83f80391cee8f92f8e6629ae9",
+    "clean_before_work": true,
+    "v95_handoff": "experiments/configs/cata_raid_v95_controller_route_hold_composite_prestart_failed_handoff_v96.json",
+    "v95_handoff_sha256": "14fed35ebafbf92c5cceea72a21fd821a882f6ec08303527c216d1ef03a44c13"
+  },
+  "repair": {
+    "first_broken_edge": "controller_route_hold_launch_identity assumed a singleton target list and selected element zero",
+    "verified_projection": "verify_recurrence_admission now returns checkpoint_fixture_id from the fully verified checkpoint seal",
+    "consumer": "controller_route_hold_launch_identity requires that explicit nonempty ID to be a member of the authenticated target list",
+    "list_position_selection_removed": true,
+    "target_request_revision_policy_changed": false
+  },
+  "production": {
+    "tools/raid_program/recurrence_admission.py": {
+      "sha256": "14a80a42ab91a37375c62de8a174ef097a70b6d4631d1e9624d4dd1abafabba2",
+      "lines": 903
+    },
+    "tools/raid_program/controller_route_hold.py": {
+      "sha256": "8b31593f1147223f0f3f2645da1928501e489b0a7d90b87f14d2d5c23f013f70",
+      "lines": 493,
+      "function_count": 22,
+      "ast_branch_nodes": 100,
+      "maximum_function_branch_nodes": 26
+    }
+  },
+  "production_bound_regression": {
+    "test": "test_composite_checkpoint_create_verify_projection_arms_controller",
+    "path": "tests/test_recurrence_admission.py",
+    "path_sha256": "d894e61f9fb2a0c26a6bec29c80ba0359261b39f8dc84ff0a8c20f5c02a35b0d",
+    "boundary": "create_recurrence_admission -> verify_recurrence_admission -> controller_route_hold_launch_identity",
+    "positive": "the sealed Chainwielder fixture identity is selected from a four-target composite",
+    "negatives": [
+      "missing checkpoint_fixture_id rejects",
+      "nonmember checkpoint_fixture_id rejects",
+      "a forged seal fixture_id that names another admitted target rejects during authoritative seal verification"
+    ]
+  },
+  "validation": {
+    "fail_before": "controller_route_hold_verified_admission_invalid; 1 failed in 0.13s",
+    "focused_command": "pixi run pytest -q tests/test_recurrence_admission.py tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py -k 'chainwielder_checkpoint or composite_checkpoint or fixture_expansion_rejects_missing_or_extra_request_target or target_suffix_reproduces_v19_and_binds_runtime_identity or generic_controller_route_hold'",
+    "first_focused_result": "18 passed, 1 structural ownership guard failed because an added helper changed the exact function count",
+    "correction": "inline the explicit membership gate in the existing consumer; function and aggregate branch metrics remain unchanged",
+    "final_focused_result": "19 passed, 200 deselected in 0.87s",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutation_count": 0,
+    "gameplay_mutation_count": 0
+  },
+  "evidence_lifecycle": {
+    "v95_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_eeb9a370db_v95_controller_route_hold_composite_prestart_failed_20260831.dvc",
+    "v95_pointer_sha256": "47d32ab10de5ba9d56841572144099992838bb8df8adca200779ace12df2bae6",
+    "remote_reconstruction": "verified",
+    "local_hydration": "not_required"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the authenticated composite admission now reaches a route-hold identity using the seal-owned checkpoint fixture",
+      "missing, nonmember, and forged checkpoint fixture identities remain fail closed",
+      "all existing target, request, revision, purpose, seal, and source checks remain active"
+    ],
+    "refuted": [
+      "generic route-hold launch identity requires a singleton fixture target list",
+      "list position is an admissible fixture identity authority"
+    ],
+    "unproven": [
+      "the fresh map-669 production replay and revisions 4/5/5",
+      "any gameplay canary or boss result"
+    ]
+  },
+  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v97",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run one fresh exact-current map-669 fixture replay with the preserved composite admission and completion watchdog; no retry."
+}

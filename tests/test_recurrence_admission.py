@@ -10,6 +10,9 @@ import pytest
 from tools.raid_program.capture_checkpoint_controller import (
     chainwielder_checkpoint_arm_command,
 )
+from tools.raid_program.controller_route_hold import (
+    controller_route_hold_launch_identity,
+)
 from tools.raid_program.recurrence_admission import (
     CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
     FIXTURE_EXPANSION_PURPOSE,
@@ -407,6 +410,47 @@ def test_composite_checkpoint_create_verify_projection_arms_controller(
         "botautochaincheckpoint arm 30008 "
         f'{verified["checkpoint_seal_sha256"]} {verified["source_commit"]}'
     )
+    identity = controller_route_hold_launch_identity(
+        recurrence_admission=verified,
+        required_purpose=FIXTURE_EXPANSION_PURPOSE,
+        actor_guid=30008,
+        scenario_id="blackwing_descent_10n_magmaw_diagnostic",
+        runtime_profile="test_profile",
+        pool_tag="test_pool",
+        route_manifest_sha256=sha256_file(Path(paths["route"])),
+        route_node_id="bwd.magmaw.chainwielder",
+    )
+    assert identity is not None
+    assert identity.fixture_id == CHAINWIELDER_CHECKPOINT_FIXTURE_ID
+
+    for mutation in ("missing", "not_member"):
+        candidate = json.loads(json.dumps(verified))
+        if mutation == "missing":
+            candidate.pop("checkpoint_fixture_id", None)
+        else:
+            candidate["checkpoint_fixture_id"] = "not_an_admitted_fixture"
+        with pytest.raises(
+            ValueError, match="controller_route_hold_verified_admission_invalid"
+        ):
+            controller_route_hold_launch_identity(
+                recurrence_admission=candidate,
+                required_purpose=FIXTURE_EXPANSION_PURPOSE,
+                actor_guid=30008,
+                scenario_id="blackwing_descent_10n_magmaw_diagnostic",
+                runtime_profile="test_profile",
+                pool_tag="test_pool",
+                route_manifest_sha256=sha256_file(Path(paths["route"])),
+                route_node_id="bwd.magmaw.chainwielder",
+            )
+
+    admission_path = Path(paths["admission"])
+    forged = json.loads(admission_path.read_text(encoding="utf-8"))
+    forged["checkpoint_seal"]["fixture_id"] = requests[0]["fixture_id"]
+    _write_json(admission_path, forged)
+    with pytest.raises(
+        RecurrenceAdmissionError, match="checkpoint_seal_identity_mismatch"
+    ):
+        _verify_chainwielder(paths)
 
 
 @pytest.mark.parametrize(

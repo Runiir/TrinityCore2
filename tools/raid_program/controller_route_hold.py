@@ -74,15 +74,17 @@ def controller_route_hold_launch_identity(
     if not isinstance(recurrence_admission, dict):
         raise ValueError("controller_route_hold_verified_admission_missing")
     fixture_ids = recurrence_admission.get("fixture_expansion_target_ids")
+    checkpoint_fixture_id = recurrence_admission.get("checkpoint_fixture_id")
     if (
         not isinstance(required_purpose, str)
         or not required_purpose
         or recurrence_admission.get("valid") is not True
         or recurrence_admission.get("purpose") != required_purpose
         or not isinstance(fixture_ids, list)
-        or len(fixture_ids) != 1
-        or not isinstance(fixture_ids[0], str)
-        or not fixture_ids[0].strip()
+        or not fixture_ids
+        or not isinstance(checkpoint_fixture_id, str)
+        or not checkpoint_fixture_id.strip()
+        or checkpoint_fixture_id not in fixture_ids
     ):
         raise ValueError("controller_route_hold_verified_admission_invalid")
     identity = ControllerRouteHoldLaunchIdentity(
@@ -92,7 +94,7 @@ def controller_route_hold_launch_identity(
         route_manifest_sha256=route_manifest_sha256 or "",
         route_node_id=route_node_id,
         actor_guid=actor_guid if isinstance(actor_guid, int) else 0,
-        fixture_id=fixture_ids[0],
+        fixture_id=checkpoint_fixture_id,
         seal_sha256=str(recurrence_admission.get("checkpoint_seal_sha256") or ""),
         source_commit=str(recurrence_admission.get("source_commit") or ""),
     )

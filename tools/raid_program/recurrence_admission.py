@@ -810,6 +810,10 @@ def verify_recurrence_admission(
             checkpoint_seal["seal_sha256"]
             if isinstance(checkpoint_seal, dict) else None
         ),
+        "checkpoint_fixture_id": (
+            checkpoint_seal["fixture_id"]
+            if isinstance(checkpoint_seal, dict) else None
+        ),
         "bindings": {
             "route_manifest": (admission.get("bindings") or {})["route_manifest"],
             **({"profile_manifest": (admission.get("bindings") or {})[
