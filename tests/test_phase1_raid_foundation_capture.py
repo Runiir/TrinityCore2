@@ -21,12 +21,16 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     _normalized_batch_payload_impl,
     _forbidden_assistance_entries,
     _dvc_status_is_clean,
+    _process_arguments,
     _protected_process_matches,
     expected_bwd_10n_roster,
     _expected_identity_by_slot,
     _compact_trailing_zero_gems,
     _identity_manifest_rejections,
     preflight_runtime_exclusions,
+    git_identity,
+    _utc_timestamp,
+    validate_build_receipt,
     validate_runtime_profile_assets,
     evidence_demux_report,
     _evidence_demux_report_impl,
@@ -48,6 +52,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     _capture_classification,
     bounded_native_shutdown,
     build_policy_path_for_receipt,
+    sha256_file,
     _frozen_drudge_member_anchors,
     _validate_drudge_observation_geometry,
     process_resource_sample,
@@ -2782,6 +2787,23 @@ def test_dvc_lineage_requires_an_exact_empty_json_status():
     assert _dvc_status_is_clean("{}") is True
     assert _dvc_status_is_clean('{"validation_scenarios": [{"changed outs": {}}]}') is False
     assert _dvc_status_is_clean("WARN inherited manifest\n{}") is False
+
+
+def test_build_and_runtime_validation_use_focused_production_module():
+    expected_module = "tools.raid_program.capture_environment_validation"
+    for function in (
+        git_identity,
+        _utc_timestamp,
+        validate_build_receipt,
+        build_policy_path_for_receipt,
+        _process_arguments,
+        _protected_process_matches,
+        _dvc_status_is_clean,
+        preflight_runtime_exclusions,
+        validate_runtime_profile_assets,
+        sha256_file,
+    ):
+        assert function.__module__ == expected_module
 
 
 def test_live_evidence_demux_rejects_cross_identity_runtime():
