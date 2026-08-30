@@ -1,109 +1,72 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:controller_route_hold_release_order_gate_v106",
+  "work_unit": "review:controller_route_hold_release_order_v107",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "failure_class": "trace_backed_controller_false_abort",
-  "epoch_id": "v106_controller_route_hold_release_order_gate_20260831",
-  "observed_at_commit": "6c0fb8b5a677797e5b6d4691603d17c8c644086f",
-  "immutable_input_commit": "6c0fb8b5a677797e5b6d4691603d17c8c644086f",
-  "gate_state": "controller_route_hold_receipt_order_repair_required_all_live_and_gameplay_gates_closed",
+  "classification": "independent_review_required",
+  "epoch_id": "v107_controller_route_hold_release_order_review_20260831",
+  "observed_at_commit": "2e2fc05f5e85fa60e2a2474a76922c5662668734",
+  "immutable_input_commit": "2e2fc05f5e85fa60e2a2474a76922c5662668734",
+  "gate_state": "implementation_passed_review_required_live_and_gameplay_gates_closed",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "ready_for_bounded_repair": true,
+  "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:controller_route_hold_release_order_gate_v106",
-  "next_action": "Repair only the capture controller's trace-backed false pre-release route-advance verdict and add deterministic receipt-order coverage. No server start is admitted.",
+  "next_work_unit": "review:controller_route_hold_release_order_v107",
+  "next_action": "Independently review the V106 release-order predicate and retained V105 transcript. Do not start a server.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v105_controller_hold_false_abort_handoff_v106.json",
-    "sha256": "510e1e83c4558ba5f6af2081c8836d3e92eb108b18a04315b7d70c4269b0b704",
-    "source_commit": "6c0fb8b5a677797e5b6d4691603d17c8c644086f",
-    "source_tree": "eebefec59b1e45db130b8b36ba011cf9f54a2f41"
+    "path": "experiments/configs/cata_raid_v106_controller_release_order_repair_handoff_v107.json",
+    "sha256": "d6a710a924a7988c6de1cf9f6b827f37ecb4dfebd9235344f586f46e9b7d853f",
+    "source_commit": "2e2fc05f5e85fa60e2a2474a76922c5662668734",
+    "source_tree": "4e7dfb4896e5236193aed0bc5c1efa8583c68af1"
   },
   "completed_predecessor": {
-    "work_unit": "shard:composite_map669_production_boundary_replay_v105",
-    "classification": "infrastructure_abort",
+    "work_unit": "evidence:controller_route_hold_release_order_gate_v106",
+    "implementation_commit": "2e2fc05f5e85fa60e2a2474a76922c5662668734",
+    "focused_tests": "5/5 passed",
     "full_bank_fixture_commands": "20/20 passed",
-    "configure_count": 1,
-    "worldserver_build_count": 1,
-    "worldserver_start_count": 1,
-    "authserver_start_count": 0,
-    "retry_count": 0,
-    "cleanup_gate_passed": true,
-    "boss_clear_claimed": false
+    "server_start_count": 0,
+    "database_mutation_count": 0,
+    "gameplay_changed": false
   },
   "program_scope": {
-    "operation": "one bounded capture-controller receipt-order repair with deterministic tests",
-    "evidence_controller_implementation_allowed": true,
-    "test_implementation_allowed": true,
-    "runtime_implementation_allowed": false,
-    "gameplay_mutations_allowed": false,
-    "fixture_expectation_mutations_allowed": false,
-    "ledger_mutations_allowed": false,
-    "database_mutations_allowed": false,
+    "operation": "one read-only independent review of the trace-backed capture-controller release-order repair",
+    "implementation_allowed": false,
+    "test_mutation_allowed": false,
     "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
-    "fixture_expansion_replay_admitted": false,
+    "database_mutations_allowed": false,
+    "dvc_mutations_allowed": false,
     "gameplay_canary_admitted": false,
     "acceptance_admitted": false
   },
   "scope_lock": {
-    "allowed_change": "Change only the capture controller route-hold protocol and its focused deterministic tests so route advancement is rejected only when proven before the retained release acknowledgement. Preserve fail-closed handling for advancement while held or armed.",
-    "trace_backed_failure": {
-      "reason": "controller_route_hold_route_advanced_before_release",
-      "held_route_generation": 1,
-      "release_ack_route_generation": 1,
-      "later_post_release_route_generation": 2,
-      "native_checkpoint_outcome": "route_identity_preserved_after_receiptless_hazard_rejection"
-    },
-    "required_tests": [
-      "advancement while held remains rejected",
-      "advancement while armed before release remains rejected",
-      "release acknowledgement on the held identity followed by later route advancement is accepted",
-      "missing or mismatched release acknowledgement remains fail-closed",
-      "V105 retained receipt transcript reconstructs the same verdict deterministically"
+    "required_review": [
+      "reconstruct V105 capture sequences 14, 69, and 73 from the compact handoff",
+      "confirm release_ack_count is set only after an exact identity-bound released acknowledgement",
+      "confirm generation advancement before acknowledgement still fails in held and armed phases",
+      "confirm repeated generation-2 statuses after acknowledgement remain idempotently complete"
     ],
     "forbidden": [
-      "gameplay, movement planner, native executor, priority, class, encounter, route geometry, fixture expectation, recurrence ledger, or database edits",
+      "gameplay, C++, movement, planner, encounter, class, route, fixture expectation, ledger, or database edits",
       "worldserver or authserver start",
-      "fixture-expansion, gameplay-canary, boss-clear, DPS, HPS, or acceptance claim",
-      "loosening identity, release acknowledgement, or fail-closed evidence requirements"
-    ]
-  },
-  "preserved_boundaries": {
-    "observed": [
-      "chainwielder_pre_admission_rejection_isolation_v1"
-    ],
-    "still_missing": [
-      "same_level_floor_observation_v1 revision 4",
-      "same_level_hazard_path_admission_v1 revision 5",
-      "same_level_native_path_proof_v1 revision 5"
-    ],
-    "preserved_invalidated_fixtures": [
-      "magmaw_parasite_control_full_runtime_v1",
-      "magmaw_parasite_lane_paths_v1",
-      "magmaw_parasite_lane_transition_full_replay_v1"
+      "gameplay canary, boss clear, DPS, HPS, or acceptance claim"
     ]
   },
   "execution_budget": {
-    "focused_test_invocation_count_maximum": 2,
-    "full_bank_invocation_count_maximum": 1,
-    "configure_count_maximum": 0,
-    "worldserver_build_count_maximum": 0,
+    "review_test_invocation_count_maximum": 1,
     "worldserver_start_count_maximum": 0,
     "authserver_start_count_maximum": 0,
-    "retry_count_maximum": 0,
     "database_mutation_count_maximum": 0,
     "dvc_mutation_count_maximum": 0
   },
   "required_terminal_evidence": {
-    "pass": "Focused route-hold protocol tests prove both fail-closed pre-release rejection and permitted post-release route progression, the V105 transcript is deterministically reconstructed, and the exact full bank passes without fixture or ledger changes.",
-    "fail": "Stop on the first mismatched receipt-order verdict, identity ambiguity, regression, or scope violation and retain a compact trace-backed handoff."
+    "pass": "Independent source and value-level review confirms the release acknowledgement is the exact ordering boundary without weakening pre-release failures.",
+    "fail": "Stop on any identity loosening, missing negative, or transcript mismatch and route one bounded correction."
   },
   "remaining_unproven": [
-    "the three unobserved V105 same-level production boundaries",
+    "the three unobserved same-level production boundaries",
     "the three preserved invalidated parasite fixtures represent repaired live behavior",
     "any gameplay canary, Magmaw completion, DPS, HPS, or acceptance result"
   ],
@@ -112,10 +75,8 @@
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "focused_receipt_order_tests_pass",
-      "v105_transcript_reconstruction_pass",
-      "full_recurrence_bank_pass",
-      "receipt_identity_or_order_mismatch",
+      "independent_review_passed",
+      "identity_or_order_mismatch",
       "scope_violation"
     ]
   }

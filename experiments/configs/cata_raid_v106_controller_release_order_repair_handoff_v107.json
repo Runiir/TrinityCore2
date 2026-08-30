@@ -1,0 +1,68 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:controller_route_hold_release_order_gate_v106",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "passed_requires_independent_review",
+  "git_commit": "2e2fc05f5e85fa60e2a2474a76922c5662668734",
+  "git_tree": "4e7dfb4896e5236193aed0bc5c1efa8583c68af1",
+  "cause": {
+    "predicate_before": "route_generation > initial and phase != awaiting_post_release_advance",
+    "retained_order": [
+      "capture sequence 14: release acknowledgement, held generation 1",
+      "capture sequence 69: released status, runtime and validation generation 2",
+      "capture sequence 73: duplicate released status, runtime and validation generation 2"
+    ],
+    "first_broken_edge": "sequence 69 completed the scheduler, then sequence 73 was falsely classified as pre-release because phase was complete",
+    "predicate_after": "route_generation > initial and release_ack_count != 1"
+  },
+  "scope": {
+    "changed_files": [
+      "tools/raid_program/controller_route_hold.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "gameplay_changed": false,
+    "server_started": false,
+    "database_changed": false,
+    "ledger_changed": false
+  },
+  "validation": {
+    "fail_before": "1 failed, 1 passed",
+    "focused_after": "5 passed, 146 deselected",
+    "full_recurrence_bank": "20/20 passed",
+    "full_bank_manifest_sha256": "1a9ca91c8cbed6c947e85a1211abff519e1c92b1948610e18bd11353efeedf28",
+    "full_bank_receipt_sha256": "2eb9464b339d2ffc05d2581e691a9b369835c6e47a0262a885cbcdce901b4863",
+    "full_bank_decision_sha256": "6fcfbc2edaf32282676428bd656686681809884d2ba40fcd8151e728ecf816c6",
+    "python_metrics": {
+      "physical_lines": 545,
+      "functions": 23,
+      "total_branch_nodes": 109,
+      "maximum_branch_nodes": 27,
+      "observe_status_branch_nodes": 27
+    }
+  },
+  "evidence_lifecycle": {
+    "v105_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_6c0fb8b5a6_v105_controller_hold_abort_20260831.dvc",
+    "remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_evicted": true,
+    "unique_cache_children_evicted": 17,
+    "shared_cache_children_retained": 10,
+    "directory_metadata_retained": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "duplicate post-release progress cannot be reclassified as pre-release advancement",
+      "advancement while held or armed remains fail-closed",
+      "missing and duplicate release acknowledgements remain fail-closed"
+    ],
+    "unproven": [
+      "the three remaining same-level production boundaries",
+      "any gameplay, Magmaw clear, DPS, HPS, or acceptance result"
+    ]
+  },
+  "next_work_unit": {
+    "id": "review:controller_route_hold_release_order_v107",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Independently review commit 2e2fc05f5e and the exact V105 receipt order. Confirm the release acknowledgement is the causal boundary, duplicate post-release statuses are idempotent, and true pre-release advancement still fails closed. Do not start a server.",
+    "live_authorization": false
+  }
+}
