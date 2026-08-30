@@ -1,264 +1,61 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "trace_delta_cadence_smoke_recurrence_admission_blocked_v1_20260830",
-  "work_unit": "coordination:resolve_trace_smoke_recurrence_gate_ordering",
+  "epoch_id": "trace_transport_non_gameplay_lane_pending_build_and_live_v1_20260830",
+  "work_unit": "shard:production_controller_trace_delta_cadence_smoke",
   "raid": "blackwing_descent",
-  "boss": "magmaw",
-  "mode": "10N",
-  "owner_skill": "raid-performance-loop",
-  "classification": "production_cadence_smoke_blocked_before_worldserver_start_by_recurrence_admission",
-  "gate_state": "recurrence_bank_not_admitted_worldserver_start_count_zero",
-  "observed_at_commit": "dab365efb239bb9a0ab166e4c1394caea74a0b87",
+  "boss": null,
+  "mode": "telemetry_only",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_build_and_live_verification",
+  "gate_state": "route_disabled_ten_actor_transport_lane_implemented_worldserver_start_count_zero_fresh_exact_build_receipt_required",
+  "observed_at_commit": "22b42bccc7704444bd09c6ec6b2718ff79dfa6d9",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_6518233c67_chainwielder_trace_transport_summary_v1.json",
-    "sha256": "a2784575f5944b9d4054817e6b1d21ff67096bef10921faf8ccaeb70025309b9",
-    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_6518233c67_chainwielder_trace_transport_quarantine_20260830.dvc",
-    "dvc_pointer_sha256": "601094fd735339abac38925b8ca39e3a7d80517bb087ff03d4da314969e13afe",
-    "dvc_directory_md5": "ca266dd38c919db04544be1ae6000b0f.dir",
-    "source_report_sha256": "34f8d81134263462f30aa4b95af9946b9ce49bb2a27bc41c893ea92a42bf803b",
-    "source_raw_output_sha256": "d28fabf617748a887ef0b2655df0a0dea852d7bc192fbaeceabb26228999ffa8",
-    "source_worldserver_log_sha256": "bd824fa190d801326b13552c6b9a9688ece3d53a4012ea6d8319cd566e6ea6e3"
+    "path": "experiments/configs/cata_raid_trace_transport_non_gameplay_lane_handoff_v1.json",
+    "sha256": "c4c0f47ae5edec4a2dad6a1609e17679d6e4a9ce7f0dbc471cabdf3de3adbe86"
   },
-  "implementation_handoff": {
-    "path": "experiments/configs/cata_raid_native_trace_discontinuity_transport_handoff_v1.json",
-    "sha256": "de0b38bad5be0fa1d3d5e2cd0e39a601a52abaa289f5a12f0d5ddfada6eafa0c",
-    "implementation_commit": "dc061cd96e60cccccf233cf0a588b70ce9238aec"
+  "immutable_input": {
+    "path": "experiments/configs/cata_raid_production_controller_trace_delta_cadence_smoke_handoff_v1.json",
+    "sha256": "3edcb4ce1701f8aa009d16650225916586c4bf16844069aeeb1e6f68dabeea8d"
   },
-  "runtime_smoke_handoff": {
-    "path": "experiments/configs/cata_raid_native_trace_discontinuity_runtime_smoke_handoff_v1.json",
-    "sha256": "716edcdb86b8bc4960eedc89d7041992289653f4d4d1cdb77423c497d13ded96",
-    "classification": "failed_verification_live_second_poll_reoverflow",
-    "configure_ticket_id": "raid-build-073f13006b74413cbc5ca44eb50580ce",
-    "configure_receipt_sha256": "81ab6745b4425035b2ebd5d9adf6fb884ac719e7a72ea7731d8639d7896aaad3",
-    "build_ticket_id": "raid-build-425e5ad4bf7346239076b60579983bbb",
-    "build_receipt_sha256": "fba062fda79121cc20fa8085b3df1bc71fa992dd51c8f02f3530d04eb1de35b6",
-    "worldserver_binary_sha256": "662154787fd29953296632549306093fb02e23236dbd47dffecaa38915774838",
-    "worldserver_start_count": 1
-  },
-  "runtime_review_handoff": {
-    "path": "experiments/configs/cata_raid_trace_delta_all_poll_serialization_overrun_handoff_v1.json",
-    "sha256": "40d49dff1f8fe8cf3a83fedfaf6c95b72a57c089d641aee8c1fc5548358f2930",
-    "classification": "informational_only_no_runtime_edit",
-    "source_commit": "f834000ca8267a9631a4dcdc2de2d7896519ebeb"
-  },
-  "first_broken_edge": "The failed two-poll smoke retained exact response bytes and cursor facts but no command-send, response-complete, or poll-interval timestamps and no production-controller identity. It therefore cannot join multi-megabyte response size to the second actor-local ring overwrite.",
-  "first_controller_defect": "The capture demultiplexer promoted one bot's real trace gap into rejection of each complete ten-bot envelope, hiding nine peers whose delta cursors and entries remained contiguous.",
-  "causal_signature": "manual_trace_smoke_missing_production_cadence_correlation",
-  "causal_claim_status": "serialization_bloat_causal_owner_unproven_production_scheduler_already_uses_two_second_pressure_cadence",
-  "claim_ledger": {
-    "verified": [
-      "source_identity_6518233c67_was_clean_and_admitted",
-      "entrance_chainwielder_and_drudges_cleared_before_magmaw",
-      "terminal_edge_was_death_loop_watchdog_count_3_at_magmaw",
-      "cleanup_returned_bots_leases_and_processes_to_zero",
-      "capture_sequence_28_first_gap_is_bot30008_only_at_cursor_46",
-      "the_other_nine_trace_actors_remain_contiguous_through_the_gapped_envelopes",
-      "bot30008_sequences_47_through_3120_are_absent_from_retained_trace_evidence",
-      "terminal_full_snapshot_recovers_bot30008_at_sequences_3121_through_3248",
-      "controller_replay_binds_all_783_envelopes_and_2749_of_2990_actor_rows",
-      "exactly_241_actor_rows_remain_rejected_for_bot30008_trace_delta_gap",
-      "compiled_native_transition_reports_missing_47_through_174_and_exports_retained_175_through_238",
-      "compiled_second_poll_resumes_contiguously_at_239_and_advances_through_302",
-      "controller_keeps_the_explicit_missing_interval_gate_failing_while_binding_the_second_poll",
-      "clean_isolated_fast8_v2_configure_request_was_rejected_before_admission_by_the_frozen_filesystem_reserve",
-      "authorized_nvme_retry_produced_independently_verified_gate_bearing_configure_and_worldserver_build_receipts",
-      "live_actor30008_first_poll_emitted_missing_1_through_30_retained_31_through_158_and_advanced_cursor_0_through_158",
-      "live_actor30008_second_poll_truthfully_emitted_a_new_missing_159_through_666_retained_667_through_794_and_advanced_cursor_158_through_794",
-      "both_live_discontinuities_were_actor_local_with_zero_peer_gaps",
-      "owned_cohort_server_process_ports_and_temporary_root_were_cleaned_to_zero",
-      "production_scheduler_switches_to_two_second_trace_polling_after_any_actor_returns_at_least_16_entries",
-      "focused_native_cursor_production_scheduler_and_controller_demux_regressions_pass_6_of_6",
-      "runtime_serializer_source_repeats_current_state_Last_diagnostic_strings_in_each_delta_entry_but_causality_is_not_bound"
-    ],
-    "refuted": [
-      "the_241_rejected_envelopes_prove_global_trace_transport_loss",
-      "this_capture_promotes_chainwielder_pre_admission_rejection_isolation_v1_to_revision_2",
-      "this_capture_is_gate_bearing_gameplay_acceptance_evidence",
-      "an_unadmitted_configure_ticket_is_a_clean_worldserver_build_receipt",
-      "the_second_live_poll_was_gap_false_beginning_at_prior_cursor_after_plus_one",
-      "the_live_smoke_is_runtime_smoke_green",
-      "the_failed_manual_two_poll_smoke_proves_the_production_TelemetryScheduler_cadence_is_too_slow",
-      "a_larger_native_trace_ring_is_required"
-    ],
-    "unproven": [
-      "lossless_native_trace_transport_for_a_busy_single_actor",
-      "actor_join_for_bot30008_decisions_47_through_3120",
-      "live_route_owner_state_preservation_after_a_receiptless_owner_hazard_rejection",
-      "magmaw_completion_or_full_raid_acceptance",
-      "quiescence_free_contiguous_recovery_for_a_high_rate_actor_across_all_actor_trace_response_delivery",
-      "the_interval_between_the_two_live_smoke_commands",
-      "native_serialization_response_delivery_and_controller_parse_time_components",
-      "duplicated_per_entry_diagnostic_fields_caused_the_second_overflow",
-      "the_production_two_second_pressure_cadence_reoverflows_the_same_actor"
-    ]
-  },
-  "source_capture": {
-    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "map_id": 669,
-    "instance_id": 2,
-    "attempt_id": 1,
-    "terminal": "death_loop_watchdog",
-    "terminal_count": 3,
-    "active_throughput": {
-      "chainwielder_dps": 83025.0,
-      "chainwielder_hps": 3695.054,
-      "drudges_dps": 78360.674,
-      "drudges_hps": 34847.371,
-      "magmaw_dps": 84971.551,
-      "magmaw_hps": 28555.277
-    }
-  },
-  "recurrence": {
-    "target_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
-    "retained_fixture_revision": 1,
-    "required_production_revision": 2,
-    "production_revision_promoted": false
-  },
-  "required_production_boundary": "Run botauto trace all 128 delta through the canonical TelemetryScheduler, retain command-sent response-first-byte response-complete and next-command timestamps plus scheduler state, and distinguish native serialization console delivery and controller parsing before assigning a runtime repair.",
-  "implementation": {
-    "state": "fixture-green-live-explicit-gap-truthful-contiguous-followup-unexercised",
-    "hypothesis": "When the first unexported sequence has fallen behind the bounded ring, emit one explicit discontinuity with the exact missing interval, export a bounded contiguous retained prefix, and advance only through the last serialized entry.",
-    "native_response_contract": {
-      "gap": true,
-      "discontinuity_fields": [
-        "missing_sequence_start",
-        "missing_sequence_end",
-        "oldest_retained_sequence",
-        "newest_retained_sequence"
-      ],
-      "cursor_rule": "cursor_after_equals_last_emitted_sequence",
-      "next_poll_rule": "ordinary_gap_false_delta_starts_at_prior_cursor_after_plus_one",
-      "gate_rule": "the_explicit_missing_interval_remains_rejected"
-    },
-    "compiled_replay": {
-      "cursor_before": 46,
-      "retained_sequence_start": 175,
-      "retained_sequence_end": 302,
-      "first_poll_limit": 64,
-      "first_poll_cursor_after": 238,
-      "second_poll_sequence_start": 239,
-      "second_poll_cursor_after": 302
-    },
-    "live_verified": false,
-    "live_observation": {
-      "bot_guid": 30008,
-      "poll_1": "gap_true_cursor_0_to_158_missing_1_to_30_retained_31_to_158",
-      "poll_2": "gap_true_cursor_158_to_794_missing_159_to_666_retained_667_to_794",
-      "failure": "second overflow occurred while the multi-megabyte all-actor first response was delivered"
-    },
-    "runtime_review": {
-      "state": "no_edit_causal_owner_unproven",
-      "single_hypothesis": "duplicated per-entry diagnostic fields cause response-size-induced same-actor reoverflow",
-      "verdict": "unproven",
-      "production_pressure_watermark_entries": 16,
-      "production_pressure_interval_seconds": 2.0,
-      "before_poll_1_bytes": 3870371,
-      "before_poll_2_bytes": 5507676,
-      "after_bytes": "unchanged_no_runtime_edit"
-    }
-  },
-  "scope_lock": {
-    "allowed_change": "Run one fresh one-start cadence-instrumented trace smoke through the canonical production controller. Preserve explicit actor-local gaps and cursor truth; do not edit runtime serialization without timed attribution.",
-    "forbidden": [
-      "gameplay_or_strategy_change",
-      "class_rotation_or_dps_tuning",
-      "movement_or_encounter_policy_change",
-      "watchdog_threshold_change",
-      "fixture_revision_promotion",
-      "acceptance_claim_from_the_quarantined_capture"
-    ]
+  "first_broken_edge": "The gameplay recurrence canary cannot authorize a transport prerequisite; the new typed route-disabled trace_transport_10 lane separates transport admission from route, gameplay, fixture, canary, and acceptance admission without bypassing Magmaw recurrence.",
+  "required_production_boundary": "Obtain an exact clean-commit build receipt, provision and read back the ordinary ten-actor pool without auto-start, then run exactly one trace_transport_10 capture through the production TelemetryScheduler and exact botauto trace all 128 delta command.",
+  "claim_scope": {
+    "authority": "trace_transport_test_only_not_gameplay",
+    "transport_admitted": null,
+    "gameplay_admitted": false,
+    "route_admitted": false,
+    "fixture_admitted": false,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "boss_fidelity_admitted": false
   },
   "validation_clock": {
     "policy": "completion_watchdog",
-    "fixed_success_timer_seconds": null
+    "fixed_success_timer_seconds": null,
+    "emergency_wall_cap_seconds": 90,
+    "cap_expiry_is_success": false
   },
   "validation": {
-    "controller_actor_demux_fixed": true,
-    "source_envelopes_bound": 783,
-    "source_envelopes_rejected": 0,
-    "telemetry_actor_rows_total": 2990,
-    "telemetry_actor_rows_bound": 2749,
-    "telemetry_actor_rows_rejected": 241,
-    "trace_discontinuity": {
-      "bot_guid": 30008,
-      "missing_sequence_start": 47,
-      "missing_sequence_end": 3120,
-      "gate_passed": false
-    },
-    "native_transition_fixture_passed": true,
-    "explicit_discontinuity_controller_contract_passed": true,
-    "compiled_second_poll_contiguous": true,
-    "build_verified": true,
-    "build_admission": {
-      "historical_unadmitted_ticket_id": "raid-build-6287ba59d60c4b2aa071e4986067c301",
-      "configure_ticket_id": "raid-build-073f13006b74413cbc5ca44eb50580ce",
-      "configure_queue_sequence": 1207,
-      "build_ticket_id": "raid-build-425e5ad4bf7346239076b60579983bbb",
-      "build_queue_sequence": 1208,
-      "policy_id": "cata_raid_build_resource_policy_fast8_v2",
-      "compiler_jobs": 8,
-      "linker_jobs": 1,
-      "classification": "success_gate_bearing",
-      "temporary_filesystem": "/dev/nvme1n1p3",
-      "required_available_bytes": 21474836480,
-      "configure_receipt_sha256": "81ab6745b4425035b2ebd5d9adf6fb884ac719e7a72ea7731d8639d7896aaad3",
-      "build_receipt_sha256": "fba062fda79121cc20fa8085b3df1bc71fa992dd51c8f02f3530d04eb1de35b6",
-      "binary_sha256": "662154787fd29953296632549306093fb02e23236dbd47dffecaa38915774838"
-    },
-    "runtime_smoke_verified": false,
-    "runtime_smoke_observation": "same_actor_second_poll_reoverflow_with_response_size_and_poll_timing_causality_unbound",
-    "immutable_handoff_claimed_response_delivery_cadence_as_sole_failure": true,
-    "runtime_smoke_failed_solely_because_polling_cadence_did_not_exercise_contiguous_recovery": false,
-    "runtime_smoke_cleanup_verified": true,
-    "runtime_repair_admitted": false,
-    "runtime_repair_classification": "informational_only_no_edit_causality_unproven",
+    "implementation_commit": "22b42bccc7704444bd09c6ec6b2718ff79dfa6d9",
+    "focused_tests": "8_passed",
+    "runtime_profile": "trace_transport_10",
+    "runtime_route_enabled": false,
+    "target_actor_count": 10,
+    "production_trace_command": "botauto trace all 128 delta",
     "production_pressure_interval_seconds": 2.0,
-    "focused_validation": {
-      "result": "passed",
-      "pass_count": 6,
-      "fail_count": 0,
-      "duration_seconds": 4.19
-    },
+    "worldserver_start_count": 0,
+    "live_transport_verified": false,
     "gameplay_admitted": false,
     "fixture_promotion_admitted": false,
     "acceptance_admitted": false
   },
-  "coordinator_followup": {
-    "next_owner": "raid-performance-loop",
-    "next_owner_command": "resolve_trace_smoke_recurrence_gate_ordering_without_bypass_or_unchanged_fixture_promotion",
-    "next_work_unit": "coordination:resolve_trace_smoke_recurrence_gate_ordering",
-    "return_to_work_unit": "shard:production_controller_trace_delta_cadence_smoke",
-    "return_owner_if_timed_reoverflow_recurs": "raid-bot-runtime-implementation",
-    "do_not_advance_to": "gameplay_acceptance_or_worldserver_start_before_recurrence_canary_admission"
-  },
-  "latest_bounded_attempt": {
-    "handoff_path": "experiments/configs/cata_raid_production_controller_trace_delta_cadence_smoke_handoff_v1.json",
-    "handoff_sha256": "3edcb4ce1701f8aa009d16650225916586c4bf16844069aeeb1e6f68dabeea8d",
-    "source_commit": "dab365efb239bb9a0ab166e4c1394caea74a0b87",
-    "instrumentation_focused_tests": "4_passed",
-    "build_policy_id": "cata_raid_build_resource_policy_fast8_v2",
-    "worldserver_binary_sha256": "73d8405f6dc5c5c2c8ef71068dafb3101a7800a3ca706c377a8723ff91e482f9",
-    "recurrence_suite_current_pass_count": 20,
-    "recurrence_suite_current_fail_count": 0,
-    "recurrence_build_admitted": false,
-    "recurrence_canary_admitted": false,
-    "invalidated_fixture_count": 6,
-    "pending_fixture_ids": [
-      "chainwielder_pre_admission_rejection_isolation_v1"
-    ],
-    "worldserver_start_count": 0,
-    "production_cadence_hypothesis": "unproven_pre_admission_block"
-  },
-  "coordinator_blocker": {
-    "first_broken_edge": "the immutable recurrence decision denies build and canary admission even though all 20 current fixture commands pass, because six retained fixture revisions were invalidated by later live recurrences and the Chainwielder fixture expansion remains pending",
-    "required_next_work_unit": "coordination:resolve_trace_smoke_recurrence_gate_ordering",
-    "return_to_work_unit": "shard:production_controller_trace_delta_cadence_smoke",
-    "forbidden_shortcuts": [
-      "recurrence_gate_bypass",
-      "unchanged_fixture_promotion",
-      "gameplay_edit_in_telemetry_work_unit",
-      "worldserver_start_before_canary_admission"
-    ]
-  },
-  "next_action": "Resolve the ordering conflict between the required production cadence smoke and the recurrence bank's pending or invalidated fixtures without weakening either gate. Then return to the one-start production-controller cadence smoke."
+  "next_owner": {
+    "owner": "raid-shard-architecture",
+    "work_unit": "shard:production_controller_trace_delta_cadence_smoke",
+    "required_before_start": "fresh gate-bearing fast8_v2 worldserver build receipt bound to clean commit 22b42bccc7704444bd09c6ec6b2718ff79dfa6d9 and ordinary blackwing_descent_10n provisioning/readback",
+    "one_start_command": "pixi run python -m tools.raid_program.capture_phase1_raid_foundation --binary build/src/server/worldserver/worldserver --config /tmp/cata-trace-transport-10-prepared/worldserver.validation.conf --output /tmp/cata-trace-transport-10-run/report.json --raw-output /tmp/cata-trace-transport-10-run/trace.raw.jsonl --server-log-output /tmp/cata-trace-transport-10-run/worldserver.log --build-receipt experiments/configs/cata_raid_build_receipts/trace_transport_10_worldserver_22b42bccc7.json --worktree /home/runiir/Games/trinity-cata --trace-transport-smoke --scenario-id trace_transport_10 --runtime-profile trace_transport_10 --pool-tag blackwing_descent_10n --observe-sec 90",
+    "return_on_pass": "raid-performance-loop",
+    "return_on_same_actor_reoverflow": "raid-bot-runtime-implementation"
+  }
 }

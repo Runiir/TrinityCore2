@@ -1,0 +1,125 @@
+{
+  "schema": "cata_raid_trace_transport_non_gameplay_lane_handoff_v1",
+  "work_unit_id": "coordination:resolve_trace_smoke_recurrence_gate_ordering",
+  "owner_skill": "raid-performance-loop",
+  "classification": "implemented_route_disabled_transport_lane_pending_fresh_build_receipt_and_one_live_start",
+  "observed_at_utc": "2026-08-30T00:31:59Z",
+  "implementation": {
+    "commit": "22b42bccc7704444bd09c6ec6b2718ff79dfa6d9",
+    "tree": "b600d2d2656958a76589e56cf4aa51bf429c4d0f",
+    "profile": "trace_transport_10",
+    "pool_tag": "blackwing_descent_10n",
+    "actor_count": 10,
+    "native_start_command": "botauto start trace_transport_10",
+    "production_trace_command": "botauto trace all 128 delta",
+    "production_pressure_watermark_entries": 16,
+    "production_pressure_interval_seconds": 2.0,
+    "controller_owns_exactly_one_start": true,
+    "changed_files": [
+      "dataset/bot_runtime_profiles/profiles.json",
+      "tools/raid_program/capture_phase1_raid_foundation.py",
+      "tools/raid_program/trace_transport_smoke.py",
+      "tests/test_trace_transport_smoke.py"
+    ]
+  },
+  "immutable_input": {
+    "path": "experiments/configs/cata_raid_production_controller_trace_delta_cadence_smoke_handoff_v1.json",
+    "sha256": "3edcb4ce1701f8aa009d16650225916586c4bf16844069aeeb1e6f68dabeea8d",
+    "edited": false
+  },
+  "claim_scope": {
+    "authority": "trace_transport_test_only_not_gameplay",
+    "transport_admitted": null,
+    "gameplay_admitted": false,
+    "route_admitted": false,
+    "fixture_admitted": false,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "boss_fidelity_admitted": false,
+    "allowed_claim": "ten-actor native trace transport through the production TelemetryScheduler and controller demultiplexer"
+  },
+  "profile_contract": {
+    "target_population": 10,
+    "spawn_mode": "resume_or_race_start",
+    "allow_configured_center_fallback": false,
+    "use_saved_position": true,
+    "allow_combat": false,
+    "allow_grinding": false,
+    "allow_questing": false,
+    "allow_dungeons": false,
+    "allow_raids": false,
+    "enable_progression": false,
+    "record_decisions": false,
+    "record_perception": false,
+    "smart_sampling": false,
+    "auto_start_recording": false,
+    "validation_route_enabled": false
+  },
+  "admission_contract": {
+    "exact_profile_and_scenario": "trace_transport_10",
+    "exact_pool_tag": "blackwing_descent_10n",
+    "recurrence_admission_forbidden": true,
+    "fixture_expansion_forbidden": true,
+    "minimum_emergency_wall_cap_seconds": 30,
+    "magmaw_recurrence_bypass_added": false,
+    "bwd_diagnostic_profile_used": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "no existing route-disabled generic runtime profile provisions ten actors; the existing generic route-disabled profiles provision five",
+      "the new trace_transport_10 runtime profile provisions ten actors from the ordinary blackwing_descent_10n pool while disabling route, combat, grinding, questing, dungeon, raid, progression, and persistent decision recording",
+      "native RecordDecision records the bounded in-memory DecisionTrace before the RunId and RecordDecisions persistence gate, so record_decisions false does not disable transport pressure",
+      "the capture uses the unchanged production TelemetryScheduler and exact botauto trace all 128 delta command with independent actor cursors",
+      "the typed gate preserves the exact missing interval, requires ten actor identities, the 2.0-second pressure-scheduled next send, and a contiguous actor-local follow-up while retaining the explicit gap as rejected",
+      "transport mode cannot carry recurrence admission or fixture expansion and emits gameplay_admitted false plus route, fixture, canary, acceptance, and boss-fidelity false",
+      "the focused transport and existing scheduler instrumentation suite passes 8 of 8",
+      "no worldserver was started, no build was run, no database was mutated, no gameplay fixture was changed, and no DVC artifact was created in this work unit"
+    ],
+    "refuted": [
+      "renaming a route-enabled blackwing_descent_10n execution makes it transport-only",
+      "the Magmaw recurrence gate may be bypassed for a route or gameplay capture",
+      "a five-actor generic profile proves ten independent actor cursor demultiplexing",
+      "focused unit tests prove live trace pressure or cadence"
+    ],
+    "unproven": [
+      "the route-disabled ten-actor profile acquires all ten actors and creates enough live trace pressure for one explicit actor-local gap",
+      "a production pressure-scheduled same-actor live follow-up is contiguous after the explicit gap",
+      "the timed native serialization, console delivery, and controller parse latency components",
+      "whether the measured production cadence reoverflows the same actor"
+    ]
+  },
+  "focused_validation": {
+    "command": "pixi run pytest -q tests/test_trace_transport_smoke.py tests/test_phase1_raid_foundation_capture.py::test_production_trace_transport_receipt_binds_fragmented_response_and_next_pressure_send tests/test_phase1_raid_foundation_capture.py::test_trace_transport_receipt_rejects_ambiguous_outstanding_commands tests/test_phase1_raid_foundation_capture.py::test_json_log_cursor_reads_append_only_chunks_once_and_preserves_partial_rows tests/test_phase1_raid_foundation_capture.py::test_trace_scheduler_shortens_after_ring_pressure_without_accepting_gaps",
+    "result": "8 passed in 0.15s",
+    "diff_check_passed": true,
+    "python_compile_passed": true
+  },
+  "build_boundary": {
+    "prior_build_receipt_verified_at_commit": "dab365efb239bb9a0ab166e4c1394caea74a0b87",
+    "prior_build_receipt_reusable": false,
+    "reason": "the capture verifier binds a build receipt to the exact clean source commit, so the prior receipt cannot admit commit 22b42bccc7704444bd09c6ec6b2718ff79dfa6d9 even though no native source changed",
+    "required_next_action": "obtain and independently verify one fresh gate-bearing fast8_v2 worldserver build receipt at implementation commit 22b42bccc7704444bd09c6ec6b2718ff79dfa6d9 before the live start"
+  },
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "emergency_wall_cap_seconds": 90,
+    "cap_expiry_is_success": false
+  },
+  "next_owner": {
+    "owner": "raid-shard-architecture",
+    "work_unit": "shard:production_controller_trace_delta_cadence_smoke",
+    "precondition": "clean implementation commit 22b42bccc7704444bd09c6ec6b2718ff79dfa6d9 plus a fresh exact queued worldserver build receipt and ordinary blackwing_descent_10n provisioning/readback",
+    "prepare_command": "pixi run python -m tools.bot_ml.run_live_bot_validation --worldserver build/src/server/worldserver/worldserver --config trinity-worldserver-test.conf --output-dir /tmp/cata-trace-transport-10-prepared --apply-validation-provisioning --prepare-only --validation-scenario-id blackwing_descent_10n --bot-pool-tag blackwing_descent_10n",
+    "one_start_command": "pixi run python -m tools.raid_program.capture_phase1_raid_foundation --binary build/src/server/worldserver/worldserver --config /tmp/cata-trace-transport-10-prepared/worldserver.validation.conf --output /tmp/cata-trace-transport-10-run/report.json --raw-output /tmp/cata-trace-transport-10-run/trace.raw.jsonl --server-log-output /tmp/cata-trace-transport-10-run/worldserver.log --build-receipt experiments/configs/cata_raid_build_receipts/trace_transport_10_worldserver_22b42bccc7.json --worktree /home/runiir/Games/trinity-cata --trace-transport-smoke --scenario-id trace_transport_10 --runtime-profile trace_transport_10 --pool-tag blackwing_descent_10n --observe-sec 90",
+    "start_budget": 1,
+    "return_on_pass": "raid-performance-loop may resume the independently gated recurrence and Chainwielder fixture sequence; the transport report makes no gameplay or fixture claim",
+    "return_on_same_actor_reoverflow": "raid-bot-runtime-implementation with the timed transport report only",
+    "return_on_noncompletion": "raid-shard-architecture with the missing ten-actor acquisition or pressure fact; do not reinterpret the cap as success"
+  },
+  "dvc": {
+    "publication_performed": false,
+    "reason": "no live or bulk evidence was produced"
+  }
+}
