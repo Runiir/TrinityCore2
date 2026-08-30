@@ -1,0 +1,130 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:queued_build_and_chainwielder_owner_checkpoint_one_start",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed",
+  "git_commit": "1036d427af3e7568dc15510ac783a610f72cc8a9",
+  "input_identities": {
+    "active_descriptor_at_admission": "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "checkpoint_implementation_commit": "5346269e2e9d2b617936f0351efc9a9f83627289",
+    "checkpoint_implementation_handoff": "experiments/configs/cata_raid_chainwielder_owner_checkpoint_implementation_handoff_v1.json",
+    "checkpoint_implementation_handoff_sha256": "dff554a15747b386211902f489e937d5ac09ac5e27e0352b10b2ad98431151b4",
+    "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+    "fixture_revision": 1,
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic"
+  },
+  "scope_lock": {
+    "hypothesis": "The clean checkpoint implementation can be built, admitted with a fresh fixture-expansion receipt, and observed once without gameplay mutation.",
+    "owned_behavior": "one exact build, deterministic provisioning/readback, recurrence admission, and at most one observation-only worldserver start",
+    "excluded": [
+      "gameplay_or_strategy_change",
+      "class_or_pet_change",
+      "boss_or_database_change",
+      "fixture_revision_promotion",
+      "gameplay_canary_or_acceptance",
+      "second_worldserver_start"
+    ]
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgr.h",
+    "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_chainwielder_checkpoint_1036d427af_admission_preflight_handoff_v1.json",
+    "artifacts/cata_raid_program/.gitignore",
+    "artifacts/cata_raid_program/phase1_foundation_1036d427af_chainwielder_checkpoint_admission_preflight_20260830.dvc"
+  ],
+  "first_broken_edge_before": "The implementation handoff had not been compiled or observed through the exact live Route-owner/Hazard-rejection checkpoint boundary.",
+  "implemented_hypothesis": "No gameplay implementation was authorized. The one build correction moved a namespace-bearing header out of an include fragment that is expanded inside the BotWorldPopulationMgr class.",
+  "validation": {
+    "focused_test": {
+      "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+      "result": "4 passed"
+    },
+    "retained_regression_bank": {
+      "command": "pixi run python -m tools.raid_program.blocker_recurrence_ledger --ledger experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json --source-identity 1036d427af3e7568dc15510ac783a610f72cc8a9 --run-suite <receipt> --boundary-run-id trinity-magmaw-78e33e6557-receipt-history-expansion.attempt1 --boundary after --gate fixture_expansion --output <decision>",
+      "result": "20 passed, 0 failed; fixture_expansion_admitted=true; sole target chainwielder_pre_admission_rejection_isolation_v1",
+      "suite_sha256": "bdef53daa0bf34e037f06b4c24f52b3e467d076642cedc15142eb3962f29d600",
+      "decision_sha256": "5520d9731ade6a3ef4b57f05bddbb1433739f1ec51e3e6671b915de288900f24"
+    },
+    "build": {
+      "policy": "cata_raid_build_resource_policy_fast8_v2",
+      "compiler_jobs": 8,
+      "linker_jobs": 1,
+      "configure_ticket": "raid-build-2a085319c88c4163986bde408c7eaf9f",
+      "worldserver_ticket": "raid-build-91b9e6c81dd24874b2fb345f8849c199",
+      "gate_bearing": true,
+      "binary_sha256": "7549e28de21b5b1b8d0b217b2c4d9937d7528d2a04f640e887385c93f2f08b90"
+    },
+    "provisioning": {
+      "strict_verifier_passed": true,
+      "strict_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+      "shard_readback_passed": true,
+      "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+      "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"
+    },
+    "admission": {
+      "fresh_admission_sha256": "3c339a3c0df6d1690d716f2b3da73dedc3cc60e8374a02f0ca6a3ced3ae43d51",
+      "bound_runtime_config_sha256": "f7a728b7d151ad720cc129e89cb4ff5741dedde7ffab6a5bbff3e21de70bd892",
+      "checkpoint_config_sha256": "ea997a6c74ec32900909e7154ea6c03b79fa2b4eaaa8e9f3f2359b31db5eb18e",
+      "verifier_result": "failed: runtime_config_hash_mismatch",
+      "worldserver_start_count": 0
+    },
+    "runtime_verdict": "inconclusive_not_started"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_final_binary_and_build_receipt_are_gate_bearing_at_clean_commit_1036d427af",
+      "the_exact_Magmaw_diagnostic_roster_and_route_are_provisioned_and_read_back_clean",
+      "the_retained_bank_passes_all_twenty_commands_and_admits_only_the_named_observation fixture",
+      "the_recurrence_admission_binds_runtime_config_hash_f7a728b7",
+      "adding_the_required_final_admission_SHA_to_the_checkpoint_config_changes_that_hash_to_ea997a6c",
+      "the_official_verifier_rejects_runtime_config_hash_mismatch_before_worldserver_start"
+    ],
+    "refuted": [
+      "the_current_admission_contract_can_bind_the_final_admission_file_SHA_inside_the_same_runtime_config_it_hashes",
+      "the_current_work_unit_authorized_a_worldserver_start"
+    ],
+    "unproven": [
+      "checkpoint_injection_count_equals_one",
+      "a_real_Route_owned_path_or_armed_Route_hazard_retry_triggers_the_checkpoint",
+      "the_Hazard_future_pack_rejection_preserves_the_Route_identity",
+      "hazard_exit_completed_after_the_checkpoint",
+      "Chainwielder_DPS_HPS_and_deaths_for_this_work_unit"
+    ]
+  },
+  "gear_identity": {
+    "status": "not_applicable"
+  },
+  "effective_stat_parity": {
+    "status": "not_applicable",
+    "tuning_admitted": false
+  },
+  "dps_tuning_gate": {
+    "status": "not_applicable",
+    "tuning_admitted": false
+  },
+  "evidence_paths": [
+    "artifacts/cata_raid_program/phase1_foundation_1036d427af_chainwielder_checkpoint_admission_preflight_20260830.dvc"
+  ],
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_foundation_1036d427af_chainwielder_checkpoint_admission_preflight_20260830.dvc",
+    "pointer_sha256": "2e4c4521118ff793f9c221a61e5b657a5d79177b60a8aa11699255e945195adf",
+    "directory_md5": "56f725187166faec03505c0313f7b358.dir",
+    "file_count": 16,
+    "size_bytes": 710632,
+    "push_result": "13 files pushed",
+    "remote_verification": "cache_and_remote_in_sync_before_eviction",
+    "eviction_state": "workspace_and_temporary_root_evicted_12_unique_cache_objects_removed_4_shared_cache_objects_retained_directory_metadata_retained_remote_reconstruction_required"
+  },
+  "remaining_blocker": "The admission file hashes the runtime config, while the checkpoint requires that runtime config to contain the final admission file SHA. The final SHA cannot be inserted without invalidating the admission's config binding.",
+  "next_work_unit": "evidence:chainwielder_checkpoint_non_self_referential_admission_binding_v1",
+  "runtime_verification_plan": {
+    "worldserver_start_budget": 1,
+    "duration_policy": "completion-watchdog",
+    "fixed_success_timer_seconds": null,
+    "prerequisite": "First define and test a non-self-referential immutable checkpoint seal present in the config before the recurrence admission hashes it. The admission, config, and arm command must bind that same seal while the admission file retains an independently verifiable file SHA.",
+    "required_live_receipt_after_repair": "injection_count=1; real Route path or armed Route hazard retry trigger; Hazard future_pack_destination rejection; planner_receipt_id=0; identical before/after Route identity; hazard_exit_completed or one typed failed terminal"
+  }
+}
