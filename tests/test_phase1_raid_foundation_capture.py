@@ -49,6 +49,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     native_readycheck_request_identity,
     ready_for_native_readycheck,
     chainwielder_checkpoint_arm_command,
+    observe_chainwielder_checkpoint_arm_gate,
 )
 
 
@@ -85,12 +86,9 @@ def _scheduler_status(*, route_index: int = 0, encounter: bool = False) -> dict:
 
 
 def test_chainwielder_checkpoint_arm_uses_verified_precomputed_seal():
-    seal = "a" * 64
-    commit = "b" * 40
-    admission = {
-        "checkpoint_seal_sha256": seal,
-        "source_commit": commit,
-    }
+    admission = _verified_checkpoint_admission()
+    seal = admission["checkpoint_seal_sha256"]
+    commit = admission["source_commit"]
 
     assert chainwielder_checkpoint_arm_command(admission, 30008) == (
         f"botautochaincheckpoint arm 30008 {seal} {commit}"
@@ -98,10 +96,7 @@ def test_chainwielder_checkpoint_arm_uses_verified_precomputed_seal():
 
 
 def test_chainwielder_checkpoint_arm_fails_closed_on_wrong_arm_value():
-    admission = {
-        "checkpoint_seal_sha256": "a" * 64,
-        "source_commit": "b" * 40,
-    }
+    admission = _verified_checkpoint_admission()
 
     for actor_guid in (None, 0, -1):
         try:
@@ -125,6 +120,20 @@ def test_chainwielder_checkpoint_arm_fails_closed_on_wrong_arm_value():
         assert str(error) == "checkpoint_actor_without_verified_seal"
     else:
         raise AssertionError("unsealed checkpoint arm was admitted")
+
+
+def _verified_checkpoint_admission() -> dict:
+    return {
+        "valid": True,
+        "admission_sha256": "9" * 64,
+        "source_commit": "b" * 40,
+        "source_tree": "c" * 40,
+        "purpose": "fixture_expansion_replay",
+        "fixture_expansion_target_ids": [
+            "chainwielder_pre_admission_rejection_isolation_v1"
+        ],
+        "checkpoint_seal_sha256": "a" * 64,
+    }
 
 
 def test_telemetry_scheduler_reduces_steady_state_heavy_commands():
@@ -911,6 +920,189 @@ def accepted_status() -> dict:
     }
 
 
+def _materialize_profile_identity(status: dict, profile: str) -> None:
+    runtime = status["raid_runtime"]
+    expected = _expected_identity_by_slot(profile)
+    for row in runtime["roster"]:
+        identity = expected[row["roster_slot_id"]]
+        gear_guids = {
+            item["slot"]: item["guid"]
+            for item in row["gear_identity_manifest"]["items"]
+        }
+        row.update(
+            guid=identity["character_guid"],
+            account_id=identity["account_id"],
+            account=identity["account"],
+            name=identity["name"],
+            class_id=identity["class_id"],
+            class_spec=identity["class_spec"],
+            talents=list(identity["talents"]),
+            glyphs=list(identity["glyphs"]),
+        )
+        row["gear_identity_manifest"]["items"] = [
+            {
+                "slot": item["slot"],
+                "guid": gear_guids[item["slot"]],
+                "entry": item["entry"],
+                "enchant_id": item["enchant_id"],
+                "gem_item_ids": list(item["gem_item_ids"]),
+                "reforge_id": item["reforge_id"],
+            }
+            for item in identity["gear"]
+        ]
+    runtime["leader_guid"] = runtime["roster"][0]["guid"]
+
+
+def checkpoint_pre_route_status() -> dict:
+    profile = "blackwing_descent_10n_magmaw_diagnostic"
+    status = accepted_status()
+    _materialize_profile_identity(status, profile)
+    runtime = status["raid_runtime"]
+    runtime.update(
+        admission_phase="active",
+        server_provisioning_complete=True,
+        bot_actions_enabled=True,
+        strategy_id="pre_route_admission",
+        route_progress={"generation": 1, "node_index": 0},
+        alive_size=9,
+        ready_check_satisfied=False,
+    )
+    runtime["admission_receipt"] = {
+        "attempt_id": runtime["attempt_id"],
+        "server_epoch": runtime["server_epoch"],
+        "group_guid": runtime["group_guid"],
+        "instance_id": runtime["instance_id"],
+        "committed_at_ms": 12345,
+        "bot_actions_enabled_at_commit": True,
+        "scenario_id": profile,
+        "runtime_profile": profile,
+        "route_manifest_sha256": "d" * 64,
+        "entrance_map_id": runtime["map_id"],
+        "profile_generation": runtime["profile_generation"],
+        "profile_content_hash": runtime["profile_content_hash"],
+        "leader_guid": runtime["leader_guid"],
+        "all_current_gear_matches_admission": True,
+        "members": [{"guid": row["guid"]} for row in runtime["roster"]],
+    }
+    status.update(cohort_id="default", active_profile=profile)
+    return status
+
+
+class _CheckpointProcess:
+    def __init__(self) -> None:
+        self.stdin = io.BytesIO()
+
+
+def _observe_checkpoint_gate(state: dict, process: _CheckpointProcess, status: dict, admission: dict) -> dict:
+    command = chainwielder_checkpoint_arm_command(admission, 30008)
+    assert command is not None
+    return observe_chainwielder_checkpoint_arm_gate(
+        state,
+        status,
+        process=process,
+        recurrence_admission=admission,
+        checkpoint_arm_command=command,
+        actor_guid=30008,
+        profile_name="blackwing_descent_10n_magmaw_diagnostic",
+        scenario_id="blackwing_descent_10n_magmaw_diagnostic",
+        expected_route_manifest_sha256="d" * 64,
+    )
+
+
+def test_checkpoint_arm_emits_once_at_stable_pre_route_gate_without_full_foundation_acceptance():
+    status = checkpoint_pre_route_status()
+    accepted, reasons = accepted_foundation_status(
+        status,
+        profile_name="blackwing_descent_10n_magmaw_diagnostic",
+        route_partition={"node_count": 4, "terminal_index": 3},
+    )
+    assert accepted is False
+    assert {
+        "alive_size_10", "strategy_owned", "ready_check_satisfied",
+        "selected_route_terminal_node",
+    }.issubset(reasons)
+
+    state: dict = {}
+    process = _CheckpointProcess()
+    admission = _verified_checkpoint_admission()
+    _observe_checkpoint_gate(state, process, status, admission)
+    assert process.stdin.getvalue() == b""
+    _observe_checkpoint_gate(state, process, status, admission)
+    _observe_checkpoint_gate(state, process, status, admission)
+
+    command = chainwielder_checkpoint_arm_command(admission, 30008)
+    assert process.stdin.getvalue() == (command + "\n").encode()
+    assert state["command_sent"] is True
+    assert state["emission_count"] == 1
+    assert state["emission"]["route_generation"] == 1
+    assert state["last_readiness"]["accepted"] is True
+
+
+def test_checkpoint_arm_gate_rejects_material_identity_admission_and_source_tampering():
+    cases = (
+        "cohort", "profile", "admission_attempt", "admission_members",
+        "actor", "route_generation", "seal", "source", "admission",
+    )
+    for case in cases:
+        status = checkpoint_pre_route_status()
+        admission = _verified_checkpoint_admission()
+        actor_guid = 30008
+        if case == "cohort":
+            status["cohort_id"] = "foreign"
+        elif case == "profile":
+            status["active_profile"] = "blackwing_descent_10n"
+        elif case == "admission_attempt":
+            status["raid_runtime"]["admission_receipt"]["attempt_id"] += 1
+        elif case == "admission_members":
+            status["raid_runtime"]["admission_receipt"]["members"][0]["guid"] += 1
+        elif case == "actor":
+            actor_guid = 39999
+        elif case == "route_generation":
+            status["raid_runtime"]["route_progress"]["generation"] = 2
+        elif case == "seal":
+            admission["checkpoint_seal_sha256"] = "wrong"
+        elif case == "source":
+            admission["source_commit"] = "wrong"
+        else:
+            admission["valid"] = False
+        command = (
+            chainwielder_checkpoint_arm_command(_verified_checkpoint_admission(), actor_guid)
+            if case in {"seal", "source", "admission"} else
+            chainwielder_checkpoint_arm_command(admission, actor_guid)
+        )
+        state: dict = {}
+        process = _CheckpointProcess()
+        for _ in range(2):
+            observe_chainwielder_checkpoint_arm_gate(
+                state, status, process=process,
+                recurrence_admission=admission,
+                checkpoint_arm_command=command,
+                actor_guid=actor_guid,
+                profile_name="blackwing_descent_10n_magmaw_diagnostic",
+                scenario_id="blackwing_descent_10n_magmaw_diagnostic",
+                expected_route_manifest_sha256="d" * 64,
+            )
+        assert process.stdin.getvalue() == b"", case
+        assert state["command_sent"] is False, case
+        assert state["last_readiness"]["rejections"], case
+
+
+def test_checkpoint_arm_gate_requires_two_matching_ready_identities():
+    admission = _verified_checkpoint_admission()
+    process = _CheckpointProcess()
+    state: dict = {}
+    first = checkpoint_pre_route_status()
+    drifted = checkpoint_pre_route_status()
+    drifted["raid_runtime"]["admission_receipt"]["committed_at_ms"] += 1
+
+    _observe_checkpoint_gate(state, process, first, admission)
+    _observe_checkpoint_gate(state, process, drifted, admission)
+    assert process.stdin.getvalue() == b""
+    assert state["consecutive_stable_statuses"] == 1
+    _observe_checkpoint_gate(state, process, drifted, admission)
+    assert state["emission_count"] == 1
+
+
 def accepted_drudge_status() -> dict:
     status = accepted_status()
     runtime = status["raid_runtime"]
@@ -1556,37 +1748,9 @@ def test_magmaw_diagnostic_accepts_only_its_materialized_roster_identity():
     status = accepted_status()
     runtime = status["raid_runtime"]
     profile = "blackwing_descent_10n_magmaw_diagnostic"
-    expected = _expected_identity_by_slot(profile)
+    _materialize_profile_identity(status, profile)
     runtime["strategy_id"] = profile
     runtime["route_progress"] = {"generation": 4, "node_index": 3}
-    for row in runtime["roster"]:
-        identity = expected[row["roster_slot_id"]]
-        gear_guid_by_slot = {
-            item["slot"]: item["guid"]
-            for item in row["gear_identity_manifest"]["items"]
-        }
-        row.update(
-            guid=identity["character_guid"],
-            account_id=identity["account_id"],
-            account=identity["account"],
-            name=identity["name"],
-            class_id=identity["class_id"],
-            class_spec=identity["class_spec"],
-            talents=list(identity["talents"]),
-            glyphs=list(identity["glyphs"]),
-        )
-        row["gear_identity_manifest"]["items"] = [
-            {
-                "slot": item["slot"],
-                "guid": gear_guid_by_slot[item["slot"]],
-                "entry": item["entry"],
-                "enchant_id": item["enchant_id"],
-                "gem_item_ids": list(item["gem_item_ids"]),
-                "reforge_id": item["reforge_id"],
-            }
-            for item in identity["gear"]
-        ]
-    runtime["leader_guid"] = runtime["roster"][0]["guid"]
     accepted, reasons = accepted_foundation_status(
         status,
         profile_name=profile,

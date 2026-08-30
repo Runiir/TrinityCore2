@@ -1,79 +1,49 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_checkpoint_pre_route_arm_gate_v1_20260830",
-  "work_unit": "evidence:chainwielder_checkpoint_pre_route_arm_gate_v1",
+  "epoch_id": "magmaw_chainwielder_checkpoint_observation_v4_20260830",
+  "work_unit": "shard:queued_build_and_chainwielder_checkpoint_one_observation_start_v4",
   "raid": "blackwing_descent",
   "boss": "magmaw_chainwielder",
   "mode": "10N",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "gate_state": "capture_controller_pre_route_arm_gate_repair_required",
-  "observed_at_commit": "7a03aeebfba391a83ce973da47fe5ae90f6b2db5",
-  "source_handoff": {
+  "owner_skill": "raid-shard-architecture",
+  "classification": "ready_for_queued_build_and_observation",
+  "gate_state": "pre_route_arm_gate_passed_static_only_live_checkpoint_unproven",
+  "source_selection": "exact_clean_HEAD_containing_this_descriptor_and_implementation_handoff",
+  "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json",
+  "immutable_failed_capture": {
     "path": "experiments/configs/cata_raid_chainwielder_checkpoint_7a03aeebfb_live_unarmed_handoff_v1.json",
     "sha256": "86b0583948e187084bfd49ffb349f3fb281993b9285b76d900f7697060d4c484",
-    "source_commit": "7a03aeebfba391a83ce973da47fe5ae90f6b2db5",
-    "source_tree": "435660993f24fde1ec45d7350b22b6c2f4f199c2",
-    "binary_sha256": "c22cae2bc980f0667ea69ab57a8be09883b5ec4daf922e2af1386ab7d7e6d7c2",
-    "worldserver_start_count": 1,
     "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_7a03aeebfb_chainwielder_checkpoint_unarmed_20260830.dvc",
     "dvc_pointer_sha256": "1c97ae3ab072925cd3d98ecd4d3c6e05dc2b2bd0c9dc0773f137015932a4a287",
-    "dvc_directory_md5": "b0bccd6af98730e1cd74274ece860ec4.dir"
+    "workspace_state": "remote_only_verified_eviction"
   },
-  "first_broken_edge": "tools/raid_program/capture_phase1_raid_foundation.py:6638-6654 nests checkpoint arm emission inside accepted_foundation_status; that gate requires the selected terminal route node at lines 1194-1196, so it cannot arm actor 30008 before generation-2 Chainwielder. The closed capture proves required=true, command_sent=false, accepted_stable_statuses=0.",
-  "causal_signature": "chainwielder_checkpoint_controller_arm_not_emitted",
-  "causal_claim_status": "native_route_owner_hypothesis_inconclusive_boundary_not_exercised",
-  "scope_lock": {
-    "allowed_change": "Repair and test only the evidence capture controller's pre-route checkpoint arm gate. Emit once only after exact verified admission, profile, roster, map, attempt, actor, seal, and source identity are live, while leaving the independent terminal foundation acceptance gate unchanged.",
-    "forbidden": [
-      "gameplay_or_strategy_change",
-      "class_or_pet_change",
-      "boss_route_or_database_change",
-      "planner_priority_or_tolerance_change",
-      "fixture_revision_promotion",
-      "build_or_worldserver_start",
-      "gameplay_canary_or_acceptance",
-      "native_invariant_claim_from_the_unarmed_capture"
+  "admitted_actions": {
+    "queued_clean_build_count": 1,
+    "observation_only_worldserver_start_count_maximum": 1,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "checkpoint_actor_guid": 30008,
+    "required_prestart": [
+      "build_exact_clean_HEAD_once",
+      "regenerate_and_verify_exact_source_bound_recurrence_admission",
+      "bind_the_exact_checkpoint_seal_source_runtime_config_route_and_actor",
+      "verify_prestart_roster_map_attempt_profile_cohort_and_zero_residue"
     ]
   },
-  "claim_ledger": {
-    "verified": [
-      "the_exact_clean_configure_and_worldserver_build_passed_once",
-      "the_full_recurrence_bank_passed_twenty_of_twenty",
-      "the_single_worldserver_start_cleared_chainwielder_and_drudges",
-      "the_checkpoint_arm_was_required_for_actor_30008_but_command_sent_was_false",
-      "the_controller_finished_with_zero_accepted_stable_statuses",
-      "cleanup_and_deterministic_shard_baseline_restoration_passed"
-    ],
-    "refuted": [
-      "the_single_authorized_start_produced_a_completed_checkpoint_receipt"
-    ],
-    "unproven": [
-      "the_live_checkpoint_reaches_a_real_Route_owner_trigger",
-      "the_live_checkpoint_preserves_Route_identity_across_the_receipt_zero_Hazard_rejection",
-      "the_live_checkpoint_completes_the_hazard_exit"
-    ]
+  "required_observation": {
+    "controller_arm_command_sent": true,
+    "controller_arm_emission_count": 1,
+    "controller_gate_route_generation": 1,
+    "native_checkpoint_lifecycle_count": 1,
+    "terminal": "completed_or_one_typed_checkpoint_failure",
+    "required_causal_join": "actor_30008_route_owner_to_receipt_zero_hazard_rejection_to_preserved_route_identity_to_hazard_exit"
   },
-  "validation": {
-    "focused_tests": "24_passed_126_deselected",
-    "recurrence_bank": "20_of_20_passed",
-    "build_count": 1,
-    "worldserver_start_count": 1,
-    "second_start_admitted": false,
-    "checkpoint_arm_required": true,
-    "checkpoint_arm_command_sent": false,
-    "checkpoint_lifecycle_event_count": 0,
-    "fixture_revision_promoted": false,
-    "gameplay_admitted": false,
-    "acceptance_admitted": false
-  },
-  "validation_clock": {
-    "policy": "completion_watchdog",
-    "fixed_success_timer_seconds": null
-  },
-  "coordinator_followup": {
-    "next_owner": "raid-evidence-lifecycle",
-    "next_work_unit": "evidence:chainwielder_checkpoint_pre_route_arm_gate_v1",
-    "next_action": "Decouple the one-shot checkpoint arm command from full terminal foundation acceptance and add static positive/tamper tests. Do not build or start a worldserver in this bounded controller-only repair."
-  }
+  "forbidden": [
+    "second_worldserver_start",
+    "gameplay_or_fixture_mutation",
+    "database_or_provisioning_mutation_outside_the_frozen_run_plan",
+    "fixture_revision_promotion_before_receipt_review",
+    "gameplay_canary_or_acceptance_claim_from_static_tests"
+  ],
+  "next_terminal_handoff": "Publish and review the single observation bundle, then report the first typed checkpoint terminal without broadening into gameplay repair."
 }

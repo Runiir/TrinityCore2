@@ -1,0 +1,97 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:chainwielder_checkpoint_pre_route_arm_gate_v1",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "passed_static_only",
+  "source_base_commit": "e7d430405e27c230e1a6ea5ee8efa985f2b56d31",
+  "source_base_clean": true,
+  "immutable_evidence": {
+    "failed_live_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_7a03aeebfb_live_unarmed_handoff_v1.json",
+    "failed_live_handoff_sha256": "86b0583948e187084bfd49ffb349f3fb281993b9285b76d900f7697060d4c484",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_7a03aeebfb_chainwielder_checkpoint_unarmed_20260830.dvc",
+    "dvc_pointer_sha256": "1c97ae3ab072925cd3d98ecd4d3c6e05dc2b2bd0c9dc0773f137015932a4a287",
+    "dvc_workspace_hydrated": false
+  },
+  "scope_lock": {
+    "hypothesis": "The controller can arm exactly once before route generation two after two matching, exact admission-bound statuses without weakening full terminal foundation acceptance.",
+    "owned_files": [
+      "tools/raid_program/capture_phase1_raid_foundation.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json"
+    ],
+    "excluded": [
+      "production_cpp_or_gameplay",
+      "class_pet_boss_route_or_database",
+      "build_worldserver_or_live_validation",
+      "dvc_hydration_publication_or_eviction",
+      "fixture_promotion_or_acceptance"
+    ]
+  },
+  "implementation": {
+    "first_broken_edge_before": "The arm write was nested inside accepted_foundation_status, whose terminal-route predicate could not pass before the generation-2 Chainwielder checkpoint.",
+    "first_broken_edge_after": "The monitor evaluates a separate pre-route readiness gate before full foundation acceptance, requires two matching exact status identities, and emits the verified arm command once.",
+    "reused_predicates": [
+      "_watchdog_scope_rejections",
+      "_roster_rejections",
+      "_roster_binding_identity"
+    ],
+    "typed_report_schema": "chainwielder_checkpoint_pre_route_arm_gate_v1",
+    "full_foundation_gate_changed": false,
+    "gameplay_admission_changed": false,
+    "command_default_off": true
+  },
+  "changed_files": [
+    "tools/raid_program/capture_phase1_raid_foundation.py",
+    "tests/test_phase1_raid_foundation_capture.py",
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json"
+  ],
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_recurrence_admission.py tests/test_chainwielder_owner_checkpoint.py tests/test_phase1_raid_foundation_capture.py -k 'chainwielder_checkpoint or recurrence_admission or checkpoint_arm_gate or checkpoint_arm_emits'",
+    "final_result": "27 passed, 126 deselected",
+    "correction_cycle": "One compacting-pass regression for a missing non-roster actor rejection was corrected; the final rerun passed.",
+    "fail_before_signal": "The early status is rejected by unchanged full foundation acceptance for alive_size_10, strategy_owned, ready_check_satisfied, and selected_route_terminal_node; the old nested branch therefore emits zero arm commands.",
+    "pass_after_signal": "The same early status reaches the separate generation-1 gate and emits exactly once after two matching admission-bound observations.",
+    "negative_signals": [
+      "cohort_mismatch",
+      "profile_mismatch",
+      "admission_attempt_mismatch",
+      "admission_member_mismatch",
+      "missing_exact_actor",
+      "route_generation_two_or_later",
+      "seal_tamper",
+      "source_tamper",
+      "verified_admission_tamper"
+    ],
+    "build_run": false,
+    "worldserver_start_count": 0,
+    "dvc_artifacts_produced": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_failed_capture_did_not_send_the_required_arm_command",
+      "the_old_source_nested_arm_emission_inside_full_terminal_foundation_acceptance",
+      "the_new_controller_path_requires_two_matching_pre_route_admission_bound_statuses",
+      "the_new_controller_path_emits_the_verified_command_at_most_once",
+      "material_identity_admission_actor_seal_and_source_tampering_fail_closed",
+      "accepted_foundation_status_is_unchanged_and_independently_rejects_the_early_status"
+    ],
+    "refuted": [
+      "full_terminal_route_acceptance_is_required_to_emit_the_checkpoint_arm_command",
+      "one_ready_status_is_sufficient_to_emit_the_command"
+    ],
+    "unproven": [
+      "the_next_live_controller_report_has_command_sent_true",
+      "the_native_checkpoint_reaches_a_real_Route_owner_trigger",
+      "the_native_checkpoint_preserves_Route_identity_and_completes_the_hazard_exit"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:queued_build_and_chainwielder_checkpoint_one_observation_start_v4",
+    "owner_skill": "raid-shard-architecture",
+    "authorization": "One queued build of the exact clean HEAD and at most one observation-only completion-watchdog worldserver start.",
+    "required_terminal": "command_sent=true, emission_count=1, and one actor-30008 checkpoint lifecycle ending completed or at one typed failed checkpoint terminal.",
+    "forbidden": "No second start, gameplay change, fixture promotion, canary, or acceptance claim."
+  }
+}
