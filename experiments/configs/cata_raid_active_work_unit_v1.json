@@ -1,29 +1,29 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:chainwielder_route_checkpoint_regression_receipt_refresh_v100",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "evidence_review_required",
-  "epoch_id": "v99_route_checkpoint_semantics_20260831",
-  "observed_at_commit": "a4d1c3d0b2efc107e1d3b153866a9e57ad555109",
-  "immutable_input_commit": "a4d1c3d0b2efc107e1d3b153866a9e57ad555109",
-  "gate_state": "corrected_fixture_requires_exact_current_regression_receipt",
+  "work_unit": "review:chainwielder_checkpoint_production_boundary_v101",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "independent_review_required",
+  "epoch_id": "v100_checkpoint_production_boundary_20260831",
+  "observed_at_commit": "a6c997324e76920f415d821a15ff8af0d5c7a261",
+  "immutable_input_commit": "a6c997324e76920f415d821a15ff8af0d5c7a261",
+  "gate_state": "production_boundary_repair_requires_independent_review",
   "behavior_change": false,
   "evidence_contract_change": true,
   "ready_for_bounded_repair": false,
   "ready_for_live_verification": false,
   "ready_for_fixture_expansion": false,
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:chainwielder_route_checkpoint_regression_receipt_refresh_v100",
-  "next_action": "Review the V99 production-bound checkpoint correction and create an exact-current full recurrence-bank receipt before any separately authorized build or live replay.",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_work_unit": "review:chainwielder_checkpoint_production_boundary_v101",
+  "next_action": "Independently review the active-Route-only trigger, shared lifecycle boundary, and exact live scheduler validation before any regression receipt refresh, build, or live replay.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v99_route_checkpoint_fixture_semantic_correction_handoff_v100.json",
-    "sha256": "73163d2a3c3433bfc354c369444d5dc1acc05ff9a82a2696ba2874fda564a4ce",
-    "source_commit": "a4d1c3d0b2efc107e1d3b153866a9e57ad555109",
-    "implementation_commit": "a4d1c3d0b2efc107e1d3b153866a9e57ad555109",
-    "implementation_tree": "8782325d5da7d70a0fa74e89b6b2ed329ba09221"
+    "path": "experiments/configs/cata_raid_v100_checkpoint_production_boundary_repair_handoff_v101.json",
+    "sha256": "0fe75c3f0b03c9c9f6058d7d5eb94b64326b19ac3b8d14c5d5ee038be1a607f2",
+    "source_commit": "a6c997324e76920f415d821a15ff8af0d5c7a261",
+    "implementation_commit": "a6c997324e76920f415d821a15ff8af0d5c7a261",
+    "implementation_tree": "6ee25a2214c71184654eec649259c1cfef052398"
   },
   "program_scope": {
-    "operation": "exact-current regression receipt for corrected Route-preservation checkpoint semantics",
+    "operation": "independent review of the corrected Chainwielder checkpoint production boundary",
     "build_admitted": false,
     "worldserver_start_admitted": false,
     "fixture_expansion_replay_admitted": false,
@@ -32,16 +32,15 @@
     "gameplay_mutations_allowed": false
   },
   "scope_lock": {
-    "allowed_change": "Review the committed V99 fixture boundary and refresh only its exact-current regression receipt and admission evidence.",
+    "allowed_change": "Review only implementation a6c997324e, its shared checkpoint transition, exact lifecycle receipt, and focused tests. Produce a review handoff and next descriptor.",
     "forbidden": [
-      "gameplay, geometry, destination, planner, tolerance, priority, encounter, class, route, or compatibility-adapter changes",
-      "worldserver build or start, provisioning, database mutation, gameplay canary, or map-669 revision claims",
-      "restoring hazard_exit_completed as the Route-preservation checkpoint terminal"
+      "gameplay, geometry, planner, destination, priority, encounter, class, DPS, or ordinary retry changes",
+      "build, worldserver, authserver, provisioning, database, DVC, recurrence-bank refresh, or live claims"
     ]
   },
   "execution_budget": {
     "focused_test_run_count_maximum": 1,
-    "focused_correction_rerun_count_maximum": 1,
+    "focused_correction_rerun_count_maximum": 0,
     "configure_count": 0,
     "worldserver_build_count": 0,
     "worldserver_start_count": 0,
@@ -51,27 +50,28 @@
     "dvc_mutation_count": 0
   },
   "required_terminal_evidence": {
-    "fail_before": "the prior full recurrence receipt predates implementation a4d1c3d0b2 and the corrected checkpoint outcome contract",
-    "pass_after": "one exact-current full-bank receipt binds implementation a4d1c3d0b2 and the Route-preserved-after-receiptless-Hazard-rejection terminal",
+    "pass": "the reviewer confirms only a real actor/attempt/wipe/generation/node-bound active Route path can inject and the live capture scheduler requires every exact successful lifecycle field",
+    "fail": "the reviewer finds a remaining retry-only trigger, manual snapshot-copy certification, partial terminal acceptance, or a mismatch between compiled boundary and live callsites",
     "negative_outcomes": [
-      "accepted configured Hazard/Hazard movement is not counted as Route or receipt-zero rejection",
-      "missing active Route path and stale actor, attempt, wipe, generation, or node cannot trigger",
-      "duplicate injection and lifecycle transitions remain rejected",
-      "ordinary gameplay hazard_exit_completed telemetry remains independent"
+      "accepted Hazard/Hazard movement cannot trigger the Route checkpoint",
+      "armed Route-hazard retry alone cannot trigger",
+      "failed or partial checkpoint lifecycle cannot release the controller hold",
+      "native ExecuteMovementIntent remains explicitly unproven by the compiled value fixture"
     ]
   },
   "remaining_unproven": [
+    "independent review acceptance",
     "an exact-current full recurrence-bank receipt",
-    "map-669 revisions 4/5/5 and required native outcomes",
-    "any build, worldserver, gameplay canary, or boss outcome"
+    "native movement execution under a built worldserver",
+    "map-669 or Magmaw gameplay outcome"
   ],
   "validation_clock": {
-    "policy": "completion_watchdog",
+    "policy": "completion-watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "full_bank_receipt_pass",
-      "full_bank_typed_failure",
+      "independent_review_pass",
+      "independent_review_fail",
       "scope_or_identity_violation"
     ]
   }
