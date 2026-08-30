@@ -17,6 +17,8 @@ try:
     from tools.raid_program.recurrence_admission import (
         CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
         FIXTURE_EXPANSION_PURPOSE,
+        RecurrenceAdmissionError,
+        _fixture_expansion_contract,
     )
 except ModuleNotFoundError:
     from capture_runtime_acceptance import _roster_rejections
@@ -26,6 +28,32 @@ except ModuleNotFoundError:
     from recurrence_admission import (
         CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
         FIXTURE_EXPANSION_PURPOSE,
+        RecurrenceAdmissionError,
+        _fixture_expansion_contract,
+    )
+
+
+def _verified_checkpoint_target_contract(
+    recurrence_admission: dict[str, Any],
+) -> bool:
+    """Require the checkpoint plus every authenticated expansion request."""
+
+    try:
+        requests = _fixture_expansion_contract(
+            recurrence_admission, label="checkpoint_verified_admission"
+        )
+    except RecurrenceAdmissionError:
+        return False
+    targets = recurrence_admission.get("fixture_expansion_target_ids")
+    revisions = recurrence_admission.get("fixture_revisions")
+    if (
+        CHAINWIELDER_CHECKPOINT_FIXTURE_ID not in targets
+        or not isinstance(revisions, dict)
+    ):
+        return False
+    return all(
+        revisions.get(request["fixture_id"]) == request["from_revision"]
+        for request in requests
     )
 
 
@@ -46,8 +74,7 @@ def chainwielder_checkpoint_arm_command(
     if (
         recurrence_admission.get("valid") is not True
         or recurrence_admission.get("purpose") != FIXTURE_EXPANSION_PURPOSE
-        or recurrence_admission.get("fixture_expansion_target_ids")
-        != [CHAINWIELDER_CHECKPOINT_FIXTURE_ID]
+        or not _verified_checkpoint_target_contract(recurrence_admission)
         or not isinstance(admission_sha256, str)
         or not re.fullmatch(r"[0-9a-f]{64}", admission_sha256)
     ):

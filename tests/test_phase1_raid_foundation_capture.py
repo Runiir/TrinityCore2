@@ -129,6 +129,73 @@ def test_chainwielder_checkpoint_arm_uses_verified_precomputed_seal():
     )
 
 
+def test_chainwielder_checkpoint_arm_accepts_only_verified_composite_targets():
+    admission = _verified_checkpoint_admission()
+    requests = [
+        {
+            "fixture_id": "same_level_floor_observation_v1",
+            "from_revision": 3,
+            "to_revision": 4,
+            "causal_signature": "same_level_movement_path_floor_false_negative",
+            "required_production_boundary": "map_669_native_floor_observation",
+        },
+        {
+            "fixture_id": "same_level_hazard_path_admission_v1",
+            "from_revision": 4,
+            "to_revision": 5,
+            "causal_signature": "same_level_encounter_hazard_path_rejection",
+            "required_production_boundary": "map_669_native_hazard_path_admission",
+        },
+        {
+            "fixture_id": "same_level_native_path_proof_v1",
+            "from_revision": 4,
+            "to_revision": 5,
+            "causal_signature": "same_level_native_path_proof_false_negative",
+            "required_production_boundary": "map_669_native_path_proof",
+        },
+    ]
+    target_ids = [
+        "chainwielder_pre_admission_rejection_isolation_v1",
+        *(request["fixture_id"] for request in requests),
+    ]
+    admission.update(
+        fixture_expansion_target_ids=target_ids,
+        fixture_expansion_requests=requests,
+        pending_fixture_ids=["chainwielder_pre_admission_rejection_isolation_v1"],
+        fixture_revisions={
+            request["fixture_id"]: request["from_revision"]
+            for request in requests
+        },
+    )
+
+    assert chainwielder_checkpoint_arm_command(admission, 30008) is not None
+
+    rejected = []
+    for mutation in ("missing_checkpoint", "unexpected_target", "stale", "wrong_gate"):
+        candidate = json.loads(json.dumps(admission))
+        if mutation == "missing_checkpoint":
+            candidate["fixture_expansion_target_ids"].pop(0)
+            candidate["pending_fixture_ids"] = []
+        elif mutation == "unexpected_target":
+            candidate["fixture_expansion_target_ids"].append("unexpected_fixture_v1")
+        elif mutation == "stale":
+            candidate["fixture_revisions"][requests[0]["fixture_id"]] = 2
+        else:
+            candidate["purpose"] = "gameplay_canary"
+        try:
+            chainwielder_checkpoint_arm_command(candidate, 30008)
+        except ValueError as error:
+            rejected.append((mutation, str(error)))
+        else:
+            raise AssertionError(f"{mutation} composite target set was admitted")
+    assert rejected == [
+        (mutation, "checkpoint_verified_admission_invalid")
+        for mutation in (
+            "missing_checkpoint", "unexpected_target", "stale", "wrong_gate"
+        )
+    ]
+
+
 def test_chainwielder_checkpoint_arm_fails_closed_on_wrong_arm_value():
     admission = _verified_checkpoint_admission()
 
@@ -709,6 +776,11 @@ def _verified_checkpoint_admission() -> dict:
         "fixture_expansion_target_ids": [
             "chainwielder_pre_admission_rejection_isolation_v1"
         ],
+        "fixture_expansion_requests": [],
+        "pending_fixture_ids": [
+            "chainwielder_pre_admission_rejection_isolation_v1"
+        ],
+        "fixture_revisions": {},
         "checkpoint_seal_sha256": "a" * 64,
     }
 

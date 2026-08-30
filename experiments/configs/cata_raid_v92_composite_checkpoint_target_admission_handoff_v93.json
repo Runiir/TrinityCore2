@@ -1,0 +1,105 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:bind_composite_fixture_targets_to_checkpoint_arm_v92",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_pending_live_verification",
+  "source": {
+    "commit": "7f97cf2ba91e4c6f89af87036050bc63e2534ab1",
+    "clean_before_work": true,
+    "v91_handoff": "experiments/configs/cata_raid_v91_checkpoint_composite_target_prestart_failed_handoff_v92.json",
+    "v91_handoff_sha256": "096ad638bfdef2783c1b2f95b0aa06490abf7f0f71f049bdbcc6758093bbe238"
+  },
+  "first_broken_edge": {
+    "before": "chainwielder_checkpoint_arm_command rejected every verified fixture-expansion target list except the Chainwielder singleton",
+    "after": "the controller requires the recurrence contract, Chainwielder membership, and every expansion request at its verified current revision",
+    "preserved_rejection": "checkpoint_verified_admission_invalid"
+  },
+  "admitted_composite": {
+    "purpose": "fixture_expansion_replay",
+    "target_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "requested_revisions": {
+      "same_level_floor_observation_v1": {
+        "from": 3,
+        "to": 4
+      },
+      "same_level_hazard_path_admission_v1": {
+        "from": 4,
+        "to": 5
+      },
+      "same_level_native_path_proof_v1": {
+        "from": 4,
+        "to": 5
+      }
+    },
+    "identity_invariants": [
+      "target set equals pending targets union authenticated request IDs",
+      "Chainwielder checkpoint target is present",
+      "each request from_revision equals its verified current fixture revision",
+      "admission purpose, hash, seal, source commit, and actor remain exact"
+    ]
+  },
+  "negative_contract": {
+    "missing_chainwielder": "rejected",
+    "unexpected_unbound_target": "rejected",
+    "stale_request_revision": "rejected",
+    "non_fixture_expansion_purpose": "rejected"
+  },
+  "implementation": {
+    "files": {
+      "tools/raid_program/capture_checkpoint_controller.py": {
+        "sha256": "6632f244e3eb2d8c47c73a60e3c2e897f83e1e55774775a9219c77c30c8773f2",
+        "lines": 289
+      },
+      "tests/test_phase1_raid_foundation_capture.py": {
+        "sha256": "b6e29f9ee4a9354990931bd054cb77c3bb4c7fd85feaac8b53a5c6fb14d31b5f",
+        "production_bound_regression": "test_chainwielder_checkpoint_arm_accepts_only_verified_composite_targets"
+      }
+    },
+    "controller_arm_ccn": {
+      "measurement": "AST decision approximation",
+      "before": 16,
+      "after": 16,
+      "new_target_contract_helper": 4,
+      "note": "the target-set checks moved behind one shared recurrence-contract call; the arm function's aggregate branch count did not increase"
+    }
+  },
+  "validation": {
+    "fail_before": "1 failed in 0.45s",
+    "focused_command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py -k 'chainwielder_checkpoint or checkpoint_arm or checkpoint_pre_route'",
+    "focused_result": "7 passed, 143 deselected in 7.14s",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutation_count": 0,
+    "gameplay_mutation_count": 0
+  },
+  "evidence_lifecycle": {
+    "v91_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_99fa708520_v91_checkpoint_composite_target_prestart_failed_20260830.dvc",
+    "v91_pointer_sha256": "7ebe9d5291d8b073e7b5a4605234c956fe511c5c400d99ef5f98564b4367f9a8",
+    "remote_reconstruction": "verified",
+    "hydrated_payload": "evicted"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the V91 composite admission now reaches the checkpoint arm boundary",
+      "missing checkpoint, unmatched targets, stale revisions, and wrong-purpose admissions remain fail closed",
+      "the fix reuses the authoritative recurrence target/request contract and does not hardcode map-669 IDs in production"
+    ],
+    "refuted": [
+      "the checkpoint arm must require a singleton target list"
+    ],
+    "unproven": [
+      "the fresh map-669 production replay and revisions 4/5/5",
+      "any gameplay canary or boss result"
+    ]
+  },
+  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v93",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run one fresh exact-current map-669 fixture replay with the preserved composite admission and completion watchdog; no retry."
+}
