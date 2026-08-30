@@ -1,0 +1,58 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:composite_map669_production_boundary_replay_v111",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "configure_operand_preflight_failed",
+  "source": {
+    "commit": "7246a213108b976cad243556a4370f7e80fe1f78",
+    "tree": "1dcdf326c0e0ec8e143caadfed286fffb16fd53d",
+    "active_descriptor_sha256": "1ab07640ad08fdbd4c091b2d57db2f422c321e859aa39695401b73ada72710ae",
+    "v110_handoff_sha256": "bb4608e7ae05e5a7ab0eb2469ea663ca760f8381dbc9595fd7791c3d3829b93a"
+  },
+  "inherited_admission": {
+    "source_commit": "50ce8b07cfe71767e31437aa4425837ed1de950a",
+    "fixture_commands": "20/20 returned zero",
+    "fixture_expansion_target_count": 4,
+    "receipt_sha256": "2febca3542389c11c084553a6de8527e0a8d189078f2c74e0f054f98151ea388",
+    "decision_sha256": "3ca28cc493d235cf820d16361c2644fb8e744cf458d70c677bf454dc09a3d7fe"
+  },
+  "first_failed_gate": {
+    "stage": "queued_fast8_v4_configure_command_preflight",
+    "stderr": "queued_build: policy-bound configure must use -S . -B build",
+    "cause": "the submitted argv used absolute source and build operands instead of the frozen relative operands",
+    "accepted_executable": "/usr/bin/cmake",
+    "required_prefix": ["/usr/bin/cmake", "-S", ".", "-B", "build"],
+    "configure_process_started": false,
+    "build_started": false,
+    "worldserver_started": false,
+    "authserver_started": false,
+    "database_mutated": false,
+    "retry_attempted": false,
+    "terminal_edge": "preflight_invocation_failed_no_native_execution"
+  },
+  "production_boundary_status": "all_four_missing_prestart_invocation_failed",
+  "claim_ledger": {
+    "verified": [
+      "the literal frozen CMake executable passed its dedicated preflight predicate",
+      "the coordinator rejected absolute -S and -B operands before ticket creation or CMake execution",
+      "no configure, build, worldserver, authserver, database, gameplay, or DVC publication mutation occurred"
+    ],
+    "unproven": [
+      "V106 controller release ordering in a second live execution",
+      "all four admitted production boundaries",
+      "spellbook identity across the next worldserver lifecycle",
+      "any gameplay, Magmaw clear, DPS, HPS, or acceptance result"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:composite_map669_production_boundary_replay_v112",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Repeat the identical observation-only replay chain from one exact clean descriptor HEAD. Invoke the sole configure with exact prefix /usr/bin/cmake -S . -B build, then perform at most one fast8_v4 worldserver build, one strict spellbook-aware read-only verifier, one atomic bundle create and verify, and one no-retry completion-watchdog worldserver start. Do not reprovision or start an authserver.",
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "authserver_start_count_maximum": 0,
+    "database_mutation_count_maximum": 0,
+    "retry_count_maximum": 0
+  }
+}
