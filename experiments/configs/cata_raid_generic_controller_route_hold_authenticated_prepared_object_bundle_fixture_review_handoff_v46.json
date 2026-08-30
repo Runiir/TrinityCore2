@@ -1,0 +1,121 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_authenticated_bundle_fixture_review_v46",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_evidence_not_independently_reconstructible",
+  "source_state": {
+    "reviewed_commit": "d5c89ea0103da530623e6746597142427ce65729",
+    "reviewed_tree": "7610a65d506f7772fe23f671da2424abef04b638",
+    "fixture_source_commit": "1e6c7b59d55379878d5915dcab94bd68d97f66e2",
+    "clean_before_review": true,
+    "v44_handoff_sha256": "2c3b315484f1a60626f4fe3dbe13d900e9f18000fa58dd2b21e44207c5470273",
+    "v45_handoff_sha256": "d37089695ff6c1492be209c3abf528f8f5f2180ae76ed67723b3271bec6c27d7",
+    "v45_changed_files": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_generic_controller_route_hold_authenticated_prepared_object_bundle_fixture_handoff_v45.json"
+    ]
+  },
+  "independent_reconstruction": {
+    "dvc_directory_manifest_md5": "3c2286d3c01ccc479606a66b2babec34.dir",
+    "catalog_member_md5": "b1415465d3f26567e0af3e76cfb7bfed",
+    "catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "catalog_row_count": 77,
+    "selected_scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "selected_row_count": 4,
+    "selected_rows_sha256": "b47a63e9a45ea351da40e4a53b7df0cef7e3f9092f1b965aa2dc506bb2e85cda",
+    "prepared_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "selected_node_ids": [
+      "bwd.entry.regroup",
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ],
+    "route_generations": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "runtime_initial_node_id": "bwd.magmaw.chainwielder",
+    "runtime_suffix_node_ids": [
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ],
+    "source_profile_manifest_sha256": "d774828316837aa5c67095d3615db90341799cb1de668f1f607d105493027647",
+    "source_selected_profile_sha256": "6020c094bbd9e59ee66aecebbb03a61d5012c2b0e1348e36bf745eadf06adae0",
+    "profile_manifest_envelope_sha256": "f4a7f7fa2123062cbfaa226d16fd36a6066a09149a8caa46098c070c1ccc535c"
+  },
+  "fixture_boundary_review": {
+    "production_bundle_sha256": "4de020a2a42428e8d9da91dee9cf37b6a45c28b51a73e422ef4cb17db3a8db4c",
+    "production_bundle_lines": 984,
+    "v45_production_change_count": 0,
+    "create_calls_verify_bundle_on_sibling_staging_before_atomic_replace": true,
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py::test_v6_manual_missing_flag_fails_before_atomic_bundle_passes_after tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity tests/test_chainwielder_prestart_bundle.py::test_launch_contract_is_exact_one_start_completion_watchdog tests/test_chainwielder_prestart_bundle.py::test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged",
+    "focused_result": "4 passed in 0.50s",
+    "fixture_payload_temp_evicted": true,
+    "remaining_non_authoritative_temp_file": "/tmp/v45_post_status.json",
+    "git_clean_after_validation": true
+  },
+  "evidence_gap": {
+    "first_broken_edge": "V45 retained summary booleans and hashes but not the ordered fixture event/result bytes or the exact bundle payloads that produced its path-dependent hashes",
+    "missing_reconstructible_proof": [
+      "the exact one-stage, one-materialize, one-prepared-verify, one-create, one-explicit-verify operation ledger",
+      "the three original, sibling-staging, and final fixture-gate observations with authenticated receipt and policy bytes",
+      "the exact prepared-object pathname supplied to create",
+      "the final bundle manifest, runtime profile, launch contract, create result, and explicit verify bytes behind the reported hashes",
+      "an ordered execution record proving the launch contract, worldserver, build, database, and DVC actions were not invoked"
+    ],
+    "reason": "The compact V45 handoff is the only tracked occurrence of most reported values, and its fixture directory was evicted. Stored passed/executed booleans cannot independently prove those historical events. A fresh deterministic test proves the production boundary, not the historical V45 call counts."
+  },
+  "binary_reuse_review": {
+    "current_binary_sha256": "04a9ad083f4623e7adde5b44d20d93f15e9c98c53b5bc4d77fd6ec33aa0d50b0",
+    "retained_attestation_source_commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db",
+    "reviewed_source_commit": "d5c89ea0103da530623e6746597142427ce65729",
+    "current_source_build_ticket_count": 0,
+    "reusable_for_live": false,
+    "decision": "No exact current-source gate-bearing build receipt exists; do not reuse this binary for live admission."
+  },
+  "claim_ledger": {
+    "verified": [
+      "the tracked DVC directory manifest authenticates the 77-row catalog member and independently reproduces the catalog, selected-row, and prepared-object hashes reported by V45",
+      "the prepared object contains entrance regroup followed by Chainwielder, Drudges, and Magmaw; unchanged bundle code deterministically begins its runtime suffix at Chainwielder and retains Drudges plus Magmaw",
+      "the committed source profile, selected-profile, and profile-envelope identities match V45",
+      "the unchanged create performs a mandatory verify on sibling staging before atomic replace, and the focused real create/verify, suffix, launch-contract, and three-path boundary tests pass",
+      "V45 changed no production, test, skill, build, server, database, DVC, gameplay, or controller file",
+      "the V45 fixture payload directory is absent and Git remained clean after independent validation"
+    ],
+    "refuted": [
+      "all V45 counts and path-dependent hashes can be independently reconstructed from its compact handoff",
+      "an exact gate-bearing binary attestation exists for the reviewed current source"
+    ],
+    "unproven": [
+      "the historical V45 three-phase stub call count and exact per-phase observations",
+      "the historical V45 create result, explicit verify result, bundle/profile/launch hashes, and launch non-execution assertion",
+      "any native Held, arm, terminal, release, retained Drudges, DPS, HPS, or pet-share outcome"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_fixture_receipt_retention_v47",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Run exactly one no-live reconstruction of the authenticated stage, prepared materialize/verify, three-path hash-based fixture gate, unchanged atomic create, and explicit verify. Retain one canonical typed evidence packet containing the ordered operation ledger and canonical bytes or complete reconstructible records for every claimed receipt/result/bundle identity before evicting exact temporary payloads. Do not build or start a worldserver.",
+    "budget": {
+      "targeted_validation_scenarios_checkout_count_maximum": 1,
+      "canonical_stage_count_maximum": 1,
+      "prepared_object_materialize_count_maximum": 1,
+      "prepared_object_verify_count_maximum": 1,
+      "atomic_bundle_create_count_maximum": 1,
+      "atomic_bundle_explicit_verify_count_maximum": 1,
+      "worldserver_build_count_maximum": 0,
+      "worldserver_start_count_maximum": 0,
+      "retry_count_maximum": 0
+    },
+    "forbidden": [
+      "production_skill_or_test_edit",
+      "configure_build_or_launch_execution",
+      "database_or_gameplay_mutation",
+      "live_authorization_from_summary_booleans",
+      "broad_dvc_gc_or_unbounded_hydration"
+    ]
+  }
+}
