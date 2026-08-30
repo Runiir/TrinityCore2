@@ -1,0 +1,84 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_external_route_staging_preflight_v31",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_complete_pending_independent_review",
+  "source_state": {
+    "commit": "d531ab6d8c6f31af9d5a81d105b50bbec9420529",
+    "source_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_bundle_input_location_failure_handoff_v30.json",
+    "source_handoff_sha256": "75c784db3a64f85e7186ca341db16853ec37f9757a4386d057c75d2f50abd50f"
+  },
+  "scope_lock": {
+    "owned_behavior": "authenticate and stage one exact canonical DVC route outside the worktree before an atomic bundle create can be invoked or counted",
+    "excluded": [
+      "bundle_create_or_verify",
+      "native_or_gameplay",
+      "controller_priority_or_watchdog",
+      "configure_build_worldserver_database_or_dvc_mutation"
+    ],
+    "behavior_change": false,
+    "evidence_contract_change": true
+  },
+  "implementation": {
+    "production_api": "tools.raid_program.chainwielder_prestart_bundle.stage_canonical_route",
+    "receipt_schema": "cata_raid_external_route_staging_receipt_v1",
+    "authority_chain": [
+      "clean Git HEAD and tree",
+      "HEAD-exact dvc.yaml and dvc.lock bytes",
+      "validation_scenarios locked output directory digest",
+      "hash-authenticated local DVC .dir cache manifest",
+      "exact route member MD5",
+      "caller-bound source SHA-256",
+      "external non-symlink run root",
+      "atomic same-filesystem staged copy and receipt publication",
+      "post-copy source and staged SHA-256 equality"
+    ],
+    "files": [
+      {
+        "path": "tools/raid_program/chainwielder_prestart_bundle.py",
+        "lines": 999,
+        "sha256": "f88ad8deaf651eb7745e0b330f686c1fda967033bc8833c1f298e0cd449523b0"
+      },
+      {
+        "path": "tests/test_chainwielder_prestart_bundle.py",
+        "lines": 968,
+        "sha256": "e2b0a67c23797657d9ba59d30c95cbcc46dd28cad69110dd3a7370a3a5661d77"
+      },
+      {
+        "path": ".agents/skills/raid-shard-architecture/SKILL.md",
+        "lines": 396,
+        "sha256": "371b26c8cd40de878431bdf89e5ca163c10bbf9497b9ce629c73b2d141e09985"
+      }
+    ]
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py -k external_route_staging",
+    "focused_result": "11 passed, 34 deselected in 0.41s",
+    "py_compile": "passed",
+    "skill_quick_validate": "Skill is valid!",
+    "diff_check": "passed",
+    "atomic_bundle_create_count": 0,
+    "atomic_bundle_verify_count": 0,
+    "worldserver_start_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "the actual canonical route is a DVC output rather than a direct Git blob",
+      "the preflight authenticates the route through HEAD-bound DVC metadata without invoking DVC",
+      "exact external copies produce a hash-bound typed receipt while preserving source bytes",
+      "missing source/cache, source/caller/copy/cache drift, dirty HEAD, conflicting destination, worktree root, and symlink root all reject before create",
+      "the shard skill now requires receipt validation before consuming the sole atomic-create budget"
+    ],
+    "refuted": [
+      "the canonical route file itself can be authenticated with git cat-file HEAD:path"
+    ],
+    "unproven": [
+      "the staged route reaches the existing atomic bundle creator and verifier",
+      "the next live shard reaches Held generation one and the required checkpoint lifecycle"
+    ]
+  },
+  "next_work_unit": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "action": "independently review the V31 authority chain before granting one atomic create; no live execution is admitted by this handoff"
+  }
+}
