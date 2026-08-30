@@ -1,50 +1,49 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:composite_map669_production_boundary_replay_v110",
+  "work_unit": "shard:composite_map669_production_boundary_replay_v111",
   "owner_skill": "raid-shard-architecture",
-  "classification": "fixture_expansion_admitted_spellbook_and_lifecycle_restored",
-  "epoch_id": "v110_composite_map669_production_boundary_replay_20260831",
-  "observed_at_commit": "184f3c5205cc25ea5ebf7660cab6056c0ea5286d",
-  "immutable_input_commit": "184f3c5205cc25ea5ebf7660cab6056c0ea5286d",
-  "gate_state": "fixture_expansion_admitted_roster_verified_gameplay_closed",
+  "classification": "configure_invocation_corrected_identical_replay_reauthorized",
+  "epoch_id": "v111_composite_map669_production_boundary_replay_20260831",
+  "observed_at_commit": "50ce8b07cfe71767e31437aa4425837ed1de950a",
+  "immutable_input_commit": "50ce8b07cfe71767e31437aa4425837ed1de950a",
+  "gate_state": "fixture_expansion_admitted_configure_invocation_corrected_gameplay_closed",
   "behavior_change": false,
   "evidence_contract_change": false,
   "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
   "next_owner_skill": "raid-shard-architecture",
-  "next_work_unit": "shard:composite_map669_production_boundary_replay_v110",
-  "next_action": "Run one fresh exact-clean no-retry completion-watchdog map-669 replay for the four admitted production boundaries. Re-run the strict provisioning verifier read-only immediately before launch; do not reprovision or start an authserver.",
+  "next_work_unit": "shard:composite_map669_production_boundary_replay_v111",
+  "next_action": "Run the identical exact-clean no-retry composite map-669 replay, using literal /usr/bin/cmake for the sole fast8_v4 configure. Re-run the strict provisioning verifier read-only immediately before launch; do not reprovision or start an authserver.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v109_spellbook_lifecycle_identity_restored_handoff_v110.json",
-    "sha256": "945c9dc4404ccd259a10740f0e8c5c4490a6e03e66cd00e07cd65d6d2ed360e3",
-    "source_commit": "184f3c5205cc25ea5ebf7660cab6056c0ea5286d",
-    "source_tree": "36b921569174020a4c45477df4d91ab4a4014e0f"
+    "path": "experiments/configs/cata_raid_v110_configure_invocation_preflight_failed_handoff_v111.json",
+    "sha256": "bb4608e7ae05e5a7ab0eb2469ea663ca760f8381dbc9595fd7791c3d3829b93a",
+    "source_commit": "50ce8b07cfe71767e31437aa4425837ed1de950a",
+    "source_tree": "407b920d218bbed936b8c142bc583a850d7c1c69"
   },
   "completed_predecessor": {
-    "work_unit": "shard:restore_map669_spellbook_and_lifecycle_identity_v109",
-    "prepare_only_invocations": 1,
-    "strict_verifier_invocations": 1,
-    "shard_readback_invocations": 1,
-    "strict_verifier_passed": true,
-    "shard_readback_passed": true,
-    "selected_name_count": 10,
-    "map_id": 669,
-    "complete_required_spellbooks": true,
-    "zero_lifecycle_residue": true,
+    "work_unit": "shard:composite_map669_production_boundary_replay_v110",
+    "full_bank_invocations": 1,
+    "full_bank_fixture_commands": "20/20 returned zero",
+    "fixture_expansion_target_count": 4,
+    "configure_invocation_count": 1,
+    "configure_process_start_count": 0,
+    "worldserver_build_count": 0,
     "worldserver_start_count": 0,
     "authserver_start_count": 0,
-    "database_mutation_count": 1,
-    "dvc_mutation_count": 0
+    "database_mutation_count": 0,
+    "dvc_mutation_count": 0,
+    "terminal_edge": "preflight_invocation_failed_no_native_execution"
   },
   "inherited_admission": {
-    "source_work_unit": "shard:composite_map669_production_boundary_replay_v108",
+    "source_work_unit": "shard:composite_map669_production_boundary_replay_v110",
     "fixture_commands": "20/20 returned zero",
     "fixture_expansion_target_count": 4,
-    "binary_sha256": "b19334830150185e90206ba9f75f8bbdfd9e2669e7860d2681469c4e3c6420ea",
+    "full_bank_receipt_sha256": "2febca3542389c11c084553a6de8527e0a8d189078f2c74e0f054f98151ea388",
+    "full_bank_decision_sha256": "3ca28cc493d235cf820d16361c2644fb8e744cf458d70c677bf454dc09a3d7fe",
     "canonical_route_and_derived_runtime_config_verified": true,
     "atomic_bundle_create_and_verify": true,
-    "preservation_basis": "V109 changed only deterministic database provisioning state and experiment handoff/descriptor files; no fixture, runtime, route, gameplay, or native source changed"
+    "preservation_basis": "V110 ran the exact bank at source 50ce8b07cfe7, then stopped before configure execution. V111 changes only the compact handoff and active descriptor; no fixture, runtime, route, gameplay, native source, or database state changed."
   },
   "program_scope": {
     "operation": "one observation-only worldserver-backed map-669 composite production-bound fixture-expansion replay",
@@ -61,7 +60,7 @@
     "dvc_mutations_allowed": true
   },
   "scope_lock": {
-    "allowed_change": "At exact clean descriptor HEAD, obtain at most one gate-bearing fast8 build, run one strict read-only provisioning verifier, verify route and atomic bundle identity, then run one no-retry map-669 replay for exactly the four admitted production boundaries. Publish, remotely reconstruct, and exactly evict only that evidence.",
+    "allowed_change": "At exact clean descriptor HEAD, invoke the sole configure with literal /usr/bin/cmake, obtain at most one gate-bearing fast8_v4 worldserver build, run one strict spellbook-aware read-only provisioning verifier, verify route and atomic bundle identity, then run one no-retry map-669 replay for exactly the four admitted production boundaries. Publish, remotely reconstruct, and exactly evict only that evidence.",
     "requested_fixtures": [
       {"fixture_id": "chainwielder_pre_admission_rejection_isolation_v1", "requested_revision": 1, "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state"},
       {"fixture_id": "same_level_floor_observation_v1", "requested_revision": 4, "causal_signature": "same_level_movement_path_floor_false_negative"},
@@ -69,8 +68,9 @@
       {"fixture_id": "same_level_native_path_proof_v1", "requested_revision": 5, "causal_signature": "same_level_native_path_proof_false_negative"}
     ],
     "required_order": [
-      "verify clean descriptor HEAD and V109 handoff identity",
-      "obtain at most one exact-current build with 8 compiler jobs and 1 linker job",
+      "verify clean descriptor HEAD and V110 handoff identity",
+      "invoke one policy-bound configure with the frozen executable /usr/bin/cmake",
+      "obtain at most one exact-current fast8_v4 worldserver build with 8 compiler jobs and 1 linker job",
       "run one strict provisioning verifier read-only and require complete spellbook plus lifecycle identity",
       "verify tracked runtime config, selected route object, and atomic bundle",
       "start one completion-watchdog worldserver replay with no retry and no authserver",
@@ -101,7 +101,7 @@
     "readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0"
   },
   "execution_budget": {
-    "recurrence_suite_invocation_count_maximum": 1,
+    "recurrence_suite_invocation_count_maximum": 0,
     "configure_count_maximum": 1,
     "worldserver_build_count_maximum": 1,
     "strict_roster_verifier_count_maximum": 1,

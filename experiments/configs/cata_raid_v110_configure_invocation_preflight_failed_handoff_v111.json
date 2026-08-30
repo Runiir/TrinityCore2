@@ -1,0 +1,74 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:composite_map669_production_boundary_replay_v110",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "configure_invocation_preflight_failed",
+  "source": {
+    "commit": "50ce8b07cfe71767e31437aa4425837ed1de950a",
+    "tree": "407b920d218bbed936b8c142bc583a850d7c1c69",
+    "active_descriptor_sha256": "cc4c6dc7c97738bd9568f1532dafa54502ef7112ba12361f6121b85a8a97f63a",
+    "v109_handoff_sha256": "945c9dc4404ccd259a10740f0e8c5c4490a6e03e66cd00e07cd65d6d2ed360e3",
+    "build_policy_sha256": "06847f4cc78b6b3b2e13dd6ecb60e7a2810a44adc35e4107cb9b7cd611286d74",
+    "recurrence_ledger_sha256": "2997dc762e11767ce665f6f7e49ea8ae37a07b88939c548ab65d43185ed72223"
+  },
+  "full_bank_admission": {
+    "invocation_count": 1,
+    "fixture_commands": "20/20 returned zero",
+    "receipt_sha256": "2febca3542389c11c084553a6de8527e0a8d189078f2c74e0f054f98151ea388",
+    "decision_sha256": "3ca28cc493d235cf820d16361c2644fb8e744cf458d70c677bf454dc09a3d7fe",
+    "fixture_expansion_admitted": true,
+    "fixture_expansion_targets": [
+      "chainwielder_pre_admission_rejection_isolation_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "required_next_action": "run_fixture_expansion_replay"
+  },
+  "first_failed_gate": {
+    "stage": "queued_fast8_v4_configure_command_preflight",
+    "stderr": "queued_build: policy-bound configure must invoke the frozen CMake executable",
+    "cause": "the submitted argv used cmake instead of the policy-required literal /usr/bin/cmake",
+    "configure_process_started": false,
+    "build_started": false,
+    "worldserver_started": false,
+    "authserver_started": false,
+    "database_mutated": false,
+    "retry_attempted": false,
+    "terminal_edge": "preflight_invocation_failed_no_native_execution"
+  },
+  "production_boundaries": [
+    {"fixture_id": "chainwielder_pre_admission_rejection_isolation_v1", "status": "missing_prestart_invocation_failed"},
+    {"fixture_id": "same_level_floor_observation_v1", "status": "missing_prestart_invocation_failed"},
+    {"fixture_id": "same_level_hazard_path_admission_v1", "status": "missing_prestart_invocation_failed"},
+    {"fixture_id": "same_level_native_path_proof_v1", "status": "missing_prestart_invocation_failed"}
+  ],
+  "claim_ledger": {
+    "verified": [
+      "the exact V110 full recurrence bank passed and admitted all four observation-only production boundaries",
+      "the build coordinator rejected the configure argv before creating a ticket or starting CMake",
+      "no configure, build, worldserver, authserver, database, gameplay, or DVC publication mutation occurred"
+    ],
+    "refuted": [
+      "V110 started a build or live replay"
+    ],
+    "unproven": [
+      "V106 controller release ordering in a second live execution",
+      "all four admitted production boundaries",
+      "spellbook identity across the next worldserver lifecycle",
+      "any gameplay, Magmaw clear, DPS, HPS, or acceptance result"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:composite_map669_production_boundary_replay_v111",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Repeat the identical observation-only replay chain from one exact clean descriptor HEAD. Invoke the sole configure with the policy-required literal /usr/bin/cmake, then perform at most one fast8_v4 worldserver build, one strict spellbook-aware read-only verifier, one atomic bundle create and verify, and one no-retry completion-watchdog worldserver start. Do not reprovision or start an authserver.",
+    "frozen_configure_executable": "/usr/bin/cmake",
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "authserver_start_count_maximum": 0,
+    "database_mutation_count_maximum": 0,
+    "retry_count_maximum": 0
+  }
+}
