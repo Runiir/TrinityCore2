@@ -1,0 +1,69 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_v38",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_pending_independent_review",
+  "source_state": {
+    "parent_commit": "18fdd4b56a54e167735489d814782c37c4cba60a",
+    "parent_clean": true,
+    "v37_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_jsonl_bundle_shape_failure_handoff_v37.json",
+    "v37_handoff_sha256": "7777e8adbe5f55371dc65e4c514d08ce19de10a57fda282a0c2c81844fc96304"
+  },
+  "implementation": {
+    "behavior_change": false,
+    "evidence_contract_change": true,
+    "staging_owner": "tools/raid_program/canonical_route_staging.py",
+    "selection_owner": "tools/raid_program/canonical_route_catalog.py",
+    "staging_owner_sha256": "8e637ffbfb40caed8e500804708c983be54689305597ce2582002986af82fc15",
+    "selection_owner_sha256": "29a926615e83e2b4bc420990c30a5bbca6bc2984fc9dc4fbdd8526461c51db19",
+    "staging_owner_lines": 336,
+    "selection_owner_lines": 330,
+    "consumer_unchanged": "tools/raid_program/chainwielder_prestart_bundle.py",
+    "consumer_lines": 984,
+    "generic_contract": [
+      "re-verifies clean HEAD and committed DVC stage/member authority through the staging receipt",
+      "selects one exact scenario from canonical JSONL and rejects malformed, missing, ambiguous, forbidden-kind, or invalid-coordinate state",
+      "uses the canonical runtime manifest payload and segment naming semantics",
+      "binds catalog hashes, selected row count/order/identity, deterministic object hash, and exclusive output paths in a typed receipt",
+      "reconstructs the selection and output during receipt verification"
+    ],
+    "canary_constants_in_generic_owner": false
+  },
+  "validation": {
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "focused_command": "pixi run pytest -q tests/test_canonical_route_staging.py",
+    "focused_result": "26 passed in 0.93s",
+    "test_file_sha256": "cf560ff54d8989ff0556e4c57b1b036a121a09f47d5b2216002de494a24722c6",
+    "live_actions": 0,
+    "builds": 0,
+    "database_mutations": 0,
+    "dvc_mutations": 0,
+    "atomic_bundle_creates": 0,
+    "atomic_bundle_verifies": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "raw multi-row JSONL still fails the unchanged atomic-bundle object parser with route_manifest_invalid",
+      "the production selector emits deterministic single-scenario object bytes accepted by the unchanged consumer shape validator",
+      "multi-scenario selection preserves only the exact selected scenario in step order with deterministic route generations and row identities",
+      "receipt verification rejects catalog hash drift and coherent receipt-field drift",
+      "all edited production modules remain below 1000 lines"
+    ],
+    "refuted": [
+      "the authenticated staged JSONL catalog is itself a runtime route manifest object"
+    ],
+    "unproven": [
+      "independent review of the new authority chain",
+      "one authenticated prepared object reaches atomic bundle create and verify",
+      "native Held, arm, terminal, release, and post-release route progression",
+      "route DPS, HPS, actor throughput, and pet share"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_review_v39",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Independently review the catalog-to-scenario authority chain and focused fixtures without building or starting a server. If clean, admit one bounded atomic bundle create/verify consumer check; otherwise emit a typed rejection.",
+    "live_budget": 0
+  }
+}

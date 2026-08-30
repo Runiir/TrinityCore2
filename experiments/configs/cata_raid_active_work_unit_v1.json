@@ -1,16 +1,16 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_v38_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_v38",
+  "epoch_id": "generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_review_v39_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_review_v39",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "gate_state": "v37_authenticated_catalog_staging_green_atomic_bundle_input_shape_rejected",
-  "observed_at_commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db",
-  "immutable_input_commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db",
+  "classification": "implementation_pending_independent_review",
+  "gate_state": "v38_authenticated_catalog_to_scenario_contract_implemented_fixture_green",
+  "observed_at_commit": "18fdd4b56a54e167735489d814782c37c4cba60a",
+  "immutable_input_commit": "18fdd4b56a54e167735489d814782c37c4cba60a",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_jsonl_bundle_shape_failure_handoff_v37.json",
-    "sha256": "7777e8adbe5f55371dc65e4c514d08ce19de10a57fda282a0c2c81844fc96304",
-    "source_commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_handoff_v38.json",
+    "sha256": "33144a654d205af01e43b527a34266e7ce0a8f0109252ed8c389871bd29d21a8",
+    "source_commit": "18fdd4b56a54e167735489d814782c37c4cba60a"
   },
   "evidence_pointer": {
     "path": "artifacts/cata_raid_program/phase1_raid_foundation_245a30593b_generic_controller_route_hold_jsonl_bundle_shape_failure_v37_20260830.dvc",
@@ -29,21 +29,18 @@
   },
   "behavior_change": false,
   "evidence_contract_change": true,
-  "ready_for_bounded_repair": true,
+  "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Define and fixture-review one production-owned authenticated transformation or parsing boundary from canonical DVC validation_routes.jsonl to the exact single-scenario JSON object required by chainwielder_prestart_bundle. Bind clean commit, DVC member/hash, selected scenario/rows, output object hash, and typed receipt.",
+    "allowed_change": "Independently review the V38 production-owned authenticated transformation from canonical DVC validation_routes.jsonl to an exact single-scenario runtime manifest object. Verify authority reconstruction, canonical runtime semantics, deterministic bytes, typed receipts, and unchanged consumer admission before authorizing a bounded create/verify check.",
     "allowed_files": [
-      "tools/raid_program/canonical_route_staging.py_or_one_narrow_owned_companion",
-      "tools/raid_program/chainwielder_prestart_bundle.py_only_if_required_for_the_typed_contract",
-      "tests/test_canonical_route_staging.py",
-      "tests/test_chainwielder_prestart_bundle.py",
-      ".agents/skills/raid-evidence-lifecycle/SKILL.md_only_if_generic_contract_clarification_is_required",
-      "one_compact_handoff_and_active_descriptor"
+      "one_compact_review_handoff",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
     "forbidden": [
-      "manual_jsonl_conversion_or_live_bundle_retry",
+      "production_or_test_edits",
+      "manual_jsonl_conversion_or_live_bundle_create_verify_or_retry",
       "gameplay_native_controller_route_content_identity_comparison_polling_watchdog_or_threshold_change",
       "configure_build_database_mutation_worldserver_start_or_dvc_publication",
       "comparison_loosening_or_acceptance_claim"
@@ -69,12 +66,13 @@
     "failure_receipt_sha256": "7903d02b5baa0595e7928d6eaf805e8856ff0c4d782be14b51b8fd7ddfd00e47"
   },
   "first_broken_edge": {
-    "owner": "raid_shard_bundle_input_shape_contract",
-    "edge": "authenticated_canonical_route_is_jsonl_but_atomic_bundle_requires_one_json_object",
+    "owner": "raid_evidence_catalog_to_runtime_manifest_contract",
+    "edge": "v38_implementation_requires_independent_authority_and_consumer_review",
     "first_observed_mutation": "none",
-    "failure_postcondition": "failed_closed prestart; no launch contract and no worldserver start"
+    "failure_postcondition": "no atomic bundle create, verification, launch contract, or worldserver start is authorized before review"
   },
   "remaining_unproven": [
+    "independent review of the V38 catalog-to-scenario authority chain",
     "an authenticated scenario-shaped route object reaches one atomic create and verify",
     "a fresh native worldserver consumes the profile-bound suffix as Chainwielder generation one",
     "two stable Held statuses precede one sealed arm",
@@ -87,8 +85,8 @@
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "typed_contract_fixture_pass",
-      "typed_contract_fixture_failure",
+      "independent_review_accept",
+      "independent_review_reject",
       "source_identity_mismatch",
       "scope_violation"
     ]
@@ -104,7 +102,7 @@
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_v38",
+  "next_work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_review_v39",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Implement and fixture-review the bounded authenticated catalog-to-scenario object contract. Do not build, start, mutate the database, manually transform an input, or retry V37."
+  "next_action": "Independently review V38 without production edits or live actions. If the authority chain is exact, admit one bounded atomic bundle create/verify check; otherwise emit a typed rejection descriptor."
 }

@@ -17,6 +17,14 @@ import yaml
 STAGING_RECEIPT_SCHEMA = "cata_raid_external_route_staging_receipt_v1"
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 MD5_RE = re.compile(r"[0-9a-f]{32}")
+STAGING_RECEIPT_FIELDS = {
+    "schema",
+    "source_commit",
+    "source_path",
+    "source_sha256",
+    "staged_path",
+    "staged_sha256",
+}
 
 
 class CanonicalRouteStagingError(RuntimeError):
@@ -51,6 +59,10 @@ def _sha256_file(path: Path) -> str:
 
 def _md5_bytes(payload: bytes) -> str:
     return hashlib.md5(payload, usedforsecurity=False).hexdigest()
+
+
+def _canonical_json_bytes(value: object) -> bytes:
+    return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
 
 def atomic_write_new(destination: Path, payload: bytes) -> None:
@@ -170,6 +182,83 @@ def _copy_exact(source: Path, destination: Path) -> None:
         )
 
 
+def verify_staging_receipt(
+    *, worktree: Path, receipt_path: Path, expected_receipt_sha256: str,
+    dvc_stage_name: str = "validation_scenarios",
+    output_relative_member: str = "validation_routes.jsonl",
+) -> dict[str, Any]:
+    worktree = worktree.resolve()
+    receipt_lexical = Path(os.path.abspath(receipt_path))
+    receipt_path = receipt_path.resolve()
+    if (
+        receipt_lexical != receipt_path
+        or receipt_path.is_symlink()
+        or not receipt_path.is_file()
+        or _is_within(receipt_path, worktree)
+    ):
+        raise CanonicalRouteStagingError("staging_receipt_location_invalid")
+    if (
+        not SHA256_RE.fullmatch(expected_receipt_sha256)
+        or _sha256_file(receipt_path) != expected_receipt_sha256
+    ):
+        raise CanonicalRouteStagingError("staging_receipt_sha256_mismatch")
+    try:
+        receipt_bytes = receipt_path.read_bytes()
+        receipt = json.loads(receipt_bytes)
+    except (OSError, json.JSONDecodeError) as error:
+        raise CanonicalRouteStagingError("staging_receipt_invalid") from error
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != STAGING_RECEIPT_FIELDS
+        or receipt.get("schema") != STAGING_RECEIPT_SCHEMA
+        or receipt_bytes != _canonical_json_bytes(receipt)
+    ):
+        raise CanonicalRouteStagingError("staging_receipt_invalid")
+
+    head, _tree = _clean_source_identity(worktree)
+    if receipt.get("source_commit") != head:
+        raise CanonicalRouteStagingError("staging_receipt_source_commit_mismatch")
+    source = Path(str(receipt.get("source_path") or ""))
+    staged = Path(str(receipt.get("staged_path") or ""))
+    if (
+        Path(os.path.abspath(source)) != source
+        or source.resolve() != source
+        or not source.is_file()
+        or not _is_within(source, worktree)
+        or Path(os.path.abspath(staged)) != staged
+        or staged.resolve() != staged
+        or staged.is_symlink()
+        or not staged.is_file()
+        or _is_within(staged, worktree)
+    ):
+        raise CanonicalRouteStagingError("staging_receipt_catalog_path_invalid")
+    source_sha = str(receipt.get("source_sha256") or "")
+    staged_sha = str(receipt.get("staged_sha256") or "")
+    if (
+        not SHA256_RE.fullmatch(source_sha)
+        or staged_sha != source_sha
+        or _sha256_file(source) != source_sha
+        or _sha256_file(staged) != staged_sha
+    ):
+        raise CanonicalRouteStagingError("staging_receipt_catalog_hash_mismatch")
+    member_md5 = _locked_member_md5(
+        worktree=worktree,
+        source=source,
+        lock=_head_dvc_lock(worktree),
+        dvc_stage_name=dvc_stage_name,
+        output_relative_member=output_relative_member,
+    )
+    if _md5_bytes(source.read_bytes()) != member_md5:
+        raise CanonicalRouteStagingError("source_route_dvc_member_hash_mismatch")
+    return {
+        **receipt,
+        "receipt_path": str(receipt_path),
+        "receipt_sha256": expected_receipt_sha256,
+        "dvc_stage_name": dvc_stage_name,
+        "output_relative_member": output_relative_member,
+    }
+
+
 def stage_canonical_route(
     *, worktree: Path, source_route: Path, expected_sha256: str,
     external_run_root: Path, dvc_stage_name: str = "validation_scenarios",
@@ -238,9 +327,7 @@ def stage_canonical_route(
         "staged_path": str(destination),
         "staged_sha256": expected_sha256,
     }
-    receipt_bytes = (
-        json.dumps(receipt, indent=2, sort_keys=True) + "\n"
-    ).encode("utf-8")
+    receipt_bytes = _canonical_json_bytes(receipt)
     atomic_write_new(receipt_path, receipt_bytes)
     return {
         **receipt,

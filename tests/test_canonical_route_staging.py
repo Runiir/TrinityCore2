@@ -8,6 +8,7 @@ import subprocess
 import pytest
 
 import tools.raid_program.canonical_route_staging as staging
+import tools.raid_program.canonical_route_catalog as catalog
 import tools.raid_program.chainwielder_prestart_bundle as prestart_bundle
 
 
@@ -110,6 +111,58 @@ def _stage(fixture: dict[str, object]) -> dict[str, object]:
         worktree=fixture["root"],
         source_route=fixture["route"],
         expected_sha256=fixture["sha256"],
+        external_run_root=fixture["external"],
+        dvc_stage_name=fixture["stage_name"],
+        output_relative_member=fixture["member"],
+    )
+
+
+def _route_row(
+    scenario_id: str, step: int, node_id: str, *, kind: str = "trash",
+    coordinates_valid: bool = True,
+) -> dict[str, object]:
+    return {
+        "scenario_id": scenario_id,
+        "runtime_profile_id": scenario_id,
+        "step": step,
+        "kind": kind,
+        "label": node_id.rsplit(".", 1)[-1],
+        "route_node_id": node_id,
+        "coordinates_valid": coordinates_valid,
+        "map_id": 669,
+        "source_entry": 42649,
+        "expected_bot_count": 10,
+    }
+
+
+def _set_catalog(
+    fixture: dict[str, object], rows: list[object], *, raw: bytes | None = None,
+) -> None:
+    route = fixture["route"]
+    route.write_bytes(
+        raw if raw is not None else b"".join(
+            json.dumps(row, sort_keys=True).encode() + b"\n" for row in rows
+        )
+    )
+    member_md5 = hashlib.md5(
+        route.read_bytes(), usedforsecurity=False
+    ).hexdigest()
+    _replace_manifest(
+        fixture,
+        [{"md5": member_md5, "relpath": fixture["member"]}],
+    )
+    fixture["sha256"] = hashlib.sha256(route.read_bytes()).hexdigest()
+
+
+def _materialize(
+    fixture: dict[str, object], staging_receipt: dict[str, object],
+    scenario_id: str,
+) -> dict[str, object]:
+    return catalog.materialize_scenario_route_manifest(
+        worktree=fixture["root"],
+        staging_receipt_path=Path(staging_receipt["receipt_path"]),
+        expected_staging_receipt_sha256=staging_receipt["receipt_sha256"],
+        selected_scenario_id=scenario_id,
         external_run_root=fixture["external"],
         dvc_stage_name=fixture["stage_name"],
         output_relative_member=fixture["member"],
@@ -302,3 +355,152 @@ def test_preexisting_destination_symlink_rejects(tmp_path: Path) -> None:
         match="external_staging_destination_conflict",
     ):
         _stage(fixture)
+
+
+def test_raw_jsonl_fails_before_bundle_shape_validation(tmp_path: Path) -> None:
+    fixture = _fixture(tmp_path)
+    _set_catalog(fixture, [
+        _route_row("one", 1, "one.first"),
+        _route_row("one", 2, "one.second"),
+    ])
+    staged = _stage(fixture)
+
+    with pytest.raises(prestart_bundle.BundleError, match="route_manifest_invalid"):
+        prestart_bundle._validate_route(
+            Path(staged["staged_path"]), "one", "one"
+        )
+
+
+def test_catalog_materializes_exact_deterministic_scenario_object(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(
+        tmp_path,
+        stage_name="validation_scenarios",
+        output_path="dataset/validation_scenarios",
+        member="validation_routes.jsonl",
+    )
+    scenario = prestart_bundle.SCENARIO_ID
+    _set_catalog(fixture, [
+        _route_row("another_profile", 1, "another.first"),
+        _route_row(scenario, 3, "bwd.magmaw.drudges"),
+        _route_row(scenario, 2, prestart_bundle.NODE_ID),
+        _route_row(scenario, 4, "bwd.magmaw.encounter", kind="boss"),
+        _route_row(scenario, 1, "bwd.entry.regroup", kind="regroup"),
+    ])
+    staged = _stage(fixture)
+    result = _materialize(fixture, staged, scenario)
+    manifest_path = Path(result["output_object_path"])
+    manifest = json.loads(manifest_path.read_bytes())
+
+    assert manifest["schema"] == catalog.MANIFEST_SCHEMA
+    assert manifest["scenario_id"] == scenario
+    assert manifest["route_count"] == 4
+    assert [row["step"] for row in manifest["routes"]] == [1, 2, 3, 4]
+    assert [row["route_generation"] for row in manifest["routes"]] == [1, 2, 3, 4]
+    assert manifest["expected_segments"] == [
+        "01_regroup", "02_chainwielder", "03_drudges", "04_encounter"
+    ]
+    assert result["catalog_row_count"] == 5
+    assert result["selected_row_count"] == 4
+    assert [row["step"] for row in result["selected_row_order"]] == [1, 2, 3, 4]
+    assert prestart_bundle._validate_route(
+        manifest_path, scenario, scenario
+    ) == manifest
+
+    verified = catalog.verify_scenario_route_manifest_receipt(
+        worktree=fixture["root"],
+        receipt_path=Path(result["receipt_path"]),
+        expected_receipt_sha256=result["receipt_sha256"],
+        expected_staging_receipt_sha256=staged["receipt_sha256"],
+        selected_scenario_id=scenario,
+        dvc_stage_name=fixture["stage_name"],
+        output_relative_member=fixture["member"],
+    )
+    assert verified == result
+
+    second_root = tmp_path / "second-run"
+    second_root.mkdir()
+    second = catalog.materialize_scenario_route_manifest(
+        worktree=fixture["root"],
+        staging_receipt_path=Path(staged["receipt_path"]),
+        expected_staging_receipt_sha256=staged["receipt_sha256"],
+        selected_scenario_id=scenario,
+        external_run_root=second_root,
+        dvc_stage_name=fixture["stage_name"],
+        output_relative_member=fixture["member"],
+    )
+    assert Path(second["output_object_path"]).read_bytes() == manifest_path.read_bytes()
+    assert second["output_object_sha256"] == result["output_object_sha256"]
+
+
+@pytest.mark.parametrize(
+    ("rows", "raw", "scenario", "reason"),
+    [
+        ([], b'{"scenario_id":\n', "selected", "route_catalog_jsonl_invalid:1"),
+        ([[]], None, "selected", "route_catalog_row_invalid:1"),
+        ([_route_row("other", 1, "other.first")], None, "selected", "route_catalog_scenario_missing"),
+        ([_route_row("selected", 1, "selected.first", kind="interaction")], None, "selected", "route_catalog_kind_forbidden:1"),
+        ([_route_row("selected", 1, "selected.first", coordinates_valid=False)], None, "selected", "route_catalog_coordinates_invalid:1"),
+        ([_route_row("selected", 1, "selected.first"), _route_row("selected", 1, "selected.second")], None, "selected", "route_catalog_scenario_ambiguous"),
+        ([_route_row("selected", 1, "selected.first"), _route_row("selected", 2, "selected.first")], None, "selected", "route_catalog_scenario_ambiguous"),
+    ],
+)
+def test_catalog_selection_fails_closed(
+    tmp_path: Path, rows: list[object], raw: bytes | None,
+    scenario: str, reason: str,
+) -> None:
+    fixture = _fixture(tmp_path)
+    _set_catalog(fixture, rows, raw=raw)
+    staged = _stage(fixture)
+
+    with pytest.raises(catalog.CanonicalRouteCatalogError, match=reason):
+        _materialize(fixture, staged, scenario)
+
+
+def test_catalog_selection_rejects_hash_drift_collision_and_receipt_drift(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path)
+    _set_catalog(fixture, [_route_row("selected", 1, "selected.first")])
+    staged = _stage(fixture)
+    result = _materialize(fixture, staged, "selected")
+
+    with pytest.raises(
+        catalog.CanonicalRouteCatalogError, match="route_manifest_output_collision"
+    ):
+        _materialize(fixture, staged, "selected")
+
+    receipt_path = Path(result["receipt_path"])
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["selected_row_count"] = 2
+    drift_path = fixture["external"] / "drifted.receipt.json"
+    drift_bytes = (json.dumps(receipt, indent=2, sort_keys=True) + "\n").encode()
+    drift_path.write_bytes(drift_bytes)
+    with pytest.raises(
+        catalog.CanonicalRouteCatalogError, match="route_manifest_receipt_mismatch"
+    ):
+        catalog.verify_scenario_route_manifest_receipt(
+            worktree=fixture["root"],
+            receipt_path=drift_path,
+            expected_receipt_sha256=hashlib.sha256(drift_bytes).hexdigest(),
+            expected_staging_receipt_sha256=staged["receipt_sha256"],
+            selected_scenario_id="selected",
+            dvc_stage_name=fixture["stage_name"],
+            output_relative_member=fixture["member"],
+        )
+
+    Path(staged["staged_path"]).write_bytes(b"drift\n")
+    with pytest.raises(
+        catalog.CanonicalRouteCatalogError,
+        match="staging_receipt_catalog_hash_mismatch",
+    ):
+        catalog.verify_scenario_route_manifest_receipt(
+            worktree=fixture["root"],
+            receipt_path=receipt_path,
+            expected_receipt_sha256=result["receipt_sha256"],
+            expected_staging_receipt_sha256=staged["receipt_sha256"],
+            selected_scenario_id="selected",
+            dvc_stage_name=fixture["stage_name"],
+            output_relative_member=fixture["member"],
+        )

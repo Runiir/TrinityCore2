@@ -20,6 +20,11 @@ Before live execution, require:
   the runtime manifest's decisive node IDs and mechanic fields before
   provisioning;
 - deterministic provisioning verification against the source manifests/DBC inputs;
+- Keep a canonical route catalog and a prepared runtime route manifest as
+  distinct authenticated artifacts. Authenticate the DVC-owned JSONL catalog,
+  then use the production selector to bind one scenario's ordered rows and
+  output-object hash in a typed receipt. Never pass catalog JSONL directly to
+  a single-object consumer or hand-convert it for a live shard.
 - fresh DB readback of the exact roster, account linkage, positions, and zero group/instance/corpse/ghost residue.
 - native-loadable character identity: normalized 2–12-letter player names and `at_login == 0`; a digit or rename flag makes `Player::LoadFromDB` fail even when ordinary row equality passes.
 - provisioning/reset SQL that freezes every native group containing an exact
