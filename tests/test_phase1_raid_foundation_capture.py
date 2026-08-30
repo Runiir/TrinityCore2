@@ -77,6 +77,9 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     observe_chainwielder_checkpoint_arm_gate,
     ControllerRouteHoldLaunchIdentity,
     ControllerRouteHoldScheduler,
+    CaptureSetup,
+    build_capture_parser,
+    prepare_capture_setup,
 )
 
 
@@ -193,6 +196,109 @@ def test_capture_support_helpers_use_focused_production_modules():
     runtime_io_module = "tools.raid_program.capture_runtime_io"
     for owner in (wait_for_prompt, _artifact_record, bounded_native_shutdown):
         assert owner.__module__ == runtime_io_module
+
+
+def test_capture_setup_uses_focused_production_module():
+    setup_module = "tools.raid_program.capture_setup"
+    assert CaptureSetup.__module__ == setup_module
+    assert build_capture_parser.__module__ == setup_module
+    assert prepare_capture_setup.__module__ == setup_module
+
+
+def test_capture_parser_preserves_cli_defaults(tmp_path: Path):
+    root = tmp_path / "default-worktree"
+    parser = build_capture_parser(root=root)
+
+    args = parser.parse_args([
+        "--binary", "worldserver",
+        "--config", "worldserver.conf",
+        "--output", "capture.json",
+        "--build-receipt", "build.json",
+    ])
+
+    assert args.worktree == root
+    assert args.runtime_profile is None
+    assert args.scenario_id is None
+    assert args.pool_tag is None
+    assert args.observe_sec == 0
+    assert args.startup_timeout_sec == 180
+    assert args.required_stable_statuses == 3
+    assert args.semantic_stall_sec == 300
+    assert args.semantic_stall_min_samples == 12
+    assert args.telemetry_timeout_sec == 60
+    assert args.status_interval_sec == 5.0
+    assert args.diagnose_interval_sec == 30.0
+    assert args.trace_interval_sec == 10.0
+    assert args.resource_sample_interval_sec == 5.0
+    assert args.fixture_expansion_replay is False
+    assert args.trace_transport_smoke is False
+
+
+def test_prepare_capture_setup_returns_typed_admitted_state(tmp_path: Path, monkeypatch):
+    binary = tmp_path / "worldserver"
+    config = tmp_path / "worldserver.conf"
+    receipt = tmp_path / "build.json"
+    output = tmp_path / "capture.json"
+    for path in (binary, config, receipt):
+        path.write_bytes(b"fixture")
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.chainwielder_checkpoint_arm_command",
+        lambda admission, actor_guid: None,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.trinity_config_bool",
+        lambda *args, **kwargs: False,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.preflight_runtime_exclusions",
+        lambda worktree: {"passed": True, "reasons": []},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.git_identity",
+        lambda worktree: {"clean": True, "commit": "a" * 40},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_runtime_profile_assets",
+        lambda *args, **kwargs: {
+            "passed": True,
+            "reasons": [],
+            "route_manifest": None,
+            "route_partition": "stonecore_5n",
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.build_policy_path_for_receipt",
+        lambda build_receipt, worktree: tmp_path / "policy.json",
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_build_receipt",
+        lambda *args, **kwargs: {"valid": True, "rejections": []},
+    )
+
+    setup = prepare_capture_setup([
+        "--binary", str(binary),
+        "--config", str(config),
+        "--output", str(output),
+        "--build-receipt", str(receipt),
+        "--worktree", str(tmp_path),
+        "--runtime-profile", "stonecore_5n",
+    ], root=tmp_path)
+
+    assert isinstance(setup, CaptureSetup)
+    assert setup.binary == binary.resolve()
+    assert setup.config == config.resolve()
+    assert setup.output == output.resolve()
+    assert setup.raw_output == tmp_path / "capture.raw.jsonl"
+    assert setup.server_log_output == tmp_path / "capture.worldserver.log"
+    assert setup.profile_name == "stonecore_5n"
+    assert setup.scenario_id == "stonecore_5n"
+    assert setup.preflight == {"passed": True, "reasons": []}
+    assert setup.runtime_assets["route_partition"] == "stonecore_5n"
+    assert setup.build_provenance == {"valid": True, "rejections": []}
+    assert setup.controller_route_hold_scheduler is None
+    assert setup.drudge_observed is False
+    assert setup.drudge_required is False
 
 
 def _verified_checkpoint_admission() -> dict:
@@ -949,7 +1055,7 @@ def test_canonical_capture_explicitly_starts_the_frozen_bwd_10n_profile():
 def test_canonical_capture_rejects_worldserver_autostart_before_spawn():
     source = (
         Path(__file__).resolve().parents[1]
-        / "tools/raid_program/capture_phase1_raid_foundation.py"
+        / "tools/raid_program/capture_setup.py"
     ).read_text(encoding="utf-8")
     assert 'trinity_config_bool(config, "BotWorld.AutoStart", False)' in source
     assert "config_autostart_enabled" in source
