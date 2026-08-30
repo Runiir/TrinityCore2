@@ -152,6 +152,16 @@ database, or world lifecycle state, use those initialized production
 dependencies; a preconstructed path proof or mocked successful observation is
 not the production fixture.
 
+Trace every fixture claim through the production writer and the live consumer.
+A test that manually copies a before snapshot into an after snapshot, manually
+constructs a successful observation, or checks production calls only as source
+text is synthetic even when it compiles C++. Likewise, a launch manifest field
+is not enforced merely because bundle creation and verification agree on it:
+the live scheduler must parse and reject every decisive predicate. Require one
+negative test proving that the fixture cannot terminalize when the claimed
+production prerequisite is absent. Do not retain a compatibility fallback as
+an alternate success path when the receipt claims a single exact trigger.
+
 When a live blocker reappears after its retained fixture passed, treat that
 fixture revision as invalidated. Before editing the runtime, add an executable
 value-level counterexample using the recorded trace inputs and prove it fails

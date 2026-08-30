@@ -278,6 +278,14 @@ shards through the Chainwielder module.
    final native outcome boundary, including adjacent complete/incomplete and
    same-floor/cross-floor path variants where applicable; replaying only the
    latest coordinates is not sufficient admission evidence.
+   Audit fixture predicates in both directions before admitting a live run:
+   the production runtime must emit them and the live capture scheduler must
+   consume them. Matching JSON in bundle creation and bundle verification is
+   not enforcement. Reject manually copied before/after state, helper-created
+   success observations, and source-string assertions as production-bound
+   proof. Require a negative that cannot terminalize without the exact claimed
+   trigger, and keep a later accepted higher-priority action independent from
+   an earlier rejected action whose state-preservation invariant is under test.
 4. Start one verified worldserver with the generated shard config.
 5. Confirm console/process readiness and active runtime identity.
 6. Only then attach the boss babysitter. The babysitter monitors; it does not silently repair or manufacture state.
