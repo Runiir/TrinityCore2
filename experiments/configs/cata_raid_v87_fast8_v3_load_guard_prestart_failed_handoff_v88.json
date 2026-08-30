@@ -1,0 +1,95 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v87",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "prestart_build_resource_abort",
+  "source": {
+    "commit": "dc836d39ca3f5d05d68e05e666b527628c3676ba",
+    "tree": "ae7d10ad8ee1fded67e8565fdd8056a81bf3154b",
+    "clean": true,
+    "active_descriptor_sha256": "0988aa864204fdac400838f95404dd3c3c226947246bb316ac7d77f6abedf380"
+  },
+  "prestart": {
+    "recurrence_boundary_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+    "recurrence_boundary_side": "after",
+    "suite_invocations": 1,
+    "fixture_count": 20,
+    "passing_fixture_count": 20,
+    "route_failures": [],
+    "fixture_expansion_admitted": true,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "suite_receipt_sha256": "0766d4f27ea4bcc1285dc7d8436e4d9ee47203fe8342c3471e9a880056bd2bb7",
+    "decision_sha256": "189d7ef470de1d3d467700bd7de3c84bba7886b16b78255ef3db09eac3d22248"
+  },
+  "first_broken_edge": {
+    "stage": "gate-bearing worldserver build",
+    "classification": "build_resource_abort",
+    "policy_id": "cata_raid_build_resource_policy_fast8_v3",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "exit_code": -15,
+    "signal": 15,
+    "pressure_reasons": [
+      "load_average"
+    ],
+    "maximum_load_average_1m": 9.00537109375,
+    "configured_maximum_load_average_1m": 9.0,
+    "minimum_memory_available_bytes": 8732643328,
+    "maximum_memory_psi_some_avg10": 0.18,
+    "maximum_memory_psi_full_avg10": 0.18,
+    "sample_count": 311,
+    "source_identity_stable": true,
+    "build_configuration_stable": true,
+    "gate_bearing": false,
+    "output_artifacts": [],
+    "ticket_id": "raid-build-50d8580a5ed248cba1fe205675c0dacb",
+    "receipt_semantic_sha256": "00443ff6a9beeddf0e39dd909e32ab61871079a26f271e35f3d83a0b2f35741c",
+    "receipt_file_sha256": "3c37567917509181c8737d8c6affcf83a8bc432ab0dc457cee115fc940ce3826",
+    "log_sha256": "8836d74cf246a824ef8866e9ab5fd8053ef978c62f0b80b40c215359ca5c0c13"
+  },
+  "operations": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "runtime_config_derivation_count": 0,
+    "bundle_create_count": 0,
+    "strict_roster_readback_count": 0,
+    "database_mutation_count": 0,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "gameplay_canary_count": 0,
+    "retry_count": 0
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_dc836d39ca_v87_fast8_v3_load_guard_prestart_failed_20260830.dvc",
+    "dvc_pointer_sha256": "fc0da096069850da2fd2db5fb74ec442b5cc9dbba17840625c48aecb4db63948",
+    "dvc_directory_md5": "6e9eefe6cc765bc368cf843ad94fb70e.dir",
+    "nfiles": 6,
+    "size_bytes": 246313,
+    "remote": "object",
+    "remote_reconstruction": "verified",
+    "workspace_eviction": "verified after remote reconstruction"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact clean-HEAD V87 suite passed all 20 retained fixtures",
+      "the sole fast8_v3 build crossed the configured load-average guard and was terminated",
+      "the build receipt is locally valid but non-gate-bearing",
+      "no current binary, bundle, DB mutation, or server process was produced"
+    ],
+    "refuted": [
+      "V87 executed the correlated map-669 replay"
+    ],
+    "unproven": [
+      "whether the 0.005371 load excursion alone is an appropriately calibrated sustained abort condition",
+      "all requested revisions 4/5/5",
+      "complete/incomplete Hazard movement outcomes",
+      "cross-floor and forbidden-path no-launch negatives",
+      "any gameplay canary or boss outcome"
+    ]
+  },
+  "next_work_unit": "evidence:review_v87_fast8_v3_load_guard_abort_v88",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Review the retained load samples and policy semantics before issuing any successor replay descriptor. Do not retry V87, reuse the stale binary, or modify gameplay."
+}
