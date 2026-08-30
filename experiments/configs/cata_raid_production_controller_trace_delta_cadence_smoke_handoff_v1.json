@@ -1,0 +1,143 @@
+{
+  "schema": "cata_raid_production_controller_trace_delta_cadence_smoke_handoff_v1",
+  "work_unit_id": "shard:production_controller_trace_delta_cadence_smoke",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "blocked_pre_admission_recurrence_bank_not_admitted",
+  "observed_at_utc": "2026-08-30T00:11:28Z",
+  "source": {
+    "required_head": "4ff4ae6a46c3b1d2051d78754e2fa9eabce64397",
+    "instrumentation_commit": "dab365efb239bb9a0ab166e4c1394caea74a0b87",
+    "instrumentation_tree": "ac4174612287eb1b63633f5818015e398b99037f",
+    "clean_before_build": true
+  },
+  "immutable_input": {
+    "path": "experiments/configs/cata_raid_trace_delta_all_poll_serialization_overrun_handoff_v1.json",
+    "sha256": "40d49dff1f8fe8cf3a83fedfaf6c95b72a57c089d641aee8c1fc5548358f2930",
+    "edited": false
+  },
+  "scope_lock": {
+    "single_hypothesis": "the canonical production TelemetryScheduler's existing 2.0-second pressure cadence can obtain a same-actor contiguous follow-up after one explicit actor-local trace-ring discontinuity",
+    "owned_behavior": "capture-only transport timing and one production-controller smoke",
+    "expected_observable_change": "one explicit actor-local gap is followed by gap=false with cursor_before equal to the prior cursor_after and first_sequence equal to cursor_after plus one while peer cursors stay isolated",
+    "excluded": [
+      "native_trace_serialization",
+      "trace_ring_capacity",
+      "cursor_rules",
+      "gameplay",
+      "movement",
+      "Magmaw_logic",
+      "class_code",
+      "watchdog_thresholds",
+      "fixture_promotion",
+      "acceptance"
+    ]
+  },
+  "claim_ledger": {
+    "verified": [
+      "the production controller previously retained only aggregate command counts and final scheduler state, not per-trace command-send response-first-byte response-complete next-send response-byte or parse-duration receipts",
+      "capture-only instrumentation now records command flush completion, observed response first-byte and completion times at 0.01-second resolution, exact response-line bytes and SHA-256, parse duration, scheduler state at send and after response, actor cursors, and the next trace command send",
+      "the focused production scheduler transport tests pass 4 of 4",
+      "the fast8_v2 configure and worldserver build are gate-bearing at commit dab365efb239 with eight compiler jobs and one linker",
+      "the immutable retained recurrence suite executed all 20 current fixture commands successfully",
+      "the recurrence decision still denies build and canary admission because six retained fixture revisions were invalidated by later live recurrences and one Chainwielder fixture expansion remains pending",
+      "no worldserver was started and the one-start budget remains unused"
+    ],
+    "refuted": [
+      "a currently passing unchanged regression command automatically restores recurrence admission after a later live recurrence",
+      "the cadence smoke is authorized to bypass the normal Magmaw recurrence seal",
+      "the pre-admission result proves or refutes the production two-second cadence hypothesis"
+    ],
+    "unproven": [
+      "a production pressure-scheduled same-actor follow-up is contiguous after one explicit gap",
+      "the timed native serialization console-delivery and controller-parse latency components",
+      "whether another actor-local gap would recur at the measured production cadence"
+    ]
+  },
+  "instrumentation": {
+    "changed_files": [
+      "tools/raid_program/capture_phase1_raid_foundation.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "commit": "dab365efb239bb9a0ab166e4c1394caea74a0b87",
+    "focused_test_command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py::test_production_trace_transport_receipt_binds_fragmented_response_and_next_pressure_send tests/test_phase1_raid_foundation_capture.py::test_trace_transport_receipt_rejects_ambiguous_outstanding_commands tests/test_phase1_raid_foundation_capture.py::test_json_log_cursor_reads_append_only_chunks_once_and_preserves_partial_rows tests/test_phase1_raid_foundation_capture.py::test_trace_scheduler_shortens_after_ring_pressure_without_accepting_gaps",
+    "focused_test_result": "4 passed in 0.35s",
+    "association_policy": "fail_closed_when_more_than_one_trace_command_is_outstanding",
+    "first_byte_semantics": "first controller observation of response bytes, with 0.01-second poll resolution; not an OS-level wire timestamp"
+  },
+  "build": {
+    "policy_id": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "filesystem": "/dev/nvme1n1p3",
+    "minimum_filesystem_available_bytes": 123135303680,
+    "configure": {
+      "ticket_id": "raid-build-62ccd03ab5d447808fc20623154e54a9",
+      "queue_sequence": 1209,
+      "embedded_receipt_sha256": "bb25eb4f7603aa5eb562cf01d5a4a166edc10cd72f86f7c25fed8537844ee5ad",
+      "receipt_file_sha256": "755f8382592b1e0892a2aae27706e8156deee048242e2e94171be1433fd752bb",
+      "gate_bearing": true
+    },
+    "worldserver": {
+      "ticket_id": "raid-build-3211cc391fe94955b6ff6f24d0686949",
+      "queue_sequence": 1210,
+      "embedded_receipt_sha256": "0b933dc41897275afc9900dfcfce0c4c837a41c4001251ecc5cfd0a8507af96e",
+      "receipt_file_sha256": "989b5047e5150003b2c4c8503778497c9ba920481146c5461bc597f56288b9d5",
+      "binary_sha256": "73d8405f6dc5c5c2c8ef71068dafb3101a7800a3ca706c377a8723ff91e482f9",
+      "binary_size_bytes": 63762848,
+      "gate_bearing": true
+    }
+  },
+  "recurrence_admission": {
+    "ledger_path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "suite_fixture_count": 20,
+    "suite_current_pass_count": 20,
+    "suite_current_fail_count": 0,
+    "suite_receipt_sha256": "c15a29c0c0a3253d8cd2b0d3bb41ae80eecf482f643870245bceac76d9f3ded8",
+    "decision_sha256": "75a0ad52bea7fa94e8766f4e86cc1fed1a2849c097f3f8506074cfe9bb7dd94a",
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "required_next_action": "run_fixture_expansion_replay",
+    "invalidated_fixture_ids": [
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "pending_fixture_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1"
+    ],
+    "fixture_mutation_performed": false,
+    "fixture_revision_promoted": false
+  },
+  "live_smoke": {
+    "admitted": false,
+    "worldserver_start_count": 0,
+    "production_controller_started": false,
+    "hypothesis_result": "unproven_pre_admission_block",
+    "response_timing_receipts": [],
+    "gameplay_interpretation": null
+  },
+  "dvc": {
+    "status_command": "pixi run dvc status validation_scenarios --json",
+    "status": {},
+    "publication_performed": false,
+    "reason": "no live or bulk evidence was created"
+  },
+  "cleanup": {
+    "worldserver_process_count": 0,
+    "coordinator_active_ticket": null,
+    "coordinator_queue_depth": 0,
+    "temporary_root_removed": true,
+    "temporary_receipts_retained_as_compact_hashes_only": true
+  },
+  "next_owner": {
+    "owner": "raid-performance-loop",
+    "work_unit": "coordination:resolve_trace_smoke_recurrence_gate_ordering",
+    "action": "resolve the circular ordering between the required production cadence smoke and the recurrence bank's pending Chainwielder fixture expansion without weakening either gate; assign the six invalidated fixture revisions to their owning specialists if replacement evidence is required",
+    "return_to": "shard:production_controller_trace_delta_cadence_smoke",
+    "do_not_do": "do not bypass recurrence admission, promote unchanged fixtures, edit gameplay in the telemetry work unit, or start a worldserver before canary_admitted is true"
+  }
+}

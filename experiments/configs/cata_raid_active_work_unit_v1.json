@@ -1,14 +1,14 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "trace_delta_production_cadence_evidence_required_v1_20260830",
-  "work_unit": "shard:production_controller_trace_delta_cadence_smoke",
+  "epoch_id": "trace_delta_cadence_smoke_recurrence_admission_blocked_v1_20260830",
+  "work_unit": "coordination:resolve_trace_smoke_recurrence_gate_ordering",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "runtime_repair_not_admitted_cadence_causality_unproven",
-  "gate_state": "production_cadence_smoke_required_gameplay_and_fixture_promotion_closed",
-  "observed_at_commit": "f834000ca8267a9631a4dcdc2de2d7896519ebeb",
+  "owner_skill": "raid-performance-loop",
+  "classification": "production_cadence_smoke_blocked_before_worldserver_start_by_recurrence_admission",
+  "gate_state": "recurrence_bank_not_admitted_worldserver_start_count_zero",
+  "observed_at_commit": "dab365efb239bb9a0ab166e4c1394caea74a0b87",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_6518233c67_chainwielder_trace_transport_summary_v1.json",
     "sha256": "a2784575f5944b9d4054817e6b1d21ff67096bef10921faf8ccaeb70025309b9",
@@ -224,11 +224,41 @@
     "acceptance_admitted": false
   },
   "coordinator_followup": {
-    "next_owner": "raid-shard-architecture",
-    "next_owner_command": "run_one_fresh_one_start_trace_smoke_through_the_canonical_TelemetryScheduler_and_retain_command_send_response_first_byte_response_complete_next_command_timestamps_and_scheduler_state",
-    "next_work_unit": "shard:production_controller_trace_delta_cadence_smoke",
+    "next_owner": "raid-performance-loop",
+    "next_owner_command": "resolve_trace_smoke_recurrence_gate_ordering_without_bypass_or_unchanged_fixture_promotion",
+    "next_work_unit": "coordination:resolve_trace_smoke_recurrence_gate_ordering",
+    "return_to_work_unit": "shard:production_controller_trace_delta_cadence_smoke",
     "return_owner_if_timed_reoverflow_recurs": "raid-bot-runtime-implementation",
-    "do_not_advance_to": "matched_chainwielder_fixture_expansion_until_runtime_smoke_green"
+    "do_not_advance_to": "gameplay_acceptance_or_worldserver_start_before_recurrence_canary_admission"
   },
-  "next_action": "Run one fresh one-start cadence-instrumented smoke through the canonical production controller. If the same actor reoverflows at the verified two-second pressure cadence, return exact serialization delivery and parsing timings to raid-bot-runtime-implementation. Do not advance to Chainwielder fixture expansion or claim gameplay completion."
+  "latest_bounded_attempt": {
+    "handoff_path": "experiments/configs/cata_raid_production_controller_trace_delta_cadence_smoke_handoff_v1.json",
+    "handoff_sha256": "3edcb4ce1701f8aa009d16650225916586c4bf16844069aeeb1e6f68dabeea8d",
+    "source_commit": "dab365efb239bb9a0ab166e4c1394caea74a0b87",
+    "instrumentation_focused_tests": "4_passed",
+    "build_policy_id": "cata_raid_build_resource_policy_fast8_v2",
+    "worldserver_binary_sha256": "73d8405f6dc5c5c2c8ef71068dafb3101a7800a3ca706c377a8723ff91e482f9",
+    "recurrence_suite_current_pass_count": 20,
+    "recurrence_suite_current_fail_count": 0,
+    "recurrence_build_admitted": false,
+    "recurrence_canary_admitted": false,
+    "invalidated_fixture_count": 6,
+    "pending_fixture_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1"
+    ],
+    "worldserver_start_count": 0,
+    "production_cadence_hypothesis": "unproven_pre_admission_block"
+  },
+  "coordinator_blocker": {
+    "first_broken_edge": "the immutable recurrence decision denies build and canary admission even though all 20 current fixture commands pass, because six retained fixture revisions were invalidated by later live recurrences and the Chainwielder fixture expansion remains pending",
+    "required_next_work_unit": "coordination:resolve_trace_smoke_recurrence_gate_ordering",
+    "return_to_work_unit": "shard:production_controller_trace_delta_cadence_smoke",
+    "forbidden_shortcuts": [
+      "recurrence_gate_bypass",
+      "unchanged_fixture_promotion",
+      "gameplay_edit_in_telemetry_work_unit",
+      "worldserver_start_before_canary_admission"
+    ]
+  },
+  "next_action": "Resolve the ordering conflict between the required production cadence smoke and the recurrence bank's pending or invalidated fixtures without weakening either gate. Then return to the one-start production-controller cadence smoke."
 }
