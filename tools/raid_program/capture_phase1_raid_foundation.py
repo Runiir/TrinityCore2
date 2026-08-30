@@ -707,8 +707,17 @@ class JsonLogCursor:
         self.path = path
         self.offset = 0
         self._partial = b""
+        self._partial_first_byte_at: float | None = None
 
     def read_new_rows(self) -> list[dict[str, Any]]:
+        return [observation.row for observation in self.read_new_observations()]
+
+    def read_new_observations(
+        self, *, observed_at: float | None = None,
+    ) -> list[JsonLogObservation]:
+        """Return complete JSON rows with byte and parser timing receipts."""
+
+        observed_at = time.monotonic() if observed_at is None else observed_at
         with self.path.open("rb") as handle:
             handle.seek(self.offset)
             chunk = handle.read()
@@ -716,18 +725,220 @@ class JsonLogCursor:
         if not chunk:
             return []
 
+        previous_partial = self._partial
+        previous_partial_first_byte_at = self._partial_first_byte_at
         data = self._partial + chunk
         lines = data.splitlines(keepends=True)
         if lines and not lines[-1].endswith((b"\n", b"\r")):
             self._partial = lines.pop()
+            self._partial_first_byte_at = (
+                previous_partial_first_byte_at
+                if previous_partial and not lines else observed_at
+            )
         else:
             self._partial = b""
-        rows: list[dict[str, Any]] = []
-        for raw in lines:
+            self._partial_first_byte_at = None
+        observations: list[JsonLogObservation] = []
+        for index, raw in enumerate(lines):
+            parse_started = time.perf_counter()
             row = _json_row_from_log_line(raw)
+            parse_duration = time.perf_counter() - parse_started
             if row is not None:
-                rows.append(row)
-        return rows
+                first_byte_at = observed_at
+                if index == 0 and previous_partial:
+                    first_byte_at = previous_partial_first_byte_at or observed_at
+                observations.append(JsonLogObservation(
+                    row=row,
+                    response_bytes=len(raw),
+                    response_sha256=hashlib.sha256(raw).hexdigest(),
+                    first_byte_observed_at_monotonic=first_byte_at,
+                    response_complete_observed_at_monotonic=observed_at,
+                    parse_duration_seconds=parse_duration,
+                ))
+        return observations
+
+
+@dataclass(frozen=True)
+class JsonLogObservation:
+    row: dict[str, Any]
+    response_bytes: int
+    response_sha256: str
+    first_byte_observed_at_monotonic: float
+    response_complete_observed_at_monotonic: float
+    parse_duration_seconds: float
+
+
+def collect_log_observations(
+    cursor: JsonLogCursor,
+    *,
+    duration_seconds: float,
+    poll_interval_seconds: float = 0.01,
+) -> list[JsonLogObservation]:
+    """Observe append timing without changing the controller's poll window."""
+
+    deadline = time.monotonic() + duration_seconds
+    observations: list[JsonLogObservation] = []
+    while True:
+        observations.extend(cursor.read_new_observations())
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(poll_interval_seconds, remaining))
+    return observations
+
+
+class TelemetryTransportLedger:
+    """Bind trace commands to bounded-observation and parser receipts."""
+
+    def __init__(self) -> None:
+        self._next_sequence = 1
+        self._receipts: list[dict[str, Any]] = []
+        self.observation_poll_interval_seconds = 0.01
+
+    @staticmethod
+    def _trace_identity(row: dict[str, Any]) -> dict[str, Any]:
+        runtime = row.get("raid_runtime")
+        runtime = runtime if isinstance(runtime, dict) else {}
+        identity = {
+            "cohort_id": row.get("cohort_id"),
+            "server_epoch": runtime.get("server_epoch"),
+            "attempt_id": runtime.get("attempt_id"),
+            "instance_id": runtime.get("instance_id"),
+            "runtime_profile": (
+                runtime.get("strategy_id") or row.get("active_profile")
+            ),
+            "assignment_generation": runtime.get("assignment_generation"),
+            "profile_generation": runtime.get("profile_generation"),
+            "profile_content_hash": runtime.get("profile_content_hash"),
+        }
+        actors = []
+        for bot_row in row.get("bots", []):
+            if not isinstance(bot_row, dict):
+                continue
+            entries = bot_row.get("entries")
+            entries = entries if isinstance(entries, list) else []
+            sequences = [
+                entry.get("sequence") for entry in entries
+                if isinstance(entry, dict) and isinstance(entry.get("sequence"), int)
+            ]
+            actors.append({
+                "bot_guid": bot_row.get("bot_guid"),
+                "cursor_before": bot_row.get("cursor_before"),
+                "cursor_after": bot_row.get("cursor_after"),
+                "gap": bot_row.get("gap"),
+                "entry_count": len(entries),
+                "first_sequence": sequences[0] if sequences else None,
+                "last_sequence": sequences[-1] if sequences else None,
+            })
+        identity["actors"] = actors
+        return identity
+
+    def command_sent(
+        self,
+        commands: list[str],
+        *,
+        sent_at_monotonic: float,
+        scheduler_state: dict[str, Any],
+    ) -> None:
+        trace_command = next(
+            (command for command in commands if command.startswith("botauto trace ")),
+            None,
+        )
+        if trace_command is None:
+            return
+        if self._receipts:
+            previous = self._receipts[-1]
+            if previous.get("next_command_sent_at_monotonic") is None:
+                previous["next_command_sent_at_monotonic"] = sent_at_monotonic
+                previous["next_command_delay_seconds"] = round(
+                    sent_at_monotonic
+                    - float(previous["command_sent_at_monotonic"]),
+                    6,
+                )
+                completed_at = previous.get(
+                    "response_complete_observed_at_monotonic"
+                )
+                if isinstance(completed_at, (int, float)):
+                    previous["response_complete_to_next_send_seconds"] = round(
+                        sent_at_monotonic - float(completed_at), 6,
+                    )
+        self._receipts.append({
+            "command_sequence": self._next_sequence,
+            "command": trace_command,
+            "command_sent_at_monotonic": sent_at_monotonic,
+            "response_first_byte_observed_at_monotonic": None,
+            "response_complete_observed_at_monotonic": None,
+            "observation_poll_interval_seconds": (
+                self.observation_poll_interval_seconds
+            ),
+            "association_state": "awaiting_response",
+            "next_command_sent_at_monotonic": None,
+            "send_to_first_byte_observed_seconds": None,
+            "observed_response_delivery_seconds": None,
+            "response_complete_to_next_send_seconds": None,
+            "response_bytes": None,
+            "response_sha256": None,
+            "parse_duration_seconds": None,
+            "scheduler_state_at_send": dict(scheduler_state),
+            "scheduler_state_after_response": None,
+            "identity": None,
+        })
+        self._next_sequence += 1
+
+    def observe(self, observation: JsonLogObservation) -> int | None:
+        if observation.row.get("action") != "botauto_trace":
+            return None
+        pending = [
+            (index, receipt) for index, receipt in enumerate(self._receipts)
+            if receipt["response_complete_observed_at_monotonic"] is None
+        ]
+        if len(pending) != 1:
+            for _, receipt in pending:
+                receipt["association_state"] = "ambiguous_multiple_pending"
+            return None
+        index, receipt = pending[0]
+        receipt.update({
+            "response_first_byte_observed_at_monotonic": (
+                observation.first_byte_observed_at_monotonic
+            ),
+            "response_complete_observed_at_monotonic": (
+                observation.response_complete_observed_at_monotonic
+            ),
+            "send_to_first_byte_observed_seconds": round(
+                observation.first_byte_observed_at_monotonic
+                - float(receipt["command_sent_at_monotonic"]), 6,
+            ),
+            "observed_response_delivery_seconds": round(
+                observation.response_complete_observed_at_monotonic
+                - observation.first_byte_observed_at_monotonic, 6,
+            ),
+            "response_bytes": observation.response_bytes,
+            "response_sha256": observation.response_sha256,
+            "parse_duration_seconds": round(
+                observation.parse_duration_seconds, 9,
+            ),
+            "identity": self._trace_identity(observation.row),
+            "association_state": "bound_in_serial_command_order",
+        })
+        next_sent_at = receipt.get("next_command_sent_at_monotonic")
+        if isinstance(next_sent_at, (int, float)):
+            receipt["response_complete_to_next_send_seconds"] = round(
+                float(next_sent_at)
+                - observation.response_complete_observed_at_monotonic,
+                6,
+            )
+        return index
+
+    def finalize_responses(
+        self, receipt_indexes: list[int], scheduler_state: dict[str, Any],
+    ) -> None:
+        for index in receipt_indexes:
+            self._receipts[index]["scheduler_state_after_response"] = dict(
+                scheduler_state
+            )
+
+    def receipts(self) -> list[dict[str, Any]]:
+        return [dict(receipt) for receipt in self._receipts]
 
 
 def json_actions(log_bytes: bytes, action: str) -> list[dict[str, Any]]:
@@ -5901,6 +6112,7 @@ def main() -> int:
     startup_error: str | None = None
     process: subprocess.Popen[bytes] | None = None
     telemetry_scheduler: TelemetryScheduler | None = None
+    telemetry_transport_ledger = TelemetryTransportLedger()
     telemetry_command_counts = {
         "status": 0, "diagnose": 0, "trace": 0, "combat_log": 0,
     }
@@ -6216,10 +6428,20 @@ def main() -> int:
                             telemetry_command_counts["trace"] += 1
                     process.stdin.write(("\n".join(due_commands) + "\n").encode())
                     process.stdin.flush()
-                    time.sleep(1.0)
+                    command_sent_at = time.monotonic()
+                    telemetry_transport_ledger.command_sent(
+                        due_commands,
+                        sent_at_monotonic=command_sent_at,
+                        scheduler_state=telemetry_scheduler.state(),
+                    )
+                    observations = collect_log_observations(
+                        log_cursor, duration_seconds=1.0,
+                    )
                     new_statuses: list[dict[str, Any]] = []
                     new_trace_rows: list[dict[str, Any]] = []
-                    for row in log_cursor.read_new_rows():
+                    trace_receipt_indexes: list[int] = []
+                    for observation in observations:
+                        row = observation.row
                         action = row.get("action")
                         if action == "botauto_status":
                             new_statuses.append(row)
@@ -6230,8 +6452,16 @@ def main() -> int:
                         elif action == "botauto_trace":
                             trace_count += 1
                             new_trace_rows.append(row)
+                            receipt_index = telemetry_transport_ledger.observe(
+                                observation
+                            )
+                            if receipt_index is not None:
+                                trace_receipt_indexes.append(receipt_index)
                     telemetry_scheduler.observe_trace(
                         new_trace_rows, observed_at=time.monotonic(),
+                    )
+                    telemetry_transport_ledger.finalize_responses(
+                        trace_receipt_indexes, telemetry_scheduler.state(),
                     )
                     monitor_statuses.extend(new_statuses)
                     for status in new_statuses:
@@ -6729,6 +6959,7 @@ def main() -> int:
             "trace_interval_seconds": args.trace_interval_sec,
             "commands_sent": telemetry_command_counts,
             "scheduler_state": telemetry_scheduler.state() if telemetry_scheduler is not None else None,
+            "trace_transport_receipts": telemetry_transport_ledger.receipts(),
             "material_status_diagnosis": "immediate",
             "stall_bundle": (
                 "forced_diagnose_trace_delta_and_bounded_combat_log_before_termination"

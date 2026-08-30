@@ -13,6 +13,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     accepted_native_recovery,
     action_payloads,
     JsonLogCursor,
+    TelemetryTransportLedger,
     json_actions,
     json_rows,
     normalized_batch_payload,
@@ -1718,6 +1719,118 @@ def test_json_log_cursor_reads_append_only_chunks_once_and_preserves_partial_row
     assert cursor.offset == path.stat().st_size
     assert [row["action"] for row in incremental] == [
         "botauto_diagnose", "botauto_trace",
+    ]
+
+
+def test_production_trace_transport_receipt_binds_fragmented_response_and_next_pressure_send(
+    tmp_path: Path,
+):
+    path = tmp_path / "worldserver.log"
+    path.write_bytes(b"")
+    cursor = JsonLogCursor(path)
+    scheduler = TelemetryScheduler(
+        status_interval_sec=5, diagnose_interval_sec=30, trace_interval_sec=10,
+    )
+    ledger = TelemetryTransportLedger()
+
+    commands = scheduler.commands_due(10.0)
+    ledger.command_sent(
+        commands, sent_at_monotonic=10.0,
+        scheduler_state=scheduler.state(),
+    )
+    trace = {
+        "ok": True,
+        "action": "botauto_trace",
+        "cohort_id": "raid",
+        "raid_runtime": {
+            "server_epoch": 123,
+            "attempt_id": 4,
+            "instance_id": 8,
+            "strategy_id": "blackwing_descent_10n_magmaw_diagnostic",
+            "assignment_generation": 7,
+        },
+        "bots": [{
+            "bot_guid": 30008,
+            "cursor_before": 46,
+            "cursor_after": 174,
+            "gap": True,
+            "entries": [{"sequence": sequence} for sequence in range(47, 175)],
+        }],
+    }
+    raw = b"TC> " + json.dumps(trace, separators=(",", ":")).encode() + b"\n"
+    split = len(raw) // 2
+    path.write_bytes(raw[:split])
+    assert cursor.read_new_observations(observed_at=10.25) == []
+    with path.open("ab") as handle:
+        handle.write(raw[split:])
+    observations = cursor.read_new_observations(observed_at=10.75)
+    assert len(observations) == 1
+    receipt_index = ledger.observe(observations[0])
+    assert receipt_index == 0
+
+    scheduler.observe_trace([trace], observed_at=10.75)
+    ledger.finalize_responses([receipt_index], scheduler.state())
+    assert scheduler.state()["effective_trace_interval_seconds"] == 2.0
+    next_commands = scheduler.commands_due(12.75)
+    assert next_commands == ["botauto trace all 128 delta"]
+    ledger.command_sent(
+        next_commands, sent_at_monotonic=12.75,
+        scheduler_state=scheduler.state(),
+    )
+
+    receipt = ledger.receipts()[0]
+    assert receipt["command_sent_at_monotonic"] == 10.0
+    assert receipt["response_first_byte_observed_at_monotonic"] == 10.25
+    assert receipt["response_complete_observed_at_monotonic"] == 10.75
+    assert receipt["observation_poll_interval_seconds"] == 0.01
+    assert receipt["response_bytes"] == len(raw)
+    assert receipt["response_sha256"] == hashlib.sha256(raw).hexdigest()
+    assert receipt["parse_duration_seconds"] >= 0
+    assert receipt["next_command_sent_at_monotonic"] == 12.75
+    assert receipt["next_command_delay_seconds"] == 2.75
+    assert receipt["send_to_first_byte_observed_seconds"] == 0.25
+    assert receipt["observed_response_delivery_seconds"] == 0.5
+    assert receipt["response_complete_to_next_send_seconds"] == 2.0
+    assert receipt["association_state"] == "bound_in_serial_command_order"
+    assert receipt["scheduler_state_after_response"][
+        "effective_trace_interval_seconds"
+    ] == 2.0
+    assert receipt["identity"]["cohort_id"] == "raid"
+    assert receipt["identity"]["server_epoch"] == 123
+    assert receipt["identity"]["actors"] == [{
+        "bot_guid": 30008,
+        "cursor_before": 46,
+        "cursor_after": 174,
+        "gap": True,
+        "entry_count": 128,
+        "first_sequence": 47,
+        "last_sequence": 174,
+    }]
+
+
+def test_trace_transport_receipt_rejects_ambiguous_outstanding_commands(
+    tmp_path: Path,
+):
+    path = tmp_path / "worldserver.log"
+    trace = b'{"action":"botauto_trace","bots":[]}\n'
+    path.write_bytes(trace)
+    cursor = JsonLogCursor(path)
+    ledger = TelemetryTransportLedger()
+    scheduler = TelemetryScheduler()
+    scheduler.commands_due(1.0)
+    ledger.command_sent(
+        ["botauto trace all 128 delta"], sent_at_monotonic=1.0,
+        scheduler_state=scheduler.state(),
+    )
+    ledger.command_sent(
+        ["botauto trace all 128 delta"], sent_at_monotonic=11.0,
+        scheduler_state=scheduler.state(),
+    )
+
+    observation = cursor.read_new_observations(observed_at=11.1)[0]
+    assert ledger.observe(observation) is None
+    assert [receipt["association_state"] for receipt in ledger.receipts()] == [
+        "ambiguous_multiple_pending", "ambiguous_multiple_pending",
     ]
 
 
