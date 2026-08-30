@@ -38,6 +38,11 @@
   "ready_for_live_verification": false,
   "scope_lock": {
     "allowed_change": "Repair only the production arm gate source/Git-revision representation boundary with the same strict 40/40 authority equality and valid 12-or-40 exact-prefix rule already proven at start-held.",
+    "owned_files": [
+      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "tests/test_chainwielder_owner_checkpoint.py"
+    ],
     "forbidden": [
       "live_admission_configure_build_or_worldserver_start",
       "python_controller_or_polling_change",
