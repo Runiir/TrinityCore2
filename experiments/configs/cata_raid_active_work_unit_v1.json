@@ -1,86 +1,124 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_fixture_packet_independent_review_v49_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_fixture_packet_independent_review_v49",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "live_recurrence_quarantined",
-  "gate_state": "v48_fixture_packet_verified_pending_independent_review",
-  "observed_at_commit": "2cadc3937fc162df3f7d3e71e4b3b46605dec630",
-  "immutable_input_commit": "2cadc3937fc162df3f7d3e71e4b3b46605dec630",
+  "epoch_id": "generic_controller_route_hold_authenticated_one_build_one_live_v50_20260830",
+  "work_unit": "shard:generic_controller_route_hold_authenticated_one_build_one_live_v50",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
+  "gate_state": "v49_fixture_packet_independently_reconstructed_live_authorized",
+  "observed_at_commit": "a764689ef7720acdbcedc7a9368db5935d466fdc",
+  "immutable_input_commit": "a764689ef7720acdbcedc7a9368db5935d466fdc",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_repo_import_bound_retention_handoff_v48.json",
-    "sha256": "d5284a5c857cb28931ea13a7ff1b2a3b0e0888ebef6e6c97439dcd43501bed24",
-    "source_commit": "2cadc3937fc162df3f7d3e71e4b3b46605dec630"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_packet_independent_review_handoff_v49.json",
+    "sha256": "4ac1e79f1cab36382d4c1159c239fbd757f05ca750c368845f4d10a38dcac2cf",
+    "source_commit": "a764689ef7720acdbcedc7a9368db5935d466fdc"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
-    "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "V49 independently reviews the tracked no-live fixture packet. It authorizes no build, launch, live, native, or gameplay claim."
+    "supported_modes": [
+      "10N",
+      "10H",
+      "25N",
+      "25H"
+    ],
+    "canary_only": "V50 is one bounded Magmaw diagnostic recurrence. It cannot promote a fixture or native outcome to a universal route, encounter, or gameplay claim."
   },
   "behavior_change": false,
   "evidence_contract_change": false,
   "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": false,
+  "ready_for_live_verification": true,
   "scope_lock": {
-    "allowed_change": "Reconstruct V48 solely from the tracked canonical packet and route one evidence-backed next unit.",
-    "allowed_files": ["one_compact_review_handoff", "experiments/configs/cata_raid_active_work_unit_v1.json"],
+    "allowed_change": "At the exact clean descriptor commit, perform exactly one fast8_v2 configure and queued worldserver build, one authenticated catalog stage and prepared-object materialize/verify, one authoritative atomic bundle create/verify using the new exact build receipt, and at most one no-retry completion-watchdog live start. Publish, remotely reconstruct, and exactly evict the closed evidence through DVC.",
+    "allowed_files": [
+      "one_compact_live_handoff",
+      "exact_dvc_evidence_pointer_and_required_lock_update",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
+    ],
+    "required_before_start": [
+      "exact clean descriptor commit and tree",
+      "one successful fast8_v2 configure receipt",
+      "one successful gate-bearing queued worldserver build receipt whose request admission and completion source identities equal the descriptor commit",
+      "targeted DVC hydration and clean authority verification for the canonical validation route catalog",
+      "fresh strict readback of the retained frozen roster with native-loadable names and zero group instance corpse ghost residue",
+      "one authenticated external stage plus production materialize and prepared receipt verification",
+      "one atomic bundle create and explicit verify binding the new binary receipt, prepared object, Chainwielder-Drudges-Magmaw suffix, selected runtime profile, config, recurrence admission, and completion-watchdog launch contract"
+    ],
+    "required_after_terminal": [
+      "retain raw lifecycle bytes and typed terminal edge before normalization",
+      "classify every retained row and preserve first broken edge separately from terminal edge",
+      "DVC publish the immutable evidence and compact tracked handoff",
+      "verify remote reconstruction, exact file counts, sizes, hashes, and DVC status",
+      "evict only the exact published local payload and unique cache children after remote reconstruction succeeds",
+      "recheck zero worldserver and capture processes, Git status, targeted DVC status, and disk cleanup"
+    ],
     "forbidden": [
-      "production_skill_or_test_edit",
-      "configure_build_worldserver_or_launch_execution",
-      "database_or_dvc_mutation",
-      "temporary_bundle_or_validation_scenarios_hydration",
-      "gameplay_native_controller_route_comparison_polling_watchdog_or_threshold_change",
-      "live_authorization_without_exact_current_binary_identity"
+      "gameplay_native_controller_route_content_skill_or_test_edit",
+      "identity_comparison_polling_watchdog_or_threshold_change",
+      "second_configure_build_stage_materialize_verify_bundle_create_worldserver_start_or_retry",
+      "manual prepared route bundle config admission or launch mutation",
+      "fixed_300_second_raid_success_timer",
+      "local evidence eviction before verified DVC remote reconstruction",
+      "fixture result promotion to native Held release kill throughput or universal behavior"
     ]
   },
-  "closed_v48_evidence": {
-    "typed_packet_path": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_typed_evidence_packet_v48.json",
+  "closed_v49_evidence": {
     "typed_packet_sha256": "830e5a3c9893fa6b6753990678603a18c7334adb5e4799eab8baff660569e44e",
     "pre_eviction_packet_sha256": "c3c00a8a571a5825b18258037c1da153984f095ba2414a0170578483f545104f",
     "ordered_event_count": 17,
-    "canonical_stage_count": 1,
-    "prepared_object_materialize_count": 1,
-    "prepared_object_verify_count": 1,
-    "atomic_bundle_create_count": 1,
-    "atomic_bundle_internal_verify_count": 1,
-    "atomic_bundle_publish_count": 1,
-    "atomic_bundle_explicit_verify_count": 1,
-    "build_gate_observation_count": 3,
-    "retry_count": 0,
-    "worldserver_start_count": 0,
-    "fixture_result": "pass",
-    "exact_payload_eviction_complete": true
+    "catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "prepared_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "runtime_route_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+    "runtime_profile_sha256": "6e3295bcbee6b6161ad35eef51aadaa3e1aecfcd311f197744ae724d16d2e5f6",
+    "runtime_node_ids": [
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ],
+    "fixture_create_internal_verify_publish_explicit_verify_count": 1,
+    "fixture_worldserver_start_count": 0,
+    "current_source_binary_reuse_rejected": true
   },
-  "required_review_proof": [
-    "the tracked packet is canonical and matches its handoff SHA-256",
-    "all operation counts derive from the ordered event types and sequence",
-    "retained canonical prepared bytes reproduce the prepared SHA-256 and create binding",
-    "retained receipt and policy bytes reproduce all three ordered gate observations",
-    "typed create, internal verify, publish, and explicit verify results are mutually consistent",
-    "compact manifest, route, profile, and launch identities agree with the typed results",
-    "zero execution ledger and exact eviction closure are internally consistent"
+  "live_acceptance": [
+    "one and only one worldserver start is owned by the generated completion-watchdog launch plan",
+    "native source build config binary roster prepared route runtime profile recurrence admission and launch identities remain exact",
+    "fresh status diagnose and trace envelopes bind the exact cohort attempt server epoch route generation and roster",
+    "ordered native observations independently establish Held arm terminal release and retained Drudges outcomes or preserve the first fail-closed edge",
+    "the terminal edge is normal clear, monotonic semantic or no-progress stall, repeated decisions, excessive death loops, infrastructure loss, contamination, or explicit interruption rather than a fixed raid timer",
+    "closed raw and normalized evidence is DVC-published, remotely reconstructed, verified, and exactly evicted"
   ],
   "remaining_unproven": [
-    "a gate-bearing current-source native binary reaches the retained verified bundle",
-    "native Held, arm, terminal, release, retained Drudges, DPS, HPS, or pet-share evidence"
+    "native Held, arm, terminal, release, retained Drudges, DPS, HPS, and pet-share evidence",
+    "any generic route, encounter, or gameplay promotion beyond this bounded diagnostic recurrence"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": ["review_pass", "review_reject", "identity_or_scope_mismatch"]
+    "terminal_edges": [
+      "normal_clear",
+      "monotonic_semantic_or_no_progress_stall",
+      "repeated_decisions",
+      "excessive_death_loops",
+      "infrastructure_loss",
+      "contamination",
+      "explicit_interruption"
+    ]
   },
   "verification_budget": {
-    "configure_count_maximum": 0,
-    "worldserver_build_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "staging_preflight_count_maximum": 1,
+    "prepared_object_materialize_count_maximum": 1,
+    "prepared_object_verify_count_maximum": 1,
+    "atomic_bundle_create_count_maximum": 1,
+    "atomic_bundle_verify_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
     "retry_count_maximum": 0,
-    "database_mutation": "forbidden",
-    "dvc_mutation": "forbidden"
+    "database_mutation": "forbidden; strict retained frozen-roster readback only",
+    "dvc_mutation": "targeted hydration before admission and required publish remote reconstruction verification exact eviction after closure"
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_fixture_packet_independent_review_v49",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Review V48 solely from the tracked packet; do not hydrate the deleted bundle or run live."
+  "next_work_unit": "shard:generic_controller_route_hold_authenticated_one_build_one_live_v50",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run the exact authenticated one-build, at-most-one-start completion-watchdog recurrence and close it through verified DVC publication and exact eviction."
 }

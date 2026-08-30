@@ -1,0 +1,133 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_fixture_packet_independent_review_v49",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "verified_live_verification_authorized",
+  "source_state": {
+    "reviewed_commit": "a764689ef7720acdbcedc7a9368db5935d466fdc",
+    "reviewed_tree": "d19c5f1fc10c1e4958e33936dfdfcc1fb98225de",
+    "fixture_source_commit": "2cadc3937fc162df3f7d3e71e4b3b46605dec630",
+    "fixture_source_tree": "3602cb4c5f096394484c11bc1fd548423567ff1f",
+    "clean_before_review": true,
+    "v46_handoff_sha256": "32e6019a607435058d8fa27be9e2909383dfd755fed697f52227c1d3ab34f801",
+    "v47_handoff_sha256": "7ce49fc118c107aba21133b1c0e3207c7db1b2e0ac50c43faa1cc9bd04c0063d",
+    "v48_handoff_sha256": "d5284a5c857cb28931ea13a7ff1b2a3b0e0888ebef6e6c97439dcd43501bed24"
+  },
+  "packet_review": {
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_typed_evidence_packet_v48.json",
+    "canonical_json": true,
+    "packet_sha256": "830e5a3c9893fa6b6753990678603a18c7334adb5e4799eab8baff660569e44e",
+    "pre_eviction_packet_sha256_reconstructed": "c3c00a8a571a5825b18258037c1da153984f095ba2414a0170578483f545104f",
+    "ordered_event_count": 17,
+    "ordered_sequence": "contiguous_1_through_17",
+    "pre_eviction_event_count": 15,
+    "closure_event_count": 2
+  },
+  "derived_operation_counts": {
+    "repository_import_preflight": 1,
+    "targeted_dvc_hydration": 1,
+    "canonical_stage": 1,
+    "prepared_object_materialize": 1,
+    "prepared_object_verify": 1,
+    "atomic_bundle_create": 1,
+    "build_gate_observation": 3,
+    "internal_bundle_verify": 1,
+    "atomic_bundle_publish": 1,
+    "atomic_bundle_explicit_verify": 1,
+    "targeted_temporary_payload_evict": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_start": 0,
+    "launch_contract_execution": 0,
+    "database_mutation": 0,
+    "non_target_dvc_action": 0,
+    "retry": 0
+  },
+  "recomputed_identities": {
+    "dvc_directory_manifest_md5": "3c2286d3c01ccc479606a66b2babec34.dir",
+    "catalog_member_md5": "b1415465d3f26567e0af3e76cfb7bfed",
+    "catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "catalog_row_count": 77,
+    "selected_row_count": 4,
+    "selected_rows_sha256": "b47a63e9a45ea351da40e4a53b7df0cef7e3f9092f1b965aa2dc506bb2e85cda",
+    "staging_receipt_sha256": "1c9a377ac0d7c61cfde04094118f40c8c4853fb4c5c2f56712dd95a98d580062",
+    "prepared_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "prepared_receipt_sha256": "6f28997f1786ceb000ed53612615b28e00339ea721ef528533b5e740cde869eb",
+    "gate_receipt_sha256": "90bf0931af25e1ca1207e16ae925a8fdeee62da95eb0ed2bd2553b3e14ea1852",
+    "gate_policy_sha256": "c8ba4aebd3f5457b9f75a73854e970c3bc303cbb9bcd9ed83aa4c8dd83928093",
+    "runtime_route_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+    "runtime_profile_sha256": "6e3295bcbee6b6161ad35eef51aadaa3e1aecfcd311f197744ae724d16d2e5f6",
+    "bundle_manifest_sha256": "61351a9622efd2804d6b7f3d6325b21cd56b1fac9ce39b396dbfcd7844707c8e",
+    "launch_contract_sha256": "637d628f3c50c9715bd3b096a48aedf921f788c3d3f4bc83c06f5e8777d71f6d",
+    "launch_argv_sha256": "23c9cf0a88a2a2fd067289768506b5feeb5b1667fae5506846e4e51e705b7cc4"
+  },
+  "correlation_review": {
+    "prepared_verify_path_and_sha_equal_create_input": true,
+    "gate_phase_order": [
+      "original",
+      "atomic_sibling_staging",
+      "final_bundle"
+    ],
+    "gate_receipt_and_policy_canonical_bytes_equal_all_phases": true,
+    "internal_verify_materialized_root_equals_atomic_publish_source": true,
+    "atomic_publish_destination_equals_create_and_explicit_verify_bundle": true,
+    "create_without_pre_rename_flag_equals_internal_and_explicit_verify_results": true,
+    "runtime_node_ids": [
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ],
+    "profile_overlay_reconstructed_from_tracked_source_profile_and_runtime_route": true,
+    "launch_contract_inspected_not_executed": true,
+    "pre_eviction_receipt_bound_to_reconstructed_packet_and_manifest_hashes": true,
+    "external_root_absent_now": true,
+    "hydrated_validation_scenarios_absent_now": true,
+    "worldserver_or_capture_process_count_now": 0,
+    "git_clean_after_review": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "the tracked packet is canonical and both its final and exact pre-eviction SHA-256 values independently reconstruct",
+      "all operation counts derive from the contiguous ordered event sequence rather than summary booleans",
+      "the admitted source commit/tree and committed DVC lock authenticate the cached catalog member, its 77 rows, the four selected rows, and the exact canonical prepared object and receipt",
+      "the prepared verify event passes the exact path and SHA-256 consumed by the sole create invocation",
+      "the three ordered build-gate events bind canonical retained receipt and policy bytes at original, sibling staging, and final bundle paths",
+      "internal verify, atomic publish, create result, and explicit verify are sequence- and identity-consistent",
+      "runtime suffix, profile overlay, bundle manifest, launch argv, and launch-contract identities are mutually consistent",
+      "the zero ledger, pre-eviction receipt, exact eviction event, present path absence, final clean Git state, and zero current worldserver/capture processes close the fixture lifecycle"
+    ],
+    "refuted": [
+      "V48 depends on an unretained whole temporary bundle for independent fixture reconstruction",
+      "the previously attested binary may be reused as an exact current-source live binary"
+    ],
+    "unproven": [
+      "a gate-bearing binary built at the next exact clean source reaches the authenticated bundle",
+      "native Held, arm, terminal, release, retained Drudges, DPS, HPS, or pet-share evidence"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:generic_controller_route_hold_authenticated_one_build_one_live_v50",
+    "owner_skill": "raid-shard-architecture",
+    "allowed_action": "At the exact clean reviewed commit, perform exactly one fast8_v2 configure and queued worldserver build, one authenticated canonical-route stage/materialize/verify and authoritative atomic bundle create/verify using the new exact build receipt, then at most one no-retry completion-watchdog live start. Close and DVC-publish the evidence, reconstruct it from the remote, then exactly evict local payloads.",
+    "budget": {
+      "configure_count": 1,
+      "worldserver_build_count": 1,
+      "staging_preflight_count": 1,
+      "prepared_object_materialize_count": 1,
+      "prepared_object_verify_count": 1,
+      "atomic_bundle_create_count": 1,
+      "atomic_bundle_verify_count": 1,
+      "worldserver_start_count_maximum": 1,
+      "retry_count": 0,
+      "database_mutation": "forbidden; require fresh strict readback of the retained frozen roster before create",
+      "dvc_mutation": "required after capture closure for publish, remote reconstruction verification, and exact eviction"
+    },
+    "forbidden": [
+      "gameplay_native_controller_route_content_skill_or_test_edit",
+      "identity_comparison_polling_watchdog_or_threshold_change",
+      "second_configure_build_stage_materialize_verify_bundle_create_worldserver_start_or_retry",
+      "manual prepared route bundle config admission or launch mutation",
+      "local evidence eviction before verified DVC remote reconstruction"
+    ]
+  }
+}
