@@ -1,40 +1,40 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:chainwielder_live_combat_movement_owner_v98",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "epoch_id": "v97_live_combat_movement_owner_20260831",
-  "observed_at_commit": "c35fa964011ba7b10b5ff6f942bb38a8c7697c18",
+  "work_unit": "shard:chainwielder_route_checkpoint_fixture_semantic_correction_v99",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "fixture_green_architecture_correction_required",
+  "epoch_id": "v98_truthful_hazard_owner_20260831",
+  "observed_at_commit": "13368547cfa617fd98311e1fdeeb047fd8908a8e",
   "immutable_input_commit": "c35fa964011ba7b10b5ff6f942bb38a8c7697c18",
-  "gate_state": "live_combat_range_owner_refuted_route_fixture",
-  "behavior_change": false,
-  "evidence_contract_change": false,
-  "ready_for_bounded_repair": true,
+  "gate_state": "truthful_hazard_owner_refutes_route_only_checkpoint",
+  "behavior_change": true,
+  "evidence_contract_change": true,
+  "ready_for_bounded_repair": false,
   "ready_for_live_verification": false,
-  "ready_for_fixture_expansion": false,
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "runtime:chainwielder_live_combat_movement_owner_v98",
-  "next_action": "Reproduce receipt 2 at the focused production boundary and repair only the missing explicit typed owner for configured validation-route hazard movement; do not build or start a server.",
+  "ready_for_fixture_expansion": true,
+  "next_owner_skill": "raid-shard-architecture",
+  "next_work_unit": "shard:chainwielder_route_checkpoint_fixture_semantic_correction_v99",
+  "next_action": "Correct the checkpoint fixture seam so its receipt-zero Hazard rejection is observed against an already active real Route path independently of the later accepted configured-hazard exit; do not relabel that accepted exit as Route or start a live canary.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v97_real_route_owner_not_observed_handoff_v98.json",
-    "sha256": "b3a8f2118c6e0a0eb761a783d9c8d2537026ee32824dd74ca9b8d9f9b9882080",
-    "source_commit": "c35fa964011ba7b10b5ff6f942bb38a8c7697c18"
+    "path": "experiments/configs/cata_raid_v98_truthful_hazard_owner_handoff_v99.json",
+    "implementation_commit": "13368547cfa617fd98311e1fdeeb047fd8908a8e",
+    "implementation_tree": "bea80cffcf2ac75a5eb8e5aa40e8ab95d8304bba"
   },
   "program_scope": {
-    "operation": "trace-backed typed movement-owner repair for the configured validation-route hazard exit",
+    "operation": "fixture architecture correction separating Route-path rejection preservation from accepted Hazard-owned exit movement",
     "build_admitted": false,
     "worldserver_start_admitted": false,
-    "fixture_expansion_replay_admitted": false,
+    "fixture_expansion_replay_admitted": true,
     "gameplay_canary_admitted": false,
     "database_mutations_allowed": false,
     "gameplay_mutations_allowed": false
   },
   "scope_lock": {
-    "allowed_change": "At the narrow TryValidationRouteMovementCheck production call, carry the truthful configured-route movement owner through the existing planner and add one focused real-boundary regression for the V97 in-combat case.",
+    "allowed_change": "Revise only the checkpoint fixture/observation seam so a receipt-zero Hazard rejection is injected while a real identity-bound Route path is active; retain the accepted configured-hazard exit as Hazard/Hazard.",
     "forbidden": [
-      "geometry, destination, planner admission, encounter, class, route content, threshold, tolerance, target policy, recurrence admission, or database change",
-      "synthetic ownership, compatibility-adapter global change, identity weakening, wrapper-only reason suppression, build, server start, DVC mutation, or gameplay canary",
-      "claiming revisions 4/5/5 or a boss outcome from the focused repair"
+      "relabeling configured hazard movement as Route, weakening owner or identity checks, or changing movement geometry, destination, planner, priority ordering, encounter, class, route content, threshold, or tolerance",
+      "compatibility-adapter global change, build, server start, database mutation, DVC mutation, gameplay canary, or claims about revisions 4/5/5",
+      "combining the receipt-zero Route-preservation observation with the later accepted Hazard exit merely to satisfy the old Route-only expectation"
     ]
   },
   "execution_budget": {
@@ -49,16 +49,18 @@
     "dvc_mutation_count": 0
   },
   "required_terminal_evidence": {
-    "fail_before": "the exact in-combat configured hazard call launches receipt 2 as CombatRange and cannot satisfy the Route-only checkpoint",
-    "pass_after": "the same production call carries its explicit configured-route owner without changing destination or planner result, and the focused checkpoint lifecycle reaches one rejection plus one identity-preserved terminal",
+    "fail_before": "the checkpoint requires Route ownership and matching configured-hazard identity at the later accepted exit, although truthful Hazard/Hazard has legitimately replaced the earlier Route path",
+    "pass_after": "one real active Route path survives one receipt-zero Hazard rejection with full identity preserved, while the independent accepted configured-hazard exit remains Hazard/Hazard",
     "negative_outcomes": [
-      "ordinary in-combat non-route movement retains its current owner",
+      "ordinary in-combat non-route movement remains CombatRange/Combat",
+      "an accepted configured-hazard path is never counted as a receipt-zero rejection or a Route path",
       "stale or mismatched checkpoint identity cannot trigger",
-      "missing configured hazard identity cannot trigger",
+      "missing configured hazard identity cannot trigger accepted hazard movement",
       "duplicate lifecycle transitions remain rejected"
     ]
   },
   "remaining_unproven": [
+    "a corrected production-bound checkpoint fixture separating the two movement events",
     "map-669 revisions 4/5/5 and required negative outcomes",
     "any gameplay canary or boss outcome"
   ],
