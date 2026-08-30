@@ -1,0 +1,259 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:generic_controller_route_hold_bootstrap_revalidation_one_build_one_start_v15",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed",
+  "failure_classification": "controller_route_hold_config_identity_mismatch",
+  "input_identities": {
+    "source_commit": "6056b52ef4213f701b2c14744b1a98333dd3e302",
+    "source_tree": "69f181d056b799556b58544a8b469ed3cf5fb791",
+    "source_clean_before_configure": true,
+    "source_clean_before_build": true,
+    "source_clean_before_start": true,
+    "source_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_revalidation_admission_handoff_v15.json",
+    "source_handoff_sha256": "6d60ce0dc92e375eb24692bf0d185f64425f61e090e5e321acb4cbd326a6a228",
+    "implementation_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_identity_ordering_handoff_v14.json",
+    "implementation_handoff_sha256": "c312595e4eb2164e8c1609a443fad0b198848f053878ff5b1b0d99a2a8101eb3",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008,
+    "checkpoint_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1"
+  },
+  "scope_lock": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 1,
+    "bundle_create_count": 1,
+    "bundle_verify_count": 1,
+    "second_configure_run": false,
+    "second_worldserver_build": false,
+    "second_worldserver_start": false,
+    "manual_bundle_or_launch_mutation": false,
+    "gameplay_or_fixture_changes": false,
+    "fixture_revision_promoted": false,
+    "gameplay_canary_or_acceptance_claimed": false
+  },
+  "validation": {
+    "configure": {
+      "classification": "success",
+      "ticket_id": "raid-build-d6fc517216cc4227ac632e4051b31c74",
+      "queue_sequence": 1236,
+      "receipt_canonical_sha256": "2b29bd2102251a14fe0699845fb6b0cc58ce3222678a7b1fdf98d3c3af2115e9",
+      "receipt_file_sha256": "f29a3baf45dc0641483bb41ea393948b5a64bc3c7e95bbc8ca43b263558673fc",
+      "command_sha256": "be70ed356d98ec9b6b158e6237ffb8a00fe0ab7d125862735f2df2e1e85c5d5f",
+      "gate_bearing": true,
+      "compiler_job_ceiling": 8,
+      "linker_job_ceiling": 1
+    },
+    "worldserver_build": {
+      "classification": "success",
+      "ticket_id": "raid-build-2c8530d716394c388c972d5525d04bd7",
+      "queue_sequence": 1237,
+      "receipt_canonical_sha256": "62bf89687f28eec92d47341a11067b731da6abec6d910a67890ba9c2e82983e8",
+      "receipt_file_sha256": "0a31436c128dd3dd5ea0ca501822d183145cc29fd4595244b152dbfaef818f60",
+      "command_sha256": "852873daa29036c72e1d920be4d0669835fde59faa0cd9fb00b5ae8627f53ecc",
+      "gate_bearing": true,
+      "compiler_job_ceiling": 8,
+      "linker_job_ceiling": 1,
+      "binary_sha256": "a5061ab33a7bb492691aeb56b474fc93bc0deac7d68a8a09d788c298985fdc80"
+    },
+    "provisioning": {
+      "owned_transaction_count": 1,
+      "prepared": true,
+      "prepare_report_sha256": "f9180e772bf5c6f9f79a3961a50273808b9ec87c0fbeef8d215a6f91a8f64036",
+      "strict_verifier_invocation_omitted_outer_provisioning_report": true,
+      "strict_failure_count": 0,
+      "strict_report_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+      "exact_ten_actor_readback_passed": true,
+      "zero_prestart_group_instance_corpse_ghost_residue": true,
+      "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+      "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+      "prepared_config_sha256": "8fd2521c6334dca82db651fbf1a1400cf18fc91b33583164921849e37b8f7a2a"
+    },
+    "recurrence_bank": {
+      "verification_count": 20,
+      "passed_count": 20,
+      "source_identity": "6056b52ef4213f701b2c14744b1a98333dd3e302",
+      "fixture_expansion_admitted": true,
+      "fixture_expansion_target_ids": [
+        "chainwielder_pre_admission_rejection_isolation_v1"
+      ],
+      "canary_admitted": false,
+      "acceptance_admitted": false,
+      "suite_receipt_sha256": "db7f5b78813036734e75e1250033a5f9dc33b2caa17e8d409ae7f11f0dd87459",
+      "decision_sha256": "437e50f70d1bf2b455f3b73d0705be276e8677a5c86dbdb29cda5908c8e09227",
+      "ledger_sha256": "c02d27c6ff62d20aa5a31d463b9cdef68513fa67f74b3068ae7d236e061a1830"
+    },
+    "atomic_bundle": {
+      "create_count": 1,
+      "create_passed": true,
+      "pre_rename_verified": true,
+      "independent_verify_count": 1,
+      "independent_verify_passed": true,
+      "bundle_manifest_sha256": "4ef504cc38b51d98c99a12d6840e9717fccea34e0d0966a20b82181b071d0d6c",
+      "launch_contract_sha256": "06fed12d8fc05f9a9cbb6dfe96ab1d62cf73fc2281eb1d4e89e82c83051b7e76",
+      "recurrence_admission_sha256": "eb9560f6f34456693a622541e72279e4bf0d01947927bd1ba81f1af83ee63877",
+      "checkpoint_seal_sha256": "ca815d45d53689aa7fb03f563417b0f00163864c97f4edd318610e627db978d6",
+      "checkpoint_seal_file_sha256": "c9bc2bdd854f9d629aa57404c3902fa208f32a24bf3f72988f515a178c1671d9",
+      "launch_argv_executed_directly": true,
+      "duration_policy": "completion-watchdog",
+      "fixed_success_timer_seconds": null,
+      "start_budget": {
+        "worldserver_starts": 1,
+        "owner": "capture_controller"
+      }
+    },
+    "controller_transcript": {
+      "schema": "generic_controller_route_hold_scheduler_v1",
+      "phase": "failed",
+      "failure_reason": "controller_route_hold_config_identity_mismatch",
+      "command_counts": {
+        "start_held": 1,
+        "status": 0,
+        "arm": 0,
+        "release": 0
+      },
+      "start_ack_count": 0,
+      "held_status_count": 0,
+      "arm_ack_count": 0,
+      "checkpoint_terminal_count": 0,
+      "release_ack_count": 0,
+      "launch_identity": {
+        "actor_guid": 30008,
+        "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+        "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+        "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+        "route_manifest_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+        "route_generation": 1,
+        "route_node_id": "bwd.magmaw.chainwielder",
+        "seal_sha256": "ca815d45d53689aa7fb03f563417b0f00163864c97f4edd318610e627db978d6",
+        "source_commit": "6056b52ef4213f701b2c14744b1a98333dd3e302"
+      },
+      "native_failure_receipt": {
+        "ok": false,
+        "phase": "failed",
+        "attempt_id": 1,
+        "actor_guid": 30008,
+        "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+        "seal_sha256": "ca815d45d53689aa7fb03f563417b0f00163864c97f4edd318610e627db978d6",
+        "source_commit": "6056b52ef4213f701b2c14744b1a98333dd3e302",
+        "scenario_id": "",
+        "runtime_profile": "",
+        "route_manifest_sha256": "",
+        "route_generation": 0,
+        "route_node_id": "",
+        "acquire_count": 0,
+        "failure_reason": "controller_route_hold_config_identity_mismatch"
+      },
+      "ordinary_route_progress_before_release": false
+    },
+    "throughput": {
+      "route_dps": null,
+      "route_hps": null,
+      "actor_30008_dps": null,
+      "actor_30008_hps": null,
+      "actor_30008_pet_share": null,
+      "reason": "start_held_rejected_before_any status or combat"
+    },
+    "terminal": {
+      "classification": "infrastructure_abort",
+      "startup_error": "RuntimeError:controller route hold bootstrap rejected: controller_route_hold_config_identity_mismatch",
+      "capture_process_exit_code": 2,
+      "worldserver_exit_code": 0,
+      "capture_report_file_sha256": "e7e6953e94927425bac191badb05635ce0ea4750d370cdcd276d7bf0568e05bf",
+      "capture_report_canonical_sha256": "89fad6c7cb30059420e7fe34644edf9c680f9fa3684e818a58ddce7dcf786c59",
+      "normalized_raw_sha256": "2bd48174ad966a5003358724785dc04eeb45dd62443742766edee57547d48644",
+      "worldserver_log_sha256": "5a1e8591cab790c50fc9b8975ee6e41412f91a202965c504a3796491643c1967"
+    },
+    "cleanup": {
+      "gate_passed": true,
+      "stop_observed": true,
+      "worldserver_process_absent": true,
+      "zero_online_bots": true,
+      "zero_leases": true,
+      "build_queue_active": false,
+      "build_queue_depth": 0
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "one clean gate-bearing configure and one clean gate-bearing fast8_v2 worldserver build were consumed",
+      "one owned provisioning transaction, strict verifier, and exact ten-actor readback passed",
+      "all twenty source-bound recurrence fixtures passed and only fixture expansion was admitted",
+      "the atomic bundle was created once, independently verified once, and its emitted launch argv was executed without mutation",
+      "the sole worldserver start emitted start-held once and failed before any held status, arm, checkpoint lifecycle, release, route progress, or combat",
+      "the launch contract carried the exact admitted identity while the native failed-state receipt retained only actor, fixture, seal, and source and exposed empty route identity",
+      "cleanup left no worldserver process, bots, leases, build coordinator work, or local raw artifact directory"
+    ],
+    "refuted": [
+      "the V14 bootstrap-ordering implementation produces one production Held acknowledgement",
+      "the current native failure reason identifies which fixture, seal, source, or Git revision comparison failed",
+      "two identity-stable held statuses are observable after the current native bootstrap"
+    ],
+    "unproven": [
+      "sealed actor-30008 arm is acknowledged exactly once",
+      "one identity-preserved checkpoint lifecycle reaches a typed terminal",
+      "release is acknowledged once and ordinary route progress begins only afterward",
+      "route DPS, HPS, actor-30008 throughput, and pet share"
+    ]
+  },
+  "first_broken_edge": {
+    "owner": "shared_native_runtime",
+    "edge": "start_held_rejects_the_production_checkpoint_config_binding_before_hold_acquisition",
+    "first_observed_state_mutation": "the exact start-held command reached the native runtime after successful ten-bot admission, but StartAutonomyHeldForCohort rejected one of fixture ID, seal SHA, source commit, or Git revision under the aggregate controller_route_hold_config_identity_mismatch reason",
+    "failure_postcondition": "acquire_count remained zero; the returned failed state exposed empty scenario, profile, manifest, node, and generation zero, so the controller correctly sent no status, arm, or release command",
+    "diagnostic_gap": "the receipt does not expose the four runtime-side values or a typed per-field mismatch, so changing ordering or comparison again without that receipt would be guesswork",
+    "correlation_keys": {
+      "actor_guid": 30008,
+      "attempt_id": 1,
+      "launch_route_generation": 1,
+      "launch_route_node_id": "bwd.magmaw.chainwielder",
+      "launch_route_manifest_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+      "checkpoint_seal_sha256": "ca815d45d53689aa7fb03f563417b0f00163864c97f4edd318610e627db978d6"
+    }
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_6056b52ef4_generic_controller_route_hold_config_identity_mismatch_v15_20260830.dvc",
+    "pointer_file_sha256_before_commit": "2a7ea31f85e1bdd83b348d31d5d5d5ac576694b1cb31a4eefe7811205fc02c64",
+    "directory_md5": "ca588a4363d833e5891a602f1c6fabee.dir",
+    "directory_size_bytes": 1351611,
+    "directory_file_count": 24,
+    "push_result": "15 files pushed",
+    "remote_verification": "dvc_status_cloud_empty_before_eviction",
+    "workspace_output_evicted_after_remote_verification": true,
+    "external_run_root_evicted_after_remote_verification": true,
+    "cache_directory_manifest_retained": true,
+    "unique_cache_objects_evicted": 14,
+    "shared_cache_objects_retained": 5,
+    "broad_dvc_gc_run": false
+  },
+  "next_work_unit": {
+    "id": "runtime:generic_controller_route_hold_config_identity_binding_v16",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "hypothesis": "The checkpoint fixture/seal/source values loaded from the generated worldserver config are not preserved in the same cohort config observed after StartAutonomyForCohort, or one value differs from the command/Git revision in a way hidden by the aggregate failure reason.",
+    "required_change": "First add a typed fail-closed comparison result that records expected and actual hashes/identity presence without leaking or loosening authority. Reproduce the exact V15 failed state through the production start-held boundary, identify the one differing field, then repair only that native config-binding lifecycle. Preserve the exact route identity and all comparisons.",
+    "required_tests": [
+      "fail-before replay of the exact V15 command and aggregate receipt, including admitted ten-bot runtime plus zero acquire count",
+      "typed fixture-id, seal, source-commit, and Git-revision mismatch cases identify exactly one failing field without acknowledging Held",
+      "pass-after compiled production-boundary replay preserves checkpoint config across profile load/start and returns Held with exact admitted scenario, profile, manifest, generation one, node, actor, fixture, seal, and source",
+      "ordinary route actions and generation mutation remain suppressed until the exact Held acknowledgement",
+      "duplicate start-held, route drift, partial identity, and config drift remain fail-closed",
+      "existing arm, terminal, release, and post-release tests remain green"
+    ],
+    "owned_files": [
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrConfig.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrValidationProfile.cpp",
+      "tests/test_chainwielder_owner_checkpoint.py"
+    ],
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "worldserver_start_count": 0,
+      "database_mutation_allowed": false,
+      "dvc_mutation_allowed": false
+    },
+    "forbidden": "No Python controller repair, polling tweak, comparison loosening, gameplay/encounter/class/pet/movement change, build, provisioning, worldserver start, fixture promotion, or acceptance claim."
+  }
+}

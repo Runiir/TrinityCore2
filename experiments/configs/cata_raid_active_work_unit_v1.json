@@ -1,70 +1,71 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_bootstrap_revalidation_one_build_one_start_v15_20260830",
-  "work_unit": "shard:generic_controller_route_hold_bootstrap_revalidation_one_build_one_start_v15",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "v15_hash_bound_admission_green_native_build_and_live_transcript_unverified",
-  "observed_at_commit": "9a8d86f7d1e712c301c3c15c6476714a7b851cb9",
-  "immutable_input_commit": "9a8d86f7d1e712c301c3c15c6476714a7b851cb9",
+  "epoch_id": "generic_controller_route_hold_config_identity_binding_v16_20260830",
+  "work_unit": "runtime:generic_controller_route_hold_config_identity_binding_v16",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "failed",
+  "gate_state": "v15_failed_closed_before_start_held_ack_on_native_checkpoint_config_identity_mismatch",
+  "observed_at_commit": "6056b52ef4213f701b2c14744b1a98333dd3e302",
+  "immutable_input_commit": "6056b52ef4213f701b2c14744b1a98333dd3e302",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_revalidation_admission_handoff_v15.json",
-    "sha256": "6d60ce0dc92e375eb24692bf0d185f64425f61e090e5e321acb4cbd326a6a228",
-    "source_commit": "9a8d86f7d1e712c301c3c15c6476714a7b851cb9"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_config_identity_mismatch_handoff_v15.json",
+    "sha256": "3688bcaf9ecb64a9954948a9fd66e8b7cae963f056e8c240087de22402f77aca"
   },
-  "implementation_source": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_identity_ordering_handoff_v14.json",
-    "sha256": "c312595e4eb2164e8c1609a443fad0b198848f053878ff5b1b0d99a2a8101eb3"
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_6056b52ef4_generic_controller_route_hold_config_identity_mismatch_v15_20260830.dvc",
+    "directory_md5": "ca588a4363d833e5891a602f1c6fabee.dir",
+    "capture_report_file_sha256": "e7e6953e94927425bac191badb05635ce0ea4750d370cdcd276d7bf0568e05bf",
+    "capture_report_canonical_sha256": "89fad6c7cb30059420e7fe34644edf9c680f9fa3684e818a58ddce7dcf786c59",
+    "remote_verified": true,
+    "local_raw_evicted": true
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "Affliction, actor 30008, Chainwielder, and Magmaw are evidence inputs only. No live owner may branch on these identities outside the sealed observation fixture."
+    "canaries_only": ["Affliction", "Magmaw"]
   },
   "behavior_change": false,
-  "ready_for_bounded_repair": false,
+  "first_broken_edge": {
+    "owner": "shared_native_runtime",
+    "edge": "start_held_rejects_the_production_checkpoint_config_binding_before_hold_acquisition",
+    "native_failure_reason": "controller_route_hold_config_identity_mismatch",
+    "receipt": "the exact launch carried actor 30008 plus fixture, seal, source, scenario, profile, manifest, generation one, and node; native returned actor, fixture, seal, and source but empty route identity, generation zero, and acquire_count zero",
+    "diagnostic_gap": "the aggregate reason covers fixture ID, seal SHA, source commit, and Git revision comparisons but does not expose which runtime-side field differed"
+  },
+  "v15_receipt": {
+    "configure_count": 1,
+    "build_count": 1,
+    "worldserver_start_count": 1,
+    "bundle_create_count": 1,
+    "bundle_verify_count": 1,
+    "start_held_count": 1,
+    "start_ack_count": 0,
+    "held_status_count": 0,
+    "arm_count": 0,
+    "checkpoint_terminal_count": 0,
+    "release_count": 0,
+    "ordinary_route_progress_before_release": false,
+    "combat_observed": false,
+    "cleanup_passed": true
+  },
+  "ready_for_bounded_repair": true,
   "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": true,
-  "scope_lock": {
-    "allowed_change": "Configure and build the exact admitted source once with fast8, then start exactly one completion-watchdog worldserver to capture the controller-route-hold transcript.",
-    "forbidden": [
-      "native_runtime_or_gameplay_change",
-      "test_controller_or_fixture_change",
-      "class_spec_pet_encounter_route_strategy_or_priority_change",
-      "polling_or_identity_comparison_loosening",
-      "database_or_dvc_mutation",
-      "second_configure_build_start_or_retry",
-      "canary_acceptance_or_fixture_promotion_claim"
-    ]
-  },
-  "verification_budget": {
-    "configure_count_maximum": 1,
-    "worldserver_build_count_maximum": 1,
-    "worldserver_start_count_maximum": 1,
-    "retry_count_maximum": 0,
-    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
-    "compiler_jobs": 8,
-    "linker_jobs": 1,
-    "database_mutation": "forbidden",
-    "dvc_mutation": "forbidden"
-  },
-  "required_contract": {
-    "native_start_held_acknowledgement_count": 1,
-    "admission_commit_route_generation": 1,
-    "identity_stable_held_status_count": 2,
-    "checkpoint_arm_acknowledgement_count": 1,
-    "checkpoint_terminal_count": 1,
-    "release_acknowledgement_count": 1,
-    "ordinary_route_advance_before_release": false,
-    "ordinary_route_advance_after_release": true
-  },
+  "ready_for_live_verification": false,
   "remaining_unproven": [
-    "native build at source commit 9a8d86f7d1e712c301c3c15c6476714a7b851cb9",
-    "exact live generation-one Held start acknowledgement",
-    "two identity-stable Held status receipts",
-    "sealed arm, identity-preserved terminal, release, and post-release route advance"
+    "which runtime checkpoint config or Git identity field differs at production start-held",
+    "one exact native start-held acknowledgement at initial route generation",
+    "two identity-stable held status receipts",
+    "one sealed arm acknowledgement, identity-preserved checkpoint terminal, release acknowledgement, and post-release route advance",
+    "route DPS, HPS, actor-30008 throughput, and pet share"
   ],
+  "repair_budget": {
+    "configure_count_max": 0,
+    "build_count_max": 0,
+    "worldserver_start_count_max": 0,
+    "database_mutation_allowed": false,
+    "dvc_mutation_allowed": false
+  },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
@@ -78,7 +79,18 @@
       "explicit_interruption"
     ]
   },
-  "next_work_unit": "shard:generic_controller_route_hold_bootstrap_revalidation_one_build_one_start_v15",
-  "next_owner_skill": "raid-shard-architecture",
-  "next_action": "Run one clean fast8 configure/build and one no-retry completion-watchdog worldserver start; accept only the exact Held, two held statuses, arm, terminal, release, post-release advance transcript."
+  "required_repair": {
+    "boundary": "native start-held checkpoint-config binding lifecycle",
+    "acceptance": [
+      "fail-before compiled replay matches the exact V15 zero-acquire receipt after admitted runtime start",
+      "typed fixture-ID, seal, source-commit, and Git-revision mismatch cases expose the exact failing comparison and remain rejected",
+      "pass-after production-boundary replay preserves config identity across profile load/start and returns Held with exact route and checkpoint identity",
+      "ordinary route actions and generation mutation remain suppressed until the Held acknowledgement",
+      "duplicate start-held, route drift, partial identity, and config drift remain fail-closed"
+    ],
+    "forbidden": "Do not repair identity in the Python controller, loosen comparisons, alter polling, change gameplay, build, provision, start a server, promote fixtures, or claim canary acceptance."
+  },
+  "next_work_unit": "runtime:generic_controller_route_hold_config_identity_binding_v16",
+  "next_owner_skill": "raid-bot-runtime-implementation",
+  "next_action": "Add typed native checkpoint-config comparison evidence, reproduce the exact V15 boundary, and repair only the proven config-binding lifecycle with fail-before/pass-after compiled tests."
 }
