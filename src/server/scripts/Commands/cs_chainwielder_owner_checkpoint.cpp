@@ -43,11 +43,11 @@ private:
         else if (action == "arm")
         {
             uint32 actorGuid = 0;
-            std::string admissionSha256;
+            std::string sealSha256;
             std::string sourceCommit;
             std::string extra;
-            parser >> actorGuid >> admissionSha256 >> sourceCommit >> extra;
-            if (!actorGuid || admissionSha256.empty()
+            parser >> actorGuid >> sealSha256 >> sourceCommit >> extra;
+            if (!actorGuid || sealSha256.empty()
                 || sourceCommit.empty() || !extra.empty())
             {
                 result = "{\"ok\":false,\"action\":"
@@ -58,7 +58,7 @@ private:
             {
                 result = sBotWorldPopulationMgr
                     ->ArmChainwielderOwnerCheckpointForCohort(
-                        cohortId, actorGuid, admissionSha256, sourceCommit);
+                        cohortId, actorGuid, sealSha256, sourceCommit);
             }
         }
         else

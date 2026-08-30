@@ -49,8 +49,8 @@ struct GateInput
     bool AllowRaids = false;
     uint64 AttemptId = 0;
     std::string_view ConfigFixtureId;
-    std::string_view ConfigAdmissionSha256;
-    std::string_view RequestedAdmissionSha256;
+    std::string_view ConfigSealSha256;
+    std::string_view RequestedSealSha256;
     std::string_view ConfigSourceCommit;
     std::string_view RequestedSourceCommit;
     std::string_view BinarySourceCommit;
@@ -87,9 +87,9 @@ inline char const* RejectionReason(GateInput const& input)
         return "chainwielder_checkpoint_attempt_identity_missing";
     if (input.ConfigFixtureId != FixtureId)
         return "chainwielder_checkpoint_fixture_identity_mismatch";
-    if (!IsLowerHex(input.ConfigAdmissionSha256, 64)
-        || input.ConfigAdmissionSha256 != input.RequestedAdmissionSha256)
-        return "chainwielder_checkpoint_admission_mismatch";
+    if (!IsLowerHex(input.ConfigSealSha256, 64)
+        || input.ConfigSealSha256 != input.RequestedSealSha256)
+        return "chainwielder_checkpoint_seal_mismatch";
     if (!IsLowerHex(input.ConfigSourceCommit, 40)
         || input.ConfigSourceCommit != input.RequestedSourceCommit
         || input.ConfigSourceCommit != input.BinarySourceCommit)

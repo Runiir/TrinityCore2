@@ -43,6 +43,10 @@ int main()
         FixtureId, admission, admission, source, source, source,
     };
     assert(RejectionReason(valid) == nullptr);
+    valid.RequestedSealSha256 = std::string(64, 'c');
+    assert(RejectionReason(valid)
+        == std::string_view("chainwielder_checkpoint_seal_mismatch"));
+    valid.RequestedSealSha256 = admission;
     valid.RequestedSourceCommit = std::string(40, 'c');
     assert(RejectionReason(valid)
         == std::string_view("chainwielder_checkpoint_source_identity_mismatch"));
@@ -135,7 +139,9 @@ def test_checkpoint_is_default_off_and_exactly_admission_bound() -> None:
         '"BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.Enable", false'
         in config
     )
-    assert "ConfigAdmissionSha256 != input.RequestedAdmissionSha256" in header
+    assert "ConfigSealSha256 != input.RequestedSealSha256" in header
+    assert "ChainwielderOwnerCheckpoint.SealSha256" in config
+    assert "ChainwielderOwnerCheckpoint.AdmissionSha256" not in config
     assert "ConfigSourceCommit != input.BinarySourceCommit" in header
     assert "checkpoint.InjectionCount != 1" in module
     assert 'action == "arm"' in command

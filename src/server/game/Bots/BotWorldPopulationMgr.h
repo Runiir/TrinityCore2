@@ -83,7 +83,7 @@ public:
     std::string ApplyTraceTransportTestPressureForCohort(std::string const& cohortId, uint32 requestedCount);
     std::string ArmChainwielderOwnerCheckpointForCohort(
         std::string const& cohortId, uint32 actorGuid,
-        std::string const& admissionSha256,
+        std::string const& sealSha256,
         std::string const& sourceCommit);
     std::string GetChainwielderOwnerCheckpointJsonForCohort(
         std::string const& cohortId) const;
@@ -332,7 +332,7 @@ private:
     void MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
         WorldBotState& state, Player* bot);
     std::string ArmChainwielderOwnerCheckpoint(
-        uint32 actorGuid, std::string const& admissionSha256,
+        uint32 actorGuid, std::string const& sealSha256,
         std::string const& sourceCommit);
     std::string BuildChainwielderOwnerCheckpointJson() const;
     BotMovementArbitration::Request BuildMovementRequest(

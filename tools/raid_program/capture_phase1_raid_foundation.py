@@ -110,6 +110,37 @@ _CONTROLLER_TERMINAL_FAILURE_REASONS = frozenset({
 })
 
 
+def chainwielder_checkpoint_arm_command(
+    recurrence_admission: dict[str, Any] | None,
+    actor_guid: int | None,
+) -> str | None:
+    """Build the exact post-admission arm command, or fail closed."""
+
+    seal = (
+        recurrence_admission.get("checkpoint_seal_sha256")
+        if isinstance(recurrence_admission, dict) else None
+    )
+    if seal is None:
+        if actor_guid is not None:
+            raise ValueError("checkpoint_actor_without_verified_seal")
+        return None
+    source_commit = recurrence_admission.get("source_commit")
+    if (
+        not isinstance(actor_guid, int)
+        or isinstance(actor_guid, bool)
+        or actor_guid <= 0
+    ):
+        raise ValueError("checkpoint_actor_guid_required")
+    if not isinstance(seal, str) or not re.fullmatch(r"[0-9a-f]{64}", seal):
+        raise ValueError("checkpoint_verified_seal_invalid")
+    if (
+        not isinstance(source_commit, str)
+        or not re.fullmatch(r"[0-9a-f]{40}", source_commit)
+    ):
+        raise ValueError("checkpoint_verified_source_invalid")
+    return f"botautochaincheckpoint arm {actor_guid} {seal} {source_commit}"
+
+
 def _primary_gameplay_terminal(*terminals: dict[str, Any] | None) -> bool:
     """Return whether a controller/native terminal established gameplay failure.
 
@@ -5914,6 +5945,7 @@ def main() -> int:
     parser.add_argument("--build-receipt", type=Path, required=True)
     parser.add_argument("--recurrence-admission", type=Path)
     parser.add_argument("--recurrence-admission-sha256")
+    parser.add_argument("--chainwielder-checkpoint-actor-guid", type=int)
     parser.add_argument(
         "--fixture-expansion-replay",
         action="store_true",
@@ -6055,6 +6087,15 @@ def main() -> int:
             raise SystemExit(
                 f"capture preflight rejected: recurrence_admission:{error}"
             ) from error
+    try:
+        checkpoint_arm_command = chainwielder_checkpoint_arm_command(
+            recurrence_admission,
+            args.chainwielder_checkpoint_actor_guid,
+        )
+    except ValueError as error:
+        raise SystemExit(
+            f"capture preflight rejected: checkpoint_arm:{error}"
+        ) from error
     # This controller owns the single explicit native start command.  A
     # prepare-only runner hands us a config, but must not leave worldserver
     # AutoStart enabled: the resulting duplicate profile selection tears down
@@ -6169,6 +6210,7 @@ def main() -> int:
     operator_interrupt = False
     shutdown_error: str | None = None
     stop_commands_sent = False
+    checkpoint_arm_command_sent = False
     resource_samples: list[dict[str, Any]] = []
     resource_sampling_errors: list[str] = []
     resource_sampling_error_count = 0
@@ -6601,6 +6643,15 @@ def main() -> int:
                         last_rejections = rejections
                         if accepted:
                             stable.append(status)
+                            if (
+                                checkpoint_arm_command is not None
+                                and not checkpoint_arm_command_sent
+                            ):
+                                process.stdin.write(
+                                    (checkpoint_arm_command + "\n").encode()
+                                )
+                                process.stdin.flush()
+                                checkpoint_arm_command_sent = True
                         else:
                             stable.clear()
                         failure_reason, failure_rejections = terminal_runtime_failure_reason(
@@ -7064,6 +7115,15 @@ def main() -> int:
         "pool_tag_filter": runtime_assets.get("pool_tag_filter"),
         "identity_stable_during_run": identity_stable,
         "recurrence_admission": recurrence_admission,
+        "chainwielder_checkpoint_arm": {
+            "required": checkpoint_arm_command is not None,
+            "actor_guid": args.chainwielder_checkpoint_actor_guid,
+            "seal_sha256": (
+                recurrence_admission.get("checkpoint_seal_sha256")
+                if isinstance(recurrence_admission, dict) else None
+            ),
+            "command_sent": checkpoint_arm_command_sent,
+        },
         "build_provenance": build_provenance,
         "runtime_profile_assets": runtime_assets,
         "drudge_navmesh_preflight": drudge_navmesh_preflight,

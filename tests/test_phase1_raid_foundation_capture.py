@@ -48,6 +48,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     summarize_process_resource_samples,
     native_readycheck_request_identity,
     ready_for_native_readycheck,
+    chainwielder_checkpoint_arm_command,
 )
 
 
@@ -81,6 +82,49 @@ def _scheduler_status(*, route_index: int = 0, encounter: bool = False) -> dict:
             "boss_death_evidence": [],
         },
     }
+
+
+def test_chainwielder_checkpoint_arm_uses_verified_precomputed_seal():
+    seal = "a" * 64
+    commit = "b" * 40
+    admission = {
+        "checkpoint_seal_sha256": seal,
+        "source_commit": commit,
+    }
+
+    assert chainwielder_checkpoint_arm_command(admission, 30008) == (
+        f"botautochaincheckpoint arm 30008 {seal} {commit}"
+    )
+
+
+def test_chainwielder_checkpoint_arm_fails_closed_on_wrong_arm_value():
+    admission = {
+        "checkpoint_seal_sha256": "a" * 64,
+        "source_commit": "b" * 40,
+    }
+
+    for actor_guid in (None, 0, -1):
+        try:
+            chainwielder_checkpoint_arm_command(admission, actor_guid)
+        except ValueError as error:
+            assert str(error) == "checkpoint_actor_guid_required"
+        else:
+            raise AssertionError("invalid checkpoint actor was admitted")
+
+    admission["checkpoint_seal_sha256"] = "wrong"
+    try:
+        chainwielder_checkpoint_arm_command(admission, 30008)
+    except ValueError as error:
+        assert str(error) == "checkpoint_verified_seal_invalid"
+    else:
+        raise AssertionError("invalid checkpoint seal was admitted")
+
+    try:
+        chainwielder_checkpoint_arm_command(None, 30008)
+    except ValueError as error:
+        assert str(error) == "checkpoint_actor_without_verified_seal"
+    else:
+        raise AssertionError("unsealed checkpoint arm was admitted")
 
 
 def test_telemetry_scheduler_reduces_steady_state_heavy_commands():

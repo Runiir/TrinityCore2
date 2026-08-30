@@ -10,6 +10,7 @@ from typing import Any
 
 
 SCHEMA = "cata_raid_recurrence_admission_v1"
+CHECKPOINT_SEAL_SCHEMA = "cata_raid_checkpoint_seal_v1"
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 GAMEPLAY_CANARY_PURPOSE = "gameplay_canary"
 FIXTURE_EXPANSION_PURPOSE = "fixture_expansion_replay"
@@ -20,6 +21,12 @@ FIXTURE_STATE_FIELDS = (
     "missing_fixture_ids",
     "pending_fixture_ids",
     "stale_fixture_ids",
+)
+CHAINWIELDER_CHECKPOINT_FIXTURE_ID = (
+    "chainwielder_pre_admission_rejection_isolation_v1"
+)
+CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX = (
+    "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint"
 )
 
 
@@ -118,6 +125,87 @@ def _config_bool(path: Path, key: str, default: bool = False) -> bool:
     return value
 
 
+def _config_string(path: Path, key: str, default: str = "") -> str:
+    value = default
+    pattern = re.compile(
+        rf'^\s*{re.escape(key)}\s*=\s*"([^"\r\n]*)"\s*(?:#.*)?$'
+    )
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = pattern.match(line)
+        if match:
+            value = match.group(1)
+    return value
+
+
+def chainwielder_checkpoint_seal(
+    *,
+    worktree: Path,
+    binary: Path,
+    build_receipt: Path,
+    decision: Path,
+) -> dict[str, str]:
+    """Return the immutable seal that must exist before config admission.
+
+    The runtime config is deliberately absent from this payload. Its final
+    bytes contain the resulting seal and are independently hash-bound by the
+    recurrence admission created afterward.
+    """
+
+    worktree = worktree.resolve()
+    head = str(_git(worktree, "rev-parse", "HEAD"))
+    tree = str(_git(worktree, "rev-parse", "HEAD^{tree}"))
+    payload = {
+        "schema": CHECKPOINT_SEAL_SCHEMA,
+        "fixture_id": CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+        "purpose": FIXTURE_EXPANSION_PURPOSE,
+        "source_commit": head,
+        "source_tree": tree,
+        "binary_sha256": sha256_file(binary.resolve()),
+        "build_receipt_sha256": sha256_file(build_receipt.resolve()),
+        "decision_sha256": sha256_file(decision.resolve()),
+    }
+    canonical = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
+    return {**payload, "seal_sha256": hashlib.sha256(canonical).hexdigest()}
+
+
+def _verify_chainwielder_checkpoint_seal(
+    *,
+    seal: object,
+    worktree: Path,
+    binary: Path,
+    build_receipt: Path,
+    decision: Path,
+    runtime_config: Path,
+) -> dict[str, str]:
+    if not isinstance(seal, dict):
+        raise RecurrenceAdmissionError("checkpoint_seal_missing")
+    expected = chainwielder_checkpoint_seal(
+        worktree=worktree,
+        binary=binary,
+        build_receipt=build_receipt,
+        decision=decision,
+    )
+    if seal != expected:
+        raise RecurrenceAdmissionError("checkpoint_seal_identity_mismatch")
+    prefix = CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX
+    if not _config_bool(runtime_config, f"{prefix}.Enable"):
+        raise RecurrenceAdmissionError("checkpoint_config_disabled")
+    if _config_string(runtime_config, f"{prefix}.FixtureId") != (
+        CHAINWIELDER_CHECKPOINT_FIXTURE_ID
+    ):
+        raise RecurrenceAdmissionError("checkpoint_config_fixture_mismatch")
+    config_seal = _config_string(runtime_config, f"{prefix}.SealSha256")
+    if config_seal != expected["seal_sha256"]:
+        raise RecurrenceAdmissionError("checkpoint_config_seal_mismatch")
+    if _config_string(runtime_config, f"{prefix}.SourceCommit") != (
+        expected["source_commit"]
+    ):
+        raise RecurrenceAdmissionError("checkpoint_config_source_mismatch")
+    return expected
+
+
 def _verify_binding(
     admission: dict[str, Any], name: str, actual_path: Path | None = None
 ) -> Path:
@@ -172,8 +260,12 @@ def create_recurrence_admission(
         expansion_requests = _fixture_expansion_contract(
             decision_value, label="fixture_expansion"
         )
+        checkpoint_targeted = CHAINWIELDER_CHECKPOINT_FIXTURE_ID in (
+            decision_value.get("fixture_expansion_target_ids") or []
+        )
     else:
         expansion_requests = []
+        checkpoint_targeted = False
     suite = _load(suite_receipt.resolve(), "suite_receipt")
     if suite.get("source_identity") != head:
         raise RecurrenceAdmissionError("suite_receipt_source_stale")
@@ -189,6 +281,21 @@ def create_recurrence_admission(
         if not isinstance(fixture_id, str) or not isinstance(revision, int):
             raise RecurrenceAdmissionError("suite_fixture_identity_invalid")
         fixture_revisions[fixture_id] = revision
+    checkpoint_seal = None
+    if checkpoint_targeted:
+        checkpoint_seal = _verify_chainwielder_checkpoint_seal(
+            seal=chainwielder_checkpoint_seal(
+                worktree=worktree,
+                binary=binary,
+                build_receipt=build_receipt,
+                decision=decision,
+            ),
+            worktree=worktree,
+            binary=binary,
+            build_receipt=build_receipt,
+            decision=decision,
+            runtime_config=runtime_config,
+        )
     admission = {
         "schema": SCHEMA,
         "purpose": purpose,
@@ -202,6 +309,7 @@ def create_recurrence_admission(
         ) or [],
         "fixture_expansion_requests": expansion_requests,
         "gameplay_mutations_allowed": False if fixture_expansion else None,
+        "checkpoint_seal": checkpoint_seal,
         **{key: decision_value.get(key) for key in FIXTURE_STATE_FIELDS},
         "source": {
             "commit": head,
@@ -264,6 +372,9 @@ def verify_recurrence_admission(
         expansion_requests = _fixture_expansion_contract(
             admission, label="fixture_expansion"
         )
+        checkpoint_targeted = CHAINWIELDER_CHECKPOINT_FIXTURE_ID in (
+            admission.get("fixture_expansion_target_ids") or []
+        )
     else:
         if admission.get("build_admitted") is not True:
             raise RecurrenceAdmissionError("build_not_admitted")
@@ -272,6 +383,7 @@ def verify_recurrence_admission(
         for key in FIXTURE_STATE_FIELDS:
             if admission.get(key) != []:
                 raise RecurrenceAdmissionError(f"{key}_present")
+        checkpoint_targeted = False
 
     worktree = worktree.resolve()
     head = str(_git(worktree, "rev-parse", "HEAD"))
@@ -324,6 +436,18 @@ def verify_recurrence_admission(
     for key in FIXTURE_STATE_FIELDS:
         if admission.get(key) != decision.get(key):
             raise RecurrenceAdmissionError(f"decision_{key}_mismatch")
+    checkpoint_seal = admission.get("checkpoint_seal")
+    if checkpoint_targeted:
+        checkpoint_seal = _verify_chainwielder_checkpoint_seal(
+            seal=checkpoint_seal,
+            worktree=worktree,
+            binary=binary_path,
+            build_receipt=build_receipt_path,
+            decision=decision_path,
+            runtime_config=runtime_config,
+        )
+    elif checkpoint_seal is not None:
+        raise RecurrenceAdmissionError("checkpoint_seal_unexpected")
 
     suite = _load(suite_path, "suite_receipt")
     if suite.get("schema") != "trinity_raid_regression_suite_receipt_v1":
@@ -385,6 +509,10 @@ def verify_recurrence_admission(
         "fixture_expansion_requests": admission.get(
             "fixture_expansion_requests"
         ) or [],
+        "checkpoint_seal_sha256": (
+            checkpoint_seal["seal_sha256"]
+            if isinstance(checkpoint_seal, dict) else None
+        ),
     }
 
 
@@ -413,6 +541,11 @@ def main() -> int:
         "--purpose", choices=sorted(ADMISSION_PURPOSES),
         default=GAMEPLAY_CANARY_PURPOSE,
     )
+    seal = subparsers.add_parser("checkpoint-seal")
+    seal.add_argument("--worktree", type=Path, required=True)
+    seal.add_argument("--binary", type=Path, required=True)
+    seal.add_argument("--build-receipt", type=Path, required=True)
+    seal.add_argument("--decision", type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.command == "create":
@@ -434,7 +567,7 @@ def main() -> int:
                 "sha256": sha256_file(args.output.resolve()),
                 "source": result["source"],
             }
-        else:
+        elif args.command == "verify":
             result = verify_recurrence_admission(
                 admission_path=args.admission,
                 expected_sha256=args.sha256,
@@ -443,6 +576,13 @@ def main() -> int:
                 build_receipt=args.build_receipt,
                 runtime_config=args.runtime_config,
                 required_purpose=args.purpose,
+            )
+        else:
+            result = chainwielder_checkpoint_seal(
+                worktree=args.worktree,
+                binary=args.binary,
+                build_receipt=args.build_receipt,
+                decision=args.decision,
             )
     except RecurrenceAdmissionError as error:
         parser.error(str(error))

@@ -132,14 +132,14 @@ void WriteSnapshot(std::ostringstream& json, OwnerSnapshot const& snapshot)
 
 std::string BotWorldPopulationMgr::ArmChainwielderOwnerCheckpointForCohort(
     std::string const& cohortId, uint32 actorGuid,
-    std::string const& admissionSha256, std::string const& sourceCommit)
+    std::string const& sealSha256, std::string const& sourceCommit)
 {
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_chainwielder_checkpoint", cohortId);
     std::string previous = _selectedCohortId;
     _selectedCohortId = cohortId;
     std::string result = ArmChainwielderOwnerCheckpoint(
-        actorGuid, admissionSha256, sourceCommit);
+        actorGuid, sealSha256, sourceCommit);
     _selectedCohortId = previous;
     return result;
 }
@@ -157,7 +157,7 @@ std::string BotWorldPopulationMgr::GetChainwielderOwnerCheckpointJsonForCohort(
 }
 
 std::string BotWorldPopulationMgr::ArmChainwielderOwnerCheckpoint(
-    uint32 actorGuid, std::string const& admissionSha256,
+    uint32 actorGuid, std::string const& sealSha256,
     std::string const& sourceCommit)
 {
     using namespace BotChainwielderOwnerCheckpoint;
@@ -184,8 +184,8 @@ std::string BotWorldPopulationMgr::ArmChainwielderOwnerCheckpoint(
         Cohort().Config.AllowRaids,
         Cohort().AttemptId,
         Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
-        Cohort().Config.ChainwielderOwnerCheckpointAdmissionSha256,
-        admissionSha256,
+        Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
+        sealSha256,
         Cohort().Config.ChainwielderOwnerCheckpointSourceCommit,
         sourceCommit,
         GitRevision::GetHash(),
@@ -461,9 +461,9 @@ std::string BotWorldPopulationMgr::BuildChainwielderOwnerCheckpointJson() const
          << ",\"route_node_id\":\""
          << JsonEscape(Cohort().Config.ValidationRouteNodeId) << "\""
          << ",\"map_id\":" << Cohort().Config.ValidationRouteMapId
-         << ",\"configured_admission_sha256\":\""
+         << ",\"configured_seal_sha256\":\""
          << JsonEscape(Cohort().Config
-                .ChainwielderOwnerCheckpointAdmissionSha256) << "\""
+                .ChainwielderOwnerCheckpointSealSha256) << "\""
          << ",\"configured_source_commit\":\""
          << JsonEscape(Cohort().Config
                 .ChainwielderOwnerCheckpointSourceCommit) << "\""

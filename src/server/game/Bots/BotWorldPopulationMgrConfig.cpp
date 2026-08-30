@@ -162,8 +162,8 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
         "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.Enable", false);
     Cohort().Config.ChainwielderOwnerCheckpointFixtureId = sConfigMgr->GetStringDefault(
         "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.FixtureId", "");
-    Cohort().Config.ChainwielderOwnerCheckpointAdmissionSha256 = sConfigMgr->GetStringDefault(
-        "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.AdmissionSha256", "");
+    Cohort().Config.ChainwielderOwnerCheckpointSealSha256 = sConfigMgr->GetStringDefault(
+        "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.SealSha256", "");
     Cohort().Config.ChainwielderOwnerCheckpointSourceCommit = sConfigMgr->GetStringDefault(
         "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.SourceCommit", "");
     Cohort().Config.ValidationRouteManifestPath = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ManifestPath", Cohort().Config.ValidationRouteManifestPath);
