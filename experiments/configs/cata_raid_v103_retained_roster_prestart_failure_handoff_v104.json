@@ -1,0 +1,99 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:composite_map669_production_boundary_replay_v103",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "prestart_retained_roster_identity_failed",
+  "source": {
+    "commit": "7eb2e61c3b2a11d1bba404e7e293a3bba1c92dd0",
+    "tree": "e7f99c775f2a695c7a3f646990b4787c96ca6010",
+    "clean_before_handoff": true,
+    "binary_sha256": "936277e98d8e1b688840fc84ce6b1881832ed3f6fdfe4f31590b546d72eaa2ca"
+  },
+  "passed_gates": {
+    "active_descriptor_valid": true,
+    "recurrence_suite": "20/20",
+    "fixture_expansion_admitted_for_exact_four_targets": true,
+    "fast8_v4_build_gate_bearing": true,
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "tracked_runtime_config_verified": true,
+    "canonical_route_catalog_remote_and_local_clean": true,
+    "selected_route_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "atomic_bundle_verified": true,
+    "recurrence_admission_sha256": "c931b22123d9322ce9e6f28f943ffe08b466bb76fafc5618c9050631cb61dc10"
+  },
+  "first_disqualifying_gate": {
+    "stage": "strict_retained_roster_readback",
+    "result": "failed",
+    "reasons": [
+      "Mgwdpsa:health_seed",
+      "Mgwdpsa:power1_seed",
+      "Mgwdpsc:map",
+      "Mgwdpsc:position",
+      "Mgwheala:health_seed",
+      "Mgwheala:power1_seed",
+      "Mgwtankb:health_seed",
+      "Mgwtankb:power1_seed",
+      "corpse_rows",
+      "ghost_aura_rows"
+    ],
+    "decisive_observation": "actor 30008 was offline but persisted on map 0 at (-7332.4,-1617.16,295.735), while the frozen shard requires all ten actors at the map-669 entrance; one corpse row and one ghost aura row remained",
+    "terminal_edge": "prestart_gate_failed_no_worldserver_started"
+  },
+  "operations": {
+    "recurrence_suite_invocations": 1,
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_verify_count": 1,
+    "retained_roster_readback_count": 1,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "database_mutation_count": 0,
+    "retry_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact current source builds under the tracked 8-compiler and 1-linker policy",
+      "the tracked runtime config, selected four-node route object, and atomic bundle verify",
+      "the retained map-669 roster fails the mandatory prestart identity and lifecycle readback",
+      "no worldserver or authserver was started and no database row was mutated"
+    ],
+    "refuted": [
+      "the retained roster can admit the V103 production-boundary replay without deterministic reset",
+      "V103 reached any of the four requested production boundaries"
+    ],
+    "unproven": [
+      "Chainwielder Route identity preservation after a receipt-zero Hazard rejection",
+      "same-level floor observation revision 4",
+      "same-level Hazard path admission revision 5",
+      "same-level native path proof revision 5",
+      "any gameplay canary, Magmaw completion, or acceptance result"
+    ]
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_aa8a81c72a_v103_retained_roster_prestart_failed_20260831.dvc",
+    "dvc_pointer_sha256": "4007cd2616d709e24afbf84671a26ce2fe443a855f0d20aab9a3e035fa2e0e40",
+    "dvc_directory_md5": "025d85b03a9cf80a3cc6a10bccda9fa6.dir",
+    "file_count": 30,
+    "size_bytes": 1521818,
+    "remote_reconstruction_manifest_sha256": "51e2087b2d322cc01d71679e2b5d04bd5abdd07072137495557bf81136a1d670",
+    "remote_reconstruction": "verified"
+  },
+  "cleanup": {
+    "worldserver_process_absent": true,
+    "authserver_process_absent": true,
+    "workspace_payload_evicted": true,
+    "remote_reconstruction_payload_evicted": true,
+    "dvc_directory_object_evicted": true,
+    "unique_cache_children_evicted": 19,
+    "shared_cache_children_retained": 6
+  },
+  "next_work_unit": {
+    "id": "shard:restore_map669_retained_roster_identity_v104",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Run one deterministic repository-owned prepare-only provisioning reset for exactly the frozen blackwing_descent_10n_magmaw_diagnostic roster, then require strict provisioning verification and exact shard readback. Do not build or start a server.",
+    "required_postcondition": "exactly ten expected actors are offline, unleased, at the declared map-669 entrance with full health and power seeds and zero group, instance, corpse, ghost, or rename residue",
+    "after_success": "return a compact handoff that reauthorizes one fresh composite production-boundary replay at the successor clean descriptor identity"
+  }
+}
