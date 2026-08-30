@@ -9,6 +9,7 @@
   "immutable_input_commit": "1d669d29b8957de9fdf92f5a5b7e324e134d2eca",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_generic_controller_route_hold_profile_identity_mismatch_handoff_v50.json",
+    "sha256": "e9f88c0eded9ba34325360930d1c81f19247a0b8c17927dca1707bf1385b7053",
     "source_commit": "1d669d29b8957de9fdf92f5a5b7e324e134d2eca"
   },
   "program_scope": {
@@ -71,6 +72,17 @@
     "retry_count_maximum": 0,
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
+  },
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "scope": "fixture_only",
+    "fixed_success_timer_seconds": null,
+    "raid_success_timer_seconds": null,
+    "terminal_edges": [
+      "focused_fixture_pass",
+      "typed_fixture_failure",
+      "identity_or_scope_mismatch"
+    ]
   },
   "next_work_unit": "runtime:chainwielder_checkpoint_immutable_profile_identity_v51",
   "next_owner_skill": "raid-bot-runtime-implementation",
