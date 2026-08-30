@@ -1,39 +1,39 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:composite_map669_production_boundary_replay_v112",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "configure_operand_corrected_identical_replay_reauthorized",
-  "epoch_id": "v112_composite_map669_production_boundary_replay_20260831",
-  "observed_at_commit": "7246a213108b976cad243556a4370f7e80fe1f78",
-  "immutable_input_commit": "7246a213108b976cad243556a4370f7e80fe1f78",
-  "gate_state": "fixture_expansion_admitted_configure_operand_corrected_gameplay_closed",
+  "work_unit": "evidence:deterministic_composite_fixture_replay_launcher_v113",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "prestart_command_composition_repair_required",
+  "epoch_id": "v113_deterministic_composite_fixture_replay_launcher_20260831",
+  "observed_at_commit": "9a1008f35e51ab1db67c7e41fb9bf0325eaeae49",
+  "immutable_input_commit": "9a1008f35e51ab1db67c7e41fb9bf0325eaeae49",
+  "gate_state": "fixture_expansion_admitted_live_closed_launcher_repair_required",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": true,
+  "ready_for_bounded_repair": true,
+  "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_owner_skill": "raid-shard-architecture",
-  "next_work_unit": "shard:composite_map669_production_boundary_replay_v112",
-  "next_action": "Run the identical exact-clean no-retry composite map-669 replay, using exact configure prefix /usr/bin/cmake -S . -B build. Re-run the strict provisioning verifier read-only immediately before launch; do not reprovision or start an authserver.",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "evidence:deterministic_composite_fixture_replay_launcher_v113",
+  "next_action": "Implement and test one deterministic repository-owned launcher that emits the frozen configure, build, runtime-config-authority, atomic bundle, strict readback, and capture argv. Do not start a server or mutate the database.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v111_configure_operand_preflight_failed_handoff_v112.json",
-    "sha256": "cb08ef9111ebd96c8a7b4dfeb0abe903f8ce0a4db4d4f64e591d8c8a28389765",
-    "source_commit": "7246a213108b976cad243556a4370f7e80fe1f78",
-    "source_tree": "1dcdf326c0e0ec8e143caadfed286fffb16fd53d"
+    "path": "experiments/configs/cata_raid_v112_bundle_authority_prestart_failed_handoff_v113.json",
+    "sha256": "3a5cd5b7defc419106a8acdfae129772103bc42dab4fb8eb1e3de6fb2944f20e",
+    "source_commit": "9a1008f35e51ab1db67c7e41fb9bf0325eaeae49",
+    "source_tree": "edfd60d9971c8dd5406b5d52890121352a7f435d"
   },
   "completed_predecessor": {
-    "work_unit": "shard:composite_map669_production_boundary_replay_v111",
+    "work_unit": "shard:composite_map669_production_boundary_replay_v112",
     "inherited_full_bank_fixture_commands": "20/20 returned zero",
     "configure_invocation_count": 1,
-    "configure_process_start_count": 0,
-    "worldserver_build_count": 0,
+    "configure_process_start_count": 1,
+    "worldserver_build_count": 1,
     "worldserver_start_count": 0,
     "authserver_start_count": 0,
     "database_mutation_count": 0,
     "dvc_mutation_count": 0,
-    "terminal_edge": "preflight_invocation_failed_no_native_execution",
-    "accepted_configure_executable": "/usr/bin/cmake",
-    "rejected_operands": "absolute -S and -B paths"
+    "terminal_edge": "prestart_atomic_bundle_failed_no_live_execution",
+    "atomic_bundle_failure": "runtime_config_authority_selection_invalid",
+    "binary_sha256": "15abd7ebfd22330fe3bbb633075b3dff31d423d7b22ff7603a2f64a7320118bb"
   },
   "inherited_admission": {
     "source_work_unit": "shard:composite_map669_production_boundary_replay_v110",
@@ -46,21 +46,22 @@
     "preservation_basis": "V110 ran the exact bank at source 50ce8b07cfe7. V111 stopped before configure execution. V112 changes only compact handoff and descriptor files; no fixture, runtime, route, gameplay, native source, or database state changed."
   },
   "program_scope": {
-    "operation": "one observation-only worldserver-backed map-669 composite production-bound fixture-expansion replay",
+    "operation": "one bounded deterministic composite fixture replay launcher repair",
     "recurrence_bank_run_admitted": true,
     "fixture_expansion_replay_admitted": true,
-    "fixture_prerequisite_build_authorized": true,
-    "worldserver_start_admitted": true,
+    "fixture_prerequisite_build_authorized": false,
+    "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
     "gameplay_canary_admitted": false,
     "acceptance_admitted": false,
     "runtime_implementation_allowed": false,
+    "evidence_tooling_implementation_allowed": true,
     "gameplay_mutations_allowed": false,
     "database_mutations_allowed": false,
-    "dvc_mutations_allowed": true
+    "dvc_mutations_allowed": false
   },
   "scope_lock": {
-    "allowed_change": "At exact clean descriptor HEAD, invoke the sole configure with exact prefix /usr/bin/cmake -S . -B build, obtain at most one gate-bearing fast8_v4 worldserver build, run one strict spellbook-aware read-only provisioning verifier, verify route and atomic bundle identity, then run one no-retry map-669 replay for exactly the four admitted production boundaries. Publish, remotely reconstruct, and exactly evict only that evidence.",
+    "allowed_change": "Implement or repair one deterministic repository-owned fixture replay launcher and focused tests. It must emit the exact frozen configure, build, tracked-derived runtime-config-authority, atomic bundle, strict readback, and capture argv for later unchanged execution.",
     "requested_fixtures": [
       {"fixture_id": "chainwielder_pre_admission_rejection_isolation_v1", "requested_revision": 1, "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state"},
       {"fixture_id": "same_level_floor_observation_v1", "requested_revision": 4, "causal_signature": "same_level_movement_path_floor_false_negative"},
@@ -68,18 +69,16 @@
       {"fixture_id": "same_level_native_path_proof_v1", "requested_revision": 5, "causal_signature": "same_level_native_path_proof_false_negative"}
     ],
     "required_order": [
-      "verify clean descriptor HEAD and V111 handoff identity",
-      "invoke one policy-bound configure with exact prefix /usr/bin/cmake -S . -B build",
-      "obtain at most one exact-current fast8_v4 worldserver build with 8 compiler jobs and 1 linker job",
-      "run one strict provisioning verifier read-only and require complete spellbook plus lifecycle identity",
-      "verify tracked runtime config, selected route object, and atomic bundle",
-      "start one completion-watchdog worldserver replay with no retry and no authserver",
-      "publish, remotely reconstruct, verify, and exactly evict the bounded evidence"
+      "verify clean descriptor HEAD and V112 handoff identity",
+      "bind every argv token to repository-owned constants and typed inputs",
+      "emit and validate the frozen configure and build argv without executing them",
+      "emit and validate the tracked-derived runtime-config authority and atomic bundle argv without creating a bundle",
+      "emit and validate strict spellbook-aware readback and no-retry completion-watchdog capture argv without starting a server"
     ],
     "forbidden": [
       "runtime, fixture, test-expectation, ledger, gameplay, geometry, planner, priority, encounter, class, or DPS edits",
       "gameplay canary, boss completion, canary-gate, or acceptance claim",
-      "second configure, build, full-bank invocation, strict verifier, worldserver start, or replay retry",
+      "configure, build, full-bank invocation, strict verifier, atomic bundle creation, worldserver start, or replay retry",
       "authserver start, database mutation, roster reprovisioning, teleport, or forced gameplay outcome",
       "fixed 300-second raid timer"
     ]
@@ -102,21 +101,21 @@
   },
   "execution_budget": {
     "recurrence_suite_invocation_count_maximum": 0,
-    "configure_count_maximum": 1,
-    "worldserver_build_count_maximum": 1,
-    "strict_roster_verifier_count_maximum": 1,
-    "worldserver_start_count_maximum": 1,
+    "configure_count_maximum": 0,
+    "worldserver_build_count_maximum": 0,
+    "strict_roster_verifier_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
     "authserver_start_count_maximum": 0,
     "retry_count_maximum": 0,
     "database_mutation_count_maximum": 0,
-    "dvc_checkpoint_count_maximum": 1,
-    "dvc_push_count_maximum": 1,
-    "dvc_remote_reconstruction_count_maximum": 1,
-    "dvc_exact_eviction_count_maximum": 1
+    "dvc_checkpoint_count_maximum": 0,
+    "dvc_push_count_maximum": 0,
+    "dvc_remote_reconstruction_count_maximum": 0,
+    "dvc_exact_eviction_count_maximum": 0
   },
   "required_terminal_evidence": {
-    "pass": "All four production boundaries are correlated through consumed native observations, bounded evidence is remotely reconstructible, cleanup is complete, and no gameplay claim is made.",
-    "fail": "Stop on the first missing, stale, mismatched, or terminal production edge and retain it without changing runtime or fixtures."
+    "pass": "One focused production-bound test proves the launcher emits every frozen argv and authority token exactly and rejects altered values without executing external work.",
+    "fail": "Stop on the first missing, ambiguous, mutable, or hand-assembled command boundary and return its exact consumer."
   },
   "remaining_unproven": [
     "the four admitted production boundaries",

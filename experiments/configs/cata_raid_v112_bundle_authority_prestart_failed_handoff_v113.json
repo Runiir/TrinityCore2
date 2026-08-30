@@ -1,0 +1,78 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:composite_map669_production_boundary_replay_v112",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "atomic_bundle_runtime_config_authority_prestart_failed",
+  "source": {
+    "commit": "9a1008f35e51ab1db67c7e41fb9bf0325eaeae49",
+    "tree": "edfd60d9971c8dd5406b5d52890121352a7f435d",
+    "active_descriptor_sha256": "5844e961b52d48484ff166e76619aa82380c6cfa992677125f715d2c6f83cc98",
+    "v111_handoff_sha256": "cb08ef9111ebd96c8a7b4dfeb0abe903f8ce0a4db4d4f64e591d8c8a28389765"
+  },
+  "passed_gates": {
+    "inherited_full_bank": "20/20 commands returned zero; four production-boundary targets admitted",
+    "configure_gate_bearing": true,
+    "configure_receipt_sha256": "53c7d5c8cc61b6f0396cd40e58ca9dec817cf63232adf9bdee3e4f8f62186e07",
+    "configure_command_sha256": "be70ed356d98ec9b6b158e6237ffb8a00fe0ab7d125862735f2df2e1e85c5d5f",
+    "worldserver_build_gate_bearing": true,
+    "worldserver_build_receipt_sha256": "d1cccb68f9adb82e64f8177fbc1a23072df56bd733dc568d698901a8a9c06518",
+    "worldserver_build_command_sha256": "852873daa29036c72e1d920be4d0669835fde59faa0cd9fb00b5ae8627f53ecc",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "binary_sha256": "15abd7ebfd22330fe3bbb633075b3dff31d423d7b22ff7603a2f64a7320118bb",
+    "canonical_route_and_derived_runtime_config_materialized_and_verified": true,
+    "prestart_materialization_sha256": "4a6bdfe9c2b5df816bca22b2a2cc20b9028388445c29333421f98baef097bc37"
+  },
+  "first_failed_gate": {
+    "stage": "atomic_chainwielder_prestart_bundle_create",
+    "classification": "failed_closed",
+    "reason": "runtime_config_authority_selection_invalid",
+    "bundle_create_result_sha256": "59e2e416582aa94b9921ac53a3522ca6df2c5e2d2cac5943c2b00b6e4595aa7b",
+    "bundle_failure_sha256": "4f2b6d19c7253e84fa051e8c922a6de3f47ab4f2196107013bc720598ccb6469",
+    "launchable": false,
+    "strict_verifier_started": false,
+    "worldserver_started": false,
+    "authserver_started": false,
+    "database_mutated": false,
+    "retry_attempted": false,
+    "terminal_edge": "prestart_atomic_bundle_failed_no_live_execution"
+  },
+  "operations": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "atomic_bundle_create_count": 1,
+    "strict_verifier_count": 0,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "database_mutation_count": 0,
+    "retry_count": 0,
+    "dvc_checkpoint_count": 0
+  },
+  "production_boundary_status": "all_four_missing_prestart_bundle_failed",
+  "claim_ledger": {
+    "verified": [
+      "the exact frozen configure and worldserver build argv produced clean gate-bearing receipts",
+      "the route catalog, selected scenario object, and tracked-derived runtime config were materialized and independently verified",
+      "the hand-assembled bundle invocation supplied an unsupported runtime-config authority selector and failed closed",
+      "no worldserver, authserver, strict database verifier, database mutation, gameplay action, or DVC publication occurred"
+    ],
+    "refuted": [
+      "V112 reached the atomic bundle, strict readback, or live production boundaries"
+    ],
+    "unproven": [
+      "V106 controller release ordering in a second live execution",
+      "all four admitted production boundaries",
+      "spellbook identity across the next worldserver lifecycle",
+      "any gameplay, Magmaw clear, DPS, HPS, or acceptance result"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:deterministic_composite_fixture_replay_launcher_v113",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Implement or repair one deterministic repository-owned composite fixture replay launcher that emits and validates the exact frozen configure, build, runtime-config-authority, atomic bundle, strict readback, and capture argv. Exercise the launcher without building, starting a server, or mutating the database. The next live replay must consume its emitted argv unchanged instead of reconstructing commands by hand.",
+    "required_postcondition": "one tested launcher output binds the clean source, fast8_v4 policy, tracked-derived runtime-config authority token, canonical route object, atomic bundle inputs, spellbook-aware strict verifier, and no-retry completion-watchdog capture command",
+    "server_start_maximum": 0,
+    "database_mutation_maximum": 0,
+    "dvc_mutation_maximum": 0
+  }
+}
