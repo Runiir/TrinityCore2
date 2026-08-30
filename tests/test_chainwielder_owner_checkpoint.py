@@ -297,6 +297,7 @@ def test_generic_controller_route_hold_crosses_kernel_and_route_gate(
 r'''
 #include "Bots/BotChainwielderOwnerCheckpoint.h"
 #include "Bots/BotActionArbiter.h"
+#include "Bots/BotWorldPopulationMgrBotState.h"
 #define BOT_CONTROLLER_ROUTE_HOLD_CONFIG_IDENTITY_ADAPTER_ONLY
 #include "Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp"
 #define BOT_CONTROLLER_ROUTE_HOLD_BOOTSTRAP_ADAPTER_ONLY
@@ -452,10 +453,16 @@ int main()
     heldKernel.Begin(22);
     InstallAdmissionPolicy(heldKernel, hold, identity, 77);
     int setupAttempts = 0;
+    int defensiveAttempts = 0;
     int ordinaryAttempts = 0;
     int earlyCheckpointAttempts = 0;
     heldKernel.Submit(CandidateFor("formation", AdmissionClass::FormationMovement,
         setupAttempts, heldKernel));
+    Candidate defensive = CandidateFor("defensive-survival",
+        AdmissionClass::Unknown, defensiveAttempts, heldKernel);
+    defensive.ActionPriority = Priority::Survival;
+    defensive.RequiredResources = Uses(Resource::Cast);
+    heldKernel.Submit(std::move(defensive));
     heldKernel.Submit(CandidateFor("ordinary", AdmissionClass::Unknown,
         ordinaryAttempts, heldKernel));
     heldKernel.Submit(CandidateFor("checkpoint-early",
@@ -463,6 +470,7 @@ int main()
         earlyCheckpointAttempts, heldKernel, identity.ScopeKey()));
     heldKernel.Resolve();
     assert(setupAttempts == 1);
+    assert(defensiveAttempts == 1);
     assert(ordinaryAttempts == 0);
     assert(earlyCheckpointAttempts == 0);
     assert(hold.SuppressedRouteActionCount == 2);
@@ -473,20 +481,79 @@ int main()
     Kernel armedKernel;
     armedKernel.Begin(24);
     InstallAdmissionPolicy(armedKernel, hold, identity, 77);
+    BotMovementArbitration::Lease nativeLease;
+    nativeLease.MovementOwner = BotMovementArbitration::Owner::CombatRange;
+    nativeLease.MovementPriority = BotMovementArbitration::Priority::Combat;
+    nativeLease.ExpiresAtMs = 24;
+    nativeLease.MovementScope = { 9, 2, 1, 669, 31 };
     int routeExecutionCount = 0;
     int routeActionViewAttempts = 0;
     int routeMovementViewAttempts = 0;
+    int unrelatedHazardAttempts = 0;
     int armedOrdinaryAttempts = 0;
     int foreignActorAttempts = 0;
+    BotChainwielderOwnerCheckpoint::OwnerSnapshot routeIdentity;
+
+    // Exact fail-before scheduler shape: an unrelated Survival-priority
+    // movement used to be admitted first, replace the completed combat-range
+    // lease with Hazard, and consume the movement lane before Route ran.
+    Candidate unrelatedHazard;
+    unrelatedHazard.Key = "unrelated-hazard";
+    unrelatedHazard.Source = "adaptive_raid_trash";
+    unrelatedHazard.ActionPriority = Priority::Survival;
+    unrelatedHazard.UtilityScore = 8.0f;
+    unrelatedHazard.RequiredResources = Uses(Resource::Movement);
+    unrelatedHazard.Attempt = [&nativeLease, &unrelatedHazardAttempts]()
+    {
+        ++unrelatedHazardAttempts;
+        BotMovementArbitration::Request request;
+        request.MovementOwner = BotMovementArbitration::Owner::Hazard;
+        request.MovementPriority = BotMovementArbitration::Priority::Hazard;
+        request.ExpiresAtMs = 100;
+        request.MovementScope = { 9, 2, 1, 669, 31 };
+        request.X = 5.0f;
+        BotMovementArbitration::Apply(nativeLease, request);
+        return Outcome::Started("unrelated_hazard_started");
+    };
+    armedKernel.Submit(std::move(unrelatedHazard));
+
     Candidate routeAction;
     routeAction.Key = "generic-route-action";
     routeAction.Source = "validation_route_adapter";
     routeAction.ActionPriority = Priority::Mechanic;
     routeAction.UtilityScore = 3.1f;
-    routeAction.Attempt = [&routeExecutionCount, &routeActionViewAttempts]()
+    routeAction.Attempt = [&nativeLease, &routeIdentity,
+        &routeExecutionCount, &routeActionViewAttempts]()
     {
         ++routeActionViewAttempts;
         ++routeExecutionCount;
+        BotMovementArbitration::Request request;
+        request.MovementOwner = BotMovementArbitration::Owner::Route;
+        request.MovementPriority = BotMovementArbitration::Priority::Route;
+        request.ExpiresAtMs = 100;
+        request.MovementScope = { 9, 2, 1, 669, 31 };
+        request.X = 10.0f;
+        request.Y = 20.0f;
+        request.Z = 30.0f;
+        assert(BotMovementArbitration::Evaluate(nativeLease, request, 24)
+            == BotMovementArbitration::Decision::Acquire);
+        BotMovementArbitration::Apply(nativeLease, request);
+        routeIdentity.MovementOwner = nativeLease.MovementOwner;
+        routeIdentity.ActivePathValid = true;
+        routeIdentity.ActivePathSegmentValid = true;
+        routeIdentity.ActivePathTraversalMode = "native_route";
+        routeIdentity.ActivePathAttemptId = request.MovementScope.AttemptId;
+        routeIdentity.ActivePathWipeGeneration =
+            request.MovementScope.WipeGeneration;
+        routeIdentity.ActivePathRouteGeneration =
+            request.MovementScope.RouteGeneration;
+        routeIdentity.ActivePathRouteNodeId = "route.node.a";
+        routeIdentity.ActivePathToX = request.X;
+        routeIdentity.ActivePathToY = request.Y;
+        routeIdentity.ActivePathToZ = request.Z;
+        routeIdentity.DodgeCasterGuid = 9001;
+        routeIdentity.DodgeSpellId = 9002;
+        routeIdentity.DodgeUntilMs = 100;
         return Outcome::NotApplicable("route_movement_only");
     };
     Candidate routeMovement;
@@ -494,10 +561,13 @@ int main()
     routeMovement.Source = "validation_route_adapter";
     routeMovement.ActionPriority = Priority::Mechanic;
     routeMovement.UtilityScore = 3.0f;
-    routeMovement.Attempt = [&routeExecutionCount, &routeMovementViewAttempts]()
+    routeMovement.Attempt = [&nativeLease, &routeExecutionCount,
+        &routeMovementViewAttempts]()
     {
         ++routeMovementViewAttempts;
         assert(routeExecutionCount == 1);
+        assert(nativeLease.MovementOwner
+            == BotMovementArbitration::Owner::Route);
         return Outcome::Committed("route_movement_submitted");
     };
     assert(MarkCheckpointObservationCandidate(armedKernel, routeAction.Key,
@@ -523,8 +593,31 @@ int main()
     assert(routeExecutionCount == 1);
     assert(routeActionViewAttempts == 1);
     assert(routeMovementViewAttempts == 1);
+    assert(unrelatedHazardAttempts == 0);
     assert(armedOrdinaryAttempts == 0);
     assert(foreignActorAttempts == 0);
+    assert(nativeLease.MovementOwner == BotMovementArbitration::Owner::Route);
+    assert(routeIdentity.ActivePathRouteGeneration == identity.RouteGeneration);
+    assert(routeIdentity.ActivePathRouteNodeId == identity.RouteNodeId);
+
+    // The production future-pack rejection is receipt-zero and observe-only
+    // against the actor's active Route path. Its full identity survives until
+    // the later typed hazard-exit completion.
+    BotChainwielderOwnerCheckpoint::HazardRejectionObservation const rejection{
+        false, BotMovementArbitration::Owner::Hazard,
+        "future_pack_destination", "rejected",
+        "route_destination_future_pack_unsafe", 0 };
+    assert(BotChainwielderOwnerCheckpoint::
+        IsExactReceiptlessHazardRejection(rejection));
+    assert(BotWorldPopulationMgrBotState::MovementRejectionIsolation::
+        ClassifyPreAdmissionRejection(
+            rejection.MovementOwner, nativeLease.MovementOwner, true, false)
+        == BotWorldPopulationMgrBotState::MovementRejectionIsolation::
+            Disposition::ObserveOnlyPreserveExistingOwner);
+    BotChainwielderOwnerCheckpoint::OwnerSnapshot const
+        routeIdentityAfterRejection = routeIdentity;
+    assert(BotChainwielderOwnerCheckpoint::SameRouteIdentity(
+        routeIdentity, routeIdentityAfterRejection));
 
     Kernel wrongScopeKernel;
     wrongScopeKernel.Begin(24);
@@ -537,8 +630,23 @@ int main()
     wrongScopeKernel.Resolve();
     assert(wrongScopeAttempts == 0);
 
-    assert(hold.ObserveCheckpointTerminal(identity, "completed", true,
+    Kernel syntheticKernel;
+    syntheticKernel.Begin(24);
+    InstallAdmissionPolicy(syntheticKernel, hold, identity, 77);
+    int syntheticAttempts = 0;
+    syntheticKernel.Submit(CandidateFor("checkpoint-synthetic",
+        AdmissionClass::ControllerCheckpointObservation,
+        syntheticAttempts, syntheticKernel, identity.ScopeKey()));
+    syntheticKernel.Resolve();
+    assert(syntheticAttempts == 0);
+
+    assert(hold.ObserveCheckpointTerminal(identity, "hazard_exit_completed", true,
         true, 25).Accepted);
+    State duplicateTerminal = hold;
+    assert(!duplicateTerminal.ObserveCheckpointTerminal(identity,
+        "hazard_exit_completed", true, true, 26).Accepted);
+    assert(duplicateTerminal.FailureReason
+        == "controller_route_hold_checkpoint_terminal_stale");
     assert(hold.Release(identity, 26).Accepted);
     assert(hold.ReleaseCount == 1);
     assert(GateRouteMutation(hold, CompleteIdentity(2), 2));
@@ -801,6 +909,7 @@ def test_generic_controller_hold_is_wired_to_production_boundaries() -> None:
 
 
 def test_checkpoint_crosses_real_executor_and_production_tick_boundary() -> None:
+    header = HEADER.read_text(encoding="utf-8")
     module = MODULE.read_text(encoding="utf-8")
     update = UPDATE.read_text(encoding="utf-8")
 
@@ -808,9 +917,10 @@ def test_checkpoint_crosses_real_executor_and_production_tick_boundary() -> None
     assert "IsValidationRoutePatrolCombatPointSafe" in module
     assert "ExecuteMovementIntent(state, bot, rejected)" in module
     assert "MovementPlannerDiagnostics().Latest" in module
-    assert 'observation.Gate == "future_pack_destination"' in module
-    assert 'observation.Result == "rejected"' in module
-    assert "observation.LaunchReceipt.Id == 0" in module
+    assert "IsExactReceiptlessHazardRejection" in module
+    assert 'observation.Gate == "future_pack_destination"' in header
+    assert 'observation.Result == "rejected"' in header
+    assert "observation.LaunchReceiptId == 0" in header
     assert "SameRouteIdentity(\n        checkpoint.Before, immediateAfter)" in module
     assert "SameRouteIdentity(\n            checkpoint.Before, checkpoint.After)" in module
 

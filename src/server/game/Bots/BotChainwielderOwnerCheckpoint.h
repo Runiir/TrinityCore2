@@ -294,7 +294,7 @@ struct State
     }
 
     bool AdmitCandidate(Identity const& identity, uint32 actingActorGuid,
-        Admission classification, bool survival)
+        Admission classification, bool survival, bool movement)
     {
         if (!Holding())
             return true;
@@ -304,7 +304,7 @@ struct State
             || classification == Admission::BagConsumable
             || classification == Admission::OffenseSuppression
             || classification == Admission::DefensiveSurvival
-            || survival;
+            || (survival && !movement);
         bool const checkpointObservation =
             classification == Admission::CheckpointObservation
             && CurrentPhase == Phase::Armed
@@ -362,7 +362,8 @@ inline Admission ClassifyCandidate(
             classification = AdmissionClass::OffenseSuppression;
     }
     if (classification == AdmissionClass::ControllerCheckpointObservation
-        && (!metadata || metadata->ScopeKey != hold.Scope.ScopeKey()))
+        && (!metadata || metadata->ScopeKey != hold.Scope.ScopeKey()
+            || candidate.Source != "validation_route_adapter"))
         classification = AdmissionClass::Unknown;
     switch (classification)
     {
@@ -396,7 +397,9 @@ inline void InstallAdmissionPolicy(BotActionArbitration::Kernel& kernel,
                 candidate, metadata, *state);
             return state->AdmitCandidate(identity, actingActorGuid,
                     classification,
-                    candidate.ActionPriority == Priority::Survival)
+                    candidate.ActionPriority == Priority::Survival,
+                    Conflicts(candidate.RequiredResources,
+                        Uses(Resource::Movement)))
                 ? std::string()
                 : std::string("controller_route_hold_suppressed");
         });
@@ -546,6 +549,28 @@ struct OwnerSnapshot
     uint8 DodgeBearingAttempt = 0;
     std::string LastPathRejectReason;
 };
+
+struct HazardRejectionObservation
+{
+    bool Submitted = false;
+    BotMovementArbitration::Owner MovementOwner =
+        BotMovementArbitration::Owner::None;
+    std::string_view Gate;
+    std::string_view Result;
+    std::string_view Reason;
+    uint64 LaunchReceiptId = 0;
+};
+
+inline bool IsExactReceiptlessHazardRejection(
+    HazardRejectionObservation const& observation)
+{
+    return !observation.Submitted
+        && observation.MovementOwner == BotMovementArbitration::Owner::Hazard
+        && observation.Gate == "future_pack_destination"
+        && observation.Result == "rejected"
+        && observation.Reason == "route_destination_future_pack_unsafe"
+        && observation.LaunchReceiptId == 0;
+}
 
 inline bool SameRouteIdentity(
     OwnerSnapshot const& before, OwnerSnapshot const& after)

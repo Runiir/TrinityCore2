@@ -741,12 +741,11 @@ void BotWorldPopulationMgr::MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
     checkpoint.RejectionGate = observation.Gate;
     checkpoint.RejectionReason = observation.Reason;
     OwnerSnapshot const immediateAfter = CaptureOwnerSnapshot(state);
-    bool const exactRejection = !submitted && observation.Available
-        && observation.MovementOwner == BotMovementArbitration::Owner::Hazard
-        && observation.Gate == "future_pack_destination"
-        && observation.Result == "rejected"
-        && observation.Reason == "route_destination_future_pack_unsafe"
-        && observation.LaunchReceipt.Id == 0;
+    bool const exactRejection = observation.Available
+        && IsExactReceiptlessHazardRejection({
+            submitted, observation.MovementOwner, observation.Gate,
+            observation.Result, observation.Reason,
+            observation.LaunchReceipt.Id });
     bool const immediatePreserved = SameRouteIdentity(
         checkpoint.Before, immediateAfter);
     if (!exactRejection || !immediatePreserved
