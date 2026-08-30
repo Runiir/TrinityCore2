@@ -45,6 +45,7 @@ TRACKED_LEDGER_RELATIVE_PATH = Path(
 )
 
 BUNDLE_NAMES = {
+    "source_route_manifest": "source_route_manifest.json",
     "route_manifest": "route_manifest.json",
     "runtime_config": "worldserver.validation.conf",
     "base_runtime_config": "prepared_base_runtime.conf",
@@ -58,6 +59,23 @@ BUNDLE_NAMES = {
     "launch_contract": "launch_contract.json",
     "bundle_manifest": "bundle_manifest.json",
 }
+
+REQUIRED_SUFFIX_NODE_IDS = (
+    NODE_ID,
+    "bwd.magmaw.drudges",
+    "bwd.magmaw.encounter",
+)
+ROUTE_INVARIANT_FIELDS = (
+    "bot_start_map_id",
+    "bot_start_x",
+    "bot_start_y",
+    "bot_start_z",
+    "bot_start_o",
+    "roster_identity",
+    "diagnostic_only",
+    "diagnostic_parent_scenario_id",
+    "diagnostic_prerequisite_state",
+)
 
 CONFIG_VALUES = {
     "BotWorld.AutoStart": "0",
@@ -263,6 +281,68 @@ def _validate_route(path: Path, scenario: str, profile: str) -> dict[str, Any]:
     return route
 
 
+def _target_route_suffix(
+    source: dict[str, Any], scenario: str, profile: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Return the exact checkpoint suffix and its separated identities."""
+
+    rows = source.get("routes")
+    if not isinstance(rows, list) or not rows:
+        raise BundleError("source_route_rows_missing_or_empty")
+    if any(not isinstance(row, dict) for row in rows):
+        raise BundleError("source_route_row_invalid")
+    targets = [index for index, row in enumerate(rows)
+               if row.get("route_node_id") == NODE_ID]
+    if len(targets) != 1:
+        raise BundleError("route_checkpoint_node_missing_or_ambiguous")
+    source_initial = rows[0]
+    suffix_rows = rows[targets[0]:]
+    suffix_node_ids = [str(row.get("route_node_id") or "") for row in suffix_rows]
+    if suffix_node_ids != list(REQUIRED_SUFFIX_NODE_IDS):
+        raise BundleError("route_checkpoint_required_suffix_mismatch")
+
+    source_invariants = {
+        field: source_initial.get(field) for field in ROUTE_INVARIANT_FIELDS
+    }
+    if (
+        not isinstance(source_invariants["bot_start_map_id"], int)
+        or source_invariants["bot_start_map_id"] <= 0
+        or any(not isinstance(source_invariants[field], (int, float))
+               for field in ("bot_start_x", "bot_start_y", "bot_start_z", "bot_start_o"))
+        or not isinstance(source_invariants["roster_identity"], list)
+        or not source_invariants["roster_identity"]
+        or source_invariants["diagnostic_only"] is not True
+        or not isinstance(source_invariants["diagnostic_parent_scenario_id"], str)
+        or not source_invariants["diagnostic_parent_scenario_id"]
+        or not isinstance(source_invariants["diagnostic_prerequisite_state"], dict)
+        or source_invariants["diagnostic_prerequisite_state"].get(
+            "certifies_predecessors"
+        ) is not False
+    ):
+        raise BundleError("route_source_invariant_invalid")
+    for row in suffix_rows:
+        if {field: row.get(field) for field in ROUTE_INVARIANT_FIELDS} != source_invariants:
+            raise BundleError("route_suffix_invariant_drift")
+        if row.get("scenario_id", scenario) != scenario \
+                or row.get("runtime_profile_id", profile) != profile:
+            raise BundleError("route_suffix_identity_drift")
+
+    retained_rows: list[dict[str, Any]] = []
+    for step, row in enumerate(suffix_rows, start=1):
+        retained = json.loads(json.dumps(row))
+        retained["step"] = step
+        retained_rows.append(retained)
+    suffix = json.loads(json.dumps(source))
+    suffix["routes"] = retained_rows
+    suffix["scenario_id"] = scenario
+    return suffix, {
+        "source_initial_node_id": str(source_initial.get("route_node_id") or ""),
+        "runtime_initial_node_id": suffix_node_ids[0],
+        "checkpoint_target_node_id": NODE_ID,
+        "retained_node_ids": suffix_node_ids,
+    }
+
+
 def _verify_gate_bearing_build_receipt(receipt: Path, policy: Path) -> dict[str, Any]:
     try:
         report = verify_receipt(receipt, load_build_json(policy))
@@ -347,7 +427,8 @@ def verify_bundle(
         raise BundleError("launch_contract_schema_invalid")
     payload_names = [
         BUNDLE_NAMES[key] for key in (
-            "route_manifest", "runtime_config", "build_receipt", "ledger",
+            "source_route_manifest", "route_manifest", "runtime_config",
+            "build_receipt", "ledger",
             "decision", "suite_receipt", "checkpoint_seal", "admission",
             "base_runtime_config", "build_policy",
         )
@@ -373,6 +454,7 @@ def verify_bundle(
         key: logical_root / BUNDLE_NAMES[key]
         for key in (
             "runtime_config", "build_receipt", "admission", "route_manifest",
+            "source_route_manifest",
             "ledger", "decision", "suite_receipt", "checkpoint_seal",
             "base_runtime_config", "build_policy",
         )
@@ -390,7 +472,25 @@ def verify_bundle(
     _verify_gate_bearing_build_receipt(
         root / BUNDLE_NAMES["build_receipt"], policy
     )
-    _validate_route(root / BUNDLE_NAMES["route_manifest"], SCENARIO_ID, SCENARIO_ID)
+    source_route = _validate_route(
+        root / BUNDLE_NAMES["source_route_manifest"], SCENARIO_ID, SCENARIO_ID
+    )
+    expected_runtime_route, route_identity = _target_route_suffix(
+        source_route, SCENARIO_ID, SCENARIO_ID
+    )
+    runtime_route_path = root / BUNDLE_NAMES["route_manifest"]
+    if runtime_route_path.read_bytes() != _canonical_pretty_json(expected_runtime_route):
+        raise BundleError("runtime_route_suffix_reconstruction_mismatch")
+    _validate_route(runtime_route_path, SCENARIO_ID, SCENARIO_ID)
+    expected_route_identity = {
+        **route_identity,
+        "source_route_sha256": sha256_file(
+            root / BUNDLE_NAMES["source_route_manifest"]
+        ),
+        "runtime_route_sha256": sha256_file(runtime_route_path),
+    }
+    if launch.get("route_identity") != expected_route_identity:
+        raise BundleError("launch_route_identity_mismatch")
     seal = _json(root / BUNDLE_NAMES["checkpoint_seal"], "checkpoint_seal")
     _verify_config(
         root / BUNDLE_NAMES["runtime_config"],
@@ -474,6 +574,7 @@ def verify_bundle(
         "checkpoint_seal_sha256": seal["seal_sha256"],
         "source_commit": commit,
         "source_tree": tree,
+        "route_identity": expected_route_identity,
         "launch_argv": argv,
     }
 
@@ -555,11 +656,21 @@ def create_bundle(
         parent = output_dir.parent
         parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=f".{output_dir.name}.staging-", dir=parent))
+        source_route = _validate_route(
+            route_manifest, scenario_id, runtime_profile_id
+        )
+        runtime_route, route_identity = _target_route_suffix(
+            source_route, scenario_id, runtime_profile_id
+        )
         for key in (
             "build_receipt", "build_policy", "decision", "suite_receipt",
-            "route_manifest", "base_runtime_config", "ledger",
+            "base_runtime_config", "ledger",
         ):
             _copy_exact(copied_inputs[key], staging / BUNDLE_NAMES[key])
+        _copy_exact(
+            route_manifest, staging / BUNDLE_NAMES["source_route_manifest"]
+        )
+        _write_json(staging / BUNDLE_NAMES["route_manifest"], runtime_route)
         seal = chainwielder_checkpoint_seal(
             worktree=worktree,
             binary=binary,
@@ -594,7 +705,8 @@ def create_bundle(
         admission_sha = sha256_file(staging / BUNDLE_NAMES["admission"])
         payload_names = [
             BUNDLE_NAMES[key] for key in (
-                "route_manifest", "runtime_config", "build_receipt", "ledger",
+                "source_route_manifest", "route_manifest", "runtime_config",
+                "build_receipt", "ledger",
                 "decision", "suite_receipt", "checkpoint_seal", "admission",
                 "base_runtime_config", "build_policy",
             )
@@ -610,6 +722,15 @@ def create_bundle(
                 "actor_guid": actor_guid,
                 "checkpoint_fixture_id": checkpoint_fixture_id,
             },
+            "route_identity": {
+                **route_identity,
+                "source_route_sha256": sha256_file(
+                    staging / BUNDLE_NAMES["source_route_manifest"]
+                ),
+                "runtime_route_sha256": sha256_file(
+                    staging / BUNDLE_NAMES["route_manifest"]
+                ),
+            },
             "paths": {
                 "binary": {"path": str(binary.resolve()), "sha256": binary_sha256},
                 **{
@@ -619,7 +740,8 @@ def create_bundle(
                     }
                     for key in (
                         "runtime_config", "build_receipt", "admission",
-                        "route_manifest", "ledger", "decision", "suite_receipt",
+                        "route_manifest", "source_route_manifest", "ledger",
+                        "decision", "suite_receipt",
                         "checkpoint_seal",
                         "base_runtime_config", "build_policy",
                     )

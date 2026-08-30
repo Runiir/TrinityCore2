@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import hashlib
+import json
 from pathlib import Path
+import re
 import subprocess
 from typing import Any, Sequence
 
@@ -42,6 +45,7 @@ from tools.raid_program import trace_transport_smoke
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SHA256_RE = re.compile(r"[0-9a-f]{64}")
 
 
 @dataclass(frozen=True)
@@ -66,6 +70,73 @@ class CaptureSetup:
     drudge_navmesh_preflight: dict[str, Any]
     drudge_frozen_anchors: dict[int, tuple[float, float, float]]
     build_provenance: dict[str, Any]
+
+
+def controller_route_hold_runtime_manifest_identity(
+    *, config: Path, admission_path: Path, scenario_id: str,
+    runtime_profile: str, expected_admission_sha256: str,
+) -> dict[str, str]:
+    """Project the exact verified runtime route identity used by native start."""
+
+    if not SHA256_RE.fullmatch(expected_admission_sha256):
+        raise ValueError("controller_route_hold_admission_projection_hash_invalid")
+    try:
+        admission_bytes = admission_path.read_bytes()
+        admission = json.loads(admission_bytes.decode("utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("controller_route_hold_admission_projection_invalid") from error
+    if hashlib.sha256(admission_bytes).hexdigest() != expected_admission_sha256:
+        raise ValueError("controller_route_hold_admission_projection_hash_mismatch")
+    binding = ((admission.get("bindings") or {}).get("route_manifest")
+               if isinstance(admission, dict) else None)
+    bound_path_text = binding.get("path") if isinstance(binding, dict) else None
+    bound_sha256 = binding.get("sha256") if isinstance(binding, dict) else None
+    configured_path_text = trinity_config_string(
+        config, "BotWorld.ValidationRoute.ManifestPath",
+    )
+    if not isinstance(bound_path_text, str) or not bound_path_text:
+        raise ValueError("controller_route_hold_runtime_manifest_binding_missing")
+    if not isinstance(bound_sha256, str) or not SHA256_RE.fullmatch(bound_sha256):
+        raise ValueError("controller_route_hold_runtime_manifest_hash_invalid")
+    if not configured_path_text:
+        raise ValueError("controller_route_hold_runtime_manifest_config_missing")
+    configured_path = Path(configured_path_text).resolve()
+    if configured_path != Path(bound_path_text).resolve():
+        raise ValueError("controller_route_hold_runtime_manifest_path_mismatch")
+    try:
+        payload_bytes = configured_path.read_bytes()
+    except OSError as error:
+        raise ValueError("controller_route_hold_runtime_manifest_missing") from error
+    if hashlib.sha256(payload_bytes).hexdigest() != bound_sha256:
+        raise ValueError("controller_route_hold_runtime_manifest_hash_mismatch")
+    try:
+        payload = json.loads(payload_bytes.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("controller_route_hold_runtime_manifest_invalid") from error
+    rows = payload.get("routes") if isinstance(payload, dict) else None
+    if not isinstance(rows, list) or not rows or not isinstance(rows[0], dict):
+        raise ValueError("controller_route_hold_runtime_manifest_initial_node_missing")
+    first = rows[0]
+    initial_node_id = first.get("route_node_id")
+    if not isinstance(initial_node_id, str) or not initial_node_id.strip():
+        raise ValueError("controller_route_hold_runtime_manifest_initial_node_invalid")
+    if payload.get("scenario_id") != scenario_id \
+            or first.get("scenario_id", scenario_id) != scenario_id \
+            or first.get("runtime_profile_id", runtime_profile) != runtime_profile:
+        raise ValueError("controller_route_hold_runtime_manifest_identity_mismatch")
+    checkpoint_target_node_id = trinity_config_string(
+        config, "BotWorld.ValidationRoute.NodeId",
+    )
+    if not checkpoint_target_node_id:
+        raise ValueError("controller_route_hold_checkpoint_target_missing")
+    if initial_node_id != checkpoint_target_node_id:
+        raise ValueError("controller_route_hold_checkpoint_target_not_initial_node")
+    return {
+        "route_manifest_path": str(configured_path),
+        "route_manifest_sha256": bound_sha256,
+        "initial_route_node_id": initial_node_id,
+        "checkpoint_target_node_id": checkpoint_target_node_id,
+    }
 
 
 def build_capture_parser(*, root: Path = ROOT) -> argparse.ArgumentParser:
@@ -289,6 +360,15 @@ def prepare_capture_setup(
     controller_route_hold_scheduler: ControllerRouteHoldScheduler | None = None
     if args.fixture_expansion_replay:
         try:
+            if args.recurrence_admission is None:
+                raise ValueError("controller_route_hold_verified_admission_missing")
+            runtime_route_identity = controller_route_hold_runtime_manifest_identity(
+                config=config,
+                admission_path=args.recurrence_admission.resolve(),
+                scenario_id=scenario_id,
+                runtime_profile=profile_name,
+                expected_admission_sha256=args.recurrence_admission_sha256,
+            )
             controller_hold_identity = controller_route_hold_launch_identity(
                 recurrence_admission=recurrence_admission,
                 required_purpose=FIXTURE_EXPANSION_PURPOSE,
@@ -296,10 +376,10 @@ def prepare_capture_setup(
                 scenario_id=scenario_id,
                 runtime_profile=profile_name,
                 pool_tag=str(runtime_assets.get("pool_tag_filter") or ""),
-                route_manifest_sha256=runtime_assets.get("route_sha256"),
-                route_node_id=trinity_config_string(
-                    config, "BotWorld.ValidationRoute.NodeId",
-                ),
+                route_manifest_sha256=runtime_route_identity[
+                    "route_manifest_sha256"
+                ],
+                route_node_id=runtime_route_identity["initial_route_node_id"],
             )
         except ValueError as error:
             raise SystemExit(

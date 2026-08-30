@@ -17,6 +17,13 @@ from tools.raid_program.chainwielder_prestart_bundle import (
     create_bundle,
     verify_bundle,
 )
+from tools.raid_program.capture_setup import (
+    controller_route_hold_runtime_manifest_identity,
+)
+from tools.raid_program.controller_route_hold import (
+    ControllerRouteHoldScheduler,
+    controller_route_hold_launch_identity,
+)
 from tools.raid_program.recurrence_admission import (
     CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
     FIXTURE_EXPANSION_PURPOSE,
@@ -99,17 +106,47 @@ def _fixture(tmp_path: Path) -> dict[str, object]:
         }],
     })
     route = external / "route.json"
+    roster = [{
+        "roster_slot_id": f"slot-{index}",
+        "guid": 30000 + index,
+        "name": f"Bot{index}",
+        "class_spec": "test_spec",
+        "role": "dps" if index > 5 else "support",
+    } for index in range(1, 11)]
+    shared = {
+        "scenario_id": SCENARIO_ID,
+        "runtime_profile_id": SCENARIO_ID,
+        "map_id": 669,
+        "expected_bot_count": 10,
+        "bot_start_map_id": 669,
+        "bot_start_x": -345.872,
+        "bot_start_y": -224.344,
+        "bot_start_z": 193.127,
+        "bot_start_o": 0.0,
+        "roster_identity": roster,
+        "diagnostic_only": True,
+        "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+        "diagnostic_prerequisite_state": {
+            "certifies_predecessors": False,
+            "precompleted_boss_entries": [],
+        },
+    }
     _write_json(route, {
         "schema": "bot_live_validation_route_manifest_v1",
         "scenario_id": SCENARIO_ID,
-        "routes": [{
-            "scenario_id": SCENARIO_ID,
-            "runtime_profile_id": SCENARIO_ID,
-            "route_node_id": "bwd.magmaw.chainwielder",
-            "map_id": 669,
-            "source_entry": 42649,
-            "expected_bot_count": 10,
-        }],
+        "routes": [
+            {**shared, "step": 1, "route_node_id": "bwd.entry.regroup",
+             "kind": "regroup", "source_entry": 0},
+            {**shared, "step": 2,
+             "route_node_id": "bwd.magmaw.chainwielder", "kind": "trash",
+             "source_entry": 42649},
+            {**shared, "step": 3,
+             "route_node_id": "bwd.magmaw.drudges", "kind": "trash",
+             "source_entry": 42362},
+            {**shared, "step": 4,
+             "route_node_id": "bwd.magmaw.encounter", "kind": "boss",
+             "source_entry": 41570},
+        ],
     })
     base = external / "base.conf"
     base.write_text(
@@ -244,6 +281,158 @@ def test_bundle_is_deterministic_and_does_not_mutate_inputs(tmp_path: Path) -> N
     assert before == {key: sha256_file(path) for key, path in paths.items()}
 
 
+def _native_hold(identity, *, route_node_id: str, route_sha256: str) -> dict:
+    return {
+        "ok": True,
+        "phase": "held",
+        "cohort_id": "cohort-a",
+        "server_epoch": 71,
+        "attempt_id": 9,
+        "scenario_id": identity.scenario_id,
+        "runtime_profile": identity.runtime_profile,
+        "route_manifest_sha256": route_sha256,
+        "route_generation": 1,
+        "route_node_id": route_node_id,
+        "actor_guid": identity.actor_guid,
+        "fixture_id": identity.fixture_id,
+        "seal_sha256": identity.seal_sha256,
+        "source_commit": identity.source_commit,
+        "acquire_count": 1,
+        "arm_ack_count": 0,
+        "checkpoint_terminal": False,
+        "release_count": 0,
+    }
+
+
+def test_target_suffix_reproduces_v19_and_binds_runtime_identity(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path)
+    result = _create(fixture)
+    output = fixture["output"]
+    source = json.loads((output / BUNDLE_NAMES["source_route_manifest"])
+                        .read_text(encoding="utf-8"))
+    runtime = json.loads((output / BUNDLE_NAMES["route_manifest"])
+                         .read_text(encoding="utf-8"))
+    source_rows = source["routes"]
+    runtime_rows = runtime["routes"]
+    assert [row["route_node_id"] for row in source_rows] == [
+        "bwd.entry.regroup", "bwd.magmaw.chainwielder",
+        "bwd.magmaw.drudges", "bwd.magmaw.encounter",
+    ]
+    assert [row["route_node_id"] for row in runtime_rows] == [
+        "bwd.magmaw.chainwielder", "bwd.magmaw.drudges",
+        "bwd.magmaw.encounter",
+    ]
+    assert [row["step"] for row in runtime_rows] == [1, 2, 3]
+    for source_row, runtime_row in zip(source_rows[1:], runtime_rows):
+        assert {key: value for key, value in source_row.items() if key != "step"} \
+            == {key: value for key, value in runtime_row.items() if key != "step"}
+
+    launch = json.loads((output / BUNDLE_NAMES["launch_contract"])
+                        .read_text(encoding="utf-8"))
+    route_identity = launch["route_identity"]
+    assert route_identity == result["route_identity"]
+    assert route_identity["source_initial_node_id"] == "bwd.entry.regroup"
+    assert route_identity["runtime_initial_node_id"] \
+        == route_identity["checkpoint_target_node_id"] \
+        == "bwd.magmaw.chainwielder"
+    assert route_identity["source_route_sha256"] == sha256_file(
+        output / BUNDLE_NAMES["source_route_manifest"]
+    )
+    assert route_identity["runtime_route_sha256"] == sha256_file(
+        output / BUNDLE_NAMES["route_manifest"]
+    )
+
+    projected = controller_route_hold_runtime_manifest_identity(
+        config=output / BUNDLE_NAMES["runtime_config"],
+        admission_path=output / BUNDLE_NAMES["admission"],
+        scenario_id=SCENARIO_ID,
+        runtime_profile=SCENARIO_ID,
+        expected_admission_sha256=sha256_file(
+            output / BUNDLE_NAMES["admission"]
+        ),
+    )
+    admission = verify_recurrence_admission(
+        admission_path=output / BUNDLE_NAMES["admission"],
+        expected_sha256=sha256_file(output / BUNDLE_NAMES["admission"]),
+        worktree=fixture["root"], binary=fixture["paths"]["binary"],
+        build_receipt=output / BUNDLE_NAMES["build_receipt"],
+        runtime_config=output / BUNDLE_NAMES["runtime_config"],
+        required_purpose=FIXTURE_EXPANSION_PURPOSE,
+    )
+    identity = controller_route_hold_launch_identity(
+        recurrence_admission=admission,
+        required_purpose=FIXTURE_EXPANSION_PURPOSE,
+        actor_guid=ACTOR_GUID,
+        scenario_id=SCENARIO_ID,
+        runtime_profile=SCENARIO_ID,
+        pool_tag=SCENARIO_ID,
+        route_manifest_sha256=projected["route_manifest_sha256"],
+        route_node_id=projected["initial_route_node_id"],
+    )
+    assert identity is not None
+
+    fail_before_identity = controller_route_hold_launch_identity(
+        recurrence_admission=admission,
+        required_purpose=FIXTURE_EXPANSION_PURPOSE,
+        actor_guid=ACTOR_GUID,
+        scenario_id=SCENARIO_ID,
+        runtime_profile=SCENARIO_ID,
+        pool_tag=SCENARIO_ID,
+        route_manifest_sha256=route_identity["source_route_sha256"],
+        route_node_id=route_identity["checkpoint_target_node_id"],
+    )
+    assert fail_before_identity is not None
+    old = ControllerRouteHoldScheduler(fail_before_identity)
+    old.start()
+    assert old.observe(_native_hold(
+        fail_before_identity,
+        route_node_id=route_identity["source_initial_node_id"],
+        route_sha256=route_identity["source_route_sha256"],
+    )) == []
+    assert old.failure_reason == "controller_route_hold_route_node_id_mismatch"
+
+    repaired = ControllerRouteHoldScheduler(identity)
+    repaired.start()
+    assert repaired.observe(_native_hold(
+        identity,
+        route_node_id=route_identity["runtime_initial_node_id"],
+        route_sha256=route_identity["runtime_route_sha256"],
+    )) == ["botauto status"]
+    assert repaired.failure_reason is None
+
+
+@pytest.mark.parametrize(
+    ("mutation", "reason"),
+    [
+        ("missing_target", "route_checkpoint_node_missing_or_ambiguous"),
+        ("duplicate_target", "route_checkpoint_node_missing_or_ambiguous"),
+        ("missing_drudges", "route_checkpoint_required_suffix_mismatch"),
+        ("invariant_drift", "route_suffix_invariant_drift"),
+    ],
+)
+def test_target_suffix_fails_closed_on_contract_drift(
+    tmp_path: Path, mutation: str, reason: str,
+) -> None:
+    fixture = _fixture(tmp_path)
+    route = fixture["paths"]["route_manifest"]
+    payload = json.loads(route.read_text(encoding="utf-8"))
+    rows = payload["routes"]
+    if mutation == "missing_target":
+        rows.pop(1)
+    elif mutation == "duplicate_target":
+        rows.insert(2, dict(rows[1]))
+    elif mutation == "missing_drudges":
+        rows.pop(2)
+    else:
+        rows[2]["bot_start_x"] += 1.0
+    _write_json(route, payload)
+    fixture["kwargs"]["route_manifest_sha256"] = sha256_file(route)
+    with pytest.raises(BundleError, match=reason):
+        _create(fixture)
+
+
 def test_exact_clean_tracked_ledger_is_copied_byte_identically(
     tmp_path: Path,
 ) -> None:
@@ -318,7 +507,8 @@ def test_existing_empty_output_directory_is_atomically_replaced(tmp_path: Path) 
 @pytest.mark.parametrize(
     "name",
     [
-        "route_manifest", "runtime_config", "build_receipt", "ledger",
+        "source_route_manifest", "route_manifest", "runtime_config",
+        "build_receipt", "ledger",
         "decision", "suite_receipt", "checkpoint_seal", "admission",
         "launch_contract",
         "base_runtime_config", "build_policy",
