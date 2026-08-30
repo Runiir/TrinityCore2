@@ -1,19 +1,21 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_one_build_one_start_v13_20260830",
-  "work_unit": "shard:generic_controller_route_hold_one_build_one_start_v13",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "controller_decomposition_green_generic_route_hold_native_build_and_live_transcript_unverified",
-  "observed_at_commit": "875dfc3a9f19461db1a0c9fd65056c41aa6622c4",
-  "immutable_input_commit": "875dfc3a9f19461db1a0c9fd65056c41aa6622c4",
+  "epoch_id": "generic_controller_route_hold_bootstrap_identity_ordering_v14_20260830",
+  "work_unit": "runtime:generic_controller_route_hold_bootstrap_identity_ordering_v14",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "live_verification_failed_bounded_repair_required",
+  "gate_state": "v13_failed_closed_before_start_held_ack_on_native_bootstrap_route_identity_drift",
+  "observed_at_commit": "e2f7b4cb2c5f9f2809037922a824827360a4da0e",
+  "immutable_input_commit": "e2f7b4cb2c5f9f2809037922a824827360a4da0e",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_capture_controller_decomposition_handoff_v1.json",
-    "sha256": "dcedb85281f935bc51b62166f328ffe1b1e8590adaff4c4de590a61fdd96b01e"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_bootstrap_drift_handoff_v13.json",
+    "sha256": "05b0b968521744ef63fa89a73517afde39b78ed0a483ec440f3af9ea6ebf446f"
   },
-  "implementation_source": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_implementation_handoff_v1.json",
-    "sha256": "9643b7f1645fc37de47340bde383b0cefc1beab8624872bfcedc547a031e4a54"
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_e2f7b4cb2c_generic_controller_route_hold_bootstrap_drift_v13_20260830.dvc",
+    "directory_md5": "300bfd765b2b9a41a14b203ada87020f.dir",
+    "capture_report_sha256": "ec30b5483963007abad2c639fe88d64ac86535abde3bc72d072dd45c0afb3716",
+    "remote_verified": true
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
@@ -22,26 +24,42 @@
     "canaries_only": ["Affliction", "Magmaw"]
   },
   "behavior_change": false,
-  "decomposition_receipt": {
-    "controller_lines_before": 7767,
-    "controller_lines_after": 410,
-    "all_extracted_modules_below_1000_lines": true,
-    "capture_suite": "149 passed in 23.15s",
-    "build_count": 0,
-    "worldserver_start_count": 0,
-    "database_mutated": false,
-    "dvc_mutated": false
+  "first_broken_edge": {
+    "owner": "shared_native_runtime",
+    "edge": "start_held_acquires_controller_hold_before_production_route_identity_is_initialized",
+    "native_failure_reason": "controller_route_hold_bootstrap_route_drift",
+    "receipt": "attempt 1 and actor 30008 were present, but scenario, runtime profile, route manifest, and route node were empty; generation was zero, acquire_count was zero, and one route advance had already been suppressed"
   },
+  "v13_receipt": {
+    "configure_count": 1,
+    "build_count": 1,
+    "worldserver_start_count": 1,
+    "bundle_create_count": 1,
+    "bundle_verify_count": 1,
+    "start_held_count": 1,
+    "held_status_count": 0,
+    "arm_count": 0,
+    "checkpoint_terminal_count": 0,
+    "release_count": 0,
+    "ordinary_route_progress_before_release": false,
+    "combat_observed": false,
+    "cleanup_passed": true
+  },
+  "ready_for_bounded_repair": true,
+  "ready_for_fixture_expansion": false,
+  "ready_for_live_verification": false,
   "remaining_unproven": [
-    "native build success at 875dfc3a9f19461db1a0c9fd65056c41aa6622c4",
-    "one live start-held, arm, checkpoint-terminal, release transcript"
+    "one exact native start-held acknowledgement at initial route generation",
+    "two identity-stable held status receipts",
+    "one sealed arm acknowledgement, identity-preserved checkpoint terminal, release acknowledgement, and post-release route advance",
+    "route DPS, HPS, actor-30008 throughput, and pet share"
   ],
-  "verification_budget": {
-    "configure_count_max": 1,
-    "build_count_max": 1,
-    "worldserver_start_count_max": 1,
-    "compiler_jobs": 8,
-    "linker_jobs": 1
+  "repair_budget": {
+    "configure_count_max": 0,
+    "build_count_max": 0,
+    "worldserver_start_count_max": 0,
+    "database_mutation_allowed": false,
+    "dvc_mutation_allowed": false
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -56,19 +74,17 @@
       "explicit_interruption"
     ]
   },
-  "required_live_evidence": {
-    "protocol": "generic_controller_route_hold",
-    "transcript": [
-      "start-held acknowledged at the initial route generation",
-      "two identity-stable held status receipts",
-      "sealed checkpoint arm acknowledged exactly once",
-      "one identity-preserved checkpoint terminal",
-      "release acknowledged exactly once",
-      "ordinary route progress observed only after release"
+  "required_repair": {
+    "boundary": "native start-held production bootstrap ordering",
+    "acceptance": [
+      "fail-before compiled replay matches the exact v13 empty-route-identity receipt",
+      "pass-after production-boundary replay binds admitted scenario, profile, manifest, generation one, node, actor, fixture, seal, and source before acknowledging held",
+      "ordinary route actions and generation mutation remain suppressed until the acknowledgement",
+      "missing identity, drift, duplicate start-held, and partial bootstrap fail closed with typed reasons"
     ],
-    "success_timer_policy": "no fixed 300 second raid success timer"
+    "forbidden": "Do not repair identity in the Python controller, loosen comparisons, alter polling, change gameplay, build, provision, start a server, promote fixtures, or claim canary acceptance."
   },
-  "next_work_unit": "shard:generic_controller_route_hold_one_build_one_start_v13",
-  "next_owner_skill": "raid-shard-architecture",
-  "next_action": "Run one clean native build with eight compiler jobs and one linker, then at most one worldserver start governed by the completion watchdog to capture the generic start-held/arm/terminal/release transcript."
+  "next_work_unit": "runtime:generic_controller_route_hold_bootstrap_identity_ordering_v14",
+  "next_owner_skill": "raid-bot-runtime-implementation",
+  "next_action": "Repair the one native production bootstrap-ordering edge with an exact fail-before/pass-after compiled fixture, then return a no-live implementation handoff."
 }
