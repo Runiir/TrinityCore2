@@ -13,6 +13,7 @@ from tools.raid_program.chainwielder_prestart_bundle import (
     BUNDLE_NAMES,
     BundleError,
     SCENARIO_ID,
+    TRACKED_LEDGER_RELATIVE_PATH,
     create_bundle,
     verify_bundle,
 )
@@ -152,6 +153,38 @@ def _create(fixture: dict[str, object]) -> dict[str, object]:
     return create_bundle(**fixture["kwargs"])  # type: ignore[arg-type]
 
 
+def _use_tracked_ledger(fixture: dict[str, object]) -> Path:
+    root = fixture["root"]
+    paths = fixture["paths"]
+    kwargs = fixture["kwargs"]
+    ledger = root / TRACKED_LEDGER_RELATIVE_PATH
+    ledger.parent.mkdir(parents=True)
+    shutil.copyfile(paths["ledger"], ledger)
+    _git(root, "add", TRACKED_LEDGER_RELATIVE_PATH.as_posix())
+    _git(root, "commit", "-m", "track recurrence ledger")
+
+    source_commit = _git(root, "rev-parse", "HEAD")
+    receipt = paths["build_receipt"]
+    receipt_value = json.loads(receipt.read_text(encoding="utf-8"))
+    receipt_value["commit"] = source_commit
+    _write_json(receipt, receipt_value)
+    suite = paths["suite_receipt"]
+    suite_value = json.loads(suite.read_text(encoding="utf-8"))
+    suite_value["source_identity"] = source_commit
+    _write_json(suite, suite_value)
+
+    paths["ledger"] = ledger
+    kwargs.update({
+        "source_commit": source_commit,
+        "source_tree": _git(root, "rev-parse", "HEAD^{tree}"),
+        "ledger": ledger,
+        "ledger_sha256": sha256_file(ledger),
+        "build_receipt_sha256": sha256_file(receipt),
+        "suite_receipt_sha256": sha256_file(suite),
+    })
+    return ledger
+
+
 def test_v6_manual_missing_flag_fails_before_atomic_bundle_passes_after(
     tmp_path: Path,
 ) -> None:
@@ -209,6 +242,69 @@ def test_bundle_is_deterministic_and_does_not_mutate_inputs(tmp_path: Path) -> N
     second = {path.name: path.read_bytes() for path in output.iterdir()}
     assert first == second
     assert before == {key: sha256_file(path) for key, path in paths.items()}
+
+
+def test_exact_clean_tracked_ledger_is_copied_byte_identically(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path)
+    ledger = _use_tracked_ledger(fixture)
+
+    result = _create(fixture)
+
+    assert result["valid"] is True
+    copied = fixture["output"] / BUNDLE_NAMES["ledger"]
+    assert copied.read_bytes() == ledger.read_bytes()
+    assert sha256_file(copied) == fixture["kwargs"]["ledger_sha256"]
+
+
+def test_untracked_in_worktree_ledger_is_rejected(tmp_path: Path) -> None:
+    fixture = _fixture(tmp_path)
+    ledger = fixture["root"] / TRACKED_LEDGER_RELATIVE_PATH
+    ledger.parent.mkdir(parents=True)
+    shutil.copyfile(fixture["paths"]["ledger"], ledger)
+    fixture["kwargs"].update({
+        "ledger": ledger,
+        "ledger_sha256": sha256_file(ledger),
+    })
+
+    with pytest.raises(BundleError, match="ledger_not_tracked_read_only_source"):
+        _create(fixture)
+
+
+def test_tracked_ledger_alias_is_rejected(tmp_path: Path) -> None:
+    fixture = _fixture(tmp_path)
+    ledger = _use_tracked_ledger(fixture)
+    alias = fixture["external"] / "ledger-alias.json"
+    alias.symlink_to(ledger)
+    fixture["kwargs"].update({
+        "ledger": alias,
+        "ledger_sha256": sha256_file(alias),
+    })
+
+    with pytest.raises(BundleError, match="ledger_source_path_mismatch"):
+        _create(fixture)
+
+
+def test_dirty_tracked_ledger_is_rejected_even_with_matching_input_hash(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path)
+    ledger = _use_tracked_ledger(fixture)
+    ledger.write_bytes(ledger.read_bytes() + b"dirty")
+    fixture["kwargs"]["ledger_sha256"] = sha256_file(ledger)
+
+    with pytest.raises(BundleError, match="source_worktree_dirty"):
+        _create(fixture)
+
+
+def test_clean_tracked_ledger_wrong_hash_is_rejected(tmp_path: Path) -> None:
+    fixture = _fixture(tmp_path)
+    _use_tracked_ledger(fixture)
+    fixture["kwargs"]["ledger_sha256"] = "0" * 64
+
+    with pytest.raises(BundleError, match="ledger_hash_mismatch"):
+        _create(fixture)
 
 
 def test_existing_empty_output_directory_is_atomically_replaced(tmp_path: Path) -> None:

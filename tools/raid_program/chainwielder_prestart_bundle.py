@@ -40,6 +40,9 @@ MAP_ID = 669
 TARGET_ENTRY = 42649
 ACTOR_COUNT = 10
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
+TRACKED_LEDGER_RELATIVE_PATH = Path(
+    "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json"
+)
 
 BUNDLE_NAMES = {
     "route_manifest": "route_manifest.json",
@@ -147,6 +150,7 @@ def _validate_locations(
     *, worktree: Path, output_dir: Path, material_inputs: dict[str, Path],
     binary: Path, capture_paths: list[Path],
     read_only_source_inputs: set[str] | None = None,
+    exact_read_only_source_inputs: dict[str, Path] | None = None,
 ) -> None:
     worktree = worktree.resolve()
     output = output_dir.resolve()
@@ -160,8 +164,19 @@ def _validate_locations(
             if label not in (read_only_source_inputs or set()):
                 raise BundleError(f"{label}_inside_mutable_worktree")
             relative = resolved.relative_to(worktree).as_posix()
+            required_relative = (exact_read_only_source_inputs or {}).get(label)
+            if required_relative is not None:
+                expected = worktree / required_relative
+                lexical = Path(os.path.abspath(path))
+                if (
+                    lexical != expected
+                    or expected.resolve() != expected
+                    or resolved != expected
+                ):
+                    raise BundleError(f"{label}_source_path_mismatch")
             try:
                 _git(worktree, "ls-files", "--error-unmatch", relative)
+                _git(worktree, "cat-file", "-e", f"HEAD:{relative}")
             except subprocess.CalledProcessError as error:
                 raise BundleError(f"{label}_not_tracked_read_only_source") from error
         if _is_within(resolved, output) or resolved == output:
@@ -517,7 +532,10 @@ def create_bundle(
             worktree=worktree, output_dir=output_dir,
             material_inputs=copied_inputs, binary=binary,
             capture_paths=capture_paths,
-            read_only_source_inputs={"build_policy"},
+            read_only_source_inputs={"build_policy", "ledger"},
+            exact_read_only_source_inputs={
+                "ledger": TRACKED_LEDGER_RELATIVE_PATH,
+            },
         )
         commit, tree = _source_identity(worktree, source_commit, source_tree)
         hashes = {
