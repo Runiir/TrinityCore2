@@ -1,120 +1,87 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "external_base_runtime_config_one_build_one_live_v68_20260830",
-  "work_unit": "shard:external_base_runtime_config_one_build_one_live_v68",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "v67_tracked_base_config_snapshot_authority_independently_verified",
-  "observed_at_commit": "20ff8f7e6a3a10b6cf31be3d032afbbfa3dca710",
-  "immutable_input_commit": "b3fedc5acd6f2d7c01260fd39aa7ce1cc5b7023c",
+  "epoch_id": "v68_live_admission_and_runtime_config_source_review_v69_20260830",
+  "work_unit": "evidence:v68_live_admission_and_runtime_config_source_review_v69",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed",
+  "gate_state": "v68_failed_closed_before_snapshot_bundle_or_start",
+  "observed_at_commit": "587282117982cac06bbfe6806babb08bdc318905",
+  "immutable_input_commit": "587282117982cac06bbfe6806babb08bdc318905",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_external_base_runtime_config_snapshot_review_handoff_v67.json",
-    "sha256": "198437e6a452eb52efd4ad59c7197b99e1ab5245c887f0eeca85f37cfb45f462",
-    "source_commit": "20ff8f7e6a3a10b6cf31be3d032afbbfa3dca710"
+    "path": "experiments/configs/cata_raid_external_base_runtime_config_prestart_rejected_handoff_v68.json",
+    "sha256": "340ca34ae349d66ca50f317dfc9a0f556d89284d6b6c3058920f2ab8ddfc5bb6",
+    "source_commit": "587282117982cac06bbfe6806babb08bdc318905"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "V68 is one bounded Magmaw diagnostic recurrence validating a generic immutable prestart boundary; one result cannot promote universal runtime or gameplay closure."
+    "canary_only": "V69 is a read-only evidence review that must split two independent V68 prestart failures; it cannot authorize or execute a live run."
   },
   "behavior_change": false,
   "evidence_contract_change": false,
-  "ready_for_bounded_repair": false,
+  "ready_for_bounded_repair": true,
   "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": true,
+  "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "At the exact clean descriptor commit, perform at most one queued fast8_v2 configure and exactly one queued fast8_v2 worldserver build, one authenticated tracked base-runtime-config snapshot stage, one canonical route and prepared-object preflight, one atomic bundle create and explicit verify, and at most one no-retry completion-watchdog live start. Close through verified DVC publication, remote reconstruction, and exact eviction.",
+    "allowed_change": "Review the immutable V68 recurrence decision, snapshot rejection, V67 authority contract, and exact repository source identities. Establish the ordered first broken edge and emit separate non-overlapping next owners for live-admission restoration and tracked canonical runtime-config derivation.",
     "allowed_files": [
-      "one_compact_live_handoff",
-      "exact_dvc_evidence_pointer_and_required_lock_update",
+      "one_compact_review_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
-    "required_before_start": [
-      "exact clean descriptor commit and tree",
-      "one successful gate-bearing fast8_v2 build receipt with equal clean request admission and completion source identities",
-      "fresh strict readback of the retained frozen roster and zero prestart residue",
-      "one tracked base-runtime-config stage receipt binding clean HEAD tree tracked relative path git-show bytes declared SHA-256 and an external snapshot",
-      "independent verification of the canonical snapshot receipt source bytes and external snapshot bytes",
-      "one canonical route stage and prepared-object verification",
-      "one atomic bundle create and explicit verify binding exact binary config route profile seal admission and completion-watchdog launch contract"
-    ],
-    "required_live_sequence": [
-      "two stable recording-enabled Held status projections retain the admitted runtime profile",
-      "exactly one arm command receives exactly one arm acknowledgement",
-      "the held actor's unrelated Survival movement is suppressed while foreign actors retain ordinary Survival movement",
-      "the exact Armed validation_route_adapter pair establishes the real generation-one Route owner",
-      "exactly one receipt-zero Hazard rejection preserves that Route identity through a typed terminal",
-      "exactly one release follows the identity-preserved terminal and only then may Drudges route advancement occur",
-      "completion ends on a typed completion-watchdog edge rather than a fixed raid timer"
-    ],
-    "required_after_terminal": [
-      "retain raw lifecycle bytes before normalization and classify every row",
-      "preserve first broken edge separately from terminal edge",
-      "DVC-publish the immutable evidence and compact handoff",
-      "verify remote reconstruction exact counts sizes hashes and targeted DVC status",
-      "exactly evict only published local payloads after remote reconstruction succeeds",
-      "recheck zero worldserver and capture processes Git status DVC status and disk cleanup"
+    "required_findings": [
+      "record that fixture_expansion_admitted true does not override build_admitted false or canary_admitted false",
+      "identify all six invalidated fixture IDs and the exact owner needed to restore live admission",
+      "record that trinity-worldserver-test.conf is ignored and absent from git ls-files",
+      "identify the tracked canonical source and deterministic derivation required to reproduce the exact runtime config without accepting a mutable or unrelated substitute",
+      "preserve the recurrence non-admission as the first disqualifying gate and tracked_snapshot_source_invalid as a separate later prestart rejection"
     ],
     "forbidden": [
-      "implementation gameplay controller route content skill or test edit",
-      "direct mutable-worktree base-runtime-config bundle input",
-      "profile scenario pool route actor fixture seal source binary or hold identity comparison weakening",
-      "second configure build snapshot stage bundle create verify worldserver start or retry",
-      "polling watchdog timeout or threshold change",
-      "fixed 300-second raid success timer",
-      "local evidence eviction before verified remote reconstruction",
-      "fixture or single-live-result promotion to closed"
+      "implementation test gameplay controller route class encounter pet skill threshold or runtime-config edit",
+      "configure build database DVC snapshot route bundle worldserver or live-run operation",
+      "manual config substitution or identity-comparison weakening",
+      "fixture-expansion admission represented as live admission",
+      "fixed 300-second raid timer"
     ]
   },
-  "closed_v67_evidence": {
-    "implementation_commit": "b3fedc5acd6f2d7c01260fd39aa7ce1cc5b7023c",
-    "tracked_source_authority_verified": true,
-    "external_snapshot_authority_verified": true,
-    "receipt_only_bundle_api_verified": true,
-    "downstream_binding_change": false,
-    "focused_result": "78 passed in 4.94s",
-    "production_module_line_counts": {
-      "canonical_route_staging.py": 614,
-      "chainwielder_prestart_bundle.py": 949
-    },
-    "current_source_binary_available": false
+  "closed_v68_evidence": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "binary_sha256": "e0cd50062dd6c2d70d0d6d3f9c5ccff681bc97b8f9d7d03705063c782430d4aa",
+    "retained_roster_readback_passed": true,
+    "recurrence_verifications": "20/20 passed",
+    "build_admitted": false,
+    "canary_admitted": false,
+    "invalidated_fixture_count": 6,
+    "tracked_snapshot_stage_terminal": "tracked_snapshot_source_invalid",
+    "worldserver_start_count": 0,
+    "database_mutation_count": 0,
+    "dvc_remote_reconstruction_verified": true,
+    "exact_local_payload_evicted": true
   },
   "remaining_unproven": [
-    "the real canonical base runtime config passes one authenticated snapshot stage and atomic bundle create and verify",
-    "the exact reviewed source builds and links the full worldserver",
-    "one live Held Route-owner receipt-zero rejection terminal release and Drudges advance completes",
-    "Chainwielder Drudges Magmaw DPS HPS or pet outcomes"
+    "a current recurrence bank admits a live canary",
+    "a tracked canonical source deterministically derives the exact runtime config accepted by snapshot staging",
+    "the live Held Route-owner receipt-zero rejection terminal release and Drudges sequence",
+    "Chainwielder Drudges Magmaw DPS HPS or pet-share outcomes"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": [
-      "normal_clear",
-      "monotonic_semantic_or_no_progress_stall",
-      "repeated_decisions",
-      "excessive_death_loops",
-      "infrastructure_loss",
-      "contamination",
-      "explicit_interruption"
-    ]
+    "terminal_edges": ["review_complete", "identity_conflict", "owner_unresolved"]
   },
   "verification_budget": {
-    "configure_count_maximum": 1,
-    "worldserver_build_count": 1,
-    "tracked_snapshot_stage_count_maximum": 1,
-    "canonical_route_stage_count_maximum": 1,
-    "prepared_object_materialize_count_maximum": 1,
-    "prepared_object_verify_count_maximum": 1,
-    "atomic_bundle_create_count_maximum": 1,
-    "atomic_bundle_verify_count_maximum": 1,
-    "worldserver_start_count_maximum": 1,
-    "retry_count_maximum": 0,
-    "database_mutation": "forbidden; fresh strict retained-roster readback only",
-    "dvc_mutation": "required after closure for publication remote reconstruction verification and exact eviction"
+    "read_only_review_count": 1,
+    "configure_count_maximum": 0,
+    "worldserver_build_count": 0,
+    "tracked_snapshot_stage_count_maximum": 0,
+    "atomic_bundle_create_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
+    "database_mutation": "forbidden",
+    "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "shard:external_base_runtime_config_one_build_one_live_v68",
-  "next_owner_skill": "raid-shard-architecture",
-  "next_action": "Run the single authenticated prestart and no-retry completion-watchdog recurrence, then DVC-publish, remotely reconstruct, verify, and exactly evict its evidence."
+  "next_work_unit": "evidence:v68_live_admission_and_runtime_config_source_review_v69",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Perform one immutable read-only review and split the live-admission and tracked-runtime-config-source failures into separate bounded implementation owners."
 }

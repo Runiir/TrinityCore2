@@ -1,0 +1,128 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:external_base_runtime_config_one_build_one_live_v68",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed_prestart",
+  "failure_classification": "live_admission_false_and_tracked_runtime_config_source_invalid",
+  "input_identities": {
+    "source_commit": "587282117982cac06bbfe6806babb08bdc318905",
+    "source_tree": "5f90a7389503f0f939dc6762b75f8a6a0237a179",
+    "active_descriptor_sha256": "8efe85b9a2e7506b09d8a0497b5f075842e186ed82c2b9e247c5fefcba14ae7c",
+    "source_handoff": "experiments/configs/cata_raid_external_base_runtime_config_snapshot_review_handoff_v67.json",
+    "source_handoff_sha256": "198437e6a452eb52efd4ad59c7197b99e1ab5245c887f0eeca85f37cfb45f462",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008
+  },
+  "consumed_budget": {
+    "configure": "1/1",
+    "worldserver_build": "1/1",
+    "tracked_snapshot_stage": "1/1 rejected",
+    "canonical_route_stage": "0/1",
+    "prepared_object_materialize": "0/1",
+    "prepared_object_verify": "0/1",
+    "atomic_bundle_create": "0/1",
+    "atomic_bundle_verify": "0/1",
+    "worldserver_start": "0/1",
+    "retry": "0/0",
+    "database_mutation": 0
+  },
+  "build": {
+    "configure_ticket_id": "raid-build-2891b60c638043d09813897a251a3131",
+    "configure_semantic_receipt_sha256": "0135b06ee13c6f03d52e7f0ccfdc0071dc708e75ea6defd63b245e01ac82f9d3",
+    "build_ticket_id": "raid-build-ff0c036636454697951d0e891ccafe0a",
+    "build_semantic_receipt_sha256": "5f0987d3333e54cb1063335fc0348625769739b745206f8a60d5bdac41d3b20e",
+    "build_receipt_file_sha256": "10d377ebe9dcef990bc1d0e4ce813fb0e9710cb552c66b1cf87355e68a5a9bd7",
+    "binary_sha256": "e0cd50062dd6c2d70d0d6d3f9c5ccff681bc97b8f9d7d03705063c782430d4aa",
+    "gate_bearing": true,
+    "source_identity_stable": true,
+    "compiler_linker_ceiling": "8/1"
+  },
+  "prestart_gate": {
+    "retained_roster_readback_passed": true,
+    "retained_roster_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "retained_roster_count": 10,
+    "zero_residue": true,
+    "recurrence_suite_result": "20/20 passed",
+    "recurrence_suite_sha256": "a19228660d0e982ca78aebca6a5a1d32b7551150e7bd447ef7d235b45f036cdc",
+    "recurrence_decision_sha256": "5e22d3ad86471f87706190569be702c0fbd005d7072d5254423048de9e657f22",
+    "requested_gate": "fixture_expansion",
+    "fixture_expansion_admitted": true,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "canary_recurrence_admitted": false,
+    "regression_bank_admitted": false,
+    "stop_required": true,
+    "invalidated_fixture_ids": [
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "pending_fixture_ids": ["chainwielder_pre_admission_rejection_isolation_v1"],
+    "tracked_snapshot_source": "trinity-worldserver-test.conf",
+    "tracked_snapshot_source_sha256": "8b20b393839886bfe9d5906dd198a6f56eeaadcf7d220b5f1d83d044dd7ea449",
+    "tracked_snapshot_source_git_tracked": false,
+    "tracked_snapshot_source_ignore_rule": ".gitignore:36:trinity-worldserver-test.conf",
+    "tracked_snapshot_result": "tracked_snapshot_source_invalid",
+    "ordered_edges": [
+      "the recurrence decision was incorrectly requested for fixture_expansion during a live unit and explicitly denied build/canary admission with six invalidated fixtures",
+      "the later tracked snapshot attempt independently rejected because trinity-worldserver-test.conf is ignored and absent from the Git index"
+    ],
+    "first_broken_edge": "the generated recurrence decision did not admit build or live canary execution; the fixture-expansion-only gate was not live admission authority",
+    "secondary_prestart_edge": "stage_tracked_snapshot rejected the selected runtime config with tracked_snapshot_source_invalid",
+    "failure_postcondition": "no snapshot receipt, route stage, bundle, capture, or worldserver start exists and the database was not mutated"
+  },
+  "runtime_result": {
+    "worldserver_started": false,
+    "checkpoint_sequence_observed": false,
+    "combat_observed": false,
+    "party_dps": null,
+    "party_hps": null,
+    "pet_damage_share": null
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_5872821179_v68_untracked_base_runtime_config_prestart_failed_20260830.dvc",
+    "dvc_pointer_sha256_before_commit": "65deaa9a06331b6b42d66b1e8ae7238106ed5b58dc3220a2d5117d657593d811",
+    "dvc_directory_md5": "b49cd042c9eefe7af05640cd31959891.dir",
+    "file_count": 11,
+    "size_bytes": 102881,
+    "push_result": "9 files pushed; three content objects already remote",
+    "remote_reconstruction_verified": true,
+    "remote_reconstruction_manifest_sha256": "a81092b7684bd89776c0c89dc8f888af0a655f6ff54b3ceaf8c70539782d0c8e",
+    "remote_reconstruction_file_count": 11,
+    "remote_reconstruction_size_bytes": 102881,
+    "exact_local_payload_evicted": true,
+    "isolated_reconstruction_cache_evicted": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact clean source configured and built once under the fast8_v2 8-compiler 1-linker policy with valid gate-bearing receipts",
+      "the fresh retained roster readback passed for all ten characters with zero group instance corpse or ghost residue and no database mutation",
+      "the fixed bank executed 20 passing verifications but its decision denied build and canary admission because six fixtures remain invalidated",
+      "fixture_expansion admission is not live-canary admission and cannot authorize V68",
+      "trinity-worldserver-test.conf is ignored and git ls-files rejects it, so the tracked snapshot authority correctly returned tracked_snapshot_source_invalid",
+      "no worldserver started and the published evidence reconstructed byte-for-byte from the remote before exact eviction"
+    ],
+    "refuted": [
+      "V68 had a live-admitting recurrence decision",
+      "the selected runtime config satisfies the V67 tracked Git-source contract",
+      "V68 observed the live checkpoint sequence or combat"
+    ],
+    "unproven": [
+      "which tracked canonical input should authoritatively generate the exact test runtime config without weakening identity",
+      "the live Held Route-owner receipt-zero rejection terminal release and Drudges sequence",
+      "Chainwielder Drudges Magmaw DPS HPS or pet-share outcomes"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:v68_live_admission_and_runtime_config_source_review_v69",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Review the two independent prestart contract failures and emit separate bounded owners: first restore a true live-admitting recurrence bank for the six invalidated fixtures; separately define a tracked canonical source-to-exact-runtime-config derivation accepted by the snapshot authority without substituting an unrelated config.",
+    "forbidden": "configure, build, database mutation, snapshot stage, route stage, bundle, worldserver start, gameplay/controller/route/class/encounter/pet/skill/threshold changes",
+    "build_worldserver_start_budget": 0
+  }
+}
