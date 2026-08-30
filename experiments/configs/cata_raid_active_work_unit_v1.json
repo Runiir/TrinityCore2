@@ -1,62 +1,78 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_arm_identity_revalidation_one_build_one_start_v19_20260830",
-  "work_unit": "shard:generic_controller_route_hold_arm_identity_revalidation_one_build_one_start_v19",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "v19_hash_bound_shared_start_arm_identity_admission_green_live_unverified",
-  "observed_at_commit": "8583d7e9e23950000a3a8a9de8d01d99a0236a28",
-  "immutable_input_commit": "8583d7e9e23950000a3a8a9de8d01d99a0236a28",
+  "epoch_id": "generic_controller_route_hold_initial_node_identity_binding_v20_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_initial_node_identity_binding_v20",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed",
+  "gate_state": "v19_native_hold_acquired_full_identity_accepted_controller_target_node_mismatch",
+  "observed_at_commit": "a808104af9a0260c273c1ebb274f04fce451ba80",
+  "immutable_input_commit": "a808104af9a0260c273c1ebb274f04fce451ba80",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_arm_identity_revalidation_admission_handoff_v19.json",
-    "sha256": "ae53f8f0239c367ff1e17e68d63d30ad88f2cc402ec5bc104a410cecf5368257",
-    "source_commit": "8583d7e9e23950000a3a8a9de8d01d99a0236a28"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_route_node_mismatch_handoff_v19.json",
+    "sha256": "20b322ca143144c146f3841ed7bbe0cdd35385de641d29aa48819e12ddf2f800",
+    "source_commit": "a808104af9a0260c273c1ebb274f04fce451ba80"
   },
-  "implementation_source": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_arm_config_identity_binding_handoff_v18.json",
-    "sha256": "9540a695a13d30f22a79692288c2075871e706b7e9a20ba1a03a8ca11a2cd897"
+  "evidence_pointer": {
+    "path": "artifacts/cata_raid_program/phase1_raid_foundation_a808104af9_generic_controller_route_hold_route_node_mismatch_v19_20260830.dvc",
+    "sha256": "69c44663492ba66b0411972f6effa394196eacfc153703e5a675549b0beccf28",
+    "remote_verified": true,
+    "local_output_evicted": true
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
-    "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "Affliction, actor 30008, Chainwielder, and Magmaw are evidence inputs only. No live owner may branch on these identities outside the sealed observation fixture."
+    "supported_modes": [
+      "10N",
+      "10H",
+      "25N",
+      "25H"
+    ],
+    "canary_only": "Affliction actor 30008 and Chainwielder are immutable evidence inputs. The repair must remain generic to target-route fixture bundles and controller identity binding."
   },
   "behavior_change": false,
-  "ready_for_bounded_repair": false,
+  "ready_for_bounded_repair": true,
   "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": true,
+  "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Configure and build the exact admitted source once with fast8, then start exactly one completion-watchdog worldserver to capture the shared source-identity controller-route-hold transcript.",
+    "allowed_change": "Repair only the atomic targeted-route bundle and controller launch identity so the checkpoint target is the actual generation-one route node with one hash-bound identity across bundle, config, admission, and receipts.",
     "forbidden": [
       "native_runtime_or_gameplay_change",
-      "test_controller_or_fixture_change",
-      "source_fixture_or_seal_authority_loosening",
-      "class_spec_pet_encounter_route_strategy_or_priority_change",
+      "identity_comparison_loosening",
+      "polling_or_threshold_change",
+      "class_spec_pet_encounter_strategy_or_priority_change",
+      "ledger_or_provisioning_change",
+      "configure_build_or_worldserver_start",
       "database_or_dvc_mutation",
-      "second_configure_build_start_or_retry",
       "canary_acceptance_or_fixture_promotion_claim"
     ]
   },
   "verification_budget": {
-    "configure_count_maximum": 1,
-    "worldserver_build_count_maximum": 1,
-    "worldserver_start_count_maximum": 1,
+    "configure_count_maximum": 0,
+    "worldserver_build_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
     "retry_count_maximum": 0,
-    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
-    "compiler_jobs": 8,
-    "linker_jobs": 1,
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "required_contract": {
-    "native_start_held_acknowledgement_count": 1,
-    "admission_commit_route_generation": 1,
-    "identity_stable_held_status_count": 2,
+  "observed_contract": {
+    "controller_expected_route_generation": 1,
+    "controller_expected_route_node_id": "bwd.magmaw.chainwielder",
+    "native_actual_route_generation": 1,
+    "native_actual_route_node_id": "bwd.entry.regroup",
+    "native_hold_acquire_count": 1,
+    "native_suppressed_route_advance_count": 120,
     "typed_source_identity_accepted": true,
     "configured_source_length": 40,
     "requested_source_length": 40,
     "binary_revision_length": 12,
+    "controller_start_acknowledgement_count": 0
+  },
+  "required_contract": {
+    "target_checkpoint_is_actual_generation_one_node": true,
+    "bundle_config_admission_launch_and_receipt_route_identity_match": true,
+    "full_route_first_node_mismatch_fails_closed": true,
+    "native_start_held_acknowledgement_count": 1,
+    "identity_stable_held_status_count": 2,
     "checkpoint_arm_acknowledgement_count": 1,
     "checkpoint_terminal_count": 1,
     "release_acknowledgement_count": 1,
@@ -64,10 +80,9 @@
     "ordinary_route_advance_after_release": true
   },
   "remaining_unproven": [
-    "native build at the admitted V19 descriptor commit",
-    "exact live generation-one Held acknowledgement and two identity-stable Held statuses",
-    "accepted typed source identity at status and arm",
-    "identity-preserved terminal, release, and post-release route advance"
+    "an atomic target-route partition makes bwd.magmaw.chainwielder the actual generation-one node",
+    "the native Held acknowledgement is accepted against the exact generated route identity",
+    "two stable statuses, one arm, one identity-preserved terminal, one release, and post-release advance complete"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -82,7 +97,7 @@
       "explicit_interruption"
     ]
   },
-  "next_work_unit": "shard:generic_controller_route_hold_arm_identity_revalidation_one_build_one_start_v19",
-  "next_owner_skill": "raid-shard-architecture",
-  "next_action": "Run one clean fast8 configure/build and one no-retry completion-watchdog worldserver start; accept only the exact Held, two typed stable statuses, arm, terminal, release, post-release advance transcript."
+  "next_work_unit": "evidence:generic_controller_route_hold_initial_node_identity_binding_v20",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Implement and test one immutable target-route generation-one bundle identity; do not build or start a server."
 }
