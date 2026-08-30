@@ -1,0 +1,176 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:chainwielder_checkpoint_post_compile_one_build_one_live_v58",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed",
+  "failure_classification": "chainwielder_checkpoint_real_route_owner_not_observed",
+  "input_identities": {
+    "source_commit": "3f0c93a9c57d10e37ffbf874422e76487d1992e7",
+    "source_tree": "ac3dfcade1d5a36fffac862740846d3b2a6fe95a",
+    "source_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_conflicting_local_declaration_review_handoff_v57.json",
+    "source_handoff_sha256": "cf22e7b9a949f1dcb7f355989307c16cf0506c2f89ba762c5e92d9c55eae0469",
+    "binary_sha256": "1fbdbbb573daf81e3143b25be016cf7c322a6be2195528f82f49db1903de4a21",
+    "runtime_config_sha256": "b4500cb205a3635b33d6ef7e8e3c674d870c593897ce97399084d8cec000bbf0",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "route_manifest_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+    "checkpoint_actor_guid": 30008,
+    "checkpoint_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+    "checkpoint_seal_sha256": "f665d3be64b1d7ba5740cac61167fb0cc6f5f60022d68847d16f3a3d8ff6377e",
+    "recurrence_admission_sha256": "00505411aaf1130c9616d47ffef7cd8304ca0f4cca865feab056af7476c34a42"
+  },
+  "consumed_budget": {
+    "configure": "1/1",
+    "worldserver_build": "1/1",
+    "canonical_stage": "1/1",
+    "prepared_object_materialize": "1/1",
+    "prepared_object_verify": "1/1",
+    "atomic_bundle_create": "1/1",
+    "atomic_bundle_verify": "1/1",
+    "worldserver_start": "1/1",
+    "retry": "0/0",
+    "database_mutation": 0
+  },
+  "build_and_prestart": {
+    "configure_ticket_id": "raid-build-14f13e45eff74ba79f79da25674d2cef",
+    "configure_queue_sequence": 1250,
+    "configure_receipt_file_sha256": "a2134c29adbc76cc7719f02ce41f0227390a7d421fe6a2be2b5efd4b8883f6d5",
+    "worldserver_build_ticket_id": "raid-build-b52718d5c8044c40a254f7dfc697d190",
+    "worldserver_build_queue_sequence": 1251,
+    "worldserver_build_receipt_file_sha256": "e8689506651ba12c5ce7a0aebe16a373f69f75000dc956f16fdf0c46d85d786c",
+    "source_binary_attestation_valid": true,
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "bundle_create_valid": true,
+    "bundle_verify_valid": true,
+    "strict_prestart_verifier_passed": true,
+    "strict_prestart_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "retained_roster_readback_passed": true,
+    "retained_roster_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "retained_roster_count": 10,
+    "prestart_residue": {
+      "online": 0,
+      "at_login": 0,
+      "groups": 0,
+      "group_members": 0,
+      "group_instances": 0,
+      "character_instances": 0,
+      "corpses": 0,
+      "corpse_phases": 0,
+      "ghost_auras": 0
+    },
+    "duration_policy": "completion-watchdog",
+    "fixed_raid_success_timer_seconds": null
+  },
+  "ordered_native_result": {
+    "start_held_ack_count": 1,
+    "held_status_count": 2,
+    "held_status_projection_stable": true,
+    "held_status_identity_sha256": "7e0bf8518a100ac14d07b744bbfe82e9d18fdf89c97dda6e134ce9c0456c466e",
+    "route_generation_during_hold": 1,
+    "arm_command_count": 1,
+    "arm_ack_count": 1,
+    "checkpoint_terminal_count_accepted_by_controller": 0,
+    "native_checkpoint_terminal": true,
+    "native_checkpoint_stage": "failed",
+    "native_checkpoint_identity_preserved": false,
+    "release_command_count": 0,
+    "release_ack_count": 0,
+    "post_release_route_advance": false,
+    "classification": "infrastructure_abort",
+    "first_broken_edge": "after exact arm acknowledgement under the generation-one hold, actor 30008 never acquired the real node-scoped Route movement owner or armed Route hazard retry required by the production checkpoint",
+    "first_consumed_mutation": "the actor executed and completed an unrelated combat_range-owned hazard exit while the checkpoint remained awaiting_real_route_owner",
+    "failure_postcondition": "MaximumAwaitTicks terminalized the checkpoint with real_route_owner_not_observed; identity preservation was false, so the controller emitted no release and Drudges did not advance"
+  },
+  "trace_correlation": {
+    "armed_trace_action": "chainwielder_owner_checkpoint_armed",
+    "later_movement_owner": "combat_range",
+    "later_movement_results": [
+      "hazard_exit_started",
+      "hazard_exit_completed"
+    ],
+    "native_terminal_trace_action": "chainwielder_owner_checkpoint_failed",
+    "native_terminal_reason_code": "real_route_owner_not_observed",
+    "runtime_source_boundary": "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp::MaybeInjectChainwielderOwnerCheckpointAfterUpdate requires activeRoutePath or routeRetryArmed before it can inject the exact receipt-zero Hazard rejection"
+  },
+  "throughput": {
+    "route_node_id": "bwd.magmaw.chainwielder",
+    "observed_duration_seconds": 21.219,
+    "combat_duration_seconds": 1,
+    "party_dps": 0.0,
+    "party_hps": 0.0,
+    "actor_30008_dps": 0.0,
+    "actor_30008_hps": 0.0,
+    "actor_30008_pet_damage_share": 0.0,
+    "actor_30008_damage_taken": 154180,
+    "reason": "checkpoint infrastructure failed before a meaningful combat sample"
+  },
+  "cleanup": {
+    "capture_exit_code": 2,
+    "worldserver_exit_code": 0,
+    "capture_cleanup_gate_passed": true,
+    "worldserver_process_absent": true,
+    "capture_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "postrun_readback_passed": false,
+    "postrun_readback_sha256": "b16623f5c536504290cfae8d34dc10d269330b0611515ebb18888616f4ff3e9e",
+    "postrun_residue": {
+      "corpse_rows": 1,
+      "ghost_aura_rows": 3
+    },
+    "postrun_readback_note": "runtime persistence left actor health/power/position drift plus one corpse and three ghost auras; the V58 descriptor forbade DB mutation, so this state was retained and not repaired"
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_3f0c93a9c5_v58_real_route_owner_not_observed_20260830.dvc",
+    "dvc_pointer_sha256_before_commit": "0c971b1088598c3e35a926b8552375cb899270a44f32be33f0ea0a5d44d6b8b4",
+    "dvc_directory_md5": "48a920669f43305e17f179bd6ead5181.dir",
+    "file_count": 28,
+    "size_bytes": 12290937,
+    "push_result": "17 files pushed",
+    "remote_reconstruction_verified": true,
+    "remote_reconstruction_manifest_sha256": "585c3ba1476064fe8833b592b703c3f12ea4ec8ddea57ef4dd3be93d7997484b",
+    "remote_reconstruction_file_count": 28,
+    "remote_reconstruction_size_bytes": 12290937,
+    "exact_local_payload_evicted": true,
+    "unique_cache_children_evicted": 16,
+    "shared_cache_children_retained": 8,
+    "directory_manifest_cache_object_retained": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact reviewed source built and linked once under the fast8 policy with clean equal request admission and completion identities",
+      "the authenticated prepared route bundle and strict retained ten-character roster gates passed before the sole start",
+      "the controller held route generation one through two stable statuses and received exactly one arm acknowledgement",
+      "the immutable admitted profile identity survived recording-window activation and the V50 profile mismatch did not recur",
+      "actor 30008 never acquired the real Route owner or armed Route hazard retry; an unrelated combat_range hazard exit completed before the native checkpoint failed real_route_owner_not_observed",
+      "the controller did not release or advance after the failed identity-preservation terminal",
+      "capture cleanup removed all bots leases and processes"
+    ],
+    "refuted": [
+      "the remaining failure is an arm acknowledgement, mutable profile identity, polling cadence, extra status probe, or build problem",
+      "V58 proves a completed identity-preserved checkpoint lifecycle, Drudges advancement, Magmaw progression, or useful throughput"
+    ],
+    "unproven": [
+      "whether the held actor can establish a real Route owner while manifest index and generation advancement remain suppressed",
+      "one exact receipt-zero Hazard rejection preserving the preexisting Route identity followed by a typed checkpoint terminal and release",
+      "Chainwielder clear, retained Drudges advance, Magmaw progression, DPS, HPS, or pet-share quality"
+    ]
+  },
+  "next_work_unit": {
+    "id": "runtime:chainwielder_checkpoint_real_route_owner_under_hold_v59",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_change": "At the shared production boundary, preserve the controller-owned generation-one hold against route node/index advancement while allowing actor 30008 to establish the real node-scoped Route owner or armed Route hazard retry that the checkpoint observes. Do not synthesize ownership, bypass native movement, weaken identity checks, or treat combat_range movement as Route ownership.",
+    "required_fail_before": "the exact held/armed production scheduler reaches real_route_owner_not_observed because no real Route owner or armed retry appears",
+    "required_pass_after": "the held actor acquires one real generation-one Route identity, the production checkpoint injects one receipt-zero Hazard rejection, the same Route identity remains preserved through hazard_exit_completed, one typed terminal permits one release, and only then may route advancement occur",
+    "required_negative_cases": [
+      "route generation or manifest index advances before terminal-gated release",
+      "ownership is synthesized or reporting-only",
+      "combat_range or another owner is accepted as Route",
+      "duplicate arm, terminal, or release",
+      "actor, attempt, route, fixture, seal, source, or runtime-profile identity drift"
+    ],
+    "build_worldserver_database_dvc_budget": 0
+  }
+}
