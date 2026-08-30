@@ -631,6 +631,13 @@ def test_final_forced_combat_log_requires_contiguous_identity_bound_chunks():
     assert "forced_combat_log_cohort_mismatch" in rejected["rejections"]
 
 
+def test_forced_evidence_admission_uses_focused_production_module():
+    expected_module = "tools.raid_program.capture_forced_evidence"
+    assert validate_forced_evidence_bundle.__module__ == expected_module
+    assert validate_forced_combat_log_bundle.__module__ == expected_module
+    assert _forbidden_assistance_entries.__module__ == expected_module
+
+
 def test_material_signature_schedules_hostile_and_per_guid_recovery_edges():
     status = accepted_status()
     baseline = material_status_signature(status)
