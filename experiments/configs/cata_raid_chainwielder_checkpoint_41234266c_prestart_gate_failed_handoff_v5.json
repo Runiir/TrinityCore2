@@ -1,0 +1,136 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:external_prebuild_staging_then_chainwielder_checkpoint_one_start_v5",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed",
+  "failure_classification": "prestart_strict_provisioning_verifier_invocation_mismatch",
+  "input_identities": {
+    "source_commit": "41234266c1fe6630865b30b2860df9e83b546991",
+    "source_tree": "5afc692a7098bf3ef85e46828f3348a84b3b3279",
+    "source_clean_before_configure": true,
+    "source_clean_before_worldserver_build": true,
+    "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json",
+    "implementation_handoff_file_sha256": "7ded06b94def8aa51b6ce78897ef88cce54495db3ce28cc9cd870f942631d0df",
+    "v4_failure_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_410c7d60c_configure_preflight_failed_handoff_v1.json",
+    "v4_failure_handoff_file_sha256": "06f69fa5442dca56fac6d8ee96417b0354f63cf9af1acc3c12d8fb0fb7f5c08b",
+    "worldserver_binary_sha256": "f21b1cbdc02cf91d650ecd31294b64b343b8dfb34a6ec085f7e25ce6b4a4da98",
+    "runtime_config_sha256_before_checkpoint_seal": "34676895897c14bf3d3fafc4e2afb76eeba2ee4493a954ae5bbb4ef7a0b2e2e2",
+    "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"
+  },
+  "scope_lock": {
+    "owned_behavior": "one exact externally staged fast8_v2 configure/build, exact prestart admission and provisioning, and at most one observation-only actor-30008 Chainwielder checkpoint completion-watchdog start",
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 0,
+    "second_configure_run": false,
+    "second_worldserver_start": false,
+    "gameplay_or_fixture_changes": false,
+    "fixture_revision_promoted": false,
+    "gameplay_canary_or_acceptance_claimed": false
+  },
+  "validation": {
+    "focused_test_command": "pixi run pytest -q tests/test_recurrence_admission.py tests/test_chainwielder_owner_checkpoint.py tests/test_phase1_raid_foundation_capture.py -k 'chainwielder_checkpoint or recurrence_admission or checkpoint_arm_gate or checkpoint_arm_emits'",
+    "focused_test_result": "27 passed, 126 deselected",
+    "recurrence_result": "20 of 20 passed; fixture_expansion_admitted=true; sole target chainwielder_pre_admission_rejection_isolation_v1",
+    "configure": {
+      "classification": "success",
+      "ticket_id": "raid-build-2b7c91b5014c46fe9a0e4f72a97d2b30",
+      "queue_sequence": 1224,
+      "receipt_canonical_sha256": "4bb5740e488955ae56d33893070b68bcdb7734fb2a87f56b38d98a80bb00ebbd",
+      "receipt_file_sha256": "6f530a0d509808ca7b75ff6e600431a9d1eca8fcbbb88cb92ae7f4d85a8272b5",
+      "gate_bearing": true
+    },
+    "worldserver_build": {
+      "classification": "success",
+      "ticket_id": "raid-build-31b9c766e439470d905bbf8fc3e21426",
+      "queue_sequence": 1225,
+      "receipt_canonical_sha256": "3a1f587d5e8b2e056dedf1850ffb0381f67946afba2f5e4f43cad3cb2ce2045a",
+      "receipt_file_sha256": "5841495c2e57a38c8c23e7d315d10489e25a00fee0f881852c8b0b662ea8ec46",
+      "gate_bearing": true,
+      "binary_sha256": "f21b1cbdc02cf91d650ecd31294b64b343b8dfb34a6ec085f7e25ce6b4a4da98"
+    },
+    "prestart": {
+      "preparation_applied": true,
+      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+      "map_id": 669,
+      "roster_size": 10,
+      "strict_provisioning_verifier_passed": false,
+      "strict_provisioning_verifier_failure_count": 7,
+      "strict_provisioning_verifier_sha256": "8baa085b7d388d2284ecc30077308b7ea75cfa24628b54f4067ec8eb64b79b6a",
+      "failed_invocation": "pixi run python -m tools.bot_ml.validate_validation_provisioning --worldserver-conf <external-config> --provisioning-report <external-identity-report> --check-db --require-applied --output <external-verifier>",
+      "prescribed_invocation": "pixi run python -m tools.bot_ml.validate_validation_provisioning --worldserver-conf <external-config> --check-db --require-applied --output <external-verifier>",
+      "operator_error": "The failed invocation bound the outer preparation report as the provisioning report. The verifier therefore compared the wrong report and output set against the generated provisioning manifest.",
+      "database_valid_in_failed_verifier": true,
+      "payload_valid_in_failed_verifier": true,
+      "cleanup_shard_readback_passed": true,
+      "cleanup_shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+      "cleanup_selected_name_count": 10,
+      "cleanup_zero_group_instance_corpse_ghost_residue": true
+    },
+    "checkpoint_observation": {
+      "controller_gate": "not_run",
+      "controller_command_sent": null,
+      "controller_emission_count": null,
+      "native_checkpoint_lifecycle_count": 0,
+      "terminal": "prestart_strict_provisioning_verifier_failed",
+      "party_dps": null,
+      "party_hps": null,
+      "actor_30008_dps": null,
+      "actor_30008_hps": null
+    },
+    "cleanup": {
+      "worldserver_process_absent": true,
+      "zero_bots": true,
+      "zero_leases": true,
+      "build_queue_active": false,
+      "build_queue_depth": 0
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "all_prebuild_receipts_were_staged_outside_the_git_worktree",
+      "the_focused_checkpoint_controller_suite_passed_twenty_seven_tests",
+      "the_full_fixed_recurrence_bank_passed_twenty_of_twenty",
+      "the_single_authorized_configure_and_worldserver_build_were_gate_bearing_on_the_exact_clean_source",
+      "the_generated_route_manifest_contains_the_exact_four_node_Magmaw_diagnostic_partition",
+      "the_failed_verifier_observed_valid_database_and_payload_state",
+      "cleanup_readback_found_the_exact_ten_member_roster_with_zero_group_instance_corpse_and_ghost_residue",
+      "no_worldserver_start_occurred"
+    ],
+    "refuted": [
+      "the_v5_unit_completed_strict_prestart_admission",
+      "the_v5_unit_exercised_the_live_controller_arm_gate_or_native_checkpoint"
+    ],
+    "unproven": [
+      "the_live_controller_report_has_command_sent_true_and_emission_count_one",
+      "the_native_checkpoint_reaches_a_real_Route_owner_trigger",
+      "the_native_checkpoint_preserves_Route_identity_and_completes_the_hazard_exit"
+    ]
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_foundation_41234266c_chainwielder_checkpoint_prestart_gate_failed_v5_20260830.dvc",
+    "pointer_file_sha256_before_commit": "1f0aed169fa64864b3ec3409c674157e57bc6b16b064369ca6f7b242846b3eb8",
+    "directory_md5": "cbc3a7737b0e4b302a43a36bde454aff.dir",
+    "directory_size_bytes": 4040260,
+    "directory_file_count": 23,
+    "push_result": "15 files pushed",
+    "remote_verification": "cache_and_remote_object_in_sync_before_eviction",
+    "workspace_evicted": true,
+    "unique_cache_objects_evicted": 14,
+    "shared_cache_objects_retained": 9,
+    "directory_metadata_retained": true,
+    "prior_hydrated_bundle_workspace_evicted": true,
+    "prior_hydrated_bundle_unique_cache_objects_evicted": 16,
+    "prior_hydrated_bundle_shared_cache_objects_retained": 6,
+    "broad_dvc_gc_run": false
+  },
+  "remaining_blocker": "The single strict provisioning verification was invoked with the wrong --provisioning-report input and failed closed before seal creation, final recurrence admission, or worldserver start.",
+  "next_work_unit": {
+    "id": "shard:external_prebuild_staging_then_chainwielder_checkpoint_one_start_v6",
+    "owner_skill": "raid-shard-architecture",
+    "action": "Authorize one fresh clean unit. Keep every prebuild receipt external, repeat the exact gate-bearing fast8_v2 configure/build at the new descriptor HEAD, provision the frozen map-669 roster, invoke the strict verifier exactly without --provisioning-report, then create the checkpoint seal and final recurrence admission before at most one observation-only completion-watchdog start.",
+    "forbidden": "No retry under v5, no gameplay or route change, no fixture promotion, no acceptance claim, and no second worldserver start."
+  }
+}

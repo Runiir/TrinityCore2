@@ -1,36 +1,36 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_checkpoint_observation_v5_20260830",
-  "work_unit": "shard:external_prebuild_staging_then_chainwielder_checkpoint_one_start_v5",
+  "epoch_id": "magmaw_chainwielder_checkpoint_observation_v6_20260830",
+  "work_unit": "shard:external_prebuild_staging_then_chainwielder_checkpoint_one_start_v6",
   "raid": "blackwing_descent",
   "boss": "magmaw_chainwielder",
   "mode": "10N",
   "owner_skill": "raid-shard-architecture",
-  "classification": "configure_preflight_failed_pending_fresh_unit",
-  "gate_state": "v4_configure_aborted_dirty_source_no_build_no_live_start",
-  "observed_at_commit": "410c7d60c2ec9453d22111891426832ab4479d1a",
+  "classification": "prestart_gate_failed_pending_fresh_unit",
+  "gate_state": "v5_strict_provisioning_verifier_invocation_failed_no_live_start",
+  "observed_at_commit": "41234266c1fe6630865b30b2860df9e83b546991",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_410c7d60c_configure_preflight_failed_handoff_v1.json",
-    "sha256": "06f69fa5442dca56fac6d8ee96417b0354f63cf9af1acc3c12d8fb0fb7f5c08b",
-    "source_commit": "410c7d60c2ec9453d22111891426832ab4479d1a",
-    "source_tree": "3db15d3f16956a0ab90a9f4a98931bf7b9ad650e",
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_41234266c_prestart_gate_failed_handoff_v5.json",
+    "sha256": "4ef7f45c1527fb0fb3fe6b3ecc37b1f0f388eacc069ccb468ec8f9846812c97d",
+    "source_commit": "41234266c1fe6630865b30b2860df9e83b546991",
+    "source_tree": "5afc692a7098bf3ef85e46828f3348a84b3b3279",
     "clean_before_evidence_staging": true
   },
   "source": {
-    "commit": "410c7d60c2ec9453d22111891426832ab4479d1a",
-    "tree": "3db15d3f16956a0ab90a9f4a98931bf7b9ad650e",
+    "commit": "41234266c1fe6630865b30b2860df9e83b546991",
+    "tree": "5afc692a7098bf3ef85e46828f3348a84b3b3279",
     "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_pre_route_arm_gate_implementation_handoff_v1.json",
     "implementation_handoff_sha256": "7ded06b94def8aa51b6ce78897ef88cce54495db3ce28cc9cd870f942631d0df",
-    "failed_preflight_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_410c7d60c_configure_preflight_failed_handoff_v1.json",
-    "failed_preflight_handoff_sha256": "06f69fa5442dca56fac6d8ee96417b0354f63cf9af1acc3c12d8fb0fb7f5c08b",
-    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_410c7d60c_chainwielder_checkpoint_armed_20260830.dvc",
-    "dvc_pointer_sha256": "1fb2303ec239e725d2ed300a3464b332fddd1dd7053db4df0e9098386bffe7b8",
+    "failed_preflight_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_41234266c_prestart_gate_failed_handoff_v5.json",
+    "failed_preflight_handoff_sha256": "4ef7f45c1527fb0fb3fe6b3ecc37b1f0f388eacc069ccb468ec8f9846812c97d",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_41234266c_chainwielder_checkpoint_prestart_gate_failed_v5_20260830.dvc",
+    "dvc_pointer_sha256": "1f0aed169fa64864b3ec3409c674157e57bc6b16b064369ca6f7b242846b3eb8",
     "dvc_workspace_state": "remote_only_verified_eviction"
   },
   "scope_lock": {
-    "allowed_change": "In a fresh unit, stage all pre-build evidence outside the Git worktree, queue one exact clean fast8_v2 configure/build, then run exact admission/provisioning and at most one actor-30008 observation-only completion-watchdog start.",
+    "allowed_change": "In a fresh unit, stage all prebuild evidence outside the Git worktree, queue one exact clean fast8_v2 configure/build, provision the frozen roster, invoke the strict verifier without --provisioning-report, then run exact admission and at most one actor-30008 observation-only completion-watchdog start.",
     "forbidden": [
-      "retry_under_completed_v4",
+      "retry_under_completed_v5",
       "second_worldserver_start",
       "gameplay_cpp_or_strategy_change",
       "class_pet_boss_route_or_database_change",
@@ -44,14 +44,14 @@
     "verified": [
       "the_controller_pre_route_arm_gate_passed_twenty_seven_focused_tests",
       "the_fixed_recurrence_bank_passed_twenty_of_twenty",
-      "the_v4_configure_used_the_exact_required_policy_argv",
-      "the_v4_configure_failed_closed_on_untracked_in_tree_evidence",
-      "v4_ran_zero_worldserver_builds_and_zero_worldserver_starts",
+      "the_v5_configure_and_worldserver_build_were_gate_bearing_on_the_exact_clean_source",
+      "the_v5_strict_verifier_failed_closed_on_the_wrong_provisioning_report_binding",
+      "v5_ran_zero_worldserver_starts",
       "cleanup_readback_found_zero_online_bots_leases_groups_instances_corpses_and_ghosts"
     ],
     "refuted": [
-      "the_v4_unit_reached_a_gate_bearing_clean_configure",
-      "the_v4_unit_exercised_the_live_controller_arm_gate_or_native_checkpoint"
+      "the_v5_unit_completed_strict_prestart_admission",
+      "the_v5_unit_exercised_the_live_controller_arm_gate_or_native_checkpoint"
     ],
     "unproven": [
       "the_next_live_controller_report_has_command_sent_true_and_emission_count_one",
@@ -86,8 +86,10 @@
     "focused_result": "27_passed_126_deselected",
     "recurrence_bank_result": "20_passed_0_failed",
     "configure_attempts": 1,
-    "configure_result": "build_provenance_abort_source_dirty_before_admission",
-    "worldserver_build_attempts": 0,
+    "configure_result": "success_gate_bearing",
+    "worldserver_build_attempts": 1,
+    "worldserver_build_result": "success_gate_bearing",
+    "strict_provisioning_verifier_result": "failed_wrong_provisioning_report_binding",
     "worldserver_start_count": 0,
     "fixture_revision_promoted": false,
     "gameplay_admitted": false,
@@ -97,6 +99,6 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "next_action": "Start a fresh bounded v5 unit. Keep every pre-build receipt outside the Git worktree until the exact clean configure/build complete, then perform the sealed admission and at most one actor-30008 observation start.",
+  "next_action": "Start a fresh bounded v6 unit. Keep every prebuild receipt outside the Git worktree, repeat the exact clean configure/build, then invoke the strict provisioning verifier exactly without --provisioning-report before seal creation, final recurrence admission, and at most one actor-30008 observation start.",
   "next_terminal_handoff": "Publish the next single-attempt bundle and report the first typed preflight or checkpoint terminal without gameplay repair."
 }
