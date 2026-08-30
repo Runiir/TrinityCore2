@@ -1,0 +1,68 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v89",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "prestart_bundle_route_manifest_invalid",
+  "source": {
+    "commit": "b249b994f4930d8b1d0208f352b8ddcaca931c1e",
+    "tree": "1f30433f7f8cf2229b2fdd4ae545ef25f0807509",
+    "clean": true,
+    "active_descriptor_sha256": "5d14ca15e201b8c8b5d9aeed7553001ab63a0a2a212228c1e6f12efcd08042c8"
+  },
+  "passed_gates": {
+    "recurrence_suite": "20/20",
+    "fixture_expansion_admitted": true,
+    "fast8_v4_build_gate_bearing": true,
+    "binary_sha256": "95e538e5e9d20f03835cc330296e860f36537e0c81d47d97cc3584958ce33fe5",
+    "tracked_derived_runtime_config_verified": true,
+    "canonical_route_catalog_stage_verified": true
+  },
+  "first_broken_edge": {
+    "stage": "atomic_bundle_route_input",
+    "result": "route_manifest_invalid",
+    "atomic_bundle_create_count": 1,
+    "cause": "The authenticated validation_routes.jsonl catalog was passed directly to the single-object bundle consumer.",
+    "missing_production_step": "tools.raid_program.canonical_route_catalog.materialize_scenario_route_manifest",
+    "required_input": "the verified canonical staging receipt and its SHA-256",
+    "required_output": "one blackwing_descent_10n_magmaw_diagnostic route object plus its verified selector receipt"
+  },
+  "operations": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "runtime_config_derivation_count": 1,
+    "canonical_route_stage_count": 1,
+    "prepared_route_object_count": 0,
+    "atomic_bundle_create_count": 1,
+    "strict_roster_readback_count": 0,
+    "database_mutation_count": 0,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "retry_count": 0
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_b249b994f4_v89_route_catalog_shape_prestart_failed_20260830.dvc",
+    "dvc_pointer_sha256": "9daffb10d27ff9c2c887de21b41a8f8c4e4ae9a0f0c92168c158d5a7b944d9cd",
+    "dvc_directory_md5": "da0e26a4f0226f5e8a1fc3a5281339ac.dir",
+    "nfiles": 11,
+    "size_bytes": 360565,
+    "remote_reconstruction": "verified",
+    "workspace_eviction": "verified after remote reconstruction"
+  },
+  "claim_ledger": {
+    "verified": [
+      "build and tracked-derived config are valid at the V89 clean identity",
+      "bundle creation rejected the catalog/object shape mismatch before launch",
+      "no roster readback, DB mutation, or server start occurred"
+    ],
+    "refuted": [
+      "V89 executed the map-669 correlated replay"
+    ],
+    "unproven": [
+      "requested revisions 4/5/5 and all correlated movement boundaries",
+      "any gameplay canary or boss outcome"
+    ]
+  },
+  "next_work_unit": "shard:bind_canonical_route_selector_for_map669_bundle_v90",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Bind the existing production catalog selector and selector-receipt verification into a fresh one-bundle descriptor. Do not alter gameplay or retry V89."
+}
