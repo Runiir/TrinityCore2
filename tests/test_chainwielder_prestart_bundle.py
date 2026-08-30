@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -8,7 +9,9 @@ import subprocess
 
 import pytest
 
+import tools.raid_program.canonical_route_staging as canonical_staging
 import tools.raid_program.chainwielder_prestart_bundle as prestart_bundle
+import tools.raid_program.tracked_runtime_config_derivation as runtime_config
 from tools.raid_program.canonical_route_staging import stage_tracked_snapshot
 from tools.raid_program.chainwielder_prestart_bundle import (
     ACTOR_GUID,
@@ -35,21 +38,17 @@ from tools.raid_program.recurrence_admission import (
     verify_recurrence_admission,
 )
 
-
 def _git(root: Path, *args: str) -> str:
     return subprocess.run(
         ["git", "-C", str(root), *args], check=True, text=True,
         capture_output=True,
     ).stdout.strip()
 
-
 def _write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-
 def _gate(_receipt: Path, _policy: Path) -> dict[str, object]:
     return {"valid": True, "gate_bearing": True}
-
 
 def _profile_authority(
     root: Path, route: Path, profile_path: Path, *, recorded_route: Path | None = None,
@@ -74,7 +73,6 @@ def _stub_external_build_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         prestart_bundle, "_verify_gate_bearing_build_receipt", _gate
     )
-
 
 def _fixture(
     tmp_path: Path,
@@ -245,10 +243,8 @@ def _fixture(
         },
     }
 
-
 def _create(fixture: dict[str, object]) -> dict[str, object]:
     return create_bundle(**fixture["kwargs"])  # type: ignore[arg-type]
-
 
 def _restage_base_runtime_config(fixture: dict[str, object]) -> None:
     root = fixture["root"]
@@ -272,7 +268,6 @@ def _restage_base_runtime_config(fixture: dict[str, object]) -> None:
     fixture["kwargs"]["base_runtime_config_receipt_sha256"] = str(
         staged["receipt_sha256"]
     )
-
 
 def _use_tracked_ledger(fixture: dict[str, object]) -> Path:
     root = fixture["root"]
@@ -305,7 +300,6 @@ def _use_tracked_ledger(fixture: dict[str, object]) -> Path:
     })
     _restage_base_runtime_config(fixture)
     return ledger
-
 
 def test_v6_manual_missing_flag_fails_before_atomic_bundle_passes_after(
     tmp_path: Path,
@@ -361,7 +355,6 @@ def test_v6_manual_missing_flag_fails_before_atomic_bundle_passes_after(
     assert result["valid"] is True
     assert result["pre_rename_verified"] is True
 
-
 def test_bundle_is_deterministic_and_does_not_mutate_inputs(tmp_path: Path) -> None:
     fixture = _fixture(tmp_path)
     paths = fixture["paths"]
@@ -374,7 +367,6 @@ def test_bundle_is_deterministic_and_does_not_mutate_inputs(tmp_path: Path) -> N
     second = {path.name: path.read_bytes() for path in output.iterdir()}
     assert first == second
     assert before == {key: sha256_file(path) for key, path in paths.items()}
-
 
 def _native_hold(identity, *, route_node_id: str, route_sha256: str) -> dict:
     return {
@@ -397,7 +389,6 @@ def _native_hold(identity, *, route_node_id: str, route_sha256: str) -> dict:
         "checkpoint_terminal": False,
         "release_count": 0,
     }
-
 
 def test_target_suffix_reproduces_v19_and_binds_runtime_identity(
     tmp_path: Path,
@@ -561,7 +552,6 @@ def test_target_suffix_reproduces_v19_and_binds_runtime_identity(
     )) == ["botauto status"]
     assert repaired.failure_reason is None
 
-
 @pytest.mark.parametrize(
     ("mutation", "reason"),
     [
@@ -590,7 +580,6 @@ def test_target_suffix_fails_closed_on_contract_drift(
     fixture["kwargs"]["route_manifest_sha256"] = sha256_file(route)
     with pytest.raises(BundleError, match=reason):
         _create(fixture)
-
 
 def test_profile_suffix_rejects_ambiguous_selection_and_non_route_mutation(
     tmp_path: Path,
@@ -637,7 +626,6 @@ def test_profile_suffix_rejects_ambiguous_selection_and_non_route_mutation(
         ).encode("utf-8")
     ).hexdigest()
 
-
 def test_exact_clean_tracked_ledger_is_copied_byte_identically(
     tmp_path: Path,
 ) -> None:
@@ -650,7 +638,6 @@ def test_exact_clean_tracked_ledger_is_copied_byte_identically(
     copied = fixture["output"] / BUNDLE_NAMES["ledger"]
     assert copied.read_bytes() == ledger.read_bytes()
     assert sha256_file(copied) == fixture["kwargs"]["ledger_sha256"]
-
 
 def test_untracked_in_worktree_ledger_is_rejected(tmp_path: Path) -> None:
     fixture = _fixture(tmp_path)
@@ -665,7 +652,6 @@ def test_untracked_in_worktree_ledger_is_rejected(tmp_path: Path) -> None:
     with pytest.raises(BundleError, match="ledger_not_tracked_read_only_source"):
         _create(fixture)
 
-
 def test_tracked_ledger_alias_is_rejected(tmp_path: Path) -> None:
     fixture = _fixture(tmp_path)
     ledger = _use_tracked_ledger(fixture)
@@ -679,7 +665,6 @@ def test_tracked_ledger_alias_is_rejected(tmp_path: Path) -> None:
     with pytest.raises(BundleError, match="ledger_source_path_mismatch"):
         _create(fixture)
 
-
 def test_dirty_tracked_ledger_is_rejected_even_with_matching_input_hash(
     tmp_path: Path,
 ) -> None:
@@ -691,7 +676,6 @@ def test_dirty_tracked_ledger_is_rejected_even_with_matching_input_hash(
     with pytest.raises(BundleError, match="source_worktree_dirty"):
         _create(fixture)
 
-
 def test_clean_tracked_ledger_wrong_hash_is_rejected(tmp_path: Path) -> None:
     fixture = _fixture(tmp_path)
     _use_tracked_ledger(fixture)
@@ -700,14 +684,12 @@ def test_clean_tracked_ledger_wrong_hash_is_rejected(tmp_path: Path) -> None:
     with pytest.raises(BundleError, match="ledger_hash_mismatch"):
         _create(fixture)
 
-
 def test_existing_empty_output_directory_is_atomically_replaced(tmp_path: Path) -> None:
     fixture = _fixture(tmp_path)
     fixture["output"].mkdir()
 
     assert _create(fixture)["valid"] is True
     assert (fixture["output"] / BUNDLE_NAMES["launch_contract"]).is_file()
-
 
 @pytest.mark.parametrize(
     "name",
@@ -730,7 +712,6 @@ def test_verify_rejects_each_internal_material_tamper(
     with pytest.raises(BundleError, match="bundle_file_hash_mismatch"):
         verify_bundle(fixture["output"])
 
-
 @pytest.mark.parametrize("name", ["binary"])
 def test_verify_rejects_each_external_material_tamper(
     tmp_path: Path, name: str,
@@ -742,14 +723,12 @@ def test_verify_rejects_each_external_material_tamper(
     with pytest.raises(BundleError, match=f"{name}_hash_mismatch"):
         verify_bundle(fixture["output"])
 
-
 def test_verify_rejects_partial_bundle(tmp_path: Path) -> None:
     fixture = _fixture(tmp_path)
     _create(fixture)
     (fixture["output"] / BUNDLE_NAMES["admission"]).unlink()
     with pytest.raises(BundleError, match="bundle_partial_or_extra_files"):
         verify_bundle(fixture["output"])
-
 
 def test_conflicting_duplicate_required_config_fails_closed(tmp_path: Path) -> None:
     fixture = _fixture(
@@ -761,7 +740,6 @@ def test_conflicting_duplicate_required_config_fails_closed(tmp_path: Path) -> N
     assert not fixture["output"].exists()
     failure = fixture["output"].with_name("bundle.failure.json")
     assert json.loads(failure.read_text(encoding="utf-8"))["launchable"] is False
-
 
 def test_tracked_base_config_fail_before_then_verified_snapshot_passes(
     tmp_path: Path,
@@ -782,7 +760,6 @@ def test_tracked_base_config_fail_before_then_verified_snapshot_passes(
         fixture["output"] / BUNDLE_NAMES["base_runtime_config"]
     ).read_bytes() == source.read_bytes()
 
-
 def test_bundle_cannot_bypass_verified_base_config_receipt(
     tmp_path: Path,
 ) -> None:
@@ -797,7 +774,6 @@ def test_bundle_cannot_bypass_verified_base_config_receipt(
         _create(fixture)
     assert not fixture["output"].exists()
 
-
 def test_bundle_rejects_verified_snapshot_mutation_before_copy(
     tmp_path: Path,
 ) -> None:
@@ -808,13 +784,11 @@ def test_bundle_rejects_verified_snapshot_mutation_before_copy(
         _create(fixture)
     assert not fixture["output"].exists()
 
-
 def test_output_inside_worktree_is_rejected(tmp_path: Path) -> None:
     fixture = _fixture(tmp_path)
     fixture["kwargs"]["output_dir"] = fixture["root"] / "bundle"
     with pytest.raises(BundleError, match="output_inside_worktree"):
         _create(fixture)
-
 
 def test_launch_contract_is_exact_one_start_completion_watchdog(tmp_path: Path) -> None:
     fixture = _fixture(tmp_path)
@@ -830,7 +804,6 @@ def test_launch_contract_is_exact_one_start_completion_watchdog(tmp_path: Path) 
     assert launch["expected_arm_predicates"]["emission_count"] == 1
     assert launch["expected_lifecycle_predicates"]["outcome"] == "hazard_exit_completed"
     assert "--observe-sec" not in result["launch_argv"]
-
 
 def test_wrong_actor_fixture_or_source_and_dirty_source_fail_closed(tmp_path: Path) -> None:
     fixture = _fixture(tmp_path)
@@ -849,7 +822,6 @@ def test_wrong_actor_fixture_or_source_and_dirty_source_fail_closed(tmp_path: Pa
     (fixture["root"] / "tracked.txt").write_text("dirty\n", encoding="utf-8")
     with pytest.raises(BundleError, match="source_worktree_dirty"):
         _create(fixture)
-
 
 def test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged(
     tmp_path: Path,
@@ -926,3 +898,74 @@ def test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged(
             expected_runtime_profile_id=SCENARIO_ID,
             atomic_bundle_roots=(final, tmp_path / "arbitrary" / "stage"),
         )
+
+def test_snapshot_boundary_consumes_only_verified_derived_bytes(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "derived-source"
+    root.mkdir()
+    for relative in (runtime_config.TEMPLATE_PATH, runtime_config.RECIPE_PATH):
+        destination = root / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(Path(relative).read_bytes())
+    contract_relative = "experiments/configs/runtime-contract.json"
+    contract = root / contract_relative
+    contract.parent.mkdir(parents=True)
+    contract.write_bytes(Path(
+        "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json"
+    ).read_bytes())
+    _git(root, "init")
+    _git(root, "config", "user.email", "test@example.invalid")
+    _git(root, "config", "user.name", "Test")
+    _git(root, "add", ".")
+    _git(root, "commit", "-m", "derived source")
+    output = tmp_path / "derived-output"
+    output.mkdir()
+    commit = _git(root, "rev-parse", "HEAD")
+    tree = _git(root, "rev-parse", "HEAD^{tree}")
+    derived = runtime_config.derive_runtime_config(
+        worktree=root, contract_relative_path=contract_relative,
+        expected_source_commit=commit, expected_source_tree=tree,
+        external_run_root=output, destination_name="base-runtime.conf",
+    )
+    arguments = {
+        "worktree": root, "receipt_path": Path(derived["receipt_path"]),
+        "expected_receipt_sha256": derived["receipt_sha256"],
+        "contract_relative_path": contract_relative,
+        "expected_source_commit": commit, "expected_source_tree": tree,
+    }
+    verified = canonical_staging.verify_derived_runtime_config_snapshot(
+        **arguments)
+    assert hashlib.sha256(base64.b64decode(
+        verified["snapshot_bytes_base64"])).hexdigest() == runtime_config.OUTPUT_SHA256
+
+    with pytest.raises(
+        canonical_staging.CanonicalRouteStagingError,
+        match="derivation_receipt_hash_mismatch",
+    ):
+        canonical_staging.verify_derived_runtime_config_snapshot(
+            **{**arguments, "expected_receipt_sha256": "0" * 64})
+    receipt_path = Path(derived["receipt_path"])
+    receipt_bytes = receipt_path.read_bytes()
+    receipt = json.loads(receipt_bytes)
+    receipt["substitution_inventory_sha256"] = "0" * 64
+    drift = (json.dumps(receipt, indent=2, sort_keys=True) + "\n").encode()
+    receipt_path.write_bytes(drift)
+    with pytest.raises(
+        canonical_staging.CanonicalRouteStagingError,
+        match="derivation_receipt_binding_mismatch",
+    ):
+        canonical_staging.verify_derived_runtime_config_snapshot(**{
+            **arguments, "expected_receipt_sha256": hashlib.sha256(drift).hexdigest(),
+        })
+    receipt_path.write_bytes(receipt_bytes)
+
+    snapshot = Path(verified["snapshot_path"])
+    exact_bytes = snapshot.read_bytes()
+    snapshot.unlink()
+    snapshot.write_bytes(exact_bytes)
+    with pytest.raises(
+        canonical_staging.CanonicalRouteStagingError,
+        match="derived_snapshot_binding_mismatch",
+    ):
+        canonical_staging.verify_derived_runtime_config_snapshot(**arguments)

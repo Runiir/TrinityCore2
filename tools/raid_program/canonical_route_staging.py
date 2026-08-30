@@ -612,3 +612,39 @@ def verify_tracked_snapshot(
         "receipt_path": str(receipt_path),
         "receipt_sha256": expected_receipt_sha256,
     }
+
+
+def verify_derived_runtime_config_snapshot(
+    *, worktree: Path, receipt_path: Path, expected_receipt_sha256: str,
+    contract_relative_path: str, expected_source_commit: str,
+    expected_source_tree: str,
+) -> dict[str, Any]:
+    """Admit only the byte snapshot authenticated by its derivation receipt."""
+
+    from tools.raid_program.tracked_runtime_config_derivation import (
+        RuntimeConfigDerivationError,
+        verify_runtime_config_derivation,
+    )
+
+    try:
+        verified = verify_runtime_config_derivation(
+            worktree=worktree, receipt_path=receipt_path,
+            expected_receipt_sha256=expected_receipt_sha256,
+            contract_relative_path=contract_relative_path,
+            expected_source_commit=expected_source_commit,
+            expected_source_tree=expected_source_tree,
+        )
+    except RuntimeConfigDerivationError as error:
+        raise CanonicalRouteStagingError(str(error)) from error
+    return {
+        "schema": "cata_raid_verified_derived_runtime_config_snapshot_v1",
+        "contract_id": verified["contract_id"],
+        "source_commit": verified["source_commit"],
+        "source_tree": verified["source_tree"],
+        "snapshot_path": verified["destination"]["path"],
+        "snapshot_sha256": verified["output_sha256"],
+        "snapshot_length": verified["output_length"],
+        "snapshot_bytes_base64": verified["output_snapshot_base64"],
+        "derivation_receipt_path": verified["receipt_path"],
+        "derivation_receipt_sha256": verified["receipt_sha256"],
+    }

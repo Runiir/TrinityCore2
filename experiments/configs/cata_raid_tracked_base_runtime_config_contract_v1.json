@@ -1,0 +1,55 @@
+{
+  "contract_id": "cata_raid_tracked_base_runtime_config_v1",
+  "expected_output_sha256": "1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8",
+  "external_secret_inputs": false,
+  "fixed_recipe_substitutions": {
+    "allow_dungeons": false,
+    "allow_questing": true,
+    "allow_raids": false,
+    "bot_learning_enable": true,
+    "database_host": "172.20.0.2",
+    "database_names": [
+      "auth",
+      "world",
+      "characters",
+      "hotfixes"
+    ],
+    "database_port": 3306,
+    "death_recovery_mode": "native_corpse_run",
+    "player_bot_enable": true,
+    "remote_access_enable": true,
+    "respawn_mode": "native_corpse_run",
+    "soap_enable": true
+  },
+  "profile_precedence": "bundle_local_selected_profile_overlay",
+  "recipe": {
+    "relative_path": "Makefile",
+    "sha256": "76c854e1c4e7dcbc4fc9f5a2444ede512ca65a7d1ff6e2514be8941641ea918a",
+    "target": "test-configs"
+  },
+  "schema": "cata_raid_tracked_base_runtime_config_v1",
+  "template": {
+    "relative_path": "src/server/worldserver/worldserver.conf.dist",
+    "sha256": "944b69d1a22e0a55c88800ac73233aa3de75ede0058f6e2ebf96615ca285dfef"
+  },
+  "typed_inputs": {
+    "bot_policy_model_enable": false,
+    "bot_policy_model_fail_closed": true,
+    "bot_policy_model_mode": "shadow",
+    "bot_policy_model_score_weight_lexical": "1.0",
+    "bot_policy_model_version": "",
+    "botworld_allow_configured_center_fallback": false,
+    "botworld_allow_grinding": true,
+    "botworld_auto_start": false,
+    "botworld_auto_start_recording": true,
+    "botworld_enable": true,
+    "botworld_grind_only_when_no_quest_available": false,
+    "botworld_quest_first": false,
+    "botworld_recording_window_minutes": 15,
+    "botworld_runtime_profile": "",
+    "botworld_spawn_mode": "resume_or_race_start",
+    "botworld_target_population": 5,
+    "botworld_use_saved_position": true,
+    "data_dir": "/home/runiir/Games/trinity-cata/data"
+  }
+}
