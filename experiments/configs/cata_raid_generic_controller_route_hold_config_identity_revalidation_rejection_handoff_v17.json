@@ -1,0 +1,108 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_config_identity_revalidation_admission_v17",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed",
+  "failure_classification": "controller_route_hold_arm_git_revision_representation_mismatch",
+  "input_identities": {
+    "reviewed_source_commit": "fbb4fd4afad1527970639dc3797de7ef77b7b5e5",
+    "reviewed_source_tree": "caec134bc1fb4b627e78b296c6e5a952f5b6f46c",
+    "v15_failed_handoff_path": "experiments/configs/cata_raid_generic_controller_route_hold_config_identity_mismatch_handoff_v15.json",
+    "v15_failed_handoff_sha256": "3688bcaf9ecb64a9954948a9fd66e8b7cae963f056e8c240087de22402f77aca",
+    "v16_implementation_handoff_path": "experiments/configs/cata_raid_generic_controller_route_hold_config_identity_binding_handoff_v16.json",
+    "v16_implementation_handoff_sha256": "45117e6fbc655516ca6f22fb95921aa7625bde1d6a29ac7a4f287830c8bac581",
+    "native_owner_sha256": "fa39568466e196cc49363933d1d13d6af60d432d3ff1793cd2c56ea58f2bca78",
+    "production_boundary_fixture_sha256": "8319ae0e6c8183f3e7dca1586bc7946ea0922a840516b6ee967814646736ebf5"
+  },
+  "program_scope": {
+    "supported_specs": "all_configured_dps_tank_and_healer_specs",
+    "supported_encounters": "all_route_manifest_nodes",
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_semantics": "Affliction, actor 30008, Chainwielder, and Magmaw remain evidence inputs only. The reviewed V16 comparison contains no class, actor, encounter, instance, size, difficulty, geometry, or route-node branch."
+  },
+  "behavior_change": false,
+  "verified_v15_mismatch": {
+    "configured_source_commit": "6056b52ef4213f701b2c14744b1a98333dd3e302",
+    "requested_source_commit": "6056b52ef4213f701b2c14744b1a98333dd3e302",
+    "generated_binary_revision": "6056b52ef421",
+    "configured_matches_requested": true,
+    "binary_revision_is_exact_canonical_prefix": true,
+    "configured_source_length": 40,
+    "requested_source_length": 40,
+    "binary_revision_length": 12,
+    "generator": "cmake/genrev.cmake invokes git rev-parse --short=12 HEAD",
+    "fixture_seal_source_overwritten_after_load": false
+  },
+  "v16_review": {
+    "start_held_comparison": "verified: strict valid lower-hex full 40-character configured/requested equality plus valid lower-hex 12- or 40-character exact binary prefix",
+    "comparison_evidence": "verified: status exposes only typed presence/equality/format booleans, lengths, accepted, and failure_field; no new authority value is emitted",
+    "owned_diff": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_generic_controller_route_hold_config_identity_binding_handoff_v16.json",
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "tests/test_chainwielder_owner_checkpoint.py"
+    ],
+    "focused_test": {
+      "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+      "result": "6 passed in 1.37s",
+      "run_count": 1,
+      "correction_count": 0,
+      "admission_value": "rejected: the fixture supplies a 40-character BinarySourceCommit to the arm gate and therefore does not exercise the production 12-character GitRevision input"
+    },
+    "cpp_line_counts": {
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 909,
+      "BotWorldPopulationMgrConfig.cpp": 320,
+      "BotWorldPopulationMgrValidationProfile.cpp": 429,
+      "BotChainwielderOwnerCheckpoint.h": 534,
+      "BotWorldPopulationMgrValidationRouteRuntime.cpp": 779,
+      "cs_chainwielder_owner_checkpoint.cpp": 123
+    },
+    "all_listed_cpp_below_1000_lines": true,
+    "configure_count": 0,
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "first_broken_edge": {
+    "owner": "shared_native_runtime",
+    "edge": "arm_checkpoint_gate_reuses_full_hash_raw_equality_against_generated_short_revision",
+    "source": "BotChainwielderOwnerCheckpoint::RejectionReason",
+    "production_values": "ConfigSourceCommit and RequestedSourceCommit are equal valid 40-character authorities; BinarySourceCommit is GitRevision::GetHash(), a valid exact 12-character prefix",
+    "deterministic_outcome": "chainwielder_checkpoint_source_identity_mismatch before arm acknowledgement"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the V15 start-held mismatch was representation length, not overwritten fixture, seal, or full source authority",
+      "the V16 start-held comparison is strict, typed, non-secret, universal, and handles the canonical 12-character generated revision",
+      "all in-scope C++ files remain below 1000 physical lines"
+    ],
+    "refuted": [
+      "the V16 production-boundary fixture covers the real arm GitRevision representation",
+      "the required Held, status, arm, terminal, release transcript is ready for a one-start live admission"
+    ],
+    "unproven": [
+      "one live Held acknowledgement followed by a successful sealed arm",
+      "one identity-preserved terminal, release, and post-release route advance"
+    ]
+  },
+  "next_work_unit": {
+    "id": "runtime:generic_controller_route_hold_arm_config_identity_binding_v18",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_change": "Repair only the arm gate's source/Git-revision representation boundary. Preserve valid and exact full 40-character configured/requested authority equality, require a valid lower-hex 12- or 40-character generated revision equal to the exact source prefix, and emit typed non-secret comparison evidence without weakening fixture or seal authority.",
+    "required_tests": [
+      "fail-before compiled arm replay using the exact full V15 source and its 12-character generated revision",
+      "pass-after compiled arm replay through the exact production gate",
+      "invalid lengths, non-lower-hex values, non-prefix revision, unequal full authorities, fixture drift, and seal drift fail with typed reasons",
+      "start-held, held suppression, terminal, release, and post-release route gates remain green"
+    ],
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "worldserver_start_count": 0,
+      "database_mutation_allowed": false,
+      "dvc_mutation_allowed": false
+    }
+  },
+  "forbidden": "No live admission, configure, build, provisioning, worldserver start, Python controller repair, polling change, authority loosening, gameplay change, fixture promotion, canary acceptance, database mutation, or DVC mutation."
+}
