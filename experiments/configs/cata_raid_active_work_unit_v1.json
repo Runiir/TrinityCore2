@@ -1,95 +1,19 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "restore_three_invalidated_shared_planner_recurrence_fixtures_v71_20260830",
-  "work_unit": "runtime:restore_three_invalidated_shared_planner_recurrence_fixtures_v71",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "shared_planner_fixture_expansion_failed_closed",
-  "gate_state": "shared_planner_production_boundary_unproven",
-  "observed_at_commit": "c8f3edd7d4483a43b1ee01bdae0c2183414e4655",
-  "immutable_input_commit": "c8f3edd7d4483a43b1ee01bdae0c2183414e4655",
+  "epoch_id": "shared_planner_map669_correlated_fixture_expansion_v71b_20260830",
+  "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "fixture_expansion_replay_authorized",
+  "gate_state": "fixture_expansion_replay_only_build_and_gameplay_canary_closed",
+  "observed_at_commit": "ef8065a5f4bd81c5a46ea04b14bad03849e9992e",
+  "immutable_input_commit": "ef8065a5f4bd81c5a46ea04b14bad03849e9992e",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v70_parasite_fixture_post_occurrence_verification_handoff_v1.json",
-    "sha256": "8a3966be116794cba424748d286317bd28b7b0dacc8e2dd539eabadde2f0f7e0",
-    "source_commit": "c8f3edd7d4483a43b1ee01bdae0c2183414e4655"
+    "path": "experiments/configs/cata_raid_v71_shared_planner_fixture_boundary_audit_handoff_v1.json",
+    "sha256": "6f73ebd0b797cbbeeb0d0c330d75ab30302f6597b7ecb12c3679d225eafd92c6",
+    "source_commit": "ef8065a5f4bd81c5a46ea04b14bad03849e9992e"
   },
   "completed_predecessor": {
-    "work_unit": "encounter:restore_three_invalidated_parasite_recurrence_fixtures_v70",
-    "receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
-    "verified_fixture_revisions": {
-      "magmaw_parasite_lane_paths_v1": 7,
-      "magmaw_parasite_lane_transition_full_replay_v1": 6,
-      "magmaw_parasite_control_full_runtime_v1": 6
-    },
-    "admission_scope": "fixture_expansion_only",
-    "build_admitted": false,
-    "live_canary_admitted": false
-  },
-  "program_scope": {
-    "supported_specs": "all_configured_dps_tank_and_healer_specs",
-    "supported_encounters": "blackwing_descent_10n_magmaw_diagnostic",
-    "supported_modes": ["10N"],
-    "canary_only": "V71 restores only the three shared-movement-planner invalidated recurrence fixtures and evaluates their focused verification. It does not authorize a build, snapshot, bundle, database mutation, or live worldserver."
-  },
-  "behavior_change": false,
-  "evidence_contract_change": true,
-  "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": true,
-  "ready_for_live_verification": false,
-  "scope_lock": {
-    "allowed_change": "Obtain post-occurrence verification for exactly same_level_floor_observation_v1, same_level_hazard_path_admission_v1, and same_level_native_path_proof_v1 at their exact current shared-planner production boundaries. Update only their focused fixture evidence, recurrence ledger binding, one compact V71 handoff, and this descriptor.",
-    "fixtures": [
-      {
-        "fixture_id": "same_level_floor_observation_v1",
-        "revision": 3,
-        "last_invalidating_occurrence_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
-        "last_invalidating_occurrence_source_identity": "2bfbd48bdafae41950fbfcaaf26df6f70a3784a3"
-      },
-      {
-        "fixture_id": "same_level_hazard_path_admission_v1",
-        "revision": 4,
-        "last_invalidating_occurrence_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
-        "last_invalidating_occurrence_source_identity": "2bfbd48bdafae41950fbfcaaf26df6f70a3784a3"
-      },
-      {
-        "fixture_id": "same_level_native_path_proof_v1",
-        "revision": 4,
-        "last_invalidating_occurrence_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
-        "last_invalidating_occurrence_source_identity": "2bfbd48bdafae41950fbfcaaf26df6f70a3784a3"
-      }
-    ],
-    "allowed_files": [
-      "tests/test_same_level_hazard_path_admission.py",
-      "tests/test_native_path_floor_diagnostic.py",
-      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-      "one_compact_v71_handoff",
-      "experiments/configs/cata_raid_active_work_unit_v1.json"
-    ],
-    "required_findings": [
-      "each named shared-planner fixture is verified after Canary122 against its exact current production boundary",
-      "fixture revisions and verification identities are evidence-derived rather than mechanically incremented",
-      "the pending Chainwielder expansion is not counted as closure of these three fixtures",
-      "fixture-expansion admission is never represented as build or live-canary admission",
-      "the V68 tracked_snapshot_source_invalid rejection remains preserved for the later evidence owner"
-    ],
-    "forbidden": [
-      "encounter-policy, class, route, live-lane, Chainwielder, runtime-config, snapshot-stage, or gameplay-threshold edit",
-      "configure, build, database, DVC, snapshot, route, bundle, worldserver, or live-run operation",
-      "comparison weakening or fixed 300-second raid timer"
-    ]
-  },
-  "preserved_pending": {
-    "chainwielder_expansion": {
-      "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
-      "status": "pending_out_of_scope"
-    },
-    "v68_rejection": {
-      "reason": "tracked_snapshot_source_invalid",
-      "owner_skill": "raid-evidence-lifecycle",
-      "status": "pending_after_live_recurrence_admission"
-    }
-  },
-  "v71_disposition": {
-    "handoff": "experiments/configs/cata_raid_v71_shared_planner_fixture_boundary_audit_handoff_v1.json",
+    "work_unit": "runtime:restore_three_invalidated_shared_planner_recurrence_fixtures_v71",
     "result": "failed",
     "verified_fixture_count": 0,
     "retained_invalidated_revisions": {
@@ -101,49 +25,150 @@
       "same_level_floor_observation_v1": 4,
       "same_level_hazard_path_admission_v1": 5,
       "same_level_native_path_proof_v1": 5
-    },
-    "reason": "The current selectors are value-only or source-shape checks. Production receipt 598 carries the floor-conflict shape but loses continuous receipt/spline correlation before outcome; receipt 620 closes the consumed native outcome but has no floor conflict and no Hazard-owner complete/incomplete counterexample."
+    }
   },
+  "program_scope": {
+    "supported_encounters": "blackwing_descent_10n_magmaw_diagnostic",
+    "supported_modes": ["10N"],
+    "operation": "one observation-only worldserver-backed map-669 fixture expansion replay",
+    "admission_scope": "fixture_expansion_replay",
+    "gameplay_canary_admitted": false,
+    "gameplay_mutations_allowed": false,
+    "runtime_implementation_allowed": false
+  },
+  "behavior_change": false,
+  "evidence_contract_change": false,
+  "ready_for_bounded_repair": false,
+  "ready_for_fixture_expansion": true,
+  "ready_for_live_verification": false,
+  "scope_lock": {
+    "allowed_change": "At the exact clean descriptor commit, perform one worldserver-backed map-669 fixture-expansion replay for only the requested shared-planner revisions 4/5/5. Correlate every admitted or rejected receipt from planner through native submission, MotionMaster, point generator, spline, and terminal outcome or explicit supersession. Publish only the bounded evidence and handoff; do not implement runtime or gameplay behavior.",
+    "requested_fixtures": [
+      {
+        "fixture_id": "same_level_floor_observation_v1",
+        "from_revision": 3,
+        "requested_revision": 4,
+        "causal_signature": "same_level_movement_path_floor_false_negative"
+      },
+      {
+        "fixture_id": "same_level_hazard_path_admission_v1",
+        "from_revision": 4,
+        "requested_revision": 5,
+        "causal_signature": "same_level_encounter_hazard_path_rejection"
+      },
+      {
+        "fixture_id": "same_level_native_path_proof_v1",
+        "from_revision": 4,
+        "requested_revision": 5,
+        "causal_signature": "same_level_native_path_proof_false_negative"
+      }
+    ],
+    "required_production_boundary": [
+      "one same-level SampleFloorGap receipt continuously correlated from PlanMovementPath through native submission and terminal outcome or explicit supersession",
+      "one Hazard-owner complete-path receipt through selected endpoint, MotionMaster, point generator, launched spline, and consumed multi-tick outcome",
+      "one Hazard-owner incomplete-path receipt whose deterministic shorter endpoint receives a fresh complete native proof and then reaches a consumed multi-tick outcome",
+      "one legitimate cross-floor negative and one forbidden-path negative, each rejected before MotionMaster launch",
+      "continuous receipt_id, bot_guid, owner, intent_reason, scope, actor XYZ, spline_id, floor compatibility, and outcome correlation without sampling gaps"
+    ],
+    "required_identity": [
+      "clean source commit and tree",
+      "queued build receipt and binary SHA256",
+      "authenticated tracked runtime-config derivation and SHA256",
+      "route manifest and canonical roster identities",
+      "map, instance, data, VMAP, MMAP, and DBC identities",
+      "DVC pointer, directory digest, remote reconstruction verification, and exact eviction receipt"
+    ],
+    "allowed_outputs": [
+      "one compact V71b shard handoff",
+      "one compact fixture-expansion replay summary",
+      "one DVC pointer for the closed bounded evidence",
+      "recurrence-ledger evidence binding only after all requested production boundaries are satisfied",
+      "active descriptor handoff routing only"
+    ],
+    "forbidden": [
+      "gameplay canary, route acceptance, boss completion, build admission, canary admission, or closure claim",
+      "runtime, planner, executor, encounter, class, route, Chainwielder, test, threshold, tolerance, or comparison edit",
+      "second configure, second build, second worldserver start, retry, or fixed-duration success timer",
+      "database mutation, roster reprovisioning, teleport, forced boss outcome, or gameplay mutation",
+      "ignored or mutable trinity-worldserver-test.conf as snapshot authority",
+      "raw-template substitution or any bypass of V68 tracked_snapshot_source_invalid"
+    ]
+  },
+  "runtime_config_authority": {
+    "preserved_rejection": "tracked_snapshot_source_invalid",
+    "rejected_runtime_path": "trinity-worldserver-test.conf",
+    "rejected_runtime_sha256": "8b20b393839886bfe9d5906dd198a6f56eeaadcf7d220b5f1d83d044dd7ea449",
+    "required_source": "authenticated deterministic derivation from git-show canonical template bytes plus tracked recipe and explicit substitution inputs",
+    "fail_before": "Any ignored, mutable, raw-template, hash-mismatched, or otherwise unauthenticated runtime-config source terminates before snapshot staging, bundle creation, or worldserver start."
+  },
+  "preserved_pending": {
+    "chainwielder_expansion": {
+      "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+      "status": "pending_out_of_scope"
+    },
+    "v68_rejection": {
+      "reason": "tracked_snapshot_source_invalid",
+      "owner_skill": "raid-evidence-lifecycle",
+      "status": "preserved_fail_before"
+    }
+  },
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "raid_success_timer_seconds": null,
+    "emergency_wall_clock_is_success": false,
+    "terminal_edges": [
+      "all_requested_fixture_receipts_captured",
+      "production_boundary_incomplete",
+      "semantic_or_no_progress_stall",
+      "repeated_decision_terminal",
+      "death_loop_terminal",
+      "identity_or_runtime_config_mismatch",
+      "infrastructure_loss",
+      "explicit_interruption"
+    ]
+  },
+  "execution_budget": {
+    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "tracked_snapshot_stage_count_maximum": 1,
+    "atomic_bundle_create_count_maximum": 1,
+    "atomic_bundle_verify_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_count_maximum": 0,
+    "database_mutation": "forbidden; fresh strict retained-roster readback only",
+    "dvc_checkpoint_count_maximum": 1,
+    "dvc_push_count_maximum": 1,
+    "dvc_remote_reconstruction_count_maximum": 1,
+    "dvc_exact_eviction_count_maximum": 1,
+    "dvc_mutation": "required only after the bounded replay closes, for publication, remote reconstruction verification, and exact eviction"
+  },
+  "remaining_unproven": [
+    "same_level_floor_observation_v1 revision 4 satisfies its correlated production boundary",
+    "same_level_hazard_path_admission_v1 revision 5 satisfies its complete and incomplete Hazard production boundary",
+    "same_level_native_path_proof_v1 revision 5 satisfies its final policy-to-native-outcome equivalence class",
+    "the full regression bank admits any build or gameplay canary",
+    "the V68 rejected runtime bytes have an authenticated exact tracked derivation",
+    "the pending Chainwielder production boundary"
+  ],
   "ordered_followups": [
     {
-      "order": 3,
-      "active": true,
-      "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
-      "owner_skill": "raid-shard-architecture"
+      "order": 4,
+      "active": false,
+      "work_unit": "runtime:promote_shared_planner_fixture_expansion_v71c",
+      "owner_skill": "raid-bot-runtime-implementation"
     },
     {
-      "order": 4,
+      "order": 5,
       "active": false,
       "work_unit": "evidence:tracked_base_runtime_config_exact_derivation_v72",
       "owner_skill": "raid-evidence-lifecycle"
     }
   ],
-  "remaining_unproven": [
-    "same_level_floor_observation_v1 revision 4 crosses a correlated map-669 production boundary",
-    "same_level_hazard_path_admission_v1 revision 5 crosses a correlated map-669 Hazard-owner production boundary",
-    "same_level_native_path_proof_v1 revision 5 crosses its complete and incomplete Hazard production equivalence class",
-    "the complete regression bank admits a build and live canary",
-    "a tracked deterministic derivation reproduces the exact V68-rejected runtime config bytes",
-    "the live Held Route-owner receipt-zero rejection terminal release and Drudges sequence"
-  ],
-  "validation_clock": {
-    "policy": "completion_watchdog",
-    "fixed_success_timer_seconds": null,
-    "raid_success_timer_seconds": null,
-    "terminal_edges": ["three_fixture_verifications_recorded", "fixture_failure", "identity_conflict"]
-  },
-  "verification_budget": {
-    "focused_fixture_run_count_maximum": 1,
-    "focused_fixture_run_count_used": 1,
-    "configure_count_maximum": 0,
-    "worldserver_build_count": 0,
-    "tracked_snapshot_stage_count_maximum": 0,
-    "atomic_bundle_create_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
-    "database_mutation": "forbidden",
-    "dvc_mutation": "forbidden"
-  },
   "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
   "next_owner_skill": "raid-shard-architecture",
-  "next_action": "Run one fixture-expansion-only map-669 replay that continuously correlates the recorded SampleFloorGap and Hazard-owner complete/incomplete counterexamples from planner receipt through native submission, MotionMaster, point generator, spline, and terminal outcome or explicit supersession. Preserve Chainwielder and V68 tracked_snapshot_source_invalid; this is not build or gameplay-canary admission."
+  "next_action": "At the exact clean descriptor commit, use at most one queued configure/build and one no-retry completion-watchdog worldserver start to capture only the requested map-669 revisions 4/5/5 production receipts, then DVC-publish, remotely reconstruct-verify, and exactly evict the bounded evidence. Fail before start on any V68-style runtime-config authority violation."
 }
