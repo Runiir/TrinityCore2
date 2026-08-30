@@ -1,0 +1,101 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:bind_canonical_route_selector_for_map669_bundle_v90",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "route_selector_binding_verified",
+  "source": {
+    "commit": "0ad351fc64ffddfb2cd36e246517402896c6c87d",
+    "clean": true,
+    "v89_handoff": "experiments/configs/cata_raid_v89_route_catalog_shape_prestart_failed_handoff_v90.json",
+    "v89_handoff_sha256": "9d1309cd5b3fd6c187aa9081f1791df90c002e5365f9af70a9cff134104e448f"
+  },
+  "scope_lock": {
+    "owned_edge": "authenticated canonical JSONL catalog to one verified Magmaw scenario route object before atomic bundle creation",
+    "allowed_files": [
+      "experiments/configs/cata_raid_v90_canonical_route_selector_binding_handoff_v91.json",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
+    ],
+    "excluded": [
+      "build or server start",
+      "database or gameplay mutation",
+      "route content or selector semantic changes",
+      "atomic bundle creation or V89 retry"
+    ]
+  },
+  "selector_binding": {
+    "runtime": "pixi run python",
+    "materialize_callable": "tools.raid_program.canonical_route_catalog.materialize_scenario_route_manifest",
+    "materialize_arguments": {
+      "worktree": "<clean-current-worktree>",
+      "staging_receipt_path": "<canonical_stage_result.receipt_path>",
+      "expected_staging_receipt_sha256": "<canonical_stage_result.receipt_sha256>",
+      "selected_scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "external_run_root": "<new-empty-external-run-root>",
+      "dvc_stage_name": "validation_scenarios",
+      "output_relative_member": "validation_routes.jsonl"
+    },
+    "verify_callable": "tools.raid_program.canonical_route_catalog.verify_scenario_route_manifest_receipt",
+    "verify_arguments": {
+      "worktree": "<same-clean-current-worktree>",
+      "receipt_path": "<materialize_result.receipt_path>",
+      "expected_receipt_sha256": "<materialize_result.receipt_sha256>",
+      "expected_staging_receipt_sha256": "<canonical_stage_result.receipt_sha256>",
+      "selected_scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "dvc_stage_name": "validation_scenarios",
+      "output_relative_member": "validation_routes.jsonl"
+    },
+    "atomic_bundle_binding": {
+      "route_manifest": "<verified_selector_receipt.output_object_path>",
+      "route_manifest_sha256": "<verified_selector_receipt.output_object_sha256>",
+      "forbidden_substitute": "canonical_stage_result.staged_path"
+    },
+    "prepared_route_object_budget": 1,
+    "selector_receipt_verify_budget": 1
+  },
+  "identity_proof": {
+    "catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "selected_scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "selected_row_count": 4,
+    "selected_rows_sha256": "b47a63e9a45ea351da40e4a53b7df0cef7e3f9092f1b965aa2dc506bb2e85cda",
+    "route_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "route_node_ids": [
+      "bwd.entry.regroup",
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ],
+    "bundle_route_validator": "passed"
+  },
+  "validation": {
+    "command": "pixi run pytest -q tests/test_canonical_route_staging.py -k catalog_materializes_exact_deterministic_scenario_object",
+    "result": "1 passed, 66 deselected in 0.21s",
+    "production_code_changes": 0,
+    "test_changes": 0,
+    "reason_no_test_added": "The existing focused test already executes authenticated staging, materialization, selector-receipt verification, deterministic identity checks, and the unchanged atomic-bundle route validator.",
+    "build_count": 0,
+    "atomic_bundle_create_count": 0,
+    "database_mutation_count": 0,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "the authenticated catalog deterministically materializes the exact four-node Magmaw scenario object",
+      "the selector receipt reconstructs and verifies the same catalog and route identities",
+      "the verified output object passes the unchanged atomic-bundle route validator",
+      "the staged JSONL catalog is explicitly forbidden as the bundle route-manifest input"
+    ],
+    "refuted": [
+      "a new selector implementation or route-content change is required",
+      "the V89 binary can be reused after the V90 descriptor commit without a fresh exact-current build receipt"
+    ],
+    "unproven": [
+      "a fresh-current V91 build and authenticated atomic bundle",
+      "the map-669 correlated revisions 4/5/5 production replay",
+      "any gameplay canary or boss outcome"
+    ]
+  },
+  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v91",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "At the clean V90 descriptor commit, run the exact recurrence gate, one fresh fast8_v4 build, canonical stage, the bound selector materialize and verify sequence, one atomic bundle, strict readback, and at most one completion-watchdog worldserver-only map-669 replay."
+}
