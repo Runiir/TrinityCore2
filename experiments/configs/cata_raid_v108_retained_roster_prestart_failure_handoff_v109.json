@@ -1,0 +1,103 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:composite_map669_production_boundary_replay_v108",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "prestart_retained_roster_identity_failed",
+  "source": {
+    "commit": "a0795e14b50a27bc3a4b0c76494e7e5347ea8631",
+    "tree": "32ab6c9e91af6ebc32b185cbb541548870fbcd6c",
+    "binary_sha256": "b19334830150185e90206ba9f75f8bbdfd9e2669e7860d2681469c4e3c6420ea",
+    "evidence_commit": "ee9f343d8b3892f3fe8dbd27a48125ea3cf68cfa"
+  },
+  "passed_gates": {
+    "full_recurrence_bank": "20/20 commands returned zero",
+    "fixture_expansion_target_count": 4,
+    "fast8_v4_build_gate_bearing": true,
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "canonical_route_and_derived_runtime_config_verified": true,
+    "atomic_bundle_create_and_verify": true
+  },
+  "first_disqualifying_gate": {
+    "stage": "strict_retained_roster_readback",
+    "first_broken_edge": "strict_provisioning_runtime_character_spell_mismatch",
+    "failure_count": 9,
+    "affected_actors": [
+      "Mgwtanka",
+      "Mgwtankb",
+      "Mgwheala",
+      "Mgwhealb",
+      "Mgwhealc",
+      "Mgwdpsb",
+      "Mgwdpsc",
+      "Mgwdpsd",
+      "Mgwdpse"
+    ],
+    "post_terminal_read_only_readback": {
+      "passed": false,
+      "selected_name_count": 10,
+      "reason_count": 29,
+      "ghost_aura_rows": 54,
+      "group_rows": 0,
+      "group_member_rows": 0,
+      "group_instance_rows": 0,
+      "character_instance_rows": 0,
+      "corpse_rows": 0,
+      "corpse_phase_rows": 0,
+      "summary": "nine actors also retained non-seed health or power, and all ten actors were outside the declared map-669 entrance position"
+    },
+    "terminal_edge": "prestart_gate_failed_no_worldserver_started"
+  },
+  "production_boundaries": [
+    {"fixture_id": "chainwielder_pre_admission_rejection_isolation_v1", "status": "missing_prestart_gate_failed"},
+    {"fixture_id": "same_level_floor_observation_v1", "status": "missing_prestart_gate_failed"},
+    {"fixture_id": "same_level_hazard_path_admission_v1", "status": "missing_prestart_gate_failed"},
+    {"fixture_id": "same_level_native_path_proof_v1", "status": "missing_prestart_gate_failed"}
+  ],
+  "operations": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "database_mutation_count": 0,
+    "retry_count": 0,
+    "boss_clear_claimed": false
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_a0795e14b5_v108_retained_roster_prestart_failed_20260831.dvc",
+    "dvc_pointer_sha256": "27497e7d0a1370cd414eb3d061480391d5370e8d319f785de8707fc6830d5460",
+    "dvc_directory_md5": "9e8e122f859c73f0de33063d6a3b58d7.dir",
+    "file_count": 33,
+    "size_bytes": 1774851,
+    "compact_summary_sha256": "0ac97ee0845656f56ce70fe795960ffde3a9a23d98c3dba50c8c31bc9573bc3e",
+    "strict_verifier_sha256": "7de4e8840a945dd6bcf126a6308ac3f29fdc9ae98a55243564e66b5d0fa9cc24",
+    "shard_readback_sha256": "5cd9d98e8875437a904a45d5f014fa10f572fc0e485e5f33511ca97f15fcfdda",
+    "remote_reconstruction_manifest_sha256": "85b75880144a496589ef43b7ececdf5ad0c478b0114d778ae82b4ab175fdc2dd",
+    "remote_reconstruction": "33 files and all canonical payload hashes verified",
+    "dvc_remote_status": "in_sync"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact-current fixture bank, build, route, runtime config, and atomic bundle passed",
+      "the retained roster failed strict spellbook identity before launch",
+      "the read-only shard snapshot also found position, seed, and ghost-aura residue",
+      "no worldserver or authserver was started"
+    ],
+    "refuted": [
+      "the V104 restored roster remained launch-ready after V105 cleanup",
+      "V108 reached any admitted production boundary"
+    ],
+    "unproven": [
+      "all four production fixture boundaries",
+      "corrected controller release ordering in a live worldserver",
+      "any gameplay, Magmaw, DPS, HPS, or acceptance result"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:restore_map669_spellbook_and_lifecycle_identity_v109",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Run exactly one repository-owned prepare-only provisioning reset for the frozen blackwing_descent_10n_magmaw_diagnostic roster. Then run one strict verifier and one exact shard readback. Do not build or start a server.",
+    "required_postcondition": "exactly ten expected actors are offline and unleased at the declared entrance with full health and power seeds, complete required character_spell rows, and zero group, instance, corpse, ghost, rename, or character-flag residue",
+    "after_success": "reauthorize one fresh exact-clean no-retry composite production-boundary replay"
+  }
+}

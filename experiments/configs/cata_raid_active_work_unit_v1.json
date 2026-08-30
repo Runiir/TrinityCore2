@@ -1,79 +1,80 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:composite_map669_production_boundary_replay_v108",
+  "work_unit": "shard:restore_map669_spellbook_and_lifecycle_identity_v109",
   "owner_skill": "raid-shard-architecture",
-  "classification": "live_recurrence_quarantined",
-  "epoch_id": "v108_composite_map669_production_boundary_replay_20260831",
-  "observed_at_commit": "0e284b6b8145a90cb1b71eb379a0259f13298db8",
-  "immutable_input_commit": "0e284b6b8145a90cb1b71eb379a0259f13298db8",
-  "gate_state": "one_no_retry_fixture_replay_admitted_gameplay_and_acceptance_closed",
+  "classification": "prestart_retained_roster_identity_failed",
+  "epoch_id": "v109_restore_map669_spellbook_and_lifecycle_identity_20260831",
+  "observed_at_commit": "ee9f343d8b3892f3fe8dbd27a48125ea3cf68cfa",
+  "immutable_input_commit": "ee9f343d8b3892f3fe8dbd27a48125ea3cf68cfa",
+  "gate_state": "one_prepare_only_roster_restoration_admitted_live_closed",
   "behavior_change": false,
-  "evidence_contract_change": true,
+  "evidence_contract_change": false,
   "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": true,
+  "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "next_owner_skill": "raid-shard-architecture",
-  "next_work_unit": "shard:composite_map669_production_boundary_replay_v108",
-  "next_action": "Run exactly one no-retry completion-watchdog map-669 fixture-expansion replay. Build once at exact clean identity, start one worldserver without authserver, publish verified DVC evidence, and stop.",
+  "next_work_unit": "shard:restore_map669_spellbook_and_lifecycle_identity_v109",
+  "next_action": "Run exactly one repository-owned prepare-only reset for the frozen map-669 Magmaw roster, then one strict verifier and one exact shard readback. Do not build or start a server.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v107_controller_release_order_review_handoff_v108.json",
-    "sha256": "07cc636c8711a1f5fa100a48ebe821348a28de3eb682677eb9840225a2ae6b93",
-    "source_commit": "0e284b6b8145a90cb1b71eb379a0259f13298db8",
-    "source_tree": "d86bb24fb67dc09bbea97b52ed874da149b84940"
+    "path": "experiments/configs/cata_raid_v108_retained_roster_prestart_failure_handoff_v109.json",
+    "sha256": "253341dba7a3c5950868755b794f567345352d12b76105f5ce3b6595230ad49e",
+    "source_commit": "ee9f343d8b3892f3fe8dbd27a48125ea3cf68cfa",
+    "source_tree": "302ce31b4bf8abc808aa2057c754b64254060f25"
   },
   "completed_predecessor": {
-    "work_unit": "review:controller_route_hold_release_order_v107",
-    "implementation_commit": "2e2fc05f5e85fa60e2a2474a76922c5662668734",
-    "reviewed_descriptor_commit": "0e284b6b8145a90cb1b71eb379a0259f13298db8",
-    "review_verdict": "PASS",
-    "focused_tests": "5/5 passed",
-    "full_bank_fixture_commands": "20/20 passed",
-    "server_start_count": 0,
+    "work_unit": "shard:composite_map669_production_boundary_replay_v108",
+    "classification": "prestart_retained_roster_identity_failed",
+    "fixture_commands": "20/20 returned zero",
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
     "database_mutation_count": 0,
-    "gameplay_changed": false
+    "dvc_remote_verified": true
   },
   "program_scope": {
-    "operation": "one exact-clean no-retry map-669 fixture-expansion replay",
+    "operation": "one deterministic prepare-only roster identity restoration",
     "implementation_allowed": false,
     "test_mutation_allowed": false,
-    "worldserver_start_admitted": true,
+    "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
-    "database_mutations_allowed": false,
-    "dvc_mutations_allowed": true,
+    "database_mutations_allowed": true,
+    "dvc_mutations_allowed": false,
     "gameplay_canary_admitted": false,
     "acceptance_admitted": false
   },
   "scope_lock": {
-    "required_replay": [
-      "run exactly the four admitted fixture-expansion targets",
-      "retain production-consumed outcomes for each target",
-      "retain both first broken edge and terminal edge",
-      "publish, remotely verify, and safely evict bounded evidence"
+    "required_repair": [
+      "restore the exact ten frozen blackwing_descent_10n_magmaw_diagnostic actors through the repository-owned prepare-only path",
+      "restore all required character_spell rows and exact health, power, entrance position, native-loadable names, pet identity, gear, talents, glyphs, and consumables",
+      "remove group, instance, corpse, corpse-phase, ghost-aura, rename, flag, online, and lease residue",
+      "verify with one strict provisioning verifier and one exact shard readback"
     ],
     "forbidden": [
-      "gameplay, C++, movement, planner, encounter, class, route, fixture expectation, ledger, or database edits",
-      "authserver start or second worldserver start",
+      "gameplay, C++, movement, planner, encounter, class, route, fixture, ledger, or evidence-contract edits",
+      "configure, build, worldserver start, authserver start, live replay, or DVC publication",
       "gameplay canary, boss clear, DPS, HPS, or acceptance claim"
     ]
   },
   "execution_budget": {
-    "configure_count_maximum": 1,
-    "worldserver_build_count_maximum": 1,
-    "compiler_jobs": 8,
-    "linker_jobs": 1,
-    "worldserver_start_count_maximum": 1,
+    "prepare_only_count_maximum": 1,
+    "strict_verifier_count_maximum": 1,
+    "shard_readback_count_maximum": 1,
+    "configure_count_maximum": 0,
+    "worldserver_build_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
     "authserver_start_count_maximum": 0,
-    "database_mutation_count_maximum": 0,
+    "database_mutation_count_maximum": 1,
     "retry_count_maximum": 0,
-    "dvc_publication_required": true
+    "dvc_publication_required": false
   },
   "required_terminal_evidence": {
-    "pass": "All four admitted production boundaries produce identity-bound native outcomes under one completion-watchdog replay, cleanup passes, and DVC evidence is remotely verified.",
-    "fail": "Stop on the first typed fixture, infrastructure, identity, cleanup, or publication failure. Do not retry."
+    "pass": "All ten actors pass the strict verifier and exact shard readback with complete spellbook identity, exact entrance seeds, and zero lifecycle residue.",
+    "fail": "Stop on the first prepare-only, strict-verifier, or shard-readback failure. Do not retry and do not start a server."
   },
   "remaining_unproven": [
-    "the three unobserved same-level production boundaries",
-    "the three preserved invalidated parasite fixtures represent repaired live behavior",
+    "the four admitted production boundaries",
+    "corrected controller release ordering under a live worldserver",
     "any gameplay canary, Magmaw completion, DPS, HPS, or acceptance result"
   ],
   "validation_clock": {
@@ -81,8 +82,8 @@
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "all_fixture_targets_observed",
-      "first_typed_fixture_or_infrastructure_failure",
+      "strict_roster_identity_restored",
+      "first_prepare_or_readback_failure",
       "scope_violation"
     ]
   }
