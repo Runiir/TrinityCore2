@@ -1,42 +1,42 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:chainwielder_route_checkpoint_fixture_semantic_correction_v99",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "fixture_green_architecture_correction_required",
-  "epoch_id": "v98_truthful_hazard_owner_20260831",
-  "observed_at_commit": "13368547cfa617fd98311e1fdeeb047fd8908a8e",
-  "immutable_input_commit": "c35fa964011ba7b10b5ff6f942bb38a8c7697c18",
-  "gate_state": "truthful_hazard_owner_refutes_route_only_checkpoint",
-  "behavior_change": true,
+  "work_unit": "evidence:chainwielder_route_checkpoint_regression_receipt_refresh_v100",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "evidence_review_required",
+  "epoch_id": "v99_route_checkpoint_semantics_20260831",
+  "observed_at_commit": "a4d1c3d0b2efc107e1d3b153866a9e57ad555109",
+  "immutable_input_commit": "a4d1c3d0b2efc107e1d3b153866a9e57ad555109",
+  "gate_state": "corrected_fixture_requires_exact_current_regression_receipt",
+  "behavior_change": false,
   "evidence_contract_change": true,
   "ready_for_bounded_repair": false,
   "ready_for_live_verification": false,
-  "ready_for_fixture_expansion": true,
-  "next_owner_skill": "raid-shard-architecture",
-  "next_work_unit": "shard:chainwielder_route_checkpoint_fixture_semantic_correction_v99",
-  "next_action": "Correct the checkpoint fixture seam so its receipt-zero Hazard rejection is observed against an already active real Route path independently of the later accepted configured-hazard exit; do not relabel that accepted exit as Route or start a live canary.",
+  "ready_for_fixture_expansion": false,
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "evidence:chainwielder_route_checkpoint_regression_receipt_refresh_v100",
+  "next_action": "Review the V99 production-bound checkpoint correction and create an exact-current full recurrence-bank receipt before any separately authorized build or live replay.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v98_truthful_hazard_owner_handoff_v99.json",
-    "sha256": "5fae42cfd65b87ac591fa63a69b58be1ef708db2a905b5bd6aa35bf4d1a6c7b4",
-    "source_commit": "13368547cfa617fd98311e1fdeeb047fd8908a8e",
-    "implementation_commit": "13368547cfa617fd98311e1fdeeb047fd8908a8e",
-    "implementation_tree": "bea80cffcf2ac75a5eb8e5aa40e8ab95d8304bba"
+    "path": "experiments/configs/cata_raid_v99_route_checkpoint_fixture_semantic_correction_handoff_v100.json",
+    "sha256": "73163d2a3c3433bfc354c369444d5dc1acc05ff9a82a2696ba2874fda564a4ce",
+    "source_commit": "a4d1c3d0b2efc107e1d3b153866a9e57ad555109",
+    "implementation_commit": "a4d1c3d0b2efc107e1d3b153866a9e57ad555109",
+    "implementation_tree": "8782325d5da7d70a0fa74e89b6b2ed329ba09221"
   },
   "program_scope": {
-    "operation": "fixture architecture correction separating Route-path rejection preservation from accepted Hazard-owned exit movement",
+    "operation": "exact-current regression receipt for corrected Route-preservation checkpoint semantics",
     "build_admitted": false,
     "worldserver_start_admitted": false,
-    "fixture_expansion_replay_admitted": true,
+    "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "database_mutations_allowed": false,
     "gameplay_mutations_allowed": false
   },
   "scope_lock": {
-    "allowed_change": "Revise only the checkpoint fixture/observation seam so a receipt-zero Hazard rejection is injected while a real identity-bound Route path is active; retain the accepted configured-hazard exit as Hazard/Hazard.",
+    "allowed_change": "Review the committed V99 fixture boundary and refresh only its exact-current regression receipt and admission evidence.",
     "forbidden": [
-      "relabeling configured hazard movement as Route, weakening owner or identity checks, or changing movement geometry, destination, planner, priority ordering, encounter, class, route content, threshold, or tolerance",
-      "compatibility-adapter global change, build, server start, database mutation, DVC mutation, gameplay canary, or claims about revisions 4/5/5",
-      "combining the receipt-zero Route-preservation observation with the later accepted Hazard exit merely to satisfy the old Route-only expectation"
+      "gameplay, geometry, destination, planner, tolerance, priority, encounter, class, route, or compatibility-adapter changes",
+      "worldserver build or start, provisioning, database mutation, gameplay canary, or map-669 revision claims",
+      "restoring hazard_exit_completed as the Route-preservation checkpoint terminal"
     ]
   },
   "execution_budget": {
@@ -51,28 +51,27 @@
     "dvc_mutation_count": 0
   },
   "required_terminal_evidence": {
-    "fail_before": "the checkpoint requires Route ownership and matching configured-hazard identity at the later accepted exit, although truthful Hazard/Hazard has legitimately replaced the earlier Route path",
-    "pass_after": "one real active Route path survives one receipt-zero Hazard rejection with full identity preserved, while the independent accepted configured-hazard exit remains Hazard/Hazard",
+    "fail_before": "the prior full recurrence receipt predates implementation a4d1c3d0b2 and the corrected checkpoint outcome contract",
+    "pass_after": "one exact-current full-bank receipt binds implementation a4d1c3d0b2 and the Route-preserved-after-receiptless-Hazard-rejection terminal",
     "negative_outcomes": [
-      "ordinary in-combat non-route movement remains CombatRange/Combat",
-      "an accepted configured-hazard path is never counted as a receipt-zero rejection or a Route path",
-      "stale or mismatched checkpoint identity cannot trigger",
-      "missing configured hazard identity cannot trigger accepted hazard movement",
-      "duplicate lifecycle transitions remain rejected"
+      "accepted configured Hazard/Hazard movement is not counted as Route or receipt-zero rejection",
+      "missing active Route path and stale actor, attempt, wipe, generation, or node cannot trigger",
+      "duplicate injection and lifecycle transitions remain rejected",
+      "ordinary gameplay hazard_exit_completed telemetry remains independent"
     ]
   },
   "remaining_unproven": [
-    "a corrected production-bound checkpoint fixture separating the two movement events",
-    "map-669 revisions 4/5/5 and required negative outcomes",
-    "any gameplay canary or boss outcome"
+    "an exact-current full recurrence-bank receipt",
+    "map-669 revisions 4/5/5 and required native outcomes",
+    "any build, worldserver, gameplay canary, or boss outcome"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "focused_fixture_pass",
-      "focused_fixture_typed_failure",
+      "full_bank_receipt_pass",
+      "full_bank_typed_failure",
       "scope_or_identity_violation"
     ]
   }

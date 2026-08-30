@@ -1,0 +1,106 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:chainwielder_route_checkpoint_fixture_semantic_correction_v99",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "passed",
+  "git_commit": "a4d1c3d0b2efc107e1d3b153866a9e57ad555109",
+  "git_tree": "8782325d5da7d70a0fa74e89b6b2ed329ba09221",
+  "input_identities": {
+    "handoff_path": "experiments/configs/cata_raid_v98_truthful_hazard_owner_handoff_v99.json",
+    "handoff_sha256": "5fae42cfd65b87ac591fa63a69b58be1ef708db2a905b5bd6aa35bf4d1a6c7b4",
+    "implementation_commit": "13368547cfa617fd98311e1fdeeb047fd8908a8e",
+    "descriptor_commit": "42fa98c333b411862fece42445b6b26eed7bc867"
+  },
+  "scope_lock": {
+    "owned_behavior": "checkpoint fixture trigger and terminal observation contract",
+    "excluded": [
+      "gameplay policy, geometry, destination, planner, tolerance, priority, encounter, class, route content, and compatibility adapter",
+      "worldserver build or start, database mutation, DVC mutation, provisioning, and live claims"
+    ]
+  },
+  "ordered_causal_receipt": [
+    {
+      "claim": "the old activeRoutePath predicate required configured-hazard identity",
+      "status": "verified",
+      "observation": "V98 source required matchingHazardIdentity in the post-kernel checkpoint predicate"
+    },
+    {
+      "claim": "configured-hazard identity exists only after the accepted movement attempt",
+      "status": "verified",
+      "observation": "TryValidationRouteMovementCheck writes DodgeCasterGuid and DodgeSpellId after MoveBotToPoint"
+    },
+    {
+      "claim": "the accepted configured-hazard path can truthfully certify Route preservation",
+      "status": "refuted",
+      "observation": "V98 SelectValidationRouteMovementOwner returns Hazard/Hazard and the accepted path replaces Route ownership"
+    },
+    {
+      "claim": "one pre-admission Hazard rejection preserves an earlier identity-bound Route path",
+      "status": "verified",
+      "observation": "the focused production-bound fixture observes receipt 0 immediately and on the next tick with identical Route snapshots"
+    }
+  ],
+  "first_broken_edge_before": "The fixture delayed its active Route trigger until configured-hazard identity existed, after the independent accepted Hazard/Hazard exit had already replaced Route.",
+  "implemented_hypothesis": "Select the checkpoint trigger from the current identity-bound Route snapshot without requiring hazard identity, and terminalize after the next preserved Route tick instead of waiting for an unrelated hazard exit.",
+  "changed_files": [
+    "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "tools/raid_program/chainwielder_prestart_bundle.py",
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "tests/test_chainwielder_prestart_bundle.py"
+  ],
+  "validation": {
+    "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py tests/test_chainwielder_prestart_bundle.py::test_launch_contract_is_exact_one_start_completion_watchdog",
+    "fail_before": "the V98 preimage has no SelectInjectionTrigger value boundary, requires matchingHazardIdentity for activeRoutePath, waits for hazard_exit_completed, and therefore fails the new compile and source-contract assertions",
+    "pass_after": "7 passed in 1.89s",
+    "focused_run_count": 1,
+    "correction_rerun_count": 0,
+    "ccn_after": {
+      "SelectInjectionTrigger": 8,
+      "MaybeInjectChainwielderOwnerCheckpointAfterUpdate": 28,
+      "ObserveChainwielderOwnerCheckpointBeforeUpdate": 6,
+      "tool": "lizard 1.17.31 via pixi exec"
+    },
+    "source_lines": {
+      "BotChainwielderOwnerCheckpoint.h": 650,
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 874
+    },
+    "build": "forbidden_not_run",
+    "live_run": "forbidden_not_run",
+    "database": "unchanged",
+    "dvc": "unchanged"
+  },
+  "consumer_audit": {
+    "fixture_contract_updated": [
+      "chainwielder_prestart_bundle create expected_lifecycle_predicates",
+      "chainwielder_prestart_bundle verify expected_lifecycle_predicates",
+      "focused bundle contract test"
+    ],
+    "ordinary_gameplay_event_preserved": "BotWorldPopulationMgrValidationRouteMovementCheck.cpp hazard_exit_completed"
+  },
+  "claim_ledger": {
+    "verified": [
+      "a real actor/attempt/wipe/generation/node-bound Route path triggers without hazard identity",
+      "the injected Hazard future-pack rejection is unsubmitted with planner receipt 0 and preserves the Route snapshot immediately and on the next tick",
+      "the checkpoint completes exactly at the next preserved Route observation",
+      "the later accepted configured-hazard path remains Hazard/Hazard and is neither Route nor receipt-zero rejection",
+      "missing active Route state and stale actor, attempt, wipe, generation, node, motion, and duplicate lifecycle transitions remain rejected",
+      "all current checkpoint outcome consumers use the corrected terminal while ordinary gameplay hazard_exit_completed telemetry is unchanged"
+    ],
+    "refuted": [
+      "configured-hazard identity is required to observe an already active Route path",
+      "hazard_exit_completed is a valid terminal for the Route-preservation checkpoint"
+    ],
+    "unproven": [
+      "a fresh full recurrence-bank receipt for implementation a4d1c3d0b2",
+      "map-669 revisions 4/5/5 and required native outcomes",
+      "any worldserver, gameplay canary, or boss outcome"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:chainwielder_route_checkpoint_regression_receipt_refresh_v100",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Review the V99 fixture boundary and create an exact-current full recurrence-bank receipt before any separately authorized build or live replay.",
+    "live_authorization": false
+  }
+}
