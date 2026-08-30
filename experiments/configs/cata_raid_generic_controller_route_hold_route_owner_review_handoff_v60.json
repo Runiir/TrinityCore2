@@ -1,0 +1,94 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:generic_controller_route_hold_route_owner_independent_review_v60",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "failed_closed",
+  "failure_classification": "controller_hold_survival_movement_mask_not_scoped_to_active_actor",
+  "source_state": {
+    "implementation_commit": "6b9a327998c00f680cd413ecfef7ff75ea1c1dca",
+    "review_descriptor_commit": "9c89a45380636fd43e2731df2d65ae49528653dd",
+    "review_descriptor_tree": "9ef0755ad289394872a2fbc64ff23aab52318603",
+    "v58_handoff_sha256": "62aa9c059a218ef00f0bf6c516b5931f04f9ed5f30b4963214f6a0f13c587a2a",
+    "v59_handoff_sha256": "a5e8f1ac63ed74d07fb79a3ee33cee72f2ca1263429835c9ad8bc80970547759"
+  },
+  "verified_preservation": {
+    "exact_armed_route_pair": "only validation_route_adapter candidates explicitly marked with the admitted ScopeKey for Scope.ActorGuid receive CheckpointObservation admission",
+    "active_actor_unrelated_survival_movement": "denied before attempt",
+    "non_movement_survival": "admitted",
+    "explicit_defensive_survival": "admitted",
+    "route_advance_gate_changed": false,
+    "identity_comparisons_changed": false,
+    "terminal_release_order_changed": false,
+    "receiptless_hazard_predicate": "exact submitted=false, Hazard owner, future_pack_destination gate, rejected result, route_destination_future_pack_unsafe reason, and zero launch receipt"
+  },
+  "concrete_defect": {
+    "production_installation": "InstallControllerRouteHoldAdmissionPolicy installs the policy separately for every cohort bot and supplies each context actor GUID",
+    "broken_predicate": "State::AdmitCandidate admits raw Survival only when movement is false but never compares actingActorGuid with Scope.ActorGuid for this new restriction",
+    "effect": "during an active hold, unrelated actors also lose unclassified Survival movement, including ordinary hazard or recovery actions that V58 did not implicate",
+    "first_broken_edge": "a foreign cohort actor's raw Survival plus Movement candidate is hard-masked as controller_route_hold_suppressed",
+    "first_consumed_mutation": "the foreign actor's safety movement Attempt is never invoked",
+    "fixture_gap": "the compiled replay tests foreign checkpoint metadata but contains no foreign-actor raw Survival plus Movement positive case",
+    "live_authorized": false
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "focused_result": "6 passed in 1.65s",
+    "interpretation": "green but insufficient to cover the foreign-actor regression",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "line_counts": {
+      "BotChainwielderOwnerCheckpoint.h": 621,
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 912,
+      "BotWorldPopulationMgrValidationRouteRuntime.cpp": 779,
+      "test_chainwielder_owner_checkpoint.py": 970
+    },
+    "production_or_live_build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the active actor's unrelated raw Survival movement is suppressed while the exact Armed validation_route_adapter pair reaches the real Kernel and Route movement arbiter",
+      "the replay observes one zero-receipt Hazard rejection predicate, route identity preservation, typed terminal, release, and post-release route advance",
+      "the transition negative matrix for identity drift, missing terminal, and duplicate acquire arm terminal and release remains green",
+      "the scoped source diff leaves identity comparisons and route advancement gates unchanged and all C++ files remain below 1000 lines"
+    ],
+    "refuted": [
+      "the V59 survival-movement restriction applies only to the active held actor",
+      "the green V59 replay covers the nearest foreign-actor safety regression",
+      "V59 is safe to authorize for a build or live recurrence"
+    ],
+    "unproven": [
+      "foreign cohort actors retain their pre-V59 Survival movement behavior during the hold",
+      "the repaired active-actor-scoped policy builds or completes one live route-owner lifecycle",
+      "any Chainwielder, Drudges, Magmaw, DPS, HPS, or pet outcome"
+    ]
+  },
+  "next_work_unit": {
+    "id": "runtime:generic_controller_route_hold_active_actor_survival_scope_v61",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_change": "Scope only the new raw Survival plus Movement denial to actingActorGuid equal to Scope.ActorGuid. Preserve the pre-V59 Survival admission for foreign actors, preserve non-movement and explicitly classified defensive survival, and leave exact route-pair metadata, identity comparisons, and route advancement unchanged.",
+    "required_fixture": [
+      "the active actor's unrelated Survival plus Movement candidate is hard-masked and never attempts",
+      "an otherwise identical foreign actor Survival plus Movement candidate remains admitted and attempts",
+      "the exact active-actor Armed validation_route_adapter pair still establishes the real Route owner",
+      "all existing identity duplicate terminal release and post-release ordering checks remain green"
+    ],
+    "allowed_files": [
+      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+      "tests/test_chainwielder_owner_checkpoint.py",
+      "one_compact_implementation_handoff",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
+    ],
+    "budget": {
+      "focused_test_run_count_maximum": 1,
+      "correction_rerun_count_maximum": 1,
+      "configure": 0,
+      "worldserver_build": 0,
+      "worldserver_start": 0,
+      "database_mutation": 0,
+      "dvc_mutation": 0
+    }
+  }
+}
