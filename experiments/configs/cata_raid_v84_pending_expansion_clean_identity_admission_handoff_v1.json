@@ -1,0 +1,77 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:verify_pending_expansion_overlap_v84",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_expansion_admitted",
+  "source": {
+    "commit": "1da006f945abe51694edb4843c654571e43e4e74",
+    "tree": "191e3b13e28b3403e8d04dc65b27276b8314b0a2",
+    "ledger_path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "ledger_sha256": "2997dc762e11767ce665f6f7e49ea8ae37a07b88939c548ab65d43185ed72223",
+    "evaluator_path": "tools/raid_program/blocker_recurrence_ledger.py",
+    "evaluator_sha256": "74e38f2986e7a7b466491fb3bac2bc73f8e41ee3427532bd6bdfe770a0550f33"
+  },
+  "evaluation": {
+    "command_json_sha256": "e2c1f22b5079a276f89b101d9c14e7c718715b4d0ff07cb2942a4415860aa20f",
+    "boundary_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+    "boundary_side": "after",
+    "gate": "fixture_expansion",
+    "suite_receipt_sha256": "c1fe6d906971364fdfe3bed977e81fcc73f4310f7b5a11f5da1a43eee5642bb6",
+    "decision_sha256": "ca924236c665b70043ec5073645fd119f77f8fedf028efd199d391e60883519c",
+    "fixture_count": 20,
+    "passing_fixture_count": 20,
+    "failing_fixture_count": 0,
+    "route_failures": [],
+    "stop_required": false,
+    "fixture_expansion_admitted": true,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "required_next_action": "run_fixture_expansion_replay",
+    "next_causal_signature": "same_level_native_path_proof_false_negative"
+  },
+  "admitted_replay": {
+    "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
+    "owner_skill": "raid-shard-architecture",
+    "requested_fixture_revisions": {
+      "same_level_floor_observation_v1": {
+        "from": 3,
+        "to": 4
+      },
+      "same_level_hazard_path_admission_v1": {
+        "from": 4,
+        "to": 5
+      },
+      "same_level_native_path_proof_v1": {
+        "from": 4,
+        "to": 5
+      }
+    },
+    "chainwielder_target_included": false,
+    "chainwielder_reason": "The preserved V71b descriptor keeps chainwielder_pre_admission_rejection_isolation_v1 as a separate pending target."
+  },
+  "operations": {
+    "fixed_suite_invocations": 1,
+    "recurrence_evaluator_invocations": 1,
+    "configure_or_build": 0,
+    "bundle": 0,
+    "database_mutation": 0,
+    "worldserver_start": 0,
+    "dvc_publication": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact clean-identity fixed suite passed all 20 registered fixtures",
+      "the Canary122 after-boundary fixture-expansion decision has no route failures",
+      "fixture expansion is admitted while build, gameplay canary, and acceptance remain closed",
+      "the preserved map-669 replay requests only shared-planner revisions 4/5/5"
+    ],
+    "unproven": [
+      "the three requested revisions satisfy their worldserver-backed production boundaries",
+      "the separate pending Chainwielder target",
+      "any gameplay canary, boss completion, build, or acceptance claim"
+    ]
+  },
+  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v85",
+  "next_owner_skill": "raid-shard-architecture"
+}
