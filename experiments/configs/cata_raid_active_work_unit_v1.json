@@ -1,68 +1,73 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "review:chainwielder_checkpoint_production_boundary_v101",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "independent_review_required",
-  "epoch_id": "v100_checkpoint_production_boundary_20260831",
-  "observed_at_commit": "a6c997324e76920f415d821a15ff8af0d5c7a261",
-  "immutable_input_commit": "a6c997324e76920f415d821a15ff8af0d5c7a261",
-  "gate_state": "production_boundary_repair_requires_independent_review",
+  "work_unit": "evidence:chainwielder_checkpoint_full_recurrence_bank_v102",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "evidence_refresh_required",
+  "epoch_id": "v102_checkpoint_full_recurrence_bank_20260831",
+  "observed_at_commit": "fa283824964573ca12aabd8a827d4413cf754fd1",
+  "immutable_input_commit": "fa283824964573ca12aabd8a827d4413cf754fd1",
+  "gate_state": "exact_current_full_recurrence_bank_receipt_required",
   "behavior_change": false,
-  "evidence_contract_change": true,
+  "evidence_contract_change": false,
   "ready_for_bounded_repair": false,
   "ready_for_live_verification": false,
   "ready_for_fixture_expansion": false,
-  "next_owner_skill": "raid-shard-architecture",
-  "next_work_unit": "review:chainwielder_checkpoint_production_boundary_v101",
-  "next_action": "Independently review the active-Route-only trigger, shared lifecycle boundary, and exact live scheduler validation before any regression receipt refresh, build, or live replay.",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "evidence:chainwielder_checkpoint_full_recurrence_bank_v102",
+  "next_action": "Run the immutable Magmaw full recurrence bank once at the exact clean current identity, verify its receipt and build-gate decision, and return the exact failing fixtures or a green current receipt.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v100_checkpoint_production_boundary_repair_handoff_v101.json",
-    "sha256": "0fe75c3f0b03c9c9f6058d7d5eb94b64326b19ac3b8d14c5d5ee038be1a607f2",
-    "source_commit": "a6c997324e76920f415d821a15ff8af0d5c7a261",
+    "path": "experiments/configs/cata_raid_v101_checkpoint_production_boundary_independent_review_handoff_v102.json",
+    "sha256": "45499ef178448037a49d049fc070e12b94f447c6e89c3909b89ec949f0aba853",
+    "source_commit": "fa283824964573ca12aabd8a827d4413cf754fd1",
     "implementation_commit": "a6c997324e76920f415d821a15ff8af0d5c7a261",
     "implementation_tree": "6ee25a2214c71184654eec649259c1cfef052398"
   },
   "program_scope": {
-    "operation": "independent review of the corrected Chainwielder checkpoint production boundary",
+    "operation": "exact-current full Magmaw recurrence-bank receipt and deterministic evaluator decision",
+    "recurrence_bank_run_admitted": true,
     "build_admitted": false,
     "worldserver_start_admitted": false,
     "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "database_mutations_allowed": false,
-    "gameplay_mutations_allowed": false
+    "gameplay_mutations_allowed": false,
+    "dvc_mutations_allowed": false
   },
   "scope_lock": {
-    "allowed_change": "Review only implementation a6c997324e, its shared checkpoint transition, exact lifecycle receipt, and focused tests. Produce a review handoff and next descriptor.",
+    "allowed_change": "Execute the existing append-only regression-bank manifest once at the exact clean current identity, verify the generated suite receipt and recurrence decision, then track only a compact evidence handoff and next descriptor.",
     "forbidden": [
-      "gameplay, geometry, planner, destination, priority, encounter, class, DPS, or ordinary retry changes",
-      "build, worldserver, authserver, provisioning, database, DVC, recurrence-bank refresh, or live claims"
+      "runtime, fixture, test-expectation, gameplay, geometry, planner, priority, encounter, class, DPS, or ledger edits",
+      "configure, build, worldserver, authserver, provisioning, database, DVC publication, gameplay canary, or live claims",
+      "partial fixture selection or replacing the immutable full-bank runner with an ad hoc pytest command"
     ]
   },
   "execution_budget": {
-    "focused_test_run_count_maximum": 1,
-    "focused_correction_rerun_count_maximum": 0,
+    "full_bank_run_count_maximum": 1,
+    "full_bank_correction_rerun_count_maximum": 1,
+    "focused_test_run_count_maximum": 0,
     "configure_count": 0,
     "worldserver_build_count": 0,
     "worldserver_start_count": 0,
     "authserver_start_count": 0,
-    "retry_count": 0,
     "database_mutation_count": 0,
     "dvc_mutation_count": 0
   },
+  "validation": {
+    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+    "boundary_run_id": "trinity-magmaw-78e33e6557-receipt-history-expansion.attempt1",
+    "boundary": "after",
+    "gate": "build",
+    "command_template": "pixi run python -m tools.raid_program.blocker_recurrence_ledger --ledger experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json --source-identity <exact-clean-head> --config-identity sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36 --run-suite <external-empty-output-dir>/recurrence_suite_receipt.json --boundary-run-id trinity-magmaw-78e33e6557-receipt-history-expansion.attempt1 --boundary after --gate build --output <external-empty-output-dir>/recurrence_decision.json"
+  },
   "required_terminal_evidence": {
-    "pass": "the reviewer confirms only a real actor/attempt/wipe/generation/node-bound active Route path can inject and the live capture scheduler requires every exact successful lifecycle field",
-    "fail": "the reviewer finds a remaining retry-only trigger, manual snapshot-copy certification, partial terminal acceptance, or a mismatch between compiled boundary and live callsites",
-    "negative_outcomes": [
-      "accepted Hazard/Hazard movement cannot trigger the Route checkpoint",
-      "armed Route-hazard retry alone cannot trigger",
-      "failed or partial checkpoint lifecycle cannot release the controller hold",
-      "native ExecuteMovementIntent remains explicitly unproven by the compiled value fixture"
-    ]
+    "pass": "the immutable full bank executes once; the suite receipt binds the exact clean source and canonical config identities, manifest hash, every fixture ID/revision/command/result, and the evaluator returns build_admitted=true with no missing, stale, failing, or invalidated fixtures",
+    "fail": "retain the complete suite receipt and evaluator decision and report the exact missing, stale, failing, or invalidated fixture IDs without changing implementation, fixtures, ledger, or acceptance rules",
+    "correction_rerun": "allowed once only when the first invocation or generated receipt is malformed because of a command/output-contract mistake; fixture failure is terminal and does not authorize a rerun"
   },
   "remaining_unproven": [
-    "independent review acceptance",
-    "an exact-current full recurrence-bank receipt",
-    "native movement execution under a built worldserver",
+    "an exact-current green full recurrence-bank receipt",
+    "native ExecuteMovementIntent, MovementPlannerDiagnostics, and MotionMaster execution under a built worldserver",
     "map-669 or Magmaw gameplay outcome"
   ],
   "validation_clock": {
@@ -70,8 +75,9 @@
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "independent_review_pass",
-      "independent_review_fail",
+      "full_bank_receipt_and_build_gate_pass",
+      "full_bank_fixture_or_identity_failure",
+      "malformed_receipt_after_one_correction_rerun",
       "scope_or_identity_violation"
     ]
   }

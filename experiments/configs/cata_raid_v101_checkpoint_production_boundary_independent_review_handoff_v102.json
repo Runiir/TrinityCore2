@@ -1,0 +1,107 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "review:chainwielder_checkpoint_production_boundary_v101",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "passed",
+  "git_commit": "fa283824964573ca12aabd8a827d4413cf754fd1",
+  "git_tree": "24f0d22c45438f21e8d72c91d2d8c3576db2b96e",
+  "input_identities": {
+    "implementation_commit": "a6c997324e76920f415d821a15ff8af0d5c7a261",
+    "implementation_tree": "6ee25a2214c71184654eec649259c1cfef052398",
+    "implementation_handoff_path": "experiments/configs/cata_raid_v100_checkpoint_production_boundary_repair_handoff_v101.json",
+    "implementation_handoff_sha256": "0fe75c3f0b03c9c9f6058d7d5eb94b64326b19ac3b8d14c5d5ee038be1a607f2",
+    "reviewed_head": "fa283824964573ca12aabd8a827d4413cf754fd1"
+  },
+  "scope_lock": {
+    "owned_behavior": "independent review of the active-Route-only Chainwielder checkpoint trigger, shared lifecycle transition, native status receipt, and live capture consumer",
+    "excluded": [
+      "gameplay, geometry, planner, destination, priority, encounter, class, DPS, and ordinary retry changes",
+      "build, worldserver, authserver, provisioning, database, DVC, recurrence-bank execution, and live claims"
+    ]
+  },
+  "changed_files": [
+    "experiments/configs/cata_raid_v101_checkpoint_production_boundary_independent_review_handoff_v102.json",
+    "experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "first_broken_edge_before": "V99 could trigger from an armed Route-hazard retry without an active actor-bound Route path, while the live capture scheduler accepted an underspecified terminal summary.",
+  "implemented_hypothesis": "V100 requires the actor/attempt/wipe/generation/node-bound active Route producer, executes shared production-used injection and next-tick transitions, exposes the full native lifecycle, and requires that exact lifecycle before release.",
+  "validation": {
+    "review_verdict": "code_boundary_pass",
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py tests/test_chainwielder_prestart_bundle.py::test_launch_contract_is_exact_one_start_completion_watchdog tests/test_phase1_raid_foundation_capture.py::test_generic_controller_route_hold_scheduler_exact_production_transcript tests/test_phase1_raid_foundation_capture.py::test_generic_controller_route_hold_rejects_inexact_terminal_lifecycle tests/test_phase1_raid_foundation_capture.py::test_generic_controller_route_hold_scheduler_extraction_is_bounded tests/test_phase1_raid_foundation_capture.py::test_generic_controller_route_hold_scheduler_rejects_old_poll_race tests/test_phase1_raid_foundation_capture.py::test_generic_controller_route_hold_scheduler_negative_protocol_edges",
+    "focused_result": "12 passed in 1.91s",
+    "focused_run_count": 1,
+    "review_close_rerun_count": 0,
+    "scheduler_exact_lifecycle_enforcement": {
+      "injection_count": 1,
+      "triggered_by_active_route_path": true,
+      "triggered_by_armed_route_hazard_retry": false,
+      "planner_receipt_id": 0,
+      "movement_owner": "hazard",
+      "gate": "future_pack_destination",
+      "reason": "route_destination_future_pack_unsafe",
+      "before_after_route_identity": "identical",
+      "terminal_outcome": "route_identity_preserved_after_receiptless_hazard_rejection"
+    },
+    "ccn": {
+      "SelectInjectionTrigger": 9,
+      "ObserveInjectionBoundary": 6,
+      "ObserveSubsequentTickBoundary": 3,
+      "MaybeInjectChainwielderOwnerCheckpointAfterUpdate": 24,
+      "ObserveChainwielderOwnerCheckpointBeforeUpdate": 6,
+      "tool": "lizard 1.17.31 via pixi exec"
+    },
+    "source_lines": {
+      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h": 709,
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 871,
+      "tools/raid_program/controller_route_hold.py": 545
+    },
+    "descriptor_validation": {
+      "command": "pixi run python -m tools.raid_program.raid_workloop status",
+      "reviewed_at_commit": "fa283824964573ca12aabd8a827d4413cf754fd1",
+      "descriptor_valid": true,
+      "issues": [],
+      "correction": "validation_clock policy corrected from completion-watchdog to completion_watchdog"
+    },
+    "build": "forbidden_not_run",
+    "live_run": "forbidden_not_run",
+    "database": "unchanged",
+    "dvc": "unchanged"
+  },
+  "claim_ledger": {
+    "verified": [
+      "only a matching actor/attempt/wipe/generation/node-bound active Route path with native Route motion can trigger",
+      "an armed Route-hazard retry alone cannot trigger",
+      "accepted Hazard/Hazard movement cannot trigger",
+      "the live ControllerRouteHoldScheduler rejects any partial, failed, altered, or identity-changing lifecycle before release",
+      "the compiled focused fixture executes the production-used SelectInjectionTrigger, ObserveInjectionBoundary, and ObserveSubsequentTickBoundary helpers",
+      "all touched C++ files remain below 1000 physical lines",
+      "the source-only executor wiring test is now named as source wiring rather than execution proof"
+    ],
+    "refuted": [
+      "a completed-or-failed terminal summary without the exact lifecycle is acceptable",
+      "the compiled value fixture executes the native movement executor"
+    ],
+    "unproven": [
+      "native ExecuteMovementIntent, MovementPlannerDiagnostics, and MotionMaster execution on a built worldserver",
+      "an exact-current full recurrence-bank receipt",
+      "map-669 or Magmaw gameplay outcome"
+    ]
+  },
+  "evidence_paths": [
+    "experiments/configs/cata_raid_v100_checkpoint_production_boundary_repair_handoff_v101.json",
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "tests/test_phase1_raid_foundation_capture.py"
+  ],
+  "dvc_publication": {
+    "required": false,
+    "reason": "read-only source review produced no experiment payload"
+  },
+  "remaining_blocker": "An exact-current full recurrence-bank receipt must pass and be evaluated before any separately authorized build or live replay.",
+  "next_work_unit": {
+    "id": "evidence:chainwielder_checkpoint_full_recurrence_bank_v102",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Run the immutable Magmaw regression bank once at the exact clean current identity, verify the suite receipt and build-gate decision, and return a compact tracked handoff. One correction rerun is allowed only for a defect in the receipt invocation or output contract.",
+    "build_authorization": false,
+    "live_authorization": false
+  }
+}
