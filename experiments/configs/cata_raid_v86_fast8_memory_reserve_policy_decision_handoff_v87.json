@@ -1,0 +1,95 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:review_v85_fast8_memory_reserve_abort_v86",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "affordable_gate_bearing_policy_selected",
+  "source": {
+    "commit": "888f05ef151edfb63179376aa847c5bcbc095a0d",
+    "tree": "268f691b381260045ae848c1b0cf74c09a402cc5",
+    "v85_handoff": "experiments/configs/cata_raid_v85_fast8_memory_reserve_prestart_failed_handoff_v86.json",
+    "v85_handoff_sha256": "2428edc0ad689448118fa88b3c51779d6582580aae2922ab360a9ec41eb3d9c1"
+  },
+  "authenticated_v85_evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_4818e80873_v85_fast8_memory_reserve_prestart_failed_20260830.dvc",
+    "dvc_pointer_sha256": "fe9175ead78e4f33b7f035eb128a79c6bed7d6cd5824881164ff6ff77c229024",
+    "dvc_directory_md5": "a16d8f78a8fd7eff189a2a7ec9317b7d.dir",
+    "worldserver_build_receipt_sha256": "18441ea0da31ca174a2e9a4109765f2474453c1c375c1375e1029b3997ea8bfa",
+    "summary_sha256": "0b6fb75521b010ff2151186bc0ce2983579cc60365f98f9682d9b3e4563cf279",
+    "remote_reconstruction": "verified_by_v85_and_rehydrated_for_v86_review",
+    "workspace_eviction": "verified_after_v86_review"
+  },
+  "resource_findings": {
+    "compiler_job_ceiling": 8,
+    "linker_job_ceiling": 1,
+    "actual_peak_compiler_concurrency": null,
+    "actual_peak_concurrency_evidence": "The receipt retains the eight-job ceiling but not a process-count series. The termination log proves at least three compiler outputs were in flight; an exact peak is not claimed.",
+    "memory_total_bytes": 32513720320,
+    "preflight_memory_available_bytes": 14060388352,
+    "minimum_memory_available_bytes": 9468084224,
+    "preflight_swap_used_bytes": 4957310976,
+    "maximum_swap_used_bytes": 5105897472,
+    "swap_growth_bytes": 148586496,
+    "maximum_memory_psi_some_avg10": 0.0,
+    "maximum_memory_psi_full_avg10": 0.0,
+    "maximum_load_average_1m": 8.6474609375,
+    "sample_count": 261,
+    "fast8_v2_reserve_bytes": 9754116096,
+    "minimum_below_v2_reserve_bytes": 286031872,
+    "minimum_above_hard_8gib_reserve_bytes": 878149632,
+    "pressure_reasons": [
+      "memory_reserve"
+    ]
+  },
+  "policy_decision": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast8_v3.json",
+    "file_sha256": "579749fcc7c6046beff04d7b181c2fd105c0c8901cc6c9824779a59e2464a1bb",
+    "semantic_sha256": "9aa635868fa94f4e5893d59cab349e79f7fbd3ec58c1f3076c1d34853cebba41",
+    "policy_id": "cata_raid_build_resource_policy_fast8_v3",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "minimum_memory_available_gib": 8,
+    "minimum_memory_available_fraction": 0.25,
+    "effective_reserve_on_v85_host_bytes": 8589934592,
+    "unchanged_guards": [
+      "512 MiB swap growth per compiler job",
+      "10 percent memory PSI some avg10",
+      "5 percent memory PSI full avg10",
+      "load average 1m maximum 9",
+      "20 GiB filesystem reserve",
+      "three sustained unsafe samples at 0.5-second cadence",
+      "single-linker lock, Release -O1, no unity build, no PCH, low-memory linking"
+    ],
+    "rationale": "V85 retained 8.82 GiB available memory, zero PSI, and only 141.70 MiB swap growth. The 30% reserve, not observed OOM pressure, terminated the build. The evidence therefore supports retaining eight compiler jobs and the hard 8 GiB reserve rather than reducing parallelism."
+  },
+  "successor_budget": {
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_count_maximum": 0,
+    "exact_clean_identity_required": true,
+    "stale_v85_binary_reuse": false
+  },
+  "operations": {
+    "configure_or_build": 0,
+    "worldserver_start": 0,
+    "database_mutation": 0,
+    "gameplay_mutation": 0,
+    "dvc_publication": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "V85 was killed solely by the 30%-of-RAM memory reserve after three sustained samples",
+      "V85 retained more than 8 GiB available memory with zero memory PSI and bounded swap growth",
+      "the evidence does not justify lowering compiler parallelism below eight",
+      "fast8_v3 changes only the fractional reserve from 0.30 to 0.25 while preserving the hard 8 GiB reserve and all other fast8_v2 controls"
+    ],
+    "unproven": [
+      "the exact peak compiler process concurrency in V85",
+      "fast8_v3 produces a gate-bearing binary at the successor clean identity",
+      "the map-669 fixture replay and requested revisions 4/5/5",
+      "any gameplay canary or boss outcome"
+    ]
+  },
+  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v87",
+  "next_owner_skill": "raid-shard-architecture"
+}
