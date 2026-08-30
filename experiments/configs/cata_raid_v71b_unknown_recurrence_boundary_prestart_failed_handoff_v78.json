@@ -1,0 +1,132 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:bind_v71b_recurrence_boundary_and_remote_reconstruction_v78",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_prestart_evidence_verified",
+  "source": {
+    "commit": "f0eef225c296c5cbcf76a504c31482b904712a04",
+    "tree": "c6fcd13fd82d0c01192df6002a6b4fb86d07476d",
+    "source_handoff": "experiments/configs/cata_raid_derived_runtime_config_bundle_independent_review_handoff_v77.json",
+    "source_handoff_sha256": "9c99d7fc86bfe663708d64f28207aa483963496c9d739334fbf8da833314ff0b"
+  },
+  "failed_attempt": {
+    "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
+    "classification": "recurrence_suite_boundary_run_id_unbound",
+    "rejected_boundary_run_id": "trinity-map669-f0eef225c2-v71b-fixture-expansion.attempt1",
+    "first_broken_edge": "The replay supplied an invented run_id that is absent from the immutable recurrence ledger, so the fixed suite rejected before producing a receipt or decision.",
+    "failure_postcondition": "No runtime-config derivation, bundle, retained-roster readback, database mutation, worldserver start, gameplay mutation, fixture promotion, or replay receipt occurred.",
+    "consumed_budget": {
+      "configure": "1/1 success",
+      "worldserver_build": "1/1 success",
+      "recurrence_suite_invocation": "1/1 failed_closed",
+      "runtime_config_derivation": "0/1",
+      "atomic_bundle_create": "0/1",
+      "worldserver_start": "0/1",
+      "retry": "0/0"
+    }
+  },
+  "authoritative_recurrence_boundary": {
+    "ledger_path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "ledger_sha256": "27439db79d9fe4310dabe6f2481f6773b33dd7c8b7a06640ca122c363f9beb08",
+    "run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+    "side": "after",
+    "run_index_is_existing": true,
+    "run_source_identity": "2bfbd48bdafae41950fbfcaaf26df6f70a3784a3",
+    "admitted_fixture_revisions": {
+      "same_level_floor_observation_v1": 3,
+      "same_level_hazard_path_admission_v1": 4,
+      "same_level_native_path_proof_v1": 4
+    },
+    "invalidating_occurrences": {
+      "same_level_movement_path_floor_false_negative": "occurred",
+      "same_level_encounter_hazard_path_rejection": "occurred",
+      "same_level_native_path_proof_false_negative": "occurred"
+    },
+    "ledger_mutation": false,
+    "fixture_revision_promotion": false,
+    "reason": "This exact existing run contains all three invalidating occurrences while admitting revisions 3/4/4; an after boundary correctly places the requested 4/5/5 suite verification after those occurrences."
+  },
+  "build_receipt_disposition": {
+    "prior_configure_ticket_id": "raid-build-d1a3a4c38b8b465694681071360b86a1",
+    "prior_worldserver_ticket_id": "raid-build-2b402ddce1d74fe588ecffd11845ad46",
+    "prior_worldserver_receipt_sha256": "9cab3d5c4560c7fc41426266df4614010b0817825a9ffeb18f1d193cd9c13b19",
+    "prior_binary_sha256": "1f291af0ec9cbb0358713ce2177ddaefe6c5c7692fdf8f6adbe8c4a0710a52ad",
+    "prior_source_commit": "f0eef225c296c5cbcf76a504c31482b904712a04",
+    "gate_bearing": true,
+    "reusable_by_successor": false,
+    "reason": "capture admission requires build_receipt.commit to equal the successor's exact clean Git HEAD. Committing this V78 evidence and descriptor changes HEAD, so the prior receipt cannot be reused without weakening the build contract.",
+    "successor_budget": "one new queued fast8 configure and one new queued fast8 worldserver build, with 8 compiler jobs and 1 linker"
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_f0eef225c2_v71b_unknown_boundary_prestart_failed_20260830.dvc",
+    "pointer_sha256": "e829218acac7f8b577e22acdea49056f142879a5f514182f3590aa0327a38935",
+    "directory_md5": "174d986f75eb96bff8b69cc6dc664c2c.dir",
+    "directory_manifest_sha256": "462db6dc21f37de33e0b3ea706e310edc40dedb945d1f04f667c60be4b52ee46",
+    "file_count": 11,
+    "size_bytes": 63804,
+    "inventory_sha256": "9132e4851da223a5205230386d94e2bd82635cd325c086126fc22d84c3fdc9a5",
+    "push_result": "9 files pushed by the failed replay owner",
+    "remote_status": "in_sync",
+    "remote_reconstruction_verified": true,
+    "verification_context": "fresh local clone, isolated DVC cache, and a copied .dvc/config.local used only in the temporary clone; credentials were neither printed nor committed",
+    "per_file_md5_verified": true,
+    "workspace_evicted": true,
+    "evicted_files": 11,
+    "evicted_bytes": 63804,
+    "recoverable_from_dvc": true,
+    "cache_eviction": "not performed; only the exact published workspace payload was removed"
+  },
+  "preserved_successor_contract": {
+    "requested_fixture_revisions": {
+      "same_level_floor_observation_v1": 4,
+      "same_level_hazard_path_admission_v1": 5,
+      "same_level_native_path_proof_v1": 5
+    },
+    "runtime_config_authority": "tracked_derived_runtime_config_v1 accepted by V77",
+    "operation": "one observation-only map-669 correlated fixture-expansion replay",
+    "worldserver_start_maximum": 1,
+    "retry_count_maximum": 0,
+    "fixed_success_timer_seconds": null,
+    "gameplay_mutation": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "Canary122 is the exact existing immutable after-boundary for the three requested fixture expansions",
+      "the boundary run contains all three invalidating occurrences and admitted revisions 3/4/4",
+      "the failed attempt stopped before runtime config bundle database worldserver or gameplay",
+      "the already-pushed DVC directory reconstructed byte-for-byte from an isolated authenticated context and its exact local payload was evicted",
+      "the prior build is gate-bearing but cannot be reused after the V78 commit because strict capture admission binds receipt commit to current HEAD"
+    ],
+    "refuted": [
+      "the invented map669 attempt run_id was a valid recurrence boundary",
+      "the first V71b attempt exercised or promoted revisions 4/5/5",
+      "the published failed-prestart evidence remains unverified remotely or resident as a workspace payload",
+      "reusing the f0eef225c2 build receipt at the successor descriptor commit preserves exact build identity"
+    ],
+    "unproven": [
+      "same_level_floor_observation_v1 revision 4",
+      "same_level_hazard_path_admission_v1 revision 5 complete and incomplete Hazard paths",
+      "same_level_native_path_proof_v1 revision 5",
+      "cross-floor and forbidden no-launch negatives",
+      "any map-669 replay or gameplay outcome after V78"
+    ]
+  },
+  "operations": {
+    "ledger_append": 0,
+    "fixture_revision_promotion": 0,
+    "configure_or_build": 0,
+    "bundle": 0,
+    "database_mutation": 0,
+    "worldserver_start": 0,
+    "gameplay_mutation": 0,
+    "dvc_remote_pull": 1,
+    "dvc_exact_workspace_eviction": 1
+  },
+  "next_work_unit": {
+    "id": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_bound_v79",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "At the exact clean descriptor commit, run the fixed suite with boundary run_id trinity-magmaw-2bfbd48bda-canary122.y7Jn38 and side after, then use one new exact-current fast8 build, the V77 tracked-derived runtime-config authority, and one no-retry completion-watchdog map-669 start to capture only revisions 4/5/5.",
+    "live_authorized": true,
+    "gameplay_canary_admitted": false
+  }
+}
