@@ -461,6 +461,7 @@
           "revision": 7,
           "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
           "passed_after_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+          "evidence": "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths",
           "source_identity": "acaeaf9f2682b18765ec357121b38d0efbccaa8a"
         },
         {
@@ -468,6 +469,7 @@
           "revision": 6,
           "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
           "passed_after_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+          "evidence": "tests/test_magmaw_parasite_policy.py::test_magmaw_lane_transition_replays_selection_to_reset",
           "source_identity": "acaeaf9f2682b18765ec357121b38d0efbccaa8a"
         }
       ]
@@ -484,6 +486,7 @@
           "revision": 6,
           "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
           "passed_after_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+          "evidence": "tests/test_magmaw_parasite_policy.py::test_magmaw_containment_replays_full_runtime_contract",
           "source_identity": "acaeaf9f2682b18765ec357121b38d0efbccaa8a"
         }
       ]
