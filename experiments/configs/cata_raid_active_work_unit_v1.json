@@ -1,152 +1,69 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "shared_planner_map669_selector_bound_v91_20260830",
-  "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v91",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "live_recurrence_quarantined",
-  "gate_state": "fixture_expansion_admitted_route_selector_bound_fresh_identity_replay",
-  "observed_at_commit": "0ad351fc64ffddfb2cd36e246517402896c6c87d",
-  "immutable_input_commit": "0ad351fc64ffddfb2cd36e246517402896c6c87d",
+  "epoch_id": "v91_checkpoint_composite_target_prestart_failed_20260830",
+  "work_unit": "evidence:bind_composite_fixture_targets_to_checkpoint_arm_v92",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed",
+  "gate_state": "fixture_replay_prestart_rejected_composite_checkpoint_targets",
+  "observed_at_commit": "99fa70852043878200d25f9f31a4b1eb0eb3d305",
+  "immutable_input_commit": "99fa70852043878200d25f9f31a4b1eb0eb3d305",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v90_canonical_route_selector_binding_handoff_v91.json",
-    "sha256": "d79e7dd2b3cbeb8d6b20af60a83ae793932dbf33ba9522d6c4cd30bf0d56d097",
-    "source_commit": "0ad351fc64ffddfb2cd36e246517402896c6c87d"
+    "path": "experiments/configs/cata_raid_v91_checkpoint_composite_target_prestart_failed_handoff_v92.json",
+    "sha256": "096ad638bfdef2783c1b2f95b0aa06490abf7f0f71f049bdbcc6758093bbe238",
+    "source_commit": "99fa70852043878200d25f9f31a4b1eb0eb3d305"
   },
   "program_scope": {
-    "operation": "one fresh clean-identity worldserver-backed map-669 correlated fixture replay using the verified single-scenario route selector",
-    "admission_scope": "fixture_expansion_replay",
+    "operation": "repair only the capture checkpoint-arm predicate for a verified composite fixture-expansion target set",
     "gameplay_canary_admitted": false,
+    "fixture_expansion_replay_admitted": false,
+    "build_admitted": false,
+    "worldserver_start_admitted": false,
     "gameplay_mutations_allowed": false,
-    "runtime_implementation_allowed": false,
     "database_mutations_allowed": false
   },
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": true,
+  "evidence_contract_change": true,
+  "ready_for_bounded_repair": true,
+  "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "recurrence_boundary": {
-    "ledger_path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "ledger_sha256": "2997dc762e11767ce665f6f7e49ea8ae37a07b88939c548ab65d43185ed72223",
-    "run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
-    "side": "after",
-    "admitted_revisions_at_boundary": {
-      "same_level_floor_observation_v1": 3,
-      "same_level_hazard_path_admission_v1": 4,
-      "same_level_native_path_proof_v1": 4
-    },
-    "requested_revisions": {
-      "same_level_floor_observation_v1": 4,
-      "same_level_hazard_path_admission_v1": 5,
-      "same_level_native_path_proof_v1": 5
-    },
-    "ledger_append_allowed": false,
-    "fixture_promotion_before_replay_allowed": false
-  },
   "scope_lock": {
-    "allowed_change": "Run the exact recurrence gate, one fresh fast8_v4 build, tracked config derivation, canonical catalog staging, one selector materialize and verify, one atomic bundle, one strict retained-roster readback, and at most one completion-watchdog map-669 fixture replay. Publish bounded evidence only.",
-    "required_production_boundary": [
-      "one same-level SampleFloorGap receipt correlated through native submission and terminal outcome or supersession",
-      "Hazard complete and incomplete paths through MotionMaster, point generator, launched spline, and multi-tick outcome",
-      "cross-floor and forbidden-path negatives rejected before MotionMaster launch",
-      "continuous receipt, bot, owner, intent, actor XYZ, spline, floor, and outcome correlation"
-    ],
-    "required_order": [
-      "verify clean descriptor identity and run the recurrence suite once",
-      "configure and build once under fast8_v4; require an exact-current gate-bearing receipt",
-      "derive and verify the V77 tracked runtime config",
-      "stage the authenticated canonical catalog",
-      "materialize and verify one Magmaw scenario route object using route_selector_authority",
-      "pass only the verified selector output object and SHA-256 to one atomic bundle",
-      "perform one strict retained-roster readback without DB mutation",
-      "start one completion-watchdog map-669 replay without retry",
-      "publish, remotely reconstruct, verify, and exactly evict bounded evidence"
+    "allowed_change": "Permit the sealed Chainwielder checkpoint arm when its exact fixture ID is present in a verified composite fixture-expansion target list, while preserving every other admission, seal, actor, source, and target identity check. Add one focused production-controller fail-before/pass-after test.",
+    "allowed_files": [
+      "tools/raid_program/capture_checkpoint_controller.py",
+      "one focused existing controller test file",
+      "one compact handoff",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
     "forbidden": [
-      "passing the staged JSONL catalog as the bundle route manifest",
-      "reusing the V89 binary or receipt after the V90 commit",
-      "second configure, build, selector, bundle, server start, or retry",
-      "gameplay canary, boss claim, runtime, planner, encounter, class, route-content, test, threshold, tolerance, or workflow change",
-      "DB mutation, roster reprovisioning, authserver, forced outcome, or fixed 300-second raid timer"
+      "build, bundle, readback, worldserver, authserver, database, or gameplay action",
+      "planner, movement, encounter, class, route-content, threshold, tolerance, recurrence-ledger, or selector change",
+      "dropping target identity, checkpoint membership, seal, actor, source, purpose, or admission validation"
     ]
   },
-  "route_selector_authority": {
-    "catalog_stage": "validation_scenarios",
-    "catalog_member": "validation_routes.jsonl",
-    "catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
-    "selected_scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "materialize_callable": "tools.raid_program.canonical_route_catalog.materialize_scenario_route_manifest",
-    "verify_callable": "tools.raid_program.canonical_route_catalog.verify_scenario_route_manifest_receipt",
-    "materialize_input_receipt": "canonical_stage_result.receipt_path + canonical_stage_result.receipt_sha256",
-    "verify_input_receipt": "materialize_result.receipt_path + materialize_result.receipt_sha256 + canonical_stage_result.receipt_sha256",
-    "bundle_route_manifest": "verified_selector_receipt.output_object_path",
-    "bundle_route_manifest_sha256": "verified_selector_receipt.output_object_sha256",
-    "expected_selected_row_count": 4,
-    "expected_selected_rows_sha256": "b47a63e9a45ea351da40e4a53b7df0cef7e3f9092f1b965aa2dc506bb2e85cda",
-    "expected_route_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"
-  },
-  "build_authority": {
-    "policy_path": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
-    "policy_file_sha256": "06847f4cc78b6b3b2e13dd6ecb60e7a2810a44adc35e4107cb9b7cd611286d74",
-    "policy_sha256": "5a29ebfbcd3d56b0a8c04f2634dd570a2edd5668f4f6e4b7243d79b36646151a",
-    "policy_id": "cata_raid_build_resource_policy_fast8_v4",
-    "compiler_jobs": 8,
-    "linker_jobs": 1,
-    "reuse_authorized": false,
-    "fresh_exact_current_build_required": true,
-    "v89_binary_sha256_is_provenance_only": "95e538e5e9d20f03835cc330296e860f36537e0c81d47d97cc3584958ce33fe5"
-  },
-  "runtime_config_authority": {
-    "authority": "tracked_derived_runtime_config_v1",
-    "review_handoff": "experiments/configs/cata_raid_derived_runtime_config_bundle_independent_review_handoff_v77.json",
-    "review_handoff_sha256": "9c99d7fc86bfe663708d64f28207aa483963496c9d739334fbf8da833314ff0b",
-    "contract_path": "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json",
-    "contract_sha256": "f62e93e740981b255adacd49311abe195f9c254cc15afe078a71e274244d8972",
-    "expected_output_length": 156488,
-    "expected_output_sha256": "1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8"
+  "v91_terminal": {
+    "reason": "checkpoint_arm:checkpoint_verified_admission_invalid",
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "retries": 0,
+    "evidence_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_99fa708520_v91_checkpoint_composite_target_prestart_failed_20260830.dvc",
+    "evidence_pointer_sha256": "7ebe9d5291d8b073e7b5a4605234c956fe511c5c400d99ef5f98564b4367f9a8",
+    "remote_reconstruction": "verified"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "emergency_wall_clock_is_success": false,
     "terminal_edges": [
-      "all_requested_fixture_receipts_captured",
-      "build_resource_abort",
-      "route_selector_identity_mismatch",
-      "atomic_bundle_failure",
-      "production_boundary_incomplete",
-      "semantic_or_no_progress_stall",
-      "identity_or_runtime_config_mismatch",
-      "infrastructure_loss",
-      "explicit_interruption"
+      "focused_controller_test_pass",
+      "focused_controller_test_fail",
+      "scope_violation"
     ]
   },
-  "execution_budget": {
-    "recurrence_suite_invocation_count_maximum": 1,
-    "configure_count_maximum": 1,
-    "worldserver_build_count_maximum": 1,
-    "runtime_config_derivation_count_maximum": 1,
-    "canonical_route_stage_count_maximum": 1,
-    "prepared_route_object_count_maximum": 1,
-    "selector_receipt_verify_count_maximum": 1,
-    "atomic_bundle_create_count_maximum": 1,
-    "atomic_bundle_verify_count_maximum": 1,
-    "strict_retained_roster_readback_count_maximum": 1,
-    "worldserver_start_count_maximum": 1,
-    "retry_after_attempt_count_maximum": 0,
-    "database_mutation": "forbidden",
-    "dvc_checkpoint_count_maximum": 1,
-    "dvc_push_count_maximum": 1,
-    "dvc_remote_reconstruction_count_maximum": 1,
-    "dvc_exact_eviction_count_maximum": 1
-  },
   "remaining_unproven": [
-    "a fresh V91 gate-bearing current binary and authenticated atomic bundle",
-    "map-669 revisions 4/5/5 and required negative production boundaries",
+    "map-669 revisions 4/5/5 and required negative outcomes",
     "any gameplay canary or boss outcome"
   ],
-  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v91",
-  "next_owner_skill": "raid-shard-architecture",
-  "next_action": "Run one clean-identity fast8_v4 build and one no-retry completion-watchdog map-669 fixture replay using the verified selector output object as the bundle route input."
+  "next_work_unit": "evidence:bind_composite_fixture_targets_to_checkpoint_arm_v92",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Repair and test only the composite-target checkpoint-arm admission predicate; do not build or start a server."
 }

@@ -1,0 +1,73 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v91",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "prestart_checkpoint_composite_target_rejected",
+  "source": {
+    "commit": "99fa70852043878200d25f9f31a4b1eb0eb3d305",
+    "tree": "c930d9c77a5fe308dfd2ea7db0a89679876cc610",
+    "clean": true
+  },
+  "passed_gates": {
+    "recurrence_suite": "20/20",
+    "fixture_expansion_admitted": true,
+    "fresh_fast8_v4_build_gate_bearing": true,
+    "binary_sha256": "5509f0a0cb1da781ddd1e7903e607098def054a74083644e947aec40c638f64f",
+    "tracked_runtime_config_verified": true,
+    "canonical_catalog_and_selector_verified": true,
+    "route_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "atomic_bundle_verified": true,
+    "strict_retained_roster_readback": true
+  },
+  "first_broken_edge": {
+    "stage": "capture_checkpoint_arm_preflight",
+    "result": "checkpoint_arm:checkpoint_verified_admission_invalid",
+    "observed_contract": "fixture_expansion_target_ids contains Chainwielder plus same_level_floor_observation_v1, same_level_hazard_path_admission_v1, and same_level_native_path_proof_v1",
+    "rejecting_predicate": "chainwielder_checkpoint_arm_command requires fixture_expansion_target_ids to equal only [chainwielder_pre_admission_rejection_isolation_v1]",
+    "worldserver_spawned": false
+  },
+  "operations": {
+    "recurrence_suite_invocations": 1,
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "runtime_config_derivation_count": 1,
+    "canonical_route_stage_count": 1,
+    "prepared_route_object_count": 1,
+    "selector_receipt_verify_count": 1,
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_verify_count": 1,
+    "strict_retained_roster_readback_count": 1,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "retry_count": 0,
+    "database_mutation_count": 0,
+    "gameplay_mutation_count": 0
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_99fa708520_v91_checkpoint_composite_target_prestart_failed_20260830.dvc",
+    "dvc_pointer_sha256": "7ebe9d5291d8b073e7b5a4605234c956fe511c5c400d99ef5f98564b4367f9a8",
+    "dvc_directory_md5": "c9e57388af2b991897e91d40958a8e1f.dir",
+    "file_count": 29,
+    "size_bytes": 1169214,
+    "remote_reconstruction_manifest_sha256": "d663e3ce8327f3b8349aee70933310c55ee0102668ab40021e5f99fb57e201ca",
+    "remote_reconstruction": "verified"
+  },
+  "claim_ledger": {
+    "verified": [
+      "all V91 prestart identities and the retained roster were valid",
+      "the capture controller rejected the valid composite fixture target set before spawning worldserver",
+      "no process, database, or gameplay cleanup was required"
+    ],
+    "refuted": [
+      "V91 reached the map-669 production fixture boundary",
+      "the selector or atomic bundle remained the blocker"
+    ],
+    "unproven": [
+      "map-669 revisions 4/5/5 and required negative outcomes",
+      "any gameplay canary or boss result"
+    ]
+  },
+  "next_work_unit": "evidence:bind_composite_fixture_targets_to_checkpoint_arm_v92",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Repair only the capture-controller admission predicate so the sealed Chainwielder arm remains valid when its target is present in an otherwise verified composite fixture-expansion set; preserve exact target identities and add one focused fail-before/pass-after controller test."
+}
