@@ -1,70 +1,120 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "chainwielder_checkpoint_exact_owner_sequence_independent_review_v54_20260830",
-  "work_unit": "evidence:chainwielder_checkpoint_exact_owner_sequence_independent_review_v54",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "fixture_green_pending_independent_review",
-  "gate_state": "v53_exact_compiled_owner_sequence_green_no_live_authorization",
-  "observed_at_commit": "ebc7078c3e586c525cd7e31e5617a7857632523a",
+  "epoch_id": "chainwielder_checkpoint_immutable_profile_one_build_one_live_v55_20260830",
+  "work_unit": "shard:chainwielder_checkpoint_immutable_profile_one_build_one_live_v55",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
+  "gate_state": "v54_exact_production_owner_sequence_independently_verified",
+  "observed_at_commit": "03911910c6135262d140dbd75467b55cdf50ce17",
+  "immutable_input_commit": "03911910c6135262d140dbd75467b55cdf50ce17",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_exact_owner_sequence_fixture_handoff_v53.json",
-    "sha256": "f107b841a9a910ad72ed360f92bd87c73065bd64f38084cf94d26c114a160806",
-    "source_commit": "self"
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_exact_owner_sequence_review_handoff_v54.json",
+    "sha256": "11a7afa22ed7ce5bc178c48cac810409315ff89665ed2d1da832b18474eb0b63",
+    "source_commit": "03911910c6135262d140dbd75467b55cdf50ce17"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
-    "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "Actor 30008 and Chainwielder are retained evidence identities only; no production or review branch may depend on them."
+    "supported_modes": [
+      "10N",
+      "10H",
+      "25N",
+      "25H"
+    ],
+    "canary_only": "V55 is one bounded recording-enabled Magmaw diagnostic recurrence. It cannot promote a fixture result to universal runtime or gameplay closure."
   },
   "behavior_change": false,
   "evidence_contract_change": false,
   "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": false,
+  "ready_for_live_verification": true,
   "scope_lock": {
-    "allowed_change": "Independently verify V53 source hashes, the shared admitted-identity selector, exact compiled causal order, unchanged comparisons, and focused results; emit a separate build/live admission or typed rejection.",
+    "allowed_change": "At the exact clean descriptor commit, perform exactly one queued fast8_v2 worldserver build, with at most one matching configure only if required for exact queue provenance, one authenticated bundle create/verify, and at most one no-retry completion-watchdog live start. Close through verified DVC publication, remote reconstruction, and exact eviction.",
+    "allowed_files": [
+      "one_compact_live_handoff",
+      "exact_dvc_evidence_pointer_and_required_lock_update",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
+    ],
+    "required_before_start": [
+      "exact clean descriptor commit and tree",
+      "one successful gate-bearing fast8_v2 build receipt with equal clean request admission and completion source identities",
+      "fresh strict readback of the retained frozen roster and zero prestart residue",
+      "one authenticated prepared-route bundle create and explicit verify binding the exact new binary config route profile seal admission and completion-watchdog launch contract"
+    ],
+    "required_live_sequence": [
+      "two stable recording-enabled Held status projections retain the admitted runtime profile while experiment name is autonomy_window_0",
+      "exactly one arm command receives exactly one arm acknowledgement",
+      "ordinary route advance remains suppressed before an identity-preserved terminal",
+      "exactly one release acknowledgement follows the terminal",
+      "ordinary post-release route advance occurs or a typed earlier fail-closed edge is retained",
+      "completion ends on a typed completion-watchdog edge rather than a fixed raid timer"
+    ],
+    "required_after_terminal": [
+      "retain raw lifecycle bytes before normalization and classify every row",
+      "preserve first broken edge separately from terminal edge",
+      "DVC-publish the immutable evidence and compact handoff",
+      "verify remote reconstruction exact counts sizes hashes and targeted DVC status",
+      "exactly evict only published local payloads after remote reconstruction succeeds",
+      "recheck zero worldserver and capture processes Git status DVC status and disk cleanup"
+    ],
     "forbidden": [
-      "native_runtime_gameplay_or_comparison_change",
-      "source_string_only_behavior_acceptance",
-      "python_controller_polling_timeout_retry_or_threshold_change",
-      "configure_build_or_worldserver_start",
-      "database_or_dvc_mutation",
-      "fixture_or_canary_promotion"
+      "implementation_gameplay_controller_route_content_skill_or_test edit",
+      "profile_scenario_pool_route_actor_fixture_seal_source_binary_or_hold_identity comparison weakening",
+      "second_build_bundle_create_verify_worldserver_start_or_retry",
+      "polling_watchdog_timeout_or_threshold change",
+      "fixed_300_second_raid_success_timer",
+      "local_evidence_eviction_before_verified_remote_reconstruction",
+      "fixture_or_single_live_result_promotion_to_closed"
     ]
   },
-  "admitted_actions": {
-    "validation": "handoff_hash_source_owner_sequence_and_focused_fixture_review_only",
-    "configure_count_maximum": 0,
-    "worldserver_build_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
-    "database_mutation": "forbidden",
-    "dvc_mutation": "forbidden"
-  },
-  "required_contract": {
-    "recording_after_complete_acquire": true,
-    "stable_status_observation_count": 2,
-    "production_value_selector": "BotControllerRouteHold::AdmittedIdentity",
-    "manual_arm_profile_population": false,
-    "checkpoint_arm_acknowledgement_count": 1,
-    "checkpoint_terminal_count": 1,
+  "closed_v54_evidence": {
+    "production_selector": "BotControllerRouteHold::AdmittedIdentity",
+    "selector_branch_count": 0,
+    "status_and_arm_share_selector": true,
+    "recording_name_mutation_after_acquire_replayed": true,
+    "stable_held_status_count": 2,
+    "legacy_mutable_name_rejected": true,
+    "production_selector_gate_accepted": true,
+    "arm_acknowledgement_count": 1,
+    "terminal_count": 1,
     "release_acknowledgement_count": 1,
-    "ordinary_route_advance_before_release": false,
-    "ordinary_route_advance_after_release": true,
-    "comparison_weakening": false
+    "post_release_route_advance": true,
+    "no_recording_path": "green",
+    "strict_identity_negative_matrix": "green",
+    "focused_result": "6 passed in 1.38s",
+    "comparison_weakening": false,
+    "current_source_binary_available": false
   },
   "remaining_unproven": [
-    "native build at the V53 implementation commit",
-    "one live recording-enabled Held and accepted arm sequence",
-    "identity-preserved terminal, release, and post-release route advance",
-    "gameplay and throughput outcomes"
+    "the exact reviewed source builds and completes one recording-enabled live lifecycle",
+    "native Held arm terminal release and post-release route identities",
+    "Chainwielder Drudges Magmaw DPS HPS or pet outcomes"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "raid_success_timer_seconds": null
+    "raid_success_timer_seconds": null,
+    "terminal_edges": [
+      "normal_clear",
+      "monotonic_semantic_or_no_progress_stall",
+      "repeated_decisions",
+      "excessive_death_loops",
+      "infrastructure_loss",
+      "contamination",
+      "explicit_interruption"
+    ]
   },
-  "next_work_unit": "evidence:chainwielder_checkpoint_exact_owner_sequence_independent_review_v54",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Review V53 without starting a server and issue a separate immutable build/live admission or typed rejection."
+  "verification_budget": {
+    "configure_count_maximum": 1,
+    "worldserver_build_count": 1,
+    "atomic_bundle_create_count_maximum": 1,
+    "atomic_bundle_verify_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_count_maximum": 0,
+    "database_mutation": "forbidden; fresh strict retained-roster readback only",
+    "dvc_mutation": "required after closure for publication remote reconstruction verification and exact eviction"
+  },
+  "next_work_unit": "shard:chainwielder_checkpoint_immutable_profile_one_build_one_live_v55",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run one exact fast8 build and at most one no-retry recording-enabled completion-watchdog recurrence, then DVC-publish, remotely reconstruct, verify, and exactly evict its evidence."
 }

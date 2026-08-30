@@ -1,0 +1,107 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:chainwielder_checkpoint_exact_owner_sequence_independent_review_v54",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "verified_build_live_admission_authorized",
+  "source_state": {
+    "reviewed_commit": "03911910c6135262d140dbd75467b55cdf50ce17",
+    "reviewed_tree": "15b4210450a9ba7bf5026f3bdf2b47dde807fd53",
+    "implementation_base_commit": "ebc7078c3e586c525cd7e31e5617a7857632523a",
+    "clean_before_review": true,
+    "v52_handoff_sha256": "1de5231283dd1ae7640880c4b35377f3cba537b53801f324661c2dc1fdd49d6c",
+    "v53_handoff_sha256": "f107b841a9a910ad72ed360f92bd87c73065bd64f38084cf94d26c114a160806"
+  },
+  "production_value_review": {
+    "selector": "BotControllerRouteHold::AdmittedIdentity",
+    "implementation": "branch-free const reference to State.Scope",
+    "scope_population": "State::CompleteAcquire validates complete identity and bootstrap core, then copies the admitted identity into Scope before entering Held",
+    "status_consumer": "BotWorldPopulationMgr::BuildControllerRouteHoldJson",
+    "arm_consumer": "BotWorldPopulationMgr::ArmChainwielderOwnerCheckpoint GateInput.AdmittedRuntimeProfile",
+    "mutable_name_dependencies": 0,
+    "config_or_metrics_name_drift_possible": false,
+    "manual_accepted_profile_injection_in_replay": false,
+    "comparison_weakening": false
+  },
+  "compiled_causal_replay": {
+    "exact_order_verified": [
+      "BeginAcquire and CompleteAcquire freeze admitted RuntimeProfile",
+      "first AdmittedIdentity status observation",
+      "BuildNameTransition changes mutable Config.Name-equivalent and Metrics.Name-equivalent to autonomy_window_0",
+      "second separated AdmittedIdentity observation equals the first",
+      "legacy mutable-name GateInput rejects with chainwielder_checkpoint_profile_identity_mismatch",
+      "production-used AdmittedIdentity selector supplies the accepted GateInput profile",
+      "early Release rejects with controller_route_hold_release_before_terminal",
+      "one AcknowledgeArm succeeds",
+      "one identity-preserved completed terminal succeeds",
+      "one Release succeeds",
+      "ordinary route generation two is admitted after release"
+    ],
+    "no_recording_path": "accepted through the same selector-built GateInput",
+    "gate_identity_negatives": "all selected/admitted profile, pool, scenario, route, actor-count, attempt, fixture, seal, source, and binary cases remain typed fail-closed",
+    "hold_identity_negatives": "all cohort, epoch, attempt, scenario, profile, route hash/generation/node, actor, fixture, seal, and source fields remain typed fail-closed"
+  },
+  "independent_validation": {
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "focused_result": "6 passed in 1.38s",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "implementation_hashes_match_v53": true,
+    "new_production_special_case_count": 0,
+    "complexity_effect": "one branch-free selector; no lifecycle or comparison branch added, removed, or moved",
+    "cpp_line_counts": {
+      "BotChainwielderOwnerCheckpoint.h": 596,
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 913,
+      "BotWorldPopulationMgrRecordingWindow.cpp": 89
+    },
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false,
+    "git_clean_after_review": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "AdmittedIdentity is the exact branch-free production value source shared by controller-hold status JSON and arm GateInput",
+      "the selector returns only the identity copied into Scope by successful CompleteAcquire and has no dependency on mutable Config.Name or Metrics.Name",
+      "the compiled replay executes the exact causal order with separated admitted-identity observations across the real recording transition",
+      "the legacy mutable name remains rejected while the production selector is accepted without manual admitted-profile substitution",
+      "one arm, typed terminal-gated release, one release, and post-release route advance occur in order; the no-recording path remains green",
+      "all strict gate and hold identity negatives remain typed fail-closed",
+      "the scoped diff adds no special case, comparison loosening, complexity regression, or C++ file over 1000 lines"
+    ],
+    "refuted": [
+      "status and arm can observe different admitted runtime-profile authorities",
+      "a recording-window name can overwrite the held-scope runtime profile",
+      "source-string-only behavior proof remains necessary after V53"
+    ],
+    "unproven": [
+      "the native worldserver builds at the independently reviewed descriptor commit",
+      "one live recording-enabled arm, identity-preserved terminal, release, and post-release advance completes",
+      "Chainwielder, Drudges, Magmaw, DPS, HPS, or pet outcomes"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:chainwielder_checkpoint_immutable_profile_one_build_one_live_v55",
+    "owner_skill": "raid-shard-architecture",
+    "allowed_action": "At the exact clean reviewed descriptor commit, perform exactly one queued fast8_v2 worldserver build, with at most one matching configure only if required for exact queue provenance, then one authenticated bundle create/verify and at most one no-retry completion-watchdog live start. Retain the recording-enabled Held, arm, terminal, release, and post-release route identities; DVC-publish, remotely reconstruct, verify, and exactly evict the closed evidence.",
+    "budget": {
+      "configure_count_maximum": 1,
+      "worldserver_build_count": 1,
+      "atomic_bundle_create_count": 1,
+      "atomic_bundle_verify_count": 1,
+      "worldserver_start_count_maximum": 1,
+      "retry_count": 0,
+      "database_mutation": "forbidden; require fresh strict retained-roster readback",
+      "dvc_mutation": "required after closure for publication remote reconstruction verification and exact eviction"
+    },
+    "forbidden": [
+      "implementation_gameplay_controller_route_content_skill_or_test_edit",
+      "profile_scenario_pool_route_actor_fixture_seal_source_binary_or_hold_identity_comparison_weakening",
+      "second_build_bundle_create_verify_worldserver_start_or_retry",
+      "polling_watchdog_timeout_or_threshold change",
+      "fixed raid success timer",
+      "local evidence eviction before verified remote reconstruction"
+    ]
+  }
+}
