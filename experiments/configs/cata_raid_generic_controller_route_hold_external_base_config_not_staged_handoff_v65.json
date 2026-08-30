@@ -1,0 +1,102 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:generic_controller_route_hold_one_build_one_live_v65",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed_prestart",
+  "failure_classification": "base_runtime_config_not_externally_staged",
+  "input_identities": {
+    "source_commit": "75bbbeb8fa271073b61baaa4ff0a3e1a9436f02e",
+    "source_tree": "b2df7d35e69f621652316b5c2b7b92e713ecb9bf",
+    "active_descriptor_sha256": "663d55bb73ff2de6cecf69acecaa51a487011a942fe2edb7e324823a818a90a9",
+    "source_handoff": "experiments/configs/cata_raid_retained_roster_normal_provisioning_handoff_v64.json",
+    "source_handoff_sha256": "ddb16becd0bb1e226b33aedcad09638c691007138a9625cd76faac1b7cfbbfbb",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008
+  },
+  "consumed_budget": {
+    "configure": "1/1",
+    "worldserver_build": "1/1",
+    "canonical_stage": "1/1",
+    "prepared_object_materialize": "1/1",
+    "prepared_object_verify": "1/1",
+    "atomic_bundle_create": "1/1 rejected",
+    "atomic_bundle_verify": "1/1 bundle_missing",
+    "worldserver_start": "0/1",
+    "retry": "0/0",
+    "database_mutation": 0
+  },
+  "build": {
+    "configure_receipt_sha256": "5e86d1be6f23fb564fd67e3b1b2985cc4df4a9b2037209c2f4dd18bd2dda43cd",
+    "configure_ticket_id": "raid-build-a57ee2e3f3d64bb1a7953169038701b0",
+    "build_receipt_sha256": "6acd8318fa5be5d7bac00640bbcd3aba6dde860840617b437d4b92059b133e32",
+    "build_ticket_id": "raid-build-2b14b0d7af0f4e13ad761cb4e7a75efa",
+    "binary_sha256": "5f042c34d453dda20c00f27936140bdccf3c649e36b58274c0a518d8459a8eb0",
+    "gate_bearing": true,
+    "source_identity_stable": true
+  },
+  "prestart_gate": {
+    "strict_verifier_passed": true,
+    "strict_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "retained_roster_readback_passed": true,
+    "retained_roster_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "recurrence_suite_result": "20/20 passed",
+    "fixture_expansion_admitted": true,
+    "canonical_stage_receipt_sha256": "75d161f2fd8993d1b582c7f85615b4a88a7ab261c6877daca7e402d778866769",
+    "prepared_route_receipt_sha256": "c80c0ae8b787ee7e9e04f9c4b31a1feef2860e64d79a64c823da565185e85219",
+    "prepared_route_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "bundle_create_result": "base_runtime_config_inside_mutable_worktree",
+    "bundle_verify_result": "bundle_missing",
+    "first_broken_edge": "the authenticated bundle boundary rejected the tracked base runtime config because no externally staged immutable runtime-config snapshot had been created",
+    "failure_postcondition": "no bundle, capture, or worldserver started and no database state was mutated"
+  },
+  "runtime_result": {
+    "worldserver_started": false,
+    "checkpoint_sequence_observed": false,
+    "combat_observed": false,
+    "party_dps": null,
+    "party_hps": null,
+    "pet_damage_share": null
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_75bbbeb8fa_v65_external_base_config_not_staged_prestart_failed_20260830.dvc",
+    "dvc_pointer_sha256_before_commit": "4473399edd994a7a80db5bd81aff871444cd2831a9ca42acd6b5342dd5786fa5",
+    "dvc_directory_md5": "07b12aeecf9d6efb63889ebccd4423bc.dir",
+    "file_count": 14,
+    "size_bytes": 780585,
+    "push_result": "11 files pushed; four content objects already remote",
+    "remote_reconstruction_verified": true,
+    "remote_reconstruction_manifest_sha256": "f6b8b3e2a652c16fbf24cc274d67506291d470a0cf4e56d485500990e388cbd8",
+    "remote_reconstruction_file_count": 14,
+    "remote_reconstruction_size_bytes": 780585,
+    "exact_local_payload_evicted": true,
+    "isolated_reconstruction_cache_evicted": true,
+    "main_cache_children_retained_conservatively": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "one configure and one fast8 worldserver build completed with equal clean request, admission, and completion source identities",
+      "the current binary is attested and the fresh strict retained-roster gates remained clean without database mutation",
+      "the fixed recurrence suite passed 20 of 20 checks and admitted the fixture-expansion replay",
+      "the canonical route stage and prepared route object each materialized and verified exactly once",
+      "the bundle failed closed before start with base_runtime_config_inside_mutable_worktree",
+      "the evidence was pushed, independently reconstructed byte-for-byte from the remote in an isolated cache, and exactly evicted"
+    ],
+    "refuted": [
+      "the tracked in-worktree runtime config can be passed directly to the immutable bundle boundary",
+      "V65 started a worldserver, changed the database, or observed combat"
+    ],
+    "unproven": [
+      "the live hold, Route-owner, receipt-zero rejection, terminal, release, and Drudges sequence",
+      "Chainwielder, Drudges, Magmaw, DPS, HPS, or pet-share outcomes"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:external_base_runtime_config_snapshot_stage_v66",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Add one fail-closed production staging primitive and receipt verifier for the base runtime config, parallel to canonical route staging, so bundle creation consumes an externally located byte-identical snapshot bound to the clean source identity and declared SHA-256.",
+    "forbidden": "configure, build, database mutation, bundle creation, worldserver start, gameplay/controller/route/class/encounter/pet/skill/threshold changes",
+    "build_worldserver_start_budget": 0
+  }
+}
