@@ -51,6 +51,8 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     chainwielder_checkpoint_arm_command,
     chainwielder_checkpoint_monitor_commands,
     observe_chainwielder_checkpoint_arm_gate,
+    ControllerRouteHoldLaunchIdentity,
+    ControllerRouteHoldScheduler,
 )
 
 
@@ -1145,6 +1147,237 @@ def test_checkpoint_controller_pre_route_probe_closes_live_ordering_race():
     assert pass_after["pre_route_probe_batches"] == 1
     assert pass_after["pre_route_probe_command_count"] == 1
     assert pass_after_bytes.count((command + "\n").encode()) == 1
+
+
+def _generic_hold_identity() -> ControllerRouteHoldLaunchIdentity:
+    return ControllerRouteHoldLaunchIdentity(
+        scenario_id="raid-scenario-a",
+        runtime_profile="raid-profile-a",
+        pool_tag="raid-pool-a",
+        route_manifest_sha256="a" * 64,
+        route_node_id="raid.node.a",
+        actor_guid=77,
+        fixture_id="fixture-a",
+        seal_sha256="b" * 64,
+        source_commit="c" * 40,
+    )
+
+
+def _generic_hold(*, phase: str = "held", route_generation: int = 1) -> dict:
+    return {
+        "ok": phase != "failed",
+        "phase": phase,
+        "cohort_id": "cohort-a",
+        "server_epoch": 71,
+        "attempt_id": 9,
+        "scenario_id": "raid-scenario-a",
+        "runtime_profile": "raid-profile-a",
+        "route_manifest_sha256": "a" * 64,
+        "route_generation": route_generation,
+        "route_node_id": "raid.node.a",
+        "actor_guid": 77,
+        "fixture_id": "fixture-a",
+        "seal_sha256": "b" * 64,
+        "source_commit": "c" * 40,
+        "acquire_count": 1,
+        "arm_ack_count": 1 if phase in {"armed", "checkpoint_terminal", "released"} else 0,
+        "checkpoint_stage": "disabled" if phase == "held" else "armed",
+        "checkpoint_terminal": phase in {"checkpoint_terminal", "released"},
+        "checkpoint_identity_preserved": phase in {"checkpoint_terminal", "released"},
+        "release_count": 1 if phase == "released" else 0,
+        "suppressed_route_action_count": 4,
+        "suppressed_route_advance_count": 1,
+        "acquired_at_ms": 10,
+        "armed_at_ms": 20 if phase != "held" else 0,
+        "terminal_at_ms": 30 if phase in {"checkpoint_terminal", "released"} else 0,
+        "released_at_ms": 40 if phase == "released" else 0,
+        "failure_reason": (
+            "controller_route_hold_fixture_rejected" if phase == "failed" else None
+        ),
+    }
+
+
+def _generic_hold_status(
+    *, phase: str = "held", route_generation: int = 1,
+    checkpoint_stage: str | None = None,
+) -> dict:
+    hold = _generic_hold(phase=phase)
+    if checkpoint_stage is not None:
+        hold["checkpoint_stage"] = checkpoint_stage
+    return {
+        "ok": True,
+        "action": "botauto_status",
+        "cohort_id": "cohort-a",
+        "active_profile": "raid-profile-a",
+        "raid_runtime": {
+            "active": True,
+            "server_epoch": 71,
+            "attempt_id": 9,
+            "route_progress": {"generation": route_generation},
+            "controller_route_hold": hold,
+        },
+        "validation_route": {"generation": route_generation},
+    }
+
+
+def _generic_arm_ack() -> dict:
+    return {
+        "ok": True,
+        "action": "botauto_chainwielder_checkpoint",
+        "cohort_id": "cohort-a",
+        "server_epoch": 71,
+        "attempt_id": 9,
+        "active_profile": "raid-profile-a",
+        "actor_guid": 77,
+        "fixture_id": "fixture-a",
+        "controller_route_hold": _generic_hold(phase="armed"),
+    }
+
+
+def _advance_generic_hold_to_terminal(
+    scheduler: ControllerRouteHoldScheduler,
+) -> None:
+    assert scheduler.start()[0].startswith(
+        "botautochaincheckpoint start-held 77 fixture-a"
+    )
+    assert scheduler.observe(_generic_hold()) == ["botauto status"]
+    assert scheduler.observe(_generic_hold_status()) == ["botauto status"]
+    assert scheduler.observe(_generic_hold_status())[0].startswith(
+        "botautochaincheckpoint arm 77"
+    )
+    assert scheduler.observe(_generic_arm_ack()) == []
+
+
+def test_generic_controller_route_hold_scheduler_exact_production_transcript():
+    scheduler = ControllerRouteHoldScheduler(_generic_hold_identity())
+    _advance_generic_hold_to_terminal(scheduler)
+    assert scheduler.observe(_generic_hold_status(
+        phase="checkpoint_terminal", checkpoint_stage="completed",
+    ))[0].startswith("botautochaincheckpoint release 77")
+    assert scheduler.observe(_generic_hold(phase="released")) == ["botauto status"]
+    assert scheduler.observe(_generic_hold_status(
+        phase="released", route_generation=2,
+    )) == []
+
+    receipt = scheduler.receipt()
+    assert receipt["gate_passed"] is True
+    assert receipt["command_transcript"] == [
+        "botautochaincheckpoint start-held 77 fixture-a " + "b" * 64 + " " + "c" * 40,
+        "botauto status",
+        "botauto status",
+        "botautochaincheckpoint arm 77 " + "b" * 64 + " " + "c" * 40,
+        "botautochaincheckpoint release 77 " + "b" * 64 + " " + "c" * 40,
+        "botauto status",
+    ]
+    assert receipt["command_counts"] == {
+        "start_held": 1, "status": 3, "arm": 1, "release": 1,
+    }
+    assert receipt["start_ack_count"] == 1
+    assert receipt["held_status_count"] == 2
+    assert receipt["arm_ack_count"] == 1
+    assert receipt["checkpoint_terminal_count"] == 1
+    assert receipt["checkpoint_terminal_stage"] == "completed"
+    assert receipt["release_ack_count"] == 1
+
+
+def test_generic_controller_route_hold_scheduler_rejects_old_poll_race():
+    scheduler = ControllerRouteHoldScheduler(_generic_hold_identity())
+    scheduler.start()
+    scheduler.observe(_generic_hold())
+    scheduler.observe(_generic_hold_status(route_generation=1))
+    scheduler.observe(_generic_hold_status(route_generation=2))
+    assert scheduler.failed is True
+    assert scheduler.failure_reason == (
+        "controller_route_hold_route_advanced_before_release"
+    )
+    assert scheduler.command_counts["arm"] == 0
+    assert scheduler.command_counts["release"] == 0
+
+
+def test_generic_controller_route_hold_scheduler_negative_protocol_edges():
+    def fresh() -> ControllerRouteHoldScheduler:
+        return ControllerRouteHoldScheduler(_generic_hold_identity())
+
+    rejected_start = fresh()
+    rejected_start.start()
+    rejected_start.observe(_generic_hold(phase="failed"))
+    assert rejected_start.failure_reason == "controller_route_hold_fixture_rejected"
+
+    unstable = fresh()
+    unstable.start()
+    unstable.observe(_generic_hold())
+    unstable.observe(_generic_hold_status())
+    drifted = _generic_hold_status()
+    drifted["raid_runtime"]["controller_route_hold"]["route_node_id"] = "raid.node.b"
+    unstable.observe(drifted)
+    assert unstable.failure_reason == "controller_route_hold_route_node_id_mismatch"
+
+    missing_arm = fresh()
+    missing_arm.start()
+    missing_arm.observe(_generic_hold())
+    missing_arm.observe(_generic_hold_status())
+    missing_arm.observe(_generic_hold_status())
+    missing_arm.finish()
+    assert missing_arm.failure_reason == "controller_route_hold_arm_ack_missing"
+
+    duplicate_arm = fresh()
+    _advance_generic_hold_to_terminal(duplicate_arm)
+    duplicate_arm.observe(_generic_arm_ack())
+    assert duplicate_arm.failure_reason == (
+        "controller_route_hold_duplicate_or_stale_arm_ack"
+    )
+
+    absent_lifecycle = fresh()
+    _advance_generic_hold_to_terminal(absent_lifecycle)
+    absent_lifecycle.finish()
+    assert absent_lifecycle.failure_reason == (
+        "controller_route_hold_checkpoint_lifecycle_missing"
+    )
+
+    rejected_lifecycle = fresh()
+    _advance_generic_hold_to_terminal(rejected_lifecycle)
+    rejected_lifecycle.observe(_generic_hold_status(phase="failed"))
+    assert rejected_lifecycle.failed is True
+
+    early_release = fresh()
+    _advance_generic_hold_to_terminal(early_release)
+    early_release.observe(_generic_hold_status(phase="released"))
+    assert early_release.failure_reason == (
+        "controller_route_hold_checkpoint_lifecycle_invalid"
+    )
+
+    missing_release = fresh()
+    _advance_generic_hold_to_terminal(missing_release)
+    missing_release.observe(_generic_hold_status(
+        phase="checkpoint_terminal", checkpoint_stage="failed",
+    ))
+    missing_release.finish()
+    assert missing_release.failure_reason == "controller_route_hold_release_ack_missing"
+
+    duplicate_release = fresh()
+    _advance_generic_hold_to_terminal(duplicate_release)
+    duplicate_release.observe(_generic_hold_status(
+        phase="checkpoint_terminal", checkpoint_stage="completed",
+    ))
+    duplicate_release.observe(_generic_hold(phase="released"))
+    duplicate_release.observe(_generic_hold(phase="released"))
+    assert duplicate_release.failure_reason == (
+        "controller_route_hold_duplicate_release_ack"
+    )
+
+    no_advance = fresh()
+    _advance_generic_hold_to_terminal(no_advance)
+    no_advance.observe(_generic_hold_status(
+        phase="checkpoint_terminal", checkpoint_stage="completed",
+    ))
+    no_advance.observe(_generic_hold(phase="released"))
+    no_advance.observe(_generic_hold_status(
+        phase="released", route_generation=1,
+    ))
+    no_advance.finish()
+    assert no_advance.failure_reason == (
+        "controller_route_hold_post_release_advance_missing"
+    )
 
 
 def accepted_drudge_status() -> dict:

@@ -1,0 +1,64 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_scheduler_v12",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "passed",
+  "immutable_input_commit": "39422c9e229b66a010064020fd56c8fe2e9c8bb3",
+  "input_handoff": {
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_implementation_handoff_v1.json",
+    "sha256": "9643b7f1645fc37de47340bde383b0cefc1beab8624872bfcedc547a031e4a54"
+  },
+  "program_scope": {
+    "specs": "all configured DPS, tank, and healer specs",
+    "encounters": "all route-manifest nodes",
+    "modes": ["10N", "10H", "25N", "25H"],
+    "canaries_only": ["Affliction", "actor 30008", "Chainwielder", "Magmaw", "BWD 10N"]
+  },
+  "changed_files": {
+    "tools/raid_program/capture_phase1_raid_foundation.py": "efd89fb5e3bca6482a531a01edddc71538eecdf3d364949a520623d9cf240069",
+    "tests/test_phase1_raid_foundation_capture.py": "a1a53fca0d53a38791b5fec41e6fb786e959c836c9b73f7be6b0eadef10525d0"
+  },
+  "implemented_boundary": {
+    "state_machine": "ControllerRouteHoldScheduler",
+    "native_protocol": ["start-held", "status", "status", "arm", "checkpoint terminal", "release", "post-release status"],
+    "native_receipt": "raid_runtime.controller_route_hold",
+    "report_receipt": "generic_controller_route_hold_scheduler_v1",
+    "failure_policy": "any rejection, duplicate, drift, stale receipt, missing terminal, early transition, or missing post-release advance is a typed infrastructure failure",
+    "ordinary_capture_impact": "none; the refuted adjacent-poll adapter is bypassed only for verified fixture-expansion captures"
+  },
+  "validation": {
+    "focused_test": "3 passed, 129 deselected in 0.20s after one permitted correction rerun",
+    "exact_transcript_asserted": true,
+    "fail_before_old_poll_race_asserted": true,
+    "negative_edges_asserted": true,
+    "py_compile": "passed",
+    "git_diff_check": "passed",
+    "configure_count": 0,
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "one generic controller state machine consumes actual native command/status JSON shapes",
+      "native and launch identities stay joined through acquire, arm, terminal, release, and generation advance",
+      "command emission counts are exact and bounded",
+      "completed and typed-failed checkpoint terminals are distinguished from missing or rejected lifecycle evidence"
+    ],
+    "unproven": [
+      "native build success at the implementation commit",
+      "live start-held acknowledgement",
+      "live checkpoint terminal and post-release generation advance"
+    ]
+  },
+  "proposed_live_followup": {
+    "work_unit": "shard:generic_controller_route_hold_one_build_one_start_v13",
+    "authorization": "closed_pending_separate_admission",
+    "build_budget": 1,
+    "worldserver_start_budget": 1,
+    "timer": "completion_watchdog_only",
+    "fixed_success_timer_seconds": null,
+    "required_result": "one exact live controller transcript or one typed native gap; no gameplay or fixture promotion claim"
+  }
+}
