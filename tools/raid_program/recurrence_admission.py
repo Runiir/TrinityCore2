@@ -805,6 +805,7 @@ def verify_recurrence_admission(
         "fixture_expansion_requests": admission.get(
             "fixture_expansion_requests"
         ) or [],
+        "pending_fixture_ids": admission.get("pending_fixture_ids") or [],
         "checkpoint_seal_sha256": (
             checkpoint_seal["seal_sha256"]
             if isinstance(checkpoint_seal, dict) else None

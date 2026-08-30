@@ -1,62 +1,99 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "v93_checkpoint_verified_projection_prestart_failed_20260830",
-  "work_unit": "evidence:bind_pending_fixture_ids_to_verified_projection_v94",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "gate_state": "checkpoint_verified_projection_missing_pending_fixture_ids",
-  "observed_at_commit": "043bb4f417c705ff66c48f2900858ffb48e805f6",
-  "immutable_input_commit": "043bb4f417c705ff66c48f2900858ffb48e805f6",
+  "epoch_id": "v94_verified_pending_projection_fixed_20260830",
+  "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v95",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
+  "gate_state": "composite_checkpoint_verified_projection_complete",
+  "observed_at_commit": "d3b80c3d41e2ba54cb5ba884e2f505f7c8920aa2",
+  "immutable_input_commit": "d3b80c3d41e2ba54cb5ba884e2f505f7c8920aa2",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v93_checkpoint_verified_projection_prestart_failed_handoff_v94.json",
-    "sha256": "ca841b49cc0c583c2e91b25a01ef93c255f24d1c1269f4c5ab533459eae6c41d",
-    "source_commit": "043bb4f417c705ff66c48f2900858ffb48e805f6"
+    "path": "experiments/configs/cata_raid_v94_verified_pending_projection_handoff_v95.json",
+    "sha256": "bf2788c75205ffdfeac801c359c8a5c3b04997be50cfb37c532fccde1f7c7274",
+    "source_commit": "d3b80c3d41e2ba54cb5ba884e2f505f7c8920aa2"
   },
   "program_scope": {
-    "operation": "bind the already-authenticated pending fixture identities into the verified recurrence-admission projection consumed by checkpoint arming",
+    "operation": "one fresh exact-current map-669 production fixture replay of the verified composite Chainwielder plus floor, hazard, and native-path-proof admission",
     "gameplay_canary_admitted": false,
-    "fixture_expansion_replay_admitted": false,
-    "build_admitted": false,
-    "worldserver_start_admitted": false,
+    "fixture_expansion_replay_admitted": true,
+    "build_admitted": true,
+    "worldserver_start_admitted": true,
     "gameplay_mutations_allowed": false,
     "database_mutations_allowed": false
   },
   "behavior_change": false,
-  "evidence_contract_change": true,
-  "ready_for_bounded_repair": true,
+  "evidence_contract_change": false,
+  "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": false,
-  "first_broken_edge": {
-    "stage": "capture_checkpoint_arm_preflight",
-    "result": "checkpoint_arm:checkpoint_verified_admission_invalid",
-    "helper_result": "checkpoint_verified_admission_request_target_mismatch",
-    "cause": "verify_recurrence_admission omits pending_fixture_ids from its verified return projection after validating them in the sealed raw admission"
+  "ready_for_live_verification": true,
+  "fixture_expansion_contract": {
+    "purpose": "fixture_expansion_replay",
+    "target_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "requested_revisions": {
+      "same_level_floor_observation_v1": {
+        "from": 3,
+        "to": 4
+      },
+      "same_level_hazard_path_admission_v1": {
+        "from": 4,
+        "to": 5
+      },
+      "same_level_native_path_proof_v1": {
+        "from": 4,
+        "to": 5
+      }
+    },
+    "required_route": {
+      "map_id": 669,
+      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "checkpoint_target": "bwd.magmaw.chainwielder"
+    }
+  },
+  "execution_budget": {
+    "recurrence_suite_invocations": 1,
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "build_policy": "fast8_v4",
+    "runtime_config_derivation_count": 1,
+    "canonical_route_stage_count": 1,
+    "prepared_route_object_count": 1,
+    "atomic_bundle_create_count": 1,
+    "strict_retained_roster_readback_count": 1,
+    "worldserver_start_count": 1,
+    "authserver_start_count": 0,
+    "retry_count": 0
   },
   "scope_lock": {
-    "allowed_change": "Return authenticated pending_fixture_ids in the verified projection and add one create -> verify -> checkpoint-arm regression.",
+    "allowed_change": "Produce exactly one fresh production fixture replay for the preserved authenticated composite admission and publish its compact decision evidence.",
     "forbidden": [
-      "target-set semantic change or hard-coded map-669 fixture list",
-      "gameplay, planner, movement, encounter, class, route, threshold, tolerance, or recurrence-ledger change",
-      "build, database mutation, worldserver or authserver start, replay retry, gameplay-canary or boss-success claim"
+      "gameplay, planner, movement, encounter, class, route-content, threshold, tolerance, target-policy, or recurrence-ledger change",
+      "database mutation, authserver start, second build, second worldserver start, or retry",
+      "gameplay-canary or boss-success promotion from fixture evidence"
     ]
   },
-  "required_proof": {
-    "positive": "the exact sealed V93 composite admission survives create -> verify_recurrence_admission -> chainwielder_checkpoint_arm_command",
-    "negative": [
-      "missing Chainwielder target remains rejected",
-      "unexpected target remains rejected",
-      "stale request revision remains rejected",
-      "wrong admission purpose remains rejected"
-    ],
-    "complexity": "reuse the existing authoritative expansion contract without adding another target-rule layer"
+  "required_terminal_evidence": {
+    "checkpoint": "Chainwielder target arms once after the exact create and verified-projection boundary",
+    "map_669": "one correlated worldserver-backed receipt crosses the floor observation, hazard path admission, native submission, MotionMaster, point generator, launched spline, and consumed terminal outcome boundaries",
+    "negative_outcomes": [
+      "incomplete or cross-floor path does not launch",
+      "stale, missing, forged, or unexpected fixture identities do not arm"
+    ]
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "focused_regression_complete",
-      "typed_contract_failure",
+      "fixture_receipt_complete",
+      "semantic_stall",
+      "repeated_decision_limit",
       "infrastructure_loss",
       "explicit_interruption"
     ]
@@ -65,7 +102,7 @@
     "map-669 revisions 4/5/5 and required negative outcomes",
     "any gameplay canary or boss outcome"
   ],
-  "next_work_unit": "evidence:bind_pending_fixture_ids_to_verified_projection_v94",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Repair only the verified recurrence-admission projection and its real production-bound regression; do not build or start a server."
+  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v95",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run the one-build, one-start, no-retry map-669 fixture replay under the completion watchdog."
 }

@@ -7,6 +7,9 @@ import subprocess
 
 import pytest
 
+from tools.raid_program.capture_checkpoint_controller import (
+    chainwielder_checkpoint_arm_command,
+)
 from tools.raid_program.recurrence_admission import (
     CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
     FIXTURE_EXPANSION_PURPOSE,
@@ -183,13 +186,46 @@ def _replacement_request() -> dict[str, object]:
     }
 
 
+def _map669_expansion_requests() -> list[dict[str, object]]:
+    return [
+        {
+            "fixture_id": "same_level_floor_observation_v1",
+            "from_revision": 3,
+            "to_revision": 4,
+            "causal_signature": "same_level_movement_path_floor_false_negative",
+            "required_production_boundary": "map_669_native_floor_observation",
+        },
+        {
+            "fixture_id": "same_level_hazard_path_admission_v1",
+            "from_revision": 4,
+            "to_revision": 5,
+            "causal_signature": "same_level_encounter_hazard_path_rejection",
+            "required_production_boundary": "map_669_native_hazard_path_admission",
+        },
+        {
+            "fixture_id": "same_level_native_path_proof_v1",
+            "from_revision": 4,
+            "to_revision": 5,
+            "causal_signature": "same_level_native_path_proof_false_negative",
+            "required_production_boundary": "map_669_native_path_proof",
+        },
+    ]
+
+
 def _create_chainwielder_checkpoint_admission(
     paths: dict[str, Path | str],
+    *,
+    expansion_requests: list[dict[str, object]] | None = None,
 ) -> dict[str, str]:
     admission = Path(paths["admission"])
     decision = Path(paths["decision"])
     suite = Path(paths["suite"])
     config = Path(paths["config"])
+    expansion_requests = expansion_requests or []
+    target_ids = [
+        CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+        *(request["fixture_id"] for request in expansion_requests),
+    ]
     admission.unlink()
     decision_value = json.loads(decision.read_text(encoding="utf-8"))
     decision_value.update(
@@ -197,11 +233,9 @@ def _create_chainwielder_checkpoint_admission(
             "build_admitted": False,
             "canary_admitted": False,
             "fixture_expansion_admitted": True,
-            "fixture_expansion_target_ids": [
-                CHAINWIELDER_CHECKPOINT_FIXTURE_ID
-            ],
-            "fixture_expansion_requests": [],
-            "pending_fixture_ids": [CHAINWIELDER_CHECKPOINT_FIXTURE_ID],
+            "fixture_expansion_target_ids": target_ids,
+            "fixture_expansion_requests": expansion_requests,
+            "pending_fixture_ids": target_ids,
         }
     )
     _write_json(decision, decision_value)
@@ -211,7 +245,15 @@ def _create_chainwielder_checkpoint_admission(
             "fixture_id": CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
             "fixture_revision": 1,
             "passed": True,
-        }
+        },
+        *(
+            {
+                "fixture_id": request["fixture_id"],
+                "fixture_revision": request["from_revision"],
+                "passed": True,
+            }
+            for request in expansion_requests
+        ),
     ]
     _write_json(suite, suite_value)
     source_profiles = json.loads(
@@ -344,6 +386,27 @@ def test_chainwielder_checkpoint_uses_precomputed_non_circular_seal(
         ).encode("utf-8")
     ).hexdigest()
     assert result["runtime_profile_overlay"] == admission["runtime_profile_overlay"]
+
+
+def test_composite_checkpoint_create_verify_projection_arms_controller(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    requests = _map669_expansion_requests()
+    _create_chainwielder_checkpoint_admission(
+        paths, expansion_requests=requests
+    )
+
+    verified = _verify_chainwielder(paths)
+
+    assert verified["pending_fixture_ids"] == [
+        CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+        *(request["fixture_id"] for request in requests),
+    ]
+    assert chainwielder_checkpoint_arm_command(verified, 30008) == (
+        "botautochaincheckpoint arm 30008 "
+        f'{verified["checkpoint_seal_sha256"]} {verified["source_commit"]}'
+    )
 
 
 @pytest.mark.parametrize(
