@@ -49,6 +49,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     bounded_native_shutdown,
     build_policy_path_for_receipt,
     _frozen_drudge_member_anchors,
+    _validate_drudge_observation_geometry,
     process_resource_sample,
     summarize_process_resource_samples,
     native_readycheck_request_identity,
@@ -1706,6 +1707,12 @@ def test_drudge_contract_reconstructs_delivery_interval_and_exact_roster_tactics
     assert reasons == []
 
 
+def test_drudge_contract_and_geometry_use_focused_production_modules():
+    assert accepted_drudge_contract.__module__ == "tools.raid_program.capture_drudge_contract"
+    assert _frozen_drudge_member_anchors.__module__ == "tools.raid_program.capture_drudge_geometry"
+    assert _validate_drudge_observation_geometry.__module__ == "tools.raid_program.capture_drudge_geometry"
+
+
 def test_drudge_geometry_is_loaded_from_explicit_sealed_route_manifest(tmp_path, monkeypatch):
     sealed = (
         Path(__file__).resolve().parents[1]
@@ -1714,7 +1721,7 @@ def test_drudge_geometry_is_loaded_from_explicit_sealed_route_manifest(tmp_path,
     # A mutable controller checkout with no route assets cannot influence the
     # explicit generated manifest bound by the capture worktree.
     monkeypatch.setattr(
-        "tools.raid_program.capture_phase1_raid_foundation.ROOT", tmp_path,
+        "tools.raid_program.capture_drudge_geometry.ROOT", tmp_path,
     )
     anchors = _frozen_drudge_member_anchors(sealed)
     assert set(anchors) == set(range(1, 11))
