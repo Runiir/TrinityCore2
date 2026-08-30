@@ -14,7 +14,10 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     accepted_native_recovery,
     action_payloads,
     JsonLogCursor,
+    JsonLogObservation,
     TelemetryTransportLedger,
+    collect_log_observations,
+    _json_row_from_log_line,
     json_actions,
     json_rows,
     normalized_batch_payload,
@@ -158,6 +161,24 @@ def test_telemetry_scheduler_reduces_steady_state_heavy_commands():
     assert commands.count("botauto diagnose all") == 5
     assert commands.count("botauto trace all 128 delta") == 7
     assert commands.count("botauto diagnose all") < commands.count("botauto status")
+
+
+def test_telemetry_transport_uses_focused_production_module():
+    expected_module = "tools.raid_program.capture_telemetry_transport"
+    for owner in (
+        _json_row_from_log_line,
+        JsonLogCursor,
+        JsonLogObservation,
+        collect_log_observations,
+        TelemetryTransportLedger,
+        json_actions,
+        json_rows,
+        action_payloads,
+        observe_telemetry_freshness,
+        material_status_signature,
+        TelemetryScheduler,
+    ):
+        assert owner.__module__ == expected_module
 
 
 def test_default_scheduler_reduces_heavy_payload_volume_without_dropping_channels():
