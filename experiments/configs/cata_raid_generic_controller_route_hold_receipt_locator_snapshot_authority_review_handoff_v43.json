@@ -1,0 +1,78 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_receipt_locator_snapshot_authority_review_v43",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "verified_fixture_only_bundle_check_authorized",
+  "source_state": {
+    "commit": "631379aff0c9c7e2fe6670c1f053bad4ead37a0b",
+    "tree": "af922eac74edaafc922a8a6a8376cf8b05523516",
+    "parent_commit": "249292869d406a7ce91f7af7da2f34acb2b672f1",
+    "clean_before_review": true,
+    "v41_handoff_sha256": "735b4af0e4749443f8673f554d56b912185f28647b6c60e6f00569dd9f9ba6c1",
+    "v42_handoff_sha256": "582cb86d34d2872283e5943f1d427e785ab43306c1475718ab35158351dfcf45"
+  },
+  "claim_ledger": {
+    "verified": [
+      "verify_staging_receipt hashes, parses, and canonical-validates the exact bytes read from one opened regular-file descriptor and returns canonical base64 plus the externally supplied matching SHA-256",
+      "the scenario receipt embeds those exact bytes and hash; later verification authenticates the embedded snapshot against the external staging-receipt hash and never opens the diagnostic locator",
+      "the embedded receipt and outer scenario receipt both enforce exact schemas, canonical JSON bytes, clean HEAD, committed DVC authority, source/staged paths and hashes, catalog reconstruction, selected identities, output bytes, and receipt hashes",
+      "replacement after the last locator stat changes diagnostic metadata only; materialization and later verification remain bound to the originally opened snapshot",
+      "receipt-two substitution, embedded hash drift, noncanonical equivalent base64 re-encoding, malformed base64, field/schema drift, and output/catalog drift reject before an acceptance claim",
+      "the diagnostic locator must be absolute and outside the worktree but need not exist or name the authenticated snapshot",
+      "all nine committed scenario IDs exactly match the runtime loader for route objects, order, generations, payload bytes, and expected segments",
+      "the exact canonical JSONL remains route_manifest_invalid while its prepared four-route Magmaw object is accepted by the unchanged consumer",
+      "clean-HEAD/DVC/path/symlink/collision/exclusive-write behavior is preserved; the generic owners contain no encounter or canary constants and all production files remain below 1000 lines"
+    ],
+    "refuted": [
+      "later scenario verification depends on reopening the mutable staging-receipt locator",
+      "an equivalent noncanonical base64 spelling can survive canonical outer-receipt reconstruction",
+      "a mutable pathname must permanently name the opened authoritative snapshot"
+    ],
+    "unproven": [
+      "one fixture-only Chainwielder atomic bundle create and verify consumes the authenticated prepared object",
+      "any native Held, arm, terminal, release, Drudges, or throughput claim"
+    ]
+  },
+  "independent_validation": {
+    "focused_command": "pixi run pytest -q tests/test_canonical_route_staging.py",
+    "focused_result": "29 passed in 1.06s",
+    "all_scenario_parity": "9 of 9 exact",
+    "locator_deleted_before_later_verification": "passed",
+    "noncanonical_equivalent_base64": "rejected as route_manifest_receipt_mismatch",
+    "raw_jsonl_and_prepared_consumer_probe": "raw rejected; prepared four-route object accepted",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "changed_files_within_v42_allowlist": true,
+    "bundle_create_count": 0,
+    "bundle_verify_count": 0,
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutation_count": 0,
+    "dvc_mutation_count": 0
+  },
+  "next_work_unit": {
+    "id": "shard:generic_controller_route_hold_authenticated_prepared_object_bundle_fixture_v44",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Run exactly one fixture-only authenticated canonical stage, scenario materialize and receipt verify, then one Chainwielder atomic bundle create and verify using that exact prepared object and SHA-256. Retain a compact receipt. Do not use a live binary or start a worldserver.",
+    "budget": {
+      "staging_preflight_count": 1,
+      "prepared_object_materialize_count": 1,
+      "prepared_object_verify_count": 1,
+      "atomic_bundle_create_count": 1,
+      "atomic_bundle_verify_count": 1,
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "worldserver_start_count": 0,
+      "database_mutation_allowed": false,
+      "dvc_mutation_allowed": false,
+      "retry_count_maximum": 0
+    },
+    "forbidden": [
+      "production_or_test_edit",
+      "manual_jsonl_conversion",
+      "live_binary_or_worldserver_execution",
+      "gameplay_native_controller_route_content_or_comparison_change",
+      "configure_build_database_dvc_or_live_action"
+    ]
+  }
+}

@@ -1,82 +1,80 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_receipt_locator_snapshot_authority_review_v43_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_receipt_locator_snapshot_authority_review_v43",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "implementation_pending_independent_review",
-  "gate_state": "v42_snapshot_authority_embedded_locator_diagnostic_fixture_green",
-  "observed_at_commit": "249292869d406a7ce91f7af7da2f34acb2b672f1",
-  "immutable_input_commit": "249292869d406a7ce91f7af7da2f34acb2b672f1",
+  "epoch_id": "generic_controller_route_hold_authenticated_prepared_object_bundle_fixture_v44_20260830",
+  "work_unit": "shard:generic_controller_route_hold_authenticated_prepared_object_bundle_fixture_v44",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "live_recurrence_quarantined",
+  "gate_state": "v43_snapshot_authority_verified_fixture_only_bundle_check_authorized",
+  "observed_at_commit": "631379aff0c9c7e2fe6670c1f053bad4ead37a0b",
+  "immutable_input_commit": "631379aff0c9c7e2fe6670c1f053bad4ead37a0b",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_receipt_locator_snapshot_authority_handoff_v42.json",
-    "sha256": "582cb86d34d2872283e5943f1d427e785ab43306c1475718ab35158351dfcf45",
-    "source_commit": "249292869d406a7ce91f7af7da2f34acb2b672f1"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_receipt_locator_snapshot_authority_review_handoff_v43.json",
+    "sha256": "678cc27df9adccec4b0836ee92400512f93e6903acd52b11ebada2dee4c20a44",
+    "source_commit": "631379aff0c9c7e2fe6670c1f053bad4ead37a0b"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "Catalog selection is verified generic and frozen. V42 owns only staging-receipt snapshot versus mutable-locator authority."
+    "canary_only": "V44 is one fixture-only Chainwielder consumer check of the generic authenticated prepared-object contract. It authorizes no live or gameplay claim."
   },
   "behavior_change": false,
-  "evidence_contract_change": true,
+  "evidence_contract_change": false,
   "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": false,
+  "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Independently review only V42 exact-snapshot authority, embedded reconstruction, and diagnostic-only locator handling.",
+    "allowed_change": "Execute exactly one fixture-only authenticated stage, scenario materialize/verify, and Chainwielder atomic bundle create/verify using the exact prepared object and SHA-256; record only compact fixture evidence and the next descriptor.",
     "allowed_files": [
-      "one_compact_review_handoff",
+      "one_compact_fixture_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
     "forbidden": [
-      "production_or_test_edits",
-      "catalog_filter_order_generation_segment_or_payload_semantic_change",
-      "bundle_create_or_verify_execution",
+      "production_skill_or_test_edit",
+      "manual_jsonl_conversion_or_unverified_route_input",
+      "live_binary_worldserver_or_launch_execution",
       "gameplay_native_controller_route_content_identity_comparison_polling_watchdog_or_threshold_change",
-      "configure_build_database_mutation_worldserver_start_or_dvc_mutation",
-      "fixture_acceptance_or_live_authorization"
+      "configure_build_database_mutation_or_dvc_mutation",
+      "retry_or_live_authorization"
     ]
   },
-  "first_broken_edge": {
-    "owner": "raid_evidence_staging_receipt_locator_authority",
-    "edge": "v42_embedded_snapshot_and_diagnostic_locator_contract_requires_independent_review",
-    "failure_postcondition": "no atomic bundle create, verify, launch contract, or worldserver start is authorized before review"
-  },
-  "verified_preservation": [
-    "all nine committed scenarios exactly match canonical runtime route selection and payload bytes",
-    "excluded rows enter only whole-catalog authority, never selected identities or runtime payload",
-    "clean HEAD, DVC member, source/staged hashes, exclusive writes, paths, symlinks, collisions, and unchanged consumer remain intact"
+  "verified_input_contract": [
+    "opened receipt bytes and external SHA-256 are authoritative; locator is diagnostic only",
+    "embedded snapshot is canonical and later verification does not reopen locator",
+    "all nine committed scenario payloads match the runtime loader exactly",
+    "raw canonical JSONL fails and authenticated prepared Magmaw object passes the unchanged consumer"
   ],
-  "required_proof": [
-    "opened canonical receipt bytes and expected hash are the sole staging-receipt authority",
-    "scenario receipt embeds or atomically preserves that exact snapshot rather than trusting the original mutable locator",
-    "replacement after the final pathname stat cannot produce or verify a mismatched scenario receipt",
-    "all V41 catalog parity hashes and existing failure boundaries remain unchanged",
-    "focused pytest, py_compile, diff-check, generic audit, and line limits pass"
+  "required_fixture_proof": [
+    "one canonical stage receipt verifies from exact clean fixture source and DVC authority",
+    "one prepared Magmaw object and scenario receipt verify with exact embedded staging snapshot and hashes",
+    "the unchanged Chainwielder create receives exactly the verified prepared-object path and SHA-256",
+    "one atomic bundle create and one verify succeed with no retry",
+    "no launch contract is executed and no worldserver, build, database, DVC, gameplay, or production mutation occurs"
   ],
   "remaining_unproven": [
-    "one authenticated prepared object reaches atomic bundle create and verify",
-    "native Held, arm, terminal, release, retained Drudges, and throughput evidence"
+    "a fresh native worldserver consumes the profile-bound suffix",
+    "Held, arm, terminal, release, retained Drudges, and throughput evidence"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": ["independent_review_accept", "independent_review_reject", "scope_violation"]
+    "terminal_edges": ["fixture_create_verify_pass", "fixture_reject", "scope_violation"]
   },
   "verification_budget": {
     "configure_count_maximum": 0,
     "worldserver_build_count_maximum": 0,
-    "staging_preflight_count_maximum": 0,
-    "atomic_bundle_create_count_maximum": 0,
-    "atomic_bundle_verify_count_maximum": 0,
+    "staging_preflight_count_maximum": 1,
+    "prepared_object_materialize_count_maximum": 1,
+    "prepared_object_verify_count_maximum": 1,
+    "atomic_bundle_create_count_maximum": 1,
+    "atomic_bundle_verify_count_maximum": 1,
     "worldserver_start_count_maximum": 0,
     "retry_count_maximum": 0,
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_receipt_locator_snapshot_authority_review_v43",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Independently review only V42 snapshot authority without production edits or live actions. If exact, admit the next bounded consumer check; otherwise emit a typed rejection."
+  "next_work_unit": "shard:generic_controller_route_hold_authenticated_prepared_object_bundle_fixture_v44",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run one fixture-only authenticated prepared-object Chainwielder bundle create and verify. Do not build or start a worldserver."
 }
