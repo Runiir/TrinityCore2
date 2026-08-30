@@ -1,0 +1,491 @@
+"""Generic fail-closed controller for the native route-hold protocol."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+import hashlib
+import json
+import re
+from typing import Any
+
+
+def _canonical_object_sha256(value: Any) -> str:
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+@dataclass(frozen=True)
+class ControllerRouteHoldLaunchIdentity:
+    """Controller-owned immutable inputs to one generic held route attempt."""
+
+    scenario_id: str
+    runtime_profile: str
+    pool_tag: str
+    route_manifest_sha256: str
+    route_node_id: str
+    actor_guid: int
+    fixture_id: str
+    seal_sha256: str
+    source_commit: str
+    route_generation: int = 1
+
+    def validate(self) -> None:
+        text_fields = {
+            "scenario_id": self.scenario_id,
+            "runtime_profile": self.runtime_profile,
+            "pool_tag": self.pool_tag,
+            "route_node_id": self.route_node_id,
+            "fixture_id": self.fixture_id,
+        }
+        for name, value in text_fields.items():
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"controller_route_hold_{name}_invalid")
+        if not isinstance(self.actor_guid, int) or isinstance(self.actor_guid, bool) \
+                or self.actor_guid <= 0:
+            raise ValueError("controller_route_hold_actor_guid_invalid")
+        if self.route_generation != 1:
+            raise ValueError("controller_route_hold_initial_generation_invalid")
+        for name, value, length in (
+            ("route_manifest_sha256", self.route_manifest_sha256, 64),
+            ("seal_sha256", self.seal_sha256, 64),
+            ("source_commit", self.source_commit, 40),
+        ):
+            if not isinstance(value, str) or not re.fullmatch(
+                rf"[0-9a-f]{{{length}}}", value
+            ):
+                raise ValueError(f"controller_route_hold_{name}_invalid")
+
+
+def controller_route_hold_launch_identity(
+    *,
+    recurrence_admission: dict[str, Any] | None,
+    required_purpose: str,
+    actor_guid: int | None,
+    scenario_id: str,
+    runtime_profile: str,
+    pool_tag: str,
+    route_manifest_sha256: str | None,
+    route_node_id: str,
+) -> ControllerRouteHoldLaunchIdentity | None:
+    """Build the generic hold identity from verified launch/config inputs."""
+
+    if recurrence_admission is None and actor_guid is None:
+        return None
+    if not isinstance(recurrence_admission, dict):
+        raise ValueError("controller_route_hold_verified_admission_missing")
+    fixture_ids = recurrence_admission.get("fixture_expansion_target_ids")
+    if (
+        not isinstance(required_purpose, str)
+        or not required_purpose
+        or recurrence_admission.get("valid") is not True
+        or recurrence_admission.get("purpose") != required_purpose
+        or not isinstance(fixture_ids, list)
+        or len(fixture_ids) != 1
+        or not isinstance(fixture_ids[0], str)
+        or not fixture_ids[0].strip()
+    ):
+        raise ValueError("controller_route_hold_verified_admission_invalid")
+    identity = ControllerRouteHoldLaunchIdentity(
+        scenario_id=scenario_id,
+        runtime_profile=runtime_profile,
+        pool_tag=pool_tag,
+        route_manifest_sha256=route_manifest_sha256 or "",
+        route_node_id=route_node_id,
+        actor_guid=actor_guid if isinstance(actor_guid, int) else 0,
+        fixture_id=fixture_ids[0],
+        seal_sha256=str(recurrence_admission.get("checkpoint_seal_sha256") or ""),
+        source_commit=str(recurrence_admission.get("source_commit") or ""),
+    )
+    identity.validate()
+    return identity
+
+
+class ControllerRouteHoldScheduler:
+    """Schedule commands from actual native route-hold JSON receipts."""
+
+    _HOLD_IDENTITY_FIELDS = (
+        "cohort_id", "server_epoch", "attempt_id", "scenario_id",
+        "runtime_profile", "route_manifest_sha256", "route_generation",
+        "route_node_id", "actor_guid", "fixture_id", "seal_sha256",
+        "source_commit",
+    )
+
+    def __init__(self, identity: ControllerRouteHoldLaunchIdentity):
+        identity.validate()
+        self.identity = identity
+        self.phase = "ready"
+        self.failure_reason: str | None = None
+        self.command_counts = {
+            "start_held": 0, "status": 0, "arm": 0, "release": 0,
+        }
+        self.command_transcript: list[str] = []
+        self.receipt_transcript: list[dict[str, Any]] = []
+        self._native_scope: dict[str, Any] | None = None
+        self._held_status_bytes: bytes | None = None
+        self._held_status_count = 0
+        self._start_ack_count = 0
+        self._arm_ack_count = 0
+        self._release_ack_count = 0
+        self._terminal_count = 0
+        self._terminal_stage: str | None = None
+
+    @property
+    def complete(self) -> bool:
+        return self.phase == "complete"
+
+    @property
+    def failed(self) -> bool:
+        return self.phase == "failed"
+
+    def _fail(self, reason: str) -> list[str]:
+        if self.failure_reason is None:
+            self.failure_reason = reason
+        self.phase = "failed"
+        return []
+
+    def _emit(self, kind: str, command: str) -> list[str]:
+        if self.failed:
+            return []
+        if self.command_counts[kind] != 0:
+            return self._fail(f"controller_route_hold_duplicate_{kind}_command")
+        self.command_counts[kind] = 1
+        self.command_transcript.append(command)
+        return [command]
+
+    def start(self) -> list[str]:
+        if self.phase != "ready":
+            return self._fail("controller_route_hold_duplicate_start_held_command")
+        self.phase = "awaiting_start_ack"
+        return self._emit(
+            "start_held",
+            "botautochaincheckpoint start-held "
+            f"{self.identity.actor_guid} {self.identity.fixture_id} "
+            f"{self.identity.seal_sha256} {self.identity.source_commit}",
+        )
+
+    def _status_command(self) -> list[str]:
+        if self.failed:
+            return []
+        if self.command_counts["status"] >= 2:
+            return self._fail("controller_route_hold_duplicate_held_status_command")
+        self.command_counts["status"] += 1
+        command = "botauto status"
+        self.command_transcript.append(command)
+        return [command]
+
+    @staticmethod
+    def _hold_from_status(row: dict[str, Any]) -> dict[str, Any] | None:
+        runtime = row.get("raid_runtime")
+        if not isinstance(runtime, dict):
+            return None
+        hold = runtime.get("controller_route_hold")
+        return hold if isinstance(hold, dict) else None
+
+    @staticmethod
+    def _hold_from_checkpoint(row: dict[str, Any]) -> dict[str, Any] | None:
+        hold = row.get("controller_route_hold")
+        return hold if isinstance(hold, dict) else None
+
+    def _hold_rejections(
+        self, hold: dict[str, Any], *, expected_phase: str | None = None,
+    ) -> list[str]:
+        expected = {
+            "scenario_id": self.identity.scenario_id,
+            "runtime_profile": self.identity.runtime_profile,
+            "route_manifest_sha256": self.identity.route_manifest_sha256,
+            "route_generation": self.identity.route_generation,
+            "route_node_id": self.identity.route_node_id,
+            "actor_guid": self.identity.actor_guid,
+            "fixture_id": self.identity.fixture_id,
+            "seal_sha256": self.identity.seal_sha256,
+            "source_commit": self.identity.source_commit,
+        }
+        reasons: list[str] = []
+        if hold.get("ok") is not True:
+            reasons.append(
+                str(hold.get("failure_reason") or "controller_route_hold_not_ok")
+            )
+        reasons.extend(
+            f"controller_route_hold_{field}_mismatch"
+            for field, value in expected.items() if hold.get(field) != value
+        )
+        if expected_phase is not None and hold.get("phase") != expected_phase:
+            reasons.append("controller_route_hold_phase_mismatch")
+        for field in ("cohort_id", "server_epoch", "attempt_id"):
+            value = hold.get(field)
+            if field == "cohort_id":
+                valid = isinstance(value, str) and bool(value)
+            else:
+                valid = isinstance(value, int) and not isinstance(value, bool) and value > 0
+            if not valid:
+                reasons.append(f"controller_route_hold_{field}_invalid")
+        if self._native_scope is not None:
+            reasons.extend(
+                f"controller_route_hold_{field}_drift"
+                for field in self._HOLD_IDENTITY_FIELDS
+                if hold.get(field) != self._native_scope.get(field)
+            )
+        return list(dict.fromkeys(reasons))
+
+    def _record(self, kind: str, row: dict[str, Any], hold: dict[str, Any]) -> None:
+        self.receipt_transcript.append({
+            "kind": kind,
+            "phase": hold.get("phase"),
+            "route_generation": hold.get("route_generation"),
+            "checkpoint_stage": hold.get("checkpoint_stage"),
+            "checkpoint_terminal": hold.get("checkpoint_terminal"),
+            "acquire_count": hold.get("acquire_count"),
+            "arm_ack_count": hold.get("arm_ack_count"),
+            "release_count": hold.get("release_count"),
+            "payload_sha256": _canonical_object_sha256(row),
+        })
+
+    def _status_route_generation(self, row: dict[str, Any]) -> int | None:
+        runtime = row.get("raid_runtime")
+        runtime = runtime if isinstance(runtime, dict) else {}
+        runtime_route = runtime.get("route_progress")
+        runtime_route = runtime_route if isinstance(runtime_route, dict) else {}
+        status_route = row.get("validation_route")
+        status_route = status_route if isinstance(status_route, dict) else {}
+        generations = [
+            value for value in (
+                runtime_route.get("generation"), status_route.get("generation")
+            ) if value is not None
+        ]
+        if not generations or any(
+            not isinstance(value, int) or isinstance(value, bool) or value <= 0
+            for value in generations
+        ) or len(set(generations)) != 1:
+            return None
+        return generations[0]
+
+    def _stable_status_projection(
+        self, row: dict[str, Any], hold: dict[str, Any], route_generation: int,
+    ) -> bytes:
+        runtime = row["raid_runtime"]
+        projection = {
+            "cohort_id": row.get("cohort_id"),
+            "active_profile": row.get("active_profile"),
+            "runtime_active": runtime.get("active"),
+            "server_epoch": runtime.get("server_epoch"),
+            "attempt_id": runtime.get("attempt_id"),
+            "route_generation": route_generation,
+            "controller_route_hold": {
+                field: hold.get(field) for field in self._HOLD_IDENTITY_FIELDS
+            } | {
+                "phase": hold.get("phase"),
+                "acquire_count": hold.get("acquire_count"),
+                "arm_ack_count": hold.get("arm_ack_count"),
+                "checkpoint_stage": hold.get("checkpoint_stage"),
+                "checkpoint_terminal": hold.get("checkpoint_terminal"),
+                "checkpoint_identity_preserved": hold.get(
+                    "checkpoint_identity_preserved"
+                ),
+                "release_count": hold.get("release_count"),
+            },
+        }
+        return json.dumps(
+            projection, sort_keys=True, separators=(",", ":"),
+        ).encode()
+
+    def _observe_direct_hold(self, row: dict[str, Any]) -> list[str]:
+        hold = row
+        if self.phase == "awaiting_start_ack":
+            rejections = self._hold_rejections(hold, expected_phase="held")
+            if (
+                hold.get("acquire_count") != 1
+                or hold.get("arm_ack_count") != 0
+                or hold.get("release_count") != 0
+                or hold.get("checkpoint_terminal") is not False
+            ):
+                rejections.append("controller_route_hold_start_ack_shape_invalid")
+            if rejections:
+                return self._fail(rejections[0])
+            self._native_scope = {
+                field: hold.get(field) for field in self._HOLD_IDENTITY_FIELDS
+            }
+            self._start_ack_count = 1
+            self._record("start_held_ack", row, hold)
+            self.phase = "collecting_held_status"
+            return self._status_command()
+        if self.phase == "awaiting_release_ack":
+            rejections = self._hold_rejections(hold, expected_phase="released")
+            if hold.get("release_count") != 1:
+                rejections.append("controller_route_hold_release_ack_shape_invalid")
+            if rejections:
+                return self._fail(rejections[0])
+            self._release_ack_count = 1
+            self._record("release_ack", row, hold)
+            self.phase = "awaiting_post_release_advance"
+            self.command_counts["status"] += 1
+            command = "botauto status"
+            self.command_transcript.append(command)
+            return [command]
+        if hold.get("phase") == "held":
+            return self._fail("controller_route_hold_duplicate_start_held_ack")
+        if hold.get("phase") == "released":
+            return self._fail("controller_route_hold_duplicate_release_ack")
+        return self._fail("controller_route_hold_unexpected_direct_receipt")
+
+    def _observe_status(self, row: dict[str, Any]) -> list[str]:
+        hold = self._hold_from_status(row)
+        if hold is None:
+            return self._fail("controller_route_hold_status_receipt_missing")
+        rejections = self._hold_rejections(hold)
+        runtime = row.get("raid_runtime")
+        route_generation = self._status_route_generation(row)
+        if (
+            row.get("ok") is not True
+            or row.get("action") != "botauto_status"
+            or row.get("active_profile") != self.identity.runtime_profile
+            or not isinstance(runtime, dict)
+            or runtime.get("active") is not True
+            or runtime.get("server_epoch") != hold.get("server_epoch")
+            or runtime.get("attempt_id") != hold.get("attempt_id")
+        ):
+            rejections.append("controller_route_hold_active_status_invalid")
+        if route_generation is None:
+            rejections.append("controller_route_hold_status_generation_invalid")
+        if rejections:
+            return self._fail(rejections[0])
+        assert route_generation is not None
+        if route_generation > self.identity.route_generation and \
+                self.phase != "awaiting_post_release_advance":
+            return self._fail("controller_route_hold_route_advanced_before_release")
+        self._record("status", row, hold)
+        if self.phase == "collecting_held_status":
+            if hold.get("phase") != "held" or route_generation != 1:
+                return self._fail("controller_route_hold_unstable_held_status")
+            status_bytes = self._stable_status_projection(
+                row, hold, route_generation,
+            )
+            if self._held_status_bytes is None:
+                self._held_status_bytes = status_bytes
+                self._held_status_count = 1
+                return self._status_command()
+            if status_bytes != self._held_status_bytes:
+                return self._fail("controller_route_hold_unstable_held_status")
+            self._held_status_count = 2
+            self.phase = "awaiting_arm_ack"
+            return self._emit(
+                "arm",
+                "botautochaincheckpoint arm "
+                f"{self.identity.actor_guid} {self.identity.seal_sha256} "
+                f"{self.identity.source_commit}",
+            )
+        if self.phase == "awaiting_terminal":
+            if hold.get("phase") == "armed":
+                if hold.get("arm_ack_count") != 1:
+                    return self._fail("controller_route_hold_arm_ack_lost")
+                return []
+            if (
+                hold.get("phase") != "checkpoint_terminal"
+                or hold.get("checkpoint_terminal") is not True
+                or hold.get("checkpoint_identity_preserved") is not True
+                or hold.get("checkpoint_stage") not in {"completed", "failed"}
+            ):
+                return self._fail("controller_route_hold_checkpoint_lifecycle_invalid")
+            self._terminal_count = 1
+            self._terminal_stage = hold["checkpoint_stage"]
+            self.phase = "awaiting_release_ack"
+            return self._emit(
+                "release",
+                "botautochaincheckpoint release "
+                f"{self.identity.actor_guid} {self.identity.seal_sha256} "
+                f"{self.identity.source_commit}",
+            )
+        if self.phase == "awaiting_release_ack":
+            if hold.get("phase") != "checkpoint_terminal":
+                return self._fail("controller_route_hold_early_release_without_ack")
+            return []
+        if self.phase == "awaiting_post_release_advance":
+            if hold.get("phase") != "released" or hold.get("release_count") != 1:
+                return self._fail("controller_route_hold_release_status_invalid")
+            if route_generation == self.identity.route_generation:
+                return []
+            if route_generation != self.identity.route_generation + 1:
+                return self._fail("controller_route_hold_post_release_generation_invalid")
+            self.phase = "complete"
+            return []
+        if self.phase in {"awaiting_start_ack", "awaiting_arm_ack"}:
+            return self._fail("controller_route_hold_status_before_ack")
+        if self.phase == "complete":
+            return []
+        return self._fail("controller_route_hold_unexpected_status")
+
+    def _observe_arm_ack(self, row: dict[str, Any]) -> list[str]:
+        hold = self._hold_from_checkpoint(row)
+        if hold is None:
+            return self._fail("controller_route_hold_arm_receipt_missing")
+        if self.phase != "awaiting_arm_ack":
+            return self._fail("controller_route_hold_duplicate_or_stale_arm_ack")
+        rejections = self._hold_rejections(hold, expected_phase="armed")
+        if (
+            row.get("ok") is not True
+            or hold.get("arm_ack_count") != 1
+            or hold.get("checkpoint_terminal") is not False
+            or row.get("actor_guid") != self.identity.actor_guid
+            or row.get("fixture_id") != self.identity.fixture_id
+        ):
+            rejections.append("controller_route_hold_arm_ack_shape_invalid")
+        if rejections:
+            return self._fail(rejections[0])
+        self._arm_ack_count = 1
+        self._record("arm_ack", row, hold)
+        self.phase = "awaiting_terminal"
+        return []
+
+    def observe(self, row: dict[str, Any]) -> list[str]:
+        """Consume one actual native JSON row and return ordered commands."""
+
+        if self.failed or not isinstance(row, dict):
+            return []
+        if row.get("action") == "botauto_status":
+            return self._observe_status(row)
+        if row.get("action") == "botauto_chainwielder_checkpoint":
+            return self._observe_arm_ack(row)
+        if "phase" in row and "acquire_count" in row:
+            return self._observe_direct_hold(row)
+        return []
+
+    def finish(self) -> None:
+        if self.complete or self.failed:
+            return
+        missing = {
+            "awaiting_start_ack": "controller_route_hold_start_ack_missing",
+            "collecting_held_status": "controller_route_hold_stable_status_missing",
+            "awaiting_arm_ack": "controller_route_hold_arm_ack_missing",
+            "awaiting_terminal": "controller_route_hold_checkpoint_lifecycle_missing",
+            "awaiting_release_ack": "controller_route_hold_release_ack_missing",
+            "awaiting_post_release_advance": (
+                "controller_route_hold_post_release_advance_missing"
+            ),
+        }.get(self.phase, "controller_route_hold_protocol_incomplete")
+        self._fail(missing)
+
+    def receipt(self) -> dict[str, Any]:
+        return {
+            "schema": "generic_controller_route_hold_scheduler_v1",
+            "enabled": True,
+            "phase": self.phase,
+            "gate_passed": self.complete and not self.failed,
+            "failure_reason": self.failure_reason,
+            "launch_identity": {
+                field: getattr(self.identity, field)
+                for field in self.identity.__dataclass_fields__
+            },
+            "native_scope": self._native_scope,
+            "held_status_count": self._held_status_count,
+            "held_status_identity_sha256": (
+                hashlib.sha256(self._held_status_bytes).hexdigest()
+                if self._held_status_bytes is not None else None
+            ),
+            "start_ack_count": self._start_ack_count,
+            "arm_ack_count": self._arm_ack_count,
+            "checkpoint_terminal_count": self._terminal_count,
+            "checkpoint_terminal_stage": self._terminal_stage,
+            "release_ack_count": self._release_ack_count,
+            "command_counts": dict(self.command_counts),
+            "command_transcript": list(self.command_transcript),
+            "receipt_transcript": list(self.receipt_transcript),
+        }

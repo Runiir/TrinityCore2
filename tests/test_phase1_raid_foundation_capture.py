@@ -1,3 +1,4 @@
+import ast
 import hashlib
 import json
 import io
@@ -1278,6 +1279,37 @@ def test_generic_controller_route_hold_scheduler_exact_production_transcript():
     assert receipt["checkpoint_terminal_count"] == 1
     assert receipt["checkpoint_terminal_stage"] == "completed"
     assert receipt["release_ack_count"] == 1
+
+
+def test_generic_controller_route_hold_scheduler_extraction_is_bounded():
+    module_path = Path("tools/raid_program/controller_route_hold.py")
+    controller_path = Path(
+        "tools/raid_program/capture_phase1_raid_foundation.py"
+    )
+    module_source = module_path.read_text(encoding="utf-8")
+    controller_lines = len(
+        controller_path.read_text(encoding="utf-8").splitlines()
+    )
+    assert len(module_source.splitlines()) == 491
+    assert controller_lines == 7767
+    assert 8239 - controller_lines == 472
+
+    tree = ast.parse(module_source)
+    branch_nodes = (
+        ast.If, ast.For, ast.While, ast.Try, ast.BoolOp, ast.IfExp,
+        ast.Match, ast.comprehension,
+    )
+    metrics = {
+        node.name: sum(
+            isinstance(child, branch_nodes) for child in ast.walk(node)
+        )
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    assert len(metrics) == 22
+    assert sum(metrics.values()) == 100
+    assert max(metrics.values()) == 26
+    assert metrics["_observe_status"] == 26
 
 
 def test_generic_controller_route_hold_scheduler_rejects_old_poll_race():

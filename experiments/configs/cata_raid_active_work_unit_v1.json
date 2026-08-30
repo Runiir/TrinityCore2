@@ -1,63 +1,56 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_scheduler_v12_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_scheduler_v12",
+  "epoch_id": "generic_controller_route_hold_scheduler_extraction_v12_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_scheduler_extraction_v12",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "implementation_complete",
-  "gate_state": "generic_controller_protocol_scheduler_focused_tests_green_live_unverified",
-  "immutable_input_commit": "39422c9e229b66a010064020fd56c8fe2e9c8bb3",
-  "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_implementation_handoff_v1.json",
-    "sha256": "9643b7f1645fc37de47340bde383b0cefc1beab8624872bfcedc547a031e4a54"
-  },
+  "gate_state": "generic_scheduler_extracted_focused_tests_green_live_unverified",
+  "immutable_input_commit": "3873ed6510d4d1c298fc826ddf4f9598932a1eac",
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_semantics": "Affliction, actor 30008, Chainwielder, Magmaw, BWD 10N, and the current fixture are inputs to one validation run only. The scheduler branches on none of them."
+    "canaries_only": ["Affliction", "actor 30008", "Chainwielder", "Magmaw", "BWD 10N"]
   },
-  "implementation": {
+  "extraction": {
+    "module": "tools/raid_program/controller_route_hold.py",
+    "module_sha256": "44a2712700b4b797dedd822058424505147585d9d0b836a0758c5205c22e2968",
+    "module_physical_lines": 491,
     "controller": "tools/raid_program/capture_phase1_raid_foundation.py",
-    "controller_sha256": "efd89fb5e3bca6482a531a01edddc71538eecdf3d364949a520623d9cf240069",
-    "tests": "tests/test_phase1_raid_foundation_capture.py",
-    "tests_sha256": "a1a53fca0d53a38791b5fec41e6fb786e959c836c9b73f7be6b0eadef10525d0",
-    "receipt": "raid_runtime.controller_route_hold plus generic_controller_route_hold_scheduler_v1",
-    "legacy_adjacent_poll": "bypassed for fixture-expansion captures; ordinary capture scheduling is unchanged"
+    "controller_sha256": "d030761583d9deb381be624219d7b96160dc8fcdb84e95bd02c10df7f22ff6d6",
+    "controller_lines_before": 8239,
+    "controller_lines_after": 7767,
+    "controller_lines_removed": 472,
+    "tests_sha256": "80416618216d329f7d8d1a5a1d52b972e17f8f4553df238d5eca3826e711b281",
+    "production_integration": "capture imports and invokes the extracted scheduler and response parser directly"
   },
-  "verified_protocol": [
-    "start-held emitted once and acknowledged against launch plus native attempt identity",
-    "two canonical byte-identical active generation-one held identity projections",
-    "sealed arm emitted once and acknowledged",
-    "one identity-preserved completed or typed-failed checkpoint terminal",
-    "release emitted and acknowledged once",
-    "route generation two admitted only after release"
-  ],
-  "focused_validation": {
+  "deterministic_complexity": {
+    "tool": "Python stdlib ast in focused production-controller test",
+    "protocol_function_count": 22,
+    "aggregate_branch_nodes": 100,
+    "maximum_branch_nodes": 26,
+    "maximum_function": "ControllerRouteHoldScheduler._observe_status",
+    "module_line_limit": 1000,
+    "module_line_limit_passed": true
+  },
+  "validation": {
     "command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py -k 'generic_controller_route_hold_scheduler'",
-    "first_run": "2 passed, 1 failed, 129 deselected; rejection priority hid the native typed start failure behind phase mismatch",
-    "correction": "preserve the native failure_reason as the first fail-closed reason",
-    "correction_rerun": "3 passed, 129 deselected in 0.20s",
+    "result": "4 passed, 129 deselected in 0.36s",
+    "collection_correction": "the first extraction attempt left the former class decorator attached to the following function; removed before the passing correction run",
+    "py_compile": "passed",
+    "git_diff_check": "passed",
     "configure_count": 0,
     "build_count": 0,
     "worldserver_start_count": 0,
     "database_mutated": false,
     "dvc_mutated": false
   },
-  "negative_protocol_coverage": [
-    "start-held rejection",
-    "identity or held-status drift",
-    "generation advance before arm or release",
-    "missing or duplicate arm acknowledgement",
-    "absent or rejected checkpoint lifecycle",
-    "early, missing, or duplicate release acknowledgement",
-    "missing post-release generation advance"
-  ],
+  "behavior_change": false,
   "remaining_unproven": [
-    "the worldserver builds at the implementation commit",
-    "one live native transcript matches the focused production-controller transcript",
-    "the live released route advances after one accepted checkpoint terminal"
+    "native build success at the extraction commit",
+    "one live start-held through post-release-generation transcript"
   ],
   "next_work_unit": "shard:generic_controller_route_hold_one_build_one_start_v13",
-  "next_action": "A separate shard owner may propose one clean build and at most one completion-watchdog worldserver start. This descriptor does not authorize or execute that run.",
-  "next_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_scheduler_handoff_v1.json"
+  "next_action": "One separate clean build and at most one completion-watchdog worldserver start remain proposed but unauthorized by this extraction unit.",
+  "next_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_scheduler_extraction_handoff_v1.json"
 }

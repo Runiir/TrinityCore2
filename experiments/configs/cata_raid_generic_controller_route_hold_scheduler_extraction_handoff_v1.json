@@ -1,0 +1,53 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_scheduler_extraction_v12",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "passed",
+  "immutable_input_commit": "3873ed6510d4d1c298fc826ddf4f9598932a1eac",
+  "scope": {
+    "universal": true,
+    "specs": "all configured DPS, tank, and healer specs",
+    "encounters": "all route-manifest nodes",
+    "modes": ["10N", "10H", "25N", "25H"],
+    "canary_branching_or_identity_constants_in_module": false,
+    "native_adapter_name": "The existing botautochaincheckpoint command name is preserved as protocol compatibility, not encounter branching."
+  },
+  "files": {
+    "tools/raid_program/controller_route_hold.py": "44a2712700b4b797dedd822058424505147585d9d0b836a0758c5205c22e2968",
+    "tools/raid_program/capture_phase1_raid_foundation.py": "d030761583d9deb381be624219d7b96160dc8fcdb84e95bd02c10df7f22ff6d6",
+    "tests/test_phase1_raid_foundation_capture.py": "80416618216d329f7d8d1a5a1d52b972e17f8f4553df238d5eca3826e711b281"
+  },
+  "maintainability_receipt": {
+    "controller_lines_before": 8239,
+    "controller_lines_after": 7767,
+    "extracted_module_lines": 491,
+    "stdlib_ast_protocol_functions": 22,
+    "stdlib_ast_total_branch_nodes": 100,
+    "stdlib_ast_max_branch_nodes": 26,
+    "stdlib_ast_max_function": "_observe_status"
+  },
+  "behavior_receipt": {
+    "protocol_changed": false,
+    "commands_changed": false,
+    "receipt_schema_changed": false,
+    "polling_changed": false,
+    "production_controller_uses_extracted_implementation": true,
+    "focused_tests": "4 passed, 129 deselected in 0.36s",
+    "py_compile": "passed",
+    "git_diff_check": "passed"
+  },
+  "mutations": {
+    "native_or_gameplay": false,
+    "build_or_server": false,
+    "database": false,
+    "dvc": false
+  },
+  "proposed_live_followup": {
+    "work_unit": "shard:generic_controller_route_hold_one_build_one_start_v13",
+    "authorization": "closed_pending_separate_admission",
+    "build_budget": 1,
+    "worldserver_start_budget": 1,
+    "timer": "completion_watchdog_only",
+    "fixed_success_timer_seconds": null
+  }
+}
