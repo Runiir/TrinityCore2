@@ -15,8 +15,12 @@ from typing import Any
 from tools.raid_program.canonical_route_staging import (
     CanonicalRouteStagingError,
     STAGING_RECEIPT_SCHEMA,
-    atomic_write_new,
+    copy_exact_file,
+    file_sha_rows,
+    git_output,
+    is_within,
     stage_canonical_route as _stage_canonical_route,
+    verify_tracked_snapshot,
 )
 from tools.raid_program.queued_build import (
     CoordinatorError,
@@ -49,40 +53,25 @@ TARGET_ENTRY = 42649
 ACTOR_COUNT = 10
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 TRACKED_LEDGER_RELATIVE_PATH = Path(
-    "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json"
-)
+    "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json")
 BUNDLE_NAMES = {
     "source_route_manifest": "source_route_manifest.json",
-    "route_manifest": "route_manifest.json",
-    "profile_manifest": "runtime_profiles.json",
+    "route_manifest": "route_manifest.json", "profile_manifest": "runtime_profiles.json",
     "runtime_config": "worldserver.validation.conf",
     "base_runtime_config": "prepared_base_runtime.conf",
-    "build_receipt": "build_receipt.json",
-    "build_policy": "build_policy.json",
-    "ledger": "recurrence_ledger.json",
-    "decision": "recurrence_decision.json",
+    "build_receipt": "build_receipt.json", "build_policy": "build_policy.json",
+    "ledger": "recurrence_ledger.json", "decision": "recurrence_decision.json",
     "suite_receipt": "regression_suite_receipt.json",
-    "checkpoint_seal": "checkpoint_seal.json",
-    "admission": "recurrence_admission.json",
-    "launch_contract": "launch_contract.json",
-    "bundle_manifest": "bundle_manifest.json",
+    "checkpoint_seal": "checkpoint_seal.json", "admission": "recurrence_admission.json",
+    "launch_contract": "launch_contract.json", "bundle_manifest": "bundle_manifest.json",
 }
 
 REQUIRED_SUFFIX_NODE_IDS = (
-    NODE_ID,
-    "bwd.magmaw.drudges",
-    "bwd.magmaw.encounter",
-)
+    NODE_ID, "bwd.magmaw.drudges", "bwd.magmaw.encounter")
 ROUTE_INVARIANT_FIELDS = (
-    "bot_start_map_id",
-    "bot_start_x",
-    "bot_start_y",
-    "bot_start_z",
-    "bot_start_o",
-    "roster_identity",
-    "diagnostic_only",
-    "diagnostic_parent_scenario_id",
-    "diagnostic_prerequisite_state",
+    "bot_start_map_id", "bot_start_x", "bot_start_y", "bot_start_z",
+    "bot_start_o", "roster_identity", "diagnostic_only",
+    "diagnostic_parent_scenario_id", "diagnostic_prerequisite_state",
 )
 
 CONFIG_VALUES = {
@@ -99,24 +88,13 @@ CONFIG_VALUES = {
     "BotWorld.ValidationRoute.PrepullCheckpointEnable": "1",
     "BotProgression.AllowRaids": "1",
     f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.Enable": "1",
-    f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.FixtureId": (
-        f'"{CHAINWIELDER_CHECKPOINT_FIXTURE_ID}"'
-    ),
+    f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.FixtureId":
+        f'"{CHAINWIELDER_CHECKPOINT_FIXTURE_ID}"',
 }
 
 
 class BundleError(RuntimeError):
     pass
-
-
-def _git(worktree: Path, *args: str, binary: bool = False) -> str | bytes:
-    result = subprocess.run(
-        ["git", "-C", str(worktree), *args],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    return result.stdout if binary else result.stdout.decode().strip()
 
 
 def _json(path: Path, label: str) -> dict[str, Any]:
@@ -141,14 +119,6 @@ def _canonical_pretty_json(value: object) -> bytes:
     return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
 
-def _is_within(path: Path, parent: Path) -> bool:
-    try:
-        path.relative_to(parent)
-    except ValueError:
-        return False
-    return True
-
-
 def _require_hash(path: Path, expected: str, label: str) -> None:
     if not SHA256_RE.fullmatch(expected):
         raise BundleError(f"{label}_sha256_invalid")
@@ -162,11 +132,12 @@ def _source_identity(
     worktree: Path, expected_commit: str, expected_tree: str
 ) -> tuple[str, str]:
     worktree = worktree.resolve()
-    head = str(_git(worktree, "rev-parse", "HEAD"))
-    tree = str(_git(worktree, "rev-parse", "HEAD^{tree}"))
+    head = str(git_output(worktree, "rev-parse", "HEAD"))
+    tree = str(git_output(worktree, "rev-parse", "HEAD^{tree}"))
     if head != expected_commit or tree != expected_tree:
         raise BundleError("source_identity_mismatch")
-    porcelain = _git(worktree, "status", "--porcelain=v1", "-z", binary=True)
+    porcelain = git_output(
+        worktree, "status", "--porcelain=v1", "-z", binary=True)
     if porcelain:
         raise BundleError("source_worktree_dirty")
     return head, tree
@@ -175,7 +146,7 @@ def _source_identity(
 def _tracked_profile_manifest(worktree: Path) -> tuple[Path, dict[str, Any]]:
     path = worktree.resolve() / PROFILE_MANIFEST_RELATIVE_PATH
     try:
-        committed = _git(
+        committed = git_output(
             worktree, "show", f"HEAD:{PROFILE_MANIFEST_RELATIVE_PATH.as_posix()}",
             binary=True,
         )
@@ -195,13 +166,13 @@ def _validate_locations(
 ) -> None:
     worktree = worktree.resolve()
     output = output_dir.resolve()
-    if _is_within(output, worktree):
+    if is_within(output, worktree):
         raise BundleError("output_inside_worktree")
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         raise BundleError("output_not_empty")
     for label, path in material_inputs.items():
         resolved = path.resolve()
-        if _is_within(resolved, worktree):
+        if is_within(resolved, worktree):
             if label not in (read_only_source_inputs or set()):
                 raise BundleError(f"{label}_inside_mutable_worktree")
             relative = resolved.relative_to(worktree).as_posix()
@@ -216,15 +187,15 @@ def _validate_locations(
                 ):
                     raise BundleError(f"{label}_source_path_mismatch")
             try:
-                _git(worktree, "ls-files", "--error-unmatch", relative)
-                _git(worktree, "cat-file", "-e", f"HEAD:{relative}")
+                git_output(worktree, "ls-files", "--error-unmatch", relative)
+                git_output(worktree, "cat-file", "-e", f"HEAD:{relative}")
             except subprocess.CalledProcessError as error:
                 raise BundleError(f"{label}_not_tracked_read_only_source") from error
-        if _is_within(resolved, output) or resolved == output:
+        if is_within(resolved, output) or resolved == output:
             raise BundleError(f"{label}_aliases_output")
     for path in capture_paths:
         resolved = path.resolve()
-        if _is_within(resolved, worktree) or _is_within(resolved, output):
+        if is_within(resolved, worktree) or is_within(resolved, output):
             raise BundleError("capture_output_location_invalid")
     if not binary.resolve().is_file():
         raise BundleError("binary_missing")
@@ -378,16 +349,6 @@ def _verify_gate_bearing_build_receipt(receipt: Path, policy: Path) -> dict[str,
     return report
 
 
-def _copy_exact(source: Path, destination: Path) -> None:
-    try:
-        atomic_write_new(destination, source.read_bytes())
-    except CanonicalRouteStagingError as error:
-        raise BundleError(str(error)) from error
-    if sha256_file(source) != sha256_file(destination):
-        destination.unlink(missing_ok=True)
-        raise BundleError(f"copy_hash_mismatch:{destination.name}")
-
-
 def stage_canonical_route(
     *, worktree: Path, source_route: Path, expected_sha256: str,
     external_run_root: Path,
@@ -403,13 +364,6 @@ def stage_canonical_route(
         )
     except CanonicalRouteStagingError as error:
         raise BundleError(str(error)) from error
-
-
-def _file_rows(root: Path, names: list[str]) -> list[dict[str, str]]:
-    return [
-        {"path": name, "sha256": sha256_file(root / name)}
-        for name in sorted(names)
-    ]
 
 
 def _logical_bindings(root: Path) -> dict[str, Path]:
@@ -483,7 +437,7 @@ def verify_bundle(
             "base_runtime_config", "build_policy",
         )
     ]
-    if launch.get("canonical_payload_manifest") != _file_rows(root, payload_names):
+    if launch.get("canonical_payload_manifest") != file_sha_rows(root, payload_names):
         raise BundleError("launch_payload_manifest_mismatch")
     source = launch.get("source") or {}
     worktree = Path(str(source.get("worktree") or ""))
@@ -668,7 +622,7 @@ def verify_bundle(
 
 def _failure_receipt(output_dir: Path, reason: str, worktree: Path) -> None:
     destination = output_dir.resolve().with_name(output_dir.name + ".failure.json")
-    if _is_within(destination, worktree.resolve()):
+    if is_within(destination, worktree.resolve()):
         destination = worktree.resolve().parent / destination.name
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_name(destination.name + ".tmp")
@@ -688,43 +642,51 @@ def create_bundle(
     build_receipt_sha256: str, build_policy: Path, build_policy_sha256: str,
     decision: Path, decision_sha256: str, suite_receipt: Path,
     suite_receipt_sha256: str, route_manifest: Path, route_manifest_sha256: str,
-    base_runtime_config: Path, base_runtime_config_sha256: str, ledger: Path,
+    base_runtime_config_receipt: Path,
+    base_runtime_config_receipt_sha256: str, ledger: Path,
     ledger_sha256: str, scenario_id: str, runtime_profile_id: str,
     pool_tag: str, actor_guid: int, checkpoint_fixture_id: str,
 ) -> dict[str, Any]:
     output_dir = output_dir.resolve()
     staging: Path | None = None
-    copied_inputs = {
-        "build_receipt": build_receipt,
-        "decision": decision,
-        "suite_receipt": suite_receipt,
-        "route_manifest": route_manifest,
-        "base_runtime_config": base_runtime_config,
-        "ledger": ledger,
-        "build_policy": build_policy,
-    }
     try:
-        if (
-            scenario_id != SCENARIO_ID or runtime_profile_id != SCENARIO_ID
-            or pool_tag != SCENARIO_ID or actor_guid != ACTOR_GUID
-            or checkpoint_fixture_id != CHAINWIELDER_CHECKPOINT_FIXTURE_ID
-        ):
-            raise BundleError("chainwielder_identity_input_mismatch")
+        copied_inputs = {
+            "build_receipt": build_receipt, "decision": decision,
+            "suite_receipt": suite_receipt, "route_manifest": route_manifest,
+            "ledger": ledger, "build_policy": build_policy,
+        }
         capture_stem = output_dir.with_name(output_dir.name + ".capture")
         capture_paths = [
             capture_stem.with_suffix(".json"),
             capture_stem.with_suffix(".raw.jsonl"),
             capture_stem.with_suffix(".worldserver.log"),
         ]
-        _validate_locations(
-            worktree=worktree, output_dir=output_dir,
-            material_inputs=copied_inputs, binary=binary,
-            capture_paths=capture_paths,
-            read_only_source_inputs={"build_policy", "ledger"},
-            exact_read_only_source_inputs={
+        location_args = {
+            "worktree": worktree, "output_dir": output_dir,
+            "binary": binary, "capture_paths": capture_paths,
+            "read_only_source_inputs": {"build_policy", "ledger"},
+            "exact_read_only_source_inputs": {
                 "ledger": TRACKED_LEDGER_RELATIVE_PATH,
             },
-        )
+        }
+        _validate_locations(material_inputs=copied_inputs, **location_args)
+        try:
+            base_snapshot = verify_tracked_snapshot(
+                worktree=worktree, receipt_path=base_runtime_config_receipt,
+                expected_receipt_sha256=base_runtime_config_receipt_sha256,
+            )
+        except CanonicalRouteStagingError as error:
+            raise BundleError(str(error)) from error
+        base_runtime_config = Path(base_snapshot["snapshot_path"])
+        base_runtime_config_sha256 = str(base_snapshot["snapshot_sha256"])
+        copied_inputs["base_runtime_config"] = base_runtime_config
+        if (
+            scenario_id != SCENARIO_ID or runtime_profile_id != SCENARIO_ID
+            or pool_tag != SCENARIO_ID or actor_guid != ACTOR_GUID
+            or checkpoint_fixture_id != CHAINWIELDER_CHECKPOINT_FIXTURE_ID
+        ):
+            raise BundleError("chainwielder_identity_input_mismatch")
+        _validate_locations(material_inputs=copied_inputs, **location_args)
         commit, tree = _source_identity(worktree, source_commit, source_tree)
         hashes = {
             "binary": (binary, binary_sha256),
@@ -753,8 +715,8 @@ def create_bundle(
             "build_receipt", "build_policy", "decision", "suite_receipt",
             "base_runtime_config", "ledger",
         ):
-            _copy_exact(copied_inputs[key], staging / BUNDLE_NAMES[key])
-        _copy_exact(
+            copy_exact_file(copied_inputs[key], staging / BUNDLE_NAMES[key])
+        copy_exact_file(
             route_manifest, staging / BUNDLE_NAMES["source_route_manifest"]
         )
         _write_json(staging / BUNDLE_NAMES["route_manifest"], runtime_route)
@@ -862,7 +824,7 @@ def create_bundle(
                     )
                 },
             },
-            "canonical_payload_manifest": _file_rows(staging, payload_names),
+            "canonical_payload_manifest": file_sha_rows(staging, payload_names),
             "completion_watchdog": {
                 "duration_policy": "completion-watchdog",
                 "terminal_edges": [
@@ -909,7 +871,7 @@ def create_bundle(
         _write_json(staging / BUNDLE_NAMES["launch_contract"], launch)
         _write_json(staging / BUNDLE_NAMES["bundle_manifest"], {
             "schema": MANIFEST_SCHEMA,
-            "files": _file_rows(
+            "files": file_sha_rows(
                 staging,
                 payload_names + [BUNDLE_NAMES["launch_contract"]],
             ),
@@ -926,7 +888,10 @@ def create_bundle(
             "bundle": str(output_dir),
             "pre_rename_verified": result["valid"],
         }
-    except (BundleError, RecurrenceAdmissionError, OSError, subprocess.SubprocessError) as error:
+    except (
+        BundleError, CanonicalRouteStagingError, RecurrenceAdmissionError,
+        OSError, subprocess.SubprocessError,
+    ) as error:
         if staging is not None and staging.exists():
             shutil.rmtree(staging)
         reason = str(error) or type(error).__name__
@@ -952,7 +917,7 @@ def parser() -> argparse.ArgumentParser:
     create.add_argument("--source-tree", required=True)
     for name in (
         "binary", "build-receipt", "build-policy", "decision", "suite-receipt",
-        "route-manifest", "base-runtime-config", "ledger",
+        "route-manifest", "base-runtime-config-receipt", "ledger",
     ):
         create.add_argument(f"--{name}", type=Path, required=True)
         create.add_argument(f"--{name}-sha256", required=True)

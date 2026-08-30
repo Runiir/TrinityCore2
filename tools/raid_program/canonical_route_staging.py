@@ -18,8 +18,10 @@ import yaml
 
 
 STAGING_RECEIPT_SCHEMA = "cata_raid_external_route_staging_receipt_v1"
+TRACKED_SNAPSHOT_RECEIPT_SCHEMA = "cata_raid_tracked_snapshot_receipt_v1"
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 MD5_RE = re.compile(r"[0-9a-f]{32}")
+ARTIFACT_LABEL_RE = re.compile(r"[a-z0-9][a-z0-9_.-]*")
 STAGING_RECEIPT_FIELDS = {
     "schema",
     "source_commit",
@@ -27,6 +29,15 @@ STAGING_RECEIPT_FIELDS = {
     "source_sha256",
     "staged_path",
     "staged_sha256",
+}
+TRACKED_SNAPSHOT_RECEIPT_FIELDS = {
+    "schema",
+    "source_commit",
+    "source_tree",
+    "source_relative_path",
+    "source_sha256",
+    "snapshot_path",
+    "snapshot_sha256",
 }
 
 
@@ -66,6 +77,32 @@ def _md5_bytes(payload: bytes) -> str:
 
 def _canonical_json_bytes(value: object) -> bytes:
     return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
+def git_output(worktree: Path, *args: str, binary: bool = False) -> str | bytes:
+    """Expose the shared exact Git read primitive to evidence consumers."""
+
+    return _git(worktree, *args, binary=binary)
+
+
+def is_within(path: Path, parent: Path) -> bool:
+    return _is_within(path, parent)
+
+
+def file_sha_rows(root: Path, names: list[str]) -> list[dict[str, str]]:
+    return [
+        {"path": name, "sha256": _sha256_file(root / name)}
+        for name in sorted(names)
+    ]
+
+
+def copy_exact_file(source: Path, destination: Path) -> None:
+    atomic_write_new(destination, source.read_bytes())
+    if _sha256_file(source) != _sha256_file(destination):
+        destination.unlink(missing_ok=True)
+        raise CanonicalRouteStagingError(
+            f"copy_hash_mismatch:{destination.name}"
+        )
 
 
 def _stable_regular_file_snapshot(path: Path) -> bytes:
@@ -404,4 +441,174 @@ def stage_canonical_route(
         **receipt,
         "receipt_path": str(receipt_path),
         "receipt_sha256": _sha256_file(receipt_path),
+    }
+
+
+def _tracked_source_snapshot(
+    worktree: Path, source: Path,
+) -> tuple[str, str, str, bytes]:
+    commit, tree = _clean_source_identity(worktree)
+    try:
+        relative = source.relative_to(worktree).as_posix()
+        _git(worktree, "ls-files", "--error-unmatch", relative)
+        committed = _git(worktree, "show", f"HEAD:{relative}", binary=True)
+        source_bytes = source.read_bytes()
+    except (OSError, subprocess.SubprocessError, ValueError) as error:
+        raise CanonicalRouteStagingError(
+            "tracked_snapshot_source_invalid"
+        ) from error
+    if source_bytes != committed:
+        raise CanonicalRouteStagingError("tracked_snapshot_source_commit_mismatch")
+    return commit, tree, relative, source_bytes
+
+
+def stage_tracked_snapshot(
+    *, worktree: Path, source_path: Path, expected_sha256: str,
+    external_run_root: Path, artifact_label: str,
+) -> dict[str, Any]:
+    worktree = worktree.resolve()
+    source = source_path.resolve()
+    root = external_run_root.resolve()
+    if (
+        Path(os.path.abspath(source_path)) != source
+        or source_path.is_symlink()
+        or not source.is_file()
+        or not _is_within(source, worktree)
+    ):
+        raise CanonicalRouteStagingError("tracked_snapshot_source_invalid")
+    if (
+        Path(os.path.abspath(external_run_root)) != root
+        or external_run_root.is_symlink()
+        or not root.is_dir()
+        or _is_within(root, worktree)
+    ):
+        raise CanonicalRouteStagingError("tracked_snapshot_root_invalid")
+    if not ARTIFACT_LABEL_RE.fullmatch(artifact_label):
+        raise CanonicalRouteStagingError("tracked_snapshot_label_invalid")
+
+    commit, tree, relative, source_bytes = _tracked_source_snapshot(
+        worktree, source
+    )
+    source_sha = hashlib.sha256(source_bytes).hexdigest()
+    if not SHA256_RE.fullmatch(expected_sha256) or source_sha != expected_sha256:
+        raise CanonicalRouteStagingError("tracked_snapshot_source_sha256_mismatch")
+    suffix = source.suffix or ".bin"
+    snapshot = root / f"{artifact_label}-{source_sha}{suffix}"
+    receipt_path = root / f"{artifact_label}-{source_sha}.receipt.json"
+    if (
+        snapshot.exists()
+        or snapshot.is_symlink()
+        or receipt_path.exists()
+        or receipt_path.is_symlink()
+    ):
+        raise CanonicalRouteStagingError("tracked_snapshot_destination_conflict")
+    try:
+        atomic_write_new(snapshot, source_bytes)
+    except CanonicalRouteStagingError as error:
+        raise CanonicalRouteStagingError(
+            "tracked_snapshot_destination_conflict"
+        ) from error
+    if snapshot.read_bytes() != source_bytes:
+        snapshot.unlink(missing_ok=True)
+        raise CanonicalRouteStagingError("tracked_snapshot_copy_mismatch")
+    repeated = _tracked_source_snapshot(worktree, source)
+    if repeated != (commit, tree, relative, source_bytes):
+        snapshot.unlink(missing_ok=True)
+        raise CanonicalRouteStagingError("tracked_snapshot_source_mutated")
+
+    receipt = {
+        "schema": TRACKED_SNAPSHOT_RECEIPT_SCHEMA,
+        "source_commit": commit,
+        "source_tree": tree,
+        "source_relative_path": relative,
+        "source_sha256": source_sha,
+        "snapshot_path": str(snapshot),
+        "snapshot_sha256": source_sha,
+    }
+    receipt_bytes = _canonical_json_bytes(receipt)
+    try:
+        atomic_write_new(receipt_path, receipt_bytes)
+    except CanonicalRouteStagingError as error:
+        snapshot.unlink(missing_ok=True)
+        raise CanonicalRouteStagingError(
+            "tracked_snapshot_destination_conflict"
+        ) from error
+    return {
+        **receipt,
+        "receipt_path": str(receipt_path),
+        "receipt_sha256": hashlib.sha256(receipt_bytes).hexdigest(),
+    }
+
+
+def verify_tracked_snapshot(
+    *, worktree: Path, receipt_path: Path, expected_receipt_sha256: str,
+) -> dict[str, Any]:
+    worktree = worktree.resolve()
+    lexical = Path(os.path.abspath(receipt_path))
+    receipt_path = receipt_path.resolve()
+    if (
+        lexical != receipt_path
+        or receipt_path.is_symlink()
+        or not receipt_path.is_file()
+        or _is_within(receipt_path, worktree)
+    ):
+        raise CanonicalRouteStagingError(
+            "tracked_snapshot_receipt_location_invalid"
+        )
+    receipt_bytes = _stable_regular_file_snapshot(receipt_path)
+    if (
+        not SHA256_RE.fullmatch(expected_receipt_sha256)
+        or hashlib.sha256(receipt_bytes).hexdigest() != expected_receipt_sha256
+    ):
+        raise CanonicalRouteStagingError("tracked_snapshot_receipt_sha256_mismatch")
+    try:
+        receipt = json.loads(receipt_bytes)
+    except json.JSONDecodeError as error:
+        raise CanonicalRouteStagingError("tracked_snapshot_receipt_invalid") from error
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != TRACKED_SNAPSHOT_RECEIPT_FIELDS
+        or receipt.get("schema") != TRACKED_SNAPSHOT_RECEIPT_SCHEMA
+        or receipt_bytes != _canonical_json_bytes(receipt)
+    ):
+        raise CanonicalRouteStagingError("tracked_snapshot_receipt_invalid")
+
+    commit, tree = _clean_source_identity(worktree)
+    relative = str(receipt.get("source_relative_path") or "")
+    source = worktree / relative
+    if (
+        receipt.get("source_commit") != commit
+        or receipt.get("source_tree") != tree
+        or not relative
+        or Path(relative).is_absolute()
+        or source.resolve() != source
+        or not source.is_file()
+        or not _is_within(source, worktree)
+    ):
+        raise CanonicalRouteStagingError("tracked_snapshot_source_identity_mismatch")
+    verified = _tracked_source_snapshot(worktree, source)
+    source_bytes = verified[3]
+    source_sha = hashlib.sha256(source_bytes).hexdigest()
+    snapshot = Path(str(receipt.get("snapshot_path") or ""))
+    if (
+        Path(os.path.abspath(snapshot)) != snapshot
+        or snapshot.resolve() != snapshot
+        or snapshot.is_symlink()
+        or not snapshot.is_file()
+        or _is_within(snapshot, worktree)
+    ):
+        raise CanonicalRouteStagingError("tracked_snapshot_path_invalid")
+    snapshot_bytes = snapshot.read_bytes()
+    if (
+        verified[:3] != (commit, tree, relative)
+        or receipt.get("source_sha256") != source_sha
+        or receipt.get("snapshot_sha256") != source_sha
+        or hashlib.sha256(snapshot_bytes).hexdigest() != source_sha
+        or snapshot_bytes != source_bytes
+    ):
+        raise CanonicalRouteStagingError("tracked_snapshot_binding_mismatch")
+    return {
+        **receipt,
+        "receipt_path": str(receipt_path),
+        "receipt_sha256": expected_receipt_sha256,
     }

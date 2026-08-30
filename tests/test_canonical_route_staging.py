@@ -122,6 +122,35 @@ def _stage(fixture: dict[str, object]) -> dict[str, object]:
     )
 
 
+def _tracked_fixture(tmp_path: Path) -> dict[str, object]:
+    root = tmp_path / "tracked-source"
+    root.mkdir()
+    _git(root, "init")
+    _git(root, "config", "user.email", "test@example.invalid")
+    _git(root, "config", "user.name", "Test")
+    source = root / "worldserver.conf"
+    source.write_bytes(b"BotWorld.AutoStart = 0\n")
+    _git(root, "add", source.name)
+    _git(root, "commit", "-m", "source")
+    external = tmp_path / "tracked-run"
+    external.mkdir()
+    return {
+        "root": root,
+        "source": source,
+        "external": external,
+        "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+    }
+
+
+def _stage_tracked(fixture: dict[str, object]) -> dict[str, object]:
+    return staging.stage_tracked_snapshot(
+        worktree=fixture["root"], source_path=fixture["source"],
+        expected_sha256=fixture["sha256"],
+        external_run_root=fixture["external"],
+        artifact_label="base-runtime-config",
+    )
+
+
 def _route_row(
     scenario_id: str, step: int, node_id: str, *, kind: str = "trash",
     coordinates_valid: bool = True,
@@ -194,6 +223,150 @@ def test_generic_route_staging_authenticates_dvc_and_writes_receipt(
     assert hashlib.sha256(
         receipt_path.read_bytes()
     ).hexdigest() == receipt["receipt_sha256"]
+
+
+def test_tracked_snapshot_binds_clean_head_source_and_external_copy(
+    tmp_path: Path,
+) -> None:
+    fixture = _tracked_fixture(tmp_path)
+    receipt = _stage_tracked(fixture)
+    verified = staging.verify_tracked_snapshot(
+        worktree=fixture["root"],
+        receipt_path=Path(receipt["receipt_path"]),
+        expected_receipt_sha256=receipt["receipt_sha256"],
+    )
+
+    assert verified == receipt
+    assert receipt["schema"] == staging.TRACKED_SNAPSHOT_RECEIPT_SCHEMA
+    assert receipt["source_commit"] == _git(fixture["root"], "rev-parse", "HEAD")
+    assert receipt["source_tree"] == _git(
+        fixture["root"], "rev-parse", "HEAD^{tree}")
+    assert receipt["source_relative_path"] == "worldserver.conf"
+    assert Path(receipt["snapshot_path"]).read_bytes() == (
+        fixture["source"].read_bytes()
+    )
+    assert receipt["source_sha256"] == receipt["snapshot_sha256"]
+
+
+@pytest.mark.parametrize("case", ["dirty", "in_worktree", "symlink_root", "bad_hash"])
+def test_tracked_snapshot_staging_fails_closed(
+    tmp_path: Path, case: str,
+) -> None:
+    fixture = _tracked_fixture(tmp_path)
+    expected = {
+        "dirty": "source_worktree_dirty",
+        "in_worktree": "tracked_snapshot_root_invalid",
+        "symlink_root": "tracked_snapshot_root_invalid",
+        "bad_hash": "tracked_snapshot_source_sha256_mismatch",
+    }[case]
+    if case == "dirty":
+        fixture["source"].write_bytes(b"dirty\n")
+    elif case == "in_worktree":
+        inside = fixture["root"] / "stage"
+        inside.mkdir()
+        fixture["external"] = inside
+    elif case == "symlink_root":
+        target = tmp_path / "real-stage"
+        target.mkdir()
+        link = tmp_path / "linked-stage"
+        link.symlink_to(target, target_is_directory=True)
+        fixture["external"] = link
+    else:
+        fixture["sha256"] = "0" * 64
+
+    with pytest.raises(staging.CanonicalRouteStagingError, match=expected):
+        _stage_tracked(fixture)
+
+
+def test_tracked_snapshot_rejects_collision_and_later_mutation(
+    tmp_path: Path,
+) -> None:
+    fixture = _tracked_fixture(tmp_path)
+    receipt = _stage_tracked(fixture)
+    with pytest.raises(
+        staging.CanonicalRouteStagingError,
+        match="tracked_snapshot_destination_conflict",
+    ):
+        _stage_tracked(fixture)
+
+    snapshot = Path(receipt["snapshot_path"])
+    snapshot.write_bytes(b"mutated\n")
+    with pytest.raises(
+        staging.CanonicalRouteStagingError,
+        match="tracked_snapshot_binding_mismatch",
+    ):
+        staging.verify_tracked_snapshot(
+            worktree=fixture["root"],
+            receipt_path=Path(receipt["receipt_path"]),
+            expected_receipt_sha256=receipt["receipt_sha256"],
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement", "reason"),
+    [
+        ("source_commit", "0" * 40, "tracked_snapshot_source_identity_mismatch"),
+        ("source_tree", "0" * 40, "tracked_snapshot_source_identity_mismatch"),
+        ("source_relative_path", "missing.conf", "tracked_snapshot_source_identity_mismatch"),
+        ("source_sha256", "0" * 64, "tracked_snapshot_binding_mismatch"),
+        ("snapshot_sha256", "0" * 64, "tracked_snapshot_binding_mismatch"),
+    ],
+)
+def test_tracked_snapshot_receipt_authority_rejects_coherent_field_drift(
+    tmp_path: Path, field: str, replacement: str, reason: str,
+) -> None:
+    fixture = _tracked_fixture(tmp_path)
+    staged = _stage_tracked(fixture)
+    receipt = json.loads(
+        Path(staged["receipt_path"]).read_text(encoding="utf-8"))
+    receipt[field] = replacement
+    drift = tmp_path / f"drift-{field}.receipt.json"
+    drift_bytes = (json.dumps(receipt, indent=2, sort_keys=True) + "\n").encode()
+    drift.write_bytes(drift_bytes)
+
+    with pytest.raises(staging.CanonicalRouteStagingError, match=reason):
+        staging.verify_tracked_snapshot(
+            worktree=fixture["root"], receipt_path=drift,
+            expected_receipt_sha256=hashlib.sha256(drift_bytes).hexdigest(),
+        )
+
+
+def test_tracked_snapshot_rejects_missing_noncanonical_and_wrong_hash_receipts(
+    tmp_path: Path,
+) -> None:
+    fixture = _tracked_fixture(tmp_path)
+    staged = _stage_tracked(fixture)
+    receipt_path = Path(staged["receipt_path"])
+    with pytest.raises(
+        staging.CanonicalRouteStagingError,
+        match="tracked_snapshot_receipt_sha256_mismatch",
+    ):
+        staging.verify_tracked_snapshot(
+            worktree=fixture["root"], receipt_path=receipt_path,
+            expected_receipt_sha256="0" * 64,
+        )
+
+    value = json.loads(receipt_path.read_text(encoding="utf-8"))
+    noncanonical = tmp_path / "noncanonical.receipt.json"
+    noncanonical.write_text(json.dumps(value), encoding="utf-8")
+    with pytest.raises(
+        staging.CanonicalRouteStagingError,
+        match="tracked_snapshot_receipt_invalid",
+    ):
+        staging.verify_tracked_snapshot(
+            worktree=fixture["root"], receipt_path=noncanonical,
+            expected_receipt_sha256=hashlib.sha256(
+                noncanonical.read_bytes()).hexdigest(),
+        )
+
+    with pytest.raises(
+        staging.CanonicalRouteStagingError,
+        match="tracked_snapshot_receipt_location_invalid",
+    ):
+        staging.verify_tracked_snapshot(
+            worktree=fixture["root"], receipt_path=tmp_path / "missing.json",
+            expected_receipt_sha256="0" * 64,
+        )
 
 
 def test_chainwielder_public_staging_wrapper_preserves_contract(

@@ -9,6 +9,7 @@ import subprocess
 import pytest
 
 import tools.raid_program.chainwielder_prestart_bundle as prestart_bundle
+from tools.raid_program.canonical_route_staging import stage_tracked_snapshot
 from tools.raid_program.chainwielder_prestart_bundle import (
     ACTOR_GUID,
     BUNDLE_NAMES,
@@ -75,7 +76,10 @@ def _stub_external_build_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def _fixture(tmp_path: Path) -> dict[str, object]:
+def _fixture(
+    tmp_path: Path,
+    *, base_text: str = 'BotWorld.RuntimeProfile = "old"\nBotWorld.AutoStart = 1\n',
+) -> dict[str, object]:
     root = tmp_path / "source"
     root.mkdir()
     _git(root, "init")
@@ -104,6 +108,8 @@ def _fixture(tmp_path: Path) -> dict[str, object]:
             {"name": "foreign", "validation_route": {"enable": False}},
         ],
     })
+    base_source = root / "base.conf"
+    base_source.write_text(base_text, encoding="utf-8")
     _git(root, "add", ".")
     _git(root, "commit", "-m", "source")
     external = tmp_path / "inputs"
@@ -188,11 +194,16 @@ def _fixture(tmp_path: Path) -> dict[str, object]:
              "source_entry": 41570},
         ],
     })
-    base = external / "base.conf"
-    base.write_text(
-        'BotWorld.RuntimeProfile = "old"\nBotWorld.AutoStart = 1\n',
-        encoding="utf-8",
+    base_root = tmp_path / "base-snapshot"
+    base_root.mkdir()
+    base_stage = stage_tracked_snapshot(
+        worktree=root,
+        source_path=base_source,
+        expected_sha256=sha256_file(base_source),
+        external_run_root=base_root,
+        artifact_label="base-runtime-config",
     )
+    base = Path(base_stage["snapshot_path"])
     ledger = external / "ledger.json"
     _write_json(ledger, {"schema": "recurrence_ledger_test_v1"})
     paths = {
@@ -203,6 +214,8 @@ def _fixture(tmp_path: Path) -> dict[str, object]:
         "suite_receipt": suite,
         "route_manifest": route,
         "base_runtime_config": base,
+        "base_runtime_config_source": base_source,
+        "base_runtime_config_receipt": Path(base_stage["receipt_path"]),
         "ledger": ledger,
     }
     return {
@@ -215,8 +228,15 @@ def _fixture(tmp_path: Path) -> dict[str, object]:
             "output_dir": tmp_path / "bundle",
             "source_commit": _git(root, "rev-parse", "HEAD"),
             "source_tree": _git(root, "rev-parse", "HEAD^{tree}"),
-            **{key: path for key, path in paths.items()},
-            **{f"{key}_sha256": sha256_file(path) for key, path in paths.items()},
+            **{
+                key: path for key, path in paths.items()
+                if key not in {"base_runtime_config", "base_runtime_config_source"}
+            },
+            **{
+                f"{key}_sha256": sha256_file(path)
+                for key, path in paths.items()
+                if key not in {"base_runtime_config", "base_runtime_config_source"}
+            },
             "scenario_id": SCENARIO_ID,
             "runtime_profile_id": SCENARIO_ID,
             "pool_tag": SCENARIO_ID,
@@ -228,6 +248,30 @@ def _fixture(tmp_path: Path) -> dict[str, object]:
 
 def _create(fixture: dict[str, object]) -> dict[str, object]:
     return create_bundle(**fixture["kwargs"])  # type: ignore[arg-type]
+
+
+def _restage_base_runtime_config(fixture: dict[str, object]) -> None:
+    root = fixture["root"]
+    source = fixture["paths"]["base_runtime_config_source"]
+    stage_root = fixture["external"].parent / (
+        "base-snapshot-" + _git(root, "rev-parse", "HEAD")[:12]
+    )
+    stage_root.mkdir()
+    staged = stage_tracked_snapshot(
+        worktree=root, source_path=source,
+        expected_sha256=sha256_file(source), external_run_root=stage_root,
+        artifact_label="base-runtime-config",
+    )
+    fixture["paths"]["base_runtime_config"] = Path(staged["snapshot_path"])
+    fixture["paths"]["base_runtime_config_receipt"] = Path(
+        staged["receipt_path"]
+    )
+    fixture["kwargs"]["base_runtime_config_receipt"] = Path(
+        staged["receipt_path"]
+    )
+    fixture["kwargs"]["base_runtime_config_receipt_sha256"] = str(
+        staged["receipt_sha256"]
+    )
 
 
 def _use_tracked_ledger(fixture: dict[str, object]) -> Path:
@@ -259,6 +303,7 @@ def _use_tracked_ledger(fixture: dict[str, object]) -> Path:
         "build_receipt_sha256": sha256_file(receipt),
         "suite_receipt_sha256": sha256_file(suite),
     })
+    _restage_base_runtime_config(fixture)
     return ledger
 
 
@@ -707,17 +752,61 @@ def test_verify_rejects_partial_bundle(tmp_path: Path) -> None:
 
 
 def test_conflicting_duplicate_required_config_fails_closed(tmp_path: Path) -> None:
-    fixture = _fixture(tmp_path)
-    base = fixture["paths"]["base_runtime_config"]
-    base.write_text(
-        "BotWorld.AutoStart = 0\nBotWorld.AutoStart = 1\n", encoding="utf-8"
+    fixture = _fixture(
+        tmp_path,
+        base_text="BotWorld.AutoStart = 0\nBotWorld.AutoStart = 1\n",
     )
-    fixture["kwargs"]["base_runtime_config_sha256"] = sha256_file(base)
     with pytest.raises(BundleError, match="config_duplicate_key:BotWorld.AutoStart"):
         _create(fixture)
     assert not fixture["output"].exists()
     failure = fixture["output"].with_name("bundle.failure.json")
     assert json.loads(failure.read_text(encoding="utf-8"))["launchable"] is False
+
+
+def test_tracked_base_config_fail_before_then_verified_snapshot_passes(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path)
+    source = fixture["paths"]["base_runtime_config_source"]
+    with pytest.raises(
+        BundleError, match="base_runtime_config_inside_mutable_worktree",
+    ):
+        prestart_bundle._validate_locations(
+            worktree=fixture["root"], output_dir=fixture["output"],
+            material_inputs={"base_runtime_config": source},
+            binary=fixture["paths"]["binary"], capture_paths=[],
+        )
+
+    assert _create(fixture)["valid"] is True
+    assert (
+        fixture["output"] / BUNDLE_NAMES["base_runtime_config"]
+    ).read_bytes() == source.read_bytes()
+
+
+def test_bundle_cannot_bypass_verified_base_config_receipt(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path)
+    source = fixture["paths"]["base_runtime_config_source"]
+    fixture["kwargs"]["base_runtime_config_receipt"] = source
+    fixture["kwargs"]["base_runtime_config_receipt_sha256"] = sha256_file(source)
+
+    with pytest.raises(
+        BundleError, match="tracked_snapshot_receipt_location_invalid",
+    ):
+        _create(fixture)
+    assert not fixture["output"].exists()
+
+
+def test_bundle_rejects_verified_snapshot_mutation_before_copy(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path)
+    fixture["paths"]["base_runtime_config"].write_bytes(b"mutated\n")
+
+    with pytest.raises(BundleError, match="tracked_snapshot_binding_mismatch"):
+        _create(fixture)
+    assert not fixture["output"].exists()
 
 
 def test_output_inside_worktree_is_rejected(tmp_path: Path) -> None:
