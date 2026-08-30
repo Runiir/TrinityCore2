@@ -1,0 +1,153 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:chainwielder_checkpoint_atomic_prestart_bundle_generator_v1",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "completed_pending_live_verification",
+  "immutable_input": {
+    "starting_source_commit": "c97f9a40f0402f5a7bcc2e4a49770f5c515ee411",
+    "starting_source_tree": "325e98e22921d4c8b1a4305b939bfe5a0882bb72",
+    "v6_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_3af269cdc8_final_admission_failed_handoff_v6.json",
+    "v6_handoff_sha256": "404481d4b7180362e36a7aa67f4e477cdb35b4ba84ecc92804ed0f2e31497bce",
+    "v6_terminal": "fixture_expansion_checkpoint_disabled"
+  },
+  "scope_lock": {
+    "hypothesis": "One fail-closed CLI that owns the final route/config/seal/admission bytes and verifies them before an atomic directory rename eliminates the operator omission that invalidated v6.",
+    "first_broken_edge": "manual prestart assembly omitted BotWorld.ValidationRoute.PrepullCheckpointEnable=1",
+    "failure_postcondition": "the production recurrence verifier rejected fixture_expansion_checkpoint_disabled before process creation",
+    "owned_behavior": "external atomic prestart bundle generation and verification only",
+    "excluded": [
+      "configure_or_build_execution",
+      "provisioning_or_database_mutation",
+      "worldserver_start",
+      "dvc_hydration_or_publication",
+      "gameplay_cpp_strategy_class_pet_boss_or_route_changes",
+      "fixture_promotion",
+      "acceptance_claims"
+    ]
+  },
+  "implementation": {
+    "create_cli": "pixi run python -m tools.raid_program.chainwielder_prestart_bundle create",
+    "verify_cli": "pixi run python -m tools.raid_program.chainwielder_prestart_bundle verify --output-dir <exact-external-bundle-dir>",
+    "atomicity": "all payload bytes are written under an exact hidden sibling staging directory, verified there, then exposed with one directory rename",
+    "failure_contract": "a typed nonlaunchable sibling failure receipt is written and staging bytes are removed",
+    "production_reuse": [
+      "tools.raid_program.queued_build.verify_receipt",
+      "tools.raid_program.recurrence_admission.chainwielder_checkpoint_seal",
+      "tools.raid_program.recurrence_admission.create_recurrence_admission",
+      "tools.raid_program.recurrence_admission.verify_recurrence_admission"
+    ],
+    "relocation_security_boundary": "The production admission default remains exact-path-only. Its optional atomic relocation accepts only an exact hidden sibling named .<final>.staging-*, maps identical relative binding paths, and is used only before the final directory rename; non-sibling and default path substitutions fail closed.",
+    "required_config": {
+      "BotWorld.AutoStart": 0,
+      "BotWorld.ValidationRoute.PrepullCheckpointEnable": 1,
+      "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.Enable": 1,
+      "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+      "actor_guid": 30008
+    },
+    "bundle_outputs": [
+      "prepared_base_runtime.conf",
+      "worldserver.validation.conf",
+      "route_manifest.json",
+      "build_receipt.json",
+      "build_policy.json",
+      "recurrence_ledger.json",
+      "recurrence_decision.json",
+      "regression_suite_receipt.json",
+      "checkpoint_seal.json",
+      "recurrence_admission.json",
+      "launch_contract.json",
+      "bundle_manifest.json"
+    ]
+  },
+  "changed_files": {
+    "tools/raid_program/chainwielder_prestart_bundle.py": {
+      "lines": 729,
+      "sha256": "d589a2df54ac326c1511f04bcf6e91e6ebc38fd7878f50d9a555c750b3f75abe"
+    },
+    "tools/raid_program/recurrence_admission.py": {
+      "lines": 674,
+      "sha256": "a456d41d895d931f7821eb58df38c4e23672cd7b67182aa774224bd916b6757a"
+    },
+    "tests/test_chainwielder_prestart_bundle.py": {
+      "lines": 374,
+      "sha256": "8d05ec4bbebbaa3c2b033683de9631100a1ef468828d89ed46c01a343ce39425"
+    },
+    "experiments/configs/cata_raid_chainwielder_checkpoint_atomic_prestart_bundle_implementation_handoff_v1.json": {
+      "lines": null,
+      "sha256": null
+    },
+    "experiments/configs/cata_raid_active_work_unit_v1.json": {
+      "lines": null,
+      "sha256": null
+    }
+  },
+  "before_after": {
+    "fail_before": "A manually assembled config without BotWorld.ValidationRoute.PrepullCheckpointEnable failed the unchanged production verifier with fixture_expansion_checkpoint_disabled.",
+    "pass_after": "The atomic creator emits a config with one unambiguous enabled checkpoint key, binds the precomputed seal and final paths, creates the final admission after config bytes exist, passes the production verifier in staging, and exposes one complete launch contract.",
+    "live_result": "not_run_not_authorized"
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py",
+    "focused_result": "21 passed in 1.31s",
+    "relevant_command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_recurrence_admission.py tests/test_chainwielder_owner_checkpoint.py tests/test_phase1_raid_foundation_capture.py -k 'chainwielder_prestart_bundle or chainwielder_checkpoint or recurrence_admission or checkpoint_arm_gate or checkpoint_arm_emits'",
+    "relevant_result": "48 passed, 126 deselected in 9.03s",
+    "negative_coverage": [
+      "v6_missing_prepull_checkpoint_flag",
+      "every_internal_material_file_tamper",
+      "binary_tamper",
+      "partial_or_extra_bundle",
+      "duplicate_required_config_key",
+      "output_inside_worktree",
+      "wrong_actor_fixture_source_or_purpose",
+      "dirty_or_drifted_source",
+      "path_substitution",
+      "non_sibling_atomic_relocation",
+      "default_production_verifier_rejects_staged_path_substitution"
+    ],
+    "deterministic_repeat_bytes": true,
+    "input_files_unchanged": true,
+    "build_run": false,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false,
+    "optional_ruff_check": "unavailable_in_pixi_environment"
+  },
+  "claim_ledger": {
+    "verified": [
+      "v6_fail_before_is_reproduced_through_the_production_admission_verifier",
+      "atomic_pass_after_is_verified_before_the_final_directory_rename",
+      "the_final_config_is_reconstructed_byte_for_byte_from_the_copied_prepared_base_config_and_seal",
+      "the_launch_contract_has_one_capture_owned_start_and_no_fixed_success_timer",
+      "the_bundle_verifier_rejects_tamper_partial_path_identity_source_and_config_drift",
+      "no_input_file_is_mutated"
+    ],
+    "refuted": [
+      "manual_post_generator_config_or_admission_assembly_is_required",
+      "the_atomic_staging_contract_allows_arbitrary_path_substitution"
+    ],
+    "unproven": [
+      "the_next_clean_built_binary_emits_command_sent_true_and_emission_count_one",
+      "actor_30008_reaches_one_completed_native_checkpoint_lifecycle",
+      "the_live_route_identity_is_preserved_through_the_receipt_zero_hazard_rejection_and_hazard_exit"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:chainwielder_checkpoint_atomic_bundle_one_build_one_start_v7",
+    "owner_skill": "raid-shard-architecture",
+    "build_budget": 1,
+    "worldserver_start_budget": 1,
+    "required_order": [
+      "resolve_the_exact_clean_descriptor_HEAD_and_tree",
+      "run_one_gate_bearing_worldserver_build_for_that_identity",
+      "prepare_and_read_back_the_exact_external_scenario_profile_pool_and_roster",
+      "generate_source_bound_decision_suite_and_ledger_inputs",
+      "invoke_the_atomic_prestart_bundle_create_CLI_once_with_explicit_paths_and_hashes",
+      "invoke_the_bundle_verify_subcommand",
+      "execute_only_the_launch_argv_array_returned_by_the_verified_contract",
+      "stop_on_the_completion_watchdog_terminal_and_publish_the_typed_result"
+    ],
+    "required_live_receipt": "command_sent=true; emission_count=1; actor_guid=30008; injection_count=1; real Route path or armed Route hazard retry; Hazard future_pack_destination rejection; planner_receipt_id=0; identical before/after Route identity; hazard_exit_completed or one typed failed terminal",
+    "fixed_success_timer_seconds": null,
+    "forbidden": "No manual bundle edits, second build, second start, fixed raid timer, gameplay/route/fixture mutation, fixture promotion, or acceptance claim."
+  }
+}

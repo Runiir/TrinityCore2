@@ -207,7 +207,8 @@ def _verify_chainwielder_checkpoint_seal(
 
 
 def _verify_binding(
-    admission: dict[str, Any], name: str, actual_path: Path | None = None
+    admission: dict[str, Any], name: str, actual_path: Path | None = None,
+    *, atomic_bundle_roots: tuple[Path, Path] | None = None,
 ) -> Path:
     binding = (admission.get("bindings") or {}).get(name)
     if not isinstance(binding, dict):
@@ -217,13 +218,65 @@ def _verify_binding(
     if not isinstance(raw_path, str) or not SHA256_RE.fullmatch(str(expected_hash or "")):
         raise RecurrenceAdmissionError(f"{name}_binding_invalid")
     path = Path(raw_path).resolve()
-    if actual_path is not None and path != actual_path.resolve():
+    expected_path = _atomic_recorded_path(actual_path, atomic_bundle_roots) \
+        if actual_path is not None else None
+    if expected_path is not None and path != expected_path:
         raise RecurrenceAdmissionError(f"{name}_path_mismatch")
-    if not path.is_file():
+    checked_path = _atomic_materialized_path(path, atomic_bundle_roots)
+    if not checked_path.is_file():
         raise RecurrenceAdmissionError(f"{name}_missing")
-    if sha256_file(path) != expected_hash:
+    if sha256_file(checked_path) != expected_hash:
         raise RecurrenceAdmissionError(f"{name}_hash_mismatch")
-    return path
+    return checked_path
+
+
+def _validated_atomic_bundle_roots(
+    roots: tuple[Path, Path] | None,
+) -> tuple[Path, Path] | None:
+    if roots is None:
+        return None
+    final_root, staging_root = (path.resolve() for path in roots)
+    if (
+        final_root == staging_root
+        or final_root.parent != staging_root.parent
+        or not staging_root.name.startswith(f".{final_root.name}.staging-")
+    ):
+        raise RecurrenceAdmissionError("atomic_bundle_roots_invalid")
+    return final_root, staging_root
+
+
+def _atomic_recorded_path(
+    path: Path, roots: tuple[Path, Path] | None,
+) -> Path:
+    validated = _validated_atomic_bundle_roots(roots)
+    resolved = path.resolve()
+    if validated is None:
+        return resolved
+    final_root, staging_root = validated
+    try:
+        relative = resolved.relative_to(staging_root)
+    except ValueError:
+        return resolved
+    if relative == Path("."):
+        raise RecurrenceAdmissionError("atomic_bundle_binding_invalid")
+    return final_root / relative
+
+
+def _atomic_materialized_path(
+    path: Path, roots: tuple[Path, Path] | None,
+) -> Path:
+    validated = _validated_atomic_bundle_roots(roots)
+    resolved = path.resolve()
+    if validated is None:
+        return resolved
+    final_root, staging_root = validated
+    try:
+        relative = resolved.relative_to(final_root)
+    except ValueError:
+        return resolved
+    if relative == Path("."):
+        raise RecurrenceAdmissionError("atomic_bundle_binding_invalid")
+    return staging_root / relative
 
 
 def create_recurrence_admission(
@@ -238,6 +291,7 @@ def create_recurrence_admission(
     decision: Path,
     suite_receipt: Path,
     purpose: str = GAMEPLAY_CANARY_PURPOSE,
+    atomic_bundle_roots: tuple[Path, Path] | None = None,
 ) -> dict[str, Any]:
     if output.exists():
         raise RecurrenceAdmissionError("admission_output_exists")
@@ -317,7 +371,12 @@ def create_recurrence_admission(
             "porcelain_sha256": hashlib.sha256(porcelain).hexdigest(),
         },
         "bindings": {
-            name: {"path": str(path.resolve()), "sha256": sha256_file(path.resolve())}
+            name: {
+                "path": str(
+                    _atomic_recorded_path(path, atomic_bundle_roots)
+                ),
+                "sha256": sha256_file(path.resolve()),
+            }
             for name, path in {
                 "binary": binary,
                 "build_receipt": build_receipt,
@@ -346,6 +405,7 @@ def verify_recurrence_admission(
     build_receipt: Path,
     runtime_config: Path,
     required_purpose: str = GAMEPLAY_CANARY_PURPOSE,
+    atomic_bundle_roots: tuple[Path, Path] | None = None,
 ) -> dict[str, Any]:
     """Verify the immutable Magmaw recurrence gate before process startup."""
 
@@ -398,16 +458,36 @@ def verify_recurrence_admission(
     if source.get("porcelain_sha256") != hashlib.sha256(porcelain).hexdigest():
         raise RecurrenceAdmissionError("source_porcelain_mismatch")
 
-    binary_path = _verify_binding(admission, "binary", binary)
-    build_receipt_path = _verify_binding(admission, "build_receipt", build_receipt)
-    _verify_binding(admission, "runtime_config", runtime_config)
-    route_path = _verify_binding(admission, "route_manifest")
-    ledger_path = _verify_binding(admission, "ledger")
-    decision_path = _verify_binding(admission, "decision")
-    suite_path = _verify_binding(admission, "suite_receipt")
+    binary_path = _verify_binding(
+        admission, "binary", binary, atomic_bundle_roots=atomic_bundle_roots,
+    )
+    build_receipt_path = _verify_binding(
+        admission, "build_receipt", build_receipt,
+        atomic_bundle_roots=atomic_bundle_roots,
+    )
+    _verify_binding(
+        admission, "runtime_config", runtime_config,
+        atomic_bundle_roots=atomic_bundle_roots,
+    )
+    route_path = _verify_binding(
+        admission, "route_manifest", atomic_bundle_roots=atomic_bundle_roots,
+    )
+    ledger_path = _verify_binding(
+        admission, "ledger", atomic_bundle_roots=atomic_bundle_roots,
+    )
+    decision_path = _verify_binding(
+        admission, "decision", atomic_bundle_roots=atomic_bundle_roots,
+    )
+    suite_path = _verify_binding(
+        admission, "suite_receipt", atomic_bundle_roots=atomic_bundle_roots,
+    )
 
     config_text = runtime_config.read_text(encoding="utf-8")
-    if str(route_path) not in config_text:
+    recorded_route_path = str(
+        ((admission.get("bindings") or {}).get("route_manifest") or {}).get("path")
+        or ""
+    )
+    if recorded_route_path not in config_text:
         raise RecurrenceAdmissionError("route_manifest_not_bound_by_config")
     decision = _load(decision_path, "decision")
     if fixture_expansion:
