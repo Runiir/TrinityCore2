@@ -25,7 +25,13 @@ try:
         trinity_config_bool,
         trinity_config_string,
     )
-    from tools.raid_program.capture_no_bots_baseline import process_sample as _baseline_process_sample
+    from tools.raid_program.capture_checkpoint_controller import (
+        _initialize_chainwielder_checkpoint_arm_gate,
+        chainwielder_checkpoint_arm_command,
+        chainwielder_checkpoint_monitor_commands,
+        chainwielder_checkpoint_pre_route_readiness,
+        observe_chainwielder_checkpoint_arm_gate,
+    )
     from tools.raid_program.controller_route_hold import (
         ControllerRouteHoldLaunchIdentity,
         ControllerRouteHoldScheduler,
@@ -95,6 +101,18 @@ try:
         _route_advancement_marker,
         _runtime_identity,
     )
+    from tools.raid_program.capture_run_outcome import (
+        _capture_classification,
+        _primary_gameplay_terminal,
+        _terminal_evidence_incomplete,
+        process_resource_sample,
+        summarize_process_resource_samples,
+    )
+    from tools.raid_program.capture_runtime_io import (
+        _artifact_record,
+        bounded_native_shutdown,
+        wait_for_prompt,
+    )
     from tools.raid_program.capture_runtime_acceptance import (
         _canonical_int_list,
         _compact_trailing_zero_gems,
@@ -144,7 +162,13 @@ except ModuleNotFoundError:
         trinity_config_bool,
         trinity_config_string,
     )
-    from capture_no_bots_baseline import process_sample as _baseline_process_sample
+    from capture_checkpoint_controller import (
+        _initialize_chainwielder_checkpoint_arm_gate,
+        chainwielder_checkpoint_arm_command,
+        chainwielder_checkpoint_monitor_commands,
+        chainwielder_checkpoint_pre_route_readiness,
+        observe_chainwielder_checkpoint_arm_gate,
+    )
     from controller_route_hold import (
         ControllerRouteHoldLaunchIdentity,
         ControllerRouteHoldScheduler,
@@ -214,6 +238,18 @@ except ModuleNotFoundError:
         _route_advancement_marker,
         _runtime_identity,
     )
+    from capture_run_outcome import (
+        _capture_classification,
+        _primary_gameplay_terminal,
+        _terminal_evidence_incomplete,
+        process_resource_sample,
+        summarize_process_resource_samples,
+    )
+    from capture_runtime_io import (
+        _artifact_record,
+        bounded_native_shutdown,
+        wait_for_prompt,
+    )
     from capture_runtime_acceptance import (
         _canonical_int_list,
         _compact_trailing_zero_gems,
@@ -256,404 +292,6 @@ except ModuleNotFoundError:
 
 ROOT = Path(__file__).resolve().parents[2]
 
-def chainwielder_checkpoint_arm_command(
-    recurrence_admission: dict[str, Any] | None,
-    actor_guid: int | None,
-) -> str | None:
-    """Build the exact post-admission arm command, or fail closed."""
-
-    seal = recurrence_admission.get("checkpoint_seal_sha256") \
-        if isinstance(recurrence_admission, dict) else None
-    if seal is None:
-        if actor_guid is not None:
-            raise ValueError("checkpoint_actor_without_verified_seal")
-        return None
-    admission_sha256 = recurrence_admission.get("admission_sha256")
-    source_commit = recurrence_admission.get("source_commit")
-    if (
-        recurrence_admission.get("valid") is not True
-        or recurrence_admission.get("purpose") != FIXTURE_EXPANSION_PURPOSE
-        or recurrence_admission.get("fixture_expansion_target_ids")
-        != [CHAINWIELDER_CHECKPOINT_FIXTURE_ID]
-        or not isinstance(admission_sha256, str)
-        or not re.fullmatch(r"[0-9a-f]{64}", admission_sha256)
-    ):
-        raise ValueError("checkpoint_verified_admission_invalid")
-    if (
-        not isinstance(actor_guid, int)
-        or isinstance(actor_guid, bool)
-        or actor_guid <= 0
-    ):
-        raise ValueError("checkpoint_actor_guid_required")
-    if not isinstance(seal, str) or not re.fullmatch(r"[0-9a-f]{64}", seal):
-        raise ValueError("checkpoint_verified_seal_invalid")
-    if not isinstance(source_commit, str) or not re.fullmatch(r"[0-9a-f]{40}", source_commit):
-        raise ValueError("checkpoint_verified_source_invalid")
-    return f"botautochaincheckpoint arm {actor_guid} {seal} {source_commit}"
-
-
-def chainwielder_checkpoint_pre_route_readiness(
-    status: dict[str, Any],
-    *,
-    recurrence_admission: dict[str, Any] | None,
-    checkpoint_arm_command: str | None,
-    actor_guid: int | None,
-    profile_name: str,
-    scenario_id: str,
-    expected_route_manifest_sha256: str | None,
-) -> tuple[bool, list[str], dict[str, Any]]:
-    """Validate the immutable admission boundary before route generation two."""
-
-    reasons: list[str] = []
-    try:
-        expected_command = chainwielder_checkpoint_arm_command(
-            recurrence_admission, actor_guid,
-        )
-    except ValueError as error:
-        reasons.append(str(error))
-        expected_command = None
-    if expected_command is None or checkpoint_arm_command != expected_command:
-        reasons.append("checkpoint_arm_command_identity_mismatch")
-    runtime = status.get("raid_runtime")
-    if not isinstance(runtime, dict):
-        reasons.append("checkpoint_runtime_missing")
-        return False, reasons, {"accepted": False, "identity_sha256": None}
-    receipt = runtime.get("admission_receipt")
-    receipt = receipt if isinstance(receipt, dict) else {}
-    roster = runtime.get("roster") if isinstance(runtime.get("roster"), list) else []
-    roster_rows = [row for row in roster if isinstance(row, dict)]
-    route_progress = runtime.get("route_progress")
-    route_progress = route_progress if isinstance(route_progress, dict) else {}
-    actor_rows = [row for row in roster_rows if row.get("guid") == actor_guid]
-    reasons.extend(_watchdog_scope_rejections(status, profile_name=profile_name))
-    reasons.extend(f"checkpoint_{reason}" for reason in _roster_rejections(runtime, profile_name))
-    expected_receipt = {
-        "attempt_id": runtime.get("attempt_id"),
-        "server_epoch": runtime.get("server_epoch"),
-        "group_guid": runtime.get("group_guid"),
-        "instance_id": runtime.get("instance_id"),
-        "scenario_id": scenario_id,
-        "runtime_profile": profile_name,
-        "route_manifest_sha256": expected_route_manifest_sha256,
-        "entrance_map_id": runtime.get("map_id"),
-        "profile_generation": runtime.get("profile_generation"),
-        "profile_content_hash": runtime.get("profile_content_hash"),
-        "leader_guid": runtime.get("leader_guid"),
-    }
-    if (
-        runtime.get("admission_phase") != "active"
-        or runtime.get("server_provisioning_complete") is not True
-        or runtime.get("bot_actions_enabled") is not True
-    ):
-        reasons.append("checkpoint_admission_not_active")
-    if route_progress.get("generation") != 1:
-        reasons.append("checkpoint_route_not_pre_generation_two")
-    if (
-        not _positive_int(receipt.get("committed_at_ms"))
-        or receipt.get("bot_actions_enabled_at_commit") is not True
-        or receipt.get("all_current_gear_matches_admission") is not True
-        or any(receipt.get(key) != value for key, value in expected_receipt.items())
-        or not isinstance(expected_route_manifest_sha256, str)
-        or not re.fullmatch(r"[0-9a-f]{64}", expected_route_manifest_sha256)
-    ):
-        reasons.append("checkpoint_admission_identity_mismatch")
-    if len(actor_rows) != 1:
-        reasons.append("checkpoint_actor_identity_missing")
-
-    identity_projection = {
-        "cohort_id": status.get("cohort_id"),
-        "active_profile": status.get("active_profile"),
-        "runtime_identity": {field: runtime.get(field) for field in IDENTITY_FIELDS},
-        "roster_identity": _roster_binding_identity(roster_rows),
-        "admission_receipt": receipt,
-        "actor_guid": actor_guid,
-    }
-    identity_sha256 = _canonical_object_sha256(identity_projection) if not reasons else None
-    facts = {
-        "accepted": not reasons,
-        "actor_guid": actor_guid,
-        "route_generation": route_progress.get("generation"),
-        "evidence_sequence": runtime.get("evidence_sequence"),
-        "identity_sha256": identity_sha256,
-    }
-    return not reasons, list(dict.fromkeys(reasons)), facts
-
-
-def _initialize_chainwielder_checkpoint_arm_gate(
-    state: dict[str, Any],
-) -> None:
-    defaults = {
-        "schema": "chainwielder_checkpoint_pre_route_arm_gate_v1",
-        "required_stable_statuses": 2,
-        "consecutive_stable_statuses": 0,
-        "last_identity_sha256": None,
-        "last_readiness": None,
-        "pre_route_probe_batches": 0,
-        "pre_route_probe_command_count": 0,
-        "gate_open": False,
-        "command_sent": False,
-        "emission_count": 0,
-        "emission": None,
-    }
-    for key, value in defaults.items():
-        state.setdefault(key, value)
-
-
-def observe_chainwielder_checkpoint_arm_gate(
-    state: dict[str, Any],
-    status: dict[str, Any],
-    *,
-    process: Any,
-    recurrence_admission: dict[str, Any] | None,
-    checkpoint_arm_command: str,
-    actor_guid: int,
-    profile_name: str,
-    scenario_id: str,
-    expected_route_manifest_sha256: str | None,
-) -> dict[str, Any]:
-    """Observe two stable pre-route statuses and emit the arm command once."""
-
-    _initialize_chainwielder_checkpoint_arm_gate(state)
-    ready, rejections, facts = chainwielder_checkpoint_pre_route_readiness(
-        status,
-        recurrence_admission=recurrence_admission,
-        checkpoint_arm_command=checkpoint_arm_command,
-        actor_guid=actor_guid,
-        profile_name=profile_name,
-        scenario_id=scenario_id,
-        expected_route_manifest_sha256=expected_route_manifest_sha256,
-    )
-    if ready:
-        if facts["identity_sha256"] == state["last_identity_sha256"]:
-            state["consecutive_stable_statuses"] += 1
-        else:
-            state["consecutive_stable_statuses"] = 1
-        state["last_identity_sha256"] = facts["identity_sha256"]
-    else:
-        state["consecutive_stable_statuses"] = 0
-        state["last_identity_sha256"] = None
-    state["last_readiness"] = {**facts, "rejections": rejections}
-    state["gate_open"] = (
-        ready
-        and state["consecutive_stable_statuses"]
-        >= state["required_stable_statuses"]
-    )
-    if state["gate_open"] and state["emission_count"] == 0:
-        process.stdin.write((checkpoint_arm_command + "\n").encode())
-        process.stdin.flush()
-        state["emission_count"] = 1
-        state["command_sent"] = True
-        state["emission"] = {
-            "actor_guid": actor_guid,
-            "admission_sha256": recurrence_admission.get("admission_sha256")
-                if isinstance(recurrence_admission, dict) else None,
-            "identity_sha256": facts["identity_sha256"],
-            "evidence_sequence": facts["evidence_sequence"],
-            "route_generation": facts["route_generation"],
-        }
-    return state
-
-
-def chainwielder_checkpoint_monitor_commands(
-    scheduled_commands: list[str],
-    *,
-    checkpoint_arm_command: str | None,
-    checkpoint_arm_gate: dict[str, Any],
-) -> list[str]:
-    """Add one adjacent status probe while the pre-route arm gate is pending.
-
-    The normal five-second heartbeat allowed the validation route to advance
-    from generation one to generation two between the two identity receipts
-    required by the arm gate. In fixture-expansion mode, issue the second
-    status in the same console batch as the scheduled heartbeat. The existing
-    readiness gate still validates both responses independently and remains
-    the only authority that can emit the sealed arm command.
-    """
-
-    commands = list(scheduled_commands)
-    if (
-        checkpoint_arm_command is None
-        or checkpoint_arm_gate.get("command_sent") is True
-        or "botauto status" not in commands
-    ):
-        return commands
-    _initialize_chainwielder_checkpoint_arm_gate(checkpoint_arm_gate)
-    status_index = commands.index("botauto status")
-    commands.insert(status_index + 1, "botauto status")
-    checkpoint_arm_gate["pre_route_probe_batches"] = int(
-        checkpoint_arm_gate.get("pre_route_probe_batches") or 0
-    ) + 1
-    checkpoint_arm_gate["pre_route_probe_command_count"] = int(
-        checkpoint_arm_gate.get("pre_route_probe_command_count") or 0
-    ) + 1
-    return commands
-
-
-def _primary_gameplay_terminal(*terminals: dict[str, Any] | None) -> bool:
-    """Return whether a controller/native terminal established gameplay failure.
-
-    Evidence-integrity failures that occur while collecting the terminal bundle
-    must not erase this primary outcome.  The integrity gates still reject the
-    capture; this predicate only preserves the causal classification.
-    """
-
-    return any(
-        isinstance(terminal, dict)
-        and terminal.get("detected") is True
-        and terminal.get("classification") == "gameplay_failure"
-        for terminal in terminals
-    )
-
-
-def _terminal_evidence_incomplete(
-    *,
-    primary_gameplay_failure: bool,
-    forced_evidence_report: dict[str, Any],
-    telemetry_abort: dict[str, Any],
-    telemetry_envelopes: dict[str, Any],
-    demux_rejections: list[str],
-) -> bool:
-    """Expose incomplete terminal evidence without making it an acceptance.
-
-    Only a known gameplay terminal gets this causal annotation.  Other
-    incomplete captures remain infrastructure/incomplete evidence as before.
-    """
-
-    if not primary_gameplay_failure:
-        return False
-    return bool(
-        forced_evidence_report.get("gate_passed") is not True
-        or telemetry_abort.get("detected") is True
-        or telemetry_envelopes.get("gate_passed") is not True
-        or demux_rejections
-    )
-
-
-def _capture_classification(
-    *,
-    success: bool,
-    forbidden_entries: list[Any],
-    primary_gameplay_failure: bool,
-    operational_infrastructure_abort: bool,
-    evidence_incomplete: bool,
-) -> str:
-    """Classify a capture without letting evidence gaps erase causality.
-
-    Evidence gates remain independent from this label through ``success``.
-    An operational abort still takes precedence; otherwise a retained primary
-    gameplay terminal takes precedence over incomplete terminal evidence.
-    """
-
-    if success:
-        return "success"
-    if forbidden_entries:
-        return "diagnostic_only"
-    if operational_infrastructure_abort:
-        return "infrastructure_abort"
-    if primary_gameplay_failure:
-        return "gameplay_failure"
-    if evidence_incomplete:
-        return "infrastructure_abort"
-    return "incomplete_evidence"
-
-
-def process_resource_sample(
-    pid: int,
-    *,
-    sample_sequence: int,
-    scenario_id: str,
-    runtime_profile: str,
-    status: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Retain a compact, identity-bound worldserver resource sample.
-
-    The baseline sampler is the source of truth for `/proc` parsing and CPU
-    tick/RSS units.  Only those process fields are retained here; host load,
-    memory pressure, and other baseline diagnostics are intentionally not
-    copied into the raid telemetry stream.  Runtime identity is attached to
-    every row so a later report cannot accidentally join samples from another
-    cohort or attempt.
-    """
-    baseline = _baseline_process_sample(pid)
-    runtime = status.get("raid_runtime") if isinstance(status, dict) else None
-    runtime = runtime if isinstance(runtime, dict) else {}
-    identity: dict[str, Any] = {
-        "scenario_id": scenario_id,
-        "runtime_profile": runtime_profile,
-    }
-    if isinstance(status, dict) and status.get("cohort_id") is not None:
-        identity["cohort_id"] = status["cohort_id"]
-    for field in (
-        "server_epoch", "attempt_id", "profile_generation", "profile_content_hash",
-        "assignment_generation", "group_guid", "leader_guid", "instance_id",
-        "lockout_save_id",
-    ):
-        value = runtime.get(field)
-        if value is not None:
-            identity[field] = value
-    return {
-        "sample_sequence": sample_sequence,
-        "process_pid": pid,
-        "monotonic_sec": baseline["monotonic_sec"],
-        "process_cpu_ticks": baseline["process_cpu_ticks"],
-        "process_rss_bytes": baseline["process_rss_bytes"],
-        "run_identity": identity,
-    }
-
-
-def summarize_process_resource_samples(
-    samples: list[dict[str, Any]], *, tick_rate: int | None = None,
-    sampling_errors: list[str] | None = None,
-    sampling_error_count: int | None = None,
-) -> dict[str, Any]:
-    """Summarize retained process samples without copying them into telemetry.
-
-    CPU percentage intentionally matches ``capture_no_bots_baseline``:
-    process CPU time divided by wall time, expressed as a percentage of one
-    logical core.  A mixed-PID sample set fails closed for CPU delta rather
-    than attributing a reused PID to the raid.
-    """
-    errors = sampling_errors or []
-    error_count = len(errors) if sampling_error_count is None else sampling_error_count
-    if not samples:
-        return {
-            "sample_count": 0,
-            "process_pid": None,
-            "pid_consistent": False,
-            "elapsed_seconds": 0.0,
-            "cpu_ticks_delta": None,
-            "tick_rate": tick_rate,
-            "mean_cpu_percent_one_core": None,
-            "maximum_rss_bytes": None,
-            "minimum_rss_bytes": None,
-            "sampling_error_count": error_count,
-        }
-    pids = [int(row["process_pid"]) for row in samples]
-    pid_consistent = len(set(pids)) == 1
-    first_time = float(samples[0]["monotonic_sec"])
-    last_time = float(samples[-1]["monotonic_sec"])
-    elapsed = max(0.0, last_time - first_time)
-    ticks_delta = None
-    mean_cpu = None
-    if pid_consistent and len(samples) > 1:
-        ticks_delta = int(samples[-1]["process_cpu_ticks"]) - int(samples[0]["process_cpu_ticks"])
-        if tick_rate and tick_rate > 0 and elapsed > 0:
-            mean_cpu = round((ticks_delta / tick_rate) / elapsed * 100, 3)
-    rss_values = [int(row["process_rss_bytes"]) for row in samples]
-    return {
-        "sample_count": len(samples),
-        "process_pid": pids[0] if pid_consistent else None,
-        "pid_consistent": pid_consistent,
-        "first_monotonic_sec": round(first_time, 6),
-        "last_monotonic_sec": round(last_time, 6),
-        "elapsed_seconds": round(elapsed, 3),
-        "cpu_ticks_delta": ticks_delta,
-        "tick_rate": tick_rate,
-        "mean_cpu_percent_one_core": mean_cpu,
-        "maximum_rss_bytes": max(rss_values),
-        "minimum_rss_bytes": min(rss_values),
-        "sampling_error_count": error_count,
-    }
 
 
 
@@ -720,15 +358,8 @@ def summarize_process_resource_samples(
 
 
 
-def wait_for_prompt(process: subprocess.Popen[bytes], log_path: Path, timeout_sec: int) -> None:
-    deadline = time.monotonic() + timeout_sec
-    while time.monotonic() < deadline:
-        if process.poll() is not None:
-            raise RuntimeError(f"worldserver exited before readiness with code {process.returncode}")
-        if log_path.exists() and b"TC>" in log_path.read_bytes()[-65536:]:
-            return
-        time.sleep(0.25)
-    raise RuntimeError("worldserver readiness prompt timed out")
+
+
 
 
 
@@ -797,60 +428,8 @@ def write_normalized_batch(path: Path, rows: list[dict[str, Any]]) -> tuple[str,
 
 
 
-def _artifact_record(path: Path, kind: str) -> dict[str, Any]:
-    if not path.is_file():
-        raise RuntimeError(f"immutable artifact missing: {path}")
-    return {
-        "kind": kind,
-        "path": str(path),
-        "sha256": sha256_file(path),
-        "bytes": path.stat().st_size,
-        "immutable": True,
-    }
 
 
-def bounded_native_shutdown(
-    process: subprocess.Popen[bytes], wait_seconds: float,
-) -> dict[str, Any]:
-    """Request native cleanup and wait for the child within a hard budget.
-
-    The caller still owns process-group escalation after this function
-    returns.  Keeping the native request separate makes the operator-abort
-    path testable without starting a worldserver and ensures repeated Ctrl-C
-    cannot turn cleanup into an uncaught traceback.
-    """
-    result: dict[str, Any] = {
-        "commands_sent": False,
-        "operator_interrupted": False,
-        "error": None,
-        "exited": process.poll() is not None,
-        "wait_seconds": wait_seconds,
-    }
-    if result["exited"]:
-        return result
-    if process.stdin is None:
-        result["error"] = "native_shutdown_stdin_unavailable"
-        return result
-    try:
-        process.stdin.write(b"botauto stop\nbotauto status\nserver exit\n")
-        process.stdin.flush()
-        result["commands_sent"] = True
-    except (BrokenPipeError, OSError) as error:
-        result["error"] = f"native_shutdown_write:{type(error).__name__}:{error}"
-        return result
-    deadline = time.monotonic() + wait_seconds
-    while process.poll() is None and time.monotonic() < deadline:
-        try:
-            process.wait(timeout=min(0.25, max(0.01, deadline - time.monotonic())))
-        except subprocess.TimeoutExpired:
-            continue
-        except KeyboardInterrupt:
-            result["operator_interrupted"] = True
-            continue
-    result["exited"] = process.poll() is not None
-    if not result["exited"]:
-        result["error"] = f"native_shutdown_timeout:{wait_seconds:g}s"
-    return result
 
 
 def main() -> int:

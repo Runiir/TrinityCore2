@@ -59,7 +59,9 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     _primary_gameplay_terminal,
     _terminal_evidence_incomplete,
     _capture_classification,
+    _artifact_record,
     bounded_native_shutdown,
+    wait_for_prompt,
     build_policy_path_for_receipt,
     sha256_file,
     _frozen_drudge_member_anchors,
@@ -69,6 +71,8 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     native_readycheck_request_identity,
     ready_for_native_readycheck,
     chainwielder_checkpoint_arm_command,
+    chainwielder_checkpoint_pre_route_readiness,
+    _initialize_chainwielder_checkpoint_arm_gate,
     chainwielder_checkpoint_monitor_commands,
     observe_chainwielder_checkpoint_arm_gate,
     ControllerRouteHoldLaunchIdentity,
@@ -143,6 +147,52 @@ def test_chainwielder_checkpoint_arm_fails_closed_on_wrong_arm_value():
         assert str(error) == "checkpoint_actor_without_verified_seal"
     else:
         raise AssertionError("unsealed checkpoint arm was admitted")
+
+
+def test_checkpoint_pre_route_readiness_resolves_watchdog_scope_validator():
+    status = checkpoint_pre_route_status()
+    admission = _verified_checkpoint_admission()
+    command = chainwielder_checkpoint_arm_command(admission, 30008)
+
+    accepted, reasons, receipt = chainwielder_checkpoint_pre_route_readiness(
+        status,
+        recurrence_admission=admission,
+        checkpoint_arm_command=command,
+        actor_guid=30008,
+        profile_name="blackwing_descent_10n_magmaw_diagnostic",
+        scenario_id="blackwing_descent_10n_magmaw_diagnostic",
+        expected_route_manifest_sha256="d" * 64,
+    )
+
+    assert accepted is True
+    assert reasons == []
+    assert receipt["accepted"] is True
+
+
+def test_capture_support_helpers_use_focused_production_modules():
+    checkpoint_module = "tools.raid_program.capture_checkpoint_controller"
+    for owner in (
+        chainwielder_checkpoint_arm_command,
+        chainwielder_checkpoint_pre_route_readiness,
+        _initialize_chainwielder_checkpoint_arm_gate,
+        observe_chainwielder_checkpoint_arm_gate,
+        chainwielder_checkpoint_monitor_commands,
+    ):
+        assert owner.__module__ == checkpoint_module
+
+    outcome_module = "tools.raid_program.capture_run_outcome"
+    for owner in (
+        _primary_gameplay_terminal,
+        _terminal_evidence_incomplete,
+        _capture_classification,
+        process_resource_sample,
+        summarize_process_resource_samples,
+    ):
+        assert owner.__module__ == outcome_module
+
+    runtime_io_module = "tools.raid_program.capture_runtime_io"
+    for owner in (wait_for_prompt, _artifact_record, bounded_native_shutdown):
+        assert owner.__module__ == runtime_io_module
 
 
 def _verified_checkpoint_admission() -> dict:
@@ -354,7 +404,7 @@ def test_bounded_native_shutdown_sends_cleanup_and_handles_operator_interrupt():
 
 def test_process_resource_sample_reuses_baseline_proc_units_and_binds_run_identity(monkeypatch):
     monkeypatch.setattr(
-        "tools.raid_program.capture_phase1_raid_foundation._baseline_process_sample",
+        "tools.raid_program.capture_run_outcome._baseline_process_sample",
         lambda pid: {
             "monotonic_sec": 12.5,
             "process_cpu_ticks": 321,
