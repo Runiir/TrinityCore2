@@ -304,7 +304,8 @@ struct State
             || classification == Admission::BagConsumable
             || classification == Admission::OffenseSuppression
             || classification == Admission::DefensiveSurvival
-            || (survival && !movement);
+            || (survival && (!movement
+                || actingActorGuid != Scope.ActorGuid));
         bool const checkpointObservation =
             classification == Admission::CheckpointObservation
             && CurrentPhase == Phase::Armed

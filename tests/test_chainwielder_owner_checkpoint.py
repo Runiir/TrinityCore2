@@ -492,6 +492,7 @@ int main()
     int unrelatedHazardAttempts = 0;
     int armedOrdinaryAttempts = 0;
     int foreignActorAttempts = 0;
+    int foreignSurvivalMovementAttempts = 0;
     BotChainwielderOwnerCheckpoint::OwnerSnapshot routeIdentity;
 
     // Exact fail-before scheduler shape: an unrelated Survival-priority
@@ -588,6 +589,13 @@ int main()
     assert(!MarkCheckpointObservationCandidate(foreignKernel, foreign.Key,
         foreignActorHold, 78));
     foreignKernel.Submit(std::move(foreign));
+    Candidate foreignSurvivalMovement = CandidateFor(
+        "foreign-survival-movement", AdmissionClass::Unknown,
+        foreignSurvivalMovementAttempts, foreignKernel);
+    foreignSurvivalMovement.Source = "adaptive_raid_trash";
+    foreignSurvivalMovement.ActionPriority = Priority::Survival;
+    foreignSurvivalMovement.RequiredResources = Uses(Resource::Movement);
+    foreignKernel.Submit(std::move(foreignSurvivalMovement));
     armedKernel.Resolve();
     foreignKernel.Resolve();
     assert(routeExecutionCount == 1);
@@ -596,6 +604,7 @@ int main()
     assert(unrelatedHazardAttempts == 0);
     assert(armedOrdinaryAttempts == 0);
     assert(foreignActorAttempts == 0);
+    assert(foreignSurvivalMovementAttempts == 1);
     assert(nativeLease.MovementOwner == BotMovementArbitration::Owner::Route);
     assert(routeIdentity.ActivePathRouteGeneration == identity.RouteGeneration);
     assert(routeIdentity.ActivePathRouteNodeId == identity.RouteNodeId);
