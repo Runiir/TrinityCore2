@@ -1,22 +1,23 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_initial_node_identity_binding_v20_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_initial_node_identity_binding_v20",
+  "epoch_id": "generic_controller_route_hold_target_suffix_binding_v21_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_target_suffix_binding_v21",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
-  "gate_state": "v19_native_hold_acquired_full_identity_accepted_controller_target_node_mismatch",
-  "observed_at_commit": "a808104af9a0260c273c1ebb274f04fce451ba80",
-  "immutable_input_commit": "a808104af9a0260c273c1ebb274f04fce451ba80",
+  "gate_state": "v20_proved_full_route_initial_identity_and_checkpoint_target_conflation",
+  "observed_at_commit": "69b5fce953abd11caa98c395b7d44d8b5803c0d6",
+  "immutable_input_commit": "69b5fce953abd11caa98c395b7d44d8b5803c0d6",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_route_node_mismatch_handoff_v19.json",
-    "sha256": "20b322ca143144c146f3841ed7bbe0cdd35385de641d29aa48819e12ddf2f800",
-    "source_commit": "a808104af9a0260c273c1ebb274f04fce451ba80"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_initial_node_contract_review_handoff_v20.json",
+    "sha256": "b8d27a542ad2a1a1931f775e2dab0c21e079e718645494ae2a9a1352082de127",
+    "source_commit": "69b5fce953abd11caa98c395b7d44d8b5803c0d6"
   },
   "evidence_pointer": {
     "path": "artifacts/cata_raid_program/phase1_raid_foundation_a808104af9_generic_controller_route_hold_route_node_mismatch_v19_20260830.dvc",
     "sha256": "69c44663492ba66b0411972f6effa394196eacfc153703e5a675549b0beccf28",
     "remote_verified": true,
-    "local_output_evicted": true
+    "local_output_evicted": true,
+    "hydrated_for_v20": false
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
@@ -27,62 +28,69 @@
       "25N",
       "25H"
     ],
-    "canary_only": "Affliction actor 30008 and Chainwielder are immutable evidence inputs. The repair must remain generic to target-route fixture bundles and controller identity binding."
+    "canary_only": "Affliction actor 30008, Chainwielder, and Magmaw identify the immutable counterexample. The controller acquisition rule remains generic to the exact generated runtime manifest."
   },
   "behavior_change": false,
   "ready_for_bounded_repair": true,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Repair only the atomic targeted-route bundle and controller launch identity so the checkpoint target is the actual generation-one route node with one hash-bound identity across bundle, config, admission, and receipts.",
+    "allowed_change": "Generate and seal one checkpoint-target route suffix in the fixture bundle, explicitly separate source-route, runtime-initial-node, and checkpoint-target identities, and bind generic capture setup to the exact admission-verified runtime manifest first node and hash.",
+    "allowed_files": [
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_setup.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
     "forbidden": [
       "native_runtime_or_gameplay_change",
+      "generic_controller_canary_constant",
       "identity_comparison_loosening",
-      "polling_or_threshold_change",
-      "class_spec_pet_encounter_strategy_or_priority_change",
-      "ledger_or_provisioning_change",
+      "route_strategy_checkpoint_gate_or_priority_change",
+      "polling_threshold_or_watchdog_change",
+      "ledger_provisioning_or_profile_change",
       "configure_build_or_worldserver_start",
       "database_or_dvc_mutation",
-      "canary_acceptance_or_fixture_promotion_claim"
+      "fixture_promotion_or_acceptance_claim"
     ]
   },
   "verification_budget": {
     "configure_count_maximum": 0,
     "worldserver_build_count_maximum": 0,
     "worldserver_start_count_maximum": 0,
-    "retry_count_maximum": 0,
+    "retry_count_maximum": 1,
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
   "observed_contract": {
-    "controller_expected_route_generation": 1,
-    "controller_expected_route_node_id": "bwd.magmaw.chainwielder",
-    "native_actual_route_generation": 1,
-    "native_actual_route_node_id": "bwd.entry.regroup",
+    "canonical_full_route_initial_node": "bwd.entry.regroup",
+    "canonical_checkpoint_target_node": "bwd.magmaw.chainwielder",
+    "controller_v19_node_source": "prepared_config_checkpoint_target",
+    "native_v19_node_source": "runtime_manifest_first_row",
     "native_hold_acquire_count": 1,
     "native_suppressed_route_advance_count": 120,
-    "typed_source_identity_accepted": true,
-    "configured_source_length": 40,
-    "requested_source_length": 40,
-    "binary_revision_length": 12,
-    "controller_start_acknowledgement_count": 0
+    "controller_start_acknowledgement_count": 0,
+    "hold_at_entrance_can_reach_checkpoint": false
   },
   "required_contract": {
-    "target_checkpoint_is_actual_generation_one_node": true,
-    "bundle_config_admission_launch_and_receipt_route_identity_match": true,
-    "full_route_first_node_mismatch_fails_closed": true,
-    "native_start_held_acknowledgement_count": 1,
-    "identity_stable_held_status_count": 2,
-    "checkpoint_arm_acknowledgement_count": 1,
-    "checkpoint_terminal_count": 1,
-    "release_acknowledgement_count": 1,
-    "ordinary_route_advance_before_release": false,
-    "ordinary_route_advance_after_release": true
+    "runtime_suffix_initial_node_is_checkpoint_target": true,
+    "runtime_suffix_preserves_entrance_bot_start": true,
+    "runtime_suffix_preserves_frozen_roster": true,
+    "runtime_suffix_preserves_diagnostic_prerequisite_state": true,
+    "runtime_suffix_retains_downstream_drudge_observation_node": true,
+    "source_and_runtime_route_hashes_are_separately_named": true,
+    "config_admission_launch_setup_and_native_runtime_hash_match": true,
+    "generic_scheduler_uses_exact_runtime_manifest_first_node": true,
+    "full_route_entrance_receipt_remains_rejected": true,
+    "canary_constants_added_to_generic_controller": false
   },
+  "fail_before_fixture": "A four-node source route beginning at entrance is copied unchanged while capture setup expects the config checkpoint target as generation one, reproducing controller_route_hold_route_node_id_mismatch.",
+  "pass_after_fixture": "Atomic creation emits a hash-bound target suffix; production setup builds scheduler identity from that exact suffix; the scheduler accepts its generation-one native Held receipt and rejects the original full-route entrance receipt.",
   "remaining_unproven": [
-    "an atomic target-route partition makes bwd.magmaw.chainwielder the actual generation-one node",
-    "the native Held acknowledgement is accepted against the exact generated route identity",
-    "two stable statuses, one arm, one identity-preserved terminal, one release, and post-release advance complete"
+    "the bounded target-suffix implementation passes the production bundle and setup boundary",
+    "a built native runtime consumes the suffix as Chainwielder generation one",
+    "one live arm reaches an identity-preserved terminal",
+    "release advances exactly once to the retained downstream node"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -97,7 +105,11 @@
       "explicit_interruption"
     ]
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_initial_node_identity_binding_v20",
+  "focused_validation": {
+    "command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py -k 'target_suffix or controller_route_hold_runtime_manifest_binding'",
+    "maximum_correction_reruns": 1
+  },
+  "next_work_unit": "evidence:generic_controller_route_hold_target_suffix_binding_v21",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Implement and test one immutable target-route generation-one bundle identity; do not build or start a server."
+  "next_action": "Implement the bounded target-suffix and exact runtime-manifest identity binding; do not build or start a server."
 }

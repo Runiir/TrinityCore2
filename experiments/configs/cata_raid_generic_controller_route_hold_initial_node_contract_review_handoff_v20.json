@@ -1,0 +1,193 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_initial_node_identity_binding_v20",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_bounded_repair_required",
+  "source_state": {
+    "commit": "69b5fce953abd11caa98c395b7d44d8b5803c0d6",
+    "tree": "776ce38e48cd5a79a1b4bcb645578500777cd656",
+    "clean_before_review": true,
+    "v19_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_route_node_mismatch_handoff_v19.json",
+    "v19_handoff_sha256": "20b322ca143144c146f3841ed7bbe0cdd35385de641d29aa48819e12ddf2f800",
+    "v19_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_a808104af9_generic_controller_route_hold_route_node_mismatch_v19_20260830.dvc",
+    "v19_pointer_sha256": "69c44663492ba66b0411972f6effa394196eacfc153703e5a675549b0beccf28",
+    "hydration_performed": false
+  },
+  "scope_lock": {
+    "reviewed_boundary": "atomic bundle route identity through capture setup, generic scheduler acquisition, native manifest initialization, hold suppression, checkpoint arm, and post-release advance",
+    "source_or_test_edits": false,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false,
+    "gameplay_or_native_mutated": false
+  },
+  "protocol_identity_findings": {
+    "bundle_input_route": {
+      "initial_node_id": "bwd.entry.regroup",
+      "initial_generation": 1,
+      "checkpoint_target_node_id": "bwd.magmaw.chainwielder",
+      "checkpoint_source_generation_in_canonical_route": 2,
+      "identity_transport": "implicit_only"
+    },
+    "prepared_config": {
+      "BotWorld.ValidationRoute.NodeId": "bwd.magmaw.chainwielder",
+      "meaning": "checkpoint target before native manifest initialization",
+      "durability": "overwritten by ApplyValidationRouteManifestNode with the actual current manifest node"
+    },
+    "launch_contract": {
+      "explicit_initial_route_identity": false,
+      "explicit_checkpoint_target_identity": false,
+      "route_manifest_path_and_hash_present": true,
+      "fixture_identity_present": true
+    },
+    "capture_setup": {
+      "scheduler_node_source": "BotWorld.ValidationRoute.NodeId from prepared config",
+      "scheduler_manifest_hash_source": "canonical worktree runtime profile route_sha256",
+      "actual_native_manifest_source": "admission-verified config-bound bundle route",
+      "conflation": "checkpoint target is used as start-held acquisition node; canonical source hash is used instead of the exact config-bound runtime manifest hash"
+    },
+    "native_runtime": {
+      "initialization": "LoadValidationRouteManifest applies routes[0] and generation index+1 before CompleteAcquire",
+      "v19_result": "correctly acquired bwd.entry.regroup generation 1",
+      "fault_owner": false
+    }
+  },
+  "hold_semantics": {
+    "hold_at_actual_full_route_initial_node_then_arm": "impossible_under_current_protocol",
+    "proof": [
+      "while Held, generic admission suppresses ordinary route candidates",
+      "while Held or Armed, GateRouteMutation suppresses route generation advance",
+      "the Chainwielder arm gate requires current node bwd.magmaw.chainwielder",
+      "therefore accepting bwd.entry.regroup generation 1 cannot reach or arm the generation-2 checkpoint before release",
+      "release itself requires an identity-preserved checkpoint terminal, so the sequence deadlocks"
+    ],
+    "suppressed_advance_live_observation": 120,
+    "controller_relaxation_allowed": false
+  },
+  "target_suffix_contract": {
+    "admitted_shape": "an immutable fixture-only suffix beginning at the sealed checkpoint target and retaining every downstream node required by the observation",
+    "generation_one_node": "bwd.magmaw.chainwielder",
+    "required_downstream_node": "bwd.magmaw.drudges",
+    "required_invariants": [
+      "the target node is unique in the reviewed canonical scenario partition",
+      "the suffix preserves source ordering and exact node payloads except deterministic contiguous step renumbering",
+      "the suffix first row preserves the canonical bot_start map and coordinates",
+      "the suffix preserves one exact frozen roster identity across all retained rows",
+      "the suffix preserves diagnostic-only and non-certifying prerequisite state",
+      "the suffix retains the Drudge future-trash row used by the checkpoint unsafe-future-pack observation",
+      "the generated suffix hash is bound by runtime config, recurrence admission, launch contract, controller acquisition identity, native receipt, and bundle manifest",
+      "the canonical full-route source hash and generated runtime-suffix hash remain separately named and never compared as if equivalent"
+    ],
+    "why_entrance_removal_is_bounded": "Every canonical Magmaw diagnostic row carries the same entrance bot_start identity. The checkpoint suffix still spawns at that entrance; setup and formation candidates remain admitted while held. The omitted regroup is not certified as completed and the fixture remains evidence-only.",
+    "remaining_live_question": "Whether the single armed actor reaches the real Chainwielder hazard and terminal observation is intentionally left to the later one-start live verification."
+  },
+  "claim_ledger": {
+    "verified": [
+      "the V19 handoff and retained DVC pointer hashes match the active descriptor",
+      "the launch bundle carries the full-route initial identity and checkpoint target only implicitly, not as two named launch identities",
+      "capture_setup conflates the config checkpoint target with the native start-held acquisition node",
+      "capture_setup also sources the scheduler route hash from the canonical worktree profile instead of the admission-verified config-bound runtime manifest",
+      "native initialization correctly treats the first manifest row as generation one",
+      "holding the entrance cannot execute or advance to the Chainwielder checkpoint under the current suppression and release rules",
+      "a target suffix can preserve entrance spawn, frozen roster, diagnostic prerequisite state, and the downstream Drudge observation dependency",
+      "the generic scheduler needs no Chainwielder or Magmaw constant; it only needs the exact generated runtime manifest first-node identity"
+    ],
+    "refuted": [
+      "the native route manifest initialization caused the V19 mismatch",
+      "loosening the scheduler to accept bwd.entry.regroup is a complete repair",
+      "the current launch bundle explicitly transports both initial-route and checkpoint-target identities",
+      "the existing single-node bundle fixture covers the V19 full-route counterexample",
+      "a bundle-only target partition can pass capture setup without separately binding the generated runtime manifest hash"
+    ],
+    "unproven": [
+      "the target-suffix implementation passes the exact production bundle and setup boundary",
+      "the native worldserver consumes the generated suffix as Chainwielder generation one",
+      "one armed actor reaches a real route-owner hazard observation while the cohort remains held",
+      "the live checkpoint reaches terminal, releases once, and advances to the retained Drudge node"
+    ]
+  },
+  "first_broken_edge": {
+    "owner": "atomic_bundle_and_capture_setup_identity_projection",
+    "edge": "the bundle preserves a full route beginning at entrance while setup projects the config checkpoint target as that route's generation-one acquisition identity",
+    "first_state_infecting_mutation": "capture_setup constructs ControllerRouteHoldLaunchIdentity with bwd.magmaw.chainwielder and the canonical profile route hash before native returns the actual bundle-manifest entrance identity",
+    "failure_postcondition": "native acquires exactly one correct Held entrance scope, controller rejects its first receipt, and no status, arm, terminal, or release command is emitted",
+    "correlation_keys": {
+      "actor_guid": 30008,
+      "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+      "route_generation": 1,
+      "controller_node": "bwd.magmaw.chainwielder",
+      "native_node": "bwd.entry.regroup",
+      "native_manifest_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+      "checkpoint_seal_sha256": "451c7cd1a0886a3929dd843edb9cedc1a1bae6e2544729a723e263d5f7fa6f62"
+    }
+  },
+  "deterministic_review": {
+    "command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py::test_bundle_is_deterministic_and_does_not_mutate_inputs tests/test_chainwielder_prestart_bundle.py::test_launch_contract_is_exact_one_start_completion_watchdog tests/test_phase1_raid_foundation_capture.py::test_generic_controller_route_hold_scheduler_exact_production_transcript",
+    "result": "3 passed in 0.33s",
+    "interpretation": "The current green tests prove local determinism and protocol order but use an already-targeted single-node bundle fixture, so they do not reproduce the V19 full-route mismatch."
+  },
+  "reviewed_owners": {
+    "tools/raid_program/chainwielder_prestart_bundle.py": {
+      "sha256": "d96ca1ad68743f8f3fc6ad3e4fd1c845d50e63a8e70e0d42be1e9f35205c79ff",
+      "lines": 747
+    },
+    "tools/raid_program/capture_setup.py": {
+      "sha256": "f37117af651fd079638db0f5dde12cd67b35a4085213104a61723cf10ec64955",
+      "lines": 376
+    },
+    "tools/raid_program/controller_route_hold.py": {
+      "sha256": "44a2712700b4b797dedd822058424505147585d9d0b836a0758c5205c22e2968",
+      "lines": 491,
+      "expected_change": false
+    },
+    "src/server/game/Bots/BotWorldPopulationMgrValidationRouteManifest.cpp": {
+      "sha256": "88613b888b43021dd648b9bd8387667c449684aa5d47d5ac140d630dffd45d40",
+      "lines": 913,
+      "expected_change": false
+    },
+    "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp": {
+      "sha256": "431f90cef0f9a6d3021041c028eee2c655413173ac222bf3db30d9af43d24548",
+      "lines": 779,
+      "expected_change": false
+    },
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": {
+      "sha256": "4fc4a48b72be7a1d7f0da6f829d3b73ed56724c8d7be27207b463d0357661718",
+      "lines": 910,
+      "expected_change": false
+    }
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_target_suffix_binding_v21",
+    "owner_skill": "raid-evidence-lifecycle",
+    "hypothesis": "Generating and sealing a checkpoint-target suffix, then deriving the generic controller acquisition identity from that exact admission-verified runtime manifest, makes the native and controller generation-one scopes identical without weakening hold semantics or hard-coding a canary in the generic scheduler.",
+    "allowed_files": [
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_setup.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "required_fail_before": "A canonical four-node Magmaw diagnostic source route creates a launch whose scheduler expects Chainwielder while the copied runtime manifest starts at entrance, reproducing controller_route_hold_route_node_id_mismatch.",
+    "required_pass_after": [
+      "atomic create emits a canonical suffix beginning at the unique checkpoint target and retaining Drudges plus Magmaw",
+      "the suffix preserves entrance bot_start, roster, diagnostic prerequisite, and exact retained-node payload invariants",
+      "launch contract names canonical source route identity, runtime suffix identity, initial node, and checkpoint target separately",
+      "config and admission bind the exact suffix path and hash",
+      "prepare_capture_setup derives the generic scheduler node and manifest hash from that exact admission-verified suffix",
+      "the production scheduler accepts a native Held receipt carrying the suffix node/hash and still rejects a full-route entrance receipt",
+      "no canary node, actor, spec, raid size, or difficulty constant is added to controller_route_hold.py"
+    ],
+    "focused_validation": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py -k 'target_suffix or controller_route_hold_runtime_manifest_binding'",
+    "maximum_correction_reruns": 1,
+    "forbidden": [
+      "native_or_gameplay_change",
+      "controller_identity_comparison_loosening",
+      "route_strategy_or_checkpoint_gate_change",
+      "polling_threshold_or_watchdog_change",
+      "configure_build_worldserver_or_database",
+      "dvc_mutation_or_hydration",
+      "fixture_promotion_or_acceptance_claim"
+    ]
+  }
+}
