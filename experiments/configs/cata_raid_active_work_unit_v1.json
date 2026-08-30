@@ -61,7 +61,7 @@
     "worldserver_start_count_maximum": 1
   },
   "validation_clock": {
-    "policy": "completion-watchdog",
+    "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "terminal_conditions": [
       "normal_clear",
