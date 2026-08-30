@@ -1,0 +1,133 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:restore_map669_retained_roster_identity_v104",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "strict_roster_readback_passed",
+  "source": {
+    "commit": "ff2cb9b3f5dba00e89e92bb8f1a8ef592a1379a2",
+    "tree": "3e5442882f0a4aa98dec3d3494a4db962005c16f",
+    "active_descriptor_sha256": "463ae91330dcc85ed842828feb33a9d6aedbc8ff98f1adb9bd2bb955c93caa33",
+    "v103_handoff": "experiments/configs/cata_raid_v103_retained_roster_prestart_failure_handoff_v104.json",
+    "v103_handoff_sha256": "f06d8a26b24fbd9314ec19305f5b83e16704c2c0cd12ae696c15989204d86606",
+    "tracked_runtime_config_sha256": "1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8"
+  },
+  "scope_lock": {
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "operation": "one repository-owned prepare-only reset followed by one strict verifier and one exact shard readback",
+    "worldserver_or_authserver_started": false,
+    "build_or_gameplay_mutation": false,
+    "dvc_mutation_or_publication": false
+  },
+  "operations": {
+    "prepare_only_invocations": 1,
+    "database_mutations": 1,
+    "strict_verifier_invocations": 1,
+    "shard_readback_invocations": 1,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "retry_count": 0,
+    "dvc_mutation_count": 0
+  },
+  "preparation": {
+    "schema": "bot_live_validation_preparation_v1",
+    "report_sha256": "9e695553959f2b4f940260fc544612474817d21141ffaa70700db041185d6363",
+    "prepared": true,
+    "worldserver_started": false,
+    "validation_scenario_stage_preflight_valid": true,
+    "validation_scenario_stage_current": true,
+    "account_statement_count": 110,
+    "executed_account_statement_count": 110,
+    "character_statement_count": 12635,
+    "executed_character_statement_count": 12635,
+    "generated_account_sql_sha256": "9c032a31ba93a1beb3c9f03840ca00bd1c587f0e825362c3d15f603e9923c001",
+    "generated_character_sql_sha256": "21451a6acf1a52c915b700480b04136bbfb09dc1db960fe760dedee3ef76a20a"
+  },
+  "strict_verification": {
+    "schema": "bot_validation_provisioning_verifier_report_v1",
+    "receipt_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "all_passed": true,
+    "provisioning_all_ready": true,
+    "payload_valid": true,
+    "database_valid": true,
+    "failure_count": 0,
+    "config_hash": "a69a7491bdb56e8d6acc782e81e27fde283eb9f522dcd6d76a63d341b6c815f3",
+    "caller_authored_provisioning_report_used": false,
+    "runtime_rotation_profile_ready_count": 31,
+    "runtime_rotation_profile_expected_count": 31
+  },
+  "shard_readback": {
+    "schema": "cata_raid_phase1_bwd_provisioning_readback_v5",
+    "receipt_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "passed": true,
+    "selected_name_count": 10,
+    "map_id": 669,
+    "position": {
+      "x": -345.872,
+      "y": -224.344,
+      "z": 193.127,
+      "o": 0.0
+    },
+    "health_seed": 4294967295,
+    "power1_seed": 4294967295,
+    "online_rows": 0,
+    "leased_rows": 0,
+    "at_login_rows": 0,
+    "character_flag_rows": 0,
+    "group_rows": 0,
+    "group_member_rows": 0,
+    "group_instance_rows": 0,
+    "character_instance_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0,
+    "ghost_aura_rows": 0,
+    "actor_30008_exact": true,
+    "all_ten_names_native_loadable": true,
+    "reasons": []
+  },
+  "resolved_v103_failures": [
+    "Mgwdpsa:health_seed",
+    "Mgwdpsa:power1_seed",
+    "Mgwdpsc:map",
+    "Mgwdpsc:position",
+    "Mgwheala:health_seed",
+    "Mgwheala:power1_seed",
+    "Mgwtankb:health_seed",
+    "Mgwtankb:power1_seed",
+    "corpse_rows",
+    "ghost_aura_rows"
+  ],
+  "claim_ledger": {
+    "verified": [
+      "one deterministic repository-owned prepare-only pass restored the exact frozen Magmaw roster without starting a server",
+      "the independent strict database verifier passed with zero failures without consuming a caller-authored preparation report",
+      "all ten expected actors are offline and unleased at the declared map-669 entrance with full health and power seeds",
+      "normalized names, at_login zero, character flags zero, and group, instance, corpse, corpse-phase, and ghost-aura residue zero are proven"
+    ],
+    "refuted": [
+      "the V103 actor 30008 map and position mismatch remains",
+      "the V103 health, power, corpse, or ghost residue remains after V104"
+    ],
+    "unproven": [
+      "the four V103 production boundaries",
+      "the three preserved invalidated parasite fixtures represent repaired live behavior",
+      "any gameplay canary, Magmaw completion, DPS, HPS, or acceptance result"
+    ]
+  },
+  "evidence": {
+    "publication_required": false,
+    "dvc_mutation": false,
+    "retention": "compact tracked hashes only; transient preparation SQL and reports evicted after descriptor validation"
+  },
+  "next_work_unit": {
+    "id": "shard:composite_map669_production_boundary_replay_v105",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Run one exact-current no-retry completion-watchdog map-669 fixture-expansion replay for exactly the four previously admitted production boundaries. Recheck the restored roster read-only before the single worldserver start; do not reprovision or start an authserver.",
+    "required_postcondition": "all four production boundaries are correlated through consumed native observations or the run stops at the first exact missing or terminal edge",
+    "worldserver_start_maximum": 1,
+    "database_mutation_maximum": 0,
+    "retry_maximum": 0
+  }
+}
