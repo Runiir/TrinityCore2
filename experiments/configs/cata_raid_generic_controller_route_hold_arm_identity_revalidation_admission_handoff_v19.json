@@ -1,0 +1,107 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_arm_identity_revalidation_admission_v19",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "passed",
+  "input_identities": {
+    "reviewed_source_commit": "8583d7e9e23950000a3a8a9de8d01d99a0236a28",
+    "reviewed_source_tree": "da56640344f1850278b00f5b1a58dad1159352a3",
+    "v17_rejection_handoff_path": "experiments/configs/cata_raid_generic_controller_route_hold_config_identity_revalidation_rejection_handoff_v17.json",
+    "v17_rejection_handoff_sha256": "30895882b0a83080c6d9a910a46d454f9eb21dddc0c5328bd43ff7df2551dfee",
+    "v18_implementation_handoff_path": "experiments/configs/cata_raid_generic_controller_route_hold_arm_config_identity_binding_handoff_v18.json",
+    "v18_implementation_handoff_sha256": "9540a695a13d30f22a79692288c2075871e706b7e9a20ba1a03a8ca11a2cd897",
+    "shared_identity_owner_sha256": "34e8d1cb73cc1e2cd5c9094923c547cbbf6134f877233502da67a7247bfdd8d7",
+    "runtime_owner_sha256": "4fc4a48b72be7a1d7f0da6f829d3b73ed56724c8d7be27207b463d0357661718",
+    "production_boundary_fixture_sha256": "a72bea80edad233a06e7a3f60a8f33993717126dace75e774dfb055248cf475d"
+  },
+  "program_scope": {
+    "supported_specs": "all_configured_dps_tank_and_healer_specs",
+    "supported_encounters": "all_route_manifest_nodes",
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_semantics": "Affliction, actor 30008, Chainwielder, and Magmaw are evidence inputs only. The reviewed shared source-identity change contains no class, actor, encounter, instance, size, difficulty, geometry, or route-node branch."
+  },
+  "behavior_change": false,
+  "independent_review": {
+    "owned_diff": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_generic_controller_route_hold_arm_config_identity_binding_handoff_v18.json",
+      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "tests/test_chainwielder_owner_checkpoint.py"
+    ],
+    "shared_predicate": "Both production start-held and arm paths use BotControllerRouteHold::CompareSourceIdentity. It requires valid lower-hex exact equal 40-character configured/requested authorities and a valid lower-hex 12- or 40-character binary revision equal to the exact source prefix/full value.",
+    "typed_evidence": "Start-held/status exposes typed presence, format, equality, accepted, failure-field, and length values without adding the generated or requested raw authority. Arm returns distinct typed fixture, seal, source-authority, and Git-revision reasons.",
+    "transcript_audit": [
+      "start-held receives the full source and acknowledges Held only after the shared predicate accepts the generated short revision",
+      "status serializes the full held scope and recomputes accepted config identity against GitRevision::GetHash",
+      "the controller compares two stable held identity projections before emitting one full-source arm command",
+      "the native arm GateInput receives full configured/requested source plus the canonical short GitRevision and uses the shared predicate",
+      "checkpoint reset preserves the moved controller hold; terminal observes exact current identity",
+      "release reconstructs current identity and replaces only command seal/source, so exact state identity remains required",
+      "ordinary route mutation remains suppressed before release and must advance exactly one generation afterward"
+    ],
+    "focused_test": {
+      "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+      "result": "6 passed in 1.34s",
+      "run_count": 1,
+      "correction_count": 0,
+      "coverage": "Exact short-revision arm GateInput; strict negative representations and authorities; start-held, held suppression, arm, terminal, release, and post-release gates."
+    },
+    "cpp_line_counts": {
+      "BotChainwielderOwnerCheckpoint.h": 590,
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 910,
+      "cs_chainwielder_owner_checkpoint.cpp": 123,
+      "BotActionArbiter.h": 637,
+      "BotWorldPopulationMgrUpdateBotKernelPreparation.cpp": 583,
+      "BotWorldPopulationMgrUpdateBotKernelFallback.cpp": 823,
+      "BotWorldPopulationMgrValidationRouteRuntime.cpp": 779,
+      "BotWorldPopulationMgrRaidRuntime.cpp": 999
+    },
+    "all_listed_cpp_below_1000_lines": true,
+    "remaining_deterministic_identity_or_initialization_mismatch": null,
+    "configure_count": 0,
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the shared strict predicate is used by both real production start-held and arm paths",
+      "the real arm fixture uses the canonical short generated revision and covers invalid length, case, prefix, full value, unequal authority, fixture, and seal cases",
+      "status, arm invocation, terminal, release, and post-release initialization and identity boundaries contain no remaining deterministic full-versus-short mismatch",
+      "the implementation is universal and all scoped C++ remains below 1000 physical lines"
+    ],
+    "refuted": [],
+    "unproven": [
+      "the native worldserver builds at source commit 8583d7e9e23950000a3a8a9de8d01d99a0236a28",
+      "one live Held acknowledgement and two identity-stable Held statuses are followed by an accepted arm",
+      "one live identity-preserved terminal, release, and post-release route advance completes"
+    ]
+  },
+  "admission": {
+    "next_work_unit": "shard:generic_controller_route_hold_arm_identity_revalidation_one_build_one_start_v19",
+    "next_owner_skill": "raid-shard-architecture",
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_count_maximum": 0,
+    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "database_mutation": "forbidden",
+    "dvc_mutation": "forbidden",
+    "duration_policy": "completion-watchdog",
+    "fixed_success_timer_seconds": null,
+    "raid_success_timer_seconds": null
+  },
+  "required_live_transcript": [
+    "one start-held acknowledgement in Held at admitted route generation one",
+    "two identity-stable Held status receipts with accepted typed source identity",
+    "one accepted sealed arm acknowledgement",
+    "one identity-preserved typed checkpoint terminal",
+    "one terminal-gated release acknowledgement",
+    "ordinary route advance occurs only after release"
+  ],
+  "forbidden": "No second configure, build, start, or retry; no native, test, controller, gameplay, class, pet, encounter, route-strategy, database, DVC, fixture-promotion, canary-acceptance, or fixed-duration raid-success change."
+}
