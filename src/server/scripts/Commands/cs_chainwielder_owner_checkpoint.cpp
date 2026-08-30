@@ -40,6 +40,29 @@ private:
             result = sBotWorldPopulationMgr
                 ->GetChainwielderOwnerCheckpointJsonForCohort(cohortId);
         }
+        else if (action == "start-held")
+        {
+            uint32 actorGuid = 0;
+            std::string fixtureId;
+            std::string sealSha256;
+            std::string sourceCommit;
+            std::string extra;
+            parser >> actorGuid >> fixtureId >> sealSha256
+                >> sourceCommit >> extra;
+            if (!actorGuid || fixtureId.empty() || sealSha256.empty()
+                || sourceCommit.empty() || !extra.empty())
+            {
+                result = "{\"ok\":false,\"action\":"
+                    "\"botauto_controller_route_hold\","
+                    "\"failure_reason\":\"invalid_arguments\"}";
+            }
+            else
+            {
+                result = sBotWorldPopulationMgr
+                    ->StartAutonomyHeldForCohort(cohortId, actorGuid,
+                        fixtureId, sealSha256, sourceCommit);
+            }
+        }
         else if (action == "arm")
         {
             uint32 actorGuid = 0;
@@ -61,11 +84,33 @@ private:
                         cohortId, actorGuid, sealSha256, sourceCommit);
             }
         }
+        else if (action == "release")
+        {
+            uint32 actorGuid = 0;
+            std::string sealSha256;
+            std::string sourceCommit;
+            std::string extra;
+            parser >> actorGuid >> sealSha256 >> sourceCommit >> extra;
+            if (!actorGuid || sealSha256.empty()
+                || sourceCommit.empty() || !extra.empty())
+            {
+                result = "{\"ok\":false,\"action\":"
+                    "\"botauto_controller_route_hold\","
+                    "\"failure_reason\":\"invalid_arguments\"}";
+            }
+            else
+            {
+                result = sBotWorldPopulationMgr
+                    ->ReleaseControllerRouteHoldForCohort(
+                        cohortId, actorGuid, sealSha256, sourceCommit);
+            }
+        }
         else
         {
             result = "{\"ok\":false,\"action\":"
                 "\"botauto_chainwielder_checkpoint\","
-                "\"failure_reason\":\"arm_or_status_required\"}";
+                "\"failure_reason\":"
+                "\"start_held_arm_release_or_status_required\"}";
         }
         handler->SendSysMessage(result.c_str());
         return true;

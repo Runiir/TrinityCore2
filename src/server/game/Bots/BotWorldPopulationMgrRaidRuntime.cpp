@@ -7,7 +7,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
 namespace
 {
 BotAdmissionIdentityGenerated::Identity const* FindExpectedBotAdmissionIdentity(
@@ -99,6 +98,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
          << ",\"attempt_id\":" << raid.AttemptId
          << ",\"profile_generation\":" << raid.ProfileGeneration
          << ",\"profile_content_hash\":\"" << JsonEscape(raid.ProfileContentHash) << "\""
+         << ",\"controller_route_hold\":" << BuildControllerRouteHoldJson()
          << ",\"assignment_generation\":" << raid.AssignmentGeneration
          << ",\"evidence_sequence\":" << raid.EvidenceSequence
          << ",\"admission_receipt\":{\"attempt_id\":" << raid.AdmissionAttemptId

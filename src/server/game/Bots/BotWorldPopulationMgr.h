@@ -85,6 +85,15 @@ public:
         std::string const& cohortId, uint32 actorGuid,
         std::string const& sealSha256,
         std::string const& sourceCommit);
+    std::string StartAutonomyHeldForCohort(
+        std::string const& cohortId, uint32 actorGuid,
+        std::string const& fixtureId,
+        std::string const& sealSha256,
+        std::string const& sourceCommit);
+    std::string ReleaseControllerRouteHoldForCohort(
+        std::string const& cohortId, uint32 actorGuid,
+        std::string const& sealSha256,
+        std::string const& sourceCommit);
     std::string GetChainwielderOwnerCheckpointJsonForCohort(
         std::string const& cohortId) const;
     std::string GetCombatLogJsonForCohort(std::string const& cohortId) const;
@@ -335,6 +344,11 @@ private:
         uint32 actorGuid, std::string const& sealSha256,
         std::string const& sourceCommit);
     std::string BuildChainwielderOwnerCheckpointJson() const;
+    std::string BuildControllerRouteHoldJson() const;
+    BotControllerRouteHold::Identity CurrentControllerRouteHoldIdentity(
+        uint32 actorGuid) const;
+    bool PermitControllerRouteAdvance(uint64 prospectiveGeneration);
+    void InstallControllerRouteHoldAdmissionPolicy(BotUpdateContext& context);
     BotMovementArbitration::Request BuildMovementRequest(
         Player* bot, BotWorldMovement::Intent const& intent, uint64 nowMs) const;
     BotWorldMovement::ActivePathObservation ObserveActiveMovement(

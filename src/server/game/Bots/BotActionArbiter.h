@@ -176,7 +176,9 @@ enum class AdmissionClass : uint8
     FormationMovement,
     FriendlyHealing,
     BagConsumable,
-    OffenseSuppression
+    OffenseSuppression,
+    DefensiveSurvival,
+    ControllerCheckpointObservation
 };
 
 using ResourceMask = uint16;

@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotChainwielderOwnerCheckpoint.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/BotWorldPopulationMgrUpdateContext.h"
 
 #include "Creature.h"
 #include "GameTime.h"
@@ -128,6 +129,204 @@ void WriteSnapshot(std::ostringstream& json, OwnerSnapshot const& snapshot)
          << EscapeJson(snapshot.LastPathRejectReason)
          << "\"}";
 }
+
+void SyncControllerTerminal(
+    BotControllerRouteHold::State& controller,
+    BotControllerRouteHold::Identity const& identity,
+    BotChainwielderOwnerCheckpoint::State const& checkpoint,
+    uint64 nowMs)
+{
+    if (controller.CurrentPhase != BotControllerRouteHold::Phase::Armed)
+        return;
+    bool const terminal = checkpoint.CurrentStage == Stage::Completed
+        || checkpoint.CurrentStage == Stage::Failed;
+    if (!terminal)
+        return;
+    controller.ObserveCheckpointTerminal(identity,
+        StageName(checkpoint.CurrentStage), true,
+        checkpoint.BeforeAfterIdentityPreserved, nowMs);
+}
+}
+
+BotControllerRouteHold::Identity
+BotWorldPopulationMgr::CurrentControllerRouteHoldIdentity(
+    uint32 actorGuid) const
+{
+    return {
+        Cohort().Id,
+        _serverEpoch,
+        Cohort().AttemptId,
+        Cohort().Config.ValidationRouteScenarioId,
+        Cohort().SelectedProfileName.empty()
+            ? Cohort().Config.Name : Cohort().SelectedProfileName,
+        Party().ValidationRouteManifestSha256,
+        Party().ValidationRouteGeneration,
+        Cohort().Config.ValidationRouteNodeId,
+        actorGuid,
+        Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
+        Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
+        Cohort().Config.ChainwielderOwnerCheckpointSourceCommit,
+    };
+}
+
+std::string BotWorldPopulationMgr::StartAutonomyHeldForCohort(
+    std::string const& cohortId, uint32 actorGuid,
+    std::string const& fixtureId, std::string const& sealSha256,
+    std::string const& sourceCommit)
+{
+    using namespace BotControllerRouteHold;
+    if (!FindCohort(cohortId))
+        return UnknownCohortJson("botauto_controller_route_hold", cohortId);
+
+    std::string const previous = _selectedCohortId;
+    _selectedCohortId = cohortId;
+    State& hold = Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
+    if (Cohort().Active)
+    {
+        hold.Reject("controller_route_hold_active_attempt_acquire");
+        std::string result = BuildControllerRouteHoldJson();
+        _selectedCohortId = previous;
+        return result;
+    }
+
+    Identity bootstrap;
+    bootstrap.CohortId = cohortId;
+    bootstrap.ServerEpoch = _serverEpoch;
+    bootstrap.AttemptId = Cohort().AttemptId + 1;
+    bootstrap.ActorGuid = actorGuid;
+    bootstrap.FixtureId = fixtureId;
+    bootstrap.SealSha256 = sealSha256;
+    bootstrap.SourceCommit = sourceCommit;
+    TransitionResult const begin = hold.BeginAcquire(bootstrap, NowMs());
+    if (!begin.Accepted)
+    {
+        std::string result = BuildControllerRouteHoldJson();
+        _selectedCohortId = previous;
+        return result;
+    }
+
+    if (!StartAutonomyForCohort(cohortId))
+    {
+        _selectedCohortId = cohortId;
+        hold.Reject("controller_route_hold_runtime_start_failed");
+        std::string result = BuildControllerRouteHoldJson();
+        _selectedCohortId = previous;
+        return result;
+    }
+    _selectedCohortId = cohortId;
+
+    bool const actorInCohort = std::any_of(Party().Bots.begin(),
+        Party().Bots.end(), [actorGuid](WorldBotState const& state)
+        {
+            return state.Guid.GetCounter() == actorGuid;
+        });
+    Identity const identity = CurrentControllerRouteHoldIdentity(actorGuid);
+    if (!actorInCohort)
+        hold.Reject("controller_route_hold_actor_not_in_cohort");
+    else if (identity.FixtureId != fixtureId
+        || identity.SealSha256 != sealSha256
+        || identity.SourceCommit != sourceCommit
+        || identity.SourceCommit != GitRevision::GetHash())
+        hold.Reject("controller_route_hold_config_identity_mismatch");
+    else
+        hold.CompleteAcquire(identity, NowMs());
+
+    std::string result = BuildControllerRouteHoldJson();
+    _selectedCohortId = previous;
+    return result;
+}
+
+std::string BotWorldPopulationMgr::ReleaseControllerRouteHoldForCohort(
+    std::string const& cohortId, uint32 actorGuid,
+    std::string const& sealSha256, std::string const& sourceCommit)
+{
+    using namespace BotControllerRouteHold;
+    if (!FindCohort(cohortId))
+        return UnknownCohortJson("botauto_controller_route_hold", cohortId);
+    std::string const previous = _selectedCohortId;
+    _selectedCohortId = cohortId;
+    State& hold = Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
+    Identity requested = CurrentControllerRouteHoldIdentity(actorGuid);
+    requested.SealSha256 = sealSha256;
+    requested.SourceCommit = sourceCommit;
+    hold.Release(requested, NowMs());
+    std::string result = BuildControllerRouteHoldJson();
+    _selectedCohortId = previous;
+    return result;
+}
+
+bool BotWorldPopulationMgr::PermitControllerRouteAdvance(
+    uint64 prospectiveGeneration)
+{
+    BotControllerRouteHold::State& hold =
+        Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
+    BotControllerRouteHold::Identity identity =
+        CurrentControllerRouteHoldIdentity(hold.Scope.ActorGuid);
+    return BotControllerRouteHold::GateRouteMutation(
+        hold, identity, prospectiveGeneration);
+}
+
+void BotWorldPopulationMgr::InstallControllerRouteHoldAdmissionPolicy(
+    BotUpdateContext& context)
+{
+    BotControllerRouteHold::State& hold =
+        Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
+    if (!hold.Holding())
+        return;
+    BotControllerRouteHold::Identity identity =
+        CurrentControllerRouteHoldIdentity(hold.Scope.ActorGuid);
+    uint32 const actingActorGuid = context.State.Guid.GetCounter();
+    BotControllerRouteHold::InstallAdmissionPolicy(
+        context.State.DecisionKernel, hold, std::move(identity),
+        actingActorGuid);
+}
+
+std::string BotWorldPopulationMgr::BuildControllerRouteHoldJson() const
+{
+    using namespace BotControllerRouteHold;
+    State const& hold =
+        Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
+    Identity const& scope = hold.Scope;
+    std::ostringstream json;
+    bool const ok = hold.CurrentPhase != Phase::Failed
+        && hold.FailureReason.empty();
+    json << "{\"ok\":" << (ok ? "true" : "false")
+         << ",\"phase\":\"" << PhaseName(hold.CurrentPhase) << "\""
+         << ",\"cohort_id\":\"" << JsonEscape(scope.CohortId) << "\""
+         << ",\"server_epoch\":" << scope.ServerEpoch
+         << ",\"attempt_id\":" << scope.AttemptId
+         << ",\"scenario_id\":\"" << JsonEscape(scope.ScenarioId) << "\""
+         << ",\"runtime_profile\":\"" << JsonEscape(scope.RuntimeProfile) << "\""
+         << ",\"route_manifest_sha256\":\""
+         << JsonEscape(scope.RouteManifestSha256) << "\""
+         << ",\"route_generation\":" << scope.RouteGeneration
+         << ",\"route_node_id\":\"" << JsonEscape(scope.RouteNodeId) << "\""
+         << ",\"actor_guid\":" << scope.ActorGuid
+         << ",\"fixture_id\":\"" << JsonEscape(scope.FixtureId) << "\""
+         << ",\"seal_sha256\":\"" << JsonEscape(scope.SealSha256) << "\""
+         << ",\"source_commit\":\"" << JsonEscape(scope.SourceCommit) << "\""
+         << ",\"acquire_count\":" << hold.AcquireCount
+         << ",\"arm_ack_count\":" << hold.ArmAckCount
+         << ",\"checkpoint_stage\":\""
+         << JsonEscape(hold.CheckpointStage) << "\""
+         << ",\"checkpoint_terminal\":"
+         << (hold.CheckpointTerminal ? "true" : "false")
+         << ",\"checkpoint_identity_preserved\":"
+         << (hold.CheckpointIdentityPreserved ? "true" : "false")
+         << ",\"release_count\":" << hold.ReleaseCount
+         << ",\"suppressed_route_action_count\":"
+         << hold.SuppressedRouteActionCount
+         << ",\"suppressed_route_advance_count\":"
+         << hold.SuppressedRouteAdvanceCount
+         << ",\"acquired_at_ms\":" << hold.AcquiredAtMs
+         << ",\"armed_at_ms\":" << hold.ArmedAtMs
+         << ",\"terminal_at_ms\":" << hold.TerminalAtMs
+         << ",\"released_at_ms\":" << hold.ReleasedAtMs
+         << ",\"failure_reason\":"
+         << (hold.FailureReason.empty()
+                ? "null" : "\"" + JsonEscape(hold.FailureReason) + "\"")
+         << "}";
+    return json.str();
 }
 
 std::string BotWorldPopulationMgr::ArmChainwielderOwnerCheckpointForCohort(
@@ -193,6 +392,8 @@ std::string BotWorldPopulationMgr::ArmChainwielderOwnerCheckpoint(
     if (char const* reason = RejectionReason(gate))
     {
         Cohort().ChainwielderOwnerCheckpoint.Outcome = reason;
+        Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold.Reject(
+            reason);
         return BuildChainwielderOwnerCheckpointJson();
     }
 
@@ -201,6 +402,8 @@ std::string BotWorldPopulationMgr::ArmChainwielderOwnerCheckpoint(
     {
         Cohort().ChainwielderOwnerCheckpoint.Outcome =
             "chainwielder_checkpoint_actor_not_in_cohort";
+        Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold.Reject(
+            "controller_route_hold_actor_not_in_cohort");
         return BuildChainwielderOwnerCheckpointJson();
     }
 
@@ -209,10 +412,25 @@ std::string BotWorldPopulationMgr::ArmChainwielderOwnerCheckpoint(
         && checkpoint.CurrentStage != Stage::Disabled)
     {
         checkpoint.Outcome = "chainwielder_checkpoint_already_armed";
+        checkpoint.ControllerRouteHold.Reject(
+            "controller_route_hold_duplicate_arm");
         return BuildChainwielderOwnerCheckpointJson();
     }
 
+    BotControllerRouteHold::Identity const holdIdentity =
+        CurrentControllerRouteHoldIdentity(actorGuid);
+    BotControllerRouteHold::TransitionResult const arm =
+        checkpoint.ControllerRouteHold.AcknowledgeArm(holdIdentity, NowMs());
+    if (!arm.Accepted)
+    {
+        checkpoint.Outcome = arm.Reason;
+        return BuildChainwielderOwnerCheckpointJson();
+    }
+
+    BotControllerRouteHold::State controllerHold =
+        std::move(checkpoint.ControllerRouteHold);
     checkpoint = {};
+    checkpoint.ControllerRouteHold = std::move(controllerHold);
     checkpoint.CurrentStage = Stage::Armed;
     checkpoint.AttemptId = Cohort().AttemptId;
     checkpoint.ActorGuid = actorGuid;
@@ -239,6 +457,9 @@ void BotWorldPopulationMgr::MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
     {
         checkpoint.CurrentStage = Stage::Failed;
         checkpoint.Outcome = "real_route_owner_not_observed";
+        SyncControllerTerminal(checkpoint.ControllerRouteHold,
+            CurrentControllerRouteHoldIdentity(checkpoint.ActorGuid),
+            checkpoint, NowMs());
         RecordDecisionTrace(state, "fixture_observation",
             "chainwielder_owner_checkpoint_failed", nullptr, 0, "failed",
             checkpoint.Outcome.c_str(), false);
@@ -311,6 +532,9 @@ void BotWorldPopulationMgr::MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
     {
         checkpoint.CurrentStage = Stage::Failed;
         checkpoint.Outcome = "future_pack_destination_not_resolved";
+        SyncControllerTerminal(checkpoint.ControllerRouteHold,
+            CurrentControllerRouteHoldIdentity(checkpoint.ActorGuid),
+            checkpoint, NowMs());
         RecordDecisionTrace(state, "fixture_observation",
             "chainwielder_owner_checkpoint_failed", nullptr, 0, "failed",
             checkpoint.Outcome.c_str(), false);
@@ -356,6 +580,10 @@ void BotWorldPopulationMgr::MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
         checkpoint.Outcome = exactRejection
             ? "foreign_route_identity_changed_during_rejection"
             : "exact_receiptless_hazard_rejection_not_observed";
+        checkpoint.BeforeAfterIdentityPreserved = immediatePreserved;
+        SyncControllerTerminal(checkpoint.ControllerRouteHold,
+            CurrentControllerRouteHoldIdentity(checkpoint.ActorGuid),
+            checkpoint, NowMs());
         RecordDecisionTrace(state, "fixture_observation",
             "chainwielder_owner_checkpoint_failed", nullptr, 0, "failed",
             checkpoint.Outcome.c_str(), false);
@@ -389,6 +617,9 @@ void BotWorldPopulationMgr::ObserveChainwielderOwnerCheckpointBeforeUpdate(
             checkpoint.CurrentStage = Stage::Failed;
             checkpoint.Outcome =
                 "foreign_route_identity_changed_before_subsequent_tick";
+            SyncControllerTerminal(checkpoint.ControllerRouteHold,
+                CurrentControllerRouteHoldIdentity(checkpoint.ActorGuid),
+                checkpoint, NowMs());
             RecordDecisionTrace(state, "fixture_observation",
                 "chainwielder_owner_checkpoint_after", nullptr, 0, "failed",
                 checkpoint.Outcome.c_str(), false);
@@ -435,6 +666,9 @@ void BotWorldPopulationMgr::ObserveChainwielderOwnerCheckpointBeforeUpdate(
         return;
 
     checkpoint.OutcomeObservedAtMs = NowMs();
+    SyncControllerTerminal(checkpoint.ControllerRouteHold,
+        CurrentControllerRouteHoldIdentity(checkpoint.ActorGuid),
+        checkpoint, checkpoint.OutcomeObservedAtMs);
     RecordDecisionTrace(state, "fixture_observation",
         "chainwielder_owner_checkpoint_outcome", nullptr, 0,
         checkpoint.CurrentStage == Stage::Completed ? "ok" : "failed",
@@ -450,11 +684,15 @@ std::string BotWorldPopulationMgr::BuildChainwielderOwnerCheckpointJson() const
     bool const terminal = checkpoint.CurrentStage == Stage::Completed
         || checkpoint.CurrentStage == Stage::Failed;
     bool const commandOk = gatePassed
-        && checkpoint.CurrentStage != Stage::Failed;
+        && checkpoint.CurrentStage != Stage::Failed
+        && checkpoint.ControllerRouteHold.CurrentPhase
+            != BotControllerRouteHold::Phase::Failed;
     json << "{\"ok\":" << (commandOk ? "true" : "false")
          << ",\"action\":\"botauto_chainwielder_checkpoint\"";
     AppendGenericRuntimeIdentityJson(json);
-    json << ",\"authority\":\"" << Authority << "\""
+    json << ",\"controller_route_hold\":"
+         << BuildControllerRouteHoldJson()
+         << ",\"authority\":\"" << Authority << "\""
          << ",\"fixture_id\":\"" << FixtureId << "\""
          << ",\"scenario_id\":\""
          << JsonEscape(Cohort().Config.ValidationRouteScenarioId) << "\""

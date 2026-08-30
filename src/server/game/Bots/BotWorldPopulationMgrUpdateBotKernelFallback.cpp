@@ -384,6 +384,16 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                     ? "route_movement_only"
                     : outcome.Reason);
         };
+        BotControllerRouteHold::State const& controllerHold =
+            Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
+        uint32 const actingActorGuid = context.State.Guid.GetCounter();
+        // Action and movement are paired deferred views over the same
+        // routeAttempt. The action view can legally yield movement-only, so
+        // both keys need the same typed observation admission; routeAttempt
+        // still guarantees that the underlying route owner executes once.
+        BotControllerRouteHold::MarkCheckpointObservationCandidate(
+            context.State.DecisionKernel, routeAction.Key, controllerHold,
+            actingActorGuid);
         context.State.DecisionKernel.Submit(std::move(routeAction));
 
         BotActionArbitration::Candidate routeMovement;
@@ -405,6 +415,9 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                     "route_action_only");
             return outcome;
         };
+        BotControllerRouteHold::MarkCheckpointObservationCandidate(
+            context.State.DecisionKernel, routeMovement.Key, controllerHold,
+            actingActorGuid);
         context.State.DecisionKernel.Submit(std::move(routeMovement));
         BotActionArbitration::Candidate boss;
         boss.Key = "world.boss_mechanics";

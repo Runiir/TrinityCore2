@@ -1,0 +1,145 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:generic_controller_route_hold_control_v2",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "passed",
+  "git_commit": "self",
+  "input_identities": {
+    "immutable_source_commit": "c8d015b8f5c5254cb35c3a46e828b9462ae82c09",
+    "scope_handoff_path": "experiments/configs/cata_raid_controller_route_hold_scope_expansion_required_handoff_v11.json",
+    "scope_handoff_sha256": "bb46ff3e53a2da97ef69e1ca641a4fd13182fc84d806ca4d099c04a31840e2a4",
+    "canary_only": {
+      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "actor_guid": 30008,
+      "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1"
+    }
+  },
+  "program_scope": {
+    "supported_specs": "all_configured_dps_tank_and_healer_specs",
+    "supported_encounters": "all_route_manifest_nodes",
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_semantics": "Affliction, actor 30008, Chainwielder, and Magmaw are evidence inputs only and are not encoded in the generic controller-route-hold state or admission adapters."
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotActionArbiter.h",
+    "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+    "src/server/game/Bots/BotWorldPopulationMgr.h",
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrRaidRuntime.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp",
+    "src/server/scripts/Commands/cs_chainwielder_owner_checkpoint.cpp",
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_generic_controller_route_hold_implementation_handoff_v1.json"
+  ],
+  "implementation_files": {
+    "BotActionArbiter.h_sha256": "29afabdd496622201c1402cea653f10f4644c61fc71f112da8aecefa4754d4b8",
+    "BotChainwielderOwnerCheckpoint.h_sha256": "aa2892b59ecb2a37684d15e1876104f67e3ac48efaf6969fd53937ce781f19d9",
+    "BotWorldPopulationMgr.h_sha256": "4ecdcf8a20c093f0847536da90c81db70f03619242326307bfd963ef86f0850b",
+    "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp_sha256": "411f47a46b5f2b8f754e6a2f5b518c9cffb922cf03d403ecdea72dc24c531da6",
+    "BotWorldPopulationMgrRaidRuntime.cpp_sha256": "1e69d0c35a3dd1f0a8a9b7bb3b850d2ce4910e428f2e9817bf63aeceade45439",
+    "BotWorldPopulationMgrUpdateBotKernelFallback.cpp_sha256": "850776be2e7f1f967195c0d33b80ac46403e480f4896195194f16320c75617b7",
+    "BotWorldPopulationMgrUpdateBotKernelPreparation.cpp_sha256": "f7614d2125d2ff804256c3aa067ff08ec8699f3b1d79412c030db76070689448",
+    "BotWorldPopulationMgrValidationRouteRuntime.cpp_sha256": "8f8b33686da6057644ce51951cd20e227e47e78b689d7aa2bfa88e678e3d5180",
+    "cs_chainwielder_owner_checkpoint.cpp_sha256": "9edf9bc1ec0321261bffd58ac773f94e6ec30c2b1f63b9c84171f8daa6ba3972",
+    "test_chainwielder_owner_checkpoint.py_sha256": "6004da6b89caf63fd0dda37ae7177107661c515371fe51e23788c884027eb4df"
+  },
+  "first_broken_edge_before": "The active runtime could execute an ordinary validation-route candidate and mutate route generation before the evidence controller obtained two stable generation-one receipts and armed the checkpoint.",
+  "implemented_hypothesis": "Install one attempt-scoped native hold before the first update, admit only setup/safety and the exact actor/scope checkpoint observation while held, block route mutation at both production owners, and release exactly once only after an identity-preserved terminal checkpoint receipt.",
+  "production_boundary": {
+    "admission_adapter": "BotControllerRouteHold::InstallAdmissionPolicy",
+    "checkpoint_marker": "BotControllerRouteHold::MarkCheckpointObservationCandidate",
+    "route_mutation_gate": "BotControllerRouteHold::GateRouteMutation",
+    "paired_route_views": "Both validation_route_action and validation_route_movement are marked because they are deferred views of one shared routeAttempt. The action view can yield movement-only; the shared routeAttempt ensures the underlying route owner executes once.",
+    "status_object": "raid_runtime.controller_route_hold"
+  },
+  "validation": {
+    "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "result": "6 passed in 1.30s",
+    "compiled_boundary": [
+      "real_BotActionArbitration_Kernel",
+      "production_InstallAdmissionPolicy",
+      "production_MarkCheckpointObservationCandidate",
+      "production_GateRouteMutation"
+    ],
+    "decisive_metrics": {
+      "ordinary_candidate_attempts_while_held": 0,
+      "setup_candidate_attempts_while_held": 1,
+      "typed_checkpoint_underlying_route_executions": 1,
+      "typed_checkpoint_action_view_attempts": 1,
+      "typed_checkpoint_movement_view_attempts": 1,
+      "foreign_actor_checkpoint_attempts": 0,
+      "wrong_scope_checkpoint_attempts": 0,
+      "held_route_mutation_admitted": false,
+      "released_route_mutation_admitted": true
+    },
+    "build_run": false,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false,
+    "cpp_line_limit": "all_touched_C_and_Cpp_files_below_1000_lines"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_generic_state_is_parameterized_by_cohort_epoch_attempt_scenario_profile_manifest_generation_node_actor_fixture_seal_and_source",
+      "ordinary_candidates_are_suppressed_and_counted_while_setup_safety_candidates_remain_admitted",
+      "the_checkpoint_candidate_requires_armed_phase_exact_actor_and_exact_scope",
+      "both_paired_route_views_execute_one_underlying_route_attempt",
+      "route_mutation_is_suppressed_and_counted_while_held",
+      "release_requires_one_identity_preserved_terminal_and_reenables_route_mutation",
+      "raid_runtime_serializes_controller_route_hold",
+      "the_compiled_fixture_uses_the_same_generic_adapters_as_production"
+    ],
+    "refuted": [
+      "a_source_shape_assertion_or_test_local_admission_policy_is_sufficient_proof",
+      "only_one_of_the_two_paired_route_candidate_views_can_be_marked_without_losing_the_observation_boundary"
+    ],
+    "unproven": [
+      "the_native_worldserver_build_compiles_at_this_commit",
+      "the_evidence_controller_emits_start_held_arm_and_release_in_the_required_order",
+      "two_live_generation_one_status_receipts_are_byte_identical",
+      "one_live_checkpoint_lifecycle_reaches_terminal_before_release",
+      "ordinary_route_generation_advances_after_live_release"
+    ]
+  },
+  "gear_identity": {"status": "not_applicable"},
+  "effective_stat_parity": {
+    "status": "not_applicable",
+    "tuning_admitted": false,
+    "first_broken_edge": null
+  },
+  "dps_tuning_gate": {
+    "status": "not_applicable",
+    "tuning_admitted": false,
+    "first_broken_edge": null
+  },
+  "evidence_paths": [
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_generic_controller_route_hold_implementation_handoff_v1.json"
+  ],
+  "dvc_publication": {
+    "pointer": null,
+    "remote_verification": "not_applicable",
+    "eviction_state": "not_applicable"
+  },
+  "remaining_blocker": "The evidence controller does not yet consume the native start-held, stable-status, arm, terminal, and release protocol. No native build or live start is authorized by this handoff.",
+  "runtime_verification_plan": {
+    "next_owner": "raid-evidence-lifecycle",
+    "next_work_unit": "evidence:generic_controller_route_hold_scheduler_v12",
+    "worldserver_start_budget": 0,
+    "fixed_success_timer_seconds": null,
+    "required_scheduler_order": [
+      "start-held acknowledged at initial route generation",
+      "two byte-identical active held status receipts",
+      "sealed checkpoint arm acknowledged once",
+      "one identity-preserved completed or typed-failed checkpoint terminal",
+      "release acknowledged once",
+      "ordinary route advance observed only after release"
+    ],
+    "required_live_followup_after_scheduler_tests": "A later shard owner may queue one clean build and at most one completion-watchdog start after a separate admission authorizes it."
+  },
+  "runtime_verdict": "unverified",
+  "next_work_unit": "evidence:generic_controller_route_hold_scheduler_v12"
+}

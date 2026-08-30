@@ -577,6 +577,7 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
         BotValidationPrepullCheckpoint::InstallAdmissionPolicy(
             context.State.DecisionKernel,
             raid.ValidationPrepullCheckpoint);
+        InstallControllerRouteHoldAdmissionPolicy(context);
 
 
 }

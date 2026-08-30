@@ -1,39 +1,39 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_scope_expansion_v11_20260830",
-  "work_unit": "runtime:generic_controller_route_hold_control_v2",
+  "epoch_id": "generic_controller_route_hold_scheduler_v12_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_scheduler_v12",
   "raid": "blackwing_descent",
   "boss": "magmaw_chainwielder",
   "mode": "10N",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "scope_expansion_required",
-  "gate_state": "native_implementation_blocked_owned_files_do_not_cross_action_generation_or_status_boundaries",
-  "observed_at_commit": "d819037d1d65b7e7a5024a39066cd564555a8ddc",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_required",
+  "gate_state": "native_generic_hold_fixture_green_controller_scheduler_not_implemented",
+  "observed_at_commit": "c8d015b8f5c5254cb35c3a46e828b9462ae82c09",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_controller_route_hold_scope_expansion_required_handoff_v11.json",
-    "sha256": "bb46ff3e53a2da97ef69e1ca641a4fd13182fc84d806ca4d099c04a31840e2a4",
-    "source_commit": "d819037d1d65b7e7a5024a39066cd564555a8ddc"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_implementation_handoff_v1.json",
+    "sha256": "9643b7f1645fc37de47340bde383b0cefc1beab8624872bfcedc547a031e4a54",
+    "source_commit": "self"
+  },
+  "program_scope": {
+    "supported_specs": "all_configured_dps_tank_and_healer_specs",
+    "supported_encounters": "all_route_manifest_nodes",
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_only": "The current BWD identity, actor 30008, Chainwielder, Magmaw, and Affliction are validation inputs only. The scheduler must consume the generic identity fields without branching on them."
   },
   "scope_lock": {
-    "allowed_change": "Implement and unit-test one generic native controller route hold across the actual candidate admission, route-generation, and raid-status boundaries.",
+    "allowed_change": "Teach the evidence controller to consume the generic native start-held, stable-status, arm, terminal, and release protocol and prove exact ordering in no-server tests.",
     "owned_files": [
-      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
-      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
-      "src/server/scripts/Commands/cs_chainwielder_owner_checkpoint.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgr.h",
-      "src/server/game/Bots/BotActionArbiter.h",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrRaidRuntime.cpp",
-      "tests/test_chainwielder_owner_checkpoint.py"
+      "tools/raid_program/capture_phase1_raid_foundation.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "one_compact_evidence_scheduler_handoff"
     ],
     "forbidden": [
       "configure_build_or_worldserver_start",
       "database_or_dvc_mutation",
-      "gameplay_route_movement_class_pet_encounter_or_priority_change",
-      "python capture controller edits",
-      "polling_tolerance_or_cadence repair",
+      "native_runtime_or_gameplay_change",
+      "class_spec_pet_encounter_route_strategy_or_priority_change",
+      "polling_tolerance_or_cadence_only_repair",
       "fixture_revision_promotion",
       "gameplay_canary_or_acceptance_claim"
     ]
@@ -44,7 +44,7 @@
     "worldserver_start_count_maximum": 0,
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden",
-    "validation": "focused_no_server_production_boundary_tests_only"
+    "validation": "focused_no_server_production_controller_tests_only"
   },
   "required_identity": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
@@ -56,6 +56,7 @@
     "failed_live_pointer_sha256": "72ff0b4c1a4d4a208475eaff1f623b781d0af151bddca4b9492b6d3de020bd19"
   },
   "required_contract": {
+    "native_start_held_acknowledgement_count": 1,
     "admission_commit_route_generation": 1,
     "route_advance_held_before_arm": true,
     "identical_active_status_count": 2,
@@ -65,23 +66,25 @@
     "accepted_actor_checkpoint_lifecycle_count": 1,
     "lifecycle_identity_preserved": true,
     "lifecycle_terminal": "completed_or_one_typed_checkpoint_failure",
+    "release_acknowledgement_count": 1,
     "route_release_after_lifecycle_receipt": true
   },
   "refuted_repairs": [
-    "another_adjacent_status_poll",
+    "another_adjacent_status_poll_without_native_hold",
     "longer_poll_interval_or_tolerance",
+    "test_local_admission_or_route_gate_model",
     "treating_the_later_magmaw_watchdog_as_the_first_edge"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "terminal_conditions": [
-      "focused_contract_pass",
+      "focused_controller_protocol_pass",
       "typed_handshake_failure",
       "test_infrastructure_loss",
       "explicit_interruption"
     ]
   },
-  "next_action": "Authorize the minimum production-boundary file expansion recorded in the v11 handoff, then implement the generic native control primitive. Do not simulate the hold in Python and do not authorize a build or live start.",
-  "next_terminal_handoff": "Return native changed-file hashes, typed hold-arm-release states, focused unit-test receipts, and authorization to resume the evidence-controller production-boundary replay only after the native primitive passes static review."
+  "next_action": "Implement the controller-side command scheduler against raid_runtime.controller_route_hold. Prove start-held, two identical held statuses, one arm, one terminal, one release, and post-release route advance in focused no-server tests. Do not build or start a worldserver.",
+  "next_terminal_handoff": "Return exact controller file hashes, protocol transition receipts, focused test counts, and a proposed one-build/one-start shard unit with live authorization still closed."
 }

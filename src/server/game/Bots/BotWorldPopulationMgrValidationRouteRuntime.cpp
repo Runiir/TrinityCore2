@@ -25,6 +25,8 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
 {
     if (index >= Party().ValidationRouteManifest.size())
         return false;
+    if (!PermitControllerRouteAdvance(index + 1))
+        return false;
 
     // Flush route-local repeatable-event tails before installing the next
     // node/generation so the trace entry remains attributed to the node that
@@ -648,6 +650,13 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
     if (!terminal)
         return false;
 
+    size_t const nextIndex = Party().ValidationRouteManifestIndex + 1;
+    uint64 const prospectiveGeneration =
+        nextIndex < Party().ValidationRouteManifest.size()
+            ? nextIndex + 1 : Party().ValidationRouteGeneration;
+    if (!PermitControllerRouteAdvance(prospectiveGeneration))
+        return false;
+
     bool terminalRecorded = std::any_of(Party().ValidationRouteTerminalEvidence.begin(), Party().ValidationRouteTerminalEvidence.end(), [this](ValidationRouteEvidence const& evidence)
     {
         return evidence.NodeId == Cohort().Config.ValidationRouteNodeId && evidence.Generation == Party().ValidationRouteGeneration;
@@ -655,7 +664,6 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
     if (!terminalRecorded)
         Party().ValidationRouteTerminalEvidence.push_back({Cohort().Config.ValidationRouteNodeId, Party().ValidationRouteGeneration, Cohort().Config.ValidationRouteKind, ObjectGuid::Empty, Cohort().Config.ValidationRouteTargetEntry, terminalReason});
 
-    size_t nextIndex = Party().ValidationRouteManifestIndex + 1;
     Player* reporter = nullptr;
     WorldBotState* reporterState = nullptr;
     for (WorldBotState& state : Party().Bots)
