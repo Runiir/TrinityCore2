@@ -1,0 +1,163 @@
+{
+  "schema": "cata_raid_chainwielder_pre_admission_fixture_expansion_summary_v1",
+  "purpose": "fixture_expansion_replay",
+  "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+  "classification": "production_boundary_not_observed_no_promotion",
+  "observed_at_utc": "2026-08-30T01:41:21Z",
+  "source": {
+    "commit": "fba1434e0a715aba6e372380b58a34f323c8e886",
+    "tree": "2c0c4e8e1c71b66a864d5cd20b309175907f37cf",
+    "worktree_clean_during_run": true,
+    "mode": "10N",
+    "binary_sha256": "472f5f0ac4633eec4fa39a8f6403ba4675e851614c970e3b68b95c12a7dbbab8",
+    "config_sha256": "e04ba86cc1b6c9b1b7248ff35f4c67cda98b20c18f2750120327e268fcee8586",
+    "configure_ticket_id": "raid-build-a48f63c0def5419cb6ebb55b76c24756",
+    "configure_receipt_canonical_sha256": "34e5f8411c4ab0bdd66b881d83b2eb24ef30bb8ad5fc42dede108411c969a693",
+    "configure_receipt_file_sha256": "1b8b01fdd7987c728c34b68cb4fca2619e3a66a76ec2ee30d6a0a818d7acc97a",
+    "worldserver_build_ticket_id": "raid-build-98d843509adc461c850d8d248d896018",
+    "worldserver_build_receipt_canonical_sha256": "4882d7c01b64aab7a8b1e0998148daa6cbf53ba261b10aa9c98aa030958a8168",
+    "worldserver_build_receipt_file_sha256": "ba8e43ad8f651697d3e1a1ab582d34699b1414708ebce1ba0a086d92e951083b",
+    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1
+  },
+  "transport_handoff": {
+    "path": "experiments/configs/cata_raid_trace_transport_pressure_one_start_live_handoff_v1.json",
+    "sha256": "4ea7ee87126cbf8234cb67d506dd3b12fa3696c596998c2517a8410c74b6a91c",
+    "reviewed_before_start": true
+  },
+  "admission": {
+    "recurrence_fixture_count": 20,
+    "recurrence_pass_count": 20,
+    "recurrence_fail_count": 0,
+    "recurrence_suite_receipt_sha256": "9cf50234c3ec71a270f3b29803018f4e01575de09de23ed1665e619154e47fcc",
+    "recurrence_decision_sha256": "2af568c06988a1f07db6873a0f106ef6d777a106bfb3ca2ab51463c7a1866f0c",
+    "fixture_expansion_admitted": true,
+    "fixture_expansion_target_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1"
+    ],
+    "sole_target_verified": true,
+    "fixture_expansion_admission_sha256": "f4984f8f5368604f2f563f7566db944cab6c157cb449e999d88d6c3d2dc7bb57",
+    "gameplay_canary_admitted": false,
+    "gameplay_mutations_allowed": false,
+    "fixture_revision_2_promoted": false
+  },
+  "provisioning": {
+    "strict_verifier_passed": true,
+    "strict_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "shard_readback_passed": true,
+    "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "roster_size": 10,
+    "map_id": 669,
+    "instance_id": 8
+  },
+  "capture": {
+    "worldserver_start_count": 1,
+    "single_observation_only_attempt": true,
+    "second_attempt_run": false,
+    "attempt_id": 1,
+    "route_node_id": "bwd.magmaw.chainwielder",
+    "route_generation": 2,
+    "chainwielder_terminal": "trash_cluster_cleared",
+    "chainwielder_terminal_status_capture_sequence": 74,
+    "chainwielder_terminal_status_duration_seconds": 140,
+    "deaths": 0,
+    "repeated_decision_watchdog_detected": false,
+    "controller_advanced_to_route_node_id_before_stop": "bwd.magmaw.drudges",
+    "controller_advanced_to_route_generation_before_stop": 3,
+    "report_classification": "infrastructure_abort",
+    "report_startup_error": "KeyboardInterrupt:operator_interrupt",
+    "classification_interpretation": "The operator interrupt implemented the authorized stop-on-Chainwielder-completion boundary after the next status heartbeat had already advanced the route. It is not a Chainwielder failure and cannot be used as a Drudges result.",
+    "worldserver_exit_code": 0,
+    "cleanup_gate_passed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "combat": {
+    "encounter": "bwd.magmaw.chainwielder",
+    "combat_window_seconds": 53.0,
+    "party_damage": 4649400,
+    "party_healing": 293427,
+    "active_party_dps": 87724.528,
+    "active_party_hps": 5536.359,
+    "affliction_bot_guid": 30008,
+    "affliction_dps": 22114.83,
+    "affliction_hps": 381.887
+  },
+  "required_production_boundary": {
+    "met": false,
+    "closest_bot_guid": 30001,
+    "scope": {
+      "attempt_id": 1,
+      "route_generation": 2,
+      "map": 669,
+      "instance": 8
+    },
+    "predecessor": {
+      "sequence": 182,
+      "decision_sequence": 102,
+      "movement_owner": "combat_range",
+      "planner_receipt_id": 210,
+      "planner_result": "submitted"
+    },
+    "rejection": {
+      "sequence": 186,
+      "decision_sequence": 103,
+      "movement_owner": "hazard",
+      "gate": "future_pack_destination",
+      "reason": "route_destination_future_pack_unsafe",
+      "planner_receipt_id": 0,
+      "result": "hazard_exit_failed"
+    },
+    "subsequent": {
+      "sequence": 188,
+      "decision_sequence": 104,
+      "movement_owner": "combat_range",
+      "planner_receipt_id": 234,
+      "planner_result": "submitted",
+      "terminal_sequence": 199,
+      "terminal_result": "hazard_exit_completed"
+    },
+    "missing_join": "The only receiptless owner=Hazard future-pack rejection was bracketed by combat_range-owned submissions, not by an existing Route path or an armed route-owned hazard retry. Bot 30008 had Route submissions and two completed hazard exits but no receiptless Hazard future-pack rejection.",
+    "fixture_revision_promoted": false
+  },
+  "causal_classification": {
+    "status": "value_outcome_improved_exact_fixture_join_absent",
+    "old_twenty_repeated_hazard_exit_terminal_recurred": false,
+    "all_bot_hazard_exit_failed_events": 19,
+    "all_bot_hazard_exit_completed_events": 18,
+    "fixture_actor_30008_hazard_exit_failed_events": 0,
+    "fixture_actor_30008_hazard_exit_completed_events": 2,
+    "chainwielder_completion_proven": true,
+    "route_owner_preservation_invariant_proven": false,
+    "implemented_invariant_refuted": false,
+    "gameplay_or_magmaw_claim_admitted": false
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_fba1434e0a_chainwielder_pre_admission_fixture_expansion_20260830.dvc",
+    "dvc_pointer_sha256": "4c7e38d2380e7e47341036bb341264db87e49cc094fa13d14ec1a921bc3a72f5",
+    "dvc_directory_md5": "238c408f2fcde1e1fd982d2e5431861f.dir",
+    "dvc_directory_size_bytes": 108014783,
+    "dvc_directory_file_count": 14,
+    "capture_report_canonical_sha256": "789e68c9408a6c582251b1f663f43a9eccd1cfa360ec41b1162ec4b00c4ddab8",
+    "capture_report_file_sha256": "87b5362e6d20a647ec5e4a4a806cc5668f0cafa109926936dd499f6cfcb89776",
+    "raw_normalized_sha256": "96251e91caf1fd708f50ac8f8f334eef5167e8cb630c64e81b21060c7d703aac",
+    "worldserver_log_sha256": "1f8993f500b1f3659b874728cd0d02f4761f6215e272aa7e68d5629a91ce6260",
+    "fixture_boundary_sha256": "3bfaa48f9768acfa8e4029365f7fca59aaabf78e0a8ac71f4acdf2f590fc7b65",
+    "push_result": "12 files pushed",
+    "remote_status": "cache_and_remote_in_sync_before_eviction",
+    "workspace_evicted": true,
+    "temporary_capture_root_evicted": true,
+    "unique_cache_objects_evicted": 12,
+    "shared_cache_objects_retained": 3,
+    "broad_dvc_gc_run": false
+  },
+  "next_owner": {
+    "owner": "raid-performance-loop",
+    "work_unit": "coordination:chainwielder_fixture_boundary_no_promotion_review",
+    "action": "Keep revision 1 pending. Decide whether to add a narrower observation-only checkpoint that guarantees an existing Route owner before one Hazard future-pack proposal, or close this fixture as non-reproducible from the current route. Do not infer the Route-owner invariant from the successful Chainwielder clear.",
+    "do_not_do": "Do not promote revision 2, change gameplay from this capture, claim Magmaw completion, or run a second attempt under the completed one-start work unit."
+  }
+}

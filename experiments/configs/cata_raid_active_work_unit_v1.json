@@ -22,7 +22,7 @@
   },
   "first_broken_edge": "In the immutable map-669 Chainwielder capture, a receiptless adaptive Hazard proposal rejected by the future-pack destination guard was allowed to clear or overwrite movement state owned by an already-admitted Route path or its armed hazard retry. The route then repeated hazard_exit_failed twenty times. Commit a75334b519 isolates that state transition in a compiled helper, but no current worldserver-backed run has yet proved the fixed binary preserves the Route owner and completes the hazard exit.",
   "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state",
-  "causal_claim_status": "causal_edge_implemented_compiled_helper_green_production_outcome_unverified",
+  "causal_claim_status": "causal_edge_implemented_chainwielder_value_outcome_improved_exact_route_owner_join_unobserved",
   "claim_ledger": {
     "verified": [
       "the_source_capture_is_bound_to_review_commit_461fe73779_and_capture_source_78e33e6557",
@@ -30,16 +30,21 @@
       "the_rejected_adaptive_hazard_proposal_had_no_planner_receipt_and_did_not_own_the_existing_route_movement_state",
       "commit_a75334b519_separates_receiptless_pre_admission_rejection_observation_from_foreign_owner_state_mutation",
       "the_compiled_helper_exercises_foreign_route_path_preservation_armed_route_hazard_retry_preservation_same_owner_fail_closed_and_unowned_fail_closed_cases",
-      "the_same_level_native_path_fixture_calls_and_executes_the_shared_exact_route_hazard_retry_predicate_without_weakening_path_proof_assertions"
+      "the_same_level_native_path_fixture_calls_and_executes_the_shared_exact_route_hazard_retry_predicate_without_weakening_path_proof_assertions",
+      "the_exact_clean_fba1434e0a_binary_completed_chainwielder_with_trash_cluster_cleared_zero_deaths_and_no_repeated_decision_watchdog",
+      "bot_30008_completed_two_chainwielder_hazard_exits_with_zero_hazard_exit_failed_events",
+      "the_only_receiptless_hazard_future_pack_rejection_was_bot_30001_sequence_186_and_was_bracketed_by_combat_range_not_route_owner_submissions",
+      "the_single_observation_only_start_was_stopped_after_chainwielder_completion_and_cleanup_reached_zero_bots_and_leases"
     ],
     "refuted": [
       "the_compiled_helper_is_a_live_map669_executor_replay",
-      "a_green_helper_fixture_authorizes_gameplay_or_acceptance"
+      "a_green_helper_fixture_authorizes_gameplay_or_acceptance",
+      "a_successful_chainwielder_value_outcome_without_the_exact_route_owner_join_authorizes_fixture_revision_2_promotion"
     ],
     "unproven": [
       "the_current_binary_preserves_the_route_owned_path_after_the_matched_receiptless_hazard_rejection_in_a_live_chainwielder_run",
       "the_current_binary_preserves_the_armed_route_hazard_retry_across_subsequent_world_ticks",
-      "the_bot_completes_the_chainwielder_hazard_exit_without_the_twenty_decision_loop",
+      "the_current_binary_preserves_route_owned_state_across_the_exact_matched_rejection_because_that_route_owner_join_was_not_observed",
       "magmaw_or_later_route_progress"
     ]
   },
@@ -57,6 +62,24 @@
     "deaths": 0,
     "active_party_dps": 42310.833,
     "active_party_hps": 2610.056
+  },
+  "latest_fixture_expansion": {
+    "summary_path": "experiments/configs/cata_raid_magmaw_fba1434e0a_chainwielder_pre_admission_fixture_expansion_summary_v1.json",
+    "source_commit": "fba1434e0a715aba6e372380b58a34f323c8e886",
+    "map": 669,
+    "instance": 8,
+    "attempt_id": 1,
+    "route_generation": 2,
+    "route_node_id": "bwd.magmaw.chainwielder",
+    "terminal": "trash_cluster_cleared",
+    "deaths": 0,
+    "active_party_dps": 87724.528,
+    "active_party_hps": 5536.359,
+    "production_boundary_met": false,
+    "fixture_revision_promoted": false,
+    "missing_join": "the_receiptless_hazard_rejection_was_bracketed_by_combat_range_not_route_owner_submissions",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_fba1434e0a_chainwielder_pre_admission_fixture_expansion_20260830.dvc",
+    "dvc_pointer_sha256": "4c7e38d2380e7e47341036bb341264db87e49cc094fa13d14ec1a921bc3a72f5"
   },
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
@@ -114,5 +137,5 @@
     "next_work_unit": "shard:magmaw_chainwielder_pre_admission_rejection:fixture_expansion_capture",
     "implementation_owner_after_capture": "none_unless_the_matched_production_outcome_refutes_the_implemented_invariant"
   },
-  "next_action": "Run the full retained bank at the exact clean descriptor commit. If and only if fixture_expansion_admitted is true and the sole target is chainwielder_pre_admission_rejection_isolation_v1, acquire one exact queued build and run one observation-only matched Chainwielder fixture-expansion capture. Keep gameplay, canary, and acceptance closed."
+  "next_action": "The sole target remains chainwielder_pre_admission_rejection_isolation_v1 revision 1 because the one admitted capture cleared Chainwielder but did not observe the exact Route-owner/Hazard-rejection join. Coordinator review must decide a new bounded observation boundary or close the fixture as non-reproducible; no second attempt belongs to this completed work unit. Keep gameplay, canary, and acceptance closed."
 }
