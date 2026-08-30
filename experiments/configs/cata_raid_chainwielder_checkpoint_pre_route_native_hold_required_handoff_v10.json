@@ -1,0 +1,124 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:chainwielder_checkpoint_pre_route_hold_arm_release_handshake_v10",
+  "classification": "blocked_native_control_primitive_required",
+  "source_base": {
+    "commit": "0bf705ffedec1ce399eae7b0b13620a728fdcfc2",
+    "clean_before_audit": true
+  },
+  "identity": {
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008,
+    "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+    "route_generation": 1,
+    "route_node_id": "bwd.magmaw.chainwielder"
+  },
+  "verified_existing_boundary": {
+    "controller_starts_active_runtime_before_first_status": true,
+    "controller_start_to_first_status_sleep_seconds": 1.0,
+    "checkpoint_commands": [
+      "botautochaincheckpoint arm <actor_guid> <seal_sha256> <source_commit>",
+      "botautochaincheckpoint status"
+    ],
+    "checkpoint_hold_command_available": false,
+    "checkpoint_release_command_available": false,
+    "validation_prepull_checkpoint_is_controller_owned": false,
+    "validation_prepull_checkpoint_auto_releases_in_bot_update": true,
+    "validation_prepull_checkpoint_enabled_for_trash_node": false,
+    "conclusion": "No Python-only scheduler change can prevent generation-one route execution before the two required status receipts or keep advancement held through the accepted checkpoint lifecycle."
+  },
+  "focused_validation": {
+    "command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py -k 'checkpoint_arm or checkpoint_controller_pre_route_probe'",
+    "result": "6_passed_123_deselected",
+    "interpretation": "The current no-server tests remain green but model adjacent status polling, not the refuted live production hold boundary."
+  },
+  "forbidden_python_repair": [
+    "more_or_faster_status_polling",
+    "writing_a_reporting_only_hold_state",
+    "treating_botauto_stop_as_a_resumable_hold",
+    "reusing_the_auto_releasing_boss_only_prepull_checkpoint",
+    "claiming_arm_emission_without_native_hold_acknowledgement"
+  ],
+  "required_runtime_control_primitive": {
+    "ownership": "native_bot_runtime",
+    "start_held": {
+      "requirement": "One atomic native start-held operation must install a sealed attempt-scoped route hold before Cohort.Active can execute its first bot or validation-route update.",
+      "scope": [
+        "cohort_id",
+        "attempt_id",
+        "server_epoch",
+        "scenario_id",
+        "runtime_profile",
+        "route_manifest_sha256",
+        "route_generation_1",
+        "route_node_id",
+        "seal_sha256",
+        "source_commit"
+      ],
+      "effect": "Allow bootstrap, roster formation, consumables, status, diagnosis, trace, and checkpoint control while rejecting ordinary route actions and every route-generation mutation."
+    },
+    "arm_transition": {
+      "requirement": "The existing sealed actor-30008 arm command must return an explicit accepted acknowledgement bound to the held attempt, generation, node, actor, seal, and source.",
+      "effect": "Permit only the checkpoint observation path needed to reach completed or one typed failed terminal while continuing to reject ordinary route advancement."
+    },
+    "release_transition": {
+      "requirement": "A native release command must succeed exactly once only after the same checkpoint lifecycle is terminal and identity-preserved.",
+      "effect": "Remove the route hold and permit ordinary generation advancement. Early, duplicate, stale, rejected, or missing release must be a typed infrastructure failure."
+    },
+    "required_status_receipt": {
+      "object": "raid_runtime.controller_route_hold",
+      "fields": [
+        "phase",
+        "cohort_id",
+        "server_epoch",
+        "attempt_id",
+        "scenario_id",
+        "runtime_profile",
+        "route_manifest_sha256",
+        "route_generation",
+        "route_node_id",
+        "actor_guid",
+        "seal_sha256",
+        "source_commit",
+        "acquire_count",
+        "arm_ack_count",
+        "checkpoint_stage",
+        "checkpoint_terminal",
+        "checkpoint_identity_preserved",
+        "release_count",
+        "suppressed_route_action_count",
+        "suppressed_route_advance_count",
+        "acquired_at_ms",
+        "armed_at_ms",
+        "terminal_at_ms",
+        "released_at_ms",
+        "failure_reason"
+      ]
+    }
+  },
+  "required_order": [
+    "native_start_held_acknowledged_at_generation_1",
+    "two_byte_identical_active_generation_1_statuses",
+    "sealed_actor_30008_arm_acknowledged_once",
+    "one_accepted_identity_preserved_checkpoint_lifecycle_terminal",
+    "native_release_acknowledged_once",
+    "ordinary_route_generation_advances"
+  ],
+  "negative_contract": [
+    "route_generation_changes_while_held",
+    "hold_missing_or_rejected",
+    "status_identity_changes_while_held",
+    "arm_missing_rejected_or_duplicated",
+    "checkpoint_lifecycle_absent_rejected_or_stale",
+    "release_before_checkpoint_terminal",
+    "release_missing_rejected_or_duplicated"
+  ],
+  "next_work_unit": {
+    "id": "runtime:chainwielder_checkpoint_pre_route_native_hold_control_v1",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "authorization": "Implement and unit-test only the native start-held, checkpoint-only arm transition, status receipt, and terminal-gated release primitive. No configure, build, worldserver, DB, DVC, gameplay, fixture promotion, canary, or acceptance run.",
+    "return_to_controller": "After the native primitive is committed and statically reviewed, resume the evidence controller work unit to implement the real command scheduler and production-boundary replay."
+  }
+}
