@@ -89,6 +89,12 @@ struct BotWorldExperimentConfig
     bool ValidationRouteEnable = false;
     // Validation-only boss-node checkpoint. Disabled for ordinary runtime.
     bool ValidationPrepullCheckpointEnable = false;
+    // Default-off observation seam for one recurrence fixture. The capture
+    // must bind an exact admission hash and the binary's source commit.
+    bool ChainwielderOwnerCheckpointEnable = false;
+    std::string ChainwielderOwnerCheckpointFixtureId;
+    std::string ChainwielderOwnerCheckpointAdmissionSha256;
+    std::string ChainwielderOwnerCheckpointSourceCommit;
     std::string ValidationRouteManifestPath;
     std::string ValidationRouteAdvanceMode = "disabled";
     std::string ValidationRouteScenarioId;

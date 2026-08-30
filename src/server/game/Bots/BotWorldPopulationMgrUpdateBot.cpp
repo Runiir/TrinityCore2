@@ -9,6 +9,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     if (!bot)
         return;
 
+    ObserveChainwielderOwnerCheckpointBeforeUpdate(state, bot);
+
     if (Cohort().Config.ValidationRouteEnable)
         BotWorldMovement::ObserveReceiptTaggedMovementProgress(bot);
 
@@ -25,4 +27,5 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     if (!RunBotDecisionKernel(context))
         return;
     FinalizeBotUpdate(context);
+    MaybeInjectChainwielderOwnerCheckpointAfterUpdate(state, bot);
 }

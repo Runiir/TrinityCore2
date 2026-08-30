@@ -80,6 +80,12 @@ public:
     std::string GetBotDiagnosisJsonForCohort(std::string const& cohortId, std::string const& selector);
     std::string GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit, bool delta = false) const;
     std::string ApplyTraceTransportTestPressureForCohort(std::string const& cohortId, uint32 requestedCount);
+    std::string ArmChainwielderOwnerCheckpointForCohort(
+        std::string const& cohortId, uint32 actorGuid,
+        std::string const& admissionSha256,
+        std::string const& sourceCommit);
+    std::string GetChainwielderOwnerCheckpointJsonForCohort(
+        std::string const& cohortId) const;
     std::string GetCombatLogJsonForCohort(std::string const& cohortId) const;
     std::string StartCombatCalibrationForCohort(std::string const& cohortId, std::string const& mode = "single_target_300", std::string const& targetSpec = "", uint32 seed = 1);
     std::string StopCombatCalibrationForCohort(std::string const& cohortId);
@@ -320,6 +326,14 @@ private:
         std::string_view movementReason = {});
     bool ExecuteMovementIntent(WorldBotState& state, Player* bot,
         BotWorldMovement::Intent const& intent);
+    void ObserveChainwielderOwnerCheckpointBeforeUpdate(
+        WorldBotState& state, Player* bot);
+    void MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
+        WorldBotState& state, Player* bot);
+    std::string ArmChainwielderOwnerCheckpoint(
+        uint32 actorGuid, std::string const& admissionSha256,
+        std::string const& sourceCommit);
+    std::string BuildChainwielderOwnerCheckpointJson() const;
     BotMovementArbitration::Request BuildMovementRequest(
         Player* bot, BotWorldMovement::Intent const& intent, uint64 nowMs) const;
     BotWorldMovement::ActivePathObservation ObserveActiveMovement(

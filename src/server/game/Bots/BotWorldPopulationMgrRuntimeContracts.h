@@ -1,6 +1,8 @@
 #ifndef TRINITY_BOT_WORLD_POPULATION_MGR_RUNTIME_CONTRACTS_H
 #define TRINITY_BOT_WORLD_POPULATION_MGR_RUNTIME_CONTRACTS_H
 
+#include "Bots/BotChainwielderOwnerCheckpoint.h"
+
 // This fragment is included inside BotWorldPopulationMgr's private section so
 // runtime state retains the manager's private nested-type ownership.
     struct PartyRuntime
@@ -470,6 +472,7 @@
         // route-disabled trace_transport_10 profile. It never grants gameplay
         // or raid admission authority.
         uint64 TraceTransportTestPressureAttemptId = 0;
+        BotChainwielderOwnerCheckpoint::State ChainwielderOwnerCheckpoint;
         BotExperienceLearningConfig LearningConfig;
         BotPolicyModelConfig PolicyModelConfig;
         bool CalibrationActive = false;
