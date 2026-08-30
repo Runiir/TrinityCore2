@@ -1,8 +1,6 @@
 #ifndef TRINITY_BOT_WORLD_POPULATION_MGR_RUNTIME_CONTRACTS_H
 #define TRINITY_BOT_WORLD_POPULATION_MGR_RUNTIME_CONTRACTS_H
 
-#include "Bots/BotChainwielderOwnerCheckpoint.h"
-
 // This fragment is included inside BotWorldPopulationMgr's private section so
 // runtime state retains the manager's private nested-type ownership.
     struct PartyRuntime
