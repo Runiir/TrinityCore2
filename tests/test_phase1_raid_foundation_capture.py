@@ -3768,6 +3768,13 @@ def test_semantic_progress_signature_tracks_boss_and_bot_decisions_not_heartbeat
     assert semantic_progress_signature(status, diagnosis) != baseline
 
 
+def test_watchdog_and_progress_are_reexported_from_focused_production_modules():
+    assert semantic_progress_signature.__module__ == "tools.raid_program.capture_progress"
+    assert observe_monotonic_semantic_progress.__module__ == "tools.raid_program.capture_progress"
+    assert ready_for_native_readycheck.__module__ == "tools.raid_program.capture_progress"
+    assert observe_capture_watchdog.__module__ == "tools.raid_program.capture_watchdog"
+
+
 def test_monotonic_semantic_progress_rejects_cast_victim_and_hp_oscillation():
     status = accepted_status()
     status["validation_route"] = {"generation": 1, "manifest_index": 1}
