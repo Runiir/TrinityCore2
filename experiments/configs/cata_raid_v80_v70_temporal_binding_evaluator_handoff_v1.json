@@ -1,0 +1,126 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:bind_v70_fixture_verifications_to_runs_v80",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_prestart_evidence_reference_missing",
+  "source": {
+    "input_commit": "ec4c513db4",
+    "ledger_correction_commit": "3b73247ed8634d43ff3f7931c16ddd74d4cb1ee2",
+    "v79_handoff": "experiments/configs/cata_raid_v79_v70_temporal_binding_prestart_failed_handoff_v80.json",
+    "v79_handoff_sha256": "0ba3cf03dc425516d98972a71277185f5fb487a63fbc0b03f485ea2f7675b2af",
+    "v70_handoff": "experiments/configs/cata_raid_v70_parasite_fixture_post_occurrence_verification_handoff_v1.json",
+    "v70_handoff_sha256": "8a3966be116794cba424748d286317bd28b7b0dacc8e2dd539eabadde2f0f7e0"
+  },
+  "ledger_correction": {
+    "path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "sha256": "cf07be2b0679dddcf7c132b92d3f73d052aa36d9c4a3bee58270df076d08dcf7",
+    "changed_row_count": 3,
+    "only_change": "replace verified_after_commit with passed_after_run_id",
+    "passed_after_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+    "preserved_rows": [
+      {
+        "causal_signature": "magmaw_parasite_containment_failure",
+        "fixture_id": "magmaw_parasite_lane_paths_v1",
+        "revision": 7,
+        "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
+        "source_identity": "acaeaf9f2682b18765ec357121b38d0efbccaa8a"
+      },
+      {
+        "causal_signature": "magmaw_parasite_containment_failure",
+        "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
+        "revision": 6,
+        "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
+        "source_identity": "acaeaf9f2682b18765ec357121b38d0efbccaa8a"
+      },
+      {
+        "causal_signature": "magmaw_parasite_control_allows_player_infection",
+        "fixture_id": "magmaw_parasite_control_full_runtime_v1",
+        "revision": 6,
+        "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
+        "source_identity": "acaeaf9f2682b18765ec357121b38d0efbccaa8a"
+      }
+    ],
+    "fixture_revision_change": false,
+    "ledger_run_append": false,
+    "causal_interpretation_change": false
+  },
+  "suite": {
+    "prior_v79_receipt_reusable": false,
+    "prior_v79_source_identity": "353181972807cbd0ba0a902e73e0cfb7071a216c",
+    "reason_not_reusable": "the corrected clean ledger HEAD is 3b73247ed8634d43ff3f7931c16ddd74d4cb1ee2 and the evaluator requires exact current source identity",
+    "fresh_suite_invocation_count": 1,
+    "boundary_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+    "boundary_side": "after",
+    "receipt_sha256": "ba222c366e4a097dcb2f598c913330ac8b1ef6e840d7446f1ae6ba66100d1400",
+    "source_identity": "3b73247ed8634d43ff3f7931c16ddd74d4cb1ee2",
+    "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+    "verification_count": 20,
+    "passing_verifications": 20,
+    "failing_verifications": 0,
+    "decision_created": false
+  },
+  "terminal_boundary": {
+    "stage": "recurrence_decision_evaluation",
+    "error": "signature magmaw_parasite_containment_failure fixture verification 1 is missing evidence",
+    "first_invalid_row": {
+      "causal_signature": "magmaw_parasite_containment_failure",
+      "verification_index": 1,
+      "fixture_id": "magmaw_parasite_lane_paths_v1",
+      "revision": 7,
+      "passed_after_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+      "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
+      "evidence": null
+    },
+    "first_broken_edge": "The exact temporal binding now passes, but the evaluator's next mandatory fixture-verification field is a nonempty evidence reference and all three V70 rows omit it.",
+    "failure_postcondition": "The fixed suite is green but no complete recurrence decision exists, so fixture expansion, build, bundle, database, and worldserver remain forbidden.",
+    "correction_within_v80_scope": false
+  },
+  "preserved_v71b": {
+    "recurrence_boundary": {
+      "run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+      "side": "after"
+    },
+    "requested_fixture_revisions": {
+      "same_level_floor_observation_v1": 4,
+      "same_level_hazard_path_admission_v1": 5,
+      "same_level_native_path_proof_v1": 5
+    },
+    "runtime_config_authority": "tracked_derived_runtime_config_v1 accepted by V77",
+    "status": "not_started_unproven"
+  },
+  "claim_ledger": {
+    "verified": [
+      "exactly three V70 temporal fields were replaced with the existing Canary122 after-boundary",
+      "revisions 7/6/6 receipt IDs source identities commands results and causal interpretation are unchanged",
+      "the one fresh exact-identity suite passed all 20 fixtures",
+      "the evaluator advanced beyond temporal validation and stopped at the first missing evidence reference",
+      "V79 evidence pointer and closure were committed before the V80 ledger edit"
+    ],
+    "refuted": [
+      "the temporal binding remains invalid",
+      "the three-field V80 correction alone yields a complete fixture-expansion decision",
+      "the green suite permits activation without a complete decision"
+    ],
+    "unproven": [
+      "an authenticated nonempty evidence reference for each V70 verification row",
+      "a complete fixture-expansion-admitted recurrence decision",
+      "shared-planner revisions 4/5/5 map-669 production evidence"
+    ]
+  },
+  "operations": {
+    "fixture_test_suite_invocations": 1,
+    "ledger_run_append": 0,
+    "fixture_revision_change": 0,
+    "configure_or_build": 0,
+    "bundle": 0,
+    "database_mutation": 0,
+    "worldserver_start": 0,
+    "dvc_publication": 0
+  },
+  "next_work_unit": {
+    "id": "evidence:bind_v70_fixture_verification_evidence_v81",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Bind each of the same three V70 rows to its exact immutable V70 receipt or selector evidence without altering chronology revisions receipt IDs source identities commands results or causal interpretation, then evaluate once and reactivate the same requested 4/5/5 map replay only if the complete decision admits fixture expansion.",
+    "live_authorized": false
+  }
+}

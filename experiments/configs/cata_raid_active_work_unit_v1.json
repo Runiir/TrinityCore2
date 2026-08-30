@@ -1,30 +1,55 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "v79_v70_fixture_verification_temporal_binding_failed_v80_20260830",
-  "work_unit": "evidence:bind_v70_fixture_verifications_to_runs_v80",
+  "epoch_id": "v80_v70_fixture_evidence_reference_failed_v81_20260830",
+  "work_unit": "evidence:bind_v70_fixture_verification_evidence_v81",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "failed_closed_prestart_review_required",
-  "observed_at_commit": "353181972807cbd0ba0a902e73e0cfb7071a216c",
-  "immutable_input_commit": "353181972807cbd0ba0a902e73e0cfb7071a216c",
+  "gate_state": "v70_temporal_binding_valid_complete_decision_blocked_by_missing_evidence_reference",
+  "observed_at_commit": "3b73247ed8634d43ff3f7931c16ddd74d4cb1ee2",
+  "immutable_input_commit": "3b73247ed8634d43ff3f7931c16ddd74d4cb1ee2",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v79_v70_temporal_binding_prestart_failed_handoff_v80.json",
-    "sha256": "0ba3cf03dc425516d98972a71277185f5fb487a63fbc0b03f485ea2f7675b2af",
-    "source_commit": "353181972807cbd0ba0a902e73e0cfb7071a216c"
+    "path": "experiments/configs/cata_raid_v80_v70_temporal_binding_evaluator_handoff_v1.json",
+    "sha256": "7a7bf981b2a668e3ed82be1a885e82e74f400682eeb4e18063a91dccbfc3ea33",
+    "source_commit": "3b73247ed8634d43ff3f7931c16ddd74d4cb1ee2"
   },
   "program_scope": {
-    "operation": "bind existing V70 fixture verifications to exact immutable run chronology",
+    "operation": "bind exact immutable V70 evidence references for three already-corrected fixture verification rows",
     "gameplay_canary_admitted": false,
     "fixture_expansion_replay_admitted": false,
     "build_admitted": false,
     "worldserver_start_admitted": false
   },
+  "behavior_change": false,
+  "evidence_contract_change": true,
+  "ready_for_bounded_repair": true,
+  "ready_for_fixture_expansion": false,
+  "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Replace only V70 commit-only temporal evidence with exact existing passed_before_run_id or passed_after_run_id bindings proven by the immutable evidence; preserve revisions commands results and causal interpretation.",
+    "allowed_change": "Add only one exact immutable evidence reference to each of the three V70 fixture_verifications already bound to the Canary122 after-boundary. The reference must reconstruct the existing V70 receipt or exact selector evidence. Preserve chronology, revisions 7/6/6, receipt IDs, source identities, commands, results, and causal interpretation. Evaluate once; activate the preserved map replay only if the complete decision admits fixture expansion.",
+    "owned_rows": [
+      "magmaw_parasite_containment_failure:magmaw_parasite_lane_paths_v1:7",
+      "magmaw_parasite_containment_failure:magmaw_parasite_lane_transition_full_replay_v1:6",
+      "magmaw_parasite_control_allows_player_infection:magmaw_parasite_control_full_runtime_v1:6"
+    ],
     "forbidden": [
-      "configure build runtime config bundle database or worldserver operation",
-      "gameplay runtime planner executor encounter class route threshold tolerance or test edit",
-      "fixture revision change invented run ID or ledger run append"
+      "temporal binding revision receipt ID source identity command result or causal interpretation change",
+      "ledger run append invented run ID or fixture promotion",
+      "test code gameplay runtime planner executor encounter class route threshold or tolerance edit",
+      "configure build runtime config bundle database worldserver or DVC publication",
+      "additional workflow feature",
+      "fixed 300-second raid timer"
     ]
+  },
+  "v80_result": {
+    "ledger_commit": "3b73247ed8634d43ff3f7931c16ddd74d4cb1ee2",
+    "ledger_sha256": "cf07be2b0679dddcf7c132b92d3f73d052aa36d9c4a3bee58270df076d08dcf7",
+    "boundary_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+    "boundary_side": "after",
+    "changed_temporal_fields": 3,
+    "fresh_suite_result": "20 passed, 0 failed",
+    "fresh_suite_receipt_sha256": "ba222c366e4a097dcb2f598c913330ac8b1ef6e840d7446f1ae6ba66100d1400",
+    "decision_created": false,
+    "first_broken_edge": "signature magmaw_parasite_containment_failure fixture verification 1 is missing evidence"
   },
   "preserved_v71b": {
     "recurrence_boundary": {
@@ -36,6 +61,9 @@
       "same_level_hazard_path_admission_v1": 5,
       "same_level_native_path_proof_v1": 5
     },
+    "runtime_config_authority": "tracked_derived_runtime_config_v1 accepted by V77",
+    "worldserver_start_count_maximum": 1,
+    "retry_count_maximum": 0,
     "status": "not_started_unproven"
   },
   "validation_clock": {
@@ -43,11 +71,25 @@
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "v70_temporal_binding_admitted",
-      "v70_temporal_binding_rejected"
+      "complete_fixture_expansion_decision_admitted",
+      "evidence_reference_rejected"
     ]
   },
-  "next_work_unit": "evidence:bind_v70_fixture_verifications_to_runs_v80",
+  "verification_budget": {
+    "recurrence_evaluator_count_maximum": 1,
+    "correction_count_maximum": 1,
+    "configure_count_maximum": 0,
+    "worldserver_build_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
+    "database_mutation": "forbidden",
+    "dvc_publication": "forbidden"
+  },
+  "remaining_unproven": [
+    "exact immutable evidence reference for each V70 fixture verification",
+    "complete fixture-expansion-admitted recurrence decision",
+    "shared-planner revisions 4/5/5 map-669 production evidence"
+  ],
+  "next_work_unit": "evidence:bind_v70_fixture_verification_evidence_v81",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Authenticate exact existing run chronology for each V70 verified_after_commit row, execute one evidence-only evaluator check, and emit a fresh replay descriptor only if the complete recurrence decision is admitted."
+  "next_action": "Bind only the three missing V70 evidence references, evaluate once, and reactivate the unchanged requested 4/5/5 map replay only if the complete decision admits fixture expansion."
 }
