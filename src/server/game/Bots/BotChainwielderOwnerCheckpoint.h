@@ -445,7 +445,6 @@ enum class Stage : uint8
     Disabled,
     Armed,
     RejectionObserved,
-    AfterObserved,
     Completed,
     Failed
 };
@@ -593,6 +592,35 @@ inline bool SameRouteIdentity(
         && before.DodgeUntilMs == after.DodgeUntilMs
         && before.DodgeBearingAttempt == after.DodgeBearingAttempt
         && before.LastPathRejectReason == after.LastPathRejectReason;
+}
+
+struct InjectionTriggerDecision
+{
+    bool ActiveRoutePath = false;
+    bool ArmedRouteHazardRetry = false;
+
+    explicit operator bool() const
+    {
+        return ActiveRoutePath || ArmedRouteHazardRetry;
+    }
+};
+
+inline InjectionTriggerDecision SelectInjectionTrigger(
+    bool actorMatches, OwnerSnapshot const& current, uint64 attemptId,
+    uint32 wipeGeneration, uint64 routeGeneration, std::string_view routeNodeId,
+    bool nativeRouteMotion, bool armedRouteHazardRetry)
+{
+    if (!actorMatches)
+        return {};
+
+    bool const activeRoutePath = current.ActivePathValid
+        && current.MovementOwner == BotMovementArbitration::Owner::Route
+        && current.ActivePathAttemptId == attemptId
+        && current.ActivePathWipeGeneration == wipeGeneration
+        && current.ActivePathRouteGeneration == routeGeneration
+        && current.ActivePathRouteNodeId == routeNodeId
+        && nativeRouteMotion;
+    return { activeRoutePath, armedRouteHazardRetry };
 }
 
 struct State

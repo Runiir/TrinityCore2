@@ -802,7 +802,9 @@ def test_launch_contract_is_exact_one_start_completion_watchdog(tmp_path: Path) 
     assert launch["completion_watchdog"]["duration_policy"] == "completion-watchdog"
     assert launch["fixed_success_timer_seconds"] is None
     assert launch["expected_arm_predicates"]["emission_count"] == 1
-    assert launch["expected_lifecycle_predicates"]["outcome"] == "hazard_exit_completed"
+    assert launch["expected_lifecycle_predicates"]["outcome"] == (
+        "route_identity_preserved_after_receiptless_hazard_rejection"
+    )
     assert "--observe-sec" not in result["launch_argv"]
 
 def test_wrong_actor_fixture_or_source_and_dirty_source_fail_closed(tmp_path: Path) -> None:

@@ -298,6 +298,7 @@ r'''
 #include "Bots/BotChainwielderOwnerCheckpoint.h"
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotWorldPopulationMgrBotState.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteMovementCheck.h"
 #define BOT_CONTROLLER_ROUTE_HOLD_CONFIG_IDENTITY_ADAPTER_ONLY
 #include "Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp"
 #define BOT_CONTROLLER_ROUTE_HOLD_BOOTSTRAP_ADAPTER_ONLY
@@ -609,9 +610,53 @@ int main()
     assert(routeIdentity.ActivePathRouteGeneration == identity.RouteGeneration);
     assert(routeIdentity.ActivePathRouteNodeId == identity.RouteNodeId);
 
+    // Trigger before the separate configured-hazard producer owns a later
+    // exit. Hazard identity is deliberately absent at this checkpoint edge.
+    routeIdentity.DodgeCasterGuid = 0;
+    routeIdentity.DodgeSpellId = 0;
+    routeIdentity.DodgeUntilMs = 0;
+    auto const routeTrigger =
+        BotChainwielderOwnerCheckpoint::SelectInjectionTrigger(
+        true, routeIdentity, identity.AttemptId, 2,
+        identity.RouteGeneration, identity.RouteNodeId, true, false);
+    assert(routeTrigger);
+    assert(routeTrigger.ActiveRoutePath);
+    assert(!routeTrigger.ArmedRouteHazardRetry);
+
+    auto expectNoActiveRouteTrigger = [&](bool actorMatches,
+        BotChainwielderOwnerCheckpoint::OwnerSnapshot snapshot,
+        uint64 attemptId, uint32 wipeGeneration,
+        uint64 routeGeneration, std::string_view routeNodeId,
+        bool nativeRouteMotion)
+    {
+        auto const trigger =
+            BotChainwielderOwnerCheckpoint::SelectInjectionTrigger(
+            actorMatches, snapshot, attemptId, wipeGeneration,
+            routeGeneration, routeNodeId, nativeRouteMotion, false);
+        assert(!trigger);
+        assert(!trigger.ActiveRoutePath);
+    };
+    BotChainwielderOwnerCheckpoint::OwnerSnapshot missingRoutePath =
+        routeIdentity;
+    missingRoutePath.ActivePathValid = false;
+    expectNoActiveRouteTrigger(true, missingRoutePath, identity.AttemptId, 2,
+        identity.RouteGeneration, identity.RouteNodeId, true);
+    expectNoActiveRouteTrigger(false, routeIdentity, identity.AttemptId, 2,
+        identity.RouteGeneration, identity.RouteNodeId, true);
+    expectNoActiveRouteTrigger(true, routeIdentity, identity.AttemptId + 1, 2,
+        identity.RouteGeneration, identity.RouteNodeId, true);
+    expectNoActiveRouteTrigger(true, routeIdentity, identity.AttemptId, 3,
+        identity.RouteGeneration, identity.RouteNodeId, true);
+    expectNoActiveRouteTrigger(true, routeIdentity, identity.AttemptId, 2,
+        identity.RouteGeneration + 1, identity.RouteNodeId, true);
+    expectNoActiveRouteTrigger(true, routeIdentity, identity.AttemptId, 2,
+        identity.RouteGeneration, "route.node.stale", true);
+    expectNoActiveRouteTrigger(true, routeIdentity, identity.AttemptId, 2,
+        identity.RouteGeneration, identity.RouteNodeId, false);
+
     // The production future-pack rejection is receipt-zero and observe-only
-    // against the actor's active Route path. Its full identity survives until
-    // the later typed hazard-exit completion.
+    // against the actor's active Route path. Its full identity survives the
+    // immediate observation and the next production tick.
     BotChainwielderOwnerCheckpoint::HazardRejectionObservation const rejection{
         false, BotMovementArbitration::Owner::Hazard,
         "future_pack_destination", "rejected",
@@ -627,6 +672,40 @@ int main()
         routeIdentityAfterRejection = routeIdentity;
     assert(BotChainwielderOwnerCheckpoint::SameRouteIdentity(
         routeIdentity, routeIdentityAfterRejection));
+    auto const subsequentTickTrigger =
+        BotChainwielderOwnerCheckpoint::SelectInjectionTrigger(
+        true, routeIdentityAfterRejection, identity.AttemptId, 2,
+        identity.RouteGeneration, identity.RouteNodeId, true, false);
+    assert(subsequentTickTrigger.ActiveRoutePath);
+
+    // The later accepted configured-hazard exit is independently Hazard at
+    // both arbitration dimensions. It is neither a Route trigger nor the
+    // receipt-zero rejected observation above.
+    auto const configuredHazardOwner =
+        BotWorldPopulationMgrValidationRoute::
+            SelectValidationRouteMovementOwner(true, true);
+    assert(configuredHazardOwner.Owner
+        == BotMovementArbitration::Owner::Hazard);
+    assert(configuredHazardOwner.Priority
+        == BotMovementArbitration::Priority::Hazard);
+    BotChainwielderOwnerCheckpoint::OwnerSnapshot acceptedHazardPath =
+        routeIdentity;
+    acceptedHazardPath.MovementOwner = configuredHazardOwner.Owner;
+    expectNoActiveRouteTrigger(true, acceptedHazardPath, identity.AttemptId, 2,
+        identity.RouteGeneration, identity.RouteNodeId, true);
+    BotChainwielderOwnerCheckpoint::HazardRejectionObservation const
+        acceptedHazard{
+        true, configuredHazardOwner.Owner, "movement_launch", "submitted", "",
+        2 };
+    assert(!BotChainwielderOwnerCheckpoint::
+        IsExactReceiptlessHazardRejection(acceptedHazard));
+    auto const missingConfiguredHazardOwner =
+        BotWorldPopulationMgrValidationRoute::
+            SelectValidationRouteMovementOwner(false, true);
+    assert(missingConfiguredHazardOwner.Owner
+        == BotMovementArbitration::Owner::CombatRange);
+    assert(missingConfiguredHazardOwner.Priority
+        == BotMovementArbitration::Priority::Combat);
 
     Kernel wrongScopeKernel;
     wrongScopeKernel.Begin(24);
@@ -649,11 +728,13 @@ int main()
     syntheticKernel.Resolve();
     assert(syntheticAttempts == 0);
 
-    assert(hold.ObserveCheckpointTerminal(identity, "hazard_exit_completed", true,
+    assert(hold.ObserveCheckpointTerminal(identity,
+        "route_identity_preserved_after_receiptless_hazard_rejection", true,
         true, 25).Accepted);
     State duplicateTerminal = hold;
     assert(!duplicateTerminal.ObserveCheckpointTerminal(identity,
-        "hazard_exit_completed", true, true, 26).Accepted);
+        "route_identity_preserved_after_receiptless_hazard_rejection",
+        true, true, 26).Accepted);
     assert(duplicateTerminal.FailureReason
         == "controller_route_hold_checkpoint_terminal_stale");
     assert(hold.Release(identity, 26).Accepted);
@@ -932,6 +1013,15 @@ def test_checkpoint_crosses_real_executor_and_production_tick_boundary() -> None
     assert "observation.LaunchReceiptId == 0" in header
     assert "SameRouteIdentity(\n        checkpoint.Before, immediateAfter)" in module
     assert "SameRouteIdentity(\n            checkpoint.Before, checkpoint.After)" in module
+    assert "InjectionTriggerDecision const trigger = SelectInjectionTrigger(" in module
+    assert "checkpoint.Before = triggerSnapshot" in module
+    trigger_source = module[
+        module.index("InjectionTriggerDecision const trigger") :
+        module.index("if (!trigger)")
+    ]
+    assert "matchingHazardIdentity" not in trigger_source
+    assert '"route_identity_preserved_after_receiptless_hazard_rejection"' in module
+    assert '"hazard_exit_completed"' not in module
 
     observe = update.index("ObserveChainwielderOwnerCheckpointBeforeUpdate")
     progress = update.index("ObserveReceiptTaggedMovementProgress")

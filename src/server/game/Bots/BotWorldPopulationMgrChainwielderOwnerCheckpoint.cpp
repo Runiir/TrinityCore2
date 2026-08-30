@@ -163,7 +163,6 @@ char const* StageName(Stage stage)
         case Stage::Disabled: return "disabled";
         case Stage::Armed: return "armed";
         case Stage::RejectionObserved: return "rejection_observed";
-        case Stage::AfterObserved: return "after_observed";
         case Stage::Completed: return "completed";
         case Stage::Failed: return "failed";
     }
@@ -659,16 +658,14 @@ void BotWorldPopulationMgr::MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
     MotionMaster* motion = bot->GetMotionMaster();
     MovementGeneratorType motionType = motion
         ? motion->GetMotionSlotType(MOTION_SLOT_ACTIVE) : MAX_MOTION_TYPE;
-    bool const activeRoutePath = state.ActivePathValid
-        && state.MovementLease.MovementOwner
-            == BotMovementArbitration::Owner::Route
-        && state.ActivePathAttemptId == Cohort().AttemptId
-        && state.ActivePathWipeGeneration == Cohort().Raid.WipeGeneration
-        && state.ActivePathRouteGeneration == Party().ValidationRouteGeneration
-        && state.ActivePathRouteNodeId == NodeId
-        && (motionType == POINT_MOTION_TYPE || motionType == CHASE_MOTION_TYPE)
-        && matchingHazardIdentity;
-    if (!activeRoutePath && !routeRetryArmed)
+    OwnerSnapshot const triggerSnapshot = CaptureOwnerSnapshot(state);
+    InjectionTriggerDecision const trigger = SelectInjectionTrigger(
+        true, triggerSnapshot, Cohort().AttemptId,
+        Cohort().Raid.WipeGeneration, Party().ValidationRouteGeneration,
+        NodeId,
+        motionType == POINT_MOTION_TYPE || motionType == CHASE_MOTION_TYPE,
+        routeRetryArmed);
+    if (!trigger)
         return;
 
     float unsafeX = 0.0f;
@@ -717,9 +714,10 @@ void BotWorldPopulationMgr::MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
         return;
     }
 
-    checkpoint.Before = CaptureOwnerSnapshot(state);
-    checkpoint.TriggeredByActiveRoutePath = activeRoutePath;
-    checkpoint.TriggeredByArmedRouteHazardRetry = routeRetryArmed;
+    checkpoint.Before = triggerSnapshot;
+    checkpoint.TriggeredByActiveRoutePath = trigger.ActiveRoutePath;
+    checkpoint.TriggeredByArmedRouteHazardRetry =
+        trigger.ArmedRouteHazardRetry;
     RecordDecisionTrace(state, "fixture_observation",
         "chainwielder_owner_checkpoint_before", nullptr, 0, "ok",
         Authority, false);
@@ -800,54 +798,18 @@ void BotWorldPopulationMgr::ObserveChainwielderOwnerCheckpointBeforeUpdate(
                 checkpoint.Outcome.c_str(), false);
             return;
         }
-        checkpoint.CurrentStage = Stage::AfterObserved;
-        checkpoint.Outcome = "foreign_route_identity_preserved";
+        checkpoint.CurrentStage = Stage::Completed;
+        checkpoint.Outcome =
+            "route_identity_preserved_after_receiptless_hazard_rejection";
+        checkpoint.OutcomeObservedAtMs = checkpoint.AfterObservedAtMs;
+        SyncControllerTerminal(checkpoint.ControllerRouteHold,
+            CurrentControllerRouteHoldIdentity(checkpoint.ActorGuid),
+            checkpoint, checkpoint.OutcomeObservedAtMs);
         RecordDecisionTrace(state, "fixture_observation",
-            "chainwielder_owner_checkpoint_after", nullptr, 0, "ok",
+            "chainwielder_owner_checkpoint_outcome", nullptr, 0, "ok",
             checkpoint.Outcome.c_str(), false);
         return;
     }
-    if (checkpoint.CurrentStage != Stage::AfterObserved)
-        return;
-
-    ++checkpoint.AwaitTicks;
-    if (state.ValidationRouteDodgeCasterGuid.IsEmpty()
-        && state.ValidationRouteDodgeSpellId == 0)
-    {
-        checkpoint.CurrentStage = Stage::Completed;
-        checkpoint.Outcome = "hazard_exit_completed";
-    }
-    else if (!bot->IsAlive())
-    {
-        checkpoint.CurrentStage = Stage::Failed;
-        checkpoint.Outcome = "actor_died_before_hazard_exit_completion";
-    }
-    else if (state.ValidationRouteTerminalState)
-    {
-        checkpoint.CurrentStage = Stage::Failed;
-        checkpoint.Outcome = state.ValidationRouteTerminalReason.empty()
-            ? "route_terminal_before_hazard_exit_completion"
-            : state.ValidationRouteTerminalReason;
-    }
-    else if (Cohort().Config.ValidationRouteNodeId != NodeId
-        || checkpoint.AwaitTicks > MaximumAwaitTicks)
-    {
-        checkpoint.CurrentStage = Stage::Failed;
-        checkpoint.Outcome = Cohort().Config.ValidationRouteNodeId != NodeId
-            ? "route_advanced_before_hazard_exit_completion"
-            : "hazard_exit_completion_timeout";
-    }
-    else
-        return;
-
-    checkpoint.OutcomeObservedAtMs = NowMs();
-    SyncControllerTerminal(checkpoint.ControllerRouteHold,
-        CurrentControllerRouteHoldIdentity(checkpoint.ActorGuid),
-        checkpoint, checkpoint.OutcomeObservedAtMs);
-    RecordDecisionTrace(state, "fixture_observation",
-        "chainwielder_owner_checkpoint_outcome", nullptr, 0,
-        checkpoint.CurrentStage == Stage::Completed ? "ok" : "failed",
-        checkpoint.Outcome.c_str(), false);
 }
 
 std::string BotWorldPopulationMgr::BuildChainwielderOwnerCheckpointJson() const

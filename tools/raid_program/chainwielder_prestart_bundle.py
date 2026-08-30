@@ -553,7 +553,9 @@ def verify_bundle(
         "rejection_reason": "route_destination_future_pack_unsafe",
         "planner_receipt_id": 0,
         "before_after_identity_preserved": True,
-        "outcome": "hazard_exit_completed",
+        "outcome": (
+            "route_identity_preserved_after_receiptless_hazard_rejection"
+        ),
     }:
         raise BundleError("launch_lifecycle_predicates_invalid")
     argv = launch.get("launch_argv")
@@ -821,7 +823,9 @@ def create_bundle(
                 "rejection_owner": "hazard", "rejection_gate": "future_pack_destination",
                 "rejection_reason": "route_destination_future_pack_unsafe",
                 "planner_receipt_id": 0, "before_after_identity_preserved": True,
-                "outcome": "hazard_exit_completed",
+                "outcome": (
+                    "route_identity_preserved_after_receiptless_hazard_rejection"
+                ),
             },
             "launch_argv": [
                 "pixi", "run", "python", "-m",
