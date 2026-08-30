@@ -1,0 +1,115 @@
+{
+  "catalog_identity": {
+    "dvc_directory_manifest_md5": "3c2286d3c01ccc479606a66b2babec34.dir",
+    "hydrated_path": "/home/runiir/Games/trinity-cata/dataset/validation_scenarios",
+    "source_catalog_path": "/home/runiir/Games/trinity-cata/dataset/validation_scenarios/validation_routes.jsonl",
+    "source_catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5"
+  },
+  "closure": {
+    "events": [
+      {
+        "count": 1,
+        "external_root": "/tmp/generic_route_hold_v47.3u72gy",
+        "external_root_absent_after": true,
+        "hydrated_workspace_absent_after": true,
+        "hydrated_workspace_path": "/home/runiir/Games/trinity-cata/dataset/validation_scenarios",
+        "type": "exact_targeted_payload_eviction"
+      },
+      {
+        "porcelain_before_tracked_closure": "",
+        "type": "final_git_state_observation"
+      }
+    ],
+    "temporary_bundle_retained": false
+  },
+  "events": [
+    {
+      "action": "pixi run dvc checkout dataset/validation_scenarios",
+      "count": 1,
+      "sequence": 1,
+      "target": "dataset/validation_scenarios",
+      "type": "targeted_dvc_hydration"
+    },
+    {
+      "command": "pixi run python /tmp/v47_fixture_driver.py --worktree /home/runiir/Games/trinity-cata --external-root /tmp/generic_route_hold_v47.3u72gy --packet /tmp/v47_chain_packet.json",
+      "exception_message": "No module named 'tools'",
+      "exception_type": "ModuleNotFoundError",
+      "exit_code": 1,
+      "first_edge": "external_fixture_driver_repository_module_path_unbound",
+      "sequence": 2,
+      "type": "fixture_driver_bootstrap_failure"
+    },
+    {
+      "counts": {
+        "atomic_bundle_create": 0,
+        "atomic_bundle_explicit_verify": 0,
+        "atomic_bundle_publish": 0,
+        "build_gate_observation": 0,
+        "canonical_stage": 0,
+        "configure": 0,
+        "database_mutation": 0,
+        "internal_bundle_verify": 0,
+        "launch_contract_execution": 0,
+        "non_target_dvc_action": 0,
+        "prepared_object_materialize": 0,
+        "prepared_object_verify": 0,
+        "retry": 0,
+        "worldserver_build": 0,
+        "worldserver_start": 0
+      },
+      "sequence": 3,
+      "type": "zero_or_unconsumed_operation_ledger"
+    }
+  ],
+  "first_broken_edge": {
+    "classification": "fixture_reconstruction_failure",
+    "detail": "The external fixture driver did not bind the repository root on Python's module search path, so import failed before any production fixture function was reached.",
+    "reason": "external_fixture_driver_repository_module_path_unbound"
+  },
+  "operation_count_derivation": {
+    "atomic_bundle_create": 0,
+    "atomic_bundle_explicit_verify": 0,
+    "atomic_bundle_publish": 0,
+    "build_gate_observation": 0,
+    "canonical_stage": 0,
+    "configure": 0,
+    "database_mutation": 0,
+    "internal_bundle_verify": 0,
+    "launch_contract_execution": 0,
+    "non_target_dvc_action": 0,
+    "prepared_object_materialize": 0,
+    "prepared_object_verify": 0,
+    "retry": 0,
+    "targeted_dvc_hydration": 1,
+    "targeted_temporary_payload_evict": 1,
+    "worldserver_build": 0,
+    "worldserver_start": 0
+  },
+  "pre_eviction_verification": {
+    "event_count": 3,
+    "packet_sha256": "0d62ac232ce523be461a19e402441961efa140294e993e2cde0abedde29c52ad",
+    "payloads_present": true,
+    "valid": true
+  },
+  "schema": "cata_raid_chainwielder_fixture_typed_evidence_packet_v1",
+  "source": {
+    "clean_at_admission": true,
+    "commit": "1c6a838495e2620645fec4745ff17a429c6a7a80",
+    "tree": "a8f070594b2825d458e88117692251a05d2a47ae",
+    "worktree": "/home/runiir/Games/trinity-cata"
+  },
+  "temporary_payload_contract": {
+    "external_root": "/tmp/generic_route_hold_v47.3u72gy",
+    "hydrated_workspace_path": "/home/runiir/Games/trinity-cata/dataset/validation_scenarios",
+    "pre_eviction_packet_verification_required": true,
+    "retain_whole_bundle": false
+  },
+  "unavailable_due_to_first_edge": [
+    "selected-row identity from a fresh stage/materialize chain",
+    "prepared object canonical bytes/path/SHA from V47",
+    "three build-gate events",
+    "typed create/internal-verify/publish/explicit-verify results",
+    "bundle manifest, runtime route/profile, and launch identities"
+  ],
+  "work_unit_id": "evidence:generic_controller_route_hold_fixture_receipt_retention_v47"
+}

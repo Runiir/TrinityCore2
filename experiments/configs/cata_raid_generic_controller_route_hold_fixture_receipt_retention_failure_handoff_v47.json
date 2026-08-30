@@ -1,0 +1,84 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_fixture_receipt_retention_v47",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_fixture_driver_bootstrap",
+  "source_state": {
+    "commit": "1c6a838495e2620645fec4745ff17a429c6a7a80",
+    "tree": "a8f070594b2825d458e88117692251a05d2a47ae",
+    "clean_before_run": true,
+    "v46_handoff_sha256": "32e6019a607435058d8fa27be9e2909383dfd755fed697f52227c1d3ab34f801"
+  },
+  "retained_packet": {
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_typed_evidence_packet_v47.json",
+    "sha256": "adb526dc8c4420d099c7324eb7e869a58a895310f91d1d86b187ccec271f792e",
+    "canonical_json_verified": true,
+    "pre_eviction_packet_sha256": "0d62ac232ce523be461a19e402441961efa140294e993e2cde0abedde29c52ad",
+    "pre_eviction_independent_verification": true
+  },
+  "consumed_budget": {
+    "targeted_validation_scenarios_checkout_count": 1,
+    "canonical_stage_count": 0,
+    "prepared_object_materialize_count": 0,
+    "prepared_object_verify_count": 0,
+    "atomic_bundle_create_count": 0,
+    "atomic_bundle_internal_verify_count": 0,
+    "atomic_bundle_publish_count": 0,
+    "atomic_bundle_explicit_verify_count": 0,
+    "build_gate_observation_count": 0,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "launch_contract_execution_count": 0,
+    "database_mutation_count": 0,
+    "non_target_dvc_action_count": 0,
+    "retry_count": 0,
+    "targeted_temporary_payload_evict_count": 1
+  },
+  "first_broken_edge": {
+    "reason": "external_fixture_driver_repository_module_path_unbound",
+    "exception": "ModuleNotFoundError: No module named 'tools'",
+    "boundary": "external driver import before any production fixture function",
+    "effect": "No stage, materialize, prepared verify, bundle create, internal verify, publish, explicit verify, or gate observation occurred."
+  },
+  "cleanup": {
+    "external_root": "/tmp/generic_route_hold_v47.3u72gy",
+    "external_root_evicted": true,
+    "targeted_hydrated_workspace": "dataset/validation_scenarios",
+    "targeted_hydrated_workspace_evicted": true,
+    "whole_bundle_retained": false,
+    "worldserver_or_capture_process_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact catalog was hydrated once and authenticated by SHA-256 before driver invocation",
+      "the driver failed at repository-package import before any budgeted fixture operation",
+      "all unconsumed and zero counts derive from the ordered retained failure packet",
+      "the packet was independently canonical/hash verified before exact temporary and hydrated payload eviction",
+      "no build, server, launch, database, gameplay, controller, production, test, or skill mutation occurred"
+    ],
+    "unproven": [
+      "fresh V47 selected rows or prepared object",
+      "three ordered build-gate observations",
+      "create, internal verify, publish, explicit verify, bundle/profile/route/launch identities",
+      "any native or gameplay outcome"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_fixture_repo_import_bound_retention_v48",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "From the repository root, first run an unbudgeted `pixi run python` import assertion proving `tools.raid_program` resolves from this exact checkout. Only after it passes, execute one no-live fixture chain through a repository-root Python invocation with no external-script import ambiguity, retain and independently verify the canonical typed packet, then evict exact payloads.",
+    "budget": {
+      "targeted_validation_scenarios_checkout_count_maximum": 1,
+      "canonical_stage_count_maximum": 1,
+      "prepared_object_materialize_count_maximum": 1,
+      "prepared_object_verify_count_maximum": 1,
+      "atomic_bundle_create_count_maximum": 1,
+      "atomic_bundle_explicit_verify_count_maximum": 1,
+      "worldserver_build_count_maximum": 0,
+      "worldserver_start_count_maximum": 0,
+      "retry_count_maximum": 0
+    },
+    "forbidden": "No external-script invocation before the repository import assertion; no production/test/skill/build/server/database/gameplay/controller/live change."
+  }
+}

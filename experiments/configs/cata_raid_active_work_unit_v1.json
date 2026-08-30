@@ -1,27 +1,22 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_fixture_receipt_retention_v47_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_fixture_receipt_retention_v47",
+  "epoch_id": "generic_controller_route_hold_fixture_repo_import_bound_retention_v48_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_fixture_repo_import_bound_retention_v48",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
-  "gate_state": "v46_rejected_summary_only_fixture_evidence",
-  "observed_at_commit": "d5c89ea0103da530623e6746597142427ce65729",
-  "immutable_input_commit": "d5c89ea0103da530623e6746597142427ce65729",
+  "gate_state": "v47_external_driver_import_failed_before_fixture_chain",
+  "observed_at_commit": "1c6a838495e2620645fec4745ff17a429c6a7a80",
+  "immutable_input_commit": "1c6a838495e2620645fec4745ff17a429c6a7a80",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_authenticated_prepared_object_bundle_fixture_review_handoff_v46.json",
-    "sha256": "32e6019a607435058d8fa27be9e2909383dfd755fed697f52227c1d3ab34f801",
-    "source_commit": "d5c89ea0103da530623e6746597142427ce65729"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_fixture_receipt_retention_failure_handoff_v47.json",
+    "sha256": "7ce49fc118c107aba21133b1c0e3207c7db1b2e0ac50c43faa1cc9bd04c0063d",
+    "source_commit": "1c6a838495e2620645fec4745ff17a429c6a7a80"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
-    "supported_modes": [
-      "10N",
-      "10H",
-      "25N",
-      "25H"
-    ],
-    "canary_only": "V47 repairs fixture evidence retention only. It authorizes no build, launch, live, native, or gameplay claim."
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_only": "V48 repairs only the no-live fixture invocation and evidence retention boundary. It authorizes no live or gameplay claim."
   },
   "behavior_change": false,
   "evidence_contract_change": false,
@@ -29,67 +24,55 @@
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Run one no-live V45-equivalent fixture chain and retain one compact canonical typed packet whose ordered events and results independently reconstruct every operation count, gate observation, input binding, create result, explicit verify result, and non-execution claim without retaining the whole temporary bundle.",
+    "allowed_change": "From the exact repository root, prove the repository tools package is importable before consuming any fixture budget, then run one no-live V47-equivalent chain through a repository-root Python invocation and retain one canonical typed event/result packet.",
+    "mandatory_import_preflight": "pixi run python -c 'from pathlib import Path; import tools.raid_program.chainwielder_prestart_bundle as m; assert Path(m.__file__).resolve().is_relative_to(Path.cwd().resolve())'",
     "allowed_files": [
       "one_compact_canonical_fixture_evidence_packet",
       "one_compact_specialist_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
-    "required_retained_packet": [
-      "ordered operation events for one stage, materialize, prepared verify, create, internal verify, atomic publish, and explicit verify",
-      "exact authenticated catalog member and selected-row identities plus prepared object path, canonical bytes, and SHA-256",
-      "three ordered fixture-gate events identifying original, sibling atomic-staging, and final paths with exact receipt and policy byte hashes",
-      "canonical typed create result, explicit verify result, and compact identities for bundle manifest, runtime route, runtime profile, and launch contract",
-      "an ordered invocation ledger showing zero configure, build, worldserver start, launch-contract execution, database mutation, retry, and non-targeted DVC action",
-      "exact targeted hydration and exact temporary-payload eviction events plus final Git status"
-    ],
     "forbidden": [
+      "external_script_direct_execution_before_or_instead_of_repository_root_import_binding",
       "production_skill_or_test_edit",
       "configure_build_worldserver_or_launch_execution",
       "database_or_gameplay_mutation",
       "native_controller_route_comparison_polling_watchdog_or_threshold_change",
       "whole_temporary_bundle_retention",
-      "live_authorization_before_an_independent_review_of_retained_packet_bytes",
-      "broad_dvc_gc_or_unbounded_hydration"
+      "broad_dvc_gc_or_unbounded_hydration",
+      "retry_within_v48"
     ]
   },
-  "closed_v46_evidence": {
-    "catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
-    "catalog_row_count": 77,
-    "selected_row_count": 4,
-    "selected_rows_sha256": "b47a63e9a45ea351da40e4a53b7df0cef7e3f9092f1b965aa2dc506bb2e85cda",
-    "prepared_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
-    "runtime_initial_node_id": "bwd.magmaw.chainwielder",
-    "runtime_suffix_node_ids": [
-      "bwd.magmaw.chainwielder",
-      "bwd.magmaw.drudges",
-      "bwd.magmaw.encounter"
-    ],
-    "focused_tests": "4 passed in 0.50s",
-    "v45_summary_only_evidence_rejected": true,
-    "current_source_binary_attestation_available": false
+  "closed_v47_evidence": {
+    "typed_packet_sha256": "adb526dc8c4420d099c7324eb7e869a58a895310f91d1d86b187ccec271f792e",
+    "pre_eviction_packet_sha256": "0d62ac232ce523be461a19e402441961efa140294e993e2cde0abedde29c52ad",
+    "targeted_validation_scenarios_checkout_count": 1,
+    "canonical_stage_count": 0,
+    "prepared_object_materialize_count": 0,
+    "prepared_object_verify_count": 0,
+    "atomic_bundle_create_count": 0,
+    "atomic_bundle_explicit_verify_count": 0,
+    "worldserver_start_count": 0,
+    "retry_count": 0,
+    "first_edge": "external_fixture_driver_repository_module_path_unbound",
+    "exact_payload_eviction_complete": true
   },
   "required_repair_proof": [
-    "all operation counts derive from ordered retained events rather than aggregate booleans",
-    "the fixture gate authenticates exact receipt and policy bytes at original, sibling atomic-staging, and final paths",
-    "the exact verified prepared-object path and SHA enter the sole unchanged create call",
-    "create's internal verify, atomic publish, and one explicit final verify reconstruct from retained typed results",
-    "the compact identities reconstruct the Chainwielder, Drudges, and Magmaw suffix, exact profile identity, and unexecuted launch contract",
-    "temporary payloads are evicted only after the compact packet is independently hash-verified"
+    "the exact repository-root import assertion passes before hydration, staging, or any other budgeted operation",
+    "one ordered retained packet derives stage, materialize, prepared verify, create, internal verify, publish, and explicit verify counts",
+    "the three build-gate events authenticate exact receipt and policy bytes at original, sibling atomic-staging, and final paths",
+    "the packet retains canonical prepared bytes plus compact manifest, route, profile, and launch identities",
+    "the packet is independently hash verified before exact targeted payload eviction"
   ],
   "remaining_unproven": [
-    "a gate-bearing current-source native binary reaches the retained verified bundle",
+    "one complete import-bound fixture chain produces the required retained packet",
+    "a gate-bearing current-source native binary reaches the verified bundle",
     "native Held, arm, terminal, release, retained Drudges, DPS, HPS, or pet-share evidence"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": [
-      "fixture_packet_verified",
-      "fixture_reconstruction_failure",
-      "identity_or_scope_mismatch"
-    ]
+    "terminal_edges": ["fixture_packet_verified", "fixture_reconstruction_failure", "identity_or_scope_mismatch"]
   },
   "verification_budget": {
     "targeted_validation_scenarios_checkout_count_maximum": 1,
@@ -106,7 +89,7 @@
     "database_mutation": "forbidden",
     "dvc_mutation": "targeted_validation_scenarios_hydration_and_exact_workspace_eviction_only"
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_fixture_receipt_retention_v47",
+  "next_work_unit": "evidence:generic_controller_route_hold_fixture_repo_import_bound_retention_v48",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Produce and verify one compact reconstructible canonical fixture event/result packet, then evict only the exact hydrated and temporary payloads. Do not build or run live."
+  "next_action": "Run the repository-root import assertion first; only if it passes, run one no-live chain through a repository-root Python invocation and retain the independently verified typed packet."
 }
