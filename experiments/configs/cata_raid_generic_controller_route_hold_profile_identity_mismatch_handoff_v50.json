@@ -1,0 +1,119 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:generic_controller_route_hold_authenticated_one_build_one_live_v50",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed",
+  "failure_classification": "chainwielder_checkpoint_profile_identity_mismatch",
+  "input_identities": {
+    "source_commit": "1d669d29b8957de9fdf92f5a5b7e324e134d2eca",
+    "source_tree": "5ee4f8ea9704e18f9f9add0ffa99af8fad03b1b7",
+    "binary_sha256": "806c0c8a8cff618d56d2c90e218b1bb23066fe7528eea031bfc1c85cedb890cb",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008,
+    "checkpoint_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+    "route_manifest_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+    "checkpoint_seal_sha256": "dea9b6fef3f9d8ea2303acaecb2b680ca46b4686764168756405eb50d33efcc1"
+  },
+  "consumed_budget": {
+    "configure": "1/1",
+    "worldserver_build": "1/1",
+    "canonical_stage": "1/1",
+    "prepared_object_materialize": "1/1",
+    "prepared_object_verify": "1/1",
+    "atomic_bundle_create": "1/1",
+    "atomic_bundle_verify": "1/1",
+    "worldserver_start": "1/1",
+    "retry": "0/0",
+    "database_mutation": 0
+  },
+  "validation": {
+    "configure_receipt_file_sha256": "cb5fe3d119f99574cc30b7fc3b0feb5760eaf5ea10569a3b6b3135fd5e55b93f",
+    "build_receipt_file_sha256": "6d50fe21ee37e70456df459f2c9db1981b560caf9a8e50aa517d72ec4788575e",
+    "build_ticket_id": "raid-build-c8a35ae9f0724954a1aafde15cb452e5",
+    "build_queue_sequence": 1247,
+    "source_binary_attestation_valid": true,
+    "strict_prestart_verifier_passed": true,
+    "strict_prestart_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "retained_roster_readback_passed": true,
+    "retained_roster_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "retained_roster_count": 10,
+    "prestart_residue_counts": {"online": 0, "at_login": 0, "groups": 0, "group_members": 0, "group_instances": 0, "character_instances": 0, "corpses": 0, "corpse_phases": 0, "ghost_auras": 0},
+    "bundle_manifest_sha256": "6eb0fbbd8ee1e2ef05ca91bba63472bb759d023126c23dba67b671286adab2da",
+    "launch_contract_sha256": "aeca4f0d59cc55d1661966d521f7093d7f8dea2b42f5429e1c30b4cd741b4a1c",
+    "recurrence_admission_sha256": "372cc6c01a62f345e15e97f5a1c39e070c56f189c89f51eba80083eed9ef2deb",
+    "duration_policy": "completion-watchdog",
+    "fixed_success_timer_seconds": null,
+    "capture_process_exit_code": 2,
+    "worldserver_exit_code": 0,
+    "capture_report_file_sha256": "c8861363e621e2dbc3261943016f3aa4b25d3698fcac0542fe85f98196a725aa",
+    "capture_report_canonical_sha256": "9be335f62f924013d48fac8c76bfd32ca76b52a0fbb1aa6c1819c0c61198cbfa",
+    "normalized_raw_sha256": "dc9810a71ebca0bd3a5c6d9ba52eceb0030e287d7a3b6371cea2da7864248760",
+    "worldserver_log_sha256": "ea2efb9087adf759e9d971965728929e1ef3de85f0562bd43bc2bed4faa3ecc7"
+  },
+  "ordered_native_result": {
+    "start_held_ack_count": 1,
+    "held_status_count": 2,
+    "held_status_projection_stable": true,
+    "route_generation_during_hold": 1,
+    "suppressed_route_action_count_at_second_status": 14,
+    "suppressed_route_advance_count": 0,
+    "arm_command_count": 1,
+    "arm_ack_count": 0,
+    "checkpoint_terminal_count": 0,
+    "release_command_count": 0,
+    "release_ack_count": 0,
+    "terminal_classification": "infrastructure_abort",
+    "first_broken_edge": "the native arm gate compares the mutable recording-window Config.Name to the frozen runtime profile after AutoStartRecording has renamed Config.Name to autonomy_window_0",
+    "failure_postcondition": "hold remains fail-closed; no checkpoint lifecycle, release, route advance, or gameplay occurred"
+  },
+  "source_correlation": {
+    "recording_mutation": "BotWorldPopulationMgrRecordingWindow.cpp::MaybeStartAutoRecordingWindow assigns Cohort().Config.Name = BuildAutoRecordingWindowName()",
+    "arm_comparison": "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp::ArmChainwielderOwnerCheckpoint passes Cohort().Config.Name into GateInput",
+    "rejection_contract": "BotChainwielderOwnerCheckpoint.h::RejectionReason requires GateInput.ConfigName == blackwing_descent_10n_magmaw_diagnostic",
+    "live_observation": "both stable statuses retained active_profile blackwing_descent_10n_magmaw_diagnostic while experiment was autonomy_window_0; all scenario, pool, route, actor, fixture, seal, source, and generation fields remained exact"
+  },
+  "throughput": {"route_dps": null, "route_hps": null, "actor_30008_dps": null, "actor_30008_hps": null, "actor_30008_pet_share": null, "reason": "arm rejected before checkpoint lifecycle or combat"},
+  "cleanup": {"gate_passed": true, "worldserver_process_absent": true, "capture_process_absent": true, "zero_bots": true, "zero_leases": true},
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_1d669d29b8_generic_controller_route_hold_profile_identity_mismatch_v50_20260830.dvc",
+    "dvc_pointer_sha256_before_commit": "a089528f51755289d335ca960a69e6dddf9d8ede2e4d20ae577de29414f696e3",
+    "dvc_directory_md5": "0890691cd4aeb03a3b1083ac435b297a.dir",
+    "file_count": 32,
+    "size_bytes": 2463236,
+    "remote_reconstruction_verified": true,
+    "remote_reconstruction_manifest_sha256": "6fd16ba95379fd95bf4bd2839aa3d0f5238cebc86c9c72ec3270646d87dbf462",
+    "remote_reconstruction_file_count": 32,
+    "remote_reconstruction_size_bytes": 2463236,
+    "exact_local_payload_evicted": true,
+    "unique_cache_children_evicted": 16,
+    "shared_cache_children_retained": 7,
+    "directory_manifest_cache_object_evicted": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "the generic controller hold prevents route actions and generation advancement before arm",
+      "the controller observes two byte-identical stable identity projections at route generation one and emits one exact arm command",
+      "the native arm fails closed before gameplay because mutable recording-window Config.Name no longer equals the selected runtime profile identity",
+      "all other exposed runtime, route, actor, fixture, seal, source, and roster identities remained exact",
+      "cleanup removed every bot, lease, capture process, and worldserver process"
+    ],
+    "refuted": ["additional status polls, cadence changes, or route-hold changes are the next repair", "the route advances before arm under the V50 production hold", "V50 provides throughput or gameplay evidence"],
+    "unproven": ["one native arm acknowledgement with an immutable runtime-profile identity", "one identity-preserved checkpoint terminal followed by exactly one release and ordinary route advance", "Chainwielder, Drudges, Magmaw, DPS, HPS, or pet-share outcomes"]
+  },
+  "next_work_unit": {
+    "id": "runtime:chainwielder_checkpoint_immutable_profile_identity_v51",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_change": "Separate immutable selected runtime-profile identity from mutable experiment/recording-window naming at the native arm gate. Preserve and compare the exact admitted profile identity; do not remove or weaken profile, scenario, pool, route, actor, fixture, seal, source, or binary checks.",
+    "required_tests": [
+      "a fail-before compiled production-boundary replay starts held with AutoStartRecording enabled, records autonomy_window_0, then reproduces the exact arm rejection",
+      "the pass-after replay preserves selected profile identity through recording-window start and acknowledges exactly one arm",
+      "wrong selected profile, scenario, pool, route, actor, fixture, seal, source, and binary identities each remain typed fail-closed",
+      "two stable held statuses precede arm; route actions and route generation stay suppressed until terminal-gated release",
+      "the existing no-recording path remains green"
+    ],
+    "owned_files": ["src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp", "src/server/game/Bots/BotWorldPopulationMgrRecordingWindow.cpp", "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h", "tests/test_chainwielder_owner_checkpoint.py"],
+    "budget": {"configure": 0, "worldserver_build": 0, "worldserver_start": 0, "database_mutation": 0, "dvc_mutation": 0}
+  }
+}
