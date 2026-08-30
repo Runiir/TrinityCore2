@@ -1,0 +1,131 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:restore_map669_spellbook_and_lifecycle_identity_v109",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "strict_spellbook_and_lifecycle_identity_restored",
+  "source": {
+    "commit": "184f3c5205cc25ea5ebf7660cab6056c0ea5286d",
+    "tree": "36b921569174020a4c45477df4d91ab4a4014e0f",
+    "active_descriptor_sha256": "cdeb065d967c32887b4bc1b5cb521339975bacc02231bf0a019229957fb0b51d",
+    "v108_handoff": "experiments/configs/cata_raid_v108_retained_roster_prestart_failure_handoff_v109.json",
+    "v108_handoff_sha256": "253341dba7a3c5950868755b794f567345352d12b76105f5ce3b6595230ad49e",
+    "tracked_runtime_config_sha256": "1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8"
+  },
+  "scope_lock": {
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "operation": "one repository-owned prepare-only reset followed by one strict verifier and one exact shard readback",
+    "worldserver_or_authserver_started": false,
+    "build_or_gameplay_mutation": false,
+    "dvc_mutation_or_publication": false
+  },
+  "operations": {
+    "prepare_only_invocations": 1,
+    "database_mutations": 1,
+    "strict_verifier_invocations": 1,
+    "shard_readback_invocations": 1,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "retry_count": 0,
+    "dvc_mutation_count": 0
+  },
+  "causal_diagnosis": {
+    "verified": [
+      "V104 and V109 produced the identical strict-verifier SHA-256 9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+      "V104 and V109 produced the identical exact shard-readback SHA-256 869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+      "the canonical prepare-only path restores the required character_spell rows and lifecycle identity deterministically",
+      "V105 started one worldserver after V104 and its compact postrun readback did not include character_spell identity",
+      "V108 was the next strict database verifier and found the intervening spellbook and lifecycle drift before launch"
+    ],
+    "refuted": [
+      "the current canonical provisioner omits the frozen Magmaw roster baseline spell set",
+      "a gameplay, C++, route, verifier, or provisioning implementation change is required to restore V109"
+    ],
+    "unproven": [
+      "the exact native save callback and per-row lifecycle transition that removed the V104 character_spell rows",
+      "spellbook identity remains unchanged after the next worldserver lifecycle"
+    ],
+    "observability_gap": "The compact V104/V105 shard readback was never spellbook-bearing, so it could not certify retained spellbook identity across a later live lifecycle. The strict verifier is the authoritative prestart spellbook gate."
+  },
+  "preparation": {
+    "schema": "bot_live_validation_preparation_v1",
+    "prepared": true,
+    "worldserver_started": false,
+    "validation_scenario_stage_preflight_valid": true,
+    "validation_scenario_stage_current": true,
+    "account_statement_count": 110,
+    "executed_account_statement_count": 110,
+    "character_statement_count": 12635,
+    "executed_character_statement_count": 12635,
+    "generated_account_sql_sha256": "9c032a31ba93a1beb3c9f03840ca00bd1c587f0e825362c3d15f603e9923c001",
+    "generated_character_sql_sha256": "21451a6acf1a52c915b700480b04136bbfb09dc1db960fe760dedee3ef76a20a"
+  },
+  "strict_verification": {
+    "schema": "bot_validation_provisioning_verifier_report_v1",
+    "receipt_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "all_passed": true,
+    "provisioning_all_ready": true,
+    "payload_valid": true,
+    "database_valid": true,
+    "failure_count": 0,
+    "config_hash": "a69a7491bdb56e8d6acc782e81e27fde283eb9f522dcd6d76a63d341b6c815f3",
+    "runtime_rotation_profile_ready_count": 31,
+    "runtime_rotation_profile_expected_count": 31
+  },
+  "baseline_spell_identity": {
+    "canonicalization": "sorted positive bot_known_spell_ids joined with comma and SHA-256 hashed",
+    "all_missing_known_spell_lists_empty": true,
+    "all_missing_talent_spell_lists_empty": true,
+    "actors": {
+      "Mgwtanka": {"count": 60, "sha256": "c73eeb1d70344d9b59a2859a82de47a300688c69b867a3853bff0d4b676cec1b"},
+      "Mgwtankb": {"count": 48, "sha256": "362e6f91e697b7c7fc09e944f22bcaa6475c503d08020737fb90112382e273cb"},
+      "Mgwheala": {"count": 43, "sha256": "d6705d4da2298d89e2cbf832f8c2a84717eae5ed29626400eb019905826be4ed"},
+      "Mgwhealb": {"count": 55, "sha256": "834dcce6f31b1fb671550c2bc756157379358c42f6fa597020a11129ef8946f6"},
+      "Mgwhealc": {"count": 44, "sha256": "6f32750daaa4e1b8e974637faa0ba42a87b0b9c34a7d0cd484db548db3b9470e"},
+      "Mgwdpsa": {"count": 46, "sha256": "59e3274cd10b7cc8b13806942e470325428f17716ee8e0c4e9701661f5482ebc"},
+      "Mgwdpsb": {"count": 46, "sha256": "59e3274cd10b7cc8b13806942e470325428f17716ee8e0c4e9701661f5482ebc"},
+      "Mgwdpsc": {"count": 42, "sha256": "9f8c75473475bd1db40d94fc1552aedb088dd4b525552c7cf9e342b92bcb15fc"},
+      "Mgwdpsd": {"count": 50, "sha256": "a85e2f8cf4da7bff2c100d383bb488376a2d7b7cfd1b9afc56df366acd389c24"},
+      "Mgwdpse": {"count": 58, "sha256": "9695e31a01d6fbd77121cfc1f8a8cb9f774b4cb2649174074dfc0bbfc32bf1cc"}
+    }
+  },
+  "shard_readback": {
+    "schema": "cata_raid_phase1_bwd_provisioning_readback_v5",
+    "receipt_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "passed": true,
+    "selected_name_count": 10,
+    "map_id": 669,
+    "position": [-345.872, -224.344, 193.127, 0.0],
+    "health_seed": 4294967295,
+    "power1_seed": 4294967295,
+    "online_rows": 0,
+    "leased_rows": 0,
+    "at_login_rows": 0,
+    "character_flag_rows": 0,
+    "group_rows": 0,
+    "group_member_rows": 0,
+    "group_instance_rows": 0,
+    "character_instance_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0,
+    "ghost_aura_rows": 0,
+    "all_ten_names_native_loadable": true,
+    "reasons": []
+  },
+  "repository_changes": {
+    "provisioning_or_verifier_change_required": false,
+    "reason": "The canonical provisioner restored the exact generated spell identity and the existing strict verifier detected it. No invariant is missing at the authoritative prestart gate.",
+    "transient_payload": "/tmp/trinity-cata-v109-map669-prep.rp8UKvE3"
+  },
+  "next_work_unit": {
+    "id": "shard:composite_map669_production_boundary_replay_v110",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Run one fresh exact-clean no-retry completion-watchdog map-669 replay for the four admitted production boundaries. Re-run the strict provisioning verifier read-only immediately before launch and do not reprovision or start an authserver.",
+    "required_postcondition": "all four production boundaries are correlated through consumed native observations or the run stops at the first exact missing or terminal edge",
+    "worldserver_start_maximum": 1,
+    "database_mutation_maximum": 0,
+    "retry_maximum": 0
+  }
+}

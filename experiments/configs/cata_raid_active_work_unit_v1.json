@@ -1,80 +1,126 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:restore_map669_spellbook_and_lifecycle_identity_v109",
+  "work_unit": "shard:composite_map669_production_boundary_replay_v110",
   "owner_skill": "raid-shard-architecture",
-  "classification": "prestart_retained_roster_identity_failed",
-  "epoch_id": "v109_restore_map669_spellbook_and_lifecycle_identity_20260831",
-  "observed_at_commit": "ee9f343d8b3892f3fe8dbd27a48125ea3cf68cfa",
-  "immutable_input_commit": "ee9f343d8b3892f3fe8dbd27a48125ea3cf68cfa",
-  "gate_state": "one_prepare_only_roster_restoration_admitted_live_closed",
+  "classification": "fixture_expansion_admitted_spellbook_and_lifecycle_restored",
+  "epoch_id": "v110_composite_map669_production_boundary_replay_20260831",
+  "observed_at_commit": "184f3c5205cc25ea5ebf7660cab6056c0ea5286d",
+  "immutable_input_commit": "184f3c5205cc25ea5ebf7660cab6056c0ea5286d",
+  "gate_state": "fixture_expansion_admitted_roster_verified_gameplay_closed",
   "behavior_change": false,
   "evidence_contract_change": false,
   "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": false,
+  "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
   "next_owner_skill": "raid-shard-architecture",
-  "next_work_unit": "shard:restore_map669_spellbook_and_lifecycle_identity_v109",
-  "next_action": "Run exactly one repository-owned prepare-only reset for the frozen map-669 Magmaw roster, then one strict verifier and one exact shard readback. Do not build or start a server.",
+  "next_work_unit": "shard:composite_map669_production_boundary_replay_v110",
+  "next_action": "Run one fresh exact-clean no-retry completion-watchdog map-669 replay for the four admitted production boundaries. Re-run the strict provisioning verifier read-only immediately before launch; do not reprovision or start an authserver.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v108_retained_roster_prestart_failure_handoff_v109.json",
-    "sha256": "253341dba7a3c5950868755b794f567345352d12b76105f5ce3b6595230ad49e",
-    "source_commit": "ee9f343d8b3892f3fe8dbd27a48125ea3cf68cfa",
-    "source_tree": "302ce31b4bf8abc808aa2057c754b64254060f25"
+    "path": "experiments/configs/cata_raid_v109_spellbook_lifecycle_identity_restored_handoff_v110.json",
+    "sha256": "945c9dc4404ccd259a10740f0e8c5c4490a6e03e66cd00e07cd65d6d2ed360e3",
+    "source_commit": "184f3c5205cc25ea5ebf7660cab6056c0ea5286d",
+    "source_tree": "36b921569174020a4c45477df4d91ab4a4014e0f"
   },
   "completed_predecessor": {
-    "work_unit": "shard:composite_map669_production_boundary_replay_v108",
-    "classification": "prestart_retained_roster_identity_failed",
-    "fixture_commands": "20/20 returned zero",
-    "configure_count": 1,
-    "worldserver_build_count": 1,
+    "work_unit": "shard:restore_map669_spellbook_and_lifecycle_identity_v109",
+    "prepare_only_invocations": 1,
+    "strict_verifier_invocations": 1,
+    "shard_readback_invocations": 1,
+    "strict_verifier_passed": true,
+    "shard_readback_passed": true,
+    "selected_name_count": 10,
+    "map_id": 669,
+    "complete_required_spellbooks": true,
+    "zero_lifecycle_residue": true,
     "worldserver_start_count": 0,
     "authserver_start_count": 0,
-    "database_mutation_count": 0,
-    "dvc_remote_verified": true
+    "database_mutation_count": 1,
+    "dvc_mutation_count": 0
+  },
+  "inherited_admission": {
+    "source_work_unit": "shard:composite_map669_production_boundary_replay_v108",
+    "fixture_commands": "20/20 returned zero",
+    "fixture_expansion_target_count": 4,
+    "binary_sha256": "b19334830150185e90206ba9f75f8bbdfd9e2669e7860d2681469c4e3c6420ea",
+    "canonical_route_and_derived_runtime_config_verified": true,
+    "atomic_bundle_create_and_verify": true,
+    "preservation_basis": "V109 changed only deterministic database provisioning state and experiment handoff/descriptor files; no fixture, runtime, route, gameplay, or native source changed"
   },
   "program_scope": {
-    "operation": "one deterministic prepare-only roster identity restoration",
-    "implementation_allowed": false,
-    "test_mutation_allowed": false,
-    "worldserver_start_admitted": false,
+    "operation": "one observation-only worldserver-backed map-669 composite production-bound fixture-expansion replay",
+    "recurrence_bank_run_admitted": true,
+    "fixture_expansion_replay_admitted": true,
+    "fixture_prerequisite_build_authorized": true,
+    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
-    "database_mutations_allowed": true,
-    "dvc_mutations_allowed": false,
     "gameplay_canary_admitted": false,
-    "acceptance_admitted": false
+    "acceptance_admitted": false,
+    "runtime_implementation_allowed": false,
+    "gameplay_mutations_allowed": false,
+    "database_mutations_allowed": false,
+    "dvc_mutations_allowed": true
   },
   "scope_lock": {
-    "required_repair": [
-      "restore the exact ten frozen blackwing_descent_10n_magmaw_diagnostic actors through the repository-owned prepare-only path",
-      "restore all required character_spell rows and exact health, power, entrance position, native-loadable names, pet identity, gear, talents, glyphs, and consumables",
-      "remove group, instance, corpse, corpse-phase, ghost-aura, rename, flag, online, and lease residue",
-      "verify with one strict provisioning verifier and one exact shard readback"
+    "allowed_change": "At exact clean descriptor HEAD, obtain at most one gate-bearing fast8 build, run one strict read-only provisioning verifier, verify route and atomic bundle identity, then run one no-retry map-669 replay for exactly the four admitted production boundaries. Publish, remotely reconstruct, and exactly evict only that evidence.",
+    "requested_fixtures": [
+      {"fixture_id": "chainwielder_pre_admission_rejection_isolation_v1", "requested_revision": 1, "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state"},
+      {"fixture_id": "same_level_floor_observation_v1", "requested_revision": 4, "causal_signature": "same_level_movement_path_floor_false_negative"},
+      {"fixture_id": "same_level_hazard_path_admission_v1", "requested_revision": 5, "causal_signature": "same_level_encounter_hazard_path_rejection"},
+      {"fixture_id": "same_level_native_path_proof_v1", "requested_revision": 5, "causal_signature": "same_level_native_path_proof_false_negative"}
+    ],
+    "required_order": [
+      "verify clean descriptor HEAD and V109 handoff identity",
+      "obtain at most one exact-current build with 8 compiler jobs and 1 linker job",
+      "run one strict provisioning verifier read-only and require complete spellbook plus lifecycle identity",
+      "verify tracked runtime config, selected route object, and atomic bundle",
+      "start one completion-watchdog worldserver replay with no retry and no authserver",
+      "publish, remotely reconstruct, verify, and exactly evict the bounded evidence"
     ],
     "forbidden": [
-      "gameplay, C++, movement, planner, encounter, class, route, fixture, ledger, or evidence-contract edits",
-      "configure, build, worldserver start, authserver start, live replay, or DVC publication",
-      "gameplay canary, boss clear, DPS, HPS, or acceptance claim"
+      "runtime, fixture, test-expectation, ledger, gameplay, geometry, planner, priority, encounter, class, or DPS edits",
+      "gameplay canary, boss completion, canary-gate, or acceptance claim",
+      "second configure, build, full-bank invocation, strict verifier, worldserver start, or replay retry",
+      "authserver start, database mutation, roster reprovisioning, teleport, or forced gameplay outcome",
+      "fixed 300-second raid timer"
     ]
   },
+  "restored_roster_contract": {
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "selected_name_count": 10,
+    "map_id": 669,
+    "position": [-345.872, -224.344, 193.127, 0.0],
+    "health_seed": 4294967295,
+    "power1_seed": 4294967295,
+    "offline": true,
+    "unleased": true,
+    "at_login_zero": true,
+    "complete_required_spellbooks": true,
+    "zero_group_instance_corpse_ghost_residue": true,
+    "strict_verifier_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0"
+  },
   "execution_budget": {
-    "prepare_only_count_maximum": 1,
-    "strict_verifier_count_maximum": 1,
-    "shard_readback_count_maximum": 1,
-    "configure_count_maximum": 0,
-    "worldserver_build_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
+    "recurrence_suite_invocation_count_maximum": 1,
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "strict_roster_verifier_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
     "authserver_start_count_maximum": 0,
-    "database_mutation_count_maximum": 1,
     "retry_count_maximum": 0,
-    "dvc_publication_required": false
+    "database_mutation_count_maximum": 0,
+    "dvc_checkpoint_count_maximum": 1,
+    "dvc_push_count_maximum": 1,
+    "dvc_remote_reconstruction_count_maximum": 1,
+    "dvc_exact_eviction_count_maximum": 1
   },
   "required_terminal_evidence": {
-    "pass": "All ten actors pass the strict verifier and exact shard readback with complete spellbook identity, exact entrance seeds, and zero lifecycle residue.",
-    "fail": "Stop on the first prepare-only, strict-verifier, or shard-readback failure. Do not retry and do not start a server."
+    "pass": "All four production boundaries are correlated through consumed native observations, bounded evidence is remotely reconstructible, cleanup is complete, and no gameplay claim is made.",
+    "fail": "Stop on the first missing, stale, mismatched, or terminal production edge and retain it without changing runtime or fixtures."
   },
   "remaining_unproven": [
     "the four admitted production boundaries",
-    "corrected controller release ordering under a live worldserver",
+    "spellbook identity remains unchanged after the next worldserver lifecycle",
     "any gameplay canary, Magmaw completion, DPS, HPS, or acceptance result"
   ],
   "validation_clock": {
@@ -82,9 +128,15 @@
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "strict_roster_identity_restored",
-      "first_prepare_or_readback_failure",
-      "scope_violation"
+      "all_four_production_boundaries_captured",
+      "production_boundary_incomplete",
+      "strict_roster_identity_failed",
+      "semantic_or_no_progress_stall",
+      "repeated_decision_terminal",
+      "death_loop_terminal",
+      "identity_or_runtime_config_mismatch",
+      "infrastructure_loss",
+      "explicit_interruption"
     ]
   }
 }
