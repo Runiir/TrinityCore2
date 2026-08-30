@@ -4,6 +4,14 @@ from pathlib import Path
 from tools.raid_program import trace_transport_smoke as smoke
 
 
+def generic_identity():
+    return {
+        "cohort_id": "default", "server_epoch": 123, "attempt_id": 1,
+        "profile_generation": 2, "profile_content_hash": "a" * 64,
+        "active_profile": smoke.PROFILE,
+    }
+
+
 def receipts(*, actor_count: int = 10, followup_gap: bool = False):
     first, second = [], []
     for index in range(actor_count):
@@ -76,7 +84,7 @@ def test_route_disabled_demux_binds_ten_diagnosis_and_trace_actors():
     guids = list(range(30001, 30011))
     status = {
         "action": "botauto_status", "active": True,
-        "cohort_id": "default",
+        **generic_identity(),
         "active_profile": smoke.PROFILE, "pool_tag_filter": smoke.POOL_TAG,
         "bots": 10, "lease_count": 10, "validation_route": {"enabled": False},
         "kills": 0, "deaths": 0, "quests_accepted": 0,
@@ -90,10 +98,19 @@ def test_route_disabled_demux_binds_ten_diagnosis_and_trace_actors():
     for receipt in receipts():
         actors = receipt["identity"]["actors"]
         trace_rows.append({
-            "action": "botauto_trace", "cohort_id": "default",
+            "action": "botauto_trace", **generic_identity(),
             "bots": [{"bot_guid": row["bot_guid"], "gap": row["gap"]} for row in actors],
         })
-    rows = [{"payload": row} for row in (status, diagnosis, *trace_rows)]
+    pressure = {
+        "ok": True, "action": "botauto_trace_pressure",
+        **generic_identity(), "authority": smoke.AUTHORITY,
+        "actor_guid": guids[0], "actor_name": "Bwdtanka",
+        "requested_count": smoke.PRESSURE_COUNT,
+        "emitted_count": smoke.PRESSURE_COUNT,
+        "sequence_before": 3, "sequence_after": 3 + smoke.PRESSURE_COUNT,
+        "failure_reason": None,
+    }
+    rows = [{"payload": row} for row in (pressure, status, diagnosis, *trace_rows)]
     report = smoke.demux_report(rows, gate)
     assert report["gate_passed"] is True
     assert report["actor_binding_counts"] == {
@@ -102,6 +119,25 @@ def test_route_disabled_demux_binds_ten_diagnosis_and_trace_actors():
     status["validation_route"]["enabled"] = True
     assert "route_disabled_status_identity_mismatch" in smoke.demux_report(
         rows, gate
+    )["rejections"]
+
+
+def test_pressure_receipt_is_exactly_once_bounded_and_generic_identity_bound():
+    receipt = {
+        "ok": True, "action": "botauto_trace_pressure",
+        **generic_identity(), "authority": smoke.AUTHORITY,
+        "actor_guid": 30001, "actor_name": "Bwdtanka",
+        "requested_count": smoke.PRESSURE_COUNT,
+        "emitted_count": smoke.PRESSURE_COUNT,
+        "sequence_before": 4, "sequence_after": 4 + smoke.PRESSURE_COUNT,
+        "failure_reason": None,
+    }
+    assert smoke.pressure_receipt_report([receipt])["gate_passed"] is True
+    duplicate = smoke.pressure_receipt_report([receipt, receipt])
+    assert duplicate["rejections"] == ["trace_pressure_receipt_count_mismatch"]
+    drifted = dict(receipt, active_profile="blackwing_descent_10n")
+    assert "trace_pressure_generic_identity_invalid" in smoke.pressure_receipt_report(
+        [drifted]
     )["rejections"]
 
 

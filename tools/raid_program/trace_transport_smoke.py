@@ -16,6 +16,12 @@ PRESSURE_INTERVAL_SECONDS = 2.0
 PRESSURE_WARMUP_SECONDS = 5.0
 AUTHORITY = "trace_transport_test_only_not_gameplay"
 DELTA_COMMAND = "botauto trace all 128 delta"
+PRESSURE_COUNT = 129
+PRESSURE_COMMAND = f"botautotracepressure {PRESSURE_COUNT}"
+GENERIC_IDENTITY_FIELDS = (
+    "cohort_id", "server_epoch", "attempt_id", "profile_generation",
+    "profile_content_hash", "active_profile",
+)
 
 
 def claim_scope() -> dict[str, Any]:
@@ -116,6 +122,72 @@ def _by_guid(rows: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
         and isinstance(row.get("bot_guid"), int)
         and not isinstance(row.get("bot_guid"), bool)
         and row["bot_guid"] > 0
+    }
+
+
+def generic_identity(payload: dict[str, Any]) -> tuple[Any, ...] | None:
+    if not all(field in payload for field in GENERIC_IDENTITY_FIELDS):
+        return None
+    identity = tuple(payload[field] for field in GENERIC_IDENTITY_FIELDS)
+    cohort, epoch, attempt, generation, content_hash, profile = identity
+    if not (
+        isinstance(cohort, str) and cohort
+        and isinstance(epoch, int) and not isinstance(epoch, bool) and epoch > 0
+        and isinstance(attempt, int) and not isinstance(attempt, bool) and attempt > 0
+        and isinstance(generation, int) and not isinstance(generation, bool)
+        and generation > 0
+        and isinstance(content_hash, str) and len(content_hash) == 64
+        and isinstance(profile, str) and profile
+    ):
+        return None
+    return identity
+
+
+def pressure_receipt_report(payloads: list[dict[str, Any]]) -> dict[str, Any]:
+    receipts = [
+        row for row in payloads
+        if isinstance(row, dict) and row.get("action") == "botauto_trace_pressure"
+    ]
+    reasons: list[str] = []
+    if len(receipts) != 1:
+        reasons.append("trace_pressure_receipt_count_mismatch")
+        return {
+            "gate_passed": False, "rejections": reasons,
+            "receipt_count": len(receipts), "receipt": receipts[0] if receipts else None,
+        }
+    receipt = receipts[0]
+    before = receipt.get("sequence_before")
+    after = receipt.get("sequence_after")
+    if receipt.get("ok") is not True:
+        reasons.append("trace_pressure_command_rejected")
+    if receipt.get("authority") != AUTHORITY:
+        reasons.append("trace_pressure_authority_mismatch")
+    if generic_identity(receipt) is None or receipt.get("active_profile") != PROFILE:
+        reasons.append("trace_pressure_generic_identity_invalid")
+    if not (
+        isinstance(receipt.get("actor_guid"), int)
+        and not isinstance(receipt.get("actor_guid"), bool)
+        and receipt["actor_guid"] > 0
+    ):
+        reasons.append("trace_pressure_actor_invalid")
+    if (
+        receipt.get("requested_count") != PRESSURE_COUNT
+        or receipt.get("emitted_count") != PRESSURE_COUNT
+    ):
+        reasons.append("trace_pressure_count_mismatch")
+    if not (
+        isinstance(before, int) and not isinstance(before, bool) and before >= 0
+        and isinstance(after, int) and not isinstance(after, bool)
+        and after == before + PRESSURE_COUNT
+    ):
+        reasons.append("trace_pressure_sequence_receipt_invalid")
+    if receipt.get("failure_reason") is not None:
+        reasons.append("trace_pressure_failure_reason_present")
+    return {
+        "gate_passed": not reasons,
+        "rejections": reasons,
+        "receipt_count": len(receipts),
+        "receipt": receipt,
     }
 
 
@@ -220,6 +292,8 @@ def demux_report(rows: list[dict[str, Any]], gate: dict[str, Any]) -> dict[str, 
     diagnoses = [row for row in payloads if row.get("action") == "botauto_diagnose"]
     traces = [row for row in payloads if row.get("action") == "botauto_trace"]
     reasons = []
+    pressure = pressure_receipt_report(payloads)
+    reasons.extend(pressure["rejections"])
     non_gameplay = ("kills", "deaths", "quests_accepted", "quests_completed", "raid_boss_kills")
     for status in statuses:
         route = status.get("validation_route") or {}
@@ -244,6 +318,12 @@ def demux_report(rows: list[dict[str, Any]], gate: dict[str, Any]) -> dict[str, 
         canonical_sets.append(guids)
     if not statuses:
         reasons.append("active_status_missing")
+    status_identities = [generic_identity(status) for status in statuses]
+    if not status_identities or any(identity is None for identity in status_identities):
+        reasons.append("generic_status_identity_invalid")
+    elif len(set(status_identities)) != 1:
+        reasons.append("generic_status_identity_changed")
+    canonical_generic_identity = status_identities[0] if status_identities else None
     if not canonical_sets or any(len(guids) != ACTOR_COUNT for guids in canonical_sets):
         reasons.append("diagnosis_actor_identity_mismatch")
     canonical = canonical_sets[0] if canonical_sets else set()
@@ -253,7 +333,15 @@ def demux_report(rows: list[dict[str, Any]], gate: dict[str, Any]) -> dict[str, 
         actor_total += len(actors)
         if set(actors) != canonical or trace.get("cohort_id") != "default":
             reasons.append("trace_actor_envelope_identity_mismatch")
+        if generic_identity(trace) != canonical_generic_identity:
+            reasons.append("trace_generic_identity_mismatch")
         actor_rejected += sum(row.get("gap") is True for row in actors.values())
+    pressure_receipt = pressure.get("receipt")
+    if isinstance(pressure_receipt, dict):
+        if generic_identity(pressure_receipt) != canonical_generic_identity:
+            reasons.append("trace_pressure_identity_mismatch")
+        if pressure_receipt.get("actor_guid") not in canonical:
+            reasons.append("trace_pressure_actor_not_in_canonical_cohort")
     if actor_rejected != 1:
         reasons.append("actor_local_rejection_count_mismatch")
     if gate.get("gate_passed") is not True:
@@ -266,6 +354,7 @@ def demux_report(rows: list[dict[str, Any]], gate: dict[str, Any]) -> dict[str, 
             "rejected": actor_rejected, "unchecked": 0,
         },
         "expected_gap_actor_guid": gate.get("gap_actor_guid"),
+        "pressure_receipt": pressure,
         "native_gap_remains_rejected": actor_rejected == 1,
         "peer_and_followup_rows_bound": not reasons,
     }

@@ -34,6 +34,7 @@ void AddSC_go_commandscript();
 void AddSC_gobject_commandscript();
 void AddSC_group_commandscript();
 void AddSC_healerbot_commandscript();
+void AddSC_trace_transport_test_commandscript();
 void AddSC_guild_commandscript();
 void AddSC_honor_commandscript();
 void AddSC_instance_commandscript();
@@ -80,6 +81,7 @@ void AddCommandsScripts()
     AddSC_gobject_commandscript();
     AddSC_group_commandscript();
     AddSC_healerbot_commandscript();
+    AddSC_trace_transport_test_commandscript();
     AddSC_guild_commandscript();
     AddSC_honor_commandscript();
     AddSC_instance_commandscript();

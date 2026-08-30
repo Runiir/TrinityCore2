@@ -1,0 +1,126 @@
+{
+  "schema": "cata_raid_trace_transport_test_pressure_and_generic_identity_claim_ledger_v1",
+  "work_unit_id": "runtime:trace_transport_test_pressure_and_generic_identity",
+  "source_head": "03c7c6cd177444a99e4bcdc544509c9589b6c6b5",
+  "immutable_handoff": {
+    "path": "experiments/configs/cata_raid_trace_transport_10_one_start_live_smoke_handoff_v1.json",
+    "sha256": "af4b21453eee012e8d96761daef4814e20cab983074bd60a5f585612f6146764"
+  },
+  "scope_lock": {
+    "candidate_first_broken_edge": "the transport-only production fixture cannot create actor-local ring pressure and its trace envelopes omit the generic runtime identity carried by status",
+    "first_observed_downstream_state_mutation": "TelemetryScheduler retained the ten-second interval because every actor delta stayed below sixteen entries",
+    "failure_postcondition": "no explicit actor-local gap followed by a pressure-scheduled gap-free delta was observed, and transport rows could not bind to canonical generic runtime identity",
+    "single_hypothesis": "a strictly profile-gated inert append through the real decision-trace writer plus status-equivalent generic envelope identity can exercise and bind the transport lane without gameplay authority",
+    "correlation_keys": [
+      "cohort_id",
+      "server_epoch",
+      "attempt_id",
+      "profile_generation",
+      "profile_content_hash",
+      "active_profile",
+      "actor_guid",
+      "trace_sequence"
+    ],
+    "owned_behavior": "generic trace-envelope identity, one bounded trace_transport_10-only pressure command, and the transport-only controller transition that issues it once before the first delta poll",
+    "expected_observable_change": "one actor receives enough inert records to overflow the existing 128-entry ring, the first ordinary delta reports the real gap, and the next pressure-scheduled delta for that actor is gap-free and cursor-contiguous",
+    "production_boundary": "native command transport to the existing decision-trace append path and ring exporter, then the production TelemetryScheduler and transport-only demultiplexer",
+    "expected_fail_before": "no pressure command exists, generic trace identity is absent, and natural pressure never reaches the overflow boundary",
+    "expected_pass_after": "the gated command emits an explicit receipt, trace identity matches status, and controller tests require the normal gap then next gap-free transition without clearing cursors",
+    "allowed_paths": [
+      "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+      "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp",
+      "src/server/game/Bots/BotWorldTraceTransportTest.h",
+      "src/server/game/Bots/BotWorldPopulationMgrTraceTransportTest.cpp",
+      "src/server/scripts/CMakeLists.txt",
+      "src/server/scripts/Commands/cs_trace_transport_test.cpp",
+      "src/server/scripts/Commands/cs_script_loader.cpp",
+      "tools/raid_program/trace_transport_smoke.py",
+      "tools/raid_program/capture_phase1_raid_foundation.py",
+      "tests/test_trace_transport_smoke.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      "tests/test_bot_world_population_mgr_trace_transport_test.py",
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_trace_transport_test_pressure_and_generic_identity_claim_ledger_v1.json",
+      "experiments/configs/cata_raid_trace_transport_test_pressure_and_generic_identity_handoff_v1.json"
+    ],
+    "excluded_lanes": [
+      "gameplay behavior",
+      "Magmaw and encounter scripts",
+      "class behavior",
+      "trace ring capacity",
+      "cursor recovery semantics",
+      "raid admission and general raid evidence demultiplexing",
+      "recurrence and fixture promotion",
+      "database, gear, roster, and provisioning",
+      "build, live server, and DVC"
+    ],
+    "focused_validation": "pixi run pytest -q tests/test_bot_world_population_mgr_trace_transport_test.py tests/test_trace_transport_smoke.py tests/test_phase1_raid_foundation_capture.py -k 'trace_transport or generic_trace_identity'",
+    "terminal_conditions": {
+      "success": "focused source/compiled/controller tests prove exact gate rejection and acceptance, real ring append, generic identity binding, and normal gap-to-gap-free scheduling",
+      "failed_verification": "the focused test fails after at most one correction cycle",
+      "out_of_scope_handoff": "the real writer requires gameplay, world, DB, raid-admission, ring-capacity, or cursor-semantic mutation"
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      {
+        "claim": "the immutable handoff hash matches the assigned SHA256",
+        "observation": "sha256sum returned af4b21453eee012e8d96761daef4814e20cab983074bd60a5f585612f6146764"
+      },
+      {
+        "claim": "nine polls across ninety actor rows were gap-free and cursor-contiguous",
+        "observation": "the immutable handoff actor_cursor_receipt marks every actor all_gap_false and all_contiguous"
+      },
+      {
+        "claim": "natural pressure was three through six entries per actor, below the watermark of sixteen",
+        "observation": "the immutable handoff transport_gate records maximum_observed_pressure_entries=6 and pressure_watermark_entries=16"
+      },
+      {
+        "claim": "status carried nonzero generic profile identity while trace receipts exposed zero or null raid runtime identity",
+        "observation": "the immutable handoff demultiplexing.missing_canonical_identity_boundary records both projections"
+      },
+      {
+        "claim": "general raid evidence demultiplexing rejected the non-admitted trace rows",
+        "observation": "the immutable handoff records rejected_no_active_raid_rows_and_canonical_runtime_missing"
+      },
+      {
+        "claim": "the real trace writer is safe for the inert transport append under the exact gate",
+        "observation": "DecisionTrace consumers are diagnosis/export only; the focused compiled/source test proves the seam calls RecordDecisionTrace and contains no gameplay or persistence writer"
+      },
+      {
+        "claim": "generic trace identity binds to status identity without weakening raid demultiplexing",
+        "observation": "focused controller tests passed the generic join while the general raid evidence demux remained unchanged"
+      },
+      {
+        "claim": "the controller sends one bounded pressure command before its first production delta poll",
+        "observation": "focused tests passed; the native gate rejects repeated same-attempt pressure and counts outside 129..192"
+      }
+    ],
+    "refuted": [
+      {
+        "claim": "natural route-disabled decision churn is enough to exercise recovery",
+        "observation": "maximum pressure was six and explicit_actor_local_gap_count was zero"
+      },
+      {
+        "claim": "raid_runtime is a valid generic transport identity when no raid is admitted",
+        "observation": "raid_runtime identity was zero or null while status generic identity was nonzero"
+      }
+    ],
+    "unproven": [
+      {
+        "claim": "one bounded pressure receipt triggers the required transition in a live worldserver",
+        "needed_observation": "one clean build-bound completion-watchdog transport-only start"
+      }
+    ]
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_bot_world_population_mgr_trace_transport_test.py tests/test_trace_transport_smoke.py tests/test_phase1_raid_foundation_capture.py::test_production_trace_transport_receipt_binds_fragmented_response_and_next_pressure_send tests/test_phase1_raid_foundation_capture.py::test_trace_transport_receipt_rejects_ambiguous_outstanding_commands tests/test_phase1_raid_foundation_capture.py::test_trace_scheduler_shortens_after_ring_pressure_without_accepting_gaps",
+    "result_after_one_correction": "12 passed in 0.45s",
+    "direct_adapter_postcheck": "4 passed in 0.14s",
+    "build_run": false,
+    "live_run": false,
+    "dvc_run": false
+  },
+  "pre_existing_dirty_files": []
+}

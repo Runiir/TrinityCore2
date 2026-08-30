@@ -1742,6 +1742,11 @@ def test_production_trace_transport_receipt_binds_fragmented_response_and_next_p
         "ok": True,
         "action": "botauto_trace",
         "cohort_id": "raid",
+        "server_epoch": 123,
+        "attempt_id": 4,
+        "profile_generation": 9,
+        "profile_content_hash": "a" * 64,
+        "active_profile": "blackwing_descent_10n",
         "raid_runtime": {
             "server_epoch": 123,
             "attempt_id": 4,
@@ -1752,9 +1757,15 @@ def test_production_trace_transport_receipt_binds_fragmented_response_and_next_p
         "bots": [{
             "bot_guid": 30008,
             "cursor_before": 46,
-            "cursor_after": 174,
+            "cursor_after": 302,
             "gap": True,
-            "entries": [{"sequence": sequence} for sequence in range(47, 175)],
+            "entries": [{"sequence": sequence} for sequence in range(175, 303)],
+            "discontinuity": {
+                "missing_sequence_start": 47,
+                "missing_sequence_end": 174,
+                "oldest_retained_sequence": 175,
+                "newest_retained_sequence": 302,
+            },
         }],
     }
     raw = b"TC> " + json.dumps(trace, separators=(",", ":")).encode() + b"\n"
@@ -1797,14 +1808,22 @@ def test_production_trace_transport_receipt_binds_fragmented_response_and_next_p
     ] == 2.0
     assert receipt["identity"]["cohort_id"] == "raid"
     assert receipt["identity"]["server_epoch"] == 123
+    assert receipt["identity"]["attempt_id"] == 4
+    assert receipt["identity"]["profile_generation"] == 9
+    assert receipt["identity"]["profile_content_hash"] == "a" * 64
+    assert receipt["identity"]["active_profile"] == "blackwing_descent_10n"
     assert receipt["identity"]["actors"] == [{
         "bot_guid": 30008,
         "cursor_before": 46,
-        "cursor_after": 174,
+        "cursor_after": 302,
         "gap": True,
         "entry_count": 128,
-        "first_sequence": 47,
-        "last_sequence": 174,
+        "first_sequence": 175,
+        "last_sequence": 302,
+        "missing_sequence_start": 47,
+        "missing_sequence_end": 174,
+        "oldest_retained_sequence": 175,
+        "newest_retained_sequence": 302,
     }]
 
 

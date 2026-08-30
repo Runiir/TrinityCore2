@@ -31,6 +31,7 @@
 #include <mutex>
 #include <optional>
 #include <set>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -78,6 +79,7 @@ public:
     std::string RequestNativeRaidReadyCheckForCohort(std::string const& cohortId);
     std::string GetBotDiagnosisJsonForCohort(std::string const& cohortId, std::string const& selector);
     std::string GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit, bool delta = false) const;
+    std::string ApplyTraceTransportTestPressureForCohort(std::string const& cohortId, uint32 requestedCount);
     std::string GetCombatLogJsonForCohort(std::string const& cohortId) const;
     std::string StartCombatCalibrationForCohort(std::string const& cohortId, std::string const& mode = "single_target_300", std::string const& targetSpec = "", uint32 seed = 1);
     std::string StopCombatCalibrationForCohort(std::string const& cohortId);
@@ -689,6 +691,8 @@ private:
     void FlushDecisionFingerprintMemory(WorldBotState& state) const;
     void FlushPendingDecisionFingerprintMemory();
     void RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode, bool coalesceRepeatable = false);
+    std::string ApplyTraceTransportTestPressure(uint32 requestedCount);
+    void AppendGenericRuntimeIdentityJson(std::ostringstream& json) const;
     void ResetTraceStreams();
     BotDiagnosis BuildBotDiagnosis(WorldBotState const& state, Player const* bot) const;
     std::string BuildBotDiagnosisObjectJson(WorldBotState const& state, Player const* bot) const;

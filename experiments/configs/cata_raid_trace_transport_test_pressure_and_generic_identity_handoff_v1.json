@@ -1,0 +1,158 @@
+{
+  "schema": "cata_raid_trace_transport_test_pressure_and_generic_identity_handoff_v1",
+  "work_unit_id": "runtime:trace_transport_test_pressure_and_generic_identity",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "implemented_focused_green_build_and_live_unproven",
+  "git_commit": "self",
+  "input_identity": {
+    "clean_head": "03c7c6cd177444a99e4bcdc544509c9589b6c6b5",
+    "handoff_path": "experiments/configs/cata_raid_trace_transport_10_one_start_live_smoke_handoff_v1.json",
+    "handoff_sha256": "af4b21453eee012e8d96761daef4814e20cab983074bd60a5f585612f6146764"
+  },
+  "exact_before": {
+    "natural_pressure_entries_per_actor_per_poll": "3..6",
+    "pressure_watermark": 16,
+    "polls": 9,
+    "actor_rows": 90,
+    "explicit_gaps": 0,
+    "trace_generic_identity": "zero_or_null_raid_runtime_without_raid_admission",
+    "general_raid_demux": "rejected"
+  },
+  "exact_after": {
+    "command": "botautotracepressure 129",
+    "count_bounds": [129, 192],
+    "actor": "first actor in exact ten-actor trace_transport_10 cohort",
+    "one_shot_latch": "cohort attempt_id",
+    "real_writer": "BotWorldPopulationMgr::RecordDecisionTrace",
+    "situation": "trace_transport_test_pressure",
+    "action": "append_inert_trace_record",
+    "authority": "trace_transport_test_only_not_gameplay",
+    "receipt_fields": [
+      "actor_guid",
+      "actor_name",
+      "requested_count",
+      "emitted_count",
+      "sequence_before",
+      "sequence_after",
+      "authority"
+    ],
+    "generic_identity_fields": [
+      "cohort_id",
+      "server_epoch",
+      "attempt_id",
+      "profile_generation",
+      "profile_content_hash",
+      "active_profile"
+    ],
+    "raid_runtime_separate": true,
+    "general_raid_demux_changed": false,
+    "ring_capacity_changed": false,
+    "cursor_semantics_changed": false,
+    "controller_pressure_count": 1,
+    "controller_pressure_before_first_delta": true,
+    "required_transition": "ordinary_gap_then_next_pressure_scheduled_gap_false"
+  },
+  "mutation_inventory": {
+    "allowed": [
+      "one actor DecisionTrace and TraceSequence",
+      "diagnostic trace association",
+      "suppressed-repeatable-event telemetry transfer",
+      "attempt-scoped pressure latch"
+    ],
+    "absent": [
+      "movement",
+      "combat",
+      "world state",
+      "database",
+      "gear",
+      "roster",
+      "fixture",
+      "raid admission",
+      "gameplay"
+    ]
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_bot_world_population_mgr_trace_transport_test.py tests/test_trace_transport_smoke.py tests/test_phase1_raid_foundation_capture.py::test_production_trace_transport_receipt_binds_fragmented_response_and_next_pressure_send tests/test_phase1_raid_foundation_capture.py::test_trace_transport_receipt_rejects_ambiguous_outstanding_commands tests/test_phase1_raid_foundation_capture.py::test_trace_scheduler_shortens_after_ring_pressure_without_accepting_gaps",
+    "initial_result": "11 passed, 1 failed in 0.57s",
+    "initial_failure": "new nested discontinuity fields were retained but absent from the expected receipt",
+    "one_correction": "use exact missing 47..174 and retained 175..302 values and assert all discontinuity fields",
+    "result_after_correction": "12 passed in 0.45s",
+    "direct_adapter_postcheck": "4 passed in 0.14s",
+    "build": "excluded_not_run",
+    "live_server": "excluded_not_run",
+    "dvc": "excluded_not_run"
+  },
+  "complexity_and_lines": {
+    "ccn_measurement": "lizard unavailable; branch-point estimates reported",
+    "branch_point_estimates": {
+      "BotWorldTraceTransportTest::RejectionReason": 9,
+      "ApplyTraceTransportTestPressureForCohort": 2,
+      "ApplyTraceTransportTestPressure_excluding_receipt_lambda": 3,
+      "GetBotTraceJson_before_after_existing_estimate": "34_to_34"
+    },
+    "cpp_line_counts": {
+      "src/server/game/Bots/BotWorldPopulationMgr.h": 783,
+      "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h": 581,
+      "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp": 783,
+      "src/server/game/Bots/BotWorldPopulationMgrTraceTransportTest.cpp": 92,
+      "src/server/game/Bots/BotWorldTraceTransportTest.h": 61,
+      "src/server/scripts/Commands/cs_script_loader.cpp": 108,
+      "src/server/scripts/Commands/cs_trace_transport_test.cpp": 50
+    },
+    "all_touched_cpp_below_1000_lines": true,
+    "oversized_cs_healerbot_cpp_touched": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "immutable handoff hash matches",
+      "the exact gate calls the real trace writer without a gameplay or persistence writer",
+      "inactive, wrong-profile, wrong-cohort, route/gameplay-enabled, repeated-attempt, and out-of-bounds requests reject",
+      "trace envelopes and pressure receipts carry status-equivalent generic identity",
+      "transport ledger reads generic identity and nested discontinuity bounds",
+      "transport demux requires generic identity while general raid demux is unchanged",
+      "controller pressure is once and before the first production delta"
+    ],
+    "refuted": [
+      "natural route-disabled churn reaches the watermark",
+      "raid_runtime is generic identity without raid admission",
+      "pressure requires gameplay or cursor mutation"
+    ],
+    "unproven": [
+      "clean queued build identity",
+      "live pressure receipt and actor-local gap",
+      "live next scheduled same-actor gap=false transition",
+      "all gameplay, route, fixture, boss-fidelity, canary, and acceptance claims"
+    ]
+  },
+  "next_owner": {
+    "owner": "raid-shard-architecture",
+    "work_unit": "shard:queued_build_and_trace_transport_pressure_one_start",
+    "plan": [
+      "queue one clean native build containing this commit",
+      "run exactly one completion-watchdog trace_transport_10 start",
+      "require one successful 129-row pressure receipt with exact generic identity",
+      "require exactly one actor-local gap in the first ordinary delta",
+      "require next scheduled same-actor cursor continuity with gap=false"
+    ],
+    "prohibited": "no second pressure, cursor clear, raid demux relaxation, gameplay claim, fixture promotion, boss fidelity, or acceptance"
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgr.h",
+    "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+    "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrTraceTransportTest.cpp",
+    "src/server/game/Bots/BotWorldTraceTransportTest.h",
+    "src/server/scripts/CMakeLists.txt",
+    "src/server/scripts/Commands/cs_script_loader.cpp",
+    "src/server/scripts/Commands/cs_trace_transport_test.cpp",
+    "tools/raid_program/capture_phase1_raid_foundation.py",
+    "tools/raid_program/trace_transport_smoke.py",
+    "tests/test_bot_world_population_mgr_trace_transport_test.py",
+    "tests/test_phase1_raid_foundation_capture.py",
+    "tests/test_trace_transport_smoke.py",
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_trace_transport_test_pressure_and_generic_identity_claim_ledger_v1.json",
+    "experiments/configs/cata_raid_trace_transport_test_pressure_and_generic_identity_handoff_v1.json"
+  ],
+  "untouched_dirty_files": []
+}

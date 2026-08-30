@@ -466,6 +466,10 @@
         bool RuntimeProfilesLoaded = false;
         bool RuntimeProfileDirty = false;
         bool RuntimeProfileSelectionPending = false;
+        // One attempt-scoped diagnostic append is permitted only by the exact
+        // route-disabled trace_transport_10 profile. It never grants gameplay
+        // or raid admission authority.
+        uint64 TraceTransportTestPressureAttemptId = 0;
         BotExperienceLearningConfig LearningConfig;
         BotPolicyModelConfig PolicyModelConfig;
         bool CalibrationActive = false;

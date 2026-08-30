@@ -100,17 +100,13 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
         ? Cohort().ValidationAttemptFailureReason : std::string();
     BotWorldStatus status = GetStatus();
     std::ostringstream json;
-    json << "{\"ok\":true,\"action\":\"botauto_status\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
-         << "\",\"server_epoch\":" << _serverEpoch
-         << ",\"attempt_id\":" << Cohort().AttemptId
-         << ",\"profile_generation\":" << Cohort().PinnedProfileGeneration
-         << ",\"profile_content_hash\":\"" << JsonEscape(Cohort().PinnedProfileContentHash)
-         << "\",\"lease_count\":" << Cohort().RosterLeases.size()
+    json << "{\"ok\":true,\"action\":\"botauto_status\"";
+    AppendGenericRuntimeIdentityJson(json);
+    json << ",\"lease_count\":" << Cohort().RosterLeases.size()
          << ",\"experiment\":\"" << JsonEscape(status.Name)
          << "\",\"run\":" << status.RunId
          << ",\"mode\":\"" << RuntimeModeName(status.Mode) << "\""
          << ",\"non_certifying_assistance\":" << (Cohort().NonCertifyingAssistance ? "true" : "false")
-         << ",\"active_profile\":" << (Cohort().SelectedProfileName.empty() ? "null" : ("\"" + JsonEscape(Cohort().SelectedProfileName) + "\""))
          << ",\"loaded_profile_count\":" << Cohort().RuntimeProfiles.size()
          << ",\"profile_manifest_path\":\"" << JsonEscape(Cohort().ProfileManifestPath) << "\""
          << ",\"profile_manifest_load_error\":\"" << JsonEscape(Cohort().ProfileManifestLoadError) << "\""
@@ -279,8 +275,9 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
     if (selector.empty() || selector == "all")
     {
         std::ostringstream json;
-        json << "{\"ok\":true,\"action\":\"botauto_trace\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
-             << "\",\"trace_schema_version\":1"
+        json << "{\"ok\":true,\"action\":\"botauto_trace\"";
+        AppendGenericRuntimeIdentityJson(json);
+        json << ",\"trace_schema_version\":1"
              << ",\"selector\":\"" << JsonEscape(selector.empty() ? "all" : selector) << "\""
              << ",\"limit\":" << normalizedLimit
              << ",\"validation_route\":{\"manifest_index\":" << Party().ValidationRouteManifestIndex
@@ -444,12 +441,19 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
     }
 
     if (!selected)
-        return "{\"ok\":false,\"action\":\"botauto_trace\",\"trace_schema_version\":1,\"failure_reason\":\"no_matching_bot\"}";
+    {
+        std::ostringstream json;
+        json << "{\"ok\":false,\"action\":\"botauto_trace\"";
+        AppendGenericRuntimeIdentityJson(json);
+        json << ",\"trace_schema_version\":1,\"failure_reason\":\"no_matching_bot\"}";
+        return json.str();
+    }
 
     Player* bot = GetLoadedBot(*selected);
     std::ostringstream json;
-    json << "{\"ok\":true,\"action\":\"botauto_trace\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
-             << "\",\"trace_schema_version\":1"
+    json << "{\"ok\":true,\"action\":\"botauto_trace\"";
+    AppendGenericRuntimeIdentityJson(json);
+    json << ",\"trace_schema_version\":1"
          << ",\"bot_guid\":" << selected->Guid.GetCounter()
          << ",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "") << "\""
          << ",\"limit\":" << normalizedLimit

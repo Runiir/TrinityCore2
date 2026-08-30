@@ -803,15 +803,14 @@ class TelemetryTransportLedger:
         runtime = runtime if isinstance(runtime, dict) else {}
         identity = {
             "cohort_id": row.get("cohort_id"),
-            "server_epoch": runtime.get("server_epoch"),
-            "attempt_id": runtime.get("attempt_id"),
+            "server_epoch": row.get("server_epoch"),
+            "attempt_id": row.get("attempt_id"),
             "instance_id": runtime.get("instance_id"),
-            "runtime_profile": (
-                runtime.get("strategy_id") or row.get("active_profile")
-            ),
+            "runtime_profile": row.get("active_profile"),
+            "active_profile": row.get("active_profile"),
             "assignment_generation": runtime.get("assignment_generation"),
-            "profile_generation": runtime.get("profile_generation"),
-            "profile_content_hash": runtime.get("profile_content_hash"),
+            "profile_generation": row.get("profile_generation"),
+            "profile_content_hash": row.get("profile_content_hash"),
         }
         actors = []
         for bot_row in row.get("bots", []):
@@ -823,6 +822,8 @@ class TelemetryTransportLedger:
                 entry.get("sequence") for entry in entries
                 if isinstance(entry, dict) and isinstance(entry.get("sequence"), int)
             ]
+            discontinuity = bot_row.get("discontinuity")
+            discontinuity = discontinuity if isinstance(discontinuity, dict) else {}
             actors.append({
                 "bot_guid": bot_row.get("bot_guid"),
                 "cursor_before": bot_row.get("cursor_before"),
@@ -832,13 +833,13 @@ class TelemetryTransportLedger:
                 "first_sequence": sequences[0] if sequences else None,
                 "last_sequence": sequences[-1] if sequences else None,
                 **({
-                    field: bot_row.get(field)
+                    field: discontinuity.get(field)
                     for field in (
                         "missing_sequence_start", "missing_sequence_end",
                         "oldest_retained_sequence", "newest_retained_sequence",
                     )
                 } if any(
-                    field in bot_row for field in (
+                    field in discontinuity for field in (
                         "missing_sequence_start", "missing_sequence_end",
                         "oldest_retained_sequence", "newest_retained_sequence",
                     )
@@ -6161,8 +6162,10 @@ def main() -> int:
     telemetry_scheduler: TelemetryScheduler | None = None
     telemetry_transport_ledger = TelemetryTransportLedger()
     telemetry_command_counts = {
-        "status": 0, "diagnose": 0, "trace": 0, "combat_log": 0,
+        "status": 0, "diagnose": 0, "trace": 0, "trace_pressure": 0,
+        "combat_log": 0,
     }
+    trace_transport_pressure_gate = trace_transport_smoke.pressure_receipt_report([])
     operator_interrupt = False
     shutdown_error: str | None = None
     stop_commands_sent = False
@@ -6240,11 +6243,31 @@ def main() -> int:
                 process.stdin.write((f"botauto start {profile_name}\n").encode())
             process.stdin.flush()
             time.sleep(1.0)
+            log_cursor = JsonLogCursor(log_path)
             if args.trace_transport_smoke:
                 # Produce one bounded native decision-history backlog before
-                # the unchanged production scheduler begins polling. The
-                # transport gate, not this warmup duration, decides success.
+                # the unchanged production scheduler begins polling, then use
+                # the attempt-latched telemetry-only writer exactly once. The
+                # first normal delta must expose the real ring discontinuity.
                 time.sleep(trace_transport_smoke.PRESSURE_WARMUP_SECONDS)
+                process.stdin.write(
+                    (trace_transport_smoke.PRESSURE_COMMAND + "\n").encode()
+                )
+                process.stdin.flush()
+                telemetry_command_counts["trace_pressure"] += 1
+                pressure_observations = collect_log_observations(
+                    log_cursor, duration_seconds=1.0,
+                )
+                trace_transport_pressure_gate = (
+                    trace_transport_smoke.pressure_receipt_report(
+                        [observation.row for observation in pressure_observations]
+                    )
+                )
+                if trace_transport_pressure_gate["gate_passed"] is not True:
+                    raise RuntimeError(
+                        "trace transport pressure rejected: "
+                        + ",".join(trace_transport_pressure_gate["rejections"])
+                    )
             # Canonical raid validation is terminal-gate driven. Raid and boss
             # duration alone must never end an otherwise healthy run. A
             # positive limit remains available only for explicitly bounded
@@ -6255,7 +6278,6 @@ def main() -> int:
                 diagnose_interval_sec=args.diagnose_interval_sec,
                 trace_interval_sec=args.trace_interval_sec,
             )
-            log_cursor = JsonLogCursor(log_path)
             monitor_statuses: list[dict[str, Any]] = []
             diagnosis_count = 0
             trace_count = 0
@@ -7030,6 +7052,8 @@ def main() -> int:
             ),
             "transport_gate": trace_transport_gate,
             "controller_demux_gate": trace_transport_demux,
+            "pressure_receipt_gate": trace_transport_pressure_gate,
+            "pressure_command_count": telemetry_command_counts["trace_pressure"],
             "one_start_owned_by_capture": True,
         },
         "terminal_evidence_incomplete": terminal_evidence_incomplete,

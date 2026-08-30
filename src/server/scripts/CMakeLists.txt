@@ -204,7 +204,8 @@ set(WORLDSERVER_DYNAMIC_SCRIPT_MODULES_DEPENDENCIES ${DYNAMIC_SCRIPT_MODULE_PROJ
 ConfigureScriptLoader("static" SCRIPT_MODULE_PRIVATE_SCRIPTLOADER OFF ${STATIC_SCRIPT_MODULES})
 
 list(APPEND PRIVATE_SOURCES
-  ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_healerbot.cpp)
+  ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_healerbot.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_trace_transport_test.cpp)
 
 add_library(scripts STATIC
   ScriptLoader.h
