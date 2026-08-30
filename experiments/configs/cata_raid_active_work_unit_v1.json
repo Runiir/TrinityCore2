@@ -3,7 +3,7 @@
   "epoch_id": "generic_controller_route_hold_bootstrap_identity_ordering_v14_20260830",
   "work_unit": "runtime:generic_controller_route_hold_bootstrap_identity_ordering_v14",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "live_verification_failed_bounded_repair_required",
+  "classification": "failed",
   "gate_state": "v13_failed_closed_before_start_held_ack_on_native_bootstrap_route_identity_drift",
   "observed_at_commit": "e2f7b4cb2c5f9f2809037922a824827360a4da0e",
   "immutable_input_commit": "e2f7b4cb2c5f9f2809037922a824827360a4da0e",
