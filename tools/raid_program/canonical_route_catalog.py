@@ -17,6 +17,7 @@ from tools.raid_program.canonical_route_staging import (
     CanonicalRouteStagingError,
     atomic_write_new,
     verify_staging_receipt,
+    verify_staging_receipt_snapshot,
 )
 
 
@@ -30,7 +31,8 @@ CATALOG_RECEIPT_FIELDS = {
     "source_commit",
     "dvc_stage_name",
     "output_relative_member",
-    "staging_receipt_path",
+    "staging_receipt_locator",
+    "staging_receipt_snapshot_base64",
     "staging_receipt_sha256",
     "source_catalog_path",
     "source_catalog_sha256",
@@ -76,12 +78,35 @@ def _outside_worktree(path: Path, worktree: Path, reason: str) -> Path:
     return resolved
 
 
+def _diagnostic_locator(value: object, worktree: Path) -> str:
+    if not isinstance(value, str) or not value:
+        raise CanonicalRouteCatalogError("staging_receipt_locator_invalid")
+    path = Path(value)
+    lexical = Path(os.path.abspath(path))
+    if path != lexical:
+        raise CanonicalRouteCatalogError("staging_receipt_locator_invalid")
+    try:
+        lexical.relative_to(worktree)
+    except ValueError:
+        return str(lexical)
+    raise CanonicalRouteCatalogError("staging_receipt_locator_invalid")
+
+
 def _verified_staging(
     *, worktree: Path, staging_receipt_path: Path,
     expected_staging_receipt_sha256: str, dvc_stage_name: str,
     output_relative_member: str,
+    staging_receipt_snapshot_base64: str | None = None,
 ) -> dict[str, Any]:
     try:
+        if staging_receipt_snapshot_base64 is not None:
+            return verify_staging_receipt_snapshot(
+                worktree=worktree,
+                receipt_snapshot_base64=staging_receipt_snapshot_base64,
+                expected_receipt_sha256=expected_staging_receipt_sha256,
+                dvc_stage_name=dvc_stage_name,
+                output_relative_member=output_relative_member,
+            )
         return verify_staging_receipt(
             worktree=worktree,
             receipt_path=staging_receipt_path,
@@ -164,6 +189,7 @@ def _derive(
     *, worktree: Path, staging_receipt_path: Path,
     expected_staging_receipt_sha256: str, selected_scenario_id: str,
     dvc_stage_name: str, output_relative_member: str,
+    staging_receipt_snapshot_base64: str | None = None,
 ) -> tuple[dict[str, Any], bytes, dict[str, Any]]:
     if not SAFE_SCENARIO_RE.fullmatch(selected_scenario_id):
         raise CanonicalRouteCatalogError("selected_scenario_id_invalid")
@@ -173,6 +199,7 @@ def _derive(
         expected_staging_receipt_sha256=expected_staging_receipt_sha256,
         dvc_stage_name=dvc_stage_name,
         output_relative_member=output_relative_member,
+        staging_receipt_snapshot_base64=staging_receipt_snapshot_base64,
     )
     catalog_path = Path(staging["staged_path"])
     before = catalog_path.read_bytes()
@@ -232,7 +259,10 @@ def materialize_scenario_route_manifest(
         "source_commit": staging["source_commit"],
         "dvc_stage_name": dvc_stage_name,
         "output_relative_member": output_relative_member,
-        "staging_receipt_path": staging["receipt_path"],
+        "staging_receipt_locator": staging["receipt_locator"],
+        "staging_receipt_snapshot_base64": staging[
+            "receipt_snapshot_base64"
+        ],
         "staging_receipt_sha256": staging["receipt_sha256"],
         "source_catalog_path": staging["source_path"],
         "source_catalog_sha256": staging["source_sha256"],
@@ -284,14 +314,20 @@ def verify_scenario_route_manifest_receipt(
         or receipt_bytes != _canonical_json_bytes(receipt)
     ):
         raise CanonicalRouteCatalogError("route_manifest_receipt_invalid")
+    staging_receipt_locator = _diagnostic_locator(
+        receipt.get("staging_receipt_locator"), worktree
+    )
 
     staging, manifest_bytes, derived = _derive(
         worktree=worktree,
-        staging_receipt_path=Path(str(receipt.get("staging_receipt_path") or "")),
+        staging_receipt_path=Path(),
         expected_staging_receipt_sha256=expected_staging_receipt_sha256,
         selected_scenario_id=selected_scenario_id,
         dvc_stage_name=dvc_stage_name,
         output_relative_member=output_relative_member,
+        staging_receipt_snapshot_base64=str(
+            receipt.get("staging_receipt_snapshot_base64") or ""
+        ),
     )
     output_path = _outside_worktree(
         Path(str(receipt.get("output_object_path") or "")),
@@ -303,7 +339,10 @@ def verify_scenario_route_manifest_receipt(
         "source_commit": staging["source_commit"],
         "dvc_stage_name": dvc_stage_name,
         "output_relative_member": output_relative_member,
-        "staging_receipt_path": staging["receipt_path"],
+        "staging_receipt_locator": staging_receipt_locator,
+        "staging_receipt_snapshot_base64": staging[
+            "receipt_snapshot_base64"
+        ],
         "staging_receipt_sha256": staging["receipt_sha256"],
         "source_catalog_path": staging["source_path"],
         "source_catalog_sha256": staging["source_sha256"],

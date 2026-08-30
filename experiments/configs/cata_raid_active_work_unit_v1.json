@@ -1,16 +1,16 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_receipt_locator_snapshot_authority_v42_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_receipt_locator_snapshot_authority_v42",
+  "epoch_id": "generic_controller_route_hold_receipt_locator_snapshot_authority_review_v43_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_receipt_locator_snapshot_authority_review_v43",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "gate_state": "v41_catalog_parity_green_receipt_locator_snapshot_race_rejected",
-  "observed_at_commit": "41a9b356db84c38173fb28aaf8251a7f37db2b4e",
-  "immutable_input_commit": "41a9b356db84c38173fb28aaf8251a7f37db2b4e",
+  "classification": "implementation_pending_independent_review",
+  "gate_state": "v42_snapshot_authority_embedded_locator_diagnostic_fixture_green",
+  "observed_at_commit": "249292869d406a7ce91f7af7da2f34acb2b672f1",
+  "immutable_input_commit": "249292869d406a7ce91f7af7da2f34acb2b672f1",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_review_handoff_v41.json",
-    "sha256": "735b4af0e4749443f8673f554d56b912185f28647b6c60e6f00569dd9f9ba6c1",
-    "source_commit": "41a9b356db84c38173fb28aaf8251a7f37db2b4e"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_receipt_locator_snapshot_authority_handoff_v42.json",
+    "sha256": "582cb86d34d2872283e5943f1d427e785ab43306c1475718ab35158351dfcf45",
+    "source_commit": "249292869d406a7ce91f7af7da2f34acb2b672f1"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
@@ -20,21 +20,19 @@
   },
   "behavior_change": false,
   "evidence_contract_change": true,
-  "ready_for_bounded_repair": true,
+  "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Make exact opened staging-receipt bytes/hash authoritative without claiming a mutable locator still names that snapshot; preserve the snapshot for scenario-receipt reconstruction and add the post-final-stat race regression.",
+    "allowed_change": "Independently review only V42 exact-snapshot authority, embedded reconstruction, and diagnostic-only locator handling.",
     "allowed_files": [
-      "tools/raid_program/canonical_route_staging.py",
-      "tools/raid_program/canonical_route_catalog.py",
-      "tests/test_canonical_route_staging.py",
-      "one_compact_implementation_handoff",
+      "one_compact_review_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
     "forbidden": [
+      "production_or_test_edits",
       "catalog_filter_order_generation_segment_or_payload_semantic_change",
-      "bundle_create_or_verify_edit_or_execution",
+      "bundle_create_or_verify_execution",
       "gameplay_native_controller_route_content_identity_comparison_polling_watchdog_or_threshold_change",
       "configure_build_database_mutation_worldserver_start_or_dvc_mutation",
       "fixture_acceptance_or_live_authorization"
@@ -42,8 +40,8 @@
   },
   "first_broken_edge": {
     "owner": "raid_evidence_staging_receipt_locator_authority",
-    "edge": "pathname replacement after the verifier's final stat is accepted while receipt_path is returned as if it still names the opened authenticated snapshot",
-    "failure_postcondition": "no atomic bundle create, verify, launch contract, or worldserver start is authorized"
+    "edge": "v42_embedded_snapshot_and_diagnostic_locator_contract_requires_independent_review",
+    "failure_postcondition": "no atomic bundle create, verify, launch contract, or worldserver start is authorized before review"
   },
   "verified_preservation": [
     "all nine committed scenarios exactly match canonical runtime route selection and payload bytes",
@@ -65,7 +63,7 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": ["focused_contract_green", "focused_contract_reject", "scope_violation"]
+    "terminal_edges": ["independent_review_accept", "independent_review_reject", "scope_violation"]
   },
   "verification_budget": {
     "configure_count_maximum": 0,
@@ -74,11 +72,11 @@
     "atomic_bundle_create_count_maximum": 0,
     "atomic_bundle_verify_count_maximum": 0,
     "worldserver_start_count_maximum": 0,
-    "retry_count_maximum": 1,
+    "retry_count_maximum": 0,
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_receipt_locator_snapshot_authority_v42",
+  "next_work_unit": "evidence:generic_controller_route_hold_receipt_locator_snapshot_authority_review_v43",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Repair only receipt snapshot-versus-locator authority and its focused regression. Do not create or verify a bundle."
+  "next_action": "Independently review only V42 snapshot authority without production edits or live actions. If exact, admit the next bounded consumer check; otherwise emit a typed rejection."
 }

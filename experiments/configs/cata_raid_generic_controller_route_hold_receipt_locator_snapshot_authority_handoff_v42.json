@@ -1,0 +1,72 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_receipt_locator_snapshot_authority_v42",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_pending_independent_review",
+  "source_state": {
+    "parent_commit": "249292869d406a7ce91f7af7da2f34acb2b672f1",
+    "parent_clean": true,
+    "v41_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_review_handoff_v41.json",
+    "v41_handoff_sha256": "735b4af0e4749443f8673f554d56b912185f28647b6c60e6f00569dd9f9ba6c1"
+  },
+  "implementation": {
+    "behavior_change": false,
+    "evidence_contract_change": true,
+    "staging_owner": "tools/raid_program/canonical_route_staging.py",
+    "staging_owner_sha256": "d06e2ed312acd8c75096f5b0fdf85afe3efcee81dede20285e8b6fe8b30a8151",
+    "staging_owner_lines": 407,
+    "catalog_owner": "tools/raid_program/canonical_route_catalog.py",
+    "catalog_owner_sha256": "d066e4610c2f288ef3e37f7555f9da724b37a7cbbcff55bf4470d1df7f9db07b",
+    "catalog_owner_lines": 364,
+    "consumer_unchanged": "tools/raid_program/chainwielder_prestart_bundle.py",
+    "consumer_lines": 984,
+    "authority_contract": [
+      "verify_staging_receipt returns canonical opened bytes encoded as base64 and their externally expected SHA-256",
+      "scenario receipts embed that exact snapshot and hash",
+      "scenario verification re-authenticates clean HEAD, DVC authority, and catalog files from the embedded snapshot without opening the recorded receipt locator",
+      "the receipt locator is lexical, outside-worktree diagnostic metadata only"
+    ],
+    "catalog_selection_semantics_changed": false,
+    "generic_constant_audit": "passed"
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_canonical_route_staging.py",
+    "initial_result": "29 passed in 1.08s",
+    "final_result_after_diagnostic_locator_validation": "29 passed in 1.06s",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "test_file_sha256": "e5da8446828550a83828750717ebcf1349bd4c98edbd1b0e55b51aa0375c4706",
+    "bundle_create_count": 0,
+    "bundle_verify_count": 0,
+    "configure_count": 0,
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutation_count": 0,
+    "dvc_mutation_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "replacement after the verifier's final pathname stat may change only diagnostic locator state, not the returned authenticated snapshot",
+      "a scenario receipt created after that replacement embeds receipt-one bytes/hash and catalog identity even while its diagnostic locator names receipt two",
+      "later scenario verification succeeds from the embedded receipt-one snapshot without reading the changed locator",
+      "coherent substitution of receipt-two snapshot/hash is rejected against the external receipt-one hash",
+      "all existing catalog selection, DVC, source/staged path, hash, collision, raw-JSONL, and prepared-object fixtures remain green",
+      "all production modules remain below 1000 lines"
+    ],
+    "refuted": [
+      "a receipt verifier can guarantee that a mutable pathname permanently names the opened snapshot",
+      "downstream scenario verification must reopen the original receipt locator"
+    ],
+    "unproven": [
+      "independent review of the V42 snapshot authority chain",
+      "one authenticated prepared object reaches atomic bundle create and verify",
+      "native Held, arm, terminal, release, Drudges, and throughput evidence"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_receipt_locator_snapshot_authority_review_v43",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Independently review only the V42 snapshot-versus-locator authority change. Do not edit production, create or verify a bundle, build, or start a server.",
+    "live_budget": 0
+  }
+}

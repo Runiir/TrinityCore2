@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
 import json
 import os
@@ -97,6 +99,70 @@ def _stable_regular_file_snapshot(path: Path) -> bytes:
     ):
         raise CanonicalRouteStagingError("staging_receipt_path_replaced")
     return b"".join(chunks)
+
+
+def _verified_receipt_snapshot(
+    *, worktree: Path, receipt_bytes: bytes, expected_receipt_sha256: str,
+    dvc_stage_name: str, output_relative_member: str,
+) -> dict[str, Any]:
+    if not SHA256_RE.fullmatch(expected_receipt_sha256) or (
+        hashlib.sha256(receipt_bytes).hexdigest() != expected_receipt_sha256
+    ):
+        raise CanonicalRouteStagingError("staging_receipt_sha256_mismatch")
+    try:
+        receipt = json.loads(receipt_bytes)
+    except json.JSONDecodeError as error:
+        raise CanonicalRouteStagingError("staging_receipt_invalid") from error
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != STAGING_RECEIPT_FIELDS
+        or receipt.get("schema") != STAGING_RECEIPT_SCHEMA
+        or receipt_bytes != _canonical_json_bytes(receipt)
+    ):
+        raise CanonicalRouteStagingError("staging_receipt_invalid")
+
+    head, _tree = _clean_source_identity(worktree)
+    if receipt.get("source_commit") != head:
+        raise CanonicalRouteStagingError("staging_receipt_source_commit_mismatch")
+    source = Path(str(receipt.get("source_path") or ""))
+    staged = Path(str(receipt.get("staged_path") or ""))
+    if (
+        Path(os.path.abspath(source)) != source
+        or source.resolve() != source
+        or not source.is_file()
+        or not _is_within(source, worktree)
+        or Path(os.path.abspath(staged)) != staged
+        or staged.resolve() != staged
+        or staged.is_symlink()
+        or not staged.is_file()
+        or _is_within(staged, worktree)
+    ):
+        raise CanonicalRouteStagingError("staging_receipt_catalog_path_invalid")
+    source_sha = str(receipt.get("source_sha256") or "")
+    staged_sha = str(receipt.get("staged_sha256") or "")
+    if (
+        not SHA256_RE.fullmatch(source_sha)
+        or staged_sha != source_sha
+        or _sha256_file(source) != source_sha
+        or _sha256_file(staged) != staged_sha
+    ):
+        raise CanonicalRouteStagingError("staging_receipt_catalog_hash_mismatch")
+    member_md5 = _locked_member_md5(
+        worktree=worktree,
+        source=source,
+        lock=_head_dvc_lock(worktree),
+        dvc_stage_name=dvc_stage_name,
+        output_relative_member=output_relative_member,
+    )
+    if _md5_bytes(source.read_bytes()) != member_md5:
+        raise CanonicalRouteStagingError("source_route_dvc_member_hash_mismatch")
+    return {
+        **receipt,
+        "receipt_snapshot_base64": base64.b64encode(receipt_bytes).decode("ascii"),
+        "receipt_sha256": expected_receipt_sha256,
+        "dvc_stage_name": dvc_stage_name,
+        "output_relative_member": output_relative_member,
+    }
 
 
 def atomic_write_new(destination: Path, payload: bytes) -> None:
@@ -231,65 +297,37 @@ def verify_staging_receipt(
         or _is_within(receipt_path, worktree)
     ):
         raise CanonicalRouteStagingError("staging_receipt_location_invalid")
-    receipt_bytes = _stable_regular_file_snapshot(receipt_path)
-    if not SHA256_RE.fullmatch(expected_receipt_sha256) or (
-        hashlib.sha256(receipt_bytes).hexdigest() != expected_receipt_sha256
-    ):
-        raise CanonicalRouteStagingError("staging_receipt_sha256_mismatch")
-    try:
-        receipt = json.loads(receipt_bytes)
-    except (OSError, json.JSONDecodeError) as error:
-        raise CanonicalRouteStagingError("staging_receipt_invalid") from error
-    if (
-        not isinstance(receipt, dict)
-        or set(receipt) != STAGING_RECEIPT_FIELDS
-        or receipt.get("schema") != STAGING_RECEIPT_SCHEMA
-        or receipt_bytes != _canonical_json_bytes(receipt)
-    ):
-        raise CanonicalRouteStagingError("staging_receipt_invalid")
-
-    head, _tree = _clean_source_identity(worktree)
-    if receipt.get("source_commit") != head:
-        raise CanonicalRouteStagingError("staging_receipt_source_commit_mismatch")
-    source = Path(str(receipt.get("source_path") or ""))
-    staged = Path(str(receipt.get("staged_path") or ""))
-    if (
-        Path(os.path.abspath(source)) != source
-        or source.resolve() != source
-        or not source.is_file()
-        or not _is_within(source, worktree)
-        or Path(os.path.abspath(staged)) != staged
-        or staged.resolve() != staged
-        or staged.is_symlink()
-        or not staged.is_file()
-        or _is_within(staged, worktree)
-    ):
-        raise CanonicalRouteStagingError("staging_receipt_catalog_path_invalid")
-    source_sha = str(receipt.get("source_sha256") or "")
-    staged_sha = str(receipt.get("staged_sha256") or "")
-    if (
-        not SHA256_RE.fullmatch(source_sha)
-        or staged_sha != source_sha
-        or _sha256_file(source) != source_sha
-        or _sha256_file(staged) != staged_sha
-    ):
-        raise CanonicalRouteStagingError("staging_receipt_catalog_hash_mismatch")
-    member_md5 = _locked_member_md5(
+    verified = _verified_receipt_snapshot(
         worktree=worktree,
-        source=source,
-        lock=_head_dvc_lock(worktree),
+        receipt_bytes=_stable_regular_file_snapshot(receipt_path),
+        expected_receipt_sha256=expected_receipt_sha256,
         dvc_stage_name=dvc_stage_name,
         output_relative_member=output_relative_member,
     )
-    if _md5_bytes(source.read_bytes()) != member_md5:
-        raise CanonicalRouteStagingError("source_route_dvc_member_hash_mismatch")
-    return {
-        **receipt,
-        "receipt_path": str(receipt_path),
-        "receipt_sha256": expected_receipt_sha256,
-        "dvc_stage_name": dvc_stage_name,
-        "output_relative_member": output_relative_member,
-    }
+    return {**verified, "receipt_locator": str(receipt_path)}
+
+
+def verify_staging_receipt_snapshot(
+    *, worktree: Path, receipt_snapshot_base64: str,
+    expected_receipt_sha256: str,
+    dvc_stage_name: str = "validation_scenarios",
+    output_relative_member: str = "validation_routes.jsonl",
+) -> dict[str, Any]:
+    try:
+        receipt_bytes = base64.b64decode(
+            receipt_snapshot_base64.encode("ascii"), validate=True
+        )
+    except (UnicodeEncodeError, ValueError, binascii.Error) as error:
+        raise CanonicalRouteStagingError(
+            "staging_receipt_snapshot_invalid"
+        ) from error
+    return _verified_receipt_snapshot(
+        worktree=worktree.resolve(),
+        receipt_bytes=receipt_bytes,
+        expected_receipt_sha256=expected_receipt_sha256,
+        dvc_stage_name=dvc_stage_name,
+        output_relative_member=output_relative_member,
+    )
 
 
 def stage_canonical_route(

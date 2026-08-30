@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -562,6 +563,7 @@ def test_staging_receipt_replacement_cannot_substitute_valid_snapshot(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixture = _fixture(tmp_path)
+    _set_catalog(fixture, [_route_row("generic", 1, "generic.first")])
     first = _stage(fixture)
     second_root = tmp_path / "second-stage"
     second_root.mkdir()
@@ -605,3 +607,88 @@ def test_staging_receipt_replacement_cannot_substitute_valid_snapshot(
             output_relative_member=fixture["member"],
         )
     assert calls == 2
+
+
+def test_post_stat_locator_replacement_preserves_snapshot_authority(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _fixture(tmp_path)
+    _set_catalog(fixture, [_route_row("generic", 1, "generic.first")])
+    first = _stage(fixture)
+    first_receipt_bytes = Path(first["receipt_path"]).read_bytes()
+    first_staged_path = first["staged_path"]
+
+    second_root = tmp_path / "second-stage"
+    second_root.mkdir()
+    fixture["external"] = second_root
+    second = _stage(fixture)
+    second_receipt_bytes = Path(second["receipt_path"]).read_bytes()
+    replacement = tmp_path / "replacement-after-stat.json"
+    replacement.write_bytes(second_receipt_bytes)
+
+    output_root = tmp_path / "scenario-output"
+    output_root.mkdir()
+    fixture["external"] = output_root
+    first_path = Path(first["receipt_path"])
+    real_stat = staging.os.stat
+    swapped = False
+
+    def replace_after_final_stat(
+        path: object, *args: object, **kwargs: object,
+    ) -> object:
+        nonlocal swapped
+        state = real_stat(path, *args, **kwargs)
+        if (
+            not swapped
+            and Path(path) == first_path
+            and kwargs.get("follow_symlinks") is False
+        ):
+            staging.os.replace(replacement, first_path)
+            swapped = True
+        return state
+
+    monkeypatch.setattr(staging.os, "stat", replace_after_final_stat)
+    result = _materialize(fixture, first, "generic")
+    embedded = base64.b64decode(
+        result["staging_receipt_snapshot_base64"], validate=True
+    )
+
+    assert swapped is True
+    assert first_path.read_bytes() == second_receipt_bytes
+    assert embedded == first_receipt_bytes
+    assert hashlib.sha256(embedded).hexdigest() == first["receipt_sha256"]
+    assert result["staging_receipt_locator"] == str(first_path)
+    assert result["staged_catalog_path"] == first_staged_path
+
+    verified = catalog.verify_scenario_route_manifest_receipt(
+        worktree=fixture["root"],
+        receipt_path=Path(result["receipt_path"]),
+        expected_receipt_sha256=result["receipt_sha256"],
+        expected_staging_receipt_sha256=first["receipt_sha256"],
+        selected_scenario_id="generic",
+        dvc_stage_name=fixture["stage_name"],
+        output_relative_member=fixture["member"],
+    )
+    assert verified == result
+
+    drift = json.loads(Path(result["receipt_path"]).read_text(encoding="utf-8"))
+    drift["staging_receipt_snapshot_base64"] = base64.b64encode(
+        second_receipt_bytes
+    ).decode("ascii")
+    drift["staging_receipt_sha256"] = second["receipt_sha256"]
+    drift_path = output_root / "mismatched-snapshot.receipt.json"
+    drift_bytes = (json.dumps(drift, indent=2, sort_keys=True) + "\n").encode()
+    drift_path.write_bytes(drift_bytes)
+    with pytest.raises(
+        catalog.CanonicalRouteCatalogError,
+        match="staging_receipt_sha256_mismatch",
+    ):
+        catalog.verify_scenario_route_manifest_receipt(
+            worktree=fixture["root"],
+            receipt_path=drift_path,
+            expected_receipt_sha256=hashlib.sha256(drift_bytes).hexdigest(),
+            expected_staging_receipt_sha256=first["receipt_sha256"],
+            selected_scenario_id="generic",
+            dvc_stage_name=fixture["stage_name"],
+            output_relative_member=fixture["member"],
+        )
