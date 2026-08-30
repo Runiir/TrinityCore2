@@ -18,6 +18,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     json_actions,
     json_rows,
     normalized_batch_payload,
+    _normalized_batch_payload_impl,
     _forbidden_assistance_entries,
     _dvc_status_is_clean,
     _protected_process_matches,
@@ -28,6 +29,9 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     preflight_runtime_exclusions,
     validate_runtime_profile_assets,
     evidence_demux_report,
+    _evidence_demux_report_impl,
+    _required_telemetry_envelope_report,
+    _trace_actor_transport_rejections,
     evidence_demux_rejections,
     semantic_progress_signature,
     observe_monotonic_semantic_progress,
@@ -2389,6 +2393,13 @@ def test_normalized_batch_payload_is_ordered_and_forbidden_assistance_is_recompu
     assert [row["capture_sequence"] for row in rows] == [1, 2, 3]
     assert [row["action"] for row in rows] == ["botauto_status", "botauto_trace", "botauto_diagnose"]
     assert _forbidden_assistance_entries(rows)[0]["path"].endswith("forbidden_completion_assists")
+
+
+def test_demux_adapters_execute_focused_production_implementations():
+    assert _normalized_batch_payload_impl.__module__ == "tools.raid_program.capture_evidence_demux"
+    assert _evidence_demux_report_impl.__module__ == "tools.raid_program.capture_evidence_demux"
+    assert _required_telemetry_envelope_report.__module__ == "tools.raid_program.capture_evidence_demux"
+    assert _trace_actor_transport_rejections.__module__ == "tools.raid_program.capture_evidence_demux"
 
 
 def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
