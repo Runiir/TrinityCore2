@@ -327,6 +327,9 @@ def prepare_capture_setup(
                     Path(configured_profile_manifest).resolve()
                     if configured_profile_manifest else None
                 ),
+                expected_runtime_profile_id=(
+                    profile_name if args.fixture_expansion_replay else None
+                ),
                 required_purpose=(
                     FIXTURE_EXPANSION_PURPOSE
                     if args.fixture_expansion_replay

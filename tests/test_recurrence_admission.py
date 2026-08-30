@@ -44,14 +44,17 @@ def _fixture(tmp_path: Path) -> dict[str, Path | str]:
     source_profiles.parent.mkdir(parents=True)
     _write_json(source_profiles, {
         "schema": "bot_world_runtime_profiles_v1",
-        "profiles": [{
-            "name": "test_profile",
-            "target_population": 10,
-            "validation_route": {
-                "enable": True,
-                "manifest_path": "canonical/routes.jsonl",
-            },
-        }],
+        "profiles": [
+            {
+                "name": name,
+                "target_population": 10,
+                "validation_route": {
+                    "enable": True,
+                    "manifest_path": "canonical/routes.jsonl",
+                },
+            }
+            for name in ("test_profile", "foreign_valid_profile")
+        ],
     })
     _git(root, "add", ".")
     _git(root, "commit", "-m", "identity")
@@ -235,6 +238,7 @@ def _create_chainwielder_checkpoint_admission(
         decision=decision,
         profile_manifest=profile_manifest,
         runtime_profile_overlay=overlay,
+        expected_runtime_profile_id="test_profile",
     )
     source_commit = _git(Path(paths["root"]), "rev-parse", "HEAD")
     config.write_text(
@@ -263,6 +267,7 @@ def _create_chainwielder_checkpoint_admission(
         suite_receipt=suite,
         profile_manifest=profile_manifest,
         runtime_profile_overlay=overlay,
+        expected_runtime_profile_id="test_profile",
         purpose=FIXTURE_EXPANSION_PURPOSE,
     )
     return seal
@@ -280,6 +285,7 @@ def _verify_chainwielder(
         build_receipt=Path(paths["build_receipt"]),
         runtime_config=Path(paths["config"]),
         profile_manifest=Path(paths["profile_manifest"]),
+        expected_runtime_profile_id="test_profile",
         required_purpose=FIXTURE_EXPANSION_PURPOSE,
     )
 
@@ -330,6 +336,7 @@ def test_chainwielder_checkpoint_uses_precomputed_non_circular_seal(
     assert seal["profile_manifest_sha256"] == sha256_file(
         Path(paths["profile_manifest"])
     )
+    assert seal["expected_runtime_profile_id"] == "test_profile"
     assert seal["runtime_profile_overlay_sha256"] == hashlib.sha256(
         json.dumps(
             admission["runtime_profile_overlay"],
@@ -395,9 +402,107 @@ def test_profile_overlay_authority_rejects_coherent_drift(
 
     with pytest.raises(
         RecurrenceAdmissionError,
-        match="runtime_profile_(overlay|source)|source_profile_manifest|checkpoint_seal",
+        match=(
+            "runtime_profile_(overlay|source)|expected_runtime_profile|"
+            "source_profile_manifest|checkpoint_seal"
+        ),
     ):
         _verify_chainwielder(paths)
+
+
+def test_expected_runtime_profile_rejects_coherent_valid_profile_substitution(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    original_seal = _create_chainwielder_checkpoint_admission(paths)
+    assert _verify_chainwielder(paths)["expected_runtime_profile_id"] == (
+        "test_profile"
+    )
+
+    root = Path(paths["root"])
+    route = Path(paths["route"])
+    profile_path = Path(paths["profile_manifest"])
+    source_path = root / "dataset/bot_runtime_profiles/profiles.json"
+    source = json.loads(source_path.read_text(encoding="utf-8"))
+    runtime, foreign_overlay = build_runtime_profile_suffix_manifest(
+        source_manifest=source, runtime_profile="foreign_valid_profile",
+        route_manifest_path=route,
+    )
+    _write_json(profile_path, runtime)
+    foreign_overlay.update({
+        "source_profile_manifest_sha256": sha256_file(source_path),
+        "runtime_profile_manifest_sha256": sha256_file(profile_path),
+        "runtime_route_manifest_sha256": sha256_file(route),
+    })
+    foreign_seal = chainwielder_checkpoint_seal(
+        worktree=root, binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        decision=Path(paths["decision"]), profile_manifest=profile_path,
+        runtime_profile_overlay=foreign_overlay,
+        expected_runtime_profile_id="foreign_valid_profile",
+    )
+    config = Path(paths["config"])
+    config.write_text(
+        config.read_text(encoding="utf-8")
+        .replace('"test_profile"', '"foreign_valid_profile"')
+        .replace(original_seal["seal_sha256"], foreign_seal["seal_sha256"]),
+        encoding="utf-8",
+    )
+    admission = Path(paths["admission"])
+    admission.unlink()
+    create_kwargs = {
+        "output": admission,
+        "worktree": root,
+        "binary": Path(paths["binary"]),
+        "build_receipt": Path(paths["build_receipt"]),
+        "runtime_config": config,
+        "route_manifest": route,
+        "ledger": Path(paths["ledger"]),
+        "decision": Path(paths["decision"]),
+        "suite_receipt": Path(paths["suite"]),
+        "profile_manifest": profile_path,
+        "runtime_profile_overlay": foreign_overlay,
+        "purpose": FIXTURE_EXPANSION_PURPOSE,
+    }
+    with pytest.raises(
+        RecurrenceAdmissionError, match="expected_runtime_profile_mismatch"
+    ):
+        create_recurrence_admission(
+            **create_kwargs, expected_runtime_profile_id="test_profile"
+        )
+
+    create_recurrence_admission(
+        **create_kwargs, expected_runtime_profile_id="foreign_valid_profile"
+    )
+    with pytest.raises(
+        RecurrenceAdmissionError, match="expected_runtime_profile_mismatch"
+    ):
+        verify_recurrence_admission(
+            admission_path=admission, expected_sha256=sha256_file(admission),
+            worktree=root, binary=Path(paths["binary"]),
+            build_receipt=Path(paths["build_receipt"]), runtime_config=config,
+            profile_manifest=profile_path,
+            expected_runtime_profile_id="test_profile",
+            required_purpose=FIXTURE_EXPANSION_PURPOSE,
+        )
+
+
+def test_expected_runtime_profile_is_absent_for_non_checkpoint_admission(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    assert _verify(paths)["expected_runtime_profile_id"] is None
+    admission = Path(paths["admission"])
+    with pytest.raises(
+        RecurrenceAdmissionError, match="profile_authority_unexpected"
+    ):
+        verify_recurrence_admission(
+            admission_path=admission, expected_sha256=sha256_file(admission),
+            worktree=Path(paths["root"]), binary=Path(paths["binary"]),
+            build_receipt=Path(paths["build_receipt"]),
+            runtime_config=Path(paths["config"]),
+            expected_runtime_profile_id="not_applicable",
+        )
 
 
 @pytest.mark.parametrize(

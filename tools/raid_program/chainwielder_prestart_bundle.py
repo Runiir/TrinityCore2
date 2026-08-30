@@ -562,6 +562,7 @@ def verify_bundle(
             build_receipt=root / BUNDLE_NAMES["build_receipt"],
             runtime_config=root / BUNDLE_NAMES["runtime_config"],
             profile_manifest=root / BUNDLE_NAMES["profile_manifest"],
+            expected_runtime_profile_id=SCENARIO_ID,
             required_purpose=FIXTURE_EXPANSION_PURPOSE,
             atomic_bundle_roots=(logical_root, root) if root != logical_root else None,
         )
@@ -755,6 +756,7 @@ def create_bundle(
             decision=staging / BUNDLE_NAMES["decision"],
             profile_manifest=staging / BUNDLE_NAMES["profile_manifest"],
             runtime_profile_overlay=profile_identity,
+            expected_runtime_profile_id=runtime_profile_id,
         )
         if seal.get("fixture_id") != checkpoint_fixture_id:
             raise BundleError("checkpoint_seal_fixture_mismatch")
@@ -781,6 +783,7 @@ def create_bundle(
             suite_receipt=materialized["suite_receipt"],
             profile_manifest=materialized["profile_manifest"],
             runtime_profile_overlay=profile_identity,
+            expected_runtime_profile_id=runtime_profile_id,
             purpose=FIXTURE_EXPANSION_PURPOSE,
             atomic_bundle_roots=(output_dir, staging),
         )

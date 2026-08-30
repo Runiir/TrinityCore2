@@ -279,6 +279,7 @@ def test_v6_manual_missing_flag_fails_before_atomic_bundle_passes_after(
         worktree=root, binary=paths["binary"],
         build_receipt=paths["build_receipt"], decision=paths["decision"],
         profile_manifest=profile, runtime_profile_overlay=overlay,
+        expected_runtime_profile_id=SCENARIO_ID,
     )
     config.write_text(
         f'BotWorld.ValidationRoute.ManifestPath = "{route.resolve()}"\n'
@@ -297,6 +298,7 @@ def test_v6_manual_missing_flag_fails_before_atomic_bundle_passes_after(
         route_manifest=route, ledger=paths["ledger"], decision=paths["decision"],
         suite_receipt=paths["suite_receipt"], purpose=FIXTURE_EXPANSION_PURPOSE,
         profile_manifest=profile, runtime_profile_overlay=overlay,
+        expected_runtime_profile_id=SCENARIO_ID,
     )
     with pytest.raises(
         RecurrenceAdmissionError, match="fixture_expansion_checkpoint_disabled"
@@ -306,6 +308,7 @@ def test_v6_manual_missing_flag_fails_before_atomic_bundle_passes_after(
             worktree=root, binary=paths["binary"],
                 build_receipt=paths["build_receipt"], runtime_config=config,
                 profile_manifest=profile,
+                expected_runtime_profile_id=SCENARIO_ID,
                 required_purpose=FIXTURE_EXPANSION_PURPOSE,
         )
 
@@ -448,6 +451,7 @@ def test_target_suffix_reproduces_v19_and_binds_runtime_identity(
             worktree=fixture["root"], binary=fixture["paths"]["binary"],
             build_receipt=output / BUNDLE_NAMES["build_receipt"],
             runtime_config=canonical_config, profile_manifest=canonical_profiles,
+            expected_runtime_profile_id=SCENARIO_ID,
             required_purpose=FIXTURE_EXPANSION_PURPOSE,
         )
 
@@ -458,6 +462,7 @@ def test_target_suffix_reproduces_v19_and_binds_runtime_identity(
         build_receipt=output / BUNDLE_NAMES["build_receipt"],
         runtime_config=output / BUNDLE_NAMES["runtime_config"],
         profile_manifest=output / BUNDLE_NAMES["profile_manifest"],
+        expected_runtime_profile_id=SCENARIO_ID,
         required_purpose=FIXTURE_EXPANSION_PURPOSE,
     )
     projected = controller_route_hold_runtime_manifest_identity(
@@ -779,6 +784,7 @@ def test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged(
     seal = chainwielder_checkpoint_seal(
         profile_manifest=staging / "runtime_profiles.json",
         runtime_profile_overlay=overlay,
+        expected_runtime_profile_id=SCENARIO_ID,
         worktree=root, binary=paths["binary"], build_receipt=staging / "build.json",
         decision=staging / "decision.json",
     )
@@ -803,6 +809,7 @@ def test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged(
         purpose=FIXTURE_EXPANSION_PURPOSE,
         profile_manifest=staging / "runtime_profiles.json",
         runtime_profile_overlay=overlay,
+        expected_runtime_profile_id=SCENARIO_ID,
         atomic_bundle_roots=(final, staging),
     )
     with pytest.raises(RecurrenceAdmissionError, match="build_receipt_path_mismatch"):
@@ -811,12 +818,14 @@ def test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged(
             worktree=root, binary=paths["binary"], build_receipt=staging / "build.json",
             runtime_config=config, required_purpose=FIXTURE_EXPANSION_PURPOSE,
             profile_manifest=staging / "runtime_profiles.json",
+            expected_runtime_profile_id=SCENARIO_ID,
         )
     assert verify_recurrence_admission(
         admission_path=admission, expected_sha256=sha256_file(admission),
         worktree=root, binary=paths["binary"], build_receipt=staging / "build.json",
         runtime_config=config, required_purpose=FIXTURE_EXPANSION_PURPOSE,
         profile_manifest=staging / "runtime_profiles.json",
+        expected_runtime_profile_id=SCENARIO_ID,
         atomic_bundle_roots=(final, staging),
     )["valid"] is True
     with pytest.raises(RecurrenceAdmissionError, match="atomic_bundle_roots_invalid"):
@@ -825,5 +834,6 @@ def test_atomic_relocation_is_sibling_only_and_default_verifier_unchanged(
             worktree=root, binary=paths["binary"], build_receipt=staging / "build.json",
             runtime_config=config, required_purpose=FIXTURE_EXPANSION_PURPOSE,
             profile_manifest=staging / "runtime_profiles.json",
+            expected_runtime_profile_id=SCENARIO_ID,
             atomic_bundle_roots=(final, tmp_path / "arbitrary" / "stage"),
         )
