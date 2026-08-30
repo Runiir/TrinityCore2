@@ -1,0 +1,104 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:generic_controller_route_hold_one_build_one_live_v63",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed_prestart",
+  "failure_classification": "retained_roster_drift_requires_unauthorized_database_mutation",
+  "input_identities": {
+    "source_commit": "6d2cb8d248dc056f65d0f4ad9e7e510501fe6100",
+    "source_tree": "8453037bbf91be27ad6affcfd4753d6fafdd33b6",
+    "active_descriptor_sha256": "6b45011d80dcd0717165273bb4679512e4201f54385b77871da3ed001e2af973",
+    "source_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_active_actor_survival_scope_review_handoff_v62.json",
+    "source_handoff_sha256": "9b8379f738c9e8f65340fc6d84255d4ef317f9ac960d23597b739b94fc1704ed",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic"
+  },
+  "consumed_budget": {
+    "configure": "0/1",
+    "worldserver_build": "0/1",
+    "canonical_stage": "0/1",
+    "prepared_object_materialize": "0/1",
+    "prepared_object_verify": "0/1",
+    "atomic_bundle_create": "0/1",
+    "atomic_bundle_verify": "0/1",
+    "worldserver_start": "0/1",
+    "retry": "0/0",
+    "database_mutation": 0
+  },
+  "prestart_gate": {
+    "strict_verifier_passed": false,
+    "strict_verifier_sha256": "b4e89dee1936a3e65af1c619491b636d217e7abe435809af432bdd353bb4e0fb",
+    "strict_payload_valid": true,
+    "strict_provisioning_all_ready": true,
+    "strict_database_valid": false,
+    "strict_failure_count": 5,
+    "retained_roster_readback_passed": false,
+    "retained_roster_readback_sha256": "b16623f5c536504290cfae8d34dc10d269330b0611515ebb18888616f4ff3e9e",
+    "retained_roster_count": 10,
+    "corpse_rows": 1,
+    "ghost_aura_rows": 3,
+    "drifted_characters": [
+      "Mgwdpsc",
+      "Mgwdpse",
+      "Mgwhealc",
+      "Mgwtanka",
+      "Mgwtankb"
+    ],
+    "actor_30008_drift": [
+      "health_seed",
+      "map",
+      "position",
+      "power1_seed"
+    ],
+    "first_broken_edge": "the fresh retained-roster readback found persisted V58 corpse, ghost-aura, stat, map, and position drift before any configure, build, bundle, or worldserver start",
+    "failure_postcondition": "V63 forbids database mutation, so the controller failed closed without attempting normal provisioning or consuming any expensive live budget"
+  },
+  "runtime_result": {
+    "worldserver_started": false,
+    "checkpoint_sequence_observed": false,
+    "combat_observed": false,
+    "party_dps": null,
+    "party_hps": null,
+    "pet_damage_share": null,
+    "reason": "prestart retained-roster gate failed before runtime"
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_6d2cb8d248_v63_retained_roster_drift_prestart_failed_20260830.dvc",
+    "dvc_pointer_sha256_before_commit": "5ffb61d5127850fbc88467fa6c89bcb20463dc909d7606a1bb8cc9f8f67d4f3b",
+    "dvc_directory_md5": "ebdc6ec6404f4be3f4e4123092e792df.dir",
+    "file_count": 4,
+    "size_bytes": 188082,
+    "push_result": "4 files pushed",
+    "remote_reconstruction_verified": true,
+    "remote_reconstruction_manifest_sha256": "1ed4460654a73948a217e6c26de85022673c919ca2e9b1c5b32ed2453c18c6e6",
+    "remote_reconstruction_file_count": 4,
+    "remote_reconstruction_size_bytes": 188082,
+    "exact_local_payload_evicted": true,
+    "unique_cache_children_evicted": 3,
+    "shared_cache_children_retained": 1,
+    "directory_manifest_cache_object_retained": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact V63 source and descriptor began clean with no server, capture, configure, or build process active",
+      "fresh read-only gates reproduced the retained V58 roster drift before any stateful or expensive action",
+      "V63 consumed no configure, build, bundle, start, retry, or database-mutation budget",
+      "the compact failed-prestart evidence was pushed, independently reconstructed byte-for-byte, and exactly evicted"
+    ],
+    "refuted": [
+      "the retained roster is a zero-residue immutable prestart state suitable for V63",
+      "V63 authorizes normal provisioning to repair the retained database state"
+    ],
+    "unproven": [
+      "the reviewed source builds and links a current worldserver",
+      "the live hold, Route-owner, receipt-zero rejection, terminal, release, and Drudges sequence",
+      "Chainwielder, Drudges, Magmaw, DPS, HPS, or pet-share outcomes"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:retained_roster_normal_provisioning_v64",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Use exactly one normal tracked production restoration for the admitted Magmaw roster, then perform fresh strict verifier and retained-roster readback. Require ten exact characters, zero corpse/ghost/instance/group/online residue, exact map/position/health/power seeds, and the required runtime spell state.",
+    "forbidden": "configure, build, stage, bundle, worldserver start, gameplay/controller/route/test/skill/threshold edits, ad-hoc SQL, or acceptance promotion",
+    "build_worldserver_start_budget": 0
+  }
+}
