@@ -1,90 +1,86 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "external_base_runtime_config_snapshot_stage_v66_20260830",
-  "work_unit": "evidence:external_base_runtime_config_snapshot_stage_v66",
+  "epoch_id": "external_base_runtime_config_snapshot_review_v67_20260830",
+  "work_unit": "evidence:external_base_runtime_config_snapshot_review_v67",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "gate_state": "v65_failed_closed_before_start_on_unstaged_base_runtime_config",
-  "observed_at_commit": "75bbbeb8fa271073b61baaa4ff0a3e1a9436f02e",
-  "immutable_input_commit": "75bbbeb8fa271073b61baaa4ff0a3e1a9436f02e",
+  "classification": "fixture_green_pending_independent_review",
+  "gate_state": "v66_tracked_base_config_snapshot_fixture_green_pending_review",
+  "observed_at_commit": "b3fedc5acd6f2d7c01260fd39aa7ce1cc5b7023c",
+  "immutable_input_commit": "b3fedc5acd6f2d7c01260fd39aa7ce1cc5b7023c",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_external_base_config_not_staged_handoff_v65.json",
-    "sha256": "c8de3b78f96b2adac7dfea2e85a8c8857b559fc53e106be2bdddf95648ccdc9e",
-    "source_commit": "75bbbeb8fa271073b61baaa4ff0a3e1a9436f02e"
+    "path": "experiments/configs/cata_raid_external_base_runtime_config_snapshot_stage_handoff_v66.json",
+    "sha256": "50974126b189539c77983de92585dfa634d1e2514eae8b7cea5506ba6af454b5",
+    "source_commit": "b3fedc5acd6f2d7c01260fd39aa7ce1cc5b7023c"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "V66 repairs one immutable prestart evidence boundary and performs fixture-only validation; it cannot promote live behavior."
+    "canary_only": "V67 independently reviews one generic immutable prestart evidence boundary; Affliction and Magmaw remain canaries, not workflow special cases."
   },
   "behavior_change": false,
   "evidence_contract_change": true,
-  "ready_for_bounded_repair": true,
+  "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Add one fail-closed production staging primitive and verifier for a clean-worktree base runtime config. It must copy the declared tracked source bytes exactly once to a unique external run root, bind source commit tree path and SHA-256 in a canonical receipt, and make the bundle consume only that verified external snapshot.",
+    "allowed_change": "Review only commit b3fedc5acd6f2d7c01260fd39aa7ce1cc5b7023c and the hash-bound V66 handoff. Verify the tracked-source authority, exact external snapshot and canonical receipt, receipt-only bundle API, full rejection matrix, and unchanged downstream bundle bindings.",
     "allowed_files": [
-      "tools/raid_program/canonical_route_staging.py",
-      "tools/raid_program/chainwielder_prestart_bundle.py",
-      "tests/test_canonical_route_staging.py",
-      "tests/test_chainwielder_prestart_bundle.py",
-      "one_compact_implementation_handoff",
+      "one_compact_review_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
-    "required_fixture_sequence": [
-      "fail-before reproduces base_runtime_config_inside_mutable_worktree",
-      "pass-after stages one byte-identical external snapshot and canonical receipt from a clean immutable source",
-      "the verifier independently rechecks source commit tree source bytes snapshot bytes and both declared hashes",
-      "bundle creation accepts only the verified external snapshot and preserves every existing route profile seal admission binary and launch binding"
-    ],
-    "required_negative_cases": [
-      "dirty source identity",
-      "in-worktree destination",
-      "source or staged byte mutation",
-      "source commit tree or SHA mismatch",
-      "missing rejected or noncanonical receipt",
-      "duplicate destination",
-      "bundle input bypasses the verified snapshot"
+    "required_review": [
+      "authenticate the V66 implementation diff and every recorded file hash",
+      "prove source authority uses clean HEAD tree tracked relative path git-show bytes and declared SHA-256",
+      "prove verifier independently rechecks receipt source and external snapshot authority",
+      "prove create_bundle has no direct base-runtime-config pathname bypass",
+      "prove route profile seal admission binary launch and completion-watchdog fields remain unchanged",
+      "run the exact focused tests once with no correction"
     ],
     "forbidden": [
+      "production or test correction",
       "configure build database DVC bundle worldserver or live-run operation",
-      "gameplay controller route class encounter pet skill threshold or fixture-contract weakening",
-      "manual copying as an unverified substitute for the production staging primitive",
+      "gameplay controller route class encounter pet skill threshold or fixture-contract change",
       "fixed 300-second timer"
     ]
   },
-  "closed_v65_evidence": {
-    "configure_count": 1,
-    "worldserver_build_count": 1,
-    "binary_sha256": "5f042c34d453dda20c00f27936140bdccf3c649e36b58274c0a518d8459a8eb0",
-    "strict_roster_gate_passed": true,
-    "recurrence_suite_result": "20/20 passed",
-    "canonical_stage_count": 1,
-    "prepared_object_materialize_count": 1,
-    "prepared_object_verify_count": 1,
-    "bundle_create_terminal": "base_runtime_config_inside_mutable_worktree",
+  "closed_v66_evidence": {
+    "implementation_commit": "b3fedc5acd6f2d7c01260fd39aa7ce1cc5b7023c",
+    "focused_result": "78 passed in 4.95s",
+    "focused_run_count": 1,
+    "correction_rerun_count": 1,
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "production_module_line_counts": {
+      "tools/raid_program/canonical_route_staging.py": 614,
+      "tools/raid_program/chainwielder_prestart_bundle.py": 949
+    },
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "atomic_bundle_create_count": 0,
     "worldserver_start_count": 0,
     "database_mutation_count": 0,
-    "dvc_remote_reconstruction_verified": true,
-    "exact_local_payload_evicted": true
+    "dvc_mutation_count": 0
   },
   "remaining_unproven": [
-    "a verified external base-runtime-config snapshot is accepted by the complete bundle",
-    "the live hold, Route-owner, receipt-zero rejection, terminal, release, and Drudges sequence",
+    "independent acceptance of the V66 authority chain",
+    "the real canonical base config passes one atomic bundle create and verify",
+    "the live Held, Route-owner, receipt-zero rejection, terminal, release, and Drudges sequence",
     "Chainwielder, Drudges, Magmaw, DPS, HPS, or pet-share outcomes"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "focused_test_files": ["tests/test_canonical_route_staging.py", "tests/test_chainwielder_prestart_bundle.py"],
-    "rerun_budget": "one focused run plus one correction rerun only if the patch causes a failure"
+    "focused_test_files": [
+      "tests/test_canonical_route_staging.py",
+      "tests/test_chainwielder_prestart_bundle.py"
+    ],
+    "rerun_budget": "one independent focused run with no correction"
   },
   "verification_budget": {
     "focused_test_run_count_maximum": 1,
-    "correction_rerun_count_maximum": 1,
+    "correction_rerun_count_maximum": 0,
     "configure_count_maximum": 0,
     "worldserver_build_count": 0,
     "atomic_bundle_create_count_maximum": 0,
@@ -92,7 +88,7 @@
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "evidence:external_base_runtime_config_snapshot_stage_v66",
+  "next_work_unit": "evidence:external_base_runtime_config_snapshot_review_v67",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Implement and fixture-verify the external immutable base-runtime-config staging and receipt boundary, then hand off one reviewed live unit."
+  "next_action": "Independently review V66 without correction, then emit one hash-bound live admission or typed rejection."
 }

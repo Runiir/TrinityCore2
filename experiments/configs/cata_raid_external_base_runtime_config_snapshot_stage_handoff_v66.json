@@ -1,0 +1,69 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:external_base_runtime_config_snapshot_stage_v66",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_green_pending_independent_review",
+  "source_commit": "f3c75d819d09cd9813da69851861fdeb8d51fde5",
+  "implementation_commit": "b3fedc5acd6f2d7c01260fd39aa7ce1cc5b7023c",
+  "input_handoff": {
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_external_base_config_not_staged_handoff_v65.json",
+    "sha256": "c8de3b78f96b2adac7dfea2e85a8c8857b559fc53e106be2bdddf95648ccdc9e"
+  },
+  "authority_chain": {
+    "source": "clean HEAD tree plus tracked relative path plus exact git-show bytes and caller-declared SHA-256",
+    "stage": "one exclusive external snapshot and canonical receipt bind source commit tree relative path and source/snapshot SHA-256",
+    "verify": "receipt hash and canonical shape, clean current HEAD/tree, tracked git-show bytes, materialized source bytes, and external snapshot bytes are independently rechecked",
+    "bundle": "create_bundle exposes only receipt path plus receipt SHA-256 and derives the base runtime config path/hash exclusively from the verified result"
+  },
+  "changed_files": {
+    "tools/raid_program/canonical_route_staging.py": {
+      "lines": 614,
+      "sha256": "915e8b4c7abf479eac5a6ffc5a4f13850cec0726ee6a37a66b15fab4f2ade9a4"
+    },
+    "tools/raid_program/chainwielder_prestart_bundle.py": {
+      "lines": 949,
+      "sha256": "a8d185452b67ec6918e81a02161dcfd01ea1aa3feb8c79e7c32aa1cd1b84d3cb"
+    },
+    "tests/test_canonical_route_staging.py": {
+      "lines": 867,
+      "sha256": "c57924251cee4156427e51294b6bda271da9b6cfac5cee5a84a2275a89758893"
+    },
+    "tests/test_chainwielder_prestart_bundle.py": {
+      "lines": 928,
+      "sha256": "5d890dbef3e712e6771a3f408955d481d3280a7c1430312b0d1f9a57a2e25382"
+    }
+  },
+  "verification": {
+    "focused_command": "pixi run pytest -q tests/test_canonical_route_staging.py tests/test_chainwielder_prestart_bundle.py",
+    "first_result": "77 passed, 1 failed: pre-existing ledger-location assertion exposed changed validation ordering",
+    "correction": "prevalidate known material locations before receipt verification, restoring ledger rejection precedence without weakening snapshot admission",
+    "correction_rerun_result": "78 passed in 4.95s",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "configure_build_bundle_live": "forbidden_not_run"
+  },
+  "claim_ledger": {
+    "verified": [
+      "V65's direct worktree base config reproduces base_runtime_config_inside_mutable_worktree while the receipt-bound external snapshot completes the same synthetic bundle path",
+      "dirty source, in-worktree or symlink staging root, source/hash/commit/tree/path drift, external snapshot mutation, receipt absence/noncanonical bytes/hash drift, collision, and direct bundle bypass fail closed",
+      "route profile seal admission binary launch and completion-watchdog semantics are unchanged by the receipt-only base-config boundary",
+      "all edited production modules remain below 1000 lines and the bundle is 949 lines"
+    ],
+    "refuted": [
+      "a mutable worktree path remains an accepted base_runtime_config create_bundle argument",
+      "V66 authorizes a build, bundle creation, worldserver start, gameplay result, or acceptance claim"
+    ],
+    "unproven": [
+      "an independent reviewer accepts commit b3fedc5acd6f2d7c01260fd39aa7ce1cc5b7023c and this authority chain",
+      "the real canonical base config stages and passes the complete atomic bundle",
+      "the live Held, Route-owner, terminal, release, and Drudges transcript",
+      "Chainwielder, Drudges, Magmaw, DPS, HPS, or pet-share outcomes"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:external_base_runtime_config_snapshot_review_v67",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Independently audit implementation commit b3fedc5acd6f2d7c01260fd39aa7ce1cc5b7023c, this handoff hash, tracked-source and external-snapshot authority, receipt-only bundle API, rejection matrix, and unchanged downstream bundle bindings. Run the focused tests once with no correction, then emit one reviewed live admission or typed rejection.",
+    "ready_for_live_verification": false
+  }
+}
