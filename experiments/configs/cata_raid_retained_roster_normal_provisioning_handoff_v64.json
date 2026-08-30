@@ -1,0 +1,125 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:retained_roster_normal_provisioning_v64",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "verified_provisioning_live_admission_ready",
+  "input_identities": {
+    "source_commit": "3acf34dc0cae76131e374ed37d807b0eb1dd6738",
+    "source_tree": "f6fa43511df2c8b16db8e4c17f89824c6ea25ada",
+    "active_descriptor_sha256": "01357e4478991dbb38b1ed6167af27ac6cf201382080dc6e48646b8a4cebda4c",
+    "source_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_retained_roster_drift_handoff_v63.json",
+    "source_handoff_sha256": "9c7989cc4b6bf00808124875161d1878eaf72a2e486ceac0fea36ac87a230dcd",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "provisioning_config_sha256": "8da89f5f13de5c15339d2c6e6c73aa33959ff4b44f5df2311bf0b536ca427f85",
+    "scenario_config_sha256": "718ddc9a56fbcfa3bd02f747f7a488429c469c6788c69275bc8b31cb5d084fa9",
+    "bwd_shard_fixture_sha256": "19cff150d9c1e4f27f832936619090f4f5b330bce76b15a81f6bb1f75ac80c6d"
+  },
+  "consumed_budget": {
+    "normal_tracked_preparation": "1/1",
+    "strict_provisioning_verifier": "1/1",
+    "retained_roster_readback": "1/1",
+    "configure": "0/0",
+    "worldserver_build": "0/0",
+    "atomic_bundle_create": "0/0",
+    "atomic_bundle_verify": "0/0",
+    "worldserver_start": "0/0",
+    "retry": "0/0",
+    "database_mutation": "one normal tracked preparation; no ad-hoc SQL"
+  },
+  "preparation_receipt": {
+    "schema": "bot_live_validation_preparation_v1",
+    "prepared": true,
+    "worldserver_started": false,
+    "validation_scenario_stage_preflight_valid": true,
+    "validation_scenario_stage_current": true,
+    "report_sha256": "01c59cb300dae5815ef97f3233f7e67800882d5e0f5be29dea5f2b8597704adf",
+    "account_statement_count": 110,
+    "executed_account_statement_count": 110,
+    "character_statement_count": 12635,
+    "executed_character_statement_count": 12635,
+    "generated_account_sql_sha256": "9c032a31ba93a1beb3c9f03840ca00bd1c587f0e825362c3d15f603e9923c001",
+    "generated_character_sql_sha256": "21451a6acf1a52c915b700480b04136bbfb09dc1db960fe760dedee3ef76a20a"
+  },
+  "strict_verification": {
+    "all_passed": true,
+    "provisioning_all_ready": true,
+    "payload_valid": true,
+    "database_valid": true,
+    "failure_count": 0,
+    "config_hash": "a69a7491bdb56e8d6acc782e81e27fde283eb9f522dcd6d76a63d341b6c815f3",
+    "receipt_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "gear_glyph_talent_spell_consumable_durability_mismatches": 0,
+    "runtime_rotation_profile_ready_count": 31,
+    "runtime_rotation_profile_expected_count": 31
+  },
+  "retained_roster_readback": {
+    "passed": true,
+    "receipt_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "selected_name_count": 10,
+    "map_id": 669,
+    "position": {
+      "x": -345.872,
+      "y": -224.344,
+      "z": 193.127,
+      "o": 0.0
+    },
+    "health_seed": 4294967295,
+    "power1_seed": 4294967295,
+    "online_rows": 0,
+    "at_login_rows": 0,
+    "leased_rows": 0,
+    "group_rows": 0,
+    "group_member_rows": 0,
+    "group_instance_rows": 0,
+    "character_instance_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0,
+    "ghost_aura_rows": 0,
+    "actor_30008_exact": true,
+    "all_peers_exact": true,
+    "reasons": []
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_3acf34dc0c_v64_retained_roster_normal_provisioning_passed_20260830.dvc",
+    "dvc_pointer_sha256_before_commit": "1724d88f7875440389c136aee28008e78df9b08cc103896004bd0595d804f274",
+    "dvc_directory_md5": "c902acae3331241041c1d6e395c5c4a2.dir",
+    "file_count": 5,
+    "size_bytes": 186970,
+    "push_result": "4 files pushed; one content object already remote",
+    "remote_reconstruction_verified": true,
+    "remote_reconstruction_manifest_sha256": "91d284c6707b3f575ee40be1e50049b47e0f9faa0021adcbbf0a9bd94e5d7528",
+    "remote_reconstruction_file_count": 5,
+    "remote_reconstruction_size_bytes": 186970,
+    "exact_local_payload_evicted": true,
+    "unique_cache_children_evicted": 3,
+    "shared_cache_children_retained": 2,
+    "directory_manifest_cache_object_retained": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "one normal tracked prepare-only restoration completed and did not start a worldserver",
+      "the strict provisioning verifier and exact retained-roster readback each passed on their sole execution",
+      "all ten frozen characters are offline and unleased at the declared map and entrance with full health and power seeds",
+      "group, instance, corpse, corpse-phase, ghost-aura, online, and at_login residue are zero",
+      "gear, glyph, talent, known-spell, consumable, durability, pet-contract, and runtime rotation-profile checks are clean",
+      "the compact evidence was pushed, independently reconstructed byte-for-byte, and exactly evicted"
+    ],
+    "refuted": [
+      "the retained V58 corpse, ghost, map, position, health, power, or runtime-spell drift remains after V64",
+      "V64 configured, built, bundled, or started a worldserver"
+    ],
+    "unproven": [
+      "the reviewed source builds and links a current worldserver",
+      "the live hold, Route-owner, receipt-zero rejection, terminal, release, and Drudges sequence",
+      "Chainwielder, Drudges, Magmaw, DPS, HPS, or pet-share outcomes"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:generic_controller_route_hold_one_build_one_live_v65",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "From the exact clean descriptor commit and restored zero-residue roster, perform at most one configure, exactly one fast8 worldserver build, one authenticated stage/prepared/bundle create-and-verify chain, and at most one no-retry completion-watchdog start for the reviewed V62 active-actor Route-owner sequence.",
+    "database_mutation": "forbidden; fresh read-only prestart verification only",
+    "retry_count": 0
+  }
+}
