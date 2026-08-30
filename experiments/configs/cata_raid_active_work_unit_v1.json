@@ -1,84 +1,67 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "chainwielder_checkpoint_conflicting_local_declaration_v56_20260830",
-  "work_unit": "runtime:chainwielder_checkpoint_conflicting_local_declaration_v56",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "gate_state": "v55_exact_clean_worldserver_compile_failure_verified",
-  "observed_at_commit": "e67b132eb8637a09afa95826d2fda1f4ae8e03d1",
-  "immutable_input_commit": "e67b132eb8637a09afa95826d2fda1f4ae8e03d1",
+  "epoch_id": "chainwielder_checkpoint_conflicting_local_declaration_independent_review_v57_20260830",
+  "work_unit": "evidence:chainwielder_checkpoint_conflicting_local_declaration_independent_review_v57",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "production_translation_unit_compile_green_pending_independent_review",
+  "gate_state": "v56_exact_production_object_compile_green_no_live_authorization",
+  "observed_at_commit": "b1436441875b00388546002b3e374b3c7b3b5945",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_v55_build_failure_handoff.json",
-    "sha256": "fea4a14712b47e8f6bfe0abbd1f62d6a9d9945188c37a6bc7d20ce609b44d3bc",
-    "source_commit": "e67b132eb8637a09afa95826d2fda1f4ae8e03d1"
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_conflicting_local_declaration_handoff_v56.json",
+    "sha256": "1690e0377fab93cadf0fd67a4f5731e8849afa7a305fa521a1d4f2075da74f0e",
+    "source_commit": "self"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "The Chainwielder actor identifies the compile evidence boundary only; the correction is a generic same-scope local declaration repair with no class, encounter, actor, or route special case."
+    "canary_only": "The Chainwielder actor is a retained compile-evidence identity only; no production or review branch may depend on it."
   },
   "behavior_change": false,
   "evidence_contract_change": false,
-  "ready_for_bounded_repair": true,
+  "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "first_broken_edge": "The real production translation unit declares controllerHold at lines 543 and 606 in the same ArmChainwielderOwnerCheckpoint scope, so the sole V55 build fails before linking.",
-    "allowed_change": "Resolve only the same-scope local-name collision while preserving the const admitted-identity reference and later move-out/reset/move-back controller-hold lifecycle exactly.",
-    "allowed_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
-      "tests/test_chainwielder_owner_checkpoint.py",
-      "one_compact_implementation_handoff",
-      "experiments/configs/cata_raid_active_work_unit_v1.json"
-    ],
-    "required_tests": [
-      "fail-before compilation of the real production translation unit reproduces the exact conflicting declaration",
-      "pass-after compilation of that real production translation unit succeeds",
-      "existing focused checkpoint suite remains green with identity and lifecycle order unchanged",
-      "all touched C++ files remain below 1000 lines"
-    ],
+    "allowed_change": "Independently verify V56 source hashes, exact production compile command/object receipt, identifier-only diff, unchanged move lifecycle, and focused result; emit a separate build/live admission or typed rejection.",
     "forbidden": [
-      "identity_comparison_or_lifecycle_change",
-      "gameplay_route_movement_class_pet_encounter_or_priority_change",
-      "polling_watchdog_timeout_threshold_or_fixture_promotion",
-      "configure_worldserver_build_worldserver_start_database_or_dvc_action"
+      "native_runtime_identity_lifecycle_gameplay_or_comparison_change",
+      "configure_worldserver_build_or_worldserver_start",
+      "python_controller_polling_timeout_retry_or_threshold_change",
+      "database_or_dvc_mutation",
+      "fixture_or_canary_promotion"
     ]
   },
-  "closed_v55_evidence": {
-    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_e67b132eb8_v55_build_conflicting_controller_hold_20260830.dvc",
-    "configure_ticket": "raid-build-f1e37ba691624061b1ec183670ddb5bc",
-    "configure_receipt_sha256": "2ecaf05f9dc649dce7d96ba9c7f826b235b129ad1d85f5363ae631dc759c292b",
-    "build_ticket": "raid-build-de8c949b9c8945029660c8064cbe89d7",
-    "build_receipt_sha256": "849c693819a97e38142e9e9243258023cf3fb99fc4082f206200ac2301eb2cfc",
-    "build_classification": "command_failed",
-    "binary_produced": false,
-    "worldserver_start_count": 0,
-    "remote_reconstruction_verified": true,
-    "exact_local_payload_evicted": true
-  },
-  "verification_budget": {
-    "focused_test_run_count_maximum": 1,
-    "correction_rerun_count_maximum": 1,
+  "admitted_actions": {
+    "validation": "handoff_hash_source_diff_compile_receipt_and_focused_fixture_review_only",
     "configure_count_maximum": 0,
     "worldserver_build_count_maximum": 0,
     "worldserver_start_count_maximum": 0,
-    "retry_count_maximum": 0,
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
+  "required_contract": {
+    "production_translation_unit_compile": true,
+    "identifier_only_change": true,
+    "const_admitted_identity_reference_preserved": true,
+    "move_out_preserved": true,
+    "checkpoint_reset_preserved": true,
+    "move_back_preserved": true,
+    "identity_comparison_changed": false,
+    "lifecycle_changed": false,
+    "gameplay_changed": false
+  },
+  "remaining_unproven": [
+    "full worldserver link at the V56 commit",
+    "one live recording-enabled Held, arm, terminal, release, and post-release route advance",
+    "gameplay and throughput outcomes"
+  ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "scope": "fixture_only",
     "fixed_success_timer_seconds": null,
-    "raid_success_timer_seconds": null,
-    "terminal_edges": [
-      "production_translation_unit_compile_pass",
-      "typed_compile_failure",
-      "identity_or_scope_mismatch"
-    ]
+    "raid_success_timer_seconds": null
   },
-  "next_work_unit": "runtime:chainwielder_checkpoint_conflicting_local_declaration_v56",
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "next_action": "Repair only the duplicate local declaration and prove the real production translation unit compiles; do not build or start a worldserver."
+  "next_work_unit": "evidence:chainwielder_checkpoint_conflicting_local_declaration_independent_review_v57",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Review V56 without building or starting a server, then issue a separate immutable full-build/live admission or typed rejection."
 }

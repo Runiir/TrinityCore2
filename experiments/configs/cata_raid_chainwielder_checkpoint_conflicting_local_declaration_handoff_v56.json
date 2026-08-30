@@ -1,0 +1,91 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:chainwielder_checkpoint_conflicting_local_declaration_v56",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "production_translation_unit_compile_green_pending_independent_review",
+  "git_commit": "self",
+  "input_identities": {
+    "implementation_base_commit": "b1436441875b00388546002b3e374b3c7b3b5945",
+    "v55_source_commit": "e67b132eb8637a09afa95826d2fda1f4ae8e03d1",
+    "v55_handoff_path": "experiments/configs/cata_raid_chainwielder_checkpoint_v55_build_failure_handoff.json",
+    "v55_handoff_sha256": "fea4a14712b47e8f6bfe0abbd1f62d6a9d9945188c37a6bc7d20ce609b44d3bc"
+  },
+  "program_scope": {
+    "supported_specs": "all_configured_dps_tank_and_healer_specs",
+    "supported_encounters": "all_route_manifest_nodes",
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_semantics": "The Chainwielder actor identifies only the retained compile evidence; the repair is a generic local identifier rename with no gameplay branch."
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_chainwielder_checkpoint_conflicting_local_declaration_handoff_v56.json",
+    "experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "implementation_files": {
+    "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp_sha256": "392cabea96a970668a2b8f44c12aedf4cfae32f838ded0979db4c0e1a555ed97",
+    "test_chainwielder_owner_checkpoint.py_sha256": "c97e246daa750d6a14c56dac6133ba34c7d516739a0966557b3832135f9047c0"
+  },
+  "repair": {
+    "before": "the same ArmChainwielderOwnerCheckpoint scope declared const-reference controllerHold for admitted identity and later mutable controllerHold for preservation",
+    "after": "only the later mutable local is named preservedControllerHold",
+    "const_admitted_identity_reference_changed": false,
+    "first_move_expression_changed": false,
+    "checkpoint_reset_changed": false,
+    "move_back_expression_semantics_changed": false,
+    "identity_comparison_changed": false,
+    "lifecycle_changed": false,
+    "gameplay_changed": false
+  },
+  "production_compile": {
+    "translation_unit": "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "compile_database_path": "build/compile_commands.json",
+    "compile_database_sha256": "1b29043874e01760b02d99f6613c3fd1512dfd1683f19d413deaa3b84008afbc",
+    "compile_command_sha256": "54b38850923e7884fd5a485634de829d1a8c38078523abf0846071032a811872",
+    "object_target": "build/src/server/game/CMakeFiles/game.dir/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp.o",
+    "fail_before": "compiler error at line 606: conflicting declaration BotControllerRouteHold::State controllerHold; previous const-reference declaration at line 543",
+    "pass_after": "exit 0; production object emitted",
+    "pass_after_object_sha256": "4db218d5a153c03f7508c9042cb9e0219a21a2cb2ea880fa19b71f87494856fb",
+    "nonfatal_warning": "pre-existing C++20 ciso646 deprecation warning",
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "focused_result": "6 passed in 1.42s",
+    "focused_run_count": 1,
+    "correction_rerun_count": 0,
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "guard": "retains const admitted reference, first move, reset, move-back, and rejects recurrence of mutable State controllerHold declaration",
+    "cpp_line_count": 913,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact V55 compiler diagnostic reproduces with the current production compile command",
+      "the same command compiles the production translation unit after only the later local identifier changes",
+      "the admitted-identity reference and move-out/reset/move-back lifecycle remain structurally and semantically unchanged",
+      "the focused immutable-profile, gate, arm, terminal, release, and negative regression suite remains green",
+      "the touched C++ file remains below 1000 physical lines"
+    ],
+    "refuted": [
+      "an identity, lifecycle, gameplay, route, or comparison change is required to resolve the V55 build failure",
+      "a configure, worldserver build, or server start is needed to prove this translation-unit correction"
+    ],
+    "unproven": [
+      "the full worldserver links at the V56 commit",
+      "one live recording-enabled arm, terminal, release, and post-release route advance completes",
+      "any Chainwielder, Drudges, Magmaw, DPS, HPS, or pet outcome"
+    ]
+  },
+  "remaining_blocker": "The exact production translation unit is compile-green, but V56 remains independently unreviewed and the complete worldserver is unlinked and unverified live.",
+  "next_work_unit": {
+    "id": "evidence:chainwielder_checkpoint_conflicting_local_declaration_independent_review_v57",
+    "owner_skill": "raid-evidence-lifecycle",
+    "allowed_action": "Independently verify the two-token identifier repair, production object receipt, source hashes, and unchanged lifecycle guard; emit a separate build/live admission or typed rejection.",
+    "worldserver_start_budget": 0
+  }
+}

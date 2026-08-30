@@ -785,6 +785,18 @@ def test_generic_controller_hold_is_wired_to_production_boundaries() -> None:
     assert "AdmittedIdentity(controllerHold)" in MODULE.read_text(
         encoding="utf-8"
     )
+    assert "State const& controllerHold" in MODULE.read_text(encoding="utf-8")
+    assert "State preservedControllerHold =" in MODULE.read_text(
+        encoding="utf-8"
+    )
+    assert "std::move(checkpoint.ControllerRouteHold)" in MODULE.read_text(
+        encoding="utf-8"
+    )
+    assert "checkpoint = {};" in MODULE.read_text(encoding="utf-8")
+    assert "std::move(preservedControllerHold)" in MODULE.read_text(
+        encoding="utf-8"
+    )
+    assert "State controllerHold =" not in MODULE.read_text(encoding="utf-8")
     assert "Cohort().Config.Name," not in MODULE.read_text(encoding="utf-8")
 
 

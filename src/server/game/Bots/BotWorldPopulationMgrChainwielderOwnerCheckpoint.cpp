@@ -603,10 +603,10 @@ std::string BotWorldPopulationMgr::ArmChainwielderOwnerCheckpoint(
         return BuildChainwielderOwnerCheckpointJson();
     }
 
-    BotControllerRouteHold::State controllerHold =
+    BotControllerRouteHold::State preservedControllerHold =
         std::move(checkpoint.ControllerRouteHold);
     checkpoint = {};
-    checkpoint.ControllerRouteHold = std::move(controllerHold);
+    checkpoint.ControllerRouteHold = std::move(preservedControllerHold);
     checkpoint.CurrentStage = Stage::Armed;
     checkpoint.AttemptId = Cohort().AttemptId;
     checkpoint.ActorGuid = actorGuid;
