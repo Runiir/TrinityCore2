@@ -1,0 +1,138 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_external_route_staging_final_review_v32",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_skill_scope_and_readability_repair_required",
+  "source_state": {
+    "commit": "a5bb5f25f8fd1315cad490d42c454e5a4a8cd6cc",
+    "tree": "98a8801f1250c15aeed67819b1cc43993c503db7",
+    "parent_commit": "d531ab6d8c6f31af9d5a81d105b50bbec9420529",
+    "clean_before_review": true,
+    "v30_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_bundle_input_location_failure_handoff_v30.json",
+    "v30_handoff_sha256": "75c784db3a64f85e7186ca341db16853ec37f9757a4386d057c75d2f50abd50f",
+    "v31_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_external_route_staging_preflight_review_handoff_v31.json",
+    "v31_handoff_sha256": "b79f9a943ba89fdb7c32f2265223159a75cc33625cf11d0c1a2ee3e4e9e14b6c"
+  },
+  "scope_lock": {
+    "reviewed_boundary": "HEAD-bound DVC directory output authentication, exact route-member staging outside the worktree, typed receipt publication, behavioral regressions, shard-skill routing language, and production readability",
+    "implementation_skill_or_test_edits": false,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "staging_preflight_count": 0,
+    "atomic_bundle_create_count": 0,
+    "atomic_bundle_verify_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "stage_canonical_route requires a clean Git HEAD/tree and byte-equal HEAD dvc.yaml and dvc.lock before trusting staging authority",
+      "the validation_scenarios output directory path and .dir digest are read from the locked stage output rather than hardcoded",
+      "the local DVC .dir cache manifest is hashed against the locked directory digest, and the exact source member MD5 is selected by its relative path and compared with materialized source bytes",
+      "the caller-supplied SHA-256 must match the source before staging and both source and staged SHA-256 are rechecked after the exclusive copy",
+      "the source must resolve within the worktree while the explicit existing run root and deterministic destination must resolve outside; source/root symlink aliases and conflicting destination or receipt names reject",
+      "copy and receipt publication use exclusive link creation and do not overwrite an existing destination",
+      "the typed receipt carries source commit, source path/hash, staged path/hash, receipt path, and receipt SHA-256",
+      "stage_canonical_route is a separate preflight function and neither invokes nor consumes create_bundle or verify_bundle; the focused tests observe zero create calls",
+      "the behavioral suite passes successful exact copy plus missing source/cache, materialized member MD5 drift, caller SHA drift, dirty tracked authority, directory-manifest drift, copy drift, destination conflict, worktree root, and symlink-root rejection",
+      "the focused production test passed 11 cases and skill quick_validate reports Skill is valid",
+      "commit a5bb5f25 changes only the V31-allowed production file, focused test, shard skill, and V31 compact handoff",
+      "no gameplay, native, controller, bundle-create/verify, route-content, DVC, database, build, or worldserver mutation was introduced"
+    ],
+    "refuted": [
+      "the raid-shard-architecture update is narrowly scoped: it says every live shard must call the Chainwielder-specific chainwielder_prestart_bundle.stage_canonical_route helper",
+      "the production file remains readable while satisfying the requested line boundary: it reaches 999 lines by deleting top-level blank separators broadly across unrelated pre-existing functions"
+    ],
+    "unproven": [
+      "the committed behavioral suite directly exercises a dirty dvc.lock rather than only dirty dvc.yaml",
+      "the committed behavioral suite directly exercises a missing exact member entry in an otherwise hash-consistent .dir manifest",
+      "the committed behavioral suite directly exercises a destination symlink rather than a regular conflicting destination and symlinked root",
+      "an externally staged exact route reaches the unchanged atomic bundle create and verify boundary",
+      "native Held generation one and the identity-preserved checkpoint lifecycle complete"
+    ]
+  },
+  "first_broken_edge": {
+    "owner": "raid_shard_skill_scope_and_staging_module_maintainability",
+    "edge": "the new skill paragraph begins with every live shard but mandates a helper owned by the Chainwielder prestart bundle",
+    "first_state_infecting_mutation": "a future non-Magmaw shard following the skill would be routed into a Magmaw-specific staging API despite having no Chainwielder atomic-bundle contract",
+    "failure_postcondition": "the skill turns one retained Magmaw failure into a universal workflow requirement, and the production implementation is held at 999 lines by removing readability separators rather than separating the staging concern",
+    "correlation_keys": {
+      "skill_lines": ".agents/skills/raid-shard-architecture/SKILL.md:211",
+      "mandated_helper": "tools.raid_program.chainwielder_prestart_bundle.stage_canonical_route",
+      "production_file_lines": 999,
+      "production_diff_numstat": "87 insertions, 45 deletions",
+      "focused_result": "11 passed, 34 deselected in 0.41s",
+      "skill_validation": "Skill is valid!"
+    }
+  },
+  "changed_file_audit": {
+    "changed_files": [
+      ".agents/skills/raid-shard-architecture/SKILL.md",
+      "experiments/configs/cata_raid_generic_controller_route_hold_external_route_staging_preflight_review_handoff_v31.json",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py"
+    ],
+    "all_changes_within_v31_allowlist": true,
+    "reviewed_files": {
+      ".agents/skills/raid-shard-architecture/SKILL.md": {
+        "sha256": "371b26c8cd40de878431bdf89e5ca163c10bbf9497b9ce629c73b2d141e09985",
+        "lines": 396
+      },
+      "tools/raid_program/chainwielder_prestart_bundle.py": {
+        "sha256": "f88ad8deaf651eb7745e0b330f686c1fda967033bc8833c1f298e0cd449523b0",
+        "lines": 999
+      },
+      "tests/test_chainwielder_prestart_bundle.py": {
+        "sha256": "e2b0a67c23797657d9ba59d30c95cbcc46dd28cad69110dd3a7370a3a5661d77",
+        "lines": 968
+      }
+    },
+    "production_under_1000": true,
+    "production_readability_passed": false
+  },
+  "deterministic_review": {
+    "independent_boundary_command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py -k external_route_staging",
+    "independent_boundary_result": "11 passed, 34 deselected in 0.41s",
+    "skill_validation_command": "pixi run python /home/runiir/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/raid-shard-architecture",
+    "skill_validation_result": "Skill is valid!",
+    "interpretation": "The staging behavior is locally green and fail-closed, but syntax/frontmatter validation does not cure the universal Magmaw-specific routing rule or the compressed 999-line production module."
+  },
+  "next_work_unit": {
+    "id": "evidence:external_route_staging_scope_readability_finalization_v33",
+    "owner_skill": "raid-evidence-lifecycle",
+    "hypothesis": "Scoping the skill paragraph only to the Chainwielder/Magmaw atomic-bundle flow and separating generic DVC staging authority into a focused module will preserve behavior while restoring narrow routing and readable concern boundaries.",
+    "owned_files": [
+      ".agents/skills/raid-shard-architecture/SKILL.md",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/canonical_route_staging.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_canonical_route_staging.py"
+    ],
+    "required_change": [
+      "scope the shard-skill instruction explicitly to the Chainwielder/Magmaw atomic-bundle workflow, or reference a genuinely generic staging API without requiring the Chainwielder module for unrelated shards",
+      "move the DVC authority, exclusive-copy, and typed-receipt concern into a focused readable production module and restore normal separation in chainwielder_prestart_bundle.py",
+      "preserve the existing stage_canonical_route caller contract and all eleven behavioral outcomes",
+      "add direct behavioral cases for dirty dvc.lock, a missing exact member in a hash-consistent .dir manifest, and destination symlink conflict",
+      "rerun focused staging tests and skill quick_validate once"
+    ],
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "staging_preflight_count": 0,
+      "atomic_bundle_create_count": 0,
+      "atomic_bundle_verify_count": 0,
+      "worldserver_start_count": 0,
+      "retry_count_maximum": 1,
+      "database_mutation_allowed": false,
+      "dvc_mutation_allowed": false
+    },
+    "forbidden": [
+      "gameplay_native_controller_route_content_or_identity_comparison_change",
+      "bundle_create_or_verify_semantic_change",
+      "polling_watchdog_threshold_fixture_or_acceptance_change",
+      "configure_build_worldserver_start_database_or_dvc_mutation",
+      "live_authorization"
+    ]
+  }
+}

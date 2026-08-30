@@ -1,16 +1,16 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_external_route_staging_preflight_v31_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_external_route_staging_preflight_v31",
+  "epoch_id": "external_route_staging_scope_readability_finalization_v33_20260830",
+  "work_unit": "evidence:external_route_staging_scope_readability_finalization_v33",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
-  "gate_state": "v30_atomic_create_rejected_worktree_contained_route_before_bundle_or_start",
-  "observed_at_commit": "6aff25af465cda7a8670cabe0e7a8c358c8c7473",
-  "immutable_input_commit": "6aff25af465cda7a8670cabe0e7a8c358c8c7473",
+  "gate_state": "v32_refuted_narrow_skill_scope_and_production_readability",
+  "observed_at_commit": "a5bb5f25f8fd1315cad490d42c454e5a4a8cd6cc",
+  "immutable_input_commit": "a5bb5f25f8fd1315cad490d42c454e5a4a8cd6cc",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_bundle_input_location_failure_handoff_v30.json",
-    "sha256": "75c784db3a64f85e7186ca341db16853ec37f9757a4386d057c75d2f50abd50f",
-    "source_commit": "6aff25af465cda7a8670cabe0e7a8c358c8c7473"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_external_route_staging_final_review_handoff_v32.json",
+    "sha256": "b24c72a36d2c061013f646be7a4b7f7b78defc86272a749c1430749c6f31d86a",
+    "source_commit": "a5bb5f25f8fd1315cad490d42c454e5a4a8cd6cc"
   },
   "evidence_pointer": {
     "path": "artifacts/cata_raid_program/phase1_raid_foundation_6aff25af46_generic_controller_route_hold_bundle_input_location_failure_v30_20260830.dvc",
@@ -22,8 +22,13 @@
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
-    "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "Affliction actor 30008 and Chainwielder remain observation identities; the required preflight is generic to every atomic shard input."
+    "supported_modes": [
+      "10N",
+      "10H",
+      "25N",
+      "25H"
+    ],
+    "canary_only": "The retained V30 counterexample is Magmaw/Chainwielder-specific. V33 owns staging skill scope, module readability, and adjacent staging regressions only."
   },
   "behavior_change": false,
   "evidence_contract_change": true,
@@ -31,59 +36,72 @@
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Add one deterministic no-live staging/preflight boundary that copies the exact canonical route into the external run root, proves source/staged hash equality, and rejects worktree-contained authoritative inputs before the sole atomic create is counted or invoked.",
+    "allowed_change": "Scope the shard instruction to the Chainwielder/Magmaw atomic-bundle flow, separate DVC route staging into a focused readable module while preserving the public contract, and add direct dirty-lock, missing-member, and destination-symlink regressions.",
     "allowed_files": [
-      "tools/raid_program/chainwielder_prestart_bundle.py",
-      "tests/test_chainwielder_prestart_bundle.py",
       ".agents/skills/raid-shard-architecture/SKILL.md",
-      "one_compact_tracked_review_handoff"
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/canonical_route_staging.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_canonical_route_staging.py"
     ],
     "forbidden": [
       "gameplay_native_controller_route_content_or_identity_comparison_change",
+      "bundle_create_or_verify_semantic_change",
       "polling_watchdog_threshold_fixture_or_acceptance_change",
       "configure_build_worldserver_start_database_or_dvc_mutation",
-      "authoritative_bundle_create_or_verify"
+      "live_authorization"
     ]
   },
   "verification_budget": {
     "configure_count_maximum": 0,
     "worldserver_build_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
+    "staging_preflight_count_maximum": 0,
     "atomic_bundle_create_count_maximum": 0,
     "atomic_bundle_verify_count_maximum": 0,
-    "retry_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
+    "retry_count_maximum": 1,
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "observed_failure": {
-    "bundle_create_count": 1,
-    "bundle_verify_count": 0,
-    "worldserver_start_count": 0,
-    "source_route_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
-    "failure_receipt_sha256": "ff8bbac1618f940378e9973269cb82e1e1010d4fd6c6312931df671877c3dfc8",
-    "first_edge": "The authoritative create received dataset/validation_scenarios/validation_routes.jsonl inside the mutable worktree and failed closed with route_manifest_inside_mutable_worktree before staging or launch."
+  "verified_v31_behavior": {
+    "clean_head_dvc_authority_checked": true,
+    "locked_output_directory_digest_not_hardcoded": true,
+    "directory_manifest_and_exact_member_md5_checked": true,
+    "caller_source_and_staged_sha256_checked": true,
+    "worktree_and_external_location_boundaries_checked": true,
+    "exclusive_non_overwrite_copy_and_receipt": true,
+    "typed_receipt_commit_paths_and_hashes": true,
+    "preflight_does_not_invoke_bundle_create_or_verify": true,
+    "focused_tests_green": true,
+    "skill_quick_validate_green": true
   },
-  "required_repair": {
-    "staging": "Copy exact canonical route bytes to a new external run root without altering content.",
-    "preflight": "Before authoritative create, require the staged route is outside the Git worktree and its SHA-256 equals the caller-bound canonical route SHA-256.",
-    "counting": "A location/hash rejection must happen in preflight and must not consume the one authoritative create budget.",
-    "positive_test": "An exact external copy passes and can be supplied unchanged to the existing create boundary.",
-    "negative_tests": "A worktree path, byte drift, symlink escape, missing file, and reused/nonempty destination fail before create."
+  "failed_review_contract": {
+    "skill_rule_is_narrow_to_magmaw_chainwielder_flow": false,
+    "chainwielder_prestart_bundle_readability_preserved": false,
+    "dirty_dvc_lock_direct_regression_present": false,
+    "missing_hash_consistent_member_direct_regression_present": false,
+    "destination_symlink_direct_regression_present": false,
+    "live_authorization_revoked": true
   },
   "remaining_unproven": [
     "an externally staged exact route reaches atomic bundle verification",
     "native Held generation one is Chainwielder with the profile-bound suffix hash",
     "two stable Held statuses precede one sealed arm",
     "one identity-preserved checkpoint lifecycle reaches a typed terminal",
-    "release advances exactly once to retained Drudges",
-    "route DPS HPS and Affliction pet share"
+    "release advances exactly once to retained Drudges"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_external_route_staging_preflight_v31",
+  "focused_validation": {
+    "command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py -k external_route_staging",
+    "result": "11 passed, 34 deselected in 0.41s",
+    "skill_quick_validate": "Skill is valid!",
+    "interpretation": "Local staging behavior passes; live remains closed until skill scope and production readability are corrected and the direct boundary regressions are retained."
+  },
+  "next_work_unit": "evidence:external_route_staging_scope_readability_finalization_v33",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Implement and independently test only the external route staging/location/hash preflight before authorizing another bundle create or live shard."
+  "next_action": "Narrow the skill rule, extract a readable staging concern without changing its public behavior, add the three direct regressions, and return for one independent no-live review."
 }
