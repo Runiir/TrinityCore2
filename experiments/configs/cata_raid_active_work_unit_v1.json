@@ -1,93 +1,77 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_review_v39_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_review_v39",
+  "epoch_id": "generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_v40_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_v40",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "implementation_pending_independent_review",
-  "gate_state": "v38_authenticated_catalog_to_scenario_contract_implemented_fixture_green",
-  "observed_at_commit": "18fdd4b56a54e167735489d814782c37c4cba60a",
-  "immutable_input_commit": "18fdd4b56a54e167735489d814782c37c4cba60a",
+  "classification": "failed",
+  "gate_state": "v39_rejected_runtime_selection_mismatch_and_receipt_snapshot_race",
+  "observed_at_commit": "5a16c0cd6135c0e2ad4d9d3b80c7ba7cea883450",
+  "immutable_input_commit": "5a16c0cd6135c0e2ad4d9d3b80c7ba7cea883450",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_handoff_v38.json",
-    "sha256": "33144a654d205af01e43b527a34266e7ce0a8f0109252ed8c389871bd29d21a8",
-    "source_commit": "18fdd4b56a54e167735489d814782c37c4cba60a"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_canonical_jsonl_bundle_shape_review_handoff_v39.json",
+    "sha256": "23adf0fa2731317bd6b5faaa2e0acf2137c76f46cf8ffb8f4bb1b6215c210960",
+    "source_commit": "5a16c0cd6135c0e2ad4d9d3b80c7ba7cea883450"
   },
   "evidence_pointer": {
     "path": "artifacts/cata_raid_program/phase1_raid_foundation_245a30593b_generic_controller_route_hold_jsonl_bundle_shape_failure_v37_20260830.dvc",
     "sha256": "722d82370070542c3f32ee6aca03df7ad108f5697b63ff31c5147b62d47b94b4",
     "directory_md5": "04b7be47dc30901d48d97d62a32ca2aa.dir",
     "remote_verified": true,
-    "remote_reconstruction_verified": true,
-    "remote_reconstruction_manifest_sha256": "d50e60b9433c423928f23ccb19135c188f822f28c20b3e861d3e114d3462f575",
     "local_output_evicted": true
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "The generic catalog-to-scenario input-shape contract applies to authenticated route catalogs. Chainwielder/Magmaw remains the exact current consumer and no gameplay claim was made."
+    "canary_only": "The repair is generic catalog selection and receipt authority. Chainwielder/Magmaw is only the current consumer fixture."
   },
   "behavior_change": false,
   "evidence_contract_change": true,
-  "ready_for_bounded_repair": false,
+  "ready_for_bounded_repair": true,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Independently review the V38 production-owned authenticated transformation from canonical DVC validation_routes.jsonl to an exact single-scenario runtime manifest object. Verify authority reconstruction, canonical runtime semantics, deterministic bytes, typed receipts, and unchanged consumer admission before authorizing a bounded create/verify check.",
+    "allowed_change": "Repair only runtime-equivalent filtering before admitted-row ambiguity checks and exact-byte staging-receipt snapshot binding, with focused behavioral regressions.",
     "allowed_files": [
-      "one_compact_review_handoff",
+      "tools/raid_program/canonical_route_catalog.py",
+      "tools/raid_program/canonical_route_staging.py",
+      "tests/test_canonical_route_staging.py",
+      "one_compact_implementation_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
     "forbidden": [
-      "production_or_test_edits",
-      "manual_jsonl_conversion_or_live_bundle_create_verify_or_retry",
+      "bundle_create_or_verify_edit_or_execution",
+      "manual_route_conversion_or_fixture_acceptance",
       "gameplay_native_controller_route_content_identity_comparison_polling_watchdog_or_threshold_change",
-      "configure_build_database_mutation_worldserver_start_or_dvc_publication",
-      "comparison_loosening_or_acceptance_claim"
+      "configure_build_database_mutation_worldserver_start_or_dvc_mutation",
+      "comparison_loosening_or_live_authorization"
     ]
   },
-  "closed_v37_evidence": {
-    "source_commit": "245a30593b80cbd223a2a39a4a3f98ef52cf12db",
-    "binary_sha256": "04a9ad083f4623e7adde5b44d20d93f15e9c98c53b5bc4d77fd6ec33aa0d50b0",
-    "configure_count": 1,
-    "worldserver_build_count": 1,
-    "database_mutation_count": 0,
-    "recurrence_fixture_count": 20,
-    "recurrence_fixture_pass_count": 20,
-    "staging_preflight_count": 1,
-    "staging_receipt_sha256": "b4d1d9be63571733fc0f72c61f7038baa167d33b99f7dcf46f044a32d523840f",
-    "canonical_catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
-    "canonical_catalog_row_count": 77,
-    "atomic_bundle_create_count": 1,
-    "atomic_bundle_verify_count": 0,
-    "worldserver_start_count": 0,
-    "retry_count": 0,
-    "failure_reason": "route_manifest_invalid",
-    "failure_receipt_sha256": "7903d02b5baa0595e7928d6eaf805e8856ff0c4d782be14b51b8fd7ddfd00e47"
-  },
   "first_broken_edge": {
-    "owner": "raid_evidence_catalog_to_runtime_manifest_contract",
-    "edge": "v38_implementation_requires_independent_authority_and_consumer_review",
-    "first_observed_mutation": "none",
-    "failure_postcondition": "no atomic bundle create, verification, launch contract, or worldserver start is authorized before review"
+    "owner": "raid_evidence_catalog_selection_and_receipt_authority",
+    "edge": "selected interaction/invalid-coordinate rows are rejected rather than canonically filtered, and staging receipt hashing is not over the exact parsed snapshot",
+    "failure_postcondition": "no atomic bundle create, verify, launch contract, or worldserver start is authorized"
   },
+  "required_proof": [
+    "mixed-kind selected scenarios exactly match load_validation_routes_for_scenario ordering and generation after filtering",
+    "excluded rows cannot enter selected identities, expected segments, output object, or receipt",
+    "duplicate admitted step or node rejects only after canonical filtering",
+    "hash and parser consume one immutable staging-receipt snapshot and a deterministic replacement race rejects",
+    "exact raw JSONL still fails and exact prepared object still succeeds through the unchanged consumer",
+    "focused pytest, py_compile, diff-check, line limits, and generic-constant audit pass"
+  ],
   "remaining_unproven": [
-    "independent review of the V38 catalog-to-scenario authority chain",
-    "an authenticated scenario-shaped route object reaches one atomic create and verify",
-    "a fresh native worldserver consumes the profile-bound suffix as Chainwielder generation one",
-    "two stable Held statuses precede one sealed arm",
-    "one identity-preserved checkpoint lifecycle reaches a typed terminal",
-    "release advances exactly once to retained Drudges",
-    "route DPS, HPS, actor throughput, and pet share"
+    "one repaired authenticated prepared object reaches atomic bundle create and verify",
+    "a fresh native worldserver consumes the profile-bound suffix",
+    "Held, arm, terminal, release, retained Drudges, and throughput evidence"
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "independent_review_accept",
-      "independent_review_reject",
-      "source_identity_mismatch",
+      "focused_contract_green",
+      "focused_contract_reject",
       "scope_violation"
     ]
   },
@@ -98,11 +82,11 @@
     "atomic_bundle_create_count_maximum": 0,
     "atomic_bundle_verify_count_maximum": 0,
     "worldserver_start_count_maximum": 0,
-    "retry_count_maximum": 0,
+    "retry_count_maximum": 1,
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_review_v39",
+  "next_work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_v40",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Independently review V38 without production edits or live actions. If the authority chain is exact, admit one bounded atomic bundle create/verify check; otherwise emit a typed rejection descriptor."
+  "next_action": "Implement only the two V39 authority-boundary repairs and focused regressions. Do not create or verify a bundle."
 }

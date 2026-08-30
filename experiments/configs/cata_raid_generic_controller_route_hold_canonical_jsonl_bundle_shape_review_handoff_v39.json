@@ -1,0 +1,109 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_review_v39",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_runtime_selection_and_receipt_snapshot_repair_required",
+  "source_state": {
+    "commit": "5a16c0cd6135c0e2ad4d9d3b80c7ba7cea883450",
+    "tree": "ec9a01c527747a9d1b9f33cf6c9f3ade1b8aec9b",
+    "parent_commit": "18fdd4b56a54e167735489d814782c37c4cba60a",
+    "clean_before_review": true,
+    "v37_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_jsonl_bundle_shape_failure_handoff_v37.json",
+    "v38_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_canonical_jsonl_bundle_shape_contract_handoff_v38.json",
+    "v38_handoff_sha256": "33144a654d205af01e43b527a34266e7ce0a8f0109252ed8c389871bd29d21a8"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact canonical JSONL still reaches the unchanged Chainwielder consumer as route_manifest_invalid, while a deterministically prepared Magmaw object from the same bytes is accepted by that unchanged shape and identity validator",
+      "clean-HEAD, committed dvc.yaml/dvc.lock, directory-manifest MD5, exact member MD5, caller SHA-256, source/staged SHA-256, external paths, exclusive output writes, deterministic object bytes, selected row identities, and output SHA-256 are represented in the staging and selection contracts",
+      "malformed JSONL, non-object rows, missing scenario, duplicate admitted step/node identity, output collisions, receipt drift, and staged-catalog drift fail closed in the focused fixtures",
+      "ordering, route_generation, expected_segments, and output bytes use the same sort and production payload helpers as the canonical runtime loader for scenarios containing only admitted route kinds",
+      "the changed production owners are generic and contain no Magmaw, Chainwielder, BWD, actor-30008, or canary constants",
+      "all V38 changes are within its six-file allowlist and canonical_route_catalog.py, canonical_route_staging.py, and chainwielder_prestart_bundle.py are respectively 330, 336, and 984 lines"
+    ],
+    "refuted": [
+      "V38 selection is semantically equivalent to load_validation_routes_for_scenario for all canonical scenarios",
+      "route_catalog_kind_forbidden is a valid universal treatment of selected-scenario rows excluded by the runtime loader",
+      "verify_staging_receipt binds the expected receipt SHA-256 to the exact bytes it parses under concurrent path replacement",
+      "V38 is ready for an atomic bundle create/verify fixture"
+    ],
+    "unproven": [
+      "a repaired selector reproduces runtime filtering while retaining fail-closed ambiguity checks after filtering",
+      "a repaired staging verifier hashes and parses one immutable receipt snapshot",
+      "one authenticated prepared object reaches atomic bundle create and verify",
+      "any native Held, arm, terminal, release, Drudges, or throughput claim"
+    ]
+  },
+  "first_broken_edges": [
+    {
+      "owner": "canonical_route_catalog_runtime_selection_semantics",
+      "edge": "_parse_catalog rejects disallowed kinds and invalid coordinates before constructing the runtime-selected row set, while load_validation_routes_for_scenario filters those rows out",
+      "production_reproduction": {
+        "catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+        "affected_scenarios": {
+          "blackwing_descent_10n": 7,
+          "blackwing_descent_10n_atramedes_diagnostic": 3,
+          "blackwing_descent_10n_chimaeron_diagnostic": 2,
+          "blackwing_descent_10n_nefarian_diagnostic": 2
+        },
+        "atramedes_runtime_selected_steps": [1, 2, 6, 7],
+        "v38_result": "route_catalog_kind_forbidden:26",
+        "duplicate_steps_after_runtime_filter": 0,
+        "duplicate_nodes_after_runtime_filter": 0
+      }
+    },
+    {
+      "owner": "canonical_route_staging_receipt_snapshot_binding",
+      "edge": "verify_staging_receipt hashes receipt_path with _sha256_file and then separately reads receipt_path, without hashing the bytes actually parsed",
+      "race_reproduction": "after the expected hash pass, replace receipt-one bytes with a second valid receipt for the same committed DVC member; verification accepts the second staged path while returning receipt-one's expected hash",
+      "accepted_expected_sha256": "c3f8340fa313e8ca4c5edac96d659a599f540a2612dca3213beab17948420858",
+      "accepted_consumed_bytes_sha256": "9a8bbc0fe2a303bf8c76e599a917193f15069a469cc8ea34a1f60560e9d947ec"
+    }
+  ],
+  "independent_validation": {
+    "focused_command": "pixi run pytest -q tests/test_canonical_route_staging.py",
+    "focused_result": "26 passed in 0.90s; green suite includes the incorrect forbidden-kind expectation and therefore does not clear review",
+    "py_compile": "passed for canonical_route_catalog.py, canonical_route_staging.py, and test_canonical_route_staging.py",
+    "diff_check": "passed",
+    "exact_consumer_probe": "exact raw catalog -> route_manifest_invalid; prepared Magmaw object -> accepted with 4 ordered routes",
+    "live_actions": 0,
+    "builds": 0,
+    "database_mutations": 0,
+    "dvc_mutations": 0,
+    "atomic_bundle_creates": 0,
+    "atomic_bundle_verifies": 0
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_v40",
+    "owner_skill": "raid-evidence-lifecycle",
+    "owned_files": [
+      "tools/raid_program/canonical_route_catalog.py",
+      "tools/raid_program/canonical_route_staging.py",
+      "tests/test_canonical_route_staging.py"
+    ],
+    "required_change": [
+      "match load_validation_routes_for_scenario by filtering selected-scenario rows to admitted kinds and truthy coordinates before sorting, generation, empty-selection handling, and duplicate step/node ambiguity checks",
+      "prove excluded interaction/invalid-coordinate rows and their identities cannot enter routes, expected_segments, selected-row receipt bindings, or output bytes, while malformed catalog rows and duplicate admitted rows still reject",
+      "hash, validate, and parse the exact same staging-receipt byte snapshot; reject symlink/path/inode replacement and add a deterministic two-valid-receipt race regression",
+      "rerun the exact raw-JSONL failure and prepared-object success through the unchanged consumer plus receipt create/verify fixtures"
+    ],
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "staging_preflight_count": 0,
+      "atomic_bundle_create_count": 0,
+      "atomic_bundle_verify_count": 0,
+      "worldserver_start_count": 0,
+      "retry_count_maximum": 1,
+      "database_mutation_allowed": false,
+      "dvc_mutation_allowed": false
+    },
+    "forbidden": [
+      "bundle_create_or_verify_edit_or_execution",
+      "runtime_loader_semantic_change_or_comparison_loosening",
+      "gameplay_native_controller_route_content_polling_watchdog_or_threshold_change",
+      "configure_build_worldserver_start_database_or_dvc_mutation",
+      "fixture_or_live_authorization"
+    ]
+  }
+}
