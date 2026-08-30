@@ -1,0 +1,323 @@
+{
+  "schema": "cata_raid_trace_transport_10_one_start_live_smoke_handoff_v1",
+  "work_unit_id": "shard:trace_transport_10_one_start_live_smoke",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_verification_route_disabled_pressure_below_watermark_no_explicit_gap",
+  "observed_at_utc": "2026-08-30T00:42:32Z",
+  "source": {
+    "commit": "2d92d393ceb9039ede9b74efd5e3e34a5885b100",
+    "tree": "55844b4d1f02553734046dd106a745a34b357d49",
+    "clean_before_build_provisioning_and_start": true,
+    "immutable_lane_handoff": {
+      "path": "experiments/configs/cata_raid_trace_transport_non_gameplay_lane_handoff_v1.json",
+      "sha256": "c4c0f47ae5edec4a2dad6a1609e17679d6e4a9ce7f0dbc471cabdf3de3adbe86",
+      "edited": false
+    },
+    "active_descriptor_matched_lane_before_start": true
+  },
+  "scope_lock": {
+    "candidate_first_broken_edge": "the natural route-disabled trace_transport_10 actors produce fewer than the production pressure watermark of 16 trace entries per actor between polls",
+    "first_observed_downstream_state_mutation": "TelemetryScheduler retained effective_trace_interval_seconds 10.0 because trace_pressure_entries never exceeded 6",
+    "failure_postcondition": "the sole 90-second run produced no explicit actor-local gap, so the required same-actor pressure-scheduled contiguous recovery edge was not exercised",
+    "single_hypothesis": "ordinary route-disabled ten-actor decision churn is insufficient to create the required live ring pressure",
+    "correlation_keys": [
+      "capture_id=cata_raid_phase1_trace_transport_10_v1",
+      "scenario_id=trace_transport_10",
+      "cohort_id=default",
+      "server_epoch=4265640866098872",
+      "attempt_id=1",
+      "profile_generation=1",
+      "profile_content_hash=551F369D459DFA0C01544B93FFAF57A35AA5F681BCE67D6FAB9E8CBA92E626AD",
+      "trace_command_sequence=1..9",
+      "bot_guid=1271..1280"
+    ],
+    "owned_behavior": "one production-controller transport-only smoke and its compact evidence lifecycle",
+    "production_boundary": "production TelemetryScheduler plus exact botauto trace all 128 delta against the ordinary ten-actor pool",
+    "allowed_changes": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_trace_transport_10_one_start_live_smoke_handoff_v1.json"
+    ],
+    "excluded": [
+      "gameplay",
+      "route",
+      "fixture",
+      "canary",
+      "boss_fidelity",
+      "acceptance",
+      "native_pressure",
+      "trace_ring_capacity",
+      "cursor_rules",
+      "watchdog_thresholds",
+      "class_policy",
+      "encounter_policy",
+      "DVC_publication",
+      "second_worldserver_start"
+    ],
+    "terminal_condition_observed": "failed_verification_pressure_shortfall_fail_closed_without_retry"
+  },
+  "claim_scope": {
+    "authority": "trace_transport_test_only_not_gameplay",
+    "transport_admitted": false,
+    "gameplay_admitted": false,
+    "route_admitted": false,
+    "fixture_admitted": false,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "boss_fidelity_admitted": false,
+    "allowed_claim": "one ten-actor native trace-transport noncompletion through the production TelemetryScheduler and controller parser"
+  },
+  "focused_validation": {
+    "command": "pixi run pytest -q tests/test_trace_transport_smoke.py tests/test_phase1_raid_foundation_capture.py::test_production_trace_transport_receipt_binds_fragmented_response_and_next_pressure_send tests/test_phase1_raid_foundation_capture.py::test_trace_transport_receipt_rejects_ambiguous_outstanding_commands tests/test_phase1_raid_foundation_capture.py::test_json_log_cursor_reads_append_only_chunks_once_and_preserves_partial_rows tests/test_phase1_raid_foundation_capture.py::test_trace_scheduler_shortens_after_ring_pressure_without_accepting_gaps",
+    "result": "8 passed in 0.15s",
+    "pass_count": 8,
+    "fail_count": 0
+  },
+  "build": {
+    "policy_id": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "configure": {
+      "ticket_id": "raid-build-0778b57afea04fffa0d90d486fb9baf0",
+      "queue_sequence": 1211,
+      "semantic_receipt_sha256": "77944bac95edd80db24c79d5728ebbc837c7d6f11cdaebd50fe0471e2ba8bc5d",
+      "receipt_file_sha256": "d461c8ced808fc5d7f2a742efde4f7e66772567ed67c094ee9e6cc1b425b9160",
+      "classification": "success",
+      "source_identity_stable": true,
+      "build_configuration_stable": true
+    },
+    "worldserver": {
+      "ticket_id": "raid-build-a929c11119e54b079bdcf425d64e0a32",
+      "queue_sequence": 1212,
+      "semantic_receipt_sha256": "d8ea917655e78c43e9e0f085d02700d46ad7b2c00e3521a1855f8bf9d75d4336",
+      "receipt_file_sha256": "aece484d3c2c881d0bc4130cfeaf3de7d357794e25dbcd62bcb9ebd2ede53fea",
+      "binary_sha256": "ca32e30f0b7cf655c55e27c50a52566c89f431bc3652da555ea0f6f928b86298",
+      "binary_size_bytes": 63762848,
+      "classification": "success",
+      "gate_bearing": true,
+      "source_identity_stable": true,
+      "build_configuration_stable": true
+    }
+  },
+  "provisioning": {
+    "scenario_id": "blackwing_descent_10n",
+    "pool_tag": "blackwing_descent_10n",
+    "verifier_all_passed": true,
+    "verifier_file_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "initial_readback_passed": true,
+    "initial_readback_file_sha256": "5b96cbe220178b794d43144f1087e2662f0e6a8bb404c21e28aeea094017a75d",
+    "actor_count": 10,
+    "all_offline": true,
+    "all_unleased": true,
+    "at_login_zero": true,
+    "initial_residue": {
+      "groups": 0,
+      "group_members": 0,
+      "group_instances": 0,
+      "character_instances": 0,
+      "corpses": 0,
+      "corpse_phases": 0,
+      "ghost_auras": 0
+    },
+    "actors": [
+      {"bot_guid": 1271, "name": "Bwdtanka", "role": "tank", "class_spec": "protection_paladin"},
+      {"bot_guid": 1272, "name": "Bwdtankb", "role": "tank", "class_spec": "blood_death_knight"},
+      {"bot_guid": 1273, "name": "Bwdheala", "role": "healer", "class_spec": "restoration_druid"},
+      {"bot_guid": 1274, "name": "Bwdhealb", "role": "healer", "class_spec": "holy_paladin"},
+      {"bot_guid": 1275, "name": "Bwdhealc", "role": "healer", "class_spec": "discipline_priest"},
+      {"bot_guid": 1276, "name": "Bwddpsa", "role": "dps", "class_spec": "fire_mage"},
+      {"bot_guid": 1277, "name": "Bwddpsb", "role": "dps", "class_spec": "assassination_rogue"},
+      {"bot_guid": 1278, "name": "Bwddpsc", "role": "dps", "class_spec": "affliction_warlock"},
+      {"bot_guid": 1279, "name": "Bwddpsd", "role": "dps", "class_spec": "marksmanship_hunter"},
+      {"bot_guid": 1280, "name": "Bwddpse", "role": "dps", "class_spec": "elemental_shaman"}
+    ]
+  },
+  "live_smoke": {
+    "capture_id": "cata_raid_phase1_trace_transport_10_v1",
+    "started_at_utc": "2026-08-30T00:38:41Z",
+    "worldserver_start_count": 1,
+    "one_start_owned_by_capture": true,
+    "emergency_wall_cap_seconds": 90,
+    "cap_expiry_is_success": false,
+    "worldserver_exit_code": 0,
+    "classification": "trace_transport_smoke_noncompletion",
+    "exact_command": "botauto trace all 128 delta",
+    "trace_command_count": 9,
+    "status_command_count": 18,
+    "diagnose_command_count": 3,
+    "transport_gate": {
+      "gate_passed": false,
+      "state": "awaiting_explicit_actor_local_gap",
+      "gap_actor_guid": null,
+      "pressure_watermark_entries": 16,
+      "maximum_observed_pressure_entries": 6,
+      "effective_trace_interval_seconds": 10.0,
+      "pressure_interval_seconds_not_armed": 2.0,
+      "explicit_actor_local_gap_count": 0,
+      "contiguous_recovery_exercised": false
+    },
+    "runtime_status_identity": {
+      "active_profile": "trace_transport_10",
+      "cohort_id": "default",
+      "pool_tag_filter": "blackwing_descent_10n",
+      "server_epoch": 4265640866098872,
+      "attempt_id": 1,
+      "profile_generation": 1,
+      "profile_content_hash": "551F369D459DFA0C01544B93FFAF57A35AA5F681BCE67D6FAB9E8CBA92E626AD",
+      "active_actor_count": 10,
+      "active_lease_count": 10,
+      "validation_route_enabled": false,
+      "kills": 0,
+      "deaths": 0,
+      "quests_accepted": 0,
+      "quests_completed": 0,
+      "raid_boss_kills": 0
+    },
+    "timing_semantics": "first byte is the controller's first 0.01-second-poll observation, not an OS wire timestamp",
+    "total_response_bytes": 2165324,
+    "response_receipts": [
+      {"sequence": 1, "send": 716556.969822814, "first_byte": 716556.980218477, "complete": 716556.980218477, "send_to_first_byte_seconds": 0.010396, "delivery_seconds": 0.0, "parse_seconds": 0.002527109, "bytes": 252420, "sha256": "16eb0862a4b39f6b6f8c02ef42abb96be8a304eb30d94c27d2b1f05174d85dd8", "complete_to_next_send_seconds": 9.994288, "pressure_entries": 5, "effective_interval_seconds": 10.0},
+      {"sequence": 2, "send": 716566.97450673, "first_byte": 716566.984623743, "complete": 716566.984623743, "send_to_first_byte_seconds": 0.010117, "delivery_seconds": 0.0, "parse_seconds": 0.00143466, "bytes": 205818, "sha256": "7598824124ef79c3dbe0a9c1888a4b15974b8bcbc25ec4ffc6bd883025f6cc8d", "complete_to_next_send_seconds": 9.993959, "pressure_entries": 5, "effective_interval_seconds": 10.0},
+      {"sequence": 3, "send": 716576.978583201, "first_byte": 716576.988685636, "complete": 716576.988685636, "send_to_first_byte_seconds": 0.010102, "delivery_seconds": 0.0, "parse_seconds": 0.001679466, "bytes": 240044, "sha256": "ea26b7a246bddd2c82fabb1cd308a7c2a4c7f2c916931f403c3d5d2758e0ac19", "complete_to_next_send_seconds": 9.994044, "pressure_entries": 5, "effective_interval_seconds": 10.0},
+      {"sequence": 4, "send": 716586.982730126, "first_byte": 716586.992831008, "complete": 716586.992831008, "send_to_first_byte_seconds": 0.010101, "delivery_seconds": 0.0, "parse_seconds": 0.001631725, "bytes": 233265, "sha256": "9115d11b102feda83f33cae57a10cf8eee17159fd3d5ed179f5a5388c007bf10", "complete_to_next_send_seconds": 9.99491, "pressure_entries": 5, "effective_interval_seconds": 10.0},
+      {"sequence": 5, "send": 716596.987740594, "first_byte": 716596.99784919, "complete": 716596.99784919, "send_to_first_byte_seconds": 0.010109, "delivery_seconds": 0.0, "parse_seconds": 0.001817088, "bytes": 252324, "sha256": "cb0f3b90e345ad2ff61dd7dd7c015f591ecb4ea9212f88d93f04b04b5493660c", "complete_to_next_send_seconds": 9.994002, "pressure_entries": 5, "effective_interval_seconds": 10.0},
+      {"sequence": 6, "send": 716606.99185154, "first_byte": 716607.001950659, "complete": 716607.001950659, "send_to_first_byte_seconds": 0.010099, "delivery_seconds": 0.0, "parse_seconds": 0.001564598, "bytes": 245283, "sha256": "de7897979f193a62a41cf982af3d0d8c7fc49f1c2635ebe85dffa4f086936758", "complete_to_next_send_seconds": 9.994574, "pressure_entries": 5, "effective_interval_seconds": 10.0},
+      {"sequence": 7, "send": 716616.996524516, "first_byte": 716617.006625338, "complete": 716617.006625338, "send_to_first_byte_seconds": 0.010101, "delivery_seconds": 0.0, "parse_seconds": 0.001943679, "bytes": 282275, "sha256": "977604a7400284c7c9895eda5d90c1eb6d9e7721443c4f31da322ebc0c5b4169", "complete_to_next_send_seconds": 9.99407, "pressure_entries": 6, "effective_interval_seconds": 10.0},
+      {"sequence": 8, "send": 716627.000695697, "first_byte": 716627.010791379, "complete": 716627.010791379, "send_to_first_byte_seconds": 0.010096, "delivery_seconds": 0.0, "parse_seconds": 0.001603321, "bytes": 229805, "sha256": "cc9fd306c77fd2f8771f33abb57ac4252b8ce07795741589debd700b63ebbc30", "complete_to_next_send_seconds": 9.994045, "pressure_entries": 6, "effective_interval_seconds": 10.0},
+      {"sequence": 9, "send": 716637.00483648, "first_byte": 716637.01494185, "complete": 716637.01494185, "send_to_first_byte_seconds": 0.010105, "delivery_seconds": 0.0, "parse_seconds": 0.001475608, "bytes": 224090, "sha256": "a218f5e5e09c7db19305a506aa2b681c02aaeb6fd2f8357bc5768ecb02aef9a6", "complete_to_next_send_seconds": null, "pressure_entries": 6, "effective_interval_seconds": 10.0}
+    ],
+    "actor_cursor_receipt": [
+      {"bot_guid": 1271, "cursor_chain": [0, 5, 8, 13, 17, 21, 26, 31, 34, 39], "entry_counts": [5, 3, 5, 4, 4, 5, 5, 3, 5], "all_gap_false": true, "all_contiguous": true},
+      {"bot_guid": 1272, "cursor_chain": [0, 5, 9, 13, 17, 22, 26, 31, 36, 39], "entry_counts": [5, 4, 4, 4, 5, 4, 5, 5, 3], "all_gap_false": true, "all_contiguous": true},
+      {"bot_guid": 1273, "cursor_chain": [0, 5, 8, 12, 17, 21, 25, 31, 34, 38], "entry_counts": [5, 3, 4, 5, 4, 4, 6, 3, 4], "all_gap_false": true, "all_contiguous": true},
+      {"bot_guid": 1274, "cursor_chain": [0, 5, 8, 12, 17, 21, 26, 31, 34, 39], "entry_counts": [5, 3, 4, 5, 4, 5, 5, 3, 5], "all_gap_false": true, "all_contiguous": true},
+      {"bot_guid": 1275, "cursor_chain": [0, 5, 9, 13, 17, 22, 26, 31, 36, 39], "entry_counts": [5, 4, 4, 4, 5, 4, 5, 5, 3], "all_gap_false": true, "all_contiguous": true},
+      {"bot_guid": 1276, "cursor_chain": [0, 5, 9, 13, 17, 22, 26, 31, 36, 39], "entry_counts": [5, 4, 4, 4, 5, 4, 5, 5, 3], "all_gap_false": true, "all_contiguous": true},
+      {"bot_guid": 1277, "cursor_chain": [0, 5, 8, 13, 17, 21, 26, 31, 34, 39], "entry_counts": [5, 3, 5, 4, 4, 5, 5, 3, 5], "all_gap_false": true, "all_contiguous": true},
+      {"bot_guid": 1278, "cursor_chain": [0, 5, 8, 13, 17, 21, 26, 31, 34, 39], "entry_counts": [5, 3, 5, 4, 4, 5, 5, 3, 5], "all_gap_false": true, "all_contiguous": true},
+      {"bot_guid": 1279, "cursor_chain": [0, 5, 9, 13, 17, 22, 26, 31, 36, 39], "entry_counts": [5, 4, 4, 4, 5, 4, 5, 5, 3], "all_gap_false": true, "all_contiguous": true},
+      {"bot_guid": 1280, "cursor_chain": [0, 5, 9, 13, 17, 22, 26, 31, 36, 39], "entry_counts": [5, 4, 4, 4, 5, 4, 5, 5, 3], "all_gap_false": true, "all_contiguous": true}
+    ]
+  },
+  "demultiplexing": {
+    "typed_transport_actor_rows_total": 90,
+    "typed_transport_actor_rows_bound": 90,
+    "typed_transport_actor_rows_rejected": 0,
+    "all_actor_cursors_independent_and_contiguous": true,
+    "typed_transport_gate_failed_only_before_the_required_gap_recovery_boundary": true,
+    "missing_canonical_identity_boundary": {
+      "verified": true,
+      "trace_receipt_identity_values": {
+        "server_epoch": 0,
+        "attempt_id": 0,
+        "profile_generation": 0,
+        "profile_content_hash": "",
+        "runtime_profile": null,
+        "instance_id": 0,
+        "assignment_generation": 0
+      },
+      "status_identity_values": {
+        "server_epoch": 4265640866098872,
+        "attempt_id": 1,
+        "profile_generation": 1,
+        "profile_content_hash": "551F369D459DFA0C01544B93FFAF57A35AA5F681BCE67D6FAB9E8CBA92E626AD",
+        "runtime_profile": "trace_transport_10"
+      },
+      "general_evidence_demux_result": "rejected_no_active_raid_rows_and_canonical_runtime_missing",
+      "interpretation": "actor-local transport ordering is observed, but the retained trace receipt cannot be promoted to a fully canonical lifecycle identity join"
+    }
+  },
+  "resource_summary": {
+    "sample_count": 19,
+    "elapsed_seconds": 90.039,
+    "mean_cpu_percent_one_core": 8.252,
+    "maximum_rss_bytes": 1423343616,
+    "minimum_rss_bytes": 1406828544,
+    "pid_consistent": true
+  },
+  "capture_artifact_hashes_before_eviction": {
+    "report_file_sha256": "09ce9862ab9655bfaeac7ef038c9e614d15ad09cb9de248d832877697965a8b5",
+    "report_canonical_sha256": "666c8cd1cc77c971d16bea1d760169aa06f74b000ff5048b5ba82063a7b96ad5",
+    "report_bytes": 70043,
+    "raw_jsonl_sha256": "075f1dd826e0375e7da637575558771f52930d262d913ba2273b1241d785ed08",
+    "raw_jsonl_bytes": 2911377,
+    "worldserver_log_sha256": "7bce6fa6253747b7d963244bf913b62fc7f09654ffb0e344f9fac68254f13388",
+    "worldserver_log_bytes": 2955466
+  },
+  "cleanup": {
+    "controller_cleanup_gate_passed": true,
+    "botauto_stop_observed": true,
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "controller_process_absent": true,
+    "zero_runtime_bots": true,
+    "zero_runtime_leases": true,
+    "intermediate_readback": {
+      "passed": false,
+      "character_instance_rows": 10,
+      "ghost_aura_rows": 2,
+      "file_sha256": "374f72b8e4bdd077a7b0814ac5363d7df8b505cb4d6b35af319300b57449ef47"
+    },
+    "ordinary_reversible_provisioning_reset_applied": true,
+    "final_readback": {
+      "passed": true,
+      "selected_actor_count": 10,
+      "online_count": 0,
+      "leased_count": 0,
+      "groups": 0,
+      "group_members": 0,
+      "group_instances": 0,
+      "character_instances": 0,
+      "corpses": 0,
+      "corpse_phases": 0,
+      "ghost_auras": 0,
+      "file_sha256": "5b96cbe220178b794d43144f1087e2662f0e6a8bb404c21e28aeea094017a75d"
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact clean HEAD handoff build provisioning and profile identity gates passed before the sole start",
+      "the gate-bearing fast8_v2 build used eight compiler jobs and one linker and produced the exact admitted binary",
+      "the production capture owned exactly one worldserver start and used the exact botauto trace all 128 delta command",
+      "all nine trace responses contained all ten actors with independent gap-free contiguous cursor chains",
+      "natural route-disabled pressure was only three through six entries per actor per poll and never armed the two-second pressure cadence",
+      "no explicit actor-local gap occurred so the required gap-to-contiguous-followup result was not exercised",
+      "the status stream carried the exact nonzero runtime identity but trace transport receipts retained zero or null canonical identity values",
+      "gameplay route fixture canary boss fidelity build and acceptance claims remain false",
+      "controller cleanup completed and the ordinary provisioning reset returned the isolated cohort to exact zero residue"
+    ],
+    "refuted": [
+      "the route-disabled trace_transport_10 profile creates enough natural pressure for the required explicit gap within the assigned one-start 90-second smoke",
+      "the two-second pressure-scheduled recovery response was observed",
+      "typed actor ordering alone supplies the canonical lifecycle identity required by general evidence demultiplexing",
+      "emergency cap expiry is transport success"
+    ],
+    "unproven": [
+      "same-actor recovery after an explicit live gap under the production two-second pressure cadence",
+      "whether the same actor reoverflows once production pressure is naturally present",
+      "a transport serialization delivery or parse bottleneck under pressure"
+    ]
+  },
+  "dvc": {
+    "publication_performed": false,
+    "reason": "the result is a nonaccepted transport receipt and no gameplay evidence may be published"
+  },
+  "eviction": {
+    "temporary_root": "/home/runiir/Games/cata-trace-transport-10-live-smoke",
+    "raw_report_log_receipts_and_generated_provisioning_removed_after_hashing": true,
+    "retained_local_evidence": "tracked compact handoff only",
+    "dvc_cache_mutated": false
+  },
+  "next_owner": {
+    "owner": "raid-shard-architecture",
+    "work_unit": "shard:resolve_trace_transport_natural_pressure_and_identity_boundary_offline",
+    "action": "review the verified natural-pressure shortfall and the missing canonical trace-receipt identity boundary offline; coordinate evidence-lifecycle ownership for the identity join before proposing any new live admission",
+    "evidence_lifecycle_boundary": "trace receipt identity must bind the status-observed server epoch attempt profile generation profile hash and runtime profile",
+    "prohibited": "do not add native pressure, reinterpret this run as admitted transport, make gameplay claims, patch an adjacent lane, or start another worldserver under this work unit"
+  },
+  "changed_files": [
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_trace_transport_10_one_start_live_smoke_handoff_v1.json"
+  ],
+  "untouched_dirty_files": []
+}

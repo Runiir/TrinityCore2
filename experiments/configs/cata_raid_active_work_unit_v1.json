@@ -1,27 +1,27 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "trace_transport_non_gameplay_lane_pending_build_and_live_v1_20260830",
-  "work_unit": "shard:production_controller_trace_delta_cadence_smoke",
+  "epoch_id": "trace_transport_10_one_start_pressure_noncompletion_v1_20260830",
+  "work_unit": "shard:resolve_trace_transport_natural_pressure_and_identity_boundary_offline",
   "raid": "blackwing_descent",
   "boss": null,
   "mode": "telemetry_only",
   "owner_skill": "raid-shard-architecture",
-  "classification": "implementation_pending_build_and_live_verification",
-  "gate_state": "route_disabled_ten_actor_transport_lane_implemented_worldserver_start_count_zero_fresh_exact_build_receipt_required",
-  "observed_at_commit": "22b42bccc7704444bd09c6ec6b2718ff79dfa6d9",
+  "classification": "failed_verification_route_disabled_pressure_below_watermark_no_explicit_gap",
+  "gate_state": "one_start_consumed_transport_not_admitted_no_second_start",
+  "observed_at_commit": "2d92d393ceb9039ede9b74efd5e3e34a5885b100",
   "source_handoff": {
+    "path": "experiments/configs/cata_raid_trace_transport_10_one_start_live_smoke_handoff_v1.json",
+    "sha256": "af4b21453eee012e8d96761daef4814e20cab983074bd60a5f585612f6146764"
+  },
+  "immutable_lane_handoff": {
     "path": "experiments/configs/cata_raid_trace_transport_non_gameplay_lane_handoff_v1.json",
     "sha256": "c4c0f47ae5edec4a2dad6a1609e17679d6e4a9ce7f0dbc471cabdf3de3adbe86"
   },
-  "immutable_input": {
-    "path": "experiments/configs/cata_raid_production_controller_trace_delta_cadence_smoke_handoff_v1.json",
-    "sha256": "3edcb4ce1701f8aa009d16650225916586c4bf16844069aeeb1e6f68dabeea8d"
-  },
-  "first_broken_edge": "The gameplay recurrence canary cannot authorize a transport prerequisite; the new typed route-disabled trace_transport_10 lane separates transport admission from route, gameplay, fixture, canary, and acceptance admission without bypassing Magmaw recurrence.",
-  "required_production_boundary": "Obtain an exact clean-commit build receipt, provision and read back the ordinary ten-actor pool without auto-start, then run exactly one trace_transport_10 capture through the production TelemetryScheduler and exact botauto trace all 128 delta command.",
+  "first_broken_edge": "Natural route-disabled trace_transport_10 pressure reached only six entries per actor between polls, below the production watermark of sixteen, so TelemetryScheduler remained at ten seconds and no explicit actor-local gap occurred.",
+  "additional_missing_boundary": "The typed trace receipt bound all ninety actor rows in serial command order but retained zero or null canonical runtime identity fields while status carried the real server epoch attempt profile generation and profile hash.",
   "claim_scope": {
     "authority": "trace_transport_test_only_not_gameplay",
-    "transport_admitted": null,
+    "transport_admitted": false,
     "gameplay_admitted": false,
     "route_admitted": false,
     "fixture_admitted": false,
@@ -37,25 +37,29 @@
     "cap_expiry_is_success": false
   },
   "validation": {
-    "implementation_commit": "22b42bccc7704444bd09c6ec6b2718ff79dfa6d9",
+    "source_commit": "2d92d393ceb9039ede9b74efd5e3e34a5885b100",
     "focused_tests": "8_passed",
+    "build_receipt_gate_bearing": true,
+    "build_receipt_sha256": "d8ea917655e78c43e9e0f085d02700d46ad7b2c00e3521a1855f8bf9d75d4336",
+    "worldserver_binary_sha256": "ca32e30f0b7cf655c55e27c50a52566c89f431bc3652da555ea0f6f928b86298",
     "runtime_profile": "trace_transport_10",
     "runtime_route_enabled": false,
     "target_actor_count": 10,
     "production_trace_command": "botauto trace all 128 delta",
-    "production_pressure_interval_seconds": 2.0,
-    "worldserver_start_count": 0,
+    "worldserver_start_count": 1,
+    "trace_response_count": 9,
+    "maximum_pressure_entries": 6,
+    "pressure_watermark_entries": 16,
+    "explicit_gap_count": 0,
+    "all_actor_cursor_chains_contiguous": true,
     "live_transport_verified": false,
-    "gameplay_admitted": false,
-    "fixture_promotion_admitted": false,
-    "acceptance_admitted": false
+    "cleanup_verified": true,
+    "final_zero_residue_readback": true
   },
   "next_owner": {
     "owner": "raid-shard-architecture",
-    "work_unit": "shard:production_controller_trace_delta_cadence_smoke",
-    "required_before_start": "fresh gate-bearing fast8_v2 worldserver build receipt bound to clean commit 22b42bccc7704444bd09c6ec6b2718ff79dfa6d9 and ordinary blackwing_descent_10n provisioning/readback",
-    "one_start_command": "pixi run python -m tools.raid_program.capture_phase1_raid_foundation --binary build/src/server/worldserver/worldserver --config /tmp/cata-trace-transport-10-prepared/worldserver.validation.conf --output /tmp/cata-trace-transport-10-run/report.json --raw-output /tmp/cata-trace-transport-10-run/trace.raw.jsonl --server-log-output /tmp/cata-trace-transport-10-run/worldserver.log --build-receipt experiments/configs/cata_raid_build_receipts/trace_transport_10_worldserver_22b42bccc7.json --worktree /home/runiir/Games/trinity-cata --trace-transport-smoke --scenario-id trace_transport_10 --runtime-profile trace_transport_10 --pool-tag blackwing_descent_10n --observe-sec 90",
-    "return_on_pass": "raid-performance-loop",
-    "return_on_same_actor_reoverflow": "raid-bot-runtime-implementation"
+    "work_unit": "shard:resolve_trace_transport_natural_pressure_and_identity_boundary_offline",
+    "action": "review the natural-pressure shortfall and coordinate raid-evidence-lifecycle ownership for the canonical trace receipt identity join before any new live admission",
+    "do_not_do": "do not add native pressure, patch gameplay, publish gameplay evidence, reinterpret the noncompletion as transport admission, or start another worldserver under the consumed work unit"
   }
 }
