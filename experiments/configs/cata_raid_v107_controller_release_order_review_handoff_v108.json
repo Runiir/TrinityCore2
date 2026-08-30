@@ -1,0 +1,78 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "review:controller_route_hold_release_order_v107",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "passed",
+  "reviewed_commits": [
+    "2e2fc05f5e85fa60e2a2474a76922c5662668734",
+    "0e284b6b8145a90cb1b71eb379a0259f13298db8"
+  ],
+  "review_verdict": "PASS",
+  "semantic_boundary": {
+    "predicate": "route_generation > initial and release_ack_count != 1",
+    "assessment": "correct causal ordering boundary",
+    "release_ack_requirements": [
+      "phase is released",
+      "release_count is exactly one",
+      "launch and native-scope identity fields match exactly",
+      "held route generation remains one"
+    ],
+    "fail_closed_edges": [
+      "generation advancement while held",
+      "generation advancement while armed",
+      "wrong release identity",
+      "missing, malformed, or duplicate release acknowledgement",
+      "missing, partial, altered, or identity-changing checkpoint lifecycle"
+    ]
+  },
+  "v105_value_reconstruction": {
+    "source_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_6c0fb8b5a6_v105_controller_hold_abort_20260831.dvc",
+    "raw_object_md5": "d1d1427616d02df3418fb2bb88b86416",
+    "capture_sequence_14": "exact identity-bound released acknowledgement, release_count 1, held generation 1",
+    "capture_sequence_69": "identity-bound released status, runtime and validation generation 2",
+    "capture_sequence_73": "second identity-bound released status, runtime and validation generation 2",
+    "conclusion": "sequence 69 completed the scheduler and sequence 73 is idempotent post-release progress, not pre-release advancement"
+  },
+  "validation": {
+    "focused_result": "5 passed in 0.17s",
+    "focused_run_count": 1,
+    "regression_kind": "value-level scheduler transcript and negative protocol execution",
+    "full_bank_receipt_sha256": "2eb9464b339d2ffc05d2581e691a9b369835c6e47a0262a885cbcdce901b4863",
+    "full_bank_decision_sha256": "6fcfbc2edaf32282676428bd656686681809884d2ba40fcd8151e728ecf816c6",
+    "full_bank_manifest_sha256": "1a9ca91c8cbed6c947e85a1211abff519e1c92b1948610e18bd11353efeedf28",
+    "full_bank_source_identity": "2e2fc05f5e85fa60e2a2474a76922c5662668734",
+    "full_bank_result": "20/20 commands passed; zero timeout or nonzero return codes",
+    "python_metrics": {
+      "physical_lines": 545,
+      "functions": 23,
+      "total_branch_nodes": 109,
+      "maximum_branch_nodes": 27,
+      "observe_status_branch_nodes": 27
+    },
+    "server_start_count": 0,
+    "database_mutation_count": 0,
+    "dvc_tracking_mutation_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "an exact release acknowledgement is the only boundary that permits later route generation progress",
+      "one or repeated post-release generation-2 status rows remain accepted after completion",
+      "the V106 regression executes values through ControllerRouteHoldScheduler and is not source-only",
+      "the V106 full-bank hashes and exact source identity match the retained receipts"
+    ],
+    "unproven": [
+      "the three remaining same-level production boundaries",
+      "the invalidated parasite fixtures represent repaired live behavior",
+      "any gameplay, Magmaw clear, DPS, HPS, or acceptance result"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:composite_map669_production_boundary_replay_v108",
+    "owner_skill": "raid-shard-architecture",
+    "authorization": "one exact-clean no-retry fixture-expansion replay only",
+    "build_rules": "at most one configure and one gate-bearing worldserver build, 8 compiler jobs and 1 linker job, exact request/admission/completion identity required",
+    "server_rules": "exactly one worldserver start, no authserver, completion watchdog only, no fixed raid success timer",
+    "evidence_rules": "publish and remotely verify the bounded immutable run through DVC, retain first and terminal edges, then safely evict raw local payload",
+    "gameplay_authorization": false
+  }
+}

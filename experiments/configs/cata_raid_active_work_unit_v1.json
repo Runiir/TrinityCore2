@@ -1,29 +1,31 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "review:controller_route_hold_release_order_v107",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "independent_review_required",
-  "epoch_id": "v107_controller_route_hold_release_order_review_20260831",
-  "observed_at_commit": "2e2fc05f5e85fa60e2a2474a76922c5662668734",
-  "immutable_input_commit": "2e2fc05f5e85fa60e2a2474a76922c5662668734",
-  "gate_state": "implementation_passed_review_required_live_and_gameplay_gates_closed",
+  "work_unit": "shard:composite_map669_production_boundary_replay_v108",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "live_recurrence_quarantined",
+  "epoch_id": "v108_composite_map669_production_boundary_replay_20260831",
+  "observed_at_commit": "0e284b6b8145a90cb1b71eb379a0259f13298db8",
+  "immutable_input_commit": "0e284b6b8145a90cb1b71eb379a0259f13298db8",
+  "gate_state": "one_no_retry_fixture_replay_admitted_gameplay_and_acceptance_closed",
   "behavior_change": false,
   "evidence_contract_change": true,
   "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": false,
+  "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "review:controller_route_hold_release_order_v107",
-  "next_action": "Independently review the V106 release-order predicate and retained V105 transcript. Do not start a server.",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_work_unit": "shard:composite_map669_production_boundary_replay_v108",
+  "next_action": "Run exactly one no-retry completion-watchdog map-669 fixture-expansion replay. Build once at exact clean identity, start one worldserver without authserver, publish verified DVC evidence, and stop.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v106_controller_release_order_repair_handoff_v107.json",
-    "sha256": "d6a710a924a7988c6de1cf9f6b827f37ecb4dfebd9235344f586f46e9b7d853f",
-    "source_commit": "2e2fc05f5e85fa60e2a2474a76922c5662668734",
-    "source_tree": "4e7dfb4896e5236193aed0bc5c1efa8583c68af1"
+    "path": "experiments/configs/cata_raid_v107_controller_release_order_review_handoff_v108.json",
+    "sha256": "07cc636c8711a1f5fa100a48ebe821348a28de3eb682677eb9840225a2ae6b93",
+    "source_commit": "0e284b6b8145a90cb1b71eb379a0259f13298db8",
+    "source_tree": "d86bb24fb67dc09bbea97b52ed874da149b84940"
   },
   "completed_predecessor": {
-    "work_unit": "evidence:controller_route_hold_release_order_gate_v106",
+    "work_unit": "review:controller_route_hold_release_order_v107",
     "implementation_commit": "2e2fc05f5e85fa60e2a2474a76922c5662668734",
+    "reviewed_descriptor_commit": "0e284b6b8145a90cb1b71eb379a0259f13298db8",
+    "review_verdict": "PASS",
     "focused_tests": "5/5 passed",
     "full_bank_fixture_commands": "20/20 passed",
     "server_start_count": 0,
@@ -31,39 +33,43 @@
     "gameplay_changed": false
   },
   "program_scope": {
-    "operation": "one read-only independent review of the trace-backed capture-controller release-order repair",
+    "operation": "one exact-clean no-retry map-669 fixture-expansion replay",
     "implementation_allowed": false,
     "test_mutation_allowed": false,
-    "worldserver_start_admitted": false,
+    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "database_mutations_allowed": false,
-    "dvc_mutations_allowed": false,
+    "dvc_mutations_allowed": true,
     "gameplay_canary_admitted": false,
     "acceptance_admitted": false
   },
   "scope_lock": {
-    "required_review": [
-      "reconstruct V105 capture sequences 14, 69, and 73 from the compact handoff",
-      "confirm release_ack_count is set only after an exact identity-bound released acknowledgement",
-      "confirm generation advancement before acknowledgement still fails in held and armed phases",
-      "confirm repeated generation-2 statuses after acknowledgement remain idempotently complete"
+    "required_replay": [
+      "run exactly the four admitted fixture-expansion targets",
+      "retain production-consumed outcomes for each target",
+      "retain both first broken edge and terminal edge",
+      "publish, remotely verify, and safely evict bounded evidence"
     ],
     "forbidden": [
       "gameplay, C++, movement, planner, encounter, class, route, fixture expectation, ledger, or database edits",
-      "worldserver or authserver start",
+      "authserver start or second worldserver start",
       "gameplay canary, boss clear, DPS, HPS, or acceptance claim"
     ]
   },
   "execution_budget": {
-    "review_test_invocation_count_maximum": 1,
-    "worldserver_start_count_maximum": 0,
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "worldserver_start_count_maximum": 1,
     "authserver_start_count_maximum": 0,
     "database_mutation_count_maximum": 0,
-    "dvc_mutation_count_maximum": 0
+    "retry_count_maximum": 0,
+    "dvc_publication_required": true
   },
   "required_terminal_evidence": {
-    "pass": "Independent source and value-level review confirms the release acknowledgement is the exact ordering boundary without weakening pre-release failures.",
-    "fail": "Stop on any identity loosening, missing negative, or transcript mismatch and route one bounded correction."
+    "pass": "All four admitted production boundaries produce identity-bound native outcomes under one completion-watchdog replay, cleanup passes, and DVC evidence is remotely verified.",
+    "fail": "Stop on the first typed fixture, infrastructure, identity, cleanup, or publication failure. Do not retry."
   },
   "remaining_unproven": [
     "the three unobserved same-level production boundaries",
@@ -75,8 +81,8 @@
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "independent_review_passed",
-      "identity_or_order_mismatch",
+      "all_fixture_targets_observed",
+      "first_typed_fixture_or_infrastructure_failure",
       "scope_violation"
     ]
   }
