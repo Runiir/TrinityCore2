@@ -1,0 +1,162 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_profile_manifest_suffix_review_v25",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_authoritative_profile_seal_binding_required",
+  "source_state": {
+    "commit": "f90a054e5d4d38d690463cbdf943260ed781f8f6",
+    "tree": "bd6e494b6bf507eb495617ae82564a358842743e",
+    "parent_commit": "aee7497863798e60395ad8e1a68f8c525d7350d5",
+    "clean_before_review": true,
+    "v23_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_profile_overlay_mismatch_handoff_v23.json",
+    "v23_handoff_sha256": "37605ae9289d656c3dd7caaa89050120c9c2b827841ce8cc3a7257723adcb92a"
+  },
+  "scope_lock": {
+    "reviewed_boundary": "bundle-local selected-profile construction through config, bundle payload manifests, recurrence admission, capture-setup config-then-profile projection, and generic scheduler identity",
+    "implementation_or_test_edits": false,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false,
+    "native_or_gameplay_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the V23 fail-before is reproduced: a config-level suffix is overridden when the selected canonical runtime profile supplies the four-node canonical route path",
+      "the generated bundle-local profile manifest contains exactly the selected blackwing_descent_10n_magmaw_diagnostic profile",
+      "bundle creation reconstructs the selected committed profile and changes only validation_route.manifest_path semantically",
+      "BotWorld.ProfileManifest points to the sealed bundle-local runtime_profiles.json file",
+      "the profile file and overlay identities are listed in the canonical payload manifest, bundle manifest, recurrence-admission JSON, and launch contract",
+      "capture setup resolves config first and then the selected-profile overlay, verifies config/admission profile path and SHA-256, verifies the route suffix path and SHA-256, and derives the scheduler node/hash from the effective suffix",
+      "the setup validator has fail-closed branches for missing or duplicate selected profiles, foreign selection, path drift, profile hash drift, envelope drift, and non-route selected-profile drift",
+      "controller_route_hold.py and all native/gameplay files are unchanged; capture_setup adds no actor, spec, raid-size, difficulty, Chainwielder, Magmaw, or concrete route-node constant and does not loosen scheduler comparisons",
+      "commit f90a054e changes only the three V24-allowed files",
+      "all reviewed production files remain under 1000 lines"
+    ],
+    "refuted": [
+      "the runtime-profile path/hash and semantic overlay identity are bound by the checkpoint seal",
+      "verify_recurrence_admission authoritatively validates the profile_manifest binding or runtime_profile_overlay identity",
+      "capture setup receives an independently authenticated profile semantic identity rather than a self-asserted extra admission field",
+      "green bundle tests alone satisfy the V23 requirement to carry profile identity through the seal and authoritative recurrence verifier"
+    ],
+    "unproven": [
+      "a forged but internally self-consistent profile overlay cannot pass recurrence verification and capture-setup projection after bypassing bundle verification",
+      "the full missing, duplicate, foreign, path, hash, envelope, and non-route drift matrix is exercised at the real capture-setup boundary rather than partly through helper-level cases",
+      "native ApplyRuntimeProfile consumes the suffix as Chainwielder generation one",
+      "one identity-preserved checkpoint lifecycle reaches a typed terminal",
+      "release advances exactly once to retained Drudges"
+    ]
+  },
+  "first_broken_edge": {
+    "owner": "recurrence_admission_and_checkpoint_seal_profile_identity_authority",
+    "edge": "the bundle creates the standard recurrence admission without a profile manifest, then appends profile_manifest and runtime_profile_overlay fields afterward",
+    "first_state_infecting_mutation": "capture setup reads the appended runtime_profile_overlay as its semantic source of truth even though the checkpoint seal contains only source, binary, build receipt, decision, fixture, and purpose identities and verify_recurrence_admission ignores the appended profile fields",
+    "failure_postcondition": "a profile path/hash/semantic identity is not closed by the required seal and authoritative recurrence verifier, so V25 cannot authorize a worldserver start",
+    "correlation_keys": {
+      "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+      "v23_expected_suffix_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+      "v23_actual_canonical_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+      "bundle_append_lines": "tools/raid_program/chainwielder_prestart_bundle.py:788",
+      "seal_payload_lines": "tools/raid_program/recurrence_admission.py:157",
+      "capture_overlay_consumer_lines": "tools/raid_program/capture_setup.py:217"
+    }
+  },
+  "binding_audit": {
+    "bundle_local_profile_exact_selected_only": true,
+    "only_route_manifest_path_semantically_changed": true,
+    "config_profile_manifest_path_bound": true,
+    "canonical_payload_manifest_bound": true,
+    "bundle_manifest_bound": true,
+    "launch_contract_bound": true,
+    "recurrence_json_extra_fields_present": true,
+    "recurrence_authoritative_verifier_bound": false,
+    "checkpoint_seal_bound": false,
+    "live_admission_complete": false
+  },
+  "changed_file_audit": {
+    "changed_files": [
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py"
+    ],
+    "all_changes_within_v24_allowlist": true,
+    "controller_source_changed": false,
+    "native_or_gameplay_source_changed": false,
+    "reviewed_files": {
+      "tools/raid_program/chainwielder_prestart_bundle.py": {
+        "sha256": "aa65c6dddfc319c69b92bb00f98cc7df2e99e2f7c87331621c3726f6ddc2057a",
+        "lines": 962
+      },
+      "tools/raid_program/capture_setup.py": {
+        "sha256": "c82d23c75ba63353ca484ad0637dc51bb41b1ff05a8170883e75c6309f481bdd",
+        "lines": 576
+      },
+      "tools/raid_program/controller_route_hold.py": {
+        "sha256": "44a2712700b4b797dedd822058424505147585d9d0b836a0758c5205c22e2968",
+        "lines": 491,
+        "changed": false
+      },
+      "src/server/game/Bots/BotWorldPopulationMgrValidationRouteManifest.cpp": {
+        "lines": 913,
+        "changed": false
+      },
+      "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp": {
+        "lines": 779,
+        "changed": false
+      },
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": {
+        "lines": 910,
+        "changed": false
+      },
+      "tests/test_chainwielder_prestart_bundle.py": {
+        "sha256": "519a73f7b04b8ab07dcfd7e105c04acecea495e96a79bd065f7066c85f74a541",
+        "lines": 790
+      }
+    },
+    "production_line_limit_passed": true
+  },
+  "deterministic_review": {
+    "coordinator_committed_tree_test": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py",
+    "coordinator_committed_tree_result": "34 passed in 2.10s",
+    "independent_boundary_test": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity tests/test_chainwielder_prestart_bundle.py::test_profile_suffix_rejects_ambiguous_selection_and_non_route_mutation",
+    "independent_boundary_result": "2 passed in 0.25s",
+    "interpretation": "The real create/verify/admission/setup/scheduler boundary and helper drift cases are green, but the tests confirm only internal bundle consistency; they do not add the missing checkpoint-seal and authoritative recurrence-verifier binding."
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_profile_overlay_authority_binding_v26",
+    "owner_skill": "raid-evidence-lifecycle",
+    "hypothesis": "The selected-profile binding is currently post-appended, so moving it into recurrence-admission creation and binding its file hash plus canonical semantic overlay hash into the pre-config checkpoint seal will give capture setup an independently verified config-then-profile identity.",
+    "owned_files": [
+      "tools/raid_program/recurrence_admission.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_setup.py",
+      "tests/test_recurrence_admission.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "required_change": [
+      "make profile_manifest and the canonical runtime_profile_overlay identity first-class inputs to recurrence-admission creation rather than post-creation JSON mutations",
+      "bind the exact profile-manifest SHA-256 and canonical overlay semantic SHA-256 in the checkpoint seal before config rendering",
+      "make verify_recurrence_admission re-hash and validate the profile binding, seal fields, selected profile, source committed profile semantics, exact one-field route-path delta, and effective suffix path/hash before returning an admitted overlay",
+      "make capture setup consume only that authoritative verified overlay and reject any independently edited admission overlay",
+      "add real boundary counterexamples for coherent self-updated profile/admission drift plus missing, duplicate, foreign, path, hash, envelope, and non-route mutations"
+    ],
+    "validation": "pixi run pytest -q tests/test_recurrence_admission.py tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py -k 'profile_manifest or profile_overlay or target_suffix'",
+    "budget": {
+      "configure_count": 0,
+      "worldserver_build_count": 0,
+      "worldserver_start_count": 0,
+      "retry_count_maximum": 1,
+      "database_mutation_allowed": false,
+      "dvc_mutation_allowed": false
+    },
+    "forbidden": [
+      "native_runtime_gameplay_class_pet_encounter_or_route_strategy_change",
+      "generic_controller_change_or_identity_comparison_loosening",
+      "priority_polling_watchdog_threshold_change",
+      "configure_build_worldserver_start_database_or_dvc_mutation",
+      "fixture_promotion_or_acceptance_claim"
+    ]
+  }
+}
