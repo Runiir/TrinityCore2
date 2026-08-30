@@ -1,0 +1,84 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v95",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "prestart_controller_route_hold_composite_target_rejected",
+  "source": {
+    "commit": "eeb9a370dbdde926dd95c4e00ee7dc333574025d",
+    "tree": "b08930b15396ca68635bda66683c0d8bc7540379",
+    "clean": true,
+    "v94_handoff": "experiments/configs/cata_raid_v94_verified_pending_projection_handoff_v95.json",
+    "v94_handoff_sha256": "bf2788c75205ffdfeac801c359c8a5c3b04997be50cfb37c532fccde1f7c7274"
+  },
+  "passed_gates": {
+    "recurrence_suite": "20/20",
+    "fixture_expansion_admitted": true,
+    "fresh_fast8_v4_build_gate_bearing": true,
+    "binary_sha256": "680c8d7cd0a97660e71a0d94d967f700168252193ceda9ad87df89fa8720d599",
+    "build_receipt_sha256": "a18b1c87f8af7b07ccc59192eab11121f7cbc22ab57ea243e3e69c2b5706690a",
+    "tracked_runtime_config_verified": true,
+    "canonical_catalog_and_selector_verified": true,
+    "route_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "atomic_bundle_verified": true,
+    "strict_retained_roster_readback": true,
+    "checkpoint_verified_projection_accepted": true
+  },
+  "first_broken_edge": {
+    "stage": "controller_route_hold_preflight",
+    "result": "controller_route_hold:controller_route_hold_verified_admission_invalid",
+    "worldserver_spawned": false,
+    "cause": "controller_route_hold_launch_identity requires a singleton fixture_expansion_target_ids list and derives fixture_id from element zero, while the authenticated V95 projection correctly contains four targets",
+    "missing_verified_identity": "the raw verified checkpoint seal binds fixture_id=chainwielder_pre_admission_rejection_isolation_v1, but verify_recurrence_admission exposes only checkpoint_seal_sha256"
+  },
+  "required_repair": {
+    "projection": "expose checkpoint_fixture_id from the already-verified checkpoint seal",
+    "consumer": "make controller_route_hold_launch_identity consume that verified ID and require its membership in fixture_expansion_target_ids",
+    "forbidden": "do not select a target by list position, restore a singleton assumption, or loosen target-set validation",
+    "regression": "exercise create_recurrence_admission -> verify_recurrence_admission -> controller_route_hold_launch_identity with the exact composite target set and preserve forged/missing/nonmember negative cases"
+  },
+  "operations": {
+    "recurrence_suite_invocations": 1,
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "runtime_config_derivation_count": 1,
+    "canonical_route_stage_count": 1,
+    "prepared_route_object_count": 1,
+    "selector_receipt_verify_count": 1,
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_verify_count": 1,
+    "strict_retained_roster_readback_count": 1,
+    "capture_controller_invocations": 1,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "retry_count": 0,
+    "database_mutation_count": 0,
+    "gameplay_mutation_count": 0
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_eeb9a370db_v95_controller_route_hold_composite_prestart_failed_20260831.dvc",
+    "dvc_pointer_sha256": "47d32ab10de5ba9d56841572144099992838bb8df8adca200779ace12df2bae6",
+    "dvc_directory_md5": "1e90c062f140ee7409feeaa7308599a0.dir",
+    "file_count": 29,
+    "size_bytes": 696583,
+    "remote_reconstruction_manifest_sha256": "39f3700ceb22994db4557f1007e615146a1002e3748c69fd1b466ae75cb4ffe7",
+    "remote_reconstruction": "verified"
+  },
+  "claim_ledger": {
+    "verified": [
+      "V94's verified pending projection reaches the next prestart consumer",
+      "generic route-hold still assumes a singleton and rejects the valid composite admission",
+      "the correct checkpoint fixture identity is already authenticated by the verified seal"
+    ],
+    "refuted": [
+      "V95 reached the map-669 correlated production boundary",
+      "list position is a valid checkpoint fixture authority"
+    ],
+    "unproven": [
+      "map-669 revisions 4/5/5 and required negative outcomes",
+      "any gameplay canary or boss result"
+    ]
+  },
+  "next_work_unit": "evidence:bind_verified_checkpoint_fixture_to_route_hold_v96",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Expose and consume the authenticated checkpoint fixture identity with one real production-bound regression; no build or server start in V96."
+}
