@@ -27,9 +27,15 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     _process_arguments,
     _protected_process_matches,
     expected_bwd_10n_roster,
+    _provisioned_bwd_bots,
+    _provisioned_bwd_10n_bots,
+    _canonical_int_list,
     _expected_identity_by_slot,
+    _runtime_gear_manifest,
     _compact_trailing_zero_gems,
     _identity_manifest_rejections,
+    _roster_identity,
+    _roster_rejections,
     preflight_runtime_exclusions,
     git_identity,
     _utc_timestamp,
@@ -260,6 +266,28 @@ def test_terminal_runtime_failure_is_exact_roster_bound_and_material():
     reason, rejections = terminal_runtime_failure_reason(status)
     assert reason is None
     assert "terminal_failure_all_roster_leases_owned" in rejections
+
+
+def test_runtime_acceptance_uses_focused_production_module():
+    expected_module = "tools.raid_program.capture_runtime_acceptance"
+    for owner in (
+        expected_bwd_10n_roster,
+        _provisioned_bwd_bots,
+        _provisioned_bwd_10n_bots,
+        _canonical_int_list,
+        _expected_identity_by_slot,
+        _runtime_gear_manifest,
+        _compact_trailing_zero_gems,
+        _identity_manifest_rejections,
+        _roster_identity,
+        _roster_rejections,
+        accepted_foundation_status,
+        terminal_preflight_failure_reason,
+        terminal_runtime_failure_reason,
+        accepted_native_recovery,
+        native_readycheck_request_identity,
+    ):
+        assert owner.__module__ == expected_module
 
 
 def test_terminal_preflight_failure_stops_before_semantic_stall_and_keeps_active_terminal_semantics():
