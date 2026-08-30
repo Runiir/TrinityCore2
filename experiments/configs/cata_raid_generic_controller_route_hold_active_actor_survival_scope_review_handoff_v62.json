@@ -1,0 +1,97 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_active_actor_survival_scope_review_v62",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "verified_build_live_admission_authorized",
+  "source_state": {
+    "implementation_commit": "9898ac6aac1021c651b29273fcb398d550725c0f",
+    "implementation_tree": "b2e3862340de7ba3c7c12c3f1887bfe606833f20",
+    "review_descriptor_commit": "5e0cf08141b1610ba8a1f8d27771d889022a6d12",
+    "review_descriptor_tree": "88fd4a0e0e417407c5d4adeb57d12112cf29725a",
+    "v60_handoff_sha256": "d5ee792a787ea3a5fc32d72162d5a0799b9c1158a3c4ab22041f9696ccff9799",
+    "v61_handoff_sha256": "6ee2bdc5986b71fc43496f7a5937060d2519b56b6b9707be63e35d8e0145f188",
+    "clean_before_review": true
+  },
+  "diff_review": {
+    "production_change": "the existing raw Survival plus Movement denial gains only actingActorGuid equal to Scope.ActorGuid scoping",
+    "production_files_changed": [
+      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h"
+    ],
+    "test_files_changed": [
+      "tests/test_chainwielder_owner_checkpoint.py"
+    ],
+    "identity_comparison_changed": false,
+    "route_advance_gate_changed": false,
+    "terminal_or_release_changed": false,
+    "special_case_added": false,
+    "complexity_effect": "one actor comparison in the existing low-CCN predicate; no decision tree added or duplicated"
+  },
+  "compiled_replay_review": {
+    "boundary": "real BotControllerRouteHold::State admission, BotActionArbitration::Kernel resolution, and BotMovementArbitration Evaluate and Apply",
+    "active_actor_survival_movement_attempts": 0,
+    "foreign_actor_survival_movement_attempts": 1,
+    "foreign_candidate_matches_admission_shape": "same Unknown classification, adaptive_raid_trash source, Survival priority, and Movement resource",
+    "non_movement_survival_attempts": 1,
+    "explicit_defensive_survival_source_path_preserved": true,
+    "exact_armed_validation_route_pair_attempts": [1, 1],
+    "route_owner_after_pair": "Route",
+    "receiptless_hazard_rejection": "submitted false, Hazard owner, future_pack_destination, rejected, route_destination_future_pack_unsafe, receipt zero",
+    "route_identity_preserved": true,
+    "typed_terminal": "hazard_exit_completed",
+    "release_count": 1,
+    "route_advance_before_release": false,
+    "route_advance_after_release": true,
+    "negative_matrix": "all identity-field drift, wrong scope, foreign actor checkpoint metadata, synthetic non-route source, missing terminal, and duplicate acquire arm terminal release cases remain typed fail-closed"
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "focused_result": "6 passed in 1.59s",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "line_counts": {
+      "BotChainwielderOwnerCheckpoint.h": 622,
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 912,
+      "BotWorldPopulationMgrValidationRouteRuntime.cpp": 779,
+      "test_chainwielder_owner_checkpoint.py": 979
+    },
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the V61 production diff is exactly actor scoping of the raw Survival plus Movement denial",
+      "the active actor denial and foreign actor admission execute through the real State and Kernel boundary",
+      "the exact Armed validation_route_adapter pair establishes the real Route owner before the receipt-zero Hazard rejection",
+      "route identity survives through the typed terminal, one release, and post-release advance",
+      "all retained identity duplicate and ordering negatives pass without comparison weakening or special cases",
+      "all touched C++ files remain below 1000 lines"
+    ],
+    "refuted": [
+      "foreign actors remain suppressed by the V59 predicate",
+      "V61 changes identity, route advancement, terminal, release, encounter, class, spec, or gameplay policy beyond actor scoping"
+    ],
+    "unproven": [
+      "the full worldserver builds and links at the reviewed descriptor commit",
+      "one live recording-enabled Route owner, receipt-zero rejection, terminal, release, and post-release advance completes",
+      "any Chainwielder, Drudges, Magmaw, DPS, HPS, or pet outcome"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:generic_controller_route_hold_one_build_one_live_v63",
+    "owner_skill": "raid-shard-architecture",
+    "allowed_action": "At the exact clean descriptor commit, perform at most one queued fast8_v2 configure and exactly one queued fast8_v2 worldserver build, then one authenticated bundle create/verify and at most one no-retry completion-watchdog live start. DVC-publish, remotely reconstruct, verify, and exactly evict the closed evidence.",
+    "budget": {
+      "configure_count_maximum": 1,
+      "worldserver_build_count": 1,
+      "atomic_bundle_create_count": 1,
+      "atomic_bundle_verify_count": 1,
+      "worldserver_start_count_maximum": 1,
+      "retry_count": 0,
+      "database_mutation": "forbidden; fresh strict retained-roster readback only",
+      "dvc_mutation": "required after closure for publication remote reconstruction verification and exact eviction"
+    }
+  }
+}

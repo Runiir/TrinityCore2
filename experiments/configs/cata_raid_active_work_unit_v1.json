@@ -1,78 +1,113 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_active_actor_survival_scope_review_v62_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_active_actor_survival_scope_review_v62",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "fixture_green_pending_independent_review",
-  "gate_state": "v61_actor_scoped_survival_movement_fixture_green_no_live_authorization",
-  "observed_at_commit": "9898ac6aac1021c651b29273fcb398d550725c0f",
+  "epoch_id": "generic_controller_route_hold_one_build_one_live_v63_20260830",
+  "work_unit": "shard:generic_controller_route_hold_one_build_one_live_v63",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
+  "gate_state": "v62_actor_scoped_survival_movement_and_route_owner_lifecycle_independently_verified",
+  "observed_at_commit": "5e0cf08141b1610ba8a1f8d27771d889022a6d12",
   "immutable_input_commit": "9898ac6aac1021c651b29273fcb398d550725c0f",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_active_actor_survival_scope_handoff_v61.json",
-    "sha256": "6ee2bdc5986b71fc43496f7a5937060d2519b56b6b9707be63e35d8e0145f188",
-    "source_commit": "9898ac6aac1021c651b29273fcb398d550725c0f"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_active_actor_survival_scope_review_handoff_v62.json",
+    "sha256": "9b8379f738c9e8f65340fc6d84255d4ef317f9ac960d23597b739b94fc1704ed",
+    "source_commit": "5e0cf08141b1610ba8a1f8d27771d889022a6d12"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "Chainwielder naming remains fixture debt; the repaired admission predicate is generic and contains no encounter actor class spec raid-size or difficulty constant."
+    "canary_only": "V63 is one bounded recording-enabled Magmaw diagnostic recurrence; one result cannot promote universal runtime or gameplay closure."
   },
   "behavior_change": false,
   "evidence_contract_change": false,
   "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": false,
-  "ordered_claim_ledger": {
-    "verified": [
-      "V61 committed the actor-scoped admission correction at 9898ac6aac1021c651b29273fcb398d550725c0f",
-      "the V61 focused suite passed six tests in one run with no correction rerun",
-      "py_compile and diff-check passed and all C++ files remain below 1000 lines"
-    ],
-    "refuted": [
-      "V61 itself authorizes configure build server database DVC or live work"
-    ],
-    "unproven": [
-      "independent review accepts the causal scope and compiled fixture",
-      "native build or live route-owner lifecycle",
-      "any gameplay or throughput result"
-    ]
-  },
+  "ready_for_live_verification": true,
   "scope_lock": {
-    "allowed_change": "Independently verify the V61 implementation commit, handoff hash, exact actor-scoped predicate, retained identity gates, focused result, and line counts; emit a separate build/live admission or typed rejection.",
+    "allowed_change": "At the exact clean descriptor commit, perform at most one queued fast8_v2 configure and exactly one queued fast8_v2 worldserver build, one authenticated bundle create/verify, and at most one no-retry completion-watchdog live start. Close through verified DVC publication, remote reconstruction, and exact eviction.",
+    "allowed_files": [
+      "one_compact_live_handoff",
+      "exact_dvc_evidence_pointer_and_required_lock_update",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
+    ],
+    "required_before_start": [
+      "exact clean descriptor commit and tree",
+      "one successful gate-bearing fast8_v2 build receipt with equal clean request admission and completion source identities",
+      "fresh strict readback of the retained frozen roster and zero prestart residue",
+      "one authenticated prepared-route bundle create and explicit verify binding the exact binary config route profile seal admission and completion-watchdog launch contract"
+    ],
+    "required_live_sequence": [
+      "two stable recording-enabled Held status projections retain the admitted runtime profile",
+      "exactly one arm command receives exactly one arm acknowledgement",
+      "the held actor's unrelated Survival movement is suppressed while foreign actors retain ordinary Survival movement",
+      "the exact Armed validation_route_adapter pair establishes the real generation-one Route owner",
+      "exactly one receipt-zero Hazard rejection preserves that Route identity through a typed terminal",
+      "exactly one release follows the identity-preserved terminal and only then may route advancement occur",
+      "completion ends on a typed completion-watchdog edge rather than a fixed raid timer"
+    ],
+    "required_after_terminal": [
+      "retain raw lifecycle bytes before normalization and classify every row",
+      "preserve first broken edge separately from terminal edge",
+      "DVC-publish the immutable evidence and compact handoff",
+      "verify remote reconstruction exact counts sizes hashes and targeted DVC status",
+      "exactly evict only published local payloads after remote reconstruction succeeds",
+      "recheck zero worldserver and capture processes Git status DVC status and disk cleanup"
+    ],
     "forbidden": [
-      "production test controller gameplay route movement encounter class pet priority threshold or skill edit",
-      "configure build worldserver start database or DVC mutation",
-      "polling watchdog timeout or live canary",
-      "fixture promotion or acceptance claim without a separate admission"
+      "implementation_gameplay_controller_route_content_skill_or_test edit",
+      "profile_scenario_pool_route_actor_fixture_seal_source_binary_or_hold_identity comparison weakening",
+      "second_configure_build_bundle_create_verify_worldserver_start_or_retry",
+      "polling_watchdog_timeout_or_threshold change",
+      "fixed_300_second_raid_success_timer",
+      "local_evidence eviction before verified remote reconstruction",
+      "fixture_or_single_live_result promotion to closed"
     ]
   },
-  "required_review": {
-    "active_actor_survival_movement": "hard-masked",
-    "foreign_actor_survival_movement": "attempted exactly once",
-    "exact_armed_route_pair": "admitted for the held actor and scope",
-    "route_advance_before_release": false,
-    "route_advance_after_release": true,
-    "identity_comparison_change": false
+  "closed_v62_evidence": {
+    "production_diff": "one actor comparison scopes the raw Survival plus Movement denial",
+    "active_actor_survival_movement_attempts": 0,
+    "foreign_actor_survival_movement_attempts": 1,
+    "exact_route_pair_attempts": [1, 1],
+    "route_owner": "Route",
+    "receiptless_hazard_rejection": true,
+    "route_identity_preserved": true,
+    "typed_terminal": "hazard_exit_completed",
+    "release_count": 1,
+    "post_release_route_advance": true,
+    "focused_result": "6 passed in 1.59s",
+    "comparison_weakening": false,
+    "current_source_binary_available": false
   },
-  "focused_validation": {
-    "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
-    "run_count_maximum": 1,
-    "correction_rerun_count_maximum": 0,
-    "required_result": "independent reproduction of six passing focused tests at the immutable V61 implementation commit"
-  },
+  "remaining_unproven": [
+    "the exact reviewed source builds and links the full worldserver",
+    "one live recording-enabled Route owner rejection terminal release and post-release advance",
+    "Chainwielder Drudges Magmaw DPS HPS or pet outcomes"
+  ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": ["independent_review_passed", "independent_review_rejected"]
+    "terminal_edges": [
+      "normal_clear",
+      "monotonic_semantic_or_no_progress_stall",
+      "repeated_decisions",
+      "excessive_death_loops",
+      "infrastructure_loss",
+      "contamination",
+      "explicit_interruption"
+    ]
   },
-  "remaining_unproven": [
-    "independent source and focused-receipt review",
-    "native build and live route-owner lifecycle",
-    "Chainwielder Drudges Magmaw DPS HPS or pet quality"
-  ],
-  "next_work_unit": "evidence:generic_controller_route_hold_active_actor_survival_scope_review_v62",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Review V61 without starting a server and issue a separate immutable build/live admission or typed rejection."
+  "verification_budget": {
+    "configure_count_maximum": 1,
+    "worldserver_build_count": 1,
+    "atomic_bundle_create_count_maximum": 1,
+    "atomic_bundle_verify_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_count_maximum": 0,
+    "database_mutation": "forbidden; fresh strict retained-roster readback only",
+    "dvc_mutation": "required after closure for publication remote reconstruction verification and exact eviction"
+  },
+  "next_work_unit": "shard:generic_controller_route_hold_one_build_one_live_v63",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "Run one exact fast8 configure/build and at most one no-retry recording-enabled completion-watchdog recurrence, then DVC-publish, remotely reconstruct, verify, and exactly evict its evidence."
 }
