@@ -1,0 +1,205 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_target_suffix_review_v22",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_fixture_green_live_verification_authorized",
+  "source_state": {
+    "commit": "75bca7e08bcd5f7539285fa276c3a2ce4f0e9f5d",
+    "tree": "16167fe169a79f0d490157b18985223cf00a7fb5",
+    "parent_commit": "f541941cfaebb61091b30285ac3db080cc6a9b20",
+    "clean_before_review": true,
+    "v20_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_initial_node_contract_review_handoff_v20.json",
+    "v20_handoff_sha256": "b8d27a542ad2a1a1931f775e2dab0c21e079e718645494ae2a9a1352082de127"
+  },
+  "scope_lock": {
+    "reviewed_boundary": "canonical diagnostic source route through atomic suffix creation and verification, generated config, recurrence admission, capture-setup identity projection, and generic scheduler generation-one acquisition",
+    "implementation_or_test_edits": false,
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false,
+    "gameplay_or_native_mutated": false
+  },
+  "review_findings": {
+    "source_route_identity": {
+      "node_ids": [
+        "bwd.entry.regroup",
+        "bwd.magmaw.chainwielder",
+        "bwd.magmaw.drudges",
+        "bwd.magmaw.encounter"
+      ],
+      "checkpoint_target_count": 1,
+      "source_initial_node_id": "bwd.entry.regroup",
+      "identity_name": "source_route_sha256"
+    },
+    "runtime_suffix_identity": {
+      "node_ids": [
+        "bwd.magmaw.chainwielder",
+        "bwd.magmaw.drudges",
+        "bwd.magmaw.encounter"
+      ],
+      "steps": [
+        1,
+        2,
+        3
+      ],
+      "runtime_initial_node_id": "bwd.magmaw.chainwielder",
+      "checkpoint_target_node_id": "bwd.magmaw.chainwielder",
+      "identity_name": "runtime_route_sha256",
+      "source_and_runtime_hashes_separate": true
+    },
+    "preserved_invariants": {
+      "bot_start": {
+        "map_id": 669,
+        "x": -345.872,
+        "y": -224.344,
+        "z": 193.127,
+        "o": 0.0
+      },
+      "frozen_roster_count": 10,
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "diagnostic_prerequisite_state": {
+        "state_source": "native_instance_start_and_tracked_route_nodes",
+        "precompleted_boss_entries": [],
+        "certifies_predecessors": false,
+        "fixture_kind": "boss_shard_route"
+      },
+      "retained_payload_rule": "every retained source row is copied byte-semantically except deterministic contiguous step renumbering"
+    },
+    "identity_binding": {
+      "generated_config_manifest_path": "runtime_suffix_route_manifest",
+      "recurrence_admission_manifest_path_and_sha256": "same_generated_runtime_suffix",
+      "capture_setup_admission_sha256_rehashed": true,
+      "capture_setup_runtime_manifest_sha256_rehashed": true,
+      "scheduler_node_source": "exact_admission_bound_runtime_manifest_first_row",
+      "scheduler_hash_source": "exact_admission_bound_runtime_manifest_sha256",
+      "checkpoint_target_equality_required": true
+    },
+    "rejection_preserved": {
+      "original_full_route_entrance_held_receipt": "rejected",
+      "reason": "controller_route_hold_route_node_id_mismatch",
+      "runtime_suffix_chainwielder_held_receipt": "accepted_and_emits_first_status"
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the canonical generated Magmaw diagnostic source route has exactly four ordered nodes and exactly one Chainwielder checkpoint target",
+      "the deterministic runtime suffix starts at Chainwielder generation one and retains Drudges followed by Magmaw",
+      "the suffix preserves the entrance bot_start map and coordinates, one exact ten-slot frozen roster, diagnostic-only state, predecessor non-certification, and every retained node payload except contiguous step renumbering",
+      "the launch contract names source-route and runtime-suffix hashes separately",
+      "the generated runtime config and recurrence admission bind the exact runtime suffix path and SHA-256",
+      "capture_setup re-hashes the admission bytes and admitted runtime manifest bytes, requires config/admission path equality and checkpoint-target/first-node equality, and gives the generic scheduler the exact admitted suffix node and hash",
+      "the original entrance Held receipt remains rejected while the exact runtime-suffix Held receipt is accepted",
+      "controller_route_hold.py is unchanged and capture_setup.py adds no actor, spec, raid-size, difficulty, Chainwielder, Magmaw, or route-node constant and does not loosen a scheduler comparison",
+      "commit 75bca7e08 changes only the three files allowed by V20",
+      "the focused regression executes real atomic create, internal verify, recurrence-admission create/verify, capture-setup identity projection, and the production scheduler; it does not rely on source-string assertions"
+    ],
+    "refuted": [
+      "the implementation still copies the full source route as the native runtime manifest",
+      "capture setup still derives the scheduler hash from the canonical worktree runtime profile",
+      "the repair accepts the entrance Held receipt by weakening identity comparison",
+      "the focused target-suffix regression is source-shape-only"
+    ],
+    "unproven": [
+      "a freshly configured and built native worldserver consumes the generated suffix as Chainwielder generation one",
+      "one completion-watchdog start reaches a typed identity-preserved checkpoint terminal",
+      "release advances exactly once to the retained Drudges node",
+      "the closed live evidence bundle is remotely reconstructible until DVC publication and verification complete"
+    ]
+  },
+  "changed_file_audit": {
+    "changed_files": [
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py"
+    ],
+    "all_changes_within_v20_allowlist": true,
+    "controller_source_changed": false,
+    "native_or_gameplay_source_changed": false,
+    "reviewed_files": {
+      "tools/raid_program/chainwielder_prestart_bundle.py": {
+        "sha256": "70f30581b0e5a558eda9cbc8e456b1020c30ac5ef54b18e5409ec320283ffdd2",
+        "lines": 869
+      },
+      "tools/raid_program/capture_setup.py": {
+        "sha256": "bdd6090de3b896ac725a6237ac594876ed6b6781ab7a8feae4cf2d66702e2860",
+        "lines": 456
+      },
+      "tests/test_chainwielder_prestart_bundle.py": {
+        "sha256": "16270ae7aa4cdc5165784bfae760ea76f5fae89b86fa8ae594bfdc57b5b31d51",
+        "lines": 660
+      },
+      "tools/raid_program/controller_route_hold.py": {
+        "sha256": "44a2712700b4b797dedd822058424505147585d9d0b836a0758c5205c22e2968",
+        "lines": 491,
+        "changed": false
+      },
+      "src/server/game/Bots/BotWorldPopulationMgrValidationRouteManifest.cpp": {
+        "sha256": "88613b888b43021dd648b9bd8387667c449684aa5d47d5ac140d630dffd45d40",
+        "lines": 913,
+        "changed": false
+      },
+      "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp": {
+        "sha256": "431f90cef0f9a6d3021041c028eee2c655413173ac222bf3db30d9af43d24548",
+        "lines": 779,
+        "changed": false
+      },
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": {
+        "sha256": "4fc4a48b72be7a1d7f0da6f829d3b73ed56724c8d7be27207b463d0357661718",
+        "lines": 910,
+        "changed": false
+      }
+    },
+    "c_cpp_line_limit_passed": true
+  },
+  "deterministic_review": {
+    "canonical_manifest_audit": "pixi run python bounded build_manifests projection",
+    "canonical_manifest_result": "4 rows; nodes entrance, Chainwielder, Drudges, Magmaw; unique target; shared entrance, roster, and diagnostic invariants",
+    "focused_test_command": "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py -k 'target_suffix or controller_route_hold_runtime_manifest_binding'",
+    "focused_test_result": "5 passed, 176 deselected in 0.36s",
+    "diff_check": "passed",
+    "line_limit_check": "all reviewed C/C++ files remain below 1000 lines"
+  },
+  "next_work_unit": {
+    "id": "shard:generic_controller_route_hold_target_suffix_one_build_one_start_v23",
+    "owner_skill": "raid-shard-architecture",
+    "immutable_source_commit": "75bca7e08bcd5f7539285fa276c3a2ce4f0e9f5d",
+    "allowed_sequence": [
+      "run exactly one clean fast8_v2 configure",
+      "run exactly one queued fast8 worldserver build with eight compiler jobs and one linker job",
+      "freshly provision and strictly read back the exact frozen ten-actor map-669 roster and prerequisite state",
+      "create and independently verify exactly one atomic bundle whose config and recurrence admission bind the generated target suffix",
+      "start exactly one completion-watchdog worldserver capture with no retry",
+      "on typed completion or failure, preserve the compact summary and immutable raw, report, log, receipt, and readback bundle through DVC; push and verify remote reconstruction before exact local eviction"
+    ],
+    "acceptance_observations": [
+      "native generation one is bwd.magmaw.chainwielder with the exact admitted runtime_route_sha256",
+      "the controller observes one Held acquisition, two stable held statuses, one arm acknowledgement, one identity-preserved checkpoint terminal, one release, and exactly one post-release advance to bwd.magmaw.drudges",
+      "cleanup leaves zero owned bots, leases, groups, and worldserver processes",
+      "DVC pointer, remote object, reconstructed file count, sizes, and hashes are verified before eviction"
+    ],
+    "budget": {
+      "configure_count_maximum": 1,
+      "worldserver_build_count_maximum": 1,
+      "worldserver_start_count_maximum": 1,
+      "retry_count_maximum": 0,
+      "build_policy": "cata_raid_build_resource_policy_fast8_v2",
+      "compiler_jobs": 8,
+      "linker_jobs": 1,
+      "completion_watchdog_required": true,
+      "fixed_success_timer_seconds": null,
+      "dvc_publish_verify_and_exact_evict_required": true
+    },
+    "forbidden": [
+      "gameplay_native_controller_bundle_setup_or_test_edit",
+      "canary_constant_or_identity_comparison_loosening",
+      "route_strategy_checkpoint_gate_priority_polling_or_watchdog_change",
+      "second_configure_build_worldserver_start_or_retry",
+      "manual_bundle_config_admission_or_launch_mutation",
+      "fixture_promotion_or_route_acceptance_claim",
+      "local_evidence_eviction_before_verified_dvc_remote_reconstruction"
+    ]
+  }
+}
