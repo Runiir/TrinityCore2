@@ -1,0 +1,113 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:chainwielder_checkpoint_pre_route_arm_emission_race_repair_v8",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "passed_implementation_pending_live_verification",
+  "source_base": {
+    "commit": "551c4118a8aa343e551b58c39ae31afd3a5ae86f",
+    "tree": "e4a7062fb6b444917c8c3bd594fb528c45eb08c0",
+    "clean": true
+  },
+  "implementation_source": {
+    "commit": "e4d44eb1fe1bf9e021bea3bca1936e921656deae",
+    "tree": "b17c1ee642b34112678c89492bcb8c7f43e89975"
+  },
+  "immutable_evidence": {
+    "failed_live_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_arm_not_emitted_live_handoff_v7.json",
+    "failed_live_handoff_sha256": "da662435d7bd987b05cad954e27991db29ccdccb885f3131b30bbf8be366f4cc",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_6cea93f4_chainwielder_checkpoint_atomic_live_v7_20260830.dvc",
+    "dvc_directory_md5": "cf8125cbe9fe6513ee3507e5c2173e1c.dir",
+    "dvc_workspace_hydrated": false
+  },
+  "scope_lock": {
+    "owned_behavior": "capture-controller pre-route checkpoint arming only",
+    "changed_files": [
+      "tools/raid_program/capture_phase1_raid_foundation.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "excluded": [
+      "native_cpp_or_gameplay",
+      "class_pet_boss_route_or_movement_policy",
+      "configure_build_worldserver_or_database",
+      "bundle_seal_admission_or_launch_contract_mutation",
+      "fixture_promotion_canary_or_acceptance"
+    ]
+  },
+  "implementation": {
+    "first_broken_edge_before": "The ordinary five-second status heartbeat observed generation one once, then generation two before the two-status arm gate could open.",
+    "controller_ordering_after": "While an exact verified checkpoint arm command is pending, the production telemetry batch places one additional status command immediately after the scheduled status heartbeat.",
+    "authority_unchanged": "Both returned statuses still cross chainwielder_checkpoint_pre_route_readiness independently; only observe_chainwielder_checkpoint_arm_gate may write the sealed arm command.",
+    "emission_bound": "The existing emission_count zero guard preserves exactly-once arm emission.",
+    "full_foundation_gate_changed": false,
+    "gameplay_admission_changed": false,
+    "live_budget_used": {
+      "configure": 0,
+      "build": 0,
+      "worldserver_start": 0,
+      "database_mutation": false
+    }
+  },
+  "production_boundary_fixture": {
+    "test": "tests/test_phase1_raid_foundation_capture.py::test_checkpoint_controller_pre_route_probe_closes_live_ordering_race",
+    "crosses": [
+      "production_scheduled_command_batch_expansion",
+      "production_pre_route_readiness_gate",
+      "production_stable_identity_state_machine",
+      "production_sealed_command_emitter"
+    ],
+    "fail_before": {
+      "ordered_route_generations": [
+        1,
+        2
+      ],
+      "command_sent": false,
+      "emission_count": 0
+    },
+    "pass_after": {
+      "first_batch_route_generations": [
+        1,
+        1
+      ],
+      "actor_guid": 30008,
+      "command_sent": true,
+      "emission_count": 1,
+      "route_generation_at_emission": 1,
+      "route_generation_two_before_emission": false,
+      "immediate_probe_batches": 1,
+      "immediate_probe_commands": 1
+    }
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py -k 'checkpoint_controller_pre_route_probe or checkpoint_arm_gate_requires_two_matching_ready_identities or checkpoint_arm_emits_once_at_stable_pre_route_gate'",
+    "result": "3 passed, 126 deselected",
+    "correction_rerun_used": false,
+    "worldserver_required": false,
+    "generated_test_artifacts": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_v7_first_checkpoint_edge_was_controller_non_emission_before_route_generation_two",
+      "the_pre_fix_ordering_fixture_reproduces_generation_one_then_generation_two_with_zero_emissions",
+      "the_repaired_production_command batch samples generation one twice before the next heartbeat",
+      "the_two exact admission-bound identity observations emit the sealed actor_30008 command once",
+      "identity admission actor seal source and route-generation checks remain unchanged",
+      "no configure build worldserver database or DVC mutation occurred"
+    ],
+    "refuted": [
+      "the_five_second_periodic_status_cadence_is_sufficient_for_the_two_observation_pre_route_gate",
+      "the_repair_requires weakening the two-stable-status or exact-identity checks"
+    ],
+    "unproven": [
+      "the_next_live report has command_sent true and emission_count one",
+      "the_native checkpoint preserves Route identity and reaches one completed or typed failed actor_30008 lifecycle",
+      "the_checkpoint fixture is eligible for promotion"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:chainwielder_checkpoint_atomic_bundle_one_build_one_start_v8",
+    "owner_skill": "raid-shard-architecture",
+    "authorization": "From the exact clean final descriptor HEAD, use the atomic prestart bundle, perform at most one gate-bearing build and one completion-watchdog worldserver start, then publish and evict the immutable evidence.",
+    "required_terminal": "command_sent=true, emission_count=1, emission route_generation=1, no generation two before emission, and exactly one accepted actor-30008 checkpoint lifecycle ending completed or at one typed checkpoint failure.",
+    "forbidden": "No second start, gameplay change, manual bundle/config/seal/admission/launch mutation, fixture promotion, canary, or acceptance claim."
+  }
+}
