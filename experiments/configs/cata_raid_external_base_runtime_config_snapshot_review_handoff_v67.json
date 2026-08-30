@@ -1,0 +1,119 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:external_base_runtime_config_snapshot_review_v67",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "verified_live_admission_authorized",
+  "source_state": {
+    "implementation_commit": "b3fedc5acd6f2d7c01260fd39aa7ce1cc5b7023c",
+    "implementation_tree": "5a0ee382b6fe807c52afd13589edf0a2f6fe82d7",
+    "review_descriptor_commit": "20ff8f7e6a3a10b6cf31be3d032afbbfa3dca710",
+    "review_descriptor_tree": "3ca92120bce80a9df9bca7590175c30d6abeb09c",
+    "v65_handoff_sha256": "c8de3b78f96b2adac7dfea2e85a8c8857b559fc53e106be2bdddf95648ccdc9e",
+    "v66_handoff_sha256": "50974126b189539c77983de92585dfa634d1e2514eae8b7cea5506ba6af454b5",
+    "clean_before_review": true
+  },
+  "authenticated_files": {
+    "tools/raid_program/canonical_route_staging.py": {
+      "sha256": "915e8b4c7abf479eac5a6ffc5a4f13850cec0726ee6a37a66b15fab4f2ade9a4",
+      "lines": 614,
+      "matches_implementation_git_show": true
+    },
+    "tools/raid_program/chainwielder_prestart_bundle.py": {
+      "sha256": "a8d185452b67ec6918e81a02161dcfd01ea1aa3feb8c79e7c32aa1cd1b84d3cb",
+      "lines": 949,
+      "matches_implementation_git_show": true
+    },
+    "tests/test_canonical_route_staging.py": {
+      "sha256": "c57924251cee4156427e51294b6bda271da9b6cfac5cee5a84a2275a89758893",
+      "lines": 867,
+      "matches_implementation_git_show": true
+    },
+    "tests/test_chainwielder_prestart_bundle.py": {
+      "sha256": "5d890dbef3e712e6771a3f408955d481d3280a7c1430312b0d1f9a57a2e25382",
+      "lines": 928,
+      "matches_implementation_git_show": true
+    }
+  },
+  "authority_review": {
+    "source": "stage_tracked_snapshot requires an absolute nonsymlink regular file within the worktree, a clean HEAD and tree, one tracked relative path, byte equality with git show HEAD:path, and caller-declared SHA-256 equality",
+    "stage": "exclusive atomic snapshot and canonical receipt bind commit tree tracked relative path source SHA-256 absolute external snapshot path and snapshot SHA-256; source identity and bytes are repeated before receipt publication",
+    "verify": "verify_tracked_snapshot independently snapshots and hashes canonical receipt bytes, rechecks clean current HEAD/tree, tracked git-show and materialized source equality, absolute nonsymlink external snapshot location, source/snapshot hashes, and exact byte equality",
+    "bundle_api": "create_bundle and its CLI expose base_runtime_config_receipt plus receipt SHA-256 only; the runtime config pathname and SHA-256 are derived exclusively from verify_tracked_snapshot",
+    "direct_base_runtime_config_path_parameter_present": false
+  },
+  "downstream_preservation": {
+    "base_snapshot_copy": "copied byte-identically into the atomic staging bundle and bound in both bundle manifest and canonical launch payload manifest",
+    "runtime_config": "reconstructed from the copied snapshot and exact route profile seal and source-commit bindings, then byte-compared by verify_bundle",
+    "route_suffix": "unchanged exact Chainwielder Drudges Magmaw suffix reconstruction and identity hashes",
+    "profile_overlay": "unchanged clean tracked catalog reconstruction plus runtime route and profile hashes",
+    "checkpoint_seal": "unchanged binary build receipt decision profile overlay and expected runtime-profile authority",
+    "recurrence_admission": "unchanged independent verifier and profile-overlay equality",
+    "launch": "unchanged binary config build receipt admission scenario profile pool actor and one fixture-expansion-replay argv bindings",
+    "completion_watchdog": "unchanged one-start budget, completion-watchdog policy, typed terminal edges, and null fixed success timer"
+  },
+  "negative_matrix": [
+    "dirty source worktree",
+    "untracked changed or non-git-show-equal source bytes",
+    "wrong caller-declared source SHA-256",
+    "in-worktree or symlink external root",
+    "invalid artifact label and destination collision",
+    "missing symlink noncanonical or wrong-hash receipt",
+    "receipt commit tree relative-path source-hash or snapshot-hash drift even with recomputed outer receipt hash",
+    "external snapshot path location byte or hash drift",
+    "direct mutable-worktree config supplied as the bundle receipt",
+    "verified snapshot mutation before bundle copy",
+    "output input capture and tracked-ledger location aliasing",
+    "route profile seal admission binary launch and payload tamper",
+    "wrong actor fixture source identity or dirty source",
+    "partial extra or noncanonical bundle material"
+  ],
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_canonical_route_staging.py tests/test_chainwielder_prestart_bundle.py",
+    "focused_result": "78 passed in 4.94s",
+    "focused_run_count": 1,
+    "correction_rerun_count": 0,
+    "diff_check": "passed",
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "atomic_bundle_create_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "every V66 recorded file and handoff hash authenticates against the reviewed implementation commit",
+      "tracked-source staging authority binds clean HEAD tree tracked relative path exact git-show bytes and declared SHA-256",
+      "verification independently rechecks canonical receipt source authority and external snapshot bytes and hashes",
+      "create_bundle has no direct base-runtime-config pathname bypass",
+      "all downstream route profile seal admission binary launch and completion-watchdog bindings remain fail-closed and semantically unchanged",
+      "the complete focused positive and rejection matrix passes and production modules remain below 1000 lines"
+    ],
+    "refuted": [
+      "a mutable worktree config or unauthenticated external snapshot can enter create_bundle directly",
+      "V66 loosens route profile seal admission binary launch or duration comparisons"
+    ],
+    "unproven": [
+      "the real canonical base runtime config stages and passes one atomic bundle create and explicit verify",
+      "the exact reviewed source builds and links a worldserver",
+      "one live Held Route-owner receipt-zero rejection terminal release and Drudges sequence completes",
+      "Chainwielder Drudges Magmaw DPS HPS or pet-share outcomes"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:external_base_runtime_config_one_build_one_live_v68",
+    "owner_skill": "raid-shard-architecture",
+    "allowed_action": "At the exact clean descriptor commit, perform at most one queued fast8_v2 configure and exactly one queued fast8_v2 worldserver build, one authenticated tracked base-runtime-config snapshot stage, one canonical route and prepared-object preflight, one atomic bundle create and explicit verify, and at most one no-retry completion-watchdog live start. DVC-publish, remotely reconstruct, verify, and exactly evict the closed evidence.",
+    "budget": {
+      "configure_count_maximum": 1,
+      "worldserver_build_count": 1,
+      "tracked_snapshot_stage_count": 1,
+      "atomic_bundle_create_count": 1,
+      "atomic_bundle_verify_count": 1,
+      "worldserver_start_count_maximum": 1,
+      "retry_count": 0,
+      "database_mutation": "forbidden; fresh strict retained-roster readback only",
+      "dvc_mutation": "required after closure for publication remote reconstruction verification and exact eviction"
+    }
+  }
+}
