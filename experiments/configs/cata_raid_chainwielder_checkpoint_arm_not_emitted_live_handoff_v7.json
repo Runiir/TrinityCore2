@@ -1,0 +1,272 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:chainwielder_checkpoint_atomic_bundle_one_build_one_start_v7",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed",
+  "failure_classification": "checkpoint_arm_not_emitted_before_route_generation_two",
+  "input_identities": {
+    "source_commit": "6cea93f4c96781092f805c3e097be6bdd966fc66",
+    "source_tree": "6c74acd539aebc6953e3c2e9722cdeca41f8b6a4",
+    "source_clean_before_configure": true,
+    "source_clean_before_worldserver_build": true,
+    "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_atomic_prestart_bundle_implementation_handoff_v1.json",
+    "implementation_handoff_sha256": "40cc8146224b1727244c283997d7c368191caa0594b56c4f5d103489cd3f87f1",
+    "worldserver_binary_sha256": "9264336515cda314604df8e761d8dc8da4665fe6a2b0e0e80aac057086e66151",
+    "runtime_config_sha256": "6d6b9f18d168a1231efb92d2758df6f1607c6363ef0e9043bed4813d3caa62fc",
+    "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008,
+    "checkpoint_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1"
+  },
+  "scope_lock": {
+    "hypothesis": "One exact clean externally staged fast8_v2 build plus the atomic prestart bundle CLI yields a verified launch contract, and executing only its argv array produces one actor-30008 checkpoint lifecycle completed or one typed failure.",
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 1,
+    "bundle_create_count": 1,
+    "bundle_verify_count": 1,
+    "second_configure_run": false,
+    "second_worldserver_build": false,
+    "second_worldserver_start": false,
+    "manual_bundle_mutation": false,
+    "gameplay_or_fixture_changes": false,
+    "fixture_revision_promoted": false,
+    "gameplay_canary_or_acceptance_claimed": false
+  },
+  "validation": {
+    "configure": {
+      "classification": "success",
+      "ticket_id": "raid-build-29d798789b2847c2bb0106c836caf3e1",
+      "queue_sequence": 1228,
+      "receipt_canonical_sha256": "b352b58f302568d09c7025506a85679a2a52473ef11fd2eef3ab0965acc4eab4",
+      "receipt_file_sha256": "a48f05404a20ddf726a17860fb56120ea48296cd58d7b27b72f91ebabf1ca638",
+      "gate_bearing": true
+    },
+    "worldserver_build": {
+      "classification": "success",
+      "ticket_id": "raid-build-d9df9c9042ef44d3b076188982a6fbf4",
+      "queue_sequence": 1229,
+      "receipt_canonical_sha256": "c496274252fb8135966153d56e75561a701e9a0ce877ae6bee2051c8719e1f3d",
+      "receipt_file_sha256": "22589d8b0e31828335ae0716b2ad48ecf4e1a035b274287b0530c58f5891445c",
+      "gate_bearing": true,
+      "compiler_job_ceiling": 8,
+      "linker_job_ceiling": 1,
+      "binary_sha256": "9264336515cda314604df8e761d8dc8da4665fe6a2b0e0e80aac057086e66151"
+    },
+    "provisioning": {
+      "prepared": true,
+      "worldserver_started": false,
+      "strict_verifier_invocation_omitted_provisioning_report": true,
+      "strict_failure_count": 0,
+      "provisioning_all_ready": true,
+      "database_valid": true,
+      "payload_valid": true,
+      "strict_report_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+      "shard_readback_passed": true,
+      "selected_name_count": 10,
+      "zero_prestart_group_instance_corpse_ghost_residue": true,
+      "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0"
+    },
+    "recurrence_bank": {
+      "verification_count": 20,
+      "passed_count": 20,
+      "source_identity": "6cea93f4c96781092f805c3e097be6bdd966fc66",
+      "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+      "fixture_expansion_admitted": true,
+      "fixture_expansion_target_ids": [
+        "chainwielder_pre_admission_rejection_isolation_v1"
+      ],
+      "canary_admitted": false,
+      "suite_receipt_sha256": "4a6151f7e9c4f231df815ba0b43b645bb325ac4de9039d5af70d3b3c984cd04a",
+      "decision_sha256": "9857d7304cc29dfeee57df6aae3a260dcc3e40b00d09604fd68dee054e3aaecb",
+      "ledger_sha256": "c02d27c6ff62d20aa5a31d463b9cdef68513fa67f74b3068ae7d236e061a1830"
+    },
+    "atomic_bundle": {
+      "create_passed": true,
+      "pre_rename_verified": true,
+      "verify_passed": true,
+      "bundle_manifest_sha256": "8275d9f3044e9dfb6f266576497d42cdfc70db0e5a7b2c6164692e92de202fe8",
+      "launch_contract_sha256": "f1647ed3de0a4782a38ac20b73366381113c150227c739ded7d304d1ec396cfa",
+      "recurrence_admission_sha256": "2698fc80da6d9fbdce328d0f2d53490d86c86aabd3758b821d24a076959bb14f",
+      "checkpoint_seal_sha256": "24610162e150f6e9ca9c6b5961d9969c27ce8dfccdf4ec95b417f2edd9be978e",
+      "checkpoint_seal_file_sha256": "c735eb0e13f07da1f7be767adcbcb3a00bea3f1a26ae07a6dfa552af9d3b4547",
+      "duration_policy": "completion-watchdog",
+      "fixed_success_timer_seconds": null,
+      "start_budget": {
+        "worldserver_starts": 1,
+        "owner": "capture_controller"
+      },
+      "launch_argv_executed_directly": true,
+      "launch_shell_used": false
+    },
+    "checkpoint_observation": {
+      "required": true,
+      "actor_guid": 30008,
+      "command_sent": false,
+      "emission_count": 0,
+      "gate_open": false,
+      "required_stable_statuses": 2,
+      "first_status": {
+        "capture_sequence": 2,
+        "duration_seconds": 0,
+        "admission_phase": "active",
+        "bot_actions_enabled": true,
+        "route_generation": 1,
+        "route_node_id": "bwd.entry.regroup"
+      },
+      "second_status": {
+        "capture_sequence": 3,
+        "duration_seconds": 0,
+        "admission_phase": "active",
+        "bot_actions_enabled": true,
+        "route_generation": 2,
+        "route_node_id": "bwd.magmaw.chainwielder"
+      },
+      "last_readiness_rejections": [
+        "checkpoint_route_not_pre_generation_two"
+      ],
+      "accepted_native_lifecycle_count": 0,
+      "stale_scope_observation_count": 140,
+      "stale_scope_reason": "validation_prepull_checkpoint_stale_scope",
+      "injection_count": 0,
+      "before_after_route_identity_preserved": null,
+      "hazard_exit_outcome": null
+    },
+    "controller_terminal": {
+      "classification": "gameplay_failure",
+      "failure_reason": "repeated_decision_watchdog",
+      "elapsed_seconds": 345.877,
+      "route_generation": 4,
+      "route_node_id": "bwd.magmaw.encounter",
+      "repeated_decision_count": 31,
+      "max_repeated_decisions": 20,
+      "outcome": "native_move_retryable",
+      "first_broken_checkpoint_edge_preserved": "checkpoint_arm_not_emitted_before_route_generation_two",
+      "terminal_is_not_checkpoint_lifecycle": true,
+      "worldserver_exit_code": 0,
+      "capture_process_exit_code": 2
+    },
+    "evidence_integrity": {
+      "identity_stable_during_run": true,
+      "forced_terminal_evidence_gate_passed": true,
+      "terminal_evidence_incomplete": true,
+      "demux_gate_passed": false,
+      "demux_rejection": "evidence_demux_trace_delta_gap",
+      "trace_gap_actor_guid": 30008,
+      "trace_gap_capture_sequence": 29,
+      "trace_missing_sequence_start": 45,
+      "trace_missing_sequence_end": 175,
+      "retained_suffix_first_sequence": 176,
+      "capture_report_sha256": "83e73c5b53c0dffb2232b8d375402373effa55342113de0c1b6e6df898895432",
+      "normalized_raw_sha256": "02a5fdd3ef1863ed58934d054e73ea3978e36626941d3b0589dc88b0e2ffefaa",
+      "worldserver_log_sha256": "ccf301e16c47dbc8b581bc327b37a8beaf62c2dac9f48cde442f04fadac53e48"
+    },
+    "throughput": {
+      "chainwielder": {
+        "party_dps": 84534.545,
+        "party_hps": 3042.836,
+        "actor_30008_dps": 25822.327,
+        "actor_30008_hps": 102.091
+      },
+      "drudges": {
+        "party_dps": 107293.846,
+        "party_hps": 47389.677,
+        "actor_30008_dps": 21913.892,
+        "actor_30008_hps": 2274.4
+      },
+      "magmaw": {
+        "party_dps": 85999.408,
+        "party_hps": 13505.092,
+        "actor_30008_dps": 27580.265,
+        "actor_30008_hps": 758.806
+      }
+    },
+    "resources": {
+      "elapsed_seconds": 345.877,
+      "sample_count": 68,
+      "mean_cpu_percent_one_core": 32.451,
+      "maximum_rss_bytes": 1446526976,
+      "pid_consistent": true
+    },
+    "cleanup": {
+      "controller_gate_passed": true,
+      "stop_observed": true,
+      "worldserver_process_absent": true,
+      "zero_online_bots": true,
+      "zero_leases": true,
+      "build_queue_active": false,
+      "build_queue_depth": 0,
+      "postflight_pristine_readback_passed": false,
+      "postflight_pristine_readback_context": "Expected live lifecycle residue remained in health, power, positions, and ghost auras; no manual database reset was authorized or performed.",
+      "postflight_readback_sha256": "cd840e0cd6fd0f43d3ab1a5be06a587eda6695fc86de7b87241ff742e9addffb"
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the_exact_clean_fast8_v2_configure_and_worldserver_build_each_ran_once_and_are_gate_bearing",
+      "strict_provisioning_and_the_independent_prestart_ten_actor_readback_passed",
+      "the_source_bound_regression_bank_passed_twenty_of_twenty_and_admitted_only_the_checkpoint_fixture_expansion",
+      "the_atomic_bundle_create_and_verify_commands passed with no manual byte mutation",
+      "the_launch_contract_bound the exact binary config receipt admission scenario profile pool actor completion watchdog null fixed timer and one-start budget",
+      "the_only_worldserver_start_was_created by direct argv array execution and shut down natively",
+      "capture_sequence_two observed active generation one but capture_sequence_three had already advanced to generation two",
+      "the_two-stable-status pre-route arm gate therefore emitted no command and recorded emission_count_zero",
+      "no accepted actor_30008 checkpoint lifecycle was observed and one_hundred_forty retained observations were stale-scope only",
+      "the later repeated-decision watchdog terminal occurred at Magmaw generation four and is not a checkpoint lifecycle terminal",
+      "cleanup observed zero bots zero leases no worldserver and an idle build queue"
+    ],
+    "refuted": [
+      "the_v7_controller_report_has_command_sent_true_and_emission_count_one",
+      "v7_contains_one_accepted_actor_30008_native_checkpoint_lifecycle",
+      "the_atomic_bundle_and_exact_launch_contract_alone_guarantee_the_controller_can_arm_before_route_generation_two",
+      "the_v7_capture_is_gate_bearing_despite_the_actor_30008_trace_delta_gap"
+    ],
+    "unproven": [
+      "the_native_checkpoint_preserves_Route_identity_across_the_receipt_zero_hazard_rejection",
+      "the_native_checkpoint_completes_the_chainwielder_hazard_exit",
+      "one_controller_ordering_repair_will_reach_the_checkpoint_without_exposing_an_adjacent_runtime_failure"
+    ]
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_foundation_6cea93f4_chainwielder_checkpoint_atomic_live_v7_20260830.dvc",
+    "pointer_file_sha256_before_commit": "7a3b191b5f014dd09607d2fc3dc8e6f02e385f11723c725b670642b3d71b15a2",
+    "directory_md5": "cf8125cbe9fe6513ee3507e5c2173e1c.dir",
+    "directory_size_bytes": 197468533,
+    "directory_file_count": 52,
+    "push_result": "28 files pushed",
+    "remote_verification": "cache_and_remote_object_in_sync_before_eviction",
+    "workspace_eviction_pending_at_handoff_write": false,
+    "workspace_output_evicted_after_remote_verification": true,
+    "cache_directory_manifest_retained": true,
+    "unique_cache_children_evicted": 20,
+    "shared_cache_children_retained": 32,
+    "post_eviction_dvc_status_context": "Only the twenty deliberately evicted unique cache children report deleted locally; the remote was verified in sync immediately before exact eviction.",
+    "broad_dvc_gc_run": false
+  },
+  "first_broken_edge": {
+    "owner": "capture_controller",
+    "edge": "checkpoint_arm_not_emitted_before_route_generation_two",
+    "first_observed_state_mutation": "the route advanced from generation one at capture sequence two to generation two at capture sequence three before the arm gate obtained its second stable identity receipt",
+    "failure_postcondition": "command_sent=false emission_count=0 and every later checkpoint observation was stale-scope, so no native checkpoint lifecycle was admitted",
+    "correlation_keys": {
+      "actor_guid": 30008,
+      "attempt_id": 1,
+      "server_epoch": 1,
+      "route_generation_before": 1,
+      "route_generation_after": 2,
+      "checkpoint_seal_sha256": "24610162e150f6e9ca9c6b5961d9969c27ce8dfccdf4ec95b417f2edd9be978e"
+    }
+  },
+  "next_work_unit": {
+    "id": "evidence:chainwielder_checkpoint_pre_route_arm_emission_race_repair_v8",
+    "owner_skill": "raid-evidence-lifecycle",
+    "action": "Repair one capture-controller ordering edge so a fixture-expansion start retains route generation one until two identical active-admission status receipts are observed and the exact arm command is emitted once. Add a focused fail-before/pass-after controller fixture. Return a no-live implementation handoff.",
+    "build_budget": 0,
+    "worldserver_start_budget": 0,
+    "database_mutation_allowed": false,
+    "fixture_promotion_allowed": false,
+    "forbidden": "No second v7 start, build, provisioning, database reset, gameplay or route policy change, fixture revision promotion, canary, or acceptance claim."
+  }
+}

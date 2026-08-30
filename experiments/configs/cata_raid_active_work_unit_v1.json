@@ -1,111 +1,109 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "magmaw_chainwielder_atomic_bundle_one_build_one_start_v7_20260830",
-  "work_unit": "shard:chainwielder_checkpoint_atomic_bundle_one_build_one_start_v7",
+  "epoch_id": "magmaw_chainwielder_checkpoint_pre_route_arm_emission_race_repair_v8_20260830",
+  "work_unit": "evidence:chainwielder_checkpoint_pre_route_arm_emission_race_repair_v8",
   "raid": "blackwing_descent",
   "boss": "magmaw_chainwielder",
   "mode": "10N",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "atomic_prestart_bundle_generator_passed_pending_one_build_one_start",
-  "observed_at_commit": "c97f9a40f0402f5a7bcc2e4a49770f5c515ee411",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed",
+  "gate_state": "checkpoint_arm_not_emitted_before_route_generation_two",
+  "observed_at_commit": "6cea93f4c96781092f805c3e097be6bdd966fc66",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_atomic_prestart_bundle_implementation_handoff_v1.json",
-    "sha256": "40cc8146224b1727244c283997d7c368191caa0594b56c4f5d103489cd3f87f1",
-    "source_commit": "c97f9a40f0402f5a7bcc2e4a49770f5c515ee411",
-    "source_tree": "325e98e22921d4c8b1a4305b939bfe5a0882bb72"
+    "path": "experiments/configs/cata_raid_chainwielder_checkpoint_arm_not_emitted_live_handoff_v7.json",
+    "sha256": "da662435d7bd987b05cad954e27991db29ccdccb885f3131b30bbf8be366f4cc",
+    "source_commit": "6cea93f4c96781092f805c3e097be6bdd966fc66",
+    "source_tree": "6c74acd539aebc6953e3c2e9722cdeca41f8b6a4"
   },
   "source": {
-    "failed_v6_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_3af269cdc8_final_admission_failed_handoff_v6.json",
-    "failed_v6_handoff_sha256": "404481d4b7180362e36a7aa67f4e477cdb35b4ba84ecc92804ed0f2e31497bce",
-    "implementation_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_atomic_prestart_bundle_implementation_handoff_v1.json",
-    "bundle_cli": "tools.raid_program.chainwielder_prestart_bundle"
+    "v7_live_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_arm_not_emitted_live_handoff_v7.json",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_6cea93f4_chainwielder_checkpoint_atomic_live_v7_20260830.dvc",
+    "dvc_directory_md5": "cf8125cbe9fe6513ee3507e5c2173e1c.dir",
+    "controller_owner": "tools/raid_program/capture_phase1_raid_foundation.py"
   },
   "scope_lock": {
-    "allowed_change": "Run one exact clean gate-bearing worldserver build, external preparation/readback, one atomic prestart bundle creation and verification, and at most one capture-owned completion-watchdog worldserver start to observe the Chainwielder checkpoint.",
+    "allowed_change": "Repair one capture-controller ordering edge so a fixture-expansion run keeps route generation one until two identical active-admission status receipts are observed and emits the exact checkpoint arm command once. Add one focused fail-before/pass-after controller fixture and return a no-live implementation handoff.",
     "forbidden": [
-      "manual_route_config_seal_or_admission_edits_after_bundle_creation",
-      "second_worldserver_build",
-      "second_worldserver_start",
-      "fixed_raid_success_timer",
-      "gameplay_cpp_strategy_class_pet_boss_or_route_change",
+      "worldserver_configure_or_build",
+      "worldserver_start",
+      "provisioning_or_database_mutation",
+      "manual_bundle_seal_admission_or_launch_contract_edit",
+      "gameplay_cpp_strategy_class_pet_boss_or_route_policy_change",
       "fixture_revision_promotion",
-      "gameplay_canary_or_acceptance_claim"
+      "gameplay_canary_or_acceptance_claim",
+      "second_v7_attempt"
     ]
   },
   "claim_ledger": {
     "verified": [
-      "the_v6_missing_checkpoint_enable_flag_fails_the_unchanged_production_admission_verifier",
-      "the_atomic_generator_sets_and_reconstructs_the_exact_checkpoint_config_before_final_admission_creation",
-      "the_staged_final_path_bindings_pass_the_constrained_production_verifier_before_atomic_rename",
-      "the_launch_contract_binds_one_capture_owned_start_and_completion_watchdog_semantics"
+      "the_v7_atomic_bundle_and_launch_contract_passed_all_prestart_verifiers",
+      "the_single_v7_start_used_the_launch_contract_argv_array_directly",
+      "capture_sequence_two_observed_active_generation_one",
+      "capture_sequence_three_observed_generation_two_before_the_required_second_stable_generation_one_receipt",
+      "the_controller_arm_gate_reported_command_sent_false_and_emission_count_zero",
+      "one_hundred_forty_checkpoint_observations_were_stale_scope_and_no_accepted_native_checkpoint_lifecycle_was_retained",
+      "the_later_generation_four_repeated_decision_terminal_does_not_replace_the_missing_arm_as_the_first_broken_checkpoint_edge",
+      "the_capture_evidence_gate_rejected_one_actor_30008_trace_delta_gap",
+      "cleanup_observed_zero_bots_zero_leases_no_worldserver_and_an_idle_build_queue"
     ],
     "refuted": [
-      "manual_post_generator_bundle_assembly_is_required",
-      "the_atomic_relocation_boundary_allows_non_sibling_or_arbitrary_path_substitution"
+      "the_v7_controller_emitted_the_arm_command_once",
+      "the_v7_run_observed_one_accepted_actor_30008_checkpoint_lifecycle",
+      "the_atomic_prestart_bundle_alone_closes_the_controller_ordering_boundary",
+      "the_v7_capture_is_gate_bearing"
     ],
     "unproven": [
-      "the_live_controller_report_has_command_sent_true_and_emission_count_one",
-      "the_native_checkpoint_reaches_one_actor_30008_real_Route_owner_trigger",
-      "the_native_checkpoint_preserves_Route_identity_and_completes_the_hazard_exit"
+      "the_native_checkpoint_preserves_Route_identity_across_the_receipt_zero_hazard_rejection",
+      "the_native_checkpoint_completes_the_chainwielder_hazard_exit",
+      "one_controller_ordering_repair_will_reach_the_checkpoint_without_an_adjacent_runtime_failure"
     ]
   },
   "admitted_actions": {
-    "configure_count_maximum": 1,
-    "worldserver_build_count_maximum": 1,
-    "worldserver_start_count_maximum": 1,
-    "bundle_create_count_maximum": 1,
-    "bundle_verify_required": true,
-    "launch_argv_authority": "verified_launch_contract_only",
-    "database_mutation": "exact_external_preparation_and_readback_only"
+    "focused_fixture_run_maximum": 1,
+    "correction_cycle_maximum": 1,
+    "configure_count_maximum": 0,
+    "worldserver_build_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
+    "database_mutation": "forbidden",
+    "dvc_mutation": "implementation_handoff_only_if_new_test_artifacts_are_generated"
   },
-  "required_prestart_order": [
-    "resolve_exact_clean_descriptor_HEAD_and_tree",
-    "run_one_gate_bearing_configure_if_required_and_one_worldserver_build",
-    "prepare_and_strictly_read_back_the_exact_external_scenario_profile_pool_and_ten_actor_roster",
-    "create_exact_source_bound_recurrence_decision_suite_receipt_and_ledger",
-    "invoke_tools.raid_program.chainwielder_prestart_bundle_create_once_with_every_explicit_input_hash",
-    "invoke_tools.raid_program.chainwielder_prestart_bundle_verify",
-    "execute_only_launch_contract.launch_argv"
-  ],
   "required_identity": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
     "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
     "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
     "actor_guid": 30008,
-    "checkpoint_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1"
+    "checkpoint_fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+    "checkpoint_seal_sha256": "24610162e150f6e9ca9c6b5961d9969c27ce8dfccdf4ec95b417f2edd9be978e"
   },
-  "required_observation": {
-    "controller_arm": {
-      "command_sent": true,
-      "emission_count": 1,
-      "actor_guid": 30008
-    },
-    "native_checkpoint": {
-      "injection_count": 1,
-      "trigger": "real_Route_path_or_armed_Route_hazard_retry",
-      "rejection_owner": "Hazard",
-      "rejection_gate": "future_pack_destination",
-      "rejection_reason": "route_destination_future_pack_unsafe",
-      "planner_receipt_id": 0,
-      "before_after_Route_identity_preserved": true,
-      "terminal": "hazard_exit_completed_or_one_typed_checkpoint_failure"
-    },
-    "live_result_required": true
+  "fail_before": {
+    "first_status_capture_sequence": 2,
+    "first_status_route_generation": 1,
+    "second_status_capture_sequence": 3,
+    "second_status_route_generation": 2,
+    "required_stable_statuses": 2,
+    "command_sent": false,
+    "emission_count": 0,
+    "accepted_native_lifecycle_count": 0
+  },
+  "pass_after": {
+    "two_identical_generation_one_active_admission_statuses": true,
+    "command_sent": true,
+    "emission_count": 1,
+    "actor_guid": 30008,
+    "route_generation_at_emission": 1,
+    "route_generation_two_before_emission": false,
+    "worldserver_required_for_focused_fixture": false
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "terminal_conditions": [
-      "normal_clear",
-      "monotonic_semantic_or_no_progress_stall",
-      "repeated_decisions",
-      "excessive_death_loop",
-      "infrastructure_loss",
-      "contamination",
+      "focused_fixture_pass",
+      "focused_fixture_failure",
+      "source_or_scope_mismatch",
       "explicit_interruption"
     ]
   },
-  "next_action": "At the exact clean descriptor HEAD, run one gate-bearing build, prepare/read back the external shard inputs, create and verify one atomic prestart bundle, then execute its argv array for at most one completion-watchdog start. Do not manually edit bundle bytes.",
-  "next_terminal_handoff": "Return the exact build, preparation/readback, bundle manifest, verified launch contract, controller arm, native checkpoint lifecycle, watchdog terminal, cleanup, and publication receipts."
+  "next_action": "Repair the capture-controller pre-route arm ordering race and prove fail-before/pass-after without building, provisioning, or starting a worldserver. Do not weaken the exact identity checks or two-stable-status requirement.",
+  "next_terminal_handoff": "Return the exact controller ordering change, focused production-owner fixture, before/after command emission receipt, unchanged live budgets, and the next one-build/one-start authorization request."
 }
