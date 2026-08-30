@@ -1,0 +1,70 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_v40",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_pending_independent_review",
+  "source_state": {
+    "parent_commit": "63e6c550e822af049f3b7441992b4063bc1b8ae5",
+    "parent_clean": true,
+    "v39_handoff": "experiments/configs/cata_raid_generic_controller_route_hold_canonical_jsonl_bundle_shape_review_handoff_v39.json",
+    "v39_handoff_sha256": "23adf0fa2731317bd6b5faaa2e0acf2137c76f46cf8ffb8f4bb1b6215c210960"
+  },
+  "implementation": {
+    "behavior_change": false,
+    "evidence_contract_change": true,
+    "catalog_owner": "tools/raid_program/canonical_route_catalog.py",
+    "catalog_owner_sha256": "03a2d0f7614d5c1c41624b8a128a45c04ad4c3353e03c616785f171f9472344b",
+    "catalog_owner_lines": 325,
+    "staging_owner": "tools/raid_program/canonical_route_staging.py",
+    "staging_owner_sha256": "9d2ab46ee433f496ad83d33c4c0b2fdf5a201d9bbab1d5614fdcfefad2a6cc2d",
+    "staging_owner_lines": 369,
+    "consumer_unchanged": "tools/raid_program/chainwielder_prestart_bundle.py",
+    "consumer_lines": 984,
+    "repairs": [
+      "selected-scenario rows are filtered by canonical allowed-kind and coordinates-valid semantics before empty, sort, generation, and duplicate admitted identity checks",
+      "excluded rows cannot enter runtime routes, expected segments, selected-row identities, selected-row hash, output bytes, or receipt",
+      "staging receipt hash, parse, and canonical-byte validation consume one opened-file snapshot and reject file or path identity replacement"
+    ],
+    "generic_constant_audit": "passed"
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_canonical_route_staging.py",
+    "initial_result": "28 passed in 0.98s",
+    "final_result_after_race_fixture_strengthening": "28 passed in 1.02s",
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "test_file_sha256": "c41780249ff55d8b1814278ef10cad69ca909b4656384d644d26e7cf887102ef",
+    "bundle_create_count": 0,
+    "bundle_verify_count": 0,
+    "configure_count": 0,
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutation_count": 0,
+    "dvc_mutation_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "the mixed Atramedes-shaped catalog produces byte-for-byte the canonical runtime payload with steps 1, 2, 6, 7 and generations 1 through 4",
+      "interaction and invalid-coordinate rows, including a duplicate identity excluded by canonical filtering, do not enter selected identities or the output",
+      "duplicate admitted step or node identity still fails after filtering",
+      "two independently valid staging receipts cannot substitute through an opened-path replacement race",
+      "raw JSONL still fails the unchanged consumer and the prepared Magmaw object still succeeds",
+      "all production modules remain below 1000 lines"
+    ],
+    "refuted": [
+      "unsupported selected-scenario rows should be rejected instead of filtered",
+      "a path hash followed by a separate path read binds the bytes parsed by the verifier"
+    ],
+    "unproven": [
+      "independent review of the repaired authority boundary",
+      "one authenticated prepared object reaches atomic bundle create and verify",
+      "native Held, arm, terminal, release, Drudges, and throughput evidence"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_review_v41",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Independently review only the V40 canonical-filtering parity and stable receipt snapshot implementation. Do not edit production, create or verify a bundle, build, or start a server.",
+    "live_budget": 0
+  }
+}

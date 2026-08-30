@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import subprocess
 import tempfile
 from typing import Any
@@ -63,6 +64,39 @@ def _md5_bytes(payload: bytes) -> str:
 
 def _canonical_json_bytes(value: object) -> bytes:
     return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
+def _stable_regular_file_snapshot(path: Path) -> bytes:
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as error:
+        raise CanonicalRouteStagingError(
+            "staging_receipt_location_invalid"
+        ) from error
+    try:
+        opened = os.fstat(descriptor)
+        chunks: list[bytes] = []
+        while chunk := os.read(descriptor, 1024 * 1024):
+            chunks.append(chunk)
+        finished = os.fstat(descriptor)
+        current = os.stat(path, follow_symlinks=False)
+    except OSError as error:
+        raise CanonicalRouteStagingError(
+            "staging_receipt_path_replaced"
+        ) from error
+    finally:
+        os.close(descriptor)
+    identity_fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns")
+    if (
+        not stat.S_ISREG(opened.st_mode)
+        or any(getattr(opened, field) != getattr(finished, field)
+               for field in identity_fields)
+        or any(getattr(finished, field) != getattr(current, field)
+               for field in identity_fields)
+    ):
+        raise CanonicalRouteStagingError("staging_receipt_path_replaced")
+    return b"".join(chunks)
 
 
 def atomic_write_new(destination: Path, payload: bytes) -> None:
@@ -197,13 +231,12 @@ def verify_staging_receipt(
         or _is_within(receipt_path, worktree)
     ):
         raise CanonicalRouteStagingError("staging_receipt_location_invalid")
-    if (
-        not SHA256_RE.fullmatch(expected_receipt_sha256)
-        or _sha256_file(receipt_path) != expected_receipt_sha256
+    receipt_bytes = _stable_regular_file_snapshot(receipt_path)
+    if not SHA256_RE.fullmatch(expected_receipt_sha256) or (
+        hashlib.sha256(receipt_bytes).hexdigest() != expected_receipt_sha256
     ):
         raise CanonicalRouteStagingError("staging_receipt_sha256_mismatch")
     try:
-        receipt_bytes = receipt_path.read_bytes()
         receipt = json.loads(receipt_bytes)
     except (OSError, json.JSONDecodeError) as error:
         raise CanonicalRouteStagingError("staging_receipt_invalid") from error

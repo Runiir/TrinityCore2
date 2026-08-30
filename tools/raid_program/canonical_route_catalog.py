@@ -117,7 +117,11 @@ def _parse_catalog(
                 f"route_catalog_row_invalid:{line_number}"
             )
         all_rows.append(row)
-        if str(row.get("scenario_id") or "") == selected_scenario_id:
+        if (
+            str(row.get("scenario_id") or "") == selected_scenario_id
+            and str(row.get("kind") or "") in ALLOWED_ROUTE_KINDS
+            and bool(row.get("coordinates_valid", True))
+        ):
             selected.append((line_number, row))
 
     if not selected:
@@ -127,15 +131,6 @@ def _parse_catalog(
     steps: set[int] = set()
     node_ids: set[str] = set()
     for line_number, row in selected:
-        kind = str(row.get("kind") or "")
-        if kind not in ALLOWED_ROUTE_KINDS:
-            raise CanonicalRouteCatalogError(
-                f"route_catalog_kind_forbidden:{line_number}"
-            )
-        if not bool(row.get("coordinates_valid", True)):
-            raise CanonicalRouteCatalogError(
-                f"route_catalog_coordinates_invalid:{line_number}"
-            )
         try:
             step = int(row.get("step") or 0)
         except (TypeError, ValueError) as error:

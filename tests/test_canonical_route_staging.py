@@ -10,6 +10,10 @@ import pytest
 import tools.raid_program.canonical_route_staging as staging
 import tools.raid_program.canonical_route_catalog as catalog
 import tools.raid_program.chainwielder_prestart_bundle as prestart_bundle
+from tools.bot_ml.run_live_bot_validation import (
+    load_validation_routes_for_scenario,
+    validation_route_manifest_payload,
+)
 
 
 def _git(root: Path, *args: str) -> str:
@@ -434,14 +438,62 @@ def test_catalog_materializes_exact_deterministic_scenario_object(
     assert second["output_object_sha256"] == result["output_object_sha256"]
 
 
+def test_mixed_kind_catalog_matches_canonical_runtime_selection(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(
+        tmp_path,
+        stage_name="validation_scenarios",
+        output_path="dataset/validation_scenarios",
+        member="validation_routes.jsonl",
+    )
+    scenario = "blackwing_descent_10n_atramedes_diagnostic"
+    rows = [
+        _route_row("another_profile", 1, "another.first"),
+        _route_row(scenario, 7, "bwd.atramedes.encounter", kind="boss"),
+        _route_row(scenario, 3, "bwd.atramedes.bell_ready", kind="interaction"),
+        _route_row(scenario, 1, "bwd.atramedes.north_spirits"),
+        _route_row(
+            scenario, 1, "bwd.atramedes.north_spirits",
+            coordinates_valid=False,
+        ),
+        _route_row(scenario, 4, "bwd.atramedes.bell", kind="interaction"),
+        _route_row(scenario, 2, "bwd.atramedes.south_spirits"),
+        _route_row(scenario, 5, "bwd.atramedes.intro_wait", kind="interaction"),
+        _route_row(scenario, 6, "bwd.atramedes.regroup", kind="regroup"),
+    ]
+    _set_catalog(fixture, rows)
+    canonical_routes = load_validation_routes_for_scenario(
+        fixture["route"].parent, scenario
+    )
+    canonical_payload = validation_route_manifest_payload(
+        scenario, canonical_routes
+    )
+    staged = _stage(fixture)
+    result = _materialize(fixture, staged, scenario)
+    manifest = json.loads(Path(result["output_object_path"]).read_bytes())
+
+    assert manifest == canonical_payload
+    assert [row["step"] for row in manifest["routes"]] == [1, 2, 6, 7]
+    assert [row["route_generation"] for row in manifest["routes"]] == [1, 2, 3, 4]
+    assert [row["line_number"] for row in result["selected_row_order"]] == [
+        4, 7, 9, 2
+    ]
+    assert result["selected_row_count"] == 4
+    excluded = {3, 5, 6, 8}
+    assert excluded.isdisjoint(
+        row["line_number"] for row in result["selected_row_order"]
+    )
+
+
 @pytest.mark.parametrize(
     ("rows", "raw", "scenario", "reason"),
     [
         ([], b'{"scenario_id":\n', "selected", "route_catalog_jsonl_invalid:1"),
         ([[]], None, "selected", "route_catalog_row_invalid:1"),
         ([_route_row("other", 1, "other.first")], None, "selected", "route_catalog_scenario_missing"),
-        ([_route_row("selected", 1, "selected.first", kind="interaction")], None, "selected", "route_catalog_kind_forbidden:1"),
-        ([_route_row("selected", 1, "selected.first", coordinates_valid=False)], None, "selected", "route_catalog_coordinates_invalid:1"),
+        ([_route_row("selected", 1, "selected.first", kind="interaction")], None, "selected", "route_catalog_scenario_missing"),
+        ([_route_row("selected", 1, "selected.first", coordinates_valid=False)], None, "selected", "route_catalog_scenario_missing"),
         ([_route_row("selected", 1, "selected.first"), _route_row("selected", 1, "selected.second")], None, "selected", "route_catalog_scenario_ambiguous"),
         ([_route_row("selected", 1, "selected.first"), _route_row("selected", 2, "selected.first")], None, "selected", "route_catalog_scenario_ambiguous"),
     ],
@@ -504,3 +556,52 @@ def test_catalog_selection_rejects_hash_drift_collision_and_receipt_drift(
             dvc_stage_name=fixture["stage_name"],
             output_relative_member=fixture["member"],
         )
+
+
+def test_staging_receipt_replacement_cannot_substitute_valid_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _fixture(tmp_path)
+    first = _stage(fixture)
+    second_root = tmp_path / "second-stage"
+    second_root.mkdir()
+    fixture["external"] = second_root
+    second = _stage(fixture)
+
+    for valid in (first, second):
+        verified = staging.verify_staging_receipt(
+            worktree=fixture["root"],
+            receipt_path=Path(valid["receipt_path"]),
+            expected_receipt_sha256=valid["receipt_sha256"],
+            dvc_stage_name=fixture["stage_name"],
+            output_relative_member=fixture["member"],
+        )
+        assert verified["staged_path"] == valid["staged_path"]
+
+    first_path = Path(first["receipt_path"])
+    replacement = tmp_path / "replacement-receipt.json"
+    replacement.write_bytes(Path(second["receipt_path"]).read_bytes())
+    real_fstat = staging.os.fstat
+    calls = 0
+
+    def replace_after_open(descriptor: int) -> object:
+        nonlocal calls
+        state = real_fstat(descriptor)
+        calls += 1
+        if calls == 1:
+            staging.os.replace(replacement, first_path)
+        return state
+
+    monkeypatch.setattr(staging.os, "fstat", replace_after_open)
+    with pytest.raises(
+        staging.CanonicalRouteStagingError,
+        match="staging_receipt_path_replaced",
+    ):
+        staging.verify_staging_receipt(
+            worktree=fixture["root"],
+            receipt_path=first_path,
+            expected_receipt_sha256=first["receipt_sha256"],
+            dvc_stage_name=fixture["stage_name"],
+            output_relative_member=fixture["member"],
+        )
+    assert calls == 2

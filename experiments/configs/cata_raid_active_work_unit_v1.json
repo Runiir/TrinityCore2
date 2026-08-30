@@ -1,16 +1,16 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_v40_20260830",
-  "work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_v40",
+  "epoch_id": "generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_review_v41_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_review_v41",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "gate_state": "v39_rejected_runtime_selection_mismatch_and_receipt_snapshot_race",
-  "observed_at_commit": "5a16c0cd6135c0e2ad4d9d3b80c7ba7cea883450",
-  "immutable_input_commit": "5a16c0cd6135c0e2ad4d9d3b80c7ba7cea883450",
+  "classification": "implementation_pending_independent_review",
+  "gate_state": "v40_runtime_selection_parity_and_receipt_snapshot_repaired_fixture_green",
+  "observed_at_commit": "63e6c550e822af049f3b7441992b4063bc1b8ae5",
+  "immutable_input_commit": "63e6c550e822af049f3b7441992b4063bc1b8ae5",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_canonical_jsonl_bundle_shape_review_handoff_v39.json",
-    "sha256": "23adf0fa2731317bd6b5faaa2e0acf2137c76f46cf8ffb8f4bb1b6215c210960",
-    "source_commit": "5a16c0cd6135c0e2ad4d9d3b80c7ba7cea883450"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_handoff_v40.json",
+    "sha256": "af4071571d46560d986c343ce58536870aa485c6ffd29e7d9014884c3f8511fd",
+    "source_commit": "63e6c550e822af049f3b7441992b4063bc1b8ae5"
   },
   "evidence_pointer": {
     "path": "artifacts/cata_raid_program/phase1_raid_foundation_245a30593b_generic_controller_route_hold_jsonl_bundle_shape_failure_v37_20260830.dvc",
@@ -27,20 +27,18 @@
   },
   "behavior_change": false,
   "evidence_contract_change": true,
-  "ready_for_bounded_repair": true,
+  "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Repair only runtime-equivalent filtering before admitted-row ambiguity checks and exact-byte staging-receipt snapshot binding, with focused behavioral regressions.",
+    "allowed_change": "Independently review only V40 runtime-equivalent row filtering before admitted-row ambiguity checks and exact-byte stable staging-receipt snapshot binding.",
     "allowed_files": [
-      "tools/raid_program/canonical_route_catalog.py",
-      "tools/raid_program/canonical_route_staging.py",
-      "tests/test_canonical_route_staging.py",
-      "one_compact_implementation_handoff",
+      "one_compact_review_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
     "forbidden": [
-      "bundle_create_or_verify_edit_or_execution",
+      "production_or_test_edits",
+      "bundle_create_or_verify_execution",
       "manual_route_conversion_or_fixture_acceptance",
       "gameplay_native_controller_route_content_identity_comparison_polling_watchdog_or_threshold_change",
       "configure_build_database_mutation_worldserver_start_or_dvc_mutation",
@@ -49,8 +47,8 @@
   },
   "first_broken_edge": {
     "owner": "raid_evidence_catalog_selection_and_receipt_authority",
-    "edge": "selected interaction/invalid-coordinate rows are rejected rather than canonically filtered, and staging receipt hashing is not over the exact parsed snapshot",
-    "failure_postcondition": "no atomic bundle create, verify, launch contract, or worldserver start is authorized"
+    "edge": "v40_repairs_require_independent_filtering_and_snapshot_authority_review",
+    "failure_postcondition": "no atomic bundle create, verify, launch contract, or worldserver start is authorized before review"
   },
   "required_proof": [
     "mixed-kind selected scenarios exactly match load_validation_routes_for_scenario ordering and generation after filtering",
@@ -70,8 +68,8 @@
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
     "terminal_edges": [
-      "focused_contract_green",
-      "focused_contract_reject",
+      "independent_review_accept",
+      "independent_review_reject",
       "scope_violation"
     ]
   },
@@ -82,11 +80,11 @@
     "atomic_bundle_create_count_maximum": 0,
     "atomic_bundle_verify_count_maximum": 0,
     "worldserver_start_count_maximum": 0,
-    "retry_count_maximum": 1,
+    "retry_count_maximum": 0,
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_v40",
+  "next_work_unit": "evidence:generic_controller_route_hold_canonical_jsonl_runtime_selection_receipt_snapshot_review_v41",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Implement only the two V39 authority-boundary repairs and focused regressions. Do not create or verify a bundle."
+  "next_action": "Independently review only the two V40 repairs without production edits or live actions. If exact, admit the next bounded consumer check; otherwise emit a typed rejection."
 }
