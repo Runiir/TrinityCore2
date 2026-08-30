@@ -1,0 +1,95 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:bind_derived_runtime_config_to_bundle_consumer_v76",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_corrected_pending_independent_review",
+  "source_commit": "e47cd5ccf9d22fe350b9efa76a637a86d4049483",
+  "implementation_commit": "5c8eb6ee7a83f2bcb36ab265f78345969f36428e",
+  "implementation_tree": "c34b666d982ca18d5a842ae10ae2ad6976476d60",
+  "input_handoff": {
+    "path": "experiments/configs/cata_raid_tracked_base_runtime_config_independent_review_handoff_v75.json",
+    "sha256": "6857d78a997a09fc52c53b0472d61103ef6079231824ca178c8f964ff145e331"
+  },
+  "changed_files": {
+    "tools/raid_program/chainwielder_prestart_bundle.py": {
+      "lines": 928,
+      "sha256": "4841b6743f77c0982d9507a8f03f2032dd82139eeee4174143d112208b8ea506"
+    },
+    "tools/raid_program/chainwielder_runtime_config_authority.py": {
+      "lines": 174,
+      "sha256": "90d1215f8fa7ea0ef73619676ebee4ab0f6f6d1fd14eff8102922f8540fe11ad"
+    },
+    "tests/test_chainwielder_derived_runtime_config_bundle.py": {
+      "lines": 472,
+      "sha256": "3888f71e7a656119be2363e988eec245bdb0c593f9708f04d0bde5f3c637c58c"
+    }
+  },
+  "implemented_authority_chain": {
+    "selection": [
+      "tracked_snapshot_v1",
+      "tracked_derived_runtime_config_v1"
+    ],
+    "derived_boundary": "create_bundle calls the focused authority resolver, which calls the authoritative derivation verifier with the exact clean source commit/tree, contract path, receipt path, and receipt SHA256",
+    "byte_ownership": "only the verifier-returned canonical base64 snapshot is decoded, canonical-base64 checked, length checked at 156488, and SHA256 checked at 1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8",
+    "copy_semantics": "create_bundle writes those returned bytes directly into its fresh atomic staging directory and renders the final config from the same bytes; it never reopens the derived snapshot pathname",
+    "legacy_semantics": "tracked_snapshot_v1 remains a separate verifier path; a derivation contract argument on the legacy authority is rejected as ambiguous",
+    "preserved_bundle_semantics": "route suffix, selected-profile overlay, checkpoint seal, recurrence admission, final config precedence, pre-rename verification, and atomic publication ordering are unchanged",
+    "ignored_runtime_path_access": false
+  },
+  "focused_verification": {
+    "command": "pixi run pytest -q tests/test_chainwielder_derived_runtime_config_bundle.py",
+    "run_count": 1,
+    "result": "20 passed, 3 failed in 3.25s",
+    "failed_nodes": [
+      "test_real_bundle_consumes_authenticated_derived_snapshot",
+      "test_post_verification_locator_replacement_cannot_change_bundle_bytes",
+      "test_explicit_legacy_tracked_snapshot_remains_separate"
+    ],
+    "single_failure_cause": "the size extraction removed controller-local _config_value but _verify_config retained one reference, causing NameError after the new authority boundary and all pre-publication gates had passed",
+    "correction": "exported runtime_config_value from the focused authority module and changed _verify_config to call it with BundleError, preserving exact reason strings",
+    "correction_rerun": "not_run_due_exact_one_focused_run_budget",
+    "post_correction_py_compile": "passed",
+    "post_correction_diff_check": "passed"
+  },
+  "executed_negative_evidence": {
+    "passed_before_correction": [
+      "missing foreign boolean list and duplicate-list authority selections reject before staging",
+      "schema source contract typed-input inventory output and destination receipt drift reject before staging",
+      "mutated same-bytes inode-replaced and symlinked derived outputs reject before staging",
+      "foreign stale-8b20 and observed-a482 receipt hashes reject",
+      "a raw tracked template cannot be presented as a derivation receipt",
+      "legacy and derived authority arguments cannot be mixed"
+    ],
+    "post_verification_path_replacement": "the test reached final bundle verification and failed only at the corrected NameError; the staged base member was populated from returned bytes, not the replaced locator",
+    "staging_create_count_on_authority_rejection": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "the production consumer now has one focused explicit authority dispatch and the derived branch calls the authoritative verifier itself",
+      "the derived branch validates and consumes the verifier-owned opened-byte snapshot without reopening snapshot_path",
+      "all twenty executed authority-selection receipt drift path drift stale identity and pre-publication negatives passed",
+      "the monolith is 928 lines and every changed Python file is below 1000 lines",
+      "no configure build server database DVC operational staging bundle V71b gameplay controller priority watchdog or threshold action occurred"
+    ],
+    "refuted": [
+      "the sole V76 focused run was entirely green",
+      "the three failed positive-boundary nodes exposed a derivation or admission mismatch"
+    ],
+    "unproven": [
+      "an independent run verifies the post-run config-helper correction and all 23 focused tests",
+      "an operational bundle consumes the derived authority",
+      "V71b revisions 4 5 and 5 or any build worldserver database DVC or gameplay outcome"
+    ]
+  },
+  "preserved_v68_fail_before": {
+    "terminal": "tracked_snapshot_source_invalid",
+    "replacement_is_retroactive": false,
+    "reason": "the ignored mutable runtime file is still not an admissible tracked-snapshot authority; V76 adds a separate tracked derivation rather than weakening that gate"
+  },
+  "next_work_unit": {
+    "id": "evidence:review_derived_runtime_config_bundle_consumer_v77",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Independently audit implementation commit 5c8eb6ee7a83f2bcb36ab265f78345969f36428e, run the exact focused module once with no correction, and verify the corrected real create_bundle positive, post-verification locator replacement, explicit legacy path, every pre-publication negative, file sizes, and absence of ignored runtime access.",
+    "live_or_build_authority": false
+  }
+}
