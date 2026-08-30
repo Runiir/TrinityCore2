@@ -1,0 +1,68 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:review_derived_runtime_config_bundle_consumer_v77",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_fixture_green_live_replay_authorized",
+  "reviewed_commit": "5c8eb6ee7a83f2bcb36ab265f78345969f36428e",
+  "reviewed_tree": "c34b666d982ca18d5a842ae10ae2ad6976476d60",
+  "input_handoff": {
+    "path": "experiments/configs/cata_raid_derived_runtime_config_bundle_implementation_handoff_v76.json",
+    "sha256": "24660ff791ca7161e53b55dc9c28fffbe25adcc3fe9d30ece31fac4f43d5783d"
+  },
+  "authenticated_files": {
+    "tools/raid_program/chainwielder_prestart_bundle.py": {
+      "lines": 928,
+      "sha256": "4841b6743f77c0982d9507a8f03f2032dd82139eeee4174143d112208b8ea506"
+    },
+    "tools/raid_program/chainwielder_runtime_config_authority.py": {
+      "lines": 174,
+      "sha256": "90d1215f8fa7ea0ef73619676ebee4ab0f6f6d1fd14eff8102922f8540fe11ad"
+    },
+    "tests/test_chainwielder_derived_runtime_config_bundle.py": {
+      "lines": 472,
+      "sha256": "3888f71e7a656119be2363e988eec245bdb0c593f9708f04d0bde5f3c637c58c"
+    }
+  },
+  "focused_verification": {
+    "command": "pixi run pytest -q tests/test_chainwielder_derived_runtime_config_bundle.py",
+    "run_count": 1,
+    "result": "23 passed in 3.66s"
+  },
+  "claim_ledger": {
+    "verified": [
+      "authority selection is explicit and rejects missing foreign boolean ambiguous and duplicate selections before staging",
+      "the tracked-derived branch invokes the authoritative verifier with the clean source commit tree tracked contract path receipt path and receipt hash",
+      "the verifier-returned opened bytes are canonical-base64 round-trip checked and fixed at 156488 bytes and SHA256 1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8",
+      "create_bundle copies and renders from the returned immutable bytes and never reopens the diagnostic snapshot locator",
+      "replacement of the locator after verification cannot change the staged base member",
+      "legacy tracked-snapshot authority remains distinct and cannot be mixed with derived authority arguments",
+      "the V68 ignored mutable config and stale 8b20 and a482 identities remain rejected",
+      "route selected-profile checkpoint-seal recurrence-admission final-config-precedence pre-rename verification and atomic-publication ordering were not loosened",
+      "the implementation commit changes only the two production modules and one focused test listed above and all remain below 1000 lines"
+    ],
+    "refuted": [
+      "the V76 helper correction remained unverified",
+      "post-verification locator replacement can affect accepted bundle bytes"
+    ],
+    "unproven": [
+      "map-669 fixture revisions 4 5 and 5 in a live production replay",
+      "any build worldserver database DVC or gameplay outcome"
+    ]
+  },
+  "preserved_v68_fail_before": {
+    "terminal": "tracked_snapshot_source_invalid",
+    "replacement_is_retroactive": false,
+    "reason": "tracked-derived authority is a new authenticated path and does not admit the ignored mutable runtime config"
+  },
+  "next_work_unit": {
+    "id": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
+    "owner_skill": "raid-shard-architecture",
+    "requested_fixture_revisions": {
+      "same_level_floor_observation_v1": 4,
+      "same_level_hazard_path_admission_v1": 5,
+      "same_level_native_path_proof_v1": 5
+    },
+    "live_authority": "one bounded fixture-expansion replay under the preserved no-retry completion-watchdog budget",
+    "gameplay_canary_admitted": false
+  }
+}

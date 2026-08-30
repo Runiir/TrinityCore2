@@ -1,103 +1,180 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "review_derived_runtime_config_bundle_consumer_v77_20260830",
-  "work_unit": "evidence:review_derived_runtime_config_bundle_consumer_v77",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "implementation_corrected_pending_independent_review",
-  "gate_state": "v76_post_run_helper_correction_requires_one_concise_review",
-  "observed_at_commit": "5c8eb6ee7a83f2bcb36ab265f78345969f36428e",
+  "epoch_id": "shared_planner_map669_correlated_fixture_expansion_v71b_reactivated_v77_20260830",
+  "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "live_recurrence_quarantined",
+  "gate_state": "fixture_expansion_replay_only_with_tracked_derived_runtime_config_build_and_gameplay_canary_closed",
+  "observed_at_commit": "acf17450af611db334833822f4a9eba69db22e69",
   "immutable_input_commit": "5c8eb6ee7a83f2bcb36ab265f78345969f36428e",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_derived_runtime_config_bundle_implementation_handoff_v76.json",
-    "sha256": "24660ff791ca7161e53b55dc9c28fffbe25adcc3fe9d30ece31fac4f43d5783d",
+    "path": "experiments/configs/cata_raid_derived_runtime_config_bundle_independent_review_handoff_v77.json",
+    "sha256": "9c99d7fc86bfe663708d64f28207aa483963496c9d739334fbf8da833314ff0b",
     "source_commit": "5c8eb6ee7a83f2bcb36ab265f78345969f36428e"
   },
+  "completed_predecessors": [
+    {
+      "work_unit": "runtime:restore_three_invalidated_shared_planner_recurrence_fixtures_v71",
+      "result": "failed",
+      "retained_invalidated_revisions": {
+        "same_level_floor_observation_v1": 3,
+        "same_level_hazard_path_admission_v1": 4,
+        "same_level_native_path_proof_v1": 4
+      },
+      "requested_expansions": {
+        "same_level_floor_observation_v1": 4,
+        "same_level_hazard_path_admission_v1": 5,
+        "same_level_native_path_proof_v1": 5
+      }
+    },
+    {
+      "work_unit": "evidence:review_derived_runtime_config_bundle_consumer_v77",
+      "result": "accepted",
+      "focused_test_result": "23 passed in 3.66s"
+    }
+  ],
   "program_scope": {
-    "supported_encounters": "all_chainwielder_bundle_consumers_using_external_base_runtime_config",
+    "supported_encounters": "blackwing_descent_10n_magmaw_diagnostic",
     "supported_modes": ["10N"],
-    "operation": "one concise independent correctness review of the derived-runtime-config bundle boundary",
-    "live_authorized": false,
-    "build_authorized": false
+    "operation": "one observation-only worldserver-backed map-669 fixture expansion replay",
+    "admission_scope": "fixture_expansion_replay",
+    "gameplay_canary_admitted": false,
+    "gameplay_mutations_allowed": false,
+    "runtime_implementation_allowed": false
   },
   "behavior_change": false,
   "evidence_contract_change": false,
-  "ready_for_bounded_review": true,
+  "ready_for_bounded_repair": false,
+  "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Review only implementation commit 5c8eb6ee7a83f2bcb36ab265f78345969f36428e and the V76 handoff. Authenticate the owned diff and hashes, inspect the explicit authority dispatch and byte-ownership chain, run the exact focused test module once with no correction, and emit either a compact acceptance routing directly to the preserved map-669 replay or a typed rejection naming the first broken production edge.",
-    "allowed_files": [
-      "one_compact_v77_independent_review_handoff",
-      "experiments/configs/cata_raid_active_work_unit_v1.json"
+    "allowed_change": "At the exact clean descriptor commit, perform one worldserver-backed map-669 fixture-expansion replay for only the requested shared-planner revisions 4/5/5. Correlate every admitted or rejected receipt from planner through native submission, MotionMaster, point generator, spline, and terminal outcome or explicit supersession. Use only the V77-accepted tracked-derived runtime-config authority. Publish only the bounded evidence and handoff; do not implement runtime or gameplay behavior.",
+    "requested_fixtures": [
+      {
+        "fixture_id": "same_level_floor_observation_v1",
+        "from_revision": 3,
+        "requested_revision": 4,
+        "causal_signature": "same_level_movement_path_floor_false_negative"
+      },
+      {
+        "fixture_id": "same_level_hazard_path_admission_v1",
+        "from_revision": 4,
+        "requested_revision": 5,
+        "causal_signature": "same_level_encounter_hazard_path_rejection"
+      },
+      {
+        "fixture_id": "same_level_native_path_proof_v1",
+        "from_revision": 4,
+        "requested_revision": 5,
+        "causal_signature": "same_level_native_path_proof_false_negative"
+      }
     ],
-    "required_review": [
-      "the tracked-derived branch calls the authoritative receipt verifier with exact clean source commit/tree and tracked contract path",
-      "the returned opened-byte snapshot is canonical-base64 decoded and checked at exactly 156488 bytes and SHA256 1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8",
-      "create_bundle writes and renders from those returned bytes without reopening the mutable derived pathname",
-      "post-verification pathname replacement cannot change the staged base member",
-      "legacy tracked-snapshot authority and the historical V68 rejection remain separate",
-      "route profile seal admission final-config precedence and atomic publish behavior remain intact",
-      "all focused nodes pass after the single config-helper correction and every changed Python file is below 1000 lines"
+    "required_production_boundary": [
+      "one same-level SampleFloorGap receipt continuously correlated from PlanMovementPath through native submission and terminal outcome or explicit supersession",
+      "one Hazard-owner complete-path receipt through selected endpoint MotionMaster point generator launched spline and consumed multi-tick outcome",
+      "one Hazard-owner incomplete-path receipt whose deterministic shorter endpoint receives a fresh complete native proof and then reaches a consumed multi-tick outcome",
+      "one legitimate cross-floor negative and one forbidden-path negative each rejected before MotionMaster launch",
+      "continuous receipt_id bot_guid owner intent_reason scope actor XYZ spline_id floor compatibility and outcome correlation without sampling gaps"
+    ],
+    "required_identity": [
+      "clean source commit and tree",
+      "queued build receipt and binary SHA256",
+      "tracked-derived runtime-config contract receipt and exact output SHA256",
+      "route manifest and canonical roster identities",
+      "map instance data VMAP MMAP and DBC identities",
+      "DVC pointer directory digest remote reconstruction verification and exact eviction receipt"
+    ],
+    "allowed_outputs": [
+      "one compact V71b shard handoff",
+      "one compact fixture-expansion replay summary",
+      "one DVC pointer for the closed bounded evidence",
+      "recurrence-ledger evidence binding only after all requested production boundaries are satisfied",
+      "active descriptor handoff routing only"
     ],
     "forbidden": [
-      "production test gameplay controller priority watchdog threshold route or fixture edit",
-      "configure build operational bundle worldserver database DVC or V71b execution",
-      "ignored runtime config access or authority fallback",
-      "additional workflow design or feature proposal",
-      "fixed 300-second raid timer"
+      "gameplay canary route acceptance boss completion build admission canary admission or closure claim",
+      "runtime planner executor encounter class route Chainwielder test threshold tolerance or comparison edit",
+      "second configure second build second worldserver start retry or fixed-duration success timer",
+      "database mutation roster reprovisioning teleport forced boss outcome or gameplay mutation",
+      "ignored or mutable trinity-worldserver-test.conf as authority",
+      "raw-template legacy-snapshot stale-8b20 stale-a482 or caller-summary bypass of tracked-derived authority"
     ]
   },
-  "v76_evidence": {
-    "implementation_commit": "5c8eb6ee7a83f2bcb36ab265f78345969f36428e",
-    "focused_run": "20 passed, 3 failed in 3.25s",
-    "failed_nodes_share_one_cause": "_verify_config retained a removed _config_value reference",
-    "single_correction": "_verify_config now uses focused runtime_config_value with exact BundleError semantics",
-    "correction_rerun": "not_run_due_one_run_budget",
-    "post_correction_py_compile": "passed",
-    "post_correction_diff_check": "passed",
-    "bundle_module_lines": 928,
-    "authority_module_lines": 174,
-    "focused_test_lines": 472
+  "runtime_config_authority": {
+    "authority": "tracked_derived_runtime_config_v1",
+    "contract_path": "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json",
+    "contract_sha256": "f62e93e740981b255adacd49311abe195f9c254cc15afe078a71e274244d8972",
+    "template_relative_path": "src/server/worldserver/worldserver.conf.dist",
+    "template_sha256": "944b69d1a22e0a55c88800ac73233aa3de75ede0058f6e2ebf96615ca285dfef",
+    "recipe_relative_path": "Makefile",
+    "recipe_sha256": "76c854e1c4e7dcbc4fc9f5a2444ede512ca65a7d1ff6e2514be8941641ea918a",
+    "expected_output_length": 156488,
+    "expected_output_sha256": "1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8",
+    "bundle_consumption": "create_bundle must invoke the V77-accepted derived verifier and consume only its returned authenticated bytes",
+    "preserved_v68_rejection": "tracked_snapshot_source_invalid",
+    "fail_before": "Any ignored mutable legacy stale hash raw-template caller-summary contract-mismatched or otherwise unauthenticated runtime-config source terminates before bundle publication or worldserver start."
   },
-  "preserved_v68_fail_before": {
-    "terminal": "tracked_snapshot_source_invalid",
-    "replacement_is_retroactive": false
-  },
-  "preserved_next_work_unit": {
-    "active": false,
-    "order": 2,
-    "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
-    "owner_skill": "raid-shard-architecture",
-    "descriptor_commit": "e7450e0a3e9fa7a6514bab377624096b506ad298",
-    "descriptor_sha256": "c90b86c6f2a7ff0732acb000469135786e3aae07548aae4bc6e4cf90e3027c92",
-    "requested_fixture_revisions": {
-      "same_level_floor_observation_v1": 4,
-      "same_level_hazard_path_admission_v1": 5,
-      "same_level_native_path_proof_v1": 5
+  "preserved_pending": {
+    "chainwielder_expansion": {
+      "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+      "status": "pending_out_of_scope"
     },
-    "reactivation_condition": "V77 independently accepts the corrected V76 bundle boundary; then route directly to the already-defined map-669 replay."
+    "v68_rejection": {
+      "reason": "tracked_snapshot_source_invalid",
+      "owner_skill": "raid-evidence-lifecycle",
+      "status": "preserved_fail_before"
+    }
   },
-  "remaining_unproven": [
-    "one independent green focused run after the V76 helper correction",
-    "V71b revisions 4 5 and 5 production replay",
-    "any build operational bundle worldserver database DVC or gameplay outcome"
-  ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": ["v76_boundary_accepted", "typed_boundary_rejection"]
+    "emergency_wall_clock_is_success": false,
+    "terminal_edges": [
+      "all_requested_fixture_receipts_captured",
+      "production_boundary_incomplete",
+      "semantic_or_no_progress_stall",
+      "repeated_decision_terminal",
+      "death_loop_terminal",
+      "identity_or_runtime_config_mismatch",
+      "infrastructure_loss",
+      "explicit_interruption"
+    ]
   },
-  "verification_budget": {
-    "focused_test_run_count_maximum": 1,
-    "correction_count_maximum": 0,
-    "configure_count_maximum": 0,
-    "worldserver_build_count_maximum": 0,
-    "operational_bundle_create_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
-    "database_mutation": "forbidden",
-    "dvc_mutation": "forbidden"
+  "execution_budget": {
+    "build_policy": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "configure_count_maximum": 1,
+    "worldserver_build_count_maximum": 1,
+    "runtime_config_derivation_count_maximum": 1,
+    "atomic_bundle_create_count_maximum": 1,
+    "atomic_bundle_verify_count_maximum": 1,
+    "worldserver_start_count_maximum": 1,
+    "retry_count_maximum": 0,
+    "database_mutation": "forbidden; fresh strict retained-roster readback only",
+    "dvc_checkpoint_count_maximum": 1,
+    "dvc_push_count_maximum": 1,
+    "dvc_remote_reconstruction_count_maximum": 1,
+    "dvc_exact_eviction_count_maximum": 1,
+    "dvc_mutation": "required only after the bounded replay closes for publication remote reconstruction verification and exact eviction"
   },
-  "next_work_unit": "evidence:review_derived_runtime_config_bundle_consumer_v77",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Run one concise correctness review of V76; if green, route directly to the preserved map-669 replay."
+  "remaining_unproven": [
+    "same_level_floor_observation_v1 revision 4 satisfies its correlated production boundary",
+    "same_level_hazard_path_admission_v1 revision 5 satisfies its complete and incomplete Hazard production boundary",
+    "same_level_native_path_proof_v1 revision 5 satisfies its final policy-to-native-outcome equivalence class",
+    "the full regression bank admits any build or gameplay canary",
+    "the pending Chainwielder production boundary"
+  ],
+  "ordered_followups": [
+    {
+      "order": 2,
+      "active": false,
+      "work_unit": "runtime:promote_shared_planner_fixture_expansion_v71c",
+      "owner_skill": "raid-bot-runtime-implementation"
+    }
+  ],
+  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_action": "At the exact clean descriptor commit, use at most one queued fast8 configure/build, one tracked-derived runtime-config derivation and authenticated atomic bundle create/verify, and one no-retry completion-watchdog worldserver start to capture only map-669 revisions 4/5/5, then DVC-publish, remotely reconstruct-verify, and exactly evict the bounded evidence."
 }
