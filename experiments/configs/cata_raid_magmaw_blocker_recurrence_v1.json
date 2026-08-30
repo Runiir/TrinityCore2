@@ -11,6 +11,68 @@
     "current_identity": {
       "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36"
     },
+    "post_occurrence_verification_receipts": [
+      {
+        "receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
+        "status": "passed",
+        "fixture_ids": [
+          "magmaw_parasite_lane_paths_v1",
+          "magmaw_parasite_lane_transition_full_replay_v1",
+          "magmaw_parasite_control_full_runtime_v1"
+        ],
+        "fixture_revisions": {
+          "magmaw_parasite_lane_paths_v1": 7,
+          "magmaw_parasite_lane_transition_full_replay_v1": 6,
+          "magmaw_parasite_control_full_runtime_v1": 6
+        },
+        "revision_basis": "Retain the registered revisions: the three selector sets and their owned assertions did not change after the revision-7/6/6 bindings. Commit 39422c9e229b66a010064020fd56c8fe2e9c8bb3 was the last later production-boundary invalidation because it changed BotActionArbiter.h, which the compiled Magmaw replays execute.",
+        "last_invalidating_occurrence_commit": "39422c9e229b66a010064020fd56c8fe2e9c8bb3",
+        "verified_at_utc": "2026-08-30T17:08:08Z",
+        "verified_source_commit": "acaeaf9f2682b18765ec357121b38d0efbccaa8a",
+        "verified_source_tree": "06b1507ad5bc151c1cbc6d9d4dc1cacd74ef811c",
+        "command_json_sha256": "d3d7e9b8f0a3e42a9cb56e7a46527f263be63fc97b9171ccb5ee9ca32a9275b0",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_containment_replays_full_runtime_contract",
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_arrived_endpoint_replans_same_living_wave",
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_lane_transition_replays_selection_to_reset",
+          "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_bounded_complete_mechanic_endpoint_selection",
+          "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step",
+          "tests/test_native_path_floor_diagnostic.py::test_canary121_near_arrival_endpoint_is_not_rejected",
+          "tests/test_magmaw_event_movement_transition.py"
+        ],
+        "result": {
+          "exit_code": 0,
+          "passed": 8,
+          "failed": 0,
+          "duration_seconds": 8.93
+        },
+        "fixture_file_sha256": {
+          "tests/test_magmaw_parasite_policy.py": "7697b57047b3bf8f8d2a18e1ab3941493393d5e194d05de6afa09fc759246b5c",
+          "tests/test_bot_action_arbitration.py": "16d77cff832b638556d8d76857388d58dfc412aecef4a67bda6cb6fda0c8e0de",
+          "tests/test_native_path_floor_diagnostic.py": "46cec938be452105ced9ae5f3349cf704c716b3ef4f1d7f090aff7dba03fef8b",
+          "tests/test_magmaw_event_movement_transition.py": "4f94fa1d4c2341e7375bd2a8a6c67078b57fe6528bcd49469d51fc86185c9d7c"
+        },
+        "production_boundary_sha256": {
+          "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h": "af9cc75fad86e067c3292e4d92f498a357bf82cbcf1dd7ae6feeacdd72435d60",
+          "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h": "94f356e45562a41df3fa0895615c7ba092771d5cdbee88f57bd3961ec8507240",
+          "src/server/game/Bots/BotNativeActionIntent.h": "82b7c177e0e7b56f8f2dad94f61b84736240cb7aa941abba74bf05f90f8e20cd",
+          "src/server/game/Bots/BotActionArbiter.h": "29afabdd496622201c1402cea653f10f4644c61fc71f112da8aecefa4754d4b8",
+          "src/server/game/Bots/BotMovementArbiter.h": "414f4ecde8c97e326d3f24493bbbed80e7085e35fe641b767fe36523c4ba0017",
+          "src/server/game/Bots/BotWorldPopulationMgrNativeFloor.h": "ec050bfe5e39702d38e1335d5b1a792df47550e683f33b49a6d29992a3b8fa93",
+          "src/server/game/Bots/BotWorldPopulationMgrMovement.h": "a43f2a1ba30b1772964ce4ba5e3269445dcffad7cc058453efd4c8ea39b1c777",
+          "src/server/game/Bots/BotWorldPopulationMgrNativePathAdmission.h": "aea41fcf799272d185be70821ab7cb95c8b9dff16c18c55044f3f55a71601364",
+          "src/server/game/Bots/BotWorldPopulationMgrMovementPathSelection.h": "54bfcaadab62763eba81e8f7c3f408a8aa9cb5327446e5bf458d4304e64afb30"
+        },
+        "admission_scope": "fixture_expansion_only",
+        "build_admitted": false,
+        "live_canary_admitted": false
+      }
+    ],
     "fixture_expansion_requests": [],
     "fixture_history": [
       "magmaw_parasite_lane_paths_v1",
@@ -38,6 +100,7 @@
       {
         "fixture_id": "magmaw_parasite_lane_paths_v1",
         "revision": 7,
+        "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
         "causal_signature": "magmaw_parasite_containment_failure",
         "command": [
           "pixi",
@@ -55,6 +118,7 @@
       {
         "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
         "revision": 6,
+        "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
         "causal_signature": "magmaw_parasite_containment_failure",
         "command": [
           "pixi",
@@ -73,6 +137,7 @@
       {
         "fixture_id": "magmaw_parasite_control_full_runtime_v1",
         "revision": 6,
+        "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
         "causal_signature": "magmaw_parasite_control_allows_player_infection",
         "command": [
           "pixi",
@@ -356,6 +421,20 @@
           "evidence": "tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths",
           "source_identity": "3eadfc6b0e280993cb079ea4c542db8729fc26dd",
           "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36"
+        },
+        {
+          "fixture_id": "magmaw_parasite_lane_paths_v1",
+          "revision": 7,
+          "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
+          "verified_after_commit": "39422c9e229b66a010064020fd56c8fe2e9c8bb3",
+          "source_identity": "acaeaf9f2682b18765ec357121b38d0efbccaa8a"
+        },
+        {
+          "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
+          "revision": 6,
+          "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
+          "verified_after_commit": "39422c9e229b66a010064020fd56c8fe2e9c8bb3",
+          "source_identity": "acaeaf9f2682b18765ec357121b38d0efbccaa8a"
         }
       ]
     },
@@ -364,7 +443,16 @@
       "parent": "magmaw_parasite_containment_failure",
       "invariant": "the fixed mobile bait team must traverse a stable room lane whose complete and incomplete movement requests reach a newly proved safe native endpoint without player Parasitic Infection or parasite re-entry",
       "architecture_reviewed_through_occurrence_count": 18,
-      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md"
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
+      "fixture_verifications": [
+        {
+          "fixture_id": "magmaw_parasite_control_full_runtime_v1",
+          "revision": 6,
+          "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
+          "verified_after_commit": "39422c9e229b66a010064020fd56c8fe2e9c8bb3",
+          "source_identity": "acaeaf9f2682b18765ec357121b38d0efbccaa8a"
+        }
+      ]
     },
     "magmaw_lethal_movement_identity_churn": {
       "owner": "encounter_movement_transition",

@@ -3,14 +3,14 @@
   "epoch_id": "restore_three_invalidated_parasite_recurrence_fixtures_v70_20260830",
   "work_unit": "encounter:restore_three_invalidated_parasite_recurrence_fixtures_v70",
   "owner_skill": "raid-encounter-implementation",
-  "classification": "live_recurrence_quarantined",
-  "gate_state": "live_recurrence_admission_false_first_ordered_gate",
-  "observed_at_commit": "50d4cc498b4498407ab3ccb15a6ede68be0ba347",
+  "classification": "passed_fixture_evidence_only",
+  "gate_state": "encounter_fixture_verification_true_shared_planner_verification_pending",
+  "observed_at_commit": "acaeaf9f2682b18765ec357121b38d0efbccaa8a",
   "immutable_input_commit": "587282117982cac06bbfe6806babb08bdc318905",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v68_prestart_gate_order_review_handoff_v69.json",
-    "sha256": "a3c3709728d9ec6076265a5c7886e988a8e241495c8ed2e3571117081abefe6d",
-    "source_commit": "50d4cc498b4498407ab3ccb15a6ede68be0ba347"
+    "path": "experiments/configs/cata_raid_v70_parasite_fixture_post_occurrence_verification_handoff_v1.json",
+    "sha256": "8a3966be116794cba424748d286317bd28b7b0dacc8e2dd539eabadde2f0f7e0",
+    "source_commit": "acaeaf9f2682b18765ec357121b38d0efbccaa8a"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
@@ -23,6 +23,20 @@
   "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
+  "completion_receipt": {
+    "receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
+    "recurrence_ledger_path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "recurrence_ledger_sha256": "2e80d0de9db3f89c2a63327653b1fbf248028405600232ac7be0d7b925d6680d",
+    "verified_fixture_revisions": {
+      "magmaw_parasite_lane_paths_v1": 7,
+      "magmaw_parasite_lane_transition_full_replay_v1": 6,
+      "magmaw_parasite_control_full_runtime_v1": 6
+    },
+    "focused_validation_result": "8 passed in 8.93s",
+    "admission_scope": "fixture_expansion_only",
+    "build_admitted": false,
+    "live_canary_admitted": false
+  },
   "scope_lock": {
     "allowed_change": "Reproduce and obtain post-occurrence production-bound verification for exactly the three encounter-owned invalidated fixtures: magmaw_parasite_control_full_runtime_v1, magmaw_parasite_lane_paths_v1, and magmaw_parasite_lane_transition_full_replay_v1. Update only their focused fixture evidence, recurrence ledger binding, compact handoff, and this descriptor.",
     "allowed_files": [
@@ -52,7 +66,7 @@
   "ordered_followups": [
     {
       "order": 2,
-      "active": false,
+      "active": true,
       "work_unit": "runtime:restore_three_invalidated_shared_planner_recurrence_fixtures_v71",
       "owner_skill": "raid-bot-runtime-implementation"
     },
@@ -64,7 +78,7 @@
     }
   ],
   "remaining_unproven": [
-    "all six invalidated fixtures have current post-occurrence verification",
+    "same_level_floor_observation_v1, same_level_hazard_path_admission_v1, and same_level_native_path_proof_v1 have current post-occurrence verification",
     "the complete regression bank admits a build and live canary",
     "a tracked deterministic derivation reproduces the exact rejected runtime config bytes",
     "the live Held Route-owner receipt-zero rejection terminal release and Drudges sequence"
@@ -77,6 +91,7 @@
   },
   "verification_budget": {
     "focused_fixture_run_count_maximum": 1,
+    "focused_fixture_run_count_used": 1,
     "configure_count_maximum": 0,
     "worldserver_build_count": 0,
     "tracked_snapshot_stage_count_maximum": 0,
@@ -85,7 +100,7 @@
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "encounter:restore_three_invalidated_parasite_recurrence_fixtures_v70",
-  "next_owner_skill": "raid-encounter-implementation",
-  "next_action": "Verify only the three encounter-owned invalidated fixtures after their last invalidating occurrence and hand off the remaining shared-planner fixtures without claiming live admission."
+  "next_work_unit": "runtime:restore_three_invalidated_shared_planner_recurrence_fixtures_v71",
+  "next_owner_skill": "raid-bot-runtime-implementation",
+  "next_action": "Obtain post-occurrence verification for same_level_floor_observation_v1, same_level_hazard_path_admission_v1, and same_level_native_path_proof_v1 at their exact current shared-planner production boundaries. Preserve fixture-expansion-only admission, the pending Chainwielder expansion, and V68 tracked_snapshot_source_invalid; do not claim build or live admission until the complete accumulated bank passes."
 }
