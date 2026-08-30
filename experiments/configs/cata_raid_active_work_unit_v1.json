@@ -1,66 +1,90 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "tracked_runtime_config_authority_resolution_v73_20260830",
-  "work_unit": "evidence:tracked_runtime_config_authority_resolution_v73",
+  "epoch_id": "implement_tracked_base_runtime_config_contract_v74_20260830",
+  "work_unit": "evidence:implement_tracked_base_runtime_config_contract_v74",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed_closed_missing_external_authority",
-  "gate_state": "v72_exact_derivation_rejected_without_canonical_substitution_authority",
-  "observed_at_commit": "99bfec5d3b803e762c3c378412e5a257731dcaad",
-  "immutable_input_commit": "99bfec5d3b803e762c3c378412e5a257731dcaad",
+  "classification": "failed",
+  "gate_state": "replacement_runtime_config_authority_approved_pending_bounded_implementation",
+  "observed_at_commit": "ad3e4488ebde1efb67224460a4d7157c4847270d",
+  "immutable_input_commit": "ad3e4488ebde1efb67224460a4d7157c4847270d",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_tracked_runtime_config_exact_derivation_missing_authority_handoff_v72.json",
-    "sha256": "2750e358748231ccf5e0ee24638f945c76dc763e7cdd4fb8b6cee596e8fcf6a4",
-    "source_commit": "99bfec5d3b803e762c3c378412e5a257731dcaad"
+    "path": "experiments/configs/cata_raid_tracked_runtime_config_authority_resolution_handoff_v73.json",
+    "sha256": "8705727aa35ee515df89e85a784c79e562d139e7f9142fde236bbfd0e0d80219",
+    "source_commit": "ad3e4488ebde1efb67224460a4d7157c4847270d"
   },
   "program_scope": {
     "supported_encounters": "all_route_manifest_nodes_requiring_external_base_runtime_config",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "operation": "resolve missing authenticated runtime-config derivation authority without live execution",
+    "operation": "implement and fixture-verify one generic tracked base-runtime-config derivation contract",
     "live_authorized": false,
     "build_authorized": false
   },
   "behavior_change": false,
   "evidence_contract_change": true,
-  "ready_for_bounded_repair": false,
+  "ready_for_bounded_repair": true,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "scope_lock": {
-    "allowed_change": "Provide independently authenticated historical transformation provenance plus a canonical typed input object that exactly derives the required runtime hash, or explicitly review replacement of the stale mutable runtime identity with a newly tracked reproducible config contract.",
+    "allowed_change": "Implement the approved cata_raid_tracked_base_runtime_config_v1 contract. Consume only clean git-show worldserver.conf.dist and Makefile:test-configs bytes plus the exact tracked typed-input object, verify every substitution, derive once into a fresh exclusive external test destination, and accept only output SHA256 1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8. Integrate the authenticated derived snapshot at the snapshot-staging boundary without executing a real stage, bundle, build, or server.",
     "allowed_files": [
-      "one_compact_authority_resolution_handoff",
+      "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json",
+      "tools/raid_program/tracked_runtime_config_derivation.py",
+      "tools/raid_program/canonical_route_staging.py",
+      "tests/test_canonical_route_staging.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "one_compact_v74_implementation_handoff",
       "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
-    "required_resolution": [
-      "do not infer substitutions from the expected hash",
-      "do not read copy or authenticate the ignored trinity-worldserver-test.conf as source authority",
-      "bind every transformation and typed input to clean tracked provenance",
-      "if historical provenance is unavailable require explicit independent evidence-contract review before selecting a new reproducible runtime hash",
-      "preserve V68 fail-before and leave V71b inactive"
+    "required_contract": {
+      "contract_id": "cata_raid_tracked_base_runtime_config_v1",
+      "template_relative_path": "src/server/worldserver/worldserver.conf.dist",
+      "template_git_show_sha256": "944b69d1a22e0a55c88800ac73233aa3de75ede0058f6e2ebf96615ca285dfef",
+      "recipe_relative_path": "Makefile",
+      "recipe_target": "test-configs",
+      "recipe_git_show_file_sha256": "76c854e1c4e7dcbc4fc9f5a2444ede512ca65a7d1ff6e2514be8941641ea918a",
+      "typed_inputs_authority": "exact canonical object approved in the V73 handoff, copied without semantic drift into one tracked contract file",
+      "expected_output_sha256": "1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8",
+      "base_runtime_profile": "",
+      "later_profile_authority": "authenticated bundle-local selected-profile overlay with separately bound final launch-config hash"
+    },
+    "required_proof": [
+      "clean commit/tree and git-show tracked relative-path authority for template, recipe, and typed contract",
+      "exact template and recipe hashes and exact test-configs target identity",
+      "schema-complete canonical typed inputs with every variable and fixed substitution represented exactly once",
+      "substitution cardinality and before/after match counts reject recipe drift, missing keys, duplicate keys, and silently unmatched replacements",
+      "fresh exclusive external destination rejects pre-existence, worktree containment, symlink, alias, collision, and replacement",
+      "opened derived byte snapshot independently hashes to 1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8",
+      "typed receipt binds source commit/tree, template/recipe/contract paths and hashes, canonical input and substitution-inventory hashes, output length/hash, and destination identity",
+      "snapshot-staging boundary consumes the verified byte snapshot/receipt and never reopens the ignored mutable runtime path"
+    ],
+    "required_negative_matrix": [
+      "dirty/nonexistent source or commit/tree drift",
+      "absolute/untracked/missing/escaping/symlink template, recipe, or contract path",
+      "template, recipe, target, contract, input, substitution inventory, output, or receipt hash drift",
+      "missing, duplicate, foreign, mistyped, noncanonical lexical, inherited-environment, or post-parse-mutated input",
+      "raw template, known a4820b7f1cffef45f366517a40bd96a5be19cef61d30fc3c34b2df0304fdbfae observed-values output, or stale 8b20b393839886bfe9d5906dd198a6f56eeaadcf7d220b5f1d83d044dd7ea449 mutable identity",
+      "pre-existing, in-worktree, symlinked, colliding, aliased, or replaced destination",
+      "secret cleartext in contract, receipt, retained events, or logs; v1 rejects external secret inputs"
     ],
     "forbidden": [
-      "production or test implementation without the missing authority",
-      "configure build database DVC snapshot route bundle worldserver or live-run operation",
-      "gameplay controller planner encounter class route threshold tolerance or fixture revision change",
-      "expected-hash weakening or mutable runtime pathname acceptance",
+      "read copy authenticate hash or use ignored trinity-worldserver-test.conf",
+      "configure compile build binary attestation database DVC canonical-route stage real snapshot stage bundle worldserver or live operation",
+      "native runtime planner encounter class route fixture revision threshold tolerance or comparison change",
+      "expected-hash weakening, target-hash-derived substitutions, embedded output bytes, raw-template substitution, or mutable pathname authority",
+      "V68 fail-before erasure or retroactive acceptance",
+      "V71b revision, production-boundary, budget, or gameplay-claim change",
       "fixed 300-second raid timer"
     ]
   },
-  "closed_v72_evidence": {
-    "terminal": "tracked_runtime_config_substitution_authority_missing",
-    "template_git_show_sha256": "944b69d1a22e0a55c88800ac73233aa3de75ede0058f6e2ebf96615ca285dfef",
-    "recipe_git_show_file_sha256": "76c854e1c4e7dcbc4fc9f5a2444ede512ca65a7d1ff6e2514be8941641ea918a",
-    "observed_values_recipe_output_sha256": "a4820b7f1cffef45f366517a40bd96a5be19cef61d30fc3c34b2df0304fdbfae",
-    "required_output_sha256": "8b20b393839886bfe9d5906dd198a6f56eeaadcf7d220b5f1d83d044dd7ea449",
-    "focused_result": "12 passed, 29 deselected in 0.53s",
-    "production_or_test_edit_count": 0,
-    "external_derivation_destination_count": 0,
-    "snapshot_stage_count": 0,
-    "atomic_bundle_count": 0,
-    "configure_count": 0,
-    "worldserver_build_count": 0,
-    "worldserver_start_count": 0,
-    "database_mutation_count": 0,
-    "dvc_mutation_count": 0
+  "secret_policy": {
+    "external_secret_inputs": "forbidden_in_v1",
+    "tracked_test_credentials": "remain source literals already committed in template/recipe",
+    "future_secret_receipts": "identity and digest only; never retain cleartext"
+  },
+  "preserved_v68_fail_before": {
+    "terminal": "tracked_snapshot_source_invalid",
+    "stale_mutable_runtime_sha256": "8b20b393839886bfe9d5906dd198a6f56eeaadcf7d220b5f1d83d044dd7ea449",
+    "replacement_is_retroactive": false
   },
   "preserved_next_work_unit": {
     "active": false,
@@ -74,12 +98,12 @@
       "same_level_hazard_path_admission_v1": 5,
       "same_level_native_path_proof_v1": 5
     },
-    "reactivation_condition": "An accepted exact derivation receipt or an independently reviewed replacement runtime identity exists; otherwise V71b remains failed before start."
+    "reactivation_condition": "V74 implementation is fixture-green and independently reviewed as reproducing the approved exact hash and preserving V68 fail-before; otherwise V71b remains inactive."
   },
   "remaining_unproven": [
-    "the historical typed substitutions and additional transformation that produced the required runtime hash",
-    "an independently approved replacement canonical runtime-config identity if historical provenance is unavailable",
-    "snapshot staging accepts an authenticated derived byte snapshot",
+    "the implemented generic contract reproduces and verifies exact output 1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8",
+    "the snapshot boundary consumes only its authenticated byte snapshot and receipt",
+    "independent V74 implementation review",
     "V71b revisions 4, 5, and 5 production replay",
     "any build, bundle, worldserver, or live outcome"
   ],
@@ -87,14 +111,10 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": [
-      "historical_derivation_authority_supplied",
-      "replacement_identity_independently_approved",
-      "authority_remains_missing"
-    ]
+    "terminal_edges": ["implementation_fixture_green", "derivation_or_receipt_rejected", "authority_or_scope_conflict"]
   },
   "verification_budget": {
-    "focused_test_run_count_maximum": 0,
+    "focused_test_run_count_maximum": 1,
     "configure_count_maximum": 0,
     "worldserver_build_count_maximum": 0,
     "tracked_snapshot_stage_count_maximum": 0,
@@ -103,7 +123,7 @@
     "database_mutation": "forbidden",
     "dvc_mutation": "forbidden"
   },
-  "next_work_unit": "evidence:tracked_runtime_config_authority_resolution_v73",
+  "next_work_unit": "evidence:implement_tracked_base_runtime_config_contract_v74",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_action": "Obtain real derivation provenance or independently approve a new tracked reproducible runtime identity; do not guess values or execute V71b."
+  "next_action": "Implement and fixture-verify only the approved tracked base-runtime-config contract and authenticated snapshot-boundary consumption; do not execute V71b or any operational stage."
 }

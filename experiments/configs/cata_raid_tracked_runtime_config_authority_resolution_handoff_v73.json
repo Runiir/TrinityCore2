@@ -1,0 +1,117 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:tracked_runtime_config_authority_resolution_v73",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "replacement_contract_approved_pending_implementation",
+  "reviewed_commit": "ad3e4488ebde1efb67224460a4d7157c4847270d",
+  "reviewed_tree": "734c744f84912db4e357b6a69ea30ba5135bbf11",
+  "authenticated_inputs": {
+    "active_v73_descriptor_sha256": "62c3d4016671f737ce3551429d117cdef12d64669d38ffbe1ad8dbcfe8dcd771",
+    "v72_missing_authority_handoff_sha256": "2750e358748231ccf5e0ee24638f945c76dc763e7cdd4fb8b6cee596e8fcf6a4",
+    "v72_ordering_handoff_sha256": "16d5beae8b4c8b339ec3091dd3a07e74aeb23c2e46f02a744aef7e3998d74dd1",
+    "v69_handoff_sha256": "a3c3709728d9ec6076265a5c7886e988a8e241495c8ed2e3571117081abefe6d",
+    "v68_handoff_sha256": "340ca34ae349d66ca50f317dfc9a0f556d89284d6b6c3058920f2ab8ddfc5bb6",
+    "inactive_v71b_descriptor_commit": "e7450e0a3e9fa7a6514bab377624096b506ad298",
+    "inactive_v71b_descriptor_sha256": "c90b86c6f2a7ff0732acb000469135786e3aae07548aae4bc6e4cf90e3027c92"
+  },
+  "historical_provenance_audit": {
+    "ignored_runtime_read_or_authenticated": false,
+    "historical_commits_tracking_ignored_runtime_path": 0,
+    "historical_tracked_worldserver_config_blob_count": 436,
+    "historical_tracked_blob_matches_required_8b20_hash": 0,
+    "tracked_target_hash_references": 5,
+    "target_reference_disposition": "all five are V68-V73 evidence or descriptor claims; none contains a canonical typed substitution object or an additional tracked transform that derives the target",
+    "verdict": "no tracked historical provenance exactly derives 8b20b393839886bfe9d5906dd198a6f56eeaadcf7d220b5f1d83d044dd7ea449"
+  },
+  "authority_resolution": {
+    "replacement_approved": true,
+    "reason": "The stale hash identifies rejected mutable bytes with no tracked derivation. A new contract can instead derive a base runtime config solely from clean git-show template bytes, the exact tracked test-configs recipe, and one canonical explicit typed input object.",
+    "scope": "new base-runtime-config authority for future attempts only",
+    "not_retroactive": "V68 remains tracked_snapshot_source_invalid and neither V68 nor V71b becomes admitted until the replacement contract is implemented and independently verified."
+  },
+  "approved_replacement_contract": {
+    "contract_id": "cata_raid_tracked_base_runtime_config_v1",
+    "source_commit_policy": "exact clean active descriptor commit",
+    "template_relative_path": "src/server/worldserver/worldserver.conf.dist",
+    "template_git_show_sha256": "944b69d1a22e0a55c88800ac73233aa3de75ede0058f6e2ebf96615ca285dfef",
+    "recipe_relative_path": "Makefile",
+    "recipe_target": "test-configs",
+    "recipe_git_show_file_sha256": "76c854e1c4e7dcbc4fc9f5a2444ede512ca65a7d1ff6e2514be8941641ea918a",
+    "typed_inputs": {
+      "data_dir": "/home/runiir/Games/trinity-cata/data",
+      "botworld_auto_start": false,
+      "botworld_auto_start_recording": true,
+      "botworld_enable": true,
+      "botworld_runtime_profile": "",
+      "botworld_recording_window_minutes": 15,
+      "botworld_target_population": 5,
+      "botworld_spawn_mode": "resume_or_race_start",
+      "botworld_allow_configured_center_fallback": false,
+      "botworld_use_saved_position": true,
+      "botworld_quest_first": false,
+      "botworld_allow_grinding": true,
+      "botworld_grind_only_when_no_quest_available": false,
+      "bot_policy_model_enable": false,
+      "bot_policy_model_mode": "shadow",
+      "bot_policy_model_version": "",
+      "bot_policy_model_score_weight_lexical": "1.0",
+      "bot_policy_model_fail_closed": true
+    },
+    "fixed_recipe_substitutions": {
+      "database_host": "172.20.0.2",
+      "database_port": 3306,
+      "database_names": ["auth", "world", "characters", "hotfixes"],
+      "player_bot_enable": true,
+      "remote_access_enable": true,
+      "soap_enable": true,
+      "death_recovery_mode": "native_corpse_run",
+      "respawn_mode": "native_corpse_run",
+      "allow_questing": true,
+      "allow_dungeons": false,
+      "allow_raids": false,
+      "bot_learning_enable": true
+    },
+    "secret_policy": "No external secret input is admitted by v1. Database credential literals already present in the tracked template and recipe remain tracked-source bytes. Any future external secret must enter only through a typed identity/digest in retained receipts; its cleartext must never be retained, logged, or placed in the tracked contract.",
+    "profile_precedence": "The empty base runtime profile is intentional. The authenticated bundle-local selected-profile overlay remains the sole later profile authority and must bind the final launch-config hash separately.",
+    "expected_output_sha256": "1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8",
+    "expected_hash_basis": "independent in-memory application of the tracked test-configs substitutions to git-show template bytes using exactly the typed values above; the ignored runtime path was not read",
+    "destination_policy": "derive once into a fresh exclusive external destination outside the worktree, reject pre-existence/symlink/alias/collision, authenticate the opened output byte snapshot, and use that snapshot rather than a later pathname reopen"
+  },
+  "required_implementation_proof": [
+    "canonical schema validation rejects missing, duplicate, foreign, mistyped, inherited-environment, and noncanonical lexical inputs",
+    "git-show independently rechecks clean commit/tree, tracked relative paths, template hash, recipe hash, and exact target identity",
+    "every variable and fixed test-configs substitution is represented and the substitution cardinality is checked",
+    "derived bytes equal 1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8 and raw-template, a4820b7f1cffef45f366517a40bd96a5be19cef61d30fc3c34b2df0304fdbfae, and stale 8b20b393839886bfe9d5906dd198a6f56eeaadcf7d220b5f1d83d044dd7ea449 identities are rejected",
+    "receipt binds source commit/tree, template and recipe paths/hashes, canonical typed-input hash, substitution inventory/hash, immutable output snapshot length/hash, and exclusive external destination identity",
+    "the implementation never reads or authenticates the ignored runtime file and performs no real snapshot, bundle, build, DVC, database, or live operation"
+  ],
+  "preserved_fail_before": {
+    "v68_terminal": "tracked_snapshot_source_invalid",
+    "stale_runtime_sha256": "8b20b393839886bfe9d5906dd198a6f56eeaadcf7d220b5f1d83d044dd7ea449",
+    "disposition": "retained as historical rejected evidence, never accepted as the new contract"
+  },
+  "preserved_v71b": {
+    "active": false,
+    "next_after_implementation_and_review": true,
+    "descriptor_commit": "e7450e0a3e9fa7a6514bab377624096b506ad298",
+    "descriptor_sha256": "c90b86c6f2a7ff0732acb000469135786e3aae07548aae4bc6e4cf90e3027c92",
+    "requested_fixture_revisions": {
+      "same_level_floor_observation_v1": 4,
+      "same_level_hazard_path_admission_v1": 5,
+      "same_level_native_path_proof_v1": 5
+    }
+  },
+  "operations": {
+    "implementation_or_test": 0,
+    "build": 0,
+    "database_mutation": 0,
+    "dvc_mutation": 0,
+    "snapshot_or_bundle": 0,
+    "worldserver_start": 0
+  },
+  "next_work_unit": {
+    "id": "evidence:implement_tracked_base_runtime_config_contract_v74",
+    "owner_skill": "raid-evidence-lifecycle",
+    "live_or_build_authority": false
+  }
+}
