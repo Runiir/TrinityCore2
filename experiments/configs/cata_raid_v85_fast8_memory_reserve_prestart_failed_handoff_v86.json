@@ -1,0 +1,100 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v85",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "prestart_build_resource_abort",
+  "source": {
+    "commit": "4818e80873c2544978142f47341219744e1118d7",
+    "tree": "03411d49750121cf825e910b6e16e653484593db",
+    "clean": true,
+    "active_descriptor_sha256": "e1a3d310455308231df7b3a5150764cd94a759f2a77c6de35a1686d6642824a5"
+  },
+  "scope_lock": {
+    "assigned_operation": "one observation-only map-669 correlated fixture-expansion replay",
+    "requested_revisions": {
+      "same_level_floor_observation_v1": 4,
+      "same_level_hazard_path_admission_v1": 5,
+      "same_level_native_path_proof_v1": 5
+    },
+    "gameplay_mutation": false,
+    "database_mutation": false,
+    "retry_budget": 0
+  },
+  "prestart": {
+    "recurrence_boundary_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+    "recurrence_boundary_side": "after",
+    "suite_invocations": 1,
+    "fixture_count": 20,
+    "passing_fixture_count": 20,
+    "route_failures": [],
+    "fixture_expansion_admitted": true,
+    "build_admitted": false,
+    "canary_admitted": false,
+    "acceptance_admitted": false,
+    "suite_receipt_sha256": "5bd86250d42c0d04cc98790fd3dd00578d3d7426c21feebddcfc0a66510742d4",
+    "decision_sha256": "bf9ce31703e96a9d22b883a5e989891610e234eca9c4c30f49856d85249932f7"
+  },
+  "first_broken_edge": {
+    "stage": "gate-bearing worldserver build",
+    "classification": "build_resource_abort",
+    "policy_id": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "exit_code": -15,
+    "signal": 15,
+    "pressure_reasons": [
+      "memory_reserve"
+    ],
+    "progress_at_abort": "31 percent",
+    "source_identity_stable": true,
+    "build_configuration_stable": true,
+    "gate_bearing": false,
+    "output_artifacts": [],
+    "ticket_id": "raid-build-8eb7e1c1968846848063ed7f8ee43f2c",
+    "receipt_semantic_sha256": "87f135ab18fb4330cdff390d5345cf2740ff13fd4dd8d243eb3cf142fa8f3221",
+    "receipt_file_sha256": "18441ea0da31ca174a2e9a4109765f2474453c1c375c1375e1029b3997ea8bfa",
+    "log_sha256": "001d606a4c9bfa1ad646cd45fff682cf7528399d0b5a29447acdbab71c8d29e4"
+  },
+  "operations": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "runtime_config_derivation_count": 0,
+    "bundle_create_count": 0,
+    "strict_roster_readback_count": 0,
+    "database_mutation_count": 0,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "gameplay_canary_count": 0,
+    "retry_count": 0
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_4818e80873_v85_fast8_memory_reserve_prestart_failed_20260830.dvc",
+    "dvc_pointer_sha256": "fe9175ead78e4f33b7f035eb128a79c6bed7d6cd5824881164ff6ff77c229024",
+    "dvc_directory_md5": "a16d8f78a8fd7eff189a2a7ec9317b7d.dir",
+    "nfiles": 6,
+    "size_bytes": 203592,
+    "remote": "object",
+    "remote_reconstruction": "verified",
+    "workspace_eviction": "verified after remote reconstruction"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact clean-HEAD V85 suite passed all 20 retained fixtures",
+      "the sole fast8 build was terminated by the configured memory-reserve guard",
+      "the build receipt is locally valid but non-gate-bearing",
+      "no current binary, bundle, DB mutation, or server process was produced"
+    ],
+    "refuted": [
+      "V85 executed the correlated map-669 replay"
+    ],
+    "unproven": [
+      "all requested revisions 4/5/5",
+      "complete/incomplete Hazard movement outcomes",
+      "cross-floor and forbidden-path no-launch negatives",
+      "any gameplay canary or boss outcome"
+    ]
+  },
+  "next_work_unit": "evidence:review_v85_fast8_memory_reserve_abort_v86",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Review the V85 infrastructure abort and issue a new clean-identity replay descriptor with one explicitly affordable build policy. Do not retry V85, reuse the stale binary, or modify gameplay."
+}
