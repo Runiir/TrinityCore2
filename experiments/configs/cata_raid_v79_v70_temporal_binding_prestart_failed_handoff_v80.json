@@ -1,0 +1,114 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_bound_v79",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed_prestart",
+  "failure_classification": "v70_fixture_verification_temporal_binding_invalid",
+  "source": {
+    "commit": "353181972807cbd0ba0a902e73e0cfb7071a216c",
+    "tree": "2087585bb378b5f3e5e0e6a70bcda29c52813907",
+    "clean_at_suite_start": true,
+    "active_descriptor_sha256": "38bd0dfdfd00f0360fc36f0c0065ae1f6d06d72e8ef6e5424d149b5ad97899c2",
+    "source_handoff": "experiments/configs/cata_raid_v71b_unknown_recurrence_boundary_prestart_failed_handoff_v78.json",
+    "source_handoff_sha256": "1e57562fc0a22272f71a7c7b359a8e2ab191b291fe3eafea451f742cbae485f8"
+  },
+  "scope_lock": {
+    "owned_behavior": "one exact Canary122 after-boundary suite and, only after admission, one observation-only map-669 replay for shared-planner revisions 4/5/5",
+    "excluded": [
+      "ledger repair in the shard lane",
+      "gameplay runtime planner encounter class route threshold tolerance or test edit",
+      "database mutation",
+      "second suite invocation build or server start"
+    ]
+  },
+  "bound_recurrence_boundary": {
+    "run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+    "side": "after",
+    "ledger_sha256": "27439db79d9fe4310dabe6f2481f6773b33dd7c8b7a06640ca122c363f9beb08",
+    "boundary_lookup_passed": true
+  },
+  "suite": {
+    "invocation_count": 1,
+    "receipt_sha256": "d699be9c203ea9272d79be598e020fe697c5504dc73c025ee89a5b7568b0343d",
+    "source_identity": "353181972807cbd0ba0a902e73e0cfb7071a216c",
+    "passing_verifications": 20,
+    "failing_verifications": 0,
+    "retained_shared_planner_revisions": {
+      "same_level_floor_observation_v1": 3,
+      "same_level_hazard_path_admission_v1": 4,
+      "same_level_native_path_proof_v1": 4
+    },
+    "decision_created": false
+  },
+  "terminal_boundary": {
+    "stage": "recurrence_decision_evaluation",
+    "error": "signature magmaw_parasite_containment_failure fixture verification 1 must declare exactly one of passed_before_run_id or passed_after_run_id",
+    "first_invalid_row": {
+      "causal_signature": "magmaw_parasite_containment_failure",
+      "verification_index": 1,
+      "fixture_id": "magmaw_parasite_lane_paths_v1",
+      "revision": 7,
+      "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
+      "verified_after_commit": "39422c9e229b66a010064020fd56c8fe2e9c8bb3",
+      "source_identity": "acaeaf9f2682b18765ec357121b38d0efbccaa8a",
+      "passed_before_run_id": null,
+      "passed_after_run_id": null
+    },
+    "first_broken_edge": "A V70 ledger verification uses verified_after_commit rather than the evaluator-required exclusive passed_before_run_id or passed_after_run_id temporal binding.",
+    "failure_postcondition": "The full suite receipt exists and is green, but no recurrence decision exists; therefore build, derivation, bundle, readback, and worldserver start remain forbidden.",
+    "retry_count": 0
+  },
+  "operations": {
+    "configure": 0,
+    "worldserver_build": 0,
+    "runtime_config_derivation": 0,
+    "canonical_route_stage": 0,
+    "atomic_bundle_create": 0,
+    "strict_retained_roster_readback": 0,
+    "database_mutation": 0,
+    "worldserver_start": 0,
+    "gameplay_mutation": 0,
+    "fixture_revision_promotion": 0
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_3531819728_v79_v70_ledger_schema_prestart_failed_20260830.dvc",
+    "pointer_sha256": "cfd44f999d5079d25499761abffeec6b370032382adc737f5d31281ff678e4d4",
+    "directory_md5": "97e33d931b0d73364b8d593aa6c84c21.dir",
+    "size_bytes": 21437,
+    "file_count": 4,
+    "push_result": "4 files pushed",
+    "remote_status": "in_sync",
+    "remote_reconstruction_verified": true,
+    "verification_context": "fresh local clone with isolated DVC cache and copied local credential config; credentials were not printed or committed",
+    "per_file_bytes_verified": true,
+    "workspace_evicted": true,
+    "recoverable_from_dvc": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact Canary122 after-boundary exists and was accepted by the fixed-suite boundary lookup",
+      "the single fixed suite produced twenty passing verifications at source 353181972807",
+      "the recurrence evaluator rejected the first V70 commit-only verification row before producing a decision",
+      "no build runtime config bundle database readback worldserver gameplay or fixture promotion occurred",
+      "the bounded evidence was pushed reconstructed byte-for-byte from the remote and exactly evicted"
+    ],
+    "refuted": [
+      "the bound V79 prestart ledger satisfies the evaluator's temporal fixture-verification schema",
+      "the green retained 3/4/4 suite alone admits the requested 4/5/5 live expansion",
+      "V79 exercised any map-669 production boundary"
+    ],
+    "unproven": [
+      "the correct existing run binding for each V70 verified_after_commit row",
+      "same_level_floor_observation_v1 revision 4",
+      "same_level_hazard_path_admission_v1 revision 5 complete and incomplete paths",
+      "same_level_native_path_proof_v1 revision 5",
+      "cross-floor and forbidden no-launch negatives"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:bind_v70_fixture_verifications_to_runs_v80",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Review the immutable V70 evidence and bind each commit-only fixture verification to exactly one existing passed_before_run_id or passed_after_run_id without changing its revision, command, result, causal interpretation, or gameplay evidence. Run the evaluator once in that evidence-only unit and emit a fresh clean V71b replay descriptor only if the complete decision is admitted.",
+    "forbidden": "build bundle database worldserver gameplay runtime planner encounter class route threshold tolerance or fixture-revision change"
+  }
+}

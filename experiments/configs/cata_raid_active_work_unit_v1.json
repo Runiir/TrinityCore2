@@ -1,182 +1,53 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "shared_planner_map669_correlated_fixture_expansion_v71b_bound_v79_20260830",
-  "work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_bound_v79",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "live_recurrence_quarantined",
-  "gate_state": "exact_existing_after_boundary_bound_remote_failed_prestart_evidence_verified",
-  "observed_at_commit": "f0eef225c296c5cbcf76a504c31482b904712a04",
-  "immutable_input_commit": "f0eef225c296c5cbcf76a504c31482b904712a04",
+  "epoch_id": "v79_v70_fixture_verification_temporal_binding_failed_v80_20260830",
+  "work_unit": "evidence:bind_v70_fixture_verifications_to_runs_v80",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed_closed_prestart_review_required",
+  "observed_at_commit": "353181972807cbd0ba0a902e73e0cfb7071a216c",
+  "immutable_input_commit": "353181972807cbd0ba0a902e73e0cfb7071a216c",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_v71b_unknown_recurrence_boundary_prestart_failed_handoff_v78.json",
-    "sha256": "1e57562fc0a22272f71a7c7b359a8e2ab191b291fe3eafea451f742cbae485f8",
-    "source_commit": "f0eef225c296c5cbcf76a504c31482b904712a04"
+    "path": "experiments/configs/cata_raid_v79_v70_temporal_binding_prestart_failed_handoff_v80.json",
+    "sha256": "0ba3cf03dc425516d98972a71277185f5fb487a63fbc0b03f485ea2f7675b2af",
+    "source_commit": "353181972807cbd0ba0a902e73e0cfb7071a216c"
   },
-  "completed_predecessors": [
-    {
-      "work_unit": "evidence:review_derived_runtime_config_bundle_consumer_v77",
-      "result": "accepted",
-      "focused_test_result": "23 passed in 3.66s",
-      "runtime_config_authority": "tracked_derived_runtime_config_v1"
-    },
-    {
-      "work_unit": "evidence:bind_v71b_recurrence_boundary_and_remote_reconstruction_v78",
-      "result": "accepted",
-      "boundary_run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
-      "boundary_side": "after",
-      "remote_reconstruction_verified": true,
-      "failed_prestart_payload_evicted": true
-    }
-  ],
   "program_scope": {
-    "supported_encounters": "blackwing_descent_10n_magmaw_diagnostic_map669_fixture_context",
-    "supported_modes": ["10N"],
-    "operation": "one observation-only worldserver-backed map-669 correlated fixture-expansion replay",
-    "admission_scope": "fixture_expansion_replay",
+    "operation": "bind existing V70 fixture verifications to exact immutable run chronology",
     "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": false,
-    "runtime_implementation_allowed": false
-  },
-  "behavior_change": false,
-  "evidence_contract_change": false,
-  "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": true,
-  "ready_for_live_verification": false,
-  "recurrence_boundary": {
-    "ledger_path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "ledger_sha256": "27439db79d9fe4310dabe6f2481f6773b33dd7c8b7a06640ca122c363f9beb08",
-    "run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
-    "side": "after",
-    "required_cli": [
-      "--boundary-run-id",
-      "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
-      "--boundary",
-      "after"
-    ],
-    "admitted_revisions_at_boundary": {
-      "same_level_floor_observation_v1": 3,
-      "same_level_hazard_path_admission_v1": 4,
-      "same_level_native_path_proof_v1": 4
-    },
-    "required_occurrences_at_boundary": {
-      "same_level_movement_path_floor_false_negative": "occurred",
-      "same_level_encounter_hazard_path_rejection": "occurred",
-      "same_level_native_path_proof_false_negative": "occurred"
-    },
-    "ledger_append_allowed": false,
-    "fixture_promotion_before_replay_allowed": false
+    "fixture_expansion_replay_admitted": false,
+    "build_admitted": false,
+    "worldserver_start_admitted": false
   },
   "scope_lock": {
-    "allowed_change": "At the exact clean descriptor commit, invoke the fixed recurrence suite once with the bound Canary122 after-boundary, then perform one worldserver-backed map-669 fixture expansion for only shared-planner revisions 4/5/5. Correlate every selected receipt through native submission, MotionMaster, generator, spline, and consumed terminal outcome or explicit supersession. Publish the bounded evidence only; do not implement gameplay or runtime behavior.",
-    "requested_fixtures": [
-      {
-        "fixture_id": "same_level_floor_observation_v1",
-        "from_revision": 3,
-        "requested_revision": 4,
-        "causal_signature": "same_level_movement_path_floor_false_negative"
-      },
-      {
-        "fixture_id": "same_level_hazard_path_admission_v1",
-        "from_revision": 4,
-        "requested_revision": 5,
-        "causal_signature": "same_level_encounter_hazard_path_rejection"
-      },
-      {
-        "fixture_id": "same_level_native_path_proof_v1",
-        "from_revision": 4,
-        "requested_revision": 5,
-        "causal_signature": "same_level_native_path_proof_false_negative"
-      }
-    ],
-    "required_production_boundary": [
-      "one same-level SampleFloorGap receipt continuously correlated from PlanMovementPath through native submission and terminal outcome or explicit supersession",
-      "one Hazard-owner complete-path receipt through selected endpoint MotionMaster point generator launched spline and consumed multi-tick outcome",
-      "one Hazard-owner incomplete-path receipt whose shorter endpoint receives a fresh complete native proof and reaches a consumed multi-tick outcome",
-      "one legitimate cross-floor negative and one forbidden-path negative each rejected before MotionMaster launch",
-      "continuous receipt_id bot_guid owner intent_reason scope actor XYZ spline_id floor compatibility and outcome correlation without sampling gaps"
-    ],
-    "required_order": [
-      "verify clean descriptor HEAD and immutable ledger hash",
-      "run the fixed suite exactly once at the bound Canary122 after-boundary and require an exact passing receipt for requested revisions 4/5/5",
-      "obtain one new exact-current gate-bearing fast8 build because the prior f0eef225c2 receipt cannot match the successor HEAD",
-      "derive and verify the V77 tracked runtime config and create one authenticated atomic bundle",
-      "perform one strict retained-roster readback without database mutation",
-      "start one completion-watchdog worldserver replay with no retry",
-      "publish remotely reconstruct verify and exactly evict the bounded replay evidence"
-    ],
+    "allowed_change": "Replace only V70 commit-only temporal evidence with exact existing passed_before_run_id or passed_after_run_id bindings proven by the immutable evidence; preserve revisions commands results and causal interpretation.",
     "forbidden": [
-      "invented boundary run_id ledger append or pre-replay fixture promotion",
-      "gameplay canary route acceptance boss completion build admission or canary admission claim",
-      "runtime planner executor encounter class route Chainwielder test threshold tolerance or comparison edit",
-      "second configure second build second recurrence-suite invocation second worldserver start or retry",
-      "database mutation roster reprovisioning teleport forced boss outcome or gameplay mutation",
-      "ignored mutable raw-template legacy-snapshot stale-hash or caller-summary runtime-config authority",
-      "fixed 300-second raid timer"
+      "configure build runtime config bundle database or worldserver operation",
+      "gameplay runtime planner executor encounter class route threshold tolerance or test edit",
+      "fixture revision change invented run ID or ledger run append"
     ]
   },
-  "build_authority": {
-    "prior_receipt_commit": "f0eef225c296c5cbcf76a504c31482b904712a04",
-    "prior_receipt_sha256": "9cab3d5c4560c7fc41426266df4614010b0817825a9ffeb18f1d193cd9c13b19",
-    "prior_binary_sha256": "1f291af0ec9cbb0358713ce2177ddaefe6c5c7692fdf8f6adbe8c4a0710a52ad",
-    "reuse_authorized": false,
-    "reason": "capture admission requires the receipt commit to equal the exact current descriptor HEAD",
-    "new_build_policy": "cata_raid_build_resource_policy_fast8_v2",
-    "compiler_jobs": 8,
-    "linker_jobs": 1
-  },
-  "runtime_config_authority": {
-    "authority": "tracked_derived_runtime_config_v1",
-    "review_handoff": "experiments/configs/cata_raid_derived_runtime_config_bundle_independent_review_handoff_v77.json",
-    "review_handoff_sha256": "9c99d7fc86bfe663708d64f28207aa483963496c9d739334fbf8da833314ff0b",
-    "contract_path": "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json",
-    "contract_sha256": "f62e93e740981b255adacd49311abe195f9c254cc15afe078a71e274244d8972",
-    "expected_output_length": 156488,
-    "expected_output_sha256": "1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8",
-    "bundle_consumption": "create_bundle invokes the authoritative derived verifier and consumes only its returned authenticated bytes",
-    "preserved_v68_rejection": "tracked_snapshot_source_invalid"
+  "preserved_v71b": {
+    "recurrence_boundary": {
+      "run_id": "trinity-magmaw-2bfbd48bda-canary122.y7Jn38",
+      "side": "after"
+    },
+    "requested_fixture_revisions": {
+      "same_level_floor_observation_v1": 4,
+      "same_level_hazard_path_admission_v1": 5,
+      "same_level_native_path_proof_v1": 5
+    },
+    "status": "not_started_unproven"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "emergency_wall_clock_is_success": false,
     "terminal_edges": [
-      "all_requested_fixture_receipts_captured",
-      "production_boundary_incomplete",
-      "semantic_or_no_progress_stall",
-      "repeated_decision_terminal",
-      "death_loop_terminal",
-      "identity_or_runtime_config_mismatch",
-      "infrastructure_loss",
-      "explicit_interruption"
+      "v70_temporal_binding_admitted",
+      "v70_temporal_binding_rejected"
     ]
   },
-  "execution_budget": {
-    "recurrence_suite_invocation_count_maximum": 1,
-    "configure_count_maximum": 1,
-    "worldserver_build_count_maximum": 1,
-    "runtime_config_derivation_count_maximum": 1,
-    "canonical_route_stage_count_maximum": 1,
-    "prepared_route_object_count_maximum": 1,
-    "atomic_bundle_create_count_maximum": 1,
-    "atomic_bundle_verify_count_maximum": 1,
-    "strict_retained_roster_readback_count_maximum": 1,
-    "worldserver_start_count_maximum": 1,
-    "retry_count_maximum": 0,
-    "database_mutation": "forbidden",
-    "dvc_checkpoint_count_maximum": 1,
-    "dvc_push_count_maximum": 1,
-    "dvc_remote_reconstruction_count_maximum": 1,
-    "dvc_exact_eviction_count_maximum": 1
-  },
-  "remaining_unproven": [
-    "same_level_floor_observation_v1 revision 4 satisfies its correlated production boundary",
-    "same_level_hazard_path_admission_v1 revision 5 satisfies complete and incomplete Hazard boundaries",
-    "same_level_native_path_proof_v1 revision 5 satisfies its final policy-to-native-outcome equivalence class",
-    "cross-floor and forbidden path no-launch negatives",
-    "any gameplay canary or boss outcome"
-  ],
-  "next_work_unit": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_bound_v79",
-  "next_owner_skill": "raid-shard-architecture",
-  "next_action": "Use the exact Canary122 after-boundary, one exact-current fast8 build, V77 tracked-derived config authority, and one no-retry completion-watchdog map-669 replay for revisions 4/5/5."
+  "next_work_unit": "evidence:bind_v70_fixture_verifications_to_runs_v80",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Authenticate exact existing run chronology for each V70 verified_after_commit row, execute one evidence-only evaluator check, and emit a fresh replay descriptor only if the complete recurrence decision is admitted."
 }
