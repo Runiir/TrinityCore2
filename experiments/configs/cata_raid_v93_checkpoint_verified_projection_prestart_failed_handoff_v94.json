@@ -1,0 +1,92 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:shared_planner_map669_correlated_fixture_expansion_v71b_v93",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "prestart_checkpoint_verified_projection_rejected",
+  "source": {
+    "commit": "043bb4f417c705ff66c48f2900858ffb48e805f6",
+    "tree": "6df54d7aa920becd84d874feae0b582456cb1d10",
+    "clean": true,
+    "v92_handoff": "experiments/configs/cata_raid_v92_composite_checkpoint_target_admission_handoff_v93.json",
+    "v92_handoff_sha256": "4fe3a9bbfd01806e791119d90c30dc42f080355a31cee460a9f1c67165679dbf"
+  },
+  "passed_gates": {
+    "recurrence_suite": "20/20",
+    "fixture_expansion_admitted": true,
+    "fresh_fast8_v4_build_gate_bearing": true,
+    "binary_sha256": "1b68fc1f0b1032d44760ea0124a90ae06ce4360c37fc7fb475eaa8556abdbf2a",
+    "build_receipt_sha256": "ac5b4fe16d250164251a2945506771c8915b30df23194353440572abf2c2daef",
+    "tracked_runtime_config_verified": true,
+    "canonical_catalog_and_selector_verified": true,
+    "route_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "atomic_bundle_verified": true,
+    "strict_retained_roster_readback": true
+  },
+  "first_broken_edge": {
+    "stage": "capture_checkpoint_arm_preflight",
+    "result": "checkpoint_arm:checkpoint_verified_admission_invalid",
+    "helper_result": "checkpoint_verified_admission_request_target_mismatch",
+    "worldserver_spawned": false,
+    "cause": "verify_recurrence_admission validates pending_fixture_ids in the raw sealed admission, but omits pending_fixture_ids from its verified return projection. _verified_checkpoint_target_contract passes that projection back to _fixture_expansion_contract, which sees pending=[] and rejects the Chainwielder target as unmatched.",
+    "test_gap": "the V92 regression calls chainwielder_checkpoint_arm_command with a synthetic full admission containing pending_fixture_ids; it does not exercise create -> verify_recurrence_admission -> arm."
+  },
+  "preserved_contract": {
+    "raw_pending_fixture_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1",
+      "same_level_floor_observation_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "requested_revisions": {
+      "same_level_floor_observation_v1": {"from": 3, "to": 4},
+      "same_level_hazard_path_admission_v1": {"from": 4, "to": 5},
+      "same_level_native_path_proof_v1": {"from": 4, "to": 5}
+    },
+    "required_fix": "Return the already-authenticated pending_fixture_ids from verify_recurrence_admission and add one real create -> verify -> checkpoint-arm regression. Do not retune the target-set semantics."
+  },
+  "operations": {
+    "recurrence_suite_invocations": 1,
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "runtime_config_derivation_count": 1,
+    "canonical_route_stage_count": 1,
+    "prepared_route_object_count": 1,
+    "selector_receipt_verify_count": 1,
+    "atomic_bundle_create_count": 1,
+    "atomic_bundle_verify_count": 1,
+    "strict_retained_roster_readback_count": 1,
+    "capture_controller_invocations": 1,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "retry_count": 0,
+    "database_mutation_count": 0,
+    "gameplay_mutation_count": 0
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_043bb4f417_v93_checkpoint_projection_prestart_failed_20260830.dvc",
+    "dvc_pointer_sha256": "3926a95db2950e108d972b3b7d952547ae4e373b1ae376fe9c388bc4123030d6",
+    "dvc_directory_md5": "7392ff1ecbd2a0312733216c3131795f.dir",
+    "file_count": 26,
+    "size_bytes": 695107,
+    "remote_reconstruction_manifest_sha256": "96309144baa547b165ae684d55b6183a436bcd9bca9f73df20825f102198a22a",
+    "remote_reconstruction": "verified"
+  },
+  "claim_ledger": {
+    "verified": [
+      "all V93 identity, build, selector, bundle, and retained-roster gates passed",
+      "the real verified admission projection lacks pending_fixture_ids",
+      "that omission causes the exact production checkpoint helper rejection before worldserver startup"
+    ],
+    "refuted": [
+      "the V92 regression covered the verified projection consumed by capture setup",
+      "V93 reached the map-669 correlated production boundary"
+    ],
+    "unproven": [
+      "map-669 revisions 4/5/5 and required negative outcomes",
+      "any gameplay canary or boss result"
+    ]
+  },
+  "next_work_unit": "evidence:bind_pending_fixture_ids_to_verified_projection_v94",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Add authenticated pending_fixture_ids to the verify_recurrence_admission return projection and cover the real create -> verify -> checkpoint-arm production path; no build or server start in V94."
+}
