@@ -1,0 +1,71 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:generic_controller_route_hold_active_actor_survival_scope_v61",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "fixture_green_pending_independent_review",
+  "source_commit": "79fc2c8d0e7ca12466f17d274c04aa02b1dba5f1",
+  "implementation_commit": "9898ac6aac1021c651b29273fcb398d550725c0f",
+  "input_handoff": {
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_route_owner_review_handoff_v60.json",
+    "sha256": "d5ee792a787ea3a5fc32d72162d5a0799b9c1158a3c4ab22041f9696ccff9799"
+  },
+  "causal_repair": {
+    "before": "raw Survival plus Movement was denied for every cohort actor while one checkpoint actor was held",
+    "after": "raw Survival plus Movement is denied only when actingActorGuid equals the held Scope.ActorGuid; foreign actors retain pre-V59 admission",
+    "unchanged": [
+      "exact Armed validation_route_adapter actor and scope admission",
+      "non-movement and explicitly classified defensive survival admission",
+      "all immutable identity comparisons",
+      "pre-release route mutation suppression",
+      "typed terminal release and post-release advance ordering"
+    ]
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+    "tests/test_chainwielder_owner_checkpoint.py"
+  ],
+  "verification": {
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "focused_result": "6 passed in 1.62s",
+    "focused_run_count": 1,
+    "correction_rerun_count": 0,
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "production_build": "forbidden_not_run",
+    "live_run": "forbidden_not_run"
+  },
+  "compiled_boundary": {
+    "active_actor_negative": "the active actor's unrelated Survival plus Movement candidate is hard-masked and its Attempt count remains zero",
+    "foreign_actor_positive": "an otherwise identical foreign actor candidate crosses the real State admission policy and Kernel arbitration and attempts exactly once",
+    "retained_route_lifecycle": "the exact Armed route pair still establishes Route ownership through the movement arbiter, preserves the zero-receipt Hazard rejection identity, reaches hazard_exit_completed, releases once, and advances only afterward"
+  },
+  "line_counts": {
+    "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h": 622,
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 912,
+    "src/server/game/Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp": 779,
+    "tests/test_chainwielder_owner_checkpoint.py": 979
+  },
+  "complexity": "the repair adds one actor-scope comparison to the existing low-CCN admission predicate and does not move or duplicate a decision tree",
+  "claim_ledger": {
+    "verified": [
+      "active and foreign actors now have the required distinct Survival movement results through the compiled production admission boundary",
+      "the complete retained V59 route identity and transition negative matrix remains green",
+      "all C/C++ files remain below 1000 physical lines"
+    ],
+    "refuted": [
+      "foreign actors remain hard-masked by the V59 Survival movement correction",
+      "V61 authorizes a build live canary or acceptance claim"
+    ],
+    "unproven": [
+      "an independent reviewer accepts the source and fixture contract",
+      "a native build or live shard produces the expected route-owner lifecycle",
+      "any Chainwielder Drudges Magmaw DPS HPS or pet outcome"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:generic_controller_route_hold_active_actor_survival_scope_review_v62",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Independently verify commit 9898ac6aac1021c651b29273fcb398d550725c0f, the V61 handoff hash, the actor-scoped predicate, and the focused receipt. Issue a separate build/live admission or typed rejection; do not start a server in review.",
+    "ready_for_live_verification": false
+  }
+}

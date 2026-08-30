@@ -1,97 +1,78 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_active_actor_survival_scope_v61_20260830",
-  "work_unit": "runtime:generic_controller_route_hold_active_actor_survival_scope_v61",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "gate_state": "v60_foreign_actor_survival_movement_regression_no_live_authorization",
-  "observed_at_commit": "9c89a45380636fd43e2731df2d65ae49528653dd",
-  "immutable_input_commit": "9c89a45380636fd43e2731df2d65ae49528653dd",
+  "epoch_id": "generic_controller_route_hold_active_actor_survival_scope_review_v62_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_active_actor_survival_scope_review_v62",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_green_pending_independent_review",
+  "gate_state": "v61_actor_scoped_survival_movement_fixture_green_no_live_authorization",
+  "observed_at_commit": "9898ac6aac1021c651b29273fcb398d550725c0f",
+  "immutable_input_commit": "9898ac6aac1021c651b29273fcb398d550725c0f",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_route_owner_review_handoff_v60.json",
-    "sha256": "d5ee792a787ea3a5fc32d72162d5a0799b9c1158a3c4ab22041f9696ccff9799",
-    "source_commit": "9c89a45380636fd43e2731df2d65ae49528653dd"
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_active_actor_survival_scope_handoff_v61.json",
+    "sha256": "6ee2bdc5986b71fc43496f7a5937060d2519b56b6b9707be63e35d8e0145f188",
+    "source_commit": "9898ac6aac1021c651b29273fcb398d550725c0f"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canary_only": "Chainwielder naming remains fixture debt; the repair is a generic actor-scope correction and may not add encounter or actor constants."
+    "canary_only": "Chainwielder naming remains fixture debt; the repaired admission predicate is generic and contains no encounter actor class spec raid-size or difficulty constant."
   },
-  "behavior_change": true,
+  "behavior_change": false,
   "evidence_contract_change": false,
-  "ready_for_bounded_repair": true,
+  "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
   "ordered_claim_ledger": {
     "verified": [
-      "the V59 focused suite passes six tests",
-      "the active actor's unrelated raw Survival movement is denied and the exact Armed route pair is admitted",
-      "identity comparisons route advancement and terminal release ordering are unchanged"
+      "V61 committed the actor-scoped admission correction at 9898ac6aac1021c651b29273fcb398d550725c0f",
+      "the V61 focused suite passed six tests in one run with no correction rerun",
+      "py_compile and diff-check passed and all C++ files remain below 1000 lines"
     ],
     "refuted": [
-      "the new Survival movement restriction is scoped only to the active held actor",
-      "the current green replay is sufficient for build or live authorization"
+      "V61 itself authorizes configure build server database DVC or live work"
     ],
     "unproven": [
-      "foreign cohort actors preserve their ordinary hazard and recovery movement during the hold",
-      "one full build or live route-owner lifecycle at a corrected source"
+      "independent review accepts the causal scope and compiled fixture",
+      "native build or live route-owner lifecycle",
+      "any gameplay or throughput result"
     ]
   },
   "scope_lock": {
-    "allowed_change": "Change only the controller-hold raw Survival plus Movement predicate so the new denial applies when actingActorGuid equals Scope.ActorGuid; add the matching compiled active-actor negative and foreign-actor positive while preserving the complete V59 replay.",
-    "allowed_files": [
-      "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
-      "tests/test_chainwielder_owner_checkpoint.py",
-      "one_compact_implementation_handoff",
-      "experiments/configs/cata_raid_active_work_unit_v1.json"
-    ],
+    "allowed_change": "Independently verify the V61 implementation commit, handoff hash, exact actor-scoped predicate, retained identity gates, focused result, and line counts; emit a separate build/live admission or typed rejection.",
     "forbidden": [
-      "other production runtime route movement gameplay encounter class pet priority threshold or controller changes",
-      "identity comparison route mutation terminal or release weakening",
+      "production test controller gameplay route movement encounter class pet priority threshold or skill edit",
       "configure build worldserver start database or DVC mutation",
       "polling watchdog timeout or live canary",
-      "fixture promotion or acceptance claim"
+      "fixture promotion or acceptance claim without a separate admission"
     ]
   },
-  "required_repair": {
-    "active_actor_survival_movement": "hard-masked before attempt",
-    "foreign_actor_survival_movement": "admitted and attempted exactly as before V59",
-    "non_movement_survival": "admitted",
-    "explicit_defensive_survival": "admitted",
-    "exact_armed_route_pair": "admitted only for validation_route_adapter with the held scope and active actor",
-    "unchanged_gates": [
-      "all immutable identity comparisons",
-      "pre-release route mutation suppression",
-      "typed terminal before release",
-      "duplicate acquire arm terminal and release rejection"
-    ]
+  "required_review": {
+    "active_actor_survival_movement": "hard-masked",
+    "foreign_actor_survival_movement": "attempted exactly once",
+    "exact_armed_route_pair": "admitted for the held actor and scope",
+    "route_advance_before_release": false,
+    "route_advance_after_release": true,
+    "identity_comparison_change": false
   },
   "focused_validation": {
     "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
     "run_count_maximum": 1,
-    "correction_rerun_count_maximum": 1,
-    "required_result": "the compiled production-bound replay and complete retained checkpoint suite pass"
+    "correction_rerun_count_maximum": 0,
+    "required_result": "independent reproduction of six passing focused tests at the immutable V61 implementation commit"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "raid_success_timer_seconds": null,
-    "terminal_edges": ["fixture_green", "repair_failed", "out_of_scope"]
-  },
-  "admitted_actions": {
-    "configure_count_maximum": 0,
-    "worldserver_build_count_maximum": 0,
-    "worldserver_start_count_maximum": 0,
-    "database_mutation": "forbidden",
-    "dvc_mutation": "forbidden"
+    "terminal_edges": ["independent_review_passed", "independent_review_rejected"]
   },
   "remaining_unproven": [
-    "correct active-actor-only Survival movement scope",
-    "native full build and live route-owner lifecycle",
+    "independent source and focused-receipt review",
+    "native build and live route-owner lifecycle",
     "Chainwielder Drudges Magmaw DPS HPS or pet quality"
   ],
-  "next_work_unit": "runtime:generic_controller_route_hold_active_actor_survival_scope_v61",
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "next_action": "Apply the one-predicate actor-scope correction and add one compiled foreign-actor survival-movement positive without building or starting a server."
+  "next_work_unit": "evidence:generic_controller_route_hold_active_actor_survival_scope_review_v62",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Review V61 without starting a server and issue a separate immutable build/live admission or typed rejection."
 }
