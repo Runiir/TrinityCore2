@@ -1,0 +1,220 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:chainwielder_checkpoint_atomic_bundle_one_build_one_start_v9",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed_implementation_required",
+  "source_base": {
+    "commit": "e5f240c510794c658a85290539397001b3dc6b29",
+    "tree": "e47fa5d05be78ece8c48ebc4ec72a311f9288a75",
+    "clean": true
+  },
+  "scope_lock": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 1,
+    "manual_bundle_or_launch_edits": false,
+    "gameplay_or_source_edits": false,
+    "retry_used": false
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v2.json",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "configure": {
+      "receipt_file_sha256": "72c75ead5f7f78d407b2dcbfa0bac967e057dbb97a27b1ec71e3a0019c7923c8",
+      "receipt_identity_sha256": "65d9d18649dddfd89db53d9150480984a5fdcb4de3273b7851d19072c269d466",
+      "ticket_id": "raid-build-a1cd88c2d60243e08a7cc3f74f1c3e6c",
+      "queue_sequence": 1232,
+      "command_sha256": "be70ed356d98ec9b6b158e6237ffb8a00fe0ab7d125862735f2df2e1e85c5d5f"
+    },
+    "worldserver": {
+      "receipt_file_sha256": "603e605d8f18d2fc4bb0522d8d7bf5ee648236a07e0d5e0ed38e777d9d9ba49d",
+      "receipt_identity_sha256": "db265c9cef92a9c45929df69d7682e9bc82d3c9b671fd0885c3fa61b670c82ee",
+      "ticket_id": "raid-build-f9ae215e1adf4445a10fb07e58c06eec",
+      "queue_sequence": 1233,
+      "command_sha256": "852873daa29036c72e1d920be4d0669835fde59faa0cd9fb00b5ae8627f53ecc",
+      "binary_sha256": "2ac91906715f23fa1e05652471f438343d380a4f97d049c5efce713e1ec14313"
+    }
+  },
+  "prepared_identity": {
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30008,
+    "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+    "strict_provisioning_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "strict_provisioning_passed": true,
+    "readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "readback_actor_count": 10,
+    "readback_state": "offline_unleased_map_669_zero_instance_group_corpse_and_ghost_residue",
+    "route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "prepared_base_runtime_sha256": "f4051653df4d37cb66a62fe5ae32131c9819bbd58333da9285a61478380b96c4"
+  },
+  "recurrence": {
+    "tracked_ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "tracked_ledger_sha256": "c02d27c6ff62d20aa5a31d463b9cdef68513fa67f74b3068ae7d236e061a1830",
+    "suite_receipt_sha256": "67422fe056589a929295d21aa1b59a297ebf179d0950c4b0ff44949f8c10b1c5",
+    "suite_result": "20_of_20_passed",
+    "decision_sha256": "28ad029a65474fda354cb724d239b65f4e5ffad207317f6834eee4718ce8906e",
+    "fixture_expansion_admitted": true,
+    "gameplay_canary_or_acceptance_admitted": false
+  },
+  "atomic_bundle": {
+    "generator_invocation_count": 1,
+    "independent_verification_passed": true,
+    "bundle_manifest_sha256": "50c29bcf5af65ed845dbc704fe3f064c06c70dedf7c1f7dbaf6db1e0a3790b59",
+    "launch_contract_sha256": "3e53892f7c38c1a5ee5baf6d388cf9b0c61778b0d28c79a2ceedb563e68e4e29",
+    "runtime_config_sha256": "d3f2fca24dfe687988c917d83214235935831ffa0cf151ff57aa5d97f3d449cb",
+    "admission_sha256": "085a410a92af754c7810b59e0959b0ce1f45c26c008969c1c4a7dade603eab39",
+    "checkpoint_seal_file_sha256": "92151e80eaae140ec9bb4dfaa0e733a9a1a77cfd036cc073edb477a5d0513f13",
+    "checkpoint_seal_identity_sha256": "c0fa2089e59307d40f924150e0eab0dae8a5861ab17d57a6c4cf2a77173bab71",
+    "launch_source": "exact_emitted_argv_array",
+    "launch_argv": [
+      "pixi",
+      "run",
+      "python",
+      "-m",
+      "tools.raid_program.capture_phase1_raid_foundation",
+      "--worktree",
+      "/home/runiir/Games/trinity-cata",
+      "--binary",
+      "/home/runiir/Games/trinity-cata/build/src/server/worldserver/worldserver",
+      "--config",
+      "/tmp/chainwielder_atomic_v9.p7BPb32D/bundle/worldserver.validation.conf",
+      "--output",
+      "/tmp/chainwielder_atomic_v9.p7BPb32D/bundle.json",
+      "--raw-output",
+      "/tmp/chainwielder_atomic_v9.p7BPb32D/bundle.raw.jsonl",
+      "--server-log-output",
+      "/tmp/chainwielder_atomic_v9.p7BPb32D/bundle.worldserver.log",
+      "--build-receipt",
+      "/tmp/chainwielder_atomic_v9.p7BPb32D/bundle/build_receipt.json",
+      "--recurrence-admission",
+      "/tmp/chainwielder_atomic_v9.p7BPb32D/bundle/recurrence_admission.json",
+      "--recurrence-admission-sha256",
+      "085a410a92af754c7810b59e0959b0ce1f45c26c008969c1c4a7dade603eab39",
+      "--chainwielder-checkpoint-actor-guid",
+      "30008",
+      "--fixture-expansion-replay",
+      "--scenario-id",
+      "blackwing_descent_10n_magmaw_diagnostic",
+      "--runtime-profile",
+      "blackwing_descent_10n_magmaw_diagnostic",
+      "--pool-tag",
+      "blackwing_descent_10n_magmaw_diagnostic"
+    ]
+  },
+  "first_broken_edge": {
+    "boundary": "admission_commit_to_pre_route_checkpoint_arm",
+    "accepted_stable_statuses": 0,
+    "required_stable_statuses": 2,
+    "pre_route_probe_batches": 114,
+    "pre_route_probe_command_count": 114,
+    "checkpoint_command_sent": false,
+    "checkpoint_emission_count": 0,
+    "checkpoint_gate_open": false,
+    "checkpoint_identity_sha256": null,
+    "accepted_actor_30008_lifecycle_count": 0,
+    "last_rejection": "checkpoint_route_not_pre_generation_two",
+    "proof": "The adjacent-poll no-server fixture covered the wrong boundary: live bot actions advanced the route before two identical active-admission generation-one statuses could be captured and before the sealed command could be emitted.",
+    "refuted": [
+      "another_status_polling_tweak_can_make_the_live_arm_atomic",
+      "the_later_magmaw_watchdog_is_the_first_failure_of_this_work_unit"
+    ]
+  },
+  "route_receipts": {
+    "chainwielder_generation_2": {
+      "cleared": true,
+      "party_dps": 78047.517,
+      "party_hps": 4270.183,
+      "elapsed_party_dps": 75024.048,
+      "elapsed_party_hps": 4104.761,
+      "actor_30008_dps": 23343.167,
+      "actor_30008_hps": 105.683,
+      "actor_30008_pet_damage_share": 0.235434,
+      "actor_30008_pet_uptime": 0.366667
+    },
+    "drudges_generation_3": {
+      "cleared": true,
+      "party_dps": 112485.484,
+      "party_hps": 45163.242,
+      "elapsed_party_dps": 69059.384,
+      "elapsed_party_hps": 27727.539,
+      "actor_30008_dps": 25184.177,
+      "actor_30008_hps": 1405.048,
+      "actor_30008_pet_damage_share": 0.183805,
+      "actor_30008_pet_uptime": 0.516129
+    },
+    "magmaw_generation_4": {
+      "cleared": false,
+      "party_dps": 81672.701,
+      "party_hps": 20775.364,
+      "elapsed_party_dps": 73490.733,
+      "elapsed_party_hps": 18694.088,
+      "actor_30008_dps": 25464.788,
+      "actor_30008_hps": 1158.558,
+      "actor_30008_pet_damage_share": 0.236647,
+      "actor_30008_pet_uptime": 0.593074
+    }
+  },
+  "downstream_terminal": {
+    "classification": "gameplay_failure",
+    "reason": "repeated_decision_watchdog",
+    "route_generation": 4,
+    "route_node_id": "bwd.magmaw.encounter",
+    "repeated_decision_count": 26,
+    "death_loop_count": 1,
+    "observed_edges": [
+      "actor_30004_validation_route_recovery_route_destination_unreachable",
+      "actor_30010_adaptive_magmaw_movement_native_move_retryable"
+    ],
+    "causal_position": "downstream_of_unemitted_checkpoint_not_the_first_broken_edge"
+  },
+  "cleanup": {
+    "worldserver_exit_code": 0,
+    "stop_observed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "evidence": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_e5f240c510_chainwielder_checkpoint_arm_failed_v9_20260830.dvc",
+    "pointer_sha256": "72ff0b4c1a4d4a208475eaff1f623b781d0af151bddca4b9492b6d3de020bd19",
+    "directory_md5": "c9ea7779b37789365ea46ca109f785ec.dir",
+    "size_bytes": 278128223,
+    "nfiles": 16,
+    "capture_report_sha256": "99209c538b52940818908dc5f35a76cae79ffb5f701a58c087a687b1575750ad",
+    "raw_normalized_sha256": "5a84f5445d6e3ab1a126f19d42a1e86cfe16a1b0a4c6ac76e31213f918613f54",
+    "worldserver_log_sha256": "f1bc4f6098f127b4c677f65bb105a53b9572a5c9b59798e39b37787ce3b4351c",
+    "dvc_push": "14_files_pushed",
+    "remote_verification_before_eviction": "in_sync",
+    "workspace_evicted": true,
+    "unique_cache_objects_evicted": true,
+    "shared_cache_objects_preserved": true,
+    "recoverable_with": "pixi run dvc pull artifacts/cata_raid_program/phase1_raid_foundation_e5f240c510_chainwielder_checkpoint_arm_failed_v9_20260830.dvc"
+  },
+  "next_work_unit": {
+    "id": "evidence:chainwielder_checkpoint_pre_route_hold_arm_release_handshake_v10",
+    "owner_skill": "raid-evidence-lifecycle",
+    "classification": "implementation_required",
+    "required_contract": [
+      "admission_commit_at_route_generation_one",
+      "hold_route_and_bot_actions_before_route_advance",
+      "observe_two_identical_active_admission_generation_one_statuses",
+      "emit_the_sealed_actor_30008_checkpoint_command_exactly_once",
+      "observe_one_accepted_identity_preserved_checkpoint_lifecycle_to_completed_or_one_typed_failure",
+      "release_route_and_bot_actions_only_after_the_checkpoint_lifecycle_receipt"
+    ],
+    "owned_files": [
+      "tools/raid_program/capture_phase1_raid_foundation.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "forbidden": [
+      "configure_build_worldserver_start_or_database_mutation",
+      "gameplay_route_movement_class_pet_encounter_or_priority_change",
+      "another_polling_tolerance_or_cadence_tweak",
+      "fixture_promotion_canary_or_acceptance_claim"
+    ],
+    "required_validation": "A focused production-boundary replay must prove the hold-arm-release ordering and fail if route generation two appears before emission. No live start is authorized until that implementation handoff is reviewed."
+  }
+}
