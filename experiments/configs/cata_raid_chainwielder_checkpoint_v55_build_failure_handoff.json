@@ -1,0 +1,121 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:chainwielder_checkpoint_immutable_profile_one_build_one_live_v55",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "failed_closed",
+  "failure_classification": "worldserver_compile_failure_conflicting_controller_hold_declaration",
+  "input_identities": {
+    "source_commit": "e67b132eb8637a09afa95826d2fda1f4ae8e03d1",
+    "source_tree": "1178f0f615f3e0186c4e3b15249e12e2ed99ba7d",
+    "source_handoff": "experiments/configs/cata_raid_chainwielder_checkpoint_exact_owner_sequence_review_handoff_v54.json",
+    "source_handoff_sha256": "11a7afa22ed7ce5bc178c48cac810409315ff89665ed2d1da832b18474eb0b63",
+    "source_file_sha256": "eee45dfcd49937c678aafbe37da0c406b3cc53302a00b8f597e47a6fbe60d135"
+  },
+  "consumed_budget": {
+    "configure": "1/1",
+    "worldserver_build": "1/1",
+    "atomic_bundle_create": "0/1",
+    "atomic_bundle_verify": "0/1",
+    "worldserver_start": "0/1",
+    "retry": "0/0",
+    "database_mutation": 0
+  },
+  "build_evidence": {
+    "policy_id": "cata_raid_build_resource_policy_fast8_v2",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "configure_ticket": "raid-build-f1e37ba691624061b1ec183670ddb5bc",
+    "configure_queue_sequence": 1248,
+    "configure_classification": "success",
+    "configure_gate_bearing": true,
+    "configure_receipt_canonical_sha256": "2ecaf05f9dc649dce7d96ba9c7f826b235b129ad1d85f5363ae631dc759c292b",
+    "configure_receipt_file_sha256": "405ad21b4cfb67cd588bf92732379422c5c2c46074e135230b16847da6991661",
+    "build_ticket": "raid-build-de8c949b9c8945029660c8064cbe89d7",
+    "build_queue_sequence": 1249,
+    "build_classification": "command_failed",
+    "build_gate_bearing": false,
+    "build_receipt_semantics_valid": true,
+    "build_receipt_canonical_sha256": "849c693819a97e38142e9e9243258023cf3fb99fc4082f206200ac2301eb2cfc",
+    "build_receipt_file_sha256": "faf93bc5b4bf24f10a565b1902e5517b117af684513000e7e16ec981be065232",
+    "build_log_sha256": "ee44314d23b7e9e6092035b1a0887f15e02a12ada0123f86ba0abbb49ec1b3f9",
+    "binary_produced": false,
+    "source_identity_stable": true,
+    "pressure_reasons": [],
+    "provenance_reasons": []
+  },
+  "ordered_failure": {
+    "first_broken_edge": "the production translation unit declares controllerHold twice in ArmChainwielderOwnerCheckpoint",
+    "first_declaration": "line 543: BotControllerRouteHold::State const& controllerHold",
+    "consuming_use": "AdmittedIdentity(controllerHold).RuntimeProfile supplies the immutable gate identity",
+    "conflicting_declaration": "line 606: BotControllerRouteHold::State controllerHold = std::move(checkpoint.ControllerRouteHold)",
+    "compiler_diagnostic": "error: conflicting declaration BotControllerRouteHold::State controllerHold",
+    "failure_postcondition": "worldserver target failed before linking; no binary, bundle, provisioning, DB readback, server start, lifecycle, route, or combat evidence exists",
+    "terminal_edge": "gate-bearing queued build command_failed with exit code 2"
+  },
+  "throughput": {
+    "route_dps": null,
+    "route_hps": null,
+    "actor_30008_dps": null,
+    "actor_30008_hps": null,
+    "actor_30008_pet_share": null,
+    "reason": "build failed before live execution"
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_e67b132eb8_v55_build_conflicting_controller_hold_20260830.dvc",
+    "dvc_pointer_sha256": "353483735cf80136379c6ec47b3233ba2dac0f17f6073e660d556ad2788c5cd1",
+    "dvc_directory_md5": "1aaa6fc450565f5e8171eb4c1d6a7e7b.dir",
+    "file_count": 4,
+    "size_bytes": 44087,
+    "push_result": "5 files pushed",
+    "remote_reconstruction_verified": true,
+    "remote_reconstruction_manifest_sha256": "3eabaca45892b713740168b6eb3dab6344015cceb94ef2a783e2afd12ba2eb3c",
+    "exact_local_payload_evicted": true,
+    "unique_cache_children_evicted": 4,
+    "shared_cache_children_retained": 0,
+    "directory_metadata_cache_retained": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact clean V54-reviewed descriptor source configured successfully under fast8 with valid same-commit lineage",
+      "the sole queued build retained clean equal request, admission, and completion source identities and failed for one deterministic compiler diagnostic",
+      "the production translation unit contains two same-scope controllerHold declarations at lines 543 and 606",
+      "no worldserver start, gameplay mutation, route action, database mutation, or retry occurred",
+      "the four-file evidence packet was pushed, independently reconstructed byte-for-byte, and exactly evicted"
+    ],
+    "refuted": [
+      "V54 source is buildable",
+      "the focused six-test fixture compiled the complete production translation unit",
+      "V55 can proceed to live lifecycle or throughput validation"
+    ],
+    "unproven": [
+      "the reviewed immutable-profile implementation links in worldserver",
+      "live Held, arm, terminal, release, post-release Drudges advance, DPS, HPS, or pet share"
+    ]
+  },
+  "next_work_unit": {
+    "id": "runtime:chainwielder_checkpoint_conflicting_local_declaration_v56",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_change": "Resolve only the same-scope local-name collision while preserving the const admitted-identity reference and the later move-out/reset/move-back controller-hold lifecycle exactly.",
+    "required_tests": [
+      "fail-before compilation of the real BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp reproduces the exact conflicting declaration",
+      "pass-after compilation of that real production translation unit succeeds",
+      "the existing focused checkpoint suite remains green with immutable admitted profile, strict negative matrix, arm, terminal, release, and post-release order unchanged",
+      "all touched C++ files remain below 1000 lines"
+    ],
+    "owned_files": [
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "tests/test_chainwielder_owner_checkpoint.py",
+      "one_compact_implementation_handoff",
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
+    ],
+    "budget": {
+      "focused_test_run_count_maximum": 1,
+      "correction_rerun_count_maximum": 1,
+      "configure": 0,
+      "worldserver_build": 0,
+      "worldserver_start": 0,
+      "database_mutation": 0,
+      "dvc_mutation": 0
+    }
+  }
+}
