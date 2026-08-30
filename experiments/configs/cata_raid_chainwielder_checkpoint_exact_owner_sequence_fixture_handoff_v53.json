@@ -1,0 +1,101 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:chainwielder_checkpoint_exact_owner_sequence_fixture_v53",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "fixture_green_pending_independent_review",
+  "git_commit": "self",
+  "input_identities": {
+    "implementation_base_commit": "ebc7078c3e586c525cd7e31e5617a7857632523a",
+    "v51_implementation_commit": "fc26f4cdf854dc0e214dc84c17b6dd1c7c48a765",
+    "v52_handoff_path": "experiments/configs/cata_raid_chainwielder_checkpoint_immutable_profile_identity_review_handoff_v52.json",
+    "v52_handoff_sha256": "1de5231283dd1ae7640880c4b35377f3cba537b53801f324661c2dc1fdd49d6c"
+  },
+  "program_scope": {
+    "supported_specs": "all_configured_dps_tank_and_healer_specs",
+    "supported_encounters": "all_route_manifest_nodes",
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_semantics": "Actor 30008 and Chainwielder occur only in retained test evidence; the shared selector contains no actor, class, encounter, route, size, or difficulty branch."
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_chainwielder_checkpoint_exact_owner_sequence_fixture_handoff_v53.json",
+    "experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "implementation_files": {
+    "BotChainwielderOwnerCheckpoint.h_sha256": "6e3eb5d63b11cebb8b82c177031975c15a827d5cc1417701034a83d6620904a5",
+    "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp_sha256": "eee45dfcd49937c678aafbe37da0c406b3cc53302a00b8f597e47a6fbe60d135",
+    "BotWorldPopulationMgrRecordingWindow.cpp_sha256": "bde178ab9673600c357d14b3f0dbee27198fe4678bc6263af11a8a96241be07a",
+    "test_chainwielder_owner_checkpoint.py_sha256": "544c17225fca2a03f0913c0cce7297f9e66beb6a5bb40473697c4a8c71801776"
+  },
+  "fixture_repair": {
+    "shared_value_boundary": "BotControllerRouteHold::AdmittedIdentity",
+    "production_status_consumer": "BotWorldPopulationMgr::BuildControllerRouteHoldJson",
+    "production_arm_consumer": "BotWorldPopulationMgr::ArmChainwielderOwnerCheckpoint",
+    "comparison_semantics_changed": false,
+    "exact_order": [
+      "BeginAcquire then CompleteAcquire freezes admitted RuntimeProfile",
+      "first production-used AdmittedIdentity observation",
+      "BuildNameTransition mutates Config.Name-equivalent and Metrics.Name-equivalent to autonomy_window_0",
+      "second production-used AdmittedIdentity observation remains identical",
+      "legacy mutable-name GateInput rejects with chainwielder_checkpoint_profile_identity_mismatch",
+      "production-used AdmittedIdentity selector supplies RuntimeProfile to the actual RejectionReason gate",
+      "one AcknowledgeArm",
+      "Release rejects before terminal",
+      "identity-preserved terminal then one Release",
+      "ordinary route advance admitted after release"
+    ],
+    "manual_arm_profile_population": false,
+    "source_string_behavior_proof": false,
+    "no_recording_regression": "passed",
+    "exhaustive_gate_and_hold_identity_negatives": "preserved"
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "focused_result": "6 passed in 1.40s",
+    "focused_run_count": 1,
+    "correction_rerun_count": 0,
+    "py_compile": "passed",
+    "diff_check": "passed",
+    "complexity_effect": "AdmittedIdentity is a branch-free const-reference selector; no comparison or lifecycle branch moved or changed.",
+    "cpp_line_counts": {
+      "BotChainwielderOwnerCheckpoint.h": 596,
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 913,
+      "BotWorldPopulationMgrRecordingWindow.cpp": 89
+    },
+    "configure_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the compiled replay now admits the profile before the recording-name mutation",
+      "two production-used admitted-identity observations straddle the mutation and remain identical",
+      "the production status and arm callsites share the same compiled value selector exercised by the replay",
+      "the actual GateInput predicate rejects the legacy mutable name and accepts the selected held-scope value",
+      "one arm, typed terminal, terminal-gated release, and post-release route advance execute in causal order",
+      "no-recording and exhaustive immutable identity negatives remain green",
+      "all touched C++ files remain below 1000 physical lines"
+    ],
+    "refuted": [
+      "immediate scope copies before a recording mutation prove the production sequence",
+      "a source-string assertion is required to establish the production-used arm value",
+      "V51 comparison semantics must change to repair replay adequacy"
+    ],
+    "unproven": [
+      "the native worldserver builds at the V53 commit",
+      "one live recording-enabled arm, terminal, release, and post-release advance completes",
+      "any Chainwielder, Drudges, Magmaw, DPS, HPS, or pet outcome"
+    ]
+  },
+  "remaining_blocker": "The exact compiled causal replay is green but independently unreviewed, unbuilt, and not live-verified; this handoff authorizes no build or server start.",
+  "next_work_unit": {
+    "id": "evidence:chainwielder_checkpoint_exact_owner_sequence_independent_review_v54",
+    "owner_skill": "raid-evidence-lifecycle",
+    "allowed_action": "Independently verify V53 hashes, production consumers, exact compiled order, unchanged comparisons, and focused results; emit a separate build/live admission or typed rejection.",
+    "worldserver_start_budget": 0
+  }
+}

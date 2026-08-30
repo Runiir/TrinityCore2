@@ -417,7 +417,7 @@ std::string BotWorldPopulationMgr::BuildControllerRouteHoldJson() const
     using namespace BotControllerRouteHold;
     State const& hold =
         Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
-    Identity const& scope = hold.Scope;
+    Identity const& scope = AdmittedIdentity(hold);
     BotControllerRouteHoldConfigIdentity::Comparison const configComparison =
         BotControllerRouteHoldConfigIdentity::Compare(
             Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
@@ -546,7 +546,8 @@ std::string BotWorldPopulationMgr::ArmChainwielderOwnerCheckpoint(
         Cohort().Config.ChainwielderOwnerCheckpointEnable,
         Cohort().Active,
         Cohort().SelectedProfileName,
-        controllerHold.Scope.RuntimeProfile,
+        BotControllerRouteHold::AdmittedIdentity(controllerHold)
+            .RuntimeProfile,
         Cohort().Config.PoolTagFilter,
         Cohort().Config.ValidationRouteScenarioId,
         Cohort().Config.ValidationRouteNodeId,

@@ -66,25 +66,13 @@ int main()
     assert(sourceIdentity.BinaryRevisionLength == 12);
     assert(RejectionReason(valid) == nullptr);
 
-    // Exact V50 fail-before: recording changes only the mutable experiment
-    // name. The previously admitted runtime-profile identity remains exact.
-    auto const recording = BotRecordingWindowIdentity::BuildNameTransition(
-        ProfileId, "autonomy_window_0");
-    assert(recording.ExperimentName == "autonomy_window_0");
-    assert(recording.MetricsName == "autonomy_window_0");
-    assert(recording.ImmutableSelectedRuntimeProfile == ProfileId);
-    GateInput staleConfigGate = valid;
-    staleConfigGate.AdmittedRuntimeProfile = recording.ExperimentName;
-    assert(RejectionReason(staleConfigGate) == std::string_view(
-        "chainwielder_checkpoint_profile_identity_mismatch"));
-
+    std::string const selectedRuntimeProfile = ProfileId;
     BotControllerRouteHold::Identity admitted;
     admitted.CohortId = "cohort-v50";
     admitted.ServerEpoch = 51;
     admitted.AttemptId = valid.AttemptId;
     admitted.ScenarioId = valid.ScenarioId;
-    admitted.RuntimeProfile =
-        std::string(recording.ImmutableSelectedRuntimeProfile);
+    admitted.RuntimeProfile = selectedRuntimeProfile;
     admitted.RouteManifestSha256 = admission;
     admitted.RouteGeneration = 1;
     admitted.RouteNodeId = valid.RouteNodeId;
@@ -102,14 +90,45 @@ int main()
     BotControllerRouteHold::State hold;
     assert(hold.BeginAcquire(bootstrap, 1).Accepted);
     assert(hold.CompleteAcquire(admitted, 2).Accepted);
-    BotControllerRouteHold::Identity const heldStatusOne = hold.Scope;
-    BotControllerRouteHold::Identity const heldStatusTwo = hold.Scope;
+
+    // Production status boundary one observes the already-admitted scope.
+    BotControllerRouteHold::Identity const heldStatusOne =
+        BotControllerRouteHold::AdmittedIdentity(hold);
+    std::string mutableConfigName = selectedRuntimeProfile;
+    std::string mutableMetricsName = selectedRuntimeProfile;
+
+    // Exact V50 mutation happens after admission. Recording changes only the
+    // mutable experiment/metrics names and keeps the selected profile value.
+    auto const recording = BotRecordingWindowIdentity::BuildNameTransition(
+        selectedRuntimeProfile, "autonomy_window_0");
+    mutableConfigName = recording.ExperimentName;
+    mutableMetricsName = recording.MetricsName;
+    assert(mutableConfigName == "autonomy_window_0");
+    assert(mutableMetricsName == "autonomy_window_0");
+    assert(recording.ImmutableSelectedRuntimeProfile
+        == selectedRuntimeProfile);
+
+    // Production status boundary two remains byte-identical across recording.
+    BotControllerRouteHold::Identity const heldStatusTwo =
+        BotControllerRouteHold::AdmittedIdentity(hold);
     assert(heldStatusOne == heldStatusTwo);
     assert(heldStatusOne.RuntimeProfile
         == recording.ImmutableSelectedRuntimeProfile);
 
-    GateInput recordingGate = valid;
-    recordingGate.AdmittedRuntimeProfile = hold.Scope.RuntimeProfile;
+    GateInput staleConfigGate = valid;
+    staleConfigGate.AdmittedRuntimeProfile = mutableConfigName;
+    assert(RejectionReason(staleConfigGate) == std::string_view(
+        "chainwielder_checkpoint_profile_identity_mismatch"));
+
+    // This is the same value-only selector used by the production arm owner;
+    // the replay cannot manually substitute the mutable recording name.
+    GateInput recordingGate{
+        true, true, selectedRuntimeProfile,
+        BotControllerRouteHold::AdmittedIdentity(hold).RuntimeProfile,
+        PoolTag, ProfileId, NodeId, MapId, ActorCount, ActorCount,
+        TargetEntry, true, true, admitted.AttemptId, FixtureId,
+        admission, admission, source, source, binaryRevision,
+    };
     assert(RejectionReason(recordingGate) == nullptr);
     BotControllerRouteHold::State earlyRelease = hold;
     assert(!earlyRelease.Release(admitted, 3).Accepted);
@@ -121,10 +140,10 @@ int main()
         admitted, "completed", true, true, 5).Accepted);
     assert(hold.Release(admitted, 6).Accepted);
     assert(hold.ReleaseCount == 1);
+    assert(hold.PermitRouteAdvance(admitted, 2));
 
     // No-recording remains the same exact admitted-profile path.
-    GateInput noRecordingGate = valid;
-    noRecordingGate.AdmittedRuntimeProfile = ProfileId;
+    GateInput noRecordingGate = recordingGate;
     assert(RejectionReason(noRecordingGate) == nullptr);
 
     auto expectRejected = [](GateInput input, std::string_view reason)
@@ -763,7 +782,7 @@ def test_generic_controller_hold_is_wired_to_production_boundaries() -> None:
     assert 'action == "start-held"' in command
     assert 'action == "release"' in command
     assert "BuildNameTransition(" in recording
-    assert "controllerHold.Scope.RuntimeProfile" in MODULE.read_text(
+    assert "AdmittedIdentity(controllerHold)" in MODULE.read_text(
         encoding="utf-8"
     )
     assert "Cohort().Config.Name," not in MODULE.read_text(encoding="utf-8")

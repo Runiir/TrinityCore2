@@ -337,6 +337,11 @@ struct State
     }
 };
 
+inline Identity const& AdmittedIdentity(State const& state)
+{
+    return state.Scope;
+}
+
 inline Admission ClassifyCandidate(
     BotActionArbitration::Candidate const& candidate,
     BotActionArbitration::AdmissionMetadata const* metadata,
