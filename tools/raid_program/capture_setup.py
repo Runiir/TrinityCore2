@@ -72,6 +72,89 @@ class CaptureSetup:
     build_provenance: dict[str, Any]
 
 
+def _canonical_object_sha256(value: object) -> str:
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def build_runtime_profile_suffix_manifest(
+    *, source_manifest: dict[str, Any], runtime_profile: str,
+    route_manifest_path: Path,
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Create a one-profile overlay while changing only its route path."""
+
+    rows = source_manifest.get("profiles")
+    if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+        raise ValueError("runtime_profile_source_profiles_invalid")
+    selected = [row for row in rows if row.get("name") == runtime_profile]
+    if len(selected) != 1:
+        raise ValueError("runtime_profile_source_selection_missing_or_duplicate")
+    source_profile = json.loads(json.dumps(selected[0]))
+    route = source_profile.get("validation_route")
+    if not isinstance(route, dict) or not isinstance(route.get("manifest_path"), str) \
+            or not route["manifest_path"]:
+        raise ValueError("runtime_profile_source_route_manifest_missing")
+    source_route_path = route["manifest_path"]
+    runtime_profile_payload = json.loads(json.dumps(source_profile))
+    runtime_profile_payload["validation_route"]["manifest_path"] = str(
+        route_manifest_path.resolve()
+    )
+    envelope = {
+        key: json.loads(json.dumps(value))
+        for key, value in source_manifest.items() if key != "profiles"
+    }
+    runtime_manifest = {**envelope, "profiles": [runtime_profile_payload]}
+    identity = {
+        "runtime_profile_id": runtime_profile,
+        "source_validation_route_manifest_path": source_route_path,
+        "runtime_validation_route_manifest_path": str(route_manifest_path.resolve()),
+        "source_selected_profile_sha256": _canonical_object_sha256(source_profile),
+        "runtime_selected_profile_sha256": _canonical_object_sha256(
+            runtime_profile_payload
+        ),
+        "profile_manifest_envelope_sha256": _canonical_object_sha256(envelope),
+    }
+    return runtime_manifest, identity
+
+
+def _validate_runtime_profile_suffix_manifest(
+    *, runtime_manifest: dict[str, Any], runtime_profile: str,
+    route_manifest_path: Path, identity: dict[str, Any],
+) -> dict[str, Any]:
+    rows = runtime_manifest.get("profiles")
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+        raise ValueError("runtime_profile_manifest_selection_not_unique")
+    selected = json.loads(json.dumps(rows[0]))
+    if selected.get("name") != runtime_profile \
+            or identity.get("runtime_profile_id") != runtime_profile:
+        raise ValueError("runtime_profile_manifest_foreign_selection")
+    envelope = {key: value for key, value in runtime_manifest.items()
+                if key != "profiles"}
+    if _canonical_object_sha256(envelope) != identity.get(
+        "profile_manifest_envelope_sha256"
+    ):
+        raise ValueError("runtime_profile_manifest_envelope_mutated")
+    route = selected.get("validation_route")
+    effective_path = route.get("manifest_path") if isinstance(route, dict) else None
+    expected_path = str(route_manifest_path.resolve())
+    if effective_path != expected_path \
+            or identity.get("runtime_validation_route_manifest_path") != expected_path:
+        raise ValueError("runtime_profile_manifest_route_path_mismatch")
+    if _canonical_object_sha256(selected) != identity.get(
+        "runtime_selected_profile_sha256"
+    ):
+        raise ValueError("runtime_profile_manifest_selected_profile_mutated")
+    source_path = identity.get("source_validation_route_manifest_path")
+    if not isinstance(source_path, str) or not source_path:
+        raise ValueError("runtime_profile_manifest_source_route_missing")
+    selected["validation_route"]["manifest_path"] = source_path
+    if _canonical_object_sha256(selected) != identity.get(
+        "source_selected_profile_sha256"
+    ):
+        raise ValueError("runtime_profile_manifest_non_route_semantic_mutation")
+    return rows[0]
+
+
 def controller_route_hold_runtime_manifest_identity(
     *, config: Path, admission_path: Path, scenario_id: str,
     runtime_profile: str, expected_admission_sha256: str,
@@ -87,8 +170,8 @@ def controller_route_hold_runtime_manifest_identity(
         raise ValueError("controller_route_hold_admission_projection_invalid") from error
     if hashlib.sha256(admission_bytes).hexdigest() != expected_admission_sha256:
         raise ValueError("controller_route_hold_admission_projection_hash_mismatch")
-    binding = ((admission.get("bindings") or {}).get("route_manifest")
-               if isinstance(admission, dict) else None)
+    bindings = admission.get("bindings") if isinstance(admission, dict) else None
+    binding = bindings.get("route_manifest") if isinstance(bindings, dict) else None
     bound_path_text = binding.get("path") if isinstance(binding, dict) else None
     bound_sha256 = binding.get("sha256") if isinstance(binding, dict) else None
     configured_path_text = trinity_config_string(
@@ -103,6 +186,41 @@ def controller_route_hold_runtime_manifest_identity(
     configured_path = Path(configured_path_text).resolve()
     if configured_path != Path(bound_path_text).resolve():
         raise ValueError("controller_route_hold_runtime_manifest_path_mismatch")
+    profile_binding = bindings.get("profile_manifest") \
+        if isinstance(bindings, dict) else None
+    profile_path_text = profile_binding.get("path") \
+        if isinstance(profile_binding, dict) else None
+    profile_sha256 = profile_binding.get("sha256") \
+        if isinstance(profile_binding, dict) else None
+    configured_profile_path = trinity_config_string(config, "BotWorld.ProfileManifest")
+    if not isinstance(profile_path_text, str) or not profile_path_text:
+        raise ValueError("controller_route_hold_profile_manifest_binding_missing")
+    if not isinstance(profile_sha256, str) or not SHA256_RE.fullmatch(profile_sha256):
+        raise ValueError("controller_route_hold_profile_manifest_hash_invalid")
+    if not configured_profile_path:
+        raise ValueError("controller_route_hold_profile_manifest_config_missing")
+    profile_path = Path(configured_profile_path).resolve()
+    if profile_path != Path(profile_path_text).resolve():
+        raise ValueError("controller_route_hold_profile_manifest_path_mismatch")
+    try:
+        profile_bytes = profile_path.read_bytes()
+    except OSError as error:
+        raise ValueError("controller_route_hold_profile_manifest_missing") from error
+    if hashlib.sha256(profile_bytes).hexdigest() != profile_sha256:
+        raise ValueError("controller_route_hold_profile_manifest_hash_mismatch")
+    try:
+        profile_manifest = json.loads(profile_bytes.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("controller_route_hold_profile_manifest_invalid") from error
+    if not isinstance(profile_manifest, dict):
+        raise ValueError("controller_route_hold_profile_manifest_invalid")
+    profile_identity = admission.get("runtime_profile_overlay")
+    if not isinstance(profile_identity, dict):
+        raise ValueError("controller_route_hold_profile_overlay_binding_missing")
+    _validate_runtime_profile_suffix_manifest(
+        runtime_manifest=profile_manifest, runtime_profile=runtime_profile,
+        route_manifest_path=configured_path, identity=profile_identity,
+    )
     try:
         payload_bytes = configured_path.read_bytes()
     except OSError as error:
@@ -134,6 +252,8 @@ def controller_route_hold_runtime_manifest_identity(
     return {
         "route_manifest_path": str(configured_path),
         "route_manifest_sha256": bound_sha256,
+        "profile_manifest_path": str(profile_path),
+        "profile_manifest_sha256": profile_sha256,
         "initial_route_node_id": initial_node_id,
         "checkpoint_target_node_id": checkpoint_target_node_id,
     }

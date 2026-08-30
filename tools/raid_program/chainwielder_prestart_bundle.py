@@ -17,6 +17,10 @@ from tools.raid_program.queued_build import (
     load_json as load_build_json,
     verify_receipt,
 )
+from tools.raid_program.capture_setup import (
+    _validate_runtime_profile_suffix_manifest,
+    build_runtime_profile_suffix_manifest,
+)
 from tools.raid_program.recurrence_admission import (
     CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX,
     CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
@@ -43,10 +47,12 @@ SHA256_RE = re.compile(r"[0-9a-f]{64}")
 TRACKED_LEDGER_RELATIVE_PATH = Path(
     "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json"
 )
+PROFILE_MANIFEST_RELATIVE_PATH = Path("dataset/bot_runtime_profiles/profiles.json")
 
 BUNDLE_NAMES = {
     "source_route_manifest": "source_route_manifest.json",
     "route_manifest": "route_manifest.json",
+    "profile_manifest": "runtime_profiles.json",
     "runtime_config": "worldserver.validation.conf",
     "base_runtime_config": "prepared_base_runtime.conf",
     "build_receipt": "build_receipt.json",
@@ -164,6 +170,21 @@ def _source_identity(
     return head, tree
 
 
+def _tracked_profile_manifest(worktree: Path) -> tuple[Path, dict[str, Any]]:
+    path = worktree.resolve() / PROFILE_MANIFEST_RELATIVE_PATH
+    try:
+        committed = _git(
+            worktree, "show", f"HEAD:{PROFILE_MANIFEST_RELATIVE_PATH.as_posix()}",
+            binary=True,
+        )
+        payload = path.read_bytes()
+    except (OSError, subprocess.SubprocessError) as error:
+        raise BundleError("source_profile_manifest_not_tracked") from error
+    if payload != committed:
+        raise BundleError("source_profile_manifest_commit_mismatch")
+    return path, _json(path, "source_profile_manifest")
+
+
 def _validate_locations(
     *, worktree: Path, output_dir: Path, material_inputs: dict[str, Path],
     binary: Path, capture_paths: list[Path],
@@ -234,7 +255,8 @@ def _config_value(text: str, key: str) -> str:
 
 
 def _render_config(
-    base: Path, *, route_path: Path, seal: dict[str, str], source_commit: str,
+    base: Path, *, route_path: Path, profile_manifest_path: Path,
+    seal: dict[str, str], source_commit: str,
 ) -> bytes:
     try:
         text = base.read_text(encoding="utf-8")
@@ -243,6 +265,7 @@ def _render_config(
     values = {
         **CONFIG_VALUES,
         "BotWorld.ValidationRoute.ManifestPath": f'"{route_path}"',
+        "BotWorld.ProfileManifest": f'"{profile_manifest_path}"',
         f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.SealSha256": (
             f'"{seal["seal_sha256"]}"'
         ),
@@ -370,19 +393,22 @@ def _logical_bindings(root: Path) -> dict[str, Path]:
     return {
         key: root / BUNDLE_NAMES[key]
         for key in (
-            "runtime_config", "route_manifest", "build_receipt", "ledger",
+            "runtime_config", "route_manifest", "profile_manifest",
+            "build_receipt", "ledger",
             "decision", "suite_receipt",
         )
     }
 
 
 def _verify_config(
-    path: Path, *, route_path: Path, seal: dict[str, Any], source_commit: str,
+    path: Path, *, route_path: Path, profile_manifest_path: Path,
+    seal: dict[str, Any], source_commit: str,
 ) -> None:
     text = path.read_text(encoding="utf-8")
     expected = {
         **CONFIG_VALUES,
         "BotWorld.ValidationRoute.ManifestPath": f'"{route_path}"',
+        "BotWorld.ProfileManifest": f'"{profile_manifest_path}"',
         f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.SealSha256": (
             f'"{seal.get("seal_sha256")}"'
         ),
@@ -427,7 +453,8 @@ def verify_bundle(
         raise BundleError("launch_contract_schema_invalid")
     payload_names = [
         BUNDLE_NAMES[key] for key in (
-            "source_route_manifest", "route_manifest", "runtime_config",
+            "source_route_manifest", "route_manifest", "profile_manifest",
+            "runtime_config",
             "build_receipt", "ledger",
             "decision", "suite_receipt", "checkpoint_seal", "admission",
             "base_runtime_config", "build_policy",
@@ -454,7 +481,7 @@ def verify_bundle(
         key: logical_root / BUNDLE_NAMES[key]
         for key in (
             "runtime_config", "build_receipt", "admission", "route_manifest",
-            "source_route_manifest",
+            "source_route_manifest", "profile_manifest",
             "ledger", "decision", "suite_receipt", "checkpoint_seal",
             "base_runtime_config", "build_policy",
         )
@@ -491,14 +518,45 @@ def verify_bundle(
     }
     if launch.get("route_identity") != expected_route_identity:
         raise BundleError("launch_route_identity_mismatch")
+    source_profile_path, source_profile = _tracked_profile_manifest(worktree)
+    try:
+        expected_profile, profile_identity = build_runtime_profile_suffix_manifest(
+            source_manifest=source_profile, runtime_profile=SCENARIO_ID,
+            route_manifest_path=logical["route_manifest"],
+        )
+        _validate_runtime_profile_suffix_manifest(
+            runtime_manifest=_json(
+                root / BUNDLE_NAMES["profile_manifest"], "profile_manifest"
+            ),
+            runtime_profile=SCENARIO_ID,
+            route_manifest_path=logical["route_manifest"], identity=profile_identity,
+        )
+    except ValueError as error:
+        raise BundleError(str(error)) from error
+    if (root / BUNDLE_NAMES["profile_manifest"]).read_bytes() != (
+        _canonical_pretty_json(expected_profile)
+    ):
+        raise BundleError("runtime_profile_manifest_reconstruction_mismatch")
+    profile_identity["runtime_profile_manifest_sha256"] = sha256_file(
+        root / BUNDLE_NAMES["profile_manifest"]
+    )
+    profile_identity["source_profile_manifest_sha256"] = sha256_file(
+        source_profile_path
+    )
+    if launch.get("runtime_profile_overlay") != profile_identity:
+        raise BundleError("launch_profile_overlay_identity_mismatch")
     seal = _json(root / BUNDLE_NAMES["checkpoint_seal"], "checkpoint_seal")
     _verify_config(
         root / BUNDLE_NAMES["runtime_config"],
-        route_path=logical["route_manifest"], seal=seal, source_commit=commit,
+        route_path=logical["route_manifest"],
+        profile_manifest_path=logical["profile_manifest"],
+        seal=seal, source_commit=commit,
     )
     reconstructed = _render_config(
         root / BUNDLE_NAMES["base_runtime_config"],
-        route_path=logical["route_manifest"], seal=seal, source_commit=commit,
+        route_path=logical["route_manifest"],
+        profile_manifest_path=logical["profile_manifest"],
+        seal=seal, source_commit=commit,
     )
     if reconstructed != (root / BUNDLE_NAMES["runtime_config"]).read_bytes():
         raise BundleError("runtime_config_reconstruction_mismatch")
@@ -518,6 +576,15 @@ def verify_bundle(
         raise BundleError(f"recurrence_admission:{error}") from error
     if verified.get("checkpoint_seal_sha256") != seal.get("seal_sha256"):
         raise BundleError("checkpoint_seal_verification_mismatch")
+    verified_admission = _json(root / BUNDLE_NAMES["admission"], "admission")
+    admission_profile = (verified_admission.get("bindings") or {}).get(
+        "profile_manifest"
+    )
+    if admission_profile != {
+        "path": str(logical["profile_manifest"]),
+        "sha256": profile_identity["runtime_profile_manifest_sha256"],
+    } or verified_admission.get("runtime_profile_overlay") != profile_identity:
+        raise BundleError("recurrence_admission_profile_overlay_mismatch")
     watchdog = launch.get("completion_watchdog") or {}
     if (
         launch.get("fixed_success_timer_seconds") is not None
@@ -671,6 +738,21 @@ def create_bundle(
             route_manifest, staging / BUNDLE_NAMES["source_route_manifest"]
         )
         _write_json(staging / BUNDLE_NAMES["route_manifest"], runtime_route)
+        source_profile_path, source_profile = _tracked_profile_manifest(worktree)
+        try:
+            runtime_profile, profile_identity = build_runtime_profile_suffix_manifest(
+                source_manifest=source_profile, runtime_profile=runtime_profile_id,
+                route_manifest_path=output_dir / BUNDLE_NAMES["route_manifest"],
+            )
+        except ValueError as error:
+            raise BundleError(str(error)) from error
+        _write_json(staging / BUNDLE_NAMES["profile_manifest"], runtime_profile)
+        profile_identity["runtime_profile_manifest_sha256"] = sha256_file(
+            staging / BUNDLE_NAMES["profile_manifest"]
+        )
+        profile_identity["source_profile_manifest_sha256"] = sha256_file(
+            source_profile_path
+        )
         seal = chainwielder_checkpoint_seal(
             worktree=worktree,
             binary=binary,
@@ -685,6 +767,7 @@ def create_bundle(
             _render_config(
                 staging / BUNDLE_NAMES["base_runtime_config"],
                 route_path=logical["route_manifest"],
+                profile_manifest_path=logical["profile_manifest"],
                 seal=seal, source_commit=commit,
             )
         )
@@ -702,10 +785,18 @@ def create_bundle(
             purpose=FIXTURE_EXPANSION_PURPOSE,
             atomic_bundle_roots=(output_dir, staging),
         )
+        admission = _json(staging / BUNDLE_NAMES["admission"], "admission")
+        admission["bindings"]["profile_manifest"] = {
+            "path": str(logical["profile_manifest"]),
+            "sha256": profile_identity["runtime_profile_manifest_sha256"],
+        }
+        admission["runtime_profile_overlay"] = profile_identity
+        _write_json(staging / BUNDLE_NAMES["admission"], admission)
         admission_sha = sha256_file(staging / BUNDLE_NAMES["admission"])
         payload_names = [
             BUNDLE_NAMES[key] for key in (
-                "source_route_manifest", "route_manifest", "runtime_config",
+                "source_route_manifest", "route_manifest", "profile_manifest",
+                "runtime_config",
                 "build_receipt", "ledger",
                 "decision", "suite_receipt", "checkpoint_seal", "admission",
                 "base_runtime_config", "build_policy",
@@ -731,6 +822,7 @@ def create_bundle(
                     staging / BUNDLE_NAMES["route_manifest"]
                 ),
             },
+            "runtime_profile_overlay": profile_identity,
             "paths": {
                 "binary": {"path": str(binary.resolve()), "sha256": binary_sha256},
                 **{
@@ -740,7 +832,8 @@ def create_bundle(
                     }
                     for key in (
                         "runtime_config", "build_receipt", "admission",
-                        "route_manifest", "source_route_manifest", "ledger",
+                        "route_manifest", "source_route_manifest",
+                        "profile_manifest", "ledger",
                         "decision", "suite_receipt",
                         "checkpoint_seal",
                         "base_runtime_config", "build_policy",

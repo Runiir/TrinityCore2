@@ -18,6 +18,8 @@ from tools.raid_program.chainwielder_prestart_bundle import (
     verify_bundle,
 )
 from tools.raid_program.capture_setup import (
+    _validate_runtime_profile_suffix_manifest,
+    build_runtime_profile_suffix_manifest,
     controller_route_hold_runtime_manifest_identity,
 )
 from tools.raid_program.controller_route_hold import (
@@ -64,7 +66,29 @@ def _fixture(tmp_path: Path) -> dict[str, object]:
     _git(root, "config", "user.email", "test@example.invalid")
     _git(root, "config", "user.name", "Test")
     (root / "tracked.txt").write_text("source\n", encoding="utf-8")
-    _git(root, "add", "tracked.txt")
+    profile_manifest = root / "dataset/bot_runtime_profiles/profiles.json"
+    profile_manifest.parent.mkdir(parents=True)
+    _write_json(profile_manifest, {
+        "schema": "bot_world_runtime_profiles_v1",
+        "profiles": [
+            {
+                "name": SCENARIO_ID,
+                "description": "selected diagnostic profile",
+                "target_population": 10,
+                "pool_tag_filter": SCENARIO_ID,
+                "allow_raids": True,
+                "diagnostic_only": True,
+                "validation_route": {
+                    "enable": True,
+                    "manifest_path": "dataset/validation_scenarios/routes.jsonl",
+                    "advance_mode": "terminal",
+                    "scenario_id": SCENARIO_ID,
+                },
+            },
+            {"name": "foreign", "validation_route": {"enable": False}},
+        ],
+    })
+    _git(root, "add", ".")
     _git(root, "commit", "-m", "source")
     external = tmp_path / "inputs"
     external.mkdir()
@@ -343,6 +367,59 @@ def test_target_suffix_reproduces_v19_and_binds_runtime_identity(
     assert route_identity["runtime_route_sha256"] == sha256_file(
         output / BUNDLE_NAMES["route_manifest"]
     )
+    profile_manifest = json.loads(
+        (output / BUNDLE_NAMES["profile_manifest"]).read_text(encoding="utf-8")
+    )
+    assert [row["name"] for row in profile_manifest["profiles"]] == [SCENARIO_ID]
+    selected = profile_manifest["profiles"][0]
+    assert selected["description"] == "selected diagnostic profile"
+    assert selected["target_population"] == 10
+    assert selected["diagnostic_only"] is True
+    assert selected["validation_route"]["manifest_path"] == str(
+        (output / BUNDLE_NAMES["route_manifest"]).resolve()
+    )
+    assert launch["runtime_profile_overlay"][
+        "runtime_profile_manifest_sha256"
+    ] == sha256_file(output / BUNDLE_NAMES["profile_manifest"])
+
+    # V23 fail-before: native applies the selected profile after config, so a
+    # canonical profile manifest would overwrite the suffix route in config.
+    canonical_config = tmp_path / "canonical-overlay.conf"
+    config_text = (output / BUNDLE_NAMES["runtime_config"]).read_text(
+        encoding="utf-8"
+    )
+    source_profiles = fixture["root"] / prestart_bundle.PROFILE_MANIFEST_RELATIVE_PATH
+    canonical_profiles = tmp_path / "canonical-selected-profile.json"
+    canonical_payload = json.loads(source_profiles.read_text(encoding="utf-8"))
+    canonical_payload["profiles"] = [
+        row for row in canonical_payload["profiles"]
+        if row.get("name") == SCENARIO_ID
+    ]
+    _write_json(canonical_profiles, canonical_payload)
+    canonical_config.write_text(
+        config_text.replace(
+            str((output / BUNDLE_NAMES["profile_manifest"]).resolve()),
+            str(canonical_profiles.resolve()),
+        ),
+        encoding="utf-8",
+    )
+    canonical_admission = tmp_path / "canonical-overlay-admission.json"
+    admission_payload = json.loads(
+        (output / BUNDLE_NAMES["admission"]).read_text(encoding="utf-8")
+    )
+    admission_payload["bindings"]["profile_manifest"] = {
+        "path": str(canonical_profiles.resolve()),
+        "sha256": sha256_file(canonical_profiles),
+    }
+    _write_json(canonical_admission, admission_payload)
+    with pytest.raises(
+        ValueError, match="runtime_profile_manifest_route_path_mismatch"
+    ):
+        controller_route_hold_runtime_manifest_identity(
+            config=canonical_config, admission_path=canonical_admission,
+            scenario_id=SCENARIO_ID, runtime_profile=SCENARIO_ID,
+            expected_admission_sha256=sha256_file(canonical_admission),
+        )
 
     projected = controller_route_hold_runtime_manifest_identity(
         config=output / BUNDLE_NAMES["runtime_config"],
@@ -372,6 +449,10 @@ def test_target_suffix_reproduces_v19_and_binds_runtime_identity(
         route_node_id=projected["initial_route_node_id"],
     )
     assert identity is not None
+    assert projected["profile_manifest_sha256"] == sha256_file(
+        output / BUNDLE_NAMES["profile_manifest"]
+    )
+    assert verify_bundle(output)["valid"] is True
 
     fail_before_identity = controller_route_hold_launch_identity(
         recurrence_admission=admission,
@@ -431,6 +512,54 @@ def test_target_suffix_fails_closed_on_contract_drift(
     fixture["kwargs"]["route_manifest_sha256"] = sha256_file(route)
     with pytest.raises(BundleError, match=reason):
         _create(fixture)
+
+
+def test_profile_suffix_rejects_ambiguous_selection_and_non_route_mutation(
+    tmp_path: Path,
+) -> None:
+    source = {
+        "schema": "bot_world_runtime_profiles_v1",
+        "profiles": [
+            {
+                "name": "selected",
+                "target_population": 10,
+                "validation_route": {"manifest_path": "canonical.jsonl"},
+            },
+            {"name": "foreign", "validation_route": {"enable": False}},
+        ],
+    }
+    route_path = tmp_path / "suffix.json"
+    runtime, identity = build_runtime_profile_suffix_manifest(
+        source_manifest=source, runtime_profile="selected",
+        route_manifest_path=route_path,
+    )
+    assert [row["name"] for row in runtime["profiles"]] == ["selected"]
+
+    duplicate = json.loads(json.dumps(source))
+    duplicate["profiles"].append(dict(duplicate["profiles"][0]))
+    with pytest.raises(
+        ValueError, match="runtime_profile_source_selection_missing_or_duplicate"
+    ):
+        build_runtime_profile_suffix_manifest(
+            source_manifest=duplicate, runtime_profile="selected",
+            route_manifest_path=route_path,
+        )
+    with pytest.raises(
+        ValueError, match="runtime_profile_source_selection_missing_or_duplicate"
+    ):
+        build_runtime_profile_suffix_manifest(
+            source_manifest=source, runtime_profile="missing",
+            route_manifest_path=route_path,
+        )
+
+    runtime["profiles"][0]["target_population"] = 9
+    with pytest.raises(
+        ValueError, match="runtime_profile_manifest_selected_profile_mutated"
+    ):
+        _validate_runtime_profile_suffix_manifest(
+            runtime_manifest=runtime, runtime_profile="selected",
+            route_manifest_path=route_path, identity=identity,
+        )
 
 
 def test_exact_clean_tracked_ledger_is_copied_byte_identically(
@@ -507,7 +636,8 @@ def test_existing_empty_output_directory_is_atomically_replaced(tmp_path: Path) 
 @pytest.mark.parametrize(
     "name",
     [
-        "source_route_manifest", "route_manifest", "runtime_config",
+        "source_route_manifest", "route_manifest", "profile_manifest",
+        "runtime_config",
         "build_receipt", "ledger",
         "decision", "suite_receipt", "checkpoint_seal", "admission",
         "launch_contract",
