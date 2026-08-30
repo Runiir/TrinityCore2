@@ -120,6 +120,8 @@ def test_generic_controller_route_hold_crosses_kernel_and_route_gate(
 r'''
 #include "Bots/BotChainwielderOwnerCheckpoint.h"
 #include "Bots/BotActionArbiter.h"
+#define BOT_CONTROLLER_ROUTE_HOLD_CONFIG_IDENTITY_ADAPTER_ONLY
+#include "Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp"
 #define BOT_CONTROLLER_ROUTE_HOLD_BOOTSTRAP_ADAPTER_ONLY
 #include "Bots/BotWorldPopulationMgrValidationRouteRuntime.cpp"
 
@@ -177,6 +179,42 @@ int main()
     Identity const identity = CompleteIdentity();
     Identity const bootstrap = BootstrapIdentity();
 
+    // Exact V15 fail-before aggregate. Config and command carried the full
+    // source identity, while Trinity's generated GitRevision was its exact
+    // canonical twelve-character representation. The old raw equality
+    // rejected this before CompleteAcquire and retained only bootstrap scope.
+    std::string const v15Source =
+        "6056b52ef4213f701b2c14744b1a98333dd3e302";
+    std::string const v15BinaryRevision = "6056b52ef421";
+    assert(v15Source != v15BinaryRevision);
+    State v15RecordedFailure;
+    Identity v15Bootstrap = bootstrap;
+    v15Bootstrap.SourceCommit = v15Source;
+    assert(v15RecordedFailure.BeginAcquire(v15Bootstrap, 1).Accepted);
+    v15RecordedFailure.Reject("controller_route_hold_config_identity_mismatch");
+    assert(v15RecordedFailure.CurrentPhase
+        == BotControllerRouteHold::Phase::Failed);
+    assert(v15RecordedFailure.Scope.ScenarioId.empty());
+    assert(v15RecordedFailure.Scope.RuntimeProfile.empty());
+    assert(v15RecordedFailure.Scope.RouteManifestSha256.empty());
+    assert(v15RecordedFailure.Scope.RouteGeneration == 0);
+    assert(v15RecordedFailure.Scope.RouteNodeId.empty());
+    assert(v15RecordedFailure.AcquireCount == 0);
+
+    auto const v15Comparison =
+        BotControllerRouteHoldConfigIdentity::Compare(
+            identity.FixtureId, identity.FixtureId,
+            identity.SealSha256, identity.SealSha256,
+            v15Source, v15Source, v15BinaryRevision);
+    assert(v15Comparison.Accepted);
+    assert(v15Comparison.FailureField == std::string_view("none"));
+    assert(v15Comparison.SourceMatches);
+    assert(v15Comparison.BinaryRevisionFormatValid);
+    assert(v15Comparison.BinaryRevisionMatchesSource);
+    assert(v15Comparison.ConfiguredSourceLength == 40);
+    assert(v15Comparison.RequestedSourceLength == 40);
+    assert(v15Comparison.BinaryRevisionLength == 12);
+
     // Exact v13 fail-before: configuration has already admitted generation
     // one, but the old 0 -> 1-only gate rejects that canonical 1 -> 1 bind.
     State recordedFailure;
@@ -198,6 +236,13 @@ int main()
     // unchanged and no ordinary action can execute before acknowledgement.
     State hold;
     assert(hold.BeginAcquire(bootstrap, 20).Accepted);
+    auto const configComparison =
+        BotControllerRouteHoldConfigIdentity::Compare(
+            identity.FixtureId, bootstrap.FixtureId,
+            identity.SealSha256, bootstrap.SealSha256,
+            identity.SourceCommit, bootstrap.SourceCommit,
+            std::string(12, 'c'));
+    assert(configComparison.Accepted);
     uint64 routeGeneration = 1;
     int ordinaryBeforeAckAttempts = 0;
     assert(AdmitCanonicalInitialRouteBinding(hold, identity, 1)
@@ -411,6 +456,65 @@ int main()
     assert(AdmitCanonicalInitialRouteBinding(zeroGeneration, bootstrap, 1)
         == InitialRouteBindingDecision::NotApplicable);
     assert(GateRouteMutation(zeroGeneration, bootstrap, 1));
+
+    auto compare = [](std::string configuredFixture,
+        std::string requestedFixture, std::string configuredSeal,
+        std::string requestedSeal, std::string configuredSource,
+        std::string requestedSource, std::string binaryRevision)
+    {
+        return BotControllerRouteHoldConfigIdentity::Compare(
+            configuredFixture, requestedFixture, configuredSeal,
+            requestedSeal, configuredSource, requestedSource,
+            binaryRevision);
+    };
+    auto fixtureMismatch = compare("configured-fixture", "requested-fixture",
+        identity.SealSha256, identity.SealSha256, identity.SourceCommit,
+        identity.SourceCommit, std::string(12, 'c'));
+    assert(!fixtureMismatch.Accepted);
+    assert(fixtureMismatch.FailureField == std::string_view("fixture_id"));
+    assert(fixtureMismatch.FailureReason == std::string_view(
+        "controller_route_hold_config_fixture_id_mismatch"));
+
+    auto sealMismatch = compare(identity.FixtureId, identity.FixtureId,
+        std::string(64, 'a'), std::string(64, 'b'), identity.SourceCommit,
+        identity.SourceCommit, std::string(12, 'c'));
+    assert(!sealMismatch.Accepted);
+    assert(sealMismatch.FailureField == std::string_view("seal_sha256"));
+    assert(sealMismatch.FailureReason == std::string_view(
+        "controller_route_hold_config_seal_mismatch"));
+
+    auto sourceMismatch = compare(identity.FixtureId, identity.FixtureId,
+        identity.SealSha256, identity.SealSha256, std::string(40, 'c'),
+        std::string(40, 'd'), std::string(12, 'c'));
+    assert(!sourceMismatch.Accepted);
+    assert(sourceMismatch.FailureField == std::string_view("source_commit"));
+    assert(sourceMismatch.FailureReason == std::string_view(
+        "controller_route_hold_config_source_commit_mismatch"));
+
+    auto gitMismatch = compare(identity.FixtureId, identity.FixtureId,
+        identity.SealSha256, identity.SealSha256, identity.SourceCommit,
+        identity.SourceCommit, std::string(12, 'd'));
+    assert(!gitMismatch.Accepted);
+    assert(gitMismatch.FailureField == std::string_view("git_revision"));
+    assert(gitMismatch.FailureReason == std::string_view(
+        "controller_route_hold_git_revision_mismatch"));
+
+    auto missingFixture = compare("", identity.FixtureId,
+        identity.SealSha256, identity.SealSha256, identity.SourceCommit,
+        identity.SourceCommit, std::string(12, 'c'));
+    assert(!missingFixture.Accepted);
+    assert(!missingFixture.FixtureConfiguredPresent);
+    assert(missingFixture.FailureReason == std::string_view(
+        "controller_route_hold_config_fixture_id_missing"));
+
+    // A post-bind config change remains a typed failure; the comparison is
+    // not refreshed or relaxed after the admission identity is established.
+    auto configDrift = compare(identity.FixtureId, identity.FixtureId,
+        identity.SealSha256, identity.SealSha256, std::string(40, 'd'),
+        identity.SourceCommit, std::string(12, 'd'));
+    assert(!configDrift.Accepted);
+    assert(configDrift.FailureReason == std::string_view(
+        "controller_route_hold_config_source_commit_mismatch"));
 }
 ''',
         encoding="utf-8",
@@ -449,6 +553,11 @@ def test_generic_controller_hold_is_wired_to_production_boundaries() -> None:
     assert fallback.count("MarkCheckpointObservationCandidate(") == 2
     assert "InstallAdmissionPolicy(" in MODULE.read_text(encoding="utf-8")
     assert "GateRouteMutation(" in MODULE.read_text(encoding="utf-8")
+    assert "BotControllerRouteHoldConfigIdentity::Compare(" in (
+        MODULE.read_text(encoding="utf-8")
+    )
+    assert "GitRevision::GetHash()" in MODULE.read_text(encoding="utf-8")
+    assert r'\"config_identity_comparison\"' in MODULE.read_text(encoding="utf-8")
     assert "PermitControllerRouteAdvance(index + 1)" in route_runtime
     assert "AdmitCanonicalInitialRouteBinding(" in route_runtime
     assert "InitialRouteBindingDecision::Rejected" in route_runtime

@@ -1,0 +1,133 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:generic_controller_route_hold_config_identity_binding_v16",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "passed",
+  "git_commit": "self",
+  "input_identities": {
+    "immutable_clean_head": "5e930821eec09559a092fa391135c07765772ec8",
+    "failed_runtime_handoff_path": "experiments/configs/cata_raid_generic_controller_route_hold_config_identity_mismatch_handoff_v15.json",
+    "failed_runtime_handoff_sha256": "3688bcaf9ecb64a9954948a9fd66e8b7cae963f056e8c240087de22402f77aca",
+    "dvc_pointer_path": "artifacts/cata_raid_program/phase1_raid_foundation_6056b52ef4_generic_controller_route_hold_config_identity_mismatch_v15_20260830.dvc",
+    "dvc_directory_md5": "ca588a4363d833e5891a602f1c6fabee.dir",
+    "v15_source_commit": "6056b52ef4213f701b2c14744b1a98333dd3e302",
+    "v15_generated_binary_revision": "6056b52ef421"
+  },
+  "program_scope": {
+    "supported_specs": "all_configured_dps_tank_and_healer_specs",
+    "supported_encounters": "all_route_manifest_nodes",
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_semantics": "Affliction, actor 30008, Chainwielder, and Magmaw are evidence inputs only; no canary identity is encoded in the comparison or start binding."
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_generic_controller_route_hold_config_identity_binding_handoff_v16.json"
+  ],
+  "implementation_files": {
+    "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp_sha256": "fa39568466e196cc49363933d1d13d6af60d432d3ff1793cd2c56ea58f2bca78",
+    "test_chainwielder_owner_checkpoint.py_sha256": "8319ae0e6c8183f3e7dca1586bc7946ea0922a840516b6ee967814646736ebf5"
+  },
+  "first_broken_edge_before": "StartAutonomyHeldForCohort compared the configured/requested full 40-character source commit directly to Trinity's generated 12-character GitRevision::GetHash(). V15 values were 6056b52ef4213f701b2c14744b1a98333dd3e302 and 6056b52ef421 respectively, so the aggregate config_identity_mismatch was deterministic even though fixture ID, seal, and configured/requested source matched.",
+  "exact_mismatch_field": {
+    "field": "git_revision",
+    "owner": "BotWorldPopulationMgr::StartAutonomyHeldForCohort",
+    "configured_source_length": 40,
+    "requested_source_length": 40,
+    "binary_revision_length": 12,
+    "configured_matches_requested": true,
+    "binary_revision_is_exact_canonical_prefix": true
+  },
+  "implemented_hypothesis": "Preserve exact 40-character configured/requested source equality and validate Trinity's binary revision as lower-hex of its generated 12- or 40-character representation, requiring it to equal the exact leading representation of the already validated full source identity. Emit per-field presence, equality, format, and length evidence without adding raw authority values.",
+  "production_boundary": {
+    "typed_adapter": "BotControllerRouteHoldConfigIdentity::Compare",
+    "start_owner": "BotWorldPopulationMgr::StartAutonomyHeldForCohort",
+    "status_owner": "BotWorldPopulationMgr::BuildControllerRouteHoldJson",
+    "status_object": "raid_runtime.controller_route_hold.config_identity_comparison",
+    "config_owner_audit": "LoadConfig loads fixture, seal, and source before profile application; ApplyRuntimeProfile and PrepareCurrentValidationProfile do not write those fields."
+  },
+  "validation": {
+    "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "result": "6 passed in 1.33s",
+    "focused_run_count": 2,
+    "correction_budget_used": 1,
+    "correction": "The behavior fixture passed on the first run; the sole failure was an incorrectly escaped supplemental source-wiring assertion, corrected without changing production behavior.",
+    "compiled_boundary": [
+      "exact production BotControllerRouteHoldConfigIdentity::Compare implementation",
+      "exact V15 full source and generated short revision values",
+      "production controller hold state transitions",
+      "real BotActionArbitration::Kernel and route-hold admission adapter",
+      "production initial-route and held/released mutation gates"
+    ],
+    "typed_negative_fields": [
+      "fixture_id",
+      "seal_sha256",
+      "source_commit",
+      "git_revision",
+      "missing_fixture_identity",
+      "post_bind_config_drift"
+    ],
+    "build_run": false,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false,
+    "cpp_line_counts": {
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 909,
+      "BotWorldPopulationMgrConfig.cpp": 320,
+      "BotWorldPopulationMgrValidationProfile.cpp": 429
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact V15 differing production field was git_revision, not fixture ID, seal, or configured/requested source commit",
+      "the generated binary revision is an exact 12-character representation of the full admitted source commit",
+      "each checkpoint config comparison now has a distinct fail-closed reason and non-secret presence/equality evidence",
+      "the configured and requested 40-character source authorities must still be valid lower-hex and exactly equal",
+      "duplicate acquire, partial identity, route drift, config drift, arm, terminal, release, and post-release gates remain covered",
+      "all in-scope C++ files remain below 1000 physical lines"
+    ],
+    "refuted": [
+      "a checkpoint config/profile writer overwrote fixture ID, seal, or source during V15 start",
+      "the Python controller supplied a stale or partial source identity",
+      "the aggregate config mismatch justified weakening configured/requested authority equality"
+    ],
+    "unproven": [
+      "the native worldserver builds at this implementation commit",
+      "the live start-held command returns Held with the exact full identity",
+      "two live held receipts remain identity-stable",
+      "the live arm, terminal, release, and post-release route sequence completes"
+    ]
+  },
+  "gear_identity": {"status": "not_applicable"},
+  "effective_stat_parity": {"status": "not_applicable", "tuning_admitted": false, "first_broken_edge": null},
+  "dps_tuning_gate": {"status": "not_applicable", "tuning_admitted": false, "first_broken_edge": null},
+  "evidence_paths": [
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_generic_controller_route_hold_config_identity_binding_handoff_v16.json"
+  ],
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_6056b52ef4_generic_controller_route_hold_config_identity_mismatch_v15_20260830.dvc",
+    "remote_verification": "inherited_remote_verified_immutable_v15_input",
+    "eviction_state": "raw_workspace_evidence_already_evicted",
+    "mutation_performed": false
+  },
+  "remaining_blocker": "The native repair is fixture-green but unbuilt and has no runtime receipt. This handoff authorizes no worldserver start or live acceptance claim.",
+  "runtime_verification_plan": {
+    "next_owner": "raid-evidence-lifecycle",
+    "next_work_unit": "evidence:generic_controller_route_hold_config_identity_revalidation_admission_v17",
+    "worldserver_start_budget": 0,
+    "required_first_receipt": {
+      "phase": "held",
+      "acquire_count": 1,
+      "config_identity_comparison.accepted": true,
+      "config_identity_comparison.failure_field": "none",
+      "config_identity_comparison.configured_source_length": 40,
+      "config_identity_comparison.requested_source_length": 40,
+      "config_identity_comparison.binary_revision_length": 12
+    },
+    "required_followup": "Independently validate this implementation and issue a separate hash-bound build/live admission; do not start a server from this descriptor."
+  },
+  "runtime_verdict": "unverified",
+  "next_work_unit": "evidence:generic_controller_route_hold_config_identity_revalidation_admission_v17"
+}

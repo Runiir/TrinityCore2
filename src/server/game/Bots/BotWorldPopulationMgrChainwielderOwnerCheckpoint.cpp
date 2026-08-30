@@ -1,5 +1,133 @@
-#include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotChainwielderOwnerCheckpoint.h"
+
+#include <string_view>
+
+namespace BotControllerRouteHoldConfigIdentity
+{
+struct Comparison
+{
+    bool Accepted = false;
+    char const* FailureField = "none";
+    char const* FailureReason = nullptr;
+    bool FixtureConfiguredPresent = false;
+    bool FixtureRequestedPresent = false;
+    bool FixtureMatches = false;
+    bool SealConfiguredPresent = false;
+    bool SealRequestedPresent = false;
+    bool SealMatches = false;
+    bool SourceConfiguredPresent = false;
+    bool SourceRequestedPresent = false;
+    bool SourceMatches = false;
+    bool BinaryRevisionPresent = false;
+    bool BinaryRevisionFormatValid = false;
+    bool BinaryRevisionMatchesSource = false;
+    std::size_t ConfiguredSourceLength = 0;
+    std::size_t RequestedSourceLength = 0;
+    std::size_t BinaryRevisionLength = 0;
+};
+
+Comparison Compare(std::string_view configuredFixture,
+    std::string_view requestedFixture, std::string_view configuredSeal,
+    std::string_view requestedSeal, std::string_view configuredSource,
+    std::string_view requestedSource, std::string_view binaryRevision)
+{
+    Comparison result;
+    result.FixtureConfiguredPresent = !configuredFixture.empty();
+    result.FixtureRequestedPresent = !requestedFixture.empty();
+    result.FixtureMatches = configuredFixture == requestedFixture;
+    result.SealConfiguredPresent = !configuredSeal.empty();
+    result.SealRequestedPresent = !requestedSeal.empty();
+    result.SealMatches = configuredSeal == requestedSeal;
+    result.SourceConfiguredPresent = !configuredSource.empty();
+    result.SourceRequestedPresent = !requestedSource.empty();
+    result.SourceMatches = configuredSource == requestedSource;
+    result.BinaryRevisionPresent = !binaryRevision.empty();
+    result.ConfiguredSourceLength = configuredSource.size();
+    result.RequestedSourceLength = requestedSource.size();
+    result.BinaryRevisionLength = binaryRevision.size();
+    result.BinaryRevisionFormatValid =
+        BotControllerRouteHold::IsLowerHex(binaryRevision, 12)
+        || BotControllerRouteHold::IsLowerHex(binaryRevision, 40);
+    result.BinaryRevisionMatchesSource = result.BinaryRevisionFormatValid
+        && BotControllerRouteHold::IsLowerHex(configuredSource, 40)
+        && configuredSource.substr(0, binaryRevision.size()) == binaryRevision;
+
+    if (!result.FixtureConfiguredPresent
+        || !result.FixtureRequestedPresent)
+    {
+        result.FailureField = "fixture_id";
+        result.FailureReason =
+            "controller_route_hold_config_fixture_id_missing";
+    }
+    else if (!result.FixtureMatches)
+    {
+        result.FailureField = "fixture_id";
+        result.FailureReason =
+            "controller_route_hold_config_fixture_id_mismatch";
+    }
+    else if (!result.SealConfiguredPresent || !result.SealRequestedPresent)
+    {
+        result.FailureField = "seal_sha256";
+        result.FailureReason = "controller_route_hold_config_seal_missing";
+    }
+    else if (!BotControllerRouteHold::IsLowerHex(configuredSeal, 64)
+        || !BotControllerRouteHold::IsLowerHex(requestedSeal, 64))
+    {
+        result.FailureField = "seal_sha256";
+        result.FailureReason = "controller_route_hold_config_seal_invalid";
+    }
+    else if (!result.SealMatches)
+    {
+        result.FailureField = "seal_sha256";
+        result.FailureReason = "controller_route_hold_config_seal_mismatch";
+    }
+    else if (!result.SourceConfiguredPresent
+        || !result.SourceRequestedPresent)
+    {
+        result.FailureField = "source_commit";
+        result.FailureReason =
+            "controller_route_hold_config_source_commit_missing";
+    }
+    else if (!BotControllerRouteHold::IsLowerHex(configuredSource, 40)
+        || !BotControllerRouteHold::IsLowerHex(requestedSource, 40))
+    {
+        result.FailureField = "source_commit";
+        result.FailureReason =
+            "controller_route_hold_config_source_commit_invalid";
+    }
+    else if (!result.SourceMatches)
+    {
+        result.FailureField = "source_commit";
+        result.FailureReason =
+            "controller_route_hold_config_source_commit_mismatch";
+    }
+    else if (!result.BinaryRevisionPresent)
+    {
+        result.FailureField = "git_revision";
+        result.FailureReason =
+            "controller_route_hold_git_revision_missing";
+    }
+    else if (!result.BinaryRevisionFormatValid)
+    {
+        result.FailureField = "git_revision";
+        result.FailureReason =
+            "controller_route_hold_git_revision_invalid";
+    }
+    else if (!result.BinaryRevisionMatchesSource)
+    {
+        result.FailureField = "git_revision";
+        result.FailureReason =
+            "controller_route_hold_git_revision_mismatch";
+    }
+    else
+        result.Accepted = true;
+    return result;
+}
+}
+
+#ifndef BOT_CONTROLLER_ROUTE_HOLD_CONFIG_IDENTITY_ADAPTER_ONLY
+
+#include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 
@@ -223,11 +351,13 @@ std::string BotWorldPopulationMgr::StartAutonomyHeldForCohort(
     Identity const identity = CurrentControllerRouteHoldIdentity(actorGuid);
     if (!actorInCohort)
         hold.Reject("controller_route_hold_actor_not_in_cohort");
-    else if (identity.FixtureId != fixtureId
-        || identity.SealSha256 != sealSha256
-        || identity.SourceCommit != sourceCommit
-        || identity.SourceCommit != GitRevision::GetHash())
-        hold.Reject("controller_route_hold_config_identity_mismatch");
+    else if (BotControllerRouteHoldConfigIdentity::Comparison const comparison =
+            BotControllerRouteHoldConfigIdentity::Compare(
+                identity.FixtureId, fixtureId, identity.SealSha256,
+                sealSha256, identity.SourceCommit, sourceCommit,
+                GitRevision::GetHash());
+        !comparison.Accepted)
+        hold.Reject(comparison.FailureReason);
     else
         hold.CompleteAcquire(identity, NowMs());
 
@@ -287,6 +417,14 @@ std::string BotWorldPopulationMgr::BuildControllerRouteHoldJson() const
     State const& hold =
         Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
     Identity const& scope = hold.Scope;
+    BotControllerRouteHoldConfigIdentity::Comparison const configComparison =
+        BotControllerRouteHoldConfigIdentity::Compare(
+            Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
+            scope.FixtureId,
+            Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
+            scope.SealSha256,
+            Cohort().Config.ChainwielderOwnerCheckpointSourceCommit,
+            scope.SourceCommit, GitRevision::GetHash());
     std::ostringstream json;
     bool const ok = hold.CurrentPhase != Phase::Failed
         && hold.FailureReason.empty();
@@ -305,6 +443,40 @@ std::string BotWorldPopulationMgr::BuildControllerRouteHoldJson() const
          << ",\"fixture_id\":\"" << JsonEscape(scope.FixtureId) << "\""
          << ",\"seal_sha256\":\"" << JsonEscape(scope.SealSha256) << "\""
          << ",\"source_commit\":\"" << JsonEscape(scope.SourceCommit) << "\""
+         << ",\"config_identity_comparison\":{\"accepted\":"
+         << (configComparison.Accepted ? "true" : "false")
+         << ",\"failure_field\":\""
+         << configComparison.FailureField << "\""
+         << ",\"fixture_configured_present\":"
+         << (configComparison.FixtureConfiguredPresent ? "true" : "false")
+         << ",\"fixture_requested_present\":"
+         << (configComparison.FixtureRequestedPresent ? "true" : "false")
+         << ",\"fixture_matches\":"
+         << (configComparison.FixtureMatches ? "true" : "false")
+         << ",\"seal_configured_present\":"
+         << (configComparison.SealConfiguredPresent ? "true" : "false")
+         << ",\"seal_requested_present\":"
+         << (configComparison.SealRequestedPresent ? "true" : "false")
+         << ",\"seal_matches\":"
+         << (configComparison.SealMatches ? "true" : "false")
+         << ",\"source_configured_present\":"
+         << (configComparison.SourceConfiguredPresent ? "true" : "false")
+         << ",\"source_requested_present\":"
+         << (configComparison.SourceRequestedPresent ? "true" : "false")
+         << ",\"source_matches\":"
+         << (configComparison.SourceMatches ? "true" : "false")
+         << ",\"binary_revision_present\":"
+         << (configComparison.BinaryRevisionPresent ? "true" : "false")
+         << ",\"binary_revision_format_valid\":"
+         << (configComparison.BinaryRevisionFormatValid ? "true" : "false")
+         << ",\"binary_revision_matches_source\":"
+         << (configComparison.BinaryRevisionMatchesSource ? "true" : "false")
+         << ",\"configured_source_length\":"
+         << configComparison.ConfiguredSourceLength
+         << ",\"requested_source_length\":"
+         << configComparison.RequestedSourceLength
+         << ",\"binary_revision_length\":"
+         << configComparison.BinaryRevisionLength << "}"
          << ",\"acquire_count\":" << hold.AcquireCount
          << ",\"arm_ack_count\":" << hold.ArmAckCount
          << ",\"checkpoint_stage\":\""
@@ -733,3 +905,5 @@ std::string BotWorldPopulationMgr::BuildChainwielderOwnerCheckpointJson() const
          << ",\"outcome\":" << checkpoint.OutcomeObservedAtMs << "}}";
     return json.str();
 }
+
+#endif

@@ -1,96 +1,73 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "generic_controller_route_hold_config_identity_binding_v16_20260830",
-  "work_unit": "runtime:generic_controller_route_hold_config_identity_binding_v16",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
-  "gate_state": "v15_failed_closed_before_start_held_ack_on_native_checkpoint_config_identity_mismatch",
-  "observed_at_commit": "6056b52ef4213f701b2c14744b1a98333dd3e302",
-  "immutable_input_commit": "6056b52ef4213f701b2c14744b1a98333dd3e302",
+  "epoch_id": "generic_controller_route_hold_config_identity_revalidation_admission_v17_20260830",
+  "work_unit": "evidence:generic_controller_route_hold_config_identity_revalidation_admission_v17",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_complete_runtime_unverified",
+  "gate_state": "v16_native_config_identity_binding_fixture_green_no_build_or_live_authorization",
+  "observed_at_commit": "5e930821eec09559a092fa391135c07765772ec8",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_controller_route_hold_config_identity_mismatch_handoff_v15.json",
-    "sha256": "3688bcaf9ecb64a9954948a9fd66e8b7cae963f056e8c240087de22402f77aca"
-  },
-  "evidence": {
-    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_6056b52ef4_generic_controller_route_hold_config_identity_mismatch_v15_20260830.dvc",
-    "directory_md5": "ca588a4363d833e5891a602f1c6fabee.dir",
-    "capture_report_file_sha256": "e7e6953e94927425bac191badb05635ce0ea4750d370cdcd276d7bf0568e05bf",
-    "capture_report_canonical_sha256": "89fad6c7cb30059420e7fe34644edf9c680f9fa3684e818a58ddce7dcf786c59",
-    "remote_verified": true,
-    "local_raw_evicted": true
+    "path": "experiments/configs/cata_raid_generic_controller_route_hold_config_identity_binding_handoff_v16.json",
+    "sha256": "45117e6fbc655516ca6f22fb95921aa7625bde1d6a29ac7a4f287830c8bac581",
+    "source_commit": "self"
   },
   "program_scope": {
     "supported_specs": "all_configured_dps_tank_and_healer_specs",
     "supported_encounters": "all_route_manifest_nodes",
     "supported_modes": ["10N", "10H", "25N", "25H"],
-    "canaries_only": ["Affliction", "Magmaw"]
+    "canary_only": "Affliction, actor 30008, Chainwielder, and Magmaw are evidence inputs only. No downstream controller may branch on these canary identities."
   },
   "behavior_change": false,
-  "first_broken_edge": {
-    "owner": "shared_native_runtime",
-    "edge": "start_held_rejects_the_production_checkpoint_config_binding_before_hold_acquisition",
-    "native_failure_reason": "controller_route_hold_config_identity_mismatch",
-    "receipt": "the exact launch carried actor 30008 plus fixture, seal, source, scenario, profile, manifest, generation one, and node; native returned actor, fixture, seal, and source but empty route identity, generation zero, and acquire_count zero",
-    "diagnostic_gap": "the aggregate reason covers fixture ID, seal SHA, source commit, and Git revision comparisons but does not expose which runtime-side field differed"
-  },
-  "v15_receipt": {
-    "configure_count": 1,
-    "build_count": 1,
-    "worldserver_start_count": 1,
-    "bundle_create_count": 1,
-    "bundle_verify_count": 1,
-    "start_held_count": 1,
-    "start_ack_count": 0,
-    "held_status_count": 0,
-    "arm_count": 0,
-    "checkpoint_terminal_count": 0,
-    "release_count": 0,
-    "ordinary_route_progress_before_release": false,
-    "combat_observed": false,
-    "cleanup_passed": true
-  },
-  "ready_for_bounded_repair": true,
+  "ready_for_bounded_repair": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "remaining_unproven": [
-    "which runtime checkpoint config or Git identity field differs at production start-held",
-    "one exact native start-held acknowledgement at initial route generation",
-    "two identity-stable held status receipts",
-    "one sealed arm acknowledgement, identity-preserved checkpoint terminal, release acknowledgement, and post-release route advance",
-    "route DPS, HPS, actor-30008 throughput, and pet share"
-  ],
-  "repair_budget": {
-    "configure_count_max": 0,
-    "build_count_max": 0,
-    "worldserver_start_count_max": 0,
-    "database_mutation_allowed": false,
-    "dvc_mutation_allowed": false
+  "scope_lock": {
+    "allowed_change": "Independently verify the v16 typed config-identity implementation handoff and produce one hash-bound build/live admission or a typed rejection; do not change native runtime or gameplay.",
+    "forbidden": [
+      "native_runtime_or_gameplay_change",
+      "class_spec_pet_encounter_route_strategy_or_priority_change",
+      "python_controller_or_polling_change",
+      "comparison_or_authority_loosening",
+      "database_or_dvc_mutation",
+      "configure_build_or_worldserver_start",
+      "fixture_promotion_or_canary_acceptance_claim"
+    ]
   },
+  "admitted_actions": {
+    "configure_count_maximum": 0,
+    "worldserver_build_count_maximum": 0,
+    "worldserver_start_count_maximum": 0,
+    "database_mutation": "forbidden",
+    "dvc_mutation": "forbidden",
+    "validation": "handoff_integrity_and_capture_contract_review_only"
+  },
+  "required_contract": {
+    "native_start_held_acknowledgement_count": 1,
+    "config_identity_comparison_accepted": true,
+    "config_identity_failure_field": "none",
+    "configured_source_length": 40,
+    "requested_source_length": 40,
+    "binary_revision_length": 12,
+    "admission_commit_route_generation": 1,
+    "identity_stable_held_status_count": 2,
+    "checkpoint_arm_acknowledgement_count": 1,
+    "checkpoint_terminal_count": 1,
+    "release_acknowledgement_count": 1,
+    "ordinary_route_advance_before_release": false,
+    "ordinary_route_advance_after_release": true
+  },
+  "remaining_unproven": [
+    "native build at the v16 implementation commit",
+    "exact live Held acknowledgement with accepted typed config identity",
+    "two identity-stable Held status receipts",
+    "sealed arm, identity-preserved terminal, release, and post-release route advance"
+  ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "raid_success_timer_seconds": null,
-    "terminal_edges": [
-      "normal_clear",
-      "monotonic_semantic_stall",
-      "repeated_decisions",
-      "excessive_death_loops",
-      "infrastructure_loss",
-      "explicit_interruption"
-    ]
+    "raid_success_timer_seconds": null
   },
-  "required_repair": {
-    "boundary": "native start-held checkpoint-config binding lifecycle",
-    "acceptance": [
-      "fail-before compiled replay matches the exact V15 zero-acquire receipt after admitted runtime start",
-      "typed fixture-ID, seal, source-commit, and Git-revision mismatch cases expose the exact failing comparison and remain rejected",
-      "pass-after production-boundary replay preserves config identity across profile load/start and returns Held with exact route and checkpoint identity",
-      "ordinary route actions and generation mutation remain suppressed until the Held acknowledgement",
-      "duplicate start-held, route drift, partial identity, and config drift remain fail-closed"
-    ],
-    "forbidden": "Do not repair identity in the Python controller, loosen comparisons, alter polling, change gameplay, build, provision, start a server, promote fixtures, or claim canary acceptance."
-  },
-  "next_work_unit": "runtime:generic_controller_route_hold_config_identity_binding_v16",
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "next_action": "Add typed native checkpoint-config comparison evidence, reproduce the exact V15 boundary, and repair only the proven config-binding lifecycle with fail-before/pass-after compiled tests."
+  "next_work_unit": "evidence:generic_controller_route_hold_config_identity_revalidation_admission_v17",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_action": "Verify the v16 handoff without starting a server, then emit the separate build/live admission required for runtime verification."
 }
