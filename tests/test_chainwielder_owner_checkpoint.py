@@ -41,20 +41,61 @@ int main()
         == std::string_view("chainwielder_checkpoint_disabled"));
 
     std::string const admission(64, 'a');
-    std::string const source(40, 'b');
+    std::string const source =
+        "6056b52ef4213f701b2c14744b1a98333dd3e302";
+    std::string const binaryRevision = "6056b52ef421";
     GateInput valid{
         true, true, ProfileId, ProfileId, PoolTag, ProfileId, NodeId,
         MapId, ActorCount, ActorCount, TargetEntry, true, true, 9,
-        FixtureId, admission, admission, source, source, source,
+        FixtureId, admission, admission, source, source, binaryRevision,
     };
+    // Exact V17 fail-before: the stale raw equality rejects Trinity's real
+    // 12-character generated representation of the same full source.
+    assert(valid.ConfigSourceCommit != valid.BinarySourceCommit);
+    auto const sourceIdentity = BotControllerRouteHold::CompareSourceIdentity(
+        valid.ConfigSourceCommit, valid.RequestedSourceCommit,
+        valid.BinarySourceCommit);
+    assert(sourceIdentity.Accepted);
+    assert(sourceIdentity.AuthoritiesMatch);
+    assert(sourceIdentity.BinaryRevisionMatchesSource);
+    assert(sourceIdentity.ConfiguredLength == 40);
+    assert(sourceIdentity.RequestedLength == 40);
+    assert(sourceIdentity.BinaryRevisionLength == 12);
     assert(RejectionReason(valid) == nullptr);
-    valid.RequestedSealSha256 = std::string(64, 'c');
+
+    valid.ConfigFixtureId = "wrong-fixture";
+    assert(RejectionReason(valid) == std::string_view(
+        "chainwielder_checkpoint_fixture_identity_mismatch"));
+    valid.ConfigFixtureId = FixtureId;
+    std::string const otherSeal(64, 'c');
+    valid.RequestedSealSha256 = otherSeal;
     assert(RejectionReason(valid)
         == std::string_view("chainwielder_checkpoint_seal_mismatch"));
     valid.RequestedSealSha256 = admission;
-    valid.RequestedSourceCommit = std::string(40, 'c');
-    assert(RejectionReason(valid)
-        == std::string_view("chainwielder_checkpoint_source_identity_mismatch"));
+    std::string const otherSource(40, 'c');
+    valid.RequestedSourceCommit = otherSource;
+    assert(RejectionReason(valid) == std::string_view(
+        "chainwielder_checkpoint_source_authority_mismatch"));
+    valid.RequestedSourceCommit = source;
+
+    std::string const shortRevision(11, 'a');
+    valid.BinarySourceCommit = shortRevision;
+    assert(RejectionReason(valid) == std::string_view(
+        "chainwielder_checkpoint_git_revision_invalid"));
+    std::string const nonHexRevision = "6056B52EF421";
+    valid.BinarySourceCommit = nonHexRevision;
+    assert(RejectionReason(valid) == std::string_view(
+        "chainwielder_checkpoint_git_revision_invalid"));
+    std::string const wrongPrefix(12, 'd');
+    valid.BinarySourceCommit = wrongPrefix;
+    assert(RejectionReason(valid) == std::string_view(
+        "chainwielder_checkpoint_git_revision_mismatch"));
+    std::string const wrongFullRevision(40, 'd');
+    valid.BinarySourceCommit = wrongFullRevision;
+    assert(RejectionReason(valid) == std::string_view(
+        "chainwielder_checkpoint_git_revision_mismatch"));
+    valid.BinarySourceCommit = source;
+    assert(RejectionReason(valid) == nullptr);
 
     OwnerSnapshot before;
     before.MovementOwner = BotMovementArbitration::Owner::Route;
@@ -605,7 +646,8 @@ def test_checkpoint_is_default_off_and_exactly_admission_bound() -> None:
     assert "ConfigSealSha256 != input.RequestedSealSha256" in header
     assert "ChainwielderOwnerCheckpoint.SealSha256" in config
     assert "ChainwielderOwnerCheckpoint.AdmissionSha256" not in config
-    assert "ConfigSourceCommit != input.BinarySourceCommit" in header
+    assert "CompareSourceIdentity(" in header
+    assert "ConfigSourceCommit != input.BinarySourceCommit" not in header
     assert "checkpoint.InjectionCount != 1" in module
     assert 'action == "arm"' in command
     assert 'action == "status"' in command

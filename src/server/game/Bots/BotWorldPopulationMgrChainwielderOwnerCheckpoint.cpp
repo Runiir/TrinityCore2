@@ -41,16 +41,17 @@ Comparison Compare(std::string_view configuredFixture,
     result.SourceConfiguredPresent = !configuredSource.empty();
     result.SourceRequestedPresent = !requestedSource.empty();
     result.SourceMatches = configuredSource == requestedSource;
-    result.BinaryRevisionPresent = !binaryRevision.empty();
-    result.ConfiguredSourceLength = configuredSource.size();
-    result.RequestedSourceLength = requestedSource.size();
-    result.BinaryRevisionLength = binaryRevision.size();
+    BotControllerRouteHold::SourceIdentityComparison const sourceIdentity =
+        BotControllerRouteHold::CompareSourceIdentity(
+            configuredSource, requestedSource, binaryRevision);
+    result.BinaryRevisionPresent = sourceIdentity.BinaryRevisionPresent;
+    result.ConfiguredSourceLength = sourceIdentity.ConfiguredLength;
+    result.RequestedSourceLength = sourceIdentity.RequestedLength;
+    result.BinaryRevisionLength = sourceIdentity.BinaryRevisionLength;
     result.BinaryRevisionFormatValid =
-        BotControllerRouteHold::IsLowerHex(binaryRevision, 12)
-        || BotControllerRouteHold::IsLowerHex(binaryRevision, 40);
-    result.BinaryRevisionMatchesSource = result.BinaryRevisionFormatValid
-        && BotControllerRouteHold::IsLowerHex(configuredSource, 40)
-        && configuredSource.substr(0, binaryRevision.size()) == binaryRevision;
+        sourceIdentity.BinaryRevisionFormatValid;
+    result.BinaryRevisionMatchesSource =
+        sourceIdentity.BinaryRevisionMatchesSource;
 
     if (!result.FixtureConfiguredPresent
         || !result.FixtureRequestedPresent)
@@ -88,14 +89,14 @@ Comparison Compare(std::string_view configuredFixture,
         result.FailureReason =
             "controller_route_hold_config_source_commit_missing";
     }
-    else if (!BotControllerRouteHold::IsLowerHex(configuredSource, 40)
-        || !BotControllerRouteHold::IsLowerHex(requestedSource, 40))
+    else if (!sourceIdentity.ConfiguredFormatValid
+        || !sourceIdentity.RequestedFormatValid)
     {
         result.FailureField = "source_commit";
         result.FailureReason =
             "controller_route_hold_config_source_commit_invalid";
     }
-    else if (!result.SourceMatches)
+    else if (!sourceIdentity.AuthoritiesMatch)
     {
         result.FailureField = "source_commit";
         result.FailureReason =

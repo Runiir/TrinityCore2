@@ -1,0 +1,125 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:generic_controller_route_hold_arm_config_identity_binding_v18",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "passed",
+  "git_commit": "self",
+  "input_identities": {
+    "immutable_clean_head": "5aaabb640f2f73de1561a6ac3bcd0161355ccf73",
+    "rejection_handoff_path": "experiments/configs/cata_raid_generic_controller_route_hold_config_identity_revalidation_rejection_handoff_v17.json",
+    "rejection_handoff_sha256": "30895882b0a83080c6d9a910a46d454f9eb21dddc0c5328bd43ff7df2551dfee",
+    "v15_full_source": "6056b52ef4213f701b2c14744b1a98333dd3e302",
+    "v15_generated_revision": "6056b52ef421"
+  },
+  "program_scope": {
+    "supported_specs": "all_configured_dps_tank_and_healer_specs",
+    "supported_encounters": "all_route_manifest_nodes",
+    "supported_modes": ["10N", "10H", "25N", "25H"],
+    "canary_semantics": "Affliction, actor 30008, Chainwielder, and Magmaw remain evidence inputs only; the shared predicate contains no canary branch."
+  },
+  "changed_files": [
+    "src/server/game/Bots/BotChainwielderOwnerCheckpoint.h",
+    "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_active_work_unit_v1.json",
+    "experiments/configs/cata_raid_generic_controller_route_hold_arm_config_identity_binding_handoff_v18.json"
+  ],
+  "implementation_files": {
+    "BotChainwielderOwnerCheckpoint.h_sha256": "34e8d1cb73cc1e2cd5c9094923c547cbbf6134f877233502da67a7247bfdd8d7",
+    "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp_sha256": "4fc4a48b72be7a1d7f0da6f829d3b73ed56724c8d7be27207b463d0357661718",
+    "test_chainwielder_owner_checkpoint.py_sha256": "a72bea80edad233a06e7a3f60a8f33993717126dace75e774dfb055248cf475d"
+  },
+  "first_broken_edge_before": "BotChainwielderOwnerCheckpoint::RejectionReason required raw equality between the valid full 40-character configured source and GitRevision::GetHash(), although Trinity generates a valid 12-character exact prefix. The production arm therefore deterministically returned chainwielder_checkpoint_source_identity_mismatch after a correct Held acknowledgement.",
+  "implemented_hypothesis": "Extract one shared strict source-identity predicate used by both start-held and arm. It requires valid exact full-40 configured/requested authority equality, then independently requires a valid lower-hex 12- or 40-character generated revision equal to the exact source prefix/full value.",
+  "production_boundary": {
+    "shared_predicate": "BotControllerRouteHold::CompareSourceIdentity",
+    "start_owner": "BotControllerRouteHoldConfigIdentity::Compare",
+    "arm_owner": "BotChainwielderOwnerCheckpoint::RejectionReason",
+    "telemetry": "raid_runtime.controller_route_hold.config_identity_comparison",
+    "raw_authority_added": false
+  },
+  "validation": {
+    "command": "pixi run pytest -q tests/test_chainwielder_owner_checkpoint.py",
+    "result": "6 passed in 1.35s",
+    "focused_run_count": 1,
+    "correction_budget_used": 0,
+    "compiled_arm_boundary": {
+      "fail_before": "the exact full V15 source is not raw-equal to its production 12-character Git revision",
+      "pass_after": "the actual production GateInput and RejectionReason accept the exact canonical representation",
+      "negative_cases": [
+        "invalid_binary_length",
+        "non_lower_hex_binary",
+        "wrong_binary_prefix",
+        "wrong_full40_binary",
+        "unequal_full_authorities",
+        "fixture_drift",
+        "seal_drift"
+      ]
+    },
+    "retained_transitions": [
+      "duplicate_and_early_arm",
+      "missing_and_stale_terminal",
+      "terminal_gated_release",
+      "duplicate_release",
+      "held_route_suppression",
+      "post_release_route_advance"
+    ],
+    "build_run": false,
+    "worldserver_start_count": 0,
+    "database_mutated": false,
+    "dvc_mutated": false,
+    "cpp_line_counts": {
+      "BotChainwielderOwnerCheckpoint.h": 590,
+      "BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp": 910
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the production arm gate now exercises the real 12-character GitRevision representation",
+      "start-held and arm share one strict source-identity predicate",
+      "configured and requested source authorities remain valid exact equal 40-character values",
+      "invalid, nonhex, wrong-prefix, full40 mismatch, fixture drift, and seal drift remain typed fail-closed",
+      "existing arm, terminal, release, action suppression, and post-release route tests remain green",
+      "all touched C++ files remain below 1000 physical lines"
+    ],
+    "refuted": [
+      "the arm gate needs raw equality between full source authority and generated short revision",
+      "duplicating the V16 representation rule in a second arm-only helper is necessary",
+      "fixture or seal authority must be weakened"
+    ],
+    "unproven": [
+      "the native worldserver builds at this implementation commit",
+      "one live Held acknowledgement and two stable Held statuses are followed by an accepted arm",
+      "one live identity-preserved terminal, release, and post-release route advance completes"
+    ]
+  },
+  "gear_identity": {"status": "not_applicable"},
+  "effective_stat_parity": {"status": "not_applicable", "tuning_admitted": false, "first_broken_edge": null},
+  "dps_tuning_gate": {"status": "not_applicable", "tuning_admitted": false, "first_broken_edge": null},
+  "evidence_paths": [
+    "tests/test_chainwielder_owner_checkpoint.py",
+    "experiments/configs/cata_raid_generic_controller_route_hold_arm_config_identity_binding_handoff_v18.json"
+  ],
+  "dvc_publication": {
+    "pointer": null,
+    "remote_verification": "not_applicable_no_new_artifact",
+    "eviction_state": "not_applicable",
+    "mutation_performed": false
+  },
+  "remaining_blocker": "The shared native repair is fixture-green but unbuilt and has no runtime arm receipt. This handoff authorizes no worldserver start or acceptance claim.",
+  "runtime_verification_plan": {
+    "next_owner": "raid-evidence-lifecycle",
+    "next_work_unit": "evidence:generic_controller_route_hold_arm_identity_revalidation_admission_v19",
+    "worldserver_start_budget": 0,
+    "required_order": [
+      "one Held acknowledgement with accepted source identity",
+      "two identity-stable Held statuses",
+      "one accepted arm with canonical binary revision",
+      "one identity-preserved checkpoint terminal",
+      "one release acknowledgement",
+      "ordinary route advance only after release"
+    ]
+  },
+  "runtime_verdict": "unverified",
+  "next_work_unit": "evidence:generic_controller_route_hold_arm_identity_revalidation_admission_v19"
+}

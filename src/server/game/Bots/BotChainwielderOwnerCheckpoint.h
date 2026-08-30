@@ -60,6 +60,49 @@ inline bool IsLowerHex(std::string_view value, std::size_t length)
     return true;
 }
 
+struct SourceIdentityComparison
+{
+    bool Accepted = false;
+    bool ConfiguredPresent = false;
+    bool RequestedPresent = false;
+    bool ConfiguredFormatValid = false;
+    bool RequestedFormatValid = false;
+    bool AuthoritiesMatch = false;
+    bool BinaryRevisionPresent = false;
+    bool BinaryRevisionFormatValid = false;
+    bool BinaryRevisionMatchesSource = false;
+    std::size_t ConfiguredLength = 0;
+    std::size_t RequestedLength = 0;
+    std::size_t BinaryRevisionLength = 0;
+};
+
+inline SourceIdentityComparison CompareSourceIdentity(
+    std::string_view configuredSource, std::string_view requestedSource,
+    std::string_view binaryRevision)
+{
+    SourceIdentityComparison result;
+    result.ConfiguredPresent = !configuredSource.empty();
+    result.RequestedPresent = !requestedSource.empty();
+    result.ConfiguredFormatValid = IsLowerHex(configuredSource, 40);
+    result.RequestedFormatValid = IsLowerHex(requestedSource, 40);
+    result.AuthoritiesMatch = configuredSource == requestedSource;
+    result.BinaryRevisionPresent = !binaryRevision.empty();
+    result.BinaryRevisionFormatValid = IsLowerHex(binaryRevision, 12)
+        || IsLowerHex(binaryRevision, 40);
+    result.BinaryRevisionMatchesSource = result.BinaryRevisionFormatValid
+        && result.ConfiguredFormatValid
+        && configuredSource.substr(0, binaryRevision.size()) == binaryRevision;
+    result.ConfiguredLength = configuredSource.size();
+    result.RequestedLength = requestedSource.size();
+    result.BinaryRevisionLength = binaryRevision.size();
+    result.Accepted = result.ConfiguredPresent && result.RequestedPresent
+        && result.ConfiguredFormatValid && result.RequestedFormatValid
+        && result.AuthoritiesMatch && result.BinaryRevisionPresent
+        && result.BinaryRevisionFormatValid
+        && result.BinaryRevisionMatchesSource;
+    return result;
+}
+
 struct Identity
 {
     std::string CohortId;
@@ -456,10 +499,23 @@ inline char const* RejectionReason(GateInput const& input)
     if (!IsLowerHex(input.ConfigSealSha256, 64)
         || input.ConfigSealSha256 != input.RequestedSealSha256)
         return "chainwielder_checkpoint_seal_mismatch";
-    if (!IsLowerHex(input.ConfigSourceCommit, 40)
-        || input.ConfigSourceCommit != input.RequestedSourceCommit
-        || input.ConfigSourceCommit != input.BinarySourceCommit)
-        return "chainwielder_checkpoint_source_identity_mismatch";
+    BotControllerRouteHold::SourceIdentityComparison const sourceIdentity =
+        BotControllerRouteHold::CompareSourceIdentity(
+            input.ConfigSourceCommit, input.RequestedSourceCommit,
+            input.BinarySourceCommit);
+    if (!sourceIdentity.ConfiguredPresent || !sourceIdentity.RequestedPresent)
+        return "chainwielder_checkpoint_source_identity_missing";
+    if (!sourceIdentity.ConfiguredFormatValid
+        || !sourceIdentity.RequestedFormatValid)
+        return "chainwielder_checkpoint_source_identity_invalid";
+    if (!sourceIdentity.AuthoritiesMatch)
+        return "chainwielder_checkpoint_source_authority_mismatch";
+    if (!sourceIdentity.BinaryRevisionPresent)
+        return "chainwielder_checkpoint_git_revision_missing";
+    if (!sourceIdentity.BinaryRevisionFormatValid)
+        return "chainwielder_checkpoint_git_revision_invalid";
+    if (!sourceIdentity.BinaryRevisionMatchesSource)
+        return "chainwielder_checkpoint_git_revision_mismatch";
     return nullptr;
 }
 
