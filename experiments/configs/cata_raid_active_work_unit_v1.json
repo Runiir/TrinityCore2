@@ -1,93 +1,48 @@
 {
   "behavior_change": false,
-  "classification": "live_recurrence_quarantined",
-  "epoch_id": "composite_map669_launcher_replay_after_v115_20260831",
+  "classification": "failed",
+  "epoch_id": "refresh_exact_current_recurrence_bank_20260831",
   "evidence_contract_change": false,
-  "gate_state": "fixture_expansion_admitted_one_start_no_retry",
-  "immutable_input_commit": "e5fd11224d2ec38e270f37e061979357641db4f8",
-  "inherited_admission": {
-    "canonical_route_and_derived_runtime_config_required": true,
-    "fixture_commands": "20/20 returned zero",
-    "fixture_expansion_target_count": 4,
-    "full_bank_decision_sha256": "3ca28cc493d235cf820d16361c2644fb8e744cf458d70c677bf454dc09a3d7fe",
-    "full_bank_receipt_sha256": "2febca3542389c11c084553a6de8527e0a8d189078f2c74e0f054f98151ea388"
-  },
-  "next_action": "Use only the deterministic launcher for one map-669 fixture-expansion replay and stop at the first failed gate without retrying.",
-  "next_owner_skill": "raid-shard-architecture",
-  "next_work_unit": "shard:composite_map669_production_boundary_replay",
-  "observed_at_commit": "e5fd11224d2ec38e270f37e061979357641db4f8",
-  "owner_skill": "raid-shard-architecture",
+  "gate_state": "one_exact_current_recurrence_invocation_admitted",
+  "immutable_input_commit": "ae598236196c156cbcfdfc4bea6333f4b9db1e25",
+  "next_action": "Run the fixed 20-command recurrence bank once, independently verify the saved receipt, and evaluate fixture-expansion admission without source or live execution.",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "evidence:refresh_exact_current_recurrence_bank",
+  "observed_at_commit": "ae598236196c156cbcfdfc4bea6333f4b9db1e25",
+  "owner_skill": "raid-evidence-lifecycle",
   "program_scope": {
-    "acceptance_admitted": false,
     "authserver_start_admitted": false,
-    "database_provisioning_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": true,
-    "fixture_expansion_replay_admitted": true,
-    "fixture_prerequisite_build_authorized": true,
-    "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": false,
-    "worldserver_start_admitted": true
+    "configure_or_build_admitted": false,
+    "database_mutation_admitted": false,
+    "dvc_publication_admitted": false,
+    "recurrence_suite_invocation_admitted": true,
+    "source_change_admitted": false,
+    "worldserver_start_admitted": false
   },
-  "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": true,
-  "ready_for_live_verification": true,
+  "ready_for_bounded_repair": true,
+  "ready_for_fixture_expansion": false,
+  "ready_for_live_verification": false,
+  "required_postcondition": "One exact-current source-bound suite receipt and independently reproduced recurrence decision either admit the four production boundaries or name the exact failing fixture.",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "No source change. Compose and execute only the committed launcher plan, publish terminal evidence, verify remote reconstruction, and evict exact local raw data.",
+    "allowed_change": "No source change. Execute the fixed recurrence bank once and write only external receipt and decision artifacts before the next tracked handoff.",
     "forbidden": [
-      "hand-built configure, build, bundle, readback, or capture argv",
-      "source, runtime, fixture, gameplay, geometry, planner, class, encounter, or DPS edits",
-      "second worldserver start or any retry",
-      "authserver start, roster reprovisioning, teleport, or forced gameplay outcome",
-      "fixed 300-second raid timer"
-    ],
-    "requested_fixtures": [
-      {
-        "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
-        "requested_revision": 1
-      },
-      {
-        "fixture_id": "same_level_floor_observation_v1",
-        "requested_revision": 4
-      },
-      {
-        "fixture_id": "same_level_hazard_path_admission_v1",
-        "requested_revision": 5
-      },
-      {
-        "fixture_id": "same_level_native_path_proof_v1",
-        "requested_revision": 5
-      }
-    ],
-    "required_order": [
-      "verify clean descriptor HEAD and V115 handoff identity",
-      "materialize one fresh tracked-derived runtime-config receipt outside the worktree",
-      "compose and run the launcher prebuild plan",
-      "realize the postbuild plan from verified configure/build receipts and matching ELF",
-      "run atomic bundle, strict spellbook-aware readback, shard readback, and one completion-watchdog capture",
-      "publish terminal evidence, reconstruct remotely, verify hashes, and evict exact raw targets"
+      "source, fixture, runtime, gameplay, class, encounter, movement, geometry, or DPS edits",
+      "configure or build",
+      "worldserver or authserver start",
+      "database mutation",
+      "second recurrence-bank invocation"
     ]
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_launcher_live_authority_repair_handoff_v1.json",
-    "sha256": "dc8eaa4e61fc1c3c94c0ef48d27e1ccb0cfb5f7b2ce092c60d72d4a3c82460a0",
-    "source_commit": "e5fd11224d2ec38e270f37e061979357641db4f8",
-    "source_tree": "289845890d615777fccaa098dd5c8122c7b3ff38"
+    "path": "experiments/configs/cata_raid_map669_suite_receipt_stale_handoff_v1.json",
+    "sha256": "be8baad4416f74de09888417590a18f27f4740ad403b247109710c30b10995ed",
+    "source_commit": "ae598236196c156cbcfdfc4bea6333f4b9db1e25",
+    "source_tree": "336bcdff699e0b5ec9a8489aef82117e1ee7db0b"
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "completion_watchdog",
-    "terminal_edges": [
-      "all_four_production_boundaries_captured",
-      "production_boundary_incomplete",
-      "strict_roster_identity_failed",
-      "semantic_or_no_progress_stall",
-      "repeated_decision_terminal",
-      "death_loop_terminal",
-      "identity_or_runtime_config_mismatch",
-      "infrastructure_loss",
-      "explicit_interruption"
-    ]
+    "policy": "completion_watchdog"
   },
-  "work_unit": "shard:composite_map669_production_boundary_replay"
+  "work_unit": "evidence:refresh_exact_current_recurrence_bank"
 }

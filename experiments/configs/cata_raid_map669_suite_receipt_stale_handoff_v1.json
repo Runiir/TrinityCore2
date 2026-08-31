@@ -1,0 +1,58 @@
+{
+  "claim_ledger": {
+    "refuted": [
+      "the inherited recurrence suite receipt is admissible for the current clean source",
+      "the replay reached strict readback, worldserver, or gameplay"
+    ],
+    "unproven": [
+      "all four admitted production boundaries",
+      "spellbook identity across the next worldserver lifecycle",
+      "any Magmaw completion, DPS, HPS, or acceptance result"
+    ],
+    "verified": [
+      "stable live source authority, configure, build, and postbuild realization passed",
+      "the atomic bundle failed closed on suite_receipt_source_stale",
+      "no strict readback, worldserver, authserver, database mutation, or retry occurred"
+    ]
+  },
+  "classification": "atomic_bundle_suite_receipt_source_stale",
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_ae59823619_map669_suite_receipt_stale_20260831.dvc",
+    "dvc_pointer_sha256": "ba656e80f7ae1f1323ebe8297f1318479e0dc2ce2758a1a7eb373acc76f1f286",
+    "terminal_file": "terminal.json",
+    "terminal_file_sha256": "67b1dfc78895b11bd8ce849ebceecb9aa90b9d3ed90b2d0c8b1e3ce682f4da83"
+  },
+  "first_failed_gate": {
+    "reason": "suite_receipt_source_stale",
+    "stage": "atomic_prestart_bundle_create",
+    "terminal_edge": "prestart_bundle_failed_no_live_execution"
+  },
+  "next_work_unit": {
+    "authserver_start_maximum": 0,
+    "database_mutation_maximum": 0,
+    "id": "evidence:refresh_exact_current_recurrence_bank",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Run the fixed 20-command recurrence bank exactly once at the clean descriptor HEAD, verify its receipt independently, evaluate the recurrence ledger from that saved receipt, and admit a new single launcher-driven replay only if fixture expansion passes. Do not configure, build, start a server, or change source.",
+    "required_postcondition": "one exact-current source-bound suite receipt and byte-stable recurrence decision either admit the four production boundaries or identify the exact failing fixture",
+    "server_start_maximum": 0,
+    "suite_invocation_maximum": 1
+  },
+  "operations": {
+    "atomic_bundle_create_count": 1,
+    "authserver_start_count": 0,
+    "configure_count": 1,
+    "database_mutation_count": 0,
+    "retry_count": 0,
+    "strict_readback_count": 0,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 0
+  },
+  "owner_skill": "raid-shard-architecture",
+  "schema": "cata_raid_specialist_handoff_v1",
+  "source": {
+    "active_descriptor_sha256": "cfd10c7521b4f3deeef8eb6660f55cf48b614d4f8fa7ce80055574c6f9955335",
+    "commit": "ae598236196c156cbcfdfc4bea6333f4b9db1e25",
+    "tree": "336bcdff699e0b5ec9a8489aef82117e1ee7db0b"
+  },
+  "work_unit_id": "shard:composite_map669_production_boundary_replay"
+}
