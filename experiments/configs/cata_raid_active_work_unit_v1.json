@@ -1,46 +1,91 @@
 {
   "behavior_change": false,
-  "classification": "failed",
-  "epoch_id": "refresh_exact_current_recurrence_bank_after_head_repair_20260831",
+  "classification": "live_recurrence_quarantined",
+  "epoch_id": "stable_map669_exact_current_recurrence_and_replay_20260831",
   "evidence_contract_change": false,
-  "gate_state": "one_head_derived_recurrence_invocation_admitted",
-  "immutable_input_commit": "979e24d592dc6cc6a292c87876f447477c0f391e",
-  "next_action": "Run the fixed recurrence bank once with --source-identity HEAD and retain its internally verified fixture-expansion decision.",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:refresh_exact_current_recurrence_bank",
-  "observed_at_commit": "979e24d592dc6cc6a292c87876f447477c0f391e",
-  "owner_skill": "raid-evidence-lifecycle",
+  "gate_state": "exact_current_recurrence_then_one_start_no_commit_no_retry",
+  "immutable_input_commit": "e5fd11224d2ec38e270f37e061979357641db4f8",
+  "next_action": "At this clean descriptor HEAD, refresh the fixed recurrence bank with the HEAD authority token, then consume its external receipt immediately through one deterministic launcher replay without an intervening commit.",
+  "next_owner_skill": "raid-shard-architecture",
+  "next_work_unit": "shard:composite_map669_production_boundary_replay",
+  "observed_at_commit": "e5fd11224d2ec38e270f37e061979357641db4f8",
+  "owner_skill": "raid-shard-architecture",
   "program_scope": {
+    "acceptance_admitted": false,
     "authserver_start_admitted": false,
-    "configure_or_build_admitted": false,
-    "database_mutation_admitted": false,
-    "dvc_publication_admitted": false,
-    "recurrence_suite_invocation_admitted": true,
-    "source_change_admitted": false,
-    "worldserver_start_admitted": false
+    "database_provisioning_mutations_allowed": false,
+    "dvc_publication_required_after_terminal": true,
+    "exact_current_recurrence_invocation_admitted": true,
+    "fixture_expansion_replay_admitted": true,
+    "fixture_prerequisite_build_authorized": true,
+    "gameplay_canary_admitted": false,
+    "gameplay_mutations_allowed": false,
+    "worldserver_start_admitted": true
   },
-  "ready_for_bounded_repair": true,
-  "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": false,
+  "ready_for_bounded_repair": false,
+  "ready_for_fixture_expansion": true,
+  "ready_for_live_verification": true,
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "No source change. Execute one HEAD-derived recurrence invocation and write only external receipt and decision artifacts before the next tracked handoff.",
+    "allowed_change": "No source change after this descriptor commit. Produce the exact-current external recurrence receipt and decision, then compose and execute only the committed launcher plan. Publish terminal evidence, verify remote reconstruction, and evict exact local raw data.",
     "forbidden": [
+      "Git commit between recurrence refresh and bundle consumption",
       "hand-entered source commit hash",
-      "source, fixture, runtime, gameplay, class, encounter, movement, geometry, or DPS edits",
-      "configure, build, worldserver, authserver, database, or DVC action",
-      "second recurrence invocation"
+      "hand-built configure, build, bundle, readback, or capture argv",
+      "source, runtime, fixture, gameplay, geometry, planner, class, encounter, or DPS edits",
+      "second worldserver start or any replay retry",
+      "authserver start, roster reprovisioning, teleport, or forced gameplay outcome",
+      "fixed 300-second raid timer"
+    ],
+    "requested_fixtures": [
+      {
+        "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+        "requested_revision": 1
+      },
+      {
+        "fixture_id": "same_level_floor_observation_v1",
+        "requested_revision": 4
+      },
+      {
+        "fixture_id": "same_level_hazard_path_admission_v1",
+        "requested_revision": 5
+      },
+      {
+        "fixture_id": "same_level_native_path_proof_v1",
+        "requested_revision": 5
+      }
+    ],
+    "required_order": [
+      "verify clean stable live descriptor and launcher-repair handoff identity",
+      "run one fixed recurrence invocation with --source-identity HEAD and require fixture-expansion admission",
+      "materialize one fresh canonical route object and tracked-derived runtime-config receipt outside the worktree",
+      "compose and run the launcher prebuild plan",
+      "realize the postbuild plan from verified configure/build receipts and matching ELF",
+      "run atomic bundle, strict spellbook-aware readback, shard readback, and one completion-watchdog capture",
+      "publish terminal evidence, reconstruct remotely, verify hashes, and evict exact raw targets"
     ]
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_recurrence_head_authority_repair_handoff_v1.json",
-    "sha256": "358ba80bb0cf69d5d0c1823e1b8a5d798b4c18e336acc481eba796b42fb46fb3",
-    "source_commit": "979e24d592dc6cc6a292c87876f447477c0f391e",
-    "source_tree": "6ce0ab206f84b6285418dfd3f70844c48f95048d"
+    "path": "experiments/configs/cata_raid_launcher_live_authority_repair_handoff_v1.json",
+    "sha256": "dc8eaa4e61fc1c3c94c0ef48d27e1ccb0cfb5f7b2ce092c60d72d4a3c82460a0",
+    "source_commit": "e5fd11224d2ec38e270f37e061979357641db4f8",
+    "source_tree": "289845890d615777fccaa098dd5c8122c7b3ff38"
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "completion_watchdog"
+    "policy": "completion_watchdog",
+    "terminal_edges": [
+      "recurrence_fixture_failed",
+      "all_four_production_boundaries_captured",
+      "production_boundary_incomplete",
+      "strict_roster_identity_failed",
+      "semantic_or_no_progress_stall",
+      "repeated_decision_terminal",
+      "death_loop_terminal",
+      "identity_or_runtime_config_mismatch",
+      "infrastructure_loss",
+      "explicit_interruption"
+    ]
   },
-  "work_unit": "evidence:refresh_exact_current_recurrence_bank"
+  "work_unit": "shard:composite_map669_production_boundary_replay"
 }
