@@ -1,0 +1,61 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:map669_native_path_correlated_fixture_expansion",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "native_path_checkpoint_request_contract_prestart_failed",
+  "source": {
+    "commit": "765f38f42583650ff0f403f5e4bdf8ce88764313",
+    "tree": "f9e3ecd4742fc4749d96283711f0ee902faab5cc",
+    "active_descriptor_sha256": "6743f80efc116644ce631364d16c81c31de470bfaf92b9922c729b5b3978944e",
+    "build_receipt_sha256": "b6d9cef71f942fe0da48d96542e7f053b979f0a90a2d38b787fe692e003fc943",
+    "regression_suite_receipt_sha256": "e188e87068c8be2e700e3af84a9847326be98c753dba1e8b1d58d1a8e8717500",
+    "recurrence_decision_sha256": "62e5c9dc36d671b26a908f99872d1078afe051366fdbe2ef1bd87ff89cc9055e"
+  },
+  "first_failed_gate": {
+    "stage": "native_path_checkpoint_seal_creation",
+    "exception": "native_path_checkpoint_request_contract_mismatch",
+    "authoritative_target_ids": [
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "authoritative_requests": {
+      "same_level_hazard_path_admission_v1": "4_to_5",
+      "same_level_native_path_proof_v1": "4_to_5"
+    },
+    "stale_required_request": {
+      "fixture_id": "same_level_floor_observation_v1",
+      "revision": "3_to_4",
+      "current_state": "already_production_verified_not_pending"
+    }
+  },
+  "operations": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "database_mutation_count": 0,
+    "retry_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact descriptor build and all 22 source-bound recurrence commands pass",
+      "fixture expansion remains admitted for exactly the two pending same-level path fixtures",
+      "native_path_checkpoint_seal rejects that authoritative two-request decision because its hard-coded request contract also requires the already-closed floor fixture"
+    ],
+    "refuted": [
+      "the current native checkpoint can be sealed from the current authoritative recurrence decision",
+      "a worldserver or gameplay run began"
+    ],
+    "unproven": [
+      "the map-669 native checkpoint lifecycle",
+      "the two pending production-bound fixture revisions",
+      "the authority-off Magmaw shadow observation"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:repair_native_path_checkpoint_request_contract",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Repair the native checkpoint admission contract so it consumes the exact authoritative pending request set without resurrecting an already-verified fixture. Preserve exact target, revision, source, binary, route, profile, and seal binding; add deterministic negative tests for missing, extra, stale, and closed-fixture requests.",
+    "required_postcondition": "focused recurrence-admission and native-checkpoint tests pass, the exact current two-request decision seals and verifies, no gameplay code changes, no build, and no server start"
+  }
+}
