@@ -1,0 +1,47 @@
+{
+  "classification": "recurrence_source_identity_preflight_failed",
+  "claim_ledger": {
+    "refuted": [
+      "the exact-current recurrence bank executed"
+    ],
+    "unproven": [
+      "the current-source recurrence decision",
+      "all four admitted production boundaries",
+      "any Magmaw completion, DPS, HPS, or acceptance result"
+    ],
+    "verified": [
+      "the recurrence tool rejected the mismatched supplied source identity before executing a fixture",
+      "no receipt or decision file was written",
+      "no configure, build, server, database, DVC, or retry action occurred"
+    ]
+  },
+  "first_failed_gate": {
+    "cause": "the hand-entered full commit hash did not equal the current HEAD",
+    "reason": "source identity does not match current HEAD",
+    "stage": "recurrence_source_identity_preflight",
+    "terminal_edge": "preflight_failed_no_fixture_execution"
+  },
+  "next_work_unit": {
+    "id": "evidence:derive_recurrence_source_identity_from_head",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Add one explicit HEAD source-authority token to the recurrence CLI so it derives and records the exact clean current commit instead of requiring a copied hash. Cover matching HEAD, dirty worktree, and mismatched explicit hash. Do not run fixtures, configure, build, start servers, mutate the database, or use DVC.",
+    "required_postcondition": "the recurrence CLI accepts HEAD only for a clean worktree, resolves it to the exact commit stored in receipts and decisions, and retains fail-closed explicit-hash validation"
+  },
+  "operations": {
+    "authserver_start_count": 0,
+    "database_mutation_count": 0,
+    "dvc_mutation_count": 0,
+    "fixture_command_count": 0,
+    "recurrence_cli_preflight_count": 1,
+    "retry_count": 0,
+    "worldserver_start_count": 0
+  },
+  "owner_skill": "raid-evidence-lifecycle",
+  "schema": "cata_raid_specialist_handoff_v1",
+  "source": {
+    "active_descriptor_sha256": "94589544125510583856e7e790e7769967cf85b25fbef4a209ad4923c9a08cd3",
+    "commit": "5e3d16ef023be241c8b83592dcd96f399705873a",
+    "tree": "e0e43c544d84bd46ef6c40e3ca76d50c15019fe5"
+  },
+  "work_unit_id": "evidence:refresh_exact_current_recurrence_bank"
+}

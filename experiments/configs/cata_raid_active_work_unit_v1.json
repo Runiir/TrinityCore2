@@ -1,48 +1,51 @@
 {
   "behavior_change": false,
   "classification": "failed",
-  "epoch_id": "refresh_exact_current_recurrence_bank_20260831",
-  "evidence_contract_change": false,
-  "gate_state": "one_exact_current_recurrence_invocation_admitted",
-  "immutable_input_commit": "ae598236196c156cbcfdfc4bea6333f4b9db1e25",
-  "next_action": "Run the fixed 20-command recurrence bank once, independently verify the saved receipt, and evaluate fixture-expansion admission without source or live execution.",
+  "epoch_id": "derive_recurrence_source_identity_from_head_20260831",
+  "evidence_contract_change": true,
+  "gate_state": "bounded_recurrence_cli_repair_admitted",
+  "immutable_input_commit": "5e3d16ef023be241c8b83592dcd96f399705873a",
+  "next_action": "Add and test an explicit HEAD token that resolves to the clean current commit inside the recurrence tool.",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:refresh_exact_current_recurrence_bank",
-  "observed_at_commit": "ae598236196c156cbcfdfc4bea6333f4b9db1e25",
+  "next_work_unit": "evidence:derive_recurrence_source_identity_from_head",
+  "observed_at_commit": "5e3d16ef023be241c8b83592dcd96f399705873a",
   "owner_skill": "raid-evidence-lifecycle",
   "program_scope": {
     "authserver_start_admitted": false,
     "configure_or_build_admitted": false,
     "database_mutation_admitted": false,
     "dvc_publication_admitted": false,
-    "recurrence_suite_invocation_admitted": true,
-    "source_change_admitted": false,
+    "recurrence_fixture_execution_admitted": false,
+    "recurrence_tool_and_test_change_admitted": true,
     "worldserver_start_admitted": false
   },
   "ready_for_bounded_repair": true,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "required_postcondition": "One exact-current source-bound suite receipt and independently reproduced recurrence decision either admit the four production boundaries or name the exact failing fixture.",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "No source change. Execute the fixed recurrence bank once and write only external receipt and decision artifacts before the next tracked handoff.",
+    "allowed_changes": [
+      "tools/raid_program/blocker_recurrence_ledger.py",
+      "tests/test_blocker_recurrence_ledger.py",
+      "the repair handoff and next descriptor"
+    ],
     "forbidden": [
-      "source, fixture, runtime, gameplay, class, encounter, movement, geometry, or DPS edits",
+      "fixture execution",
       "configure or build",
       "worldserver or authserver start",
-      "database mutation",
-      "second recurrence-bank invocation"
+      "database or DVC mutation",
+      "gameplay, class, encounter, movement, geometry, or DPS changes"
     ]
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_map669_suite_receipt_stale_handoff_v1.json",
-    "sha256": "be8baad4416f74de09888417590a18f27f4740ad403b247109710c30b10995ed",
-    "source_commit": "ae598236196c156cbcfdfc4bea6333f4b9db1e25",
-    "source_tree": "336bcdff699e0b5ec9a8489aef82117e1ee7db0b"
+    "path": "experiments/configs/cata_raid_recurrence_source_identity_preflight_failed_handoff_v1.json",
+    "sha256": "15c09a869e4eb60fadc911b213390b6695776cdea0d47cc90280d1c12a908562",
+    "source_commit": "5e3d16ef023be241c8b83592dcd96f399705873a",
+    "source_tree": "e0e43c544d84bd46ef6c40e3ca76d50c15019fe5"
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog"
   },
-  "work_unit": "evidence:refresh_exact_current_recurrence_bank"
+  "work_unit": "evidence:derive_recurrence_source_identity_from_head"
 }
