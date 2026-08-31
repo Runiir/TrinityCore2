@@ -1,0 +1,82 @@
+{
+  "schema": "cata_raid_architecture_handoff_v1",
+  "handoff_id": "magmaw_shadow_authority_off_live_observation_20260901",
+  "source_commit": "7f5ad486367118e0f5dd520ecd47b6afc74d9472",
+  "source_tree": "060d679ff405464d0abb9b2514fdb179b431d750",
+  "classification": "implementation_pending_live_verification",
+  "behavior_authority": "legacy_only",
+  "verified": {
+    "verifier_commit": "7f5ad486367118e0f5dd520ecd47b6afc74d9472",
+    "focused_and_capture_integration_tests_passed": 185,
+    "independent_review": "go",
+    "shadow_candidate_execution_enabled": false
+  },
+  "first_broken_edge": {
+    "component": "authority-off live transfer-lane observation",
+    "finding": "The deterministic verifier and causal telemetry are ready, but no immutable live capture has exercised and verified one complete two-baiter transfer-lane episode under legacy gameplay authority.",
+    "effect": "Shadow authority cannot be considered for a default-off cutover until live evidence proves stable task identity, intent equivalence, exact native receipt joins, and physical progress for both baiters.",
+    "confidence": "high"
+  },
+  "next_phase": {
+    "work_unit": "evidence:magmaw_shadow_authority_off_live_observation",
+    "owner_skill": "raid-evidence-lifecycle",
+    "objective": "Run one normal isolated 10N Magmaw completion-watchdog capture with legacy-only authority, finalize normalized evidence, evaluate it with the reviewed verifier, publish compact evidence through DVC, and clean up the shard.",
+    "behavior_cutover_allowed": false
+  },
+  "execution_contract": {
+    "scenario": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+    "bot_pool": "blackwing_descent_10n_magmaw_diagnostic",
+    "raid_size": 10,
+    "difficulty": "normal",
+    "server_mode": "isolated_autonomous_worldserver",
+    "capture_path": "normal_gameplay_canary",
+    "fixture_expansion_replay": false,
+    "chainwielder_prestart_bundle": false,
+    "fixed_success_timer_seconds": null,
+    "watchdog": "generated_completion_watchdog_run_plan",
+    "compiler_jobs": 8
+  },
+  "required_sequence": [
+    "build the exact descriptor commit and retain a compact build receipt",
+    "apply canonical validation provisioning for only the isolated Magmaw shard",
+    "verify provisioning and frozen-roster readback before launch",
+    "run gameplay-canary recurrence admission",
+    "start the normal capture controller without fixture-expansion replay",
+    "poll at the generated completion-watchdog heartbeat until a truthful terminal edge",
+    "finalize and independently demultiplex normalized schema-v2 evidence",
+    "run verify_magmaw_shadow_observation.py over the immutable normalized JSONL",
+    "publish compact receipts and DVC-backed raw evidence only after identity and demux gates pass",
+    "stop the worldserver, clean database leases and temporary runtime files, and evict local raw data after verified DVC push"
+  ],
+  "pass_contract": [
+    "the capture is exact-build, exact-profile, exact-roster, exact-attempt, exact-route, and identity-bound",
+    "legacy remains the only gameplay authority and no shadow proposal reaches native execution",
+    "one exact Magmaw lifecycle scope contains a complete transfer-lane episode with the same ordered fire-mage and hunter assignment on every active sample",
+    "both task histories are running, make semantic distance progress, and succeed without failed or aborted terminal states",
+    "all accumulated eligible shadow-versus-legacy comparisons are equivalent with stable actor, generation, keys, and immutable destination",
+    "each selected legacy candidate joins to an exact native launch receipt for the same actor and lifecycle scope",
+    "later receipt samples prove a strictly decreasing endpoint distance for both actors",
+    "the reviewed verifier returns pass and the capture finalizer, demux, forbidden-assistance, cleanup, and DVC publication gates pass"
+  ],
+  "terminal_contract": {
+    "pass": "The verifier returns pass after a complete two-baiter episode and all evidence lifecycle gates pass.",
+    "not_exercised": "The run terminates truthfully but does not contain a complete two-baiter transfer-lane episode or eligible comparisons; do not tune gameplay and route a new bounded observation only after inspecting why the mechanic was not exercised.",
+    "fail": "Any divergence, ambiguity, assignment drift, task failure, receipt mismatch, lack of numeric progress, gameplay watchdog failure, infrastructure loss, identity failure, or publication failure blocks cutover.",
+    "no_clear_requirement": "This observation gate measures the transfer-lane slice. A Magmaw kill is useful progression evidence but is not allowed to hide a verifier failure or a non-exercised episode."
+  },
+  "forbidden": [
+    "changing C or C++ gameplay code, encounter policy, class rotations, movement, geometry, arbitration, priorities, assignments, or native planner tolerances",
+    "enabling shadow execution or accepting a shadow-only movement",
+    "using chainwielder_prestart_bundle, fixture-expansion replay, synthetic trace injection, GM assistance, teleport, invulnerability, threat assistance, or direct boss pull",
+    "using a fixed raid success timer or treating an emergency wall-clock cap as success",
+    "accepting action submission, the improved boolean, approximate timestamps, or approximate actor joins as physical progress",
+    "keeping duplicated raw logs, build trees, database snapshots, or unpushed generated evidence on local disk"
+  ],
+  "promotion_gate": {
+    "next_work_unit": "runtime:magmaw_transfer_lane_default_off_authority_selector",
+    "required_evidence": "A reviewed verifier pass from one immutable authority-off live episode plus clean build, provisioning, identity, demux, cleanup, forbidden-assistance, and DVC publication receipts.",
+    "cutover_default": "legacy",
+    "shadow_only_execution_allowed": false
+  }
+}

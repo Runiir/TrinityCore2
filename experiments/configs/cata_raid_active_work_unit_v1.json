@@ -1,67 +1,74 @@
 {
   "behavior_change": false,
   "boss": "magmaw",
-  "classification": "failed",
-  "epoch_id": "magmaw_shadow_observation_gate_verifier_20260901",
-  "evidence_contract_change": true,
-  "gate_state": "deterministic_observation_verifier_required",
-  "next_action": "Implement and test one fail-closed compact verifier for a complete two-baiter authority-off transfer-lane episode. Do not start a server or change gameplay code.",
+  "classification": "implementation_pending_live_verification",
+  "epoch_id": "magmaw_shadow_authority_off_live_observation_20260901",
+  "evidence_contract_change": false,
+  "gate_state": "authority_off_live_observation_required",
+  "next_action": "Run one normal isolated Magmaw 10N completion-watchdog capture under legacy-only authority, verify the complete two-baiter episode with the reviewed compact verifier, publish evidence through DVC, and clean up. Do not change gameplay code.",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:magmaw_shadow_observation_gate_verifier",
-  "observed_at_commit": "a93b3bc3df1324731c49d2a027206c4bb819d98f",
-  "immutable_input_commit": "a93b3bc3df1324731c49d2a027206c4bb819d98f",
+  "next_work_unit": "evidence:magmaw_shadow_authority_off_live_observation",
+  "observed_at_commit": "7f5ad486367118e0f5dd520ecd47b6afc74d9472",
+  "immutable_input_commit": "7f5ad486367118e0f5dd520ecd47b6afc74d9472",
   "owner_skill": "raid-evidence-lifecycle",
   "program_scope": {
     "acceptance_admitted": false,
     "authserver_start_admitted": false,
-    "database_provisioning_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": false,
+    "database_provisioning_mutations_allowed": true,
+    "dvc_publication_required_after_terminal": true,
     "fixture_expansion_replay_admitted": false,
     "fixture_prerequisite_build_authorized": false,
-    "gameplay_canary_admitted": false,
+    "gameplay_canary_admitted": true,
     "gameplay_mutations_allowed": false,
-    "worldserver_start_admitted": false
+    "worldserver_start_admitted": true
   },
   "raid": "blackwing_descent",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "One deterministic Python verifier and focused synthetic fixtures that consume normalized status, diagnosis, trace, and native movement receipt rows and emit a compact pass, fail, or not_exercised JSON summary for an exact two-baiter Magmaw transfer-lane episode.",
+    "allowed_change": "Build and operate one isolated legacy-only Magmaw 10N authority-off observation using existing provisioning, recurrence admission, completion-watchdog capture, evidence demux, verifier, DVC publication, cleanup, and eviction tooling. Only compact run metadata and receipts may be added to Git.",
     "forbidden": [
-      "changing C or C++ runtime code, encounter behavior, class rotations, movement, arbitration, priorities, geometry, assignments, or shadow authority",
-      "starting authserver, worldserver, a live shard, fixture replay, or gameplay canary",
-      "mutating database or provisioning state",
-      "accepting a one-baiter episode, action submission without physical progress, approximate timestamp or coordinate joins, or missing streams",
-      "copying raw event streams into the compact output",
-      "changing capture scheduling or building authority cutover logic"
+      "changing gameplay code, encounter strategy, class behavior, movement, arbitration, assignments, geometry, priorities, planner tolerances, or shadow authority",
+      "running fixture-expansion replay or chainwielder_prestart_bundle",
+      "using GM or forbidden assistance, synthetic trace injection, direct boss pull, teleport, invulnerability, or threat assistance",
+      "accepting a non-exercised or failed verifier result as a pass",
+      "using a fixed success timer for the raid run",
+      "retaining duplicated raw evidence locally after verified DVC publication"
     ],
     "required_postconditions": [
-      "the verifier has explicit pass, fail, and not_exercised outcomes and fails closed on malformed, mixed-scope, ambiguous, or incomplete input",
-      "a pass requires two assigned baiters, exact stable identities and destinations, only equivalent eligible comparisons, exact legacy-key-to-native-receipt joins, and later semantic progress or arrival for both actors",
-      "transient divergence or ambiguity remains visible through the accumulated episode summary and fails even if a later sample is equivalent",
-      "the verifier can evaluate retained retired summaries after the shared shadow becomes inactive",
-      "synthetic fixtures cover the full handoff test matrix",
-      "the output is one compact deterministic JSON document with no raw-event copy",
-      "Python runs through pixi and repository tests remain green"
+      "the exact descriptor commit is built with eight compiler jobs and the build receipt is retained",
+      "canonical provisioning and frozen-roster readback pass before worldserver launch",
+      "the normal gameplay-canary path runs under the generated completion watchdog and legacy-only gameplay authority",
+      "normalized schema-v2 rows pass canonical identity, actor binding, trace transport, and evidence-demux gates",
+      "verify_magmaw_shadow_observation.py returns pass only for a complete two-baiter episode with exact receipt joins and numeric multi-tick progress",
+      "the terminal outcome is recorded truthfully as pass, fail, or not_exercised",
+      "compact evidence is committed, generated evidence is DVC-pushed, the server and provisioning leases are cleaned, and redundant local raw data is evicted"
     ]
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_shadow_observation_gate_verifier_handoff_v1.json",
-    "sha256": "ee723ccc2b5b54e5d7eff4112b6006529ca7339c8b559a2a726317736f6f389a",
-    "source_commit": "a93b3bc3df1324731c49d2a027206c4bb819d98f",
-    "source_tree": "35ce29624ec7d314c4b81f912453b940d81b1bc7"
+    "path": "experiments/configs/cata_raid_magmaw_shadow_authority_off_live_observation_handoff_v1.json",
+    "sha256": "95f125260e8483e9bbdae80a42dbfcb387a30b7e28ad2c509d224bff0d455dc1",
+    "source_commit": "7f5ad486367118e0f5dd520ecd47b6afc74d9472",
+    "source_tree": "060d679ff405464d0abb9b2514fdb179b431d750"
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "synthetic_evidence_gate_no_live_run",
+    "repair_policy": "one_authority_off_live_observation_then_terminal_review",
     "terminal_edges": [
-      "verifier_matrix_verified",
-      "fixture_failure",
-      "schema_failure",
-      "scope_violation",
+      "verifier_pass",
+      "verifier_fail",
+      "verifier_not_exercised",
+      "normal_clear",
+      "monotonic_no_progress",
+      "semantic_stall",
+      "repeated_decisions",
+      "excessive_death_loop",
+      "infrastructure_loss",
+      "identity_or_demux_failure",
+      "publication_or_cleanup_failure",
       "explicit_interruption"
     ]
   },
   "mode": "10N",
-  "work_unit": "evidence:magmaw_shadow_observation_gate_verifier"
+  "work_unit": "evidence:magmaw_shadow_authority_off_live_observation"
 }
