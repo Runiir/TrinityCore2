@@ -397,23 +397,23 @@ static Blackboard Board()
     board.ObservedAtMs = 1000;
     board.Players = {
         Player(30, "fire_mage", { 0.0f, -8.0f, 210.0f }),
-        Player(20, "fire_mage", { -24.0f, -30.0f, 210.0f }),
+        Player(20, "fire_mage", { -24.0f, -30.0f, 211.313324f }),
         Player(40, "marksmanship_hunter", { 0.0f, -8.0f, 210.0f }),
-        Player(10, "marksmanship_hunter", { -24.0f, -30.0f, 210.0f }),
+        Player(10, "marksmanship_hunter", { -24.0f, -30.0f, 211.581f }),
         Player(5, "affliction_warlock", { 0.0f, -8.0f, 210.0f }) };
-    board.Hostiles = { Parasite(900, { 0.0f, -60.0f, 210.0f }) };
+    board.Hostiles = { Parasite(900, { 0.0f, -60.0f, 211.815f }) };
     return board;
 }
 
 static void AssertSafeRoute(Vector3 actor, Vector3 support,
     MagmawParasiteRoutePlan const& route,
-    std::vector<Vector3> const& parasites)
+    std::vector<Vector3> const& parasites, float declaredZ)
 {
     Vector3 previous = actor;
     for (uint8 index = 0; index < route.PointCount; ++index)
     {
         Vector3 const& point = route.Points[index];
-        assert(point.Z == actor.Z);
+        assert(point.Z == declaredZ);
         assert(MagmawParasiteRoute::PointClearance(point, parasites) >= 10.0f);
         assert(MagmawParasiteRoute::SegmentClearance(previous, point,
             parasites) >= 10.0f);
@@ -442,9 +442,27 @@ int main()
     board.Players[3].Alive = true;
 
     Vector3 const actor = board.Players[1].Position;
-    Vector3 const support{ 0.0f, -8.0f, 999.0f };
-    Vector3 const destination{ 24.0f, -30.0f, 999.0f };
+    Vector3 const support{ 0.0f, -8.0f, 211.815f };
+    Vector3 const destination{ 24.0f, -30.0f, 211.815f };
     std::vector<Vector3> parasites{ board.Hostiles[0].Position };
+
+    // A route keeps the declared navigation-floor Z. It may tolerate the
+    // actor's small on-terrain offset, but invalid and cross-floor anchors do
+    // not become same-level merely by inheriting the actor's transient Z.
+    Vector3 invalidDestination = destination;
+    invalidDestination.Z = std::numeric_limits<float>::quiet_NaN();
+    assert(!MagmawParasiteRoute::Build(actor, support, invalidDestination,
+        parasites));
+    Vector3 crossFloorDestination = destination;
+    crossFloorDestination.Z = actor.Z
+        + BotWorldMovement::NativeFloorTolerance + 0.01f;
+    assert(!MagmawParasiteRoute::Build(actor, support, crossFloorDestination,
+        parasites));
+    Vector3 crossFloorSupport = support;
+    crossFloorSupport.Z = actor.Z
+        - BotWorldMovement::NativeFloorTolerance - 0.01f;
+    assert(!MagmawParasiteRoute::Build(actor, crossFloorSupport, destination,
+        parasites));
 
     // Fail-before counterexample: endpoint clearance alone accepted this
     // chord. Production admission now proves every point and full segment.
@@ -453,7 +471,7 @@ int main()
     assert(direct && direct->PointCount == 1);
     assert(!direct->UsesFarPerimeterArc);
     assert(direct->AdmittedClearance == 16.0f);
-    AssertSafeRoute(actor, support, *direct, parasites);
+    AssertSafeRoute(actor, support, *direct, parasites, destination.Z);
 
     MagmawParasiteCrashObstacle crash;
     crash.Active = true;
@@ -466,7 +484,7 @@ int main()
     assert(arc && arc->UsesFarPerimeterArc && arc->PointCount == 3);
     assert(MagmawParasiteRoute::DistanceToSegment(crash.Center, actor,
         destination) < crash.Radius);
-    AssertSafeRoute(actor, support, *arc, parasites);
+    AssertSafeRoute(actor, support, *arc, parasites, destination.Z);
     Vector3 previous = actor;
     for (uint8 index = 0; index < arc->PointCount; ++index)
     {
@@ -482,6 +500,16 @@ int main()
         board.Players[1], anchors, retained, 900, 2, crash);
     assert(firstPoint && retained.MageParasiteRoute.UsesFarPerimeterArc);
     MagmawParasiteRoutePlan const retainedArc = retained.MageParasiteRoute;
+    auto hunterPoint = MagmawParasitePolicy::EnsureSafeParasiteRoute(board,
+        board.Players[3], anchors, retained, 900, 2, crash);
+    assert(hunterPoint && !retained.HunterParasiteRoute.Empty());
+    assert(retained.Destination.Z == destination.Z);
+    for (uint8 index = 0; index < retained.MageParasiteRoute.PointCount;
+        ++index)
+        assert(retained.MageParasiteRoute.Points[index].Z == destination.Z);
+    for (uint8 index = 0; index < retained.HunterParasiteRoute.PointCount;
+        ++index)
+        assert(retained.HunterParasiteRoute.Points[index].Z == destination.Z);
 
     // GUID churn is not a route generation: direction, destination, and all
     // retained arc points remain byte-for-byte stable.
@@ -498,7 +526,7 @@ int main()
             == retainedArc.Points[index].X);
         assert(retained.MageParasiteRoute.Points[index].Y
             == retainedArc.Points[index].Y);
-        assert(retained.MageParasiteRoute.Points[index].Z == actor.Z);
+        assert(retained.MageParasiteRoute.Points[index].Z == destination.Z);
     }
     assert(!MagmawParasitePolicy::EnsureSafeParasiteRoute(board,
         board.Players[4], anchors, retained, 1, 2, crash));

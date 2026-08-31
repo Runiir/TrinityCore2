@@ -2,6 +2,7 @@
 #define TRINITY_BOT_MAGMAW_PARASITE_ROUTE_H
 
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/BotWorldPopulationMgrNativeFloor.h"
 
 #include <algorithm>
 #include <array>
@@ -178,29 +179,29 @@ public:
         std::optional<MagmawParasiteCrashObstacle> const& crash = std::nullopt,
         float supportClearance = 20.0f)
     {
-        if (!Finite(actor) || !Finite(support) || !Finite(destination)
+        if (!Finite(actor) || !SameNavigationFloor(actor, support)
+            || !SameNavigationFloor(actor, destination)
             || supportClearance <= 0.0f)
             return std::nullopt;
 
-        Vector3 floorDestination = destination;
-        floorDestination.Z = actor.Z;
+        Vector3 const declaredDestination = destination;
         for (float clearance : { PreferredClearance, MinimumClearance })
         {
             bool const crashIntersects = CrashIntersects(actor,
-                floorDestination, crash);
+                declaredDestination, crash);
             if (!crashIntersects
-                && SegmentAdmissible(actor, floorDestination, support,
+                && SegmentAdmissible(actor, declaredDestination, support,
                     parasites, clearance, supportClearance))
             {
                 MagmawParasiteRoutePlan route;
-                route.Points[0] = floorDestination;
+                route.Points[0] = declaredDestination;
                 route.PointCount = 1;
                 route.AdmittedClearance = clearance;
                 return route;
             }
 
             std::optional<MagmawParasiteRoutePlan> arc = BuildFarArc(actor,
-                support, floorDestination, parasites, crash, clearance,
+                support, declaredDestination, parasites, crash, clearance,
                 supportClearance);
             if (arc)
                 return arc;
@@ -219,6 +220,13 @@ private:
     {
         return std::isfinite(point.X) && std::isfinite(point.Y)
             && std::isfinite(point.Z);
+    }
+
+    static bool SameNavigationFloor(Vector3 const& actor,
+        Vector3 const& point)
+    {
+        return Finite(point) && std::fabs(point.Z - actor.Z)
+            <= BotWorldMovement::NativeFloorTolerance;
     }
 
     static bool CrashIntersects(Vector3 const& start, Vector3 const& end,
@@ -273,7 +281,7 @@ private:
         for (uint8 index = 0; index < route.PointCount; ++index)
         {
             Vector3 const& point = route.Points[index];
-            if (point.Z != actor.Z
+            if (!SameNavigationFloor(actor, point)
                 || !SegmentAdmissible(previous, point, support, parasites,
                     clearance, supportClearance))
                 return false;
@@ -328,9 +336,11 @@ private:
         }
 
         float const positiveSupportDistance = Distance2d(support, {
-            blocker.Center.X + normalX, blocker.Center.Y + normalY, actor.Z });
+            blocker.Center.X + normalX, blocker.Center.Y + normalY,
+            destination.Z });
         float const negativeSupportDistance = Distance2d(support, {
-            blocker.Center.X - normalX, blocker.Center.Y - normalY, actor.Z });
+            blocker.Center.X - normalX, blocker.Center.Y - normalY,
+            destination.Z });
         std::array<float, 2> sides = positiveSupportDistance
                 >= negativeSupportDistance
             ? std::array<float, 2>{ 1.0f, -1.0f }
@@ -347,15 +357,14 @@ private:
                         + normalX * side * perimeter,
                     blocker.Center.Y - dy * perimeter
                         + normalY * side * perimeter,
-                    actor.Z };
+                    destination.Z };
                 route.Points[1] = {
                     blocker.Center.X + dx * perimeter
                         + normalX * side * perimeter,
                     blocker.Center.Y + dy * perimeter
                         + normalY * side * perimeter,
-                    actor.Z };
+                    destination.Z };
                 route.Points[2] = destination;
-                route.Points[2].Z = actor.Z;
                 route.PointCount = 3;
                 route.AdmittedClearance = clearance;
                 route.UsesFarPerimeterArc = true;
