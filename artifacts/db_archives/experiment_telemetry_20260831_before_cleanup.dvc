@@ -1,0 +1,6 @@
+outs:
+- md5: 25ae447aa1e327954339477d91ee96da.dir
+  size: 171368385
+  nfiles: 2
+  hash: md5
+  path: experiment_telemetry_20260831_before_cleanup
