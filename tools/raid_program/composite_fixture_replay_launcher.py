@@ -67,6 +67,23 @@ EXPECTED_REQUIRED_POSTCONDITION = (
     "atomic bundle inputs, spellbook-aware strict verifier, and no-retry "
     "completion-watchdog capture command"
 )
+LIVE_WORK_UNIT = "shard:composite_map669_production_boundary_replay_v114"
+LIVE_HANDOFF_WORK_UNIT = EXPECTED_WORK_UNIT
+LIVE_HANDOFF_PATH = (
+    "experiments/configs/cata_raid_v113_deterministic_launcher_review_handoff_v114.json"
+)
+LIVE_HANDOFF_CLASSIFICATION = "deterministic_composite_replay_launcher_passed"
+LIVE_SOURCE_COMMIT = "7f6a5e40e6455d28b48618ed1275d9c0a5585ee0"
+LIVE_SOURCE_TREE = "b02e1bf3f12c674adb03b6c30215f2b6868e4ca9"
+LIVE_REQUIRED_ACTION = (
+    "Use only the committed deterministic launcher to compose, run, realize, and "
+    "run one map-669 fixture-expansion replay. Stop at the first failed gate and "
+    "do not retry."
+)
+LIVE_REQUIRED_POSTCONDITION = (
+    "one worldserver start either captures all four admitted production boundaries "
+    "or returns the exact first failed gate with immutable evidence"
+)
 POLICY_RELATIVE_PATH = Path(
     "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json"
 )
@@ -183,14 +200,38 @@ def _source_authority(
         or descriptor.get("schema") != "cata_raid_active_work_unit_v1"
     ):
         raise ReplayPlanError("active_descriptor_identity_invalid")
+    if expected_work_unit == EXPECTED_WORK_UNIT:
+        descriptor_owner = "raid-evidence-lifecycle"
+        descriptor_classification = "prestart_command_composition_repair_required"
+        handoff_path_expected = EXPECTED_HANDOFF_PATH
+        handoff_work_unit = EXPECTED_HANDOFF_WORK_UNIT
+        handoff_owner = "raid-shard-architecture"
+        handoff_classification = EXPECTED_HANDOFF_CLASSIFICATION
+        source_commit_expected = EXPECTED_V112_COMMIT
+        source_tree_expected = EXPECTED_V112_TREE
+        next_owner = "raid-evidence-lifecycle"
+        required_action = EXPECTED_REQUIRED_ACTION
+        required_postcondition = EXPECTED_REQUIRED_POSTCONDITION
+    elif expected_work_unit == LIVE_WORK_UNIT:
+        descriptor_owner = "raid-shard-architecture"
+        descriptor_classification = "deterministic_launcher_live_replay_admitted"
+        handoff_path_expected = LIVE_HANDOFF_PATH
+        handoff_work_unit = LIVE_HANDOFF_WORK_UNIT
+        handoff_owner = "raid-evidence-lifecycle"
+        handoff_classification = LIVE_HANDOFF_CLASSIFICATION
+        source_commit_expected = LIVE_SOURCE_COMMIT
+        source_tree_expected = LIVE_SOURCE_TREE
+        next_owner = "raid-shard-architecture"
+        required_action = LIVE_REQUIRED_ACTION
+        required_postcondition = LIVE_REQUIRED_POSTCONDITION
+    else:
+        raise ReplayPlanError("active_work_unit_mismatch")
     if (
-        expected_work_unit != EXPECTED_WORK_UNIT
-        or descriptor.get("work_unit") != EXPECTED_WORK_UNIT
-        or descriptor.get("owner_skill") != "raid-evidence-lifecycle"
-        or descriptor.get("classification")
-        != "prestart_command_composition_repair_required"
-        or descriptor.get("next_work_unit") != EXPECTED_WORK_UNIT
-        or descriptor.get("next_owner_skill") != "raid-evidence-lifecycle"
+        descriptor.get("work_unit") != expected_work_unit
+        or descriptor.get("owner_skill") != descriptor_owner
+        or descriptor.get("classification") != descriptor_classification
+        or descriptor.get("next_work_unit") != expected_work_unit
+        or descriptor.get("next_owner_skill") != descriptor_owner
     ):
         raise ReplayPlanError("active_work_unit_mismatch")
     source_handoff = descriptor.get("source_handoff")
@@ -198,7 +239,7 @@ def _source_authority(
         raise ReplayPlanError("source_handoff_identity_invalid")
     handoff_relative = Path(str(source_handoff.get("path") or ""))
     if (
-        handoff_relative.as_posix() != EXPECTED_HANDOFF_PATH
+        handoff_relative.as_posix() != handoff_path_expected
         or handoff_relative.is_absolute()
         or ".." in handoff_relative.parts
     ):
@@ -224,18 +265,18 @@ def _source_authority(
         or not isinstance(handoff_source, dict)
         or not isinstance(next_work_unit, dict)
         or handoff.get("schema") != "cata_raid_specialist_handoff_v1"
-        or handoff.get("work_unit_id") != EXPECTED_HANDOFF_WORK_UNIT
-        or handoff.get("owner_skill") != "raid-shard-architecture"
-        or handoff.get("classification") != EXPECTED_HANDOFF_CLASSIFICATION
-        or handoff_source.get("commit") != EXPECTED_V112_COMMIT
-        or handoff_source.get("tree") != EXPECTED_V112_TREE
-        or source_handoff.get("source_commit") != EXPECTED_V112_COMMIT
-        or source_handoff.get("source_tree") != EXPECTED_V112_TREE
-        or next_work_unit.get("id") != EXPECTED_WORK_UNIT
-        or next_work_unit.get("owner_skill") != "raid-evidence-lifecycle"
-        or next_work_unit.get("required_action") != EXPECTED_REQUIRED_ACTION
+        or handoff.get("work_unit_id") != handoff_work_unit
+        or handoff.get("owner_skill") != handoff_owner
+        or handoff.get("classification") != handoff_classification
+        or handoff_source.get("commit") != source_commit_expected
+        or handoff_source.get("tree") != source_tree_expected
+        or source_handoff.get("source_commit") != source_commit_expected
+        or source_handoff.get("source_tree") != source_tree_expected
+        or next_work_unit.get("id") != expected_work_unit
+        or next_work_unit.get("owner_skill") != next_owner
+        or next_work_unit.get("required_action") != required_action
         or next_work_unit.get("required_postcondition")
-        != EXPECTED_REQUIRED_POSTCONDITION
+        != required_postcondition
         or descriptor.get("observed_at_commit")
         != source_handoff.get("source_commit")
         or descriptor.get("immutable_input_commit")
@@ -375,7 +416,7 @@ def _request_context(
     else:
         raise ReplayPlanError("run_root_must_be_external")
     expected_work_unit = request["expected_work_unit"]
-    if expected_work_unit != EXPECTED_WORK_UNIT:
+    if expected_work_unit not in {EXPECTED_WORK_UNIT, LIVE_WORK_UNIT}:
         raise ReplayPlanError("expected_work_unit_invalid")
     authorities = request["runtime_config_authorities"]
     if authorities != [TRACKED_DERIVED_AUTHORITY]:

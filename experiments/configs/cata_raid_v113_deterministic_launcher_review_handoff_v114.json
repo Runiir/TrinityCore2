@@ -1,0 +1,47 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:deterministic_composite_fixture_replay_launcher_v113",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "deterministic_composite_replay_launcher_passed",
+  "source": {
+    "commit": "7f6a5e40e6455d28b48618ed1275d9c0a5585ee0",
+    "tree": "b02e1bf3f12c674adb03b6c30215f2b6868e4ca9"
+  },
+  "verified": {
+    "focused_tests": "61/61 passed",
+    "independent_review": "PASS",
+    "configure_child_sha256": "be70ed356d98ec9b6b158e6237ffb8a00fe0ab7d125862735f2df2e1e85c5d5f",
+    "build_child_sha256": "852873daa29036c72e1d920be4d0669835fde59faa0cd9fb00b5ae8627f53ecc",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "capture_contract": "exact verified bundle argv with completion watchdog and no fixed raid timer",
+    "dynamic_boundary": "postbuild realization requires independently verified configure and build receipts plus matching ELF",
+    "external_execution_count": 0,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "database_mutation_count": 0,
+    "dvc_mutation_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "hand-built configure, build, authority, bundle, readback, and capture argv are replaced by typed plans",
+      "prebuild and postbuild plans bind exact argv and cwd and reject output reuse",
+      "the complete capture argv is reconstructed byte-for-byte from the verified atomic bundle",
+      "the tracked-derived runtime-config authority is the only admitted selector"
+    ],
+    "unproven": [
+      "the four admitted map-669 production boundaries",
+      "spellbook identity across the next worldserver lifecycle",
+      "any Magmaw clear, DPS, HPS, or gameplay acceptance result"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:composite_map669_production_boundary_replay_v114",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Use only the committed deterministic launcher to compose, run, realize, and run one map-669 fixture-expansion replay. Stop at the first failed gate and do not retry.",
+    "required_postcondition": "one worldserver start either captures all four admitted production boundaries or returns the exact first failed gate with immutable evidence",
+    "worldserver_start_maximum": 1,
+    "authserver_start_maximum": 0,
+    "retry_count_maximum": 0
+  }
+}
