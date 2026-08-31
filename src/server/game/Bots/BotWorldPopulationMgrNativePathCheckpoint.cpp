@@ -3,12 +3,15 @@
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrNativeFloor.h"
+#include "GameTime.h"
 #include "GitRevision.h"
 #include "Map.h"
 #include "Player.h"
 
+#include <chrono>
 #include <cmath>
 #include <sstream>
+#include <string>
 
 namespace
 {
@@ -18,6 +21,12 @@ using BotNativePathCheckpoint::Stage;
 using BotNativePathCheckpoint::State;
 
 constexpr float EndpointTolerance = 0.25f;
+
+uint64 NowMs()
+{
+    return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
+        GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
+}
 
 bool Near(float left, float right, float tolerance = EndpointTolerance)
 {
@@ -124,6 +133,7 @@ std::string BotWorldPopulationMgr::ArmNativePathCheckpointForCohort(
     State& checkpoint = Cohort().NativePathCheckpoint;
     BotControllerRouteHold::State& hold =
         Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
+    std::string const nativeRevisionHash = GitRevision::GetHash();
     bool const configured = Cohort().Config.ValidationRouteEnable
         && Cohort().Config.NativePathCheckpointEnable
         && Cohort().Config.NativePathCheckpointFixtureId
@@ -133,8 +143,8 @@ std::string BotWorldPopulationMgr::ArmNativePathCheckpointForCohort(
         && Cohort().Config.NativePathCheckpointSourceCommit == sourceCommit
         && BotControllerRouteHold::IsLowerHex(sealSha256, 64)
         && BotControllerRouteHold::IsLowerHex(sourceCommit, 40)
-        && sourceCommit.substr(0, GitRevision::GetHash().size())
-            == GitRevision::GetHash();
+        && sourceCommit.substr(0, nativeRevisionHash.size())
+            == nativeRevisionHash;
     BotControllerRouteHold::Identity const identity =
         CurrentControllerRouteHoldIdentity(actorGuid);
     if (!configured || hold.Scope.FixtureId
