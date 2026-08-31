@@ -103,6 +103,41 @@ class BundleError(RuntimeError):
     pass
 
 
+def _capture_paths(output_dir: Path) -> list[Path]:
+    capture_stem = output_dir.with_name(output_dir.name + ".capture")
+    return [
+        capture_stem.with_suffix(".json"),
+        capture_stem.with_suffix(".raw.jsonl"),
+        capture_stem.with_suffix(".worldserver.log"),
+    ]
+
+
+def expected_launch_argv(
+    *, worktree: Path, binary: Path, output_dir: Path, admission_sha256: str,
+) -> list[str]:
+    """Return the only capture command admitted by this atomic bundle."""
+
+    capture_paths = _capture_paths(output_dir)
+    return [
+        "pixi", "run", "python", "-m",
+        "tools.raid_program.capture_phase1_raid_foundation",
+        "--worktree", str(worktree.resolve()),
+        "--binary", str(binary.resolve()),
+        "--config", str(output_dir / BUNDLE_NAMES["runtime_config"]),
+        "--output", str(capture_paths[0]),
+        "--raw-output", str(capture_paths[1]),
+        "--server-log-output", str(capture_paths[2]),
+        "--build-receipt", str(output_dir / BUNDLE_NAMES["build_receipt"]),
+        "--recurrence-admission", str(output_dir / BUNDLE_NAMES["admission"]),
+        "--recurrence-admission-sha256", admission_sha256,
+        "--chainwielder-checkpoint-actor-guid", str(ACTOR_GUID),
+        "--fixture-expansion-replay",
+        "--scenario-id", SCENARIO_ID,
+        "--runtime-profile", SCENARIO_ID,
+        "--pool-tag", SCENARIO_ID,
+    ]
+
+
 def _json(path: Path, label: str) -> dict[str, Any]:
     if not path.is_file():
         raise BundleError(f"{label}_missing")
@@ -377,8 +412,13 @@ def verify_bundle(
     if not root.is_dir():
         raise BundleError("bundle_missing")
     expected_names = set(BUNDLE_NAMES.values())
-    actual_names = {path.name for path in root.iterdir() if path.is_file()}
-    if actual_names != expected_names:
+    actual_entries = list(root.iterdir())
+    actual_names = {path.name for path in actual_entries}
+    if (
+        len(actual_entries) != len(expected_names)
+        or actual_names != expected_names
+        or any(path.is_symlink() or not path.is_file() for path in actual_entries)
+    ):
         raise BundleError("bundle_partial_or_extra_files")
     manifest = _json(root / BUNDLE_NAMES["bundle_manifest"], "bundle_manifest")
     if (root / BUNDLE_NAMES["bundle_manifest"]).read_bytes() != _canonical_pretty_json(manifest):
@@ -387,7 +427,16 @@ def verify_bundle(
         raise BundleError("bundle_manifest_schema_invalid")
     expected_manifest_names = expected_names - {BUNDLE_NAMES["bundle_manifest"]}
     rows = manifest.get("files")
-    if not isinstance(rows, list) or {row.get("path") for row in rows if isinstance(row, dict)} != expected_manifest_names:
+    expected_manifest_paths = sorted(expected_manifest_names)
+    if (
+        not isinstance(rows, list)
+        or len(rows) != len(expected_manifest_paths)
+        or any(
+            not isinstance(row, dict) or set(row) != {"path", "sha256"}
+            for row in rows
+        )
+        or [row["path"] for row in rows] != expected_manifest_paths
+    ):
         raise BundleError("bundle_manifest_incomplete")
     for row in rows:
         name = row.get("path")
@@ -563,26 +612,11 @@ def verify_bundle(
     argv = launch.get("launch_argv")
     if not isinstance(argv, list) or any(not isinstance(value, str) for value in argv):
         raise BundleError("launch_argv_invalid")
-    required_argv = {
-        "--binary": str(binary),
-        "--config": str(logical["runtime_config"]),
-        "--build-receipt": str(logical["build_receipt"]),
-        "--recurrence-admission": str(logical["admission"]),
-        "--recurrence-admission-sha256": admission_sha,
-        "--chainwielder-checkpoint-actor-guid": str(ACTOR_GUID),
-        "--scenario-id": SCENARIO_ID,
-        "--runtime-profile": SCENARIO_ID,
-        "--pool-tag": SCENARIO_ID,
-    }
-    for flag, value in required_argv.items():
-        try:
-            index = argv.index(flag)
-        except ValueError as error:
-            raise BundleError(f"launch_argv_missing:{flag}") from error
-        if index + 1 >= len(argv) or argv[index + 1] != value:
-            raise BundleError(f"launch_argv_binding_mismatch:{flag}")
-    if argv.count("--fixture-expansion-replay") != 1 or "--observe-sec" in argv:
-        raise BundleError("launch_argv_duration_contract_invalid")
+    if argv != expected_launch_argv(
+        worktree=worktree, binary=binary, output_dir=logical_root,
+        admission_sha256=admission_sha,
+    ):
+        raise BundleError("launch_argv_exact_binding_mismatch")
     return {
         "valid": True,
         "bundle": str(logical_root),
@@ -632,12 +666,7 @@ def create_bundle(
             "suite_receipt": suite_receipt, "route_manifest": route_manifest,
             "ledger": ledger, "build_policy": build_policy,
         }
-        capture_stem = output_dir.with_name(output_dir.name + ".capture")
-        capture_paths = [
-            capture_stem.with_suffix(".json"),
-            capture_stem.with_suffix(".raw.jsonl"),
-            capture_stem.with_suffix(".worldserver.log"),
-        ]
+        capture_paths = _capture_paths(output_dir)
         location_args = {
             "worktree": worktree, "output_dir": output_dir,
             "binary": binary, "capture_paths": capture_paths,
@@ -831,24 +860,10 @@ def create_bundle(
                     "route_identity_preserved_after_receiptless_hazard_rejection"
                 ),
             },
-            "launch_argv": [
-                "pixi", "run", "python", "-m",
-                "tools.raid_program.capture_phase1_raid_foundation",
-                "--worktree", str(worktree.resolve()),
-                "--binary", str(binary.resolve()),
-                "--config", str(output_dir / BUNDLE_NAMES["runtime_config"]),
-                "--output", str(capture_paths[0]),
-                "--raw-output", str(capture_paths[1]),
-                "--server-log-output", str(capture_paths[2]),
-                "--build-receipt", str(output_dir / BUNDLE_NAMES["build_receipt"]),
-                "--recurrence-admission", str(output_dir / BUNDLE_NAMES["admission"]),
-                "--recurrence-admission-sha256", admission_sha,
-                "--chainwielder-checkpoint-actor-guid", str(actor_guid),
-                "--fixture-expansion-replay",
-                "--scenario-id", scenario_id,
-                "--runtime-profile", runtime_profile_id,
-                "--pool-tag", pool_tag,
-            ],
+            "launch_argv": expected_launch_argv(
+                worktree=worktree, binary=binary, output_dir=output_dir,
+                admission_sha256=admission_sha,
+            ),
         }
         _write_json(staging / BUNDLE_NAMES["launch_contract"], launch)
         _write_json(staging / BUNDLE_NAMES["bundle_manifest"], {

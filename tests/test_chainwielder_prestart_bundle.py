@@ -730,6 +730,70 @@ def test_verify_rejects_partial_bundle(tmp_path: Path) -> None:
     with pytest.raises(BundleError, match="bundle_partial_or_extra_files"):
         verify_bundle(fixture["output"])
 
+def test_verify_reconstructs_the_complete_capture_argv(tmp_path: Path) -> None:
+    fixture = _fixture(tmp_path)
+    _create(fixture)
+    output = fixture["output"]
+    launch_path = output / BUNDLE_NAMES["launch_contract"]
+    launch = json.loads(launch_path.read_text(encoding="utf-8"))
+    launch["launch_argv"].append("--observe-sec=300")
+    _write_json(launch_path, launch)
+    manifest_path = output / BUNDLE_NAMES["bundle_manifest"]
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for row in manifest["files"]:
+        if row["path"] == BUNDLE_NAMES["launch_contract"]:
+            row["sha256"] = sha256_file(launch_path)
+    _write_json(manifest_path, manifest)
+    with pytest.raises(BundleError, match="launch_argv_exact_binding_mismatch"):
+        verify_bundle(output)
+
+def test_verify_rejects_extra_directory_and_duplicate_manifest_rows(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path)
+    _create(fixture)
+    output = fixture["output"]
+    (output / "unexpected").mkdir()
+    with pytest.raises(BundleError, match="bundle_partial_or_extra_files"):
+        verify_bundle(output)
+    (output / "unexpected").rmdir()
+    manifest_path = output / BUNDLE_NAMES["bundle_manifest"]
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["files"].append(dict(manifest["files"][0]))
+    _write_json(manifest_path, manifest)
+    with pytest.raises(BundleError, match="bundle_manifest_incomplete"):
+        verify_bundle(output)
+
+def test_verify_rejects_non_object_manifest_row_as_typed_error(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path)
+    _create(fixture)
+    manifest_path = fixture["output"] / BUNDLE_NAMES["bundle_manifest"]
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["files"][0] = "invalid"
+    _write_json(manifest_path, manifest)
+    with pytest.raises(BundleError, match="bundle_manifest_incomplete"):
+        verify_bundle(fixture["output"])
+
+@pytest.mark.parametrize("mutation", ["reorder", "extra_key"])
+def test_verify_requires_exact_manifest_rows(
+    tmp_path: Path, mutation: str,
+) -> None:
+    fixture = _fixture(tmp_path)
+    _create(fixture)
+    manifest_path = fixture["output"] / BUNDLE_NAMES["bundle_manifest"]
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if mutation == "reorder":
+        manifest["files"][0], manifest["files"][1] = (
+            manifest["files"][1], manifest["files"][0]
+        )
+    else:
+        manifest["files"][0]["extra"] = True
+    _write_json(manifest_path, manifest)
+    with pytest.raises(BundleError, match="bundle_manifest_incomplete"):
+        verify_bundle(fixture["output"])
+
 def test_conflicting_duplicate_required_config_fails_closed(tmp_path: Path) -> None:
     fixture = _fixture(
         tmp_path,
