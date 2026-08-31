@@ -1,121 +1,52 @@
 {
-  "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:composite_map669_production_boundary_replay_v114",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "live_recurrence_quarantined",
-  "epoch_id": "v114_composite_map669_launcher_replay_20260831",
-  "observed_at_commit": "7f6a5e40e6455d28b48618ed1275d9c0a5585ee0",
-  "immutable_input_commit": "7f6a5e40e6455d28b48618ed1275d9c0a5585ee0",
-  "gate_state": "fixture_expansion_admitted_one_start_no_retry",
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": true,
-  "ready_for_live_verification": true,
-  "next_owner_skill": "raid-shard-architecture",
-  "next_work_unit": "shard:composite_map669_production_boundary_replay_v114",
-  "next_action": "Use only the deterministic launcher for one map-669 fixture-expansion replay and stop at the first failed gate without retrying.",
-  "source_handoff": {
-    "path": "experiments/configs/cata_raid_v113_deterministic_launcher_review_handoff_v114.json",
-    "sha256": "356ab7536b239ec736e2a9cebb4785e0e1b1f682dbf47c7659908bbf44141411",
-    "source_commit": "7f6a5e40e6455d28b48618ed1275d9c0a5585ee0",
-    "source_tree": "b02e1bf3f12c674adb03b6c30215f2b6868e4ca9"
-  },
-  "completed_predecessor": {
-    "work_unit": "evidence:deterministic_composite_fixture_replay_launcher_v113",
-    "focused_tests": "61/61 passed",
-    "independent_review": "PASS",
-    "implementation_commit": "7f6a5e40e6455d28b48618ed1275d9c0a5585ee0",
-    "worldserver_start_count": 0,
-    "authserver_start_count": 0,
-    "database_mutation_count": 0,
-    "dvc_mutation_count": 0
-  },
-  "inherited_admission": {
-    "source_work_unit": "shard:composite_map669_production_boundary_replay_v110",
-    "fixture_commands": "20/20 returned zero",
-    "fixture_expansion_target_count": 4,
-    "full_bank_receipt_sha256": "2febca3542389c11c084553a6de8527e0a8d189078f2c74e0f054f98151ea388",
-    "full_bank_decision_sha256": "3ca28cc493d235cf820d16361c2644fb8e744cf458d70c677bf454dc09a3d7fe",
-    "canonical_route_and_derived_runtime_config_required": true,
-    "atomic_bundle_create_and_verify_required": true
-  },
+  "classification": "failed",
+  "epoch_id": "v115_launcher_live_authority_repair_20260831",
+  "evidence_contract_change": true,
+  "gate_state": "bounded_launcher_repair_admitted_no_live_execution",
+  "immutable_input_commit": "350a5f12f3a50fbebd12b06bef927011924b2b06",
+  "next_action": "Repair only the two stale live-work-unit authority selectors, add live compose and realization regressions, and obtain independent review.",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "evidence:repair_live_work_unit_authority_propagation_v115",
+  "observed_at_commit": "350a5f12f3a50fbebd12b06bef927011924b2b06",
+  "owner_skill": "raid-evidence-lifecycle",
   "program_scope": {
-    "operation": "one launcher-driven composite map-669 fixture replay",
-    "recurrence_suite_invocation_admitted": false,
-    "fixture_expansion_replay_admitted": true,
-    "fixture_prerequisite_build_authorized": true,
-    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
-    "gameplay_canary_admitted": false,
-    "acceptance_admitted": false,
-    "runtime_implementation_allowed": false,
-    "evidence_tooling_implementation_allowed": false,
-    "gameplay_mutations_allowed": false,
-    "database_provisioning_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": true
+    "database_mutation_admitted": false,
+    "dvc_publication_admitted": false,
+    "fixture_recurrence_invocation_admitted": false,
+    "launcher_source_and_test_repair_admitted": true,
+    "worldserver_build_admitted": false,
+    "worldserver_start_admitted": false
   },
+  "ready_for_bounded_repair": true,
+  "ready_for_fixture_expansion": false,
+  "ready_for_live_verification": false,
+  "required_postcondition": "Live-path compose and realization propagate the request's already validated work-unit selector, V113 remains covered, focused tests pass, and an independent Sol-high review finds no live-path blocker.",
+  "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "No source change. Compose and execute only the committed launcher plan, publish terminal evidence, verify remote reconstruction, and evict exact local raw data.",
-    "requested_fixtures": [
-      {"fixture_id": "chainwielder_pre_admission_rejection_isolation_v1", "requested_revision": 1},
-      {"fixture_id": "same_level_floor_observation_v1", "requested_revision": 4},
-      {"fixture_id": "same_level_hazard_path_admission_v1", "requested_revision": 5},
-      {"fixture_id": "same_level_native_path_proof_v1", "requested_revision": 5}
-    ],
-    "required_order": [
-      "verify clean V114 descriptor HEAD and V113 handoff identity",
-      "materialize one fresh tracked-derived runtime-config receipt outside the worktree",
-      "compose and run the launcher prebuild plan",
-      "realize the postbuild plan from verified configure/build receipts and matching ELF",
-      "run atomic bundle, strict spellbook-aware readback, shard readback, and one completion-watchdog capture",
-      "publish terminal evidence, reconstruct remotely, verify hashes, and evict exact raw targets"
+    "allowed_changes": [
+      "tools/raid_program/composite_fixture_replay_launcher.py",
+      "tests/test_composite_fixture_replay_launcher.py",
+      "the V115 review handoff and next descriptor"
     ],
     "forbidden": [
-      "hand-built configure, build, bundle, readback, or capture argv",
-      "source, runtime, fixture, gameplay, geometry, planner, class, encounter, or DPS edits",
-      "second worldserver start or any retry",
-      "authserver start, roster reprovisioning, teleport, or forced gameplay outcome",
-      "fixed 300-second raid timer"
+      "configure or build",
+      "worldserver or authserver start",
+      "database mutation",
+      "recurrence-suite rerun",
+      "gameplay, class, encounter, movement, geometry, or DPS changes"
     ]
   },
-  "execution_budget": {
-    "recurrence_suite_invocation_count_maximum": 0,
-    "configure_count_maximum": 1,
-    "worldserver_build_count_maximum": 1,
-    "strict_roster_verifier_count_maximum": 1,
-    "worldserver_start_count_maximum": 1,
-    "authserver_start_count_maximum": 0,
-    "retry_count_maximum": 0,
-    "database_provisioning_mutation_count_maximum": 0,
-    "dvc_checkpoint_count_maximum": 1,
-    "dvc_push_count_maximum": 1,
-    "dvc_remote_reconstruction_count_maximum": 1,
-    "dvc_exact_eviction_count_maximum": 1
+  "source_handoff": {
+    "path": "experiments/configs/cata_raid_v114_launcher_live_authority_compose_failed_handoff_v115.json",
+    "sha256": "2a0e85f3a990307830a96284625141d63a1e609844c4acca3ed1032b076b062c",
+    "source_commit": "350a5f12f3a50fbebd12b06bef927011924b2b06",
+    "source_tree": "57da9585d7c17d44f6ef3853302021c935e4edf9"
   },
-  "required_terminal_evidence": {
-    "pass": "One launcher-driven worldserver start captures all four admitted production boundaries with strict roster identity preserved.",
-    "fail": "Stop at the first launcher, build, bundle, roster, controller, watchdog, or production-boundary failure and publish its exact evidence without retrying."
-  },
-  "remaining_unproven": [
-    "the four admitted production boundaries",
-    "spellbook identity remains unchanged after the next worldserver lifecycle",
-    "any Magmaw completion, DPS, HPS, or acceptance result"
-  ],
   "validation_clock": {
-    "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "raid_success_timer_seconds": null,
-    "terminal_edges": [
-      "all_four_production_boundaries_captured",
-      "production_boundary_incomplete",
-      "strict_roster_identity_failed",
-      "semantic_or_no_progress_stall",
-      "repeated_decision_terminal",
-      "death_loop_terminal",
-      "identity_or_runtime_config_mismatch",
-      "infrastructure_loss",
-      "explicit_interruption"
-    ]
-  }
+    "policy": "completion_watchdog"
+  },
+  "work_unit": "evidence:repair_live_work_unit_authority_propagation_v115"
 }

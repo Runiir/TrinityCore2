@@ -1,0 +1,63 @@
+{
+  "claim_ledger": {
+    "refuted": [
+      "the independently reviewed V113 launcher could compose the admitted V114 live request",
+      "V114 reached configure, build, bundle, roster readback, worldserver, or gameplay"
+    ],
+    "unproven": [
+      "all four admitted production boundaries",
+      "spellbook identity across the next worldserver lifecycle",
+      "any Magmaw completion, DPS, HPS, or acceptance result"
+    ],
+    "verified": [
+      "the exact admitted recurrence decision and 20-fixture receipt were present",
+      "the canonical Magmaw route object and fresh tracked-derived runtime config were materialized and independently verified",
+      "the single launcher compose invocation failed with active_work_unit_mismatch before publishing a plan",
+      "no configure, build, worldserver, authserver, database mutation, or retry occurred"
+    ]
+  },
+  "classification": "launcher_live_authority_compose_failed",
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_350a5f12f3_v114_launcher_compose_failed_20260831.dvc",
+    "dvc_pointer_sha256": "f2cb8c80e4a2bc1ad69fcad5a17045df1230348b62dd0bc93fe0d468e48b0f99",
+    "terminal_file": "terminal.json",
+    "terminal_file_sha256": "001c9dd61d9b90ca0025491b8ad72238a2996b872d0061e859467b9a45972d4f"
+  },
+  "first_failed_gate": {
+    "cause": "compose_plan validated a V114 request but called source authority with the completed V113 work-unit constant",
+    "launcher_exit_code": 2,
+    "reason": "active_work_unit_mismatch",
+    "source_lines": [
+      "tools/raid_program/composite_fixture_replay_launcher.py:469",
+      "tools/raid_program/composite_fixture_replay_launcher.py:582"
+    ],
+    "stage": "launcher_compose_source_authority",
+    "terminal_edge": "prebuild_composition_failed_no_native_execution"
+  },
+  "next_work_unit": {
+    "authserver_start_maximum": 0,
+    "database_mutation_maximum": 0,
+    "dvc_mutation_maximum": 0,
+    "id": "evidence:repair_live_work_unit_authority_propagation_v115",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Replace the two stale V113 source-authority selectors with the request's already validated expected work unit. Add compose and realization regression coverage for the live work-unit path and independently review the repair. Do not configure, build, start a server, mutate the database, or rerun recurrence fixtures.",
+    "required_postcondition": "the launcher composes and realizes a live-path request using the live work-unit selector, while V113 composition remains covered and all focused tests pass"
+  },
+  "operations": {
+    "authserver_start_count": 0,
+    "configure_count": 0,
+    "database_mutation_count": 0,
+    "launcher_compose_count": 1,
+    "retry_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0
+  },
+  "owner_skill": "raid-shard-architecture",
+  "schema": "cata_raid_specialist_handoff_v1",
+  "source": {
+    "active_descriptor_sha256": "8b08d6a9590c257df8cbca2503c987a5259c9768bbaae5a1fdb936865be9cfd6",
+    "commit": "350a5f12f3a50fbebd12b06bef927011924b2b06",
+    "tree": "57da9585d7c17d44f6ef3853302021c935e4edf9"
+  },
+  "work_unit_id": "shard:composite_map669_production_boundary_replay_v114"
+}
