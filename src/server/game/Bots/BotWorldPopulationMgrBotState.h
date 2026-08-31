@@ -9,6 +9,7 @@
 #include "Bots/BotTypes.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeTauntConfirmation.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawEventMovementTransition.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
 #include "ObjectGuid.h"
 
@@ -469,6 +470,10 @@ namespace BotWorldPopulationMgrBotState
         // observation churn, native retries, and lease expiry.
         BotEncounter::MagmawLaneTransitionState MagmawLaneTransition;
         BotEncounter::MagmawEventMovementTransitionState MagmawEventMovement;
+        // Latest-value, observation-only comparison. It is never submitted to
+        // the decision kernel or any native action execution boundary.
+        BotEncounter::MagmawTransferLaneIntentComparison
+            MagmawTransferLaneIntentComparison;
         // Adaptive ownership bypasses the generic boss-mechanics candidate;
         // carry its immutable focus-fire/area authority into profile
         // resolution on every bot instead of leaving a default-open lane.

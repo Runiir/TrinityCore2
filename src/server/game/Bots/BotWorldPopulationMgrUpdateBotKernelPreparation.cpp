@@ -29,6 +29,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
 {
     context.DecisionNowMs = NowMs();
     context.State.DecisionKernel.Begin(context.DecisionNowMs);
+    BotEncounter::ResetMagmawTransferLaneIntentComparison(
+        context.State.MagmawTransferLaneIntentComparison);
     RaidRuntime& raid = Cohort().Raid;
     BotValidationPrepullCheckpoint::Scope const checkpointScope{
         Cohort().Id, Cohort().AttemptId, Party().ValidationRouteGeneration,
@@ -453,6 +455,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 &magmawLaneOwner->MagmawLaneTransition,
                 &context.State.MagmawParasiteHazard,
                 &context.State.MagmawEventMovement, magmawMobility);
+            ObserveMagmawTransferLaneIntentComparison(context.State,
+                context.Bot->GetGUID(), magmawPlan.Movement);
             context.AdaptiveMagmawOwnsNode = magmawPlan.OwnsNode;
             context.State.MagmawParasiteCombat = magmawPlan.ParasiteCombat;
             context.AdaptiveMagmawSuppressOffense = magmawPlan.SuppressOffense;

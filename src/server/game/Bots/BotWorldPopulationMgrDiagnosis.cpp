@@ -362,6 +362,8 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << ",\"combat_attempt\":" << BuildCombatAttemptJson(state.LastCombatAttempt)
          << ",\"route_progress\":" << BuildRouteProgressJson(state.LastRouteProgress)
          << ",\"decision_kernel\":" << (state.LastDecisionKernelJson.empty() ? "{}" : state.LastDecisionKernelJson)
+         << ",\"magmaw_transfer_lane_intent_comparison\":"
+         << BuildMagmawTransferLaneIntentComparisonJson(state)
          << ",\"evidence\":["
          << "{\"name\":\"loaded\",\"value\":" << (bot ? "true" : "false") << "},"
          << "{\"name\":\"in_world\",\"value\":" << (bot && bot->IsInWorld() ? "true" : "false") << "},"

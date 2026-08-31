@@ -289,6 +289,11 @@ private:
     void ReconcileMagmawTransferLaneTaskShadow(
         BotEncounter::Blackboard const& snapshot);
     std::string BuildMagmawTransferLaneTaskShadowJson() const;
+    std::string BuildMagmawTransferLaneIntentComparisonJson(
+        WorldBotState const& state) const;
+    void ObserveMagmawTransferLaneIntentComparison(WorldBotState& state,
+        ObjectGuid actor,
+        std::optional<BotNativeAction::Candidate> const& legacyMovement);
     BotEncounter::MagmawRosterView BuildMagmawShadowRoster(
         BotEncounter::Scope const& lifecycle) const;
     std::vector<BotEncounter::MagmawTransferLaneActorObservation>
