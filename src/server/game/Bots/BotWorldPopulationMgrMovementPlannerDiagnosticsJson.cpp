@@ -174,6 +174,9 @@ std::string MovementPlannerObservationJson(
          << observation.LaunchReceipt.Version << ",\"id\":"
          << observation.LaunchReceipt.Id
          << ",\"identity\":{\"bot_guid\":" << observation.BotGuid
+         << ",\"diagnostic_candidate_key\":\""
+         << JsonEscape(observation.LaunchReceipt.DiagnosticCandidateKey)
+         << "\""
          << ",\"map\":" << observation.RequestedMapId
          << ",\"owner\":\""
          << JsonEscape(MovementOwnerName(observation.MovementOwner))

@@ -31,6 +31,7 @@ HARNESS = r"""
 #include <cassert>
 #include <cmath>
 #include <string>
+#include <utility>
 
 using namespace BotWorldMovement;
 
@@ -107,7 +108,47 @@ int main()
     assert(annotatedMove);
     assert(annotatedMove->IntentReason == "pincer_preposition");
 
+    annotated = BotNativeAction::WithMovementDiagnosticCandidateKey(
+        std::move(annotated), "scope:adaptive_magmaw:pillar_bait_switch:300:7");
+    annotatedMove = std::get_if<BotNativeAction::Move>(&annotated);
+    assert(annotatedMove && annotatedMove->DiagnosticCandidateKey
+        == "scope:adaptive_magmaw:pillar_bait_switch:300:7");
+
     MovementPlannerDiagnosticSidecar sidecar;
+    Intent keyedRequest;
+    keyedRequest.X = 1.0f;
+    keyedRequest.Y = 2.0f;
+    keyedRequest.Z = 3.0f;
+    keyedRequest.Owner = BotMovementArbitration::Owner::Hazard;
+    keyedRequest.Priority = BotMovementArbitration::Priority::Hazard;
+    keyedRequest.IntentReason = "pillar_bait_switch";
+    CopyMovementDiagnosticCandidateKey(keyedRequest,
+        annotatedMove->DiagnosticCandidateKey);
+    BotMovementArbitration::Scope receiptScope{ 9, 2, 4, 669, 31 };
+    std::uint64_t keyedReceipt = sidecar.BeginReceipt(30100, 669,
+        keyedRequest, receiptScope, 0, 0.0f, 0.0f, 0.0f);
+    MovementPlannerObservation keyed = sidecar.Latest(30100);
+    assert(keyed.LaunchReceipt.Id == keyedReceipt);
+    assert(keyed.LaunchReceipt.DiagnosticCandidateKey
+        == keyedRequest.DiagnosticCandidateKey);
+    std::string keyedJson = MovementPlannerObservationJson(keyed);
+    assert(keyedJson.find("\"diagnostic_candidate_key\":\"scope:adaptive_magmaw")
+        != std::string::npos);
+
+    Intent otherKeyRequest = keyedRequest;
+    CopyMovementDiagnosticCandidateKey(otherKeyRequest,
+        "different-diagnostic-key");
+    sidecar.BeginReceipt(30101, 669, otherKeyRequest, receiptScope, 0,
+        0.0f, 0.0f, 0.0f);
+    assert(sidecar.Latest(30101).LaunchReceipt.IntentFingerprint
+        == keyed.LaunchReceipt.IntentFingerprint);
+    Intent emptyKeyRequest = keyedRequest;
+    CopyMovementDiagnosticCandidateKey(emptyKeyRequest, {});
+    sidecar.BeginReceipt(30102, 669, emptyKeyRequest, receiptScope, 0,
+        0.0f, 0.0f, 0.0f);
+    assert(sidecar.Latest(30102).LaunchReceipt.DiagnosticCandidateKey.empty());
+    assert(sidecar.Latest(30102).LaunchReceipt.IntentFingerprint
+        == keyed.LaunchReceipt.IntentFingerprint);
     sidecar.Record(InvalidFloor());
     std::string invalidFloorJson = MovementPlannerObservationJson(
         sidecar.Latest(30001));
@@ -339,6 +380,9 @@ def test_planner_trace_diagnosis_and_lifecycle_wiring():
     assert "RecordMovementPlannerExecutorOutcome" in executor
     assert "action.IntentReason" in native_action
     assert "intent.IntentReason = movementReason" in movement
+    assert "CopyMovementDiagnosticCandidateKey(intent," in movement
+    assert "LegacyMagmawMovementDiagnosticCandidateKey" in kernel_candidates
+    assert "WithMovementDiagnosticCandidateKey" in kernel_candidates
     assert kernel_candidates.count("WithMovementReason") >= 7
     for gate in (
         "cross_map_pending",
@@ -360,6 +404,22 @@ def test_planner_trace_diagnosis_and_lifecycle_wiring():
     assert "MovementPlannerDiagnostics().ClearAll" in runtime
     assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in update
     assert update.count("MovementPlannerDiagnostics().ClearBot") >= 2
+
+
+def test_candidate_key_is_diagnostic_only() -> None:
+    source = SOURCE.read_text(encoding="utf-8")
+    fingerprint = source.split("std::uint64_t MovementIntentFingerprint(", 1)[1]
+    fingerprint = fingerprint.split("}\n}\nnamespace BotWorldMovement", 1)[0]
+    assert "DiagnosticCandidateKey" not in fingerprint
+
+    behavior_sources = (
+        PLANNER,
+        EXECUTOR,
+        BOT_DIR / "BotWorldPopulationMgrMovementLease.cpp",
+        BOT_DIR / "BotMovementArbiter.h",
+    )
+    for path in behavior_sources:
+        assert "DiagnosticCandidateKey" not in path.read_text(encoding="utf-8")
 
 
 def test_sidecar_is_not_in_central_state_and_is_registered():

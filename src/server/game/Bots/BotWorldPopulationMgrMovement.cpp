@@ -6,11 +6,13 @@ bool BotWorldPopulationMgr::MoveBotToPoint(
     WorldBotState& state, Player* bot, float x, float y, float z,
     bool terminalOnFailure, BotMovementArbitration::Owner movementOwner,
     BotMovementArbitration::Priority movementPriority, Unit* dynamicTarget,
-    float dynamicTargetRange, std::string_view movementReason)
+    float dynamicTargetRange, std::string_view movementReason,
+    std::string_view diagnosticCandidateKey)
 {
     return MoveBotToPointWithReferenceFloor(state, bot, x, y, z,
         std::nullopt, terminalOnFailure, movementOwner, movementPriority,
-        dynamicTarget, dynamicTargetRange, movementReason);
+        dynamicTarget, dynamicTargetRange, movementReason,
+        diagnosticCandidateKey);
 }
 
 bool BotWorldPopulationMgr::MoveBotToPointWithReferenceFloor(
@@ -18,7 +20,8 @@ bool BotWorldPopulationMgr::MoveBotToPointWithReferenceFloor(
     std::optional<float> referenceFloorZ, bool terminalOnFailure,
     BotMovementArbitration::Owner movementOwner,
     BotMovementArbitration::Priority movementPriority, Unit* dynamicTarget,
-    float dynamicTargetRange, std::string_view movementReason)
+    float dynamicTargetRange, std::string_view movementReason,
+    std::string_view diagnosticCandidateKey)
 {
     if (!bot)
         return false;
@@ -56,6 +59,8 @@ bool BotWorldPopulationMgr::MoveBotToPointWithReferenceFloor(
     intent.DynamicTarget = dynamicTarget;
     intent.DynamicTargetRange = dynamicTargetRange;
     intent.IntentReason = movementReason;
+    BotWorldMovement::CopyMovementDiagnosticCandidateKey(intent,
+        diagnosticCandidateKey);
 
     // A released validation member can briefly reach this adapter before the
     // recovery episode has published its entrance-required flag.  The exact

@@ -4,6 +4,7 @@
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidHazardPlanner.h"
 #include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidTrashStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneIntent.h"
 
 #include "ObjectAccessor.h"
 #include "CharmInfo.h"
@@ -166,8 +167,11 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                     movement.EscalateAfter = 4;
                 }
                 movement.Attempt = [this, &context, nativeIntent =
-                    BotNativeAction::WithMovementReason(intent.Action,
-                        intent.Id.Mechanic),
+                    BotNativeAction::WithMovementDiagnosticCandidateKey(
+                        BotNativeAction::WithMovementReason(intent.Action,
+                            intent.Id.Mechanic),
+                        BotEncounter::LegacyMagmawMovementDiagnosticCandidateKey(
+                            intent)),
                     lease = *movementLease, mechanic = intent.Id.Mechanic]()
                 {
                     BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(

@@ -359,14 +359,16 @@ private:
         BotMovementArbitration::Owner movementOwner = BotMovementArbitration::Owner::None,
         BotMovementArbitration::Priority movementPriority = BotMovementArbitration::Priority::Idle,
         Unit* dynamicTarget = nullptr, float dynamicTargetRange = 0.0f,
-        std::string_view movementReason = {});
+        std::string_view movementReason = {},
+        std::string_view diagnosticCandidateKey = {});
     bool MoveBotToPointWithReferenceFloor(
         WorldBotState& state, Player* bot, float x, float y, float z,
         std::optional<float> referenceFloorZ, bool terminalOnFailure,
         BotMovementArbitration::Owner movementOwner,
         BotMovementArbitration::Priority movementPriority,
         Unit* dynamicTarget = nullptr, float dynamicTargetRange = 0.0f,
-        std::string_view movementReason = {});
+        std::string_view movementReason = {},
+        std::string_view diagnosticCandidateKey = {});
     bool ExecuteMovementIntent(WorldBotState& state, Player* bot,
         BotWorldMovement::Intent const& intent);
     void ObserveChainwielderOwnerCheckpointBeforeUpdate(

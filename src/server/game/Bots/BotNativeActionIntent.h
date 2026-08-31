@@ -25,6 +25,9 @@ struct Move
     // escape inside a lethal envelope instead owns cast and GCD resources so
     // a hard cast cannot replace the submitted path in the same kernel tick.
     bool PreemptCasting = false;
+    // Diagnostic-only copy of the selected arbitration candidate identity.
+    // Native movement must never consult this field.
+    std::string DiagnosticCandidateKey;
 
     Move() = default;
     Move(float x, float y, float z) : X(x), Y(y), Z(z) { }
@@ -136,6 +139,18 @@ inline Intent WithMovementReason(Intent intent, std::string_view reason)
         if constexpr (std::is_same_v<T, Move>
             || std::is_same_v<T, DirectionalMobility>)
             action.IntentReason = std::string(reason);
+    }, intent);
+    return intent;
+}
+
+inline Intent WithMovementDiagnosticCandidateKey(Intent intent,
+    std::string_view candidateKey)
+{
+    std::visit([candidateKey](auto& action)
+    {
+        using T = std::decay_t<decltype(action)>;
+        if constexpr (std::is_same_v<T, Move>)
+            action.DiagnosticCandidateKey = std::string(candidateKey);
     }, intent);
     return intent;
 }

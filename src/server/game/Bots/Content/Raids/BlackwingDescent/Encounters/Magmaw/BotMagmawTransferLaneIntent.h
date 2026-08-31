@@ -4,6 +4,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneTask.h"
 #include "Bots/Decision/BotIntentSink.h"
 
+#include <cstddef>
 #include <optional>
 #include <string>
 
@@ -54,6 +55,7 @@ struct MagmawTransferLaneExecutionContract
 {
     std::string ScopeKey;
     ObjectGuid Actor;
+    uint64 EpisodeGeneration = 0;
     uint64 TaskGeneration = 0;
     uint64 LegacyTransitionGeneration = 0;
     uint64 ObservedAtMs = 0;
@@ -67,11 +69,20 @@ struct MagmawTransferLaneIntentComparison
     uint32 ProposalCount = 0;
     uint32 MovementProposalCount = 0;
     uint32 Divergences = 0;
+    std::string ScopeKey;
+    std::string ShadowCandidateKey;
+    std::string LegacyCandidateKey;
     ObjectGuid ShadowActor;
     ObjectGuid LegacyActor;
+    uint64 ShadowEpisodeGeneration = 0;
     uint64 ShadowTaskGeneration = 0;
     uint64 LegacyEventGeneration = 0;
     uint64 ExpectedLegacyTransitionGeneration = 0;
+    Vector3 ShadowDestination;
+    Vector3 LegacyDestination;
+    bool ShadowDestinationAvailable = false;
+    bool LegacyDestinationAvailable = false;
+    uint64 ObservedAtMs = 0;
     bool Observed = false;
 
     bool Ambiguous() const { return MovementProposalCount > 1; }
@@ -79,6 +90,59 @@ struct MagmawTransferLaneIntentComparison
     {
         return (Divergences & DivergenceMask(reason)) != 0;
     }
+};
+
+struct MagmawTransferLaneIntentEpisodeIdentity
+{
+    std::string ScopeKey;
+    ObjectGuid Actor;
+    uint64 EpisodeGeneration = 0;
+    uint64 TaskGeneration = 0;
+
+    friend bool operator==(MagmawTransferLaneIntentEpisodeIdentity const& left,
+        MagmawTransferLaneIntentEpisodeIdentity const& right)
+    {
+        return left.ScopeKey == right.ScopeKey && left.Actor == right.Actor
+            && left.EpisodeGeneration == right.EpisodeGeneration
+            && left.TaskGeneration == right.TaskGeneration;
+    }
+};
+
+struct MagmawTransferLaneIntentEpisodeSummary
+{
+    MagmawTransferLaneIntentEpisodeIdentity Id;
+    uint32 ObservedCount = 0;
+    uint32 EquivalentCount = 0;
+    uint32 DivergentCount = 0;
+    uint32 AmbiguousCount = 0;
+    uint32 ShadowOnlyCount = 0;
+    uint32 LegacyOnlyCount = 0;
+    uint64 FirstObservedAtMs = 0;
+    uint64 LastObservedAtMs = 0;
+    std::string StableShadowCandidateKey;
+    std::string StableLegacyCandidateKey;
+    std::string LastShadowCandidateKey;
+    std::string LastLegacyCandidateKey;
+    Vector3 StableShadowDestination;
+    Vector3 StableLegacyDestination;
+    Vector3 LastShadowDestination;
+    Vector3 LastLegacyDestination;
+    bool StableShadowDestinationAvailable = false;
+    bool StableLegacyDestinationAvailable = false;
+    bool LastShadowDestinationAvailable = false;
+    bool LastLegacyDestinationAvailable = false;
+    uint32 ShadowKeyChangeCount = 0;
+    uint32 LegacyKeyChangeCount = 0;
+    uint32 ShadowDestinationChangeCount = 0;
+    uint32 LegacyDestinationChangeCount = 0;
+    std::optional<MagmawTransferLaneIntentComparison> FirstFailingComparison;
+};
+
+struct MagmawTransferLaneIntentEpisodeAccumulator
+{
+    static constexpr size_t MaxRetiredSummaries = 16;
+    std::optional<MagmawTransferLaneIntentEpisodeSummary> Active;
+    std::vector<MagmawTransferLaneIntentEpisodeSummary> Retired;
 };
 
 void ResetMagmawTransferLaneIntentComparison(
@@ -99,6 +163,15 @@ MagmawTransferLaneIntentComparison ObserveMagmawTransferLaneIntents(
     std::vector<MagmawTransferLaneTask> const& tasks, ObjectGuid actor,
     std::optional<BotNativeAction::Candidate> const& legacy,
     uint64 legacyTransitionGeneration);
+
+std::string LegacyMagmawMovementDiagnosticCandidateKey(
+    BotNativeAction::Candidate const& candidate);
+
+void ObserveMagmawTransferLaneIntentEpisode(
+    MagmawTransferLaneIntentEpisodeAccumulator& accumulator,
+    MagmawTransferLaneIntentComparison const& comparison);
+void ResetMagmawTransferLaneIntentEpisodeAccumulator(
+    MagmawTransferLaneIntentEpisodeAccumulator& accumulator);
 
 char const* ToString(MagmawTransferLaneIntentComparisonOutcome value);
 }

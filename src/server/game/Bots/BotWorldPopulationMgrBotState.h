@@ -474,6 +474,8 @@ namespace BotWorldPopulationMgrBotState
         // the decision kernel or any native action execution boundary.
         BotEncounter::MagmawTransferLaneIntentComparison
             MagmawTransferLaneIntentComparison;
+        BotEncounter::MagmawTransferLaneIntentEpisodeAccumulator
+            MagmawTransferLaneIntentEpisodeAccumulator;
         // Adaptive ownership bypasses the generic boss-mechanics candidate;
         // carry its immutable focus-fire/area authority into profile
         // resolution on every bot instead of leaving a default-open lane.

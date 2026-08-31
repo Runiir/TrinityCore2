@@ -118,6 +118,109 @@ uint32 ComparePresent(Candidate const& shadow, Candidate const& legacy,
     return divergences | CompareDestinations(*shadowMove, *legacyMove,
         contract);
 }
+
+void ObserveCandidate(MagmawTransferLaneIntentComparison& result,
+    Candidate const& candidate, bool shadow)
+{
+    BotNativeAction::Move const* move = MoveIntent(candidate);
+    if (shadow)
+    {
+        result.ShadowCandidateKey = candidate.Id.Key();
+        result.ShadowActor = candidate.Id.Actor;
+        result.ShadowTaskGeneration = candidate.Id.EventGeneration;
+        if (move)
+        {
+            result.ShadowDestination = { move->X, move->Y, move->Z };
+            result.ShadowDestinationAvailable = true;
+        }
+        return;
+    }
+    result.LegacyCandidateKey = candidate.Id.Key();
+    result.LegacyActor = candidate.Id.Actor;
+    result.LegacyEventGeneration = candidate.Id.EventGeneration;
+    if (move)
+    {
+        result.LegacyDestination = { move->X, move->Y, move->Z };
+        result.LegacyDestinationAvailable = true;
+    }
+}
+
+bool ValidEpisodeIdentity(MagmawTransferLaneIntentComparison const& value)
+{
+    return !value.ScopeKey.empty() && !value.ShadowActor.IsEmpty()
+        && value.ShadowEpisodeGeneration && value.ShadowTaskGeneration;
+}
+
+bool DestinationChanged(Vector3 const& left, Vector3 const& right)
+{
+    return left.X != right.X || left.Y != right.Y || left.Z != right.Z;
+}
+
+void ObserveStableKey(std::string const& observed, std::string& stable,
+    std::string& last, uint32& changeCount)
+{
+    if (observed.empty())
+        return;
+    if (stable.empty())
+        stable = observed;
+    if (!last.empty() && last != observed)
+        ++changeCount;
+    last = observed;
+}
+
+void ObserveStableDestination(bool observedAvailable,
+    Vector3 const& observed, bool& stableAvailable, Vector3& stable,
+    bool& lastAvailable, Vector3& last, uint32& changeCount)
+{
+    if (!observedAvailable)
+        return;
+    if (!stableAvailable)
+    {
+        stableAvailable = true;
+        stable = observed;
+    }
+    if (lastAvailable && DestinationChanged(last, observed))
+        ++changeCount;
+    lastAvailable = true;
+    last = observed;
+}
+
+void CountComparisonOutcome(MagmawTransferLaneIntentEpisodeSummary& summary,
+    MagmawTransferLaneIntentComparison const& comparison)
+{
+    using Outcome = MagmawTransferLaneIntentComparisonOutcome;
+    ++summary.ObservedCount;
+    if (comparison.Outcome == Outcome::Equivalent)
+        ++summary.EquivalentCount;
+    if (comparison.Outcome == Outcome::Divergent)
+        ++summary.DivergentCount;
+    if (comparison.Ambiguous())
+        ++summary.AmbiguousCount;
+    if (comparison.Outcome == Outcome::ShadowOnly)
+        ++summary.ShadowOnlyCount;
+    if (comparison.Outcome == Outcome::LegacyOnly)
+        ++summary.LegacyOnlyCount;
+}
+
+bool FailedComparison(MagmawTransferLaneIntentComparison const& comparison)
+{
+    using Outcome = MagmawTransferLaneIntentComparisonOutcome;
+    return comparison.Outcome == Outcome::Divergent
+        || comparison.Outcome == Outcome::ShadowOnly
+        || comparison.Outcome == Outcome::LegacyOnly;
+}
+
+void RetireActiveSummary(
+    MagmawTransferLaneIntentEpisodeAccumulator& accumulator)
+{
+    if (!accumulator.Active)
+        return;
+    accumulator.Retired.push_back(std::move(*accumulator.Active));
+    accumulator.Active.reset();
+    if (accumulator.Retired.size()
+        > MagmawTransferLaneIntentEpisodeAccumulator::MaxRetiredSummaries)
+        accumulator.Retired.erase(accumulator.Retired.begin());
+}
 }
 
 void ResetMagmawTransferLaneIntentComparison(
@@ -130,7 +233,8 @@ MagmawTransferLaneExecutionContract MagmawTransferLaneContract(
     MagmawTransferLaneTask const& task, uint64 legacyTransitionGeneration)
 {
     return { task.Id.Episode.Lifecycle.Key(), task.Id.ActorGuid,
-        task.Id.TaskGeneration, legacyTransitionGeneration,
+        task.Id.Episode.EpisodeGeneration, task.Id.TaskGeneration,
+        legacyTransitionGeneration,
         task.LastObservedAtMs, task.Destination };
 }
 
@@ -163,8 +267,17 @@ MagmawTransferLaneIntentComparison CompareMagmawTransferLaneIntents(
     result.Observed = true;
     result.ProposalCount = shadowProposals.size();
     if (contract)
+    {
+        result.ScopeKey = contract->ScopeKey;
+        result.ShadowActor = contract->Actor;
+        result.ShadowEpisodeGeneration = contract->EpisodeGeneration;
+        result.ShadowTaskGeneration = contract->TaskGeneration;
+        result.ObservedAtMs = contract->ObservedAtMs;
         result.ExpectedLegacyTransitionGeneration =
             contract->LegacyTransitionGeneration;
+    }
+    if (legacy)
+        ObserveCandidate(result, *legacy, false);
     Candidate const* shadowMovement = nullptr;
     for (Candidate const& proposal : shadowProposals)
         if (IsMovementProposal(proposal))
@@ -173,6 +286,8 @@ MagmawTransferLaneIntentComparison CompareMagmawTransferLaneIntents(
             shadowMovement = result.MovementProposalCount == 1
                 ? &proposal : nullptr;
         }
+    if (shadowMovement)
+        ObserveCandidate(result, *shadowMovement, true);
     if (result.Ambiguous())
     {
         result.Outcome = MagmawTransferLaneIntentComparisonOutcome::Divergent;
@@ -185,22 +300,14 @@ MagmawTransferLaneIntentComparison CompareMagmawTransferLaneIntents(
     if (shadowMovement && !legacy)
     {
         result.Outcome = MagmawTransferLaneIntentComparisonOutcome::ShadowOnly;
-        result.ShadowActor = shadowMovement->Id.Actor;
-        result.ShadowTaskGeneration = shadowMovement->Id.EventGeneration;
         return result;
     }
     if (!shadowMovement)
     {
         result.Outcome = MagmawTransferLaneIntentComparisonOutcome::LegacyOnly;
-        result.LegacyActor = legacy->Id.Actor;
-        result.LegacyEventGeneration = legacy->Id.EventGeneration;
         return result;
     }
 
-    result.ShadowActor = shadowMovement->Id.Actor;
-    result.LegacyActor = legacy->Id.Actor;
-    result.ShadowTaskGeneration = shadowMovement->Id.EventGeneration;
-    result.LegacyEventGeneration = legacy->Id.EventGeneration;
     result.Divergences = contract
         ? ComparePresent(*shadowMovement, *legacy, *contract)
         : DivergenceMask(Divergence::MissingExecutionContract);
@@ -217,10 +324,14 @@ MagmawTransferLaneIntentComparison ObserveMagmawTransferLaneIntents(
 {
     BotDecision::BotIntentSink shadowSink;
     MagmawTransferLaneTask const* runningTask = nullptr;
+    MagmawTransferLaneTask const* matchingTask = nullptr;
     uint32 runningTaskCount = 0;
+    uint32 matchingTaskCount = 0;
     for (MagmawTransferLaneTask const& task : tasks)
         if (task.Id.ActorGuid == actor)
         {
+            ++matchingTaskCount;
+            matchingTask = matchingTaskCount == 1 ? &task : nullptr;
             EmitMagmawTransferLaneTaskIntent(task, shadowSink);
             if (task.State == BotDecision::PersistentTaskState::Running)
             {
@@ -232,8 +343,82 @@ MagmawTransferLaneIntentComparison ObserveMagmawTransferLaneIntents(
     if (runningTaskCount == 1)
         contract = MagmawTransferLaneContract(*runningTask,
             legacyTransitionGeneration);
-    return CompareMagmawTransferLaneIntents(shadowSink.Proposals(), legacy,
-        contract);
+    MagmawTransferLaneIntentComparison result =
+        CompareMagmawTransferLaneIntents(shadowSink.Proposals(), legacy,
+            contract);
+    if (matchingTaskCount == 1 && matchingTask)
+    {
+        result.ScopeKey = matchingTask->Id.Episode.Lifecycle.Key();
+        result.ShadowActor = matchingTask->Id.ActorGuid;
+        result.ShadowEpisodeGeneration =
+            matchingTask->Id.Episode.EpisodeGeneration;
+        result.ShadowTaskGeneration = matchingTask->Id.TaskGeneration;
+        result.ObservedAtMs = matchingTask->LastObservedAtMs;
+    }
+    return result;
+}
+
+std::string LegacyMagmawMovementDiagnosticCandidateKey(
+    BotNativeAction::Candidate const& candidate)
+{
+    if (candidate.Id.Strategy != "adaptive_magmaw"
+        || candidate.Id.Mechanic != "pillar_bait_switch"
+        || !MoveIntent(candidate))
+        return {};
+    return candidate.Id.Key();
+}
+
+void ObserveMagmawTransferLaneIntentEpisode(
+    MagmawTransferLaneIntentEpisodeAccumulator& accumulator,
+    MagmawTransferLaneIntentComparison const& comparison)
+{
+    if (!comparison.Observed)
+        return;
+    if (!ValidEpisodeIdentity(comparison))
+    {
+        RetireActiveSummary(accumulator);
+        return;
+    }
+    MagmawTransferLaneIntentEpisodeIdentity const identity{
+        comparison.ScopeKey, comparison.ShadowActor,
+        comparison.ShadowEpisodeGeneration, comparison.ShadowTaskGeneration };
+    if (accumulator.Active && !(accumulator.Active->Id == identity))
+        RetireActiveSummary(accumulator);
+    if (!accumulator.Active)
+    {
+        accumulator.Active.emplace();
+        accumulator.Active->Id = identity;
+        accumulator.Active->FirstObservedAtMs = comparison.ObservedAtMs;
+    }
+    MagmawTransferLaneIntentEpisodeSummary& summary = *accumulator.Active;
+    summary.LastObservedAtMs = comparison.ObservedAtMs;
+    CountComparisonOutcome(summary, comparison);
+    ObserveStableKey(comparison.ShadowCandidateKey,
+        summary.StableShadowCandidateKey, summary.LastShadowCandidateKey,
+        summary.ShadowKeyChangeCount);
+    ObserveStableKey(comparison.LegacyCandidateKey,
+        summary.StableLegacyCandidateKey, summary.LastLegacyCandidateKey,
+        summary.LegacyKeyChangeCount);
+    ObserveStableDestination(comparison.ShadowDestinationAvailable,
+        comparison.ShadowDestination,
+        summary.StableShadowDestinationAvailable,
+        summary.StableShadowDestination,
+        summary.LastShadowDestinationAvailable,
+        summary.LastShadowDestination, summary.ShadowDestinationChangeCount);
+    ObserveStableDestination(comparison.LegacyDestinationAvailable,
+        comparison.LegacyDestination,
+        summary.StableLegacyDestinationAvailable,
+        summary.StableLegacyDestination,
+        summary.LastLegacyDestinationAvailable,
+        summary.LastLegacyDestination, summary.LegacyDestinationChangeCount);
+    if (!summary.FirstFailingComparison && FailedComparison(comparison))
+        summary.FirstFailingComparison = comparison;
+}
+
+void ResetMagmawTransferLaneIntentEpisodeAccumulator(
+    MagmawTransferLaneIntentEpisodeAccumulator& accumulator)
+{
+    accumulator = {};
 }
 
 char const* ToString(MagmawTransferLaneIntentComparisonOutcome value)

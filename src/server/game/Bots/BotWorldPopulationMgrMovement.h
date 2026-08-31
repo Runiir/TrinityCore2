@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 
 class Unit;
 
@@ -126,7 +127,16 @@ struct Intent
     bool AllowNativeLongPath = false;
     bool NativeRecoveryCrossMapPending = false;
     std::string IntentReason;
+    // Diagnostic-only correlation token copied from the already-selected
+    // action candidate. It is excluded from movement behavior and identity.
+    std::string DiagnosticCandidateKey;
 };
+
+inline void CopyMovementDiagnosticCandidateKey(Intent& intent,
+    std::string_view candidateKey)
+{
+    intent.DiagnosticCandidateKey = std::string(candidateKey);
+}
 
 struct PathPlan
 {

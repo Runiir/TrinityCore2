@@ -68,6 +68,21 @@ int main()
         30005, 669, intent, scope, 0, -311.814f, -32.2758f, 211.39f, true);
     assert(receiptId != 0);
 
+    Intent correlatedIntent = intent;
+    CopyMovementDiagnosticCandidateKey(correlatedIntent,
+        "scope:adaptive_magmaw:pillar_bait_switch:30008:7");
+    std::uint64_t const correlatedReceiptId = BeginMovementPlannerReceipt(
+        30008, 669, correlatedIntent, scope, 0,
+        -311.814f, -32.2758f, 211.39f);
+    MovementPlannerObservation const correlated =
+        MovementPlannerDiagnostics().Latest(30008);
+    assert(correlated.LaunchReceipt.Id == correlatedReceiptId);
+    assert(correlated.LaunchReceipt.DiagnosticCandidateKey
+        == correlatedIntent.DiagnosticCandidateKey);
+    assert(MovementPlannerObservationJson(correlated).find(
+        "\"diagnostic_candidate_key\":\"scope:adaptive_magmaw")
+        != std::string::npos);
+
     PathPlan plan;
     plan.LaunchReceiptId = receiptId;
     plan.Selected = true;
@@ -655,6 +670,7 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
     )
     assert receipt["identity"] == {
         "bot_guid": 30005,
+        "diagnostic_candidate_key": "",
         "map": 669,
         "owner": "formation",
         "intent_reason": "ranged_formation_restore",

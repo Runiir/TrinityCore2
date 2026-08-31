@@ -2,11 +2,11 @@
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCoordinator.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneIntent.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneDiagnostics.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneTask.h"
 
 #include <algorithm>
 #include <initializer_list>
-#include <sstream>
 
 namespace
 {
@@ -147,72 +147,16 @@ void BotWorldPopulationMgr::ObserveMagmawTransferLaneIntentComparison(
     state.MagmawTransferLaneIntentComparison =
         BotEncounter::ObserveMagmawTransferLaneIntents(tasks, actor,
             legacyMovement, legacyTransitionGeneration);
+    BotEncounter::ObserveMagmawTransferLaneIntentEpisode(
+        state.MagmawTransferLaneIntentEpisodeAccumulator,
+        state.MagmawTransferLaneIntentComparison);
 }
 
 std::string BotWorldPopulationMgr::BuildMagmawTransferLaneIntentComparisonJson(
     WorldBotState const& state) const
 {
-    using namespace BotEncounter;
-    MagmawTransferLaneIntentComparison const& comparison =
-        state.MagmawTransferLaneIntentComparison;
-    std::ostringstream json;
-    json << "{\"observed\":" << (comparison.Observed ? "true" : "false")
-         << ",\"outcome\":\"" << ToString(comparison.Outcome) << "\""
-         << ",\"proposal_count\":" << comparison.ProposalCount
-         << ",\"movement_proposal_count\":"
-         << comparison.MovementProposalCount
-         << ",\"ambiguous\":"
-         << (comparison.Ambiguous() ? "true" : "false")
-         << ",\"shadow_actor_guid\":"
-         << comparison.ShadowActor.GetCounter()
-         << ",\"legacy_actor_guid\":"
-         << comparison.LegacyActor.GetCounter()
-         << ",\"shadow_task_generation\":"
-         << comparison.ShadowTaskGeneration
-         << ",\"legacy_event_generation\":"
-         << comparison.LegacyEventGeneration
-         << ",\"expected_legacy_transition_generation\":"
-         << comparison.ExpectedLegacyTransitionGeneration
-         << ",\"divergences\":[";
-    bool first = true;
-    auto append = [&](MagmawTransferLaneIntentDivergence reason,
-        char const* name)
-    {
-        if (!comparison.Has(reason))
-            return;
-        json << (first ? "" : ",") << '"' << name << '"';
-        first = false;
-    };
-    append(MagmawTransferLaneIntentDivergence::AmbiguousShadowMovement,
-        "ambiguous_shadow_movement");
-    append(MagmawTransferLaneIntentDivergence::MissingExecutionContract,
-        "missing_execution_contract");
-    append(MagmawTransferLaneIntentDivergence::StrategyIdentity,
-        "strategy_identity");
-    append(MagmawTransferLaneIntentDivergence::MechanicIdentity,
-        "mechanic_identity");
-    append(MagmawTransferLaneIntentDivergence::LifecycleScope,
-        "lifecycle_scope");
-    append(MagmawTransferLaneIntentDivergence::ActionKind, "action_kind");
-    append(MagmawTransferLaneIntentDivergence::Actor, "actor");
-    append(MagmawTransferLaneIntentDivergence::GenerationCorrelation,
-        "generation_correlation");
-    append(MagmawTransferLaneIntentDivergence::MovementResource,
-        "movement_resource");
-    append(MagmawTransferLaneIntentDivergence::DestinationNonFinite,
-        "destination_non_finite");
-    append(MagmawTransferLaneIntentDivergence::Destination2d,
-        "destination_2d");
-    append(MagmawTransferLaneIntentDivergence::DestinationZ,
-        "destination_z");
-    append(MagmawTransferLaneIntentDivergence::PreemptCasting,
-        "preempt_casting");
-    append(MagmawTransferLaneIntentDivergence::ActionPriority,
-        "action_priority");
-    append(MagmawTransferLaneIntentDivergence::Utility, "utility");
-    append(MagmawTransferLaneIntentDivergence::Expiry, "expiry");
-    json << "]}";
-    return json.str();
+    return BotEncounter::BuildMagmawTransferLaneIntentComparisonDiagnosticsJson(
+        state.MagmawTransferLaneIntentComparison);
 }
 
 std::string BotWorldPopulationMgr::BuildMagmawTransferLaneTaskShadowJson()
@@ -220,55 +164,14 @@ std::string BotWorldPopulationMgr::BuildMagmawTransferLaneTaskShadowJson()
 {
     using namespace BotEncounter;
     auto const& shadow = Cohort().MagmawTransferLaneTaskShadow;
-    if (!shadow)
-        return "{\"active\":false}";
-    std::ostringstream json;
-    json << "{\"active\":" << (shadow->Episode() ? "true" : "false")
-         << ",\"source_revision\":" << shadow->SourceRevision();
-    if (shadow->Episode())
+    std::vector<MagmawTransferLaneActorIntentDiagnostics> actors;
+    actors.reserve(Party().Bots.size());
+    for (WorldBotState const& state : Party().Bots)
     {
-        MagmawTransferLaneEpisode const& episode = *shadow->Episode();
-        json << ",\"episode_generation\":"
-             << episode.Id.EpisodeGeneration
-             << ",\"mechanic_generation\":"
-             << episode.Id.MechanicGeneration
-             << ",\"raid_plan_generation\":"
-             << episode.Id.RaidPlanGeneration
-             << ",\"roster_generation\":"
-             << episode.Id.RosterGeneration
-             << ",\"direction\":\"" << ToString(episode.Direction)
-             << "\",\"fire_mage_guid\":"
-             << episode.FireMageGuid.GetCounter()
-             << ",\"hunter_guid\":" << episode.HunterGuid.GetCounter();
+        actors.push_back({ state.Guid,
+            state.MagmawTransferLaneIntentComparison,
+            state.MagmawTransferLaneIntentEpisodeAccumulator });
     }
-    json << ",\"tasks\":[";
-    for (size_t index = 0; index < shadow->Tasks().size(); ++index)
-    {
-        if (index)
-            json << ',';
-        MagmawTransferLaneTask const& task = shadow->Tasks()[index];
-        json << "{\"actor_guid\":" << task.Id.ActorGuid.GetCounter()
-             << ",\"task_generation\":" << task.Id.TaskGeneration
-             << ",\"state\":\"" << ToString(task.State)
-             << "\",\"suspension\":\"" << ToString(task.Suspension)
-             << "\",\"failure\":\"" << ToString(task.Failure)
-             << "\",\"movement_observation\":\""
-             << ToString(task.MovementDisposition)
-             << "\",\"best_distance\":" << task.BestDistance
-             << ",\"observation_samples\":" << task.ObservationSamples
-             << ",\"progress_samples\":" << task.ProgressSamples << '}';
-    }
-    json << "],\"retired_task_count\":" << shadow->Retired().size()
-         << ",\"intent_comparisons\":[";
-    for (size_t index = 0; index < Party().Bots.size(); ++index)
-    {
-        if (index)
-            json << ',';
-        WorldBotState const& state = Party().Bots[index];
-        json << "{\"actor_guid\":" << state.Guid.GetCounter()
-             << ",\"comparison\":"
-             << BuildMagmawTransferLaneIntentComparisonJson(state) << '}';
-    }
-    json << "]}";
-    return json.str();
+    return BuildMagmawTransferLaneTaskShadowDiagnosticsJson(
+        shadow.get(), actors);
 }

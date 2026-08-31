@@ -139,6 +139,8 @@ std::uint64_t MovementPlannerDiagnosticSidecar::BeginReceipt(
     observation.AllowNativeLongPath = intent.AllowNativeLongPath;
     observation.DynamicTarget = intent.DynamicTarget != nullptr;
     observation.LaunchReceipt.Id = receiptId;
+    observation.LaunchReceipt.DiagnosticCandidateKey =
+        intent.DiagnosticCandidateKey;
     observation.LaunchReceipt.IntentFingerprint = MovementIntentFingerprint(
         intent, requestedMapId, dynamicTargetGuid);
     observation.LaunchReceipt.Scope = scope;

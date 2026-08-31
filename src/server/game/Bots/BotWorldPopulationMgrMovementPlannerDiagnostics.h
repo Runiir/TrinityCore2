@@ -86,6 +86,7 @@ struct NativePathLaunchReceipt
     std::uint32_t Version = NativePathLaunchReceiptVersion;
     std::uint64_t Id = 0;
     std::uint64_t IntentFingerprint = 0;
+    std::string DiagnosticCandidateKey;
     BotMovementArbitration::Scope Scope;
     std::uint64_t DynamicTargetGuid = 0;
     bool ProgressCaptureEnabled = false;

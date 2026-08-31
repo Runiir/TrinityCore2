@@ -100,6 +100,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneTask.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneMovementObservation.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneIntent.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneDiagnostics.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrRecordingWindow.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrPolicyDeployment.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrValidationProfile.cpp
