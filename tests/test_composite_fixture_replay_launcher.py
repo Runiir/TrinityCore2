@@ -33,13 +33,15 @@ def _stable_source(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def _request(tmp_path: Path) -> dict:
+def _request(
+    tmp_path: Path, expected_work_unit: str = launcher.EXPECTED_WORK_UNIT,
+) -> dict:
     external = tmp_path.resolve()
     return {
         "schema": launcher.REQUEST_SCHEMA,
         "worktree": str(ROOT),
         "run_root": str(external / "run"),
-        "expected_work_unit": launcher.EXPECTED_WORK_UNIT,
+        "expected_work_unit": expected_work_unit,
         "decision": {"path": str(external / "decision.json")},
         "suite_receipt": {"path": str(external / "suite.json")},
         "route_manifest": {"path": str(external / "route.json")},
@@ -86,6 +88,68 @@ def test_prebuild_is_deterministic_and_exact(tmp_path: Path) -> None:
         "/usr/bin/cmake", "--build", "build", "--target", "worldserver",
         "--parallel", "8",
     ]
+
+
+def test_live_prebuild_uses_live_source_authority(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    selectors: list[str] = []
+
+    def source_authority(_worktree: Path, work_unit: str) -> dict[str, str]:
+        selectors.append(work_unit)
+        if work_unit != launcher.LIVE_WORK_UNIT:
+            raise AssertionError(f"stale selector: {work_unit}")
+        return dict(SOURCE)
+
+    monkeypatch.setattr(launcher, "_source_authority", source_authority)
+    request = _request(tmp_path, launcher.LIVE_WORK_UNIT)
+    plan = launcher.compose_plan(request)
+    assert plan["schema"] == launcher.PREBUILD_SCHEMA
+    assert selectors == [launcher.LIVE_WORK_UNIT]
+
+
+def test_live_realization_revalidates_live_source_authority(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    selectors: list[str] = []
+
+    def source_authority(_worktree: Path, work_unit: str) -> dict[str, str]:
+        selectors.append(work_unit)
+        if work_unit != launcher.LIVE_WORK_UNIT:
+            raise AssertionError(f"stale selector: {work_unit}")
+        return dict(SOURCE)
+
+    monkeypatch.setattr(launcher, "_source_authority", source_authority)
+    request = _request(tmp_path, launcher.LIVE_WORK_UNIT)
+    prebuild = launcher.compose_plan(request)
+    prebuild_path = tmp_path / "live-prebuild.json"
+    _write(prebuild_path, launcher._canonical_bytes(prebuild))
+    for label in (
+        "decision", "suite_receipt", "route_manifest",
+        "base_runtime_config_receipt",
+    ):
+        _write(Path(request[label]["path"]), label.encode())
+    run_root = Path(request["run_root"])
+    _write(run_root / "configure_receipt.json", b"configure\n")
+    _write(run_root / "worldserver_build_receipt.json", b"receipt\n")
+    monkeypatch.setattr(launcher, "_verified_build_artifacts", lambda **_kwargs: {
+        "binary": {
+            "path": str(ROOT / "build/src/server/worldserver/worldserver"),
+            "sha256": "1" * 64,
+        },
+        "configure_receipt": {
+            "path": str(run_root / "configure_receipt.json"),
+            "sha256": "2" * 64,
+        },
+        "build_receipt": {
+            "path": str(run_root / "worldserver_build_receipt.json"),
+            "sha256": "3" * 64,
+        },
+    })
+    selectors.clear()
+    realized = launcher.realize_plan(request, prebuild, prebuild_path)
+    assert realized["schema"] == launcher.REALIZED_SCHEMA
+    assert selectors == [launcher.LIVE_WORK_UNIT, launcher.LIVE_WORK_UNIT]
 
 
 def test_realization_binds_fresh_artifacts_after_build(

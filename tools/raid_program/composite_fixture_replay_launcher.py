@@ -466,7 +466,7 @@ def compose_plan(
     worktree, run_root, _artifacts, policy_path, policy, policy_sha256 = (
         _request_context(request, check_prebuild_outputs=_check_outputs)
     )
-    source = _source_authority(worktree, EXPECTED_WORK_UNIT)
+    source = _source_authority(worktree, request["expected_work_unit"])
     configure_receipt = run_root / "configure_receipt.json"
     build_receipt = run_root / "worldserver_build_receipt.json"
     plan = {
@@ -579,7 +579,9 @@ def realize_plan(
         _request_context(request, check_prebuild_outputs=False)
     )
     source = prebuild["source"]
-    current_source = _source_authority(worktree, EXPECTED_WORK_UNIT)
+    current_source = _source_authority(
+        worktree, request["expected_work_unit"]
+    )
     if source != {"worktree": str(worktree), **current_source}:
         raise ReplayPlanError("source_changed_after_prebuild")
     prebuild_path = _absolute_path(str(prebuild_path), "prebuild_plan")
