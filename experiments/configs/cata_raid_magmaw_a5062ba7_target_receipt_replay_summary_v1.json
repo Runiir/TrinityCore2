@@ -1,0 +1,172 @@
+{
+  "schema": "cata_raid_magmaw_target_receipt_replay_summary_v1",
+  "purpose": "fixture_expansion_replay",
+  "classification": "observation_only_fixture_expansion_gameplay_failure_target_receipt_closed",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "source": {
+    "commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
+    "tree": "82dfb02a84c7c766772d9b81aa9ecce8eed14da2",
+    "worktree_clean_during_run": true,
+    "binary_sha256": "6c5762d39ab0422993b6d0fa5dcbbbea0b4c7569f64610b0a8c2e9a0e677a077",
+    "config_sha256": "df9205a7a5faca31e02afb2c76d3a82a94d88ea8de85e084d685e2fd11ee2ac1",
+    "build_ticket_id": "raid-build-e9b765ced0494671a9f8efb6599a2e85",
+    "build_receipt_sha256": "9408c69b332baac953b7dee28512749daf92fcb3b9acee9b439a0563c5ebc636"
+  },
+  "admission": {
+    "recurrence_admission_sha256": "ef034bf9588bfc2ddb37a13a65610bfdb8f916b0a800a8d6814a0c1254c3ab1d",
+    "checkpoint_seal_sha256": "eab65b323de1a14bdf59cfdd9b120a03f80260a64644d2a7c57aa8f9420a7e79",
+    "regression_suite_receipt_sha256": "47a8d6ff353aa0512f6af41657da5775fee7c99a4f45fe17c499424ae4387b97",
+    "recurrence_decision_sha256": "e31ac93339cb55168ef3ad119a82aa5b9692de31305ff9f293c32cc391fd6b31",
+    "fixture_expansion_admitted": true,
+    "gameplay_canary_admitted": false,
+    "gameplay_mutations_allowed": false,
+    "authserver_start_count": 0,
+    "worldserver_start_count": 1,
+    "second_attempt_run": false
+  },
+  "provisioning": {
+    "strict_readback_passed": true,
+    "strict_readback_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "shard_readback_passed": true,
+    "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "roster_size": 10,
+    "all_current_gear_matches_admission": true,
+    "map_id": 669,
+    "instance_id": 8
+  },
+  "capture": {
+    "terminal_reason": "death_loop_watchdog",
+    "controller_death_loop_count": 3,
+    "final_status_cumulative_deaths": 3,
+    "elapsed_seconds": 466.597,
+    "chainwielder_cleared": true,
+    "drudges_cleared": true,
+    "magmaw_cleared": false,
+    "final_forced_evidence_complete": true
+  },
+  "fixture_boundaries": {
+    "targeted_movement_receipt_retention_v1": {
+      "status": "production_boundary_met",
+      "actor_guid": 30009,
+      "owner": "hazard",
+      "intent_reason": "parasite_contact_evade",
+      "intent_fingerprint": "7ab7f064635030d2",
+      "receipt_id": 579,
+      "planner_result": "submitted",
+      "native_path_complete": true,
+      "native_proof_accepted": true,
+      "point_generator_initialized": true,
+      "published_progress_samples": 8,
+      "dropped_progress_samples": 0,
+      "terminal_outcome": "selected_endpoint_reached",
+      "best_endpoint_distance": 0.0,
+      "finding": "The requested bounded Hazard lifecycle retained actor, intent fingerprint, planner proof, native submission, spline progress, and its terminal outcome without increasing global receipt or sample capacity."
+    },
+    "same_level_hazard_path_admission_v1": {
+      "status": "failed_live_boundary_not_promoted",
+      "finding": "Complete Hazard paths launched and reached endpoints, but three valid Magmaw-platform Massive Crash destinations were rejected after floor sampling resolved Z near -101 to -104 for actors and requests near Z 210."
+    },
+    "same_level_native_path_proof_v1": {
+      "status": "failed_live_boundary_not_promoted",
+      "finding": "The native proof admitted valid complete paths, but the shared floor-selection boundary still classified same-platform Massive Crash destinations as partial or missing-mmap paths before submission."
+    }
+  },
+  "first_broken_edge": {
+    "component": "native_movement_floor_selection",
+    "owner": "hazard",
+    "intent_reason": "massive_crash_evade",
+    "gate": "planner_admission",
+    "reason": "wrong_collision_layer_selected",
+    "observations": [
+      {
+        "actor_guid": 30002,
+        "receipt_id": 516,
+        "request_z": 210.948013,
+        "actor_z": 210.948013,
+        "resolved_floor_z": -104.00293,
+        "reported_z_delta": 314.950928,
+        "planner_result": "route_destination_partial_path"
+      },
+      {
+        "actor_guid": 30007,
+        "receipt_id": 528,
+        "request_z": 210.521393,
+        "actor_z": 210.098007,
+        "resolved_floor_z": -101.750114,
+        "reported_z_delta": 312.271515,
+        "planner_result": "route_destination_partial_path"
+      },
+      {
+        "actor_guid": 30008,
+        "receipt_id": 644,
+        "request_z": 210.517456,
+        "actor_z": 210.098007,
+        "resolved_floor_z": -101.340904,
+        "reported_z_delta": 311.858368,
+        "planner_result": "route_destination_partial_path"
+      }
+    ],
+    "finding": "The action queue selected lethal Hazard movement. The first failure occurred inside native floor resolution before executor submission, so queue-priority and encounter-tactic changes are out of scope for the repair."
+  },
+  "performance": {
+    "chainwielder": {
+      "duration_seconds": 66.577,
+      "party_dps": 86719.463,
+      "party_hps": 5349.019
+    },
+    "drudges": {
+      "duration_seconds": 83.804,
+      "party_dps": 104091.045,
+      "party_hps": 36376.776
+    },
+    "magmaw": {
+      "duration_seconds": 199.744,
+      "party_dps": 82493.378,
+      "party_hps": 17688.567,
+      "affliction_dps": 30966.905,
+      "affliction_active_dps": 36448.212,
+      "affliction_damage_uptime": 0.681592,
+      "affliction_pet_damage": 1230943,
+      "affliction_pet_damage_share": 0.197763
+    }
+  },
+  "replay_tool": {
+    "useful": true,
+    "bounded_window_seconds": 55.0,
+    "anchor": "death_loop_watchdog",
+    "party_dps": 80334.2,
+    "party_hps": 19319.909,
+    "movement_receipt_history_status": "partial_global_but_target_receipt_closed",
+    "target_receipt_extract": "target_receipt_579.json",
+    "missing_signal": "The terminal window lacks continuous aura, health, boss phase, and add lifecycle fields; the first broken floor edge was recovered from identity-bound diagnosis frames outside that final window."
+  },
+  "cleanup": {
+    "native_stop_observed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "gate_passed": true
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_a5062ba7_magmaw_target_receipt_replay_20260831.dvc",
+    "dvc_pointer_sha256": "8be3c6269fb82b89889f34f3e6dc7e1996a5a7980e2bdfc95d71bd1ca22ef297",
+    "dvc_directory_md5": "8694dfac1264988a7049b749112abf09.dir",
+    "dvc_directory_size_bytes": 230962649,
+    "dvc_directory_file_count": 28,
+    "remote_status": "in_sync",
+    "report_sha256": "643d83b9098370b813a5e9181ac0df0fbff81951c75964f262d5481a9a8978a0",
+    "raw_jsonl_sha256": "2aff2219c0bc37746cc47532850cea6a7c91d5bcf82c6e279997287ffb5894cf",
+    "worldserver_log_sha256": "0b17becd839f6b76b8c048834b0aa338e47754356e40a9f82b8539776fd183e0",
+    "tactical_replay_sha256": "976ae2a846c49a76c8372d1f59f49634705d7367ad7a2813c43fad630e3ce4b4",
+    "tactical_replay_summary_sha256": "027d8f02ef9fe15a5a2233e2272a7c115c7af1838cda4b5cc69ee4d13299b77a",
+    "target_receipt_extract_sha256": "8c7c3ded3739eb87f7cd95c37ceb1b9b6350a27c471a136adc598d7d26a44434",
+    "hazard_rejections_sha256": "55820b57611c9eb5ad5357c4c416f6c3821eb919c680fc8f463ed2d8762c83dd"
+  },
+  "next_work_unit": {
+    "id": "runtime:native_floor_layer_selection",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_action": "Repair the shared floor sampler so same-platform native Hazard destinations retain the reachable platform layer. Preserve cross-floor, missing-map, and forbidden-route no-launch behavior. Do not change queue priority, encounter tactics, or global planner tolerances.",
+    "required_postcondition": "A deterministic regression reproduces the three live Z observations, valid same-platform destinations launch, wrong-floor destinations remain rejected, and one bounded map-669 replay no longer emits the recorded -101 to -104 floor selection for Z 210 Massive Crash requests.",
+    "worldserver_start_maximum": 1
+  }
+}

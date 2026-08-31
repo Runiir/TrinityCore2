@@ -1,16 +1,16 @@
 {
-  "behavior_change": false,
+  "behavior_change": true,
   "boss": "magmaw",
-  "classification": "fixture_replay_authorized",
-  "epoch_id": "targeted_movement_receipt_replay_20260831",
-  "evidence_contract_change": true,
-  "gate_state": "one_targeted_fixture_replay_required",
-  "next_action": "Run exactly one no-retry map-669 fixture replay without authserver. Verify the requested complete Hazard retry retains its planner, launch, progress, and terminal lifecycle in the compact replay, then publish and stop for review.",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "shard:map669_target_receipt_fixture_replay",
-  "observed_at_commit": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
-  "immutable_input_commit": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
-  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "trace_backed_runtime_repair_authorized",
+  "epoch_id": "native_floor_layer_selection_repair_20260831",
+  "evidence_contract_change": false,
+  "gate_state": "one_shared_runtime_repair_required",
+  "next_action": "Repair the native floor sampler so a same-platform Hazard destination near Z 210 cannot select the lower collision layer near Z -101 to -104. Lock the three live observations as regression inputs, preserve wrong-floor and forbidden-path rejection, then run one bounded map-669 replay without authserver.",
+  "next_owner_skill": "raid-bot-runtime-implementation",
+  "next_work_unit": "runtime:native_floor_layer_selection",
+  "observed_at_commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
+  "immutable_input_commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
+  "owner_skill": "raid-bot-runtime-implementation",
   "program_scope": {
     "acceptance_admitted": false,
     "authserver_start_admitted": false,
@@ -19,44 +19,48 @@
     "fixture_expansion_replay_admitted": true,
     "fixture_prerequisite_build_authorized": true,
     "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": false,
+    "gameplay_mutations_allowed": true,
     "worldserver_start_admitted": true
   },
-  "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": true,
-  "ready_for_live_verification": true,
+  "ready_for_bounded_repair": true,
+  "ready_for_fixture_expansion": false,
+  "ready_for_live_verification": false,
   "raid": "blackwing_descent",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "No code or gameplay change. Run one observation-only map-669 replay to verify targeted receipt retention through the real planner, executor, MotionMaster, point generator, spline progress, and terminal outcome or explicit supersession.",
+    "allowed_change": "One shared native floor-layer selection repair at the PlanMovementPath admission boundary, plus deterministic regression coverage for the three captured map-669 Massive Crash observations.",
     "forbidden": [
-      "authserver start, manual login, a second live attempt, or automatic retry",
+      "authserver start or manual-login validation",
       "increasing global receipt or sample capacity",
-      "global arbitration priority or planner-tolerance changes",
+      "global arbitration priority changes",
+      "global planner-tolerance increases or unbounded fallback sampling",
       "class DPS, pet, consumable, Bloodlust, boss-script, or database-content changes",
-      "changing the fixed Fire Mage and Marksmanship Hunter parasite-lane assignment",
-      "claiming one clear as route acceptance",
-      "changing movement, healing, target, class, pet, consumable, or encounter behavior"
+      "changing Magmaw strategy, bait ownership, lane assignment, or movement priority",
+      "accepting a path solely because its endpoint is numerically close while its selected floor is incompatible",
+      "a second live attempt before the first repaired replay is published and reviewed"
     ],
     "required_postconditions": [
-      "global receipt and sample publication limits remain unchanged",
-      "one requested complete Hazard retry is present in the bounded publication with its terminal outcome or explicit supersession",
-      "the compact replay joins actor, intent fingerprint, planner result, native launch, spline progress, and terminal outcome",
-      "the completion watchdog stops on fixture closure or the first truthful failure",
+      "actor and requested destination near Z 210 resolve to the reachable platform layer rather than the lower collision layer near Z -101 to -104",
+      "the captured requests for actors 30002, 30007, and 30008 are deterministic regression cases",
+      "cross-floor, missing-map, partial-path, and forbidden-route negatives still do not launch",
+      "one requested Hazard receipt still retains actor, intent fingerprint, planner result, native launch, spline progress, and terminal outcome",
+      "the completion watchdog stops the single live replay on clear or the first truthful failure",
       "the immutable run is published and remotely verified before local eviction",
       "all changed C++ files remain below 1000 physical lines"
     ]
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_targeted_movement_receipt_retention_handoff_v1.json",
-    "sha256": "fc0f226c2dc432de678da88b378ccccd80feba4213fdbecbdc718c566980c933",
-    "source_commit": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
-    "source_tree": "50f81a9a97071d5b30691cc681450640aea2809d"
+    "path": "experiments/configs/cata_raid_magmaw_a5062ba7_target_receipt_replay_summary_v1.json",
+    "sha256": "9e3737f6fd495c4f039b7345d2e1522523aa9ae3ca2cb77c1e304e78a8e26a3b",
+    "source_commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
+    "source_tree": "82dfb02a84c7c766772d9b81aa9ecce8eed14da2",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_a5062ba7_magmaw_target_receipt_replay_20260831.dvc",
+    "dvc_pointer_sha256": "8be3c6269fb82b89889f34f3e6dc7e1996a5a7980e2bdfc95d71bd1ca22ef297"
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "one_no_retry_targeted_fixture_replay_before_gameplay_canary",
+    "repair_policy": "deterministic_fixture_then_one_no_retry_live_replay",
     "terminal_edges": [
       "normal_clear",
       "monotonic_no_progress_or_semantic_stall",
@@ -67,5 +71,5 @@
     ]
   },
   "mode": "10N",
-  "work_unit": "shard:map669_target_receipt_fixture_replay"
+  "work_unit": "runtime:native_floor_layer_selection"
 }

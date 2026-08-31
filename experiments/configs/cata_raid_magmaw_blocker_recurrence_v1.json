@@ -197,6 +197,25 @@
         "fixture_id": "targeted_movement_receipt_retention_v1",
         "revision": 1,
         "causal_signature": "movement_receipt_terminal_join_eviction",
+        "evidence_boundary": "production",
+        "verification_status": "production_boundary_met",
+        "required_production_boundary": "one requested bounded Hazard receipt retains actor, intent fingerprint, planner result, native launch, spline progress, and terminal outcome or explicit supersession without increasing global publication capacity",
+        "production_evidence": {
+          "path": "experiments/configs/cata_raid_magmaw_a5062ba7_target_receipt_replay_summary_v1.json",
+          "source_commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
+          "source_tree": "82dfb02a84c7c766772d9b81aa9ecce8eed14da2",
+          "binary_sha256": "6c5762d39ab0422993b6d0fa5dcbbbea0b4c7569f64610b0a8c2e9a0e677a077",
+          "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_a5062ba7_magmaw_target_receipt_replay_20260831.dvc",
+          "dvc_pointer_sha256": "8be3c6269fb82b89889f34f3e6dc7e1996a5a7980e2bdfc95d71bd1ca22ef297",
+          "actor_guid": 30009,
+          "owner": "hazard",
+          "intent_fingerprint": "7ab7f064635030d2",
+          "receipt_id": 579,
+          "terminal_outcome": "selected_endpoint_reached",
+          "published_progress_samples": 8,
+          "dropped_progress_samples": 0,
+          "finding": "The requested Hazard lifecycle remained identity-bound through complete native proof, executor submission, point-spline progress, and its selected_endpoint_reached terminal outcome."
+        },
         "command": [
           "pixi",
           "run",
@@ -1540,6 +1559,39 @@
       "worldserver_log_sha256": "f04dc13b81e629b5b1c574dbe612f802daccfed38cf44766df72736e031577ea",
       "evidence": "experiments/configs/cata_raid_magmaw_418910a90d_fixture_expansion_summary_v1.json",
       "note": "Chainwielder and Drudges cleared and the pre-admission rejection isolation boundary was reproduced. The same actor and intent selected receipt 562 as a fresh complete shorter retry after two incomplete paths, but the four-receipt publication window evicted its progress and terminal history before diagnosis. The remaining two shared Hazard lifecycle boundaries stay pending."
+    },
+    {
+      "run_id": "trinity-magmaw-a5062ba7-target-receipt-replay.attempt1",
+      "route_completed": false,
+      "classification": "observation_only_fixture_expansion_gameplay_failure_target_receipt_closed",
+      "admission": {
+        "source_identity": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
+        "source_tree": "82dfb02a84c7c766772d9b81aa9ecce8eed14da2",
+        "suite_receipt_sha256": "47a8d6ff353aa0512f6af41657da5775fee7c99a4f45fe17c499424ae4387b97",
+        "recurrence_admission_sha256": "ef034bf9588bfc2ddb37a13a65610bfdb8f916b0a800a8d6814a0c1254c3ab1d",
+        "fixture_revisions": {
+          "chainwielder_pre_admission_rejection_isolation_v1": 1,
+          "targeted_movement_receipt_retention_v1": 1,
+          "same_level_floor_observation_v1": 4,
+          "same_level_hazard_path_admission_v1": 4,
+          "same_level_native_path_proof_v1": 4
+        }
+      },
+      "blockers": {
+        "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "absent",
+        "movement_receipt_terminal_join_eviction": "absent",
+        "same_level_movement_path_floor_false_negative": "occurred",
+        "same_level_encounter_hazard_path_rejection": "occurred",
+        "same_level_native_path_proof_false_negative": "occurred",
+        "magmaw_parasite_control_allows_player_infection": "not_causally_closed",
+        "native_planner_executor_launch_divergence": "absent_for_complete_paths"
+      },
+      "report_sha256": "643d83b9098370b813a5e9181ac0df0fbff81951c75964f262d5481a9a8978a0",
+      "raw_jsonl_sha256": "2aff2219c0bc37746cc47532850cea6a7c91d5bcf82c6e279997287ffb5894cf",
+      "worldserver_log_sha256": "0b17becd839f6b76b8c048834b0aa338e47754356e40a9f82b8539776fd183e0",
+      "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_a5062ba7_magmaw_target_receipt_replay_20260831.dvc",
+      "evidence": "experiments/configs/cata_raid_magmaw_a5062ba7_target_receipt_replay_summary_v1.json",
+      "note": "Chainwielder and Drudges cleared. Hazard receipt 579 retained its complete planner, launch, progress, and selected_endpoint_reached lifecycle. Magmaw stopped at the death-loop watchdog after the floor sampler resolved three valid Z 210 Massive Crash destinations onto the lower collision layer near Z -101 to -104 and rejected them before executor submission."
     }
   ]
 }
