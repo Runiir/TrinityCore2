@@ -111,11 +111,26 @@ plus endpoint-floor validity; do not collapse those facts into one unexplained
 3D tolerance. Retain the exact rejected endpoint deltas as a compiled
 counterexample and serialize both components for future traces.
 
+A complete primary path with an inadmissible endpoint is terminal for that
+route attempt. Do not reinterpret it as permission to probe or launch a shorter
+progressive-local fallback: completeness says the native planner resolved the
+request, while endpoint or floor rejection says that resolved route is unsafe
+or wrong. Progressive-local fallback is eligible only for an explicitly
+incomplete primary path that still satisfies the shared floor and forbidden-path
+guards. Cover both branches through the final planner selection boundary.
+
 Movement producers must submit the destination's declared/navigation-floor Z,
 not the actor's transient Z, when the destination came from a route-bound
 anchor. Prove the recorded requested-versus-normalized endpoint deltas against
 the strict shared endpoint gate. Do not loosen that gate to compensate for a
 producer that discarded its destination floor.
+
+Route construction is not the only floor-identity boundary. Every consumer of
+a retained route—including waypoint advancement, arrival, remaining-route
+safety, retry, and completion—must recheck the actor against the retained
+navigation-floor anchor before changing state. Test post-retention actor Z drift
+at the same X/Y as well as a nearby legitimate terrain offset; 2D proximity
+alone must never advance or complete a route on another floor.
 
 A successful wait, suppression, or consumable candidate can coexist with a
 failed movement candidate in the same kernel resolution. Do not use the

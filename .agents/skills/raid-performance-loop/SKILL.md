@@ -275,6 +275,16 @@ submissions, plausible same-floor probes, unrelated lower-geometry probes, and
 a legitimate cross-floor rejection. Missing one of these variants keeps the
 signature open and blocks another live canary.
 
+For native-path recurrence, require separate evidence that a complete rejected
+primary path cannot launch a progressive-local fallback and that an incomplete
+same-floor path can still use the bounded fallback when otherwise admissible.
+Also require retained-route consumers to reject post-construction cross-floor
+actor drift. If the standalone test environment cannot initialize Map, MMAP,
+MotionMaster, and world ticks, helper tests may admit a build but cannot promote
+the fixture: route one admission-sealed, observation-only worldserver replay
+that injects the exact intent through the production planner and records native
+launch, progress, rejection, and terminal outcome.
+
 Only a currently `occurred` signature is eligible for repair routing. An older
 open signature whose latest assessed state is `absent` remains a provisional
 acceptance gate, but it must not displace the causal edge that occurred in the

@@ -50,7 +50,7 @@
     "terminal_evidence_complete": true
   },
   "first_broken_edge": {
-    "summary": "The fixed Fire Mage baiter requested a Pillar lane switch, but native floor validation rejected the complete path and the same survival candidate retried until the watchdog fired.",
+    "summary": "The fixed Fire Mage baiter's stable Survival candidate reached the native planner. Receipt 519 produced a complete primary path on the wrong floor, but the shared planner still admitted a shorter progressive fallback and physically moved the bot. Later receipts, including 551 and 553, rejected another complete wrong-floor endpoint and repeated until the watchdog fired. The earliest harmful edge was complete-path progressive-fallback admission, not priority ordering or the terminal retry itself.",
     "candidate_key_suffix": "adaptive_magmaw:pillar_bait_switch:GUID Full: 0x0000000000007536 Type: Player Low: 30006:3",
     "candidate_priority": 160,
     "candidate_score": 500,
@@ -60,6 +60,33 @@
       "x": -307.531,
       "y": -35.4375,
       "z": 211.815
+    },
+    "earliest_harmful_receipt": {
+      "receipt_id": 519,
+      "intent_reason": "parasite_contact_evade",
+      "requested": {
+        "x": -353.645538,
+        "y": -51.6406975,
+        "z": 211.313324
+      },
+      "primary_path_complete": true,
+      "primary_native_endpoint": {
+        "x": -353.645538,
+        "y": -51.6406975,
+        "z": -87.55674
+      },
+      "primary_endpoint_vertical_distance": 298.870056,
+      "primary_endpoint_admitted": false,
+      "progressive_fallback_was_incorrectly_attempted": true,
+      "selected_local_endpoint": {
+        "x": -350.447815,
+        "y": -46.271835,
+        "z": 212.026917
+      },
+      "native_launch_attempted": true,
+      "physical_progress_observed": true,
+      "followup_receipt_id": 521,
+      "followup_terminal_outcome": "selected_endpoint_reached"
     },
     "failed_receipts": [
       {
@@ -72,6 +99,16 @@
         },
         "planner_calculated": true,
         "planner_complete": true,
+        "planner_gate": "endpoint_match",
+        "planner_reason": "route_destination_endpoint_mismatch",
+        "native_endpoint": {
+          "x": -312.400757,
+          "y": -68.8223724,
+          "z": -124.09613
+        },
+        "native_endpoint_horizontal_distance": 0,
+        "native_endpoint_vertical_distance": 335.409454,
+        "sampled_target_floor_z": 213.079407,
         "floor_failure": "sample_floor_gap",
         "floor_observation_conflict": true,
         "reference_z": 0,
@@ -88,6 +125,16 @@
         },
         "planner_calculated": true,
         "planner_complete": true,
+        "planner_gate": "endpoint_match",
+        "planner_reason": "route_destination_endpoint_mismatch",
+        "native_endpoint": {
+          "x": -312.400757,
+          "y": -68.8223724,
+          "z": -124.09613
+        },
+        "native_endpoint_horizontal_distance": 0,
+        "native_endpoint_vertical_distance": 335.409454,
+        "sampled_target_floor_z": 213.079407,
         "floor_failure": "sample_floor_gap",
         "floor_observation_conflict": true,
         "reference_z": 0,
@@ -95,11 +142,12 @@
         "native_launch_attempted": false
       }
     ],
-    "preceding_success": {
+    "local_fallback_progress": {
       "receipt_id": 521,
       "terminal_outcome": "selected_endpoint_reached",
       "bot_guid": 30006,
-      "shows_native_motion_can_execute_on_the_platform": true
+      "shows_native_motion_can_execute_on_the_platform": true,
+      "does_not_validate_the_primary_wrong_floor_route": true
     },
     "do_not_apply": [
       "global_vertical_tolerance_increase",
@@ -213,5 +261,5 @@
       }
     }
   },
-  "next_action": "Repair the actor-local pillar lane floor reference and bounded retry termination, add deterministic real-planner coverage for receipt 551 semantics, independently review, then request a new recurrence admission. Do not run a second live replay from this source."
+  "next_action": "Reject progressive local fallback whenever the primary native path is complete but inadmissible, preserve the declared Magmaw navigation-floor anchor across route construction and every retained-route consumer, add an admission-sealed observation-only map-669 production-planner checkpoint for the exact complete/incomplete Hazard cases, independently review, rebuild, and request one no-retry fixture-expansion replay. Do not treat helper-only tests as production-boundary proof or run another gameplay canary from this source."
 }
