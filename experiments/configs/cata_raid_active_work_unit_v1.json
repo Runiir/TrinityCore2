@@ -1,91 +1,68 @@
 {
   "behavior_change": false,
-  "classification": "live_recurrence_quarantined",
-  "epoch_id": "stable_map669_exact_current_recurrence_and_replay_20260831",
+  "boss": "magmaw",
+  "classification": "failed",
+  "epoch_id": "map669_mangle_priority_heal_repair_20260831",
   "evidence_contract_change": false,
-  "gate_state": "exact_current_recurrence_then_one_start_no_commit_no_retry",
-  "immutable_input_commit": "e5fd11224d2ec38e270f37e061979357641db4f8",
-  "next_action": "At this clean descriptor HEAD, refresh the fixed recurrence bank with the HEAD authority token, then consume its external receipt immediately through one deterministic launcher replay without an intervening commit.",
-  "next_owner_skill": "raid-shard-architecture",
-  "next_work_unit": "shard:composite_map669_production_boundary_replay",
-  "observed_at_commit": "e5fd11224d2ec38e270f37e061979357641db4f8",
-  "owner_skill": "raid-shard-architecture",
+  "gate_state": "bounded_role_repair_authorized_no_live_start",
+  "next_action": "Implement and deterministically test one Mangle priority-heal ownership path. Do not build or start a server until independent review passes.",
+  "next_owner_skill": "raid-role-implementation",
+  "next_work_unit": "role:magmaw_mangle_priority_heal_target",
+  "observed_at_commit": "afd09bacaa6d7bb8bfff5699356d90686f6384a0",
+  "owner_skill": "raid-performance-loop",
   "program_scope": {
     "acceptance_admitted": false,
     "authserver_start_admitted": false,
     "database_provisioning_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": true,
-    "exact_current_recurrence_invocation_admitted": true,
-    "fixture_expansion_replay_admitted": true,
-    "fixture_prerequisite_build_authorized": true,
+    "dvc_publication_required_after_terminal": false,
+    "fixture_expansion_replay_admitted": false,
+    "fixture_prerequisite_build_authorized": false,
     "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": false,
-    "worldserver_start_admitted": true
+    "gameplay_mutations_allowed": true,
+    "worldserver_start_admitted": false
   },
-  "ready_for_bounded_repair": false,
-  "ready_for_fixture_expansion": true,
-  "ready_for_live_verification": true,
+  "ready_for_bounded_repair": true,
+  "ready_for_fixture_expansion": false,
+  "ready_for_live_verification": false,
+  "raid": "blackwing_descent",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "No source change after this descriptor commit. Produce the exact-current external recurrence receipt and decision, then compose and execute only the committed launcher plan. Publish terminal evidence, verify remote reconstruction, and evict exact local raw data.",
+    "allowed_change": "Add one adaptive Magmaw priority-heal target for living actors carrying Mangle aura 89773 or 78412, propagate its GUID through update context and kernel preparation, and select it before generic lowest-health triage. Extend deterministic Mangle arbitration tests only as needed.",
     "forbidden": [
-      "Git commit between recurrence refresh and bundle consumption",
-      "hand-entered source commit hash",
-      "hand-built configure, build, bundle, readback, or capture argv",
-      "source, runtime, fixture, gameplay, geometry, planner, class, encounter, or DPS edits",
-      "second worldserver start or any replay retry",
-      "authserver start, roster reprovisioning, teleport, or forced gameplay outcome",
-      "fixed 300-second raid timer"
+      "global arbitration priority changes",
+      "movement planner tolerances, fallback fractions, geometry, or path admission changes",
+      "class DPS, pet, consumable, Bloodlust, boss-script, or database changes",
+      "authserver or worldserver start",
+      "build before independent source review",
+      "broad healer rewrite",
+      "claiming the later death-loop watchdog as the first broken gameplay edge"
     ],
-    "requested_fixtures": [
-      {
-        "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
-        "requested_revision": 1
-      },
-      {
-        "fixture_id": "same_level_floor_observation_v1",
-        "requested_revision": 4
-      },
-      {
-        "fixture_id": "same_level_hazard_path_admission_v1",
-        "requested_revision": 5
-      },
-      {
-        "fixture_id": "same_level_native_path_proof_v1",
-        "requested_revision": 5
-      }
-    ],
-    "required_order": [
-      "verify clean stable live descriptor and launcher-repair handoff identity",
-      "run one fixed recurrence invocation with --source-identity HEAD and require fixture-expansion admission",
-      "materialize one fresh canonical route object and tracked-derived runtime-config receipt outside the worktree",
-      "compose and run the launcher prebuild plan",
-      "realize the postbuild plan from verified configure/build receipts and matching ELF",
-      "run atomic bundle, strict spellbook-aware readback, shard readback, and one completion-watchdog capture",
-      "publish terminal evidence, reconstruct remotely, verify hashes, and evict exact raw targets"
+    "required_postconditions": [
+      "the living Mangled tank is selected before parasite-damaged DPS",
+      "moving restoration and holy healers select an available instant heal",
+      "stationary healers may select a trained hard cast",
+      "two deterministic Mangle cycles retain the priority target and do not produce a tank-death outcome",
+      "existing non-Magmaw healer arbitration tests remain green",
+      "all changed C++ files remain below 1000 physical lines"
     ]
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_launcher_live_authority_repair_handoff_v1.json",
-    "sha256": "dc8eaa4e61fc1c3c94c0ef48d27e1ccb0cfb5f7b2ce092c60d72d4a3c82460a0",
-    "source_commit": "e5fd11224d2ec38e270f37e061979357641db4f8",
-    "source_tree": "289845890d615777fccaa098dd5c8122c7b3ff38"
+    "path": "experiments/configs/cata_raid_map669_composite_replay_gameplay_failure_handoff_v1.json",
+    "sha256": "66b9742fb9f0ef620f040a8c5c4d8d54c7f1e05735e1a43392cea2a0811401e5",
+    "source_commit": "afd09bacaa6d7bb8bfff5699356d90686f6384a0",
+    "source_tree": "e6b28ab23b6987eb4a1bbb70ba6a1a770cff721d"
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
+    "repair_policy": "deterministic_tests_then_independent_review",
     "terminal_edges": [
-      "recurrence_fixture_failed",
-      "all_four_production_boundaries_captured",
-      "production_boundary_incomplete",
-      "strict_roster_identity_failed",
-      "semantic_or_no_progress_stall",
-      "repeated_decision_terminal",
-      "death_loop_terminal",
-      "identity_or_runtime_config_mismatch",
-      "infrastructure_loss",
-      "explicit_interruption"
+      "all required postconditions pass",
+      "scope violation",
+      "existing healer regression",
+      "file size violation"
     ]
   },
-  "work_unit": "shard:composite_map669_production_boundary_replay"
+  "mode": "10N",
+  "work_unit": "role:magmaw_mangle_priority_heal_target"
 }
