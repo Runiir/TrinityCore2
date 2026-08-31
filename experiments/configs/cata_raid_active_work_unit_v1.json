@@ -1,13 +1,13 @@
 {
   "behavior_change": true,
   "boss": "magmaw",
-  "classification": "implementation_pending_live_verification",
+  "classification": "implementation_pending_fixture_expansion",
   "epoch_id": "map669_magmaw_support_range_ownership_20260831",
   "evidence_contract_change": true,
-  "gate_state": "independent_review_passed_one_build_one_live_start",
-  "next_action": "Commit the reviewed patch, run one queued fast8/1 worldserver build, then run exactly one no-retry 10N Magmaw completion-watchdog canary without authserver. Publish and remotely verify the terminal evidence before any further gameplay change or run.",
+  "gate_state": "recurrence_fixture_expansion_required_before_gameplay_canary",
+  "next_action": "Run exactly one no-retry map-669 fixture-expansion replay without authserver. Exercise the current actor-stable Hazard lifecycle across complete and incomplete same-level paths, publish and remotely verify the terminal evidence, then refresh the recurrence ledger before admitting a gameplay canary.",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:magmaw_support_range_ownership_live_canary",
+  "next_work_unit": "evidence:magmaw_current_path_boundary_fixture_expansion",
   "observed_at_commit": "afd09bacaa6d7bb8bfff5699356d90686f6384a0",
   "owner_skill": "raid-evidence-lifecycle",
   "program_scope": {
@@ -15,9 +15,9 @@
     "authserver_start_admitted": false,
     "database_provisioning_mutations_allowed": true,
     "dvc_publication_required_after_terminal": true,
-    "fixture_expansion_replay_admitted": false,
+    "fixture_expansion_replay_admitted": true,
     "fixture_prerequisite_build_authorized": true,
-    "gameplay_canary_admitted": true,
+    "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
     "worldserver_start_admitted": true
   },
@@ -27,10 +27,11 @@
   "raid": "blackwing_descent",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "No further gameplay change. Build and observe the reviewed Magmaw support-range ownership, Mangle target, retained movement identity, lethal-hazard ordering, and heal-selection diagnostic patch in one production map-669 canary.",
+    "allowed_change": "No further gameplay change. Run one production map-669 fixture-expansion replay to verify actor-stable complete and incomplete Hazard path lifecycles. Retain incidental DPS, HPS, movement, healing, and Magmaw observations, but do not count the replay as a gameplay canary.",
     "forbidden": [
       "authserver start or manual login",
       "a second live attempt or automatic retry",
+      "claiming the fixture-expansion replay as a gameplay canary",
       "global arbitration priority or planner-tolerance changes",
       "class DPS, pet, consumable, Bloodlust, boss-script, or database-content changes",
       "changing the fixed Fire Mage and Marksmanship Hunter parasite-lane assignment",
@@ -38,14 +39,10 @@
       "continuing after terminal evidence without publication and review"
     ],
     "required_postconditions": [
-      "the exact living actor with Mangle aura 89773 or 78412 is the priority healing target",
-      "restoration and holy heal selection reports exact profile, distance, LOS, movement state, selected spell or bounded per-spell rejections",
-      "a selected heal crosses native submission and lands on the Mangled tank",
-      "support movement stays on the route floor and within 35 yards full 3D of the Mangled tank",
-      "only the fixed Fire Mage and Marksmanship Hunter own parasite lanes while nonowners restore Support",
-      "real lit Massive Crash wins over simultaneous Pillar, parasite, retained-lane, and pincer movement and makes native progress",
-      "both tanks survive observed Mangle cycles",
-      "the completion watchdog terminates on clear or the first truthful failure without retry",
+      "complete and incomplete same-level Hazard paths retain one actor-stable lifecycle identity",
+      "the incomplete path selects a fresh complete shorter retry and crosses native submission, MotionMaster, point-generator initialization, launched spline, and a typed terminal outcome or explicit supersession",
+      "cross-floor and forbidden-path negatives do not launch",
+      "the completion watchdog terminates on fixture closure or the first truthful failure without retry",
       "DPS, HPS, deaths, healing targets, movement receipts, and terminal outcome are retained",
       "all changed C++ files remain below 1000 physical lines"
     ]
@@ -59,7 +56,7 @@
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "one_reviewed_build_then_one_no_retry_live_canary",
+    "repair_policy": "one_no_retry_fixture_expansion_before_gameplay_canary",
     "terminal_edges": [
       "normal_clear",
       "monotonic_no_progress_or_semantic_stall",
@@ -70,5 +67,5 @@
     ]
   },
   "mode": "10N",
-  "work_unit": "evidence:magmaw_support_range_ownership_live_canary"
+  "work_unit": "evidence:magmaw_current_path_boundary_fixture_expansion"
 }

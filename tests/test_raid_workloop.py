@@ -343,10 +343,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "evidence:magmaw_support_range_ownership_live_canary"
+        "evidence:magmaw_current_path_boundary_fixture_expansion"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["classification"] == "implementation_pending_live_verification"
+    assert active["classification"] == "implementation_pending_fixture_expansion"
     assert active["next_owner_skill"] == "raid-evidence-lifecycle"
     assert active["ready_for_live_verification"] is active["descriptor_valid"]
     assert active["program_scope"]["gameplay_mutations_allowed"] is False
@@ -357,7 +357,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["validation_clock"]["policy"] == "completion_watchdog"
-    assert "no-retry 10n magmaw" in active["next_action"].lower()
+    assert "no-retry map-669 fixture-expansion" in active["next_action"].lower()
     assert "global arbitration priority or planner-tolerance changes" in (
         active["scope_lock"]["forbidden"]
     )
