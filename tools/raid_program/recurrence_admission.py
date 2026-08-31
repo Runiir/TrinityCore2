@@ -539,11 +539,16 @@ def create_recurrence_admission(
         chainwielder_checkpoint_targeted = (
             CHAINWIELDER_CHECKPOINT_FIXTURE_ID in target_ids
         )
+        request_contract = {
+            row["fixture_id"]: (row["from_revision"], row["to_revision"])
+            for row in expansion_requests
+        }
         native_path_checkpoint_targeted = (
-            NATIVE_PATH_CHECKPOINT_FIXTURE_ID in target_ids
+            not chainwielder_checkpoint_targeted
+            and set(target_ids)
+                == set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
+            and request_contract == NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
         )
-        if chainwielder_checkpoint_targeted and native_path_checkpoint_targeted:
-            raise RecurrenceAdmissionError("checkpoint_authority_ambiguous")
         checkpoint_targeted = (
             chainwielder_checkpoint_targeted or native_path_checkpoint_targeted
         )
@@ -737,11 +742,16 @@ def verify_recurrence_admission(
         chainwielder_checkpoint_targeted = (
             CHAINWIELDER_CHECKPOINT_FIXTURE_ID in target_ids
         )
+        request_contract = {
+            row["fixture_id"]: (row["from_revision"], row["to_revision"])
+            for row in expansion_requests
+        }
         native_path_checkpoint_targeted = (
-            NATIVE_PATH_CHECKPOINT_FIXTURE_ID in target_ids
+            not chainwielder_checkpoint_targeted
+            and set(target_ids)
+                == set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
+            and request_contract == NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
         )
-        if chainwielder_checkpoint_targeted and native_path_checkpoint_targeted:
-            raise RecurrenceAdmissionError("checkpoint_authority_ambiguous")
         checkpoint_targeted = (
             chainwielder_checkpoint_targeted or native_path_checkpoint_targeted
         )

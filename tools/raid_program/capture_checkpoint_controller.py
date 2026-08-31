@@ -121,7 +121,7 @@ def native_path_checkpoint_arm_command(
         or recurrence_admission.get("checkpoint_fixture_id")
             != NATIVE_PATH_CHECKPOINT_FIXTURE_ID
         or not isinstance(fixture_ids, list)
-        or NATIVE_PATH_CHECKPOINT_FIXTURE_ID not in fixture_ids
+        or set(fixture_ids) != set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
         or request_contract != NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
         or not isinstance(actor_guid, int) or isinstance(actor_guid, bool)
         or actor_guid <= 0

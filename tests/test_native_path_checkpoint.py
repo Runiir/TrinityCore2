@@ -76,7 +76,6 @@ def test_controller_emits_only_sealed_case_and_no_coordinates() -> None:
         "valid": True,
         "purpose": recurrence_admission.FIXTURE_EXPANSION_PURPOSE,
         "fixture_expansion_target_ids": [
-            recurrence_admission.NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
             *recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
         ],
         "fixture_expansion_requests": _requests(),
@@ -109,12 +108,9 @@ def test_seal_binds_case_and_exact_pending_requests(
     files["build.json"].write_text("{}", encoding="utf-8")
     decision = {
         "fixture_expansion_target_ids": [
-            recurrence_admission.NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
             *recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
         ],
-        "pending_fixture_ids": [
-            recurrence_admission.NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
-        ],
+        "pending_fixture_ids": [],
         "fixture_expansion_requests": _requests(),
     }
     import json
