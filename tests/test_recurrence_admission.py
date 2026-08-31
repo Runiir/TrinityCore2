@@ -9,6 +9,7 @@ import pytest
 
 from tools.raid_program.capture_checkpoint_controller import (
     chainwielder_checkpoint_arm_command,
+    native_path_checkpoint_arm_command,
 )
 from tools.raid_program.controller_route_hold import (
     controller_route_hold_launch_identity,
@@ -16,10 +17,14 @@ from tools.raid_program.controller_route_hold import (
 from tools.raid_program.recurrence_admission import (
     CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
     FIXTURE_EXPANSION_PURPOSE,
+    NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX,
+    NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+    NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
     RecurrenceAdmissionError,
     chainwielder_checkpoint_seal,
     build_runtime_profile_suffix_manifest,
     create_recurrence_admission,
+    native_path_checkpoint_seal,
     sha256_file,
     verify_recurrence_admission,
 )
@@ -192,13 +197,6 @@ def _replacement_request() -> dict[str, object]:
 def _map669_expansion_requests() -> list[dict[str, object]]:
     return [
         {
-            "fixture_id": "same_level_floor_observation_v1",
-            "from_revision": 3,
-            "to_revision": 4,
-            "causal_signature": "same_level_movement_path_floor_false_negative",
-            "required_production_boundary": "map_669_native_floor_observation",
-        },
-        {
             "fixture_id": "same_level_hazard_path_admission_v1",
             "from_revision": 4,
             "to_revision": 5,
@@ -213,6 +211,28 @@ def _map669_expansion_requests() -> list[dict[str, object]]:
             "required_production_boundary": "map_669_native_path_proof",
         },
     ]
+
+
+def _runtime_profile_authority(
+    paths: dict[str, Path | str],
+) -> tuple[Path, dict[str, str]]:
+    source_path = (
+        Path(paths["root"]) / "dataset/bot_runtime_profiles/profiles.json"
+    )
+    source_profiles = json.loads(source_path.read_text(encoding="utf-8"))
+    profile_manifest = Path(paths["profile_manifest"])
+    runtime_profiles, overlay = build_runtime_profile_suffix_manifest(
+        source_manifest=source_profiles,
+        runtime_profile="test_profile",
+        route_manifest_path=Path(paths["route"]),
+    )
+    _write_json(profile_manifest, runtime_profiles)
+    overlay.update({
+        "source_profile_manifest_sha256": sha256_file(source_path),
+        "runtime_profile_manifest_sha256": sha256_file(profile_manifest),
+        "runtime_route_manifest_sha256": sha256_file(Path(paths["route"])),
+    })
+    return profile_manifest, overlay
 
 
 def _create_chainwielder_checkpoint_admission(
@@ -263,23 +283,7 @@ def _create_chainwielder_checkpoint_admission(
         ),
     ]
     _write_json(suite, suite_value)
-    source_profiles = json.loads(
-        (Path(paths["root"]) / "dataset/bot_runtime_profiles/profiles.json")
-        .read_text(encoding="utf-8")
-    )
-    profile_manifest = Path(paths["profile_manifest"])
-    runtime_profiles, overlay = build_runtime_profile_suffix_manifest(
-        source_manifest=source_profiles, runtime_profile="test_profile",
-        route_manifest_path=Path(paths["route"]),
-    )
-    _write_json(profile_manifest, runtime_profiles)
-    overlay.update({
-        "source_profile_manifest_sha256": sha256_file(
-            Path(paths["root"]) / "dataset/bot_runtime_profiles/profiles.json"
-        ),
-        "runtime_profile_manifest_sha256": sha256_file(profile_manifest),
-        "runtime_route_manifest_sha256": sha256_file(Path(paths["route"])),
-    })
+    profile_manifest, overlay = _runtime_profile_authority(paths)
     seal = chainwielder_checkpoint_seal(
         worktree=Path(paths["root"]),
         binary=Path(paths["binary"]),
@@ -302,6 +306,81 @@ def _create_chainwielder_checkpoint_admission(
         + f'SealSha256 = "{seal["seal_sha256"]}"\n'
         + "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint."
         + f'SourceCommit = "{source_commit}"\n',
+        encoding="utf-8",
+    )
+    create_recurrence_admission(
+        output=admission,
+        worktree=Path(paths["root"]),
+        binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        runtime_config=config,
+        route_manifest=Path(paths["route"]),
+        ledger=Path(paths["ledger"]),
+        decision=decision,
+        suite_receipt=suite,
+        profile_manifest=profile_manifest,
+        runtime_profile_overlay=overlay,
+        expected_runtime_profile_id="test_profile",
+        purpose=FIXTURE_EXPANSION_PURPOSE,
+    )
+    return seal
+
+
+def _create_native_path_checkpoint_admission(
+    paths: dict[str, Path | str],
+    *, case_id: str = "a506_receipt636_incomplete_same_floor",
+) -> dict[str, str]:
+    admission = Path(paths["admission"])
+    decision = Path(paths["decision"])
+    suite = Path(paths["suite"])
+    config = Path(paths["config"])
+    requests = _map669_expansion_requests()
+    target_ids = list(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
+    admission.unlink()
+    decision_value = json.loads(decision.read_text(encoding="utf-8"))
+    decision_value.update({
+        "build_admitted": False,
+        "canary_admitted": False,
+        "fixture_expansion_admitted": True,
+        "fixture_expansion_target_ids": target_ids,
+        "fixture_expansion_requests": requests,
+        "pending_fixture_ids": target_ids,
+    })
+    _write_json(decision, decision_value)
+    suite_value = json.loads(suite.read_text(encoding="utf-8"))
+    suite_value["verifications"] = [
+        {
+            "fixture_id": request["fixture_id"],
+            "fixture_revision": request["from_revision"],
+            "passed": True,
+        }
+        for request in requests
+    ]
+    _write_json(suite, suite_value)
+    profile_manifest, overlay = _runtime_profile_authority(paths)
+    seal = native_path_checkpoint_seal(
+        worktree=Path(paths["root"]),
+        binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        decision=decision,
+        case_id=case_id,
+        profile_manifest=profile_manifest,
+        runtime_profile_overlay=overlay,
+        expected_runtime_profile_id="test_profile",
+    )
+    source_commit = _git(Path(paths["root"]), "rev-parse", "HEAD")
+    prefix = NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX
+    config.write_text(
+        config.read_text(encoding="utf-8")
+        + 'BotWorld.RuntimeProfile = "test_profile"\n'
+        + f'BotWorld.ProfileManifest = "{profile_manifest.resolve()}"\n'
+        + "BotWorld.ValidationRoute.Enable = 1\n"
+        + "BotWorld.ValidationRoute.PrepullCheckpointEnable = 1\n"
+        + f"{prefix}.Enable = 1\n"
+        + f'{prefix}.FixtureId = "{NATIVE_PATH_CHECKPOINT_FIXTURE_ID}"\n'
+        + f'{prefix}.CaseId = "{case_id}"\n'
+        + f'{prefix}.SealSha256 = "{seal["seal_sha256"]}"\n'
+        + f'{prefix}.SourceCommit = "{source_commit}"\n',
         encoding="utf-8",
     )
     create_recurrence_admission(
@@ -393,6 +472,36 @@ def test_chainwielder_checkpoint_uses_precomputed_non_circular_seal(
         ).encode("utf-8")
     ).hexdigest()
     assert result["runtime_profile_overlay"] == admission["runtime_profile_overlay"]
+
+
+def test_native_checkpoint_creates_and_verifies_exact_pending_requests(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    seal = _create_native_path_checkpoint_admission(paths)
+
+    result = _verify_chainwielder(paths)
+
+    assert result["valid"] is True
+    assert result["purpose"] == FIXTURE_EXPANSION_PURPOSE
+    assert result["fixture_expansion_target_ids"] == list(
+        NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+    )
+    assert result["pending_fixture_ids"] == list(
+        NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+    )
+    assert result["checkpoint_fixture_id"] == NATIVE_PATH_CHECKPOINT_FIXTURE_ID
+    assert result["checkpoint_seal_sha256"] == seal["seal_sha256"]
+    assert seal["binary_sha256"] == sha256_file(Path(paths["binary"]))
+    assert seal["profile_manifest_sha256"] == sha256_file(
+        Path(paths["profile_manifest"])
+    )
+    assert result["runtime_profile_overlay"][
+        "runtime_route_manifest_sha256"
+    ] == sha256_file(Path(paths["route"]))
+    assert native_path_checkpoint_arm_command(result, 30007).startswith(
+        "botautonativepathcheckpoint arm 30007 "
+    )
 
 
 def test_fixture_replay_can_seal_auxiliary_checkpoint_profile(

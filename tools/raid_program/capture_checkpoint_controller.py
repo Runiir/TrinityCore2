@@ -18,9 +18,9 @@ try:
         CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
         FIXTURE_EXPANSION_PURPOSE,
         NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
-        NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
         RecurrenceAdmissionError,
         _fixture_expansion_contract,
+        _native_path_checkpoint_request_contract,
     )
 except ModuleNotFoundError:
     from capture_runtime_acceptance import _roster_rejections
@@ -31,9 +31,9 @@ except ModuleNotFoundError:
         CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
         FIXTURE_EXPANSION_PURPOSE,
         NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
-        NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
         RecurrenceAdmissionError,
         _fixture_expansion_contract,
+        _native_path_checkpoint_request_contract,
     )
 
 
@@ -106,12 +106,14 @@ def native_path_checkpoint_arm_command(
         return None
     if not isinstance(recurrence_admission, dict):
         raise ValueError("native_path_checkpoint_verified_admission_missing")
-    requests = recurrence_admission.get("fixture_expansion_requests")
-    request_contract = {
-        row.get("fixture_id"): (row.get("from_revision"), row.get("to_revision"))
-        for row in requests if isinstance(row, dict)
-    } if isinstance(requests, list) else {}
-    fixture_ids = recurrence_admission.get("fixture_expansion_target_ids")
+    try:
+        _native_path_checkpoint_request_contract(
+            recurrence_admission, label="native_path_checkpoint_verified_admission"
+        )
+    except RecurrenceAdmissionError as error:
+        raise ValueError(
+            "native_path_checkpoint_verified_admission_invalid"
+        ) from error
     seal = recurrence_admission.get("checkpoint_seal_sha256")
     case_id = recurrence_admission.get("checkpoint_case_id")
     source = recurrence_admission.get("source_commit")
@@ -120,9 +122,6 @@ def native_path_checkpoint_arm_command(
         or recurrence_admission.get("purpose") != FIXTURE_EXPANSION_PURPOSE
         or recurrence_admission.get("checkpoint_fixture_id")
             != NATIVE_PATH_CHECKPOINT_FIXTURE_ID
-        or not isinstance(fixture_ids, list)
-        or set(fixture_ids) != set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
-        or request_contract != NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
         or not isinstance(actor_guid, int) or isinstance(actor_guid, bool)
         or actor_guid <= 0
         or not isinstance(case_id, str) or not case_id

@@ -35,9 +35,11 @@ NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX = (
     "BotWorld.ValidationFixture.NativePathCheckpoint"
 )
 NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS = {
-    "same_level_floor_observation_v1": (3, 4),
     "same_level_hazard_path_admission_v1": (4, 5),
     "same_level_native_path_proof_v1": (4, 5),
+}
+NATIVE_PATH_CHECKPOINT_CLOSED_FIXTURE_IDS = {
+    "same_level_floor_observation_v1",
 }
 PROFILE_MANIFEST_RELATIVE_PATH = Path("dataset/bot_runtime_profiles/profiles.json")
 
@@ -88,6 +90,37 @@ def _fixture_expansion_contract(
     if set(targets) != set(pending) | set(request_ids):
         raise RecurrenceAdmissionError(f"{label}_request_target_mismatch")
     return requests
+
+
+def _native_path_checkpoint_request_contract(
+    value: dict[str, Any], *, label: str
+) -> list[dict[str, Any]]:
+    """Require exactly the pending native-path production expansions."""
+
+    requests = _fixture_expansion_contract(value, label=label)
+    expected_ids = set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
+    request_contract = {
+        row["fixture_id"]: (row["from_revision"], row["to_revision"])
+        for row in requests
+    }
+    pending_ids = value.get("pending_fixture_ids", [])
+    if (
+        set(value["fixture_expansion_target_ids"]) != expected_ids
+        or len(pending_ids) != len(expected_ids)
+        or set(pending_ids) != expected_ids
+        or request_contract != NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+    ):
+        raise RecurrenceAdmissionError(f"{label}_request_contract_mismatch")
+    return requests
+
+
+def _native_path_checkpoint_requested(value: dict[str, Any]) -> bool:
+    targets = value.get("fixture_expansion_target_ids")
+    native_ids = (
+        set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
+        | NATIVE_PATH_CHECKPOINT_CLOSED_FIXTURE_IDS
+    )
+    return isinstance(targets, list) and bool(set(targets) & native_ids)
 
 
 class RecurrenceAdmissionError(RuntimeError):
@@ -307,17 +340,9 @@ def native_path_checkpoint_seal(
     if not isinstance(case_id, str) or not case_id.strip():
         raise RecurrenceAdmissionError("native_path_checkpoint_case_invalid")
     decision_value = _load(decision.resolve(), "decision")
-    requests = _fixture_expansion_contract(
+    requests = _native_path_checkpoint_request_contract(
         decision_value, label="native_path_checkpoint"
     )
-    request_contract = {
-        row["fixture_id"]: (row["from_revision"], row["to_revision"])
-        for row in requests
-    }
-    if request_contract != NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS:
-        raise RecurrenceAdmissionError(
-            "native_path_checkpoint_request_contract_mismatch"
-        )
     worktree = worktree.resolve()
     payload = {
         "schema": CHECKPOINT_SEAL_SCHEMA,
@@ -539,16 +564,14 @@ def create_recurrence_admission(
         chainwielder_checkpoint_targeted = (
             CHAINWIELDER_CHECKPOINT_FIXTURE_ID in target_ids
         )
-        request_contract = {
-            row["fixture_id"]: (row["from_revision"], row["to_revision"])
-            for row in expansion_requests
-        }
         native_path_checkpoint_targeted = (
             not chainwielder_checkpoint_targeted
-            and set(target_ids)
-                == set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
-            and request_contract == NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+            and _native_path_checkpoint_requested(decision_value)
         )
+        if native_path_checkpoint_targeted:
+            _native_path_checkpoint_request_contract(
+                decision_value, label="native_path_checkpoint"
+            )
         checkpoint_targeted = (
             chainwielder_checkpoint_targeted or native_path_checkpoint_targeted
         )
@@ -742,16 +765,14 @@ def verify_recurrence_admission(
         chainwielder_checkpoint_targeted = (
             CHAINWIELDER_CHECKPOINT_FIXTURE_ID in target_ids
         )
-        request_contract = {
-            row["fixture_id"]: (row["from_revision"], row["to_revision"])
-            for row in expansion_requests
-        }
         native_path_checkpoint_targeted = (
             not chainwielder_checkpoint_targeted
-            and set(target_ids)
-                == set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
-            and request_contract == NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+            and _native_path_checkpoint_requested(admission)
         )
+        if native_path_checkpoint_targeted:
+            _native_path_checkpoint_request_contract(
+                admission, label="native_path_checkpoint"
+            )
         checkpoint_targeted = (
             chainwielder_checkpoint_targeted or native_path_checkpoint_targeted
         )

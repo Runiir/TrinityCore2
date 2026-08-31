@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -32,6 +33,45 @@ def _requests() -> list[dict[str, object]]:
         for fixture_id, revisions in
         recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS.items()
     ]
+
+
+def _seal_fixture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> tuple[dict[str, object], Path, dict[str, object]]:
+    files = {
+        name: tmp_path / name
+        for name in ("binary", "build.json", "decision.json", "profiles.json")
+    }
+    files["binary"].write_bytes(b"elf")
+    files["build.json"].write_text("{}", encoding="utf-8")
+    decision = {
+        "fixture_expansion_target_ids": list(
+            recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+        ),
+        "pending_fixture_ids": list(
+            recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+        ),
+        "fixture_expansion_requests": _requests(),
+    }
+    files["decision.json"].write_text(json.dumps(decision), encoding="utf-8")
+    files["profiles.json"].write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        recurrence_admission,
+        "_git",
+        lambda _worktree, *args, **_kwargs: (
+            "1" * 40 if args[-1] == "HEAD" else "2" * 40
+        ),
+    )
+    kwargs = {
+        "worktree": tmp_path,
+        "binary": files["binary"],
+        "build_receipt": files["build.json"],
+        "decision": files["decision.json"],
+        "profile_manifest": files["profiles.json"],
+        "runtime_profile_overlay": {"profile": "map669"},
+        "expected_runtime_profile_id": "map669",
+    }
+    return decision, files["decision.json"], kwargs
 
 
 def test_compiled_cases_are_enumerated_and_fail_closed(tmp_path: Path) -> None:
@@ -84,6 +124,9 @@ def test_controller_emits_only_sealed_case_and_no_coordinates() -> None:
             *recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
         ],
         "fixture_expansion_requests": _requests(),
+        "pending_fixture_ids": [
+            *recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
+        ],
         "checkpoint_fixture_id": (
             recurrence_admission.NATIVE_PATH_CHECKPOINT_FIXTURE_ID
         ),
@@ -112,6 +155,9 @@ def _native_admission(
             recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
         ),
         "fixture_expansion_requests": _requests(),
+        "pending_fixture_ids": list(
+            recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+        ),
         "checkpoint_fixture_id": (
             recurrence_admission.NATIVE_PATH_CHECKPOINT_FIXTURE_ID
         ),
@@ -337,38 +383,7 @@ def test_native_scheduler_rejects_terminal_row_identity_drift(field: str) -> Non
 def test_seal_binds_case_and_exact_pending_requests(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    files = {
-        name: tmp_path / name
-        for name in ("binary", "build.json", "decision.json", "profiles.json")
-    }
-    files["binary"].write_bytes(b"elf")
-    files["build.json"].write_text("{}", encoding="utf-8")
-    decision = {
-        "fixture_expansion_target_ids": [
-            *recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
-        ],
-        "pending_fixture_ids": [],
-        "fixture_expansion_requests": _requests(),
-    }
-    import json
-    files["decision.json"].write_text(json.dumps(decision), encoding="utf-8")
-    files["profiles.json"].write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(
-        recurrence_admission,
-        "_git",
-        lambda _worktree, *args, **_kwargs: (
-            "1" * 40 if args[-1] == "HEAD" else "2" * 40
-        ),
-    )
-    kwargs = dict(
-        worktree=tmp_path,
-        binary=files["binary"],
-        build_receipt=files["build.json"],
-        decision=files["decision.json"],
-        profile_manifest=files["profiles.json"],
-        runtime_profile_overlay={"profile": "map669"},
-        expected_runtime_profile_id="map669",
-    )
+    decision, decision_path, kwargs = _seal_fixture(tmp_path, monkeypatch)
     first = recurrence_admission.native_path_checkpoint_seal(
         case_id="a506_receipt636_incomplete_same_floor", **kwargs,
     )
@@ -377,7 +392,7 @@ def test_seal_binds_case_and_exact_pending_requests(
     )
     assert first["seal_sha256"] != second["seal_sha256"]
     decision["fixture_expansion_requests"][0]["to_revision"] += 1
-    files["decision.json"].write_text(json.dumps(decision), encoding="utf-8")
+    decision_path.write_text(json.dumps(decision), encoding="utf-8")
     with pytest.raises(
         recurrence_admission.RecurrenceAdmissionError,
         match="request_invalid",
@@ -385,6 +400,86 @@ def test_seal_binds_case_and_exact_pending_requests(
         recurrence_admission.native_path_checkpoint_seal(
             case_id="a506_receipt636_incomplete_same_floor", **kwargs,
         )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_error"),
+    [
+        ("missing", "native_path_checkpoint_request_contract_mismatch"),
+        ("extra", "native_path_checkpoint_request_contract_mismatch"),
+        ("stale", "native_path_checkpoint_request_contract_mismatch"),
+        ("closed_fixture", "native_path_checkpoint_request_contract_mismatch"),
+        ("wrong_target", "native_path_checkpoint_request_target_mismatch"),
+    ],
+)
+def test_seal_rejects_non_authoritative_pending_request_contracts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+    expected_error: str,
+) -> None:
+    decision, decision_path, kwargs = _seal_fixture(tmp_path, monkeypatch)
+    targets = decision["fixture_expansion_target_ids"]
+    pending = decision["pending_fixture_ids"]
+    requests = decision["fixture_expansion_requests"]
+    assert isinstance(targets, list)
+    assert isinstance(pending, list)
+    assert isinstance(requests, list)
+    if mutation == "missing":
+        targets.pop()
+        pending.pop()
+        requests.pop()
+    elif mutation == "extra":
+        extra = {
+            "fixture_id": "unexpected_native_path_fixture_v1",
+            "from_revision": 1,
+            "to_revision": 2,
+            "causal_signature": "unexpected_native_path_cause",
+            "required_production_boundary": "unexpected_native_path_boundary",
+        }
+        targets.append(extra["fixture_id"])
+        pending.append(extra["fixture_id"])
+        requests.append(extra)
+    elif mutation == "stale":
+        requests[0]["from_revision"] = 3
+        requests[0]["to_revision"] = 4
+    elif mutation == "closed_fixture":
+        closed = {
+            "fixture_id": "same_level_floor_observation_v1",
+            "from_revision": 3,
+            "to_revision": 4,
+            "causal_signature": "closed_floor_observation",
+            "required_production_boundary": "closed_floor_boundary",
+        }
+        targets.append(closed["fixture_id"])
+        pending.append(closed["fixture_id"])
+        requests.append(closed)
+    else:
+        targets[-1] = "wrong_native_path_target_v1"
+    decision_path.write_text(json.dumps(decision), encoding="utf-8")
+
+    with pytest.raises(
+        recurrence_admission.RecurrenceAdmissionError,
+        match=expected_error,
+    ):
+        recurrence_admission.native_path_checkpoint_seal(
+            case_id="a506_receipt636_incomplete_same_floor", **kwargs,
+        )
+
+
+@pytest.mark.parametrize("mutation", ["wrong_purpose", "wrong_target"])
+def test_controller_rejects_wrong_purpose_or_target(mutation: str) -> None:
+    admission = _native_admission()
+    if mutation == "wrong_purpose":
+        admission["purpose"] = recurrence_admission.GAMEPLAY_CANARY_PURPOSE
+    else:
+        admission["fixture_expansion_target_ids"] = [
+            "wrong_native_path_target_v1"
+        ]
+    with pytest.raises(
+        ValueError, match="native_path_checkpoint_verified_admission_invalid"
+    ):
+        native_path_checkpoint_arm_command(admission, 30007)
 
 
 def test_production_callback_order_and_exact_executor_wiring() -> None:
