@@ -34,6 +34,9 @@ def test_checked_in_magmaw_ledger_uses_supported_observation_states() -> None:
     # deliberately tri-state so admission cannot fail after a green suite.
     decision = evaluate_ledger(ledger)
     assert decision["run_count"] == len(ledger["runs"])
+    assert "magmaw_lethal_movement_safe_completion_missing" not in (
+        decision["missing_causal_signature_ids"]
+    )
 
 
 def _ledger(

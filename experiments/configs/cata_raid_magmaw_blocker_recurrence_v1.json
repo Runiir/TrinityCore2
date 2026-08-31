@@ -94,6 +94,7 @@
       "magmaw_parasite_lane_transition_full_replay_v1",
       "magmaw_parasite_control_full_runtime_v1",
       "magmaw_lethal_movement_transition_v1",
+      "magmaw_lethal_movement_safe_completion_v1",
       "movement_progress_witness_v1",
       "targeted_movement_receipt_retention_v1",
       "chainwielder_future_drudge_guard_v1",
@@ -179,6 +180,19 @@
           "pytest",
           "-q",
           "tests/test_magmaw_event_movement_transition.py"
+        ]
+      },
+      {
+        "fixture_id": "magmaw_lethal_movement_safe_completion_v1",
+        "revision": 1,
+        "causal_signature": "magmaw_lethal_movement_safe_completion_missing",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_magmaw_event_movement_transition.py",
+          "tests/test_magmaw_directional_mobility_integration.py"
         ]
       },
       {
