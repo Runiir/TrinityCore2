@@ -2,76 +2,10 @@
 #include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 #include <cmath>
 #include <cstring>
-#include <iomanip>
 #include <limits>
-#include <sstream>
 #include <utility>
 namespace
 {
-char const* MovementOwnerName(BotMovementArbitration::Owner owner)
-{
-    switch (owner)
-    {
-        case BotMovementArbitration::Owner::None: return "none";
-        case BotMovementArbitration::Owner::Route: return "route";
-        case BotMovementArbitration::Owner::Formation: return "formation";
-        case BotMovementArbitration::Owner::CombatRange: return "combat_range";
-        case BotMovementArbitration::Owner::Support: return "support";
-        case BotMovementArbitration::Owner::Mechanic: return "mechanic";
-        case BotMovementArbitration::Owner::Hazard: return "hazard";
-        case BotMovementArbitration::Owner::Recovery: return "recovery";
-    }
-    return "unknown";
-}
-std::string JsonEscape(std::string const& value)
-{
-    std::ostringstream escaped;
-    for (char character : value)
-    {
-        switch (character)
-        {
-            case '\\': escaped << "\\\\"; break;
-            case '"': escaped << "\\\""; break;
-            case '\n': escaped << "\\n"; break;
-            case '\r': escaped << "\\r"; break;
-            case '\t': escaped << "\\t"; break;
-            default: escaped << character; break;
-        }
-    }
-    return escaped.str();
-}
-void AppendPositionJson(std::ostringstream& json,
-    BotWorldMovement::NativePathPosition const& position)
-{
-    json << "{\"available\":" << (position.Available ? "true" : "false")
-         << ",\"coordinate_space\":\""
-         << JsonEscape(position.CoordinateSpace) << "\",\"x\":";
-    if (position.Available)
-        json << position.X;
-    else
-        json << "null";
-    json << ",\"y\":";
-    if (position.Available)
-        json << position.Y;
-    else
-        json << "null";
-    json << ",\"z\":";
-    if (position.Available)
-        json << position.Z;
-    else
-        json << "null";
-    json << "}";
-}
-void AppendControlsJson(std::ostringstream& json,
-    BotWorldMovement::NativePathControlSequence const& sequence)
-{
-    json << "{\"available\":" << (sequence.Available ? "true" : "false")
-         << ",\"coordinate_space\":\""
-         << JsonEscape(sequence.CoordinateSpace) << "\",\"count\":"
-         << sequence.ControlCount << ",\"fingerprint\":\"" << std::hex
-         << std::setw(16) << std::setfill('0') << sequence.Fingerprint
-         << std::dec << std::setfill(' ') << "\"}";
-}
 std::uint64_t MovementIntentFingerprint(
     BotWorldMovement::Intent const& intent, std::uint32_t mapId,
     std::uint64_t dynamicTargetGuid)
@@ -123,6 +57,20 @@ std::uint64_t MovementIntentFingerprint(
 }
 namespace BotWorldMovement
 {
+char const* PrimaryDispositionName(PrimaryDisposition disposition)
+{
+    switch (disposition)
+    {
+        case PrimaryDisposition::CompleteTerminal:
+            return "complete_terminal";
+        case PrimaryDisposition::IncompleteFallbackEligible:
+            return "incomplete_fallback_eligible";
+        case PrimaryDisposition::Forbidden:
+            return "forbidden";
+    }
+    return "forbidden";
+}
+
 std::uint64_t NativePathControlsFingerprint(
     Movement::NativePathLaunchControls const& controls)
 {
@@ -371,7 +319,10 @@ void MovementPlannerDiagnosticSidecar::RecordPlannerOutcome(
     bool targetFloorSampled, float targetFloorZ, bool targetFloorValid,
     char const* gate, bool accepted, char const* reason,
     PathPlan const& plan, NativePathProofObservation const* nativeProof,
-    NativePathControlSequence const* plannedControls)
+    NativePathControlSequence const* plannedControls,
+    PrimaryDisposition primaryDisposition,
+    NativePathProofObservation const* primaryNativeProof,
+    bool localFallbackAttempted)
 {
     auto receipt = _receiptById.find(receiptId);
     if (receipt == _receiptById.end()
@@ -386,6 +337,12 @@ void MovementPlannerDiagnosticSidecar::RecordPlannerOutcome(
         ? std::fabs(targetFloorZ - observation.RequestedZ) : 0.0f;
     if (nativeProof)
         observation.NativeProof = *nativeProof;
+    observation.PrimaryPathDisposition = primaryDisposition;
+    if (primaryNativeProof)
+        observation.PrimaryNativeProof = *primaryNativeProof;
+    observation.LocalFallbackAttempted = localFallbackAttempted;
+    observation.FinalTraversalMode = plan.TraversalMode.empty()
+        ? "unavailable" : plan.TraversalMode;
     observation.PlannerGate = gate ? gate : "planner_admission";
     observation.PlannerResult = accepted ? "accepted" : "rejected";
     observation.PlannerReason = reason ? reason : "";
@@ -396,6 +353,13 @@ void MovementPlannerDiagnosticSidecar::RecordPlannerOutcome(
     observation.LaunchReceipt.PlannerSelectedX = plan.SegmentX;
     observation.LaunchReceipt.PlannerSelectedY = plan.SegmentY;
     observation.LaunchReceipt.PlannerSelectedZ = plan.SegmentZ;
+    observation.LaunchReceipt.PrimaryPathDisposition = primaryDisposition;
+    if (primaryNativeProof)
+        observation.LaunchReceipt.PrimaryNativeProof = *primaryNativeProof;
+    observation.LaunchReceipt.LocalFallbackAttempted =
+        localFallbackAttempted;
+    observation.LaunchReceipt.FinalTraversalMode =
+        observation.FinalTraversalMode;
     if (plannedControls)
         observation.LaunchReceipt.PlannerControls = *plannedControls;
     RetainCompleteHazardRetry(observation, nativeProof, accepted);
@@ -708,12 +672,16 @@ void RecordMovementPlannerOutcome(std::uint64_t receiptId,
     Intent const& intent, bool targetFloorSampled, float targetFloorZ,
     bool targetFloorValid, char const* gate, bool accepted, char const* reason,
     PathPlan const& plan, NativePathProofObservation const* nativeProof,
-    NativePathControlSequence const* plannedControls)
+    NativePathControlSequence const* plannedControls,
+    PrimaryDisposition primaryDisposition,
+    NativePathProofObservation const* primaryNativeProof,
+    bool localFallbackAttempted)
 {
     MovementPlannerDiagnostics().RecordPlannerOutcome(receiptId,
         botGuid, requestedMapId, intent, targetFloorSampled, targetFloorZ,
         targetFloorValid, gate, accepted, reason, plan, nativeProof,
-        plannedControls);
+        plannedControls, primaryDisposition, primaryNativeProof,
+        localFallbackAttempted);
 }
 
 void RecordMovementPlannerOutcome(std::uint64_t botGuid,
@@ -779,221 +747,4 @@ void ArmMovementProgressReceipt(std::uint64_t receiptId,
         observedAtMs);
 }
 
-std::string MovementPlannerObservationJson(
-    MovementPlannerObservation const& observation)
-{
-    std::ostringstream json;
-    json << std::setprecision(std::numeric_limits<float>::max_digits10);
-    json << "{\"available\":" << (observation.Available ? "true" : "false")
-         << ",\"bot_guid\":" << observation.BotGuid
-         << ",\"owner\":\"" << JsonEscape(
-                MovementOwnerName(observation.MovementOwner)) << "\""
-         << ",\"intent_reason\":\""
-         << JsonEscape(observation.IntentReason) << "\""
-         << ",\"request\":{\"map\":" << observation.RequestedMapId
-         << ",\"x\":" << observation.RequestedX
-         << ",\"y\":" << observation.RequestedY
-         << ",\"z\":" << observation.RequestedZ << "}"
-         << ",\"target_floor\":{\"sampled\":"
-         << (observation.TargetFloorSampled ? "true" : "false")
-         << ",\"z\":";
-    if (observation.TargetFloorSampled && observation.TargetFloorValid)
-        json << observation.TargetFloorZ;
-    else
-        json << "null";
-    json << ",\"valid\":"
-         << (observation.TargetFloorValid ? "true" : "false") << "}"
-         << ",\"z_delta\":{\"available\":"
-         << (observation.ZDeltaAvailable ? "true" : "false")
-         << ",\"absolute\":";
-    if (observation.ZDeltaAvailable)
-        json << observation.AbsoluteZDelta;
-    else
-        json << "null";
-    json << ",\"threshold\":" << observation.ZDeltaThreshold << "}"
-         << ",\"flags\":{\"progressive\":"
-         << (observation.AllowProgressiveSegments ? "true" : "false")
-         << ",\"complete_path\":"
-         << (observation.RequireCompletePath ? "true" : "false")
-         << ",\"native_long_path\":"
-         << (observation.AllowNativeLongPath ? "true" : "false")
-         << ",\"dynamic_target\":"
-         << (observation.DynamicTarget ? "true" : "false") << "}"
-         << ",\"native_proof\":{\"available\":"
-         << (observation.NativeProof.Available ? "true" : "false")
-         << ",\"calculated\":"
-         << (observation.NativeProof.Calculated ? "true" : "false")
-         << ",\"path_type\":" << observation.NativeProof.PathType
-         << ",\"complete\":"
-         << (observation.NativeProof.Complete ? "true" : "false")
-         << ",\"endpoint\":{\"x\":"
-         << observation.NativeProof.EndpointX << ",\"y\":"
-         << observation.NativeProof.EndpointY << ",\"z\":"
-         << observation.NativeProof.EndpointZ << ",\"distance\":"
-         << observation.NativeProof.EndpointDistance
-         << ",\"horizontal_distance\":"
-         << observation.NativeProof.EndpointHorizontalDistance
-         << ",\"vertical_distance\":"
-         << observation.NativeProof.EndpointVerticalDistance
-         << ",\"horizontal_tolerance\":"
-         << NativePathEndpointHorizontalTolerance
-         << ",\"vertical_tolerance\":"
-         << NativePathEndpointVerticalTolerance << ",\"matched\":"
-         << (observation.NativeProof.EndpointMatched ? "true" : "false")
-         << ",\"floor_valid\":"
-         << (observation.NativeProof.EndpointFloorValid ? "true" : "false")
-         << "},\"floor_observation\":{\"failure\":\""
-         << NativePathFloorFailureName(
-                observation.NativeProof.FloorObservation.Failure)
-         << "\",\"segment_index\":"
-         << observation.NativeProof.FloorObservation.SegmentIndex
-         << ",\"sample_index\":"
-         << observation.NativeProof.FloorObservation.SampleIndex
-         << ",\"x\":" << observation.NativeProof.FloorObservation.X
-         << ",\"y\":" << observation.NativeProof.FloorObservation.Y
-         << ",\"z\":" << observation.NativeProof.FloorObservation.Z
-         << ",\"resolved_floor_z\":"
-         << observation.NativeProof.FloorObservation.ResolvedFloorZ
-         << ",\"reference_z\":"
-         << observation.NativeProof.FloorObservation.ReferenceZ
-         << "},\"floor_observation_conflict\":"
-         << (observation.NativeProof.FloorObservationConflict
-                ? "true" : "false")
-         << ",\"accepted\":"
-         << (observation.NativeProof.Accepted ? "true" : "false") << "}"
-         << ",\"planner\":{\"gate\":\""
-         << JsonEscape(observation.PlannerGate)
-         << "\",\"result\":\""
-         << JsonEscape(observation.PlannerResult)
-         << "\",\"reason\":\""
-         << JsonEscape(observation.PlannerReason) << "\"}"
-         << ",\"launch_receipt\":{\"version\":"
-         << observation.LaunchReceipt.Version << ",\"id\":"
-         << observation.LaunchReceipt.Id
-         << ",\"identity\":{\"bot_guid\":" << observation.BotGuid
-         << ",\"map\":" << observation.RequestedMapId
-         << ",\"owner\":\""
-         << JsonEscape(MovementOwnerName(observation.MovementOwner))
-         << "\",\"intent_reason\":\""
-         << JsonEscape(observation.IntentReason)
-         << "\",\"intent_fingerprint\":\"" << std::hex
-         << std::setw(16) << std::setfill('0')
-         << observation.LaunchReceipt.IntentFingerprint << std::dec
-         << std::setfill(' ')
-         << "\",\"dynamic_target_guid\":"
-         << observation.LaunchReceipt.DynamicTargetGuid
-         << ",\"progress_capture_enabled\":"
-         << (observation.LaunchReceipt.ProgressCaptureEnabled
-                ? "true" : "false")
-         << ",\"scope\":{\"attempt_id\":"
-         << observation.LaunchReceipt.Scope.AttemptId
-         << ",\"wipe_generation\":"
-         << observation.LaunchReceipt.Scope.WipeGeneration
-         << ",\"route_generation\":"
-         << observation.LaunchReceipt.Scope.RouteGeneration
-         << ",\"map\":" << observation.LaunchReceipt.Scope.MapId
-         << ",\"instance\":"
-         << observation.LaunchReceipt.Scope.InstanceId << "}}"
-         << ",\"actor_before_planning\":";
-    AppendPositionJson(json, observation.LaunchReceipt.ActorBeforePlanning);
-    json << ",\"planner_path\":{\"calculated\":"
-         << (observation.NativeProof.Calculated ? "true" : "false")
-         << ",\"type\":" << observation.NativeProof.PathType
-         << ",\"complete\":"
-         << (observation.NativeProof.Complete ? "true" : "false")
-         << ",\"controls\":";
-    AppendControlsJson(json, observation.LaunchReceipt.PlannerControls);
-    json << ",\"selected_endpoint\":{\"available\":"
-         << (observation.LaunchReceipt.PlannerSelectedEndpointAvailable
-                ? "true" : "false")
-         << ",\"x\":" << observation.LaunchReceipt.PlannerSelectedX
-         << ",\"y\":" << observation.LaunchReceipt.PlannerSelectedY
-         << ",\"z\":" << observation.LaunchReceipt.PlannerSelectedZ
-         << "},\"floor_observation\":{\"failure\":\""
-         << NativePathFloorFailureName(
-                observation.NativeProof.FloorObservation.Failure)
-         << "\",\"segment_index\":"
-         << observation.NativeProof.FloorObservation.SegmentIndex
-         << ",\"sample_index\":"
-         << observation.NativeProof.FloorObservation.SampleIndex
-         << ",\"x\":" << observation.NativeProof.FloorObservation.X
-         << ",\"y\":" << observation.NativeProof.FloorObservation.Y
-         << ",\"z\":" << observation.NativeProof.FloorObservation.Z
-         << ",\"resolved_floor_z\":"
-         << observation.NativeProof.FloorObservation.ResolvedFloorZ
-         << ",\"reference_z\":"
-         << observation.NativeProof.FloorObservation.ReferenceZ
-         << "},\"floor_observation_conflict\":"
-         << (observation.NativeProof.FloorObservationConflict
-                ? "true" : "false") << "}"
-         << ",\"executor\":{\"requested\":{\"x\":"
-         << observation.RequestedX << ",\"y\":"
-         << observation.RequestedY << ",\"z\":"
-         << observation.RequestedZ << "},\"selected\":{\"available\":"
-         << (observation.LaunchReceipt.ExecutorDestinationAvailable
-                ? "true" : "false")
-         << ",\"x\":" << observation.LaunchReceipt.ExecutorSelectedX
-         << ",\"y\":" << observation.LaunchReceipt.ExecutorSelectedY
-         << ",\"z\":" << observation.LaunchReceipt.ExecutorSelectedZ
-         << "},\"generate_path\":"
-         << (observation.LaunchReceipt.PointGeneratePath ? "true" : "false")
-         << ",\"actor_before_submission\":";
-    AppendPositionJson(json,
-        observation.LaunchReceipt.ActorBeforeNativeSubmission);
-    json << "},\"motion_master\":{\"observed\":"
-         << (observation.LaunchReceipt.MotionMasterSubmissionObserved
-                ? "true" : "false")
-         << ",\"slot\":" << observation.LaunchReceipt.MotionMasterSlot
-         << ",\"generator_type\":"
-         << observation.LaunchReceipt.MotionMasterGeneratorType
-         << ",\"point_generator_initialized\":"
-         << (observation.LaunchReceipt.PointGeneratorInitialized
-                ? "true" : "false")
-         << "},\"launches\":[";
-    for (std::size_t index = 0;
-        index < observation.LaunchReceipt.Launches.size(); ++index)
-    {
-        if (index)
-            json << ',';
-        NativeSplineLaunchObservation const& launch =
-            observation.LaunchReceipt.Launches[index];
-        json << "{\"ordinal\":" << (index + 1)
-             << ",\"second_path\":{\"attempted\":"
-             << (launch.SecondPathAttempted ? "true" : "false")
-             << ",\"calculated\":"
-             << (launch.SecondPathCalculated ? "true" : "false")
-             << ",\"type\":" << launch.SecondPathType
-             << ",\"controls\":";
-        AppendControlsJson(json, launch.SecondPathControls);
-        json << "},\"direct_two_point_selected\":"
-             << (launch.DirectTwoPointSelected ? "true" : "false")
-             << ",\"direct_two_point_fallback\":"
-             << (launch.DirectTwoPointFallback ? "true" : "false")
-             << ",\"spline_launch\":{\"attempted\":"
-             << (launch.LaunchAttempted ? "true" : "false")
-             << ",\"succeeded\":"
-             << (launch.LaunchSucceeded ? "true" : "false")
-             << ",\"spline_id\":" << launch.SplineId
-             << ",\"finalized_after_launch\":"
-             << (launch.SplineFinalizedAfterLaunch ? "true" : "false")
-             << ",\"controls\":";
-        AppendControlsJson(json, launch.LaunchedControls);
-        json << ",\"actor_after_launch\":";
-        AppendPositionJson(json, launch.ActorAfterLaunch);
-        json << "}}";
-    }
-    json << "],\"launch_attempt_capacity\":"
-         << NativePathLaunchReceipt::MaxLaunchAttempts
-         << ",\"launch_attempt_overflow_count\":"
-         << observation.LaunchReceipt.LaunchAttemptOverflowCount
-         << ",\"progress\":"
-         << MovementProgressObservationJson(
-                MovementProgressDiagnostics().ForReceipt(
-                    observation.LaunchReceipt.Id)) << "}"
-         << ",\"gate\":\"" << JsonEscape(observation.Gate)
-         << "\",\"result\":\"" << JsonEscape(observation.Result)
-         << "\",\"reason\":\"" << JsonEscape(observation.Reason)
-         << "\"}";
-    return json.str();
-}
 }

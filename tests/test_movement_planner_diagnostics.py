@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BOT_DIR = ROOT / "src/server/game/Bots"
 HEADER = BOT_DIR / "BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 SOURCE = BOT_DIR / "BotWorldPopulationMgrMovementPlannerDiagnostics.cpp"
+JSON_SOURCE = BOT_DIR / "BotWorldPopulationMgrMovementPlannerDiagnosticsJson.cpp"
 RETENTION_SOURCE = BOT_DIR / "BotWorldPopulationMgrMovementReceiptRetention.cpp"
 PROGRESS_SOURCE = BOT_DIR / "BotWorldPopulationMgrMovementProgressDiagnostics.cpp"
 PLANNER = BOT_DIR / "BotWorldPopulationMgrMovementPlanner.cpp"
@@ -77,6 +78,29 @@ MovementPlannerObservation InvalidZ()
 
 int main()
 {
+    NativePathProofObservation completeInadmissible;
+    completeInadmissible.Available = true;
+    completeInadmissible.Calculated = true;
+    completeInadmissible.Complete = true;
+    assert(ClassifyPrimaryDisposition(completeInadmissible, false, false)
+        == PrimaryDisposition::CompleteTerminal);
+    assert(std::string(PrimaryDispositionName(
+        PrimaryDisposition::CompleteTerminal)) == "complete_terminal");
+
+    NativePathProofObservation incompleteEligible;
+    incompleteEligible.Available = true;
+    incompleteEligible.Calculated = true;
+    incompleteEligible.Complete = false;
+    assert(ClassifyPrimaryDisposition(incompleteEligible, true, false)
+        == PrimaryDisposition::IncompleteFallbackEligible);
+    assert(std::string(PrimaryDispositionName(
+        PrimaryDisposition::IncompleteFallbackEligible))
+        == "incomplete_fallback_eligible");
+    assert(ClassifyPrimaryDisposition(incompleteEligible, true, true)
+        == PrimaryDisposition::Forbidden);
+    assert(std::string(PrimaryDispositionName(
+        PrimaryDisposition::Forbidden)) == "forbidden");
+
     BotNativeAction::Intent annotated = BotNativeAction::WithMovementReason(
         BotNativeAction::Move{1.0f, 2.0f, 3.0f}, "pincer_preposition");
     auto const* annotatedMove = std::get_if<BotNativeAction::Move>(&annotated);
@@ -93,6 +117,11 @@ int main()
     assert(invalidFloorJson.find("\"x\":-345.872") != std::string::npos);
     assert(invalidFloorJson.find("\"sampled\":true") != std::string::npos);
     assert(invalidFloorJson.find("\"z\":null") != std::string::npos);
+    assert(invalidFloorJson.find(
+        "\"primary_path\":{\"disposition\":\"forbidden\"")
+        != std::string::npos);
+    assert(invalidFloorJson.find("\"local_fallback_attempted\":false")
+        != std::string::npos);
 
     sidecar.Record(InvalidZ());
     MovementPlannerObservation invalidZ = sidecar.Latest(30002);
@@ -163,12 +192,25 @@ int main()
         -340.0f, -105.0f, 214.1f, 219.0f, 214.154f);
     success.NativeProof.FloorObservationConflict = true;
     success.NativeProof.Accepted = true;
+    success.PrimaryPathDisposition = PrimaryDisposition::CompleteTerminal;
+    success.PrimaryNativeProof = success.NativeProof;
+    success.PrimaryNativeProof.Accepted = false;
+    success.LocalFallbackAttempted = false;
+    success.FinalTraversalMode = "native_complete_path";
     sidecar.Record(success);
     sidecar.AssociateTrace(30001, 2);
     assert(sidecar.Latest(30001).Result == "accepted");
     std::string proofJson = MovementPlannerObservationJson(
         sidecar.Latest(30001));
     assert(proofJson.find("\"native_proof\":{\"available\":true")
+        != std::string::npos);
+    assert(proofJson.find(
+        "\"primary_path\":{\"disposition\":\"complete_terminal\"")
+        != std::string::npos);
+    assert(proofJson.find("\"local_fallback_attempted\":false")
+        != std::string::npos);
+    assert(proofJson.find(
+        "\"final_traversal_mode\":\"native_complete_path\"")
         != std::string::npos);
     assert(proofJson.find("\"endpoint\":{\"x\":-333")
         != std::string::npos);
@@ -245,6 +287,7 @@ def test_sidecar_state_and_json_contract(tmp_path):
             str(ROOT / "dep/g3dlite/include"),
             str(harness),
             str(SOURCE),
+            str(JSON_SOURCE),
             str(RETENTION_SOURCE),
             str(PROGRESS_SOURCE),
             "-o",
@@ -279,6 +322,10 @@ def test_planner_trace_diagnosis_and_lifecycle_wiring():
     assert "NativePathProofObservation" in planner
     assert "DiagnoseCompleteNativePathProof" in planner
     assert "NativePathFloorObservationBlocksCompleteProof" in planner
+    assert "primaryNativeProof = nativeProof" in planner
+    assert "ClassifyPrimaryDisposition" in planner
+    assert "localFallbackAttempted = true" in planner
+    assert "primaryDisposition, &primaryNativeProof" in planner
     assert "segmentX = verifiedMainEndpoint.x" in planner
     assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in trace
     assert "MovementPlannerDiagnostics().AssociateTrace" in trace
@@ -320,10 +367,11 @@ def test_sidecar_is_not_in_central_state_and_is_registered():
     assert "MovementPlannerDiagnostics" not in MANAGER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
     assert "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.cpp" in cmake
+    assert "Bots/BotWorldPopulationMgrMovementPlannerDiagnosticsJson.cpp" in cmake
 
 
 def test_sidecar_and_related_sources_stay_bounded():
-    for path in (HEADER, SOURCE):
+    for path in (HEADER, SOURCE, JSON_SOURCE):
         assert len(path.read_text(encoding="utf-8").splitlines()) < 1000
 
 

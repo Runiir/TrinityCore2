@@ -7,6 +7,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BOT_DIR = ROOT / "src/server/game/Bots"
 DIAGNOSTICS = BOT_DIR / "BotWorldPopulationMgrMovementPlannerDiagnostics.cpp"
+DIAGNOSTICS_JSON = (
+    BOT_DIR / "BotWorldPopulationMgrMovementPlannerDiagnosticsJson.cpp"
+)
 PROGRESS_DIAGNOSTICS = (
     BOT_DIR / "BotWorldPopulationMgrMovementProgressDiagnostics.cpp"
 )
@@ -227,6 +230,7 @@ int main()
             str(ROOT / "dep/g3dlite/include"),
             str(source),
             str(DIAGNOSTICS),
+            str(DIAGNOSTICS_JSON),
             str(RETENTION_DIAGNOSTICS),
             str(PROGRESS_DIAGNOSTICS),
             "-o",

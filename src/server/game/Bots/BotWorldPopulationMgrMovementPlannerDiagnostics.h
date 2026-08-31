@@ -20,6 +20,28 @@ constexpr std::uint32_t NativePathLaunchReceiptVersion = 1;
 
 using NativePathControl = G3D::Vector3;
 
+enum class PrimaryDisposition : std::uint8_t
+{
+    CompleteTerminal,
+    IncompleteFallbackEligible,
+    Forbidden
+};
+
+char const* PrimaryDispositionName(PrimaryDisposition disposition);
+
+inline PrimaryDisposition ClassifyPrimaryDisposition(
+    NativePathProofObservation const& proof, bool fallbackEligible,
+    bool forbidden)
+{
+    if (forbidden || !proof.Available || !proof.Calculated)
+        return PrimaryDisposition::Forbidden;
+    if (proof.Complete)
+        return PrimaryDisposition::CompleteTerminal;
+    return fallbackEligible
+        ? PrimaryDisposition::IncompleteFallbackEligible
+        : PrimaryDisposition::Forbidden;
+}
+
 struct NativePathControlSequence
 {
     bool Available = false;
@@ -67,6 +89,11 @@ struct NativePathLaunchReceipt
     BotMovementArbitration::Scope Scope;
     std::uint64_t DynamicTargetGuid = 0;
     bool ProgressCaptureEnabled = false;
+    PrimaryDisposition PrimaryPathDisposition =
+        PrimaryDisposition::Forbidden;
+    NativePathProofObservation PrimaryNativeProof;
+    bool LocalFallbackAttempted = false;
+    std::string FinalTraversalMode = "unavailable";
     NativePathPosition ActorBeforePlanning;
     NativePathPosition ActorBeforeNativeSubmission;
     NativePathControlSequence PlannerControls;
@@ -117,6 +144,11 @@ struct MovementPlannerObservation
     bool RequireCompletePath = false;
     bool AllowNativeLongPath = false;
     bool DynamicTarget = false;
+    PrimaryDisposition PrimaryPathDisposition =
+        PrimaryDisposition::Forbidden;
+    NativePathProofObservation PrimaryNativeProof;
+    bool LocalFallbackAttempted = false;
+    std::string FinalTraversalMode = "unavailable";
     NativePathProofObservation NativeProof;
     std::string PlannerGate = "unavailable";
     std::string PlannerResult = "unavailable";
@@ -152,7 +184,10 @@ public:
         bool targetFloorSampled, float targetFloorZ, bool targetFloorValid,
         char const* gate, bool accepted, char const* reason,
         PathPlan const& plan, NativePathProofObservation const* nativeProof,
-        NativePathControlSequence const* plannedControls);
+        NativePathControlSequence const* plannedControls,
+        PrimaryDisposition primaryDisposition = PrimaryDisposition::Forbidden,
+        NativePathProofObservation const* primaryNativeProof = nullptr,
+        bool localFallbackAttempted = false);
     void RecordNativeSubmission(std::uint64_t receiptId,
         std::uint64_t botGuid, std::uint32_t mapId, float actorX,
         float actorY, float actorZ, float selectedX, float selectedY,
@@ -241,7 +276,10 @@ void RecordMovementPlannerOutcome(std::uint64_t receiptId,
     float targetFloorZ, bool targetFloorValid, char const* gate, bool accepted,
     char const* reason, PathPlan const& plan,
     NativePathProofObservation const* nativeProof = nullptr,
-    NativePathControlSequence const* plannedControls = nullptr);
+    NativePathControlSequence const* plannedControls = nullptr,
+    PrimaryDisposition primaryDisposition = PrimaryDisposition::Forbidden,
+    NativePathProofObservation const* primaryNativeProof = nullptr,
+    bool localFallbackAttempted = false);
 
 // Compatibility overload for value fixtures and callers that do not own a
 // native-launch correlation token.

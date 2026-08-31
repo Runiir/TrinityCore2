@@ -41,7 +41,11 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     bool targetFloorSampled = false;
     bool targetFloorValid = false;
     BotWorldMovement::NativePathProofObservation nativeProof;
+    BotWorldMovement::NativePathProofObservation primaryNativeProof;
     BotWorldMovement::NativePathControlSequence plannerControls;
+    BotWorldMovement::PrimaryDisposition primaryDisposition =
+        BotWorldMovement::PrimaryDisposition::Forbidden;
+    bool localFallbackAttempted = false;
 
     auto reject = [&](char const* reason, char const* gate)
     {
@@ -50,7 +54,9 @@ bool BotWorldPopulationMgr::PlanMovementPath(
             PlannerBotGuid(bot), PlannerBotMapId(bot),
             intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
             gate, false, plan.RejectReason.c_str(), plan, &nativeProof,
-            plannerControls.Available ? &plannerControls : nullptr);
+            plannerControls.Available ? &plannerControls : nullptr,
+            primaryDisposition, &primaryNativeProof,
+            localFallbackAttempted);
         return false;
     };
 
@@ -293,6 +299,14 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         path.GetPath(), "world");
     nativeProof = diagnoseCompleteNativePath(pathOk, path,
         G3D::Vector3(intent.X, intent.Y, intent.Z));
+    primaryNativeProof = nativeProof;
+    bool const primaryFallbackEligible = progressivePathAdmission
+        && !strictNativeDescent && pathOk
+        && (pathType & PATHFIND_INCOMPLETE)
+        && BotWorldMovement::NativePathCanProvideProgress(pathType);
+    primaryDisposition = BotWorldMovement::ClassifyPrimaryDisposition(
+        primaryNativeProof, primaryFallbackEligible,
+        BotWorldMovement::NativePathHasForbiddenAdmissionFlag(pathType));
     bool boundedLocalMechanicEndpoint = false;
     if (targetFloorValid && nativeProof.Calculated
         && nativeProof.Complete)
@@ -321,7 +335,10 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     }
     else if (!strictNativeDescent && progressivePathAdmission
         && pathOk && (pathType & PATHFIND_INCOMPLETE))
+    {
+        localFallbackAttempted = true;
         selectProgressEndpoint(path, "native_partial_path_backoff", 3.0f);
+    }
 
     auto selectProgressiveLocalMechanicEndpoint = [&]()
     {
@@ -386,7 +403,10 @@ bool BotWorldPopulationMgr::PlanMovementPath(
 
     if (!segmentSelected && progressivePathAdmission && !strictNativeDescent
         && primaryPathAllowsProgressiveLocalFallback)
+    {
+        localFallbackAttempted = true;
         selectProgressiveLocalMechanicEndpoint();
+    }
 
     // An incomplete route may still make deterministic local progress.  The
     // chosen endpoint is always mmap-validated and must reduce goal distance;
@@ -394,6 +414,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     if (!segmentSelected && progressivePathAdmission && !strictNativeDescent
         && primaryPathAllowsProgressiveLocalFallback)
     {
+        localFallbackAttempted = true;
         float const baseAngle = bot->GetAngle(intent.X, intent.Y);
         std::array<float, 7> const angleOffsets{
             0.0f, float(M_PI) / 6.0f, -float(M_PI) / 6.0f,
@@ -555,6 +576,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         PlannerBotMapId(bot),
         intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
         "path_admission", true, nullptr, plan, &nativeProof,
-        plannerControls.Available ? &plannerControls : nullptr);
+        plannerControls.Available ? &plannerControls : nullptr,
+        primaryDisposition, &primaryNativeProof,
+        localFallbackAttempted);
     return true;
 }

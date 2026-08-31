@@ -10,6 +10,10 @@ SOURCE = (
     ROOT
     / "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.cpp"
 )
+JSON_SOURCE = (
+    ROOT
+    / "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnosticsJson.cpp"
+)
 PROGRESS_SOURCE = (
     ROOT
     / "src/server/game/Bots/BotWorldPopulationMgrMovementProgressDiagnostics.cpp"
@@ -70,6 +74,7 @@ int main()
     plan.SegmentX = intent.X;
     plan.SegmentY = intent.Y;
     plan.SegmentZ = intent.Z;
+    plan.TraversalMode = "native_bounded_same_level_local_step";
     NativePathProofObservation proof;
     proof.Available = true;
     proof.Calculated = true;
@@ -85,6 +90,15 @@ int main()
         -311.814f, -32.2758f, 209.392f, 211.39f, 211.581f);
     proof.FloorObservationConflict = true;
     proof.Accepted = true;
+    NativePathProofObservation primaryProof = proof;
+    primaryProof.PathType = 9;
+    primaryProof.Complete = false;
+    primaryProof.EndpointX = 0.0f;
+    primaryProof.EndpointY = 0.0f;
+    primaryProof.EndpointZ = 0.0f;
+    primaryProof.EndpointMatched = false;
+    primaryProof.EndpointFloorValid = false;
+    primaryProof.Accepted = false;
 
     std::vector<NativePathControl> const planned{
         {-311.0f, -32.0f, 211.5f},
@@ -104,7 +118,8 @@ int main()
         ObserveNativePathControls(planned, "world");
     RecordMovementPlannerOutcome(receiptId, 30005, 669, intent, true,
         211.39f, true, "path_admission", true, nullptr, plan, &proof,
-        &plannedSummary);
+        &plannedSummary, PrimaryDisposition::IncompleteFallbackEligible,
+        &primaryProof, true);
     RecordNativePathSubmission(receiptId, 30005, 669,
         -311.814f, -32.2758f, 211.39f, intent.X, intent.Y, intent.Z, true);
     Movement::NativePathLaunchContext const launchContext =
@@ -603,6 +618,7 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
             str(ROOT / "dep/g3dlite/include"),
             str(harness),
             str(SOURCE),
+            str(JSON_SOURCE),
             str(RETENTION_SOURCE),
             str(PROGRESS_SOURCE),
             "-o",
@@ -620,6 +636,23 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
     receipt_progress = output["receipt_progress"]
 
     assert receipt["version"] == 1
+    assert output["planner"]["primary_path"]["disposition"] == (
+        "incomplete_fallback_eligible"
+    )
+    assert output["planner"]["primary_path"]["proof"]["complete"] is False
+    assert output["planner"]["native_proof"]["complete"] is True
+    assert output["planner"]["local_fallback_attempted"] is True
+    assert output["planner"]["final_traversal_mode"] == (
+        "native_bounded_same_level_local_step"
+    )
+    assert receipt["primary_path"]["disposition"] == (
+        "incomplete_fallback_eligible"
+    )
+    assert receipt["primary_path"]["proof"]["path_type"] == 9
+    assert receipt["local_fallback_attempted"] is True
+    assert receipt["final_traversal_mode"] == (
+        "native_bounded_same_level_local_step"
+    )
     assert receipt["identity"] == {
         "bot_guid": 30005,
         "map": 669,
