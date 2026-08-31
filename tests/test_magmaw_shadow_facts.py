@@ -17,6 +17,7 @@ def test_magmaw_shadow_facts_contract(tmp_path: Path) -> None:
     source.write_text(r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLifecycleIdentity.h"
 #include <algorithm>
 #include <cassert>
 #include <functional>
@@ -210,13 +211,34 @@ static Blackboard WithoutActiveSignals(Blackboard board)
     return board;
 }
 
-static Blackboard ExactLifecycleBoard()
+static void SetExactLifecycle(Blackboard& board, NativeEncounterState state,
+    uint64 attemptEpoch, uint64 encounterEpoch,
+    uint64 instanceLifecycleEpoch = 7)
 {
-    Blackboard board = Board();
-    board.CurrentScope.EncounterId = "magmaw";
-    board.CurrentScope.EncounterEpoch = 1;
+    board.CurrentScope.EncounterEpoch = encounterEpoch;
     board.EncounterIdentityAuthoritative = true;
     board.EncounterEpochAuthoritative = true;
+    NativeEncounterLifecycle native;
+    native.Id = std::string(BotMagmawLifecycleIdentity::EncounterId);
+    native.BossId = BotMagmawLifecycleIdentity::BossId;
+    native.BossEntry = BotMagmawLifecycleIdentity::BossEntry;
+    native.State = state;
+    native.ServerEpoch = board.CurrentScope.ServerEpoch;
+    native.InstanceLifecycleEpoch = instanceLifecycleEpoch;
+    native.AttemptEpoch = attemptEpoch;
+    native.EncounterEpoch = encounterEpoch;
+    native.Authoritative = true;
+    board.NativeEncounter = native;
+}
+
+static Blackboard ExactLifecycleBoard(
+    NativeEncounterState state = NativeEncounterState::InProgress,
+    uint64 attemptEpoch = 1, uint64 encounterEpoch = 1,
+    uint64 instanceLifecycleEpoch = 7)
+{
+    Blackboard board = Board();
+    SetExactLifecycle(board, state, attemptEpoch, encounterEpoch,
+        instanceLifecycleEpoch);
     board.EncounterArenaObservationComplete = true;
     return board;
 }
@@ -248,7 +270,7 @@ static void AssertNoGenerations(MagmawFacts const& facts)
 
 static void AssertCacheLifecycle()
 {
-    Blackboard board = Board();
+    Blackboard board = ExactLifecycleBoard();
     auto cache = MagmawFactsCache::ForSnapshot(nullptr, board);
     auto same = MagmawFactsCache::ForSnapshot(cache, board);
     assert(same == cache);
@@ -307,11 +329,98 @@ static void AssertCacheLifecycle()
         [](Scope& scope) { ++scope.EncounterEpoch; } };
     for (Change const& change : retire)
     {
-        Blackboard changed = Board();
+        Blackboard changed = ExactLifecycleBoard();
         change(changed.CurrentScope);
         auto retired = MagmawFactsCache::ForSnapshot(cache, changed);
         assert(retired != cache);
         assert(retired->Facts().Lifecycle == changed.CurrentScope);
+    }
+}
+
+static void AssertExactLifecycleContinuity()
+{
+    Blackboard prepull = WithoutActiveSignals(ExactLifecycleBoard(
+        NativeEncounterState::NotStarted, 0, 1, 7));
+    auto cache = MagmawFactsCache::ForSnapshot(nullptr, prepull);
+    assert(cache->Facts().LifecycleAuthoritative);
+    assert(cache->Facts().NativeEncounter);
+
+    Blackboard engaged = ExactLifecycleBoard(
+        NativeEncounterState::InProgress, 1, 1, 7);
+    engaged.Revision = prepull.Revision + 1;
+    cache = MagmawFactsCache::ForSnapshot(cache, engaged);
+    AssertAllGenerations(cache->Facts(), 1);
+
+    Blackboard failed = WithoutActiveSignals(ExactLifecycleBoard(
+        NativeEncounterState::Failed, 1, 2, 7));
+    failed.Revision = engaged.Revision + 1;
+    cache = MagmawFactsCache::ForSnapshot(cache, failed);
+    AssertNoGenerations(cache->Facts());
+
+    Blackboard reset = failed;
+    reset.Revision++;
+    SetExactLifecycle(reset, NativeEncounterState::NotStarted, 1, 2, 7);
+    cache = MagmawFactsCache::ForSnapshot(cache, reset);
+    AssertNoGenerations(cache->Facts());
+
+    Blackboard secondPull = ExactLifecycleBoard(
+        NativeEncounterState::InProgress, 2, 2, 7);
+    secondPull.Revision = reset.Revision + 1;
+    cache = MagmawFactsCache::ForSnapshot(cache, secondPull);
+    AssertAllGenerations(cache->Facts(), 1);
+
+    prepull = WithoutActiveSignals(ExactLifecycleBoard(
+        NativeEncounterState::NotStarted, 0, 1, 7));
+    cache = MagmawFactsCache::ForSnapshot(nullptr, prepull);
+    Blackboard recreated = ExactLifecycleBoard(
+        NativeEncounterState::InProgress, 1, 1, 8);
+    recreated.Revision = prepull.Revision + 1;
+    auto recreatedCache = MagmawFactsCache::ForSnapshot(cache, recreated);
+    assert(recreatedCache != cache);
+    AssertNoGenerations(recreatedCache->Facts());
+}
+
+static void AssertMalformedLifecycleFailsClosed()
+{
+    using Mutation = std::function<void(Blackboard&)>;
+    std::vector<Mutation> malformed = {
+        [](Blackboard& board) { board.NativeEncounter->Id = "other"; },
+        [](Blackboard& board) { ++board.NativeEncounter->BossId; },
+        [](Blackboard& board) { ++board.NativeEncounter->BossEntry; },
+        [](Blackboard& board) { ++board.NativeEncounter->ServerEpoch; },
+        [](Blackboard& board) { ++board.NativeEncounter->EncounterEpoch; },
+        [](Blackboard& board) {
+            board.NativeEncounter->InstanceLifecycleEpoch = 0;
+        },
+        [](Blackboard& board) {
+            board.NativeEncounter->State = NativeEncounterState::Unknown;
+        },
+        [](Blackboard& board) {
+            board.NativeEncounter->Authoritative = false;
+        },
+        [](Blackboard& board) { board.NativeEncounter.reset(); },
+        [](Blackboard& board) {
+            board.CurrentScope.NodeId = "bwd.atramedes.encounter";
+        },
+        [](Blackboard& board) { ++board.CurrentScope.MapId; },
+        [](Blackboard& board) {
+            board.Route.NodeId = "bwd.atramedes.encounter";
+        },
+        [](Blackboard& board) {
+            board.EncounterIdentityAuthoritative = false;
+        },
+        [](Blackboard& board) {
+            board.EncounterEpochAuthoritative = false;
+        } };
+    for (Mutation const& mutate : malformed)
+    {
+        Blackboard board = ExactLifecycleBoard();
+        mutate(board);
+        MagmawFacts facts = MagmawFactsReducer::Reduce(board);
+        assert(!facts.LifecycleAuthoritative);
+        assert(!facts.EncounterIdentityAuthoritative);
+        assert(!facts.EncounterEpochAuthoritative);
+        assert(!facts.NativeEncounter);
     }
 }
 
@@ -360,6 +469,8 @@ int main()
     AssertOrderStableAndPure();
     AssertPartialObservationUnknown();
     AssertCacheLifecycle();
+    AssertExactLifecycleContinuity();
+    AssertMalformedLifecycleFailsClosed();
     Blackboard combat = Board();
     AssertLegacyDecisionsUnchanged(combat);
     combat.Hostiles.erase(combat.Hostiles.begin() + 2);

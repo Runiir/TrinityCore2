@@ -90,6 +90,17 @@ ObserveMagmawLifecycle(Player const& observer, uint64 serverEpoch,
     return lifecycle;
 }
 
+bool IsAuthoritativeMagmawLifecycle(
+    std::optional<BotEncounter::NativeEncounterLifecycle> const& lifecycle,
+    uint64 serverEpoch)
+{
+    return lifecycle && lifecycle->HasExactIdentity()
+        && lifecycle->Id == BotMagmawLifecycleIdentity::EncounterId
+        && lifecycle->BossId == BotMagmawLifecycleIdentity::BossId
+        && lifecycle->BossEntry == BotMagmawLifecycleIdentity::BossEntry
+        && lifecycle->ServerEpoch == serverEpoch;
+}
+
 bool IsMagmawPincerWarningCreature(BotEncounter::RouteView const& route,
     Creature const& creature)
 {
@@ -144,6 +155,12 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
         return;
     }
 
+    std::optional<BotEncounter::NativeEncounterLifecycle> nativeEncounter =
+        ObserveMagmawLifecycle(*observer, _serverEpoch,
+            Cohort().Config.ValidationRouteNodeId);
+    bool const nativeEncounterAuthoritative =
+        IsAuthoritativeMagmawLifecycle(nativeEncounter, _serverEpoch);
+
     BotEncounter::Scope currentScope;
     currentScope.CohortId = Cohort().Id;
     currentScope.AttemptId = Cohort().AttemptId;
@@ -157,8 +174,8 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
         ? Cohort().Config.ValidationRouteKind
         : Cohort().Config.ValidationRouteMechanicProfile;
     currentScope.ServerEpoch = _serverEpoch;
-    // BossResetGeneration is instance-wide, not a Magmaw encounter epoch.
-    currentScope.EncounterEpoch = 0;
+    currentScope.EncounterEpoch = nativeEncounterAuthoritative
+        ? nativeEncounter->EncounterEpoch : 0;
 
     auto snapshot = std::make_shared<BotEncounter::Blackboard>();
     snapshot->Revision = ++Cohort().EncounterSnapshotRevision;
@@ -167,11 +184,10 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     snapshot->NativeBossState = Cohort().Raid.EncounterInProgress ? "in_progress" : "not_in_progress";
     snapshot->NativeEncounterPhase = Cohort().Raid.EncounterPhase;
     snapshot->NativeWipeState = Cohort().Raid.WipeState;
-    snapshot->EncounterIdentityAuthoritative = false;
-    snapshot->EncounterEpochAuthoritative = false;
+    snapshot->EncounterIdentityAuthoritative = nativeEncounterAuthoritative;
+    snapshot->EncounterEpochAuthoritative = nativeEncounterAuthoritative;
     snapshot->EncounterArenaObservationComplete = false;
-    snapshot->NativeEncounter = ObserveMagmawLifecycle(*observer, _serverEpoch,
-        Cohort().Config.ValidationRouteNodeId);
+    snapshot->NativeEncounter = std::move(nativeEncounter);
 
     snapshot->Route.NodeId = Cohort().Config.ValidationRouteNodeId;
     snapshot->Route.Kind = Cohort().Config.ValidationRouteNodeKind.empty()

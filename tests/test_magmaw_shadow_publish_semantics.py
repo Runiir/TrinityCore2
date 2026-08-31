@@ -22,10 +22,14 @@ def test_shadow_cache_preserves_legacy_snapshot_refresh_order() -> None:
     assert body.index("MagmawFactsCache::ForSnapshot") > body.index(
         "BotEncounterHazards::Populate(*snapshot"
     )
-    assert "currentScope.EncounterEpoch = 0;" in body
-    assert "snapshot->EncounterIdentityAuthoritative = false;" in body
-    assert "snapshot->EncounterEpochAuthoritative = false;" in body
+    native = "nativeEncounter =\n        ObserveMagmawLifecycle"
+    assert body.index(native) < body.index("BotEncounter::Scope currentScope;")
+    assert "currentScope.EncounterEpoch = nativeEncounterAuthoritative" in body
+    assert "snapshot->EncounterIdentityAuthoritative = nativeEncounterAuthoritative;" in body
+    assert "snapshot->EncounterEpochAuthoritative = nativeEncounterAuthoritative;" in body
     assert "snapshot->EncounterArenaObservationComplete = false;" in body
+    assert "currentScope.EncounterId =" in body
+    assert "currentScope.EncounterId = BotMagmawLifecycleIdentity" not in body
     assert "currentScope.EncounterEpoch = Cohort().Raid.BossResetGeneration" not in body
     refresh_prefix = body[: body.index("Player* observer = nullptr;")]
     assert "MagmawFacts" not in refresh_prefix

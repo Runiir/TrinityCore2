@@ -76,6 +76,7 @@ struct MagmawSignal
 struct MagmawFacts
 {
     Scope Lifecycle;
+    std::optional<NativeEncounterLifecycle> NativeEncounter;
     uint64 ObservationRevision = 0;
     bool CacheScopeComplete = false;
     bool LifecycleAuthoritative = false;
@@ -123,7 +124,7 @@ public:
         std::shared_ptr<MagmawFactsCache const> const& current,
         Blackboard const& snapshot);
 
-    bool Matches(Scope const& scope, uint64 revision) const;
+    bool Matches(Blackboard const& snapshot) const;
     MagmawFacts const& Facts() const { return _facts; }
 
 private:

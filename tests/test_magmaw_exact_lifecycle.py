@@ -108,5 +108,6 @@ def test_exact_lifecycle_is_observation_only() -> None:
         if "->NativeEncounter" in text or ".NativeEncounter" in text:
             consumers.append(path.relative_to(ROOT).as_posix())
     assert consumers == [
-        "src/server/game/Bots/BotWorldPopulationMgrEncounterBlackboard.cpp"
+        "src/server/game/Bots/BotWorldPopulationMgrEncounterBlackboard.cpp",
+        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.cpp",
     ]

@@ -1,4 +1,5 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLifecycleIdentity.h"
 
 #include <algorithm>
 
@@ -17,6 +18,28 @@ constexpr uint32 PincerRightEntry = 41789;
 constexpr uint32 MangleNormal = 89773;
 constexpr uint32 MangleAlternate = 78412;
 constexpr uint32 PincerWarningAura = 87949;
+
+NativeEncounterLifecycle const* ExactNativeEncounter(Blackboard const& board)
+{
+    if (!board.EncounterIdentityAuthoritative
+        || !board.EncounterEpochAuthoritative
+        || !board.NativeEncounter
+        || !board.NativeEncounter->HasExactIdentity()
+        || !BotMagmawLifecycleIdentity::OwnsRoute(
+            board.CurrentScope.MapId, board.CurrentScope.NodeId)
+        || board.Route.NodeId != BotMagmawLifecycleIdentity::RouteNode)
+        return nullptr;
+
+    NativeEncounterLifecycle const& native = *board.NativeEncounter;
+    if (native.Id != BotMagmawLifecycleIdentity::EncounterId
+        || native.BossId != BotMagmawLifecycleIdentity::BossId
+        || native.BossEntry != BotMagmawLifecycleIdentity::BossEntry
+        || native.State == NativeEncounterState::Unknown
+        || native.ServerEpoch != board.CurrentScope.ServerEpoch
+        || native.EncounterEpoch != board.CurrentScope.EncounterEpoch)
+        return nullptr;
+    return &native;
+}
 
 bool HasAura(ActorSnapshot const& actor, uint32 spellId)
 {
@@ -113,12 +136,11 @@ MagmawFacts MagmawFactsReducer::Reduce(Blackboard const& board)
         && !board.CurrentScope.NodeId.empty()
         && board.CurrentScope.MapId
         && !board.CurrentScope.EncounterId.empty();
-    // EncounterId is currently the shared mechanic profile and no native
-    // Magmaw-specific epoch is published. Keep both semantic claims unknown.
-    facts.EncounterIdentityAuthoritative =
-        board.EncounterIdentityAuthoritative;
-    facts.EncounterEpochAuthoritative =
-        board.EncounterEpochAuthoritative;
+    NativeEncounterLifecycle const* native = ExactNativeEncounter(board);
+    if (native)
+        facts.NativeEncounter = *native;
+    facts.EncounterIdentityAuthoritative = native != nullptr;
+    facts.EncounterEpochAuthoritative = native != nullptr;
     facts.LifecycleAuthoritative = facts.CacheScopeComplete
         && facts.EncounterIdentityAuthoritative
         && facts.EncounterEpochAuthoritative;
@@ -231,23 +253,29 @@ MagmawFacts MagmawFactsReducer::Reduce(Blackboard const& board)
     return facts;
 }
 
-bool MagmawFactsCache::Matches(Scope const& scope, uint64 revision) const
+bool MagmawFactsCache::Matches(Blackboard const& snapshot) const
 {
-    return _facts.Lifecycle == scope
-        && _facts.ObservationRevision == revision;
+    NativeEncounterLifecycle const* native = ExactNativeEncounter(snapshot);
+    return native && _facts.NativeEncounter
+        && _facts.NativeEncounter->SameEpochIdentity(*native)
+        && _facts.Lifecycle == snapshot.CurrentScope
+        && _facts.ObservationRevision == snapshot.Revision;
 }
 
 std::shared_ptr<MagmawFactsCache const> MagmawFactsCache::ForSnapshot(
     std::shared_ptr<MagmawFactsCache const> const& current,
     Blackboard const& snapshot)
 {
-    if (current && current->Matches(snapshot.CurrentScope, snapshot.Revision))
+    if (current && current->Matches(snapshot))
         return current;
 
     MagmawFacts facts = MagmawFactsReducer::Reduce(snapshot);
     EdgeCounters counters;
     MagmawFacts const* previous = nullptr;
-    if (current && current->_facts.Lifecycle == snapshot.CurrentScope)
+    if (current && current->_facts.Lifecycle == snapshot.CurrentScope
+        && current->_facts.NativeEncounter && facts.NativeEncounter
+        && current->_facts.NativeEncounter->SameEpochIdentity(
+            *facts.NativeEncounter))
     {
         counters = current->_counters;
         previous = &current->_facts;
