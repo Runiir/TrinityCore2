@@ -42,8 +42,22 @@
 #include "World.h"
 #include "WorldSession.h"
 #include "WorldStateMgr.h"
+#include <atomic>
 #include <cstdarg>
 #include <sstream>
+
+namespace
+{
+std::atomic<uint64> InstanceLifecycleCounter{ 0 };
+
+uint64 BuildInstanceLifecycleEpoch()
+{
+    uint64 const epoch = InstanceLifecycleCounter.fetch_add(
+        1, std::memory_order_relaxed) + 1;
+    ASSERT(epoch);
+    return epoch;
+}
+}
 
 BossBoundaryData::~BossBoundaryData()
 {
@@ -51,7 +65,9 @@ BossBoundaryData::~BossBoundaryData()
         delete it->Boundary;
 }
 
-InstanceScript::InstanceScript(InstanceMap* map) : instance(map), completedEncounters(0), _instanceSpawnGroups(sObjectMgr->GetSpawnGroupsForInstance(map->GetId()))
+InstanceScript::InstanceScript(InstanceMap* map) : instance(map), completedEncounters(0),
+    _instanceSpawnGroups(sObjectMgr->GetSpawnGroupsForInstance(map->GetId())),
+    _lifecycleEpoch(BuildInstanceLifecycleEpoch())
 {
 #ifdef TRINITY_API_USE_DYNAMIC_LINKING
     uint32 scriptId = sObjectMgr->GetInstanceTemplate(map->GetId())->ScriptId;
@@ -408,6 +424,8 @@ bool InstanceScript::SetBossState(uint32 id, EncounterState state)
                 }
             }
 
+            bossInfo->attemptEpoch = InstanceEncounterLifecycle::NextAttemptEpoch(
+                bossInfo->state, state, bossInfo->attemptEpoch);
             bossInfo->state = state;
             SaveToDB();
         }

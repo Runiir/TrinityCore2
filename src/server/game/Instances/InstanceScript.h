@@ -117,12 +117,42 @@ typedef std::vector<AreaBoundary const*> CreatureBoundary;
 
 struct BossInfo
 {
-    BossInfo() : state(TO_BE_DECIDED) { }
+    BossInfo() : state(TO_BE_DECIDED), attemptEpoch(0) { }
     EncounterState state;
+    uint64 attemptEpoch;
     GuidSet door[MAX_DOOR_TYPES];
     GuidSet minion;
     CreatureBoundary boundary;
 };
+
+namespace InstanceEncounterLifecycle
+{
+// One epoch denotes one admitted pull. Reset, evade, and death close that pull
+// without changing its identity; the next native engage advances it.
+inline uint64 NextAttemptEpoch(EncounterState previousState,
+    EncounterState nextState, uint64 currentEpoch)
+{
+    bool const startsAttempt = (previousState == NOT_STARTED
+        || previousState == FAIL) && nextState == IN_PROGRESS;
+    return startsAttempt ? currentEpoch + 1 : currentEpoch;
+}
+
+inline uint64 CurrentOrNextEncounterEpoch(EncounterState state,
+    uint64 attemptEpoch)
+{
+    switch (state)
+    {
+        case NOT_STARTED:
+        case FAIL:
+            return attemptEpoch + 1;
+        case IN_PROGRESS:
+        case DONE:
+            return attemptEpoch;
+        default:
+            return 0;
+    }
+}
+}
 
 struct DoorInfo
 {
@@ -229,6 +259,7 @@ class TC_GAME_API InstanceScript : public ZoneScript
 
         virtual bool SetBossState(uint32 id, EncounterState state);
         EncounterState GetBossState(uint32 id) const { return id < bosses.size() ? bosses[id].state : TO_BE_DECIDED; }
+        uint64 GetBossAttemptEpoch(uint32 id) const { return id < bosses.size() ? bosses[id].attemptEpoch : 0; }
         static char const* GetBossStateName(uint8 state);
         CreatureBoundary const* GetBossBoundary(uint32 id) const { return id < bosses.size() ? &bosses[id].boundary : nullptr; }
 
@@ -255,6 +286,7 @@ class TC_GAME_API InstanceScript : public ZoneScript
         void UpdatePhasing();
 
         uint32 GetEncounterCount() const { return bosses.size(); }
+        uint64 GetLifecycleEpoch() const { return _lifecycleEpoch; }
 
         // Only used by areatriggers that inherit from OnlyOnceAreaTriggerScript
         void MarkAreaTriggerDone(uint32 id) { _activatedAreaTriggers.insert(id); }
@@ -314,6 +346,7 @@ class TC_GAME_API InstanceScript : public ZoneScript
         uint8 _combatResurrectionCharges; // the counter for available combat resurrections
         std::unordered_set<uint32> _activatedAreaTriggers;
         std::vector<InstanceSpawnGroupInfo> const* const _instanceSpawnGroups;
+        uint64 const _lifecycleEpoch;
 
     #ifdef TRINITY_API_USE_DYNAMIC_LINKING
         // Strong reference to the associated script module
