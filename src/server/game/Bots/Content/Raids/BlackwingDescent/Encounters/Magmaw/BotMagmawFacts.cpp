@@ -19,6 +19,23 @@ constexpr uint32 MangleNormal = 89773;
 constexpr uint32 MangleAlternate = 78412;
 constexpr uint32 PincerWarningAura = 87949;
 
+bool HasCoherentEncounterEpoch(NativeEncounterLifecycle const& native)
+{
+    switch (native.State)
+    {
+        case NativeEncounterState::NotStarted:
+        case NativeEncounterState::Failed:
+            return native.AttemptEpoch < native.EncounterEpoch
+                && native.EncounterEpoch - native.AttemptEpoch == 1;
+        case NativeEncounterState::InProgress:
+        case NativeEncounterState::Done:
+            return native.AttemptEpoch > 0
+                && native.EncounterEpoch == native.AttemptEpoch;
+        default:
+            return false;
+    }
+}
+
 NativeEncounterLifecycle const* ExactNativeEncounter(Blackboard const& board)
 {
     if (!board.EncounterIdentityAuthoritative
@@ -34,7 +51,7 @@ NativeEncounterLifecycle const* ExactNativeEncounter(Blackboard const& board)
     if (native.Id != BotMagmawLifecycleIdentity::EncounterId
         || native.BossId != BotMagmawLifecycleIdentity::BossId
         || native.BossEntry != BotMagmawLifecycleIdentity::BossEntry
-        || native.State == NativeEncounterState::Unknown
+        || !HasCoherentEncounterEpoch(native)
         || native.ServerEpoch != board.CurrentScope.ServerEpoch
         || native.EncounterEpoch != board.CurrentScope.EncounterEpoch)
         return nullptr;

@@ -396,6 +396,26 @@ static void AssertMalformedLifecycleFailsClosed()
             board.NativeEncounter->State = NativeEncounterState::Unknown;
         },
         [](Blackboard& board) {
+            board.NativeEncounter->State = NativeEncounterState::InProgress;
+            board.NativeEncounter->AttemptEpoch = 1;
+            board.NativeEncounter->EncounterEpoch = 2;
+            board.CurrentScope.EncounterEpoch = 2;
+        },
+        [](Blackboard& board) {
+            board.NativeEncounter->State = NativeEncounterState::InProgress;
+            board.NativeEncounter->AttemptEpoch = 0;
+            board.NativeEncounter->EncounterEpoch = 1;
+        },
+        [](Blackboard& board) {
+            board.NativeEncounter->State = NativeEncounterState::NotStarted;
+            board.NativeEncounter->AttemptEpoch = 1;
+            board.NativeEncounter->EncounterEpoch = 1;
+        },
+        [](Blackboard& board) {
+            board.NativeEncounter->State =
+                static_cast<NativeEncounterState>(255);
+        },
+        [](Blackboard& board) {
             board.NativeEncounter->Authoritative = false;
         },
         [](Blackboard& board) { board.NativeEncounter.reset(); },
