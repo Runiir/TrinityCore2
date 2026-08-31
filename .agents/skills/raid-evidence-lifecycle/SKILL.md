@@ -19,7 +19,9 @@ Before live execution, require:
   against that commit's lock, require local and cloud status clean, then verify
   the runtime manifest's decisive node IDs and mechanic fields before
   provisioning;
-- deterministic provisioning verification against the source manifests/DBC inputs;
+- deterministic provisioning application and verification against the source
+  manifests/DBC inputs before strict readback. Do not assume a prior run left
+  learned spells, consumable counts, or other mutable roster state pristine;
 - Keep a canonical route catalog and a prepared runtime route manifest as
   distinct authenticated artifacts. Authenticate the DVC-owned JSONL catalog,
   then use the production selector to bind one scenario's ordered rows and

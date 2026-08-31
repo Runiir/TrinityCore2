@@ -199,6 +199,10 @@ def test_realization_binds_fresh_artifacts_after_build(
     }
     assert realized["execution"]["capture_timer"] == "completion_watchdog"
     assert realized["execution"]["fixed_success_timer_seconds"] is None
+    assert realized["execution"]["order"] == [
+        "bundle_create", "bundle_verify", "provisioning_apply",
+        "strict_readback", "shard_readback", "capture",
+    ]
     for command in realized["commands"].values():
         assert command["cwd"] == str(ROOT)
     bundle = realized["commands"]["bundle_create"]["argv"]
@@ -208,6 +212,14 @@ def test_realization_binds_fresh_artifacts_after_build(
         TRACKED_DERIVED_AUTHORITY
     )
     assert "--observe-sec" not in realized["commands"]["capture"]["argv"]
+    provisioning = realized["commands"]["provisioning_apply"]["argv"]
+    assert provisioning[-2:] == [
+        "--apply-validation-provisioning", "--prepare-only",
+    ]
+    assert provisioning[provisioning.index("--config") + 1] == str(
+        Path(request["run_root"]) / "prestart_bundle"
+        / launcher.BUNDLE_NAMES["runtime_config"]
+    )
 
 
 @pytest.mark.parametrize(

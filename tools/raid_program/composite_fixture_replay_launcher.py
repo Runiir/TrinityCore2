@@ -636,6 +636,7 @@ def realize_plan(
     bundle = run_root / "prestart_bundle"
     for output in (
         bundle,
+        run_root / "provisioning_apply",
         run_root / "strict_provisioning_readback.json",
         run_root / "shard_roster_readback.json",
         bundle.with_suffix(".json"),
@@ -654,6 +655,14 @@ def realize_plan(
             "pixi", "run", "python", "-m",
             "tools.raid_program.chainwielder_prestart_bundle", "verify",
             "--output-dir", str(bundle),
+        ], worktree),
+        "provisioning_apply": _command([
+            "pixi", "run", "python", "-m",
+            "tools.bot_ml.run_live_bot_validation",
+            "--config", str(bundle / BUNDLE_NAMES["runtime_config"]),
+            "--output-dir", str(run_root / "provisioning_apply"),
+            "--validation-scenario-id", SCENARIO_ID,
+            "--apply-validation-provisioning", "--prepare-only",
         ], worktree),
         "strict_readback": _command([
             "pixi", "run", "python", "-m",
@@ -689,8 +698,8 @@ def realize_plan(
         "execution": {
             "composition_side_effect_free": True,
             "order": [
-                "bundle_create", "bundle_verify", "strict_readback",
-                "shard_readback", "capture",
+                "bundle_create", "bundle_verify", "provisioning_apply",
+                "strict_readback", "shard_readback", "capture",
             ],
             "capture_timer": "completion_watchdog",
             "fixed_success_timer_seconds": None,
