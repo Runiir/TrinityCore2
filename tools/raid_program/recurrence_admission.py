@@ -461,7 +461,13 @@ def create_recurrence_admission(
         fixture_revisions[fixture_id] = revision
     checkpoint_seal = None
     verified_overlay: dict[str, str] | None = None
-    if checkpoint_targeted:
+    profile_authority_supplied = any(
+        value is not None for value in (
+            profile_manifest, runtime_profile_overlay,
+            expected_runtime_profile_id,
+        )
+    )
+    if checkpoint_targeted or profile_authority_supplied:
         if profile_manifest is None or runtime_profile_overlay is None \
                 or expected_runtime_profile_id is None:
             raise RecurrenceAdmissionError("checkpoint_profile_authority_missing")
@@ -510,9 +516,6 @@ def create_recurrence_admission(
             runtime_profile_overlay=verified_overlay,
             expected_runtime_profile_id=expected_runtime_profile_id,
         )
-    elif profile_manifest is not None or runtime_profile_overlay is not None \
-            or expected_runtime_profile_id is not None:
-        raise RecurrenceAdmissionError("profile_authority_unexpected")
     admission = {
         "schema": SCHEMA,
         "purpose": purpose,
@@ -643,7 +646,12 @@ def verify_recurrence_admission(
     )
     verified_overlay: dict[str, str] | None = None
     profile_path: Path | None = None
-    if checkpoint_targeted:
+    profile_authority_recorded = (
+        admission.get("runtime_profile_overlay") is not None
+        or (admission.get("bindings") or {}).get("profile_manifest") is not None
+        or admission.get("expected_runtime_profile_id") is not None
+    )
+    if checkpoint_targeted or profile_authority_recorded:
         if profile_manifest is None or expected_runtime_profile_id is None:
             raise RecurrenceAdmissionError("checkpoint_profile_authority_missing")
         if admission.get("expected_runtime_profile_id") != expected_runtime_profile_id:
@@ -679,10 +687,7 @@ def verify_recurrence_admission(
             expected_runtime_profile_id
         ):
             raise RecurrenceAdmissionError("runtime_profile_not_bound_by_config")
-    elif (admission.get("runtime_profile_overlay") is not None
-          or (admission.get("bindings") or {}).get("profile_manifest") is not None
-          or admission.get("expected_runtime_profile_id") is not None
-          or expected_runtime_profile_id is not None):
+    elif expected_runtime_profile_id is not None or profile_manifest is not None:
         raise RecurrenceAdmissionError("profile_authority_unexpected")
     ledger_path = _verify_binding(
         admission, "ledger", atomic_bundle_roots=atomic_bundle_roots,
@@ -729,7 +734,7 @@ def verify_recurrence_admission(
         if admission.get(key) != decision.get(key):
             raise RecurrenceAdmissionError(f"decision_{key}_mismatch")
     checkpoint_seal = admission.get("checkpoint_seal")
-    if checkpoint_targeted:
+    if checkpoint_targeted or profile_authority_recorded:
         assert profile_path is not None and verified_overlay is not None
         checkpoint_seal = _verify_chainwielder_checkpoint_seal(
             seal=checkpoint_seal,

@@ -26,6 +26,12 @@ Before live execution, require:
   output-object hash in a typed receipt. Never pass catalog JSONL directly to
   a single-object consumer or hand-convert it for a live shard.
 - fresh DB readback of the exact roster, account linkage, positions, and zero group/instance/corpse/ghost residue.
+- Keep launch authority separate from the fixture target. A route replay may
+  require an authenticated runtime-profile overlay and a sealed predecessor
+  checkpoint even when neither is the behavior under test. Verify and retain
+  those auxiliary bindings without adding unrelated fixture targets; reject
+  partial profile authority where only some of the manifest, overlay, or
+  expected profile identity are present.
 - native-loadable character identity: normalized 2–12-letter player names and `at_login == 0`; a digit or rename flag makes `Player::LoadFromDB` fail even when ordinary row equality passes.
 - provisioning/reset SQL that freezes every native group containing an exact
   cohort member, including a foreign-leader group, and deletes in dependency

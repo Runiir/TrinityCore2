@@ -219,6 +219,7 @@ def _create_chainwielder_checkpoint_admission(
     paths: dict[str, Path | str],
     *,
     expansion_requests: list[dict[str, object]] | None = None,
+    include_checkpoint_target: bool = True,
 ) -> dict[str, str]:
     admission = Path(paths["admission"])
     decision = Path(paths["decision"])
@@ -226,7 +227,10 @@ def _create_chainwielder_checkpoint_admission(
     config = Path(paths["config"])
     expansion_requests = expansion_requests or []
     target_ids = [
-        CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+        *(
+            [CHAINWIELDER_CHECKPOINT_FIXTURE_ID]
+            if include_checkpoint_target else []
+        ),
         *(request["fixture_id"] for request in expansion_requests),
     ]
     admission.unlink()
@@ -389,6 +393,25 @@ def test_chainwielder_checkpoint_uses_precomputed_non_circular_seal(
         ).encode("utf-8")
     ).hexdigest()
     assert result["runtime_profile_overlay"] == admission["runtime_profile_overlay"]
+
+
+def test_fixture_replay_can_seal_auxiliary_checkpoint_profile(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    request = _replacement_request()
+    seal = _create_chainwielder_checkpoint_admission(
+        paths,
+        expansion_requests=[request],
+        include_checkpoint_target=False,
+    )
+
+    result = _verify_chainwielder(paths)
+
+    assert result["valid"] is True
+    assert result["fixture_expansion_target_ids"] == [request["fixture_id"]]
+    assert result["checkpoint_seal_sha256"] == seal["seal_sha256"]
+    assert result["runtime_profile_overlay"] is not None
 
 
 def test_composite_checkpoint_create_verify_projection_arms_controller(
