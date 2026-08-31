@@ -1,0 +1,83 @@
+{
+  "schema": "cata_raid_architecture_handoff_v1",
+  "handoff_id": "magmaw_shadow_observation_gate_verifier_20260901",
+  "source_commit": "a93b3bc3df1324731c49d2a027206c4bb819d98f",
+  "source_tree": "35ce29624ec7d314c4b81f912453b940d81b1bc7",
+  "classification": "deterministic_evidence_gate_missing",
+  "behavior_authority": "legacy_only",
+  "verified": {
+    "runtime_correlation_focused_tests_passed": 17,
+    "worldserver_full_build_jobs": 8,
+    "worldserver_full_build_passed": true,
+    "episode_schema_independent_review": "go",
+    "shadow_candidate_execution_enabled": false
+  },
+  "first_broken_edge": {
+    "component": "post-capture Magmaw shadow observation review",
+    "finding": "Runtime telemetry is now causally sufficient, but no deterministic compact verifier joins the complete two-baiter task episode, accumulated intent equivalence, selected legacy candidate, native launch receipt, and multi-tick physical progress.",
+    "effect": "A live run cannot be admitted as evidence because manual log review could miss a non-exercised mechanic, one-baiter episode, transient divergence, ambiguous proposal, missing receipt, or movement that was submitted without physical progress.",
+    "confidence": "high"
+  },
+  "next_phase": {
+    "work_unit": "evidence:magmaw_shadow_observation_gate_verifier",
+    "owner_skill": "raid-evidence-lifecycle",
+    "objective": "Implement one fail-closed deterministic verifier over normalized status, diagnosis, trace, and native movement receipt rows and emit only a compact JSON decision summary.",
+    "behavior_cutover_allowed": false
+  },
+  "required_gate_outcomes": [
+    "pass",
+    "fail",
+    "not_exercised"
+  ],
+  "pass_contract": [
+    "one exact lifecycle scope contains a complete transfer-lane episode for both assigned baiters",
+    "both actor tasks are observed running and each has exactly one eligible movement proposal per observed comparison",
+    "each actor retains one stable scope, actor, episode generation, task generation, shadow key, legacy key, and immutable destination",
+    "all eligible comparisons are equivalent with zero divergence, ambiguity, shadow-only, legacy-only, key changes, or destination changes",
+    "each stable legacy candidate key joins to at least one native movement launch receipt for the same actor and lifecycle scope",
+    "native receipts prove launch or spline submission and later observations prove semantic distance improvement and arrival or success for both actors",
+    "no join is inferred only from timestamps or approximate coordinates"
+  ],
+  "fail_closed_contract": [
+    "missing complete episode, missing second baiter, missing actor identity, or zero eligible comparisons is not_exercised",
+    "any divergence, ambiguity, unstable key or destination, mismatched actor or scope, missing exact receipt join, or missing physical progress is fail",
+    "malformed JSON, mixed lifecycle scopes, schema ambiguity, duplicate conflicting identities, or unavailable required streams is fail",
+    "the verifier must never classify action submission alone as progress",
+    "the verifier must never start a server, mutate a database, provision a shard, or change gameplay code"
+  ],
+  "test_matrix": [
+    "canonical pass with two baiters and exact receipt/progress joins",
+    "not_exercised with no episode",
+    "not_exercised with only one baiter",
+    "transient divergence followed by equivalence remains fail",
+    "ambiguous comparison remains fail",
+    "candidate key mismatch remains fail",
+    "scope or actor mismatch remains fail",
+    "destination change remains fail",
+    "missing native receipt remains fail",
+    "receipt submitted without later physical progress remains fail",
+    "retired terminal episode can pass after the shared shadow becomes inactive",
+    "malformed or mixed-schema input remains fail"
+  ],
+  "output_contract": {
+    "format": "single compact JSON document",
+    "required_fields": [
+      "schema",
+      "verdict",
+      "reason",
+      "scope_key",
+      "episode_generation",
+      "baiter_actor_guids",
+      "comparison_counts",
+      "receipt_joins",
+      "progress_summary",
+      "first_failure"
+    ],
+    "raw_event_copy_forbidden": true
+  },
+  "promotion_gate": {
+    "next_work_unit": "evidence:magmaw_shadow_authority_off_live_observation",
+    "required_evidence": "Verifier implementation and synthetic matrix pass, master tests pass, and worldserver remains buildable.",
+    "live_capture_allowed_in_this_phase": false
+  }
+}
