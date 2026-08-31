@@ -4,9 +4,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawRaidPlan.h"
 
-#include <array>
 #include <memory>
-#include <set>
 
 namespace BotEncounter
 {
@@ -17,23 +15,20 @@ public:
     static std::shared_ptr<MagmawCoordinator const> Reconcile(
         std::shared_ptr<MagmawCoordinator const> const& current,
         MagmawFacts const& facts, Blackboard const& board,
-        std::vector<MagmawAssignmentRetirementInput> const& retirements = {});
+        MagmawRosterView const& roster);
 
-    bool Matches(Scope const& scope, uint64 sourceRevision) const
+    bool Matches(Scope const& scope, uint64 sourceRevision,
+        uint64 rosterGeneration) const
     {
-        return _plan.Matches(scope, sourceRevision);
+        return _plan.Matches(scope, sourceRevision, rosterGeneration);
     }
 
     MagmawRaidPlan const& Plan() const { return _plan; }
 
 private:
-    using RetiredAssignments = std::array<std::set<uint64>,
-        MagmawRaidPlan::AssignmentCount>;
-
     MagmawCoordinator() = default;
 
     MagmawRaidPlan _plan;
-    RetiredAssignments _retired;
 };
 }
 

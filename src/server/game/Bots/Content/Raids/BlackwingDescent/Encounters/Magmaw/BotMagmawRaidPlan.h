@@ -4,6 +4,7 @@
 #include "Bots/BotEncounterBlackboard.h"
 
 #include <array>
+#include <string>
 #include <vector>
 
 namespace BotEncounter
@@ -15,63 +16,104 @@ enum class MagmawRaidAssignmentSlot : uint8
     HookOne,
     HookTwo,
     MainPullTank,
-    MangleResponder,
     SemanticLaneOwner,
     BloodlustOwner,
     Count
 };
 
-enum class MagmawAssignmentRetirementKind : uint8
+enum class MagmawRaidMode : uint8
 {
-    None,
-    Completed
+    Unknown,
+    Normal10,
+    Heroic10,
+    Normal25,
+    Heroic25
 };
 
-struct MagmawAssignmentRetirementInput
+struct MagmawRosterMember
 {
-    MagmawRaidAssignmentSlot Slot = MagmawRaidAssignmentSlot::Count;
-    ObjectGuid AssigneeGuid;
-    uint64 AssignmentEpoch = 0;
-    MagmawAssignmentRetirementKind Kind =
-        MagmawAssignmentRetirementKind::None;
+    ObjectGuid Guid;
+    std::string RosterSlotId;
+    std::string Role;
+    std::string ClassSpec;
+    bool Admitted = false;
+    bool LeaseOwned = false;
+};
 
-    bool Active() const
-    {
-        return Slot != MagmawRaidAssignmentSlot::Count
-            && !AssigneeGuid.IsEmpty() && AssignmentEpoch
-            && Kind != MagmawAssignmentRetirementKind::None;
-    }
+// Immutable view of the admitted roster. Callers must advance Generation for
+// any identity, admission, or lease change.
+struct MagmawRosterView
+{
+    Scope Lifecycle;
+    uint64 Generation = 0;
+    uint32 ExpectedSize = 0;
+    MagmawRaidMode Mode = MagmawRaidMode::Unknown;
+    bool Authoritative = false;
+    std::vector<MagmawRosterMember> Members;
 };
 
 struct MagmawRaidAssignment
 {
     ObjectGuid AssigneeGuid;
     uint64 Epoch = 0;
+
+    friend bool operator==(MagmawRaidAssignment const& left,
+        MagmawRaidAssignment const& right)
+    {
+        return left.AssigneeGuid == right.AssigneeGuid
+            && left.Epoch == right.Epoch;
+    }
 };
 
-struct MagmawRaidPlan
+class MagmawRaidPlan
 {
+public:
     static constexpr size_t AssignmentCount =
         size_t(MagmawRaidAssignmentSlot::Count);
 
     Scope Lifecycle;
     uint64 SourceRevision = 0;
+    uint64 RosterGeneration = 0;
     uint64 Generation = 0;
+    uint32 RosterExpectedSize = 0;
+    MagmawRaidMode RosterMode = MagmawRaidMode::Unknown;
     bool Authoritative = false;
-    std::array<MagmawRaidAssignment, AssignmentCount> Assignments;
     ObjectGuid MangleOwnerGuid;
     bool MangleOwnerAuthoritative = false;
 
-    MagmawRaidAssignment const& Assignment(
-        MagmawRaidAssignmentSlot slot) const
+    static bool ValidSlot(MagmawRaidAssignmentSlot slot)
     {
-        return Assignments[size_t(slot)];
+        return size_t(slot) < AssignmentCount;
     }
 
-    bool Matches(Scope const& scope, uint64 sourceRevision) const
+    MagmawRaidAssignment const* FindAssignment(
+        MagmawRaidAssignmentSlot slot) const
     {
-        return Lifecycle == scope && SourceRevision == sourceRevision;
+        return ValidSlot(slot) ? &_assignments[size_t(slot)] : nullptr;
     }
+
+    std::array<MagmawRaidAssignment, AssignmentCount> const&
+    AllAssignments() const
+    {
+        return _assignments;
+    }
+
+    bool Matches(Scope const& scope, uint64 sourceRevision,
+        uint64 rosterGeneration) const
+    {
+        return Lifecycle == scope && SourceRevision == sourceRevision
+            && RosterGeneration == rosterGeneration;
+    }
+
+private:
+    friend class MagmawCoordinator;
+
+    MagmawRaidAssignment* MutableAssignment(MagmawRaidAssignmentSlot slot)
+    {
+        return ValidSlot(slot) ? &_assignments[size_t(slot)] : nullptr;
+    }
+
+    std::array<MagmawRaidAssignment, AssignmentCount> _assignments;
 };
 }
 
