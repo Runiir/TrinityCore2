@@ -64,6 +64,7 @@ struct MagmawActorFact
 struct MagmawSignal
 {
     MagmawTruth Active = MagmawTruth::Unknown;
+    bool Authoritative = false;
     MagmawTypedGeneration Generation;
     FactSource EvidenceSource = FactSource::VisibleUnitState;
     std::vector<MagmawActorFact> Sources;
@@ -75,17 +76,25 @@ struct MagmawFacts
 {
     Scope Lifecycle;
     uint64 ObservationRevision = 0;
+    bool CacheScopeComplete = false;
     bool LifecycleAuthoritative = false;
+    bool EncounterIdentityAuthoritative = false;
+    bool EncounterEpochAuthoritative = false;
     bool ProjectionAuthoritative = false;
+    bool ArenaObservationAuthoritative = false;
     MagmawTruth OwnsNode = MagmawTruth::Unknown;
     FactSource OwnershipSource = FactSource::RouteManifest;
     MagmawPhase Phase = MagmawPhase::Unknown;
     bool PhaseAuthoritative = false;
     MagmawTruth Prepull = MagmawTruth::Unknown;
     std::vector<MagmawActorFact> Bosses;
+    bool BossIdentityAuthoritative = false;
     std::vector<MagmawActorFact> Heads;
+    bool HeadIdentityAuthoritative = false;
     MagmawTruth BossInteractable = MagmawTruth::Unknown;
+    bool BossInteractableAuthoritative = false;
     MagmawTruth HeadExposed = MagmawTruth::Unknown;
+    bool HeadExposureAuthoritative = false;
     ObjectGuid ExposedHeadGuid;
     bool ExposedHeadIdentityAuthoritative = false;
     MagmawSignal Pillar;

@@ -60,11 +60,20 @@ MagmawActorFact ActorFact(ActorSnapshot const& actor, FactSource source)
     return fact;
 }
 
-void ResolveSignal(MagmawSignal& signal)
+void ResolveSignal(MagmawSignal& signal, bool projectionAuthoritative,
+    bool absenceAuthoritative)
 {
     SortUnique(signal.Sources);
-    signal.Active = signal.Sources.empty()
-        ? MagmawTruth::False : MagmawTruth::True;
+    if (!signal.Sources.empty())
+    {
+        signal.Active = MagmawTruth::True;
+        signal.Authoritative = projectionAuthoritative;
+    }
+    else if (absenceAuthoritative)
+    {
+        signal.Active = MagmawTruth::False;
+        signal.Authoritative = true;
+    }
 }
 
 void InspectActor(MagmawFacts& facts, ActorSnapshot const& actor)
@@ -97,16 +106,21 @@ MagmawFacts MagmawFactsReducer::Reduce(Blackboard const& board)
     MagmawFacts facts;
     facts.Lifecycle = board.CurrentScope;
     facts.ObservationRevision = board.Revision;
-    facts.LifecycleAuthoritative = board.CurrentScope.ServerEpoch
+    facts.CacheScopeComplete = board.CurrentScope.ServerEpoch
         && !board.CurrentScope.CohortId.empty()
         && board.CurrentScope.AttemptId
         && !board.CurrentScope.NodeId.empty()
         && board.CurrentScope.MapId
         && !board.CurrentScope.EncounterId.empty();
+    // EncounterId is currently the shared mechanic profile and no native
+    // Magmaw-specific epoch is published. Keep both semantic claims unknown.
+    facts.LifecycleAuthoritative = facts.CacheScopeComplete
+        && facts.EncounterIdentityAuthoritative
+        && facts.EncounterEpochAuthoritative;
     bool const ownsNode = board.Route.NodeId == "bwd.magmaw.encounter"
         && board.CurrentScope.NodeId == board.Route.NodeId;
     facts.OwnsNode = ownsNode ? MagmawTruth::True : MagmawTruth::False;
-    facts.ProjectionAuthoritative = facts.LifecycleAuthoritative && ownsNode;
+    facts.ProjectionAuthoritative = facts.CacheScopeComplete && ownsNode;
     if (!ownsNode)
         return facts;
 
@@ -119,11 +133,19 @@ MagmawFacts MagmawFactsReducer::Reduce(Blackboard const& board)
 
     SortUnique(facts.Bosses);
     SortUnique(facts.Heads);
+    facts.BossIdentityAuthoritative = facts.ProjectionAuthoritative
+        && facts.Bosses.size() == 1;
+    ActorSnapshot const* visibleBoss = facts.BossIdentityAuthoritative
+        ? board.FindActor(facts.Bosses.front().Guid) : nullptr;
+    facts.ArenaObservationAuthoritative = visibleBoss && visibleBoss->Alive;
+    facts.HeadIdentityAuthoritative = facts.ArenaObservationAuthoritative;
     facts.Crash.EvidenceSource = FactSource::VisibleAura;
     facts.PincerWarning.EvidenceSource = FactSource::VisibleAura;
     SortUnique(facts.Parasites.Sources);
-    ResolveSignal(facts.Pillar);
-    ResolveSignal(facts.Crash);
+    ResolveSignal(facts.Pillar, facts.ProjectionAuthoritative,
+        facts.ArenaObservationAuthoritative);
+    ResolveSignal(facts.Crash, facts.ProjectionAuthoritative,
+        facts.ArenaObservationAuthoritative);
 
     std::vector<MagmawActorFact> mangleOwners;
     for (ActorSnapshot const& member : board.Players)
@@ -134,29 +156,24 @@ MagmawFacts MagmawFactsReducer::Reduce(Blackboard const& board)
                 FactSource::VisibleAura));
         }
     SortUnique(mangleOwners);
-    if (mangleOwners.size() <= 1)
+    if (mangleOwners.size() == 1 && facts.ProjectionAuthoritative)
     {
         facts.MangleOwnerAuthoritative = true;
-        if (!mangleOwners.empty())
-            facts.MangleOwnerGuid = mangleOwners.front().Guid;
+        facts.MangleOwnerGuid = mangleOwners.front().Guid;
     }
-    ResolveSignal(facts.PincerWarning);
-    ResolveSignal(facts.PincerVehicles);
-    ResolveSignal(facts.Parasites);
+    ResolveSignal(facts.PincerWarning, facts.ProjectionAuthoritative,
+        facts.ArenaObservationAuthoritative);
+    ResolveSignal(facts.PincerVehicles, facts.ProjectionAuthoritative,
+        facts.ArenaObservationAuthoritative);
+    ResolveSignal(facts.Parasites, facts.ProjectionAuthoritative,
+        facts.ArenaObservationAuthoritative);
 
-    std::vector<MagmawActorFact> interactableBosses;
-    auto collectInteractableBoss = [&interactableBosses](
-        std::vector<ActorSnapshot> const& actors)
+    if (visibleBoss)
     {
-        for (ActorSnapshot const& actor : actors)
-            if (actor.Entry == BossEntry && actor.Alive && actor.Interactable)
-                interactableBosses.push_back(ActorFact(actor));
-    };
-    collectInteractableBoss(board.Hostiles);
-    collectInteractableBoss(board.Summons);
-    collectInteractableBoss(board.Interactables);
-    facts.BossInteractable = interactableBosses.empty()
-        ? MagmawTruth::False : MagmawTruth::True;
+        facts.BossInteractable = visibleBoss->Interactable
+            ? MagmawTruth::True : MagmawTruth::False;
+        facts.BossInteractableAuthoritative = true;
+    }
 
     std::vector<MagmawActorFact> exposedHeads;
     auto collectExposed = [&exposedHeads](std::vector<ActorSnapshot> const& actors)
@@ -170,9 +187,17 @@ MagmawFacts MagmawFactsReducer::Reduce(Blackboard const& board)
     collectExposed(board.Summons);
     collectExposed(board.Interactables);
     SortUnique(exposedHeads);
-    facts.HeadExposed = exposedHeads.empty()
-        ? MagmawTruth::False : MagmawTruth::True;
-    if (exposedHeads.size() == 1)
+    if (!exposedHeads.empty())
+    {
+        facts.HeadExposed = MagmawTruth::True;
+        facts.HeadExposureAuthoritative = facts.ProjectionAuthoritative;
+    }
+    else if (facts.ArenaObservationAuthoritative)
+    {
+        facts.HeadExposed = MagmawTruth::False;
+        facts.HeadExposureAuthoritative = true;
+    }
+    if (exposedHeads.size() == 1 && facts.ProjectionAuthoritative)
     {
         facts.ExposedHeadGuid = exposedHeads.front().Guid;
         facts.ExposedHeadIdentityAuthoritative = true;
@@ -185,28 +210,15 @@ MagmawFacts MagmawFactsReducer::Reduce(Blackboard const& board)
         || board.NativeWipeState == "partial_deaths")
         facts.WipeLocked = MagmawTruth::False;
 
-    if (board.NativeEncounterPhase == "combat")
-        facts.Phase = MagmawPhase::Combat;
-    else if (board.NativeEncounterPhase == "recovery")
-        facts.Phase = MagmawPhase::Recovery;
-    else if (board.NativeEncounterPhase == "completed")
-        facts.Phase = MagmawPhase::Completed;
-    else if (board.NativeEncounterPhase == "formation")
-        facts.Phase = MagmawPhase::Prepull;
-    if (facts.Phase != MagmawPhase::Unknown)
-        facts.PhaseAuthoritative = true;
-
-    if (facts.Bosses.size() == 1)
+    if (visibleBoss)
     {
-        ActorSnapshot const* boss = board.FindActor(facts.Bosses.front().Guid);
-        if (boss)
+        bool const engaged = visibleBoss->InCombat
+            || !visibleBoss->VictimGuid.IsEmpty();
+        if (engaged)
         {
-            bool const engaged = boss->InCombat || !boss->VictimGuid.IsEmpty()
-                || board.NativeBossState == "in_progress";
-            if (engaged)
-                facts.Prepull = MagmawTruth::False;
-            else if (board.NativeBossState == "not_in_progress")
-                facts.Prepull = MagmawTruth::True;
+            facts.Phase = MagmawPhase::Combat;
+            facts.PhaseAuthoritative = true;
+            facts.Prepull = MagmawTruth::False;
         }
     }
     return facts;
@@ -239,7 +251,7 @@ std::shared_ptr<MagmawFactsCache const> MagmawFactsCache::ForSnapshot(
         if (signal.Active != MagmawTruth::True || !previous)
             return;
         MagmawSignal const& before = previous->*member;
-        if (before.Active == MagmawTruth::False)
+        if (before.Active == MagmawTruth::False && before.Authoritative)
             signal.Generation = { MagmawGenerationKind::ObservationEdge,
                 ++counter, signal.EvidenceSource };
         else if (before.Active == MagmawTruth::True)

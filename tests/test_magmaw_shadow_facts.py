@@ -67,8 +67,8 @@ static Blackboard Board()
     board.CurrentScope.NodeId = "bwd.magmaw.encounter";
     board.CurrentScope.MapId = 669;
     board.CurrentScope.InstanceId = 27;
-    board.CurrentScope.EncounterId = "magmaw";
-    board.CurrentScope.EncounterEpoch = 4;
+    board.CurrentScope.EncounterId = "tank_swap_adds_raid_aoe";
+    board.CurrentScope.EncounterEpoch = 0;
     board.Revision = 30;
     board.ObservedAtMs = 1000;
     board.NativeBossState = "in_progress";
@@ -121,6 +121,10 @@ static void AssertOrderStableAndPure()
     std::reverse(board.Players.begin(), board.Players.end());
     MagmawFacts second = MagmawFactsReducer::Reduce(board);
     assert(first.ObservationRevision == second.ObservationRevision);
+    assert(first.CacheScopeComplete);
+    assert(!first.LifecycleAuthoritative);
+    assert(!first.EncounterIdentityAuthoritative);
+    assert(!first.EncounterEpochAuthoritative);
     assert(first.OwnsNode == MagmawTruth::True);
     assert(first.Phase == MagmawPhase::Combat && first.PhaseAuthoritative);
     assert(first.Prepull == MagmawTruth::False);
@@ -147,6 +151,50 @@ static void AssertOrderStableAndPure()
         { -5.0f, -50.0f, 210.0f }));
     assert(!MagmawFactsReducer::Reduce(board)
         .Parasites.Generation.Authoritative());
+}
+
+static void AssertPartialObservationUnknown()
+{
+    Blackboard partial = Board();
+    partial.Players[0].Auras.clear();
+    partial.Hostiles.clear();
+    partial.Summons.clear();
+    MagmawFacts missing = MagmawFactsReducer::Reduce(partial);
+    assert(missing.ProjectionAuthoritative);
+    assert(!missing.ArenaObservationAuthoritative);
+    assert(missing.Pillar.Active == MagmawTruth::Unknown);
+    assert(missing.Crash.Active == MagmawTruth::Unknown);
+    assert(missing.PincerWarning.Active == MagmawTruth::Unknown);
+    assert(missing.PincerVehicles.Active == MagmawTruth::Unknown);
+    assert(missing.Parasites.Active == MagmawTruth::Unknown);
+    assert(missing.BossInteractable == MagmawTruth::Unknown);
+    assert(missing.HeadExposed == MagmawTruth::Unknown);
+    assert(missing.Phase == MagmawPhase::Unknown);
+    assert(missing.Prepull == MagmawTruth::Unknown);
+    assert(!missing.MangleOwnerAuthoritative);
+
+    partial.Hostiles.push_back(Creature(41806, 55,
+        { 5.0f, -50.0f, 210.0f }));
+    MagmawFacts positive = MagmawFactsReducer::Reduce(partial);
+    assert(positive.Parasites.Active == MagmawTruth::True);
+    assert(positive.Parasites.Authoritative);
+    assert(positive.Pillar.Active == MagmawTruth::Unknown);
+    partial.Hostiles.clear();
+    auto partialCache = MagmawFactsCache::ForSnapshot(nullptr, partial);
+    partial.Hostiles.push_back(Creature(41806, 56,
+        { 5.0f, -50.0f, 210.0f }));
+    ++partial.Revision;
+    partialCache = MagmawFactsCache::ForSnapshot(partialCache, partial);
+    assert(!partialCache->Facts().Parasites.Generation.Authoritative());
+
+    Blackboard unengaged = Board();
+    unengaged.Hostiles[0].InCombat = false;
+    unengaged.Hostiles[0].VictimGuid.Clear();
+    unengaged.NativeBossState = "not_in_progress";
+    unengaged.NativeEncounterPhase = "formation";
+    MagmawFacts noGlobalInference = MagmawFactsReducer::Reduce(unengaged);
+    assert(noGlobalInference.Phase == MagmawPhase::Unknown);
+    assert(noGlobalInference.Prepull == MagmawTruth::Unknown);
 }
 
 static Blackboard WithoutActiveSignals(Blackboard board)
@@ -190,6 +238,9 @@ static void AssertCacheLifecycle()
 
     Blackboard inactive = WithoutActiveSignals(Board());
     auto edgeCache = MagmawFactsCache::ForSnapshot(nullptr, inactive);
+    assert(edgeCache->Facts().ArenaObservationAuthoritative);
+    assert(edgeCache->Facts().Pillar.Active == MagmawTruth::False);
+    assert(edgeCache->Facts().Pillar.Authoritative);
     Blackboard active = Board();
     ++active.Revision;
     edgeCache = MagmawFactsCache::ForSnapshot(edgeCache, active);
@@ -276,6 +327,7 @@ static void AssertLegacyDecisionsUnchanged(Blackboard board)
 int main()
 {
     AssertOrderStableAndPure();
+    AssertPartialObservationUnknown();
     AssertCacheLifecycle();
     Blackboard combat = Board();
     AssertLegacyDecisionsUnchanged(combat);
