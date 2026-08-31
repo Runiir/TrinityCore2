@@ -89,6 +89,20 @@ int main()
         == mage.Movement->Id.EventGeneration);
     assert(mage.DirectionalMobility->Utility > mage.Movement->Utility);
 
+    // Fixed-distance mobility is not offered for a nearer waypoint. Blink or
+    // Disengage would overshoot it, leave route progress unobserved, and make
+    // the next tick request movement back toward the same point.
+    BotNativeAction::Candidate nearMagePoint = *mage.Movement;
+    nearMagePoint.Action = BotNativeAction::Move{
+        distant.Players[0].Position.X + 10.0f,
+        distant.Players[0].Position.Y,
+        distant.Players[0].Position.Z };
+    auto const routineFacts = MagmawParasitePolicy::ObserveRouteFacts(
+        distant, distant.Players[0]);
+    assert(!ProposeMagmawDirectionalMobility(distant, distant.Players[0],
+        distant.Hostiles[0], nearMagePoint,
+        MagmawDirectionalMobilityInput{ 1953, 15000 }, routineFacts));
+
     // The direct route is admitted before Crash exists. A later lit Room
     // Stalker on that same remaining segment must replace it with one
     // same-transition far-perimeter arc, not a straight Crash move.
@@ -130,6 +144,54 @@ int main()
     assert(disengage && disengage->SpellId == 781);
     assert(disengage->Facing
         == BotNativeAction::DirectionalMobilityFacing::Backward);
+    BotNativeAction::Candidate nearHunterPoint = *hunter.Movement;
+    nearHunterPoint.Action = BotNativeAction::Move{
+        distant.Players[1].Position.X + 10.0f,
+        distant.Players[1].Position.Y,
+        distant.Players[1].Position.Z };
+    assert(!ProposeMagmawDirectionalMobility(distant, distant.Players[1],
+        distant.Hostiles[0], nearHunterPoint,
+        MagmawDirectionalMobilityInput{ 781, 25000 },
+        MagmawParasitePolicy::ObserveRouteFacts(
+            distant, distant.Players[1])));
+
+    // A retained Crash fallback is retired only after a safe parasite route
+    // is admitted. If route construction fails, identical snapshots retain
+    // one fallback endpoint and candidate identity instead of replanning on
+    // every tick.
+    Blackboard blockedRoute = distant;
+    blockedRoute.Hostiles[1].Alive = false;
+    ActorSnapshot blockedCrash;
+    blockedCrash.Guid = ObjectGuid(HighGuid::Unit, uint32(47196), uint32(44));
+    blockedCrash.Entry = 47196;
+    blockedCrash.Alive = true;
+    blockedCrash.Position = { 24.0f, -30.0f, 210.0f };
+    blockedCrash.Auras.push_back({ 87949, ObjectGuid{}, 1, 0 });
+    blockedRoute.Hostiles.push_back(blockedCrash);
+    MagmawLaneTransitionState blockedLane;
+    MagmawEventMovementTransitionState blockedEvent;
+    AdaptiveMagmawPlan firstFallback = AdaptiveMagmawStrategy().Propose(
+        blockedRoute, blockedRoute.Players[0].Guid, "dps", nullptr,
+        false, false, &blockedLane, nullptr, &blockedEvent);
+    assert(firstFallback.Movement);
+    assert(firstFallback.Movement->Id.Mechanic == "massive_crash_evade");
+    uint64 const fallbackIdentity =
+        firstFallback.Movement->Id.EventGeneration;
+    blockedRoute.Hostiles[1].Alive = true;
+    blockedRoute.Hostiles[1].Position = blockedRoute.Players[0].Position;
+    ++blockedRoute.Revision;
+    AdaptiveMagmawPlan blockedFallback = AdaptiveMagmawStrategy().Propose(
+        blockedRoute, blockedRoute.Players[0].Guid, "dps", nullptr,
+        false, false, &blockedLane, nullptr, &blockedEvent);
+    assert(blockedFallback.Movement);
+    assert(blockedFallback.Movement->Id.Mechanic == "massive_crash_evade");
+    assert(blockedFallback.Movement->Id.EventGeneration == fallbackIdentity);
+    ++blockedRoute.Revision;
+    AdaptiveMagmawPlan stableFallback = AdaptiveMagmawStrategy().Propose(
+        blockedRoute, blockedRoute.Players[0].Guid, "dps", nullptr,
+        false, false, &blockedLane, nullptr, &blockedEvent);
+    assert(stableFallback.Movement);
+    assert(stableFallback.Movement->Id.EventGeneration == fallbackIdentity);
 
     // A moving parasite entering the Hunter's future segment triggers one
     // proactive per-baiter replan. Repeating the same observation retains the

@@ -43,8 +43,11 @@ public:
     {
         ObjectGuid mage;
         ObjectGuid hunter;
+        // Assignment identity comes from the frozen roster, not current
+        // liveness.  A death must not promote a different DPS into a lane
+        // transition that deliberately retains its original two actors.
         for (ActorSnapshot const& member : board.Players)
-            if (member.Alive && member.Role == "dps")
+            if (member.Role == "dps")
             {
                 if (member.ClassSpec == "fire_mage"
                     && (mage.IsEmpty() || member.Guid.GetRawValue()

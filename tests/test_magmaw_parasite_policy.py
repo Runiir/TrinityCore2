@@ -430,6 +430,17 @@ int main()
     assert(baiters.first == board.Players[1].Guid);
     assert(baiters.second == board.Players[3].Guid);
 
+    // Liveness is execution state, not assignment identity. The frozen
+    // lowest-GUID Mage and Hunter remain the baiters after death instead of
+    // splitting combat ownership from the retained lane transition.
+    board.Players[1].Alive = false;
+    board.Players[3].Alive = false;
+    auto const deadBaiters = MagmawParasitePolicy::ResolveFixedBaiters(board);
+    assert(deadBaiters.first == baiters.first);
+    assert(deadBaiters.second == baiters.second);
+    board.Players[1].Alive = true;
+    board.Players[3].Alive = true;
+
     Vector3 const actor = board.Players[1].Position;
     Vector3 const support{ 0.0f, -8.0f, 999.0f };
     Vector3 const destination{ 24.0f, -30.0f, 999.0f };

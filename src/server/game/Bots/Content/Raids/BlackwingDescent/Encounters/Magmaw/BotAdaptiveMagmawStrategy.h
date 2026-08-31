@@ -616,6 +616,7 @@ private:
         MagmawHazardObservation const observed = ObserveHazards(board, bot);
         bool const pillarBaiter = IsPillarBaiter(board, bot.Guid);
         bool const parasiteWave = HasLivingParasite(board);
+        bool retainedCrashMayYieldToRoute = false;
         if (eventMovement)
             if (auto const* lethal = eventMovement->ActiveLethal())
             {
@@ -624,11 +625,12 @@ private:
                     && Distance2d(bot.Position, observed.Pillar->Position) <= 12.0f;
                 bool const newerCrash = observed.Crash
                     && observed.Crash->Guid != lethal->SourceGuid;
-                bool const routeOwnsCrash = pillarBaiter && parasiteWave
+                retainedCrashMayYieldToRoute = pillarBaiter && parasiteWave
                     && lethal->Mechanic == "massive_crash_evade";
-                if (newerPillar || newerCrash || routeOwnsCrash)
+                if (newerPillar || newerCrash)
                     eventMovement->RetireActiveLethal();
-                if (!newerPillar && !newerCrash && !routeOwnsCrash)
+                if (!newerPillar && !newerCrash
+                    && !retainedCrashMayYieldToRoute)
                     return BuildMagmawEventMovement(board, *lethal,
                         BotActionArbitration::Priority::Survival, 450.0f);
             }
@@ -714,6 +716,12 @@ private:
                         MagmawParasitePolicy::ProposeSafeParasiteRoute(board,
                             bot, *anchors, *laneTransition, crashObstacle))
                 {
+                    // Keep the retained Crash episode stable until a complete
+                    // parasite route has actually been admitted.  If route
+                    // construction fails, the fallback below must retain the
+                    // same episode and candidate identity on the next tick.
+                    if (retainedCrashMayYieldToRoute && eventMovement)
+                        eventMovement->RetireActiveLethal();
                     if (mobility && directionalMobility)
                         *directionalMobility = ProposeMagmawDirectionalMobility(
                             board, bot, boss, *route, *mobility,

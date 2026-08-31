@@ -5,6 +5,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMobilityReservation.h"
 
+#include <cmath>
 #include <optional>
 
 namespace BotEncounter
@@ -25,6 +26,8 @@ ProposeMagmawDirectionalMobility(Blackboard const& board,
     constexpr uint32 MassiveCrashSpell = 88253;
     constexpr uint32 BlinkSpell = 1953;
     constexpr uint32 DisengageSpell = 781;
+    constexpr float BlinkTravelDistance = 20.0f;
+    constexpr float DisengageTravelDistance = 13.0f;
 
     BotNativeAction::Move const* point =
         std::get_if<BotNativeAction::Move>(&pointMovement.Action);
@@ -34,6 +37,16 @@ ProposeMagmawDirectionalMobility(Blackboard const& board,
         && input.SpellId == DisengageSpell;
     if (!point || (!fireMage && !marksHunter)
         || !input.NativeReuseCooldownMs)
+        return std::nullopt;
+
+    // These spells travel a fixed distance.  Do not use one for a nearer
+    // waypoint: overshooting it can leave route progress unobserved and make
+    // the next tick request movement back toward the same point.
+    float const pointDistance = std::hypot(point->X - bot.Position.X,
+        point->Y - bot.Position.Y);
+    float const travelDistance = fireMage
+        ? BlinkTravelDistance : DisengageTravelDistance;
+    if (pointDistance < travelDistance)
         return std::nullopt;
 
     MagmawMobilityDecision const decision = EvaluateMagmawMobilityReservation(
