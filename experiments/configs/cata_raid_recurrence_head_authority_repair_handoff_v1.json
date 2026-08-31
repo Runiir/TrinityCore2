@@ -1,0 +1,42 @@
+{
+  "classification": "recurrence_head_authority_repair_passed",
+  "claim_ledger": {
+    "unproven": [
+      "the exact-current recurrence decision",
+      "all four admitted production boundaries",
+      "any Magmaw completion, DPS, HPS, or acceptance result"
+    ],
+    "verified": [
+      "literal HEAD resolves to the exact full clean current commit",
+      "explicit source hashes remain exact-match fail-closed",
+      "tracked dirtiness rejects both authority forms",
+      "43 focused tests and independent Sol-high review passed",
+      "no fixture, build, server, database, or DVC action occurred"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:refresh_exact_current_recurrence_bank",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Invoke the fixed recurrence bank once with the repository-owned HEAD authority token, retain its exact source-bound receipt and decision, and route the result without a second verification invocation. Do not configure, build, start servers, mutate the database, or change source.",
+    "required_postcondition": "one clean-current receipt and internally verified fixture-expansion decision either admit the four production boundaries or name the exact failing fixture",
+    "suite_invocation_maximum": 1
+  },
+  "operations": {
+    "dvc_mutation_count": 0,
+    "fixture_command_count": 0,
+    "server_start_count": 0
+  },
+  "owner_skill": "raid-evidence-lifecycle",
+  "review": {
+    "focused_tests": "43/43 passed",
+    "independent_model": "sol-high",
+    "verdict": "PASS"
+  },
+  "schema": "cata_raid_specialist_handoff_v1",
+  "source": {
+    "active_descriptor_sha256": "64b5e0b458aae578e49b43f33b22c4b70711d91b6596bcb6be673ac8db22ba4a",
+    "commit": "979e24d592dc6cc6a292c87876f447477c0f391e",
+    "tree": "6ce0ab206f84b6285418dfd3f70844c48f95048d"
+  },
+  "work_unit_id": "evidence:derive_recurrence_source_identity_from_head"
+}
