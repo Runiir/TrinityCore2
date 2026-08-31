@@ -611,15 +611,16 @@ def test_source_identity_requires_exact_clean_tracked_checkout(tmp_path) -> None
         ["git", "rev-parse", "HEAD"], cwd=tmp_path, check=True, capture_output=True, text=True
     ).stdout.strip()
 
-    _verify_clean_source_identity(tmp_path, head)
+    assert _verify_clean_source_identity(tmp_path, head) == head
+    assert _verify_clean_source_identity(tmp_path, "HEAD") == head
     (tmp_path / "untracked.txt").write_text("ignored\n")
-    _verify_clean_source_identity(tmp_path, head)
+    assert _verify_clean_source_identity(tmp_path, "HEAD") == head
     with pytest.raises(ValueError, match="does not match current HEAD"):
         _verify_clean_source_identity(tmp_path, "stale-source")
 
     tracked.write_text("dirty\n")
     with pytest.raises(ValueError, match="tracked worktree is dirty"):
-        _verify_clean_source_identity(tmp_path, head)
+        _verify_clean_source_identity(tmp_path, "HEAD")
 
 
 def test_suite_receipt_is_bound_to_manifest_and_current_identity(tmp_path) -> None:

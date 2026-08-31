@@ -226,7 +226,7 @@ def _canonical_config_identity() -> str:
     return _derived_config_identity(Path(__file__).resolve().parents[2])
 
 
-def _verify_clean_source_identity(repo_root: Path, supplied: str) -> None:
+def _verify_clean_source_identity(repo_root: Path, supplied: str) -> str:
     """Require the receipt identity to name this exact clean tracked checkout."""
 
     try:
@@ -246,8 +246,12 @@ def _verify_clean_source_identity(repo_root: Path, supplied: str) -> None:
         ).stdout.strip()
     except (OSError, subprocess.CalledProcessError) as error:
         raise ValueError("cannot verify clean source identity") from error
-    _require(supplied == head, "source identity does not match current HEAD")
     _require(not tracked_status, "tracked worktree is dirty")
+    _require(
+        supplied == "HEAD" or supplied == head,
+        "source identity does not match current HEAD",
+    )
+    return head
 
 
 def _evaluate_regression_bank(
@@ -1208,7 +1212,9 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parents[2]
     canonical_config_identity = None
     if args.source_identity:
-        _verify_clean_source_identity(repo_root, args.source_identity)
+        source_identity = _verify_clean_source_identity(
+            repo_root, args.source_identity
+        )
         try:
             canonical_config_identity = _canonical_config_identity()
         except (OSError, KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError) as error:
@@ -1219,7 +1225,7 @@ def main() -> int:
                 "config identity does not match canonical route inputs",
             )
         identity = {
-            "source_identity": args.source_identity,
+            "source_identity": source_identity,
             "config_identity": canonical_config_identity,
         }
     elif args.config_identity is not None:
