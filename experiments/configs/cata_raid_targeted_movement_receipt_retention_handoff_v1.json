@@ -1,10 +1,11 @@
 {
   "schema": "cata_raid_specialist_handoff_v1",
   "work_unit_id": "evidence:magmaw_target_receipt_retention",
+  "owner_skill": "raid-evidence-lifecycle",
   "classification": "evidence_implementation_complete",
   "source": {
-    "implementation_commit": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
-    "implementation_tree": "50f81a9a97071d5b30691cc681450640aea2809d",
+    "commit": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
+    "tree": "50f81a9a97071d5b30691cc681450640aea2809d",
     "fixture_source_run": "trinity-magmaw-418910a90d-fixture-expansion.attempt1"
   },
   "repair": {
@@ -40,6 +41,7 @@
     "id": "shard:map669_target_receipt_fixture_replay",
     "owner_skill": "raid-evidence-lifecycle",
     "required_action": "Run one no-retry map-669 fixture replay without authserver and prove the requested complete Hazard retry retains planner, launch, progress, and terminal fields in the compact replay.",
+    "required_postcondition": "one requested complete Hazard retry is joined from actor and intent fingerprint through planner, native launch, spline progress, and terminal outcome without increasing global receipt or sample capacity",
     "worldserver_start_maximum": 1,
     "gameplay_mutations_allowed": false
   }

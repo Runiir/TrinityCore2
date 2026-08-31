@@ -152,6 +152,24 @@ def test_live_realization_revalidates_live_source_authority(
     assert selectors == [launcher.LIVE_WORK_UNIT, launcher.LIVE_WORK_UNIT]
 
 
+def test_target_receipt_prebuild_uses_typed_source_authority(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    selectors: list[str] = []
+
+    def source_authority(_worktree: Path, work_unit: str) -> dict[str, str]:
+        selectors.append(work_unit)
+        if work_unit != launcher.TARGET_RECEIPT_WORK_UNIT:
+            raise AssertionError(f"stale selector: {work_unit}")
+        return dict(SOURCE)
+
+    monkeypatch.setattr(launcher, "_source_authority", source_authority)
+    request = _request(tmp_path, launcher.TARGET_RECEIPT_WORK_UNIT)
+    plan = launcher.compose_plan(request)
+    assert plan["schema"] == launcher.PREBUILD_SCHEMA
+    assert selectors == [launcher.TARGET_RECEIPT_WORK_UNIT]
+
+
 def test_realization_binds_fresh_artifacts_after_build(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
 ) -> None:

@@ -9,6 +9,7 @@
   "next_owner_skill": "raid-evidence-lifecycle",
   "next_work_unit": "shard:map669_target_receipt_fixture_replay",
   "observed_at_commit": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
+  "immutable_input_commit": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
   "owner_skill": "raid-evidence-lifecycle",
   "program_scope": {
     "acceptance_admitted": false,
@@ -48,7 +49,7 @@
   },
   "source_handoff": {
     "path": "experiments/configs/cata_raid_targeted_movement_receipt_retention_handoff_v1.json",
-    "sha256": "2a0009a15465141e225780d1775ad7425e660c3bede89a4514c31abd1a87a8c1",
+    "sha256": "fc0f226c2dc432de678da88b378ccccd80feba4213fdbecbdc718c566980c933",
     "source_commit": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
     "source_tree": "50f81a9a97071d5b30691cc681450640aea2809d"
   },

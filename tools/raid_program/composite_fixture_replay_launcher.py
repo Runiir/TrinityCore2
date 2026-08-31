@@ -84,6 +84,24 @@ LIVE_REQUIRED_POSTCONDITION = (
     "one worldserver start either captures all four admitted production boundaries "
     "or returns the exact first failed gate with immutable evidence"
 )
+TARGET_RECEIPT_WORK_UNIT = "shard:map669_target_receipt_fixture_replay"
+TARGET_RECEIPT_HANDOFF_PATH = (
+    "experiments/configs/cata_raid_targeted_movement_receipt_retention_handoff_v1.json"
+)
+TARGET_RECEIPT_HANDOFF_WORK_UNIT = "evidence:magmaw_target_receipt_retention"
+TARGET_RECEIPT_HANDOFF_CLASSIFICATION = "evidence_implementation_complete"
+TARGET_RECEIPT_SOURCE_COMMIT = "58f95722d8ad41201ffc29bfe5fba18b86f1f584"
+TARGET_RECEIPT_SOURCE_TREE = "50f81a9a97071d5b30691cc681450640aea2809d"
+TARGET_RECEIPT_REQUIRED_ACTION = (
+    "Run one no-retry map-669 fixture replay without authserver and prove the "
+    "requested complete Hazard retry retains planner, launch, progress, and "
+    "terminal fields in the compact replay."
+)
+TARGET_RECEIPT_REQUIRED_POSTCONDITION = (
+    "one requested complete Hazard retry is joined from actor and intent "
+    "fingerprint through planner, native launch, spline progress, and terminal "
+    "outcome without increasing global receipt or sample capacity"
+)
 POLICY_RELATIVE_PATH = Path(
     "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json"
 )
@@ -224,6 +242,18 @@ def _source_authority(
         next_owner = "raid-shard-architecture"
         required_action = LIVE_REQUIRED_ACTION
         required_postcondition = LIVE_REQUIRED_POSTCONDITION
+    elif expected_work_unit == TARGET_RECEIPT_WORK_UNIT:
+        descriptor_owner = "raid-evidence-lifecycle"
+        descriptor_classification = "fixture_replay_authorized"
+        handoff_path_expected = TARGET_RECEIPT_HANDOFF_PATH
+        handoff_work_unit = TARGET_RECEIPT_HANDOFF_WORK_UNIT
+        handoff_owner = "raid-evidence-lifecycle"
+        handoff_classification = TARGET_RECEIPT_HANDOFF_CLASSIFICATION
+        source_commit_expected = TARGET_RECEIPT_SOURCE_COMMIT
+        source_tree_expected = TARGET_RECEIPT_SOURCE_TREE
+        next_owner = "raid-evidence-lifecycle"
+        required_action = TARGET_RECEIPT_REQUIRED_ACTION
+        required_postcondition = TARGET_RECEIPT_REQUIRED_POSTCONDITION
     else:
         raise ReplayPlanError("active_work_unit_mismatch")
     if (
@@ -416,7 +446,9 @@ def _request_context(
     else:
         raise ReplayPlanError("run_root_must_be_external")
     expected_work_unit = request["expected_work_unit"]
-    if expected_work_unit not in {EXPECTED_WORK_UNIT, LIVE_WORK_UNIT}:
+    if expected_work_unit not in {
+        EXPECTED_WORK_UNIT, LIVE_WORK_UNIT, TARGET_RECEIPT_WORK_UNIT,
+    }:
         raise ReplayPlanError("expected_work_unit_invalid")
     authorities = request["runtime_config_authorities"]
     if authorities != [TRACKED_DERIVED_AUTHORITY]:
