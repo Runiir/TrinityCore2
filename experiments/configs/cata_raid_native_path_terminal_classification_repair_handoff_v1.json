@@ -1,0 +1,32 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:repair_native_path_terminal_classification",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "evidence_contract_repair_complete",
+  "source": {
+    "evidence_commit": "43c9345c9b99e1df03d5798149b2064b0cca0313",
+    "implementation_commit": "1011e2ff59090ed6b7d8f0c537c50ece227d6394",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_69db62a09d_native_path_floor_probe_terminal_20260901.dvc"
+  },
+  "verified": {
+    "hydrated_main_tests": "226_passed",
+    "independent_sol_high_review": "go_after_one_no_go_amendment",
+    "recognized_failure_outcomes": 7,
+    "outcome_shape_matrix_exhaustive": true,
+    "truthful_failed_terminal_gate_passed": false,
+    "identity_drift_fail_closed": true,
+    "c_cpp_files_changed": 0,
+    "worldserver_starts": 0,
+    "database_mutations": 0
+  },
+  "closed_edge": {
+    "before": "an internally consistent ok=false native terminal was mislabeled as controller receipt identity invalid",
+    "after": "the controller records checkpoint_terminal_failed with exact lifecycle and movement-planner evidence, ends polling, and leaves the verification gate failed without declaring protocol or identity failure"
+  },
+  "next_work_unit": {
+    "id": "runtime:repair_map669_connected_surface_target_floor",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_action": "Repair the shared planner's request-level target-floor preflight so an unrelated lower GetHeight result cannot reject a connected walkable route before native path proof. Preserve legitimate cross-floor and forbidden-path rejection and do not increase global tolerances.",
+    "required_postcondition": "the exact 193.126999 to 210.098007 connected-surface counterexample reaches native path calculation, deterministic adjacent negatives remain fail-closed, focused tests pass, and independent review returns GO before any build or server run"
+  }
+}
