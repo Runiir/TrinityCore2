@@ -1,0 +1,68 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:repair_map669_connected_surface_target_floor",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "shared_runtime_repair_pending",
+  "source": {
+    "commit": "6660a6f6e4d1fc7f50ee079a9d60f1182e8e9d98",
+    "tree": "d8377b22dc8d212195d7b3c552dbd9d5620d06ee",
+    "evidence_handoff": "experiments/configs/cata_raid_native_path_terminal_classification_failed_handoff_v1.json",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_69db62a09d_native_path_floor_probe_terminal_20260901.dvc",
+    "recurrence_suite_sha256": "b106094ad3b803bb0803bee1fdf79c38969c5b15941dd04243210b1ccb5f17e0",
+    "recurrence_decision_sha256": "351e64d673e1db206f0a61dc2b8c831e92b939008a64abad07f8f9ce5b018510"
+  },
+  "first_broken_edge": {
+    "component": "BotWorldPopulationMgr::PlanMovementPath",
+    "gate": "target_z_transition",
+    "reason": "route_destination_invalid_z_transition",
+    "position": {
+      "actor_x": -345.872009,
+      "actor_y": -224.343994,
+      "actor_z": 193.126999,
+      "request_x": -302.471405,
+      "request_y": -31.8600292,
+      "request_z": 210.098007,
+      "resolved_target_floor_z": -106.245819,
+      "absolute_probe_delta": 316.343811
+    },
+    "causal_order": [
+      "request-level GetHeight probe",
+      "target_z_transition rejection",
+      "PathGenerator not called",
+      "no native endpoint or floor proof",
+      "no executor, MotionMaster, spline, or physical progress"
+    ]
+  },
+  "recurrence_gate": {
+    "suite": "22_of_22_passed",
+    "canary_admitted": false,
+    "fixture_expansion_admitted": true,
+    "required_next_action": "run_fixture_expansion_replay",
+    "replacement_requests": {
+      "same_level_floor_observation_v1": "4_to_5",
+      "same_level_hazard_path_admission_v1": "4_to_5",
+      "same_level_native_path_proof_v1": "4_to_5"
+    }
+  },
+  "implementation_contract": {
+    "required": [
+      "treat a request-level height sample as diagnostic when it conflicts with a potentially connected native walkable surface; it cannot be the sole proof of rejection",
+      "require native PathGenerator topology, endpoint identity, path flags, and floor/control evidence before selecting movement",
+      "allow terrain elevation to be followed by the native path rather than issuing explicit vertical movement",
+      "cover the exact connected-surface 193.126999 to 210.098007 counterexample deterministically",
+      "retain genuine cross-floor, missing-mmap, forbidden-path, and endpoint-mismatch rejection"
+    ],
+    "forbidden": [
+      "increasing global Z, endpoint, or floor tolerances",
+      "accepting declared request Z without a native path proof",
+      "adding Magmaw-specific coordinates or owner exceptions to the shared planner",
+      "changing encounter strategy, class behavior, arbitration priorities, retry counts, fallback fractions, checkpoint request revisions, or evidence-controller semantics"
+    ]
+  },
+  "next_work_unit": {
+    "id": "review:repair_map669_connected_surface_target_floor",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_action": "Independently review the shared planner repair and its exact adjacent negatives before authorizing a build or sealed replay.",
+    "required_postcondition": "GO review, focused deterministic tests, all changed C/C++ files below 1000 lines, and no server or database action"
+  }
+}

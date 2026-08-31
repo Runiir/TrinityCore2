@@ -1,61 +1,62 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:repair_native_path_terminal_classification",
-  "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "review:repair_native_path_terminal_classification",
-  "next_owner_skill": "raid-evidence-lifecycle",
+  "work_unit": "runtime:repair_map669_connected_surface_target_floor",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "next_work_unit": "review:repair_map669_connected_surface_target_floor",
+  "next_owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
-  "epoch_id": "map669_native_path_terminal_classification_20260901",
+  "epoch_id": "map669_connected_surface_target_floor_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "gate_state": "implementation_and_review_only",
-  "immutable_input_commit": "69db62a09dab8feb48618d1380da9b7499799d72",
-  "observed_at_commit": "69db62a09dab8feb48618d1380da9b7499799d72",
-  "behavior_change": false,
-  "evidence_contract_change": true,
-  "next_action": "Repair only the capture controller's conflation of terminal outcome failure with receipt identity failure, add deterministic positive and negative tests, and obtain an independent review before another replay is considered.",
+  "immutable_input_commit": "6660a6f6e4d1fc7f50ee079a9d60f1182e8e9d98",
+  "observed_at_commit": "6660a6f6e4d1fc7f50ee079a9d60f1182e8e9d98",
+  "behavior_change": true,
+  "evidence_contract_change": false,
+  "next_action": "Repair the shared request-level target-floor preflight so an unrelated lower GetHeight result cannot reject a connected native walkable route before PathGenerator proof; preserve every legitimate cross-floor and forbidden-path rejection.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_native_path_terminal_classification_failed_handoff_v1.json",
-    "sha256": "f8758dbd4ee30523661f47c7adbf56857fab91c1f1e56807ff66ff5a0f1c3e9f",
-    "source_commit": "69db62a09dab8feb48618d1380da9b7499799d72",
-    "source_tree": "a7607a35282180c09fb6b0d91969eeebc3359fc8"
+    "path": "experiments/configs/cata_raid_native_connected_surface_floor_repair_handoff_v1.json",
+    "sha256": "ebc36d518a631e872cd6db8b776eb16801261c4b8333626e169962f2cbd1ea50",
+    "source_commit": "6660a6f6e4d1fc7f50ee079a9d60f1182e8e9d98",
+    "source_tree": "d8377b22dc8d212195d7b3c552dbd9d5620d06ee"
   },
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
     "fixture_prerequisite_build_authorized": false,
     "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": false,
+    "gameplay_mutations_allowed": true,
     "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
     "database_provisioning_mutations_allowed": false,
     "dvc_publication_required_after_terminal": false
   },
   "scope_lock": {
-    "allowed_change": "Change capture-controller Python and its focused tests only so native checkpoint identity validation is independent from native terminal outcome success.",
+    "allowed_change": "Repair the shared movement planner target-floor admission and its focused deterministic tests at the first trace-proved edge. Split by concern if needed and keep every C/C++ file below 1000 lines.",
     "forbidden": [
-      "changing C or C++, gameplay, encounter, class, movement, arbitration, planner, geometry, shadow authority, recurrence revisions, or checkpoint request sets",
-      "building or starting authserver/worldserver",
-      "database mutation, provisioning, GM assistance, or synthetic gameplay evidence",
-      "weakening authority, actor, fixture, receipt, or mirrored-lifecycle identity checks",
-      "treating a native stage failure as success or promoting either pending fixture"
+      "increasing global Z, endpoint, or floor tolerances",
+      "accepting declared request Z without a native PathGenerator topology and endpoint/floor proof",
+      "adding Magmaw-specific coordinates, class behavior, or owner exceptions to the shared planner",
+      "changing encounter strategy, action arbitration priority, retry budgets, fallback fractions, checkpoint request revisions, evidence-controller semantics, or database state",
+      "building or starting authserver/worldserver before independent review"
     ],
     "required_postconditions": [
-      "an internally consistent ok=false terminal row is accepted as a truthful native terminal and retains its stage, outcome, and planner reason",
-      "actual authority, actor, fixture, receipt, and mirrored-lifecycle mismatches remain fail-closed",
-      "focused tests pass and an independent Sol-high review returns GO",
-      "no C/C++ file changes and no server start occur"
+      "the exact actor Z 193.126999, request Z 210.098007, and unrelated floor Z -106.245819 counterexample reaches native path proof instead of preflight rejection",
+      "genuine cross-floor, missing-mmap, forbidden-path, and endpoint-mismatch cases remain fail-closed",
+      "movement follows native terrain and no explicit vertical movement is introduced",
+      "focused tests pass, changed C/C++ files remain below 1000 lines, and independent Sol-high review returns GO",
+      "no build, server start, or database mutation occurs"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "one_bounded_contract_repair_then_review",
+    "repair_policy": "one_trace_bounded_runtime_repair_then_review",
     "terminal_edges": [
       "focused_tests_failed",
       "scope_drift",
-      "identity_check_weakened",
+      "cross_floor_negative_weakened",
       "independent_review_no_go",
       "repair_verified"
     ]

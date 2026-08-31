@@ -343,23 +343,23 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "evidence:repair_native_path_terminal_classification"
+        "runtime:repair_map669_connected_surface_target_floor"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["classification"] == "failed"
-    assert active["next_owner_skill"] == "raid-evidence-lifecycle"
+    assert active["next_owner_skill"] == "raid-bot-runtime-implementation"
     assert active["ready_for_bounded_repair"] is active["descriptor_valid"]
-    assert active["program_scope"]["gameplay_mutations_allowed"] is False
+    assert active["program_scope"]["gameplay_mutations_allowed"] is True
     assert active["program_scope"]["worldserver_start_admitted"] is False
     assert active["program_scope"]["authserver_start_admitted"] is False
     assert active["source_handoff"]["path"].endswith(
-        "cata_raid_native_path_terminal_classification_failed_handoff_v1.json"
+        "cata_raid_native_connected_surface_floor_repair_handoff_v1.json"
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["validation_clock"]["policy"] == "completion_watchdog"
-    assert "terminal outcome failure" in active["next_action"].lower()
+    assert "target-floor preflight" in active["next_action"].lower()
     assert any(
-        "weakening authority" in rule
+        "increasing global z" in rule.lower()
         for rule in active["scope_lock"]["forbidden"]
     )
     assert sinestra["task_kind"] == "implement_missing_boss_script"
