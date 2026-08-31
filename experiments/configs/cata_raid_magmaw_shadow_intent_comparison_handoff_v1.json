@@ -1,0 +1,47 @@
+{
+  "schema": "cata_raid_architecture_handoff_v1",
+  "handoff_id": "magmaw_transfer_lane_shadow_intent_comparison_20260831",
+  "source_commit": "9b47f9bc9a1d98fbb41b78553dfbaa2ac2cdc331",
+  "classification": "architecture_migration",
+  "behavior_authority": "shadow_only",
+  "verified": {
+    "exact_lifecycle_to_facts": true,
+    "immutable_shadow_coordinator": true,
+    "cohort_owned_lane_episode": true,
+    "per_bot_persistent_tasks": true,
+    "distance_based_semantic_progress": true,
+    "typed_suspension_and_retirement": true,
+    "legacy_gameplay_unchanged": true,
+    "focused_tests_passed": 5,
+    "production_translation_units_compiled": 4,
+    "new_source_ccn_max": 15,
+    "new_source_nloc_max": 70,
+    "new_cpp_file_lines_max": 471
+  },
+  "full_build_boundary": {
+    "state": "blocked_outside_work_unit",
+    "file": "src/server/game/Bots/BotWorldPopulationMgrNativePathCheckpoint.cpp",
+    "source_commit": "88d3011594",
+    "errors": [
+      "GitRevision::GetHash() is const char* but unchanged code calls size()",
+      "unchanged code calls an undeclared NowMs()"
+    ],
+    "phase_changed_file": false
+  },
+  "next_phase": {
+    "work_unit": "runtime:magmaw_transfer_lane_shadow_intent_comparison",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Emit the running transfer-lane task as a behavior-neutral shadow native-action candidate, collect it through a minimal intent sink, and compare it with the legacy Magmaw movement decision without arbitration or execution.",
+    "production_boundary": "persistent task to shadow intent sink to post-plan legacy comparison to diagnostics",
+    "behavior_cutover_allowed": false
+  },
+  "required_invariants": [
+    "task state owns commitment while the existing action arbiter remains the only future immediate-action authority",
+    "the shadow candidate actor identity is the moving bot GUID and its generation is the persistent task generation",
+    "suspended or terminal tasks do not emit movement intents",
+    "all eligible shadow intents are collected before comparison rather than hidden by source order",
+    "comparison never submits, arbitrates, executes, or mutates a native action",
+    "legacy Magmaw movement and combat behavior remains unchanged",
+    "all changed C and C++ files remain below 1000 physical lines"
+  ]
+}

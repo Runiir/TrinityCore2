@@ -2,14 +2,14 @@
   "behavior_change": false,
   "boss": "magmaw",
   "classification": "failed",
-  "epoch_id": "magmaw_persistent_lane_task_shadow_20260831",
+  "epoch_id": "magmaw_transfer_lane_shadow_intent_comparison_20260831",
   "evidence_contract_change": false,
-  "gate_state": "persistent_lane_task_shadow_required",
-  "next_action": "Add one cohort-owned Magmaw lane episode and persistent per-bot transfer-lane task state with typed identity, semantic progress, safety suspension, completion, failure, and retirement. Reconcile and trace it in shadow only while the legacy strategy remains authoritative.",
+  "gate_state": "shadow_intent_comparison_required",
+  "next_action": "Emit each running Magmaw transfer-lane task into a minimal shadow intent sink and compare the complete shadow set with the already-produced legacy Magmaw movement decision. Record agreement and divergence without submitting, arbitrating, or executing the shadow candidate.",
   "next_owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "runtime:magmaw_persistent_lane_task_shadow",
-  "observed_at_commit": "3ff85b28db4bab1a6cb937c41a8c1c47c5ad3c0a",
-  "immutable_input_commit": "3ff85b28db4bab1a6cb937c41a8c1c47c5ad3c0a",
+  "next_work_unit": "runtime:magmaw_transfer_lane_shadow_intent_comparison",
+  "observed_at_commit": "9b47f9bc9a1d98fbb41b78553dfbaa2ac2cdc331",
+  "immutable_input_commit": "9b47f9bc9a1d98fbb41b78553dfbaa2ac2cdc331",
   "owner_skill": "raid-bot-runtime-implementation",
   "program_scope": {
     "acceptance_admitted": false,
@@ -25,50 +25,50 @@
   "raid": "blackwing_descent",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "One behavior-neutral persistent-task vertical slice: a minimal shared typed task contract, a cohort-owned Magmaw transfer-lane episode, per-bot shadow execution state, production reconciliation from exact Magmaw facts and the admitted immutable raid plan, focused compiled fixtures, and shadow diagnostics. The existing encounter strategy and action arbiter remain authoritative.",
+    "allowed_change": "One behavior-neutral intent vertical slice: a minimal reusable BotIntentSink, a pure Magmaw transfer-lane task emitter, and a compact per-bot comparison between all emitted shadow movement intents and the already-computed legacy Magmaw movement decision. Diagnostics and deterministic compiled fixtures may be added. The shadow set is never passed to arbitration or execution.",
     "forbidden": [
-      "changing the legacy Magmaw strategy, action candidates, priorities, targets, destinations, or gameplay behavior",
-      "changing native movement, MotionMaster, PathGenerator, MMAP floor selection, route admission, tolerances, or fallbacks",
-      "changing boss scripts, class rotations, pet behavior, damage coefficients, consumables, cooldowns, or Bloodlust",
+      "changing BotAdaptiveMagmawStrategy conditions, proposal order, candidate values, priorities, targets, destinations, or gameplay behavior",
+      "submitting the shadow intent to BotActionArbitration::Kernel, BotActionExecutor, native movement, MotionMaster, or PathGenerator",
+      "changing action arbitration ordering, resource conflicts, retry policy, movement leases, MMAP floors, route admission, tolerances, or fallbacks",
+      "changing boss scripts, class rotations, pet behavior, DPS/HPS, consumables, cooldowns, Bloodlust, or database state",
       "starting authserver, worldserver, a live shard, or a gameplay canary",
-      "database provisioning or mutation",
-      "building a generic task DSL, behavior tree, GOAP planner, or encounter framework beyond the minimum shared typed task contract",
-      "replacing or bypassing the existing BotActionArbitration kernel",
-      "treating action selection or native action submission as semantic progress",
+      "building a generic behavior tree, GOAP planner, HTN engine, task DSL, or encounter framework beyond the minimal sink and typed comparison",
+      "copying the full legacy ordered conditional tree into the shadow emitter",
+      "treating emitted, selected, or submitted actions as semantic progress",
       "merging the rejected intent-vector wrapper tranche"
     ],
     "required_postconditions": [
-      "task identity contains exact encounter lifecycle, raid-plan and assignment generations, bot actor and life identity, and task generation",
-      "one cohort episode owns paired baiter direction and generation while each bot owns its own execution state and destination",
-      "the task exposes running, suspended, succeeded, failed, and aborted terminal semantics or a typed equivalent",
-      "semantic progress is measured from actor distance or arrival observations and never inferred from proposal or submission",
-      "temporary observation loss, safety preemption, and short movement-lease expiry retain or suspend the same committed task",
-      "encounter reset, route change, admitted-roster change, actor death, or assignment replacement retires the task",
-      "a production-compiled multi-tick fixture crosses exact facts, immutable coordinator plan, task reconciliation, progress observation, and retirement",
-      "shadow task state is observable without influencing the legacy movement or combat decision",
+      "a Running transfer-lane task emits exactly one typed movement candidate while Suspended, Succeeded, Failed, and Aborted tasks emit none",
+      "candidate identity uses the moving bot GUID as Actor and the persistent task generation as Generation",
+      "candidate destination is the immutable task destination and its resource is movement",
+      "the minimal sink retains every eligible proposal and performs no source-order selection",
+      "production comparison runs only after the legacy Magmaw plan is computed and cannot modify that plan or its runtime context",
+      "comparison distinguishes neither-present, shadow-only, legacy-only, equivalent, and divergent outcomes or a typed exact equivalent",
+      "equivalence checks action kind, actor identity, resource lane, and destination within an explicit tolerance; diagnostics expose reasons for divergence",
+      "deterministic tests prove multiple sink proposals are retained, terminal/suspended suppression, stable candidate identity, equivalent and divergent comparison, and production shadow-only wiring",
+      "the existing action arbiter remains unchanged and is not invoked by the comparison path",
       "changed orchestration entrypoints have CCN at most 15 and NLOC at most 100",
       "all changed C and C++ source and header files remain below 1000 physical lines"
     ]
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_task_state_migration_handoff_v1.json",
-    "sha256": "240bb6b62cd54a2b814b7682542f02efaab0dd9f746062f7cb3b847924220251",
-    "source_commit": "3ff85b28db4bab1a6cb937c41a8c1c47c5ad3c0a",
-    "source_tree": "2cf07b56d00cb1c607522ff526e33ea277efc794"
+    "path": "experiments/configs/cata_raid_magmaw_shadow_intent_comparison_handoff_v1.json",
+    "sha256": "ff1dafc1dc390db991208a13f636e178aafeecc856fba344b55de8ed4c9c5685",
+    "source_commit": "9b47f9bc9a1d98fbb41b78553dfbaa2ac2cdc331",
+    "source_tree": "4b4fe255ee6e39eb944902ddae73b52f3ab798f4"
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
     "repair_policy": "compiled_shadow_fixture_no_live_run",
     "terminal_edges": [
-      "typed_task_success",
-      "typed_task_failure",
-      "typed_task_abort",
+      "shadow_comparison_verified",
       "fixture_failure",
       "compile_failure",
+      "scope_violation",
       "explicit_interruption"
     ]
   },
   "mode": "10N",
-  "work_unit": "runtime:magmaw_persistent_lane_task_shadow"
+  "work_unit": "runtime:magmaw_transfer_lane_shadow_intent_comparison"
 }
