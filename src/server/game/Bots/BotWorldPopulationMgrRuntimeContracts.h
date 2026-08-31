@@ -455,6 +455,9 @@
         uint64 EncounterSnapshotRevision = 0;
         uint64 EncounterSnapshotNextRefreshMs = 0;
         std::shared_ptr<BotEncounter::Blackboard const> EncounterSnapshot;
+        // Incomplete here by design: encounter facts stay out of the manager
+        // header and are reduced only by the snapshot publisher.
+        std::shared_ptr<BotEncounter::MagmawFactsCache const> MagmawFacts;
         BotWorldExperimentConfig Config;
         std::string ProfileManifestPath;
         std::map<std::string, BotWorldExperimentProfile> RuntimeProfiles;

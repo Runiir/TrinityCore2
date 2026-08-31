@@ -22,6 +22,10 @@ struct Scope
     uint32 MapId = 0;
     uint32 InstanceId = 0;
     std::string EncounterId;
+    // These identities are observation scope only. Keep them out of Key() so
+    // adding shadow projections cannot change existing candidate identities.
+    uint64 ServerEpoch = 0;
+    uint64 EncounterEpoch = 0;
 
     bool Valid() const
     {
@@ -39,14 +43,16 @@ struct Scope
 
     friend bool operator==(Scope const& left, Scope const& right)
     {
-        return left.CohortId == right.CohortId
+        return left.ServerEpoch == right.ServerEpoch
+            && left.CohortId == right.CohortId
             && left.AttemptId == right.AttemptId
             && left.WipeGeneration == right.WipeGeneration
             && left.RouteGeneration == right.RouteGeneration
             && left.NodeId == right.NodeId
             && left.MapId == right.MapId
             && left.InstanceId == right.InstanceId
-            && left.EncounterId == right.EncounterId;
+            && left.EncounterId == right.EncounterId
+            && left.EncounterEpoch == right.EncounterEpoch;
     }
 };
 
@@ -225,6 +231,8 @@ struct Blackboard
     uint64 Revision = 0;
     uint64 ObservedAtMs = 0;
     std::string NativeBossState = "unknown";
+    std::string NativeEncounterPhase = "unknown";
+    std::string NativeWipeState = "unknown";
     std::vector<ActorSnapshot> Players;
     std::vector<ActorSnapshot> Hostiles;
     std::vector<ActorSnapshot> Summons;

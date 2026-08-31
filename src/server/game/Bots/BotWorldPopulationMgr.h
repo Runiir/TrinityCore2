@@ -60,6 +60,10 @@ namespace BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil
 struct HealerAddWavePrepositionRequest;
 struct Context;
 }
+namespace BotEncounter
+{
+class MagmawFactsCache;
+}
 struct AreaTriggerEntry;
 struct AreaTriggerStruct;
 

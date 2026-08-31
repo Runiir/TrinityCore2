@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotWorldPopulationMgrEncounterHazards.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -52,12 +53,6 @@ void AppendNativeMechanicTimers(BotEncounter::RouteView const& route,
 
 void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
 {
-    // The encounter view is a cohort observation, not per-bot perception.
-    // Keep it immutable for the entire decision slice so one candidate cannot
-    // erase or retarget facts that a later candidate still needs.
-    if (Cohort().EncounterSnapshot && nowMs < Cohort().EncounterSnapshotNextRefreshMs)
-        return;
-
     Player* observer = nullptr;
     std::vector<Player*> hazardObservers;
     for (WorldBotState const& state : Party().Bots)
@@ -74,24 +69,42 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     if (!observer)
     {
         Cohort().EncounterSnapshot.reset();
+        Cohort().MagmawFacts.reset();
         Cohort().EncounterSnapshotNextRefreshMs = nowMs + 100;
         return;
     }
 
+    BotEncounter::Scope currentScope;
+    currentScope.CohortId = Cohort().Id;
+    currentScope.AttemptId = Cohort().AttemptId;
+    currentScope.WipeGeneration = uint32(Cohort().Raid.WipeGeneration);
+    currentScope.RouteGeneration = Party().ValidationRouteGeneration;
+    currentScope.NodeId = Cohort().Config.ValidationRouteNodeId;
+    currentScope.MapId = observer->GetMapId();
+    currentScope.InstanceId = observer->GetInstanceId();
+    currentScope.EncounterId =
+        Cohort().Config.ValidationRouteMechanicProfile.empty()
+        ? Cohort().Config.ValidationRouteKind
+        : Cohort().Config.ValidationRouteMechanicProfile;
+    currentScope.ServerEpoch = _serverEpoch;
+    currentScope.EncounterEpoch = Cohort().Raid.BossResetGeneration;
+
+    // A refresh window never crosses semantic scope. Facts and Blackboard are
+    // retired together before any bot can observe the new identity.
+    if (Cohort().EncounterSnapshot && Cohort().MagmawFacts
+        && Cohort().EncounterSnapshot->CurrentScope == currentScope
+        && Cohort().MagmawFacts->Matches(currentScope,
+            Cohort().EncounterSnapshot->Revision)
+        && nowMs < Cohort().EncounterSnapshotNextRefreshMs)
+        return;
+
     auto snapshot = std::make_shared<BotEncounter::Blackboard>();
     snapshot->Revision = ++Cohort().EncounterSnapshotRevision;
     snapshot->ObservedAtMs = nowMs;
-    snapshot->CurrentScope.CohortId = Cohort().Id;
-    snapshot->CurrentScope.AttemptId = Cohort().AttemptId;
-    snapshot->CurrentScope.WipeGeneration = uint32(Cohort().Raid.WipeGeneration);
-    snapshot->CurrentScope.RouteGeneration = Party().ValidationRouteGeneration;
-    snapshot->CurrentScope.NodeId = Cohort().Config.ValidationRouteNodeId;
-    snapshot->CurrentScope.MapId = observer->GetMapId();
-    snapshot->CurrentScope.InstanceId = observer->GetInstanceId();
-    snapshot->CurrentScope.EncounterId = Cohort().Config.ValidationRouteMechanicProfile.empty()
-        ? Cohort().Config.ValidationRouteKind
-        : Cohort().Config.ValidationRouteMechanicProfile;
+    snapshot->CurrentScope = currentScope;
     snapshot->NativeBossState = Cohort().Raid.EncounterInProgress ? "in_progress" : "not_in_progress";
+    snapshot->NativeEncounterPhase = Cohort().Raid.EncounterPhase;
+    snapshot->NativeWipeState = Cohort().Raid.WipeState;
 
     snapshot->Route.NodeId = Cohort().Config.ValidationRouteNodeId;
     snapshot->Route.Kind = Cohort().Config.ValidationRouteNodeKind.empty()
@@ -311,6 +324,8 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     // higher confidence than this shared fallback.
     BotEncounterHazards::Populate(*snapshot, hazardObservers, nowMs);
 
+    Cohort().MagmawFacts = BotEncounter::MagmawFactsCache::ForSnapshot(
+        Cohort().MagmawFacts, *snapshot);
     Cohort().EncounterSnapshot = std::move(snapshot);
     Cohort().EncounterSnapshotNextRefreshMs = nowMs + 100;
 }
