@@ -91,7 +91,9 @@ std::string BotWorldPopulationMgr::BuildCombatAttemptJson(WorldBotState::CombatA
          << ",\"target_entry\":" << diagnostic.TargetEntry
          << ",\"self_target\":" << (diagnostic.SelfTarget ? "true" : "false") << "}"
          << ",\"failure\":{\"result\":\"" << JsonEscape(diagnostic.Result) << "\""
-         << ",\"reason\":\"" << JsonEscape(diagnostic.Reason) << "\""
+         << ",\"reason\":\"" << JsonEscape(diagnostic.DiagnosticReason.empty()
+                ? diagnostic.Reason : diagnostic.DiagnosticReason) << "\""
+         << ",\"retry_reason\":\"" << JsonEscape(diagnostic.Reason) << "\""
          << ",\"gates\":{\"casting\":" << (diagnostic.Casting ? "true" : "false")
          << ",\"global_cooldown\":" << (diagnostic.GlobalCooldown ? "true" : "false")
          << ",\"cooldown_ready\":" << (diagnostic.CooldownReady ? "true" : "false")
@@ -109,6 +111,8 @@ std::string BotWorldPopulationMgr::BuildCombatAttemptJson(WorldBotState::CombatA
          << ",\"current_generic_spell_id\":"
          << diagnostic.PetCurrentGenericSpellId
          << ",\"victim_guid\":" << diagnostic.PetVictimGuid << "}"
+         << ",\"detail\":"
+         << (diagnostic.DetailJson.empty() ? "{}" : diagnostic.DetailJson)
          << ",\"summary\":\"" << JsonEscape(diagnostic.Summary) << "\"}";
     return json.str();
 }
@@ -134,7 +138,10 @@ std::string BotWorldPopulationMgr::BuildRouteProgressJson(WorldBotState::RoutePr
     return json.str();
 }
 
-void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bot, Unit* target, char const* phase, ResolvedCombatAction const* action, BotActionResult result, char const* reason) const
+void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bot,
+    Unit* target, char const* phase, ResolvedCombatAction const* action,
+    BotActionResult result, char const* reason, char const* diagnosticReason,
+    char const* detailJson) const
 {
     WorldBotState::CombatAttemptDiagnostic diagnostic;
     diagnostic.RecordedAtMs = NowMs();
@@ -215,6 +222,9 @@ void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bo
         diagnostic.Reason = "cooldown";
     else if (!diagnostic.HasPower)
         diagnostic.Reason = "no_power";
+    diagnostic.DiagnosticReason = diagnosticReason && *diagnosticReason
+        ? diagnosticReason : diagnostic.Reason;
+    diagnostic.DetailJson = detailJson && *detailJson ? detailJson : "{}";
     diagnostic.Summary = BuildCombatAttemptSummary(diagnostic);
     state.LastCombatAttempt = diagnostic;
 }

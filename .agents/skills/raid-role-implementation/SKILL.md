@@ -82,6 +82,14 @@ observation -> candidate -> hard gates -> priority/resources -> movement/authori
             -> native submission -> completion -> landed effect -> role outcome
 ```
 
+Treat aggregate resolver labels as summaries, not causes. Before changing a
+healer profile or priority, retain the target, actor-to-target distance, LOS,
+movement/instant-only state, profile identity, and every relevant spell's
+rejection reason. A correct priority target does not prove that any heal is
+executable. If the selected target is outside the legal range because an
+encounter movement policy displaced the healer, return the repair to the
+encounter owner instead of adding a spell, priority, or range exception.
+
 If the break is boss authority, route ownership, native script timing, or
 reference identity, return it to the owning specialist instead of compensating
 inside the class rotation.

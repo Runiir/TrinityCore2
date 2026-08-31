@@ -378,6 +378,20 @@ distinct reasons in closed evidence. If old telemetry conflates them, classify
 from the underlying candidate and native outcome, then repair the diagnostic;
 renamed or ambiguous evidence cannot prove a signature `absent`.
 
+Aggregate class or resolver labels cannot authorize a gameplay patch by
+themselves. Require the specialist handoff to retain actor, target, full
+actor-target geometry, movement state, profile identity, and bounded
+per-candidate rejection reasons. If target selection succeeded but native
+availability failed because encounter movement put the actor out of range,
+split target ownership from encounter positioning and repair the positioning
+edge first.
+
+For fixed mechanic assignments, the contract must state both who owns the
+mechanic movement and what non-owners do. Reject a repair that gives the fixed
+team a lane but still lets non-owners enter a generic fallback for the same
+hazard. Tests must include owner and non-owner actors with simultaneous hazards
+so a nearer low-priority hazard cannot mask a lethal one.
+
 Route acceptance requires two consecutive completed clears in which every
 known signature is explicitly `absent`. Passing a focused test or one clean
 canary makes a repair provisional; it does not erase its recurrence history.

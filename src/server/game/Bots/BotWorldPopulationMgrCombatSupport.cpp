@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotMgr.h"
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotHealSelectionDiagnostic.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
 
@@ -173,8 +174,11 @@ uint32 BotWorldPopulationMgr::SelectInterruptSpell(Player* bot) const
     return 0;
 }
 
-uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot, Unit* target, bool instantOnly) const
+uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot, Unit* target,
+    bool instantOnly, BotHealSelection::Diagnostic* selectionDiagnostic) const
 {
+    if (selectionDiagnostic)
+        *selectionDiagnostic = BotHealSelection::Diagnostic();
     if (!bot || !target)
         return 0;
 
@@ -251,6 +255,34 @@ uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot, Unit* target, bool in
     Party().LastCombatMaskByBot[botKey] = BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile, roleGoal.c_str(), saturation.ToJson().c_str());
     Party().LastChosenCombatByBot[botKey] = BotClassSpecActionProfileStore::ChosenActionJson(best, profile, roleGoal.c_str(), BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), saturation.ExperimentConfidence);
     Party().LastActionCategoryByBot[botKey] = best ? BotCombatActionCatalog::ToString(best->Category) : "wait";
+    if (selectionDiagnostic)
+    {
+        selectionDiagnostic->ActorGuid = bot->GetGUID().GetCounter();
+        selectionDiagnostic->TargetGuid = target->GetGUID().GetCounter();
+        selectionDiagnostic->TargetDistance = bot->GetExactDist(target);
+        selectionDiagnostic->LineOfSight = bot->IsWithinLOSInMap(target);
+        selectionDiagnostic->InstantOnly = instantOnly;
+        selectionDiagnostic->ProfileClassId = profile.ClassId;
+        selectionDiagnostic->ProfileSpecTag = profile.SpecTag;
+        selectionDiagnostic->ProfileRole = profile.Role;
+        selectionDiagnostic->ProfileSource = profile.ProfileSource;
+        selectionDiagnostic->ProfileGeneration = profile.SnapshotGeneration;
+        selectionDiagnostic->ProfileContentHash = profile.SnapshotContentHash;
+        selectionDiagnostic->SelectedSpellId = best ? best->SpellId : 0;
+        std::vector<BotHealSelection::Rejection> healRejections;
+        for (BotActionCandidate const& candidate : candidates)
+        {
+            if (candidate.Category != BotCombatActionCategory::HealFast
+                && candidate.Category != BotCombatActionCategory::HealEfficient
+                && candidate.Category != BotCombatActionCategory::HealAoe)
+                continue;
+            ++selectionDiagnostic->HealingCandidateCount;
+            if (!candidate.RejectReason.empty())
+                healRejections.push_back(
+                    { candidate.SpellId, candidate.RejectReason });
+        }
+        selectionDiagnostic->SetRejections(std::move(healRejections));
+    }
     return best ? best->SpellId : 0;
 }
 

@@ -99,6 +99,8 @@ namespace BotWorldPopulationMgrBotState
             uint32 PetCurrentGenericSpellId = 0;
             uint32 PetVictimGuid = 0;
             std::string Reason;
+            std::string DiagnosticReason;
+            std::string DetailJson = "{}";
             std::string Summary;
         };
 

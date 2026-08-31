@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
+#include "Bots/BotHealSelectionDiagnostic.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidHazardPlanner.h"
@@ -712,7 +713,10 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
         if (Cohort().EncounterSnapshot && std::string(GetDungeonRole(context.Bot)) == "healer"
             && !context.AdaptiveChimaeronHealingDisabled)
         {
-            ObjectGuid healTargetGuid = context.AdaptiveChimaeronPriorityHealTargetGuid;
+            ObjectGuid healTargetGuid =
+                context.AdaptiveMagmawPriorityHealTargetGuid;
+            if (healTargetGuid.IsEmpty())
+                healTargetGuid = context.AdaptiveChimaeronPriorityHealTargetGuid;
             float lowestHealth = 94.0f;
             if (!healTargetGuid.IsEmpty())
                 if (BotEncounter::ActorSnapshot const* priority =
@@ -753,25 +757,29 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                         return BotActionArbitration::Outcome::Retryable(
                             "heal_target_stale");
                     bool const instantHealRequired = activeNativeMovementPath();
-                    uint32 const healSpell = SelectHealSpell(
-                        context.Bot, healTarget, instantHealRequired);
+                    BotHealSelection::Diagnostic healSelection;
+                    uint32 const healSpell = SelectHealSpell(context.Bot,
+                        healTarget, instantHealRequired, &healSelection);
                     ResolvedCombatAction healAction;
                     healAction.Type = "cast";
                     healAction.TargetGuid = healTarget->GetGUID();
                     healAction.DebugName = "adaptive_raid_support";
                     if (!healSpell)
                     {
+                        char const* retryReason = instantHealRequired
+                            ? "no_instant_heal_while_moving"
+                            : "no_trained_heal";
+                        std::string const selectionReason =
+                            healSelection.SummaryReason();
+                        std::string const selectionJson = healSelection.ToJson();
                         RecordCombatAttempt(
                             context.State, context.Bot, healTarget,
                             "adaptive_heal_resolve", &healAction,
-                            BotActionResult::NoAction,
-                            instantHealRequired
-                                ? "no_instant_heal_while_moving"
-                                : "no_trained_heal");
+                            BotActionResult::NoAction, retryReason,
+                            selectionReason.c_str(),
+                            selectionJson.c_str());
                         return BotActionArbitration::Outcome::Retryable(
-                            instantHealRequired
-                                ? "no_instant_heal_while_moving"
-                                : "no_trained_heal");
+                            retryReason);
                     }
                     healAction.Valid = true;
                     healAction.SpellId = healSpell;
@@ -779,17 +787,18 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                     if (!TryCastFriendlySpell(
                             context.Bot, healTarget, healSpell, &failureReason))
                     {
+                        BotHealSelection::CastFailureReceipt const failure =
+                            BotHealSelection::MakeCastFailureReceipt(
+                                healSelection, failureReason.empty()
+                                    ? "heal_cast_retryable" : failureReason);
                         RecordCombatAttempt(
                             context.State, context.Bot, healTarget,
                             "adaptive_heal_cast", &healAction,
                             BotActionResult::CastFailed,
-                            failureReason.empty()
-                                ? "heal_cast_retryable"
-                                : failureReason.c_str());
+                            failure.RetryReason.c_str(), nullptr,
+                            failure.DetailJson.c_str());
                         return BotActionArbitration::Outcome::Retryable(
-                            failureReason.empty()
-                                ? std::string_view("heal_cast_retryable")
-                                : std::string_view(failureReason));
+                            failure.RetryReason);
                     }
                     RecordCombatAttempt(
                         context.State, context.Bot, healTarget,

@@ -306,8 +306,8 @@ int main()
     assert(transition.WipeGeneration == reset.CurrentScope.WipeGeneration);
     assert(transition.TransitionId == 1);
 
-    // A non-baiter may perform local contact evasion, but cannot mutate the
-    // shared bait transition identity or destination.
+    // A non-baiter never owns parasite movement and restores the boss-side
+    // support position without mutating the shared bait transition.
     uint64 const stableId = transition.TransitionId;
     Vector3 const stableDestination = transition.Destination;
     Blackboard ordinaryBoard = reset;
@@ -316,7 +316,8 @@ int main()
     AdaptiveMagmawPlan ordinaryPlan = strategy.Propose(ordinaryBoard, ordinary,
         "dps", nullptr, false, false, &transition);
     assert(ordinaryPlan.Movement);
-    assert(ordinaryPlan.Movement->Id.Mechanic == "parasite_contact_evade");
+    assert(ordinaryPlan.Movement->Id.Mechanic
+        == "ranged_formation_restore");
     assert(transition.TransitionId == stableId);
     assert(Distance(transition.Destination, stableDestination) < 0.01f);
 }
@@ -751,8 +752,7 @@ static bool HasTrace(BotActionArbitration::Resolution const& resolution,
 }
 
 static void AssertContainedTick(Blackboard const& board,
-    AdaptiveMagmawPlan const& plan, ObjectGuid actor,
-    MagmawParasiteHazardState& hazardState)
+    AdaptiveMagmawPlan const& plan, ObjectGuid actor)
 {
     assert(plan.OwnsNode);
     assert(plan.ParasiteCombat.Active);
@@ -770,7 +770,7 @@ static void AssertContainedTick(Blackboard const& board,
     MagmawParasiteCombatContract::ProfileParameters const profile =
         plan.ParasiteCombat.ResolveProfileParameters(actor,
             MagmawParasiteCombatContract::BossEntry,
-            hazardState.HasRetainedIntent(), false, false);
+            false, false, false);
     assert(profile.TargetAllowed);
     assert(profile.ForbidAreaDamage);
     assert(!profile.AllowMultidot);
@@ -780,26 +780,13 @@ static void AssertContainedTick(Blackboard const& board,
     MagmawParasiteCombatContract::ProfileParameters const parasiteProfile =
         plan.ParasiteCombat.ResolveProfileParameters(actor,
             MagmawParasiteCombatContract::ParasiteEntry,
-            hazardState.HasRetainedIntent(), false, false);
+            false, false, false);
     assert(!parasiteProfile.TargetAllowed);
     assert(!parasiteProfile.AllowsAction(true, true, true, true, true));
-    assert(!MoveOf(plan) || plan.DamageTarget.GetRawValue());
-
-    Move const* move = MoveOf(plan);
-    assert(move);
-    BotMovementArbitration::NativePathReceipt receipt;
+    assert(!MoveOf(plan)
+        || plan.Movement->Id.Mechanic != "parasite_contact_evade");
     BotActionArbitration::Kernel kernel;
     kernel.Begin(board.ObservedAtMs);
-    BotNativeAction::Candidate const& native = *plan.Movement;
-    std::string const movementKey = std::string("magmaw_native:")
-        + std::to_string(native.Id.Actor.GetCounter()) + ":"
-        + std::to_string(native.Id.EventGeneration);
-    Move const containedDestination{ move->X, move->Y, move->Z,
-        move->IntentReason };
-    kernel.Submit(NativeCandidate(native, receipt, board,
-        PathProof({ containedDestination.X, containedDestination.Y,
-            containedDestination.Z }, true,
-            BotWorldMovement::NativePathFloorFailure::None)));
     kernel.Submit(ProfileCandidate(parasiteProfile, true, true, true, true,
         true, board.ObservedAtMs + 500, "unfiltered_magmaw_area_candidate"));
     std::string const profileKey = std::string("z_magmaw_profile_")
@@ -807,10 +794,7 @@ static void AssertContainedTick(Blackboard const& board,
     kernel.Submit(ProfileCandidate(profile, false, false, false, false, false,
         board.ObservedAtMs + 500, profileKey.c_str()));
     BotActionArbitration::Resolution const& resolution = kernel.Resolve();
-    assert(Contains(resolution.CommittedCandidates, movementKey));
     assert(Contains(resolution.CommittedCandidates, profileKey));
-    assert(receipt.Active);
-    assert(hazardState.HasRetainedIntent());
     for (BotActionArbitration::CandidateTrace const& trace : resolution.Trace)
         if (trace.Key == "unfiltered_magmaw_area_candidate")
             assert(trace.Reason == "magmaw_action_contract_forbidden");
@@ -821,29 +805,25 @@ int main()
     AdaptiveMagmawStrategy strategy;
     Blackboard board = BuildBoard();
     MagmawLaneTransitionState transition;
-    MagmawParasiteHazardState tankHazard;
-    MagmawParasiteHazardState mageHazard;
 
     // (1) Exact ten-roster selection carries the containment contract into
     // action filtering while movement and a legal profile action coexist.
     Blackboard contact = board;
     contact.Hostiles[1] = Parasite(9001, { 0.0f, -10.0f, 210.0f });
     AdaptiveMagmawPlan tankPlan = strategy.Propose(contact, PlayerGuid(30001),
-        "tank", nullptr, false, false, &transition, &tankHazard);
+        "tank", nullptr, false, false, &transition);
     AdaptiveMagmawPlan nonbaitMagePlan = strategy.Propose(contact,
-        PlayerGuid(30007), "dps", nullptr, false, false, &transition,
-        &mageHazard);
+        PlayerGuid(30007), "dps", nullptr, false, false, &transition);
     assert(tankPlan.DamageTarget == contact.Hostiles.front().Guid);
     assert(nonbaitMagePlan.DamageTarget == contact.Hostiles.front().Guid);
-    AssertContainedTick(contact, tankPlan, PlayerGuid(30001), tankHazard);
-    AssertContainedTick(contact, nonbaitMagePlan, PlayerGuid(30007),
-        mageHazard);
+    AssertContainedTick(contact, tankPlan, PlayerGuid(30001));
+    AssertContainedTick(contact, nonbaitMagePlan, PlayerGuid(30007));
 
     // (2) At the exact generic lease boundary and at +1ms, the typed hazard
     // request is still admissible. A rejected native path keeps its identity
     // and destination; combat-range movement is hard-masked by the contract.
     Blackboard retryBoard = board;
-    retryBoard.Players[0].Position = {
+    retryBoard.Players[5].Position = {
         -307.531f, -35.4375f, 211.218f };
     retryBoard.Hostiles[1] = Parasite(9001, {
         -302.1054f, -39.9491f, 211.218f });
@@ -851,8 +831,8 @@ int main()
     Vector3 const requestedDestination{
         -325.259f, -20.696f, 211.218f };
     float const requestedDistance = std::hypot(
-        requestedDestination.X - retryBoard.Players[0].Position.X,
-        requestedDestination.Y - retryBoard.Players[0].Position.Y);
+        requestedDestination.X - retryBoard.Players[5].Position.X,
+        requestedDestination.Y - retryBoard.Players[5].Position.Y);
     assert(requestedDistance > 23.05f && requestedDistance < 23.06f);
     assert(!BotWorldMovement::AllowsSameLevelLocalMechanicProgress(
         BotMovementArbitration::Owner::Hazard, true, 23.05f, false, false));
@@ -866,7 +846,7 @@ int main()
     // seq536 already retained this exact native destination before the
     // seq537 proof. Seed the production value state as that observation
     // boundary; the following strategy ticks must not replan it.
-    retryHazard.ObserveScope(retryBoard, PlayerGuid(30001));
+    retryHazard.ObserveScope(retryBoard, PlayerGuid(30006));
     retryHazard.Begin(retryBoard.Hostiles[1].Guid, requestedDestination);
     BotMovementArbitration::Lease expiredLease;
     expiredLease.MovementOwner = BotMovementArbitration::Owner::Hazard;
@@ -874,7 +854,7 @@ int main()
     expiredLease.ExpiresAtMs = retryBoard.ObservedAtMs;
     expiredLease.MovementScope = MovementScope(retryBoard);
     AdaptiveMagmawPlan firstRetry = strategy.Propose(retryBoard,
-        PlayerGuid(30001), "tank", &expiredLease, false, false, &transition,
+        PlayerGuid(30006), "dps", &expiredLease, false, false, &transition,
         &retryHazard);
     Move const* firstMove = MoveOf(firstRetry);
     assert(firstMove);
@@ -883,6 +863,7 @@ int main()
     assert(firstDestination.Y == requestedDestination.Y);
     assert(firstDestination.Z == requestedDestination.Z);
     uint64 const firstEvent = firstRetry.Movement->Id.EventGeneration;
+    assert(firstRetry.Movement->Id.Actor == PlayerGuid(30006));
     BotMovementArbitration::Request const firstRequest = MovementRequest(
         retryBoard, *firstMove, firstRetry.Movement->ExpiresAtMs);
     assert(BotMovementArbitration::Evaluate(expiredLease, firstRequest,
@@ -914,11 +895,11 @@ int main()
         BotActionArbitration::Resource::Movement);
     combatRange.ExpiresAtMs = retryBoard.ObservedAtMs + 500;
     MagmawParasiteCombatContract::ProfileParameters const retryProfile =
-        firstRetry.ParasiteCombat.ResolveProfileParameters(PlayerGuid(30001),
+        firstRetry.ParasiteCombat.ResolveProfileParameters(PlayerGuid(30006),
             MagmawParasiteCombatContract::BossEntry,
             retryHazard.HasRetainedIntent(), true, false);
-    assert(retryProfile.ForbidAreaDamage);
-    assert(!retryProfile.AllowMultidot);
+    assert(!retryProfile.ForbidAreaDamage);
+    assert(retryProfile.AllowMultidot);
     assert(retryProfile.TargetAllowed);
     assert(retryProfile.DeferCombatRange);
     combatRange.Allowed = !retryProfile.DeferCombatRange;
@@ -936,7 +917,7 @@ int main()
     assert(!combatRangeRan);
     assert(retryHazard.HasRetainedIntent());
     assert(HasTrace(rejected,
-        "magmaw_native:9001:1", "attempted",
+        "magmaw_native:30006:1", "attempted",
         "route_destination_endpoint_mismatch"));
     assert(HasTrace(rejected, "world.profile_combat_range", "hard_masked",
         "magmaw_hazard_movement_retry"));
@@ -948,7 +929,7 @@ int main()
     // be treated as progress merely because the observation revision moved.
     retry.Hostiles[1] = Parasite(9001, retryBoard.Hostiles[1].Position);
     AdaptiveMagmawPlan secondRetry = strategy.Propose(retry,
-        PlayerGuid(30001), "tank", &expiredLease, false, false, &transition,
+        PlayerGuid(30006), "dps", &expiredLease, false, false, &transition,
         &retryHazard);
     Move const* secondMove = MoveOf(secondRetry);
     assert(secondMove);
@@ -965,7 +946,7 @@ int main()
     assert(!repeated.AnyCommitted);
     assert(!repeatedReceipt.Active);
     assert(HasTrace(repeated,
-        "magmaw_native:9001:1", "attempted",
+        "magmaw_native:30006:1", "attempted",
         "route_destination_endpoint_mismatch"));
     BotMovementArbitration::Request const secondRequest = MovementRequest(
         retry, *secondMove, secondRetry.Movement->ExpiresAtMs);
@@ -977,13 +958,13 @@ int main()
     // makes progress toward the retained destination, and is not that old
     // endpoint, so safety observation clears the retained intent afterward.
     float const dx = requestedDestination.X
-        - retry.Players[0].Position.X;
+        - retry.Players[5].Position.X;
     float const dy = requestedDestination.Y
-        - retry.Players[0].Position.Y;
+        - retry.Players[5].Position.Y;
     Vector3 const localSafe{
-        retry.Players[0].Position.X + dx / requestedDistance * 12.0f,
-        retry.Players[0].Position.Y + dy / requestedDistance * 12.0f,
-        retry.Players[0].Position.Z };
+        retry.Players[5].Position.X + dx / requestedDistance * 12.0f,
+        retry.Players[5].Position.Y + dy / requestedDistance * 12.0f,
+        retry.Players[5].Position.Z };
     assert(MagmawParasiteHazardState::Distance2d(localSafe,
         retry.Hostiles[1].Position) >= MagmawParasitePolicy::SafeClearance);
     assert(MagmawParasiteHazardState::Distance2d(localSafe,
@@ -1009,13 +990,12 @@ int main()
     Blackboard safe = retry;
     safe.Revision += 1;
     safe.ObservedAtMs += 1;
-    safe.Players[0].Position = localSafe;
+    safe.Players[5].Position = localSafe;
     AdaptiveMagmawPlan safePlan = strategy.Propose(safe,
-        PlayerGuid(30001), "tank", &expiredLease, false, false, &transition,
+        PlayerGuid(30006), "dps", &expiredLease, false, false, &transition,
         &retryHazard);
     assert(!retryHazard.HasRetainedIntent());
-    assert(!safePlan.Movement);
-    assert(safePlan.DamageTarget == safe.Hostiles.front().Guid);
+    assert(safePlan.OwnsNode);
 
     // (3) The fixed 30006/30009 lane remains one identity across GUID churn,
     // midpoint observation, pillar preemption/resume, arrival, next event,

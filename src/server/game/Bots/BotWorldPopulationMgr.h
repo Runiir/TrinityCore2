@@ -46,6 +46,10 @@ class Quest;
 class Unit;
 class WorldObject;
 struct BotClassSpecActionProfile;
+namespace BotHealSelection
+{
+struct Diagnostic;
+}
 namespace BotCalibrationFixtureContractGenerated
 {
 struct SpecContract;
@@ -641,7 +645,8 @@ private:
         char const* specTagOverride = nullptr);
     char const* GetDungeonRole(Player* bot) const;
     uint32 SelectInterruptSpell(Player* bot) const;
-    uint32 SelectHealSpell(Player* bot, Unit* target, bool instantOnly = false) const;
+    uint32 SelectHealSpell(Player* bot, Unit* target, bool instantOnly = false,
+        BotHealSelection::Diagnostic* selectionDiagnostic = nullptr) const;
     bool TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId, std::string* failureReason = nullptr);
     bool TryNativeSelfResurrection(WorldBotState& state, Player* bot);
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
@@ -728,7 +733,11 @@ private:
     std::string BuildCombatMetricsJson() const;
     std::string BuildBotDecisionSnapshotJson(WorldBotState const& state, Player const* bot) const;
     std::string BuildBotTraceEntriesJson(WorldBotState const& state, uint32 limit) const;
-    void RecordCombatAttempt(WorldBotState& state, Player* bot, Unit* target, char const* phase, ResolvedCombatAction const* action, BotActionResult result, char const* reason = nullptr) const;
+    void RecordCombatAttempt(WorldBotState& state, Player* bot, Unit* target,
+        char const* phase, ResolvedCombatAction const* action,
+        BotActionResult result, char const* reason = nullptr,
+        char const* diagnosticReason = nullptr,
+        char const* detailJson = nullptr) const;
     void RecordRouteProgress(WorldBotState& state, Player* bot, Unit* target, char const* reason, float targetHealthPct, float bestHealthPct, uint32 noProgressCount, uint32 noProgressThreshold) const;
     std::string BuildCombatAttemptJson(WorldBotState::CombatAttemptDiagnostic const& diagnostic) const;
     std::string BuildRouteProgressJson(WorldBotState::RouteProgressDiagnostic const& diagnostic) const;

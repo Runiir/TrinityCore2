@@ -439,6 +439,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             context.State.MagmawParasiteCombat = magmawPlan.ParasiteCombat;
             context.AdaptiveMagmawSuppressOffense = magmawPlan.SuppressOffense;
             context.AdaptiveMagmawSuppressReason = magmawPlan.SuppressReason;
+            context.AdaptiveMagmawPriorityHealTargetGuid =
+                magmawPlan.PriorityHealTarget;
             context.AdaptiveMagmawMovement = std::move(magmawPlan.Movement);
             context.AdaptiveMagmawInteraction = std::move(magmawPlan.Interaction);
             if (!magmawPlan.DamageTarget.IsEmpty())

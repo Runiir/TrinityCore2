@@ -136,18 +136,7 @@ public:
         MagmawParasiteHazardState* hazardState = nullptr)
     {
         if (!pillarBaiter)
-        {
-            if (hazardState)
-            {
-                hazardState->ObserveScope(board, bot.Guid);
-                hazardState->ObserveNativeProgress(board, bot.Position,
-                    DestinationTolerance, SafeClearance);
-                if (hazardState->HasRetainedIntent())
-                    return BuildRetainedMove(board, *hazardState);
-            }
-            return BuildMoveAway(board, bot, parasite,
-                "parasite_contact_evade", SafeClearance, hazardState);
-        }
+            return std::nullopt;
 
         if (!anchors || !transition)
             return std::nullopt;
@@ -386,7 +375,7 @@ private:
     {
         BotNativeAction::Candidate candidate = BuildPointMovement(board,
             hazardState.Destination, "parasite_contact_evade");
-        candidate.Id.Actor = hazardState.DangerGuid;
+        candidate.Id.Actor = hazardState.ActorGuid;
         candidate.Id.EventGeneration = hazardState.IntentId;
         return candidate;
     }

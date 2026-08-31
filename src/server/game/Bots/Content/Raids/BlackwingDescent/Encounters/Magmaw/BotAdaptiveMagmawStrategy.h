@@ -1,11 +1,11 @@
 #ifndef TRINITY_BOT_ADAPTIVE_MAGMAW_STRATEGY_H
 #define TRINITY_BOT_ADAPTIVE_MAGMAW_STRATEGY_H
-
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawEventMovementTransition.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleSupportGeometry.h"
 #include <algorithm>
 #include <cmath>
 #include <optional>
@@ -21,10 +21,10 @@ struct AdaptiveMagmawPlan
     std::string_view SuppressReason;
     MagmawParasiteCombatContract ParasiteCombat;
     ObjectGuid DamageTarget;
+    ObjectGuid PriorityHealTarget;
     std::optional<BotNativeAction::Candidate> Movement;
     std::optional<BotNativeAction::Candidate> Interaction;
 };
-
 class AdaptiveMagmawStrategy
 {
 public:
@@ -33,7 +33,7 @@ public:
     static constexpr uint32 PillarEntry = 41843;
     static constexpr uint32 ParasiteEntry = 41806;
     static constexpr uint32 ParasiteAltEntry = 42321;
-    static constexpr uint32 CrashEntry = 47330;
+    static constexpr uint32 PersistentCrashDummyEntry = 47330;
     static constexpr uint32 RoomStalkerEntry = 47196;
     static constexpr uint32 PincerLeftEntry = 41620;
     static constexpr uint32 PincerRightEntry = 41789;
@@ -49,12 +49,12 @@ public:
     // leaving a full left/right lane for the mobile team to cross.
     static constexpr float RangedStackLateralOffset = 24.0f;
     static constexpr float RangedStackTolerance = 4.0f;
+    static constexpr float MangleSupportMaxDistance = 35.0f;
     static constexpr float ParasiteKiteLeadDistance =
         MagmawParasitePolicy::KiteLeadDistance;
     static constexpr float RangedParasiteTargetDistance = RangedStackDistance
         + RangedStackLateralOffset +
         MagmawParasitePolicy::SafeClearance;
-
     AdaptiveMagmawPlan Propose(Blackboard const& board, ObjectGuid botGuid,
         std::string_view role,
         BotMovementArbitration::Lease const* movementLease = nullptr,
@@ -81,7 +81,6 @@ public:
                 MagmawParasitePolicy::DestinationTolerance,
                 MagmawParasitePolicy::SafeClearance);
         }
-
         if (laneTransition)
         {
             laneTransition->ObserveScope(board);
@@ -97,12 +96,13 @@ public:
                 // as if it were the arrival generation.
                 laneTransition->SealNoMechanicArrival(board.Revision);
         }
-
         MagmawActorObservation const observed = ObserveMagmawActors(board, *bot);
         if (!observed.Boss)
             return plan;
-
         plan.OwnsNode = true;
+        ActorSnapshot const* mangleOwner = FindMangleOwner(board);
+        if (mangleOwner)
+            plan.PriorityHealTarget = mangleOwner->Guid;
         plan.ParasiteCombat.Active = true;
         plan.ParasiteCombat.ActorGuid = botGuid;
         std::pair<ObjectGuid, ObjectGuid> const baiters =
@@ -157,9 +157,9 @@ public:
         if (!plan.Movement)
             plan.Movement = ProposeHookApproach(board, *bot, *observed.Boss,
                 botGuid);
-        if (!plan.Movement && !pincerWindow
+        if (!plan.Movement && !pincerWindow && !pincerWarning
             && !(IsPillarBaiter(board, botGuid) && HasActivePillar(board))
-            && !HasLivingParasite(board)
+            && (!HasLivingParasite(board) || !IsPillarBaiter(board, botGuid))
             && !HasActiveHazardPath(board, movementLease, activePathValid,
                 moving))
             plan.Movement = ProposeRangedFormationRestore(board, *bot,
@@ -175,7 +175,6 @@ private:
         ActorSnapshot const* NearestParasite = nullptr;
         float NearestParasiteDistance = 0.0f;
     };
-
     enum class PrepullDisposition : uint8
     {
         NotApplicable,
@@ -186,21 +185,20 @@ private:
     {
         PrepullDisposition Disposition = PrepullDisposition::NotApplicable;
     };
-
     struct MagmawHazardObservation
     {
         ActorSnapshot const* Pillar = nullptr;
+        ActorSnapshot const* Crash = nullptr;
+        float CrashDistance = 0.0f;
         ActorSnapshot const* NearestImmediateHazard = nullptr;
         float NearestImmediateHazardDistance = 0.0f;
     };
-
     struct MagmawHookAssignment
     {
         bool Assigned = false;
         ActorSnapshot const* Vehicle = nullptr;
         ActorSnapshot const* Spike = nullptr;
     };
-
     using MagmawRangedAnchors = MagmawParasitePolicy::FormationAnchors;
 
     static bool IsParasiteEntry(uint32 entry)
@@ -435,6 +433,14 @@ private:
             if (!IsImmediateHazard(actor))
                 return;
             float const distance = Distance2d(bot.Position, actor.Position);
+            if (IsCrashHazard(actor)
+                && (!observed.Crash || distance < observed.CrashDistance))
+            {
+                observed.Crash = &actor;
+                observed.CrashDistance = distance;
+            }
+            if (!IsParasiteEntry(actor.Entry))
+                return;
             if (!observed.NearestImmediateHazard
                 || distance < observed.NearestImmediateHazardDistance)
             {
@@ -574,6 +580,16 @@ private:
         return HasAura(actor, 89773) || HasAura(actor, 78412);
     }
 
+    static ActorSnapshot const* FindMangleOwner(Blackboard const& board)
+    {
+        ActorSnapshot const* owner = nullptr;
+        for (ActorSnapshot const& member : board.Players)
+            if (member.Alive && HasMangleAura(member)
+                && (!owner || member.Guid.GetRawValue()
+                    < owner->Guid.GetRawValue()))
+                owner = &member;
+        return owner;
+    }
     static bool IsPincerWarningActor(ActorSnapshot const& actor)
     {
         // Persistent Massive Crash dummies are not a transient telegraph;
@@ -602,19 +618,6 @@ private:
         return assignment.Assigned && (boss.Interactable || warningObserved);
     }
 
-    static std::optional<BotNativeAction::Candidate>
-    ProposeImmediateCrashDuringPincer(Blackboard const& board,
-        ActorSnapshot const& bot, ActorSnapshot const& boss,
-        MagmawHazardObservation const& observed)
-    {
-        if (boss.Interactable || !observed.NearestImmediateHazard
-            || observed.NearestImmediateHazardDistance > 12.0f
-            || !IsCrashHazard(*observed.NearestImmediateHazard))
-            return std::nullopt;
-        return MoveAway(board, bot, *observed.NearestImmediateHazard,
-            "massive_crash_evade", 16.0f);
-    }
-
     static std::optional<BotNativeAction::Candidate> ProposeHazardMovement(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& boss, bool pincerWindow, bool pincerWarning,
@@ -630,13 +633,24 @@ private:
                 bool const newerPillar = observed.Pillar
                     && observed.Pillar->Guid != lethal->SourceGuid
                     && Distance2d(bot.Position, observed.Pillar->Position) <= 12.0f;
-                bool const newerCrash = observed.NearestImmediateHazard
-                    && IsCrashHazard(*observed.NearestImmediateHazard)
-                    && observed.NearestImmediateHazard->Guid != lethal->SourceGuid;
+                bool const newerCrash = observed.Crash
+                    && observed.Crash->Guid != lethal->SourceGuid;
                 if (!newerPillar && !newerCrash)
                     return BuildMagmawEventMovement(board, *lethal,
                         BotActionArbitration::Priority::Survival, 450.0f);
             }
+        if (observed.Crash && observed.CrashDistance <= 12.0f)
+        {
+            if (laneTransition && laneTransition->IsBaiter(bot.Guid))
+                laneTransition->MarkPreempted();
+            if (eventMovement)
+                return RetainMagmawRadialLethalMovement(board, bot,
+                    *observed.Crash, "massive_crash_evade", 16.0f,
+                    *eventMovement, 450.0f);
+            return MoveAway(board, bot, *observed.Crash,
+                "massive_crash_evade", 16.0f);
+        }
+
         if (observed.Pillar)
         {
             if (pincerWindow)
@@ -662,33 +676,19 @@ private:
         }
 
         if (pincerWindow)
-        {
-            if (std::optional<BotNativeAction::Candidate> const crash =
-                    ProposeImmediateCrashDuringPincer(board, bot, boss,
-                        observed))
-            {
-                if (laneTransition && laneTransition->IsBaiter(bot.Guid))
-                    laneTransition->MarkPreempted();
-                if (eventMovement)
-                    return RetainMagmawRadialLethalMovement(board, bot,
-                        *observed.NearestImmediateHazard,
-                        "massive_crash_evade", 16.0f, *eventMovement, 450.0f);
-                return crash;
-            }
             return std::nullopt;
-        }
 
         // A rejected local escape remains the same native intent until its
         // destination is observed. Do this before current parasite selection
         // so GUID churn or a transient missing summon cannot hand control to
         // combat-range movement.
-        if (hazardState)
+        bool const pillarBaiter = IsPillarBaiter(board, bot.Guid);
+        if (pillarBaiter && hazardState)
             if (std::optional<BotNativeAction::Candidate> const retained =
                     MagmawParasitePolicy::RetainedHazardMovement(board,
                         *hazardState))
                 return retained;
 
-        bool const pillarBaiter = IsPillarBaiter(board, bot.Guid);
         if (pillarBaiter && observed.NearestImmediateHazard
             && IsParasiteEntry(observed.NearestImmediateHazard->Entry))
         {
@@ -710,15 +710,8 @@ private:
         if (observed.NearestImmediateHazard
             && observed.NearestImmediateHazardDistance <= immediateDistance)
         {
-            if (IsCrashHazard(*observed.NearestImmediateHazard))
-                return eventMovement
-                    ? RetainMagmawRadialLethalMovement(board, bot,
-                            *observed.NearestImmediateHazard,
-                            "massive_crash_evade", 16.0f, *eventMovement,
-                            450.0f)
-                    : std::optional<BotNativeAction::Candidate>(MoveAway(
-                        board, bot, *observed.NearestImmediateHazard,
-                        "massive_crash_evade", 16.0f));
+            if (!pillarBaiter)
+                return std::nullopt;
             std::optional<MagmawParasitePolicy::FormationAnchors> anchors;
             if (pillarBaiter)
                 if (std::optional<MagmawRangedAnchors> const rangedAnchors =
@@ -733,19 +726,32 @@ private:
             if (std::optional<MagmawRangedAnchors> const anchors =
                     ResolveRangedAnchors(board, boss))
             {
-                Vector3 const& destination = observed.NearestImmediateHazard
-                        && IsCrashHazard(*observed.NearestImmediateHazard)
-                    ? (Distance2d(anchors->Left,
-                            observed.NearestImmediateHazard->Position)
-                            >= Distance2d(anchors->Right,
-                                observed.NearestImmediateHazard->Position)
-                        ? anchors->Left : anchors->Right)
-                    : anchors->Support;
-                if (Distance2d(bot.Position, destination)
-                    > RangedStackTolerance)
-                    return BuildPointMovement(board, destination,
-                        observed.NearestImmediateHazard
-                            && IsCrashHazard(*observed.NearestImmediateHazard)
+                bool const baiterCrashSide = pillarBaiter && observed.Crash;
+                ActorSnapshot const* mangleOwner = FindMangleOwner(board);
+                std::optional<Vector3> destination;
+                if (baiterCrashSide)
+                    destination = Distance2d(anchors->Left,
+                        observed.Crash->Position) >= Distance2d(anchors->Right,
+                            observed.Crash->Position)
+                        ? anchors->Left : anchors->Right;
+                else if (pillarBaiter)
+                    destination = FormationAnchor(board, *anchors, bot.Guid);
+                else if (mangleOwner)
+                    destination = MagmawMangleSupportGeometry::Resolve(
+                        anchors->Support, mangleOwner->Position,
+                        MangleSupportMaxDistance);
+                else
+                    destination = anchors->Support;
+                if (!destination)
+                    return std::nullopt;
+                bool const ownerRangeSafe = !mangleOwner
+                    || MagmawMangleSupportGeometry::WithinDistance(
+                        bot.Position, mangleOwner->Position,
+                        MangleSupportMaxDistance);
+                if (!ownerRangeSafe || Distance2d(bot.Position, *destination)
+                        > RangedStackTolerance)
+                    return BuildPointMovement(board, *destination,
+                        baiterCrashSide
                             ? "mangle_safe_side" : "mangle_midpoint_stage",
                         BotActionArbitration::Priority::Survival, 490.0f);
             }

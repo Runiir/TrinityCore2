@@ -184,6 +184,13 @@ when the real failure is range, LOS, route authority, setup, resource ownership,
 or a higher-priority mechanic. Do not call a profile correct merely because the
 spell exists in it.
 
+Do not treat aggregate reasons such as `no_trained_heal` or
+`no_instant_heal_while_moving` as the first broken edge. Correlate the exact
+actor and target with distance, LOS, movement state, profile identity, and the
+per-spell rejection mask. Verify geometry in full 3D when the runtime range
+gate does. A selected target plus a profile row is still insufficient until a
+legal candidate reaches native submission and a landed effect.
+
 Inspect these sources as applicable:
 
 - `BotClassSpecActionProfile.{h,cpp}` for profile gates and candidate evidence.

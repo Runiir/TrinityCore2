@@ -829,14 +829,17 @@ int main()
         stagedDpsWaitPlan.OwnsNode, stagedDpsWaitPlan.SuppressOffense,
         stagedDpsWaitPlan.SuppressReason));
 
-    // A nearer immediate hazard cannot replace a pillar movement proposal,
-    // while the fallback hazard candidate retains its source-relative identity.
+    // The persistent helper dummy is not a lethal observation. Only the
+    // simultaneous Pillar supplies movement here.
     BotEncounter::Blackboard magmawPillarPriority = magmaw;
-    BotEncounter::ActorSnapshot nearbyCrash = magmawBoss;
-    nearbyCrash.Guid = ObjectGuid(HighGuid::Unit, uint32(47330), uint32(73));
-    nearbyCrash.Entry = BotEncounter::AdaptiveMagmawStrategy::CrashEntry;
-    nearbyCrash.Position = { 1.5f, 0.0f, 0.0f };
-    magmawPillarPriority.Hostiles.push_back(nearbyCrash);
+    BotEncounter::ActorSnapshot persistentCrashDummy = magmawBoss;
+    persistentCrashDummy.Guid = ObjectGuid(HighGuid::Unit,
+        BotEncounter::AdaptiveMagmawStrategy::PersistentCrashDummyEntry,
+        uint32(73));
+    persistentCrashDummy.Entry =
+        BotEncounter::AdaptiveMagmawStrategy::PersistentCrashDummyEntry;
+    persistentCrashDummy.Position = { 1.5f, 0.0f, 0.0f };
+    magmawPillarPriority.Hostiles.push_back(persistentCrashDummy);
     auto magmawPillarPriorityPlan = magmawStrategy.Propose(
         magmawPillarPriority, dps.Guid, "dps");
     assert(magmawPillarPriorityPlan.Movement.has_value());
@@ -851,7 +854,14 @@ int main()
     crash.Auras = {
         BotEncounter::AuraSnapshot{ 87949u, ObjectGuid{}, 1, 0 } };
     crash.Position = { 2.0f, 0.0f, 0.0f };
-    magmawCrash.Hostiles = { magmawBoss, magmawHead, crash };
+    BotEncounter::ActorSnapshot closerCrashParasite = magmawBoss;
+    closerCrashParasite.Guid = ObjectGuid(HighGuid::Unit, uint32(41806),
+        uint32(77));
+    closerCrashParasite.Entry =
+        BotEncounter::AdaptiveMagmawStrategy::ParasiteEntry;
+    closerCrashParasite.Position = dps.Position;
+    magmawCrash.Hostiles = {
+        magmawBoss, magmawHead, closerCrashParasite, crash };
     auto magmawCrashPlan = magmawStrategy.Propose(
         magmawCrash, dps.Guid, "dps");
     assert(magmawCrashPlan.Movement.has_value());
@@ -881,27 +891,9 @@ int main()
     magmawParasite.Hostiles = { magmawBoss, magmawHead, parasite };
     auto magmawParasitePlan = magmawStrategy.Propose(
         magmawParasite, dps.Guid, "dps");
-    assert(magmawParasitePlan.Movement.has_value());
-    assert(magmawParasitePlan.Movement->Id.ScopeKey
-        == magmawParasite.CurrentScope.Key());
-    assert(magmawParasitePlan.Movement->Id.Mechanic
-        == "parasite_contact_evade");
-    assert(magmawParasitePlan.Movement->Id.Actor == parasite.Guid);
-    assert(magmawParasitePlan.Movement->Id.EventGeneration
-        == magmawParasite.Revision);
-    assert(magmawParasitePlan.Movement->ActionPriority
-        == BotActionArbitration::Priority::Survival);
-    assert(magmawParasitePlan.Movement->Utility == 450.0f);
-    assert(magmawParasitePlan.Movement->ExpiresAtMs
-        == magmawParasite.ObservedAtMs + 750);
-    assert(magmawParasitePlan.Movement->Resources()
-        == Uses(Resource::Movement));
-    auto const* magmawParasiteMove = std::get_if<Move>(
-        &magmawParasitePlan.Movement->Action);
-    assert(magmawParasiteMove);
-    assert(magmawParasiteMove->X == -14.0f);
-    assert(magmawParasiteMove->Y == 0.0f);
-    assert(magmawParasiteMove->Z == dps.Position.Z);
+    assert(!magmawParasitePlan.Movement
+        || magmawParasitePlan.Movement->Id.Mechanic
+            != "parasite_contact_evade");
 
     // No parasite may replace the exposed head. Outside that burn window, the
     // ranged envelope still prevents a remote add from suppressing boss DPS.
@@ -1204,6 +1196,19 @@ int main()
     mobileAddOwnership.Summons.clear();
     parasite.Position = mobileAddOwnership.Players[2].Position;
     mobileAddOwnership.Hostiles = { magmawBoss, parasite };
+    BotEncounter::ActorSnapshot parasiteResto = elemental;
+    parasiteResto.Guid = ObjectGuid(HighGuid::Player, uint32(113));
+    parasiteResto.Role = "healer";
+    parasiteResto.ClassSpec = "restoration_druid";
+    BotEncounter::ActorSnapshot parasiteHoly = parasiteResto;
+    parasiteHoly.Guid = ObjectGuid(HighGuid::Player, uint32(114));
+    parasiteHoly.ClassSpec = "holy_paladin";
+    BotEncounter::ActorSnapshot parasiteDiscipline = parasiteResto;
+    parasiteDiscipline.Guid = ObjectGuid(HighGuid::Player, uint32(115));
+    parasiteDiscipline.ClassSpec = "discipline_priest";
+    mobileAddOwnership.Players.push_back(parasiteResto);
+    mobileAddOwnership.Players.push_back(parasiteHoly);
+    mobileAddOwnership.Players.push_back(parasiteDiscipline);
     auto firstFireAdd = magmawStrategy.Propose(
         mobileAddOwnership, dps.Guid, "dps", nullptr, false, false,
         &mobileTransition);
@@ -1219,11 +1224,29 @@ int main()
     auto elementalKeepsBoss = magmawStrategy.Propose(
         mobileAddOwnership, elemental.Guid, "dps", nullptr, false, false,
         &mobileTransition);
+    auto restoSupport = magmawStrategy.Propose(
+        mobileAddOwnership, parasiteResto.Guid, "healer", nullptr, false,
+        false, &mobileTransition);
+    auto holySupport = magmawStrategy.Propose(
+        mobileAddOwnership, parasiteHoly.Guid, "healer", nullptr, false,
+        false, &mobileTransition);
+    auto disciplineSupport = magmawStrategy.Propose(
+        mobileAddOwnership, parasiteDiscipline.Guid, "healer", nullptr,
+        false, false, &mobileTransition);
     assert(firstFireAdd.DamageTarget == parasite.Guid);
     assert(marksAdd.DamageTarget == parasite.Guid);
     assert(secondFireKeepsBoss.DamageTarget == magmawBoss.Guid);
     assert(afflictionKeepsBoss.DamageTarget == magmawBoss.Guid);
     assert(elementalKeepsBoss.DamageTarget == magmawBoss.Guid);
+    for (BotEncounter::AdaptiveMagmawPlan const* supportPlan : {
+             &secondFireKeepsBoss, &afflictionKeepsBoss,
+             &elementalKeepsBoss, &restoSupport, &holySupport,
+             &disciplineSupport })
+    {
+        assert(supportPlan->Movement.has_value());
+        assert(supportPlan->Movement->Id.Mechanic
+            == "ranged_formation_restore");
+    }
 
     // Tank handling remains source-relative and does not inherit ranged
     // anchor switching. A tank placed inside Pillar still gets its existing
@@ -1246,18 +1269,144 @@ int main()
     mangleSafety.Hostiles.front().InCombat = true;
     mangleSafety.Hostiles.front().VictimGuid = tankA.Guid;
     mangleSafety.Summons.clear();
+    mangleSafety.Players[0].Position = { -24.0f, 0.0f, 213.225f };
+    mangleSafety.Players[1].Position = { 55.0f, 0.0f, 211.581f };
+    BotEncounter::Vector3 const ordinarySupport{
+        magmawBoss.Position.X
+            - BotEncounter::AdaptiveMagmawStrategy::SupportStackDistance,
+        magmawBoss.Position.Y,
+        mangleSafety.Route.NavigationHints.front().Z };
+    auto pointDistance3d = [](BotEncounter::Vector3 const& left,
+        BotEncounter::Vector3 const& right)
+    {
+        float const dx = left.X - right.X;
+        float const dy = left.Y - right.Y;
+        float const dz = left.Z - right.Z;
+        return std::sqrt(dx * dx + dy * dy + dz * dz);
+    };
+    assert(pointDistance3d(ordinarySupport,
+        mangleSafety.Players[0].Position) > 35.0f);
+    assert(pointDistance3d(ordinarySupport,
+        mangleSafety.Players[1].Position) > 35.0f);
     mangleSafety.Players[0].Auras = {
         BotEncounter::AuraSnapshot{ 89773u, magmawBoss.Guid, 1, 0 } };
+    BotEncounter::ActorSnapshot resto = dps;
+    resto.Guid = ObjectGuid(HighGuid::Player, uint32(110));
+    resto.Role = "healer";
+    resto.ClassSpec = "restoration_druid";
+    resto.Position = { -20.0f, 10.0f, 211.815f };
+    BotEncounter::ActorSnapshot holy = resto;
+    holy.Guid = ObjectGuid(HighGuid::Player, uint32(111));
+    holy.ClassSpec = "holy_paladin";
+    BotEncounter::ActorSnapshot discipline = resto;
+    discipline.Guid = ObjectGuid(HighGuid::Player, uint32(112));
+    discipline.ClassSpec = "discipline_priest";
+    mangleSafety.Players.push_back(resto);
+    mangleSafety.Players.push_back(holy);
+    mangleSafety.Players.push_back(discipline);
     auto offTankManglePlan = magmawStrategy.Propose(
         mangleSafety, tankB.Guid, "tank");
     auto mangledTankPlan = magmawStrategy.Propose(
         mangleSafety, tankA.Guid, "tank");
+    auto movingHealerManglePlan = magmawStrategy.Propose(
+        mangleSafety, resto.Guid, "healer", nullptr, false, true);
+    auto stationaryHealerManglePlan = magmawStrategy.Propose(
+        mangleSafety, holy.Guid, "healer", nullptr, false, false);
+    auto disciplineManglePlan = magmawStrategy.Propose(
+        mangleSafety, discipline.Guid, "healer", nullptr, false, false);
     assert(offTankManglePlan.Movement.has_value());
     assert(offTankManglePlan.Movement->Id.Mechanic
         == "mangle_midpoint_stage");
     assert(offTankManglePlan.Movement->ActionPriority
         == BotActionArbitration::Priority::Survival);
     assert(!mangledTankPlan.Movement.has_value());
+    assert(movingHealerManglePlan.PriorityHealTarget == tankA.Guid);
+    assert(stationaryHealerManglePlan.PriorityHealTarget == tankA.Guid);
+    assert(disciplineManglePlan.PriorityHealTarget == tankA.Guid);
+    auto distance3d = [](Move const& move,
+        BotEncounter::Vector3 const& point)
+    {
+        float const dx = move.X - point.X;
+        float const dy = move.Y - point.Y;
+        float const dz = move.Z - point.Z;
+        return std::sqrt(dx * dx + dy * dy + dz * dz);
+    };
+    for (BotEncounter::AdaptiveMagmawPlan const* healerPlan : {
+             &movingHealerManglePlan, &stationaryHealerManglePlan,
+             &disciplineManglePlan })
+    {
+        assert(healerPlan->Movement.has_value());
+        assert(healerPlan->Movement->Id.Mechanic
+            == "mangle_midpoint_stage");
+        auto const* supportMove = std::get_if<Move>(
+            &healerPlan->Movement->Action);
+        assert(supportMove);
+        assert(supportMove->Z == mangleSafety.Route.NavigationHints.front().Z);
+        assert(distance3d(*supportMove, mangleSafety.Players[0].Position)
+            <= BotEncounter::AdaptiveMagmawStrategy::MangleSupportMaxDistance);
+    }
+    auto const* firstMangleSupportMove = std::get_if<Move>(
+        &movingHealerManglePlan.Movement->Action);
+    BotEncounter::Blackboard nearDestinationOutsideEnvelope = mangleSafety;
+    for (BotEncounter::ActorSnapshot& member :
+        nearDestinationOutsideEnvelope.Players)
+        if (member.Guid == holy.Guid)
+            member.Position = { firstMangleSupportMove->X + 3.0f,
+                firstMangleSupportMove->Y, firstMangleSupportMove->Z };
+    BotEncounter::ActorSnapshot const* nearDestinationHealer =
+        nearDestinationOutsideEnvelope.FindActor(holy.Guid);
+    assert(nearDestinationHealer);
+    assert(pointDistance3d(nearDestinationHealer->Position,
+        nearDestinationOutsideEnvelope.Players[0].Position) > 35.0f);
+    assert(pointDistance3d(nearDestinationHealer->Position,
+        { firstMangleSupportMove->X, firstMangleSupportMove->Y,
+            firstMangleSupportMove->Z }) < 4.0f);
+    auto nearDestinationPlan = magmawStrategy.Propose(
+        nearDestinationOutsideEnvelope, holy.Guid, "healer");
+    assert(nearDestinationPlan.Movement.has_value());
+    assert(nearDestinationPlan.Movement->Id.Mechanic
+        == "mangle_midpoint_stage");
+
+    // A second native Mangle cycle may use the alternate aura and a different
+    // tank. Both moving and stationary healer plans retain that exact living
+    // owner instead of falling back to ordinary lowest-health triage.
+    BotEncounter::Blackboard secondMangleCycle = mangleSafety;
+    secondMangleCycle.Revision += 1;
+    secondMangleCycle.Players[0].Auras.clear();
+    secondMangleCycle.Players[1].Auras = {
+        BotEncounter::AuraSnapshot{ 78412u, magmawBoss.Guid, 1, 0 } };
+    auto secondMovingHealerPlan = magmawStrategy.Propose(
+        secondMangleCycle, resto.Guid, "healer", nullptr, false, true);
+    auto secondStationaryHealerPlan = magmawStrategy.Propose(
+        secondMangleCycle, holy.Guid, "healer", nullptr, false, false);
+    assert(secondMovingHealerPlan.PriorityHealTarget == tankB.Guid);
+    assert(secondStationaryHealerPlan.PriorityHealTarget == tankB.Guid);
+    for (BotEncounter::AdaptiveMagmawPlan const* healerPlan : {
+             &secondMovingHealerPlan, &secondStationaryHealerPlan })
+    {
+        assert(healerPlan->Movement.has_value());
+        auto const* supportMove = std::get_if<Move>(
+            &healerPlan->Movement->Action);
+        assert(supportMove);
+        assert(supportMove->Z
+            == secondMangleCycle.Route.NavigationHints.front().Z);
+        assert(distance3d(*supportMove,
+            secondMangleCycle.Players[1].Position)
+            <= BotEncounter::AdaptiveMagmawStrategy::MangleSupportMaxDistance);
+    }
+
+    // Route-floor altitude can make the complete 35-yard support envelope
+    // impossible. The strategy must fail closed instead of returning the
+    // swallowed owner or emitting a point away from the route floor.
+    BotEncounter::Blackboard impossibleMangleFloor = mangleSafety;
+    impossibleMangleFloor.Players[0].Position.Z =
+        impossibleMangleFloor.Route.NavigationHints.front().Z
+        + BotEncounter::AdaptiveMagmawStrategy::MangleSupportMaxDistance
+        + 10.0f;
+    auto impossibleManglePlan = magmawStrategy.Propose(
+        impossibleMangleFloor, holy.Guid, "healer");
+    assert(impossibleManglePlan.PriorityHealTarget == tankA.Guid);
+    assert(!impossibleManglePlan.Movement.has_value());
 
     BotEncounter::Blackboard magmawFormationRestore = magmawRangedPillar;
     magmawFormationRestore.Summons.clear();
@@ -1364,10 +1513,11 @@ int main()
     BotEncounter::Blackboard magmawPincerPreposition = magmawHookApproach;
     magmawPincerPreposition.Hostiles.front().Interactable = false;
     magmawPincerPreposition.Players[0].Position = {
-        magmawBoss.Position.X - 20.0f, magmawBoss.Position.Y, 0.0f };
+        magmawBoss.Position.X - 20.0f, magmawBoss.Position.Y, 211.815f };
     magmawPincerPreposition.Players[1].Position = {
-        magmawBoss.Position.X - 25.0f, magmawBoss.Position.Y, 0.0f };
-    magmawPincerPreposition.Players[2].Position = { -10.0f, 8.0f, 0.0f };
+        magmawBoss.Position.X - 25.0f, magmawBoss.Position.Y, 211.815f };
+    magmawPincerPreposition.Players[2].Position = {
+        -10.0f, 8.0f, 211.815f };
     magmawPincerPreposition.Players[2].Auras = {
         BotEncounter::AuraSnapshot{ 89773u, ObjectGuid{}, 1, 0 } };
     BotEncounter::Blackboard magmawPincerWarningParasite =
@@ -1432,9 +1582,11 @@ int main()
     persistentCrash.Players[0].Position = { 30.0f, 0.0f, 0.0f };
     persistentCrash.Players[1].Position = { 30.0f, 0.0f, 0.0f };
     BotEncounter::ActorSnapshot persistentCrashActor = magmawBoss;
-    persistentCrashActor.Guid = ObjectGuid(HighGuid::Unit, uint32(47330),
+    persistentCrashActor.Guid = ObjectGuid(HighGuid::Unit,
+        BotEncounter::AdaptiveMagmawStrategy::PersistentCrashDummyEntry,
         uint32(108));
-    persistentCrashActor.Entry = BotEncounter::AdaptiveMagmawStrategy::CrashEntry;
+    persistentCrashActor.Entry =
+        BotEncounter::AdaptiveMagmawStrategy::PersistentCrashDummyEntry;
     persistentCrashActor.Position = {
         persistentCrash.Players[1].Position.X + 2.0f,
         persistentCrash.Players[1].Position.Y, 0.0f };
@@ -1504,38 +1656,82 @@ int main()
     assert(noWarningPlan.Movement->Id.Mechanic
         == "ranged_formation_restore");
 
-    BotEncounter::Blackboard crashWarning = noPincerWarning;
-    BotEncounter::ActorSnapshot crashWarningActor = magmawBoss;
-    crashWarningActor.Guid = ObjectGuid(HighGuid::Unit, uint32(47330),
-        uint32(108));
-    crashWarningActor.Entry = BotEncounter::AdaptiveMagmawStrategy::CrashEntry;
-    crashWarningActor.Position = {
-        magmawBoss.Position.X + 20.0f, magmawBoss.Position.Y, 0.0f };
-    crashWarning.Hostiles.push_back(crashWarningActor);
-    auto crashPrepositionPlan = magmawStrategy.Propose(
-        crashWarning, hookBot.Guid, "dps");
-    assert(crashPrepositionPlan.Movement.has_value());
-    assert(crashPrepositionPlan.Movement->Id.Mechanic
-        == "ranged_formation_restore");
-
     // A lit Room Stalker is both the native Crash telegraph and the pincer
-    // warning. When it is already within the existing 12-yard escape radius,
-    // the Survival candidate wins over mechanic prepositioning.
+    // warning. It wins over the closer parasite, a retained parasite escape,
+    // pincer commitment, and a simultaneous retained Pillar for the fixed
+    // baiter. The explicit non-baiter support actor makes the same choice.
     BotEncounter::Blackboard immediateCrash = magmawPincerPreposition;
-    BotEncounter::ActorSnapshot immediateCrashActor = crashWarningActor;
+    immediateCrash.Players[0].ClassSpec = "marksmanship_hunter";
+    immediateCrash.Players[1].ClassSpec = "fire_mage";
+    immediateCrash.Players[2].Auras.clear();
+    BotEncounter::ActorSnapshot immediateCrashActor = persistentCrashActor;
+    immediateCrashActor.Guid = ObjectGuid(HighGuid::Unit, uint32(47196),
+        uint32(111));
     immediateCrashActor.Entry =
         BotEncounter::AdaptiveMagmawStrategy::RoomStalkerEntry;
     immediateCrashActor.Auras = {
         BotEncounter::AuraSnapshot{ 87949u, ObjectGuid{}, 1, 0 } };
     immediateCrashActor.Position = {
         immediateCrash.Players[1].Position.X + 2.0f,
-        immediateCrash.Players[1].Position.Y, 0.0f };
+        immediateCrash.Players[1].Position.Y,
+        immediateCrash.Players[1].Position.Z };
+    BotEncounter::ActorSnapshot closerPincerParasite = immediateCrashActor;
+    closerPincerParasite.Guid = ObjectGuid(HighGuid::Unit, uint32(41806),
+        uint32(110));
+    closerPincerParasite.Entry =
+        BotEncounter::AdaptiveMagmawStrategy::ParasiteEntry;
+    closerPincerParasite.Auras.clear();
+    closerPincerParasite.Position = immediateCrash.Players[1].Position;
+    immediateCrash.Hostiles.push_back(closerPincerParasite);
     immediateCrash.Hostiles.push_back(immediateCrashActor);
+    BotEncounter::ActorSnapshot immediatePillar = pillar;
+    immediatePillar.Guid = ObjectGuid(HighGuid::Unit, uint32(41843),
+        uint32(112));
+    immediatePillar.Position = immediateCrash.Players[1].Position;
+    immediateCrash.Summons = { immediatePillar };
+    BotEncounter::MagmawLaneTransitionState immediateCrashTransition;
+    immediateCrashTransition.ObserveScope(immediateCrash);
+    immediateCrashTransition.AssignBaiters(
+        hookBot.Guid, secondHookBot.Guid);
+    immediateCrashTransition.Begin(closerPincerParasite.Guid.GetRawValue(), 2,
+        BotEncounter::MagmawLaneTransitionState::Direction::Left,
+        { 30.0f, -20.0f, 211.815f });
+    BotEncounter::MagmawParasiteHazardState immediateCrashHazard;
+    immediateCrashHazard.ObserveScope(immediateCrash, hookBot.Guid);
+    immediateCrashHazard.Begin(closerPincerParasite.Guid,
+        { 30.0f, -20.0f, 211.815f });
+    BotEncounter::MagmawEventMovementTransitionState retainedPillarMovement;
+    retainedPillarMovement.ObserveScope(immediateCrash, hookBot.Guid);
+    assert(retainedPillarMovement.RetainLethal(immediatePillar.Guid,
+        hookBot.Guid, "pillar_evade", { 80.0f, 80.0f, 211.815f }));
     auto immediateCrashPlan = magmawStrategy.Propose(
-        immediateCrash, hookBot.Guid, "dps");
+        immediateCrash, hookBot.Guid, "dps", nullptr, false, false,
+        &immediateCrashTransition, &immediateCrashHazard,
+        &retainedPillarMovement);
+    auto immediateCrashNonownerPlan = magmawStrategy.Propose(
+        immediateCrash, nonHookBot.Guid, "healer");
     assert(immediateCrashPlan.Movement.has_value());
     assert(immediateCrashPlan.Movement->Id.Mechanic
         == "massive_crash_evade");
+    assert(immediateCrashPlan.Movement->Id.Actor == hookBot.Guid);
+    assert(immediateCrashNonownerPlan.Movement.has_value());
+    assert(immediateCrashNonownerPlan.Movement->Id.Mechanic
+        == "massive_crash_evade");
+    assert(immediateCrashNonownerPlan.Movement->Id.Actor
+        == immediateCrashActor.Guid);
+    assert(immediateCrashPlan.ParasiteCombat.FireMageGuid == hookBot.Guid);
+    assert(immediateCrashPlan.ParasiteCombat.MarksmanshipHunterGuid
+        == secondHookBot.Guid);
+    assert(immediateCrashNonownerPlan.ParasiteCombat.FireMageGuid
+        != nonHookBot.Guid);
+    assert(immediateCrashNonownerPlan.ParasiteCombat.MarksmanshipHunterGuid
+        != nonHookBot.Guid);
+    assert(immediateCrashTransition.Preempted);
+    assert(retainedPillarMovement.ActiveLethal());
+    assert(retainedPillarMovement.ActiveLethal()->Mechanic
+        == "massive_crash_evade");
+    assert(retainedPillarMovement.ActiveLethal()->SourceGuid
+        == immediateCrashActor.Guid);
     assert(immediateCrashPlan.Movement->ActionPriority
         == BotActionArbitration::Priority::Survival);
 
@@ -1554,25 +1750,24 @@ int main()
     assert(warningPillarPlan.Movement->Id.Mechanic
         != "pincer_preposition");
 
-    // An open pincer remains the movement owner when Crash and a parasite
-    // compete for the same assigned ranged user.  A local Pillar still
-    // preempts that ownership, even when an older/farther Pillar is listed
-    // first in the observed summons.
+    // A real lit Crash is the active lethal footprint. It wins over the closer
+    // parasite during the open-pincer window and over simultaneous Pillars.
     BotEncounter::Blackboard magmawPincerHazards = magmawHookApproach;
-    BotEncounter::ActorSnapshot competingCrash = magmawBoss;
-    competingCrash.Guid = ObjectGuid(HighGuid::Unit, uint32(47330), uint32(103));
-    competingCrash.Entry = BotEncounter::AdaptiveMagmawStrategy::CrashEntry;
+    BotEncounter::ActorSnapshot competingCrash = immediateCrashActor;
+    competingCrash.Guid = ObjectGuid(HighGuid::Unit, uint32(47196), uint32(103));
     competingCrash.Position = { -8.0f, 0.0f, magmawBoss.Position.Z };
     BotEncounter::ActorSnapshot competingParasite = magmawBoss;
     competingParasite.Guid = ObjectGuid(HighGuid::Unit, uint32(41806), uint32(104));
     competingParasite.Entry = BotEncounter::AdaptiveMagmawStrategy::ParasiteEntry;
-    competingParasite.Position = { -6.0f, 0.0f, magmawBoss.Position.Z };
+    competingParasite.Position = magmawPincerHazards.Players[1].Position;
     magmawPincerHazards.Hostiles.push_back(competingCrash);
     magmawPincerHazards.Hostiles.push_back(competingParasite);
     auto competingHazardsPlan = magmawStrategy.Propose(
         magmawPincerHazards, hookBot.Guid, "dps");
     assert(competingHazardsPlan.Movement.has_value());
-    assert(competingHazardsPlan.Movement->Id.Mechanic == "pincer_approach");
+    assert(competingHazardsPlan.Movement->Id.Mechanic
+        == "massive_crash_evade");
+    assert(competingHazardsPlan.Movement->Id.Actor == competingCrash.Guid);
 
     BotEncounter::Blackboard magmawPincerPillar = magmawPincerHazards;
     BotEncounter::ActorSnapshot distantPillar = magmawBoss;
@@ -1586,8 +1781,9 @@ int main()
     auto competingPillarPlan = magmawStrategy.Propose(
         magmawPincerPillar, hookBot.Guid, "dps");
     assert(competingPillarPlan.Movement.has_value());
-    assert(competingPillarPlan.Movement->Id.Mechanic == "pillar_evade");
-    assert(competingPillarPlan.Movement->Id.Actor == localPillar.Guid);
+    assert(competingPillarPlan.Movement->Id.Mechanic
+        == "massive_crash_evade");
+    assert(competingPillarPlan.Movement->Id.Actor == competingCrash.Guid);
     assert(competingPillarPlan.Movement->ActionPriority
         == BotActionArbitration::Priority::Survival);
 
@@ -1969,8 +2165,21 @@ def test_trash_adapter_requires_observable_work_and_yields_passive_waits() -> No
 
 def test_raid_healing_is_independent_and_does_not_cancel_hazard_movement() -> None:
     candidates = bot_source("BotWorldPopulationMgrUpdateBotKernelCandidates.cpp")
+    preparation = bot_source("BotWorldPopulationMgrUpdateBotKernelPreparation.cpp")
+    context = bot_source("BotWorldPopulationMgrUpdateContext.h")
     support_start = candidates.index('support.Key = "raid.support.heal."')
     support = candidates[support_start:]
+    target_selection = candidates[
+        candidates.index("ObjectGuid healTargetGuid =", support_start - 1200) : support_start
+    ]
+    assert "ObjectGuid AdaptiveMagmawPriorityHealTargetGuid;" in context
+    assert "context.AdaptiveMagmawPriorityHealTargetGuid =\n                magmawPlan.PriorityHealTarget;" in preparation
+    assert target_selection.index("AdaptiveMagmawPriorityHealTargetGuid") < target_selection.index(
+        "AdaptiveChimaeronPriorityHealTargetGuid"
+    )
+    assert target_selection.index("AdaptiveChimaeronPriorityHealTargetGuid") < target_selection.index(
+        "for (BotEncounter::ActorSnapshot const& member"
+    )
     assert "Resource::GlobalCooldown" in support
     assert "Resource::Cast" in support
     assert "Resource::Movement" not in support
@@ -1984,12 +2193,14 @@ def test_raid_healing_is_independent_and_does_not_cancel_hazard_movement() -> No
         candidates.index("auto activeNativeMovementPath = [this, &context]()") : support_start
     ]
     support_capture = support.split("support.Attempt = ", 1)[1].split("()", 1)[0]
+    assert ".Attempt = [&]" not in candidates
+    assert "healTargetGuid" in support_capture
     assert "activeNativeMovementPath" in support_capture
     assert "&activeNativeMovementPath" not in support_capture
     assert "bool const instantHealRequired =" in support
     assert "bool const instantHealRequired = activeNativeMovementPath();" in support
     assert "adaptiveHazardMovementProposed" not in support
-    assert "SelectHealSpell(\n                        context.Bot, healTarget, instantHealRequired)" in support
+    assert "SelectHealSpell(context.Bot,\n                        healTarget, instantHealRequired, &healSelection)" in support
     assert support.index("activeNativeMovementPath()") < support.index("SelectHealSpell(")
     assert '"adaptive_heal_resolve"' in support
     assert '"adaptive_heal_cast"' in support
@@ -2260,6 +2471,38 @@ int main()
     ObjectGuid const ordinaryGuid = board.Players[3].Guid;
     MagmawParasiteHazardState mageHazard;
 
+    // Retained local escape identity belongs to the moving bot. Two baiters
+    // reacting to one parasite remain distinct, and replacing that parasite
+    // GUID cannot rewrite either actor or intent generation.
+    MagmawParasiteHazardState mageIdentity;
+    MagmawParasiteHazardState hunterIdentity;
+    mageIdentity.ObserveScope(board, mageGuid);
+    hunterIdentity.ObserveScope(board, hunterGuid);
+    Vector3 const identityDestination{ 24.0f, -30.0f, 210.0f };
+    mageIdentity.Begin(board.Hostiles[1].Guid, identityDestination);
+    hunterIdentity.Begin(board.Hostiles[1].Guid, identityDestination);
+    auto mageIdentityMove = MagmawParasitePolicy::RetainedHazardMovement(
+        board, mageIdentity);
+    auto hunterIdentityMove = MagmawParasitePolicy::RetainedHazardMovement(
+        board, hunterIdentity);
+    assert(mageIdentityMove && hunterIdentityMove);
+    assert(mageIdentityMove->Id.Actor == mageGuid);
+    assert(hunterIdentityMove->Id.Actor == hunterGuid);
+    assert(mageIdentityMove->Id.Actor != hunterIdentityMove->Id.Actor);
+    Blackboard identityChurn = board;
+    identityChurn.Hostiles[1].Guid = ObjectGuid(HighGuid::Unit,
+        AdaptiveMagmawStrategy::ParasiteEntry, uint32(1));
+    auto stableMageIdentity = MagmawParasitePolicy::RetainedHazardMovement(
+        identityChurn, mageIdentity);
+    auto stableHunterIdentity = MagmawParasitePolicy::RetainedHazardMovement(
+        identityChurn, hunterIdentity);
+    assert(stableMageIdentity->Id.Actor == mageGuid);
+    assert(stableHunterIdentity->Id.Actor == hunterGuid);
+    assert(stableMageIdentity->Id.EventGeneration
+        == mageIdentityMove->Id.EventGeneration);
+    assert(stableHunterIdentity->Id.EventGeneration
+        == hunterIdentityMove->Id.EventGeneration);
+
     auto magePlan = strategy.Propose(board, mageGuid, "dps", nullptr,
         false, false, &transition);
     assert(magePlan.Movement.has_value());
@@ -2375,6 +2618,7 @@ int main()
     assert(Distance(packAdvancedDestination, packAdvanced.Hostiles[1].Position)
         >= MagmawParasitePolicy::SafeClearance);
     assert(mageHazard.HasRetainedIntent());
+    assert(packAdvancedPlan.Movement->Id.Actor == mageGuid);
     uint64 const escapeIntentId = mageHazard.IntentId;
 
     // Canary116: a baiter's endpoint-unsafe local escape is one native
@@ -2396,6 +2640,7 @@ int main()
     assert(lowerGuidMove);
     assert(lowerGuidMove->X == stableReference.X);
     assert(lowerGuidMove->Y == stableReference.Y);
+    assert(lowerGuidPlan.Movement->Id.Actor == mageGuid);
     assert(lowerGuidPlan.Movement->Id.EventGeneration == escapeIntentId);
     assert(mageHazard.IntentId == escapeIntentId);
     assert(transition.Preempted);
@@ -2467,14 +2712,16 @@ int main()
         &transition);
     assert(!remoteAtEndpointPlan.Movement.has_value());
 
-    // Ordinary ranged DPS keeps only local contact escape; a remote parasite
-    // does not opt it into the baiter's point path.
+    // Ordinary ranged DPS never owns parasite movement. It restores the
+    // boss-side support position even while the living pack remains active.
     Blackboard ordinaryRemote = board;
     ordinaryRemote.Hostiles[1].Position = { 40.0f, 0.0f, 210.0f };
     auto ordinaryRemotePlan = strategy.Propose(
         ordinaryRemote, ordinaryGuid, "dps", nullptr, false, false,
         &transition);
-    assert(!ordinaryRemotePlan.Movement.has_value());
+    assert(ordinaryRemotePlan.Movement.has_value());
+    assert(ordinaryRemotePlan.Movement->Id.Mechanic
+        == "ranged_formation_restore");
     Blackboard ordinaryContact = board;
     ordinaryContact.Hostiles[1].Position = ordinaryContact.Players[3].Position;
     auto ordinaryContactPlan = strategy.Propose(
@@ -2482,12 +2729,7 @@ int main()
         &transition);
     assert(ordinaryContactPlan.Movement.has_value());
     assert(ordinaryContactPlan.Movement->Id.Mechanic
-        == "parasite_contact_evade");
-    auto const* ordinaryMove = std::get_if<Move>(
-        &ordinaryContactPlan.Movement->Action);
-    assert(ordinaryMove);
-    assert(ordinaryMove->X == 16.0f);
-    assert(ordinaryMove->Y == -22.0f);
+        == "ranged_formation_restore");
 
     // An active pincer window still owns movement before parasite escape.
     Blackboard pincer = board;

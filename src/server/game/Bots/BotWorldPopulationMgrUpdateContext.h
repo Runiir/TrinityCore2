@@ -58,6 +58,7 @@ struct BotWorldPopulationMgr::BotUpdateContext
     bool AdaptiveNativeRouteOwnsNode = false;
     ObjectGuid AdaptiveDrudgeTankTargetGuid;
     ObjectGuid AdaptiveChimaeronPriorityHealTargetGuid;
+    ObjectGuid AdaptiveMagmawPriorityHealTargetGuid;
     ObjectGuid AdaptiveMaloriakDispelTargetGuid;
     ObjectGuid AdaptiveMaloriakInterruptTargetGuid;
     ObjectGuid AdaptiveNefarianInterruptTargetGuid;
