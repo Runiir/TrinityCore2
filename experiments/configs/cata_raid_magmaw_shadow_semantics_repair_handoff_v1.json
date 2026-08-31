@@ -1,0 +1,71 @@
+{
+  "schema": "cata_raid_architecture_handoff_v1",
+  "handoff_id": "magmaw_transfer_lane_shadow_semantics_repair_20260831",
+  "source_commit": "c52e5836db1f84aa709d0047eca70bf528e19f45",
+  "classification": "architecture_migration",
+  "behavior_authority": "shadow_only",
+  "verified": {
+    "exact_lifecycle_to_facts": true,
+    "immutable_shadow_coordinator": true,
+    "cohort_owned_lane_episode": true,
+    "per_bot_persistent_tasks": true,
+    "complete_shadow_intent_collection": true,
+    "typed_legacy_comparison": true,
+    "snapshotless_diagnostic_reset": true,
+    "legacy_gameplay_unchanged": true,
+    "focused_tests_passed": 8,
+    "production_translation_units_compiled": 3
+  },
+  "first_broken_edge": {
+    "component": "BuildMagmawShadowActorObservations",
+    "finding": "The adapter treats every current Hazard movement lease as safety preemption and treats absence of a Mechanic lease as lease expiry. Legacy pillar_bait_switch itself executes as a Hazard lease, so a new task starts suspended without a lease and remains suspended after its own legacy movement is submitted.",
+    "effect": "The shadow task cannot reliably reach Running, the emitter can remain silent, and comparison can remain legacy_only. Authority cutover would therefore be unproven and potentially inert.",
+    "confidence": "high"
+  },
+  "equivalence_gap": {
+    "currently_compared": [
+      "action kind",
+      "actor identity",
+      "resource mask",
+      "destination XY"
+    ],
+    "required_before_cutover": [
+      "action priority",
+      "utility",
+      "candidate freshness or expiry semantics",
+      "cast-preemption behavior",
+      "destination Z or typed floor divergence"
+    ]
+  },
+  "full_build_boundary": {
+    "state": "blocked_outside_work_unit",
+    "file": "src/server/game/Bots/BotWorldPopulationMgrNativePathCheckpoint.cpp",
+    "source_commit": "88d3011594",
+    "errors": [
+      "GitRevision::GetHash() is const char* but unchanged code calls size()",
+      "unchanged code calls an undeclared NowMs()"
+    ],
+    "phase_changed_file": false
+  },
+  "next_phase": {
+    "work_unit": "runtime:magmaw_transfer_lane_shadow_semantics_repair",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Repair the behavior-neutral task observation and equivalence contracts so one persistent transfer-lane episode can become Running, emit, and be compared without mistaking its own lease or lease absence for safety preemption.",
+    "production_boundary": "movement observation to persistent task state to shadow intent comparison diagnostics",
+    "behavior_cutover_allowed": false
+  },
+  "required_invariants": [
+    "an absent or expired short movement lease does not end or suspend the committed semantic task",
+    "a current same-scope movement lease matching the immutable task destination is recognized as the task's own execution even when legacy labels it Hazard",
+    "Recovery or a current mismatched Hazard destination suspends the task for safety",
+    "task progress remains based only on observed actor distance and never on proposal, selection, submission, or lease refresh",
+    "comparison never submits, arbitrates, executes, or mutates a native action",
+    "legacy Magmaw movement and combat behavior remains unchanged",
+    "all changed C and C++ files remain below 1000 physical lines"
+  ],
+  "promotion_gate": {
+    "next_authority_phase": "runtime:magmaw_transfer_lane_equivalent_only_cutover",
+    "required_evidence": "One gate-off completion-watchdog observation capture containing a complete two-baiter task episode with Running emission, semantic distance progress, no ambiguous proposal set, and typed legacy comparison distributions.",
+    "live_capture_allowed_in_this_phase": false
+  }
+}
