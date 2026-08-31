@@ -145,6 +145,8 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"recovery_events\":" << status.RecoveryEvents
          << ",\"instance_resets\":" << status.InstanceResets
          << ",\"raid_runtime\":" << BuildRaidRuntimeJson()
+         << ",\"magmaw_transfer_lane_shadow\":"
+         << BuildMagmawTransferLaneTaskShadowJson()
          << ",\"segment_counts\":" << Cohort().ExperimentCoordinator.GetCountsJson()
          << ",\"validation_route\":{\"enabled\":" << (Cohort().Config.ValidationRouteEnable ? "true" : "false")
          << ",\"manifest_path\":\"" << JsonEscape(Cohort().Config.ValidationRouteManifestPath) << "\""

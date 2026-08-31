@@ -62,7 +62,11 @@ struct Context;
 }
 namespace BotEncounter
 {
+class MagmawCoordinator;
 class MagmawFactsCache;
+class MagmawTransferLaneTaskShadow;
+struct MagmawRosterView;
+struct MagmawTransferLaneActorObservation;
 }
 struct AreaTriggerEntry;
 struct AreaTriggerStruct;
@@ -282,6 +286,14 @@ private:
     void PersistBotPosition(Player* bot) const;
     void RecordSpawnResolved(WorldBotState& state, Player* bot, SpawnPlacement const& placement, char const* result);
     void PublishEncounterBlackboard(uint64 nowMs);
+    void ReconcileMagmawTransferLaneTaskShadow(
+        BotEncounter::Blackboard const& snapshot);
+    std::string BuildMagmawTransferLaneTaskShadowJson() const;
+    BotEncounter::MagmawRosterView BuildMagmawShadowRoster(
+        BotEncounter::Scope const& lifecycle) const;
+    std::vector<BotEncounter::MagmawTransferLaneActorObservation>
+        BuildMagmawShadowActorObservations(
+            BotEncounter::Blackboard const& snapshot) const;
     bool CurrentCombatResOwnerUsable(WorldBotState const& targetState, Player const* target,
         uint64 nowMs, std::string& declineReason) const;
     std::optional<BotNativeAction::Candidate> BuildCombatResNativeActionCandidate(

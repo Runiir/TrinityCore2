@@ -629,5 +629,5 @@ def test_magmaw_coordinator_is_small_safe_and_shadow_only() -> None:
     publisher = (ROOT / "src/server/game/Bots/"
         "BotWorldPopulationMgrEncounterBlackboard.cpp").read_text(
             encoding="utf-8")
-    assert "MagmawCoordinator" not in runtime
-    assert "MagmawCoordinator" not in publisher
+    assert "MagmawCoordinatorShadow" in runtime
+    assert "ReconcileMagmawTransferLaneTaskShadow(*snapshot);" in publisher

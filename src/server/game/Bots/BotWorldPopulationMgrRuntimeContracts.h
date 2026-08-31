@@ -458,6 +458,12 @@
         // Incomplete here by design: encounter facts stay out of the manager
         // header and are reduced only by the snapshot publisher.
         std::shared_ptr<BotEncounter::MagmawFactsCache const> MagmawFacts;
+        // Immutable, diagnostics-only migration state. No strategy, action
+        // candidate, target, or movement owner consumes either projection.
+        std::shared_ptr<BotEncounter::MagmawCoordinator const>
+            MagmawCoordinatorShadow;
+        std::shared_ptr<BotEncounter::MagmawTransferLaneTaskShadow const>
+            MagmawTransferLaneTaskShadow;
         BotWorldExperimentConfig Config;
         std::string ProfileManifestPath;
         std::map<std::string, BotWorldExperimentProfile> RuntimeProfiles;

@@ -151,6 +151,8 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     {
         Cohort().EncounterSnapshot.reset();
         Cohort().MagmawFacts.reset();
+        Cohort().MagmawCoordinatorShadow.reset();
+        Cohort().MagmawTransferLaneTaskShadow.reset();
         Cohort().EncounterSnapshotNextRefreshMs = nowMs + 100;
         return;
     }
@@ -409,6 +411,7 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
 
     Cohort().MagmawFacts = BotEncounter::MagmawFactsCache::ForSnapshot(
         Cohort().MagmawFacts, *snapshot);
+    ReconcileMagmawTransferLaneTaskShadow(*snapshot);
     Cohort().EncounterSnapshot = std::move(snapshot);
     Cohort().EncounterSnapshotNextRefreshMs = nowMs + 100;
 }
