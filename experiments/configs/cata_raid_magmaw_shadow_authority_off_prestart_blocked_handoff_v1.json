@@ -1,0 +1,73 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:magmaw_shadow_authority_off_live_observation",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "gameplay_canary_prestart_recurrence_blocked",
+  "source": {
+    "commit": "eb51157c2cb8801c3f402923ee36b05d9e4e65a4",
+    "tree": "fea85f1bdfc769c80faf88639f4a6761424e1509",
+    "active_descriptor_sha256": "05851e4a22dcb83a994efa6295138a25864af8c05407e7b91f2b9012f0f11799",
+    "build_receipt_sha256": "10a07f7edee83d7d8201ca93973f4cc6d33227beee028ee1c60a2fa57af843cc",
+    "binary_sha256": "41ed2d5442e2ee9def49a1ad0556f85b1b7b0aea7203f9d5853a5fcf0d5d4b6a"
+  },
+  "verified_prestart": {
+    "exact_fast8_build_gate_bearing": true,
+    "strict_provisioning_passed": true,
+    "strict_provisioning_sha256": "82e832500156f7b29509d27fa3ed5b20b6b5e7e03af11cf78a78f33e1d45b22b",
+    "exact_ten_bot_roster_readback_passed": true,
+    "roster_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "regression_suite_fixture_count": 22,
+    "regression_suite_passed": 22,
+    "regression_suite_receipt_sha256": "bebd48d83aaafcb297953e347216d6b7fafe16e7d7968168af86ac8e306ea932"
+  },
+  "first_failed_gate": {
+    "stage": "gameplay_canary_recurrence_admission",
+    "decision_sha256": "8b3dbcb469c4f9becd0908ab5999dd89c69ecf15b1f720a49def5f0e21ea52e9",
+    "canary_admitted": false,
+    "fixture_expansion_admitted": true,
+    "required_next_action": "run_fixture_expansion_replay",
+    "invalidated_fixture_ids": [
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "pending_fixture_ids": [
+      "same_level_hazard_path_admission_v1",
+      "same_level_native_path_proof_v1"
+    ]
+  },
+  "operations": {
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "gameplay_capture_count": 0,
+    "database_provisioning_count": 1,
+    "retry_count": 0
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact source, build, generated provisioning, database state, and frozen ten-bot roster are ready",
+      "all 22 deterministic recurrence commands returned zero under the current source identity",
+      "the live-evidence recurrence gate still blocks gameplay and admits only the two-case native map-669 fixture expansion"
+    ],
+    "refuted": [
+      "a green deterministic suite alone admits the authority-off gameplay canary"
+    ],
+    "unproven": [
+      "one live two-baiter Magmaw transfer-lane episode",
+      "shadow-versus-legacy live equivalence",
+      "native receipt correlation and physical progress for both baiters",
+      "any Magmaw gameplay improvement or clear"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:map669_native_path_correlated_fixture_expansion",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Use the sealed native-path checkpoint, not the Chainwielder checkpoint, to run one exact-current observation-only map-669 fixture-expansion replay for the two admitted same-level path requests. Stop at the first completion-watchdog terminal and do not retry or change gameplay.",
+    "worldserver_start_maximum": 1,
+    "authserver_start_maximum": 0,
+    "gameplay_mutations_allowed": false,
+    "retry_maximum": 0
+  }
+}
