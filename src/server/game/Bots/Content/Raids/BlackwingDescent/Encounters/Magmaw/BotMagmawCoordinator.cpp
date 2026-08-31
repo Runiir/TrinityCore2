@@ -1,122 +1,141 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCoordinator.h"
 
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCoordinatorAssignments.h"
+
 #include <algorithm>
-#include <map>
+#include <array>
+#include <initializer_list>
 #include <set>
+#include <sstream>
+#include <tuple>
 
 namespace BotEncounter
 {
 namespace
 {
-using Slot = MagmawRaidAssignmentSlot;
-
-enum class Liveness : uint8
+struct RosterAdmission
 {
-    Unobserved,
-    Alive,
-    Dead,
-    Invalid
+    std::vector<MagmawRosterMember> Members;
+    std::string Fingerprint;
+    bool Authoritative = false;
 };
+
+bool AllTrue(std::initializer_list<bool> values)
+{
+    return std::all_of(values.begin(), values.end(),
+        [](bool value) { return value; });
+}
+
+bool AnyTrue(std::initializer_list<bool> values)
+{
+    return std::any_of(values.begin(), values.end(),
+        [](bool value) { return value; });
+}
 
 bool KnownRole(std::string const& role)
 {
-    return role == "tank" || role == "healer" || role == "dps";
+    std::array<std::string, 3> const roles = { "tank", "healer", "dps" };
+    return std::find(roles.begin(), roles.end(), role) != roles.end();
 }
 
-bool ModeSize(MagmawRaidMode mode, uint32& size)
+uint32 ExpectedModeSize(MagmawRaidMode mode)
 {
-    switch (mode)
+    using ModeSize = std::pair<MagmawRaidMode, uint32>;
+    std::array<ModeSize, 4> const sizes = {{
+        { MagmawRaidMode::Normal10, 10 },
+        { MagmawRaidMode::Heroic10, 10 },
+        { MagmawRaidMode::Normal25, 25 },
+        { MagmawRaidMode::Heroic25, 25 }
+    }};
+    auto itr = std::find_if(sizes.begin(), sizes.end(),
+        [mode](ModeSize const& value) { return value.first == mode; });
+    return itr == sizes.end() ? 0 : itr->second;
+}
+
+bool ValidRosterMember(MagmawRosterMember const& member)
+{
+    return AllTrue({ !member.Guid.IsEmpty(), !member.RosterSlotId.empty(),
+        KnownRole(member.Role), !member.ClassSpec.empty(), member.Admitted,
+        member.LeaseOwned });
+}
+
+void AppendToken(std::ostringstream& stream, std::string const& value)
+{
+    stream << value.size() << ':' << value << ';';
+}
+
+void AppendScope(std::ostringstream& stream, Scope const& scope)
+{
+    stream << scope.ServerEpoch << ';';
+    AppendToken(stream, scope.CohortId);
+    stream << scope.AttemptId << ';' << scope.WipeGeneration << ';'
+        << scope.RouteGeneration << ';';
+    AppendToken(stream, scope.NodeId);
+    stream << scope.MapId << ';' << scope.InstanceId << ';';
+    AppendToken(stream, scope.EncounterId);
+    stream << scope.EncounterEpoch << ';';
+}
+
+std::string RosterFingerprint(MagmawRosterView const& view,
+    std::vector<MagmawRosterMember> const& members)
+{
+    std::ostringstream stream;
+    AppendScope(stream, view.Lifecycle);
+    stream << unsigned(view.Mode) << ';' << view.ExpectedSize << ';'
+        << view.Authoritative << ';' << members.size() << ';';
+    for (MagmawRosterMember const& member : members)
     {
-        case MagmawRaidMode::Unknown:
-            return false;
-        case MagmawRaidMode::Normal10:
-        case MagmawRaidMode::Heroic10:
-            size = 10;
-            return true;
-        case MagmawRaidMode::Normal25:
-        case MagmawRaidMode::Heroic25:
-            size = 25;
-            return true;
+        stream << member.Guid.GetRawValue() << ';';
+        AppendToken(stream, member.RosterSlotId);
+        AppendToken(stream, member.Role);
+        AppendToken(stream, member.ClassSpec);
+        stream << member.Admitted << ';' << member.LeaseOwned << ';';
     }
-    return false;
+    return stream.str();
 }
 
-std::vector<MagmawRosterMember> CanonicalRoster(MagmawRosterView const& view,
-    bool& valid)
+RosterAdmission AdmitCanonicalRoster(MagmawRosterView const& view)
 {
-    std::vector<MagmawRosterMember> members = view.Members;
-    std::sort(members.begin(), members.end(),
-        [](MagmawRosterMember const& left, MagmawRosterMember const& right)
+    RosterAdmission result;
+    result.Members = view.Members;
+    std::sort(result.Members.begin(), result.Members.end(),
+        [](MagmawRosterMember const& left,
+            MagmawRosterMember const& right)
         {
-            return left.Guid.GetRawValue() < right.Guid.GetRawValue();
+            return std::tie(left.Guid, left.RosterSlotId, left.Role,
+                left.ClassSpec, left.Admitted, left.LeaseOwned)
+                < std::tie(right.Guid, right.RosterSlotId, right.Role,
+                    right.ClassSpec, right.Admitted, right.LeaseOwned);
         });
-    uint32 modeSize = 0;
-    valid = view.Authoritative && view.Generation && ModeSize(view.Mode,
-        modeSize) && view.ExpectedSize == modeSize
-        && members.size() == modeSize;
-
+    result.Fingerprint = RosterFingerprint(view, result.Members);
+    uint32 const modeSize = ExpectedModeSize(view.Mode);
+    result.Authoritative = AllTrue({ view.Authoritative,
+        view.Generation != 0, modeSize != 0, view.ExpectedSize == modeSize,
+        result.Members.size() == modeSize });
     std::set<uint64> guids;
     std::set<std::string> slots;
-    for (MagmawRosterMember const& member : members)
-        valid = valid && !member.Guid.IsEmpty()
-            && !member.RosterSlotId.empty() && KnownRole(member.Role)
-            && !member.ClassSpec.empty()
-            && member.Admitted && member.LeaseOwned
-            && guids.insert(member.Guid.GetRawValue()).second
-            && slots.insert(member.RosterSlotId).second;
-    return members;
+    for (MagmawRosterMember const& member : result.Members)
+        result.Authoritative = AllTrue({ result.Authoritative,
+            ValidRosterMember(member),
+            guids.insert(member.Guid.GetRawValue()).second,
+            slots.insert(member.RosterSlotId).second });
+    return result;
 }
 
-std::map<uint64, Liveness> ObserveLiveness(Blackboard const& board)
+bool SourcesAuthoritative(MagmawFacts const& facts, Blackboard const& board,
+    MagmawRosterView const& roster, RosterAdmission const& admission)
 {
-    std::map<uint64, Liveness> observations;
-    for (ActorSnapshot const& actor : board.Players)
-    {
-        uint64 const guid = actor.Guid.GetRawValue();
-        if (!guid)
-            continue;
-        Liveness const value = actor.Kind == ActorKind::Player
-            ? actor.Alive ? Liveness::Alive : Liveness::Dead
-            : Liveness::Invalid;
-        if (!observations.emplace(guid, value).second)
-            observations[guid] = Liveness::Invalid;
-    }
-    return observations;
+    // Production facts intentionally fail closed until an exact encounter
+    // identity and encounter epoch make LifecycleAuthoritative true.
+    return AllTrue({ facts.Lifecycle == board.CurrentScope,
+        facts.ObservationRevision == board.Revision,
+        roster.Lifecycle == facts.Lifecycle,
+        facts.LifecycleAuthoritative, facts.ProjectionAuthoritative,
+        facts.OwnsNode == MagmawTruth::True, admission.Authoritative });
 }
 
-Liveness Observed(std::map<uint64, Liveness> const& observations,
-    ObjectGuid guid)
-{
-    auto itr = observations.find(guid.GetRawValue());
-    return itr == observations.end() ? Liveness::Unobserved : itr->second;
-}
-
-bool Eligible(MagmawRosterMember const& member, Slot slot)
-{
-    switch (slot)
-    {
-        case Slot::FireMageBaiter:
-            return member.Role == "dps" && member.ClassSpec == "fire_mage";
-        case Slot::MarksmanshipHunterBaiter:
-            return member.Role == "dps"
-                && member.ClassSpec == "marksmanship_hunter";
-        case Slot::HookOne:
-        case Slot::HookTwo:
-            return member.Role == "dps";
-        case Slot::MainPullTank:
-            return member.Role == "tank";
-        case Slot::BloodlustOwner:
-            return member.Role == "dps"
-                && member.ClassSpec == "elemental_shaman";
-        case Slot::SemanticLaneOwner:
-        case Slot::Count:
-            return false;
-    }
-    return false;
-}
-
-MagmawRosterMember const* Find(std::vector<MagmawRosterMember> const& members,
-    ObjectGuid guid)
+MagmawRosterMember const* FindMember(
+    std::vector<MagmawRosterMember> const& members, ObjectGuid guid)
 {
     auto itr = std::find_if(members.begin(), members.end(),
         [guid](MagmawRosterMember const& member)
@@ -125,6 +144,49 @@ MagmawRosterMember const* Find(std::vector<MagmawRosterMember> const& members,
         });
     return itr == members.end() ? nullptr : &*itr;
 }
+
+void ObserveMangleOwner(MagmawRaidPlan& plan, MagmawFacts const& facts,
+    std::vector<MagmawRosterMember> const& members,
+    MagmawRosterObservations const& observations)
+{
+    plan.MangleOwnerAuthoritative = plan.Authoritative
+        && facts.MangleOwnerAuthoritative;
+    plan.MangleOwnerGuid = plan.MangleOwnerAuthoritative
+        ? facts.MangleOwnerGuid : ObjectGuid();
+    MagmawRosterMember const* owner = FindMember(members,
+        plan.MangleOwnerGuid);
+    if (plan.MangleOwnerAuthoritative && (!owner
+        || ObserveMagmawRosterMember(observations, owner->Guid)
+            != MagmawRosterLiveness::Alive))
+    {
+        plan.MangleOwnerAuthoritative = false;
+        plan.MangleOwnerGuid.Clear();
+    }
+}
+
+bool AssignmentsChanged(MagmawRaidPlan const& before,
+    MagmawRaidPlan const& after)
+{
+    auto const& oldAssignments = before.AllAssignments();
+    auto const& newAssignments = after.AllAssignments();
+    return !std::equal(oldAssignments.begin(), oldAssignments.end(),
+        newAssignments.begin());
+}
+
+void FinalizePlan(MagmawRaidPlan& plan, MagmawRaidPlan const& before,
+    bool scopeChanged)
+{
+    bool const changed = AnyTrue({ scopeChanged,
+        before.RosterGeneration != plan.RosterGeneration,
+        before.RosterExpectedSize != plan.RosterExpectedSize,
+        before.RosterMode != plan.RosterMode,
+        before.RosterFingerprint != plan.RosterFingerprint,
+        before.Authoritative != plan.Authoritative,
+        before.MangleOwnerAuthoritative != plan.MangleOwnerAuthoritative,
+        before.MangleOwnerGuid != plan.MangleOwnerGuid,
+        AssignmentsChanged(before, plan) });
+    plan.Generation = before.Generation + (changed ? 1 : 0);
+}
 }
 
 std::shared_ptr<MagmawCoordinator const> MagmawCoordinator::Reconcile(
@@ -132,19 +194,12 @@ std::shared_ptr<MagmawCoordinator const> MagmawCoordinator::Reconcile(
     MagmawFacts const& facts, Blackboard const& board,
     MagmawRosterView const& roster)
 {
-    bool rosterValid = false;
-    std::vector<MagmawRosterMember> const members = CanonicalRoster(roster,
-        rosterValid);
-    bool const sourceMatches = facts.Lifecycle == board.CurrentScope
-        && facts.ObservationRevision == board.Revision
-        && roster.Lifecycle == facts.Lifecycle;
-    // The current publisher has no exact Magmaw identity or encounter epoch.
-    // Assignments remain empty until both facts and the admitted roster agree.
-    bool const authoritative = sourceMatches && facts.LifecycleAuthoritative
-        && facts.ProjectionAuthoritative
-        && facts.OwnsNode == MagmawTruth::True && rosterValid;
-    if (current && current->Matches(facts.Lifecycle,
-        facts.ObservationRevision, roster.Generation)
+    RosterAdmission const admission = AdmitCanonicalRoster(roster);
+    bool const authoritative = SourcesAuthoritative(facts, board, roster,
+        admission);
+    if (current && current->_plan.Matches(facts.Lifecycle,
+        facts.ObservationRevision, roster.Generation,
+        admission.Fingerprint)
         && current->_plan.Authoritative == authoritative)
         return current;
 
@@ -152,148 +207,22 @@ std::shared_ptr<MagmawCoordinator const> MagmawCoordinator::Reconcile(
     if (current)
         next->_plan = current->_plan;
     MagmawRaidPlan const before = next->_plan;
-    bool const scopeChanged = !current || !(before.Lifecycle == facts.Lifecycle);
-    bool const rosterChanged = !current || before.RosterGeneration != roster.Generation;
+    bool const scopeChanged = !current
+        || !(before.Lifecycle == facts.Lifecycle);
     next->_plan.Lifecycle = facts.Lifecycle;
     next->_plan.SourceRevision = facts.ObservationRevision;
     next->_plan.RosterGeneration = roster.Generation;
     next->_plan.RosterExpectedSize = roster.ExpectedSize;
     next->_plan.RosterMode = roster.Mode;
+    next->_plan.RosterFingerprint = admission.Fingerprint;
     next->_plan.Authoritative = authoritative;
 
-    std::map<uint64, Liveness> const observations = ObserveLiveness(board);
-    auto candidates = [&](Slot slot, bool newAssignment)
-    {
-        std::vector<ObjectGuid> result;
-        if (authoritative)
-            for (MagmawRosterMember const& member : members)
-            {
-                Liveness const live = Observed(observations, member.Guid);
-                if (Eligible(member, slot) && (newAssignment
-                    ? live == Liveness::Alive
-                    : live != Liveness::Dead && live != Liveness::Invalid))
-                        result.push_back(member.Guid);
-            }
-        return result;
-    };
-    auto reconcileSlot = [&](Slot slot,
-        std::vector<ObjectGuid> const& choices,
-        std::vector<ObjectGuid> const& retainable,
-        std::set<uint64> const& excluded = {})
-    {
-        MagmawRaidAssignment* assignment = next->_plan.MutableAssignment(slot);
-        if (!assignment)
-            return;
-        auto usable = [&](ObjectGuid guid)
-        {
-            return !guid.IsEmpty()
-                && std::find(choices.begin(), choices.end(), guid)
-                    != choices.end()
-                && !excluded.count(guid.GetRawValue());
-        };
-        ObjectGuid desired;
-        bool const retain = std::find(retainable.begin(), retainable.end(),
-            assignment->AssigneeGuid) != retainable.end()
-            && !excluded.count(assignment->AssigneeGuid.GetRawValue());
-        if (!scopeChanged && retain)
-            desired = assignment->AssigneeGuid;
-        else
-            for (ObjectGuid choice : choices)
-                if (usable(choice))
-                {
-                    desired = choice;
-                    break;
-                }
-        if (scopeChanged || assignment->AssigneeGuid != desired)
-        {
-            if (!assignment->AssigneeGuid.IsEmpty() || !desired.IsEmpty())
-                assignment->Epoch = std::max<uint64>(1,
-                    assignment->Epoch + 1);
-            assignment->AssigneeGuid = desired;
-        }
-    };
-
-    if (authoritative || scopeChanged)
-    {
-        auto reconcileStandard = [&](Slot slot)
-        {
-            reconcileSlot(slot, candidates(slot, true),
-                candidates(slot, false));
-        };
-        reconcileStandard(Slot::FireMageBaiter);
-        reconcileStandard(Slot::MarksmanshipHunterBaiter);
-        std::set<uint64> hookOneExcluded;
-        if (MagmawRaidAssignment const* hookTwo = before.FindAssignment(
-            Slot::HookTwo); hookTwo && !hookTwo->AssigneeGuid.IsEmpty())
-            hookOneExcluded.insert(hookTwo->AssigneeGuid.GetRawValue());
-        reconcileSlot(Slot::HookOne, candidates(Slot::HookOne, true),
-            candidates(Slot::HookOne, false), hookOneExcluded);
-        std::set<uint64> hookTwoExcluded;
-        if (MagmawRaidAssignment const* hookOne = next->_plan.FindAssignment(
-            Slot::HookOne); hookOne && !hookOne->AssigneeGuid.IsEmpty())
-            hookTwoExcluded.insert(hookOne->AssigneeGuid.GetRawValue());
-        reconcileSlot(Slot::HookTwo, candidates(Slot::HookTwo, true),
-            candidates(Slot::HookTwo, false), hookTwoExcluded);
-        reconcileStandard(Slot::MainPullTank);
-
-        std::vector<ObjectGuid> laneRetainable;
-        std::vector<ObjectGuid> laneChoices;
-        for (Slot slot : { Slot::FireMageBaiter,
-            Slot::MarksmanshipHunterBaiter })
-            if (MagmawRaidAssignment const* bait =
-                next->_plan.FindAssignment(slot);
-                bait && !bait->AssigneeGuid.IsEmpty())
-            {
-                laneRetainable.push_back(bait->AssigneeGuid);
-                if (Observed(observations, bait->AssigneeGuid)
-                    == Liveness::Alive)
-                    laneChoices.push_back(bait->AssigneeGuid);
-            }
-        reconcileSlot(Slot::SemanticLaneOwner, laneChoices, laneRetainable);
-        std::vector<ObjectGuid> bloodlustRoster = candidates(
-            Slot::BloodlustOwner, false);
-        std::vector<ObjectGuid> bloodlust = candidates(
-            Slot::BloodlustOwner, true);
-        size_t const bloodlustOwners = std::count_if(members.begin(),
-            members.end(), [](MagmawRosterMember const& member)
-            { return Eligible(member, Slot::BloodlustOwner); });
-        if (!authoritative || bloodlustOwners != 1)
-        {
-            bloodlust.clear();
-            bloodlustRoster.clear();
-        }
-        reconcileSlot(Slot::BloodlustOwner, bloodlust, bloodlustRoster);
-    }
-    next->_plan.MangleOwnerAuthoritative = authoritative
-        && facts.MangleOwnerAuthoritative;
-    next->_plan.MangleOwnerGuid = next->_plan.MangleOwnerAuthoritative
-        ? facts.MangleOwnerGuid : ObjectGuid();
-    if (next->_plan.MangleOwnerAuthoritative)
-    {
-        MagmawRosterMember const* owner = Find(members,
-            next->_plan.MangleOwnerGuid);
-        if (!owner || Observed(observations, owner->Guid) != Liveness::Alive)
-        {
-            next->_plan.MangleOwnerAuthoritative = false;
-            next->_plan.MangleOwnerGuid.Clear();
-        }
-    }
-
-    bool changed = scopeChanged || rosterChanged
-        || before.RosterExpectedSize != next->_plan.RosterExpectedSize
-        || before.RosterMode != next->_plan.RosterMode
-        || before.Authoritative != next->_plan.Authoritative
-        || before.MangleOwnerAuthoritative
-            != next->_plan.MangleOwnerAuthoritative
-        || before.MangleOwnerGuid != next->_plan.MangleOwnerGuid;
-    auto const& oldAssignments = before.AllAssignments();
-    auto const& newAssignments = next->_plan.AllAssignments();
-    for (size_t index = 0; index < MagmawRaidPlan::AssignmentCount; ++index)
-        changed = changed
-            || oldAssignments[index].AssigneeGuid
-                != newAssignments[index].AssigneeGuid
-            || oldAssignments[index].Epoch != newAssignments[index].Epoch;
-    next->_plan.Generation = before.Generation + (changed ? 1 : 0);
+    MagmawRosterObservations const observations =
+        BuildMagmawRosterObservations(board);
+    ReconcileMagmawAssignments(next->_plan, before, admission.Members,
+        observations, authoritative, scopeChanged);
+    ObserveMangleOwner(next->_plan, facts, admission.Members, observations);
+    FinalizePlan(next->_plan, before, scopeChanged);
     return std::shared_ptr<MagmawCoordinator const>(next.release());
 }
 }

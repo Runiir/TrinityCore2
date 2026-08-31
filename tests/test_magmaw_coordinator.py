@@ -259,6 +259,59 @@ static void AssertRecurringCyclesPermutationAndPartialSnapshot()
     }
 }
 
+static void AssertSameGenerationRosterMutationsInvalidateReuse()
+{
+    Blackboard board = Board();
+    MagmawRosterView roster = Roster(board.CurrentScope);
+    auto initial = Reconcile(nullptr, board, roster);
+    uint64 const generation = roster.Generation;
+    uint64 const sourceRevision = board.Revision;
+
+    roster.Mode = MagmawRaidMode::Heroic10;
+    auto modeChanged = Reconcile(initial, board, roster);
+    assert(modeChanged != initial);
+    assert(modeChanged->Plan().Authoritative);
+    assert(modeChanged->Plan().RosterMode == MagmawRaidMode::Heroic10);
+    assert(modeChanged->Plan().RosterGeneration == generation);
+    assert(modeChanged->Plan().SourceRevision == sourceRevision);
+    assert(modeChanged->Plan().RosterFingerprint
+        != initial->Plan().RosterFingerprint);
+    assert(modeChanged->Plan().Generation == initial->Plan().Generation + 1);
+    assert(modeChanged->Plan().AllAssignments()
+        == initial->Plan().AllAssignments());
+
+    roster.ExpectedSize = 25;
+    auto sizeChanged = Reconcile(modeChanged, board, roster);
+    assert(sizeChanged != modeChanged);
+    assert(!sizeChanged->Plan().Authoritative);
+    assert(sizeChanged->Plan().RosterExpectedSize == 25);
+    assert(sizeChanged->Plan().RosterGeneration == generation);
+    assert(sizeChanged->Plan().AllAssignments()
+        == modeChanged->Plan().AllAssignments());
+
+    roster = Roster(board.CurrentScope);
+    initial = Reconcile(nullptr, board, roster);
+    RosterState(roster, 100).Role = "dps";
+    auto roleChanged = Reconcile(initial, board, roster);
+    assert(roleChanged != initial);
+    assert(roleChanged->Plan().Authoritative);
+    assert(Assigned(roleChanged->Plan(), Slot::MainPullTank)
+        == PlayerGuid(101));
+    assert(Assignment(roleChanged->Plan(), Slot::MainPullTank).Epoch
+        == Assignment(initial->Plan(), Slot::MainPullTank).Epoch + 1);
+
+    roster = Roster(board.CurrentScope);
+    initial = Reconcile(nullptr, board, roster);
+    RosterState(roster, 300).ClassSpec = "affliction_warlock";
+    auto specChanged = Reconcile(initial, board, roster);
+    assert(specChanged != initial);
+    assert(specChanged->Plan().Authoritative);
+    assert(Assigned(specChanged->Plan(), Slot::FireMageBaiter)
+        == PlayerGuid(301));
+    assert(Assignment(specChanged->Plan(), Slot::FireMageBaiter).Epoch
+        == Assignment(initial->Plan(), Slot::FireMageBaiter).Epoch + 1);
+}
+
 static void AssertInitialPartialAndTransientObservationLoss()
 {
     Blackboard board = Board();
@@ -528,6 +581,7 @@ int main()
     AssertProductionLifecycleFailsClosed();
     AssertModesInitialAndSafeAccess();
     AssertRecurringCyclesPermutationAndPartialSnapshot();
+    AssertSameGenerationRosterMutationsInvalidateReuse();
     AssertInitialPartialAndTransientObservationLoss();
     AssertAllScopeFieldsRetire();
     AssertDeathAndInvalidityReplacementStaySticky();
@@ -544,6 +598,8 @@ int main()
             "Encounters/Magmaw/BotMagmawFacts.cpp"),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
             "Encounters/Magmaw/BotMagmawCoordinator.cpp"),
+        str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+            "Encounters/Magmaw/BotMagmawCoordinatorAssignments.cpp"),
         "-o", str(binary),
     ], check=True, cwd=ROOT)
     subprocess.run([str(binary)], check=True, cwd=ROOT)
@@ -553,12 +609,17 @@ def test_magmaw_coordinator_is_small_safe_and_shadow_only() -> None:
     encounter = (ROOT / "src/server/game/Bots/Content/Raids/"
         "BlackwingDescent/Encounters/Magmaw")
     coordinator = encounter / "BotMagmawCoordinator.cpp"
+    assignments = encounter / "BotMagmawCoordinatorAssignments.cpp"
     plan = encounter / "BotMagmawRaidPlan.h"
     source = coordinator.read_text(encoding="utf-8")
+    assignment_source = assignments.read_text(encoding="utf-8")
     contract = plan.read_text(encoding="utf-8")
     assert len(source.splitlines()) < 300
-    assert "BotMagmawCoordinator.cpp" in (
-        ROOT / "src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
+    assert len(assignment_source.splitlines()) < 300
+    cmake = (ROOT / "src/server/game/CMakeLists.txt").read_text(
+        encoding="utf-8")
+    assert "BotMagmawCoordinator.cpp" in cmake
+    assert "BotMagmawCoordinatorAssignments.cpp" in cmake
     assert "ExactRoster(Blackboard" not in source
     assert "Retirement" not in source + contract
     assert "MangleResponder" not in source + contract

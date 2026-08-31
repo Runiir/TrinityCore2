@@ -3,6 +3,7 @@
 
 #include "Bots/BotEncounterBlackboard.h"
 
+#include <algorithm>
 #include <array>
 #include <string>
 #include <vector>
@@ -40,8 +41,9 @@ struct MagmawRosterMember
     bool LeaseOwned = false;
 };
 
-// Immutable view of the admitted roster. Callers must advance Generation for
-// any identity, admission, or lease change.
+// Immutable view of the admitted roster. Generation is the source's revision;
+// the coordinator also fingerprints every semantic field and therefore fails
+// closed if a source accidentally mutates the view without advancing it.
 struct MagmawRosterView
 {
     Scope Lifecycle;
@@ -77,6 +79,7 @@ public:
     uint64 Generation = 0;
     uint32 RosterExpectedSize = 0;
     MagmawRaidMode RosterMode = MagmawRaidMode::Unknown;
+    std::string RosterFingerprint;
     bool Authoritative = false;
     ObjectGuid MangleOwnerGuid;
     bool MangleOwnerAuthoritative = false;
@@ -99,10 +102,24 @@ public:
     }
 
     bool Matches(Scope const& scope, uint64 sourceRevision,
-        uint64 rosterGeneration) const
+        uint64 rosterGeneration, std::string const& rosterFingerprint) const
     {
         return Lifecycle == scope && SourceRevision == sourceRevision
-            && RosterGeneration == rosterGeneration;
+            && RosterGeneration == rosterGeneration
+            && RosterFingerprint == rosterFingerprint;
+    }
+
+    bool ApplyAssignment(MagmawRaidAssignmentSlot slot, ObjectGuid desired,
+        bool scopeChanged)
+    {
+        MagmawRaidAssignment* assignment = MutableAssignment(slot);
+        if (!assignment || (!scopeChanged
+            && assignment->AssigneeGuid == desired))
+            return false;
+        if (!assignment->AssigneeGuid.IsEmpty() || !desired.IsEmpty())
+            assignment->Epoch = std::max<uint64>(1, assignment->Epoch + 1);
+        assignment->AssigneeGuid = desired;
+        return true;
     }
 
 private:
