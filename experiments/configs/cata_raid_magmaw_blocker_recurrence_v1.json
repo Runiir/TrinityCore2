@@ -95,6 +95,7 @@
       "magmaw_parasite_control_full_runtime_v1",
       "magmaw_lethal_movement_transition_v1",
       "movement_progress_witness_v1",
+      "targeted_movement_receipt_retention_v1",
       "chainwielder_future_drudge_guard_v1",
       "chainwielder_pre_admission_rejection_isolation_v1",
       "same_level_hazard_path_admission_v1",
@@ -190,6 +191,19 @@
           "pytest",
           "-q",
           "tests/test_bot_world_population_mgr_update_bot_module.py::test_stationary_combat_does_not_refresh_movement_progress_witness"
+        ]
+      },
+      {
+        "fixture_id": "targeted_movement_receipt_retention_v1",
+        "revision": 1,
+        "causal_signature": "movement_receipt_terminal_join_eviction",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_native_path_launch_receipt.py::test_native_path_launch_receipt_value_and_schema",
+          "tests/test_tactical_replay_lite.py::test_recovers_displaced_receipt_progress_history"
         ]
       },
       {
@@ -512,6 +526,22 @@
       "invariant": "movement progress timestamps advance only after measured actor displacement; combat, casting, candidate submission, and retained movement ownership cannot hide a stationary movement stall",
       "architecture_reviewed_through_occurrence_count": 1,
       "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary121_movement_lifecycle_recurrence_handoff_20260829.md"
+    },
+    "movement_receipt_terminal_join_eviction": {
+      "owner": "raid_evidence_lifecycle",
+      "invariant": "one complete Hazard retry selected after an incomplete same-actor same-intent path remains in the bounded publication until its actor, intent fingerprint, planner result, native launch, spline progress, and terminal outcome or explicit supersession are joined",
+      "architecture_reviewed_through_occurrence_count": 2,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_418910a90d_fixture_expansion_summary_v1.json",
+      "fixture_verifications": [
+        {
+          "fixture_id": "targeted_movement_receipt_retention_v1",
+          "revision": 1,
+          "passed_after_run_id": "trinity-magmaw-418910a90d-fixture-expansion.attempt1",
+          "evidence": "tests/test_native_path_launch_receipt.py::test_native_path_launch_receipt_value_and_schema + tests/test_tactical_replay_lite.py::test_recovers_displaced_receipt_progress_history",
+          "source_identity": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
+          "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36"
+        }
+      ]
     },
     "chainwielder_future_drudge_contamination": {
       "owner": "shared_route_movement_authority",
@@ -1467,6 +1497,7 @@
       },
       "blockers": {
         "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "absent",
+        "movement_receipt_terminal_join_eviction": "occurred",
         "same_level_movement_path_floor_false_negative": "absent",
         "same_level_encounter_hazard_path_rejection": "not_exercised",
         "same_level_native_path_proof_false_negative": "not_exercised",
@@ -1497,6 +1528,7 @@
       },
       "blockers": {
         "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "absent",
+        "movement_receipt_terminal_join_eviction": "occurred",
         "same_level_movement_path_floor_false_negative": "not_exercised",
         "same_level_encounter_hazard_path_rejection": "not_exercised",
         "same_level_native_path_proof_false_negative": "not_exercised",

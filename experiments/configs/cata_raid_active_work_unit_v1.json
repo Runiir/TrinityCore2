@@ -1,36 +1,35 @@
 {
   "behavior_change": false,
   "boss": "magmaw",
-  "classification": "evidence_implementation",
-  "epoch_id": "targeted_movement_receipt_retention_20260831",
+  "classification": "fixture_replay_authorized",
+  "epoch_id": "targeted_movement_receipt_replay_20260831",
   "evidence_contract_change": true,
-  "gate_state": "targeted_receipt_retention_required_before_fixture_replay",
-  "next_action": "Retain one explicitly requested movement receipt until terminal outcome or explicit supersession, prove unrelated receipt churn cannot evict it, and keep global publication volume unchanged.",
+  "gate_state": "one_targeted_fixture_replay_required",
+  "next_action": "Run exactly one no-retry map-669 fixture replay without authserver. Verify the requested complete Hazard retry retains its planner, launch, progress, and terminal lifecycle in the compact replay, then publish and stop for review.",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:magmaw_target_receipt_retention",
-  "observed_at_commit": "418910a90d3ba398384dcd359920b9f12ab0c3e4",
+  "next_work_unit": "shard:map669_target_receipt_fixture_replay",
+  "observed_at_commit": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
   "owner_skill": "raid-evidence-lifecycle",
   "program_scope": {
     "acceptance_admitted": false,
     "authserver_start_admitted": false,
-    "database_provisioning_mutations_allowed": false,
+    "database_provisioning_mutations_allowed": true,
     "dvc_publication_required_after_terminal": true,
-    "fixture_expansion_replay_admitted": false,
-    "fixture_prerequisite_build_authorized": false,
+    "fixture_expansion_replay_admitted": true,
+    "fixture_prerequisite_build_authorized": true,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "worldserver_start_admitted": false
+    "worldserver_start_admitted": true
   },
-  "ready_for_bounded_repair": true,
-  "ready_for_fixture_expansion": false,
-  "ready_for_live_verification": false,
+  "ready_for_bounded_repair": false,
+  "ready_for_fixture_expansion": true,
+  "ready_for_live_verification": true,
   "raid": "blackwing_descent",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "Change only evidence retention and compact extraction so one explicitly requested movement receipt survives unrelated receipt churn until terminal outcome or explicit supersession. Do not increase global history capacity or change gameplay behavior.",
+    "allowed_change": "No code or gameplay change. Run one observation-only map-669 replay to verify targeted receipt retention through the real planner, executor, MotionMaster, point generator, spline progress, and terminal outcome or explicit supersession.",
     "forbidden": [
-      "authserver start or manual login",
-      "worldserver start, live attempt, or automatic retry",
+      "authserver start, manual login, a second live attempt, or automatic retry",
       "increasing global receipt or sample capacity",
       "global arbitration priority or planner-tolerance changes",
       "class DPS, pet, consumable, Bloodlust, boss-script, or database-content changes",
@@ -39,23 +38,24 @@
       "changing movement, healing, target, class, pet, consumable, or encounter behavior"
     ],
     "required_postconditions": [
-      "a requested receipt cannot be displaced by unrelated later receipts before terminal outcome or explicit supersession",
-      "the compact extractor joins actor, intent fingerprint, planner result, native launch, spline progress, and terminal outcome for that requested receipt",
       "global receipt and sample publication limits remain unchanged",
-      "deterministic tests pass without starting worldserver or authserver",
+      "one requested complete Hazard retry is present in the bounded publication with its terminal outcome or explicit supersession",
+      "the compact replay joins actor, intent fingerprint, planner result, native launch, spline progress, and terminal outcome",
+      "the completion watchdog stops on fixture closure or the first truthful failure",
+      "the immutable run is published and remotely verified before local eviction",
       "all changed C++ files remain below 1000 physical lines"
     ]
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_418910a90d_fixture_expansion_summary_v1.json",
-    "sha256": "cc7c1569aa40020bd04c339431b7b5c4eacb51711dd95540b0cd83fb4bde9266",
-    "source_commit": "418910a90d3ba398384dcd359920b9f12ab0c3e4",
-    "source_tree": "a22b5cd80e5a1443c52558d6506f89b61e572e2b"
+    "path": "experiments/configs/cata_raid_targeted_movement_receipt_retention_handoff_v1.json",
+    "sha256": "2a0009a15465141e225780d1775ad7425e660c3bede89a4514c31abd1a87a8c1",
+    "source_commit": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
+    "source_tree": "50f81a9a97071d5b30691cc681450640aea2809d"
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "deterministic_evidence_repair_before_any_live_replay",
+    "repair_policy": "one_no_retry_targeted_fixture_replay_before_gameplay_canary",
     "terminal_edges": [
       "normal_clear",
       "monotonic_no_progress_or_semantic_stall",
@@ -66,5 +66,5 @@
     ]
   },
   "mode": "10N",
-  "work_unit": "evidence:magmaw_target_receipt_retention"
+  "work_unit": "shard:map669_target_receipt_fixture_replay"
 }

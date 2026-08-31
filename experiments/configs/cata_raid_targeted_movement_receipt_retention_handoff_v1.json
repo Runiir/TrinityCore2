@@ -1,0 +1,46 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:magmaw_target_receipt_retention",
+  "classification": "evidence_implementation_complete",
+  "source": {
+    "implementation_commit": "58f95722d8ad41201ffc29bfe5fba18b86f1f584",
+    "implementation_tree": "50f81a9a97071d5b30691cc681450640aea2809d",
+    "fixture_source_run": "trinity-magmaw-418910a90d-fixture-expansion.attempt1"
+  },
+  "repair": {
+    "behavior_change": false,
+    "global_receipt_capacity_changed": false,
+    "global_sample_capacity_changed": false,
+    "policy": "When a progress-captured Hazard path becomes complete after an incomplete path under the same actor and intent fingerprint, retain that exact receipt inside the existing four-receipt publication until its terminal outcome or explicit supersession is published.",
+    "split_module": "src/server/game/Bots/BotWorldPopulationMgrMovementReceiptRetention.cpp"
+  },
+  "verification": {
+    "focused_tests": {
+      "passed": 56,
+      "failed": 0,
+      "command": "pixi run pytest -q tests/test_movement_planner_diagnostics.py tests/test_movement_pre_admission_rejection_state.py tests/test_native_path_launch_receipt.py tests/test_tactical_replay_lite.py tests/test_blocker_recurrence_ledger.py"
+    },
+    "worldserver_build": {
+      "passed": true,
+      "compiler_jobs": 8,
+      "worldserver_started": false,
+      "authserver_started": false
+    },
+    "line_count": {
+      "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.cpp": 999,
+      "src/server/game/Bots/BotWorldPopulationMgrMovementReceiptRetention.cpp": 34
+    }
+  },
+  "regression": {
+    "fixture_id": "targeted_movement_receipt_retention_v1",
+    "causal_signature": "movement_receipt_terminal_join_eviction",
+    "universal_scope": true
+  },
+  "next_work_unit": {
+    "id": "shard:map669_target_receipt_fixture_replay",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Run one no-retry map-669 fixture replay without authserver and prove the requested complete Hazard retry retains planner, launch, progress, and terminal fields in the compact replay.",
+    "worldserver_start_maximum": 1,
+    "gameplay_mutations_allowed": false
+  }
+}
