@@ -10,77 +10,26 @@ PATH_VALIDATION = (
 )
 
 
-def _target_floor_gate(*, target_floor_valid: bool,
-                       progressive_static_route: bool,
-                       strict_native_descent: bool) -> bool:
-    """Model only the planner's target-floor admission predicate."""
-    return target_floor_valid or (
-        progressive_static_route and not strict_native_descent
-    )
-
-
-def _coarse_z_gate(*, z_mismatch: bool,
-                   progressive_static_route: bool,
-                   strict_native_descent: bool) -> bool:
-    """Model the planner's early height rejection predicate."""
-    return not z_mismatch or (
-        progressive_static_route and not strict_native_descent
-    )
-
-
-def test_coarse_z_mismatch_defers_only_for_non_strict_progressive_routes() -> None:
-    cases = (
-        (True, True, False, True),
-        (True, True, True, False),
-        (True, False, False, False),
-        (False, False, False, True),
-    )
-    for mismatch, progressive, strict, expected in cases:
-        assert _coarse_z_gate(
-            z_mismatch=mismatch,
-            progressive_static_route=progressive,
-            strict_native_descent=strict,
-        ) is expected
-
-
-def test_invalid_runback_target_floor_admits_only_progressive_local_recovery() -> None:
-    # Recorded counterexample: the native entrance target had no floor sample,
-    # while recovery had already admitted progressive segments.
-    cases = (
-        (False, True, False, True),
-        (False, False, False, False),
-        (False, True, True, False),
-        (True, False, False, True),
-        (True, True, False, True),
-        (True, True, True, True),
-    )
-    for target_floor_valid, progressive, strict, expected in cases:
-        assert _target_floor_gate(
-            target_floor_valid=target_floor_valid,
-            progressive_static_route=progressive,
-            strict_native_descent=strict,
-        ) is expected
-
-
-def test_floor_gate_defers_to_the_existing_validated_local_step() -> None:
+def test_floor_probe_defers_to_native_path_before_terminal_rejection() -> None:
     planner = PLANNER.read_text(encoding="utf-8")
     validation = PATH_VALIDATION.read_text(encoding="utf-8")
-    gate = planner.index(
-        "if (!targetFloorValid && (!progressiveStaticRoute || strictNativeDescent))"
+    request_probe = planner.index("float const floorZ =")
+    native_path = planner.index("PathGenerator path(bot)")
+    connected_proof = planner.index(
+        "ClassifyNativePrimaryEndpointAdmission", native_path
     )
     local_fallback = planner.index(
-        "if (!segmentSelected && progressivePathAdmission && !strictNativeDescent)"
+        "if (!segmentSelected && progressivePathAdmission "
+        "&& !strictNativeDescent"
     )
     final_floor_rejection = planner.index(
-        "if (!targetFloorValid)", local_fallback
+        "if (targetFloorRequiresNativeProof)", local_fallback
     )
 
-    assert gate < local_fallback < final_floor_rejection
-    assert (
-        "if (targetFloorValid && std::fabs(floorZ - intent.Z) > 4.0f\n"
-        "        && !sameLevelDeclaredFloorFallback\n"
-        "        && (!progressiveStaticRoute || strictNativeDescent))"
-    ) in planner
+    assert request_probe < native_path < connected_proof
+    assert connected_proof < local_fallback < final_floor_rejection
+    assert "targetZTransitionRequiresNativeProof" in planner
+    assert "route_destination_invalid_z_transition" not in planner[:native_path]
     assert "nativeEndpointFloorValid" in planner
     assert "observation.EndpointFloorValid = endpointFloorValid" in validation
     assert "diagnoseCompleteNativePath" in planner

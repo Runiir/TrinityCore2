@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotExperienceLearningPolicy.h"
+#include "Bots/BotWorldPopulationMgrConnectedSurfacePath.h"
 #include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
 #include "Bots/BotWorldPopulationMgrNativePathValidation.h"
 #include "Bots/BotWorldPopulationMgrMovementPathSelection.h"
@@ -125,20 +126,16 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     std::optional<float> pathReferenceFloorZ = intent.ReferenceFloorZ;
     if (!pathReferenceFloorZ && sameLevelDeclaredFloorFallback)
         pathReferenceFloorZ = bot->GetPositionZ();
-    // A progressive route can still make a validated local step when its
-    // final native runback target has no floor sample in the current map
-    // state.  Complete-path and strict-descent intents remain fail-closed at
-    // the target-floor gate.
-    if (!targetFloorValid && (!progressiveStaticRoute || strictNativeDescent))
-        return reject("route_destination_invalid_floor", "target_floor");
-    // GetHeight can resolve the neighboring floor at a multi-level static
-    // route waypoint.  Let native mmap admission arbitrate that mismatch for
-    // progressive routes, while strict and ordinary movement stay fail-closed.
-    if (targetFloorValid && std::fabs(floorZ - intent.Z) > 4.0f
+    // A request-level height sample is not a topology proof. Multi-level maps
+    // can resolve unrelated geometry below an otherwise connected native
+    // route, so retain these predicates for the terminal reason but let the
+    // PathGenerator establish or refute native connectivity first.
+    bool const targetFloorRequiresNativeProof = !targetFloorValid
+        && (!progressiveStaticRoute || strictNativeDescent);
+    bool const targetZTransitionRequiresNativeProof = targetFloorValid
+        && std::fabs(floorZ - intent.Z) > 4.0f
         && !sameLevelDeclaredFloorFallback
-        && (!progressiveStaticRoute || strictNativeDescent))
-        return reject("route_destination_invalid_z_transition",
-            "target_z_transition");
+        && (!progressiveStaticRoute || strictNativeDescent);
     float const currentGoalDistance = bot->GetExactDist(intent.X, intent.Y,
         intent.Z);
     bool const sameLevelDeclaredMechanicRequest = std::isfinite(
@@ -300,6 +297,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     nativeProof = diagnoseCompleteNativePath(pathOk, path,
         G3D::Vector3(intent.X, intent.Y, intent.Z));
     primaryNativeProof = nativeProof;
+    bool const connectedPolyCorridor = path.HasConnectedPolyCorridor();
     bool const primaryFallbackEligible = progressivePathAdmission
         && !strictNativeDescent && pathOk
         && (pathType & PATHFIND_INCOMPLETE)
@@ -308,8 +306,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         primaryNativeProof, primaryFallbackEligible,
         BotWorldMovement::NativePathHasForbiddenAdmissionFlag(pathType));
     bool boundedLocalMechanicEndpoint = false;
-    if (targetFloorValid && nativeProof.Calculated
-        && nativeProof.Complete)
+    if (targetFloorValid && nativeProof.Calculated && nativeProof.Complete)
     {
         G3D::Vector3 const& verifiedMainEndpoint = path.GetActualEndPosition();
         boundedLocalMechanicEndpoint =
@@ -323,12 +320,25 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                 distanceToGoal(verifiedMainEndpoint.x, verifiedMainEndpoint.y,
                     verifiedMainEndpoint.z),
                 sameLevelDeclaredMechanicRequest);
-        if (nativeProof.Accepted || boundedLocalMechanicEndpoint)
+        BotWorldMovement::NativePrimaryEndpointAdmission const admission =
+            BotWorldMovement::ClassifyNativePrimaryEndpointAdmission(
+                nativeProof,
+                targetFloorRequiresNativeProof
+                    || targetZTransitionRequiresNativeProof,
+                BotWorldMovement::NativePathHasForbiddenAdmissionFlag(
+                    pathType),
+                connectedPolyCorridor, boundedLocalMechanicEndpoint);
+        if (admission
+            != BotWorldMovement::NativePrimaryEndpointAdmission::Rejected)
         {
             segmentX = verifiedMainEndpoint.x;
             segmentY = verifiedMainEndpoint.y;
             segmentZ = verifiedMainEndpoint.z;
-            if (boundedLocalMechanicEndpoint)
+            if (admission == BotWorldMovement::
+                    NativePrimaryEndpointAdmission::ConnectedSurface)
+                traversalMode = "native_connected_surface_path";
+            else if (admission == BotWorldMovement::
+                    NativePrimaryEndpointAdmission::BoundedLocalMechanic)
                 traversalMode = "native_bounded_same_level_mechanic_endpoint";
             segmentSelected = true;
         }
@@ -530,8 +540,6 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         if (strictNativeDescent && !bot->IsInCombat())
             return reject("native_descent_complete_path_required",
                 "complete_path_required");
-        if (!targetFloorValid)
-            return reject("route_destination_invalid_floor", "target_floor");
         if (!pathOk || (pathType & PATHFIND_NOPATH))
             return reject("route_destination_unreachable", "path_admission");
         if (pathType & PATHFIND_NOT_USING_PATH)
@@ -545,6 +553,11 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         if ((pathType & PATHFIND_NORMAL) && !nativeProof.EndpointMatched)
             return reject("route_destination_endpoint_mismatch",
                 "endpoint_match");
+        if (targetFloorRequiresNativeProof)
+            return reject("route_destination_invalid_floor", "target_floor");
+        if (targetZTransitionRequiresNativeProof)
+            return reject("route_destination_invalid_z_transition",
+                "target_z_transition");
         if ((pathType & PATHFIND_NORMAL)
             && !nativeProof.EndpointFloorValid)
             return reject("route_destination_endpoint_floor_invalid",

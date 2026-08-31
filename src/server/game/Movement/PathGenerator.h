@@ -87,6 +87,18 @@ class TC_GAME_API PathGenerator
         Movement::PointsArray const& GetPath() const { return _pathPoints; }
 
         PathType GetPathType() const { return _type; }
+        // Detour's findPath result is an ordered polygon corridor. Expose only
+        // the value needed by admission callers; polygon ownership and route
+        // construction remain private to PathGenerator.
+        bool HasConnectedPolyCorridor() const
+        {
+            if (!_navMesh || !_polyLength)
+                return false;
+            for (uint32 i = 0; i < _polyLength; ++i)
+                if (_pathPolyRefs[i] == INVALID_POLYREF)
+                    return false;
+            return true;
+        }
 
         // shortens the path until the destination is the specified distance from the target point
         void ShortenPathUntilDist(G3D::Vector3 const& point, float dist);
