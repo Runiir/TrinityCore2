@@ -233,6 +233,10 @@ struct Blackboard
     std::string NativeBossState = "unknown";
     std::string NativeEncounterPhase = "unknown";
     std::string NativeWipeState = "unknown";
+    bool EncounterIdentityAuthoritative = false;
+    bool EncounterEpochAuthoritative = false;
+    // The current observer-centered scan has no proven arena-wide bound.
+    bool EncounterArenaObservationComplete = false;
     std::vector<ActorSnapshot> Players;
     std::vector<ActorSnapshot> Hostiles;
     std::vector<ActorSnapshot> Summons;

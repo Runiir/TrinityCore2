@@ -103,6 +103,9 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     snapshot->NativeBossState = Cohort().Raid.EncounterInProgress ? "in_progress" : "not_in_progress";
     snapshot->NativeEncounterPhase = Cohort().Raid.EncounterPhase;
     snapshot->NativeWipeState = Cohort().Raid.WipeState;
+    snapshot->EncounterIdentityAuthoritative = false;
+    snapshot->EncounterEpochAuthoritative = false;
+    snapshot->EncounterArenaObservationComplete = false;
 
     snapshot->Route.NodeId = Cohort().Config.ValidationRouteNodeId;
     snapshot->Route.Kind = Cohort().Config.ValidationRouteNodeKind.empty()

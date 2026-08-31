@@ -23,6 +23,9 @@ def test_shadow_cache_preserves_legacy_snapshot_refresh_order() -> None:
         "BotEncounterHazards::Populate(*snapshot"
     )
     assert "currentScope.EncounterEpoch = 0;" in body
+    assert "snapshot->EncounterIdentityAuthoritative = false;" in body
+    assert "snapshot->EncounterEpochAuthoritative = false;" in body
+    assert "snapshot->EncounterArenaObservationComplete = false;" in body
     assert "currentScope.EncounterEpoch = Cohort().Raid.BossResetGeneration" not in body
     refresh_prefix = body[: body.index("Player* observer = nullptr;")]
     assert "MagmawFacts" not in refresh_prefix

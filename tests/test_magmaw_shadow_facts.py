@@ -210,6 +210,17 @@ static Blackboard WithoutActiveSignals(Blackboard board)
     return board;
 }
 
+static Blackboard ExactLifecycleBoard()
+{
+    Blackboard board = Board();
+    board.CurrentScope.EncounterId = "magmaw";
+    board.CurrentScope.EncounterEpoch = 1;
+    board.EncounterIdentityAuthoritative = true;
+    board.EncounterEpochAuthoritative = true;
+    board.EncounterArenaObservationComplete = true;
+    return board;
+}
+
 static void AssertGeneration(MagmawSignal const& signal, uint64 value)
 {
     assert(signal.Active == MagmawTruth::True);
@@ -226,6 +237,15 @@ static void AssertAllGenerations(MagmawFacts const& facts, uint64 value)
     AssertGeneration(facts.Parasites, value);
 }
 
+static void AssertNoGenerations(MagmawFacts const& facts)
+{
+    assert(!facts.Pillar.Generation.Authoritative());
+    assert(!facts.Crash.Generation.Authoritative());
+    assert(!facts.PincerWarning.Generation.Authoritative());
+    assert(!facts.PincerVehicles.Generation.Authoritative());
+    assert(!facts.Parasites.Generation.Authoritative());
+}
+
 static void AssertCacheLifecycle()
 {
     Blackboard board = Board();
@@ -238,10 +258,21 @@ static void AssertCacheLifecycle()
 
     Blackboard inactive = WithoutActiveSignals(Board());
     auto edgeCache = MagmawFactsCache::ForSnapshot(nullptr, inactive);
+    assert(!edgeCache->Facts().Parasites.ObservedPresent);
+    Blackboard active = Board();
+    ++active.Revision;
+    edgeCache = MagmawFactsCache::ForSnapshot(edgeCache, active);
+    assert(!edgeCache->Facts().LifecycleAuthoritative);
+    assert(edgeCache->Facts().Parasites.ObservedPresent);
+    AssertNoGenerations(edgeCache->Facts());
+
+    inactive = WithoutActiveSignals(ExactLifecycleBoard());
+    edgeCache = MagmawFactsCache::ForSnapshot(nullptr, inactive);
+    assert(edgeCache->Facts().LifecycleAuthoritative);
     assert(edgeCache->Facts().ArenaObservationAuthoritative);
     assert(edgeCache->Facts().Pillar.Active == MagmawTruth::False);
     assert(edgeCache->Facts().Pillar.Authoritative);
-    Blackboard active = Board();
+    active = ExactLifecycleBoard();
     ++active.Revision;
     edgeCache = MagmawFactsCache::ForSnapshot(edgeCache, active);
     AssertAllGenerations(edgeCache->Facts(), 1);

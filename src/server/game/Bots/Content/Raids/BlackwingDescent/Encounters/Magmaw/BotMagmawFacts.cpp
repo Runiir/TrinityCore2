@@ -64,6 +64,7 @@ void ResolveSignal(MagmawSignal& signal, bool projectionAuthoritative,
     bool absenceAuthoritative)
 {
     SortUnique(signal.Sources);
+    signal.ObservedPresent = !signal.Sources.empty();
     if (!signal.Sources.empty())
     {
         signal.Active = MagmawTruth::True;
@@ -114,6 +115,10 @@ MagmawFacts MagmawFactsReducer::Reduce(Blackboard const& board)
         && !board.CurrentScope.EncounterId.empty();
     // EncounterId is currently the shared mechanic profile and no native
     // Magmaw-specific epoch is published. Keep both semantic claims unknown.
+    facts.EncounterIdentityAuthoritative =
+        board.EncounterIdentityAuthoritative;
+    facts.EncounterEpochAuthoritative =
+        board.EncounterEpochAuthoritative;
     facts.LifecycleAuthoritative = facts.CacheScopeComplete
         && facts.EncounterIdentityAuthoritative
         && facts.EncounterEpochAuthoritative;
@@ -137,7 +142,9 @@ MagmawFacts MagmawFactsReducer::Reduce(Blackboard const& board)
         && facts.Bosses.size() == 1;
     ActorSnapshot const* visibleBoss = facts.BossIdentityAuthoritative
         ? board.FindActor(facts.Bosses.front().Guid) : nullptr;
-    facts.ArenaObservationAuthoritative = visibleBoss && visibleBoss->Alive;
+    facts.ArenaObservationAuthoritative = facts.LifecycleAuthoritative
+        && board.EncounterArenaObservationComplete
+        && visibleBoss && visibleBoss->Alive;
     facts.HeadIdentityAuthoritative = facts.ArenaObservationAuthoritative;
     facts.Crash.EvidenceSource = FactSource::VisibleAura;
     facts.PincerWarning.EvidenceSource = FactSource::VisibleAura;
@@ -245,10 +252,13 @@ std::shared_ptr<MagmawFactsCache const> MagmawFactsCache::ForSnapshot(
         counters = current->_counters;
         previous = &current->_facts;
     }
-    auto observeEdge = [previous](MagmawSignal& signal,
+    auto observeEdge = [previous, lifecycleAuthoritative =
+            facts.LifecycleAuthoritative](MagmawSignal& signal,
         MagmawSignal MagmawFacts::* member, uint64& counter)
     {
-        if (signal.Active != MagmawTruth::True || !previous)
+        if (signal.Active != MagmawTruth::True || !previous
+            || !lifecycleAuthoritative
+            || !previous->LifecycleAuthoritative)
             return;
         MagmawSignal const& before = previous->*member;
         if (before.Active == MagmawTruth::False && before.Authoritative)

@@ -64,6 +64,7 @@ struct MagmawActorFact
 struct MagmawSignal
 {
     MagmawTruth Active = MagmawTruth::Unknown;
+    bool ObservedPresent = false;
     bool Authoritative = false;
     MagmawTypedGeneration Generation;
     FactSource EvidenceSource = FactSource::VisibleUnitState;
