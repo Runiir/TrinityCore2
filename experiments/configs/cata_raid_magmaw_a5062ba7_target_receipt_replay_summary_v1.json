@@ -63,50 +63,53 @@
       "finding": "The requested bounded Hazard lifecycle retained actor, intent fingerprint, planner proof, native submission, spline progress, and its terminal outcome without increasing global receipt or sample capacity."
     },
     "same_level_hazard_path_admission_v1": {
-      "status": "failed_live_boundary_not_promoted",
-      "finding": "Complete Hazard paths launched and reached endpoints, but three valid Magmaw-platform Massive Crash destinations were rejected after floor sampling resolved Z near -101 to -104 for actors and requests near Z 210."
+      "status": "not_promoted_producer_endpoint_invalid",
+      "finding": "The same low-floor-sampled request for actor 30007 launched through a bounded complete endpoint and reached safety before later retries became INCOMPLETE|FARFROMPOLY_END. The shared admission path is not the first broken edge."
     },
     "same_level_native_path_proof_v1": {
-      "status": "failed_live_boundary_not_promoted",
-      "finding": "The native proof admitted valid complete paths, but the shared floor-selection boundary still classified same-platform Massive Crash destinations as partial or missing-mmap paths before submission."
+      "status": "not_promoted_no_false_negative_observed",
+      "finding": "The native proof admitted complete same-level progress and rejected later off-navmesh endpoints. No false native-proof result was established."
     }
   },
   "first_broken_edge": {
-    "component": "native_movement_floor_selection",
+    "component": "magmaw_retained_radial_lethal_transition",
     "owner": "hazard",
     "intent_reason": "massive_crash_evade",
-    "gate": "planner_admission",
-    "reason": "wrong_collision_layer_selected",
+    "gate": "encounter_destination_retention",
+    "reason": "fixed_radial_endpoint_outlives_safe_bounded_progress",
     "observations": [
       {
-        "actor_guid": 30002,
-        "receipt_id": 516,
-        "request_z": 210.948013,
-        "actor_z": 210.948013,
-        "resolved_floor_z": -104.00293,
-        "reported_z_delta": 314.950928,
-        "planner_result": "route_destination_partial_path"
+        "actor_guid": 30007,
+        "decision_sequence": 626,
+        "request": [-302.921356, -26.0047035, 210.521393],
+        "resolved_floor_z": -101.750114,
+        "selected_endpoint": [-308.800049, -29.3334656, 209.980377],
+        "planner_result": "native_movement_submitted",
+        "terminal_outcome": "selected_endpoint_reached"
       },
       {
         "actor_guid": 30007,
-        "receipt_id": 528,
-        "request_z": 210.521393,
-        "actor_z": 210.098007,
+        "receipt_id": 636,
+        "request": [-302.921356, -26.0047035, 210.521393],
+        "actor": [-302.471405, -31.8600292, 210.098007],
         "resolved_floor_z": -101.750114,
-        "reported_z_delta": 312.271515,
+        "path_type": 132,
+        "path_flags": ["PATHFIND_INCOMPLETE", "PATHFIND_FARFROMPOLY_END"],
         "planner_result": "route_destination_partial_path"
       },
       {
         "actor_guid": 30008,
         "receipt_id": 644,
-        "request_z": 210.517456,
-        "actor_z": 210.098007,
+        "request": [-303.506256, -25.8412647, 210.517456],
+        "actor": [-302.471405, -31.8600349, 210.098007],
         "resolved_floor_z": -101.340904,
-        "reported_z_delta": 311.858368,
+        "path_type": 132,
+        "path_flags": ["PATHFIND_INCOMPLETE", "PATHFIND_FARFROMPOLY_END"],
         "planner_result": "route_destination_partial_path"
       }
     ],
-    "finding": "The action queue selected lethal Hazard movement. The first failure occurred inside native floor resolution before executor submission, so queue-priority and encounter-tactic changes are out of scope for the repair."
+    "refuted_hypothesis": "The Z -101 to -104 floor sample was selected as the native path endpoint and caused the rejection.",
+    "finding": "PlanMovementPath passes the original requested Z to PathGenerator and uses the low sample only to enable same-level reference fallback. RetainMagmawRadialLethalMovement instead preserves an unclamped 16-yard radial destination. A shorter complete endpoint reached the safe boundary, but the semantic transition did not retire and later drove the same actor toward FARFROMPOLY_END."
   },
   "performance": {
     "chainwielder": {
@@ -163,10 +166,10 @@
     "hazard_rejections_sha256": "55820b57611c9eb5ad5357c4c416f6c3821eb919c680fc8f463ed2d8762c83dd"
   },
   "next_work_unit": {
-    "id": "runtime:native_floor_layer_selection",
-    "owner_skill": "raid-bot-runtime-implementation",
-    "required_action": "Repair the shared floor sampler so same-platform native Hazard destinations retain the reachable platform layer. Preserve cross-floor, missing-map, and forbidden-route no-launch behavior. Do not change queue priority, encounter tactics, or global planner tolerances.",
-    "required_postcondition": "A deterministic regression reproduces the three live Z observations, valid same-platform destinations launch, wrong-floor destinations remain rejected, and one bounded map-669 replay no longer emits the recorded -101 to -104 floor selection for Z 210 Massive Crash requests.",
+    "id": "encounter:magmaw_lethal_transition_safe_completion",
+    "owner_skill": "raid-encounter-implementation",
+    "required_action": "Retire or constrain retained Massive Crash movement when a native bounded endpoint has already placed the actor outside the lethal envelope. Preserve set-and-forget identity during unsafe progress, native path admission, and ordinary player movement. Do not loosen shared planner admission or change queue priority.",
+    "required_postcondition": "A compiled multi-tick regression reproduces the exact low-floor-sampled request, proves the bounded endpoint is safe, retires the semantic Crash transition there, and prevents a later retry toward the FARFROMPOLY_END radial destination while re-entry starts a new typed episode.",
     "worldserver_start_maximum": 1
   }
 }

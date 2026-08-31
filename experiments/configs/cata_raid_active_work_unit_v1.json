@@ -1,16 +1,16 @@
 {
   "behavior_change": true,
   "boss": "magmaw",
-  "classification": "trace_backed_runtime_repair_authorized",
-  "epoch_id": "native_floor_layer_selection_repair_20260831",
+  "classification": "trace_backed_encounter_repair_authorized",
+  "epoch_id": "magmaw_lethal_transition_safe_completion_20260831",
   "evidence_contract_change": false,
-  "gate_state": "one_shared_runtime_repair_required",
-  "next_action": "Repair the native floor sampler so a same-platform Hazard destination near Z 210 cannot select the lower collision layer near Z -101 to -104. Lock the three live observations as regression inputs, preserve wrong-floor and forbidden-path rejection, then run one bounded map-669 replay without authserver.",
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "runtime:native_floor_layer_selection",
+  "gate_state": "one_encounter_transition_repair_required",
+  "next_action": "Repair the retained Magmaw Massive Crash transition so a native bounded endpoint that has already put the actor outside the lethal envelope completes the semantic episode. Lock the successful sequence-626 progress and later sequence-636 off-navmesh retry as one regression, then run one bounded map-669 replay without authserver.",
+  "next_owner_skill": "raid-encounter-implementation",
+  "next_work_unit": "encounter:magmaw_lethal_transition_safe_completion",
   "observed_at_commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
   "immutable_input_commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "owner_skill": "raid-encounter-implementation",
   "program_scope": {
     "acceptance_admitted": false,
     "authserver_start_admitted": false,
@@ -28,22 +28,23 @@
   "raid": "blackwing_descent",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "One shared native floor-layer selection repair at the PlanMovementPath admission boundary, plus deterministic regression coverage for the three captured map-669 Massive Crash observations.",
+    "allowed_change": "One Magmaw event-movement semantic-completion repair, plus deterministic multi-tick regression coverage for the captured safe bounded endpoint and later off-navmesh retry.",
     "forbidden": [
       "authserver start or manual-login validation",
       "increasing global receipt or sample capacity",
       "global arbitration priority changes",
-      "global planner-tolerance increases or unbounded fallback sampling",
+      "shared planner admission, floor-selection, tolerance, or fallback changes",
       "class DPS, pet, consumable, Bloodlust, boss-script, or database-content changes",
-      "changing Magmaw strategy, bait ownership, lane assignment, or movement priority",
-      "accepting a path solely because its endpoint is numerically close while its selected floor is incompatible",
+      "changing Magmaw bait ownership, lane assignment, target priority, or movement priority",
+      "treating a submitted movement request as semantic completion without measured safe actor progress",
       "a second live attempt before the first repaired replay is published and reviewed"
     ],
     "required_postconditions": [
-      "actor and requested destination near Z 210 resolve to the reachable platform layer rather than the lower collision layer near Z -101 to -104",
-      "the captured requests for actors 30002, 30007, and 30008 are deterministic regression cases",
-      "cross-floor, missing-map, partial-path, and forbidden-route negatives still do not launch",
-      "one requested Hazard receipt still retains actor, intent fingerprint, planner result, native launch, spline progress, and terminal outcome",
+      "actor 30007 sequence 626 reaching the bounded endpoint outside the Massive Crash envelope retires the same semantic episode",
+      "the retired episode cannot later resubmit the same fixed radial destination as the sequence-636 INCOMPLETE|FARFROMPOLY_END retry",
+      "unsafe partial progress retains one set-and-forget intent and destination across ticks",
+      "re-entry into a lethal envelope starts one new typed episode",
+      "Pillar behavior remains covered if the shared Magmaw lethal-transition helper changes",
       "the completion watchdog stops the single live replay on clear or the first truthful failure",
       "the immutable run is published and remotely verified before local eviction",
       "all changed C++ files remain below 1000 physical lines"
@@ -51,7 +52,7 @@
   },
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_a5062ba7_target_receipt_replay_summary_v1.json",
-    "sha256": "9e3737f6fd495c4f039b7345d2e1522523aa9ae3ca2cb77c1e304e78a8e26a3b",
+    "sha256": "47359d55f8fa0d331001930d5658e6e67848e947311fea72fda40cbd8fc47dc8",
     "source_commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
     "source_tree": "82dfb02a84c7c766772d9b81aa9ecce8eed14da2",
     "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_a5062ba7_magmaw_target_receipt_replay_20260831.dvc",
@@ -71,5 +72,5 @@
     ]
   },
   "mode": "10N",
-  "work_unit": "runtime:native_floor_layer_selection"
+  "work_unit": "encounter:magmaw_lethal_transition_safe_completion"
 }

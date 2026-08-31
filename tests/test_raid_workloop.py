@@ -343,24 +343,22 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "evidence:magmaw_current_path_boundary_fixture_expansion"
+        "encounter:magmaw_lethal_transition_safe_completion"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["classification"] == "implementation_pending_fixture_expansion"
-    assert active["next_owner_skill"] == "raid-evidence-lifecycle"
-    assert active["ready_for_live_verification"] is active["descriptor_valid"]
-    assert active["program_scope"]["gameplay_mutations_allowed"] is False
+    assert active["classification"] == "trace_backed_encounter_repair_authorized"
+    assert active["next_owner_skill"] == "raid-encounter-implementation"
+    assert active["ready_for_bounded_repair"] is active["descriptor_valid"]
+    assert active["program_scope"]["gameplay_mutations_allowed"] is True
     assert active["program_scope"]["worldserver_start_admitted"] is True
     assert active["program_scope"]["authserver_start_admitted"] is False
     assert active["source_handoff"]["path"].endswith(
-        "cata_raid_map669_composite_replay_gameplay_failure_handoff_v1.json"
+        "cata_raid_magmaw_a5062ba7_target_receipt_replay_summary_v1.json"
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["validation_clock"]["policy"] == "completion_watchdog"
-    assert "no-retry map-669 fixture-expansion" in active["next_action"].lower()
-    assert "global arbitration priority or planner-tolerance changes" in (
-        active["scope_lock"]["forbidden"]
-    )
+    assert "bounded endpoint" in active["next_action"].lower()
+    assert "global arbitration priority changes" in active["scope_lock"]["forbidden"]
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False

@@ -540,6 +540,14 @@
       "architecture_reviewed_through_occurrence_count": 1,
       "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary121_movement_lifecycle_recurrence_handoff_20260829.md"
     },
+    "magmaw_lethal_movement_safe_completion_missing": {
+      "owner": "encounter_movement_transition",
+      "parent": "magmaw_parasite_containment_failure",
+      "invariant": "a retained Magmaw Crash or Pillar escape completes when measured same-floor movement places the actor outside the lethal envelope, even when the native planner selects a shorter bounded endpoint than the original radial request; later ticks cannot retry an off-navmesh endpoint for the completed episode",
+      "first_observed_run_id": "trinity-magmaw-a5062ba7-target-receipt-replay.attempt1",
+      "architecture_reviewed_through_occurrence_count": 1,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_a5062ba7_target_receipt_replay_summary_v1.json"
+    },
     "stationary_combat_masks_movement_nonprogress": {
       "owner": "shared_movement_progress_witness",
       "invariant": "movement progress timestamps advance only after measured actor displacement; combat, casting, candidate submission, and retained movement ownership cannot hide a stationary movement stall",
@@ -1580,9 +1588,10 @@
       "blockers": {
         "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "absent",
         "movement_receipt_terminal_join_eviction": "absent",
-        "same_level_movement_path_floor_false_negative": "occurred",
+        "magmaw_lethal_movement_safe_completion_missing": "occurred",
+        "same_level_movement_path_floor_false_negative": "absent",
         "same_level_encounter_hazard_path_rejection": "occurred",
-        "same_level_native_path_proof_false_negative": "occurred",
+        "same_level_native_path_proof_false_negative": "absent",
         "magmaw_parasite_control_allows_player_infection": "not_causally_closed",
         "native_planner_executor_launch_divergence": "absent_for_complete_paths"
       },
@@ -1591,7 +1600,7 @@
       "worldserver_log_sha256": "0b17becd839f6b76b8c048834b0aa338e47754356e40a9f82b8539776fd183e0",
       "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_a5062ba7_magmaw_target_receipt_replay_20260831.dvc",
       "evidence": "experiments/configs/cata_raid_magmaw_a5062ba7_target_receipt_replay_summary_v1.json",
-      "note": "Chainwielder and Drudges cleared. Hazard receipt 579 retained its complete planner, launch, progress, and selected_endpoint_reached lifecycle. Magmaw stopped at the death-loop watchdog after the floor sampler resolved three valid Z 210 Massive Crash destinations onto the lower collision layer near Z -101 to -104 and rejected them before executor submission."
+      "note": "Chainwielder and Drudges cleared. Hazard receipt 579 retained its complete planner, launch, progress, and selected_endpoint_reached lifecycle. For Massive Crash, actor 30007 used the original Z 210 request despite a low diagnostic floor sample, launched through a bounded complete endpoint at sequence 626, and reached safety. The encounter transition retained the fixed 16-yard radial destination and later retried it from the platform edge as INCOMPLETE|FARFROMPOLY_END at receipt 636. The shared floor and native-proof hypotheses are refuted; semantic safe completion is the first broken edge."
     }
   ]
 }
