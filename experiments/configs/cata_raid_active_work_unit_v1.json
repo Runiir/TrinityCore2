@@ -2,14 +2,14 @@
   "behavior_change": false,
   "boss": "magmaw",
   "classification": "failed",
-  "epoch_id": "native_path_checkpoint_compile_repair_20260831",
-  "evidence_contract_change": false,
-  "gate_state": "full_build_compile_repair_required",
-  "next_action": "Repair the two confirmed compile errors in BotWorldPopulationMgrNativePathCheckpoint.cpp, verify the exact translation unit, then complete the worldserver build with eight jobs. Do not start a server or change runtime behavior.",
+  "epoch_id": "magmaw_shadow_candidate_receipt_correlation_20260831",
+  "evidence_contract_change": true,
+  "gate_state": "shadow_observation_telemetry_required",
+  "next_action": "Add behavior-neutral Magmaw task, comparison, and selected-candidate-to-native-receipt correlation diagnostics. Keep legacy authority, compile and test the production helpers, and do not start a server.",
   "next_owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "runtime:native_path_checkpoint_compile_repair",
-  "observed_at_commit": "3410e71a681a0abb5e316a0a13e505d933f96a9c",
-  "immutable_input_commit": "3410e71a681a0abb5e316a0a13e505d933f96a9c",
+  "next_work_unit": "runtime:magmaw_shadow_candidate_receipt_correlation",
+  "observed_at_commit": "63326570c0a67f7c7961c0da8308f8f70f5d017c",
+  "immutable_input_commit": "63326570c0a67f7c7961c0da8308f8f70f5d017c",
   "owner_skill": "raid-bot-runtime-implementation",
   "program_scope": {
     "acceptance_admitted": false,
@@ -25,40 +25,46 @@
   "raid": "blackwing_descent",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "One behavior-neutral compile repair in BotWorldPopulationMgrNativePathCheckpoint.cpp: bind the Git hash as a safe string view or string before measuring it, and provide a local millisecond clock using the established GameTime system-point convention. Includes compile verification only.",
+    "allowed_change": "One behavior-neutral diagnostic correlation slice: expose exact transfer-lane lifecycle, immutable destinations, timing, active and retired task outcomes, and shadow/legacy candidate keys; propagate only the selected legacy Magmaw movement candidate key through the already-selected native movement intent into its diagnostic launch receipt and JSON. Add focused compiled fixtures and source guards.",
     "forbidden": [
-      "changing native-path checkpoint admission semantics, fixture identity, source-commit prefix semantics, route stages, outcomes, or JSON evidence",
-      "changing action arbitration, movement ownership, MMAP floors, path tolerances, fallback sampling, progress rules, or native execution",
-      "changing Magmaw strategy, shadow tasks, coordinator, encounter scripts, class rotations, pet behavior, DPS/HPS, consumables, cooldowns, Bloodlust, or database state",
-      "starting authserver, worldserver, a live shard, or a gameplay canary",
-      "editing any generated artifact, DVC payload, or unrelated source file"
+      "selecting, submitting, arbitrating, executing, or granting authority to a shadow candidate",
+      "changing BotAdaptiveMagmawStrategy conditions, proposal order, geometry, assignments, priorities, utility, expiry, targets, or gameplay behavior",
+      "using the diagnostic candidate key in fingerprinting, admission, planning, arbitration, retry, movement ownership, MMAP floors, path tolerances, fallbacks, or execution",
+      "changing encounter scripts, class rotations, pet behavior, DPS/HPS, consumables, cooldowns, Bloodlust, database state, provisioning, or capture scheduling",
+      "starting authserver, worldserver, a live shard, a fixture replay, or a gameplay canary",
+      "adding branches to BotAdaptiveMagmawStrategy::Propose or ProposeHazardMovement",
+      "building the post-capture verifier inside this runtime-owned work unit"
     ],
     "required_postconditions": [
-      "the source-commit prefix comparison remains exact for GitRevision::GetHash",
-      "NowMs is local to the translation unit and matches the established GameTime millisecond convention",
-      "the exact translation unit compiles",
-      "cmake --build build --target worldserver -j8 succeeds",
-      "the changed C++ file remains below 1000 physical lines",
-      "no behavior-bearing logic changes"
+      "task diagnostics expose exact lifecycle scope, episode and task generations, immutable destination XYZ, start/progress/observation times, initial/best/last distance, sample counts, state, suspension, failure, and retirement reason",
+      "comparison diagnostics expose exact shadow candidate key, legacy candidate key, scope key, shadow destination, legacy destination, outcome, counts, generations, ambiguity, and divergence bits",
+      "the selected legacy adaptive_magmaw pillar_bait_switch candidate key is copied to the native movement intent and then to the matching movement planner launch receipt",
+      "non-Magmaw and non-selected movement behavior remains unchanged and an empty diagnostic key remains valid",
+      "candidate-key telemetry is never read by behavior-bearing code",
+      "snapshotless reset clears every new comparison field",
+      "compiled production-helper fixtures cover exact correlation, mismatch, ambiguity, reset, active and retired task JSON, and empty-key compatibility",
+      "new or extracted functions have CCN at most 15 and NLOC at most 100; pre-existing touched callers gain only straight-line diagnostic assignments with unchanged CCN",
+      "all changed C and C++ source and header files remain below 1000 physical lines"
     ]
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_native_path_checkpoint_compile_repair_handoff_v1.json",
-    "sha256": "6fd2687d3d6a530b4c33b98874ea731cd703168034f16d712a1b3c7633d33c89",
-    "source_commit": "3410e71a681a0abb5e316a0a13e505d933f96a9c",
-    "source_tree": "5a9c4b431c90c6ea403d11c9a5762c4aea7d5a91"
+    "path": "experiments/configs/cata_raid_magmaw_shadow_correlation_telemetry_handoff_v1.json",
+    "sha256": "21529863bbcdd1da7618d27be2319337868b00741fed92c6da104ce4112cea0c",
+    "source_commit": "63326570c0a67f7c7961c0da8308f8f70f5d017c",
+    "source_tree": "c493241a8ce96c32841c98300d08d5565e311fbb"
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "compile_only_no_live_run",
+    "repair_policy": "compiled_diagnostics_no_live_run",
     "terminal_edges": [
-      "full_build_verified",
+      "correlation_telemetry_verified",
+      "fixture_failure",
       "compile_failure",
       "scope_violation",
       "explicit_interruption"
     ]
   },
   "mode": "10N",
-  "work_unit": "runtime:native_path_checkpoint_compile_repair"
+  "work_unit": "runtime:magmaw_shadow_candidate_receipt_correlation"
 }

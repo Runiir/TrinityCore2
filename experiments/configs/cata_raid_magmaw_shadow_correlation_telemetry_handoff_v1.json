@@ -1,0 +1,41 @@
+{
+  "schema": "cata_raid_architecture_handoff_v1",
+  "handoff_id": "magmaw_shadow_correlation_telemetry_20260831",
+  "source_commit": "63326570c0a67f7c7961c0da8308f8f70f5d017c",
+  "source_tree": "c493241a8ce96c32841c98300d08d5565e311fbb",
+  "classification": "architecture_observation_gap",
+  "behavior_authority": "legacy_only",
+  "verified": {
+    "shadow_semantics_focused_tests_passed": 8,
+    "worldserver_full_build_jobs": 8,
+    "worldserver_full_build_passed": true,
+    "shadow_candidate_execution_enabled": false
+  },
+  "first_broken_edge": {
+    "component": "Magmaw shadow task and native movement diagnostics",
+    "finding": "Current JSON omits the immutable task destination, lifecycle scope, exact shadow and legacy candidate keys, and an exact candidate-key field on the native movement receipt.",
+    "effect": "A live capture could report equivalent intents but could not prove destination stability or causally join the compared legacy candidate to its native receipt and physical progress.",
+    "confidence": "high"
+  },
+  "next_phase": {
+    "work_unit": "runtime:magmaw_shadow_candidate_receipt_correlation",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Add behavior-neutral bounded diagnostics that preserve the persistent task contract and carry the selected legacy candidate key into its native movement receipt.",
+    "behavior_cutover_allowed": false
+  },
+  "required_invariants": [
+    "legacy Magmaw remains the only gameplay authority and the shadow candidate is never submitted",
+    "task JSON exposes exact lifecycle scope, immutable destination, task timing, distance, and active or retired terminal state",
+    "intent comparison JSON exposes exact shadow and legacy candidate keys and compared destinations",
+    "only the selected legacy Magmaw movement candidate sets the diagnostic candidate key on its native movement intent",
+    "the movement planner receipt copies and publishes that key without consulting it for fingerprinting, admission, planning, arbitration, retry, or execution",
+    "diagnostic strings are bounded and reset with their owning observation",
+    "compiled fixtures prove correlation, reset, ambiguity, and no behavior-bearing use",
+    "all changed C and C++ files remain below 1000 physical lines"
+  ],
+  "promotion_gate": {
+    "next_work_unit": "evidence:magmaw_shadow_observation_gate_verifier",
+    "required_evidence": "A deterministic compact verifier over normalized status, diagnosis, trace, and native movement receipt rows before any live start.",
+    "live_capture_allowed_in_this_phase": false
+  }
+}
