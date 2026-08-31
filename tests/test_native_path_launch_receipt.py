@@ -14,6 +14,10 @@ PROGRESS_SOURCE = (
     ROOT
     / "src/server/game/Bots/BotWorldPopulationMgrMovementProgressDiagnostics.cpp"
 )
+RETENTION_SOURCE = (
+    ROOT
+    / "src/server/game/Bots/BotWorldPopulationMgrMovementReceiptRetention.cpp"
+)
 PROGRESS_HEADER = (
     ROOT
     / "src/server/game/Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
@@ -34,6 +38,7 @@ HARNESS = r"""
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -499,6 +504,78 @@ int main()
     assert(boundedPublicationJson.find("\"payload_complete\":false")
         != std::string::npos);
 
+    // One causally requested receipt survives unrelated churn without
+    // increasing either the retained or published global capacities.
+    MovementProgressDiagnostics().ClearAll();
+    MovementProgressDiagnostics().RequestRetention(2, 50001);
+    for (std::uint64_t id = 1; id <= 140; ++id)
+        MovementProgressDiagnostics().Arm(id, 50001, 669, 42, scope,
+            float(id), 20.0f, 210.0f, 0.0f, 20.0f, 210.0f,
+            true, std::uint32_t(id), float(id), 20.0f, 210.0f, id);
+    NativeMovementProgressObservation const requested2 =
+        MovementProgressDiagnostics().ForReceipt(2);
+    assert(requested2.Available);
+    assert(requested2.Terminal);
+    NativeMovementProgressPublication requestedPublication =
+        MovementProgressDiagnostics().RecentForBot(50001);
+    assert(requestedPublication.RequestedReceiptId == 2);
+    assert(requestedPublication.RetainedReceiptCount
+        == MovementProgressDiagnosticSidecar::MaxReceiptsPerBot);
+    assert(requestedPublication.Receipts.size()
+        == NativeMovementProgressPublication::MaxReceipts);
+    assert(std::any_of(requestedPublication.Receipts.begin(),
+        requestedPublication.Receipts.end(), [](auto const& observation)
+        { return observation.ReceiptId == 2; }));
+    std::string const requestedPublicationJson =
+        MovementProgressPublicationJson(requestedPublication);
+    assert(requestedPublicationJson.find("\"requested_receipt_id\":2")
+        != std::string::npos);
+    assert(requestedPublicationJson.find("\"receipt_capacity\":4")
+        != std::string::npos);
+    MovementProgressDiagnostics().RequestRetention(141, 50001);
+    MovementProgressDiagnostics().Arm(141, 50001, 669, 42, scope,
+        141.0f, 20.0f, 210.0f, 140.0f, 20.0f, 210.0f,
+        true, 141, 141.0f, 20.0f, 210.0f, 141);
+    assert(MovementProgressDiagnostics().RecentForBot(50001)
+        .RequestedReceiptId == 141);
+
+    // The planner requests retention only for a complete Hazard retry that
+    // follows an incomplete path under the same actor and intent fingerprint.
+    MovementPlannerDiagnostics().ClearAll();
+    Intent hazardIntent = intent;
+    hazardIntent.Owner = BotMovementArbitration::Owner::Hazard;
+    hazardIntent.IntentReason = "massive_crash_evade";
+    std::uint64_t const incompleteId = BeginMovementPlannerReceipt(
+        30007, 669, hazardIntent, scope, 0, 1.0f, 2.0f, 210.0f, true);
+    PathPlan incompletePlan;
+    NativePathProofObservation incompleteProof;
+    incompleteProof.Available = true;
+    incompleteProof.Calculated = true;
+    incompleteProof.Complete = false;
+    RecordMovementPlannerOutcome(incompleteId, 30007, 669, hazardIntent,
+        true, hazardIntent.Z, true, "planner_admission", false,
+        "route_destination_unreachable", incompletePlan, &incompleteProof);
+    std::uint64_t const retryId = BeginMovementPlannerReceipt(
+        30007, 669, hazardIntent, scope, 0, 1.0f, 2.0f, 210.0f, true);
+    PathPlan retryPlan;
+    retryPlan.Selected = true;
+    retryPlan.SegmentX = hazardIntent.X;
+    retryPlan.SegmentY = hazardIntent.Y;
+    retryPlan.SegmentZ = hazardIntent.Z;
+    NativePathProofObservation retryProof;
+    retryProof.Available = true;
+    retryProof.Calculated = true;
+    retryProof.Complete = true;
+    RecordMovementPlannerOutcome(retryId, 30007, 669, hazardIntent,
+        true, hazardIntent.Z, true, "planner_admission", true, "",
+        retryPlan, &retryProof);
+    MovementProgressDiagnostics().Arm(retryId, 30007, 669, 42, scope,
+        hazardIntent.X, hazardIntent.Y, hazardIntent.Z,
+        1.0f, 2.0f, 210.0f, true, 900,
+        hazardIntent.X, hazardIntent.Y, hazardIntent.Z, 1000);
+    assert(MovementProgressDiagnostics().RecentForBot(30007)
+        .RequestedReceiptId == retryId);
+
     std::cout << "{\"planner\":" << serialized
         << ",\"receipt_progress\":" << receipt598HistoryJson << "}";
 }
@@ -526,6 +603,7 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
             str(ROOT / "dep/g3dlite/include"),
             str(harness),
             str(SOURCE),
+            str(RETENTION_SOURCE),
             str(PROGRESS_SOURCE),
             "-o",
             str(binary),

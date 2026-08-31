@@ -26,13 +26,43 @@ void MovementProgressDiagnosticSidecar::RetainReceipt(
     receipts.push_back(receiptId);
     while (receipts.size() > MaxReceiptsPerBot)
     {
-        std::uint64_t const expired = receipts.front();
-        receipts.pop_front();
+        auto requestedAt = _requestedReceiptByGuid.find(botGuid);
+        std::uint64_t const requested = requestedAt == _requestedReceiptByGuid.end()
+            ? 0 : requestedAt->second;
+        auto expiredAt = receipts.begin();
+        while (expiredAt != receipts.end() && *expiredAt == requested)
+            ++expiredAt;
+        if (expiredAt == receipts.end())
+            break;
+        std::uint64_t const expired = *expiredAt;
+        receipts.erase(expiredAt);
         _byReceipt.erase(expired);
         auto active = _activeReceiptByGuid.find(botGuid);
         if (active != _activeReceiptByGuid.end() && active->second == expired)
             _activeReceiptByGuid.erase(active);
     }
+}
+
+void MovementProgressDiagnosticSidecar::RequestRetention(
+    std::uint64_t receiptId, std::uint64_t botGuid)
+{
+    if (!receiptId || !botGuid)
+        return;
+    auto requested = _requestedReceiptByGuid.find(botGuid);
+    if (requested != _requestedReceiptByGuid.end())
+    {
+        auto observation = _byReceipt.find(requested->second);
+        bool const published = _requestedReceiptPublishedByGuid[botGuid];
+        if (observation == _byReceipt.end()
+            || (observation->second.Terminal && published))
+        {
+            requested->second = receiptId;
+            _requestedReceiptPublishedByGuid[botGuid] = false;
+        }
+        return;
+    }
+    _requestedReceiptByGuid[botGuid] = receiptId;
+    _requestedReceiptPublishedByGuid[botGuid] = false;
 }
 
 void MovementProgressDiagnosticSidecar::Finish(
@@ -273,7 +303,7 @@ MovementProgressDiagnosticSidecar::ForReceipt(std::uint64_t receiptId) const
 }
 
 NativeMovementProgressPublication
-MovementProgressDiagnosticSidecar::RecentForBot(std::uint64_t botGuid) const
+MovementProgressDiagnosticSidecar::RecentForBot(std::uint64_t botGuid)
 {
     NativeMovementProgressPublication publication;
     publication.BotGuid = botGuid;
@@ -284,6 +314,9 @@ MovementProgressDiagnosticSidecar::RecentForBot(std::uint64_t botGuid) const
 
     publication.Available = true;
     publication.ActiveReceiptId = ActiveReceipt(botGuid);
+    auto requested = _requestedReceiptByGuid.find(botGuid);
+    publication.RequestedReceiptId = requested == _requestedReceiptByGuid.end()
+        ? 0 : requested->second;
     publication.RetainedReceiptCount = retained->second.size();
     auto append = [this, &publication](std::uint64_t receiptId)
     {
@@ -294,6 +327,11 @@ MovementProgressDiagnosticSidecar::RecentForBot(std::uint64_t botGuid) const
 
     if (publication.ActiveReceiptId)
         append(publication.ActiveReceiptId);
+    bool const requestedAvailable = publication.RequestedReceiptId
+        && _byReceipt.find(publication.RequestedReceiptId) != _byReceipt.end();
+    if (requestedAvailable
+        && publication.RequestedReceiptId != publication.ActiveReceiptId)
+        append(publication.RequestedReceiptId);
     for (auto receipt = retained->second.rbegin();
         receipt != retained->second.rend()
             && publication.Receipts.size()
@@ -306,6 +344,8 @@ MovementProgressDiagnosticSidecar::RecentForBot(std::uint64_t botGuid) const
     publication.OmittedReceiptCount = publication.RetainedReceiptCount
         > publication.Receipts.size()
         ? publication.RetainedReceiptCount - publication.Receipts.size() : 0;
+    if (requestedAvailable)
+        _requestedReceiptPublishedByGuid[botGuid] = true;
     return publication;
 }
 
@@ -319,12 +359,16 @@ void MovementProgressDiagnosticSidecar::ClearBot(std::uint64_t botGuid)
         _receiptIdsByGuid.erase(receipts);
     }
     _activeReceiptByGuid.erase(botGuid);
+    _requestedReceiptByGuid.erase(botGuid);
+    _requestedReceiptPublishedByGuid.erase(botGuid);
 }
 
 void MovementProgressDiagnosticSidecar::ClearAll()
 {
     _byReceipt.clear();
     _activeReceiptByGuid.clear();
+    _requestedReceiptByGuid.clear();
+    _requestedReceiptPublishedByGuid.clear();
     _receiptIdsByGuid.clear();
 }
 
@@ -452,6 +496,7 @@ std::string MovementProgressPublicationJson(
          << (publication.Available ? "true" : "false")
          << ",\"bot_guid\":" << publication.BotGuid
          << ",\"active_receipt_id\":" << publication.ActiveReceiptId
+         << ",\"requested_receipt_id\":" << publication.RequestedReceiptId
          << ",\"ordering\":\"active_then_newest\""
          << ",\"receipts\":[";
     for (std::size_t index = 0; index < publication.Receipts.size(); ++index)

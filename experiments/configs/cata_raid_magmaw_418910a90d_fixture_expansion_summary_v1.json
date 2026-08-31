@@ -1,0 +1,140 @@
+{
+  "schema": "cata_raid_magmaw_fixture_expansion_summary_v1",
+  "purpose": "fixture_expansion_replay",
+  "classification": "observation_only_fixture_expansion_gameplay_failure_partial_boundary",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "source": {
+    "commit": "418910a90d3ba398384dcd359920b9f12ab0c3e4",
+    "tree": "a22b5cd80e5a1443c52558d6506f89b61e572e2b",
+    "worktree_clean_during_run": true,
+    "binary_sha256": "ca346004324f34427bd3409dd344bec19defb413d2c4af24e05e3a5009cfb144",
+    "config_sha256": "c5e054f61396d5e9149d1da1594b259c9f5cc3297b0281e0d7d67fc0cb72b6d8",
+    "configure_ticket_id": "raid-build-0a71c2cb48a84bc99b4213a314f4b975",
+    "worldserver_build_ticket_id": "raid-build-af4c06008f9a4ac7961d88f824e3c777"
+  },
+  "admission": {
+    "recurrence_admission_sha256": "ddc37222f55a7795b91d47aa55d17e9799c377d65398f9599ef374b498eb0b5a",
+    "checkpoint_seal_sha256": "e0fe8d9a86ac223b6f50c542d920e21b0ed3c2da2ab4b1f2b00c50d58172913f",
+    "fixture_expansion_admitted": true,
+    "gameplay_canary_admitted": false,
+    "gameplay_mutations_allowed": false,
+    "authserver_start_count": 0,
+    "worldserver_start_count": 1,
+    "second_attempt_run": false
+  },
+  "provisioning": {
+    "strict_readback_passed": true,
+    "strict_readback_sha256": "9b58c70d44e3174776721ab37712c420b518d82520ce3a85500aaa4026c8268f",
+    "shard_readback_passed": true,
+    "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0",
+    "roster_size": 10,
+    "all_current_gear_matches_admission": true,
+    "map_id": 669,
+    "instance_id": 8
+  },
+  "capture": {
+    "terminal_reason": "death_loop_watchdog",
+    "controller_death_loop_count": 3,
+    "terminal_status_deaths": 2,
+    "observed_death_events": 2,
+    "elapsed_seconds": 456.373,
+    "chainwielder_cleared": true,
+    "drudges_cleared": true,
+    "magmaw_cleared": false,
+    "final_forced_evidence_complete": true
+  },
+  "fixture_boundaries": {
+    "chainwielder_pre_admission_rejection_isolation_v1": {
+      "status": "production_boundary_met",
+      "finding": "The receiptless Hazard future-pack rejection preserved the Route-owned identity and the same run cleared Chainwielder."
+    },
+    "same_level_floor_observation_v1": {
+      "status": "not_promoted_from_this_run",
+      "finding": "Receipt 571 retained actor XYZ and reached its endpoint, but two intermediate samples resolved floor Z near -91 while the actor remained near Z 210 and marked platform compatibility false. This run does not prove continuous compatible floor observation."
+    },
+    "same_level_hazard_path_admission_v1": {
+      "status": "partial_not_promoted",
+      "actor_guid": 30007,
+      "intent_reason": "massive_crash_evade",
+      "intent_fingerprint": "7a4fd042a9143195",
+      "incomplete_receipt_ids": [531, 536],
+      "complete_retry_receipt_id": 562,
+      "finding": "The same actor and intent selected a fresh complete shorter endpoint after two incomplete paths. Planner admission and MotionMaster point-generator initialization were observed, but the executor launch list was empty and receipt 562 had no retained progress history or terminal outcome."
+    },
+    "same_level_native_path_proof_v1": {
+      "status": "partial_not_promoted",
+      "finding": "Complete and incomplete current native proofs were observed under actor-stable identities, but the incomplete-to-complete receipt 562 lost its consumed multi-tick outcome before diagnosis."
+    },
+    "cross_floor_and_forbidden_no_launch_negatives": {
+      "status": "observed",
+      "finding": "Invalid Z transitions, missing-map paths, partial paths, and the Chainwielder future-pack guard did not launch native movement."
+    }
+  },
+  "first_gameplay_failure": {
+    "scope": "incidental_noncertifying_observation",
+    "actor_guid": 30001,
+    "actor_name": "Mgwtanka",
+    "terminal_at_ms": 1788146402532,
+    "damage_window_ms": 12000,
+    "mangle_damage": 262865,
+    "healing_received": 79770,
+    "finding": "Mangle target ownership was correct and healers were in range with line of sight. During Massive Crash movement, the holy paladin and discipline priest were restricted to instant spells that were unavailable, shielded, or on cooldown, while the restoration druid repeatedly returned no_valid_profile_action. The tank died to Mangle, not to wrong-target selection."
+  },
+  "performance": {
+    "chainwielder": {"party_dps": 86100.0, "party_hps": 5263.944},
+    "drudges": {"party_dps": 116235.0, "party_hps": 30051.883},
+    "magmaw": {
+      "party_dps": 85525.797,
+      "party_hps": 19487.443,
+      "affliction_dps": 30356.439,
+      "affliction_active_dps": 32672.576,
+      "affliction_damage_uptime": 0.745283,
+      "affliction_pet_damage": 1273298,
+      "affliction_pet_damage_share": 0.197853,
+      "hunter_dps": 3304.67,
+      "hunter_damage_uptime": 0.174528,
+      "elemental_dps": 1175.792,
+      "elemental_damage_uptime": 0.066038
+    }
+  },
+  "replay_tool": {
+    "useful": true,
+    "bounded_window_seconds": 31.0,
+    "anchor": "death_loop_watchdog",
+    "party_dps": 90849.935,
+    "party_hps": 9550.258,
+    "observed_death_events": 2,
+    "controller_death_loop_count": 3,
+    "receipt_history_status": "partial",
+    "omitted_receipt_count": 335,
+    "dropped_sample_count": 313,
+    "missing_signal": "target receipt 562 was evicted before its native outcome could be joined to the incomplete-path lifecycle"
+  },
+  "cleanup": {
+    "native_stop_observed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "gate_passed": true
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_418910a90d_magmaw_fixture_expansion_20260831.dvc",
+    "dvc_pointer_sha256": "1cf43a63b8d9b000729b21f101ca7f50c968fa1b81e4d2e71c7d2ecefe600d5d",
+    "dvc_directory_md5": "3b01da73ab893aaf591b763147e9220a.dir",
+    "dvc_directory_size_bytes": 235416642,
+    "dvc_directory_file_count": 22,
+    "remote_status": "in_sync",
+    "report_sha256": "cb28c9184152f44ccd8267553849082ea69ae8dc9cee352d42ca8aad11d0222c",
+    "raw_jsonl_sha256": "57c5b29647c3b4b0d4c8b8d3f7d78d79f89c38d1cc0f7e882f199bea56b509b7",
+    "worldserver_log_sha256": "f04dc13b81e629b5b1c574dbe612f802daccfed38cf44766df72736e031577ea",
+    "tactical_replay_sha256": "14615b92abbff8cef20cdbe9ea20a6d735dce2aabda9da6fa39ed8bd57b6e76e",
+    "tactical_replay_summary_sha256": "e803d3b415d0815065e8d60a6396353cee3bb9430f76d7ecaede9f460bbf966b"
+  },
+  "next_work_unit": {
+    "id": "evidence:magmaw_target_receipt_retention",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Retain a specifically requested Hazard receipt until its incomplete-to-complete lifecycle reaches a terminal outcome or explicit supersession. Do not raise global history volume or change gameplay behavior.",
+    "required_postcondition": "A deterministic replay proves that a target receipt cannot be displaced by unrelated later movement and that the compact extractor joins actor, intent fingerprint, planner result, native launch, spline progress, and terminal outcome.",
+    "worldserver_start_maximum": 0
+  }
+}

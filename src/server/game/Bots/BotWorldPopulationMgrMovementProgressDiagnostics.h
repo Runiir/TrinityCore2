@@ -92,6 +92,7 @@ struct NativeMovementProgressPublication
     bool Available = false;
     std::uint64_t BotGuid = 0;
     std::uint64_t ActiveReceiptId = 0;
+    std::uint64_t RequestedReceiptId = 0;
     std::size_t RetainedReceiptCount = 0;
     std::size_t OmittedReceiptCount = 0;
     std::deque<NativeMovementProgressObservation> Receipts;
@@ -135,13 +136,13 @@ public:
         float splineFinalX, float splineFinalY, float splineFinalZ,
         std::uint64_t observedAtMs);
     void Observe(NativeMovementProgressProbe const& probe);
+    void RequestRetention(std::uint64_t receiptId, std::uint64_t botGuid);
     std::uint64_t ActiveReceipt(std::uint64_t botGuid) const;
     bool ObservationDue(std::uint64_t botGuid,
         std::uint64_t observedAtMs) const;
     NativeMovementProgressObservation ForReceipt(
         std::uint64_t receiptId) const;
-    NativeMovementProgressPublication RecentForBot(
-        std::uint64_t botGuid) const;
+    NativeMovementProgressPublication RecentForBot(std::uint64_t botGuid);
     void ClearBot(std::uint64_t botGuid);
     void ClearAll();
 
@@ -153,6 +154,8 @@ private:
 
     std::map<std::uint64_t, NativeMovementProgressObservation> _byReceipt;
     std::map<std::uint64_t, std::uint64_t> _activeReceiptByGuid;
+    std::map<std::uint64_t, std::uint64_t> _requestedReceiptByGuid;
+    std::map<std::uint64_t, bool> _requestedReceiptPublishedByGuid;
     std::map<std::uint64_t, std::deque<std::uint64_t>> _receiptIdsByGuid;
 };
 

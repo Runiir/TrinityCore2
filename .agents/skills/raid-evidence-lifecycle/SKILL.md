@@ -131,6 +131,15 @@ error, or operator shutdown must force a fresh full diagnosis and trace delta.
 This reduces output/CPU pressure without dropping decision evidence or
 weakening freshness/demultiplexing gates.
 
+When a causal join depends on one native receipt, retain that exact receipt
+until its terminal outcome or explicit supersession has been published. Pin at
+most one requested lifecycle per actor and include it inside the existing
+bounded publication window. Do not raise global receipt/sample capacity or
+enable broad high-frequency tracing to recover one missing join. The compact
+extractor must join actor, intent fingerprint, planner result, native launch,
+spline progress, and terminal outcome for the requested receipt, and must say
+which fields remain unavailable.
+
 ## Publish and minimize disk
 
 Publication and eviction belong to the coordinator/evidence curator, not the babysitter.

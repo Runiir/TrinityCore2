@@ -167,6 +167,16 @@ def _terminal_anchor_ms(report: dict[str, Any], trace: list[dict[str, Any]]) -> 
     return max((_integer(row.get("timestamp_ms")) for row in trace), default=0)
 
 
+def _terminal_anchor_label(report: dict[str, Any]) -> str:
+    terminal = report.get("terminal_failure") or {}
+    reason = str(terminal.get("failure_reason") or "").strip()
+    if reason:
+        return reason
+    if terminal.get("detected"):
+        return "terminal_failure"
+    return "last_trace_entry"
+
+
 def _point(value: dict[str, Any] | None) -> dict[str, Any] | None:
     if not isinstance(value, dict) or value.get("available") is False:
         return None
@@ -403,6 +413,7 @@ def _collect_receipts(
     receipts_truncated = False
     omitted_receipts_by_bot: dict[int, int] = {}
     dropped_samples_by_bot: dict[int, int] = {}
+    requested_receipts: set[tuple[int, int]] = set()
     payload_incomplete = False
 
     def consider(
@@ -489,6 +500,9 @@ def _collect_receipts(
             if not isinstance(publication_receipts, list):
                 history_invalid_count += 1
                 continue
+            requested_receipt_id = _integer(publication.get("requested_receipt_id"))
+            if requested_receipt_id:
+                requested_receipts.add((bot_guid, requested_receipt_id))
             publication_drop_count = sum(
                 _integer(receipt.get("dropped_sample_count"))
                 for receipt in publication_receipts
@@ -612,7 +626,10 @@ def _collect_receipts(
                 "observed_at_basis": timestamp_basis,
                 "decision_action": action,
                 "intent_reason": str(identity.get("intent_reason") or ""),
+                "intent_fingerprint": str(identity.get("intent_fingerprint") or ""),
                 "owner": str(identity.get("owner") or ""),
+                "retention_requested": (bot_guid, receipt_id)
+                in requested_receipts,
                 "scope": identity.get("scope") or history_receipt.get("scope") or {},
                 "actor_before_planning": (
                     _point(receipt.get("actor_before_planning")) or actor_at_launch
@@ -972,6 +989,7 @@ def build_replay(
     trace = _combined_trace(trace_payloads)
     combat_log = _combined_combat_log(combat_payloads)
     terminal_ms = _terminal_anchor_ms(report, trace)
+    terminal_anchor = _terminal_anchor_label(report)
     if terminal_ms <= 0:
         raise ValueError("terminal timestamp cannot be reconstructed")
     start_ms = terminal_ms - round(before_seconds * 1000)
@@ -1089,7 +1107,7 @@ def build_replay(
             ),
         },
         "window": {
-            "anchor": "repeated_decision_watchdog",
+            "anchor": terminal_anchor,
             "terminal_at_ms": terminal_ms,
             "start_ms": start_ms,
             "end_ms": end_ms,
@@ -1123,6 +1141,17 @@ def build_replay(
         },
         "party_dps": derived["dps_hps"]["party_dps"],
         "party_hps": derived["dps_hps"]["party_hps"],
+        "observed_death_events": len(deaths),
+        "controller_death_loop_count": _integer(
+            (((report.get("watchdog") or {}).get("controller_terminal") or {}).get(
+                "death_loop_count"
+            ))
+        ),
+        "terminal_status_deaths": _integer(
+            ((report.get("terminal_failure") or {}).get("terminal_status") or {}).get(
+                "deaths"
+            )
+        ),
         "deaths": derived["deaths"]["count"],
         "movement_reversals": movement["oscillation"]["reversal_count"],
         "vertical_discontinuities": len(movement["vertical_discontinuities"]),

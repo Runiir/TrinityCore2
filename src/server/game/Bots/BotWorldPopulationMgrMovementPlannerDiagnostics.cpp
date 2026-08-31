@@ -147,7 +147,6 @@ std::uint64_t NativePathControlsFingerprint(
         for (unsigned shift = 0; shift < 32; shift += 8)
             appendByte(std::uint8_t((bits >> shift) & 0xffU));
     };
-
     appendUint64(controls.size());
     for (G3D::Vector3 const& control : controls)
     {
@@ -399,6 +398,7 @@ void MovementPlannerDiagnosticSidecar::RecordPlannerOutcome(
     observation.LaunchReceipt.PlannerSelectedZ = plan.SegmentZ;
     if (plannedControls)
         observation.LaunchReceipt.PlannerControls = *plannedControls;
+    RetainCompleteHazardRetry(observation, nativeProof, accepted);
     PublishReceiptUpdate(observation);
 }
 
@@ -664,6 +664,7 @@ void MovementPlannerDiagnosticSidecar::ClearBot(std::uint64_t botGuid)
     _latestByGuid.erase(botGuid);
     _pendingByGuid.erase(botGuid);
     _traceByGuid.erase(botGuid);
+    _incompleteHazardFingerprintByGuid.erase(botGuid);
 }
 
 void MovementPlannerDiagnosticSidecar::ClearAll()
@@ -674,6 +675,7 @@ void MovementPlannerDiagnosticSidecar::ClearAll()
     _traceByGuid.clear();
     _receiptById.clear();
     _receiptIdsByGuid.clear();
+    _incompleteHazardFingerprintByGuid.clear();
     _nextReceiptId = 1;
 }
 

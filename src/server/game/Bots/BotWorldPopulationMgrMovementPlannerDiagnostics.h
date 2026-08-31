@@ -211,12 +211,17 @@ private:
         std::uint64_t botGuid, std::uint32_t mapId);
     bool MatchesContext(Movement::NativePathLaunchContext const& context) const;
     void PublishReceiptUpdate(MovementPlannerObservation const& observation);
+    void RetainCompleteHazardRetry(
+        MovementPlannerObservation const& observation,
+        NativePathProofObservation const* nativeProof, bool accepted);
 
     std::map<std::uint64_t, MovementPlannerObservation> _latestByGuid;
     std::map<std::uint64_t, bool> _pendingByGuid;
     std::map<std::uint64_t, std::deque<TraceObservation>> _traceByGuid;
     std::map<std::uint64_t, MovementPlannerObservation> _receiptById;
     std::map<std::uint64_t, std::deque<std::uint64_t>> _receiptIdsByGuid;
+    std::map<std::uint64_t, std::uint64_t>
+        _incompleteHazardFingerprintByGuid;
     std::uint64_t _nextReceiptId = 1;
 };
 

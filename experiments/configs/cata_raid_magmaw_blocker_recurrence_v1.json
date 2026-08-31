@@ -75,13 +75,6 @@
     ],
     "fixture_expansion_requests": [
       {
-        "fixture_id": "same_level_floor_observation_v1",
-        "from_revision": 3,
-        "to_revision": 4,
-        "causal_signature": "same_level_movement_path_floor_false_negative",
-        "required_production_boundary": "one identity-bound worldserver-backed map-669 receipt for the recorded same-level SampleFloorGap equivalence class must cross PlanMovementPath, native submission, MotionMaster, point-generator initialization, and launched-spline observation through terminal outcome or explicit supersession while retaining continuous actor XYZ and floor compatibility samples"
-      },
-      {
         "fixture_id": "same_level_hazard_path_admission_v1",
         "from_revision": 4,
         "to_revision": 5,
@@ -214,8 +207,17 @@
         "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
         "revision": 1,
         "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state",
-        "evidence_boundary": "observation_only",
+        "evidence_boundary": "production",
         "required_production_boundary": "worldserver-backed map-669 Chainwielder replay on the exact current binary where the same bot has an admitted Route native path or an armed route-owned hazard retry, a receiptless owner=Hazard future_pack_destination rejection is observed, the rejected intent leaves the Route-owned path and retry state unchanged across subsequent ticks, and the bot then completes the Chainwielder hazard exit or reaches one typed terminal edge",
+        "production_evidence": {
+          "path": "experiments/configs/cata_raid_magmaw_418910a90d_fixture_expansion_summary_v1.json",
+          "source_commit": "418910a90d3ba398384dcd359920b9f12ab0c3e4",
+          "source_tree": "a22b5cd80e5a1443c52558d6506f89b61e572e2b",
+          "binary_sha256": "ca346004324f34427bd3409dd344bec19defb413d2c4af24e05e3a5009cfb144",
+          "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_418910a90d_magmaw_fixture_expansion_20260831.dvc",
+          "dvc_pointer_sha256": "1cf43a63b8d9b000729b21f101ca7f50c968fa1b81e4d2e71c7d2ecefe600d5d",
+          "finding": "The receiptless Hazard future-pack rejection preserved the Route-owned identity across subsequent ticks and the same run cleared Chainwielder."
+        },
         "source_evidence": {
           "review_commit": "461fe737791ea714b493354281f844e985ca3117",
           "capture_source_commit": "78e33e65571c50d3bc336f49b7ecbc5d900fc0dc",
@@ -264,12 +266,19 @@
       },
       {
         "fixture_id": "same_level_floor_observation_v1",
-        "revision": 3,
+        "revision": 4,
         "causal_signature": "same_level_movement_path_floor_false_negative",
-        "evidence_boundary": "observation_only",
-        "verification_status": "invalidated_pending_production_boundary",
-        "boundary_audit": "tests/test_native_path_floor_diagnostic.py::test_v71_canary122_production_boundary_remains_explicitly_unclosed",
+        "evidence_boundary": "production",
+        "verification_status": "production_boundary_met",
         "required_production_boundary": "one identity-bound worldserver-backed map-669 same-level SampleFloorGap receipt crossing planner admission and native launch with continuous actor XYZ, spline identity, floor compatibility, and terminal outcome or explicit supersession",
+        "production_evidence": {
+          "path": "experiments/configs/cata_raid_map669_composite_replay_gameplay_failure_handoff_v1.json",
+          "source_commit": "afd09bacaa6d7bb8bfff5699356d90686f6384a0",
+          "source_tree": "e6b28ab23b6987eb4a1bbb70ba6a1a770cff721d",
+          "binary_sha256": "e0774389920feccdc2de4f7d7da80886df6e335ed63ec5f3f8b2538e9a2edb9f",
+          "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_afd09bacaa_map669_composite_replay_gameplay_failure_20260831.dvc",
+          "finding": "The retained map-669 receipt crossed planner admission, native submission, MotionMaster, point-generator initialization, continuous compatible position and floor samples, and a typed terminal outcome."
+        },
         "command": [
           "pixi",
           "run",
@@ -515,7 +524,15 @@
       "first_observed_run_id": "trinity-magmaw-78e33e6557-receipt-history-expansion.attempt1",
       "source_evidence_commit": "461fe737791ea714b493354281f844e985ca3117",
       "implementation_commit": "a75334b519a47ce85804d5d387ba6452fbc54753",
-      "fixture_status": "observation_only_pending_matched_production_replay"
+      "fixture_status": "production_boundary_met",
+      "fixture_verifications": [
+        {
+          "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+          "passed_after_run_id": "trinity-magmaw-418910a90d-fixture-expansion.attempt1",
+          "evidence": "experiments/configs/cata_raid_magmaw_418910a90d_fixture_expansion_summary_v1.json",
+          "source_identity": "418910a90d3ba398384dcd359920b9f12ab0c3e4"
+        }
+      ]
     },
     "current_route_combat_authority_preempted": {
       "owner": "shared_route_action_and_target_authority",
@@ -538,6 +555,15 @@
       ],
       "architecture_reviewed_through_occurrence_count": 12,
       "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary122_planner_launch_divergence_handoff_20260829.md",
+      "fixture_verifications": [
+        {
+          "fixture_id": "same_level_floor_observation_v1",
+          "revision": 4,
+          "passed_after_run_id": "trinity-magmaw-afd09bacaa-map669-composite.attempt1",
+          "evidence": "experiments/configs/cata_raid_map669_composite_replay_gameplay_failure_handoff_v1.json",
+          "source_identity": "afd09bacaa6d7bb8bfff5699356d90686f6384a0"
+        }
+      ],
       "historical_unique_run_count": 16,
       "counting_note": "The ledger records the recent gate-bearing occurrences. Older retained reports plus Canary122 establish sixteen unique runs under this parent invariant."
     },
@@ -1422,6 +1448,66 @@
       "report_sha256": "0f0997248b8f3313994a01fd5b30bcae905c603bf6ca97f3aef7cf1f7f17cd45",
       "evidence": "experiments/configs/cata_raid_magmaw_78e33e6557_receipt_history_fixture_expansion_summary_v1.json",
       "note": "The immutable observation-only capture stopped at bwd.magmaw.chainwielder after 20 hazard_exit_failed decisions with zero deaths. The retained trace review localized a receiptless adaptive Hazard rejection at the future-pack guard overwriting movement state owned by the Route path or its armed hazard retry. Commit a75334b519 isolates that pre-admission rejection in a compiled helper, but the helper does not execute a live map-669 worldserver, PathGenerator, MotionMaster, or multi-tick Chainwielder outcome and therefore remains observation-only."
+    },
+    {
+      "run_id": "trinity-magmaw-afd09bacaa-map669-composite.attempt1",
+      "route_completed": false,
+      "classification": "fixture_expansion_gameplay_failure",
+      "admission": {
+        "source_identity": "afd09bacaa6d7bb8bfff5699356d90686f6384a0",
+        "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+        "suite_receipt_sha256": "97c6e21b29671e8ac914b4d6db5f7ea1e8ffbfa6c63628344c3de2222dc6f9bb",
+        "recurrence_admission_sha256": "282ac95fcd0662e8a386eb8a8a6b6d827b21b084cd9c7cc156775d566e27b8ae",
+        "fixture_revisions": {
+          "chainwielder_pre_admission_rejection_isolation_v1": 1,
+          "same_level_floor_observation_v1": 3,
+          "same_level_hazard_path_admission_v1": 4,
+          "same_level_native_path_proof_v1": 4
+        }
+      },
+      "blockers": {
+        "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "absent",
+        "same_level_movement_path_floor_false_negative": "absent",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_native_path_proof_false_negative": "not_exercised",
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "native_planner_executor_launch_divergence": "absent"
+      },
+      "report_sha256": "29e2326db33cf089a167f4150b1a17421a22232bd5f0a46f2adc1722f9683889",
+      "raw_jsonl_sha256": "634fd7028657122f5f580ec6da171f2839441dc82ba43b8811415f05268e5aa8",
+      "worldserver_log_sha256": "9c504b7cd9f4510c0067091a076be9090440dbf873fae7a9f769664ef42bb5c8",
+      "evidence": "experiments/configs/cata_raid_map669_composite_replay_gameplay_failure_handoff_v1.json",
+      "note": "The map-669 replay cleared Chainwielder and Drudges. It proved receiptless Hazard rejection isolation and one continuous same-level floor lifecycle through native terminal outcome. The incomplete-to-shorter-retry Hazard lifecycle remained only partial. Magmaw ended on a Mangle healing failure."
+    },
+    {
+      "run_id": "trinity-magmaw-418910a90d-fixture-expansion.attempt1",
+      "route_completed": false,
+      "classification": "observation_only_fixture_expansion_gameplay_failure_partial_boundary",
+      "admission": {
+        "source_identity": "418910a90d3ba398384dcd359920b9f12ab0c3e4",
+        "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+        "suite_receipt_sha256": "af7f6b5303fd6247a2f289c18d4e37eed89493479df64954aa2e6662d52285d1",
+        "recurrence_admission_sha256": "ddc37222f55a7795b91d47aa55d17e9799c377d65398f9599ef374b498eb0b5a",
+        "fixture_revisions": {
+          "chainwielder_pre_admission_rejection_isolation_v1": 1,
+          "same_level_floor_observation_v1": 3,
+          "same_level_hazard_path_admission_v1": 4,
+          "same_level_native_path_proof_v1": 4
+        }
+      },
+      "blockers": {
+        "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "absent",
+        "same_level_movement_path_floor_false_negative": "not_exercised",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_native_path_proof_false_negative": "not_exercised",
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "native_planner_executor_launch_divergence": "not_exercised"
+      },
+      "report_sha256": "cb28c9184152f44ccd8267553849082ea69ae8dc9cee352d42ca8aad11d0222c",
+      "raw_jsonl_sha256": "57c5b29647c3b4b0d4c8b8d3f7d78d79f89c38d1cc0f7e882f199bea56b509b7",
+      "worldserver_log_sha256": "f04dc13b81e629b5b1c574dbe612f802daccfed38cf44766df72736e031577ea",
+      "evidence": "experiments/configs/cata_raid_magmaw_418910a90d_fixture_expansion_summary_v1.json",
+      "note": "Chainwielder and Drudges cleared and the pre-admission rejection isolation boundary was reproduced. The same actor and intent selected receipt 562 as a fresh complete shorter retry after two incomplete paths, but the four-receipt publication window evicted its progress and terminal history before diagnosis. The remaining two shared Hazard lifecycle boundaries stay pending."
     }
   ]
 }

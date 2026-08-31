@@ -10,6 +10,9 @@ DIAGNOSTICS = BOT_DIR / "BotWorldPopulationMgrMovementPlannerDiagnostics.cpp"
 PROGRESS_DIAGNOSTICS = (
     BOT_DIR / "BotWorldPopulationMgrMovementProgressDiagnostics.cpp"
 )
+RETENTION_DIAGNOSTICS = (
+    BOT_DIR / "BotWorldPopulationMgrMovementReceiptRetention.cpp"
+)
 EXECUTOR = BOT_DIR / "BotWorldPopulationMgrMovementExecutor.cpp"
 ROUTE_MOVEMENT = BOT_DIR / "BotWorldPopulationMgrValidationRouteMovementCheck.cpp"
 
@@ -224,6 +227,7 @@ int main()
             str(ROOT / "dep/g3dlite/include"),
             str(source),
             str(DIAGNOSTICS),
+            str(RETENTION_DIAGNOSTICS),
             str(PROGRESS_DIAGNOSTICS),
             "-o",
             str(binary),

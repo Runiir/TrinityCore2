@@ -20,6 +20,9 @@ def _movement(receipt_id: int, timestamp_ms: int, z: float, *, submitted: bool) 
     return {
         "available": True,
         "bot_guid": 7,
+        "gate": "executor_admission",
+        "result": "accepted" if submitted else "rejected",
+        "reason": "" if submitted else "route_destination_partial_path",
         "planner": {
             "gate": "path_admission",
             "result": "accepted" if submitted else "rejected",
@@ -30,6 +33,7 @@ def _movement(receipt_id: int, timestamp_ms: int, z: float, *, submitted: bool) 
             "identity": {
                 "bot_guid": 7,
                 "intent_reason": "ranged_formation_restore",
+                "intent_fingerprint": "7a4fd042a9143195",
                 "owner": "mechanic",
                 "scope": {"attempt_id": 1, "route_generation": 4},
             },
@@ -122,6 +126,7 @@ def _receipt_history(receipt_id: int) -> dict:
         "available": True,
         "bot_guid": 7,
         "active_receipt_id": 599,
+        "requested_receipt_id": receipt_id,
         "ordering": "active_then_newest",
         "receipts": [
             {
@@ -309,11 +314,14 @@ def test_recovers_displaced_receipt_progress_history(tmp_path: Path) -> None:
             {
                 "identity": {"head": "abc"},
                 "terminal_failure": {
+                    "failure_reason": "death_loop_watchdog",
                     "elapsed_seconds": 40,
+                    "terminal_status": {"deaths": 3},
                     "raid_runtime": {
                         "admission_receipt": {"committed_at_ms": 1_000_000}
                     },
                 },
+                "watchdog": {"controller_terminal": {"death_loop_count": 4}},
             },
             sort_keys=True,
         ),
@@ -325,6 +333,10 @@ def test_recovers_displaced_receipt_progress_history(tmp_path: Path) -> None:
 
     assert first == second
     assert first_summary == second_summary
+    assert first["window"]["anchor"] == "death_loop_watchdog"
+    assert first_summary["controller_death_loop_count"] == 4
+    assert first_summary["terminal_status_deaths"] == 3
+    assert first_summary["observed_death_events"] == 0
     assert json.dumps(first, sort_keys=True, separators=(",", ":")) == json.dumps(
         second, sort_keys=True, separators=(",", ":")
     )
@@ -339,6 +351,11 @@ def test_recovers_displaced_receipt_progress_history(tmp_path: Path) -> None:
     assert receipt["progress"]["terminal_at_ms"] == 1_028_700
     assert receipt["progress"]["superseded_by_receipt_id"] == 599
     assert receipt["progress"]["terminal_outcome"] == "superseded_by_native_launch"
+    assert receipt["intent_fingerprint"] == "7a4fd042a9143195"
+    assert receipt["retention_requested"] is True
+    assert receipt["planner"]["complete"] is True
+    assert receipt["admission"]["result"] == "accepted"
+    assert receipt["executor"]["spline_launch_succeeded"] is True
     causal = first_summary["causal_assessment"]
     assert causal["suspected_upstream_receipt"]["receipt_id"] == 598
     assert causal["suspected_upstream_receipt"]["sampling_gap_to_infection_ms"] == 2_337

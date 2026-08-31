@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 BOT_DIR = ROOT / "src/server/game/Bots"
 HEADER = BOT_DIR / "BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 SOURCE = BOT_DIR / "BotWorldPopulationMgrMovementPlannerDiagnostics.cpp"
+RETENTION_SOURCE = BOT_DIR / "BotWorldPopulationMgrMovementReceiptRetention.cpp"
+PROGRESS_SOURCE = BOT_DIR / "BotWorldPopulationMgrMovementProgressDiagnostics.cpp"
 PLANNER = BOT_DIR / "BotWorldPopulationMgrMovementPlanner.cpp"
 TRACE = BOT_DIR / "BotWorldPopulationMgrDecisionTrace.cpp"
 DIAGNOSIS = BOT_DIR / "BotWorldPopulationMgrDiagnosis.cpp"
@@ -243,6 +245,8 @@ def test_sidecar_state_and_json_contract(tmp_path):
             str(ROOT / "dep/g3dlite/include"),
             str(harness),
             str(SOURCE),
+            str(RETENTION_SOURCE),
+            str(PROGRESS_SOURCE),
             "-o",
             str(binary),
         ],
