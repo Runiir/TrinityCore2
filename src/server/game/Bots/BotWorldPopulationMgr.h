@@ -7,6 +7,7 @@
 #include "Bots/BotWorldPopulationMgrBotState.h"
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotChainwielderOwnerCheckpoint.h"
+#include "Bots/BotNativePathCheckpoint.h"
 #include "Bots/BotValidationPrepullCheckpoint.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotEncounterBlackboard.h"
@@ -99,6 +100,12 @@ public:
         std::string const& sealSha256,
         std::string const& sourceCommit);
     std::string GetChainwielderOwnerCheckpointJsonForCohort(
+        std::string const& cohortId) const;
+    std::string ArmNativePathCheckpointForCohort(
+        std::string const& cohortId, uint32 actorGuid,
+        std::string const& caseId, std::string const& sealSha256,
+        std::string const& sourceCommit);
+    std::string GetNativePathCheckpointJsonForCohort(
         std::string const& cohortId) const;
     std::string GetCombatLogJsonForCohort(std::string const& cohortId) const;
     std::string StartCombatCalibrationForCohort(std::string const& cohortId, std::string const& mode = "single_target_300", std::string const& targetSpec = "", uint32 seed = 1);
@@ -342,12 +349,15 @@ private:
         BotWorldMovement::Intent const& intent);
     void ObserveChainwielderOwnerCheckpointBeforeUpdate(
         WorldBotState& state, Player* bot);
+    void ObserveNativePathCheckpointBeforeUpdate(
+        WorldBotState& state, Player* bot);
     void MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
         WorldBotState& state, Player* bot);
     std::string ArmChainwielderOwnerCheckpoint(
         uint32 actorGuid, std::string const& sealSha256,
         std::string const& sourceCommit);
     std::string BuildChainwielderOwnerCheckpointJson() const;
+    std::string BuildNativePathCheckpointJson() const;
     std::string BuildControllerRouteHoldJson() const;
     BotControllerRouteHold::Identity CurrentControllerRouteHoldIdentity(
         uint32 actorGuid) const;

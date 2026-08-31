@@ -14,6 +14,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     if (Cohort().Config.ValidationRouteEnable)
         BotWorldMovement::ObserveReceiptTaggedMovementProgress(bot);
 
+    ObserveNativePathCheckpointBeforeUpdate(state, bot);
+
     BeginMeleeAutoAttackDecision(state, bot);
     BotWorldPopulationMgrInternal::ReconcileOnScopeExit meleeAutoAttackReconcile{
         [this, &state, bot]()

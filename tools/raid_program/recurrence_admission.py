@@ -28,6 +28,17 @@ CHAINWIELDER_CHECKPOINT_FIXTURE_ID = (
 CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX = (
     "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint"
 )
+NATIVE_PATH_CHECKPOINT_FIXTURE_ID = (
+    "map669_native_path_production_boundary_v1"
+)
+NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX = (
+    "BotWorld.ValidationFixture.NativePathCheckpoint"
+)
+NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS = {
+    "same_level_floor_observation_v1": (3, 4),
+    "same_level_hazard_path_admission_v1": (4, 5),
+    "same_level_native_path_proof_v1": (4, 5),
+}
 PROFILE_MANIFEST_RELATIVE_PATH = Path("dataset/bot_runtime_profiles/profiles.json")
 
 
@@ -285,6 +296,92 @@ def chainwielder_checkpoint_seal(
     return {**payload, "seal_sha256": hashlib.sha256(canonical).hexdigest()}
 
 
+def native_path_checkpoint_seal(
+    *, worktree: Path, binary: Path, build_receipt: Path, decision: Path,
+    case_id: str, profile_manifest: Path,
+    runtime_profile_overlay: dict[str, Any],
+    expected_runtime_profile_id: str,
+) -> dict[str, str]:
+    """Seal one compiled case and the exact same-level expansion request set."""
+
+    if not isinstance(case_id, str) or not case_id.strip():
+        raise RecurrenceAdmissionError("native_path_checkpoint_case_invalid")
+    decision_value = _load(decision.resolve(), "decision")
+    requests = _fixture_expansion_contract(
+        decision_value, label="native_path_checkpoint"
+    )
+    request_contract = {
+        row["fixture_id"]: (row["from_revision"], row["to_revision"])
+        for row in requests
+    }
+    if request_contract != NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS:
+        raise RecurrenceAdmissionError(
+            "native_path_checkpoint_request_contract_mismatch"
+        )
+    worktree = worktree.resolve()
+    payload = {
+        "schema": CHECKPOINT_SEAL_SCHEMA,
+        "fixture_id": NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+        "case_id": case_id,
+        "purpose": FIXTURE_EXPANSION_PURPOSE,
+        "source_commit": str(_git(worktree, "rev-parse", "HEAD")),
+        "source_tree": str(_git(worktree, "rev-parse", "HEAD^{tree}")),
+        "binary_sha256": sha256_file(binary.resolve()),
+        "build_receipt_sha256": sha256_file(build_receipt.resolve()),
+        "decision_sha256": sha256_file(decision.resolve()),
+        "fixture_expansion_requests_sha256": _canonical_object_sha256(requests),
+        "profile_manifest_sha256": sha256_file(profile_manifest.resolve()),
+        "expected_runtime_profile_id": expected_runtime_profile_id,
+        "runtime_profile_overlay_sha256": _canonical_object_sha256(
+            runtime_profile_overlay
+        ),
+    }
+    canonical = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
+    return {**payload, "seal_sha256": hashlib.sha256(canonical).hexdigest()}
+
+
+def _verify_native_path_checkpoint_seal(
+    *, seal: object, worktree: Path, binary: Path, build_receipt: Path,
+    decision: Path, runtime_config: Path, profile_manifest: Path,
+    runtime_profile_overlay: dict[str, Any],
+    expected_runtime_profile_id: str,
+) -> dict[str, str]:
+    if not isinstance(seal, dict) or not isinstance(seal.get("case_id"), str):
+        raise RecurrenceAdmissionError("native_path_checkpoint_seal_missing")
+    expected = native_path_checkpoint_seal(
+        worktree=worktree, binary=binary, build_receipt=build_receipt,
+        decision=decision, case_id=seal["case_id"],
+        profile_manifest=profile_manifest,
+        runtime_profile_overlay=runtime_profile_overlay,
+        expected_runtime_profile_id=expected_runtime_profile_id,
+    )
+    if seal != expected:
+        raise RecurrenceAdmissionError(
+            "native_path_checkpoint_seal_identity_mismatch"
+        )
+    prefix = NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX
+    expected_config = {
+        "FixtureId": NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+        "CaseId": expected["case_id"],
+        "SealSha256": expected["seal_sha256"],
+        "SourceCommit": expected["source_commit"],
+    }
+    if not _config_bool(runtime_config, f"{prefix}.Enable"):
+        raise RecurrenceAdmissionError("native_path_checkpoint_config_disabled")
+    if not _config_bool(runtime_config, "BotWorld.ValidationRoute.Enable"):
+        raise RecurrenceAdmissionError(
+            "native_path_checkpoint_progress_sampling_disabled"
+        )
+    if any(
+        _config_string(runtime_config, f"{prefix}.{key}") != value
+        for key, value in expected_config.items()
+    ):
+        raise RecurrenceAdmissionError("native_path_checkpoint_config_mismatch")
+    return expected
+
+
 def _verify_chainwielder_checkpoint_seal(
     *,
     seal: object,
@@ -438,12 +535,23 @@ def create_recurrence_admission(
         expansion_requests = _fixture_expansion_contract(
             decision_value, label="fixture_expansion"
         )
-        checkpoint_targeted = CHAINWIELDER_CHECKPOINT_FIXTURE_ID in (
-            decision_value.get("fixture_expansion_target_ids") or []
+        target_ids = decision_value.get("fixture_expansion_target_ids") or []
+        chainwielder_checkpoint_targeted = (
+            CHAINWIELDER_CHECKPOINT_FIXTURE_ID in target_ids
+        )
+        native_path_checkpoint_targeted = (
+            NATIVE_PATH_CHECKPOINT_FIXTURE_ID in target_ids
+        )
+        if chainwielder_checkpoint_targeted and native_path_checkpoint_targeted:
+            raise RecurrenceAdmissionError("checkpoint_authority_ambiguous")
+        checkpoint_targeted = (
+            chainwielder_checkpoint_targeted or native_path_checkpoint_targeted
         )
     else:
         expansion_requests = []
         checkpoint_targeted = False
+        chainwielder_checkpoint_targeted = False
+        native_path_checkpoint_targeted = False
     suite = _load(suite_receipt.resolve(), "suite_receipt")
     if suite.get("source_identity") != head:
         raise RecurrenceAdmissionError("suite_receipt_source_stale")
@@ -497,25 +605,46 @@ def create_recurrence_admission(
             verified_overlay["runtime_profile_id"]
         ):
             raise RecurrenceAdmissionError("runtime_profile_not_bound_by_config")
-        checkpoint_seal = _verify_chainwielder_checkpoint_seal(
-            seal=chainwielder_checkpoint_seal(
+        if native_path_checkpoint_targeted:
+            case_id = _config_string(
+                runtime_config,
+                f"{NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX}.CaseId",
+            )
+            checkpoint_seal = _verify_native_path_checkpoint_seal(
+                seal=native_path_checkpoint_seal(
+                    worktree=worktree, binary=binary,
+                    build_receipt=build_receipt, decision=decision,
+                    case_id=case_id, profile_manifest=profile_manifest,
+                    runtime_profile_overlay=verified_overlay,
+                    expected_runtime_profile_id=expected_runtime_profile_id,
+                ),
+                worktree=worktree, binary=binary,
+                build_receipt=build_receipt, decision=decision,
+                runtime_config=runtime_config,
+                profile_manifest=profile_manifest,
+                runtime_profile_overlay=verified_overlay,
+                expected_runtime_profile_id=expected_runtime_profile_id,
+            )
+        else:
+            checkpoint_seal = _verify_chainwielder_checkpoint_seal(
+                seal=chainwielder_checkpoint_seal(
+                    worktree=worktree,
+                    binary=binary,
+                    build_receipt=build_receipt,
+                    decision=decision,
+                    profile_manifest=profile_manifest,
+                    runtime_profile_overlay=verified_overlay,
+                    expected_runtime_profile_id=expected_runtime_profile_id,
+                ),
                 worktree=worktree,
                 binary=binary,
                 build_receipt=build_receipt,
                 decision=decision,
+                runtime_config=runtime_config,
                 profile_manifest=profile_manifest,
                 runtime_profile_overlay=verified_overlay,
                 expected_runtime_profile_id=expected_runtime_profile_id,
-            ),
-            worktree=worktree,
-            binary=binary,
-            build_receipt=build_receipt,
-            decision=decision,
-            runtime_config=runtime_config,
-            profile_manifest=profile_manifest,
-            runtime_profile_overlay=verified_overlay,
-            expected_runtime_profile_id=expected_runtime_profile_id,
-        )
+            )
     admission = {
         "schema": SCHEMA,
         "purpose": purpose,
@@ -604,8 +733,17 @@ def verify_recurrence_admission(
         expansion_requests = _fixture_expansion_contract(
             admission, label="fixture_expansion"
         )
-        checkpoint_targeted = CHAINWIELDER_CHECKPOINT_FIXTURE_ID in (
-            admission.get("fixture_expansion_target_ids") or []
+        target_ids = admission.get("fixture_expansion_target_ids") or []
+        chainwielder_checkpoint_targeted = (
+            CHAINWIELDER_CHECKPOINT_FIXTURE_ID in target_ids
+        )
+        native_path_checkpoint_targeted = (
+            NATIVE_PATH_CHECKPOINT_FIXTURE_ID in target_ids
+        )
+        if chainwielder_checkpoint_targeted and native_path_checkpoint_targeted:
+            raise RecurrenceAdmissionError("checkpoint_authority_ambiguous")
+        checkpoint_targeted = (
+            chainwielder_checkpoint_targeted or native_path_checkpoint_targeted
         )
     else:
         if admission.get("build_admitted") is not True:
@@ -616,6 +754,8 @@ def verify_recurrence_admission(
             if admission.get(key) != []:
                 raise RecurrenceAdmissionError(f"{key}_present")
         checkpoint_targeted = False
+        chainwielder_checkpoint_targeted = False
+        native_path_checkpoint_targeted = False
 
     worktree = worktree.resolve()
     head = str(_git(worktree, "rev-parse", "HEAD"))
@@ -736,17 +876,27 @@ def verify_recurrence_admission(
     checkpoint_seal = admission.get("checkpoint_seal")
     if checkpoint_targeted or profile_authority_recorded:
         assert profile_path is not None and verified_overlay is not None
-        checkpoint_seal = _verify_chainwielder_checkpoint_seal(
-            seal=checkpoint_seal,
-            worktree=worktree,
-            binary=binary_path,
-            build_receipt=build_receipt_path,
-            decision=decision_path,
-            runtime_config=runtime_config,
-            profile_manifest=profile_path,
-            runtime_profile_overlay=verified_overlay,
-            expected_runtime_profile_id=expected_runtime_profile_id,
-        )
+        if native_path_checkpoint_targeted:
+            checkpoint_seal = _verify_native_path_checkpoint_seal(
+                seal=checkpoint_seal, worktree=worktree,
+                binary=binary_path, build_receipt=build_receipt_path,
+                decision=decision_path, runtime_config=runtime_config,
+                profile_manifest=profile_path,
+                runtime_profile_overlay=verified_overlay,
+                expected_runtime_profile_id=expected_runtime_profile_id,
+            )
+        else:
+            checkpoint_seal = _verify_chainwielder_checkpoint_seal(
+                seal=checkpoint_seal,
+                worktree=worktree,
+                binary=binary_path,
+                build_receipt=build_receipt_path,
+                decision=decision_path,
+                runtime_config=runtime_config,
+                profile_manifest=profile_path,
+                runtime_profile_overlay=verified_overlay,
+                expected_runtime_profile_id=expected_runtime_profile_id,
+            )
     elif checkpoint_seal is not None:
         raise RecurrenceAdmissionError("checkpoint_seal_unexpected")
 
@@ -817,6 +967,10 @@ def verify_recurrence_admission(
         ),
         "checkpoint_fixture_id": (
             checkpoint_seal["fixture_id"]
+            if isinstance(checkpoint_seal, dict) else None
+        ),
+        "checkpoint_case_id": (
+            checkpoint_seal.get("case_id")
             if isinstance(checkpoint_seal, dict) else None
         ),
         "bindings": {

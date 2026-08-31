@@ -307,6 +307,10 @@ BotControllerRouteHold::Identity
 BotWorldPopulationMgr::CurrentControllerRouteHoldIdentity(
     uint32 actorGuid) const
 {
+    BotControllerRouteHold::State const& hold =
+        Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
+    bool const nativePathCheckpoint = hold.Scope.FixtureId
+        == BotNativePathCheckpoint::FixtureId;
     return {
         Cohort().Id,
         _serverEpoch,
@@ -318,9 +322,15 @@ BotWorldPopulationMgr::CurrentControllerRouteHoldIdentity(
         Party().ValidationRouteGeneration,
         Cohort().Config.ValidationRouteNodeId,
         actorGuid,
-        Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
-        Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
-        Cohort().Config.ChainwielderOwnerCheckpointSourceCommit,
+        nativePathCheckpoint
+            ? Cohort().Config.NativePathCheckpointFixtureId
+            : Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
+        nativePathCheckpoint
+            ? Cohort().Config.NativePathCheckpointSealSha256
+            : Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
+        nativePathCheckpoint
+            ? Cohort().Config.NativePathCheckpointSourceCommit
+            : Cohort().Config.ChainwielderOwnerCheckpointSourceCommit,
     };
 }
 
@@ -444,13 +454,21 @@ std::string BotWorldPopulationMgr::BuildControllerRouteHoldJson() const
     State const& hold =
         Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
     Identity const& scope = AdmittedIdentity(hold);
+    bool const nativePathCheckpoint = scope.FixtureId
+        == BotNativePathCheckpoint::FixtureId;
     BotControllerRouteHoldConfigIdentity::Comparison const configComparison =
         BotControllerRouteHoldConfigIdentity::Compare(
-            Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
+            nativePathCheckpoint
+                ? Cohort().Config.NativePathCheckpointFixtureId
+                : Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
             scope.FixtureId,
-            Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
+            nativePathCheckpoint
+                ? Cohort().Config.NativePathCheckpointSealSha256
+                : Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
             scope.SealSha256,
-            Cohort().Config.ChainwielderOwnerCheckpointSourceCommit,
+            nativePathCheckpoint
+                ? Cohort().Config.NativePathCheckpointSourceCommit
+                : Cohort().Config.ChainwielderOwnerCheckpointSourceCommit,
             scope.SourceCommit, GitRevision::GetHash());
     std::ostringstream json;
     bool const ok = hold.CurrentPhase != Phase::Failed
@@ -513,8 +531,27 @@ std::string BotWorldPopulationMgr::BuildControllerRouteHoldJson() const
          << ",\"checkpoint_identity_preserved\":"
          << (hold.CheckpointIdentityPreserved ? "true" : "false")
          << ",\"checkpoint_lifecycle\":";
-    WriteCheckpointLifecycle(json,
-        Cohort().ChainwielderOwnerCheckpoint);
+    if (nativePathCheckpoint)
+    {
+        BotNativePathCheckpoint::State const& checkpoint =
+            Cohort().NativePathCheckpoint;
+        json << "{\"stage\":\""
+             << BotNativePathCheckpoint::StageName(checkpoint.CurrentStage)
+             << "\",\"terminal\":"
+             << (checkpoint.Terminal() ? "true" : "false")
+             << ",\"case_id\":\"" << JsonEscape(checkpoint.CaseId) << "\""
+             << ",\"stage_submit_count\":"
+             << checkpoint.StageSubmitCount
+             << ",\"hazard_submit_count\":"
+             << checkpoint.HazardSubmitCount
+             << ",\"stage_receipt_id\":" << checkpoint.StageReceiptId
+             << ",\"hazard_receipt_id\":" << checkpoint.HazardReceiptId
+             << ",\"outcome\":\"" << JsonEscape(checkpoint.Outcome)
+             << "\"}";
+    }
+    else
+        WriteCheckpointLifecycle(json,
+            Cohort().ChainwielderOwnerCheckpoint);
     json
          << ",\"release_count\":" << hold.ReleaseCount
          << ",\"suppressed_route_action_count\":"

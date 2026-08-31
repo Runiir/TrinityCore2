@@ -20,11 +20,53 @@ public:
             { "botautochaincheckpoint",
                 rbac::RBAC_PERM_COMMAND_HEALERBOT, true,
                 &HandleCheckpointCommand, "" },
+            { "botautonativepathcheckpoint",
+                rbac::RBAC_PERM_COMMAND_HEALERBOT, true,
+                &HandleNativePathCheckpointCommand, "" },
         };
         return commandTable;
     }
 
 private:
+    static bool HandleNativePathCheckpointCommand(
+        ChatHandler* handler, char const* args)
+    {
+        std::istringstream parser(args ? args : "");
+        std::string action;
+        parser >> action;
+        std::string const cohortId =
+            sBotWorldPopulationMgr->ResolveGlobalCohortId();
+        std::string result;
+        if (action == "status")
+            result = sBotWorldPopulationMgr
+                ->GetNativePathCheckpointJsonForCohort(cohortId);
+        else if (action == "arm")
+        {
+            uint32 actorGuid = 0;
+            std::string caseId;
+            std::string sealSha256;
+            std::string sourceCommit;
+            std::string extra;
+            parser >> actorGuid >> caseId >> sealSha256
+                >> sourceCommit >> extra;
+            if (!actorGuid || caseId.empty() || sealSha256.empty()
+                || sourceCommit.empty() || !extra.empty())
+                result = "{\"ok\":false,\"action\":"
+                    "\"botauto_native_path_checkpoint\","
+                    "\"failure_reason\":\"invalid_arguments\"}";
+            else
+                result = sBotWorldPopulationMgr
+                    ->ArmNativePathCheckpointForCohort(cohortId, actorGuid,
+                        caseId, sealSha256, sourceCommit);
+        }
+        else
+            result = "{\"ok\":false,\"action\":"
+                "\"botauto_native_path_checkpoint\","
+                "\"failure_reason\":\"arm_or_status_required\"}";
+        handler->SendSysMessage(result.c_str());
+        return true;
+    }
+
     static bool HandleCheckpointCommand(
         ChatHandler* handler, char const* args)
     {

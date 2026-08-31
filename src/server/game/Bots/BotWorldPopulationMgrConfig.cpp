@@ -166,6 +166,16 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
         "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.SealSha256", "");
     Cohort().Config.ChainwielderOwnerCheckpointSourceCommit = sConfigMgr->GetStringDefault(
         "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.SourceCommit", "");
+    Cohort().Config.NativePathCheckpointEnable = sConfigMgr->GetBoolDefault(
+        "BotWorld.ValidationFixture.NativePathCheckpoint.Enable", false);
+    Cohort().Config.NativePathCheckpointFixtureId = sConfigMgr->GetStringDefault(
+        "BotWorld.ValidationFixture.NativePathCheckpoint.FixtureId", "");
+    Cohort().Config.NativePathCheckpointCaseId = sConfigMgr->GetStringDefault(
+        "BotWorld.ValidationFixture.NativePathCheckpoint.CaseId", "");
+    Cohort().Config.NativePathCheckpointSealSha256 = sConfigMgr->GetStringDefault(
+        "BotWorld.ValidationFixture.NativePathCheckpoint.SealSha256", "");
+    Cohort().Config.NativePathCheckpointSourceCommit = sConfigMgr->GetStringDefault(
+        "BotWorld.ValidationFixture.NativePathCheckpoint.SourceCommit", "");
     Cohort().Config.ValidationRouteManifestPath = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ManifestPath", Cohort().Config.ValidationRouteManifestPath);
     Cohort().Config.ValidationRouteAdvanceMode = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.AdvanceMode", Cohort().Config.ValidationRouteAdvanceMode);
     Cohort().Config.ValidationRouteScenarioId = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ScenarioId", Cohort().Config.ValidationRouteScenarioId);

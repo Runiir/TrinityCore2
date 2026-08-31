@@ -17,6 +17,8 @@ try:
     from tools.raid_program.recurrence_admission import (
         CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
         FIXTURE_EXPANSION_PURPOSE,
+        NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+        NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
         RecurrenceAdmissionError,
         _fixture_expansion_contract,
     )
@@ -28,6 +30,8 @@ except ModuleNotFoundError:
     from recurrence_admission import (
         CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
         FIXTURE_EXPANSION_PURPOSE,
+        NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+        NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
         RecurrenceAdmissionError,
         _fixture_expansion_contract,
     )
@@ -90,6 +94,46 @@ def chainwielder_checkpoint_arm_command(
     if not isinstance(source_commit, str) or not re.fullmatch(r"[0-9a-f]{40}", source_commit):
         raise ValueError("checkpoint_verified_source_invalid")
     return f"botautochaincheckpoint arm {actor_guid} {seal} {source_commit}"
+
+
+def native_path_checkpoint_arm_command(
+    recurrence_admission: dict[str, Any] | None,
+    actor_guid: int | None,
+) -> str | None:
+    """Build the fixed-case arm command from verified admission only."""
+
+    if recurrence_admission is None and actor_guid is None:
+        return None
+    if not isinstance(recurrence_admission, dict):
+        raise ValueError("native_path_checkpoint_verified_admission_missing")
+    requests = recurrence_admission.get("fixture_expansion_requests")
+    request_contract = {
+        row.get("fixture_id"): (row.get("from_revision"), row.get("to_revision"))
+        for row in requests if isinstance(row, dict)
+    } if isinstance(requests, list) else {}
+    fixture_ids = recurrence_admission.get("fixture_expansion_target_ids")
+    seal = recurrence_admission.get("checkpoint_seal_sha256")
+    case_id = recurrence_admission.get("checkpoint_case_id")
+    source = recurrence_admission.get("source_commit")
+    if (
+        recurrence_admission.get("valid") is not True
+        or recurrence_admission.get("purpose") != FIXTURE_EXPANSION_PURPOSE
+        or recurrence_admission.get("checkpoint_fixture_id")
+            != NATIVE_PATH_CHECKPOINT_FIXTURE_ID
+        or not isinstance(fixture_ids, list)
+        or NATIVE_PATH_CHECKPOINT_FIXTURE_ID not in fixture_ids
+        or request_contract != NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+        or not isinstance(actor_guid, int) or isinstance(actor_guid, bool)
+        or actor_guid <= 0
+        or not isinstance(case_id, str) or not case_id
+        or not isinstance(seal, str) or not re.fullmatch(r"[0-9a-f]{64}", seal)
+        or not isinstance(source, str) or not re.fullmatch(r"[0-9a-f]{40}", source)
+    ):
+        raise ValueError("native_path_checkpoint_verified_admission_invalid")
+    return (
+        f"botautonativepathcheckpoint arm {actor_guid} {case_id} "
+        f"{seal} {source}"
+    )
 
 
 def chainwielder_checkpoint_pre_route_readiness(

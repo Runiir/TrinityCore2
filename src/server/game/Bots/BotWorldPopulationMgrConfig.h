@@ -95,6 +95,11 @@ struct BotWorldExperimentConfig
     std::string ChainwielderOwnerCheckpointFixtureId;
     std::string ChainwielderOwnerCheckpointSealSha256;
     std::string ChainwielderOwnerCheckpointSourceCommit;
+    bool NativePathCheckpointEnable = false;
+    std::string NativePathCheckpointFixtureId;
+    std::string NativePathCheckpointCaseId;
+    std::string NativePathCheckpointSealSha256;
+    std::string NativePathCheckpointSourceCommit;
     std::string ValidationRouteManifestPath;
     std::string ValidationRouteAdvanceMode = "disabled";
     std::string ValidationRouteScenarioId;

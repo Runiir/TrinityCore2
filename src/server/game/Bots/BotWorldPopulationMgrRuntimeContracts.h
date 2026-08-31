@@ -471,6 +471,7 @@
         // or raid admission authority.
         uint64 TraceTransportTestPressureAttemptId = 0;
         BotChainwielderOwnerCheckpoint::State ChainwielderOwnerCheckpoint;
+        BotNativePathCheckpoint::State NativePathCheckpoint;
         BotExperienceLearningConfig LearningConfig;
         BotPolicyModelConfig PolicyModelConfig;
         bool CalibrationActive = false;
