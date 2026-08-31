@@ -208,7 +208,17 @@ def test_planner_same_level_fallback_still_requires_native_path_proof(tmp_path):
     assert "EndpointMatched" in validation
     assert "NativePathEndpointComponentsMatch" in validation
     assert "NativePathAllowsBoundedSameLevelMechanicProgress" in admission
+    assert "NativePrimaryPathAllowsProgressiveLocalFallback" in admission
     assert "SelectProgressiveLocalMechanicCandidate" in planner
+    guard = planner.index("NativePrimaryPathAllowsProgressiveLocalFallback")
+    local_fallback = planner.index(
+        "selectProgressiveLocalMechanicEndpoint();", guard
+    )
+    walkable_fallback = planner.index(
+        "float const baseAngle = bot->GetAngle", local_fallback
+    )
+    terminal_rejection = planner.index("if (!segmentSelected)", walkable_fallback)
+    assert guard < local_fallback < walkable_fallback < terminal_rejection
     assert "completeNativePathToPoint(candidatePoint" in planner
     assert "native_bounded_same_level_local_step" in planner
     assert "NativeLocalMechanicEndpointMinimumTravel" in planner
@@ -547,6 +557,11 @@ int main()
     bool const primaryPathComplete = false;
     bool const primaryPathForbidden = true; // no-path equivalence member.
     assert(!primaryPathComplete && primaryPathForbidden);
+    NativePathProofObservation primaryProof;
+    primaryProof.Available = true;
+    primaryProof.Calculated = true;
+    primaryProof.Complete = primaryPathComplete;
+    assert(NativePrimaryPathAllowsProgressiveLocalFallback(primaryProof));
     assert(AdmitSameLevelDeclaredFloorFallback(
         actor.z, request.z, lowerFloor));
 
@@ -644,6 +659,130 @@ int main()
     assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
         Owner::Formation, true, true, true, false,
         formationProof, 8.0f, currentGoalDistance, 2.0f));
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/common"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
+def test_receipt519_complete_cross_floor_path_skips_progressive_fallbacks(
+    tmp_path,
+):
+    source = tmp_path / "receipt519_progressive_fallback_gate.cpp"
+    binary = tmp_path / "receipt519_progressive_fallback_gate"
+    source.write_text(
+        r'''
+#include "Bots/BotWorldPopulationMgrMovementPathSelection.h"
+#include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
+
+#include <cassert>
+
+struct Point
+{
+    float x;
+    float y;
+    float z;
+};
+
+using namespace BotWorldMovement;
+using BotMovementArbitration::Owner;
+
+int main()
+{
+    // a842 receipt 519: the primary path was complete, but its native endpoint
+    // resolved from requested z=211.313324 to lower geometry z=-87.556740.
+    // The old planner then selected and launched a shorter walkable point.
+    NativePathProofObservation receipt519;
+    receipt519.Available = true;
+    receipt519.Calculated = true;
+    receipt519.PathType = 1; // PATHFIND_NORMAL.
+    receipt519.Complete = true;
+    receipt519.EndpointX = -353.645538f;
+    receipt519.EndpointY = -51.6406975f;
+    receipt519.EndpointZ = -87.5567398f;
+    receipt519.EndpointDistance = 298.870056f;
+    receipt519.EndpointHorizontalDistance = 0.0f;
+    receipt519.EndpointVerticalDistance = 298.870056f;
+    receipt519.EndpointMatched = false;
+    receipt519.EndpointFloorValid = true;
+    receipt519.FloorObservation = MakeNativePathFloorObservation(
+        NativePathFloorFailure::SampleFloorGap, 2, 6,
+        -353.396790f, -51.2230797f, 207.974640f,
+        -87.4923706f, 212.235764f);
+    receipt519.Accepted = NativePathProofPassesAdmission(receipt519);
+    assert(!receipt519.Accepted);
+    assert(!NativePrimaryPathAllowsProgressiveLocalFallback(receipt519));
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, true, true, true, false, receipt519,
+        20.0f, 25.0f, 4.5f, true));
+
+    Point const actor{ -340.854675f, -30.1652412f, 211.313324f };
+    Point const destination{ -353.645538f, -51.6406975f, 211.313324f };
+    unsigned localAttempts = 0;
+    bool selected = false;
+    if (NativePrimaryPathAllowsProgressiveLocalFallback(receipt519))
+        selected = SelectProgressiveLocalMechanicCandidate(actor, destination,
+            [&](Point const&, float)
+            {
+                ++localAttempts;
+                return true;
+            });
+    assert(!selected);
+    assert(localAttempts == 0);
+
+    // A genuinely incomplete primary path retains local-progress eligibility.
+    NativePathProofObservation incomplete = receipt519;
+    incomplete.Complete = false;
+    assert(NativePrimaryPathAllowsProgressiveLocalFallback(incomplete));
+    selected = SelectProgressiveLocalMechanicCandidate(actor, destination,
+        [&](Point const&, float fraction)
+        {
+            ++localAttempts;
+            return fraction == 0.5f;
+        });
+    assert(selected);
+    assert(localAttempts == 2);
+
+    // A valid bounded complete endpoint is admitted by the primary-path gate;
+    // it does not need or enter progressive fallback.
+    NativePathProofObservation bounded = receipt519;
+    bounded.EndpointZ = 210.268f;
+    bounded.EndpointDistance = 1.41703f;
+    bounded.EndpointHorizontalDistance = 0.533746f;
+    bounded.EndpointVerticalDistance = 1.31267f;
+    bounded.EndpointFloorValid = true;
+    bounded.FloorObservation = {};
+    assert(NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, true, false, true, false, bounded,
+        1.0f, 1.41703f, 1.41703f, true));
+    assert(!NativePrimaryPathAllowsProgressiveLocalFallback(bounded));
+
+    // A genuine cross-floor request is neither a bounded complete endpoint nor
+    // eligible for local progressive repair.
+    NativePathProofObservation crossFloor = receipt519;
+    assert(!NativePathAllowsBoundedSameLevelMechanicProgress(
+        Owner::Hazard, false, true, true, false, crossFloor,
+        20.0f, 25.0f, 4.5f, false));
+    assert(!NativePrimaryPathAllowsProgressiveLocalFallback(crossFloor));
 }
 ''',
         encoding="utf-8",

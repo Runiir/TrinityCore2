@@ -24,6 +24,16 @@ constexpr float NativeLocalMechanicEndpointProgressEpsilon = 0.001f;
 constexpr float NativeLocalMechanicEndpointArrivalHorizontalTolerance = 1.0f;
 constexpr float NativeLocalMechanicEndpointArrivalDistanceTolerance = 1.5f;
 
+// Progressive local steps may repair an incomplete primary path. A complete
+// path that failed endpoint identity or floor admission already resolved a
+// different native destination; moving partway toward it cannot make that
+// destination valid and may carry the actor to an unsafe platform edge.
+inline bool NativePrimaryPathAllowsProgressiveLocalFallback(
+    NativePathProofObservation const& observation)
+{
+    return !observation.Complete;
+}
+
 // A complete native hazard/mechanic path can end a short distance from its
 // declared point when MMAP selects the nearest walkable polygon. Keep this
 // exception separate from global endpoint identity: it requires the same
