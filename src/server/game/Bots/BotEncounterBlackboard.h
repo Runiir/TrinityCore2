@@ -4,6 +4,7 @@
 #include "Define.h"
 #include "ObjectGuid.h"
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <optional>
 #include <string>
@@ -93,6 +94,14 @@ struct CastSnapshot
     bool Interruptible = false;
 };
 
+struct MechanicTimerSnapshot
+{
+    uint32 SpellId = 0;
+    uint32 RemainingMs = std::numeric_limits<uint32>::max();
+    bool SequenceActive = false;
+    FactSource Source = FactSource::NativeInstanceState;
+};
+
 struct ActorSnapshot
 {
     ObjectGuid Guid;
@@ -118,6 +127,17 @@ struct ActorSnapshot
     ObjectGuid VehicleGuid;
     std::vector<AuraSnapshot> Auras;
     std::optional<CastSnapshot> Cast;
+    std::vector<MechanicTimerSnapshot> MechanicTimers;
+
+    MechanicTimerSnapshot const* FindMechanicTimer(uint32 spellId) const
+    {
+        auto itr = std::find_if(MechanicTimers.begin(), MechanicTimers.end(),
+            [spellId](MechanicTimerSnapshot const& timer)
+            {
+                return timer.SpellId == spellId;
+            });
+        return itr == MechanicTimers.end() ? nullptr : &*itr;
+    }
 };
 
 enum class RegionKind : uint8

@@ -11,8 +11,10 @@
 #include "Spell.h"
 #include "SpellInfo.h"
 #include "Unit.h"
+#include "UnitAI.h"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <set>
 #include <utility>
@@ -20,12 +22,31 @@
 
 namespace
 {
+constexpr uint32 MagmawEntry = 41570;
+constexpr uint32 MagmawMassiveCrashSpell = 88253;
+
 bool IsMagmawPincerWarningCreature(BotEncounter::RouteView const& route,
     Creature const& creature)
 {
     if (route.NodeId != "bwd.magmaw.encounter" || !creature.IsAlive())
         return false;
     return creature.GetEntry() == 47196 && creature.HasAura(87949);
+}
+
+void AppendNativeMechanicTimers(BotEncounter::RouteView const& route,
+    Creature const& creature, BotEncounter::ActorSnapshot& actor)
+{
+    if (route.NodeId != "bwd.magmaw.encounter"
+        || creature.GetEntry() != MagmawEntry || !creature.IsAIEnabled())
+        return;
+
+    uint32 const remainingMs = creature.AI()->GetTimeUntilEncounterMechanic(
+        MagmawMassiveCrashSpell);
+    if (remainingMs == std::numeric_limits<uint32>::max())
+        return;
+
+    actor.MechanicTimers.push_back({ MagmawMassiveCrashSpell, remainingMs,
+        remainingMs == 0, BotEncounter::FactSource::NativeInstanceState });
 }
 }
 
@@ -112,7 +133,7 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     snapshot->Route.AllowedEntries.erase(std::unique(snapshot->Route.AllowedEntries.begin(),
         snapshot->Route.AllowedEntries.end()), snapshot->Route.AllowedEntries.end());
 
-    auto buildUnit = [nowMs](Unit* unit, BotEncounter::ActorKind kind)
+    auto buildUnit = [nowMs, &snapshot](Unit* unit, BotEncounter::ActorKind kind)
     {
         BotEncounter::ActorSnapshot actor;
         actor.Guid = unit->GetGUID();
@@ -167,6 +188,8 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
             actor.Cast = cast;
             break;
         }
+        if (Creature* creature = unit->ToCreature())
+            AppendNativeMechanicTimers(snapshot->Route, *creature, actor);
         return actor;
     };
 

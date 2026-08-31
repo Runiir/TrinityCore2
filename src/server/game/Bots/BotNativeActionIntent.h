@@ -3,6 +3,7 @@
 
 #include "Bots/BotActionArbiter.h"
 #include "ObjectGuid.h"
+#include <cmath>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -20,12 +21,50 @@ struct Move
     // top-level decision label may be replaced by a simultaneous combat
     // candidate later in the same tick.
     std::string IntentReason;
+    // Ordinary movement can coexist with instant/mobile combat.  A point
+    // escape inside a lethal envelope instead owns cast and GCD resources so
+    // a hard cast cannot replace the submitted path in the same kernel tick.
+    bool PreemptCasting = false;
 
     Move() = default;
     Move(float x, float y, float z) : X(x), Y(y), Z(z) { }
     Move(float x, float y, float z, std::string_view reason)
         : X(x), Y(y), Z(z), IntentReason(reason) { }
+    Move(float x, float y, float z, std::string_view reason,
+        bool preemptCasting)
+        : X(x), Y(y), Z(z), IntentReason(reason),
+          PreemptCasting(preemptCasting) { }
 };
+enum class DirectionalMobilityFacing : uint8
+{
+    Forward,
+    Backward
+};
+// Blink and Disengage are ordinary self-casts whose travel direction is
+// determined by player facing.  Keep the desired travel point in the typed
+// intent so the native executor can face first and then submit the real
+// non-triggered spell; it may never manufacture the resulting position.
+struct DirectionalMobility
+{
+    float X = 0.0f;
+    float Y = 0.0f;
+    float Z = 0.0f;
+    uint32 SpellId = 0;
+    DirectionalMobilityFacing Facing = DirectionalMobilityFacing::Forward;
+    std::string IntentReason;
+};
+
+inline float DirectionalMobilityFacingAngle(float originX, float originY,
+    DirectionalMobility const& action)
+{
+    constexpr float Pi = 3.14159265358979323846f;
+    constexpr float TwoPi = 2.0f * Pi;
+    float angle = std::atan2(action.Y - originY, action.X - originX);
+    if (action.Facing == DirectionalMobilityFacing::Backward)
+        angle += Pi;
+    angle = std::fmod(angle, TwoPi);
+    return angle < 0.0f ? angle + TwoPi : angle;
+}
 // Combat resurrection uses dedicated intents because its reservation identity
 // must survive selection and be revalidated at the native submission edge.
 // Generic Move/CastSpell cannot express that owner/target/spell contract.
@@ -83,7 +122,8 @@ struct UseItem { ObjectGuid Item; ObjectGuid Target; uint32 SpellId = 0; };
 struct ReleaseSpirit { };
 struct ReclaimCorpse { ObjectGuid Corpse; };
 
-using Intent = std::variant<CastSpell, Move, CombatResApproach,
+using Intent = std::variant<CastSpell, Move, DirectionalMobility,
+    CombatResApproach,
     CombatResCast, CombatResAccept, NativeDescent,
     GossipOpen, GossipSelect, SpellClick, GameObjectUse, AreaTrigger, VehicleEnter, VehicleAction,
     VehicleExit, PetCommand, UseItem, ReleaseSpirit, ReclaimCorpse>;
@@ -93,7 +133,8 @@ inline Intent WithMovementReason(Intent intent, std::string_view reason)
     std::visit([reason](auto& action)
     {
         using T = std::decay_t<decltype(action)>;
-        if constexpr (std::is_same_v<T, Move>)
+        if constexpr (std::is_same_v<T, Move>
+            || std::is_same_v<T, DirectionalMobility>)
             action.IntentReason = std::string(reason);
     }, intent);
     return intent;
@@ -105,8 +146,15 @@ inline BotActionArbitration::ResourceMask RequiredResources(Intent const& intent
     return std::visit([](auto const& action) -> ResourceMask
     {
         using T = std::decay_t<decltype(action)>;
-        if constexpr (std::is_same_v<T, Move>
-            || std::is_same_v<T, NativeDescent>)
+        if constexpr (std::is_same_v<T, Move>)
+            return action.PreemptCasting
+                ? Uses(Resource::Movement, Resource::GlobalCooldown,
+                    Resource::Cast)
+                : Uses(Resource::Movement);
+        if constexpr (std::is_same_v<T, DirectionalMobility>)
+            return Uses(Resource::Movement, Resource::GlobalCooldown,
+                Resource::Cast);
+        if constexpr (std::is_same_v<T, NativeDescent>)
             return Uses(Resource::Movement);
         if constexpr (std::is_same_v<T, CombatResApproach>)
             // Approaching only submits native movement.  It observes the

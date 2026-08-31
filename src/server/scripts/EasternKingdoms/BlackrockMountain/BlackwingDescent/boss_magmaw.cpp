@@ -30,70 +30,13 @@
 #include "MotionMaster.h"
 #include "Map.h"
 #include "blackwing_descent.h"
+#include "boss_magmaw_shared.h"
+#include <limits>
+
+void AddSC_boss_magmaw_encounter_spells();
 
 namespace BlackwingDescent::Magmaw
 {
-enum Spells
-{
-    // Magmaw
-    SPELL_RIDE_VEHICLE                          = 77901,
-    SPELL_BIRTH                                 = 26586,
-    SPELL_MAGMA_SPIT_TARGETING                  = 95280,
-    SPELL_MAGMA_SPIT_MISSILE                    = 78359,
-    SPELL_LAVA_SPEW                             = 77839,
-    SPELL_MAGMA_SPIT_MOLTEN_TANTRUM             = 78068,
-    SPELL_MANGLE_1                              = 89773,
-    SPELL_MANGLE_2                              = 78412,
-    SPELL_MANGLE_TARGETING                      = 92047,
-    SPELL_SWELTERING_ARMOR                      = 78199,
-    SPELL_PILLAR_OF_FLAME                       = 77998,
-    SPELL_PILLAR_OF_FLAME_MISSILE_PERIODIC      = 78006,
-    SPELL_PILLAR_OF_FLAME_SET_VEHICLE_ID        = 77994,
-    SPELL_MASSIVE_CRASH                         = 88253,
-    SPELL_IMPALE_SELF                           = 77907,
-    SPELL_EJECT_PASSENGER_3                     = 95204,
-    SPELL_EMOTE_MAGMA_LAVA_SPLASH               = 79461,
-    SPELL_EMOTE_SPELLCASTDIRECTED               = 20718,
-
-    // Exposed Head of Magmaw
-    SPELL_POINT_OF_VULNERABILITY_SHARE_DAMAGE   = 79010,
-    SPELL_POINT_OF_VULNERABILITY                = 79011,
-    SPELL_RIDE_VEHICLE_EXPOSED_HEAD             = 89743,
-    SPELL_QUEST_INVIS_5                         = 95478,
-    SPELL_RIDE_VEHICLE_HEAD                     = 94996,
-
-    // Pillar of Flame
-    SPELL_PILLAR_OF_FLAME_DUMMY                 = 78017,
-    SPELL_PILLAR_OF_FLAME_PERIODIC              = 77970,
-
-    // Magmaw's Pincer
-    SPELL_LAUNCH_HOOK_1                         = 77917,
-    SPELL_LAUNCH_HOOK_2                         = 77941,
-    SPELL_EJECT_PASSENGER_1                     = 77946,
-
-    // Magmaw Spike Stalker
-    SPELL_CHAIN_VISUAL_1                        = 77940,
-    SPELL_CHAIN_VISUAL_2                        = 77929,
-    SPELL_EJECT_PASSENGER                       = 78643,
-
-    // Lava Parasite
-    SPELL_LAVA_PARASITE_PROC_AURA               = 78019,
-    SPELL_LAVA_PARASITE_RIDE_VEHICLE            = 78020,
-    SPELL_PARASITIC_INFECTION_VOMIT             = 78097,
-    SPELL_PARASITIC_INFECTION_DAMAGE            = 78941,
-
-    // Nefarian
-    SPELL_BLAZING_INFERNO_TARGETING             = 94317,
-    SPELL_BLAZING_INFERNO                       = 92153,
-    SPELL_SHADOW_BREATH_TARGETING               = 95536,
-    SPELL_SHADOW_BREATH                         = 92173,
-
-    // Blazing Bone Contruct
-    SPELL_IGNITION                              = 92119,
-    SPELL_FIERY_SLASH                           = 92144,
-    SPELL_ARMAGEDDON                            = 92177
-};
-
 enum Events
 {
     // Magmaw
@@ -129,20 +72,6 @@ enum Phases
     PHASE_IMPALED       = 3
 };
 
-enum Actions
-{
-    // Magmaw
-    ACTION_IMPALE_MAGMAW            = 0,
-    ACTION_ENABLE_MOUNTING          = 1,
-    ACTION_DISABLE_MOUNTING         = 2,
-    ACTION_EXPOSE_HEAD              = 4,
-    ACTION_COVER_HEAD               = 5,
-
-    // Nefarian
-    ACTION_SCHEDULE_SHADOW_BREATH   = 0,
-    ACTION_MAGMAW_DEAD              = 1
-};
-
 enum Texts
 {
     // Magmaw
@@ -173,11 +102,6 @@ enum VehicleSeats
 
     // Magmaw's Pincer
     SEAT_PINCER                     = 0
-};
-
-enum Data
-{
-    DATA_FREE_PINCER = 0
 };
 
 enum MovePoints
@@ -366,6 +290,23 @@ struct boss_magmaw : public BossAI
         }
 
         return ObjectGuid::Empty;
+    }
+
+    uint32 GetTimeUntilEncounterMechanic(uint32 spellId) const override
+    {
+        if (spellId != SPELL_MASSIVE_CRASH)
+            return std::numeric_limits<uint32>::max();
+
+        // The sequence is already reserved after Mangle fires and remains so
+        // through Prepare Massive Crash. Release it only after the native
+        // Massive Crash event executes.
+        if (events.GetTimeUntilEvent(EVENT_PREPARE_MASSIVE_CRASH)
+                != std::numeric_limits<uint32>::max()
+            || events.GetTimeUntilEvent(EVENT_MASSIVE_CRASH)
+                != std::numeric_limits<uint32>::max())
+            return 0;
+
+        return events.GetTimeUntilEvent(EVENT_MANGLE);
     }
 
     void DamageTaken(Unit* /*attacker*/, uint32& damage) override
@@ -1008,320 +949,6 @@ class spell_magmaw_pillar_of_flame_dummy : public SpellScript
     }
 };
 
-class DistanceCheck
-{
-    public:
-        DistanceCheck(Unit* caster) : _caster(caster)  { }
-
-        bool operator()(WorldObject* object)
-        {
-            if (Unit* unit = object->ToUnit())
-                return unit->GetExactDist2d(_caster) < _caster->GetCombatReach() + 15.0f;
-
-            return true;
-        }
-    private:
-        Unit* _caster;
-};
-
-class spell_magmaw_pillar_of_flame_forcecast : public SpellScript
-{
-    void FilterTargets(std::list<WorldObject*>& targets)
-    {
-        if (targets.empty())
-            return;
-
-        targets.remove_if(IsOnVehicleCheck());
-
-        if (targets.empty())
-            return;
-
-        // Hotfix (2010-12-21): Magmaw's Pillar of Flame now prefers targets further than 15 yards away
-        std::list<WorldObject*> targetsCopy = targets;
-        targetsCopy.remove_if(DistanceCheck(GetCaster()));
-        if (!targetsCopy.empty())
-            targets = targetsCopy;
-
-        Trinity::Containers::RandomResize(targets, 1);
-    }
-
-    void Register() override
-    {
-        OnObjectAreaTargetSelect.Register(&spell_magmaw_pillar_of_flame_forcecast::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
-    }
-};
-
-class spell_magmaw_ride_vehicle : public SpellScript
-{
-    void SetTarget(WorldObject*& target)
-    {
-        if (InstanceScript* instance = GetCaster()->GetInstanceScript())
-        {
-            if (Creature* magmaw = instance->GetCreature(DATA_MAGMAW))
-            {
-                if (Creature* pincer = ObjectAccessor::GetCreature(*GetCaster(), magmaw->AI()->GetGUID(DATA_FREE_PINCER)))
-                    target = pincer;
-                else
-                    target = nullptr;
-            }
-        }
-    }
-
-    void Register() override
-    {
-        OnObjectTargetSelect.Register(&spell_magmaw_ride_vehicle::SetTarget, EFFECT_0, TARGET_UNIT_TARGET_ANY);
-    }
-};
-
-class spell_magmaw_launch_hook : public AuraScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo(
-            {
-                SPELL_LAUNCH_HOOK_1,
-                SPELL_LAUNCH_HOOK_2,
-                SPELL_CHAIN_VISUAL_1,
-                SPELL_CHAIN_VISUAL_2
-            });
-    }
-
-    void AfterApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        Unit* target = GetTarget();
-
-        if (target->HasAura(SPELL_LAUNCH_HOOK_1) && target->HasAura(SPELL_LAUNCH_HOOK_2))
-        {
-            if (InstanceScript* instance = target->GetInstanceScript())
-                if (Creature* magmaw = instance->GetCreature(DATA_MAGMAW))
-                    magmaw->AI()->DoAction(ACTION_IMPALE_MAGMAW);
-
-            target->RemoveAllAuras();
-            target->CastSpell(target, SPELL_CHAIN_VISUAL_1);
-            target->CastSpell(target, SPELL_CHAIN_VISUAL_2);
-            target->CastSpell(target, SPELL_EJECT_PASSENGER);
-        }
-    }
-
-    void Register() override
-    {
-        AfterEffectApply.Register(&spell_magmaw_launch_hook::AfterApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-    }
-};
-
-
-class spell_magmaw_eject_passenger : public SpellScript
-{
-    void EjectPassenger(SpellEffIndex /*effIndex*/)
-    {
-        Unit* target = GetHitUnit();
-        target->m_Events.AddEventAtOffset([target]()
-        {
-            target->CastSpell(target, SPELL_EJECT_PASSENGER_1, true);
-        }, 3s + 500ms);
-    }
-
-    void Register() override
-    {
-        OnEffectHitTarget.Register(&spell_magmaw_eject_passenger::EjectPassenger, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
-    }
-};
-
-class spell_magmaw_lava_parasite : public AuraScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo(
-            {
-                SPELL_PARASITIC_INFECTION_DAMAGE,
-                SPELL_PARASITIC_INFECTION_VOMIT,
-            });
-    }
-
-    void HandleProc(AuraEffect const* /*aurEff*/, ProcEventInfo& eventInfo)
-    {
-        // Hotfix (2010-12-21): Lava Parasites are functioning normally and cannot infest a player with more than 3 Parasite debuffs active
-        PreventDefaultAction();
-
-        Unit* caster = GetTarget();
-        Unit* target = eventInfo.GetProcTarget();
-        if (Vehicle* vehicle = target->GetVehicleKit())
-        {
-            if (vehicle->GetAvailableSeatCount())
-            {
-                caster->CastSpell(target, GetSpellInfo()->Effects[EFFECT_0].TriggerSpell, true);
-                caster->CastSpell(target, SPELL_PARASITIC_INFECTION_DAMAGE, true);
-                caster->CastSpell(target, SPELL_PARASITIC_INFECTION_VOMIT, true);
-            }
-        }
-    }
-
-    void Register() override
-    {
-        OnEffectProc.Register(&spell_magmaw_lava_parasite::HandleProc, EFFECT_0, SPELL_AURA_DUMMY);
-    }
-};
-
-class spell_magmaw_blazing_inferno_targeting : public SpellScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_BLAZING_INFERNO });
-    }
-
-    void FilterTargets(std::list<WorldObject*>& targets)
-    {
-        if (targets.empty())
-            return;
-
-        targets.remove_if(IsOnVehicleCheck());
-
-        if (targets.empty())
-            return;
-
-        // Hotfix (2010-03-16): In addition, on Heroic difficulty, Nefarian will now prefer ranged targets when spawning Blazing Bone Constructs.
-        InstanceScript* instance = GetCaster()->GetInstanceScript();
-        if (!instance)
-            return;
-
-        Creature* magmaw = instance->GetCreature(DATA_MAGMAW);
-        if (!magmaw)
-            return;
-
-        std::list<WorldObject*> targetsCopy = targets;
-        targetsCopy.remove_if(DistanceCheck(magmaw));
-        if (!targetsCopy.empty())
-            targets = targetsCopy;
-
-        Trinity::Containers::RandomResize(targets, 1);
-    }
-
-    void HandleScriptEffect(SpellEffIndex /*effIndex*/)
-    {
-        if (Unit* caster = GetCaster())
-            caster->CastSpell(GetHitUnit(), SPELL_BLAZING_INFERNO);
-    }
-
-    void Register() override
-    {
-        OnObjectAreaTargetSelect.Register(&spell_magmaw_blazing_inferno_targeting::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
-        OnEffectHitTarget.Register(&spell_magmaw_blazing_inferno_targeting::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
-    }
-};
-
-class spell_magmaw_shadow_breath_targeting : public SpellScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_SHADOW_BREATH });
-    }
-
-    void FilterTargets(std::list<WorldObject*>& targets)
-    {
-        if (targets.empty())
-            return;
-
-        targets.remove_if(IsOnVehicleCheck());
-
-        if (targets.empty() || targets.size() < 2)
-            return;
-
-        Trinity::Containers::RandomResize(targets, 2);
-    }
-
-    void HandleDummyEffect(SpellEffIndex /*effIndex*/)
-    {
-        if (Unit* caster = GetCaster())
-            caster->CastSpell(GetHitUnit(), SPELL_SHADOW_BREATH);
-    }
-
-    void Register() override
-    {
-        OnObjectAreaTargetSelect.Register(&spell_magmaw_shadow_breath_targeting::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
-        OnEffectHitTarget.Register(&spell_magmaw_shadow_breath_targeting::HandleDummyEffect, EFFECT_0, SPELL_EFFECT_DUMMY);
-    }
-};
-
-class spell_magmaw_lava_parasite_summon : public SpellScript
-{
-    void SetDest(SpellDestination& dest)
-    {
-        dest.RelocateOffset({ 0.0f, 0.0f, frand(13.0f, 15.0f), 0.0f });
-    }
-
-    void Register()
-    {
-        OnDestinationTargetSelect.Register(&spell_magmaw_lava_parasite_summon::SetDest, EFFECT_0, TARGET_DEST_DEST_RANDOM);
-    }
-};
-
-class spell_magmaw_massive_crash : public AuraScript
-{
-    void AfterApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        if (Creature* magmaw = GetTarget()->ToCreature())
-            if (magmaw->IsAIEnabled())
-                magmaw->AI()->DoAction(ACTION_ENABLE_MOUNTING);
-    }
-
-    void AfterRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        if (Creature* magmaw = GetTarget()->ToCreature())
-            if (magmaw->IsAIEnabled())
-                magmaw->AI()->DoAction(ACTION_DISABLE_MOUNTING);
-    }
-
-    void Register() override
-    {
-        AfterEffectApply.Register(&spell_magmaw_massive_crash::AfterApply, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-        AfterEffectRemove.Register(&spell_magmaw_massive_crash::AfterRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-    }
-};
-
-class spell_magmaw_impale_self : public AuraScript
-{
-    void AfterApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        if (Creature* magmaw = GetTarget()->ToCreature())
-            if (magmaw->IsAIEnabled())
-                magmaw->AI()->DoAction(ACTION_EXPOSE_HEAD);
-    }
-
-    void AfterRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        if (Creature* magmaw = GetTarget()->ToCreature())
-            if (magmaw->IsAIEnabled())
-                magmaw->AI()->DoAction(ACTION_COVER_HEAD);
-    }
-
-    void Register() override
-    {
-        AfterEffectApply.Register(&spell_magmaw_impale_self::AfterApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-        AfterEffectRemove.Register(&spell_magmaw_impale_self::AfterRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-    }
-};
-
-class spell_magmaw_captured : public AuraScript
-{
-    bool Validate(SpellInfo const* /*spell*/) override
-    {
-        return ValidateSpellInfo(
-            {
-                SPELL_EMOTE_MAGMA_LAVA_SPLASH,
-                SPELL_EMOTE_SPELLCASTDIRECTED
-            });
-    }
-
-    void HandleTick(AuraEffect const* /*aurEff*/)
-    {
-        GetTarget()->CastSpell(GetTarget(), RAND(SPELL_EMOTE_MAGMA_LAVA_SPLASH, SPELL_EMOTE_SPELLCASTDIRECTED), true);
-    }
-
-    void Register() override
-    {
-        OnEffectPeriodic.Register(&spell_magmaw_captured::HandleTick, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY);
-    }
-};
 }
 
 void AddSC_boss_magmaw()
@@ -1335,15 +962,5 @@ void AddSC_boss_magmaw()
     RegisterSpellScript(spell_magmaw_magma_spit);
     RegisterSpellScript(spell_magmaw_mangle);
     RegisterSpellScript(spell_magmaw_pillar_of_flame_dummy);
-    RegisterSpellScript(spell_magmaw_pillar_of_flame_forcecast);
-    RegisterSpellScript(spell_magmaw_ride_vehicle);
-    RegisterSpellScript(spell_magmaw_launch_hook);
-    RegisterSpellScript(spell_magmaw_eject_passenger);
-    RegisterSpellScript(spell_magmaw_lava_parasite);
-    RegisterSpellScript(spell_magmaw_lava_parasite_summon);
-    RegisterSpellScript(spell_magmaw_blazing_inferno_targeting);
-    RegisterSpellScript(spell_magmaw_shadow_breath_targeting);
-    RegisterSpellScript(spell_magmaw_massive_crash);
-    RegisterSpellScript(spell_magmaw_impale_self);
-    RegisterSpellScript(spell_magmaw_captured);
+    AddSC_boss_magmaw_encounter_spells();
 }

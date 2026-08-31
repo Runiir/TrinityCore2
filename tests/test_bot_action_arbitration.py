@@ -848,26 +848,36 @@ int main()
 
     BotEncounter::Blackboard magmawCrash = magmaw;
     magmawCrash.Summons.clear();
-    BotEncounter::ActorSnapshot crash = magmawBoss;
+    magmawCrash.Route.NavigationHints = {
+        { -307.531f, -35.4375f, 211.815f } };
+    BotEncounter::ActorSnapshot crashBoss = magmawBoss;
+    crashBoss.Position = { -302.467f, -31.7101f, 210.8483f };
+    BotEncounter::ActorSnapshot crashHead = magmawHead;
+    crashHead.Position = crashBoss.Position;
+    for (BotEncounter::ActorSnapshot& player : magmawCrash.Players)
+        if (player.Guid == dps.Guid)
+            player.Position = { -305.600037f, -34.9334412f, 210.521393f };
+    BotEncounter::ActorSnapshot crash = crashBoss;
     crash.Guid = ObjectGuid(HighGuid::Unit, uint32(47196), uint32(74));
     crash.Entry = BotEncounter::AdaptiveMagmawStrategy::RoomStalkerEntry;
     crash.Auras = {
         BotEncounter::AuraSnapshot{ 87949u, ObjectGuid{}, 1, 0 } };
-    crash.Position = { 2.0f, 0.0f, 0.0f };
-    BotEncounter::ActorSnapshot closerCrashParasite = magmawBoss;
+    crash.Position = { -307.5190162f, -41.3298959f, 210.521393f };
+    BotEncounter::ActorSnapshot closerCrashParasite = crashBoss;
     closerCrashParasite.Guid = ObjectGuid(HighGuid::Unit, uint32(41806),
         uint32(77));
     closerCrashParasite.Entry =
         BotEncounter::AdaptiveMagmawStrategy::ParasiteEntry;
-    closerCrashParasite.Position = dps.Position;
+    closerCrashParasite.Position =
+        { -305.600037f, -34.9334412f, 210.521393f };
     magmawCrash.Hostiles = {
-        magmawBoss, magmawHead, closerCrashParasite, crash };
+        crashBoss, crashHead, closerCrashParasite, crash };
     auto magmawCrashPlan = magmawStrategy.Propose(
         magmawCrash, dps.Guid, "dps");
     assert(magmawCrashPlan.Movement.has_value());
     assert(magmawCrashPlan.Movement->Id.ScopeKey == magmawCrash.CurrentScope.Key());
     assert(magmawCrashPlan.Movement->Id.Mechanic == "massive_crash_evade");
-    assert(magmawCrashPlan.Movement->Id.Actor == crash.Guid);
+    assert(magmawCrashPlan.Movement->Id.Actor == dps.Guid);
     assert(magmawCrashPlan.Movement->Id.EventGeneration == magmawCrash.Revision);
     assert(magmawCrashPlan.Movement->ActionPriority
         == BotActionArbitration::Priority::Survival);
@@ -878,9 +888,9 @@ int main()
     auto const* magmawCrashMove = std::get_if<Move>(
         &magmawCrashPlan.Movement->Action);
     assert(magmawCrashMove);
-    assert(magmawCrashMove->X == -14.0f);
-    assert(magmawCrashMove->Y == 0.0f);
-    assert(magmawCrashMove->Z == dps.Position.Z);
+    assert(std::hypot(magmawCrashMove->X - crashBoss.Position.X,
+        magmawCrashMove->Y - crashBoss.Position.Y) < 12.0f);
+    assert(magmawCrashMove->Z == 210.521393f);
 
     BotEncounter::Blackboard magmawParasite = magmaw;
     magmawParasite.Summons.clear();
@@ -1615,8 +1625,9 @@ int main()
         + (isPincerPreposition(persistentCrashNonAssigned) ? 1 : 0);
     assert(persistentCrashPincerCount == 0);
 
-    // The transient native Room Stalker light is the other warning source;
-    // it retains the same deterministic two-DPS assignment as player Mangle.
+    // A transient lit Room Stalker is the Crash telegraph, not merely a pincer
+    // warning. Actors already outside its selected half hold their room side
+    // instead of starting pincer preposition movement.
     BotEncounter::Blackboard litRoomStalker = magmawPincerPreposition;
     litRoomStalker.Players[2].Auras.clear();
     BotEncounter::ActorSnapshot litRoomStalkerActor = persistentCrashActor;
@@ -1635,14 +1646,17 @@ int main()
         litRoomStalker, secondHookBot.Guid, "dps");
     auto litRoomStalkerNonAssigned = magmawStrategy.Propose(
         litRoomStalker, nonHookBot.Guid, "healer");
-    assert(isPincerPreposition(litRoomStalkerFirst));
-    assert(isPincerPreposition(litRoomStalkerSecond));
+    assert(!litRoomStalkerFirst.Movement.has_value());
+    assert(!litRoomStalkerSecond.Movement.has_value());
+    assert(!litRoomStalkerNonAssigned.Movement.has_value());
+    assert(!isPincerPreposition(litRoomStalkerFirst));
+    assert(!isPincerPreposition(litRoomStalkerSecond));
     assert(!isPincerPreposition(litRoomStalkerNonAssigned));
     int const litRoomStalkerPincerCount =
         (isPincerPreposition(litRoomStalkerFirst) ? 1 : 0)
         + (isPincerPreposition(litRoomStalkerSecond) ? 1 : 0)
         + (isPincerPreposition(litRoomStalkerNonAssigned) ? 1 : 0);
-    assert(litRoomStalkerPincerCount == 2);
+    assert(litRoomStalkerPincerCount == 0);
 
     // Without a warning, the assigned user remains on normal ranged
     // formation logic. A warning-local Pillar retains survival ownership over
@@ -1663,6 +1677,8 @@ int main()
     BotEncounter::Blackboard immediateCrash = magmawPincerPreposition;
     immediateCrash.Players[0].ClassSpec = "marksmanship_hunter";
     immediateCrash.Players[1].ClassSpec = "fire_mage";
+    immediateCrash.Players[1].Position.Y = -8.0f;
+    immediateCrash.Players[2].Position.Y = -8.0f;
     immediateCrash.Players[2].Auras.clear();
     BotEncounter::ActorSnapshot immediateCrashActor = persistentCrashActor;
     immediateCrashActor.Guid = ObjectGuid(HighGuid::Unit, uint32(47196),
@@ -1671,9 +1687,10 @@ int main()
         BotEncounter::AdaptiveMagmawStrategy::RoomStalkerEntry;
     immediateCrashActor.Auras = {
         BotEncounter::AuraSnapshot{ 87949u, ObjectGuid{}, 1, 0 } };
-    immediateCrashActor.Position = {
-        immediateCrash.Players[1].Position.X + 2.0f,
-        immediateCrash.Players[1].Position.Y,
+    // ResolveRangedAnchors makes negative Y the left room half for this
+    // fixture. Both the fixed baiter and the ordinary support actor start on
+    // that lit half, so each must cross to its existing right-side anchor.
+    immediateCrashActor.Position = { -10.0f, -12.0f,
         immediateCrash.Players[1].Position.Z };
     BotEncounter::ActorSnapshot closerPincerParasite = immediateCrashActor;
     closerPincerParasite.Guid = ObjectGuid(HighGuid::Unit, uint32(41806),
@@ -1718,7 +1735,19 @@ int main()
     assert(immediateCrashNonownerPlan.Movement->Id.Mechanic
         == "massive_crash_evade");
     assert(immediateCrashNonownerPlan.Movement->Id.Actor
-        == immediateCrashActor.Guid);
+        == nonHookBot.Guid);
+    auto const* immediateCrashMove = std::get_if<Move>(
+        &immediateCrashPlan.Movement->Action);
+    auto const* immediateCrashNonownerMove = std::get_if<Move>(
+        &immediateCrashNonownerPlan.Movement->Action);
+    assert(immediateCrashMove && immediateCrashNonownerMove);
+    assert(immediateCrashMove->X == -10.0f
+        && immediateCrashMove->Y == 24.0f);
+    assert(immediateCrashNonownerMove->X == 12.0f
+        && immediateCrashNonownerMove->Y == 8.0f);
+    assert(immediateCrashMove->Z == immediateCrash.Players[1].Position.Z);
+    assert(immediateCrashNonownerMove->Z
+        == immediateCrash.Players[2].Position.Z);
     assert(immediateCrashPlan.ParasiteCombat.FireMageGuid == hookBot.Guid);
     assert(immediateCrashPlan.ParasiteCombat.MarksmanshipHunterGuid
         == secondHookBot.Guid);
@@ -1753,9 +1782,10 @@ int main()
     // A real lit Crash is the active lethal footprint. It wins over the closer
     // parasite during the open-pincer window and over simultaneous Pillars.
     BotEncounter::Blackboard magmawPincerHazards = magmawHookApproach;
+    magmawPincerHazards.Players[1].Position.Y = -8.0f;
     BotEncounter::ActorSnapshot competingCrash = immediateCrashActor;
     competingCrash.Guid = ObjectGuid(HighGuid::Unit, uint32(47196), uint32(103));
-    competingCrash.Position = { -8.0f, 0.0f, magmawBoss.Position.Z };
+    competingCrash.Position = { -10.0f, -24.0f, magmawBoss.Position.Z };
     BotEncounter::ActorSnapshot competingParasite = magmawBoss;
     competingParasite.Guid = ObjectGuid(HighGuid::Unit, uint32(41806), uint32(104));
     competingParasite.Entry = BotEncounter::AdaptiveMagmawStrategy::ParasiteEntry;
@@ -1767,7 +1797,7 @@ int main()
     assert(competingHazardsPlan.Movement.has_value());
     assert(competingHazardsPlan.Movement->Id.Mechanic
         == "massive_crash_evade");
-    assert(competingHazardsPlan.Movement->Id.Actor == competingCrash.Guid);
+    assert(competingHazardsPlan.Movement->Id.Actor == hookBot.Guid);
 
     BotEncounter::Blackboard magmawPincerPillar = magmawPincerHazards;
     BotEncounter::ActorSnapshot distantPillar = magmawBoss;
@@ -1783,7 +1813,7 @@ int main()
     assert(competingPillarPlan.Movement.has_value());
     assert(competingPillarPlan.Movement->Id.Mechanic
         == "massive_crash_evade");
-    assert(competingPillarPlan.Movement->Id.Actor == competingCrash.Guid);
+    assert(competingPillarPlan.Movement->Id.Actor == hookBot.Guid);
     assert(competingPillarPlan.Movement->ActionPriority
         == BotActionArbitration::Priority::Survival);
 
@@ -2341,7 +2371,7 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
     assert "BuildLaneDestination" not in parasite_policy
     assert "OppositeLaneEndpoint" not in parasite_policy
     assert "if (!pillarBaiter)" in parasite
-    assert "pillarBaiter && observed.NearestImmediateHazard" in strategy
+    assert "pillarBaiter && laneTransition && HasLivingParasite(board)" in strategy
     assert '|| intent.Id.Mechanic == "parasite_contact_evade"' in candidates
 
 

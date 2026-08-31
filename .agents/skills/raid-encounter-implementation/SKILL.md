@@ -87,6 +87,17 @@ Expose enough deterministic state for bot arbitration and evidence:
 
 The encounter script publishes facts. The priority queue remains responsible for candidate ranking and action choice.
 
+When movement policy must reserve a class mobility spell for an upcoming
+lethal mechanic, publish the authoritative native time-to-event and an active
+sequence state from the boss scheduler. Do not duplicate the encounter timer
+inside bot policy or leak private event IDs into generic runtime code. Keep
+ordinary point movement independent of the mobility spell: a reservation,
+cooldown, unknown spell, or rejected cast must not stop the actor from following
+its validated route. Compare the published interval with the spell's native
+reuse cooldown, not its current remaining cooldown. Missing timer evidence
+reserves routine mobility; an explicit imminent-safety predicate may override
+only the spell reservation.
+
 When the reviewed contract assigns Bloodlust, a combat potion, or another
 reserved offensive cooldown, publish the exact boss phase/window that releases
 the shared reservation. Do not select a class spell, synthesize an inventory

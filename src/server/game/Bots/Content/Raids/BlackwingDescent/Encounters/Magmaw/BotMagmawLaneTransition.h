@@ -2,6 +2,7 @@
 #define TRINITY_BOT_MAGMAW_LANE_TRANSITION_H
 
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawParasiteRoute.h"
 #include "ObjectGuid.h"
 
 #include <algorithm>
@@ -250,6 +251,12 @@ struct MagmawLaneTransitionState
     uint64 TransitionId = 0;
     Direction Lane = Direction::None;
     Vector3 Destination;
+    MagmawParasiteRoutePlan MageParasiteRoute;
+    MagmawParasiteRoutePlan HunterParasiteRoute;
+    uint8 MageRoutePoint = 0;
+    uint8 HunterRoutePoint = 0;
+    uint32 MageRouteRevision = 0;
+    uint32 HunterRouteRevision = 0;
     bool Committed = false;
     bool MageArrived = false;
     bool HunterArrived = false;
@@ -315,6 +322,7 @@ struct MagmawLaneTransitionState
     void ObserveArrival(ObjectGuid guid, Vector3 const& position,
         float tolerance, uint64 revision = 0)
     {
+        ObserveRouteProgress(guid, position, tolerance);
         if (!Committed || Distance2d(position, Destination) > tolerance)
             return;
         if (guid == MageGuid)
@@ -323,6 +331,56 @@ struct MagmawLaneTransitionState
             HunterArrived = true;
         if (IsArrived() && !ArrivalObservedRevision)
             ArrivalObservedRevision = revision;
+    }
+
+    void ObserveRouteProgress(ObjectGuid guid, Vector3 const& position,
+        float tolerance)
+    {
+        MagmawParasiteRoutePlan const* route = RouteFor(guid);
+        if (!Committed || !route || route->Empty())
+            return;
+        uint8* nextPoint = guid == MageGuid ? &MageRoutePoint
+            : guid == HunterGuid ? &HunterRoutePoint : nullptr;
+        if (!nextPoint)
+            return;
+        while (*nextPoint < route->PointCount
+            && Distance2d(position, route->Points[*nextPoint])
+                <= tolerance)
+            ++*nextPoint;
+    }
+
+    uint8 NextRoutePoint(ObjectGuid guid) const
+    {
+        return guid == MageGuid ? MageRoutePoint
+            : guid == HunterGuid ? HunterRoutePoint
+            : 0;
+    }
+
+    Vector3 const* NextRouteDestination(ObjectGuid guid) const
+    {
+        MagmawParasiteRoutePlan const* route = RouteFor(guid);
+        uint8 const nextPoint = NextRoutePoint(guid);
+        return route && nextPoint < route->PointCount
+            ? &route->Points[nextPoint] : nullptr;
+    }
+
+    MagmawParasiteRoutePlan const* RouteFor(ObjectGuid guid) const
+    {
+        return guid == MageGuid ? &MageParasiteRoute
+            : guid == HunterGuid ? &HunterParasiteRoute : nullptr;
+    }
+
+    bool HasRoute(ObjectGuid guid) const
+    {
+        MagmawParasiteRoutePlan const* route = RouteFor(guid);
+        return route && !route->Empty();
+    }
+
+    uint64 MovementGeneration(ObjectGuid guid) const
+    {
+        uint64 const revision = guid == MageGuid ? MageRouteRevision
+            : guid == HunterGuid ? HunterRouteRevision : 0;
+        return TransitionId ^ (revision << 32);
     }
 
     bool GenerationRetired(uint64 generation, uint8 kind) const
@@ -365,6 +423,12 @@ struct MagmawLaneTransitionState
         MechanicKind = kind;
         Lane = direction;
         Destination = destination;
+        MageParasiteRoute = {};
+        HunterParasiteRoute = {};
+        MageRoutePoint = 0;
+        HunterRoutePoint = 0;
+        MageRouteRevision = 0;
+        HunterRouteRevision = 0;
         Committed = true;
         MageArrived = false;
         HunterArrived = false;
@@ -373,6 +437,32 @@ struct MagmawLaneTransitionState
         ArrivedMechanicKind = 0;
         ArrivalObservedRevision = 0;
         ArrivalGenerationCaptured = false;
+    }
+
+    void BeginParasiteRoute(uint64 generation, uint8 kind,
+        Direction direction, ObjectGuid guid, MagmawParasiteRoutePlan route)
+    {
+        Begin(generation, kind, direction, route.Destination());
+        AttachParasiteRoute(guid, std::move(route));
+    }
+
+    void AttachParasiteRoute(ObjectGuid guid, MagmawParasiteRoutePlan route)
+    {
+        Destination = route.Destination();
+        if (guid == MageGuid)
+        {
+            if (!MageParasiteRoute.Empty())
+                ++MageRouteRevision;
+            MageParasiteRoute = std::move(route);
+            MageRoutePoint = 0;
+        }
+        else if (guid == HunterGuid)
+        {
+            if (!HunterParasiteRoute.Empty())
+                ++HunterRouteRevision;
+            HunterParasiteRoute = std::move(route);
+            HunterRoutePoint = 0;
+        }
     }
 
     void MarkPreempted()

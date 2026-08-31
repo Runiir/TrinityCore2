@@ -41,7 +41,8 @@ std::optional<AdaptiveMagmawMovementLease> AdaptiveMagmawMovementLeaseFor(
     if (mechanic == "pillar_evade"
         || mechanic == "pillar_bait_switch"
         || mechanic == "massive_crash_evade"
-        || mechanic == "parasite_contact_evade")
+        || mechanic == "parasite_contact_evade"
+        || mechanic == "parasite_directional_mobility")
         return AdaptiveMagmawMovementLease{
             BotMovementArbitration::Owner::Hazard,
             BotMovementArbitration::Priority::Hazard};
@@ -88,6 +89,43 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 return outcome;
             };
             context.State.DecisionKernel.Submit(std::move(movement));
+        }
+
+        if (context.AdaptiveMagmawDirectionalMobility
+            && context.AdaptiveMagmawDirectionalMobility->ExpiresAtMs
+                > context.DecisionNowMs)
+        {
+            BotNativeAction::Candidate const& intent =
+                *context.AdaptiveMagmawDirectionalMobility;
+            BotActionArbitration::Candidate mobility;
+            mobility.Key = intent.Id.Key();
+            mobility.Source = intent.Id.Strategy;
+            mobility.ActionPriority = intent.ActionPriority;
+            mobility.UtilityScore = intent.Utility;
+            mobility.RequiredResources = intent.Resources();
+            mobility.ExpiresAtMs = intent.ExpiresAtMs;
+            mobility.RetryBaseMs = 100;
+            mobility.RetryMaxMs = 500;
+            mobility.EscalateAfter = 2;
+            mobility.Attempt = [this, &context,
+                nativeIntent = BotNativeAction::WithMovementReason(
+                    intent.Action, intent.Id.Mechanic),
+                mechanic = intent.Id.Mechanic]()
+            {
+                BotActionArbitration::Outcome outcome =
+                    ExecuteNativeActionIntent(context.State, context.Bot,
+                        nativeIntent, BotMovementArbitration::Owner::Hazard,
+                        BotMovementArbitration::Priority::Hazard);
+                if (outcome.Result
+                    == BotActionArbitration::Disposition::Committed)
+                {
+                    context.Situation = "adaptive_magmaw";
+                    context.Action = mechanic;
+                    context.State.LastDecisionHandler = "adaptive_magmaw";
+                }
+                return outcome;
+            };
+            context.State.DecisionKernel.Submit(std::move(mobility));
         }
 
         if (context.AdaptiveMagmawMovement

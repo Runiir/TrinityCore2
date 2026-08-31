@@ -133,6 +133,39 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                 ? BotActionArbitration::Outcome::Submitted("native_move_submitted")
                 : BotActionArbitration::Outcome::Retryable("native_move_retryable");
         }
+        else if constexpr (std::is_same_v<T,
+            BotNativeAction::DirectionalMobility>)
+        {
+            if (!std::isfinite(action.X) || !std::isfinite(action.Y))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_directional_mobility_destination_invalid");
+
+            uint32 const spellId = action.SpellId;
+            if (!bot->HasSpell(spellId))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_directional_mobility_spell_unknown");
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+            if (!spellInfo)
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_directional_mobility_spell_unknown");
+            if (spellInfo->IsPassive())
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_directional_mobility_spell_passive");
+
+            float const facing = BotNativeAction::DirectionalMobilityFacingAngle(
+                bot->GetPositionX(), bot->GetPositionY(), action);
+            bot->SetFacingTo(facing);
+            SpellCastResult const result = bot->CastSpell(bot, spellId, false);
+            if (result != SPELL_CAST_OK)
+            {
+                std::string const reason =
+                    "native_directional_mobility_cast_rejected_result_"
+                    + std::to_string(static_cast<unsigned>(result));
+                return BotActionArbitration::Outcome::Retryable(reason);
+            }
+            return BotActionArbitration::Outcome::Submitted(
+                "native_directional_mobility_submitted");
+        }
         else if constexpr (std::is_same_v<T, BotNativeAction::NativeDescent>)
         {
             return ExecuteNativeDescentIntent(state, bot, action);

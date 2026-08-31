@@ -12,15 +12,21 @@ SPELL_MODULE = ROOT / (
     "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/"
     "spell_magmaw_magma_spit.cpp"
 )
+SHARED = ROOT / (
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/"
+    "boss_magmaw_shared.h"
+)
 LOADER = ROOT / "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp"
 SQL = ROOT / "sql/custom/world/2026_08_28_00_bwd_magmaw_magma_spit_target_filter.sql"
 
 
 def test_missile_filter_keeps_only_the_explicit_unit_and_does_not_reimplement_damage():
     source = SPELL_MODULE.read_text(encoding="utf-8")
+    shared_source = SHARED.read_text(encoding="utf-8")
 
     assert len(source.splitlines()) < 1000
-    assert "SPELL_MAGMA_SPIT_MISSILE = 78359" in source
+    assert "SPELL_MAGMA_SPIT_MISSILE                    = 78359" in shared_source
+    assert '#include "boss_magmaw_shared.h"' in source
     assert '#include "Unit.h"' in source
     assert "WorldObject* explicitTarget = GetExplTargetUnit();" in source
     assert "if (!explicitTarget)" in source
@@ -36,12 +42,13 @@ def test_missile_filter_keeps_only_the_explicit_unit_and_does_not_reimplement_da
 
 def test_native_targeting_selection_and_loader_are_separate_from_missile_filter():
     magmaw_source = MAGMAW.read_text(encoding="utf-8")
+    shared_source = SHARED.read_text(encoding="utf-8")
     loader_source = LOADER.read_text(encoding="utf-8")
 
     # 95280 remains the native source-area selector: 3 players in 10-player
     # raids and 8 players in 25-player raids. The new module only owns 78359.
-    assert "SPELL_MAGMA_SPIT_TARGETING                  = 95280" in magmaw_source
-    assert "SPELL_MAGMA_SPIT_MISSILE                    = 78359" in magmaw_source
+    assert "SPELL_MAGMA_SPIT_TARGETING                  = 95280" in shared_source
+    assert "SPELL_MAGMA_SPIT_MISSILE                    = 78359" in shared_source
     assert "RandomResize(targets, GetCaster()->GetMap()->Is25ManRaid() ? 8 : 3);" in magmaw_source
     assert "TARGET_UNIT_SRC_AREA_ENEMY" in magmaw_source[magmaw_source.index("class spell_magmaw_magma_spit") :]
 

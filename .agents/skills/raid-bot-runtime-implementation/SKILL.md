@@ -124,6 +124,15 @@ require both its typed reason and a full window with no observed movement
 progress before terminating; retain a nearby replay where the same retry is
 allowed while movement is advancing.
 
+Treat directional mobility and route traversal as separate candidates.
+Directional spells must claim movement, cast, and GCD resources, face through
+ordinary player state, and use a normal non-triggered cast. Forward travel faces
+toward the route point; backward travel faces away from it. The validated point
+path remains submitted independently with a stable actor-based identity, so a
+reserved, unknown, cooling-down, or rejected mobility spell leaves movement
+eligible in the same kernel resolution. Prove that fallback through the real
+arbiter, not only by testing the two actions separately.
+
 Shared raid cooldown reservation belongs here only when it is class-agnostic:
 reserve offensive cooldowns, offensive guardians, combat potions, and
 Bloodlust during trash, regroup, and boss staging, while leaving emergency

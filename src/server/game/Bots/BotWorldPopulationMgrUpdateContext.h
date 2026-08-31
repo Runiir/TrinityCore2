@@ -68,6 +68,7 @@ struct BotWorldPopulationMgr::BotUpdateContext
     std::optional<BotNativeAction::Candidate> AdaptiveAtramedesInteraction;
     std::optional<BotNativeAction::Candidate> AdaptiveChimaeronMovement;
     std::optional<BotNativeAction::Candidate> AdaptiveMagmawMovement;
+    std::optional<BotNativeAction::Candidate> AdaptiveMagmawDirectionalMobility;
     std::optional<BotNativeAction::Candidate> AdaptiveMagmawInteraction;
     std::optional<BotNativeAction::Candidate> AdaptiveMaloriakMovement;
     std::optional<BotNativeAction::Candidate> AdaptiveNefarianMovement;

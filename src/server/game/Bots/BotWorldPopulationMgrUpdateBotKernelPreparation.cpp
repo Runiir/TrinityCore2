@@ -14,6 +14,8 @@
 #include "GossipDef.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
+#include "SpellInfo.h"
+#include "SpellMgr.h"
 
 #include <algorithm>
 #include <optional>
@@ -427,6 +429,22 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                         break;
                     }
 
+            std::optional<BotEncounter::MagmawDirectionalMobilityInput>
+                magmawMobility;
+            if (BotEncounter::ActorSnapshot const* actor =
+                    Cohort().EncounterSnapshot->FindActor(
+                        context.Bot->GetGUID()))
+            {
+                uint32 const spellId = actor->ClassSpec == "fire_mage"
+                    ? 1953u : actor->ClassSpec == "marksmanship_hunter"
+                    ? 781u : 0u;
+                if (spellId)
+                    if (SpellInfo const* info = sSpellMgr->GetSpellInfo(spellId))
+                        magmawMobility =
+                            BotEncounter::MagmawDirectionalMobilityInput{
+                                spellId, info->GetRecoveryTime() };
+            }
+
             BotEncounter::AdaptiveMagmawStrategy magmawStrategy;
             BotEncounter::AdaptiveMagmawPlan magmawPlan = magmawStrategy.Propose(
                 *Cohort().EncounterSnapshot, context.Bot->GetGUID(),
@@ -434,7 +452,7 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 context.State.ActivePathValid, context.State.IsMoving,
                 &magmawLaneOwner->MagmawLaneTransition,
                 &context.State.MagmawParasiteHazard,
-                &context.State.MagmawEventMovement);
+                &context.State.MagmawEventMovement, magmawMobility);
             context.AdaptiveMagmawOwnsNode = magmawPlan.OwnsNode;
             context.State.MagmawParasiteCombat = magmawPlan.ParasiteCombat;
             context.AdaptiveMagmawSuppressOffense = magmawPlan.SuppressOffense;
@@ -442,6 +460,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             context.AdaptiveMagmawPriorityHealTargetGuid =
                 magmawPlan.PriorityHealTarget;
             context.AdaptiveMagmawMovement = std::move(magmawPlan.Movement);
+            context.AdaptiveMagmawDirectionalMobility =
+                std::move(magmawPlan.DirectionalMobility);
             context.AdaptiveMagmawInteraction = std::move(magmawPlan.Interaction);
             if (!magmawPlan.DamageTarget.IsEmpty())
                 if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*context.Bot,

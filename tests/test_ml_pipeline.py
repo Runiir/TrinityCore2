@@ -10099,7 +10099,7 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     assert {53595, 31935, 26573, 53600}.issubset(set(bot_spell_ids(paladin, manifest)))
     assert {6673, 469, 355, 2565}.issubset(set(bot_spell_ids(warrior, manifest)))
     assert {25780, 31801, 465, 20217, 19740, 54428}.issubset(set(bot_spell_ids(paladin, manifest)))
-    assert {56641, 2643, 77767, 883, 982, 1130, 13165, 34477}.issubset(set(bot_spell_ids(hunter, manifest)))
+    assert {781, 56641, 2643, 77767, 883, 982, 1130, 13165, 34477}.issubset(set(bot_spell_ids(hunter, manifest)))
     mastery_spells_by_class = {
         1: 87500,
         2: 87494,
@@ -10130,7 +10130,7 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     assert 674 in bot_spell_ids(shaman, manifest)
     assert 2008 in bot_spell_ids(shaman, manifest)
     assert {324, 8024, 8232, 8075, 3599, 5394, 8512, 3738, 8227, 66842}.issubset(set(bot_spell_ids(shaman, manifest)))
-    assert {1459, 30482, 79057}.issubset(set(bot_spell_ids(mage, manifest)))
+    assert {1459, 1953, 30482, 79057}.issubset(set(bot_spell_ids(mage, manifest)))
     assert 85767 in bot_spell_ids(warlock, manifest)
     assert 79060 in bot_spell_ids(druid, manifest)
     assert {8042, 17364, 60103, 421}.issubset(set(bot_spell_ids(shaman, manifest)))

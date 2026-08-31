@@ -26,8 +26,11 @@ struct MagmawEventMovementTransitionState
         uint64 IntentId = 0;
         Vector3 SourcePosition;
         Vector3 Destination;
+        Vector3 UnsafeSideAnchor;
+        Vector3 SafeSideAnchor;
         float LethalEnvelope = 0.0f;
         float ArrivalTolerance = 1.0f;
+        bool CompleteOnSafeSide = false;
         bool Active = false;
         bool Arrived = false;
 
@@ -92,7 +95,11 @@ struct MagmawEventMovementTransitionState
             && Distance2d(position, Lethal.SourcePosition)
                 > Lethal.LethalEnvelope
             && std::fabs(position.Z - Lethal.SourcePosition.Z) <= 1.5f;
-        if (!destinationReached && !lethalEnvelopeCleared)
+        bool const safeSideReached = Lethal.CompleteOnSafeSide
+            && Distance2d(position, Lethal.SafeSideAnchor)
+                < Distance2d(position, Lethal.UnsafeSideAnchor)
+            && std::fabs(position.Z - Lethal.Destination.Z) <= 1.5f;
+        if (!destinationReached && !lethalEnvelopeCleared && !safeSideReached)
             return;
         Lethal.Active = false;
         Lethal.Arrived = true;
@@ -112,9 +119,34 @@ struct MagmawEventMovementTransitionState
         return Lethal.Active ? &Lethal : nullptr;
     }
 
+    Episode const* RetainRoomSideLethal(ObjectGuid source,
+        ObjectGuid assignment, std::string mechanic, Vector3 destination,
+        Vector3 unsafeSideAnchor, Vector3 safeSideAnchor,
+        float arrivalTolerance = 2.5f)
+    {
+        if (!Lethal.Matches(source, assignment, mechanic) || !Lethal.Active)
+        {
+            Begin(Lethal, source, assignment, std::move(mechanic), destination,
+                {}, 0.0f, arrivalTolerance);
+            Lethal.UnsafeSideAnchor = unsafeSideAnchor;
+            Lethal.SafeSideAnchor = safeSideAnchor;
+            Lethal.CompleteOnSafeSide = true;
+        }
+        return Lethal.Active ? &Lethal : nullptr;
+    }
+
     Episode const* ActiveLethal() const
     {
         return Lethal.Active ? &Lethal : nullptr;
+    }
+
+    void RetireActiveLethal()
+    {
+        if (Lethal.Active)
+        {
+            Lethal.Active = false;
+            Lethal.Arrived = true;
+        }
     }
 
 private:
@@ -131,8 +163,11 @@ private:
         episode.IntentId = NextIntentId;
         episode.SourcePosition = sourcePosition;
         episode.Destination = destination;
+        episode.UnsafeSideAnchor = {};
+        episode.SafeSideAnchor = {};
         episode.LethalEnvelope = lethalEnvelope;
         episode.ArrivalTolerance = arrivalTolerance;
+        episode.CompleteOnSafeSide = false;
         episode.Active = true;
         episode.Arrived = false;
     }
@@ -188,6 +223,7 @@ RetainMagmawRadialLethalMovement(
             board, *episode, BotActionArbitration::Priority::Survival, utility))
         : std::nullopt;
 }
+
 }
 
 #endif

@@ -44,7 +44,7 @@ public:
         ObjectGuid mage;
         ObjectGuid hunter;
         for (ActorSnapshot const& member : board.Players)
-            if (member.Role == "dps")
+            if (member.Alive && member.Role == "dps")
             {
                 if (member.ClassSpec == "fire_mage"
                     && (mage.IsEmpty() || member.Guid.GetRawValue()
@@ -74,6 +74,140 @@ public:
     {
         return EnsureLaneTransition(board, bot, anchors, transition,
             generation, kind);
+    }
+
+    // Crash observation is caller-owned. Once admitted, the route points and
+    // far endpoint live in the semantic transition and therefore survive
+    // parasite GUID churn and short movement-lease expiry.
+    static std::optional<Vector3> EnsureSafeParasiteRoute(
+        Blackboard const& board, ActorSnapshot const& bot,
+        FormationAnchors const& anchors, MagmawLaneTransitionState& transition,
+        uint64 generation, uint8 kind,
+        std::optional<MagmawParasiteCrashObstacle> const& crash = std::nullopt)
+    {
+        transition.ObserveScope(board);
+        std::pair<ObjectGuid, ObjectGuid> const baiters =
+            ResolveFixedBaiters(board);
+        transition.AssignBaiters(baiters.first, baiters.second);
+        if (!transition.IsBaiter(bot.Guid))
+            return std::nullopt;
+        transition.ObserveArrival(bot.Guid, bot.Position,
+            DestinationTolerance, board.Revision);
+        std::vector<Vector3> const parasites = LivingParasitePositions(board);
+
+        transition.RecordArrivalGeneration(generation, kind, board.Revision);
+        if (transition.IsArrived()
+            && transition.GenerationRetired(generation, kind))
+        {
+            MagmawLaneTransitionState::Direction const direction =
+                OppositeDirection(transition.Lane);
+            Vector3 const destination = DestinationFor(anchors, direction);
+            if (!LaneEndpoint(anchors, destination)
+                || !FullLaneCorridorSafe(anchors))
+                return std::nullopt;
+            std::optional<MagmawParasiteRoutePlan> route =
+                MagmawParasiteRoute::Build(bot.Position, anchors.Support,
+                    destination, parasites, crash, StackSeparation);
+            if (!route)
+                return std::nullopt;
+            transition.BeginParasiteRoute(generation, kind, direction,
+                bot.Guid, *route);
+        }
+
+        bool const promotePillarLane = transition.Committed
+            && transition.MechanicKind == 1 && kind == 2
+            && !transition.HasRoute(bot.Guid);
+        bool const attachCommittedLane = transition.Committed
+            && transition.MechanicKind == kind
+            && !transition.HasRoute(bot.Guid);
+        if (!transition.Committed || promotePillarLane
+            || attachCommittedLane)
+        {
+            MagmawLaneTransitionState::Direction direction =
+                promotePillarLane || attachCommittedLane
+                    ? transition.Lane : InitialDirection(board, bot, anchors);
+            uint8 const attempts = promotePillarLane || attachCommittedLane
+                ? 1 : 2;
+            for (uint8 attempt = 0; attempt < attempts; ++attempt)
+            {
+                Vector3 const destination = promotePillarLane
+                        || attachCommittedLane
+                    ? transition.Destination
+                    : DestinationFor(anchors, direction);
+                if (LaneEndpoint(anchors, destination)
+                    && FullLaneCorridorSafe(anchors))
+                    if (std::optional<MagmawParasiteRoutePlan> route =
+                            MagmawParasiteRoute::Build(bot.Position,
+                                anchors.Support, destination, parasites, crash,
+                                StackSeparation))
+                    {
+                        if (attachCommittedLane)
+                            transition.AttachParasiteRoute(bot.Guid, *route);
+                        else
+                            transition.BeginParasiteRoute(generation, kind,
+                                direction, bot.Guid, *route);
+                        break;
+                    }
+                if (!promotePillarLane && !attachCommittedLane)
+                    direction = OppositeDirection(direction);
+            }
+        }
+
+        MagmawParasiteRoutePlan const* route =
+            transition.RouteFor(bot.Guid);
+        if (!transition.Committed || !route || route->Empty())
+            return std::nullopt;
+        uint8 const nextPoint = transition.NextRoutePoint(bot.Guid);
+        if (nextPoint >= route->PointCount)
+            return std::nullopt;
+        if (!MagmawParasiteRoute::RemainingRouteSafe(bot.Position, *route,
+                nextPoint, parasites)
+            || !MagmawParasiteRoute::RemainingRouteAvoidsCrash(bot.Position,
+                *route, nextPoint, crash))
+        {
+            std::optional<MagmawParasiteRoutePlan> replacement =
+                MagmawParasiteRoute::Build(bot.Position, anchors.Support,
+                    transition.Destination, parasites, crash,
+                    StackSeparation);
+            if (!replacement)
+                return std::nullopt;
+            transition.AttachParasiteRoute(bot.Guid, *replacement);
+            route = transition.RouteFor(bot.Guid);
+        }
+        uint8 const safePoint = transition.NextRoutePoint(bot.Guid);
+        return route && safePoint < route->PointCount
+            ? std::optional<Vector3>(route->Points[safePoint])
+            : std::nullopt;
+    }
+
+    static MagmawParasiteRouteFacts ObserveRouteFacts(
+        Blackboard const& board, ActorSnapshot const& bot)
+    {
+        return MagmawParasiteRoute::ObserveFacts(bot.Position,
+            LivingParasitePositions(board));
+    }
+
+    static std::optional<BotNativeAction::Candidate>
+    ProposeSafeParasiteRoute(Blackboard const& board,
+        ActorSnapshot const& bot, FormationAnchors const& anchors,
+        MagmawLaneTransitionState& transition,
+        std::optional<MagmawParasiteCrashObstacle> const& crash = std::nullopt)
+    {
+        uint64 const generation = ParasiteGeneration(board);
+        if (!generation)
+            return std::nullopt;
+        std::optional<Vector3> const waypoint = EnsureSafeParasiteRoute(board,
+            bot, anchors, transition, generation, 2, crash);
+        if (!waypoint || Distance2d(bot.Position, *waypoint)
+                <= DestinationTolerance)
+            return std::nullopt;
+
+        BotNativeAction::Candidate candidate = BuildPointMovement(board,
+            *waypoint, "parasite_contact_evade",
+            ObserveRouteFacts(board, bot).EmergencyClearance);
+        candidate.Id.Actor = bot.Guid;
+        candidate.Id.EventGeneration = transition.MovementGeneration(bot.Guid);
+        return candidate;
     }
 
     static uint64 ParasiteGeneration(Blackboard const& board)
@@ -177,7 +311,8 @@ public:
                 {
                     transition->Begin(generation, 2, direction, redirected);
                     BotNativeAction::Candidate candidate = BuildPointMovement(
-                        board, redirected, "parasite_contact_evade");
+                        board, redirected, "parasite_contact_evade",
+                        ObserveRouteFacts(board, bot).EmergencyClearance);
                     candidate.Id.Actor = bot.Guid;
                     candidate.Id.EventGeneration = transition->TransitionId;
                     return candidate;
@@ -197,7 +332,8 @@ public:
 
         transition->Resume();
         BotNativeAction::Candidate candidate = BuildPointMovement(board,
-            *destination, "parasite_contact_evade");
+            *destination, "parasite_contact_evade",
+            ObserveRouteFacts(board, bot).EmergencyClearance);
         // A baiter owns one point path for the scope.  Pack GUIDs are inputs
         // to safety validation only; replacing the lowest GUID must not
         // replace the native movement owner or restart its path.
@@ -262,6 +398,21 @@ private:
         inspect(board.Hostiles);
         inspect(board.Summons);
         return clearance;
+    }
+
+    static std::vector<Vector3> LivingParasitePositions(
+        Blackboard const& board)
+    {
+        std::vector<Vector3> positions;
+        auto inspect = [&positions](std::vector<ActorSnapshot> const& actors)
+        {
+            for (ActorSnapshot const& actor : actors)
+                if (actor.Alive && IsParasiteEntry(actor.Entry))
+                    positions.push_back(actor.Position);
+        };
+        inspect(board.Hostiles);
+        inspect(board.Summons);
+        return positions;
     }
 
     static bool LaneEndpoint(FormationAnchors const& anchors,
@@ -355,7 +506,8 @@ private:
     }
 
     static BotNativeAction::Candidate BuildPointMovement(
-        Blackboard const& board, Vector3 const& point, std::string mechanic)
+        Blackboard const& board, Vector3 const& point, std::string mechanic,
+        bool preemptCasting = false)
     {
         BotNativeAction::Candidate candidate;
         candidate.Id.ScopeKey = board.CurrentScope.Key();
@@ -366,15 +518,17 @@ private:
         candidate.Utility = 450.0f;
         candidate.ExpiresAtMs = board.ObservedAtMs + 750;
         candidate.Action = BotNativeAction::Move{ point.X, point.Y,
-            point.Z, "parasite_contact_evade" };
+            point.Z, "parasite_contact_evade", preemptCasting };
         return candidate;
     }
 
     static BotNativeAction::Candidate BuildRetainedMove(
         Blackboard const& board, MagmawParasiteHazardState const& hazardState)
     {
+        ActorSnapshot const* actor = board.FindActor(hazardState.ActorGuid);
         BotNativeAction::Candidate candidate = BuildPointMovement(board,
-            hazardState.Destination, "parasite_contact_evade");
+            hazardState.Destination, "parasite_contact_evade",
+            actor && ObserveRouteFacts(board, *actor).EmergencyClearance);
         candidate.Id.Actor = hazardState.ActorGuid;
         candidate.Id.EventGeneration = hazardState.IntentId;
         return candidate;
@@ -413,7 +567,8 @@ private:
         candidate.Utility = 450.0f;
         candidate.ExpiresAtMs = board.ObservedAtMs + 750;
         candidate.Action = BotNativeAction::Move{ destination.X, destination.Y,
-            destination.Z, "parasite_contact_evade" };
+            destination.Z, "parasite_contact_evade",
+            ObserveRouteFacts(board, bot).EmergencyClearance };
         return candidate;
     }
 };

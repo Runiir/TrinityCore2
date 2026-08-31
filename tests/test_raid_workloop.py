@@ -343,7 +343,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "encounter:magmaw_lethal_transition_safe_completion"
+        "encounter:magmaw_fixed_baiter_parasite_containment"
     )
     assert magmaw_25h["active_program_work_unit"] is None
     assert active["classification"] == "failed"
@@ -357,7 +357,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["validation_clock"]["policy"] == "completion_watchdog"
-    assert "bounded endpoint" in active["next_action"].lower()
+    assert "fixed fire mage and marksmanship hunter" in active["next_action"].lower()
     assert "global arbitration priority changes" in active["scope_lock"]["forbidden"]
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False

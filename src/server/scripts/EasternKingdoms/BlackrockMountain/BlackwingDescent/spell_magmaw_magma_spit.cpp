@@ -18,14 +18,10 @@
 #include "ScriptMgr.h"
 #include "SpellScript.h"
 #include "Unit.h"
+#include "boss_magmaw_shared.h"
 
 namespace BlackwingDescent::Magmaw
 {
-enum Spells
-{
-    SPELL_MAGMA_SPIT_MISSILE = 78359
-};
-
 class spell_magmaw_magma_spit_missile : public SpellScript
 {
     void FilterTargets(std::list<WorldObject*>& targets)

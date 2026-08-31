@@ -353,6 +353,355 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
+def test_magmaw_parasite_route_retains_safe_direct_and_crash_arc(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "magmaw_parasite_route_replay.cpp"
+    binary = tmp_path / "magmaw_parasite_route_replay"
+    source.write_text(
+        r'''
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h"
+#include <cassert>
+#include <cmath>
+
+using namespace BotEncounter;
+
+static ActorSnapshot Player(uint32 guid, char const* spec, Vector3 position)
+{
+    ActorSnapshot player;
+    player.Guid = ObjectGuid(HighGuid::Player, guid);
+    player.Alive = true;
+    player.Role = "dps";
+    player.ClassSpec = spec;
+    player.Position = position;
+    return player;
+}
+
+static ActorSnapshot Parasite(uint32 guid, Vector3 position)
+{
+    ActorSnapshot parasite;
+    parasite.Guid = ObjectGuid(HighGuid::Unit, 41806, guid);
+    parasite.Entry = 41806;
+    parasite.Alive = true;
+    parasite.Position = position;
+    return parasite;
+}
+
+static Blackboard Board()
+{
+    Blackboard board;
+    board.CurrentScope = Scope{
+        "parasite-route", 17, 0, 8, "bwd.magmaw.encounter", 669, 3,
+        "magmaw" };
+    board.Revision = 4;
+    board.ObservedAtMs = 1000;
+    board.Players = {
+        Player(30, "fire_mage", { 0.0f, -8.0f, 210.0f }),
+        Player(20, "fire_mage", { -24.0f, -30.0f, 210.0f }),
+        Player(40, "marksmanship_hunter", { 0.0f, -8.0f, 210.0f }),
+        Player(10, "marksmanship_hunter", { -24.0f, -30.0f, 210.0f }),
+        Player(5, "affliction_warlock", { 0.0f, -8.0f, 210.0f }) };
+    board.Hostiles = { Parasite(900, { 0.0f, -60.0f, 210.0f }) };
+    return board;
+}
+
+static void AssertSafeRoute(Vector3 actor, Vector3 support,
+    MagmawParasiteRoutePlan const& route,
+    std::vector<Vector3> const& parasites)
+{
+    Vector3 previous = actor;
+    for (uint8 index = 0; index < route.PointCount; ++index)
+    {
+        Vector3 const& point = route.Points[index];
+        assert(point.Z == actor.Z);
+        assert(MagmawParasiteRoute::PointClearance(point, parasites) >= 10.0f);
+        assert(MagmawParasiteRoute::SegmentClearance(previous, point,
+            parasites) >= 10.0f);
+        assert(MagmawParasiteRoute::DistanceToSegment(support, previous,
+            point) >= 20.0f);
+        previous = point;
+    }
+}
+
+int main()
+{
+    Blackboard board = Board();
+    auto const baiters = MagmawParasitePolicy::ResolveFixedBaiters(board);
+    assert(baiters.first == board.Players[1].Guid);
+    assert(baiters.second == board.Players[3].Guid);
+
+    Vector3 const actor = board.Players[1].Position;
+    Vector3 const support{ 0.0f, -8.0f, 999.0f };
+    Vector3 const destination{ 24.0f, -30.0f, 999.0f };
+    std::vector<Vector3> parasites{ board.Hostiles[0].Position };
+
+    // Fail-before counterexample: endpoint clearance alone accepted this
+    // chord. Production admission now proves every point and full segment.
+    auto direct = MagmawParasiteRoute::Build(actor, support, destination,
+        parasites);
+    assert(direct && direct->PointCount == 1);
+    assert(!direct->UsesFarPerimeterArc);
+    assert(direct->AdmittedClearance == 16.0f);
+    AssertSafeRoute(actor, support, *direct, parasites);
+
+    MagmawParasiteCrashObstacle crash;
+    crash.Active = true;
+    crash.Center = { 0.0f, -30.0f, -500.0f };
+    crash.UnsafeSideAnchor = actor;
+    crash.SafeSideAnchor = destination;
+    crash.Radius = 6.0f;
+    auto arc = MagmawParasiteRoute::Build(actor, support, destination,
+        parasites, crash);
+    assert(arc && arc->UsesFarPerimeterArc && arc->PointCount == 3);
+    assert(MagmawParasiteRoute::DistanceToSegment(crash.Center, actor,
+        destination) < crash.Radius);
+    AssertSafeRoute(actor, support, *arc, parasites);
+    Vector3 previous = actor;
+    for (uint8 index = 0; index < arc->PointCount; ++index)
+    {
+        assert(MagmawParasiteRoute::DistanceToSegment(crash.Center, previous,
+            arc->Points[index]) >= crash.Radius);
+        previous = arc->Points[index];
+    }
+
+    MagmawParasitePolicy::FormationAnchors const anchors{
+        support, actor, destination };
+    MagmawLaneTransitionState retained;
+    auto firstPoint = MagmawParasitePolicy::EnsureSafeParasiteRoute(board,
+        board.Players[1], anchors, retained, 900, 2, crash);
+    assert(firstPoint && retained.MageParasiteRoute.UsesFarPerimeterArc);
+    MagmawParasiteRoutePlan const retainedArc = retained.MageParasiteRoute;
+
+    // GUID churn is not a route generation: direction, destination, and all
+    // retained arc points remain byte-for-byte stable.
+    board.Hostiles[0] = Parasite(1, { 0.0f, -60.0f, 210.0f });
+    ++board.Revision;
+    auto churnPoint = MagmawParasitePolicy::EnsureSafeParasiteRoute(board,
+        board.Players[1], anchors, retained, 1, 2, crash);
+    assert(churnPoint && retained.Destination.X == destination.X
+        && retained.Destination.Y == destination.Y);
+    assert(retained.MageParasiteRoute.PointCount == retainedArc.PointCount);
+    for (uint8 index = 0; index < retainedArc.PointCount; ++index)
+    {
+        assert(retained.MageParasiteRoute.Points[index].X
+            == retainedArc.Points[index].X);
+        assert(retained.MageParasiteRoute.Points[index].Y
+            == retainedArc.Points[index].Y);
+        assert(retained.MageParasiteRoute.Points[index].Z == actor.Z);
+    }
+    assert(!MagmawParasitePolicy::EnsureSafeParasiteRoute(board,
+        board.Players[4], anchors, retained, 1, 2, crash));
+
+    MagmawParasiteRouteFacts routine = MagmawParasiteRoute::ObserveFacts(
+        actor, parasites);
+    MagmawParasiteMobilityWindow soonCrash{ 5000, 8000 };
+    assert(routine.ReserveDirectionalMobility(soonCrash));
+    assert(!routine.MayUseBlinkOrDisengage(soonCrash));
+
+    Blackboard emergencyBoard = board;
+    emergencyBoard.Hostiles[0] = Parasite(2,
+        { actor.X + 5.0f, actor.Y, actor.Z });
+    MagmawParasiteRouteFacts emergency =
+        MagmawParasitePolicy::ObserveRouteFacts(emergencyBoard,
+            emergencyBoard.Players[1]);
+    assert(emergency.EmergencyClearance);
+    assert(!emergency.ReserveDirectionalMobility(soonCrash));
+    assert(emergency.MayUseBlinkOrDisengage(soonCrash));
+
+    MagmawLaneTransitionState urgentLane;
+    MagmawParasiteHazardState urgentHazard;
+    auto urgent = MagmawParasitePolicy::Propose(emergencyBoard,
+        emergencyBoard.Players[1], emergencyBoard.Hostiles[0], true, anchors,
+        nullptr, &urgentLane, &urgentHazard);
+    assert(urgent);
+    auto const* move = std::get_if<BotNativeAction::Move>(&urgent->Action);
+    assert(move && move->PreemptCasting);
+    assert(BotActionArbitration::Conflicts(urgent->Resources(),
+        BotActionArbitration::Uses(BotActionArbitration::Resource::Movement)));
+    assert(BotActionArbitration::Conflicts(urgent->Resources(),
+        BotActionArbitration::Uses(BotActionArbitration::Resource::Cast)));
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "g++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/server/game/Entities/Object"),
+            "-I",
+            str(ROOT / "src/common"),
+            "-I",
+            str(ROOT / "src/common/Utilities"),
+            "-I",
+            str(ROOT / "src/common/Logging"),
+            "-I",
+            str(ROOT / "src/common/Debugging"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
+def test_magmaw_pillar_lane_promotes_to_retained_parasite_route(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "magmaw_pillar_parasite_transition.cpp"
+    binary = tmp_path / "magmaw_pillar_parasite_transition"
+    source.write_text(
+        r'''
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h"
+#include <cassert>
+
+using namespace BotEncounter;
+
+static ActorSnapshot Player(uint32 guid, char const* spec, Vector3 position)
+{
+    ActorSnapshot player;
+    player.Guid = ObjectGuid(HighGuid::Player, guid);
+    player.Alive = true;
+    player.Role = "dps";
+    player.ClassSpec = spec;
+    player.Position = position;
+    return player;
+}
+
+static ActorSnapshot Parasite(uint32 guid, Vector3 position)
+{
+    ActorSnapshot parasite;
+    parasite.Guid = ObjectGuid(HighGuid::Unit, 41806, guid);
+    parasite.Entry = 41806;
+    parasite.Alive = true;
+    parasite.Position = position;
+    return parasite;
+}
+
+static Blackboard Board(Vector3 parasitePosition)
+{
+    Blackboard board;
+    board.CurrentScope = Scope{
+        "pillar-parasite", 18, 0, 9, "bwd.magmaw.encounter", 669, 3,
+        "magmaw" };
+    board.Revision = 10;
+    board.Players = {
+        Player(20, "fire_mage", { -24.0f, -30.0f, 210.0f }),
+        Player(10, "marksmanship_hunter", { -24.0f, -30.0f, 210.0f }) };
+    board.Hostiles = { Parasite(900, parasitePosition) };
+    return board;
+}
+
+static void AdmitPillar(Blackboard const& board,
+    MagmawParasitePolicy::FormationAnchors const& anchors,
+    MagmawLaneTransitionState& transition)
+{
+    transition.ObserveScope(board);
+    auto const baiters = MagmawParasitePolicy::ResolveFixedBaiters(board);
+    transition.AssignBaiters(baiters.first, baiters.second);
+    auto pillar = MagmawParasitePolicy::EnsureLaneDestination(board,
+        board.Players[0], anchors, transition, 700, 1);
+    assert(pillar && transition.Committed);
+    assert(transition.MechanicKind == 1);
+    assert(transition.MageParasiteRoute.Empty());
+}
+
+int main()
+{
+    MagmawParasitePolicy::FormationAnchors const anchors{
+        { 0.0f, -8.0f, 210.0f },
+        { -24.0f, -30.0f, 210.0f },
+        { 24.0f, -30.0f, 210.0f } };
+    Blackboard board = Board({ 0.0f, -60.0f, 210.0f });
+    MagmawLaneTransitionState transition;
+    AdmitPillar(board, anchors, transition);
+    auto const lane = transition.Lane;
+    Vector3 const destination = transition.Destination;
+    ObjectGuid const mage = transition.MageGuid;
+    ObjectGuid const hunter = transition.HunterGuid;
+    uint64 const pillarTransitionId = transition.TransitionId;
+
+    // Fail-before: the committed kind-1 lane made the kind-2 call return null
+    // forever because its route was empty. Promotion retains lane ownership
+    // and endpoint while installing the first safe parasite waypoint.
+    auto parasite = MagmawParasitePolicy::EnsureSafeParasiteRoute(board,
+        board.Players[0], anchors, transition,
+        board.Hostiles[0].Guid.GetRawValue(), 2);
+    assert(parasite);
+    assert(transition.MechanicKind == 2);
+    assert(!transition.MageParasiteRoute.Empty());
+    assert(transition.Lane == lane);
+    assert(transition.Destination.X == destination.X
+        && transition.Destination.Y == destination.Y);
+    assert(transition.MageGuid == mage && transition.HunterGuid == hunter);
+    assert(transition.TransitionId != pillarTransitionId);
+
+    auto hunterPoint = MagmawParasitePolicy::EnsureSafeParasiteRoute(board,
+        board.Players[1], anchors, transition, 1, 2);
+    assert(hunterPoint);
+    assert(hunterPoint->X == parasite->X && hunterPoint->Y == parasite->Y);
+    assert(transition.Lane == lane && transition.MageGuid == mage
+        && transition.HunterGuid == hunter);
+
+    // A promotion that cannot prove the hard 10-yard segment clearance fails
+    // closed and leaves the committed Pillar transition untouched.
+    Blackboard blocked = Board({ -19.0f, -30.0f, 210.0f });
+    blocked.CurrentScope.AttemptId += 1;
+    MagmawLaneTransitionState blockedTransition;
+    AdmitPillar(blocked, anchors, blockedTransition);
+    auto const blockedLane = blockedTransition.Lane;
+    Vector3 const blockedDestination = blockedTransition.Destination;
+    uint64 const blockedId = blockedTransition.TransitionId;
+    assert(!MagmawParasitePolicy::EnsureSafeParasiteRoute(blocked,
+        blocked.Players[0], anchors, blockedTransition,
+        blocked.Hostiles[0].Guid.GetRawValue(), 2));
+    assert(blockedTransition.MechanicKind == 1);
+    assert(blockedTransition.MageParasiteRoute.Empty());
+    assert(blockedTransition.TransitionId == blockedId);
+    assert(blockedTransition.Lane == blockedLane);
+    assert(blockedTransition.Destination.X == blockedDestination.X
+        && blockedTransition.Destination.Y == blockedDestination.Y);
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "g++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/server/game/Entities/Object"),
+            "-I",
+            str(ROOT / "src/common"),
+            "-I",
+            str(ROOT / "src/common/Utilities"),
+            "-I",
+            str(ROOT / "src/common/Logging"),
+            "-I",
+            str(ROOT / "src/common/Debugging"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
 def test_magmaw_arrived_endpoint_replans_same_living_wave(tmp_path: Path) -> None:
     source = tmp_path / "magmaw_arrived_endpoint_replay.cpp"
     binary = tmp_path / "magmaw_arrived_endpoint_replay"

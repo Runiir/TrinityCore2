@@ -23,6 +23,7 @@
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
 #include "SpellDefines.h"
+#include <limits>
 
 #define CAST_AI(a, b)   (dynamic_cast<a*>(b))
 #define ENSURE_AI(a,b)  (EnsureAI<a>(b))
@@ -151,6 +152,13 @@ class TC_GAME_API UnitAI
         // Pass parameters between AI
         virtual void DoAction(int32 /*param*/) { }
         virtual uint32 GetData(uint32 /*id = 0*/) const { return 0; }
+        // Read-only encounter observation. Boss scripts may map a mechanic
+        // spell to their authoritative EventMap schedule without exposing
+        // private event identifiers or maintaining a second countdown.
+        virtual uint32 GetTimeUntilEncounterMechanic(uint32 /*spellId*/) const
+        {
+            return std::numeric_limits<uint32>::max();
+        }
         virtual void SetData(uint32 /*id*/, uint32 /*value*/) { }
         virtual void SetGUID(ObjectGuid const& /*guid*/, int32 /*id*/ = 0) { }
         virtual ObjectGuid GetGUID(int32 /*id*/ = 0) const { return ObjectGuid::Empty; }

@@ -46,6 +46,7 @@ int main()
     board.CurrentScope = Scope{ "canary121", 11, 0, 4,
         "bwd.magmaw.encounter", 669, 2, "magmaw" };
     board.Route.NodeId = "bwd.magmaw.encounter";
+    board.Route.NavigationHints = { { -329.0f, -20.0f, 211.815f } };
     board.NativeBossState = "in_progress";
     board.ObservedAtMs = 1000;
     ObjectGuid const actor = PlayerGuid(30009);
@@ -166,6 +167,8 @@ int main()
     captured.CurrentScope.InstanceId = 8;
     captured.Revision = 626;
     captured.ObservedAtMs = 20000;
+    captured.Route.NavigationHints = {
+        { -307.531f, -35.4375f, 211.815f } };
     ObjectGuid const capturedActor = PlayerGuid(30007);
     Vector3 const requested{
         -302.921356f, -26.0047035f, 210.521393f };
@@ -185,8 +188,10 @@ int main()
     ActorSnapshot capturedBot = bot;
     capturedBot.Guid = capturedActor;
     capturedBot.Position = actorAtLaunch;
+    ActorSnapshot capturedBoss = boss;
+    capturedBoss.Position = { -302.467f, -31.7101f, 210.8483f };
     captured.Players = { capturedBot };
-    captured.Hostiles = { boss, capturedCrash };
+    captured.Hostiles = { capturedBoss, capturedCrash };
     MagmawEventMovementTransitionState capturedState;
     auto capturedFirstPlan = strategy.Propose(captured, capturedActor, "dps",
         nullptr, false, false, nullptr, nullptr, &capturedState);
@@ -194,20 +199,32 @@ int main()
     auto const* capturedRequest = std::get_if<BotNativeAction::Move>(
         &capturedFirstPlan.Movement->Action);
     assert(capturedRequest);
-    assert(std::hypot(capturedRequest->X - requested.X,
-        capturedRequest->Y - requested.Y) < 0.001f);
-    assert(std::fabs(capturedRequest->Z - requested.Z) < 0.001f);
+    float roomDx = captured.Route.NavigationHints.front().X
+        - capturedBoss.Position.X;
+    float roomDy = captured.Route.NavigationHints.front().Y
+        - capturedBoss.Position.Y;
+    float const roomLength = std::hypot(roomDx, roomDy);
+    roomDx /= roomLength;
+    roomDy /= roomLength;
+    Vector3 const expectedRightSupport{
+        capturedBoss.Position.X
+            + roomDx * AdaptiveMagmawStrategy::SupportStackDistance
+            + roomDy * AdaptiveMagmawStrategy::SupportStackDistance,
+        capturedBoss.Position.Y
+            + roomDy * AdaptiveMagmawStrategy::SupportStackDistance
+            - roomDx * AdaptiveMagmawStrategy::SupportStackDistance,
+        actorAtLaunch.Z };
+    assert(std::hypot(capturedRequest->X - expectedRightSupport.X,
+        capturedRequest->Y - expectedRightSupport.Y) < 0.001f);
+    assert(capturedRequest->Z == actorAtLaunch.Z);
+    assert(std::hypot(capturedRequest->X - capturedBoss.Position.X,
+        capturedRequest->Y - capturedBoss.Position.Y) < 12.0f);
     uint64 const capturedIntent =
         capturedFirstPlan.Movement->Id.EventGeneration;
 
     captured.Revision += 1;
     captured.ObservedAtMs += 1;
-    capturedBot.Position = {
-        capturedCrash.Position.X
-            + requestedDx / requestedDirectionLength * 10.0f,
-        capturedCrash.Position.Y
-            + requestedDy / requestedDirectionLength * 10.0f,
-        requested.Z };
+    capturedBot.Position = { -306.0f, -35.0f, requested.Z };
     captured.Players = { capturedBot };
     auto unsafePartial = strategy.Propose(captured, capturedActor, "dps",
         nullptr, false, false, nullptr, nullptr, &capturedState);
@@ -245,16 +262,12 @@ int main()
     auto const* reentryRequest = std::get_if<BotNativeAction::Move>(
         &laterOffNavmesh.Movement->Action);
     assert(reentryRequest);
-    assert(std::hypot(reentryRequest->X - requested.X,
-        reentryRequest->Y - requested.Y) > 1.0f);
+    assert(reentryRequest->X == capturedRequest->X
+        && reentryRequest->Y == capturedRequest->Y
+        && reentryRequest->Z == capturedBot.Position.Z);
 
     captured.Revision += 1;
-    capturedBot.Position = {
-        capturedCrash.Position.X
-            + requestedDx / requestedDirectionLength * 8.0f,
-        capturedCrash.Position.Y
-            + requestedDy / requestedDirectionLength * 8.0f,
-        requested.Z };
+    capturedBot.Position = { -306.0f, -35.0f, requested.Z };
     captured.Players = { capturedBot };
     auto capturedReentryContinuation = strategy.Propose(captured,
         capturedActor, "dps",
@@ -269,6 +282,7 @@ int main()
     Blackboard pillarBoard = captured;
     pillarBoard.CurrentScope.AttemptId = 13;
     pillarBoard.Revision = 700;
+    pillarBoard.Route.NavigationHints.clear();
     ActorSnapshot capturedPillar = capturedCrash;
     capturedPillar.Guid = UnitGuid(41843, 802);
     capturedPillar.Entry = AdaptiveMagmawStrategy::PillarEntry;

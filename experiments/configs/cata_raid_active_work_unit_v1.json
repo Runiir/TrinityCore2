@@ -2,12 +2,12 @@
   "behavior_change": true,
   "boss": "magmaw",
   "classification": "failed",
-  "epoch_id": "magmaw_lethal_transition_safe_completion_20260831",
+  "epoch_id": "magmaw_fixed_baiter_parasite_containment_20260831",
   "evidence_contract_change": false,
-  "gate_state": "one_encounter_transition_repair_required",
-  "next_action": "Repair the retained Magmaw Massive Crash transition so a native bounded endpoint that has already put the actor outside the lethal envelope completes the semantic episode. Lock successful trace sequence 626 and receipt 509 progress plus the later receipt-636 off-navmesh retry as one regression, then run one bounded map-669 replay without authserver.",
+  "gate_state": "one_fixed_baiter_containment_repair_required",
+  "next_action": "Repair the fixed Fire Mage and Marksmanship Hunter Magmaw bait contract from the a5062ba7 infection deaths: stage both at the far lane, keep at least 10 yards from every living parasite, cross the stable far lane after Pillar, choose a stable same-floor arc when Massive Crash blocks that lane, keep parasite damage active while moving, and use ordinary Blink or Disengage only through normal learned-spell, facing, cooldown, GCD, and cast execution. Then run one bounded map-669 replay without authserver.",
   "next_owner_skill": "raid-encounter-implementation",
-  "next_work_unit": "encounter:magmaw_lethal_transition_safe_completion",
+  "next_work_unit": "encounter:magmaw_fixed_baiter_parasite_containment",
   "observed_at_commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
   "immutable_input_commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
   "owner_skill": "raid-encounter-implementation",
@@ -28,23 +28,30 @@
   "raid": "blackwing_descent",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "One Magmaw event-movement semantic-completion repair, plus deterministic multi-tick regression coverage for the captured safe bounded endpoint and later off-navmesh retry.",
+    "allowed_change": "One trace-backed Magmaw fixed-baiter parasite-containment repair. It may add a small reusable directional-mobility native intent, provision Blink 1953 to the frozen Fire Mage and Disengage 781 to the frozen Marksmanship Hunter before admission, expose the actual native Magmaw Mangle schedule to encounter policy, split Crash/parasite geometry into focused files, and mechanically split the pre-existing oversized Magmaw boss script without changing registration or gameplay behavior. Deterministic tests must cover stable far-lane staging, 10-yard parasite clearance, Crash-blocked arc selection, facing semantics, Mangle-aware mobility reservation, ordinary spell rejection fallback, and continued parasite target authority while moving.",
     "forbidden": [
       "authserver start or manual-login validation",
       "increasing global receipt or sample capacity",
       "global arbitration priority changes",
       "shared planner admission, floor-selection, tolerance, or fallback changes",
-      "class DPS, pet, consumable, Bloodlust, boss-script, or database-content changes",
-      "changing Magmaw bait ownership, lane assignment, target priority, or movement priority",
+      "class damage coefficients, pet, consumable, Bloodlust, or boss-script behavior changes beyond exposing the native Mangle schedule",
+      "changing fixed bait ownership beyond the lowest-GUID Fire Mage and lowest-GUID Marksmanship Hunter",
+      "direct position, teleport, aura, cooldown, threat, damage, health, or power mutation",
+      "teaching Blink or Disengage after the admission receipt commits",
+      "letting non-baiters target parasites or join the far bait lane",
       "treating a submitted movement request as semantic completion without measured safe actor progress",
       "a second live attempt before the first repaired replay is published and reviewed"
     ],
     "required_postconditions": [
-      "actor 30007 trace sequence 626 and receipt 509 reaching the bounded endpoint outside the Massive Crash envelope retires the same semantic episode",
-      "the retired episode cannot later resubmit the same fixed radial destination as the sequence-636 INCOMPLETE|FARFROMPOLY_END retry",
-      "unsafe partial progress retains one set-and-forget intent and destination across ticks",
-      "re-entry into a lethal envelope starts one new typed episode",
-      "Pillar behavior remains covered if the shared Magmaw lethal-transition helper changes",
+      "only actors 30006 and 30009 own the far Pillar bait lane and parasite targets",
+      "both baiters stage at ordinary maximum ranged distance before Pillar and preserve at least 10 yards from every living parasite after spawn",
+      "a clear lane produces one stable left-to-right or right-to-left point path, while a Massive Crash footprint on that path produces one stable same-floor arc around the blocked half",
+      "Blink faces actor 30006 toward the safe destination and casts learned spell 1953 normally; Disengage faces actor 30009 away from the safe destination and casts learned spell 781 normally",
+      "routine Blink or Disengage is withheld when the actual next-Mangle interval is shorter than the spell's native cooldown; ordinary point movement remains eligible, and only parasite clearance below 10 yards may override the reservation",
+      "cooldown, GCD, unknown-spell, or cast rejection leaves the ordinary native point path eligible in the same decision tick",
+      "movement requests choose X and Y only; their Z value is a floor seed and native pathfinding follows terrain without an encounter-authored vertical offset",
+      "the captured a5062ba7 Massive Crash episode still moves an unsafe actor to the opposite room side and does not resurrect the stale radial destination",
+      "the live replay reports per-actor DPS, party DPS, per-healer HPS, party HPS, parasite infections, movement progress, deaths, and terminal route outcome",
       "the completion watchdog stops the single live replay on clear or the first truthful failure",
       "the immutable run is published and remotely verified before local eviction",
       "all changed C++ files remain below 1000 physical lines"
@@ -72,5 +79,5 @@
     ]
   },
   "mode": "10N",
-  "work_unit": "encounter:magmaw_lethal_transition_safe_completion"
+  "work_unit": "encounter:magmaw_fixed_baiter_parasite_containment"
 }
