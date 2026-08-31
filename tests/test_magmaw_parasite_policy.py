@@ -511,6 +511,42 @@ int main()
         ++index)
         assert(retained.HunterParasiteRoute.Points[index].Z == destination.Z);
 
+    // Retained semantic state must not turn identical X/Y on another floor
+    // into native progress. Build and attach the direct route for both fixed
+    // baiters, then cross the post-retention actor boundary causally.
+    MagmawLaneTransitionState floorRetained;
+    auto floorMagePoint = MagmawParasitePolicy::EnsureSafeParasiteRoute(board,
+        board.Players[1], anchors, floorRetained, 900, 2);
+    auto floorHunterPoint = MagmawParasitePolicy::EnsureSafeParasiteRoute(
+        board, board.Players[3], anchors, floorRetained, 900, 2);
+    assert(floorMagePoint && floorHunterPoint);
+    assert(floorRetained.MageParasiteRoute.PointCount == 1);
+    assert(floorRetained.HunterParasiteRoute.PointCount == 1);
+    MagmawParasiteRoutePlan const* floorMageRoute =
+        floorRetained.RouteFor(board.Players[1].Guid);
+    assert(floorMageRoute && floorRetained.NextRoutePoint(
+        board.Players[1].Guid) == 0);
+
+    Vector3 crossFloorActor = floorMageRoute->Destination();
+    crossFloorActor.Z += BotWorldMovement::NativeFloorTolerance + 0.01f;
+    assert(!MagmawParasiteRoute::RemainingRouteSafe(crossFloorActor,
+        *floorMageRoute, 0, parasites));
+    floorRetained.ObserveArrival(board.Players[1].Guid, crossFloorActor,
+        MagmawParasitePolicy::DestinationTolerance, board.Revision);
+    assert(floorRetained.NextRoutePoint(board.Players[1].Guid) == 0);
+    assert(!floorRetained.MageArrived);
+
+    Vector3 sameFloorActor = floorMageRoute->Destination();
+    sameFloorActor.Z -= 1.0f;
+    assert(MagmawParasiteRoute::RemainingRouteSafe(sameFloorActor,
+        *floorMageRoute, 0, parasites));
+    floorRetained.ObserveArrival(board.Players[1].Guid, sameFloorActor,
+        MagmawParasitePolicy::DestinationTolerance, board.Revision);
+    assert(floorRetained.NextRoutePoint(board.Players[1].Guid)
+        == floorMageRoute->PointCount);
+    assert(floorRetained.MageArrived);
+    assert(!floorRetained.HunterArrived);
+
     // GUID churn is not a route generation: direction, destination, and all
     // retained arc points remain byte-for-byte stable.
     board.Hostiles[0] = Parasite(1, { 0.0f, -60.0f, 210.0f });

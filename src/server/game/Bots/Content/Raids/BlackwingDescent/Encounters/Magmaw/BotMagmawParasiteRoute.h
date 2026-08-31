@@ -90,6 +90,14 @@ public:
         return std::hypot(left.X - right.X, left.Y - right.Y);
     }
 
+    static bool SameNavigationFloor(Vector3 const& left,
+        Vector3 const& right)
+    {
+        return Finite(left) && Finite(right)
+            && std::fabs(left.Z - right.Z)
+                <= BotWorldMovement::NativeFloorTolerance;
+    }
+
     static float DistanceToSegment(Vector3 const& point,
         Vector3 const& start, Vector3 const& end)
     {
@@ -144,7 +152,8 @@ public:
         for (uint8 index = nextPoint; index < route.PointCount; ++index)
         {
             Vector3 const& point = route.Points[index];
-            if (PointClearance(point, parasites) < MinimumClearance
+            if (!SameNavigationFloor(actor, point)
+                || PointClearance(point, parasites) < MinimumClearance
                 || SegmentClearance(previous, point, parasites)
                     < MinimumClearance)
                 return false;
@@ -179,7 +188,7 @@ public:
         std::optional<MagmawParasiteCrashObstacle> const& crash = std::nullopt,
         float supportClearance = 20.0f)
     {
-        if (!Finite(actor) || !SameNavigationFloor(actor, support)
+        if (!SameNavigationFloor(actor, support)
             || !SameNavigationFloor(actor, destination)
             || supportClearance <= 0.0f)
             return std::nullopt;
@@ -220,13 +229,6 @@ private:
     {
         return std::isfinite(point.X) && std::isfinite(point.Y)
             && std::isfinite(point.Z);
-    }
-
-    static bool SameNavigationFloor(Vector3 const& actor,
-        Vector3 const& point)
-    {
-        return Finite(point) && std::fabs(point.Z - actor.Z)
-            <= BotWorldMovement::NativeFloorTolerance;
     }
 
     static bool CrashIntersects(Vector3 const& start, Vector3 const& end,

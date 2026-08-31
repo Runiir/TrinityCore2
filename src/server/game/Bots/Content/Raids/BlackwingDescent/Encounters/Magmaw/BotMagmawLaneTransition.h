@@ -323,7 +323,10 @@ struct MagmawLaneTransitionState
         float tolerance, uint64 revision = 0)
     {
         ObserveRouteProgress(guid, position, tolerance);
-        if (!Committed || Distance2d(position, Destination) > tolerance)
+        if (!Committed
+            || !MagmawParasiteRoute::SameNavigationFloor(position,
+                Destination)
+            || Distance2d(position, Destination) > tolerance)
             return;
         if (guid == MageGuid)
             MageArrived = true;
@@ -344,6 +347,8 @@ struct MagmawLaneTransitionState
         if (!nextPoint)
             return;
         while (*nextPoint < route->PointCount
+            && MagmawParasiteRoute::SameNavigationFloor(position,
+                route->Points[*nextPoint])
             && Distance2d(position, route->Points[*nextPoint])
                 <= tolerance)
             ++*nextPoint;
