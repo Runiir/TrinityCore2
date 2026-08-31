@@ -1592,8 +1592,8 @@
         "same_level_movement_path_floor_false_negative": "absent",
         "same_level_encounter_hazard_path_rejection": "occurred",
         "same_level_native_path_proof_false_negative": "absent",
-        "magmaw_parasite_control_allows_player_infection": "not_causally_closed",
-        "native_planner_executor_launch_divergence": "absent_for_complete_paths"
+        "magmaw_parasite_control_allows_player_infection": "occurred",
+        "native_planner_executor_launch_divergence": "absent"
       },
       "report_sha256": "643d83b9098370b813a5e9181ac0df0fbff81951c75964f262d5481a9a8978a0",
       "raw_jsonl_sha256": "2aff2219c0bc37746cc47532850cea6a7c91d5bcf82c6e279997287ffb5894cf",

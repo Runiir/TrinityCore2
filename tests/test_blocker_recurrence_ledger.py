@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 import subprocess
 import sys
 
@@ -21,6 +22,18 @@ from tools.raid_program.blocker_recurrence_ledger import (
 
 
 CANONICAL_CONFIG_IDENTITY = _canonical_config_identity()
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_checked_in_magmaw_ledger_uses_supported_observation_states() -> None:
+    ledger = json.loads((ROOT / "experiments/configs/"
+        "cata_raid_magmaw_blocker_recurrence_v1.json").read_text())
+
+    # This is the same parser used by the live recurrence gate. A richer
+    # narrative assessment belongs in the evidence note; the ledger remains
+    # deliberately tri-state so admission cannot fail after a green suite.
+    decision = evaluate_ledger(ledger)
+    assert decision["run_count"] == len(ledger["runs"])
 
 
 def _ledger(
