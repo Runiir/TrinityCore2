@@ -1,0 +1,217 @@
+{
+  "schema": "cata_raid_phase1_failure_evidence_summary_v2",
+  "classification": "gameplay_failure",
+  "clear": false,
+  "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "started_at_utc": "2026-08-31T07:51:57Z",
+  "identity": {
+    "source_commit": "a842df32e502bae2861561c0f55e2fece0399cc9",
+    "source_tree": "577e0a74cc6768c5c209857ab8c958995863a399",
+    "source_clean": true,
+    "binary_sha256": "1e8119d4d17fbe900213c2b9d3b7b75934e1d9b47195b71e5a5cddd1e9dd7c7a",
+    "config_sha256": "414aa94c1530b9ade9a23c7685c04d38b74d11dde7c7c2750640e011d564028c",
+    "attempt_id": 1,
+    "server_epoch": 10368588256660814,
+    "instance_id": 8,
+    "lockout_save_id": 8,
+    "group_guid": 2256303413312618497,
+    "leader_guid": 30001,
+    "profile_content_hash": "551F369D459DFA0C01544B93FFAF57A35AA5F681BCE67D6FAB9E8CBA92E626AD",
+    "route_manifest_sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2",
+    "roster_count": 10,
+    "provisioning_all_ready": true,
+    "provisioning_failure_count": 0,
+    "roster_readback_passed": true
+  },
+  "route": {
+    "chainwielder": "cleared",
+    "drudges": "cleared",
+    "magmaw": "engaged_not_cleared",
+    "terminal_node_id": "bwd.magmaw.encounter",
+    "terminal_route_generation": 3,
+    "boss_death_evidence": false
+  },
+  "terminal": {
+    "watchdog_policy": "scoped-repeated-decision-or-death-loop-terminal",
+    "wall_clock_mode": "uncapped",
+    "failure_reason": "repeated_decision_watchdog",
+    "repeated_decision_count": 26,
+    "repeated_action": "adaptive_magmaw_movement",
+    "repeated_outcome": "native_move_retryable",
+    "actor_guid": 30006,
+    "actor_name": "Mgwdpsa",
+    "actor_spec": "fire_mage",
+    "candidate_intent": "pillar_bait_switch",
+    "candidate_is_expected_fixed_baiter": true,
+    "death_loop_count": 0,
+    "elapsed_seconds": 400.376,
+    "terminal_evidence_complete": true
+  },
+  "first_broken_edge": {
+    "summary": "The fixed Fire Mage baiter requested a Pillar lane switch, but native floor validation rejected the complete path and the same survival candidate retried until the watchdog fired.",
+    "candidate_key_suffix": "adaptive_magmaw:pillar_bait_switch:GUID Full: 0x0000000000007536 Type: Player Low: 30006:3",
+    "candidate_priority": 160,
+    "candidate_score": 500,
+    "failed_reason": "native_move_retryable",
+    "decision_destination": {
+      "map": 669,
+      "x": -307.531,
+      "y": -35.4375,
+      "z": 211.815
+    },
+    "failed_receipts": [
+      {
+        "receipt_id": 551,
+        "intent_reason": "pillar_bait_switch",
+        "requested": {
+          "x": -312.400757,
+          "y": -68.8223724,
+          "z": 211.313324
+        },
+        "planner_calculated": true,
+        "planner_complete": true,
+        "floor_failure": "sample_floor_gap",
+        "floor_observation_conflict": true,
+        "reference_z": 0,
+        "resolved_floor_z": 212.986038,
+        "native_launch_attempted": false
+      },
+      {
+        "receipt_id": 553,
+        "intent_reason": "pillar_bait_switch",
+        "requested": {
+          "x": -312.400757,
+          "y": -68.8223724,
+          "z": 211.313324
+        },
+        "planner_calculated": true,
+        "planner_complete": true,
+        "floor_failure": "sample_floor_gap",
+        "floor_observation_conflict": true,
+        "reference_z": 0,
+        "resolved_floor_z": 212.986038,
+        "native_launch_attempted": false
+      }
+    ],
+    "preceding_success": {
+      "receipt_id": 521,
+      "terminal_outcome": "selected_endpoint_reached",
+      "bot_guid": 30006,
+      "shows_native_motion_can_execute_on_the_platform": true
+    },
+    "do_not_apply": [
+      "global_vertical_tolerance_increase",
+      "generic_fallback_fraction_expansion",
+      "priority_queue_reordering"
+    ]
+  },
+  "combat": {
+    "chainwielder": {
+      "duration_sec": 68.498,
+      "combat_duration_sec": 59,
+      "party_dps": 79370.356,
+      "party_hps": 6991.932
+    },
+    "drudges": {
+      "duration_sec": 91.147,
+      "combat_duration_sec": 71,
+      "party_dps": 98226.761,
+      "party_hps": 35733.056
+    },
+    "magmaw": {
+      "duration_sec": 105.923,
+      "combat_duration_sec": 77,
+      "party_dps": 107008.662,
+      "elapsed_party_dps": 77789.215,
+      "party_hps": 21304.558,
+      "elapsed_party_hps": 15487.203,
+      "affliction_warlock_dps": 32469.39,
+      "affliction_warlock_active_dps": 40842.078,
+      "fixed_fire_mage_baiter_dps": 4334.091,
+      "fixed_hunter_baiter_dps": 1015.909
+    }
+  },
+  "mechanics": {
+    "pillar_of_flame_event_count": 2,
+    "pillar_targets": [
+      "Mgwdpsa",
+      "Mgwdpsd"
+    ],
+    "pillar_targets_are_fixed_mage_and_hunter": true,
+    "parasitic_infection_event_count": 22,
+    "parasitic_infection_target_names": [
+      "Mgwdpsb",
+      "Mgwdpsc",
+      "Mgwdpse",
+      "Mgwheala",
+      "Mgwhealb",
+      "Mgwtanka"
+    ],
+    "fixed_baiters_infected": false,
+    "parasites_reached_non_bait_raid": true,
+    "exposed_head_damage_observed": true,
+    "bounded_replay_exposed_head_damage": 7694628,
+    "target_correctness_completeness": "unavailable"
+  },
+  "evidence_quality": {
+    "movement_receipt_status": "partial",
+    "movement_receipts_truncated": true,
+    "identity_mismatch_count": 0,
+    "invalid_publication_count": 0,
+    "causal_assessment": "localized_not_causally_closed",
+    "missing_field": "continuous_receipt_tagged_actor_position_and_spline_identity_from_the_last_sample_until_terminal_outcome_or_supersession",
+    "observed_death_events_in_tactical_window": 0,
+    "terminal_status_deaths_counter": 1,
+    "forbidden_assistance_observed": false
+  },
+  "resources": {
+    "sample_count": 80,
+    "mean_cpu_percent_one_core": 32.924,
+    "minimum_rss_bytes": 1386631168,
+    "maximum_rss_bytes": 1660792832,
+    "sampling_errors": 0
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "stop_ok": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "worldserver_exit_code": 0
+  },
+  "bundle": {
+    "dvc_output_directory": "artifacts/cata_raid_program/phase1_foundation_a842df32e5_magmaw_fixed_bait_live_failure_20260831",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_a842df32e5_magmaw_fixed_bait_live_failure_20260831.dvc",
+    "dvc_directory_md5": "05c65a81525b5df5d1a2e551d18f5ddc.dir",
+    "file_count": 21,
+    "size_bytes": 182463947,
+    "files": {
+      "prestart_bundle.json": {
+        "file_sha256": "76f799c0be5c45e5ecf147a547bf18b6af0ef747171cfebdd863a0ce57e8cc5c",
+        "canonical_report_sha256": "f4945f62905dd62f12b5747cb6c67d810b1d30c955531cca707c788ce5d254d9"
+      },
+      "prestart_bundle.raw.jsonl": {
+        "sha256": "904026edfa6a4aa6efe5263f6a91c251cf11825a638dc389a1cfded9f5becc02"
+      },
+      "prestart_bundle.worldserver.log": {
+        "sha256": "22675619bf221febe0cb393fd3e6ad12e69edb34de080b09788e017540a91cd9"
+      },
+      "tactical_replay.json": {
+        "sha256": "3a496490af5a5bd9574f6f91ea589b4e5b41b77c48a624deb123b2420822861f"
+      },
+      "tactical_replay_summary.json": {
+        "sha256": "48b4312c76984d4151bd85afdc569b7b2310118475f8af0deee97b8036658853"
+      },
+      "strict_provisioning_readback.json": {
+        "sha256": "82e832500156f7b29509d27fa3ed5b20b6b5e7e03af11cf78a78f33e1d45b22b"
+      },
+      "shard_roster_readback.json": {
+        "sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0"
+      }
+    }
+  },
+  "next_action": "Repair the actor-local pillar lane floor reference and bounded retry termination, add deterministic real-planner coverage for receipt 551 semantics, independently review, then request a new recurrence admission. Do not run a second live replay from this source."
+}
