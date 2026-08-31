@@ -1,70 +1,63 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "map669_native_path_correlated_fixture_expansion_20260901b",
-  "work_unit": "shard:map669_native_path_correlated_fixture_expansion",
-  "next_work_unit": "shard:map669_native_path_correlated_fixture_expansion",
-  "owner_skill": "raid-shard-architecture",
-  "next_owner_skill": "raid-shard-architecture",
-  "classification": "implementation_pending_live_verification",
-  "gate_state": "fixture_expansion_only",
-  "behavior_change": false,
-  "evidence_contract_change": false,
+  "work_unit": "evidence:repair_native_path_terminal_classification",
+  "owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "review:repair_native_path_terminal_classification",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed",
+  "epoch_id": "map669_native_path_terminal_classification_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "a53baaa7a711bc6b8e25574b3370fbc46838ef9c",
-  "immutable_input_commit": "a53baaa7a711bc6b8e25574b3370fbc46838ef9c",
+  "gate_state": "implementation_and_review_only",
+  "immutable_input_commit": "69db62a09dab8feb48618d1380da9b7499799d72",
+  "observed_at_commit": "69db62a09dab8feb48618d1380da9b7499799d72",
+  "behavior_change": false,
+  "evidence_contract_change": true,
+  "next_action": "Repair only the capture controller's conflation of terminal outcome failure with receipt identity failure, add deterministic positive and negative tests, and obtain an independent review before another replay is considered.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_native_path_checkpoint_request_contract_repair_handoff_v1.json",
-    "sha256": "353c9d8bcd789c658acba72396b9386dbd6ae5fba6e74f56552b96e858807a1d",
-    "source_commit": "a53baaa7a711bc6b8e25574b3370fbc46838ef9c",
-    "source_tree": "5ddb66e5d7af66274ab2c627afb1d0f0833d0a8b"
+    "path": "experiments/configs/cata_raid_native_path_terminal_classification_failed_handoff_v1.json",
+    "sha256": "f8758dbd4ee30523661f47c7adbf56857fab91c1f1e56807ff66ff5a0f1c3e9f",
+    "source_commit": "69db62a09dab8feb48618d1380da9b7499799d72",
+    "source_tree": "a7607a35282180c09fb6b0d91969eeebc3359fc8"
   },
-  "next_action": "Build the exact descriptor commit, regenerate the source-bound recurrence receipt, seal and verify case a506_receipt636_incomplete_same_floor for actor 30007, then run one observation-only completion-watchdog replay with no retry.",
   "program_scope": {
     "acceptance_admitted": false,
-    "authserver_start_admitted": false,
-    "database_provisioning_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": true,
-    "fixture_expansion_replay_admitted": true,
-    "fixture_prerequisite_build_authorized": true,
+    "fixture_expansion_replay_admitted": false,
+    "fixture_prerequisite_build_authorized": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "worldserver_start_admitted": true
+    "worldserver_start_admitted": false,
+    "authserver_start_admitted": false,
+    "database_provisioning_mutations_allowed": false,
+    "dvc_publication_required_after_terminal": false
   },
   "scope_lock": {
-    "allowed_change": "Operate one exact-current sealed native-path checkpoint replay for the two authoritative pending map-669 fixtures. Only compact terminal metadata and DVC evidence pointers may be added to Git.",
+    "allowed_change": "Change capture-controller Python and its focused tests only so native checkpoint identity validation is independent from native terminal outcome success.",
     "forbidden": [
-      "changing gameplay, C or C++, encounter, class, movement, arbitration, planner, geometry, or shadow authority",
-      "adding the closed floor-observation fixture or any unrelated target",
-      "using the Chainwielder checkpoint, starting an authserver, reprovisioning, GM assistance, or synthetic gameplay evidence",
-      "running a gameplay canary or acceptance run",
-      "retrying after any terminal edge",
-      "using a fixed raid success timer or retaining duplicated raw evidence after verified DVC push"
+      "changing C or C++, gameplay, encounter, class, movement, arbitration, planner, geometry, shadow authority, recurrence revisions, or checkpoint request sets",
+      "building or starting authserver/worldserver",
+      "database mutation, provisioning, GM assistance, or synthetic gameplay evidence",
+      "weakening authority, actor, fixture, receipt, or mirrored-lifecycle identity checks",
+      "treating a native stage failure as success or promoting either pending fixture"
     ],
     "required_postconditions": [
-      "the exact descriptor commit has one gate-bearing fast8 build receipt and a source-bound green recurrence receipt",
-      "the admission purpose and target/pending/request sets are exact and its native checkpoint seal verifies",
-      "actor 30007 executes only compiled case a506_receipt636_incomplete_same_floor under observation-only authority",
-      "one completion-watchdog terminal is recorded truthfully with no retry",
-      "generated evidence is DVC-pushed, remotely verified, cleaned, and locally evicted"
+      "an internally consistent ok=false terminal row is accepted as a truthful native terminal and retains its stage, outcome, and planner reason",
+      "actual authority, actor, fixture, receipt, and mirrored-lifecycle mismatches remain fail-closed",
+      "focused tests pass and an independent Sol-high review returns GO",
+      "no C/C++ file changes and no server start occur"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "one_fixture_expansion_replay_then_terminal_review",
+    "repair_policy": "one_bounded_contract_repair_then_review",
     "terminal_edges": [
-      "native_path_checkpoint_launch_progress_verified",
-      "native_path_checkpoint_no_launch_verified",
-      "monotonic_no_progress",
-      "semantic_stall",
-      "repeated_decisions",
-      "excessive_death_loop",
-      "infrastructure_loss",
-      "identity_or_checkpoint_failure",
-      "publication_or_cleanup_failure",
-      "explicit_interruption"
+      "focused_tests_failed",
+      "scope_drift",
+      "identity_check_weakened",
+      "independent_review_no_go",
+      "repair_verified"
     ]
   }
 }

@@ -1,0 +1,68 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:map669_native_path_correlated_fixture_expansion",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "native_path_terminal_classification_failed",
+  "source": {
+    "commit": "69db62a09dab8feb48618d1380da9b7499799d72",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_69db62a09d_native_path_floor_probe_terminal_20260901.dvc",
+    "dvc_pointer_sha256": "29d32718d87fa388c5fab31fd867db196c1088bd383881c075c27a67eb1bdcb2",
+    "capture_report_sha256": "7a1aee9ee0fb9d35f36d45e49589c95deb39aa992472dae76a562481df9b3750",
+    "raw_normalized_sha256": "8e7aa5497e872ba60f5f64768716d9c064a5b81244b5f59952dfc503d1a31744",
+    "worldserver_log_sha256": "872851f71e10a303cd96fde9cc1ebdb39647d89040ab759ca024c48f7d58eefc"
+  },
+  "operations": {
+    "worldserver_start_count": 1,
+    "retry_count": 0,
+    "authserver_start_count": 0,
+    "database_mutation_count": 0,
+    "cleanup_verified": true,
+    "dvc_remote_verified": true
+  },
+  "first_failed_gate": {
+    "capture_classification": "infrastructure_abort",
+    "reported_reason": "controller_route_hold_checkpoint_receipt_identity_invalid",
+    "actual_boundary": "native_path_checkpoint_terminal_classification",
+    "exact_mismatch": "the native row sets ok=false for a truthful terminal stage-submit failure; all identity and mirrored lifecycle fields remain equal, but the capture controller treats ok=false as an identity failure",
+    "native_terminal": {
+      "stage": "failed",
+      "terminal": true,
+      "outcome": "native_path_checkpoint_stage_submit_failed",
+      "stage_submit_count": 1,
+      "stage_receipt_id": 0,
+      "planner_result": "rejected",
+      "planner_gate": "target_z_transition",
+      "planner_reason": "route_destination_invalid_z_transition"
+    },
+    "geometry_observation": {
+      "actor_z": 193.126999,
+      "requested_z": 210.098007,
+      "resolved_target_floor_z": -106.245819,
+      "absolute_z_delta": 316.343811,
+      "threshold": 4.0
+    }
+  },
+  "claim_ledger": {
+    "verified": [
+      "the exact source-bound recurrence bank passed and admitted exactly the two pending fixture revisions",
+      "one sealed observation-only worldserver replay started and stopped cleanly without retry",
+      "the native terminal row is identity-consistent with its nested controller-route-hold lifecycle",
+      "the production planner rejected the stage request before path generation because the target-floor probe resolved lower geometry"
+    ],
+    "refuted": [
+      "the terminal row failed controller receipt identity validation",
+      "the replay exercised movement launch or physical progress"
+    ],
+    "unproven": [
+      "same-level incomplete-path fallback admission",
+      "same-level native path proof",
+      "Magmaw gameplay behavior or acceptance"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:repair_native_path_terminal_classification",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Separate checkpoint identity validation from checkpoint outcome success. Accept an internally identity-consistent ok=false terminal row as a native terminal, preserve its exact stage/outcome/planner fields, and retain fail-closed rejection for authority, actor, fixture, receipt, or mirrored-lifecycle mismatches.",
+    "required_postcondition": "focused capture-controller tests prove truthful terminal failures are not relabeled as identity failures, every real identity mismatch still fails closed, no C/C++, gameplay, database, build, or server changes occur, and an independent review returns GO"
+  }
+}

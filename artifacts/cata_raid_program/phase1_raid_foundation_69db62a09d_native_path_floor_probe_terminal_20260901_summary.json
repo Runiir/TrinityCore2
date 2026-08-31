@@ -1,0 +1,22 @@
+{
+  "schema": "cata_raid_compact_run_summary_v1",
+  "classification": "native_path_terminal_classification_failed",
+  "source_commit": "69db62a09dab8feb48618d1380da9b7499799d72",
+  "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_69db62a09d_native_path_floor_probe_terminal_20260901.dvc",
+  "worldserver_starts": 1,
+  "retries": 0,
+  "cleanup_verified": true,
+  "capture_controller_reported": "controller_route_hold_checkpoint_receipt_identity_invalid",
+  "reviewed_first_edge": "native terminal ok=false was incorrectly conflated with identity invalidity",
+  "native_outcome": "native_path_checkpoint_stage_submit_failed",
+  "planner_reason": "route_destination_invalid_z_transition",
+  "geometry": {
+    "actor_z": 193.126999,
+    "requested_z": 210.098007,
+    "resolved_target_floor_z": -106.245819,
+    "absolute_z_delta": 316.343811
+  },
+  "movement_launched": false,
+  "fixture_promoted": false,
+  "gameplay_claims": false
+}
