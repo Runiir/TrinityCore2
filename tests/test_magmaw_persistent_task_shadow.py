@@ -144,7 +144,7 @@ static std::vector<MagmawTransferLaneActorObservation> Observations(
             { board.CurrentScope.WipeGeneration,
                 actor.Alive ? 0u : mageLife + 1,
                 actor.Guid == PlayerGuid(400) ? hunterLife : mageLife, true },
-            actor.Position, true, actor.Alive, false, true });
+            actor.Position, true, actor.Alive, {} });
     return result;
 }
 
@@ -189,6 +189,92 @@ int main()
     auto sameRevision = MagmawTransferLaneTaskShadow::Reconcile(shadow,
         facts->Facts(), board, coordinator->Plan(), Observations(board));
     assert(sameRevision == shadow);
+
+    // Arrival cannot terminate a task while typed safety owns movement.
+    // Recovery preempts even at the immutable destination; a same-scope
+    // Hazard aimed elsewhere does too. Clearing safety completes the same
+    // task identities and destinations on the next observation.
+    {
+        Blackboard arrivalBoard = board;
+        Actor(arrivalBoard, 300).Position =
+            Task(*shadow, 300).Destination;
+        Actor(arrivalBoard, 400).Position =
+            Task(*shadow, 400).Destination;
+        ++arrivalBoard.Revision;
+        arrivalBoard.ObservedAtMs += 10;
+        auto arrivalFacts = MagmawFactsCache::ForSnapshot(
+            facts, arrivalBoard);
+        auto arrivalCoordinator = MagmawCoordinator::Reconcile(
+            coordinator, arrivalFacts->Facts(), arrivalBoard, roster);
+        auto arrivalObservations = Observations(arrivalBoard);
+
+        BotMovementArbitration::Lease arrivalRecovery;
+        arrivalRecovery.MovementOwner =
+            BotMovementArbitration::Owner::Recovery;
+        arrivalRecovery.MovementPriority =
+            BotMovementArbitration::Priority::Recovery;
+        arrivalRecovery.ExpiresAtMs = arrivalBoard.ObservedAtMs + 1000;
+        arrivalRecovery.MovementScope = MagmawTransferLaneMovementScope(
+            arrivalBoard.CurrentScope);
+        arrivalRecovery.X = Task(*shadow, 300).Destination.X;
+        arrivalRecovery.Y = Task(*shadow, 300).Destination.Y;
+        arrivalRecovery.Z = Task(*shadow, 300).Destination.Z;
+        arrivalObservations[4].Movement.CurrentLease = arrivalRecovery;
+
+        BotMovementArbitration::Lease arrivalHazard = arrivalRecovery;
+        arrivalHazard.MovementOwner =
+            BotMovementArbitration::Owner::Hazard;
+        arrivalHazard.MovementPriority =
+            BotMovementArbitration::Priority::Hazard;
+        arrivalHazard.X += 10.0f;
+        arrivalObservations[6].Movement.CurrentLease = arrivalHazard;
+
+        auto arrivalShadow = MagmawTransferLaneTaskShadow::Reconcile(
+            shadow, arrivalFacts->Facts(), arrivalBoard,
+            arrivalCoordinator->Plan(), arrivalObservations);
+        assert(Task(*arrivalShadow, 300).State == TaskState::Suspended);
+        assert(Task(*arrivalShadow, 300).Suspension
+            == Suspension::SafetyPreempted);
+        assert(Task(*arrivalShadow, 400).State == TaskState::Suspended);
+        assert(Task(*arrivalShadow, 400).Suspension
+            == Suspension::SafetyPreempted);
+        uint64 const arrivalMageGeneration =
+            Task(*arrivalShadow, 300).Id.TaskGeneration;
+        uint64 const arrivalHunterGeneration =
+            Task(*arrivalShadow, 400).Id.TaskGeneration;
+        Vector3 const arrivalMageDestination =
+            Task(*arrivalShadow, 300).Destination;
+        Vector3 const arrivalHunterDestination =
+            Task(*arrivalShadow, 400).Destination;
+
+        ++arrivalBoard.Revision;
+        arrivalBoard.ObservedAtMs += 10;
+        arrivalFacts = MagmawFactsCache::ForSnapshot(
+            arrivalFacts, arrivalBoard);
+        arrivalCoordinator = MagmawCoordinator::Reconcile(
+            arrivalCoordinator, arrivalFacts->Facts(), arrivalBoard, roster);
+        arrivalShadow = MagmawTransferLaneTaskShadow::Reconcile(
+            arrivalShadow, arrivalFacts->Facts(), arrivalBoard,
+            arrivalCoordinator->Plan(), Observations(arrivalBoard));
+        assert(Task(*arrivalShadow, 300).State == TaskState::Succeeded);
+        assert(Task(*arrivalShadow, 400).State == TaskState::Succeeded);
+        assert(Task(*arrivalShadow, 300).Id.TaskGeneration
+            == arrivalMageGeneration);
+        assert(Task(*arrivalShadow, 400).Id.TaskGeneration
+            == arrivalHunterGeneration);
+        assert(Task(*arrivalShadow, 300).Destination.X
+                == arrivalMageDestination.X
+            && Task(*arrivalShadow, 300).Destination.Y
+                == arrivalMageDestination.Y
+            && Task(*arrivalShadow, 300).Destination.Z
+                == arrivalMageDestination.Z);
+        assert(Task(*arrivalShadow, 400).Destination.X
+                == arrivalHunterDestination.X
+            && Task(*arrivalShadow, 400).Destination.Y
+                == arrivalHunterDestination.Y
+            && Task(*arrivalShadow, 400).Destination.Z
+                == arrivalHunterDestination.Z);
+    }
     uint64 const episodeGeneration = shadow->Episode()->Id.EpisodeGeneration;
     uint64 const mageTaskGeneration = Task(*shadow, 300).Id.TaskGeneration;
     uint64 const hunterTaskGeneration = Task(*shadow, 400).Id.TaskGeneration;
@@ -202,7 +288,16 @@ int main()
     coordinator = MagmawCoordinator::Reconcile(coordinator,
         facts->Facts(), board, roster);
     auto observations = Observations(board);
-    observations[4].SafetyPreempted = true;
+    BotMovementArbitration::Lease recovery;
+    recovery.MovementOwner = BotMovementArbitration::Owner::Recovery;
+    recovery.MovementPriority = BotMovementArbitration::Priority::Recovery;
+    recovery.ExpiresAtMs = board.ObservedAtMs + 1000;
+    recovery.MovementScope = MagmawTransferLaneMovementScope(
+        board.CurrentScope);
+    recovery.X = shadow->Episode()->Destination.X;
+    recovery.Y = shadow->Episode()->Destination.Y;
+    recovery.Z = shadow->Episode()->Destination.Z;
+    observations[4].Movement.CurrentLease = recovery;
     shadow = MagmawTransferLaneTaskShadow::Reconcile(shadow,
         facts->Facts(), board, coordinator->Plan(), observations);
     assert(shadow->Episode()->Id.EpisodeGeneration == episodeGeneration);
@@ -213,7 +308,7 @@ int main()
     assert(Task(*shadow, 300).State == TaskState::Suspended);
     assert(Task(*shadow, 300).Suspension == Suspension::SafetyPreempted);
 
-    // Observation loss and exact lease expiry suspend; neither is progress.
+    // Observation loss suspends. Lease absence does not.
     board.Players.erase(std::remove_if(board.Players.begin(),
         board.Players.end(), [](ActorSnapshot const& actor)
         {
@@ -245,15 +340,147 @@ int main()
         {
             return actor.Guid == PlayerGuid(400);
         });
-    hunter->MovementLeaseActive = false;
+    shadow = MagmawTransferLaneTaskShadow::Reconcile(shadow,
+        facts->Facts(), board, coordinator->Plan(), observations);
+    assert(Task(*shadow, 400).State == TaskState::Running);
+    assert(Task(*shadow, 400).Suspension == Suspension::None);
+    assert(Task(*shadow, 400).MovementDisposition
+        == MagmawTransferLaneMovementDisposition::NoLease);
+    assert(Task(*shadow, 400).ProgressSamples == hunterProgressSamples);
+
+    // Matching legacy movement stays owned; a mismatched current Hazard then
+    // suspends. Clearing it resumes the exact same task identity and
+    // destination and pauses the no-progress clock.
+    uint64 const retainedHunterGeneration =
+        Task(*shadow, 400).Id.TaskGeneration;
+    Vector3 const retainedHunterDestination = Task(*shadow, 400).Destination;
+    uint32 const progressBeforeLease = Task(*shadow, 400).ProgressSamples;
+
+    BotMovementArbitration::Lease expired = recovery;
+    expired.MovementOwner = BotMovementArbitration::Owner::Hazard;
+    expired.MovementPriority = BotMovementArbitration::Priority::Hazard;
+    expired.ExpiresAtMs = board.ObservedAtMs;
+    ++board.Revision;
+    facts = MagmawFactsCache::ForSnapshot(facts, board);
+    coordinator = MagmawCoordinator::Reconcile(coordinator,
+        facts->Facts(), board, roster);
+    observations = Observations(board);
+    hunter = std::find_if(observations.begin(), observations.end(),
+        [](MagmawTransferLaneActorObservation const& actor)
+        {
+            return actor.Guid == PlayerGuid(400);
+        });
+    hunter->Movement.CurrentLease = expired;
+    shadow = MagmawTransferLaneTaskShadow::Reconcile(shadow,
+        facts->Facts(), board, coordinator->Plan(), observations);
+    assert(Task(*shadow, 400).State == TaskState::Running);
+    assert(Task(*shadow, 400).MovementDisposition
+        == MagmawTransferLaneMovementDisposition::ExpiredLease);
+
+    ++board.Revision;
+    ++board.ObservedAtMs;
+    facts = MagmawFactsCache::ForSnapshot(facts, board);
+    coordinator = MagmawCoordinator::Reconcile(coordinator,
+        facts->Facts(), board, roster);
+    observations = Observations(board);
+    hunter = std::find_if(observations.begin(), observations.end(),
+        [](MagmawTransferLaneActorObservation const& actor)
+        {
+            return actor.Guid == PlayerGuid(400);
+        });
+    hunter->Movement.CurrentLease = expired;
+    shadow = MagmawTransferLaneTaskShadow::Reconcile(shadow,
+        facts->Facts(), board, coordinator->Plan(), observations);
+    assert(Task(*shadow, 400).State == TaskState::Running);
+    assert(Task(*shadow, 400).MovementDisposition
+        == MagmawTransferLaneMovementDisposition::ExpiredLease);
+    assert(Task(*shadow, 400).ProgressSamples == progressBeforeLease);
+
+    // The legacy transfer is a Hazard lease. Matching the immutable task
+    // destination is its own movement, and refreshing only that short lease
+    // is neither safety preemption nor semantic progress.
+    BotMovementArbitration::Lease hazard = recovery;
+    hazard.MovementOwner = BotMovementArbitration::Owner::Hazard;
+    hazard.MovementPriority = BotMovementArbitration::Priority::Hazard;
+    hazard.X = retainedHunterDestination.X;
+    hazard.Y = retainedHunterDestination.Y;
+    hazard.Z = retainedHunterDestination.Z;
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    facts = MagmawFactsCache::ForSnapshot(facts, board);
+    coordinator = MagmawCoordinator::Reconcile(coordinator,
+        facts->Facts(), board, roster);
+    observations = Observations(board);
+    hunter = std::find_if(observations.begin(), observations.end(),
+        [](MagmawTransferLaneActorObservation const& actor)
+        {
+            return actor.Guid == PlayerGuid(400);
+        });
+    hazard.ExpiresAtMs = board.ObservedAtMs + 1000;
+    hunter->Movement.CurrentLease = hazard;
+    shadow = MagmawTransferLaneTaskShadow::Reconcile(shadow,
+        facts->Facts(), board, coordinator->Plan(), observations);
+    assert(Task(*shadow, 400).State == TaskState::Running);
+    assert(Task(*shadow, 400).MovementDisposition
+        == MagmawTransferLaneMovementDisposition::OwnHazardTransfer);
+    assert(Task(*shadow, 400).ProgressSamples == progressBeforeLease);
+
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    facts = MagmawFactsCache::ForSnapshot(facts, board);
+    coordinator = MagmawCoordinator::Reconcile(coordinator,
+        facts->Facts(), board, roster);
+    observations = Observations(board);
+    hunter = std::find_if(observations.begin(), observations.end(),
+        [](MagmawTransferLaneActorObservation const& actor)
+        {
+            return actor.Guid == PlayerGuid(400);
+        });
+    hazard.ExpiresAtMs = board.ObservedAtMs + 1000;
+    hunter->Movement.CurrentLease = hazard;
+    shadow = MagmawTransferLaneTaskShadow::Reconcile(shadow,
+        facts->Facts(), board, coordinator->Plan(), observations);
+    assert(Task(*shadow, 400).State == TaskState::Running);
+    assert(Task(*shadow, 400).ProgressSamples == progressBeforeLease);
+
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    facts = MagmawFactsCache::ForSnapshot(facts, board);
+    coordinator = MagmawCoordinator::Reconcile(coordinator,
+        facts->Facts(), board, roster);
+    observations = Observations(board);
+    hunter = std::find_if(observations.begin(), observations.end(),
+        [](MagmawTransferLaneActorObservation const& actor)
+        {
+            return actor.Guid == PlayerGuid(400);
+        });
+    hazard.ExpiresAtMs = board.ObservedAtMs
+        + MagmawTransferLaneTaskShadow::NoProgressFailureMs + 1000;
+    hazard.X += 10.0f;
+    hunter->Movement.CurrentLease = hazard;
     shadow = MagmawTransferLaneTaskShadow::Reconcile(shadow,
         facts->Facts(), board, coordinator->Plan(), observations);
     assert(Task(*shadow, 400).State == TaskState::Suspended);
-    assert(Task(*shadow, 400).Suspension == Suspension::MovementLeaseExpired);
-    assert(Task(*shadow, 400).ProgressSamples == hunterProgressSamples);
+    assert(Task(*shadow, 400).Suspension == Suspension::SafetyPreempted);
 
-    // Resume, then succeed one actor and fail the other only after a full
-    // no-position-progress window.
+    Actor(board, 300).Position = shadow->Episode()->Destination;
+    board.ObservedAtMs += MagmawTransferLaneTaskShadow::NoProgressFailureMs;
+    ++board.Revision;
+    facts = MagmawFactsCache::ForSnapshot(facts, board);
+    coordinator = MagmawCoordinator::Reconcile(coordinator,
+        facts->Facts(), board, roster);
+    observations = Observations(board);
+    hunter = std::find_if(observations.begin(), observations.end(),
+        [](MagmawTransferLaneActorObservation const& actor)
+        {
+            return actor.Guid == PlayerGuid(400);
+        });
+    hazard.ExpiresAtMs = board.ObservedAtMs + 1000;
+    hunter->Movement.CurrentLease = hazard;
+    shadow = MagmawTransferLaneTaskShadow::Reconcile(shadow,
+        facts->Facts(), board, coordinator->Plan(), observations);
+    assert(Task(*shadow, 400).State == TaskState::Suspended);
+
     ++board.Revision;
     board.ObservedAtMs += 100;
     facts = MagmawFactsCache::ForSnapshot(facts, board);
@@ -262,7 +489,13 @@ int main()
     shadow = MagmawTransferLaneTaskShadow::Reconcile(shadow,
         facts->Facts(), board, coordinator->Plan(), Observations(board));
     assert(Task(*shadow, 400).State == TaskState::Running);
-    Actor(board, 300).Position = shadow->Episode()->Destination;
+    assert(Task(*shadow, 400).Id.TaskGeneration == retainedHunterGeneration);
+    assert(Task(*shadow, 400).Destination.X == retainedHunterDestination.X
+        && Task(*shadow, 400).Destination.Y == retainedHunterDestination.Y
+        && Task(*shadow, 400).Destination.Z == retainedHunterDestination.Z);
+
+    // Succeed one actor and fail the other only after a full active
+    // no-position-progress window following safety clearance.
     board.ObservedAtMs += MagmawTransferLaneTaskShadow::NoProgressFailureMs;
     ++board.Revision;
     facts = MagmawFactsCache::ForSnapshot(facts, board);
@@ -361,6 +594,8 @@ int main()
             "Encounters/Magmaw/BotMagmawCoordinatorAssignments.cpp"),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
             "Encounters/Magmaw/BotMagmawTransferLaneTask.cpp"),
+        str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+            "Encounters/Magmaw/BotMagmawTransferLaneMovementObservation.cpp"),
         "-o", str(binary),
     ], check=True, cwd=ROOT)
     subprocess.run([str(binary)], check=True, cwd=ROOT)

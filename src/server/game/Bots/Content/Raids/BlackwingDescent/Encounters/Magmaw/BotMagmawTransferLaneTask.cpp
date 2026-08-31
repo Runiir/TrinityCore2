@@ -199,29 +199,30 @@ MagmawTransferLaneRetirement EpisodeRetirement(
     return MagmawTransferLaneRetirement::RaidPlanChanged;
 }
 
-void ObserveTask(MagmawTransferLaneTask& task,
+void SuspendTask(MagmawTransferLaneTask& task,
+    BotDecision::PersistentTaskSuspension suspension, uint64 observedAtMs)
+{
+    if (task.State != BotDecision::PersistentTaskState::Suspended
+        || !task.SuspendedAtMs)
+        task.SuspendedAtMs = observedAtMs;
+    task.State = BotDecision::PersistentTaskState::Suspended;
+    task.Suspension = suspension;
+}
+
+void ResumeTask(MagmawTransferLaneTask& task, uint64 observedAtMs)
+{
+    if (task.State == BotDecision::PersistentTaskState::Suspended
+        && task.SuspendedAtMs && observedAtMs > task.SuspendedAtMs)
+        task.LastProgressAtMs += observedAtMs - task.SuspendedAtMs;
+    task.SuspendedAtMs = 0;
+    task.State = BotDecision::PersistentTaskState::Running;
+    task.Suspension = BotDecision::PersistentTaskSuspension::None;
+}
+
+bool ObserveDistance(MagmawTransferLaneTask& task,
     MagmawTransferLaneActorObservation const& actor,
     Blackboard const& board)
 {
-    if (BotDecision::IsTerminal(task.State))
-        return;
-    if (!actor.PositionObserved)
-    {
-        if (task.State != BotDecision::PersistentTaskState::Suspended)
-            task.SuspendedAtMs = board.ObservedAtMs;
-        task.State = BotDecision::PersistentTaskState::Suspended;
-        task.Suspension =
-            BotDecision::PersistentTaskSuspension::ObservationUnavailable;
-        return;
-    }
-
-    if (task.State == BotDecision::PersistentTaskState::Suspended
-        && task.SuspendedAtMs && board.ObservedAtMs > task.SuspendedAtMs)
-    {
-        task.LastProgressAtMs += board.ObservedAtMs - task.SuspendedAtMs;
-        task.SuspendedAtMs = 0;
-    }
-
     float const distance = Distance2d(actor.Position, task.Destination);
     task.LastDistance = distance;
     task.LastObservedAtMs = board.ObservedAtMs;
@@ -233,25 +234,50 @@ void ObserveTask(MagmawTransferLaneTask& task,
         task.LastProgressAtMs = board.ObservedAtMs;
         task.ProgressRevision = board.Revision;
         ++task.ProgressSamples;
+        if (task.State == BotDecision::PersistentTaskState::Suspended)
+            task.SuspendedAtMs = board.ObservedAtMs;
     }
-    if (distance <= MagmawTransferLaneTaskShadow::ArrivalTolerance)
-    {
-        task.State = BotDecision::PersistentTaskState::Succeeded;
-        task.Suspension = BotDecision::PersistentTaskSuspension::None;
+    return distance <= MagmawTransferLaneTaskShadow::ArrivalTolerance;
+}
+
+void ObserveTask(MagmawTransferLaneTask& task,
+    MagmawTransferLaneActorObservation const& actor,
+    Blackboard const& board)
+{
+    if (BotDecision::IsTerminal(task.State))
         return;
-    }
-    if (actor.SafetyPreempted || !actor.MovementLeaseActive)
+    task.MovementDisposition =
+        ClassifyMagmawTransferLaneMovementObservation(board.ObservedAtMs,
+            MagmawTransferLaneMovementScope(task.Id.Episode.Lifecycle),
+            task.Destination, actor.Movement);
+    if (!actor.PositionObserved)
     {
-        task.SuspendedAtMs = board.ObservedAtMs;
-        task.State = BotDecision::PersistentTaskState::Suspended;
-        task.Suspension = actor.SafetyPreempted
-            ? BotDecision::PersistentTaskSuspension::SafetyPreempted
-            : BotDecision::PersistentTaskSuspension::MovementLeaseExpired;
+        SuspendTask(task,
+            BotDecision::PersistentTaskSuspension::ObservationUnavailable,
+            board.ObservedAtMs);
         return;
     }
 
-    task.State = BotDecision::PersistentTaskState::Running;
-    task.Suspension = BotDecision::PersistentTaskSuspension::None;
+    bool const safetyPreempted = IsMagmawTransferLaneSafetyPreemption(
+        task.MovementDisposition);
+    if (!safetyPreempted)
+        ResumeTask(task, board.ObservedAtMs);
+    bool const arrived = ObserveDistance(task, actor, board);
+    if (safetyPreempted)
+    {
+        SuspendTask(task,
+            BotDecision::PersistentTaskSuspension::SafetyPreempted,
+            board.ObservedAtMs);
+        return;
+    }
+    if (arrived)
+    {
+        task.State = BotDecision::PersistentTaskState::Succeeded;
+        task.Suspension = BotDecision::PersistentTaskSuspension::None;
+        task.SuspendedAtMs = 0;
+        return;
+    }
+
     if (board.ObservedAtMs > task.LastProgressAtMs
         && board.ObservedAtMs - task.LastProgressAtMs
             >= MagmawTransferLaneTaskShadow::NoProgressFailureMs)

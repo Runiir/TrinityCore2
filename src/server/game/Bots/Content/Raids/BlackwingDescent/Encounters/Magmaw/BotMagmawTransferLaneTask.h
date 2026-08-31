@@ -2,6 +2,7 @@
 #define TRINITY_BOT_MAGMAW_TRANSFER_LANE_TASK_H
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneMovementObservation.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawRaidPlan.h"
 #include "Bots/Decision/BotPersistentTask.h"
 
@@ -102,6 +103,8 @@ struct MagmawTransferLaneTask
     uint64 ProgressRevision = 0;
     uint32 ObservationSamples = 0;
     uint32 ProgressSamples = 0;
+    MagmawTransferLaneMovementDisposition MovementDisposition =
+        MagmawTransferLaneMovementDisposition::NoLease;
 };
 
 struct MagmawRetiredTransferLaneTask
@@ -119,8 +122,7 @@ struct MagmawTransferLaneActorObservation
     Vector3 Position;
     bool PositionObserved = false;
     bool Alive = false;
-    bool SafetyPreempted = false;
-    bool MovementLeaseActive = true;
+    MagmawTransferLaneMovementObservation Movement;
 };
 
 class MagmawTransferLaneTaskShadow

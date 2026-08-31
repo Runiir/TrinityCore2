@@ -4,13 +4,15 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneTask.h"
 #include "Bots/Decision/BotIntentSink.h"
 
-#include <cmath>
 #include <optional>
-#include <variant>
+#include <string>
 
 namespace BotEncounter
 {
 constexpr float MagmawTransferLaneIntentDestinationTolerance2d = 0.25f;
+constexpr float MagmawTransferLaneIntentDestinationToleranceZ = 0.50f;
+constexpr uint64 MagmawTransferLaneIntentFreshnessMs = 750;
+constexpr float MagmawTransferLaneIntentUtility = 500.0f;
 
 enum class MagmawTransferLaneIntentComparisonOutcome : uint8
 {
@@ -21,21 +23,42 @@ enum class MagmawTransferLaneIntentComparisonOutcome : uint8
     Divergent
 };
 
-enum class MagmawTransferLaneIntentDivergence : uint8
+enum class MagmawTransferLaneIntentDivergence : uint32
 {
     None = 0,
-    AmbiguousShadowMovement = 1 << 0,
-    ActionKind = 1 << 1,
-    Actor = 1 << 2,
-    MovementResource = 1 << 3,
-    Destination2d = 1 << 4,
-    UnhandledDestination = 1 << 5
+    AmbiguousShadowMovement = 1u << 0,
+    MissingExecutionContract = 1u << 1,
+    StrategyIdentity = 1u << 2,
+    MechanicIdentity = 1u << 3,
+    LifecycleScope = 1u << 4,
+    ActionKind = 1u << 5,
+    Actor = 1u << 6,
+    GenerationCorrelation = 1u << 7,
+    MovementResource = 1u << 8,
+    DestinationNonFinite = 1u << 9,
+    Destination2d = 1u << 10,
+    DestinationZ = 1u << 11,
+    PreemptCasting = 1u << 12,
+    ActionPriority = 1u << 13,
+    Utility = 1u << 14,
+    Expiry = 1u << 15
 };
 
-constexpr uint8 DivergenceMask(MagmawTransferLaneIntentDivergence reason)
+constexpr uint32 DivergenceMask(
+    MagmawTransferLaneIntentDivergence reason)
 {
-    return uint8(reason);
+    return uint32(reason);
 }
+
+struct MagmawTransferLaneExecutionContract
+{
+    std::string ScopeKey;
+    ObjectGuid Actor;
+    uint64 TaskGeneration = 0;
+    uint64 LegacyTransitionGeneration = 0;
+    uint64 ObservedAtMs = 0;
+    Vector3 Destination;
+};
 
 struct MagmawTransferLaneIntentComparison
 {
@@ -43,180 +66,41 @@ struct MagmawTransferLaneIntentComparison
         MagmawTransferLaneIntentComparisonOutcome::NeitherPresent;
     uint32 ProposalCount = 0;
     uint32 MovementProposalCount = 0;
-    uint8 Divergences = 0;
+    uint32 Divergences = 0;
     ObjectGuid ShadowActor;
     ObjectGuid LegacyActor;
     uint64 ShadowTaskGeneration = 0;
+    uint64 LegacyEventGeneration = 0;
+    uint64 ExpectedLegacyTransitionGeneration = 0;
     bool Observed = false;
 
-    bool Ambiguous() const
-    {
-        return MovementProposalCount > 1;
-    }
-
+    bool Ambiguous() const { return MovementProposalCount > 1; }
     bool Has(MagmawTransferLaneIntentDivergence reason) const
     {
         return (Divergences & DivergenceMask(reason)) != 0;
     }
 };
 
-inline void ResetMagmawTransferLaneIntentComparison(
-    MagmawTransferLaneIntentComparison& comparison)
-{
-    comparison = {};
-}
+void ResetMagmawTransferLaneIntentComparison(
+    MagmawTransferLaneIntentComparison& comparison);
 
-inline void EmitMagmawTransferLaneTaskIntent(
-    MagmawTransferLaneTask const& task, BotDecision::BotIntentSink& sink)
-{
-    if (task.State != BotDecision::PersistentTaskState::Running)
-        return;
+MagmawTransferLaneExecutionContract MagmawTransferLaneContract(
+    MagmawTransferLaneTask const& task, uint64 legacyTransitionGeneration);
 
-    BotNativeAction::Candidate candidate;
-    candidate.Id.ScopeKey = task.Id.Episode.Lifecycle.Key();
-    candidate.Id.Strategy = "magmaw_transfer_lane_task_shadow";
-    candidate.Id.Mechanic = "transfer_lane";
-    candidate.Id.Actor = task.Id.ActorGuid;
-    candidate.Id.EventGeneration = task.Id.TaskGeneration;
-    candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
-    candidate.Action = BotNativeAction::Move{ task.Destination.X,
-        task.Destination.Y, task.Destination.Z,
-        "magmaw_transfer_lane_task_shadow" };
-    sink.Propose(std::move(candidate));
-}
+void EmitMagmawTransferLaneTaskIntent(
+    MagmawTransferLaneTask const& task, BotDecision::BotIntentSink& sink);
 
-inline bool IsMovementProposal(BotNativeAction::Candidate const& candidate)
-{
-    return BotActionArbitration::Conflicts(candidate.Resources(),
-        BotActionArbitration::Uses(BotActionArbitration::Resource::Movement));
-}
-
-inline std::optional<Vector3> IntentDestination(
-    BotNativeAction::Intent const& intent)
-{
-    if (auto const* move = std::get_if<BotNativeAction::Move>(&intent))
-        return Vector3{ move->X, move->Y, move->Z };
-    if (auto const* mobility =
-            std::get_if<BotNativeAction::DirectionalMobility>(&intent))
-        return Vector3{ mobility->X, mobility->Y, mobility->Z };
-    return std::nullopt;
-}
-
-inline uint8 CompareMagmawIntentDestinations(
-    BotNativeAction::Candidate const& shadow,
-    BotNativeAction::Candidate const& legacy)
-{
-    std::optional<Vector3> const shadowDestination =
-        IntentDestination(shadow.Action);
-    std::optional<Vector3> const legacyDestination =
-        IntentDestination(legacy.Action);
-    if (!shadowDestination || !legacyDestination)
-        return DivergenceMask(
-            MagmawTransferLaneIntentDivergence::UnhandledDestination);
-    bool const diverges = std::hypot(
-        shadowDestination->X - legacyDestination->X,
-        shadowDestination->Y - legacyDestination->Y)
-        > MagmawTransferLaneIntentDestinationTolerance2d;
-    return diverges ? DivergenceMask(
-        MagmawTransferLaneIntentDivergence::Destination2d) : 0;
-}
-
-inline uint8 ComparePresentMagmawTransferLaneIntents(
-    BotNativeAction::Candidate const& shadow,
-    BotNativeAction::Candidate const& legacy)
-{
-    uint8 divergences = 0;
-    if (shadow.Action.index() != legacy.Action.index())
-        divergences |= DivergenceMask(
-            MagmawTransferLaneIntentDivergence::ActionKind);
-    if (shadow.Id.Actor != legacy.Id.Actor)
-        divergences |= DivergenceMask(
-            MagmawTransferLaneIntentDivergence::Actor);
-    BotActionArbitration::ResourceMask const movement =
-        BotActionArbitration::Uses(BotActionArbitration::Resource::Movement);
-    if (shadow.Resources() != movement || legacy.Resources() != movement)
-        divergences |= DivergenceMask(
-            MagmawTransferLaneIntentDivergence::MovementResource);
-    divergences |= CompareMagmawIntentDestinations(shadow, legacy);
-    return divergences;
-}
-
-inline MagmawTransferLaneIntentComparison CompareMagmawTransferLaneIntents(
+MagmawTransferLaneIntentComparison CompareMagmawTransferLaneIntents(
     std::vector<BotNativeAction::Candidate> const& shadowProposals,
-    std::optional<BotNativeAction::Candidate> const& legacy)
-{
-    MagmawTransferLaneIntentComparison result;
-    result.Observed = true;
-    result.ProposalCount = shadowProposals.size();
-    BotNativeAction::Candidate const* shadowMovement = nullptr;
-    for (BotNativeAction::Candidate const& proposal : shadowProposals)
-        if (IsMovementProposal(proposal))
-        {
-            ++result.MovementProposalCount;
-            shadowMovement = result.MovementProposalCount == 1
-                ? &proposal : nullptr;
-        }
+    std::optional<BotNativeAction::Candidate> const& legacy,
+    std::optional<MagmawTransferLaneExecutionContract> const& contract);
 
-    if (result.Ambiguous())
-    {
-        result.Outcome = MagmawTransferLaneIntentComparisonOutcome::Divergent;
-        result.Divergences |= DivergenceMask(
-            MagmawTransferLaneIntentDivergence::AmbiguousShadowMovement);
-        return result;
-    }
-    if (!shadowMovement && !legacy)
-        return result;
-    if (shadowMovement && !legacy)
-    {
-        result.Outcome = MagmawTransferLaneIntentComparisonOutcome::ShadowOnly;
-        result.ShadowActor = shadowMovement->Id.Actor;
-        result.ShadowTaskGeneration = shadowMovement->Id.EventGeneration;
-        return result;
-    }
-    if (!shadowMovement)
-    {
-        result.Outcome = MagmawTransferLaneIntentComparisonOutcome::LegacyOnly;
-        result.LegacyActor = legacy->Id.Actor;
-        return result;
-    }
-
-    result.ShadowActor = shadowMovement->Id.Actor;
-    result.LegacyActor = legacy->Id.Actor;
-    result.ShadowTaskGeneration = shadowMovement->Id.EventGeneration;
-    result.Divergences = ComparePresentMagmawTransferLaneIntents(
-        *shadowMovement, *legacy);
-    result.Outcome = result.Divergences
-        ? MagmawTransferLaneIntentComparisonOutcome::Divergent
-        : MagmawTransferLaneIntentComparisonOutcome::Equivalent;
-    return result;
-}
-
-inline MagmawTransferLaneIntentComparison ObserveMagmawTransferLaneIntents(
+MagmawTransferLaneIntentComparison ObserveMagmawTransferLaneIntents(
     std::vector<MagmawTransferLaneTask> const& tasks, ObjectGuid actor,
-    std::optional<BotNativeAction::Candidate> const& legacy)
-{
-    BotDecision::BotIntentSink shadowSink;
-    for (MagmawTransferLaneTask const& task : tasks)
-        if (task.Id.ActorGuid == actor)
-            EmitMagmawTransferLaneTaskIntent(task, shadowSink);
-    return CompareMagmawTransferLaneIntents(shadowSink.Proposals(), legacy);
-}
+    std::optional<BotNativeAction::Candidate> const& legacy,
+    uint64 legacyTransitionGeneration);
 
-inline char const* ToString(MagmawTransferLaneIntentComparisonOutcome value)
-{
-    switch (value)
-    {
-        case MagmawTransferLaneIntentComparisonOutcome::ShadowOnly:
-            return "shadow_only";
-        case MagmawTransferLaneIntentComparisonOutcome::LegacyOnly:
-            return "legacy_only";
-        case MagmawTransferLaneIntentComparisonOutcome::Equivalent:
-            return "equivalent";
-        case MagmawTransferLaneIntentComparisonOutcome::Divergent:
-            return "divergent";
-        default: return "neither_present";
-    }
-}
+char const* ToString(MagmawTransferLaneIntentComparisonOutcome value);
 }
 
 #endif

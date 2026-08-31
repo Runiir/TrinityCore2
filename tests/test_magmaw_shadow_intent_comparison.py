@@ -20,12 +20,14 @@ def test_magmaw_shadow_intent_comparison_fixture(tmp_path: Path) -> None:
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneIntent.h"
 
 #include <cassert>
+#include <limits>
 #include <string>
 
 using namespace BotEncounter;
 using Outcome = MagmawTransferLaneIntentComparisonOutcome;
 using Divergence = MagmawTransferLaneIntentDivergence;
 using State = BotDecision::PersistentTaskState;
+constexpr uint64 LegacyGeneration = 77;
 
 std::string ObjectGuid::ToString() const
 {
@@ -37,58 +39,64 @@ static ObjectGuid PlayerGuid(uint32 counter)
     return ObjectGuid(HighGuid::Player, counter);
 }
 
-static BotNativeAction::Candidate MoveCandidate(uint32 actor, float x,
-    float y, bool preemptCasting = false)
-{
-    BotNativeAction::Candidate candidate;
-    candidate.Id.Actor = PlayerGuid(actor);
-    candidate.Action = BotNativeAction::Move{ x, y, 210.0f, "fixture",
-        preemptCasting };
-    return candidate;
-}
-
-static MagmawTransferLaneTask RunningTask()
+static MagmawTransferLaneTask RunningTask(uint32 actor = 300,
+    uint64 generation = 44)
 {
     MagmawTransferLaneTask task;
     task.Id.Episode.Lifecycle = { "cohort", 7, 2, 5, "magmaw", 669,
         23, "blackwing_descent.magmaw", 91, 4 };
-    task.Id.ActorGuid = PlayerGuid(300);
-    task.Id.TaskGeneration = 44;
+    task.Id.ActorGuid = PlayerGuid(actor);
+    task.Id.TaskGeneration = generation;
     task.Destination = { 11.0f, -22.0f, 210.0f };
     task.State = State::Running;
+    task.LastObservedAtMs = 1000;
     return task;
+}
+
+static BotNativeAction::Candidate Emitted(
+    MagmawTransferLaneTask const& task)
+{
+    BotDecision::BotIntentSink sink;
+    EmitMagmawTransferLaneTaskIntent(task, sink);
+    assert(sink.Proposals().size() == 1);
+    return sink.Proposals().front();
+}
+
+static MagmawTransferLaneIntentComparison Compare(
+    BotNativeAction::Candidate const& shadow,
+    BotNativeAction::Candidate const& legacy,
+    MagmawTransferLaneTask const& task)
+{
+    return CompareMagmawTransferLaneIntents({ shadow }, legacy,
+        MagmawTransferLaneContract(task, LegacyGeneration));
 }
 
 int main()
 {
-    // The sink retains every proposal and performs no selection.
-    BotDecision::BotIntentSink sink;
-    BotNativeAction::Candidate first = MoveCandidate(1, 1.0f, 2.0f);
-    BotNativeAction::Candidate second = MoveCandidate(2, 3.0f, 4.0f);
-    sink.Propose(first);
-    sink.Propose(second);
-    assert(sink.Proposals().size() == 2);
-    assert(sink.Proposals()[0].Id.Actor == PlayerGuid(1));
-    assert(sink.Proposals()[1].Id.Actor == PlayerGuid(2));
-
-    // Running emits one stable actor/task-generation identity and copies the
-    // exact immutable task destination into an ordinary movement candidate.
     MagmawTransferLaneTask task = RunningTask();
-    BotDecision::BotIntentSink emitted;
-    EmitMagmawTransferLaneTaskIntent(task, emitted);
-    assert(emitted.Proposals().size() == 1);
-    BotNativeAction::Candidate const candidate = emitted.Proposals().front();
-    assert(candidate.Id.Actor == PlayerGuid(300));
-    assert(candidate.Id.EventGeneration == 44);
-    assert(candidate.Resources() == BotActionArbitration::Uses(
+    BotNativeAction::Candidate shadow = Emitted(task);
+    auto const* move = std::get_if<BotNativeAction::Move>(&shadow.Action);
+    assert(shadow.Id.ScopeKey == task.Id.Episode.Lifecycle.Key());
+    assert(shadow.Id.Strategy == "adaptive_magmaw");
+    assert(shadow.Id.Mechanic == "pillar_bait_switch");
+    assert(shadow.Id.Actor == task.Id.ActorGuid);
+    assert(shadow.Id.EventGeneration == task.Id.TaskGeneration);
+    assert(shadow.ActionPriority == BotActionArbitration::Priority::Survival);
+    assert(shadow.Utility == MagmawTransferLaneIntentUtility);
+    assert(shadow.ExpiresAtMs == task.LastObservedAtMs
+        + MagmawTransferLaneIntentFreshnessMs);
+    assert(shadow.Resources() == BotActionArbitration::Uses(
         BotActionArbitration::Resource::Movement));
-    auto const* destination = std::get_if<BotNativeAction::Move>(
-        &candidate.Action);
-    assert(destination && destination->X == 11.0f
-        && destination->Y == -22.0f && destination->Z == 210.0f);
-    task.Destination = { 99.0f, 98.0f, 97.0f };
-    assert(destination->X == 11.0f && destination->Y == -22.0f
-        && destination->Z == 210.0f);
+    assert(move && move->X == task.Destination.X
+        && move->Y == task.Destination.Y && move->Z == task.Destination.Z
+        && move->IntentReason == "pillar_bait_switch"
+        && !move->PreemptCasting);
+
+    // Stable keys distinguish both actors and replacement generations.
+    BotNativeAction::Candidate otherActor = Emitted(RunningTask(400, 45));
+    BotNativeAction::Candidate replacement = Emitted(RunningTask(300, 46));
+    assert(shadow.Id.Key() != otherActor.Id.Key());
+    assert(shadow.Id.Key() != replacement.Id.Key());
 
     for (State state : { State::Suspended, State::Succeeded, State::Failed,
         State::Aborted })
@@ -98,112 +106,117 @@ int main()
         EmitMagmawTransferLaneTaskIntent(task, suppressed);
         assert(suppressed.Proposals().empty());
     }
+    task = RunningTask();
 
     std::vector<BotNativeAction::Candidate> none;
-    auto comparison = CompareMagmawTransferLaneIntents(none, std::nullopt);
+    auto comparison = CompareMagmawTransferLaneIntents(none, std::nullopt,
+        std::nullopt);
     assert(comparison.Outcome == Outcome::NeitherPresent);
-
-    std::vector<BotNativeAction::Candidate> one{
-        MoveCandidate(300, 11.0f, -22.0f) };
-    comparison = CompareMagmawTransferLaneIntents(one, std::nullopt);
+    comparison = CompareMagmawTransferLaneIntents({ shadow }, std::nullopt,
+        MagmawTransferLaneContract(task, LegacyGeneration));
     assert(comparison.Outcome == Outcome::ShadowOnly);
-
-    std::optional<BotNativeAction::Candidate> legacy =
-        MoveCandidate(300, 11.0f, -22.0f);
-    comparison = CompareMagmawTransferLaneIntents(none, legacy);
+    comparison = CompareMagmawTransferLaneIntents(none, shadow,
+        MagmawTransferLaneContract(task, LegacyGeneration));
     assert(comparison.Outcome == Outcome::LegacyOnly);
 
-    comparison = CompareMagmawTransferLaneIntents(one, legacy);
+    BotNativeAction::Candidate legacy = shadow;
+    // The legacy TransitionId and persistent TaskGeneration are separate
+    // identity domains. An authoritative correlation validates each against
+    // its own domain; numeric equality is neither required nor manufactured.
+    legacy.Id.EventGeneration = LegacyGeneration;
+    comparison = Compare(shadow, legacy, task);
     assert(comparison.Outcome == Outcome::Equivalent);
     assert(comparison.Divergences == 0);
+    assert(comparison.ShadowTaskGeneration == 44);
+    assert(comparison.LegacyEventGeneration == LegacyGeneration);
+    assert(comparison.ExpectedLegacyTransitionGeneration == LegacyGeneration);
 
-    BotNativeAction::Candidate differentAction = *legacy;
-    differentAction.Action = BotNativeAction::DirectionalMobility{
-        11.0f, -22.0f, 210.0f, 1953,
-        BotNativeAction::DirectionalMobilityFacing::Forward, "fixture" };
-    comparison = CompareMagmawTransferLaneIntents(one, differentAction);
-    assert(comparison.Outcome == Outcome::Divergent);
-    assert(comparison.Has(Divergence::ActionKind));
+    comparison = CompareMagmawTransferLaneIntents({ shadow }, legacy,
+        std::nullopt);
+    assert(comparison.Has(Divergence::MissingExecutionContract));
 
-    BotNativeAction::Candidate differentActor = *legacy;
-    differentActor.Id.Actor = PlayerGuid(400);
-    comparison = CompareMagmawTransferLaneIntents(one, differentActor);
-    assert(comparison.Has(Divergence::Actor));
+    auto expect = [&](BotNativeAction::Candidate changed,
+        Divergence divergence)
+    {
+        auto result = Compare(shadow, changed, task);
+        assert(result.Outcome == Outcome::Divergent);
+        assert(result.Has(divergence));
+    };
+    BotNativeAction::Candidate changed = legacy;
+    changed.Id.Strategy = "other";
+    expect(changed, Divergence::StrategyIdentity);
+    changed = legacy;
+    changed.Id.Mechanic = "other";
+    expect(changed, Divergence::MechanicIdentity);
+    changed = legacy;
+    changed.Id.ScopeKey = "other";
+    expect(changed, Divergence::LifecycleScope);
+    changed = legacy;
+    changed.Action = BotNativeAction::DirectionalMobility{ 11.0f, -22.0f,
+        210.0f, 1953, BotNativeAction::DirectionalMobilityFacing::Forward,
+        "pillar_bait_switch" };
+    expect(changed, Divergence::ActionKind);
+    changed = legacy;
+    changed.Id.Actor = PlayerGuid(400);
+    expect(changed, Divergence::Actor);
+    changed = legacy;
+    changed.Id.EventGeneration = 999;
+    expect(changed, Divergence::GenerationCorrelation);
+    changed = legacy;
+    std::get<BotNativeAction::Move>(changed.Action).PreemptCasting = true;
+    expect(changed, Divergence::MovementResource);
+    expect(changed, Divergence::PreemptCasting);
+    changed = legacy;
+    std::get<BotNativeAction::Move>(changed.Action).X =
+        std::numeric_limits<float>::quiet_NaN();
+    expect(changed, Divergence::DestinationNonFinite);
+    changed = legacy;
+    std::get<BotNativeAction::Move>(changed.Action).X +=
+        MagmawTransferLaneIntentDestinationTolerance2d + 0.01f;
+    expect(changed, Divergence::Destination2d);
+    changed = legacy;
+    std::get<BotNativeAction::Move>(changed.Action).Z +=
+        MagmawTransferLaneIntentDestinationToleranceZ + 0.01f;
+    expect(changed, Divergence::DestinationZ);
+    changed = legacy;
+    changed.ActionPriority = BotActionArbitration::Priority::Mechanic;
+    expect(changed, Divergence::ActionPriority);
+    changed = legacy;
+    changed.Utility = 499.0f;
+    expect(changed, Divergence::Utility);
+    changed = legacy;
+    --changed.ExpiresAtMs;
+    expect(changed, Divergence::Expiry);
 
-    BotNativeAction::Candidate differentResource =
-        MoveCandidate(300, 11.0f, -22.0f, true);
-    comparison = CompareMagmawTransferLaneIntents(one, differentResource);
-    assert(comparison.Has(Divergence::MovementResource));
+    // Shadow identity itself is checked against the persistent task contract.
+    changed = shadow;
+    changed.Id.EventGeneration = 900;
+    comparison = Compare(changed, legacy, task);
+    assert(comparison.Has(Divergence::GenerationCorrelation));
 
-    BotNativeAction::Candidate differentDestination =
-        MoveCandidate(300,
-            11.0f + MagmawTransferLaneIntentDestinationTolerance2d + 0.01f,
-            -22.0f);
-    comparison = CompareMagmawTransferLaneIntents(one,
-        differentDestination);
-    assert(comparison.Has(Divergence::Destination2d));
-    BotNativeAction::Candidate withinTolerance = MoveCandidate(300,
-        11.0f + MagmawTransferLaneIntentDestinationTolerance2d, -22.0f);
-    comparison = CompareMagmawTransferLaneIntents(one, withinTolerance);
-    assert(comparison.Outcome == Outcome::Equivalent);
-
-    // Movement-resource actions without a supported endpoint projection must
-    // never silently compare equivalent. NativeDescent deliberately remains
-    // outside this Magmaw point-movement comparator.
-    BotNativeAction::Candidate shadowDescent;
-    shadowDescent.Id.Actor = PlayerGuid(300);
-    shadowDescent.Action = BotNativeAction::NativeDescent{
-        1.0f, 2.0f, 210.0f, 3.0f, 4.0f, 210.0f, 7, true };
-    BotNativeAction::Candidate legacyDescent = shadowDescent;
-    legacyDescent.Action = BotNativeAction::NativeDescent{
-        9.0f, 8.0f, 210.0f, 7.0f, 6.0f, 210.0f, 7, true };
-    comparison = CompareMagmawTransferLaneIntents({ shadowDescent },
-        legacyDescent);
-    assert(comparison.Outcome == Outcome::Divergent);
-    assert(comparison.Has(Divergence::UnhandledDestination));
-
-    std::vector<BotNativeAction::Candidate> ambiguous{
-        MoveCandidate(300, 11.0f, -22.0f),
-        MoveCandidate(300, 12.0f, -23.0f) };
-    BotNativeAction::Candidate nonMovement;
-    ambiguous.push_back(nonMovement);
-    comparison = CompareMagmawTransferLaneIntents(ambiguous, legacy);
-    assert(comparison.Outcome == Outcome::Divergent);
-    assert(comparison.ProposalCount == 3);
-    assert(comparison.MovementProposalCount == 2);
-    assert(comparison.Ambiguous());
-    assert(comparison.Has(Divergence::AmbiguousShadowMovement));
-
-    // This is the exact helper used by production. It emits every matching
-    // task, so duplicate same-actor running tasks surface as ambiguity rather
-    // than selecting the first task by source order.
-    task = RunningTask();
-    std::vector<MagmawTransferLaneTask> productionTasks{ task };
-    comparison = ObserveMagmawTransferLaneIntents(productionTasks,
-        task.Id.ActorGuid, std::nullopt);
-    assert(comparison.Outcome == Outcome::ShadowOnly);
-    assert(comparison.ShadowActor == task.Id.ActorGuid);
-    assert(comparison.ShadowTaskGeneration == task.Id.TaskGeneration);
-    MagmawTransferLaneTask duplicate = task;
-    duplicate.Id.TaskGeneration = 45;
-    productionTasks.push_back(duplicate);
-    comparison = ObserveMagmawTransferLaneIntents(productionTasks,
-        task.Id.ActorGuid, std::nullopt);
+    std::vector<BotNativeAction::Candidate> ambiguous{ shadow, replacement };
+    comparison = CompareMagmawTransferLaneIntents(ambiguous, legacy,
+        MagmawTransferLaneContract(task, LegacyGeneration));
     assert(comparison.Outcome == Outcome::Divergent);
     assert(comparison.ProposalCount == 2);
     assert(comparison.MovementProposalCount == 2);
     assert(comparison.Has(Divergence::AmbiguousShadowMovement));
 
-    // The outer decision tick uses this same value reset before any optional
-    // snapshot observation, so a snapshotless tick is explicitly unobserved.
+    // Production emits all matching tasks instead of selecting by order.
+    std::vector<MagmawTransferLaneTask> productionTasks{ task };
+    comparison = ObserveMagmawTransferLaneIntents(productionTasks,
+        task.Id.ActorGuid, legacy, LegacyGeneration);
+    assert(comparison.Outcome == Outcome::Equivalent);
+    MagmawTransferLaneTask duplicate = task;
+    duplicate.Id.TaskGeneration = 45;
+    productionTasks.push_back(duplicate);
+    comparison = ObserveMagmawTransferLaneIntents(productionTasks,
+        task.Id.ActorGuid, legacy, LegacyGeneration);
+    assert(comparison.Outcome == Outcome::Divergent);
+    assert(comparison.Has(Divergence::AmbiguousShadowMovement));
+
     comparison.Observed = true;
-    comparison.Outcome = Outcome::Divergent;
-    comparison.ProposalCount = 9;
-    comparison.MovementProposalCount = 8;
-    comparison.Divergences = DivergenceMask(Divergence::Actor);
-    comparison.ShadowActor = PlayerGuid(300);
-    comparison.LegacyActor = PlayerGuid(400);
-    comparison.ShadowTaskGeneration = 77;
+    comparison.LegacyEventGeneration = 88;
     ResetMagmawTransferLaneIntentComparison(comparison);
     assert(!comparison.Observed);
     assert(comparison.Outcome == Outcome::NeitherPresent);
@@ -213,11 +226,16 @@ int main()
     assert(comparison.ShadowActor.IsEmpty());
     assert(comparison.LegacyActor.IsEmpty());
     assert(comparison.ShadowTaskGeneration == 0);
+    assert(comparison.LegacyEventGeneration == 0);
+    assert(comparison.ExpectedLegacyTransitionGeneration == 0);
 }
 ''', encoding="utf-8")
     subprocess.run([
         "g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", *INCLUDES,
-        str(source), "-o", str(binary),
+        str(source),
+        str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+            "Encounters/Magmaw/BotMagmawTransferLaneIntent.cpp"),
+        "-o", str(binary),
     ], check=True, cwd=ROOT)
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
@@ -227,9 +245,14 @@ def test_production_shadow_comparison_is_post_plan_and_non_executing() -> None:
     preparation = (bots /
         "BotWorldPopulationMgrUpdateBotKernelPreparation.cpp").read_text()
     adapter = (bots / "BotWorldPopulationMgrMagmawTaskShadow.cpp").read_text()
-    intent = (bots / "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
+    intent_header = (bots /
+        "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
         "BotMagmawTransferLaneIntent.h").read_text()
+    intent_source = (bots /
+        "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
+        "BotMagmawTransferLaneIntent.cpp").read_text()
     sink = (bots / "Decision/BotIntentSink.h").read_text()
+    intent = intent_header + intent_source
 
     plan = "BotEncounter::AdaptiveMagmawPlan magmawPlan = magmawStrategy.Propose("
     observe = "ObserveMagmawTransferLaneIntentComparison(context.State,"
@@ -239,6 +262,7 @@ def test_production_shadow_comparison_is_post_plan_and_non_executing() -> None:
     assert preparation.index(reset) < preparation.index(snapshot)
     assert preparation.index(plan) < preparation.index(observe)
     assert preparation.index(observe) < preparation.index(move)
+    assert "magmawLaneOwner->MagmawLaneTransition.TransitionId" in preparation
     assert "Cohort().MagmawTransferLaneTaskShadow" in adapter
     assert "ObserveMagmawTransferLaneIntents(tasks, actor," in adapter
     assert "find_if(shadow->Tasks()" not in adapter
@@ -250,6 +274,10 @@ def test_production_shadow_comparison_is_post_plan_and_non_executing() -> None:
     assert "MotionMaster" not in sink + intent + adapter
     assert "PathGenerator" not in sink + intent + adapter
     assert ".Submit(" not in sink + intent + adapter
-    assert "Propose(std::move(candidate))" in intent
+    assert "Propose(std::move(candidate))" in intent_source
     assert "state.MagmawTransferLaneIntentComparison" in adapter
-    assert '"unhandled_destination"' in adapter
+    for diagnostic in (
+        "generation_correlation", "destination_non_finite", "destination_z",
+        "preempt_casting", "action_priority", "utility", "expiry",
+    ):
+        assert f'"{diagnostic}"' in adapter

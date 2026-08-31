@@ -456,7 +456,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 &context.State.MagmawParasiteHazard,
                 &context.State.MagmawEventMovement, magmawMobility);
             ObserveMagmawTransferLaneIntentComparison(context.State,
-                context.Bot->GetGUID(), magmawPlan.Movement);
+                context.Bot->GetGUID(), magmawPlan.Movement,
+                magmawLaneOwner->MagmawLaneTransition.TransitionId);
             context.AdaptiveMagmawOwnsNode = magmawPlan.OwnsNode;
             context.State.MagmawParasiteCombat = magmawPlan.ParasiteCombat;
             context.AdaptiveMagmawSuppressOffense = magmawPlan.SuppressOffense;

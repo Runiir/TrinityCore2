@@ -293,7 +293,8 @@ private:
         WorldBotState const& state) const;
     void ObserveMagmawTransferLaneIntentComparison(WorldBotState& state,
         ObjectGuid actor,
-        std::optional<BotNativeAction::Candidate> const& legacyMovement);
+        std::optional<BotNativeAction::Candidate> const& legacyMovement,
+        uint64 legacyTransitionGeneration);
     BotEncounter::MagmawRosterView BuildMagmawShadowRoster(
         BotEncounter::Scope const& lifecycle) const;
     std::vector<BotEncounter::MagmawTransferLaneActorObservation>
