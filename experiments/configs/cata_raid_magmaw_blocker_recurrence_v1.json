@@ -87,6 +87,13 @@
         "to_revision": 5,
         "causal_signature": "same_level_native_path_proof_false_negative",
         "required_production_boundary": "one correlated worldserver-backed map-669 replay must exercise complete and incomplete same-level Hazard paths through the current shared planner proof, executor, MotionMaster, point generator, launched spline, and consumed multi-tick outcome; helper-created NativePathProofObservation values and source assertions are insufficient"
+      },
+      {
+        "fixture_id": "same_level_floor_observation_v1",
+        "from_revision": 4,
+        "to_revision": 5,
+        "causal_signature": "same_level_movement_path_floor_false_negative",
+        "required_production_boundary": "one identity-bound worldserver-backed map-669 replay must move actor 30007 from the entrance surface at Z 193.126999 toward the connected upper-room staging point at Z 210.098007 without accepting the unrelated GetHeight result at Z -106.245819, then cross PathGenerator, native endpoint and floor proof, executor submission, MotionMaster, launched-spline progress, and terminal outcome; the same replay must retain the existing same-level SampleFloorGap proof and reject genuine cross-floor, missing-mmap, and forbidden-path cases"
       }
     ],
     "fixture_history": [
