@@ -1,63 +1,69 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "epoch_id": "repair_native_path_checkpoint_request_contract_20260901",
-  "work_unit": "evidence:repair_native_path_checkpoint_request_contract",
-  "next_work_unit": "evidence:repair_native_path_checkpoint_request_contract",
-  "owner_skill": "raid-evidence-lifecycle",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "gate_state": "prestart_contract_repair_required",
+  "epoch_id": "map669_native_path_correlated_fixture_expansion_20260901b",
+  "work_unit": "shard:map669_native_path_correlated_fixture_expansion",
+  "next_work_unit": "shard:map669_native_path_correlated_fixture_expansion",
+  "owner_skill": "raid-shard-architecture",
+  "next_owner_skill": "raid-shard-architecture",
+  "classification": "implementation_pending_live_verification",
+  "gate_state": "fixture_expansion_only",
   "behavior_change": false,
-  "evidence_contract_change": true,
+  "evidence_contract_change": false,
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "765f38f42583650ff0f403f5e4bdf8ce88764313",
-  "immutable_input_commit": "765f38f42583650ff0f403f5e4bdf8ce88764313",
+  "observed_at_commit": "a53baaa7a711bc6b8e25574b3370fbc46838ef9c",
+  "immutable_input_commit": "a53baaa7a711bc6b8e25574b3370fbc46838ef9c",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_native_path_checkpoint_request_contract_prestart_failed_handoff_v1.json",
-    "sha256": "ecc9f1a5110ae5247494b88472837b7e89f5760653b71ffcc56f74f8befda13b",
-    "source_commit": "765f38f42583650ff0f403f5e4bdf8ce88764313",
-    "source_tree": "f9e3ecd4742fc4749d96283711f0ee902faab5cc"
+    "path": "experiments/configs/cata_raid_native_path_checkpoint_request_contract_repair_handoff_v1.json",
+    "sha256": "353c9d8bcd789c658acba72396b9386dbd6ae5fba6e74f56552b96e858807a1d",
+    "source_commit": "a53baaa7a711bc6b8e25574b3370fbc46838ef9c",
+    "source_tree": "5ddb66e5d7af66274ab2c627afb1d0f0833d0a8b"
   },
-  "next_action": "Repair only the native checkpoint request-contract binding, prove it against the exact current two-request recurrence decision and negative cases, then route a fresh sealed replay. Do not build or start a server in this work unit.",
+  "next_action": "Build the exact descriptor commit, regenerate the source-bound recurrence receipt, seal and verify case a506_receipt636_incomplete_same_floor for actor 30007, then run one observation-only completion-watchdog replay with no retry.",
   "program_scope": {
     "acceptance_admitted": false,
     "authserver_start_admitted": false,
     "database_provisioning_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": false,
-    "fixture_expansion_replay_admitted": false,
-    "fixture_prerequisite_build_authorized": false,
+    "dvc_publication_required_after_terminal": true,
+    "fixture_expansion_replay_admitted": true,
+    "fixture_prerequisite_build_authorized": true,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "worldserver_start_admitted": false
+    "worldserver_start_admitted": true
   },
   "scope_lock": {
-    "allowed_change": "Change only deterministic native checkpoint admission/seal tooling and its focused tests so the checkpoint consumes the authoritative pending request set while preserving fail-closed identity and revision binding.",
+    "allowed_change": "Operate one exact-current sealed native-path checkpoint replay for the two authoritative pending map-669 fixtures. Only compact terminal metadata and DVC evidence pointers may be added to Git.",
     "forbidden": [
-      "changing C or C++ bot, movement, encounter, class, or gameplay code",
-      "changing the recurrence ledger to resurrect or fabricate a closed fixture",
-      "weakening exact target, revision, source, binary, route, profile, seal, or purpose checks",
-      "building worldserver, starting worldserver or authserver, mutating the database, or running gameplay",
-      "adding unrelated fixture or launcher behavior"
+      "changing gameplay, C or C++, encounter, class, movement, arbitration, planner, geometry, or shadow authority",
+      "adding the closed floor-observation fixture or any unrelated target",
+      "using the Chainwielder checkpoint, starting an authserver, reprovisioning, GM assistance, or synthetic gameplay evidence",
+      "running a gameplay canary or acceptance run",
+      "retrying after any terminal edge",
+      "using a fixed raid success timer or retaining duplicated raw evidence after verified DVC push"
     ],
     "required_postconditions": [
-      "the exact current two-request decision creates and verifies a native checkpoint seal",
-      "missing, extra, stale-revision, closed-fixture, wrong-purpose, and wrong-target decisions fail closed",
-      "focused recurrence-admission, checkpoint-controller, and native-checkpoint tests pass",
-      "all changed functions remain small and no C or C++ file changes",
-      "the next active unit is a single no-retry map-669 native fixture replay"
+      "the exact descriptor commit has one gate-bearing fast8 build receipt and a source-bound green recurrence receipt",
+      "the admission purpose and target/pending/request sets are exact and its native checkpoint seal verifies",
+      "actor 30007 executes only compiled case a506_receipt636_incomplete_same_floor under observation-only authority",
+      "one completion-watchdog terminal is recorded truthfully with no retry",
+      "generated evidence is DVC-pushed, remotely verified, cleaned, and locally evicted"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "one_bounded_evidence_contract_repair_then_review",
+    "repair_policy": "one_fixture_expansion_replay_then_terminal_review",
     "terminal_edges": [
-      "focused_tests_pass",
-      "focused_tests_fail",
-      "scope_violation",
-      "contract_ambiguity",
+      "native_path_checkpoint_launch_progress_verified",
+      "native_path_checkpoint_no_launch_verified",
+      "monotonic_no_progress",
+      "semantic_stall",
+      "repeated_decisions",
+      "excessive_death_loop",
+      "infrastructure_loss",
+      "identity_or_checkpoint_failure",
+      "publication_or_cleanup_failure",
       "explicit_interruption"
     ]
   }

@@ -1,0 +1,45 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:repair_native_path_checkpoint_request_contract",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "evidence_contract_repair_complete",
+  "source": {
+    "commit": "a53baaa7a711bc6b8e25574b3370fbc46838ef9c",
+    "tree": "5ddb66e5d7af66274ab2c627afb1d0f0833d0a8b",
+    "active_descriptor_sha256": "b5b3576ea32c0063b8fe9e356b93d6c82d76af838d2ad22a6a874062ad74fda6",
+    "implementation_commit": "a53baaa7a711bc6b8e25574b3370fbc46838ef9c"
+  },
+  "verified": {
+    "authoritative_requests": {
+      "same_level_hazard_path_admission_v1": "4_to_5",
+      "same_level_native_path_proof_v1": "4_to_5"
+    },
+    "closed_fixture_rejected": "same_level_floor_observation_v1",
+    "shared_contract_boundaries": [
+      "native_path_checkpoint_seal",
+      "create_recurrence_admission",
+      "verify_recurrence_admission",
+      "native_path_checkpoint_arm_command"
+    ],
+    "negative_cases": [
+      "missing_request",
+      "extra_request",
+      "stale_revision",
+      "closed_fixture",
+      "wrong_purpose",
+      "wrong_target"
+    ],
+    "focused_tests": "52_passed",
+    "capture_integration_tests": "20_passed_183_deselected",
+    "independent_sol_high_review": "go",
+    "c_cpp_files_changed": 0,
+    "worldserver_starts": 0,
+    "database_mutations": 0
+  },
+  "next_work_unit": {
+    "id": "shard:map669_native_path_correlated_fixture_expansion",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Build the exact descriptor commit, regenerate the source-bound recurrence receipt, create and verify one sealed native-path checkpoint admission for a506_receipt636_incomplete_same_floor, then run one observation-only completion-watchdog fixture replay with actor 30007. Stop at the first terminal and do not retry.",
+    "required_postcondition": "one worldserver start returns an identity-bound native checkpoint terminal or the exact first failed gate; publish and evict evidence without changing gameplay"
+  }
+}
