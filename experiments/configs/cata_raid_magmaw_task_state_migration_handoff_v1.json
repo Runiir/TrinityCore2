@@ -1,0 +1,39 @@
+{
+  "schema": "cata_raid_architecture_handoff_v1",
+  "handoff_id": "magmaw_persistent_lane_task_shadow_20260831",
+  "source_commit": "3ff85b28db4bab1a6cb937c41a8c1c47c5ad3c0a",
+  "classification": "architecture_migration",
+  "behavior_authority": "shadow_only",
+  "verified": {
+    "exact_lifecycle_to_facts": true,
+    "immutable_shadow_coordinator": true,
+    "legacy_gameplay_unchanged": true,
+    "coordinator_entrypoint_ccn_before": 58,
+    "coordinator_entrypoint_ccn_after": 6,
+    "coordinator_total_ccn_before": 103,
+    "coordinator_total_ccn_after": 78,
+    "focused_tests_passed": 15,
+    "independent_review": "go"
+  },
+  "rejected_predecessor": {
+    "kind": "intent_vector_wrapper",
+    "reason": "It retained hidden source-order arbitration, mutated state while proposing, and did not cross the native outcome boundary."
+  },
+  "next_phase": {
+    "work_unit": "runtime:magmaw_persistent_lane_task_shadow",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Add a cohort-owned lane episode and persistent per-bot lane tasks with typed identity, semantic progress, suspension, completion, failure, and retirement while leaving the legacy strategy authoritative.",
+    "first_task": "magmaw_transfer_lane",
+    "production_boundary": "exact facts and admitted raid plan to per-bot task reconciliation to shadow progress observations",
+    "behavior_cutover_allowed": false
+  },
+  "required_invariants": [
+    "tasks own multi-tick commitment while the existing arbiter owns immediate action competition",
+    "action submission is not semantic progress",
+    "one cohort episode owns paired baiter direction and generation",
+    "each bot owns its own execution state and destination",
+    "temporary observation loss and short movement-lease expiry do not retire a task",
+    "exact encounter, route, roster, actor-life, or assignment identity change retires the task",
+    "all new C and C++ files remain below 1000 physical lines"
+  ]
+}
