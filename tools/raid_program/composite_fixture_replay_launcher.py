@@ -67,14 +67,14 @@ EXPECTED_REQUIRED_POSTCONDITION = (
     "atomic bundle inputs, spellbook-aware strict verifier, and no-retry "
     "completion-watchdog capture command"
 )
-LIVE_WORK_UNIT = "shard:composite_map669_production_boundary_replay_v114"
-LIVE_HANDOFF_WORK_UNIT = EXPECTED_WORK_UNIT
+LIVE_WORK_UNIT = "shard:composite_map669_production_boundary_replay"
+LIVE_HANDOFF_WORK_UNIT = "evidence:repair_live_work_unit_authority_propagation_v115"
 LIVE_HANDOFF_PATH = (
-    "experiments/configs/cata_raid_v113_deterministic_launcher_review_handoff_v114.json"
+    "experiments/configs/cata_raid_launcher_live_authority_repair_handoff_v1.json"
 )
-LIVE_HANDOFF_CLASSIFICATION = "deterministic_composite_replay_launcher_passed"
-LIVE_SOURCE_COMMIT = "7f6a5e40e6455d28b48618ed1275d9c0a5585ee0"
-LIVE_SOURCE_TREE = "b02e1bf3f12c674adb03b6c30215f2b6868e4ca9"
+LIVE_HANDOFF_CLASSIFICATION = "launcher_live_authority_repair_passed"
+LIVE_SOURCE_COMMIT = "e5fd11224d2ec38e270f37e061979357641db4f8"
+LIVE_SOURCE_TREE = "289845890d615777fccaa098dd5c8122c7b3ff38"
 LIVE_REQUIRED_ACTION = (
     "Use only the committed deterministic launcher to compose, run, realize, and "
     "run one map-669 fixture-expansion replay. Stop at the first failed gate and "

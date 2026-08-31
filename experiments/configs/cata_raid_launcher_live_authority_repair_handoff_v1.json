@@ -1,0 +1,49 @@
+{
+  "classification": "launcher_live_authority_repair_passed",
+  "claim_ledger": {
+    "unproven": [
+      "all four admitted production boundaries",
+      "spellbook identity across the next worldserver lifecycle",
+      "any Magmaw completion, DPS, HPS, or acceptance result"
+    ],
+    "verified": [
+      "compose and realization propagate the request's validated live work-unit selector",
+      "the live compose and realization regressions fail on the V114 implementation and pass on the repair",
+      "63 focused launcher and atomic-bundle tests pass",
+      "independent Sol-high review passed",
+      "no configure, build, server, database, recurrence, or DVC mutation occurred during V115"
+    ]
+  },
+  "next_work_unit": {
+    "authserver_start_maximum": 0,
+    "database_mutation_maximum": 0,
+    "id": "shard:composite_map669_production_boundary_replay",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Use only the committed deterministic launcher to compose, run, realize, and run one map-669 fixture-expansion replay. Stop at the first failed gate and do not retry.",
+    "required_postcondition": "one worldserver start either captures all four admitted production boundaries or returns the exact first failed gate with immutable evidence",
+    "retry_count_maximum": 0,
+    "worldserver_start_maximum": 1
+  },
+  "operations": {
+    "authserver_start_count": 0,
+    "configure_count": 0,
+    "database_mutation_count": 0,
+    "dvc_mutation_count": 0,
+    "recurrence_suite_invocation_count": 0,
+    "worldserver_build_count": 0,
+    "worldserver_start_count": 0
+  },
+  "owner_skill": "raid-evidence-lifecycle",
+  "review": {
+    "focused_tests": "63/63 passed",
+    "independent_model": "sol-high",
+    "verdict": "PASS"
+  },
+  "schema": "cata_raid_specialist_handoff_v1",
+  "source": {
+    "active_descriptor_sha256": "7e106855cf0306a9d2e7e8f32295f1841e714083f6520176a563caaf78063066",
+    "commit": "e5fd11224d2ec38e270f37e061979357641db4f8",
+    "tree": "289845890d615777fccaa098dd5c8122c7b3ff38"
+  },
+  "work_unit_id": "evidence:repair_live_work_unit_authority_propagation_v115"
+}
