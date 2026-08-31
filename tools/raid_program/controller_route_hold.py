@@ -8,6 +8,10 @@ import json
 import re
 from typing import Any
 
+from tools.raid_program.recurrence_admission import (
+    CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+)
+
 
 def _canonical_object_sha256(value: Any) -> str:
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
@@ -84,7 +88,7 @@ def controller_route_hold_launch_identity(
         or not fixture_ids
         or not isinstance(checkpoint_fixture_id, str)
         or not checkpoint_fixture_id.strip()
-        or checkpoint_fixture_id not in fixture_ids
+        or checkpoint_fixture_id != CHAINWIELDER_CHECKPOINT_FIXTURE_ID
     ):
         raise ValueError("controller_route_hold_verified_admission_invalid")
     identity = ControllerRouteHoldLaunchIdentity(

@@ -36,7 +36,7 @@ except ModuleNotFoundError:
 def _verified_checkpoint_target_contract(
     recurrence_admission: dict[str, Any],
 ) -> bool:
-    """Require the checkpoint plus every authenticated expansion request."""
+    """Require a verified auxiliary checkpoint and expansion requests."""
 
     try:
         requests = _fixture_expansion_contract(
@@ -44,10 +44,10 @@ def _verified_checkpoint_target_contract(
         )
     except RecurrenceAdmissionError:
         return False
-    targets = recurrence_admission.get("fixture_expansion_target_ids")
     revisions = recurrence_admission.get("fixture_revisions")
     if (
-        CHAINWIELDER_CHECKPOINT_FIXTURE_ID not in targets
+        recurrence_admission.get("checkpoint_fixture_id")
+        != CHAINWIELDER_CHECKPOINT_FIXTURE_ID
         or not isinstance(revisions, dict)
     ):
         return False

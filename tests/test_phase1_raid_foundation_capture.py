@@ -170,12 +170,18 @@ def test_chainwielder_checkpoint_arm_accepts_only_verified_composite_targets():
 
     assert chainwielder_checkpoint_arm_command(admission, 30008) is not None
 
+    auxiliary = json.loads(json.dumps(admission))
+    auxiliary["fixture_expansion_target_ids"].pop(0)
+    auxiliary["pending_fixture_ids"] = []
+    assert chainwielder_checkpoint_arm_command(auxiliary, 30008) is not None
+
     rejected = []
-    for mutation in ("missing_checkpoint", "unexpected_target", "stale", "wrong_gate"):
+    for mutation in (
+        "missing_checkpoint_identity", "unexpected_target", "stale", "wrong_gate"
+    ):
         candidate = json.loads(json.dumps(admission))
-        if mutation == "missing_checkpoint":
-            candidate["fixture_expansion_target_ids"].pop(0)
-            candidate["pending_fixture_ids"] = []
+        if mutation == "missing_checkpoint_identity":
+            candidate["checkpoint_fixture_id"] = None
         elif mutation == "unexpected_target":
             candidate["fixture_expansion_target_ids"].append("unexpected_fixture_v1")
         elif mutation == "stale":
@@ -191,7 +197,8 @@ def test_chainwielder_checkpoint_arm_accepts_only_verified_composite_targets():
     assert rejected == [
         (mutation, "checkpoint_verified_admission_invalid")
         for mutation in (
-            "missing_checkpoint", "unexpected_target", "stale", "wrong_gate"
+            "missing_checkpoint_identity", "unexpected_target", "stale",
+            "wrong_gate",
         )
     ]
 
@@ -782,6 +789,9 @@ def _verified_checkpoint_admission() -> dict:
         ],
         "fixture_revisions": {},
         "checkpoint_seal_sha256": "a" * 64,
+        "checkpoint_fixture_id": (
+            "chainwielder_pre_admission_rejection_isolation_v1"
+        ),
     }
 
 
