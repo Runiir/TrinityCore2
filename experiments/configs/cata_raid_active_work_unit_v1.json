@@ -2,21 +2,21 @@
   "behavior_change": false,
   "boss": "magmaw",
   "classification": "failed",
-  "epoch_id": "magmaw_transfer_lane_shadow_semantics_repair_20260831",
+  "epoch_id": "native_path_checkpoint_compile_repair_20260831",
   "evidence_contract_change": false,
-  "gate_state": "shadow_semantics_repair_required",
-  "next_action": "Repair task movement-observation semantics and strengthen shadow-versus-legacy execution equivalence. Keep authority legacy and prove the task can run without mistaking lease absence or its own pillar_bait_switch lease for safety preemption.",
+  "gate_state": "full_build_compile_repair_required",
+  "next_action": "Repair the two confirmed compile errors in BotWorldPopulationMgrNativePathCheckpoint.cpp, verify the exact translation unit, then complete the worldserver build with eight jobs. Do not start a server or change runtime behavior.",
   "next_owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "runtime:magmaw_transfer_lane_shadow_semantics_repair",
-  "observed_at_commit": "c52e5836db1f84aa709d0047eca70bf528e19f45",
-  "immutable_input_commit": "c52e5836db1f84aa709d0047eca70bf528e19f45",
+  "next_work_unit": "runtime:native_path_checkpoint_compile_repair",
+  "observed_at_commit": "3410e71a681a0abb5e316a0a13e505d933f96a9c",
+  "immutable_input_commit": "3410e71a681a0abb5e316a0a13e505d933f96a9c",
   "owner_skill": "raid-bot-runtime-implementation",
   "program_scope": {
     "acceptance_admitted": false,
     "authserver_start_admitted": false,
     "database_provisioning_mutations_allowed": false,
     "dvc_publication_required_after_terminal": false,
-    "fixture_expansion_replay_admitted": true,
+    "fixture_expansion_replay_admitted": false,
     "fixture_prerequisite_build_authorized": true,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
@@ -25,51 +25,40 @@
   "raid": "blackwing_descent",
   "schema": "cata_raid_active_work_unit_v1",
   "scope_lock": {
-    "allowed_change": "One behavior-neutral semantics repair: make the persistent transfer-lane task independent of short movement-lease presence, classify its own matching legacy Hazard lease separately from real safety preemption, and strengthen shadow-versus-legacy comparison to full execution equivalence. Diagnostics and deterministic compiled fixtures may be updated. Authority remains legacy.",
+    "allowed_change": "One behavior-neutral compile repair in BotWorldPopulationMgrNativePathCheckpoint.cpp: bind the Git hash as a safe string view or string before measuring it, and provide a local millisecond clock using the established GameTime system-point convention. Includes compile verification only.",
     "forbidden": [
-      "selecting, submitting, arbitrating, or executing the shadow candidate",
-      "changing BotAdaptiveMagmawStrategy conditions, proposal order, geometry, assignments, targets, destinations, or gameplay behavior",
-      "changing generic action arbitration ordering, movement arbitration rules, MMAP floors, path tolerances, fallbacks, or native execution",
-      "changing boss scripts, class rotations, pet behavior, DPS/HPS, consumables, cooldowns, Bloodlust, or database state",
+      "changing native-path checkpoint admission semantics, fixture identity, source-commit prefix semantics, route stages, outcomes, or JSON evidence",
+      "changing action arbitration, movement ownership, MMAP floors, path tolerances, fallback sampling, progress rules, or native execution",
+      "changing Magmaw strategy, shadow tasks, coordinator, encounter scripts, class rotations, pet behavior, DPS/HPS, consumables, cooldowns, Bloodlust, or database state",
       "starting authserver, worldserver, a live shard, or a gameplay canary",
-      "building a generic behavior tree, GOAP planner, HTN engine, task DSL, or cross-encounter framework",
-      "treating a proposal, selection, submission, lease refresh, or native receipt as semantic progress",
-      "fixing the unrelated BotWorldPopulationMgrNativePathCheckpoint.cpp build errors inside this work unit",
-      "adding branches to BotAdaptiveMagmawStrategy::Propose or ProposeHazardMovement"
+      "editing any generated artifact, DVC payload, or unrelated source file"
     ],
     "required_postconditions": [
-      "no lease and an expired lease leave an otherwise valid task Running",
-      "a current same-scope Hazard lease matching the immutable task destination is classified as the task's own transfer rather than safety preemption",
-      "a current same-scope Hazard lease with a mismatched destination and any current Recovery lease suspend the task for safety",
-      "stale or cross-scope leases do not preempt the current task",
-      "clearing safety resumes the same actor, task generation, and immutable destination",
-      "semantic progress remains exclusively position-distance based and safety suspension pauses the no-progress clock",
-      "execution equivalence checks exact legacy adaptive_magmaw pillar_bait_switch identity, lifecycle scope, actor, action kind, movement-only resource, finite XYZ, XY tolerance, bounded Z/floor agreement, PreemptCasting, Survival priority, utility 500, and observation-relative 750ms freshness",
-      "the shadow emitter populates the execution fields without changing task identity or submitting the candidate",
-      "compiled production-helper fixtures cover no lease, expiry, matching and mismatched Hazard, Recovery, stale scope, resume identity, distance progress, no false submission progress, and every equivalence mismatch",
-      "the existing action arbiter, executor, movement planner, and legacy Magmaw strategy remain behaviorally unchanged",
-      "new or extracted entrypoints have CCN at most 15 and NLOC at most 100; pre-existing touched callers may only gain straight-line calls with unchanged CCN",
-      "all changed C and C++ source and header files remain below 1000 physical lines"
+      "the source-commit prefix comparison remains exact for GitRevision::GetHash",
+      "NowMs is local to the translation unit and matches the established GameTime millisecond convention",
+      "the exact translation unit compiles",
+      "cmake --build build --target worldserver -j8 succeeds",
+      "the changed C++ file remains below 1000 physical lines",
+      "no behavior-bearing logic changes"
     ]
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_shadow_semantics_repair_handoff_v1.json",
-    "sha256": "50502c8c1fe6865e60de084af76d6ec99181047f7d5af927847fd0b29105840c",
-    "source_commit": "c52e5836db1f84aa709d0047eca70bf528e19f45",
-    "source_tree": "5480e2df899e72de3a4e59c03dddedcd098357f6"
+    "path": "experiments/configs/cata_raid_native_path_checkpoint_compile_repair_handoff_v1.json",
+    "sha256": "6fd2687d3d6a530b4c33b98874ea731cd703168034f16d712a1b3c7633d33c89",
+    "source_commit": "3410e71a681a0abb5e316a0a13e505d933f96a9c",
+    "source_tree": "5a9c4b431c90c6ea403d11c9a5762c4aea7d5a91"
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "compiled_shadow_fixture_no_live_run",
+    "repair_policy": "compile_only_no_live_run",
     "terminal_edges": [
-      "shadow_semantics_verified",
-      "fixture_failure",
+      "full_build_verified",
       "compile_failure",
       "scope_violation",
       "explicit_interruption"
     ]
   },
   "mode": "10N",
-  "work_unit": "runtime:magmaw_transfer_lane_shadow_semantics_repair"
+  "work_unit": "runtime:native_path_checkpoint_compile_repair"
 }

@@ -1,0 +1,32 @@
+{
+  "schema": "cata_raid_architecture_handoff_v1",
+  "handoff_id": "native_path_checkpoint_compile_repair_20260831",
+  "source_commit": "3410e71a681a0abb5e316a0a13e505d933f96a9c",
+  "source_tree": "5a9c4b431c90c6ea403d11c9a5762c4aea7d5a91",
+  "classification": "compile_repair",
+  "behavior_authority": "unchanged",
+  "first_broken_edge": {
+    "component": "BotWorldPopulationMgrNativePathCheckpoint.cpp",
+    "finding": "The full worldserver build fails because GitRevision::GetHash returns const char* but the checkpoint calls size() on it, and the translation unit calls an undeclared NowMs helper.",
+    "effect": "The authority-off Magmaw shadow observation gate cannot start from a verified binary.",
+    "confidence": "confirmed_by_compiler"
+  },
+  "next_phase": {
+    "work_unit": "runtime:native_path_checkpoint_compile_repair",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Make the native-path checkpoint translation unit compile without changing checkpoint admission, movement, route, timing, or gameplay semantics.",
+    "behavior_cutover_allowed": false
+  },
+  "required_invariants": [
+    "Git hash prefix validation remains semantically identical and handles the const char pointer safely",
+    "the local millisecond clock uses the same GameTime system-point convention as neighboring bot runtime files",
+    "no movement planner, MMAP, path tolerance, fallback, encounter, class, pet, database, or server behavior changes",
+    "the exact translation unit and the full worldserver target compile with eight jobs",
+    "all changed C and C++ files remain below 1000 physical lines"
+  ],
+  "promotion_gate": {
+    "next_work_unit": "evidence:magmaw_transfer_lane_authority_off_observation",
+    "required_evidence": "A clean successful worldserver build before any live authority-off capture.",
+    "live_capture_allowed_in_this_phase": false
+  }
+}
