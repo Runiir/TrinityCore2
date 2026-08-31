@@ -277,6 +277,52 @@ def _native_checkpoint_row(
     }
 
 
+def _native_failed_terminal_row(
+    *,
+    outcome: str = "native_path_checkpoint_stage_submit_failed",
+    stage_submit_count: int = 1,
+    hazard_submit_count: int = 0,
+    stage_receipt_id: int = 0,
+    hazard_receipt_id: int = 0,
+) -> dict[str, object]:
+    row = _native_checkpoint_row(
+        phase="checkpoint_terminal", native_stage="failed",
+    )
+    lifecycle = row["controller_route_hold"]["checkpoint_lifecycle"]
+    row["controller_route_hold"]["checkpoint_stage"] = "failed"
+    lifecycle.update({
+        "stage": "failed",
+        "terminal": True,
+        "stage_submit_count": stage_submit_count,
+        "hazard_submit_count": hazard_submit_count,
+        "stage_receipt_id": stage_receipt_id,
+        "hazard_receipt_id": hazard_receipt_id,
+        "outcome": outcome,
+    })
+    row.update({
+        "ok": False,
+        "stage": "failed",
+        "terminal": True,
+        "stage_submit_count": stage_submit_count,
+        "hazard_submit_count": hazard_submit_count,
+        "stage_receipt_id": stage_receipt_id,
+        "hazard_receipt_id": hazard_receipt_id,
+        "outcome": outcome,
+        "movement_planner": {
+            "available": True,
+            "request": {"map": 669, "z": 210.098007},
+            "target_floor": {"sampled": True, "z": -106.245819},
+            "z_delta": {"available": True, "absolute": 316.343811},
+            "planner": {
+                "gate": "target_z_transition",
+                "result": "rejected",
+                "reason": "route_destination_invalid_z_transition",
+            },
+        },
+    })
+    return row
+
+
 def _native_scheduler() -> ControllerRouteHoldScheduler:
     dialect = checkpoint_controller_dialect(_native_admission(), 30006)
     assert isinstance(dialect, dict)
@@ -323,6 +369,211 @@ def test_native_scheduler_exact_held_arm_terminal_no_release_transcript() -> Non
     assert receipt["command_counts"]["release"] == 0
     assert receipt["release_ack_count"] == 0
     assert receipt["native_scope"]["route_generation"] == 1
+
+
+def test_native_scheduler_records_truthful_failed_terminal_without_gate_pass() -> None:
+    scheduler = _native_scheduler()
+    scheduler.start()
+    scheduler.observe(_native_hold())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_checkpoint_row(
+        phase="armed", native_stage="armed",
+    ))
+
+    assert scheduler.observe(_native_failed_terminal_row()) == []
+    assert scheduler.complete is True
+    assert scheduler.failed is False
+    assert scheduler.failure_reason is None
+    receipt = scheduler.receipt()
+    assert receipt["phase"] == "checkpoint_terminal_failed"
+    assert receipt["gate_passed"] is False
+    assert receipt["checkpoint_terminal_count"] == 1
+    assert receipt["checkpoint_terminal_stage"] == "failed"
+    assert receipt["checkpoint_terminal_lifecycle"]["outcome"] == (
+        "native_path_checkpoint_stage_submit_failed"
+    )
+    observation = receipt["checkpoint_terminal_observation"]
+    assert observation["outcome"] == "native_path_checkpoint_stage_submit_failed"
+    assert observation["movement_planner"]["planner"] == {
+        "gate": "target_z_transition",
+        "result": "rejected",
+        "reason": "route_destination_invalid_z_transition",
+    }
+
+
+@pytest.mark.parametrize(
+    ("outcome", "shape"),
+    [
+        ("native_path_checkpoint_scope_or_timeout", (0, 0, 0, 0)),
+        ("native_path_checkpoint_stage_submit_failed", (1, 0, 0, 0)),
+        ("native_path_checkpoint_stage_receipt_missing", (1, 0, 0, 0)),
+        ("native_path_checkpoint_stage_identity_failed", (1, 0, 41, 0)),
+        ("native_path_checkpoint_hazard_identity_failed", (1, 1, 41, 0)),
+        ("native_path_checkpoint_outcome_mismatch", (1, 1, 41, 42)),
+        ("native_path_checkpoint_launch_progress_failed", (1, 1, 41, 42)),
+    ],
+)
+def test_native_scheduler_accepts_only_native_failure_state_shapes(
+    outcome: str, shape: tuple[int, int, int, int],
+) -> None:
+    scheduler = _native_scheduler()
+    scheduler.start()
+    scheduler.observe(_native_hold())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_checkpoint_row(
+        phase="armed", native_stage="armed",
+    ))
+    row = _native_failed_terminal_row(
+        outcome=outcome,
+        stage_submit_count=shape[0],
+        hazard_submit_count=shape[1],
+        stage_receipt_id=shape[2],
+        hazard_receipt_id=shape[3],
+    )
+
+    scheduler.observe(row)
+    assert scheduler.complete is True
+    assert scheduler.failed is False
+    receipt = scheduler.receipt()
+    assert receipt["gate_passed"] is False
+    assert receipt["checkpoint_terminal_lifecycle"]["outcome"] == outcome
+
+
+@pytest.mark.parametrize(
+    ("outcome", "impossible_shape"),
+    [
+        ("native_path_checkpoint_scope_or_timeout", (1, 0, 0, 0)),
+        ("native_path_checkpoint_stage_submit_failed", (1, 0, 41, 0)),
+        ("native_path_checkpoint_stage_receipt_missing", (1, 1, 41, 42)),
+        ("native_path_checkpoint_stage_identity_failed", (1, 0, 0, 0)),
+        ("native_path_checkpoint_hazard_identity_failed", (1, 0, 41, 0)),
+        ("native_path_checkpoint_outcome_mismatch", (1, 1, 41, 0)),
+        ("native_path_checkpoint_launch_progress_failed", (1, 1, 0, 42)),
+    ],
+)
+def test_native_scheduler_rejects_impossible_failure_state_shapes(
+    outcome: str, impossible_shape: tuple[int, int, int, int],
+) -> None:
+    scheduler = _native_scheduler()
+    scheduler.start()
+    scheduler.observe(_native_hold())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_checkpoint_row(
+        phase="armed", native_stage="armed",
+    ))
+    row = _native_failed_terminal_row(
+        outcome=outcome,
+        stage_submit_count=impossible_shape[0],
+        hazard_submit_count=impossible_shape[1],
+        stage_receipt_id=impossible_shape[2],
+        hazard_receipt_id=impossible_shape[3],
+    )
+
+    scheduler.observe(row)
+    assert scheduler.failed is True
+    assert scheduler.failure_reason == (
+        "controller_route_hold_checkpoint_lifecycle_invalid"
+    )
+
+
+def test_native_scheduler_rejects_unknown_failed_outcome() -> None:
+    scheduler = _native_scheduler()
+    scheduler.start()
+    scheduler.observe(_native_hold())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_checkpoint_row(
+        phase="armed", native_stage="armed",
+    ))
+
+    scheduler.observe(_native_failed_terminal_row(
+        outcome="native_path_checkpoint_unknown_failure",
+    ))
+    assert scheduler.failed is True
+    assert scheduler.failure_reason == (
+        "controller_route_hold_checkpoint_lifecycle_invalid"
+    )
+
+
+def test_native_scheduler_rejects_false_armed_row_instead_of_polling() -> None:
+    scheduler = _native_scheduler()
+    scheduler.start()
+    scheduler.observe(_native_hold())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_checkpoint_row(
+        phase="armed", native_stage="armed",
+    ))
+    row = _native_checkpoint_row(phase="armed", native_stage="armed")
+    row["ok"] = False
+
+    assert scheduler.observe(row) == []
+    assert scheduler.failed is True
+    assert scheduler.failure_reason == (
+        "controller_route_hold_checkpoint_lifecycle_invalid"
+    )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "field"),
+    [
+        ("authority", "authority"),
+        ("actor", "actor_guid"),
+        ("fixture", "fixture_id"),
+        ("receipt", "case_id"),
+        ("mirror", "outcome"),
+    ],
+)
+def test_native_failed_terminal_still_rejects_identity_drift(
+    mutation: str, field: str,
+) -> None:
+    scheduler = _native_scheduler()
+    scheduler.start()
+    scheduler.observe(_native_hold())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_checkpoint_row(
+        phase="armed", native_stage="armed",
+    ))
+    row = _native_failed_terminal_row()
+    if mutation == "authority":
+        row[field] = "wrong_authority"
+    elif mutation == "actor":
+        row[field] = 30007
+    elif mutation == "fixture":
+        row[field] = "wrong_fixture"
+    elif mutation == "receipt":
+        row[field] = "wrong_case"
+    else:
+        row[field] = "native_path_checkpoint_scope_or_timeout"
+
+    scheduler.observe(row)
+    assert scheduler.failed is True
+    assert scheduler.failure_reason == (
+        "controller_route_hold_checkpoint_receipt_identity_invalid"
+    )
+
+
+def test_native_failed_terminal_rejects_missing_planner_reason() -> None:
+    scheduler = _native_scheduler()
+    scheduler.start()
+    scheduler.observe(_native_hold())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_checkpoint_row(
+        phase="armed", native_stage="armed",
+    ))
+    row = _native_failed_terminal_row()
+    row["movement_planner"]["planner"]["reason"] = ""
+
+    scheduler.observe(row)
+    assert scheduler.failed is True
+    assert scheduler.failure_reason == (
+        "controller_route_hold_checkpoint_planner_missing"
+    )
 
 
 @pytest.mark.parametrize(

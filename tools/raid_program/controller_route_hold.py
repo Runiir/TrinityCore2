@@ -176,10 +176,11 @@ class ControllerRouteHoldScheduler:
         self._terminal_count = 0
         self._terminal_stage: str | None = None
         self._terminal_lifecycle: dict[str, Any] | None = None
+        self._terminal_observation: dict[str, Any] | None = None
 
     @property
     def complete(self) -> bool:
-        return self.phase == "complete"
+        return self.phase in {"complete", "checkpoint_terminal_failed"}
 
     @property
     def failed(self) -> bool:
@@ -574,7 +575,7 @@ class ControllerRouteHoldScheduler:
             "schema": "generic_controller_route_hold_scheduler_v1",
             "enabled": True,
             "phase": self.phase,
-            "gate_passed": self.complete and not self.failed,
+            "gate_passed": self.phase == "complete" and not self.failed,
             "failure_reason": self.failure_reason,
             "launch_identity": {
                 field: getattr(self.identity, field)
@@ -591,6 +592,7 @@ class ControllerRouteHoldScheduler:
             "checkpoint_terminal_count": self._terminal_count,
             "checkpoint_terminal_stage": self._terminal_stage,
             "checkpoint_terminal_lifecycle": self._terminal_lifecycle,
+            "checkpoint_terminal_observation": self._terminal_observation,
             "release_ack_count": self._release_ack_count,
             "command_counts": dict(self.command_counts),
             "command_transcript": list(self.command_transcript),

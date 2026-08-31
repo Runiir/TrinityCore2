@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import re
 from typing import Any
 
@@ -139,6 +140,33 @@ NATIVE_PATH_CHECKPOINT_TERMINAL_OUTCOMES = {
     "native_path_checkpoint_no_launch_verified",
     "native_path_checkpoint_launch_progress_verified",
 }
+NATIVE_PATH_CHECKPOINT_TERMINAL_FAILURE_SHAPES = {
+    "native_path_checkpoint_scope_or_timeout": {
+        (0, 0, False, False),
+        (1, 0, True, False),
+        (1, 1, True, True),
+    },
+    "native_path_checkpoint_stage_submit_failed": {
+        (1, 0, False, False),
+    },
+    "native_path_checkpoint_stage_receipt_missing": {
+        (1, 0, False, False),
+        (1, 0, True, False),
+    },
+    "native_path_checkpoint_stage_identity_failed": {
+        (1, 0, True, False),
+    },
+    "native_path_checkpoint_hazard_identity_failed": {
+        (1, 1, True, False),
+        (1, 1, True, True),
+    },
+    "native_path_checkpoint_outcome_mismatch": {
+        (1, 1, True, True),
+    },
+    "native_path_checkpoint_launch_progress_failed": {
+        (1, 1, True, True),
+    },
+}
 NATIVE_PATH_CHECKPOINT_AUTHORITY = (
     "sealed_compiled_map669_native_path_observation_only"
 )
@@ -167,6 +195,67 @@ def native_path_checkpoint_lifecycle_rejections(
     return []
 
 
+def _native_path_checkpoint_terminal_failure_rejections(
+    scheduler: Any,
+    row: dict[str, Any],
+    hold: dict[str, Any],
+    lifecycle: dict[str, Any],
+    *,
+    case_id: str,
+) -> list[str]:
+    """Validate a native failed terminal without treating it as success."""
+
+    hold_rejections = scheduler._hold_rejections(hold)
+    stage_count = lifecycle.get("stage_submit_count")
+    hazard_count = lifecycle.get("hazard_submit_count")
+    stage_receipt = lifecycle.get("stage_receipt_id")
+    hazard_receipt = lifecycle.get("hazard_receipt_id")
+    values = (stage_count, hazard_count, stage_receipt, hazard_receipt)
+    if (
+        row.get("ok") is not False
+        or scheduler.phase != "awaiting_terminal"
+        or hold.get("phase") != "checkpoint_terminal"
+        or hold.get("checkpoint_terminal") is not True
+        or hold.get("checkpoint_identity_preserved") is not True
+        or hold.get("checkpoint_stage") != "failed"
+        or hold_rejections
+        or lifecycle.get("stage") != "failed"
+        or lifecycle.get("terminal") is not True
+        or lifecycle.get("case_id") != case_id
+        or any(
+            not isinstance(value, int) or isinstance(value, bool) or value < 0
+            for value in values
+        )
+    ):
+        return ["controller_route_hold_checkpoint_lifecycle_invalid"]
+    shape = (
+        stage_count, hazard_count,
+        bool(stage_receipt), bool(hazard_receipt),
+    )
+    allowed_shapes = NATIVE_PATH_CHECKPOINT_TERMINAL_FAILURE_SHAPES.get(
+        lifecycle.get("outcome")
+    )
+    if allowed_shapes is None or shape not in allowed_shapes:
+        return ["controller_route_hold_checkpoint_lifecycle_invalid"]
+    planner = row.get("movement_planner")
+    planner_result = planner.get("planner") if isinstance(planner, dict) else None
+    if (
+        not isinstance(planner_result, dict)
+        or not isinstance(planner.get("available"), bool)
+    ):
+        return ["controller_route_hold_checkpoint_planner_missing"]
+    if stage_count and (
+        planner.get("available") is not True
+        or any(
+                not isinstance(planner_result.get(field), str)
+                or not planner_result.get(field)
+                for field in ("gate", "result", "reason")
+        )
+    ):
+        return ["controller_route_hold_checkpoint_planner_missing"]
+    return []
+
+
 def observe_native_path_checkpoint_row(
     scheduler: Any, row: dict[str, Any],
 ) -> list[str]:
@@ -184,8 +273,7 @@ def observe_native_path_checkpoint_row(
         "stage_receipt_id", "hazard_receipt_id", "outcome",
     )
     if (
-        row.get("ok") is not True
-        or row.get("authority") != NATIVE_PATH_CHECKPOINT_AUTHORITY
+        row.get("authority") != NATIVE_PATH_CHECKPOINT_AUTHORITY
         or row.get("actor_guid") != scheduler.identity.actor_guid
         or row.get("fixture_id") != scheduler.identity.fixture_id
         or row.get(scheduler._checkpoint_receipt_field)
@@ -199,7 +287,32 @@ def observe_native_path_checkpoint_row(
     if scheduler.phase == "awaiting_arm_ack":
         commands = scheduler._observe_arm_ack(row)
     elif scheduler.phase == "awaiting_terminal":
-        if hold.get("phase") == "armed":
+        if row.get("ok") is False:
+            rejections = _native_path_checkpoint_terminal_failure_rejections(
+                scheduler, row, hold, lifecycle,
+                case_id=scheduler._checkpoint_receipt_value,
+            )
+            if rejections:
+                return scheduler._fail(rejections[0])
+            observation = {
+                "ok": row.get("ok"),
+                "stage": row.get("stage"),
+                "terminal": row.get("terminal"),
+                "outcome": row.get("outcome"),
+                "movement_planner": row.get("movement_planner"),
+            }
+            scheduler._terminal_count = 1
+            scheduler._terminal_stage = hold["checkpoint_stage"]
+            scheduler._terminal_lifecycle = copy.deepcopy(lifecycle)
+            scheduler._terminal_observation = copy.deepcopy(observation)
+            scheduler._record("checkpoint_terminal_failure", observation, hold)
+            scheduler.phase = "checkpoint_terminal_failed"
+            commands = []
+        elif row.get("ok") is not True:
+            return scheduler._fail(
+                "controller_route_hold_checkpoint_lifecycle_invalid"
+            )
+        elif hold.get("phase") == "armed":
             commands = []
         else:
             commands = scheduler._observe_checkpoint_terminal(hold)
