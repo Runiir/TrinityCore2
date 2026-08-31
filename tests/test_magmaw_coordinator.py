@@ -112,18 +112,47 @@ static ActorSnapshot& Member(Blackboard& board, uint32 counter)
     return *itr;
 }
 
+// Assignment semantics are tested against the future lifecycle contract that
+// supplies an exact Magmaw encounter identity and epoch. Production does not
+// supply those facts yet; AssertProductionLifecycleFailsClosed covers today.
+static MagmawFacts FutureAuthoritativeFacts(Blackboard const& board)
+{
+    MagmawFacts facts = MagmawFactsReducer::Reduce(board);
+    facts.EncounterIdentityAuthoritative = true;
+    facts.EncounterEpochAuthoritative = board.CurrentScope.EncounterEpoch != 0;
+    facts.LifecycleAuthoritative = facts.CacheScopeComplete
+        && facts.EncounterIdentityAuthoritative
+        && facts.EncounterEpochAuthoritative;
+    return facts;
+}
+
 static std::shared_ptr<MagmawCoordinator const> Reconcile(
     std::shared_ptr<MagmawCoordinator const> const& current,
     Blackboard const& board,
     std::vector<MagmawAssignmentRetirementInput> const& inputs = {})
 {
-    MagmawFacts const facts = MagmawFactsReducer::Reduce(board);
+    MagmawFacts const facts = FutureAuthoritativeFacts(board);
     return MagmawCoordinator::Reconcile(current, facts, board, inputs);
 }
 
 static ObjectGuid Assigned(MagmawRaidPlan const& plan, Slot slot)
 {
     return plan.Assignment(slot).AssigneeGuid;
+}
+
+static void AssertProductionLifecycleFailsClosed()
+{
+    Blackboard board = Board();
+    board.CurrentScope.EncounterEpoch = 0;
+    MagmawFacts const facts = MagmawFactsReducer::Reduce(board);
+    assert(facts.CacheScopeComplete);
+    assert(!facts.EncounterIdentityAuthoritative);
+    assert(!facts.EncounterEpochAuthoritative);
+    assert(!facts.LifecycleAuthoritative);
+    auto plan = MagmawCoordinator::Reconcile(nullptr, facts, board);
+    assert(!plan->Plan().Authoritative);
+    for (MagmawRaidAssignment const& assignment : plan->Plan().Assignments)
+        assert(assignment.AssigneeGuid.IsEmpty() && assignment.Epoch == 0);
 }
 
 static void AssertInitialAndIdempotent()
@@ -334,6 +363,7 @@ static void AssertLegacySignatureUnchanged()
 
 int main()
 {
+    AssertProductionLifecycleFailsClosed();
     AssertInitialAndIdempotent();
     AssertPermutationAndRevisionStability();
     AssertScopeRetirement();

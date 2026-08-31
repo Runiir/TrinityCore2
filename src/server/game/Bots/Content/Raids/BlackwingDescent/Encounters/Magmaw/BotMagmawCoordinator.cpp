@@ -90,6 +90,9 @@ std::shared_ptr<MagmawCoordinator const> MagmawCoordinator::Reconcile(
 {
     bool const sourceMatches = facts.Lifecycle == board.CurrentScope
         && facts.ObservationRevision == board.Revision;
+    // This is intentionally fail-closed. The current publisher has no exact
+    // Magmaw encounter identity or epoch, so production shadow plans remain
+    // non-authoritative until those two lifecycle facts are published.
     bool const authoritative = sourceMatches
         && facts.LifecycleAuthoritative && facts.ProjectionAuthoritative
         && facts.OwnsNode == MagmawTruth::True;
