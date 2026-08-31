@@ -1,7 +1,7 @@
 {
   "behavior_change": true,
   "boss": "magmaw",
-  "classification": "trace_backed_encounter_repair_authorized",
+  "classification": "failed",
   "epoch_id": "magmaw_lethal_transition_safe_completion_20260831",
   "evidence_contract_change": false,
   "gate_state": "one_encounter_transition_repair_required",

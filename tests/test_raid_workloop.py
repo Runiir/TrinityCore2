@@ -346,7 +346,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "encounter:magmaw_lethal_transition_safe_completion"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["classification"] == "trace_backed_encounter_repair_authorized"
+    assert active["classification"] == "failed"
     assert active["next_owner_skill"] == "raid-encounter-implementation"
     assert active["ready_for_bounded_repair"] is active["descriptor_valid"]
     assert active["program_scope"]["gameplay_mutations_allowed"] is True
