@@ -67,6 +67,45 @@ enum class FactSource : uint8
     RouteManifest
 };
 
+enum class NativeEncounterState : uint8
+{
+    Unknown,
+    NotStarted,
+    InProgress,
+    Failed,
+    Done
+};
+
+struct NativeEncounterLifecycle
+{
+    std::string Id;
+    uint32 BossId = 0;
+    uint32 BossEntry = 0;
+    ObjectGuid BossGuid;
+    NativeEncounterState State = NativeEncounterState::Unknown;
+    uint64 ServerEpoch = 0;
+    uint64 InstanceLifecycleEpoch = 0;
+    uint64 AttemptEpoch = 0;
+    uint64 EncounterEpoch = 0;
+    bool Authoritative = false;
+
+    bool HasExactIdentity() const
+    {
+        return Authoritative && !Id.empty() && ServerEpoch
+            && InstanceLifecycleEpoch && EncounterEpoch;
+    }
+
+    bool SameEpochIdentity(NativeEncounterLifecycle const& other) const
+    {
+        return HasExactIdentity() && other.HasExactIdentity()
+            && Id == other.Id && BossId == other.BossId
+            && BossEntry == other.BossEntry
+            && ServerEpoch == other.ServerEpoch
+            && InstanceLifecycleEpoch == other.InstanceLifecycleEpoch
+            && EncounterEpoch == other.EncounterEpoch;
+    }
+};
+
 enum class ActorKind : uint8
 {
     Player,
@@ -237,6 +276,7 @@ struct Blackboard
     bool EncounterEpochAuthoritative = false;
     // The current observer-centered scan has no proven arena-wide bound.
     bool EncounterArenaObservationComplete = false;
+    std::optional<NativeEncounterLifecycle> NativeEncounter;
     std::vector<ActorSnapshot> Players;
     std::vector<ActorSnapshot> Hostiles;
     std::vector<ActorSnapshot> Summons;

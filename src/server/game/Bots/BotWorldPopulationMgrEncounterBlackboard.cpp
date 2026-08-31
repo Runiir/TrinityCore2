@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLifecycleIdentity.h"
 #include "Bots/BotWorldPopulationMgrEncounterHazards.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
 
@@ -7,6 +8,7 @@
 #include "Creature.h"
 #include "GameObject.h"
 #include "GridNotifiersImpl.h"
+#include "InstanceScript.h"
 #include "Map.h"
 #include "Player.h"
 #include "Spell.h"
@@ -23,8 +25,70 @@
 
 namespace
 {
-constexpr uint32 MagmawEntry = 41570;
+constexpr uint32 MagmawEntry = BotMagmawLifecycleIdentity::BossEntry;
+constexpr uint32 MagmawBossId = BotMagmawLifecycleIdentity::BossId;
 constexpr uint32 MagmawMassiveCrashSpell = 88253;
+
+BotEncounter::NativeEncounterState ToNativeEncounterState(
+    EncounterState state)
+{
+    switch (state)
+    {
+        case NOT_STARTED:
+            return BotEncounter::NativeEncounterState::NotStarted;
+        case IN_PROGRESS:
+            return BotEncounter::NativeEncounterState::InProgress;
+        case FAIL:
+            return BotEncounter::NativeEncounterState::Failed;
+        case DONE:
+            return BotEncounter::NativeEncounterState::Done;
+        default:
+            return BotEncounter::NativeEncounterState::Unknown;
+    }
+}
+
+std::optional<BotEncounter::NativeEncounterLifecycle>
+ObserveMagmawLifecycle(Player const& observer, uint64 serverEpoch,
+    std::string_view routeNode)
+{
+    if (!serverEpoch || !BotMagmawLifecycleIdentity::OwnsRoute(
+            observer.GetMapId(), routeNode))
+        return std::nullopt;
+
+    InstanceScript* instance = observer.GetInstanceScript();
+    if (!instance || instance->GetEncounterCount() <= MagmawBossId)
+        return std::nullopt;
+
+    EncounterState const state = instance->GetBossState(MagmawBossId);
+    uint64 const instanceLifecycleEpoch = instance->GetLifecycleEpoch();
+    uint64 const attemptEpoch = instance->GetBossAttemptEpoch(MagmawBossId);
+    uint64 const encounterEpoch =
+        InstanceEncounterLifecycle::CurrentOrNextEncounterEpoch(
+            state, attemptEpoch);
+    BotEncounter::NativeEncounterState const nativeState =
+        ToNativeEncounterState(state);
+    if (nativeState == BotEncounter::NativeEncounterState::Unknown
+        || !instanceLifecycleEpoch || !encounterEpoch)
+        return std::nullopt;
+
+    BotEncounter::NativeEncounterLifecycle lifecycle;
+    lifecycle.Id = BotMagmawLifecycleIdentity::EncounterId;
+    lifecycle.BossId = MagmawBossId;
+    lifecycle.BossEntry = MagmawEntry;
+    lifecycle.State = nativeState;
+    lifecycle.ServerEpoch = serverEpoch;
+    lifecycle.InstanceLifecycleEpoch = instanceLifecycleEpoch;
+    lifecycle.AttemptEpoch = attemptEpoch;
+    lifecycle.EncounterEpoch = encounterEpoch;
+    lifecycle.Authoritative = true;
+    if (Creature* magmaw = instance->GetCreature(MagmawBossId))
+    {
+        if (magmaw->GetEntry() != MagmawEntry)
+            return std::nullopt;
+        lifecycle.BossGuid = magmaw->GetGUID();
+    }
+    return lifecycle;
+}
 
 bool IsMagmawPincerWarningCreature(BotEncounter::RouteView const& route,
     Creature const& creature)
@@ -106,6 +170,8 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     snapshot->EncounterIdentityAuthoritative = false;
     snapshot->EncounterEpochAuthoritative = false;
     snapshot->EncounterArenaObservationComplete = false;
+    snapshot->NativeEncounter = ObserveMagmawLifecycle(*observer, _serverEpoch,
+        Cohort().Config.ValidationRouteNodeId);
 
     snapshot->Route.NodeId = Cohort().Config.ValidationRouteNodeId;
     snapshot->Route.Kind = Cohort().Config.ValidationRouteNodeKind.empty()
