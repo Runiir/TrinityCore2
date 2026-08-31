@@ -478,7 +478,8 @@ private:
             if (eventMovement)
             {
                 if (auto const* episode = eventMovement->RetainLethal(
-                        pillar.Guid, bot.Guid, "pillar_evade", destination))
+                        pillar.Guid, bot.Guid, "pillar_evade", destination,
+                        pillar.Position, 12.0f))
                     return BuildMagmawEventMovement(board, *episode,
                         BotActionArbitration::Priority::Survival,
                         500.0f - distance);

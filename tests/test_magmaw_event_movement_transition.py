@@ -93,7 +93,7 @@ int main()
     // event still retains one safe point and one candidate identity.
     board.Revision += 1;
     board.ObservedAtMs = 3000;
-    bot.Position = { -339.442f, -36.9149f, 211.17f };
+    bot.Position = { -339.0f, -26.0f, 211.17f };
     crash.Position = { -335.0f, -24.0f, 211.17f };
     board.Players = { bot };
     board.Hostiles = { boss, crash };
@@ -156,6 +156,167 @@ int main()
     auto resetMove = RetainMagmawRadialLethalMovement(
         reset, bot, crash, "massive_crash_evade", 16.0f, state, 450.0f);
     assert(resetMove && resetMove->Id.ScopeKey != first->Id.ScopeKey);
+
+    // a5062ba7 actor 30007, trace sequence 626 and receipt 509: the original
+    // 16-yard Crash request was retained
+    // after native movement reached this shorter same-floor bounded endpoint.
+    // The later tick then retried the original request from off navmesh.
+    Blackboard captured = board;
+    captured.CurrentScope.AttemptId = 12;
+    captured.CurrentScope.InstanceId = 8;
+    captured.Revision = 626;
+    captured.ObservedAtMs = 20000;
+    ObjectGuid const capturedActor = PlayerGuid(30007);
+    Vector3 const requested{
+        -302.921356f, -26.0047035f, 210.521393f };
+    Vector3 const boundedEndpoint{
+        -308.800049f, -29.3334656f, 209.980377f };
+    Vector3 const actorAtLaunch{
+        -305.600037f, -34.9334412f, 210.521393f };
+    float const requestedDx = requested.X - actorAtLaunch.X;
+    float const requestedDy = requested.Y - actorAtLaunch.Y;
+    float const requestedDirectionLength = std::hypot(requestedDx, requestedDy);
+    ActorSnapshot capturedCrash = crash;
+    capturedCrash.Guid = UnitGuid(47196, 801);
+    capturedCrash.Position = {
+        requested.X - requestedDx / requestedDirectionLength * 16.0f,
+        requested.Y - requestedDy / requestedDirectionLength * 16.0f,
+        requested.Z };
+    ActorSnapshot capturedBot = bot;
+    capturedBot.Guid = capturedActor;
+    capturedBot.Position = actorAtLaunch;
+    captured.Players = { capturedBot };
+    captured.Hostiles = { boss, capturedCrash };
+    MagmawEventMovementTransitionState capturedState;
+    auto capturedFirstPlan = strategy.Propose(captured, capturedActor, "dps",
+        nullptr, false, false, nullptr, nullptr, &capturedState);
+    assert(capturedFirstPlan.Movement);
+    auto const* capturedRequest = std::get_if<BotNativeAction::Move>(
+        &capturedFirstPlan.Movement->Action);
+    assert(capturedRequest);
+    assert(std::hypot(capturedRequest->X - requested.X,
+        capturedRequest->Y - requested.Y) < 0.001f);
+    assert(std::fabs(capturedRequest->Z - requested.Z) < 0.001f);
+    uint64 const capturedIntent =
+        capturedFirstPlan.Movement->Id.EventGeneration;
+
+    captured.Revision += 1;
+    captured.ObservedAtMs += 1;
+    capturedBot.Position = {
+        capturedCrash.Position.X
+            + requestedDx / requestedDirectionLength * 10.0f,
+        capturedCrash.Position.Y
+            + requestedDy / requestedDirectionLength * 10.0f,
+        requested.Z };
+    captured.Players = { capturedBot };
+    auto unsafePartial = strategy.Propose(captured, capturedActor, "dps",
+        nullptr, false, false, nullptr, nullptr, &capturedState);
+    assert(unsafePartial.Movement);
+    assert(unsafePartial.Movement->Id.EventGeneration == capturedIntent);
+    auto const* unsafeRequest = std::get_if<BotNativeAction::Move>(
+        &unsafePartial.Movement->Action);
+    assert(unsafeRequest && unsafeRequest->X == capturedRequest->X
+        && unsafeRequest->Y == capturedRequest->Y
+        && unsafeRequest->Z == capturedRequest->Z);
+
+    assert(std::hypot(boundedEndpoint.X - capturedCrash.Position.X,
+        boundedEndpoint.Y - capturedCrash.Position.Y) > 12.0f);
+    assert(std::fabs(boundedEndpoint.Z - capturedCrash.Position.Z) < 1.5f);
+    captured.Revision += 1;
+    captured.ObservedAtMs += 1;
+    capturedBot.Position = boundedEndpoint;
+    captured.Players = { capturedBot };
+    auto safeBounded = strategy.Propose(captured, capturedActor, "dps",
+        nullptr, false, false, nullptr, nullptr, &capturedState);
+    assert(!capturedState.ActiveLethal());
+    assert(!safeBounded.Movement);
+
+    captured.Revision = 636;
+    captured.ObservedAtMs += 10;
+    capturedBot.Position = {
+        -302.471405f, -31.8600292f, 210.098007f };
+    captured.Players = { capturedBot };
+    auto laterOffNavmesh = strategy.Propose(captured, capturedActor, "dps",
+        nullptr, false, false, nullptr, nullptr, &capturedState);
+    assert(laterOffNavmesh.Movement);
+    uint64 const reentryIntent =
+        laterOffNavmesh.Movement->Id.EventGeneration;
+    assert(reentryIntent != capturedIntent);
+    auto const* reentryRequest = std::get_if<BotNativeAction::Move>(
+        &laterOffNavmesh.Movement->Action);
+    assert(reentryRequest);
+    assert(std::hypot(reentryRequest->X - requested.X,
+        reentryRequest->Y - requested.Y) > 1.0f);
+
+    captured.Revision += 1;
+    capturedBot.Position = {
+        capturedCrash.Position.X
+            + requestedDx / requestedDirectionLength * 8.0f,
+        capturedCrash.Position.Y
+            + requestedDy / requestedDirectionLength * 8.0f,
+        requested.Z };
+    captured.Players = { capturedBot };
+    auto capturedReentryContinuation = strategy.Propose(captured,
+        capturedActor, "dps",
+        nullptr, false, false, nullptr, nullptr, &capturedState);
+    assert(capturedReentryContinuation.Movement);
+    assert(capturedReentryContinuation.Movement->Id.EventGeneration
+        == reentryIntent);
+
+    // Pillar uses the same transition helper. It retains one request while
+    // the actor remains inside 12 yards, completes on same-floor safe
+    // progress, and allocates a new identity on re-entry.
+    Blackboard pillarBoard = captured;
+    pillarBoard.CurrentScope.AttemptId = 13;
+    pillarBoard.Revision = 700;
+    ActorSnapshot capturedPillar = capturedCrash;
+    capturedPillar.Guid = UnitGuid(41843, 802);
+    capturedPillar.Entry = AdaptiveMagmawStrategy::PillarEntry;
+    capturedPillar.Auras.clear();
+    capturedPillar.Position = { -310.0f, -20.0f, 210.5f };
+    capturedBot.Position = { -302.0f, -20.0f, 210.5f };
+    pillarBoard.Players = { capturedBot };
+    pillarBoard.Hostiles = { boss };
+    pillarBoard.Summons = { capturedPillar };
+    MagmawEventMovementTransitionState pillarState;
+    auto pillarFirst = strategy.Propose(pillarBoard, capturedActor, "dps",
+        nullptr, false, false, nullptr, nullptr, &pillarState);
+    assert(pillarFirst.Movement);
+    assert(pillarFirst.Movement->Id.Mechanic == "pillar_evade");
+    uint64 const pillarIntent = pillarFirst.Movement->Id.EventGeneration;
+    auto const* pillarRequest = std::get_if<BotNativeAction::Move>(
+        &pillarFirst.Movement->Action);
+    assert(pillarRequest);
+
+    pillarBoard.Revision += 1;
+    capturedBot.Position = { -300.0f, -20.0f, 210.5f };
+    pillarBoard.Players = { capturedBot };
+    auto pillarUnsafe = strategy.Propose(pillarBoard, capturedActor, "dps",
+        nullptr, false, false, nullptr, nullptr, &pillarState);
+    assert(pillarUnsafe.Movement);
+    assert(pillarUnsafe.Movement->Id.EventGeneration == pillarIntent);
+    auto const* retainedPillarRequest = std::get_if<BotNativeAction::Move>(
+        &pillarUnsafe.Movement->Action);
+    assert(retainedPillarRequest
+        && retainedPillarRequest->X == pillarRequest->X
+        && retainedPillarRequest->Y == pillarRequest->Y
+        && retainedPillarRequest->Z == pillarRequest->Z);
+
+    pillarBoard.Revision += 1;
+    capturedBot.Position = { -297.0f, -20.0f, 210.0f };
+    pillarBoard.Players = { capturedBot };
+    auto pillarSafe = strategy.Propose(pillarBoard, capturedActor, "dps",
+        nullptr, false, false, nullptr, nullptr, &pillarState);
+    assert(!pillarState.ActiveLethal());
+    assert(!pillarSafe.Movement);
+
+    pillarBoard.Revision += 1;
+    capturedBot.Position = { -302.0f, -20.0f, 210.5f };
+    pillarBoard.Players = { capturedBot };
+    auto pillarReentry = strategy.Propose(pillarBoard, capturedActor, "dps",
+        nullptr, false, false, nullptr, nullptr, &pillarState);
+    assert(pillarReentry.Movement);
+    assert(pillarReentry.Movement->Id.EventGeneration != pillarIntent);
 }
 ''',
         encoding="utf-8",

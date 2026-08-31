@@ -24,7 +24,9 @@ struct MagmawEventMovementTransitionState
         ObjectGuid SourceGuid;
         ObjectGuid AssignmentGuid;
         uint64 IntentId = 0;
+        Vector3 SourcePosition;
         Vector3 Destination;
+        float LethalEnvelope = 0.0f;
         float ArrivalTolerance = 1.0f;
         bool Active = false;
         bool Arrived = false;
@@ -80,9 +82,17 @@ struct MagmawEventMovementTransitionState
 
     void ObserveArrival(Vector3 const& position)
     {
-        if (!Lethal.Active || Distance2d(position, Lethal.Destination)
-                > Lethal.ArrivalTolerance
-            || std::fabs(position.Z - Lethal.Destination.Z) > 1.5f)
+        if (!Lethal.Active)
+            return;
+        bool const destinationReached =
+            Distance2d(position, Lethal.Destination)
+                    <= Lethal.ArrivalTolerance
+                && std::fabs(position.Z - Lethal.Destination.Z) <= 1.5f;
+        bool const lethalEnvelopeCleared = Lethal.LethalEnvelope > 0.0f
+            && Distance2d(position, Lethal.SourcePosition)
+                > Lethal.LethalEnvelope
+            && std::fabs(position.Z - Lethal.SourcePosition.Z) <= 1.5f;
+        if (!destinationReached && !lethalEnvelopeCleared)
             return;
         Lethal.Active = false;
         Lethal.Arrived = true;
@@ -90,6 +100,7 @@ struct MagmawEventMovementTransitionState
 
     Episode const* RetainLethal(ObjectGuid source, ObjectGuid assignment,
         std::string mechanic, Vector3 destination,
+        Vector3 sourcePosition = {}, float lethalEnvelope = 0.0f,
         float arrivalTolerance = 2.5f)
     {
         // Retain one identity while the episode is active. If the caller
@@ -97,7 +108,7 @@ struct MagmawEventMovementTransitionState
         // that is a new escape episode even when Trinity reuses the source.
         if (!Lethal.Matches(source, assignment, mechanic) || !Lethal.Active)
             Begin(Lethal, source, assignment, std::move(mechanic), destination,
-                arrivalTolerance);
+                sourcePosition, lethalEnvelope, arrivalTolerance);
         return Lethal.Active ? &Lethal : nullptr;
     }
 
@@ -108,7 +119,8 @@ struct MagmawEventMovementTransitionState
 
 private:
     void Begin(Episode& episode, ObjectGuid source, ObjectGuid assignment,
-        std::string mechanic, Vector3 destination, float arrivalTolerance)
+        std::string mechanic, Vector3 destination, Vector3 sourcePosition,
+        float lethalEnvelope, float arrivalTolerance)
     {
         ++NextIntentId;
         if (!NextIntentId)
@@ -117,7 +129,9 @@ private:
         episode.SourceGuid = source;
         episode.AssignmentGuid = assignment;
         episode.IntentId = NextIntentId;
+        episode.SourcePosition = sourcePosition;
         episode.Destination = destination;
+        episode.LethalEnvelope = lethalEnvelope;
         episode.ArrivalTolerance = arrivalTolerance;
         episode.Active = true;
         episode.Arrived = false;
@@ -168,7 +182,7 @@ RetainMagmawRadialLethalMovement(
         danger.Position.Y + dy / length * exitDistance,
         bot.Position.Z };
     auto const* episode = transition.RetainLethal(danger.Guid, bot.Guid,
-        std::move(mechanic), destination);
+        std::move(mechanic), destination, danger.Position, 12.0f);
     return episode
         ? std::optional<BotNativeAction::Candidate>(BuildMagmawEventMovement(
             board, *episode, BotActionArbitration::Priority::Survival, utility))

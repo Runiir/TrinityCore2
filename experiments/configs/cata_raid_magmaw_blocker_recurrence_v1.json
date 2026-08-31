@@ -1600,7 +1600,7 @@
       "worldserver_log_sha256": "0b17becd839f6b76b8c048834b0aa338e47754356e40a9f82b8539776fd183e0",
       "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_a5062ba7_magmaw_target_receipt_replay_20260831.dvc",
       "evidence": "experiments/configs/cata_raid_magmaw_a5062ba7_target_receipt_replay_summary_v1.json",
-      "note": "Chainwielder and Drudges cleared. Hazard receipt 579 retained its complete planner, launch, progress, and selected_endpoint_reached lifecycle. For Massive Crash, actor 30007 used the original Z 210 request despite a low diagnostic floor sample, launched through a bounded complete endpoint at sequence 626, and reached safety. The encounter transition retained the fixed 16-yard radial destination and later retried it from the platform edge as INCOMPLETE|FARFROMPOLY_END at receipt 636. The shared floor and native-proof hypotheses are refuted; semantic safe completion is the first broken edge."
+      "note": "Chainwielder and Drudges cleared. Hazard receipt 579 retained its complete planner, launch, progress, and selected_endpoint_reached lifecycle. For Massive Crash, actor 30007 used the original Z 210 request despite a low diagnostic floor sample, launched through a bounded complete endpoint at trace sequence 626 and receipt 509, and reached 12.064634 yards from the inferred stationary Crash source. The encounter transition failed to retire. When the actor later re-entered to 10.731111 yards, it reused the stale identity and destination and produced INCOMPLETE|FARFROMPOLY_END at receipt 636 instead of opening a new escape episode. The shared floor and native-proof hypotheses are refuted; semantic safe completion is the first broken edge."
     }
   ]
 }

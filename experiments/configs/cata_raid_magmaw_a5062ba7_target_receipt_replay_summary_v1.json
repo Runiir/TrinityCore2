@@ -80,10 +80,16 @@
     "observations": [
       {
         "actor_guid": 30007,
-        "decision_sequence": 626,
+        "trace_sequence": 626,
+        "decision_sequence": 361,
+        "receipt_id": 509,
         "request": [-302.921356, -26.0047035, 210.521393],
+        "actor_before_planning": [-305.600037, -34.9334412, 210.521393],
+        "inferred_source_position": [-307.5190162, -41.3298959, 210.521393],
+        "source_inference": "The production 16-yard radial destination formula, actor_before_planning, and retained request uniquely determine the stationary Crash source on their shared ray.",
         "resolved_floor_z": -101.750114,
         "selected_endpoint": [-308.800049, -29.3334656, 209.980377],
+        "selected_endpoint_source_clearance_2d": 12.064634,
         "planner_result": "native_movement_submitted",
         "terminal_outcome": "selected_endpoint_reached"
       },
@@ -92,6 +98,8 @@
         "receipt_id": 636,
         "request": [-302.921356, -26.0047035, 210.521393],
         "actor": [-302.471405, -31.8600292, 210.098007],
+        "actor_source_clearance_2d": 10.731111,
+        "semantic_state": "lethal_envelope_reentry",
         "resolved_floor_z": -101.750114,
         "path_type": 132,
         "path_flags": ["PATHFIND_INCOMPLETE", "PATHFIND_FARFROMPOLY_END"],
@@ -109,7 +117,7 @@
       }
     ],
     "refuted_hypothesis": "The Z -101 to -104 floor sample was selected as the native path endpoint and caused the rejection.",
-    "finding": "PlanMovementPath passes the original requested Z to PathGenerator and uses the low sample only to enable same-level reference fallback. RetainMagmawRadialLethalMovement instead preserves an unclamped 16-yard radial destination. A shorter complete endpoint reached the safe boundary, but the semantic transition did not retire and later drove the same actor toward FARFROMPOLY_END."
+    "finding": "PlanMovementPath passes the original requested Z to PathGenerator and uses the low sample only to enable same-level reference fallback. RetainMagmawRadialLethalMovement instead preserves an unclamped 16-yard radial destination. A shorter complete endpoint reached outside the lethal envelope, but the semantic transition did not retire. When the actor later re-entered the envelope, it reused the stale intent and destination instead of starting a new episode, producing FARFROMPOLY_END."
   },
   "performance": {
     "chainwielder": {

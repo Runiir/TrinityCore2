@@ -5,7 +5,7 @@
   "epoch_id": "magmaw_lethal_transition_safe_completion_20260831",
   "evidence_contract_change": false,
   "gate_state": "one_encounter_transition_repair_required",
-  "next_action": "Repair the retained Magmaw Massive Crash transition so a native bounded endpoint that has already put the actor outside the lethal envelope completes the semantic episode. Lock the successful sequence-626 progress and later sequence-636 off-navmesh retry as one regression, then run one bounded map-669 replay without authserver.",
+  "next_action": "Repair the retained Magmaw Massive Crash transition so a native bounded endpoint that has already put the actor outside the lethal envelope completes the semantic episode. Lock successful trace sequence 626 and receipt 509 progress plus the later receipt-636 off-navmesh retry as one regression, then run one bounded map-669 replay without authserver.",
   "next_owner_skill": "raid-encounter-implementation",
   "next_work_unit": "encounter:magmaw_lethal_transition_safe_completion",
   "observed_at_commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
@@ -40,7 +40,7 @@
       "a second live attempt before the first repaired replay is published and reviewed"
     ],
     "required_postconditions": [
-      "actor 30007 sequence 626 reaching the bounded endpoint outside the Massive Crash envelope retires the same semantic episode",
+      "actor 30007 trace sequence 626 and receipt 509 reaching the bounded endpoint outside the Massive Crash envelope retires the same semantic episode",
       "the retired episode cannot later resubmit the same fixed radial destination as the sequence-636 INCOMPLETE|FARFROMPOLY_END retry",
       "unsafe partial progress retains one set-and-forget intent and destination across ticks",
       "re-entry into a lethal envelope starts one new typed episode",
@@ -52,7 +52,7 @@
   },
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_a5062ba7_target_receipt_replay_summary_v1.json",
-    "sha256": "47359d55f8fa0d331001930d5658e6e67848e947311fea72fda40cbd8fc47dc8",
+    "sha256": "efaf211889b6a9f881f4ddc08e98b55561f09ed8e338eaa490fbfb480e00c4a1",
     "source_commit": "a5062ba7a8a7f81a9b4a41dd24e9b1f278c89017",
     "source_tree": "82dfb02a84c7c766772d9b81aa9ecce8eed14da2",
     "dvc_pointer": "artifacts/cata_raid_program/phase1_foundation_a5062ba7_magmaw_target_receipt_replay_20260831.dvc",
