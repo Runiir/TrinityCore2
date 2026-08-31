@@ -940,9 +940,12 @@ int main()
     BotEncounter::MagmawLaneTransitionState parasiteTransition;
     BotEncounter::Blackboard parasiteLeaseBoard = magmawRangedPillar;
     parasiteLeaseBoard.Summons.clear();
-    parasiteLeaseBoard.Players[2].Position = { 0.0f, 0.0f, 0.0f };
+    float const magmawPlatformZ =
+        parasiteLeaseBoard.Route.NavigationHints.front().Z;
+    parasiteLeaseBoard.Players[2].Position = {
+        0.0f, 0.0f, magmawPlatformZ };
     BotEncounter::ActorSnapshot leaseParasite = parasite;
-    leaseParasite.Position = { 2.0f, 0.0f, 0.0f };
+    leaseParasite.Position = { 2.0f, 0.0f, magmawPlatformZ };
     parasiteLeaseBoard.Hostiles = { magmawBoss, leaseParasite };
     BotMovementArbitration::Lease parasiteLease;
     parasiteLease.MovementOwner = BotMovementArbitration::Owner::Hazard;
@@ -963,11 +966,13 @@ int main()
     assert(retainedParasiteMove);
     assert(retainedParasiteMove->X == parasiteTransition.Destination.X);
     assert(retainedParasiteMove->Y == parasiteTransition.Destination.Y);
+    assert(retainedParasiteMove->Z == magmawPlatformZ);
     assert(retainedParasitePlan.Movement->Id.Actor == dps.Guid);
     assert(retainedParasitePlan.Movement->Id.EventGeneration
         == parasiteTransition.TransitionId);
     BotEncounter::Blackboard movedParasiteBoard = parasiteLeaseBoard;
-    movedParasiteBoard.Hostiles[1].Position = { 8.0f, 8.0f, 0.0f };
+    movedParasiteBoard.Hostiles[1].Position = {
+        8.0f, 8.0f, magmawPlatformZ };
     auto movedParasitePlan = magmawStrategy.Propose(
         movedParasiteBoard, dps.Guid, "dps", &parasiteLease, false, false,
         &parasiteTransition);
@@ -979,7 +984,7 @@ int main()
     BotEncounter::Blackboard unsafeParasiteBoard = movedParasiteBoard;
     unsafeParasiteBoard.Players[2].Position = {
         parasiteTransition.Destination.X - 3.0f,
-        parasiteTransition.Destination.Y - 4.0f, 0.0f };
+        parasiteTransition.Destination.Y - 4.0f, magmawPlatformZ };
     unsafeParasiteBoard.Hostiles[1].Position = {
         parasiteTransition.Destination.X, parasiteTransition.Destination.Y,
         parasiteTransition.Destination.Z };
@@ -999,8 +1004,9 @@ int main()
     BotEncounter::Blackboard parasiteRestore = parasiteLeaseBoard;
     BotEncounter::MagmawLaneTransitionState restoreTransition;
     parasiteRestore.Players[2].Position = magmawBoss.Position;
+    parasiteRestore.Players[2].Position.Z = magmawPlatformZ;
     BotEncounter::ActorSnapshot remoteParasite = leaseParasite;
-    remoteParasite.Position = { 80.0f, 0.0f, 0.0f };
+    remoteParasite.Position = { 80.0f, 0.0f, magmawPlatformZ };
     parasiteRestore.Hostiles = { magmawBoss, remoteParasite };
     auto parasiteRestorePlan = magmawStrategy.Propose(
         parasiteRestore, dps.Guid, "dps", nullptr, false, false,
