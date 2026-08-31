@@ -2,7 +2,7 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "shard:composite_map669_production_boundary_replay_v114",
   "owner_skill": "raid-shard-architecture",
-  "classification": "deterministic_launcher_live_replay_admitted",
+  "classification": "live_recurrence_quarantined",
   "epoch_id": "v114_composite_map669_launcher_replay_20260831",
   "observed_at_commit": "7f6a5e40e6455d28b48618ed1275d9c0a5585ee0",
   "immutable_input_commit": "7f6a5e40e6455d28b48618ed1275d9c0a5585ee0",

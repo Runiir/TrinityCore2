@@ -214,7 +214,7 @@ def _source_authority(
         required_postcondition = EXPECTED_REQUIRED_POSTCONDITION
     elif expected_work_unit == LIVE_WORK_UNIT:
         descriptor_owner = "raid-shard-architecture"
-        descriptor_classification = "deterministic_launcher_live_replay_admitted"
+        descriptor_classification = "live_recurrence_quarantined"
         handoff_path_expected = LIVE_HANDOFF_PATH
         handoff_work_unit = LIVE_HANDOFF_WORK_UNIT
         handoff_owner = "raid-evidence-lifecycle"
