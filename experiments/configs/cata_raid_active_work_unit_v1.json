@@ -27,7 +27,7 @@
     "database_provisioning_mutations_allowed": false,
     "dvc_publication_required_after_terminal": true,
     "fixture_expansion_replay_admitted": true,
-    "fixture_prerequisite_build_authorized": false,
+    "fixture_prerequisite_build_authorized": true,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
     "worldserver_start_admitted": true
@@ -44,7 +44,7 @@
       "retaining duplicated raw evidence locally after verified DVC publication"
     ],
     "required_postconditions": [
-      "the existing exact fast8 build receipt, strict provisioning gate, and frozen-roster readback remain unchanged and valid",
+      "one exact fast8 build receipt is regenerated for the descriptor commit while strict provisioning and frozen-roster readback remain valid",
       "the recurrence admission purpose is fixture_expansion_replay and its target set is exactly the two required native-path fixtures",
       "the native-path checkpoint seal binds the exact source, binary, build receipt, recurrence decision, case, profile overlay, and route manifest",
       "the checkpoint terminal causally correlates the complete and incomplete same-level path cases through planner, executor, native launch, progress, and typed outcome while preserving no-launch negatives",
