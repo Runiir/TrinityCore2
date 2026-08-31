@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 import re
-from typing import Any
+from typing import Any, Callable
 
 from tools.raid_program.recurrence_admission import (
     CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
@@ -70,6 +70,7 @@ def controller_route_hold_launch_identity(
     pool_tag: str,
     route_manifest_sha256: str | None,
     route_node_id: str,
+    expected_checkpoint_fixture_id: str = CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
 ) -> ControllerRouteHoldLaunchIdentity | None:
     """Build the generic hold identity from verified launch/config inputs."""
 
@@ -88,7 +89,7 @@ def controller_route_hold_launch_identity(
         or not fixture_ids
         or not isinstance(checkpoint_fixture_id, str)
         or not checkpoint_fixture_id.strip()
-        or checkpoint_fixture_id != CHAINWIELDER_CHECKPOINT_FIXTURE_ID
+        or checkpoint_fixture_id != expected_checkpoint_fixture_id
     ):
         raise ValueError("controller_route_hold_verified_admission_invalid")
     identity = ControllerRouteHoldLaunchIdentity(
@@ -119,9 +120,46 @@ class ControllerRouteHoldScheduler:
         "route_identity_preserved_after_receiptless_hazard_rejection"
     )
 
-    def __init__(self, identity: ControllerRouteHoldLaunchIdentity):
+    def __init__(self, identity: ControllerRouteHoldLaunchIdentity, *,
+        checkpoint_action: str = "botauto_chainwielder_checkpoint",
+        checkpoint_arm_command: str | None = None,
+        checkpoint_receipt_field: str = "fixture_id",
+        checkpoint_receipt_value: object = None,
+        lifecycle_rejections: Callable[
+            [dict[str, Any]], list[str]
+        ] | None = None,
+        checkpoint_observer: Callable[
+            [Any, dict[str, Any]], list[str]
+        ] | None = None,
+        checkpoint_terminal_status_command: str = "",
+        release_after_terminal: bool = True,
+    ):
         identity.validate()
         self.identity = identity
+        default_arm_command = (
+            "botautochaincheckpoint arm "
+            f"{identity.actor_guid} {identity.seal_sha256} "
+            f"{identity.source_commit}"
+        )
+        self._checkpoint_action = checkpoint_action
+        self._checkpoint_arm_command = (
+            default_arm_command
+            if checkpoint_arm_command is None else checkpoint_arm_command
+        )
+        self._checkpoint_receipt_field = checkpoint_receipt_field
+        self._checkpoint_receipt_value = (
+            identity.fixture_id
+            if checkpoint_receipt_value is None else checkpoint_receipt_value
+        )
+        self._lifecycle_rejections = (
+            self._checkpoint_lifecycle_rejections
+            if lifecycle_rejections is None else lifecycle_rejections
+        )
+        self._checkpoint_observer = checkpoint_observer
+        self._checkpoint_terminal_status_command = (
+            checkpoint_terminal_status_command
+        )
+        self._release_after_terminal = release_after_terminal
         self.phase = "ready"
         self.failure_reason: str | None = None
         self.command_counts = {
@@ -277,6 +315,38 @@ class ControllerRouteHoldScheduler:
             return ["controller_route_hold_checkpoint_route_identity_invalid"]
         return []
 
+    def _observe_checkpoint_terminal(
+        self, hold: dict[str, Any],
+    ) -> list[str]:
+        rejections = self._hold_rejections(hold)
+        lifecycle_rejections = self._lifecycle_rejections(hold)
+        if (
+            hold.get("phase") != "checkpoint_terminal"
+            or hold.get("checkpoint_terminal") is not True
+            or hold.get("checkpoint_identity_preserved") is not True
+            or hold.get("checkpoint_stage") != "completed"
+            or rejections
+            or lifecycle_rejections
+        ):
+            return self._fail(
+                rejections[0] if rejections
+                else lifecycle_rejections[0] if lifecycle_rejections
+                else "controller_route_hold_checkpoint_lifecycle_invalid"
+            )
+        self._terminal_count = 1
+        self._terminal_stage = hold["checkpoint_stage"]
+        self._terminal_lifecycle = hold["checkpoint_lifecycle"]
+        if not self._release_after_terminal:
+            self.phase = "complete"
+            return []
+        self.phase = "awaiting_release_ack"
+        return self._emit(
+            "release",
+            "botautochaincheckpoint release "
+            f"{self.identity.actor_guid} {self.identity.seal_sha256} "
+            f"{self.identity.source_commit}",
+        )
+
     def _record(self, kind: str, row: dict[str, Any], hold: dict[str, Any]) -> None:
         self.receipt_transcript.append({
             "kind": kind,
@@ -418,39 +488,14 @@ class ControllerRouteHoldScheduler:
             self._held_status_count = 2
             self.phase = "awaiting_arm_ack"
             return self._emit(
-                "arm",
-                "botautochaincheckpoint arm "
-                f"{self.identity.actor_guid} {self.identity.seal_sha256} "
-                f"{self.identity.source_commit}",
+                "arm", self._checkpoint_arm_command,
             )
         if self.phase == "awaiting_terminal":
             if hold.get("phase") == "armed":
                 if hold.get("arm_ack_count") != 1:
                     return self._fail("controller_route_hold_arm_ack_lost")
                 return []
-            lifecycle_rejections = self._checkpoint_lifecycle_rejections(hold)
-            if (
-                hold.get("phase") != "checkpoint_terminal"
-                or hold.get("checkpoint_terminal") is not True
-                or hold.get("checkpoint_identity_preserved") is not True
-                or hold.get("checkpoint_stage") != "completed"
-                or lifecycle_rejections
-            ):
-                return self._fail(
-                    lifecycle_rejections[0]
-                    if lifecycle_rejections
-                    else "controller_route_hold_checkpoint_lifecycle_invalid"
-                )
-            self._terminal_count = 1
-            self._terminal_stage = hold["checkpoint_stage"]
-            self._terminal_lifecycle = hold["checkpoint_lifecycle"]
-            self.phase = "awaiting_release_ack"
-            return self._emit(
-                "release",
-                "botautochaincheckpoint release "
-                f"{self.identity.actor_guid} {self.identity.seal_sha256} "
-                f"{self.identity.source_commit}",
-            )
+            return self._observe_checkpoint_terminal(hold)
         if self.phase == "awaiting_release_ack":
             if hold.get("phase") != "checkpoint_terminal":
                 return self._fail("controller_route_hold_early_release_without_ack")
@@ -483,6 +528,8 @@ class ControllerRouteHoldScheduler:
             or hold.get("checkpoint_terminal") is not False
             or row.get("actor_guid") != self.identity.actor_guid
             or row.get("fixture_id") != self.identity.fixture_id
+            or row.get(self._checkpoint_receipt_field)
+                != self._checkpoint_receipt_value
         ):
             rejections.append("controller_route_hold_arm_ack_shape_invalid")
         if rejections:
@@ -499,8 +546,10 @@ class ControllerRouteHoldScheduler:
             return []
         if row.get("action") == "botauto_status":
             return self._observe_status(row)
-        if row.get("action") == "botauto_chainwielder_checkpoint":
-            return self._observe_arm_ack(row)
+        if row.get("action") == self._checkpoint_action:
+            if self._checkpoint_observer is None:
+                return self._observe_arm_ack(row)
+            return self._checkpoint_observer(self, row)
         if "phase" in row and "acquire_count" in row:
             return self._observe_direct_hold(row)
         return []

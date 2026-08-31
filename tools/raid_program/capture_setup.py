@@ -14,6 +14,7 @@ from tools.bot_ml.run_live_bot_validation import (
     trinity_config_string,
 )
 from tools.raid_program.capture_checkpoint_controller import (
+    checkpoint_controller_dialect,
     chainwielder_checkpoint_arm_command,
 )
 from tools.raid_program.capture_drudge_geometry import (
@@ -36,6 +37,7 @@ from tools.raid_program.controller_route_hold import (
 )
 from tools.raid_program.probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
 from tools.raid_program.recurrence_admission import (
+    NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
     FIXTURE_EXPANSION_PURPOSE,
     GAMEPLAY_CANARY_PURPOSE,
     RecurrenceAdmissionError,
@@ -341,10 +343,24 @@ def prepare_capture_setup(
                 f"capture preflight rejected: recurrence_admission:{error}"
             ) from error
     try:
-        checkpoint_arm_command = chainwielder_checkpoint_arm_command(
-            recurrence_admission,
-            args.chainwielder_checkpoint_actor_guid,
+        native_checkpoint = isinstance(recurrence_admission, dict) and (
+            recurrence_admission.get("checkpoint_fixture_id")
+            == NATIVE_PATH_CHECKPOINT_FIXTURE_ID
         )
+        if native_checkpoint:
+            checkpoint_dialect = checkpoint_controller_dialect(
+                recurrence_admission,
+                args.chainwielder_checkpoint_actor_guid,
+            )
+            checkpoint_arm_command = (
+                checkpoint_dialect.get("arm_command")
+                if isinstance(checkpoint_dialect, dict) else None
+            )
+        else:
+            checkpoint_arm_command = chainwielder_checkpoint_arm_command(
+                recurrence_admission,
+                args.chainwielder_checkpoint_actor_guid,
+            )
     except ValueError as error:
         raise SystemExit(
             f"capture preflight rejected: checkpoint_arm:{error}"
@@ -411,6 +427,12 @@ def prepare_capture_setup(
                 scenario_id=scenario_id,
                 runtime_profile=profile_name,
             )
+            checkpoint_dialect = checkpoint_controller_dialect(
+                recurrence_admission,
+                args.chainwielder_checkpoint_actor_guid,
+            )
+            if not isinstance(checkpoint_dialect, dict):
+                raise ValueError("checkpoint_controller_dialect_missing")
             controller_hold_identity = controller_route_hold_launch_identity(
                 recurrence_admission=recurrence_admission,
                 required_purpose=FIXTURE_EXPANSION_PURPOSE,
@@ -422,6 +444,7 @@ def prepare_capture_setup(
                     "route_manifest_sha256"
                 ],
                 route_node_id=runtime_route_identity["initial_route_node_id"],
+                expected_checkpoint_fixture_id=checkpoint_dialect["fixture_id"],
             )
         except ValueError as error:
             raise SystemExit(
@@ -433,6 +456,7 @@ def prepare_capture_setup(
             )
         controller_route_hold_scheduler = ControllerRouteHoldScheduler(
             controller_hold_identity,
+            **checkpoint_dialect["scheduler_kwargs"],
         )
     drudge_observed = not args.trace_transport_smoke and (
         profile_name == "blackwing_descent_10n"

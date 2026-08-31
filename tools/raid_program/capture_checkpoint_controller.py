@@ -136,6 +136,134 @@ def native_path_checkpoint_arm_command(
     )
 
 
+NATIVE_PATH_CHECKPOINT_TERMINAL_OUTCOMES = {
+    "native_path_checkpoint_no_launch_verified",
+    "native_path_checkpoint_launch_progress_verified",
+}
+NATIVE_PATH_CHECKPOINT_AUTHORITY = (
+    "sealed_compiled_map669_native_path_observation_only"
+)
+
+
+def native_path_checkpoint_lifecycle_rejections(
+    hold: dict[str, Any], *, case_id: str,
+) -> list[str]:
+    """Validate the terminal native checkpoint projection exactly."""
+
+    lifecycle = hold.get("checkpoint_lifecycle")
+    if not isinstance(lifecycle, dict):
+        return ["controller_route_hold_checkpoint_lifecycle_missing"]
+    if (
+        lifecycle.get("stage") != "completed"
+        or lifecycle.get("terminal") is not True
+        or lifecycle.get("case_id") != case_id
+        or lifecycle.get("stage_submit_count") != 1
+        or lifecycle.get("hazard_submit_count") != 1
+        or not _positive_int(lifecycle.get("stage_receipt_id"))
+        or not _positive_int(lifecycle.get("hazard_receipt_id"))
+        or lifecycle.get("outcome")
+            not in NATIVE_PATH_CHECKPOINT_TERMINAL_OUTCOMES
+    ):
+        return ["controller_route_hold_checkpoint_lifecycle_invalid"]
+    return []
+
+
+def observe_native_path_checkpoint_row(
+    scheduler: Any, row: dict[str, Any],
+) -> list[str]:
+    """Consume native arm/status rows through the generic hold lifecycle."""
+
+    hold = scheduler._hold_from_checkpoint(row)
+    if hold is None:
+        return scheduler._fail(
+            "controller_route_hold_checkpoint_receipt_missing"
+        )
+    lifecycle = hold.get("checkpoint_lifecycle")
+    lifecycle = lifecycle if isinstance(lifecycle, dict) else {}
+    mirrored_fields = (
+        "stage", "terminal", "stage_submit_count", "hazard_submit_count",
+        "stage_receipt_id", "hazard_receipt_id", "outcome",
+    )
+    if (
+        row.get("ok") is not True
+        or row.get("authority") != NATIVE_PATH_CHECKPOINT_AUTHORITY
+        or row.get("actor_guid") != scheduler.identity.actor_guid
+        or row.get("fixture_id") != scheduler.identity.fixture_id
+        or row.get(scheduler._checkpoint_receipt_field)
+            != scheduler._checkpoint_receipt_value
+        or any(row.get(field) != lifecycle.get(field)
+               for field in mirrored_fields)
+    ):
+        return scheduler._fail(
+            "controller_route_hold_checkpoint_receipt_identity_invalid"
+        )
+    if scheduler.phase == "awaiting_arm_ack":
+        commands = scheduler._observe_arm_ack(row)
+    elif scheduler.phase == "awaiting_terminal":
+        if hold.get("phase") == "armed":
+            commands = []
+        else:
+            commands = scheduler._observe_checkpoint_terminal(hold)
+    else:
+        return scheduler._observe_arm_ack(row)
+    if (
+        scheduler.phase == "awaiting_terminal"
+        and not scheduler.failed
+        and not commands
+    ):
+        command = scheduler._checkpoint_terminal_status_command
+        scheduler.command_transcript.append(command)
+        return [command]
+    return commands
+
+
+def checkpoint_controller_dialect(
+    recurrence_admission: dict[str, Any] | None,
+    actor_guid: int | None,
+) -> dict[str, Any] | None:
+    """Select one verified fixture-expansion checkpoint dialect."""
+
+    if recurrence_admission is None and actor_guid is None:
+        return None
+    if not isinstance(recurrence_admission, dict):
+        raise ValueError("checkpoint_controller_verified_admission_missing")
+    fixture_id = recurrence_admission.get("checkpoint_fixture_id")
+    if fixture_id == CHAINWIELDER_CHECKPOINT_FIXTURE_ID:
+        return {
+            "fixture_id": fixture_id,
+            "arm_command": chainwielder_checkpoint_arm_command(
+                recurrence_admission, actor_guid,
+            ),
+            "scheduler_kwargs": {},
+        }
+    if fixture_id == NATIVE_PATH_CHECKPOINT_FIXTURE_ID:
+        arm_command = native_path_checkpoint_arm_command(
+            recurrence_admission, actor_guid,
+        )
+        case_id = recurrence_admission.get("checkpoint_case_id")
+        return {
+            "fixture_id": fixture_id,
+            "arm_command": arm_command,
+            "scheduler_kwargs": {
+                "checkpoint_action": "botauto_native_path_checkpoint",
+                "checkpoint_arm_command": arm_command,
+                "checkpoint_receipt_field": "case_id",
+                "checkpoint_receipt_value": case_id,
+                "lifecycle_rejections": lambda hold: (
+                    native_path_checkpoint_lifecycle_rejections(
+                        hold, case_id=case_id,
+                    )
+                ),
+                "checkpoint_observer": observe_native_path_checkpoint_row,
+                "checkpoint_terminal_status_command": (
+                    "botautonativepathcheckpoint status"
+                ),
+                "release_after_terminal": False,
+            },
+        }
+    raise ValueError("checkpoint_controller_fixture_unsupported")
+
+
 def chainwielder_checkpoint_pre_route_readiness(
     status: dict[str, Any],
     *,
