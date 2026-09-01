@@ -41,12 +41,12 @@ def test_checked_in_magmaw_ledger_uses_supported_observation_states() -> None:
     )
 
 
-def test_transfer_checkpoint_ledger_is_singleton_and_main_ledger_is_unchanged(
+def test_transfer_checkpoint_ledger_is_promoted_and_main_ledger_is_bound(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     main = ROOT / "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json"
     assert hashlib.sha256(main.read_bytes()).hexdigest() == (
-        "d88d858eee182be0f27151038ef41ec9aa9c5a2da9162ae6b4d5dad198ac747e"
+        "95989df45e3ac681bafd26cf5732b8da5f58bed6de6e21943efbc432b4bfa954"
     )
     path = ROOT / (
         "experiments/configs/"
@@ -81,13 +81,9 @@ def test_transfer_checkpoint_ledger_is_singleton_and_main_ledger_is_unchanged(
         effective, current_identity=identity, suite_receipt_verified=True,
     )
     assert first == second
-    assert first["fixture_expansion_admitted"] is True
-    assert first["fixture_expansion_target_ids"] == [
-        "map669_magmaw_transfer_lane_authority_off_v1"
-    ]
-    assert first["pending_fixture_ids"] == [
-        "map669_magmaw_transfer_lane_authority_off_v1"
-    ]
+    assert first["fixture_expansion_admitted"] is False
+    assert first["fixture_expansion_target_ids"] == []
+    assert first["pending_fixture_ids"] == []
     assert first["fixture_expansion_requests"] == []
     assert first["missing_fixture_ids"] == []
     assert first["stale_fixture_ids"] == []
@@ -166,6 +162,68 @@ def _expansion_request(
             "worldserver-backed planner-to-spline progress through terminal outcome"
         ),
     }
+
+
+def test_quarantined_fixture_remains_retained_without_blocking_canary() -> None:
+    required = _fixture("required", "current_edge")
+    required["revision"] = 2
+    deferred = _fixture("deferred", "deferred_edge")
+    deferred.update({
+        "evidence_boundary": "observation_only",
+        "admission_scope": "quarantined",
+        "required_production_boundary": "one deferred worldserver boundary",
+    })
+    runs = [
+        {
+            "run_id": "before",
+            "route_completed": False,
+            "blockers": {"current_edge": "absent", "deferred_edge": "absent"},
+        },
+        {
+            "run_id": "occurrence",
+            "route_completed": False,
+            "blockers": {"current_edge": "occurred", "deferred_edge": "occurred"},
+        },
+    ]
+    verifications = [
+        {
+            "fixture_id": "required",
+            "fixture_revision": 2,
+            "status": "passed",
+            "passed_after_run_id": "occurrence",
+            "source": "source-current",
+            "config": CANONICAL_CONFIG_IDENTITY,
+            "evidence": "tests/required.py",
+        },
+        _pass("deferred", "occurrence"),
+    ]
+    ledger = _bank_ledger(
+        runs,
+        fixtures=[required, deferred],
+        verifications=verifications,
+        signatures={"current_edge": {}, "deferred_edge": {}},
+    )
+    ledger["regression_bank"]["fixture_expansion_requests"] = [
+        _expansion_request("deferred", signature="deferred_edge")
+    ]
+
+    decision = evaluate_ledger(
+        ledger,
+        current_identity={
+            "source_identity": "source-current",
+            "config_identity": CANONICAL_CONFIG_IDENTITY,
+        },
+        suite_receipt_verified=True,
+    )
+
+    assert decision["regression_bank_admitted"] is True
+    assert decision["canary_admitted"] is True
+    assert decision["fixture_expansion_admitted"] is False
+    assert decision["fixture_expansion_requests"] == []
+    assert decision["regression_bank"]["quarantined_fixture_ids"] == [
+        "deferred"
+    ]
+    assert decision["required_next_action"] == "run_clean_full_clear"
 
 
 def test_intervening_absence_does_not_erase_recurring_blocker() -> None:

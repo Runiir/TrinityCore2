@@ -123,9 +123,10 @@
     "fixtures": [
       {
         "fixture_id": "magmaw_parasite_lane_paths_v1",
-        "revision": 7,
+        "revision": 8,
         "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
         "causal_signature": "magmaw_parasite_containment_failure",
+        "revision_basis": "The production manager and compiled replay now share the same Magmaw movement-candidate adapter, so Survival masking and producer ordering are exercised at the real arbitration boundary.",
         "command": [
           "pixi",
           "run",
@@ -136,14 +137,16 @@
           "tests/test_native_path_floor_diagnostic.py::test_canary120_bounded_complete_mechanic_endpoint_selection",
           "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step",
           "tests/test_native_path_floor_diagnostic.py::test_canary121_near_arrival_endpoint_is_not_rejected",
-          "tests/test_magmaw_event_movement_transition.py"
+          "tests/test_magmaw_event_movement_transition.py",
+          "tests/test_magmaw_movement_intent_collection.py::test_magmaw_movement_intents_cross_strategy_and_real_kernel"
         ]
       },
       {
         "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
-        "revision": 6,
+        "revision": 7,
         "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
         "causal_signature": "magmaw_parasite_containment_failure",
+        "revision_basis": "The retained transition replay now crosses the shared production movement-candidate adapter and real action kernel instead of relying on a parallel test adapter.",
         "command": [
           "pixi",
           "run",
@@ -155,14 +158,16 @@
           "tests/test_native_path_floor_diagnostic.py::test_canary120_bounded_complete_mechanic_endpoint_selection",
           "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step",
           "tests/test_native_path_floor_diagnostic.py::test_canary121_near_arrival_endpoint_is_not_rejected",
-          "tests/test_magmaw_event_movement_transition.py"
+          "tests/test_magmaw_event_movement_transition.py",
+          "tests/test_magmaw_movement_intent_collection.py::test_magmaw_movement_intents_cross_strategy_and_real_kernel"
         ]
       },
       {
         "fixture_id": "magmaw_parasite_control_full_runtime_v1",
-        "revision": 6,
+        "revision": 7,
         "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
         "causal_signature": "magmaw_parasite_control_allows_player_infection",
+        "revision_basis": "The full-runtime contract now includes the shared production movement-candidate adapter, real arbitration, retryable Survival hard masking, and rejected-binding no-fallthrough behavior.",
         "command": [
           "pixi",
           "run",
@@ -174,7 +179,8 @@
           "tests/test_native_path_floor_diagnostic.py::test_canary120_bounded_complete_mechanic_endpoint_selection",
           "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step",
           "tests/test_native_path_floor_diagnostic.py::test_canary121_near_arrival_endpoint_is_not_rejected",
-          "tests/test_magmaw_event_movement_transition.py"
+          "tests/test_magmaw_event_movement_transition.py",
+          "tests/test_magmaw_movement_intent_collection.py::test_magmaw_movement_intents_cross_strategy_and_real_kernel"
         ]
       },
       {
@@ -302,6 +308,8 @@
         "fixture_id": "same_level_hazard_path_admission_v1",
         "revision": 4,
         "causal_signature": "same_level_encounter_hazard_path_rejection",
+        "admission_scope": "quarantined",
+        "quarantine_basis": "experiments/configs/cata_raid_map669_fallback_fixture_quarantine_handoff_v1.json",
         "evidence_boundary": "observation_only",
         "verification_status": "invalidated_pending_production_boundary",
         "boundary_audit": "tests/test_native_path_floor_diagnostic.py::test_v71_canary122_production_boundary_remains_explicitly_unclosed",
@@ -322,6 +330,8 @@
         "fixture_id": "same_level_floor_observation_v1",
         "revision": 4,
         "causal_signature": "same_level_movement_path_floor_false_negative",
+        "admission_scope": "quarantined",
+        "quarantine_basis": "experiments/configs/cata_raid_map669_fallback_fixture_quarantine_handoff_v1.json",
         "evidence_boundary": "production",
         "verification_status": "production_boundary_met",
         "required_production_boundary": "one identity-bound worldserver-backed map-669 same-level SampleFloorGap receipt crossing planner admission and native launch with continuous actor XYZ, spline identity, floor compatibility, and terminal outcome or explicit supersession",
@@ -359,6 +369,8 @@
         "fixture_id": "same_level_native_path_proof_v1",
         "revision": 4,
         "causal_signature": "same_level_native_path_proof_false_negative",
+        "admission_scope": "quarantined",
+        "quarantine_basis": "experiments/configs/cata_raid_map669_fallback_fixture_quarantine_handoff_v1.json",
         "evidence_boundary": "observation_only",
         "verification_status": "invalidated_pending_production_boundary",
         "boundary_audit": "tests/test_native_path_floor_diagnostic.py::test_v71_canary122_production_boundary_remains_explicitly_unclosed",

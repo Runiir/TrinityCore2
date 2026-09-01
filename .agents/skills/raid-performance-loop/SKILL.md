@@ -278,6 +278,28 @@ captured production evidence satisfies the boundary.
 Treat a recurrence after a passing fixture as proof that the fixture covered
 the wrong boundary. Stop live canaries for that signature, preserve the old
 fixture, and add a replay at the first missing policy-to-native-outcome edge.
+
+A reviewed fixture quarantine must be represented in the executable ledger,
+not only in a handoff. Keep the fixture, occurrence history, failed status, and
+deferred production-boundary request, but mark its admission scope as
+`quarantined`. The evaluator may then exclude it from build and gameplay-canary
+admission without reporting it as passed. Quarantine is appropriate only when
+an independent review shows that the missing boundary is low value for the
+current gameplay decision and names the condition that would make it relevant
+again. It must continue to block any claim that directly depends on that
+boundary.
+
+Avoid a build/metadata/rebuild loop. When the exact clean source is ready for
+its first live verification, one tracked descriptor should conditionally admit
+the current recurrence suite, one configure/build if needed, and exactly one
+no-retry completion-watchdog canary. Do not commit a build-only completion
+descriptor and then require another commit before the canary when that commit
+would invalidate the binary receipt. If a later control-only commit must reuse
+an older binary, require an explicit two-identity verifier: the binary remains
+bound to its build commit, the workflow remains bound to the current clean
+control commit, the build commit is an ancestor, and every intervening path is
+on a narrow reviewed control-plane allowlist. Any native, dependency, CMake, or
+unknown path change requires a new build.
 Rerunning the unchanged fixture after the failed run is not a repair. Every
 fixture has a positive contract revision; increment it only when its exercised
 boundary or counterexample materially expands. The recurrence evaluator must

@@ -13,6 +13,7 @@ from typing import Any, Mapping
 
 VALID_STATES = {"occurred", "absent", "not_exercised"}
 VALID_FIXTURE_EVIDENCE_BOUNDARIES = {"production", "observation_only"}
+VALID_FIXTURE_ADMISSION_SCOPES = {"required", "quarantined"}
 REGRESSION_BANK_SCHEMA = "trinity_raid_regression_bank_v1"
 SUITE_RECEIPT_SCHEMA = "trinity_raid_regression_suite_receipt_v1"
 
@@ -468,6 +469,7 @@ def _evaluate_regression_bank(
     manifest_stale: set[str] = set()
     pending: set[str] = set()
     renamed: set[str] = set()
+    quarantined: set[str] = set()
     for fixture_id, fixture in fixtures.items():
         if not _executable(fixture):
             route_failures.append(f"fixture:{fixture_id}:missing_command")
@@ -478,6 +480,15 @@ def _evaluate_regression_bank(
         evidence_boundary = str(
             fixture.get("evidence_boundary") or "production"
         ).strip()
+        admission_scope = str(
+            fixture.get("admission_scope") or "required"
+        ).strip()
+        if admission_scope not in VALID_FIXTURE_ADMISSION_SCOPES:
+            route_failures.append(
+                f"fixture:{fixture_id}:invalid_admission_scope"
+            )
+        elif admission_scope == "quarantined":
+            quarantined.add(fixture_id)
         if evidence_boundary not in VALID_FIXTURE_EVIDENCE_BOUNDARIES:
             route_failures.append(
                 f"fixture:{fixture_id}:invalid_evidence_boundary"
@@ -655,39 +666,45 @@ def _evaluate_regression_bank(
             ):
                 verified_after_occurrence.add(signature)
 
+    required = expected - quarantined
     usable_passes = current_pass - stale - failing - invalidated - pending
-    suite_ids = usable_passes if usable_passes == expected else set()
+    suite_ids = usable_passes & required
     missing_ids.update(expected - current_pass - stale - failing - invalidated)
     if not expected:
         route_failures.append("fixture_manifest_missing")
-    requested_replacements = set(expansion_requests)
+    requested_replacements = set(expansion_requests) - quarantined
     for fixture_id in sorted(requested_replacements):
         signature = str(fixtures[fixture_id].get("causal_signature") or "").strip()
         if signature not in occurred_signatures:
             route_failures.append(
                 f"fixture_expansion_request:{fixture_id}:causal_signature_not_observed"
             )
-    fixture_expansion_targets = pending | requested_replacements
+    fixture_expansion_targets = (pending - quarantined) | requested_replacements
+    blocking_missing = missing_ids - quarantined
+    blocking_stale = stale - quarantined
+    blocking_failing = failing - quarantined
+    blocking_invalidated = invalidated - quarantined
+    blocking_pending = pending - quarantined
     admitted = not (
         route_failures
-        or missing_ids
-        or stale
-        or failing
-        or invalidated
-        or pending
+        or blocking_missing
+        or blocking_stale
+        or blocking_failing
+        or blocking_invalidated
+        or blocking_pending
         or unknown
         or missing_causal_signatures
-        or expansion_requests
-        or suite_ids != expected
+        or requested_replacements
+        or suite_ids != required
     )
     fixture_expansion_admitted = bool(fixture_expansion_targets) and not (
         route_failures
-        or missing_ids
-        or stale
-        or execution_failing
+        or blocking_missing
+        or blocking_stale
+        or (execution_failing - quarantined)
         or unknown
         or missing_causal_signatures
-        or current_pass != expected
+        or (current_pass & required) != required
     )
     return {
         "enabled": True,
@@ -703,6 +720,12 @@ def _evaluate_regression_bank(
             expansion_requests[fixture_id]
             for fixture_id in sorted(requested_replacements)
         ],
+        "quarantined_fixture_ids": sorted(quarantined),
+        "quarantined_causal_signatures": sorted({
+            signature
+            for signature, fixture_ids in by_signature.items()
+            if fixture_ids and set(fixture_ids) <= quarantined
+        }),
         "expected_fixture_ids": sorted(expected),
         "verified_fixture_ids": sorted(verified),
         "suite_verified_fixture_ids": sorted(suite_ids),
@@ -710,6 +733,7 @@ def _evaluate_regression_bank(
         "stale_fixture_ids": sorted(stale),
         "failing_fixture_ids": sorted(failing),
         "invalidated_fixture_ids": sorted(invalidated),
+        "blocking_invalidated_fixture_ids": sorted(blocking_invalidated),
         "pending_fixture_ids": sorted(pending),
         "missing_causal_signature_ids": missing_causal_signatures,
         "invalidated_causal_signatures": {
@@ -914,11 +938,15 @@ def evaluate_ledger(
     )
     last_runs = normalized_runs[-clear_streak_required:]
     open_rows = [row for row in blocker_rows if row["open"]]
+    quarantined_signatures = set(
+        regression_bank.get("quarantined_causal_signatures") or []
+    )
     repair_rows = [
         row for row in open_rows
         if row["last_observed_state"] == "occurred"
         and not row["fixture_verified_after_latest_occurrence"]
         and row["causal_signature"] not in regression_bank["verified_after_latest_occurrence_signatures"]
+        and row["causal_signature"] not in quarantined_signatures
     ]
     next_signature = None
     if repair_rows:
@@ -932,10 +960,12 @@ def evaluate_ledger(
         for row in blocker_rows
         if row["retained_fixture_invalidated"]
         and row["causal_signature"] not in bank_verified_after
+        and row["causal_signature"] not in quarantined_signatures
     ]
     effective_stop_signatures = [
         signature
         for signature in stop_signatures
+        if signature not in quarantined_signatures
         if any(
             row["causal_signature"] == signature
             and (
@@ -961,6 +991,7 @@ def evaluate_ledger(
     )
     latest_occurrence_repaired = latest_occurrence_row is None or (
         latest_occurrence_row["causal_signature"] in bank_verified_after
+        or latest_occurrence_row["causal_signature"] in quarantined_signatures
         or latest_occurrence_row["fixture_verified_after_latest_occurrence"]
     )
     canary_recurrence = not effective_stop_signatures and latest_occurrence_repaired
@@ -975,7 +1006,9 @@ def evaluate_ledger(
     acceptance = recurrence_acceptance and build_admitted
     if regression_bank["fixture_expansion_admitted"]:
         required_next_action = "run_fixture_expansion_replay"
-    elif invalid_fixture_rows or regression_bank["invalidated_fixture_ids"]:
+    elif invalid_fixture_rows or regression_bank.get(
+        "blocking_invalidated_fixture_ids", regression_bank["invalidated_fixture_ids"]
+    ):
         required_next_action = "expand_invalid_retained_fixture"
     elif effective_stop_signatures:
         required_next_action = "stop_and_summarize_last_ten_occurrences"
@@ -1124,7 +1157,10 @@ def _ledger_with_suite_receipt(
     _require(isinstance(existing, list), "ledger verifications must be a list")
     effective = dict(ledger)
     effective_bank = dict(bank)
-    effective_bank["verifications"] = [*existing, *verified_rows]
+    # The just-verified exact suite is authoritative on an equal route
+    # boundary. Put it before compatibility/history rows because the evaluator
+    # intentionally keeps the first record on a boundary tie.
+    effective_bank["verifications"] = [*verified_rows, *existing]
     effective[bank_key] = effective_bank
     return effective
 
