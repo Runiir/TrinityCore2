@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <string_view>
 
 namespace BotWorldMovement
 {
@@ -31,6 +32,8 @@ struct HazardEscapeProgressObservation
     float HazardX = 0.0f;
     float HazardY = 0.0f;
     float HazardZ = 0.0f;
+    float ActorZ = 0.0f;
+    bool ActorHazardSameLevel = false;
     float ActorClearance = 0.0f;
     float EndpointX = 0.0f;
     float EndpointY = 0.0f;
@@ -38,6 +41,7 @@ struct HazardEscapeProgressObservation
     float EndpointClearance = 0.0f;
     float ClearanceProgress = 0.0f;
     float RequiredProgress = 0.0f;
+    std::string_view EndpointBasis = "unavailable";
     bool ProofQualified = false;
 };
 }

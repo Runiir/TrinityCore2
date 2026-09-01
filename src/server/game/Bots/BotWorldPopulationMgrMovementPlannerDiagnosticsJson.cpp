@@ -151,8 +151,16 @@ void AppendHazardEscapeProgressJson(std::ostringstream& json,
          << (basis ? basis->HazardZ : 0.0f) << "}"
          << ",\"progress_available\":"
          << (progress.Available ? "true" : "false")
+         << ",\"progress_hazard_guid\":" << progress.HazardGuid
+         << ",\"basis_progress_guid_match\":"
+         << (basis && basis->HazardGuid == progress.HazardGuid
+                ? "true" : "false")
+         << ",\"actor_z\":" << progress.ActorZ
+         << ",\"actor_hazard_same_level\":"
+         << (progress.ActorHazardSameLevel ? "true" : "false")
          << ",\"actor_clearance\":" << progress.ActorClearance
-         << ",\"resolved_endpoint\":{\"x\":" << progress.EndpointX
+         << ",\"endpoint_basis\":\"" << progress.EndpointBasis << "\""
+         << ",\"primary_resolved_endpoint\":{\"x\":" << progress.EndpointX
          << ",\"y\":" << progress.EndpointY << ",\"z\":"
          << progress.EndpointZ << "}"
          << ",\"endpoint_clearance\":" << progress.EndpointClearance

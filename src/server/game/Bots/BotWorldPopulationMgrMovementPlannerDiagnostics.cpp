@@ -49,9 +49,11 @@ std::uint64_t MovementIntentFingerprint(
     appendByte(intent.AllowRecentFailureRetry);
     appendByte(intent.AllowNativeLongPath);
     appendByte(intent.NativeRecoveryCrossMapPending);
-    appendByte(intent.HazardEscape.has_value());
     if (intent.HazardEscape)
     {
+        // Absence is deliberately byte-for-byte compatible with the legacy
+        // fingerprint. Only typed hazard evidence extends the identity.
+        appendByte(1);
         appendUint64(intent.HazardEscape->HazardGuid);
         appendFloat(intent.HazardEscape->HazardX);
         appendFloat(intent.HazardEscape->HazardY);
@@ -177,6 +179,7 @@ void MovementPlannerDiagnosticSidecar::Record(
         return;
 
     observation.Available = true;
+    RetainRejectedHazard(observation);
     if (observation.LaunchReceipt.Id)
         _receiptById[observation.LaunchReceipt.Id] = observation;
     _latestByGuid[observation.BotGuid] = std::move(observation);
@@ -240,6 +243,7 @@ bool MovementPlannerDiagnosticSidecar::MatchesContext(
 void MovementPlannerDiagnosticSidecar::PublishReceiptUpdate(
     MovementPlannerObservation const& observation)
 {
+    RetainRejectedHazard(observation);
     std::uint64_t const receiptId = observation.LaunchReceipt.Id;
     if (!receiptId)
         return;
@@ -605,8 +609,24 @@ void MovementPlannerDiagnosticSidecar::AssociateTrace(
         return;
 
     MovementPlannerObservation observation;
-    auto pending = _pendingByGuid.find(botGuid);
-    if (pending != _pendingByGuid.end() && pending->second)
+    auto rejected = _rejectedHazardsByGuid.find(botGuid);
+    if (rejected != _rejectedHazardsByGuid.end()
+        && !rejected->second.empty())
+    {
+        observation = std::move(rejected->second.front());
+        rejected->second.pop_front();
+        if (rejected->second.empty())
+            _rejectedHazardsByGuid.erase(rejected);
+
+        auto pending = _pendingByGuid.find(botGuid);
+        auto latest = _latestByGuid.find(botGuid);
+        if (pending != _pendingByGuid.end() && latest != _latestByGuid.end()
+            && latest->second.LaunchReceipt.Id
+                == observation.LaunchReceipt.Id)
+            pending->second = false;
+    }
+    else if (auto pending = _pendingByGuid.find(botGuid);
+        pending != _pendingByGuid.end() && pending->second)
     {
         auto latest = _latestByGuid.find(botGuid);
         if (latest != _latestByGuid.end())
@@ -660,6 +680,7 @@ void MovementPlannerDiagnosticSidecar::ClearBot(std::uint64_t botGuid)
     _latestByGuid.erase(botGuid);
     _pendingByGuid.erase(botGuid);
     _traceByGuid.erase(botGuid);
+    _rejectedHazardsByGuid.erase(botGuid);
     _incompleteHazardFingerprintByGuid.erase(botGuid);
 }
 
@@ -669,6 +690,7 @@ void MovementPlannerDiagnosticSidecar::ClearAll()
     _latestByGuid.clear();
     _pendingByGuid.clear();
     _traceByGuid.clear();
+    _rejectedHazardsByGuid.clear();
     _receiptById.clear();
     _receiptIdsByGuid.clear();
     _incompleteHazardFingerprintByGuid.clear();

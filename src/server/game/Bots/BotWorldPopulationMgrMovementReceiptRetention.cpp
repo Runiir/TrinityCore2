@@ -4,6 +4,27 @@
 
 namespace BotWorldMovement
 {
+void MovementPlannerDiagnosticSidecar::RetainRejectedHazard(
+    MovementPlannerObservation const& observation)
+{
+    if (!observation.LaunchReceipt.Id
+        || observation.MovementOwner
+            != BotMovementArbitration::Owner::Hazard
+        || observation.PlannerResult != "rejected")
+        return;
+
+    auto& pending = _rejectedHazardsByGuid[observation.BotGuid];
+    for (MovementPlannerObservation& retained : pending)
+        if (retained.LaunchReceipt.Id == observation.LaunchReceipt.Id)
+        {
+            retained = observation;
+            return;
+        }
+    pending.push_back(observation);
+    while (pending.size() > MaxTraceHistory)
+        pending.pop_front();
+}
+
 void MovementPlannerDiagnosticSidecar::RetainCompleteHazardRetry(
     MovementPlannerObservation const& observation,
     NativePathProofObservation const* nativeProof, bool accepted)

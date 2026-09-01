@@ -32,10 +32,15 @@ namespace
 BotNativeAction::Intent NativeIntent(
     BotNativeAction::Candidate const& candidate)
 {
+    std::string diagnosticKey =
+        LegacyMagmawMovementDiagnosticCandidateKey(candidate);
+    if (diagnosticKey.empty()
+        && std::get_if<BotNativeAction::Move>(&candidate.Action))
+        diagnosticKey = candidate.Id.Key();
     return BotNativeAction::WithMovementDiagnosticCandidateKey(
         BotNativeAction::WithMovementReason(candidate.Action,
             candidate.Id.Mechanic),
-        LegacyMagmawMovementDiagnosticCandidateKey(candidate));
+        diagnosticKey);
 }
 
 void ApplyRetryPolicy(BotActionArbitration::Candidate& candidate,

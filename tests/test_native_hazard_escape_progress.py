@@ -42,56 +42,73 @@ int main()
     // A complete native projection on the same surface is useful when its
     // actual endpoint increases clearance from the exact bound hazard.
     HazardEscapeProgressObservation away = ObserveHazardEscapeProgress(
-        behind, 0.0f, 0.0f, 8.0f, 0.0f, 210.4f);
+        behind, 0.0f, 0.0f, 210.0f, 8.0f, 0.0f, 210.4f);
     assert(away.Available);
     assert(away.HazardGuid == 9001);
     assert(away.ClearanceProgress == 8.0f);
     assert(NativePathProvesSameSurfaceHazardEscape(
-        Owner::Hazard, true, true, false, complete, away));
+        Owner::Hazard, true, true, false, complete, behind, away));
 
     // Goal-directed progress is not hazard progress. This endpoint could be
     // closer to an arbitrary request while moving directly toward the source.
     HazardEscapeBasis const ahead{ 9001, 10.0f, 0.0f, 210.0f };
     HazardEscapeProgressObservation closer = ObserveHazardEscapeProgress(
-        ahead, 0.0f, 0.0f, 7.5f, 0.0f, 210.4f);
+        ahead, 0.0f, 0.0f, 210.0f, 7.5f, 0.0f, 210.4f);
     assert(closer.ClearanceProgress < 0.0f);
     assert(!NativePathProvesSameSurfaceHazardEscape(
-        Owner::Hazard, true, true, false, complete, closer));
+        Owner::Hazard, true, true, false, complete, ahead, closer));
 
     HazardEscapeProgressObservation tooSmall = ObserveHazardEscapeProgress(
-        behind, 0.0f, 0.0f, 0.5f, 0.0f, 210.0f);
+        behind, 0.0f, 0.0f, 210.0f, 0.5f, 0.0f, 210.0f);
     assert(tooSmall.ClearanceProgress > 0.0f);
     assert(tooSmall.ClearanceProgress
         < NativeHazardEscapeMinimumClearanceProgress);
     assert(!NativePathProvesSameSurfaceHazardEscape(
-        Owner::Hazard, true, true, false, complete, tooSmall));
+        Owner::Hazard, true, true, false, complete, behind, tooSmall));
 
     NativePathProofObservation wrongFloor = complete;
     wrongFloor.EndpointFloorValid = false;
     assert(!NativePathProvesSameSurfaceHazardEscape(
-        Owner::Hazard, true, true, false, wrongFloor, away));
+        Owner::Hazard, true, true, false, wrongFloor, behind, away));
     assert(!NativePathProvesSameSurfaceHazardEscape(
-        Owner::Hazard, false, true, false, complete, away));
+        Owner::Hazard, false, true, false, complete, behind, away));
 
     assert(!NativePathProvesSameSurfaceHazardEscape(
-        Owner::Hazard, true, true, true, complete, away));
+        Owner::Hazard, true, true, true, complete, behind, away));
 
     NativePathProofObservation noPath = complete;
     noPath.Calculated = false;
     noPath.Complete = false;
     assert(!NativePathProvesSameSurfaceHazardEscape(
-        Owner::Hazard, true, false, false, noPath, away));
+        Owner::Hazard, true, false, false, noPath, behind, away));
 
     HazardEscapeBasis const missing{};
     HazardEscapeProgressObservation unavailable = ObserveHazardEscapeProgress(
-        missing, 0.0f, 0.0f, 8.0f, 0.0f, 210.0f);
+        missing, 0.0f, 0.0f, 210.0f, 8.0f, 0.0f, 210.0f);
     assert(!unavailable.Available);
     assert(!NativePathProvesSameSurfaceHazardEscape(
-        Owner::Hazard, true, true, false, complete, unavailable));
+        Owner::Hazard, true, true, false, complete, missing, unavailable));
+
+    HazardEscapeBasis const otherHazard{ 9002, -5.0f, 0.0f, 210.0f };
+    assert(!NativePathProvesSameSurfaceHazardEscape(
+        Owner::Hazard, true, true, false, complete, otherHazard, away));
+
+    HazardEscapeProgressObservation wrongLevel = ObserveHazardEscapeProgress(
+        HazardEscapeBasis{ 9001, -5.0f, 0.0f, 180.0f },
+        0.0f, 0.0f, 210.0f, 8.0f, 0.0f, 210.0f);
+    assert(!wrongLevel.ActorHazardSameLevel);
+    assert(!NativePathProvesSameSurfaceHazardEscape(
+        Owner::Hazard, true, true, false, complete,
+        HazardEscapeBasis{ 9001, -5.0f, 0.0f, 180.0f }, wrongLevel));
+
+    HazardEscapeProgressObservation tampered = away;
+    tampered.RequiredProgress = 0.0f;
+    assert(!NativePathProvesSameSurfaceHazardEscape(
+        Owner::Hazard, true, true, false, complete, behind, tampered));
 
     // The semantic proof cannot widen ordinary movement admission.
     assert(!NativePathProvesSameSurfaceHazardEscape(
-        Owner::Formation, true, true, false, complete, away));
+        Owner::Formation, true, true, false, complete, behind, away));
 }
 ''',
         encoding="utf-8",
@@ -136,7 +153,7 @@ def test_hazard_basis_reaches_native_planner_diagnostics_without_admission():
     assert "ObserveHazardEscapeProgress(" in planner
     assert "NativePathProvesSameSurfaceHazardEscape(" in planner
     assert '\\"hazard_escape_progress\\"' in diagnostics
-    assert '\\"resolved_endpoint\\"' in diagnostics
+    assert '\\"primary_resolved_endpoint\\"' in diagnostics
     assert "hazardState->Begin(danger.Guid, danger.Position" in parasite
     assert "move->HazardEscape = BotWorldMovement::HazardEscapeBasis" in parasite
 

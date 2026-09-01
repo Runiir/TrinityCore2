@@ -27,7 +27,7 @@ constexpr float NativeLocalMechanicEndpointArrivalHorizontalTolerance = 1.0f;
 constexpr float NativeLocalMechanicEndpointArrivalDistanceTolerance = 1.5f;
 
 inline HazardEscapeProgressObservation ObserveHazardEscapeProgress(
-    HazardEscapeBasis const& basis, float actorX, float actorY,
+    HazardEscapeBasis const& basis, float actorX, float actorY, float actorZ,
     float endpointX, float endpointY, float endpointZ)
 {
     HazardEscapeProgressObservation observation;
@@ -35,12 +35,17 @@ inline HazardEscapeProgressObservation ObserveHazardEscapeProgress(
     observation.HazardX = basis.HazardX;
     observation.HazardY = basis.HazardY;
     observation.HazardZ = basis.HazardZ;
+    observation.ActorZ = actorZ;
+    observation.ActorHazardSameLevel = std::isfinite(actorZ)
+        && std::fabs(actorZ - basis.HazardZ) <= NativeFloorTolerance;
     observation.EndpointX = endpointX;
     observation.EndpointY = endpointY;
     observation.EndpointZ = endpointZ;
     observation.RequiredProgress = NativeHazardEscapeMinimumClearanceProgress;
+    observation.EndpointBasis = "primary_native_actual_endpoint";
     if (!basis.Available() || !std::isfinite(actorX)
-        || !std::isfinite(actorY) || !std::isfinite(endpointX)
+        || !std::isfinite(actorY) || !std::isfinite(actorZ)
+        || !std::isfinite(endpointX)
         || !std::isfinite(endpointY) || !std::isfinite(endpointZ))
         return observation;
 
@@ -62,6 +67,7 @@ inline bool NativePathProvesSameSurfaceHazardEscape(
     BotMovementArbitration::Owner owner, bool sameLevelDeclaredRequest,
     bool completeNativePath, bool forbiddenNativePath,
     NativePathProofObservation const& path,
+    HazardEscapeBasis const& basis,
     HazardEscapeProgressObservation const& progress)
 {
     if (owner != BotMovementArbitration::Owner::Hazard
@@ -72,14 +78,20 @@ inline bool NativePathProvesSameSurfaceHazardEscape(
         || !path.CorridorReachedEndPoly || !path.ResolvedEndpointAvailable
         || !path.ActualEndpointMatchedResolved
         || NativePathFloorObservationBlocksCompleteProof(path.FloorObservation)
-        || !progress.Available || progress.HazardGuid == 0)
+        || !basis.Available() || !progress.Available
+        || progress.HazardGuid != basis.HazardGuid
+        || !progress.ActorHazardSameLevel
+        || progress.EndpointBasis != "primary_native_actual_endpoint"
+        || !std::isfinite(progress.RequiredProgress)
+        || progress.RequiredProgress
+            != NativeHazardEscapeMinimumClearanceProgress)
         return false;
 
     return std::isfinite(progress.ActorClearance)
         && std::isfinite(progress.EndpointClearance)
         && std::isfinite(progress.ClearanceProgress)
         && progress.ClearanceProgress
-            >= progress.RequiredProgress
+            >= NativeHazardEscapeMinimumClearanceProgress
                 - NativeLocalMechanicEndpointProgressEpsilon;
 }
 

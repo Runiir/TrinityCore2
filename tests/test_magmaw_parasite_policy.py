@@ -371,6 +371,8 @@ int main()
             str(ROOT / "src/common/Logging"),
             "-I",
             str(ROOT / "src/common/Debugging"),
+            "-I",
+            str(ROOT / "dep/g3dlite/include"),
             str(source),
             str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
                 "Encounters/Magmaw/BotMagmawMovementKernelAdapter.cpp"),
@@ -656,6 +658,8 @@ int main()
             str(ROOT / "src/common/Logging"),
             "-I",
             str(ROOT / "src/common/Debugging"),
+            "-I",
+            str(ROOT / "dep/g3dlite/include"),
             str(source),
             "-o",
             str(binary),
@@ -805,6 +809,8 @@ int main()
             str(ROOT / "src/common/Logging"),
             "-I",
             str(ROOT / "src/common/Debugging"),
+            "-I",
+            str(ROOT / "dep/g3dlite/include"),
             str(source),
             "-o",
             str(binary),
@@ -971,6 +977,8 @@ int main()
             str(ROOT / "src/common/Logging"),
             "-I",
             str(ROOT / "src/common/Debugging"),
+            "-I",
+            str(ROOT / "dep/g3dlite/include"),
             str(source),
             "-o",
             str(binary),
@@ -989,7 +997,9 @@ def test_magmaw_containment_replays_full_runtime_contract(tmp_path: Path) -> Non
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
 #include "Bots/BotWorldPopulationMgrNativeFloor.h"
+#include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
 #include "Bots/BotWorldPopulationMgrMovement.h"
+#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -1114,6 +1124,11 @@ static BotWorldMovement::NativePathProofObservation PathProof(
     proof.EndpointVerticalDistance = endpointMatched ? 0.0f
         : std::fabs(-86.0458f - requested.Z);
     proof.EndpointDistance = proof.EndpointVerticalDistance;
+    BotWorldMovement::RecordNativePathEndpointResolution(proof,
+        endpointMatched ? PathEndpointResult::ReachedRequested
+                        : PathEndpointResult::ReachedProjectedEndPoly,
+        true, true, requested.X, requested.Y, requested.Z, 0.0f,
+        proof.EndpointVerticalDistance);
     proof.EndpointMatched = BotWorldMovement::NativePathEndpointComponentsMatch(
         0.0f, endpointMatched ? 0.0f
                               : std::fabs(-86.0458f - requested.Z));
@@ -1307,7 +1322,8 @@ int main()
     // seq537 proof. Seed the production value state as that observation
     // boundary; the following strategy ticks must not replan it.
     retryHazard.ObserveScope(retryBoard, PlayerGuid(30006));
-    retryHazard.Begin(retryBoard.Hostiles[1].Guid, requestedDestination);
+    retryHazard.Begin(retryBoard.Hostiles[1].Guid,
+        retryBoard.Hostiles[1].Position, requestedDestination);
     BotMovementArbitration::Lease expiredLease;
     expiredLease.MovementOwner = BotMovementArbitration::Owner::Hazard;
     expiredLease.MovementPriority = BotMovementArbitration::Priority::Hazard;
@@ -1344,6 +1360,109 @@ int main()
     assert(rejectedProof.FloorObservationConflict);
     assert(!BotWorldMovement::NativePathFloorObservationBlocksCompleteProof(
         rejectedProof.FloorObservation));
+
+    // Policy -> production adapter -> native sidecar -> executor finalize ->
+    // JSON. Preserve the rejected hazard receipt even if another movement
+    // candidate is evaluated later in the same tick.
+    BotWorldMovement::MovementPlannerDiagnosticSidecar diagnosticSidecar;
+    MagmawMovementIntentCollection diagnosticMovements;
+    diagnosticMovements.Propose(MagmawMovementProposalOrigin::Hazard,
+        *firstRetry.Movement);
+    MagmawMovementKernelAdapterContext diagnosticContext;
+    diagnosticContext.ObservedAtMs = retryBoard.ObservedAtMs;
+    std::uint64_t diagnosticReceipt = 0;
+    std::string diagnosticCandidateKey;
+    diagnosticContext.Execute = [&](BotNativeAction::Intent const& native,
+        MagmawMovementNativeLease lease,
+        BotWorldMovement::ExecutionObservation*)
+    {
+        Move const* move = std::get_if<Move>(&native);
+        assert(move && move->HazardEscape);
+        BotWorldMovement::Intent plannerIntent;
+        plannerIntent.X = move->X;
+        plannerIntent.Y = move->Y;
+        plannerIntent.Z = move->Z;
+        plannerIntent.Owner = lease.Owner;
+        plannerIntent.Priority = lease.Priority;
+        plannerIntent.IntentReason = move->IntentReason;
+        plannerIntent.DiagnosticCandidateKey = move->DiagnosticCandidateKey;
+        diagnosticCandidateKey = move->DiagnosticCandidateKey;
+        plannerIntent.HazardEscape = move->HazardEscape;
+        diagnosticReceipt = diagnosticSidecar.BeginReceipt(30006, 669,
+            plannerIntent, MovementScope(retryBoard), 0,
+            retryBoard.Players[5].Position.X,
+            retryBoard.Players[5].Position.Y,
+            retryBoard.Players[5].Position.Z);
+        BotWorldMovement::PathPlan failedPlan;
+        failedPlan.LaunchReceiptId = diagnosticReceipt;
+        failedPlan.HazardEscapeProgress =
+            BotWorldMovement::ObserveHazardEscapeProgress(
+                *plannerIntent.HazardEscape,
+                retryBoard.Players[5].Position.X,
+                retryBoard.Players[5].Position.Y,
+                retryBoard.Players[5].Position.Z,
+                rejectedProof.EndpointX, rejectedProof.EndpointY,
+                rejectedProof.EndpointZ);
+        diagnosticSidecar.RecordPlannerOutcome(diagnosticReceipt, 30006,
+            669, plannerIntent, true, plannerIntent.Z, true,
+            "path_admission", false,
+            "route_destination_endpoint_mismatch", failedPlan,
+            &rejectedProof, nullptr,
+            BotWorldMovement::PrimaryDisposition::CompleteTerminal,
+            &rejectedProof, false);
+        diagnosticSidecar.FinalizeExecutor(30006, 669, plannerIntent,
+            "planner_admission", "rejected",
+            "route_destination_endpoint_mismatch", diagnosticReceipt);
+        return ObserveNativePathAttempt(rejectedProof);
+    };
+    BotActionArbitration::Kernel diagnosticKernel;
+    diagnosticKernel.Begin(retryBoard.ObservedAtMs);
+    assert(SubmitMagmawMovementKernelCandidates(diagnosticKernel,
+        diagnosticMovements, std::move(diagnosticContext)) == 1);
+    diagnosticKernel.Resolve();
+    assert(diagnosticReceipt != 0);
+
+    BotWorldMovement::Intent laterOrdinary;
+    laterOrdinary.X = 1.0f;
+    laterOrdinary.Y = 2.0f;
+    laterOrdinary.Z = 210.0f;
+    laterOrdinary.Owner = BotMovementArbitration::Owner::Formation;
+    laterOrdinary.Priority = BotMovementArbitration::Priority::Formation;
+    laterOrdinary.IntentReason = "ranged_formation_restore";
+    std::uint64_t laterOrdinaryReceipt = diagnosticSidecar.BeginReceipt(
+        30006, 669, laterOrdinary, MovementScope(retryBoard), 0,
+        retryBoard.Players[5].Position.X,
+        retryBoard.Players[5].Position.Y,
+        retryBoard.Players[5].Position.Z);
+    assert(diagnosticSidecar.Latest(30006).LaunchReceipt.Id
+        == laterOrdinaryReceipt);
+    diagnosticSidecar.AssociateTrace(30006, 1);
+    BotWorldMovement::MovementPlannerObservation retainedDiagnostic =
+        diagnosticSidecar.ForTrace(30006, 1);
+    assert(retainedDiagnostic.LaunchReceipt.Id == diagnosticReceipt);
+    assert(!diagnosticCandidateKey.empty());
+    assert(retainedDiagnostic.LaunchReceipt.DiagnosticCandidateKey
+        == diagnosticCandidateKey);
+    assert(retainedDiagnostic.HazardEscape->HazardGuid
+        == retryBoard.Hostiles[1].Guid.GetRawValue());
+    assert(retainedDiagnostic.HazardEscapeProgress.HazardGuid
+        == retainedDiagnostic.HazardEscape->HazardGuid);
+    assert(retainedDiagnostic.RequestedX == firstMove->X);
+    assert(retainedDiagnostic.NativeProof.EndpointZ
+        == rejectedProof.EndpointZ);
+    assert(retainedDiagnostic.Reason
+        == "route_destination_endpoint_mismatch");
+    std::string retainedDiagnosticJson =
+        BotWorldMovement::MovementPlannerObservationJson(retainedDiagnostic);
+    assert(retainedDiagnosticJson.find(diagnosticCandidateKey)
+        != std::string::npos);
+    assert(retainedDiagnosticJson.find("\"basis_progress_guid_match\":true")
+        != std::string::npos);
+    assert(retainedDiagnosticJson.find("\"primary_resolved_endpoint\"")
+        != std::string::npos);
+    assert(retainedDiagnosticJson.find(
+        "route_destination_endpoint_mismatch") != std::string::npos);
+
     bool rejectedNativeAttempted = false;
     SubmitMovementThroughProductionAdapter(rejectedTick, *firstRetry.Movement,
         retryBoard, rejectedProof, rejectedNativeAttempted);
@@ -1685,6 +1804,18 @@ int main()
         == threatenedPlan.Movement->Id.Key());
     assert(MoveOf(churnPlan)->X == MoveOf(threatenedPlan)->X);
     assert(MoveOf(churnPlan)->Y == MoveOf(threatenedPlan)->Y);
+    assert(MoveOf(threatenedPlan)->HazardEscape);
+    assert(MoveOf(churnPlan)->HazardEscape);
+    assert(MoveOf(churnPlan)->HazardEscape->HazardGuid
+        == MoveOf(threatenedPlan)->HazardEscape->HazardGuid);
+    assert(MoveOf(churnPlan)->HazardEscape->HazardX
+        == MoveOf(threatenedPlan)->HazardEscape->HazardX);
+    assert(MoveOf(churnPlan)->HazardEscape->HazardY
+        == MoveOf(threatenedPlan)->HazardEscape->HazardY);
+    assert(MoveOf(churnPlan)->HazardEscape->HazardZ
+        == MoveOf(threatenedPlan)->HazardEscape->HazardZ);
+    assert(MoveOf(churnPlan)->HazardEscape->HazardGuid
+        != guidChurn.Hostiles[1].Guid.GetRawValue());
     assert(!nonownerLane.Committed);
 
     // A rejected native result fails closed while retaining the same episode.
@@ -1766,6 +1897,8 @@ int main()
             str(ROOT / "src/common/Logging"),
             "-I",
             str(ROOT / "src/common/Debugging"),
+            "-I",
+            str(ROOT / "dep/g3dlite/include"),
             str(source),
             str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
                 "Encounters/Magmaw/BotMagmawMovementKernelAdapter.cpp"),
@@ -1777,6 +1910,14 @@ int main()
                 "Encounters/Magmaw/BotMagmawTransferLaneAuthority.cpp"),
             str(ROOT / "src/server/game/Bots/"
                 "BotWorldPopulationMgrMovementExecution.cpp"),
+            str(ROOT / "src/server/game/Bots/"
+                "BotWorldPopulationMgrMovementPlannerDiagnostics.cpp"),
+            str(ROOT / "src/server/game/Bots/"
+                "BotWorldPopulationMgrMovementPlannerDiagnosticsJson.cpp"),
+            str(ROOT / "src/server/game/Bots/"
+                "BotWorldPopulationMgrMovementReceiptRetention.cpp"),
+            str(ROOT / "src/server/game/Bots/"
+                "BotWorldPopulationMgrMovementProgressDiagnostics.cpp"),
             "-o",
             str(binary),
         ],

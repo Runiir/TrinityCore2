@@ -165,6 +165,76 @@ int main()
     assert(sidecar.Latest(30102).LaunchReceipt.DiagnosticCandidateKey.empty());
     assert(sidecar.Latest(30102).LaunchReceipt.IntentFingerprint
         == keyed.LaunchReceipt.IntentFingerprint);
+
+    // A rejected hazard receipt is evidence in its own right. A later
+    // same-tick ordinary candidate may become Latest, but cannot displace the
+    // exact rejected hazard from the next published trace row.
+    Intent hazardRequest = keyedRequest;
+    hazardRequest.X = 8.0f;
+    hazardRequest.Y = 0.0f;
+    hazardRequest.Z = 210.0f;
+    hazardRequest.IntentReason = "parasite_contact_evade";
+    hazardRequest.HazardEscape = HazardEscapeBasis{
+        9001, -5.0f, 0.0f, 210.0f };
+    CopyMovementDiagnosticCandidateKey(hazardRequest,
+        "scope:adaptive_magmaw:parasite_contact_evade:30010:17");
+    std::uint64_t hazardReceipt = sidecar.BeginReceipt(30010, 669,
+        hazardRequest, receiptScope, 0, 0.0f, 0.0f, 210.0f);
+    PathPlan rejectedPlan;
+    rejectedPlan.LaunchReceiptId = hazardReceipt;
+    rejectedPlan.HazardEscapeProgress = HazardEscapeProgressObservation{
+        true, 9001, -5.0f, 0.0f, 210.0f, 210.0f, true, 5.0f,
+        7.0f, 0.0f, 210.0f, 12.0f, 7.0f, 1.0f,
+        "primary_native_actual_endpoint", false };
+    NativePathProofObservation rejectedProof;
+    rejectedProof.Available = true;
+    rejectedProof.Calculated = true;
+    rejectedProof.Complete = true;
+    rejectedProof.EndpointX = 7.0f;
+    rejectedProof.EndpointY = 0.0f;
+    rejectedProof.EndpointZ = 210.0f;
+    rejectedProof.EndpointFloorValid = true;
+    rejectedProof.FloorObservation = MakeNativePathFloorObservation(
+        NativePathFloorFailure::None, 0, 0, 7.0f, 0.0f, 210.0f,
+        210.0f, 210.0f);
+    sidecar.RecordPlannerOutcome(hazardReceipt, 30010, 669, hazardRequest,
+        true, 210.0f, true, "path_admission", false,
+        "route_destination_endpoint_mismatch", rejectedPlan,
+        &rejectedProof, nullptr, PrimaryDisposition::CompleteTerminal,
+        &rejectedProof, false);
+    sidecar.FinalizeExecutor(30010, 669, hazardRequest,
+        "planner_admission", "rejected",
+        "route_destination_endpoint_mismatch", hazardReceipt);
+
+    Intent ordinaryRequest = keyedRequest;
+    ordinaryRequest.Owner = BotMovementArbitration::Owner::Formation;
+    ordinaryRequest.IntentReason = "ranged_formation_restore";
+    ordinaryRequest.X = 2.0f;
+    std::uint64_t ordinaryReceipt = sidecar.BeginReceipt(30010, 669,
+        ordinaryRequest, receiptScope, 0, 0.0f, 0.0f, 210.0f);
+    assert(sidecar.Latest(30010).LaunchReceipt.Id == ordinaryReceipt);
+    sidecar.AssociateTrace(30010, 10);
+    MovementPlannerObservation retainedHazard = sidecar.ForTrace(30010, 10);
+    assert(retainedHazard.LaunchReceipt.Id == hazardReceipt);
+    assert(retainedHazard.LaunchReceipt.DiagnosticCandidateKey
+        == hazardRequest.DiagnosticCandidateKey);
+    assert(retainedHazard.HazardEscape->HazardGuid == 9001);
+    assert(retainedHazard.HazardEscapeProgress.HazardGuid == 9001);
+    assert(retainedHazard.HazardEscapeProgress.EndpointX == 7.0f);
+    assert(retainedHazard.Reason == "route_destination_endpoint_mismatch");
+    std::string retainedHazardJson = MovementPlannerObservationJson(
+        retainedHazard);
+    assert(retainedHazardJson.find("\"request\":{\"map\":669,\"x\":8")
+        != std::string::npos);
+    assert(retainedHazardJson.find("\"primary_resolved_endpoint\":{\"x\":7")
+        != std::string::npos);
+    assert(retainedHazardJson.find("\"basis_progress_guid_match\":true")
+        != std::string::npos);
+    assert(retainedHazardJson.find("route_destination_endpoint_mismatch")
+        != std::string::npos);
+    sidecar.AssociateTrace(30010, 11);
+    assert(sidecar.ForTrace(30010, 11).LaunchReceipt.Id == ordinaryReceipt);
+
     sidecar.Record(InvalidFloor());
     std::string invalidFloorJson = MovementPlannerObservationJson(
         sidecar.Latest(30001));

@@ -308,14 +308,16 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         plan.HazardEscapeProgress =
             BotWorldMovement::ObserveHazardEscapeProgress(
                 *intent.HazardEscape, bot->GetPositionX(),
-                bot->GetPositionY(), endpoint.x, endpoint.y, endpoint.z);
+                bot->GetPositionY(), bot->GetPositionZ(), endpoint.x,
+                endpoint.y, endpoint.z);
         plan.HazardEscapeProgress.ProofQualified =
             BotWorldMovement::NativePathProvesSameSurfaceHazardEscape(
                 intent.Owner, sameLevelDeclaredMechanicRequest,
                 nativeProof.Complete,
                 BotWorldMovement::NativePathHasForbiddenAdmissionFlag(
                     path.GetPathType()),
-                nativeProof, plan.HazardEscapeProgress);
+                nativeProof, *intent.HazardEscape,
+                plan.HazardEscapeProgress);
     }
     bool const connectedPolyCorridor = path.HasConnectedPolyCorridor();
     bool const primaryFallbackEligible = progressivePathAdmission
