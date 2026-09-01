@@ -81,7 +81,7 @@
     "success_condition": "The run records the four exact fixture-expansion boundaries with correlated task/native outcomes and cleanup. Promotion still requires the production-boundary predicates, including zero player infection for parasite-control revision 8.",
     "failure_condition": "Any dropped actor child, key or deadline churn within one wave, infection before a candidate/native outcome, semantic stall, death loop, or route failure closes the single observation run and remains evidence. It does not certify gameplay success."
   },
-  "next_action": "At this exact clean descriptor commit, rerun the complete retained bank after the 813bdc7acd boundary with the fixture-expansion gate. If admitted, configure and build worldserver with fast8, then run one no-retry completion-watchdog observation replay for chainwielder_pre_admission_rejection_isolation_v1 revision 2, magmaw_parasite_control_full_runtime_v1 revision 8, magmaw_parasite_lane_paths_v1 revision 9, and magmaw_parasite_lane_transition_full_replay_v1 revision 8.",
+  "next_action": "At this exact clean descriptor commit, rerun the complete retained bank after the 813bdc7acd boundary with the fixture-expansion gate. If admitted, bind the fast8 worldserver build, perform one deterministic prepare-only reset of the frozen ten-player Magmaw cohort, require strict provisioning and shard readback, then run one no-retry completion-watchdog observation replay for chainwielder_pre_admission_rejection_isolation_v1 revision 2, magmaw_parasite_control_full_runtime_v1 revision 8, magmaw_parasite_lane_paths_v1 revision 9, and magmaw_parasite_lane_transition_full_replay_v1 revision 8.",
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": true,
@@ -93,13 +93,14 @@
     "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": false,
-    "database_mutation_scope": "none",
+    "database_mutations_allowed": true,
+    "database_mutation_scope": "one repository-owned prepare-only provisioning reset limited to the frozen blackwing_descent_10n_magmaw_diagnostic ten-player cohort; no world, encounter, route, spell, gear-profile, or unrelated account/character mutation",
     "dvc_publication_required_after_terminal": true,
     "admission_conditions": [
       "the exact clean descriptor commit passes every registered recurrence fixture after run magmaw-task-canary-813bdc7acd-20260901",
       "the recurrence evaluator admits fixture expansion for the four exact target fixture revisions under the canonical Magmaw config identity",
       "configure and worldserver build receipts bind the same clean source identity and fast8 policy",
+      "one deterministic scoped provisioning reset restores exact start position, health, power, auras, corpse, instance, group, gear, consumable, spellbook, talent, glyph, pet, and pool identity before both DB readbacks pass",
       "the generated runtime config, route manifest, roster readback, and recurrence admission verify before process creation",
       "the replay cannot certify gameplay success or close Magmaw acceptance"
     ]
