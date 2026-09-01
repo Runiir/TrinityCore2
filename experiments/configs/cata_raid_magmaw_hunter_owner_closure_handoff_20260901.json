@@ -1,0 +1,93 @@
+{
+  "schema": "cata_raid_handoff_v1",
+  "run_id": "magmaw-hunter-owner-closure-29b54a2188-20260901",
+  "source_commit": "29b54a2188d2ecbda3673628fe88d646c19117b4",
+  "repair_commit": "67b54b4b80fa24998e7b08bcdbf5623c6da461e3",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "mode": "10N_canary_for_universal_architecture",
+  "terminal": {
+    "completion_reason": "emergency_wall_clock_timeout",
+    "failure_reason": "worldserver_timeout",
+    "worldserver_returncode": 0,
+    "timed_out": true,
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "retries": 0,
+    "cleanup_verified": true
+  },
+  "repair_closure": {
+    "strict_provisioning_passed": true,
+    "shard_readback_passed": true,
+    "active_roster_size": 10,
+    "persisted_hunter_owner": 30009,
+    "persisted_hunter_pet_id": 8700009,
+    "stored_owner_mismatch_recurred": false,
+    "zero_size_receipt_recurred": false
+  },
+  "route": {
+    "completed_nodes": [
+      "bwd.entry.regroup",
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges"
+    ],
+    "failed_node": "bwd.magmaw.encounter",
+    "boss_killed": false
+  },
+  "combat": {
+    "chainwielder": {
+      "party_damage": 4649400,
+      "party_dps": 86100.0,
+      "party_healing": 80446,
+      "party_hps": 1489.741
+    },
+    "drudges": {
+      "party_damage": 7007551,
+      "party_dps": 109492.984,
+      "party_healing": 3109598,
+      "party_hps": 48587.469
+    },
+    "magmaw": {
+      "party_damage": 28860857,
+      "party_dps": 66194.626,
+      "party_healing": 8662977,
+      "party_hps": 19869.213,
+      "recorded_deaths": 10,
+      "zero_damage_gap_seconds_approx": 150
+    }
+  },
+  "evidence_boundary": {
+    "proven": [
+      "the 32-bit hunter pet owner read repair closes the live admission mismatch",
+      "the autonomous roster clears the entrance, Chainwielder, and Drudges",
+      "Magmaw is engaged and receives real boss, exposed-head, and parasite damage",
+      "the run does not complete Magmaw"
+    ],
+    "not_proven": [
+      "the first mechanic or decision that caused the ten-death transition",
+      "whether terminal no-line-of-sight and profile-action blockers caused the first wipe",
+      "Magmaw completion or universal raid acceptance"
+    ],
+    "excluded_changes": [
+      "pet AI",
+      "class rotations",
+      "encounter behavior",
+      "route coordinates",
+      "movement admission",
+      "MMAP tolerances",
+      "terrain following",
+      "Z behavior"
+    ]
+  },
+  "next_first_broken_edge": "The heartbeat ledger retains counters and hashes but not the compact route, survival, combat, and diagnosis state required to locate the first causal edge across the Magmaw death and recovery transition.",
+  "next_action": "Add a bounded per-heartbeat causal receipt containing route scope, alive and death state, wipe and recovery generations, boss health or originated damage, party DPS and HPS, and compact per-bot diagnosis codes. Do not change gameplay or run another canary until focused tests prove the receipt preserves the first transition without retaining duplicate raw payloads.",
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_hunter_owner_closure_29b54a2188_20260901.dvc",
+    "dvc_directory_md5": "ace387286ffd4da691d94b8e89fd1776.dir",
+    "nfiles": 14,
+    "size_bytes": 12396620,
+    "report_sha256": "98b501bb1018bee7ffbdd220ce57e4bb9f796a5ff9ce53a6a058f788eaa63228",
+    "combat_analysis_sha256": "9073cf50c4be518481ec6f1e24f25042dc7980568c6e1ead899a999eab17cab1",
+    "combat_log_sha256": "bdfd5a0f77915368a495ae809e409f4f0653e29694d1d4f21efdb611e8d0889d",
+    "terminal_summary_sha256": "0990b4d5a8261d3c0abe649c9ee6d76f97c0d99a1b6b5b1c4aeb05f5af1be87b"
+  }
+}

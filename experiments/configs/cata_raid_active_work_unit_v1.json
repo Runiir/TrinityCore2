@@ -1,75 +1,73 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:verify_hunter_pet_owner_field_width",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "runtime:repair_next_trace_backed_edge",
+  "work_unit": "evidence:retain_compact_heartbeat_causal_sequence",
+  "owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "runtime:repair_first_trace_backed_magmaw_edge",
   "next_owner_skill": "raid-bot-runtime-implementation",
   "classification": "ready",
-  "epoch_id": "magmaw_hunter_stored_owner_20260901",
+  "epoch_id": "magmaw_heartbeat_causal_sequence_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N_canary_for_universal_architecture",
-  "architecture_scope": "Expose the exact facts at a shared pet-identity admission boundary. Do not tune Magmaw or the hunter rotation.",
-  "gate_state": "reviewed_field_width_repair_admits_one_build_and_one_no_retry_start",
-  "observed_at_commit": "67b54b4b80fa24998e7b08bcdbf5623c6da461e3",
+  "architecture_scope": "Preserve the first causal route, survival, combat, and diagnosis transition for every raid or dungeon watchdog run. Do not encode Magmaw-specific strategy in the evidence contract.",
+  "gate_state": "hunter_owner_repair_closed_live; next_gameplay_mutation_blocked_on_missing_heartbeat_sequence",
+  "observed_at_commit": "29b54a2188d2ecbda3673628fe88d646c19117b4",
   "behavior_change": false,
-  "evidence_contract_change": false,
+  "evidence_contract_change": true,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_hunter_owner_width_handoff_20260901.json",
-    "sha256": "6a17f30d38b0f5f6567f98037740f427ab332276061462b068dd7bfc0eca804e"
+    "path": "experiments/configs/cata_raid_magmaw_hunter_owner_closure_handoff_20260901.json",
+    "sha256": "c386c86a2adca7dd9794697ae652074f037a8dba118db7525ef6c625adc3e709"
   },
   "first_broken_edge": {
-    "run_id": "magmaw-hunter-owner-2688e5a0f9-20260901",
-    "route_node_id": "bwd.entry.regroup",
-    "cause": "Player::LoadPetsFromDB reads the 32-bit character_pet.owner prepared-result field with GetUInt64(), consuming the following 32-bit modelid in release raw-field mode.",
-    "terminal": "validation_active_hunter_pet_observation_stored_owner_mismatch",
-    "evidence": "artifacts/cata_raid_program/magmaw_hunter_owner_width_2688e5a0f9_20260901.dvc"
+    "run_id": "magmaw-hunter-owner-closure-29b54a2188-20260901",
+    "route_node_id": "bwd.magmaw.encounter",
+    "cause": "The retained heartbeat ledger contains changing counters and hashes but omits the compact route, survival, combat, and per-bot diagnosis state needed to attribute the ten-death and recovery transition.",
+    "terminal": "emergency_wall_clock_timeout",
+    "evidence": "artifacts/cata_raid_program/magmaw_hunter_owner_closure_29b54a2188_20260901.dvc"
   },
-  "next_action": "Configure and build exact clean source with fast8_v4, deterministically prepare and read back the frozen Magmaw shard, then start exactly one worldserver under the completion watchdog. Verify the ten-member receipt and capture the next typed route outcome. Publish compact evidence to DVC. Do not retry.",
+  "next_action": "Add and test one compact, bounded heartbeat causal receipt. It must expose route scope, alive count, death and wipe state, recovery generation, boss health or originated damage, party DPS and HPS, and per-bot diagnosis codes without retaining duplicate raw payloads. No gameplay mutation or live retry is admitted by this unit.",
   "implementation_scope": {
     "allowed": [
-      "one exact fast8_v4 configure and one exact worldserver build with eight compiler jobs",
-      "deterministic reset and provisioning of only the frozen Magmaw diagnostic shard",
-      "strict provisioning verification and exact roster plus character_pet readback",
-      "one worldserver start under the generated completion watchdog plan",
-      "compact DVC publication after a typed terminal and verified cleanup",
-      "exact local payload eviction only after remote verification"
+      "completion-watchdog heartbeat event schema and compact serializer",
+      "focused deterministic tests for death, wipe, recovery, stall, and resumed-damage transitions",
+      "documentation and skill guidance for consuming the compact receipt",
+      "DVC pointer publication and exact local payload eviction for the completed closure canary"
     ],
     "forbidden": [
-      "authserver start, worldserver retry, manual gameplay intervention, or a second canary",
-      "changing owner comparison, pet AI, class, encounter, movement, MMAP, route coordinates, terrain following, or Z",
-      "claiming boss success unless the watchdog records a real boss clear"
+      "class, pet, encounter, task, movement, route, MMAP, terrain-following, or Z behavior changes",
+      "worldserver or authserver starts",
+      "database mutation",
+      "new build tickets",
+      "claiming the terminal snapshot proves the first wipe cause"
     ]
   },
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
-    "gameplay_canary_admitted": true,
+    "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "configure_admitted": true,
-    "worldserver_build_admitted": true,
-    "worldserver_start_admitted": true,
+    "configure_admitted": false,
+    "worldserver_build_admitted": false,
+    "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": true,
-    "database_mutation_scope": "only deterministic reset and provisioning for the frozen blackwing_descent_10n_magmaw_diagnostic shard",
+    "database_mutations_allowed": false,
     "dvc_publication_required_after_terminal": true
   },
   "acceptance": [
-    "build receipt binds the exact clean source commit and worldserver binary",
-    "strict prestart readback records persisted owner 30009 for pet 8700009",
-    "the admission receipt retains all ten members and records hunter stored owner 30009",
-    "the old stored-owner mismatch and downstream zero-size receipt do not recur",
-    "the completion watchdog records the next typed route terminal and complete cleanup",
-    "compact evidence is remotely verified in DVC before exact local payload eviction",
-    "no pet-AI, class, encounter, movement, terrain-following, MMAP, route, or Z behavior changes"
+    "the compact heartbeat event records route, survival, recovery, combat, and per-bot diagnosis state",
+    "the event remains bounded and excludes duplicate raw diagnosis, trace, and combat-log payloads",
+    "focused tests reconstruct a first death, full-wipe or partial-death state, recovery, damage plateau, and resumed damage",
+    "existing completion-watchdog terminal semantics remain fail closed",
+    "the completed closure evidence is remotely verified in DVC before exact local eviction",
+    "no gameplay, movement, terrain-following, MMAP, route, or Z behavior changes"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "configure_tickets": 1,
-    "worldserver_build_tickets": 1,
-    "worldserver_starts": 1,
+    "configure_tickets": 0,
+    "worldserver_build_tickets": 0,
+    "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0
   }
