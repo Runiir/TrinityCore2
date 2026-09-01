@@ -1,17 +1,17 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:observe_personal_parasite_escape_task_live",
+  "work_unit": "fixture:observe_personal_parasite_escape_task_live",
   "owner_skill": "raid-shard-architecture",
   "next_work_unit": "evidence:classify_personal_parasite_escape_live_observation",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "implementation_pending_live_verification",
+  "classification": "fixture_expansion_admitted_pending_live_verification",
   "epoch_id": "magmaw_personal_escape_task_lifecycle_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Observe one actor-local multi-tick parasite-escape task through the existing arbiter and native terrain-following executor. This is a bounded diagnostic, not Magmaw-clear, DPS acceptance, or fixture-promotion evidence.",
-  "gate_state": "implementation fixture-green and independently reviewed GO at 040652736970b422f87eaa034b6dbb5e4de10bc1; current eaf93fc988c9b4fc73d696771c14b20288985e78 is a verified test-only descendant; exact-source build and one no-retry live diagnostic remain",
-  "observed_at_commit": "eaf93fc988c9b4fc73d696771c14b20288985e78",
+  "architecture_scope": "Observe one actor-local multi-tick parasite-escape task through the existing arbiter and native terrain-following executor. This is a bounded evidence-only fixture expansion, not Magmaw-clear, DPS acceptance, or a gameplay canary.",
+  "gate_state": "implementation independently reviewed GO; exact-source recurrence suite at 999b089c7c55aef7fba125b2d85fcc447e5e7c36 passed all 24 fixtures and admitted one evidence-only fixture-expansion replay; exact-source build and one no-retry live observation remain",
+  "observed_at_commit": "999b089c7c55aef7fba125b2d85fcc447e5e7c36",
   "behavior_change": false,
   "evidence_contract_change": false,
   "source_handoff": {
@@ -42,16 +42,16 @@
     "terminal_policy": "Stop on normal route clear, typed semantic or no-progress stall, repeated decisions, excessive death loops, infrastructure loss, contamination, explicit interruption, or the bounded emergency wall-clock as noncompletion.",
     "required_observation": "For every personal parasite escape, retain actor, stable wave, task generation, hazard GUID, requested and native-resolved endpoints, planner outcome, MotionMaster or point-generator identity, same-floor progress samples, clearance change, task terminal, death outcome, and whether that actor and wave rearmed. Also retain route-node progression plus segment and party DPS/HPS.",
     "non_claims": [
-      "not a promoted recurrence fixture",
       "not a gameplay canary",
       "not a Magmaw-clear acceptance run",
-      "not a DPS or HPS acceptance run"
+      "not a DPS or HPS acceptance run",
+      "no fixture revision is promoted unless its exact live production-boundary contract is observed"
     ]
   },
-  "next_action": "At this descriptor's exact clean commit, perform one queued configure/build using eight jobs, fresh deterministic shard provisioning and strict readback, then start exactly one worldserver and no authserver under the completion watchdog. Do not retry. Classify and publish through DVC only after a typed terminal and verified cleanup.",
+  "next_action": "At this descriptor's exact clean commit, perform one queued configure/build using eight jobs, create and verify the source-bound fixture-expansion admission and fresh deterministic shard, then start exactly one worldserver and no authserver under the completion watchdog. Do not retry. Classify and publish through DVC only after a typed terminal and verified cleanup.",
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": false,
+    "fixture_expansion_replay_admitted": true,
     "gameplay_canary_admitted": false,
     "live_diagnostic_admitted": true,
     "gameplay_mutations_allowed": false,

@@ -49,7 +49,7 @@ def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
     assert scope["live_diagnostic_admitted"] is True
     assert scope["authserver_start_admitted"] is False
     assert scope["retry_admitted"] is False
-    assert scope["fixture_expansion_replay_admitted"] is False
+    assert scope["fixture_expansion_replay_admitted"] is True
     assert scope["gameplay_canary_admitted"] is False
     assert scope["acceptance_admitted"] is False
     assert scope["dvc_publication_required_after_terminal"] is True
