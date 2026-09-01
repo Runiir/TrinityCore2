@@ -45,63 +45,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PREBUILD_SCHEMA = "cata_raid_composite_fixture_replay_prebuild_plan_v1"
 REALIZED_SCHEMA = "cata_raid_composite_fixture_replay_realized_plan_v1"
 REQUEST_SCHEMA = "cata_raid_composite_fixture_replay_request_v1"
-EXPECTED_WORK_UNIT = "evidence:deterministic_composite_fixture_replay_launcher_v113"
-EXPECTED_HANDOFF_WORK_UNIT = "shard:composite_map669_production_boundary_replay_v112"
-EXPECTED_HANDOFF_PATH = (
-    "experiments/configs/cata_raid_v112_bundle_authority_prestart_failed_handoff_v113.json"
-)
-EXPECTED_HANDOFF_CLASSIFICATION = "atomic_bundle_runtime_config_authority_prestart_failed"
-EXPECTED_V112_COMMIT = "9a1008f35e51ab1db67c7e41fb9bf0325eaeae49"
-EXPECTED_V112_TREE = "edfd60d9971c8dd5406b5d52890121352a7f435d"
-EXPECTED_REQUIRED_ACTION = (
-    "Implement or repair one deterministic repository-owned composite fixture replay "
-    "launcher that emits and validates the exact frozen configure, build, "
-    "runtime-config-authority, atomic bundle, strict readback, and capture argv. "
-    "Exercise the launcher without building, starting a server, or mutating the "
-    "database. The next live replay must consume its emitted argv unchanged instead "
-    "of reconstructing commands by hand."
-)
-EXPECTED_REQUIRED_POSTCONDITION = (
-    "one tested launcher output binds the clean source, fast8_v4 policy, "
-    "tracked-derived runtime-config authority token, canonical route object, "
-    "atomic bundle inputs, spellbook-aware strict verifier, and no-retry "
-    "completion-watchdog capture command"
-)
-LIVE_WORK_UNIT = "shard:composite_map669_production_boundary_replay"
-LIVE_HANDOFF_WORK_UNIT = "evidence:repair_live_work_unit_authority_propagation_v115"
-LIVE_HANDOFF_PATH = (
-    "experiments/configs/cata_raid_launcher_live_authority_repair_handoff_v1.json"
-)
-LIVE_HANDOFF_CLASSIFICATION = "launcher_live_authority_repair_passed"
-LIVE_SOURCE_COMMIT = "e5fd11224d2ec38e270f37e061979357641db4f8"
-LIVE_SOURCE_TREE = "289845890d615777fccaa098dd5c8122c7b3ff38"
-LIVE_REQUIRED_ACTION = (
-    "Use only the committed deterministic launcher to compose, run, realize, and "
-    "run one map-669 fixture-expansion replay. Stop at the first failed gate and "
-    "do not retry."
-)
-LIVE_REQUIRED_POSTCONDITION = (
-    "one worldserver start either captures all four admitted production boundaries "
-    "or returns the exact first failed gate with immutable evidence"
-)
-TARGET_RECEIPT_WORK_UNIT = "shard:map669_target_receipt_fixture_replay"
-TARGET_RECEIPT_HANDOFF_PATH = (
-    "experiments/configs/cata_raid_targeted_movement_receipt_retention_handoff_v1.json"
-)
-TARGET_RECEIPT_HANDOFF_WORK_UNIT = "evidence:magmaw_target_receipt_retention"
-TARGET_RECEIPT_HANDOFF_CLASSIFICATION = "evidence_implementation_complete"
-TARGET_RECEIPT_SOURCE_COMMIT = "58f95722d8ad41201ffc29bfe5fba18b86f1f584"
-TARGET_RECEIPT_SOURCE_TREE = "50f81a9a97071d5b30691cc681450640aea2809d"
-TARGET_RECEIPT_REQUIRED_ACTION = (
-    "Run one no-retry map-669 fixture replay without authserver and prove the "
-    "requested complete Hazard retry retains planner, launch, progress, and "
-    "terminal fields in the compact replay."
-)
-TARGET_RECEIPT_REQUIRED_POSTCONDITION = (
-    "one requested complete Hazard retry is joined from actor and intent "
-    "fingerprint through planner, native launch, spline progress, and terminal "
-    "outcome without increasing global receipt or sample capacity"
-)
+LAUNCHER_AUTHORITY_SCHEMA = "cata_raid_composite_fixture_replay_launcher_authority_v1"
 POLICY_RELATIVE_PATH = Path(
     "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json"
 )
@@ -113,6 +57,7 @@ RUNTIME_CONFIG_CONTRACT = (
 )
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 GIT_OBJECT_RE = re.compile(r"[0-9a-f]{40,64}")
+WORK_UNIT_RE = re.compile(r"[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9_.-]*")
 REQUEST_FIELDS = {
     "schema",
     "worktree",
@@ -173,6 +118,12 @@ def _git_object(value: object, label: str) -> str:
     return value
 
 
+def _text(value: object, label: str) -> str:
+    if type(value) is not str or not value:
+        raise ReplayPlanError(f"{label}_invalid")
+    return value
+
+
 def _artifact(value: object, label: str) -> dict[str, str]:
     if not isinstance(value, dict) or set(value) != {"path"}:
         raise ReplayPlanError(f"{label}_artifact_invalid")
@@ -218,60 +169,107 @@ def _source_authority(
         or descriptor.get("schema") != "cata_raid_active_work_unit_v1"
     ):
         raise ReplayPlanError("active_descriptor_identity_invalid")
-    if expected_work_unit == EXPECTED_WORK_UNIT:
-        descriptor_owner = "raid-evidence-lifecycle"
-        descriptor_classification = "prestart_command_composition_repair_required"
-        handoff_path_expected = EXPECTED_HANDOFF_PATH
-        handoff_work_unit = EXPECTED_HANDOFF_WORK_UNIT
-        handoff_owner = "raid-shard-architecture"
-        handoff_classification = EXPECTED_HANDOFF_CLASSIFICATION
-        source_commit_expected = EXPECTED_V112_COMMIT
-        source_tree_expected = EXPECTED_V112_TREE
-        next_owner = "raid-evidence-lifecycle"
-        required_action = EXPECTED_REQUIRED_ACTION
-        required_postcondition = EXPECTED_REQUIRED_POSTCONDITION
-    elif expected_work_unit == LIVE_WORK_UNIT:
-        descriptor_owner = "raid-shard-architecture"
-        descriptor_classification = "live_recurrence_quarantined"
-        handoff_path_expected = LIVE_HANDOFF_PATH
-        handoff_work_unit = LIVE_HANDOFF_WORK_UNIT
-        handoff_owner = "raid-evidence-lifecycle"
-        handoff_classification = LIVE_HANDOFF_CLASSIFICATION
-        source_commit_expected = LIVE_SOURCE_COMMIT
-        source_tree_expected = LIVE_SOURCE_TREE
-        next_owner = "raid-shard-architecture"
-        required_action = LIVE_REQUIRED_ACTION
-        required_postcondition = LIVE_REQUIRED_POSTCONDITION
-    elif expected_work_unit == TARGET_RECEIPT_WORK_UNIT:
-        descriptor_owner = "raid-evidence-lifecycle"
-        descriptor_classification = "fixture_replay_authorized"
-        handoff_path_expected = TARGET_RECEIPT_HANDOFF_PATH
-        handoff_work_unit = TARGET_RECEIPT_HANDOFF_WORK_UNIT
-        handoff_owner = "raid-evidence-lifecycle"
-        handoff_classification = TARGET_RECEIPT_HANDOFF_CLASSIFICATION
-        source_commit_expected = TARGET_RECEIPT_SOURCE_COMMIT
-        source_tree_expected = TARGET_RECEIPT_SOURCE_TREE
-        next_owner = "raid-evidence-lifecycle"
-        required_action = TARGET_RECEIPT_REQUIRED_ACTION
-        required_postcondition = TARGET_RECEIPT_REQUIRED_POSTCONDITION
-    else:
-        raise ReplayPlanError("active_work_unit_mismatch")
+    authority = descriptor.get("launcher_authority")
+    authority_fields = {
+        "schema", "expected_work_unit", "descriptor_owner_skill",
+        "descriptor_classification", "source_handoff_schema",
+        "source_handoff_work_unit", "source_handoff_owner_skill",
+        "source_handoff_classification", "required_action_sha256",
+        "required_postcondition_sha256", "scenario", "fixture_expansion",
+        "program_scope", "validation_clock",
+    }
+    if (
+        not isinstance(authority, dict)
+        or set(authority) != authority_fields
+        or authority.get("schema") != LAUNCHER_AUTHORITY_SCHEMA
+    ):
+        raise ReplayPlanError("launcher_authority_invalid")
+    for field in (
+        "expected_work_unit", "descriptor_owner_skill",
+        "descriptor_classification", "source_handoff_schema",
+        "source_handoff_work_unit", "source_handoff_owner_skill",
+        "source_handoff_classification",
+    ):
+        _text(authority.get(field), f"launcher_authority_{field}")
+    _hash(authority.get("required_action_sha256"), "required_action")
+    _hash(
+        authority.get("required_postcondition_sha256"),
+        "required_postcondition",
+    )
     if (
         descriptor.get("work_unit") != expected_work_unit
-        or descriptor.get("owner_skill") != descriptor_owner
-        or descriptor.get("classification") != descriptor_classification
-        or descriptor.get("next_work_unit") != expected_work_unit
-        or descriptor.get("next_owner_skill") != descriptor_owner
+        or authority.get("expected_work_unit") != expected_work_unit
+        or descriptor.get("owner_skill") != authority.get("descriptor_owner_skill")
+        or descriptor.get("classification")
+        != authority.get("descriptor_classification")
     ):
         raise ReplayPlanError("active_work_unit_mismatch")
+    scenario = authority.get("scenario")
+    fixture_expansion = authority.get("fixture_expansion")
+    program_scope = authority.get("program_scope")
+    validation_clock = authority.get("validation_clock")
+    descriptor_fixture_expansion = descriptor.get("fixture_expansion")
+    descriptor_program_scope = descriptor.get("program_scope")
+    if (
+        scenario != {
+            "scenario_id": SCENARIO_ID,
+            "raid": descriptor.get("raid"),
+            "boss": descriptor.get("boss"),
+            "mode": descriptor.get("mode"),
+        }
+        or fixture_expansion != {
+            "purpose": "fixture_expansion_replay",
+            "attempts": 1,
+            "retries": 0,
+            "authserver_starts": 0,
+            "worldserver_starts": 1,
+            "duration_policy": "completion_watchdog",
+        }
+        or not isinstance(descriptor_fixture_expansion, dict)
+        or any(
+            descriptor_fixture_expansion.get(key) != value
+            for key, value in fixture_expansion.items()
+        )
+        or program_scope != {
+            "fixture_expansion_replay_admitted": True,
+            "configure_admitted": True,
+            "worldserver_build_admitted": True,
+            "worldserver_start_admitted": True,
+            "authserver_start_admitted": False,
+            "retry_admitted": False,
+            "database_mutations_allowed": True,
+            "database_mutation_scope": "validation_provisioning_only",
+        }
+        or not isinstance(descriptor_program_scope, dict)
+        or any(
+            descriptor_program_scope.get(key) != value
+            for key, value in program_scope.items()
+        )
+        or validation_clock != {
+            "fixed_success_timer_seconds": None,
+            "policy": "completion_watchdog",
+            "worldserver_starts": 1,
+            "authserver_starts": 0,
+            "retries": 0,
+        }
+        or descriptor.get("validation_clock") != validation_clock
+    ):
+        raise ReplayPlanError("launcher_authority_scope_invalid")
     source_handoff = descriptor.get("source_handoff")
-    if not isinstance(source_handoff, dict):
+    if (
+        not isinstance(source_handoff, dict)
+        or set(source_handoff)
+        != {"path", "sha256", "source_commit", "source_tree"}
+    ):
         raise ReplayPlanError("source_handoff_identity_invalid")
+    _hash(source_handoff.get("sha256"), "source_handoff")
+    _git_object(source_handoff.get("source_commit"), "handoff_source_commit")
+    _git_object(source_handoff.get("source_tree"), "handoff_source_tree")
     handoff_relative = Path(str(source_handoff.get("path") or ""))
     if (
-        handoff_relative.as_posix() != handoff_path_expected
-        or handoff_relative.is_absolute()
+        handoff_relative.is_absolute()
         or ".." in handoff_relative.parts
+        or handoff_relative.as_posix() in {"", "."}
     ):
         raise ReplayPlanError("source_handoff_identity_invalid")
     handoff_path = worktree / handoff_relative
@@ -289,24 +287,36 @@ def _source_authority(
         raise ReplayPlanError("source_handoff_identity_invalid") from error
     handoff_source = handoff.get("source") if isinstance(handoff, dict) else None
     next_work_unit = handoff.get("next_work_unit") if isinstance(handoff, dict) else None
+    required_action = (
+        next_work_unit.get("required_action")
+        if isinstance(next_work_unit, dict) else None
+    )
+    required_postcondition = (
+        next_work_unit.get("required_postcondition")
+        if isinstance(next_work_unit, dict) else None
+    )
     if (
         handoff_bytes != committed_handoff
         or source_handoff.get("sha256") != handoff_sha
         or not isinstance(handoff_source, dict)
         or not isinstance(next_work_unit, dict)
-        or handoff.get("schema") != "cata_raid_specialist_handoff_v1"
-        or handoff.get("work_unit_id") != handoff_work_unit
-        or handoff.get("owner_skill") != handoff_owner
-        or handoff.get("classification") != handoff_classification
-        or handoff_source.get("commit") != source_commit_expected
-        or handoff_source.get("tree") != source_tree_expected
-        or source_handoff.get("source_commit") != source_commit_expected
-        or source_handoff.get("source_tree") != source_tree_expected
+        or handoff.get("schema") != authority.get("source_handoff_schema")
+        or handoff.get("work_unit_id")
+        != authority.get("source_handoff_work_unit")
+        or handoff.get("owner_skill")
+        != authority.get("source_handoff_owner_skill")
+        or handoff.get("classification")
+        != authority.get("source_handoff_classification")
+        or handoff_source.get("commit") != source_handoff.get("source_commit")
+        or handoff_source.get("tree") != source_handoff.get("source_tree")
         or next_work_unit.get("id") != expected_work_unit
-        or next_work_unit.get("owner_skill") != next_owner
-        or next_work_unit.get("required_action") != required_action
-        or next_work_unit.get("required_postcondition")
-        != required_postcondition
+        or next_work_unit.get("owner_skill") != descriptor.get("owner_skill")
+        or type(required_action) is not str
+        or _sha256_bytes(required_action.encode())
+        != authority.get("required_action_sha256")
+        or type(required_postcondition) is not str
+        or _sha256_bytes(required_postcondition.encode())
+        != authority.get("required_postcondition_sha256")
         or descriptor.get("observed_at_commit")
         != source_handoff.get("source_commit")
         or descriptor.get("immutable_input_commit")
@@ -446,9 +456,10 @@ def _request_context(
     else:
         raise ReplayPlanError("run_root_must_be_external")
     expected_work_unit = request["expected_work_unit"]
-    if expected_work_unit not in {
-        EXPECTED_WORK_UNIT, LIVE_WORK_UNIT, TARGET_RECEIPT_WORK_UNIT,
-    }:
+    if (
+        type(expected_work_unit) is not str
+        or not WORK_UNIT_RE.fullmatch(expected_work_unit)
+    ):
         raise ReplayPlanError("expected_work_unit_invalid")
     authorities = request["runtime_config_authorities"]
     if authorities != [TRACKED_DERIVED_AUTHORITY]:

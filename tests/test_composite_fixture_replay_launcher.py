@@ -14,7 +14,7 @@ from tools.raid_program.chainwielder_runtime_config_authority import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-REAL_SOURCE_AUTHORITY = launcher._source_authority
+TEST_WORK_UNIT = "shard:future_composite_fixture_replay_v999"
 SOURCE = {
     "commit": "a" * 40,
     "tree": "b" * 40,
@@ -34,7 +34,7 @@ def _stable_source(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _request(
-    tmp_path: Path, expected_work_unit: str = launcher.EXPECTED_WORK_UNIT,
+    tmp_path: Path, expected_work_unit: str = TEST_WORK_UNIT,
 ) -> dict:
     external = tmp_path.resolve()
     return {
@@ -90,37 +90,37 @@ def test_prebuild_is_deterministic_and_exact(tmp_path: Path) -> None:
     ]
 
 
-def test_live_prebuild_uses_live_source_authority(
+def test_prebuild_passes_generic_work_unit_to_source_authority(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
 ) -> None:
     selectors: list[str] = []
 
     def source_authority(_worktree: Path, work_unit: str) -> dict[str, str]:
         selectors.append(work_unit)
-        if work_unit != launcher.LIVE_WORK_UNIT:
+        if work_unit != TEST_WORK_UNIT:
             raise AssertionError(f"stale selector: {work_unit}")
         return dict(SOURCE)
 
     monkeypatch.setattr(launcher, "_source_authority", source_authority)
-    request = _request(tmp_path, launcher.LIVE_WORK_UNIT)
+    request = _request(tmp_path, TEST_WORK_UNIT)
     plan = launcher.compose_plan(request)
     assert plan["schema"] == launcher.PREBUILD_SCHEMA
-    assert selectors == [launcher.LIVE_WORK_UNIT]
+    assert selectors == [TEST_WORK_UNIT]
 
 
-def test_live_realization_revalidates_live_source_authority(
+def test_realization_revalidates_generic_source_authority(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
 ) -> None:
     selectors: list[str] = []
 
     def source_authority(_worktree: Path, work_unit: str) -> dict[str, str]:
         selectors.append(work_unit)
-        if work_unit != launcher.LIVE_WORK_UNIT:
+        if work_unit != TEST_WORK_UNIT:
             raise AssertionError(f"stale selector: {work_unit}")
         return dict(SOURCE)
 
     monkeypatch.setattr(launcher, "_source_authority", source_authority)
-    request = _request(tmp_path, launcher.LIVE_WORK_UNIT)
+    request = _request(tmp_path, TEST_WORK_UNIT)
     prebuild = launcher.compose_plan(request)
     prebuild_path = tmp_path / "live-prebuild.json"
     _write(prebuild_path, launcher._canonical_bytes(prebuild))
@@ -149,25 +149,25 @@ def test_live_realization_revalidates_live_source_authority(
     selectors.clear()
     realized = launcher.realize_plan(request, prebuild, prebuild_path)
     assert realized["schema"] == launcher.REALIZED_SCHEMA
-    assert selectors == [launcher.LIVE_WORK_UNIT, launcher.LIVE_WORK_UNIT]
+    assert selectors == [TEST_WORK_UNIT, TEST_WORK_UNIT]
 
 
-def test_target_receipt_prebuild_uses_typed_source_authority(
+def test_second_future_work_unit_uses_same_source_authority_path(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
 ) -> None:
     selectors: list[str] = []
 
     def source_authority(_worktree: Path, work_unit: str) -> dict[str, str]:
         selectors.append(work_unit)
-        if work_unit != launcher.TARGET_RECEIPT_WORK_UNIT:
+        if work_unit != "shard:another_future_fixture_v1000":
             raise AssertionError(f"stale selector: {work_unit}")
         return dict(SOURCE)
 
     monkeypatch.setattr(launcher, "_source_authority", source_authority)
-    request = _request(tmp_path, launcher.TARGET_RECEIPT_WORK_UNIT)
+    request = _request(tmp_path, "shard:another_future_fixture_v1000")
     plan = launcher.compose_plan(request)
     assert plan["schema"] == launcher.PREBUILD_SCHEMA
-    assert selectors == [launcher.TARGET_RECEIPT_WORK_UNIT]
+    assert selectors == ["shard:another_future_fixture_v1000"]
 
 
 def test_realization_binds_fresh_artifacts_after_build(
@@ -416,13 +416,113 @@ def test_build_realization_verifies_both_external_receipts(
     assert result["configure_receipt"]["sha256"] == "5" * 64
 
 
-def test_source_authority_checks_descriptor_and_v112_handoff(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+def _authority_fixture() -> tuple[dict, dict]:
+    source_commit = "1" * 40
+    source_tree = "2" * 40
+    required_action = "Run one future fixture through the canonical launcher."
+    required_postcondition = (
+        "One hash-bound future fixture reaches its typed completion watchdog."
+    )
+    handoff = {
+        "schema": "cata_raid_specialist_handoff_v1",
+        "work_unit_id": "evidence:future_fixture_review_v998",
+        "owner_skill": "raid-evidence-lifecycle",
+        "classification": "fixture_authority_reviewed",
+        "source": {"commit": source_commit, "tree": source_tree},
+        "next_work_unit": {
+            "id": TEST_WORK_UNIT,
+            "owner_skill": "raid-shard-architecture",
+            "required_action": required_action,
+            "required_postcondition": required_postcondition,
+        },
+    }
+    authority = {
+        "schema": launcher.LAUNCHER_AUTHORITY_SCHEMA,
+        "expected_work_unit": TEST_WORK_UNIT,
+        "descriptor_owner_skill": "raid-shard-architecture",
+        "descriptor_classification": "fixture_replay_authorized",
+        "source_handoff_schema": handoff["schema"],
+        "source_handoff_work_unit": handoff["work_unit_id"],
+        "source_handoff_owner_skill": handoff["owner_skill"],
+        "source_handoff_classification": handoff["classification"],
+        "required_action_sha256": launcher._sha256_bytes(
+            required_action.encode()
+        ),
+        "required_postcondition_sha256": launcher._sha256_bytes(
+            required_postcondition.encode()
+        ),
+        "scenario": {
+            "scenario_id": launcher.SCENARIO_ID,
+            "raid": "blackwing_descent",
+            "boss": "magmaw",
+            "mode": "10N",
+        },
+        "fixture_expansion": {
+            "purpose": "fixture_expansion_replay",
+            "attempts": 1,
+            "retries": 0,
+            "authserver_starts": 0,
+            "worldserver_starts": 1,
+            "duration_policy": "completion_watchdog",
+        },
+        "program_scope": {
+            "fixture_expansion_replay_admitted": True,
+            "configure_admitted": True,
+            "worldserver_build_admitted": True,
+            "worldserver_start_admitted": True,
+            "authserver_start_admitted": False,
+            "retry_admitted": False,
+            "database_mutations_allowed": True,
+            "database_mutation_scope": "validation_provisioning_only",
+        },
+        "validation_clock": {
+            "fixed_success_timer_seconds": None,
+            "policy": "completion_watchdog",
+            "worldserver_starts": 1,
+            "authserver_starts": 0,
+            "retries": 0,
+        },
+    }
+    descriptor = {
+        "schema": "cata_raid_active_work_unit_v1",
+        "work_unit": TEST_WORK_UNIT,
+        "owner_skill": authority["descriptor_owner_skill"],
+        "classification": authority["descriptor_classification"],
+        "raid": authority["scenario"]["raid"],
+        "boss": authority["scenario"]["boss"],
+        "mode": authority["scenario"]["mode"],
+        "observed_at_commit": source_commit,
+        "immutable_input_commit": source_commit,
+        "fixture_expansion": dict(authority["fixture_expansion"]),
+        "program_scope": dict(authority["program_scope"]),
+        "validation_clock": dict(authority["validation_clock"]),
+        "launcher_authority": authority,
+        "source_handoff": {
+            "path": "experiments/configs/future_fixture_handoff.json",
+            "sha256": "0" * 64,
+            "source_commit": source_commit,
+            "source_tree": source_tree,
+        },
+    }
+    return descriptor, handoff
+
+
+def _commit_authority_fixture(
+    root: Path, descriptor: dict, handoff: dict, *, bind_hash: bool = True,
 ) -> None:
-    monkeypatch.undo()
-    root = tmp_path / "source"
     configs = root / "experiments/configs"
-    configs.mkdir(parents=True)
+    handoff_path = root / descriptor["source_handoff"]["path"]
+    _write(handoff_path, launcher._canonical_bytes(handoff))
+    if bind_hash:
+        descriptor["source_handoff"]["sha256"] = launcher._sha256_bytes(
+            handoff_path.read_bytes()
+        )
+    _write(
+        configs / "cata_raid_active_work_unit_v1.json",
+        launcher._canonical_bytes(descriptor),
+    )
+    policy = ROOT / launcher.POLICY_RELATIVE_PATH
+    _write(root / launcher.POLICY_RELATIVE_PATH, policy.read_bytes())
     subprocess.run(["git", "init", str(root)], check=True, capture_output=True)
     subprocess.run(
         ["git", "-C", str(root), "config", "user.email", "test@example.invalid"],
@@ -431,51 +531,89 @@ def test_source_authority_checks_descriptor_and_v112_handoff(
     subprocess.run(
         ["git", "-C", str(root), "config", "user.name", "Test"], check=True,
     )
-    old_commit = launcher.EXPECTED_V112_COMMIT
-    old_tree = launcher.EXPECTED_V112_TREE
-    handoff = {
-        "schema": "cata_raid_specialist_handoff_v1",
-        "work_unit_id": launcher.EXPECTED_HANDOFF_WORK_UNIT,
-        "owner_skill": "raid-shard-architecture",
-        "classification": launcher.EXPECTED_HANDOFF_CLASSIFICATION,
-        "source": {"commit": old_commit, "tree": old_tree},
-        "next_work_unit": {
-            "id": launcher.EXPECTED_WORK_UNIT,
-            "owner_skill": "raid-evidence-lifecycle",
-            "required_action": launcher.EXPECTED_REQUIRED_ACTION,
-            "required_postcondition": launcher.EXPECTED_REQUIRED_POSTCONDITION,
-        },
-    }
-    handoff_path = root / launcher.EXPECTED_HANDOFF_PATH
-    _write(handoff_path, launcher._canonical_bytes(handoff))
-    handoff_sha = launcher._sha256_bytes(handoff_path.read_bytes())
-    descriptor = {
-        "schema": "cata_raid_active_work_unit_v1",
-        "work_unit": launcher.EXPECTED_WORK_UNIT,
-        "owner_skill": "raid-evidence-lifecycle",
-        "classification": "prestart_command_composition_repair_required",
-        "next_work_unit": launcher.EXPECTED_WORK_UNIT,
-        "next_owner_skill": "raid-evidence-lifecycle",
-        "observed_at_commit": old_commit,
-        "immutable_input_commit": old_commit,
-        "source_handoff": {
-            "path": launcher.EXPECTED_HANDOFF_PATH,
-            "sha256": handoff_sha,
-            "source_commit": old_commit,
-            "source_tree": old_tree,
-        },
-    }
-    _write(
-        configs / "cata_raid_active_work_unit_v1.json",
-        launcher._canonical_bytes(descriptor),
-    )
     subprocess.run(["git", "-C", str(root), "add", "."], check=True)
     subprocess.run(
         ["git", "-C", str(root), "commit", "-m", "fixture"],
         check=True, capture_output=True,
     )
-    result = REAL_SOURCE_AUTHORITY(root.resolve(), launcher.EXPECTED_WORK_UNIT)
-    assert result["source_handoff_sha256"] == handoff_sha
-    handoff_path.write_text("dirty\n", encoding="utf-8")
-    with pytest.raises(launcher.ReplayPlanError, match="source_worktree_dirty"):
-        REAL_SOURCE_AUTHORITY(root.resolve(), launcher.EXPECTED_WORK_UNIT)
+
+
+def _production_request(tmp_path: Path, root: Path) -> dict:
+    external = tmp_path / "external"
+    request = _request(external, TEST_WORK_UNIT)
+    request["worktree"] = str(root.resolve())
+    return request
+
+
+def test_generic_authority_composes_nonhistorical_fixture_through_production_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    monkeypatch.undo()
+    descriptor, handoff = _authority_fixture()
+    root = (tmp_path / "source").resolve()
+    _commit_authority_fixture(root, descriptor, handoff)
+    monkeypatch.setattr(launcher, "ROOT", root)
+    plan = launcher.compose_plan(_production_request(tmp_path, root))
+    assert plan["schema"] == launcher.PREBUILD_SCHEMA
+    assert plan["source"]["active_descriptor_sha256"] == launcher._sha256_bytes(
+        (root / "experiments/configs/cata_raid_active_work_unit_v1.json").read_bytes()
+    )
+    assert plan["source"]["source_handoff_sha256"] == descriptor[
+        "source_handoff"
+    ]["sha256"]
+    assert not (root / "build").exists()
+    assert not Path(_production_request(tmp_path, root)["run_root"]).exists()
+
+
+@pytest.mark.parametrize(
+    ("case", "reason"),
+    [
+        ("dirty", "source_worktree_dirty"),
+        ("stale", "source_handoff_identity_invalid"),
+        ("hash", "source_handoff_identity_invalid"),
+        ("owner", "active_work_unit_mismatch"),
+        ("classification", "active_work_unit_mismatch"),
+        ("budget", "launcher_authority_scope_invalid"),
+        ("scenario", "launcher_authority_scope_invalid"),
+        ("clock", "launcher_authority_scope_invalid"),
+        ("handoff", "source_handoff_identity_invalid"),
+        ("prose", "source_handoff_identity_invalid"),
+        ("request", "active_work_unit_mismatch"),
+    ],
+)
+def test_generic_authority_mismatches_fail_before_plan_or_runner_action(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, case: str, reason: str,
+) -> None:
+    monkeypatch.undo()
+    descriptor, handoff = _authority_fixture()
+    bind_hash = case != "hash"
+    if case == "stale":
+        descriptor["observed_at_commit"] = "3" * 40
+    elif case == "owner":
+        descriptor["owner_skill"] = "raid-evidence-lifecycle"
+    elif case == "classification":
+        descriptor["classification"] = "historical_fixture"
+    elif case == "budget":
+        descriptor["fixture_expansion"]["worldserver_starts"] = 2
+    elif case == "scenario":
+        descriptor["boss"] = "historical_boss"
+    elif case == "clock":
+        descriptor["validation_clock"]["policy"] = "fixed_timer"
+    elif case == "handoff":
+        handoff["work_unit_id"] = "evidence:substituted_handoff"
+    elif case == "prose":
+        handoff["next_work_unit"]["required_action"] = (
+            "Use a historical canary's caller-authored prose instead."
+        )
+    root = (tmp_path / "source").resolve()
+    _commit_authority_fixture(root, descriptor, handoff, bind_hash=bind_hash)
+    if case == "dirty":
+        (root / "dirty.txt").write_text("dirty\n", encoding="utf-8")
+    monkeypatch.setattr(launcher, "ROOT", root)
+    request = _production_request(tmp_path, root)
+    if case == "request":
+        request["expected_work_unit"] = "shard:different_future_fixture"
+    with pytest.raises(launcher.ReplayPlanError, match=reason):
+        launcher.compose_plan(request)
+    assert not (root / "build").exists()
+    assert not Path(request["run_root"]).exists()
