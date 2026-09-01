@@ -42,6 +42,8 @@ std::optional<AdaptiveMagmawMovementLease> AdaptiveMagmawMovementLeaseFor(
     if (mechanic == "pillar_evade"
         || mechanic == "pillar_bait_switch"
         || mechanic == "massive_crash_evade"
+        || mechanic == "mangle_safe_side"
+        || mechanic == "mangle_midpoint_stage"
         || mechanic == "parasite_contact_evade"
         || mechanic == "parasite_directional_mobility")
         return AdaptiveMagmawMovementLease{
@@ -129,25 +131,39 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             context.State.DecisionKernel.Submit(std::move(mobility));
         }
 
-        if (context.AdaptiveMagmawMovement
-            && context.AdaptiveMagmawMovement->ExpiresAtMs > context.DecisionNowMs)
+        bool adaptiveMagmawSafetyMovementPending = false;
+        for (BotNativeAction::Candidate const& proposal :
+                context.AdaptiveMagmawMovements.Proposals())
+            adaptiveMagmawSafetyMovementPending =
+                adaptiveMagmawSafetyMovementPending
+                || (proposal.ExpiresAtMs > context.DecisionNowMs
+                    && proposal.ActionPriority
+                        == BotActionArbitration::Priority::Survival);
+
+        for (size_t proposalIndex = 0;
+            proposalIndex < context.AdaptiveMagmawMovements.Size();
+            ++proposalIndex)
         {
             BotNativeAction::Candidate const& intent =
-                *context.AdaptiveMagmawMovement;
+                context.AdaptiveMagmawMovements.Proposals()[proposalIndex];
+            if (intent.ExpiresAtMs <= context.DecisionNowMs)
+                continue;
+            BotEncounter::MagmawMovementProposalOrigin const proposalOrigin =
+                context.AdaptiveMagmawMovements.Origin(proposalIndex);
             std::optional<AdaptiveMagmawMovementLease> const movementLease =
                 AdaptiveMagmawMovementLeaseFor(intent.Id.Mechanic);
-            if (movementLease)
+            bool const movementMechanicMapped = movementLease.has_value();
+            bool const transferBindingRequired = movementMechanicMapped
+                && intent.Id.Mechanic == "pillar_bait_switch"
+                && context.AdaptiveMagmawTransferLaneBinding.has_value();
+            bool transferLaneSubmitted = BotEncounter::
+                MagmawTransferLaneCheckpoint::OwnsQueuedKernelCandidate(
+                    Cohort().MagmawTransferLaneCheckpoint,
+                    intent.Id.Key(), context.State.Guid.GetCounter());
+            if (!transferLaneSubmitted && transferBindingRequired)
             {
-                bool transferLaneSubmitted = BotEncounter::
-                    MagmawTransferLaneCheckpoint::OwnsQueuedKernelCandidate(
-                        Cohort().MagmawTransferLaneCheckpoint,
-                        intent.Id.Key(), context.State.Guid.GetCounter());
-                if (!transferLaneSubmitted
-                    && intent.Id.Mechanic == "pillar_bait_switch"
-                    && context.AdaptiveMagmawTransferLaneBinding)
-                {
-                    transferLaneSubmitted = BotEncounter::
-                        SubmitMagmawTransferLaneKernelCandidate(
+                transferLaneSubmitted = BotEncounter::
+                    SubmitMagmawTransferLaneKernelCandidate(
                             context.State.DecisionKernel, intent,
                             *context.AdaptiveMagmawTransferLaneBinding,
                             context.DecisionNowMs,
@@ -184,47 +200,59 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                             {
                                 context.State.MagmawTransferLaneNativeOutcome =
                                     outcome;
-                            });
-                }
-                if (!transferLaneSubmitted)
+                            }, BotEncounter::ToString(proposalOrigin));
+            }
+            if (!transferLaneSubmitted)
+            {
+                BotActionArbitration::Candidate movement;
+                movement.Key = intent.Id.Key();
+                movement.Source = BotEncounter::ToString(proposalOrigin);
+                movement.ActionPriority = intent.ActionPriority;
+                movement.UtilityScore = intent.Utility;
+                movement.RequiredResources = intent.Resources();
+                movement.ExpiresAtMs = intent.ExpiresAtMs;
+                BotEncounter::MagmawMovementKernelAdmission const admission =
+                    BotEncounter::EvaluateMagmawMovementKernelAdmission(
+                        movementMechanicMapped, transferBindingRequired,
+                        adaptiveMagmawSafetyMovementPending,
+                        intent.ActionPriority);
+                movement.Allowed = admission == BotEncounter::
+                    MagmawMovementKernelAdmission::Admitted;
+                movement.RejectReason = BotEncounter::RejectionReason(
+                    admission);
+                if (intent.Id.Mechanic == "prepull_ranged_stage"
+                    || intent.Id.Mechanic == "ranged_formation_restore")
                 {
-                    BotActionArbitration::Candidate movement;
-                    movement.Key = intent.Id.Key();
-                    movement.Source = intent.Id.Strategy;
-                    movement.ActionPriority = intent.ActionPriority;
-                    movement.UtilityScore = intent.Utility;
-                    movement.RequiredResources = intent.Resources();
-                    movement.ExpiresAtMs = intent.ExpiresAtMs;
-                    if (intent.Id.Mechanic == "prepull_ranged_stage"
-                        || intent.Id.Mechanic == "ranged_formation_restore")
-                    {
-                        if (Cohort().Raid.ValidationPrepullCheckpoint.Enabled())
-                            context.State.DecisionKernel.SetCandidateAdmission(
-                                movement.Key,
-                                BotActionArbitration::AdmissionClass::
-                                    FormationMovement,
-                                Cohort().Raid.ValidationPrepullCheckpoint
-                                    .CurrentScope().Key());
-                    }
-                    if (intent.Id.Mechanic == "pillar_bait_switch"
-                        || intent.Id.Mechanic == "parasite_contact_evade")
-                    {
-                        // Keep failed encounter paths retryable without
-                        // churning their stable candidate. Native receipts
-                        // remain the authority for completion; this is only
-                        // the bounded planner retry cadence.
-                        movement.RetryBaseMs = 250;
-                        movement.RetryMaxMs = 2000;
-                        movement.EscalateAfter = 4;
-                    }
-                    movement.Attempt = [this, &context, nativeIntent =
+                    if (Cohort().Raid.ValidationPrepullCheckpoint.Enabled())
+                        context.State.DecisionKernel.SetCandidateAdmission(
+                            movement.Key,
+                            BotActionArbitration::AdmissionClass::
+                                FormationMovement,
+                            Cohort().Raid.ValidationPrepullCheckpoint
+                                .CurrentScope().Key());
+                }
+                if (intent.Id.Mechanic == "pillar_bait_switch"
+                    || intent.Id.Mechanic == "parasite_contact_evade")
+                {
+                    // Keep failed encounter paths retryable without
+                    // churning their stable candidate. Native receipts
+                    // remain the authority for completion; this is only
+                    // the bounded planner retry cadence.
+                    movement.RetryBaseMs = 250;
+                    movement.RetryMaxMs = 2000;
+                    movement.EscalateAfter = 4;
+                }
+                movement.Attempt = [this, &context, nativeIntent =
                         BotNativeAction::WithMovementDiagnosticCandidateKey(
                             BotNativeAction::WithMovementReason(intent.Action,
                                 intent.Id.Mechanic),
                             BotEncounter::
                                 LegacyMagmawMovementDiagnosticCandidateKey(
                                     intent)),
-                        lease = *movementLease,
+                        lease = movementLease.value_or(
+                            AdaptiveMagmawMovementLease{
+                                BotMovementArbitration::Owner::Mechanic,
+                                BotMovementArbitration::Priority::Mechanic }),
                         mechanic = intent.Id.Mechanic]()
                     {
                         BotActionArbitration::Outcome outcome =
@@ -240,9 +268,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                                 "adaptive_magmaw";
                         }
                         return outcome;
-                    };
-                    context.State.DecisionKernel.Submit(std::move(movement));
-                }
+                };
+                context.State.DecisionKernel.Submit(std::move(movement));
             }
         }
 

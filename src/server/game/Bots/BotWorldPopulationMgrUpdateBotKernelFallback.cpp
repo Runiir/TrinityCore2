@@ -25,15 +25,18 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
 {
         auto hasRetainedMagmawHazard = [&context]()
         {
-            if (!context.State.MagmawParasiteCombat.Active
-                || !context.AdaptiveMagmawMovement)
+            if (!context.State.MagmawParasiteCombat.Active)
                 return false;
-            std::string const& mechanic =
-                context.AdaptiveMagmawMovement->Id.Mechanic;
-            return mechanic == "pillar_evade"
-                || mechanic == "pillar_bait_switch"
-                || mechanic == "massive_crash_evade"
-                || mechanic == "parasite_contact_evade";
+            for (size_t movementIndex = 0;
+                movementIndex < context.AdaptiveMagmawMovements.Size();
+                ++movementIndex)
+                if (context.AdaptiveMagmawMovements.Origin(movementIndex)
+                        == BotEncounter::MagmawMovementProposalOrigin::Hazard
+                    || context.AdaptiveMagmawMovements.Origin(movementIndex)
+                        == BotEncounter::MagmawMovementProposalOrigin::
+                            TransferLaneTask)
+                    return true;
+            return false;
         };
         struct RouteAttempt
         {

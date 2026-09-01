@@ -2275,10 +2275,14 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     hazard_start = helper.index('if (mechanic == "pillar_evade"')
     hazard = helper[hazard_start:]
     assert "AdaptiveMagmawSuppressReason" in candidates
-    strategy = bot_source(
-        "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
-        "BotAdaptiveMagmawStrategy.h"
-    )
+    strategy = "\n".join(bot_source(
+        "Content/Raids/BlackwingDescent/Encounters/Magmaw/" + name
+    ) for name in (
+        "BotAdaptiveMagmawStrategy.h",
+        "BotAdaptiveMagmawStrategySupport.h",
+        "BotAdaptiveMagmawStrategyHazard.h",
+        "BotAdaptiveMagmawStrategyHook.h",
+    ))
     for suppress_reason in (
         "prepull_formation_staging",
         "prepull_health_recovery",
@@ -2297,14 +2301,14 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     assert "return std::nullopt;" in hazard
 
     movement_start = candidates.index(
-        "if (context.AdaptiveMagmawMovement"
+        "bool adaptiveMagmawSafetyMovementPending"
     )
     movement_end = candidates.index(
         "if (context.AdaptiveMagmawInteraction", movement_start
     )
     movement = candidates[movement_start:movement_end]
     assert "AdaptiveMagmawMovementLeaseFor(intent.Id.Mechanic)" in movement
-    assert "if (movementLease)" in movement
+    assert "bool const movementMechanicMapped = movementLease.has_value();" in movement
     assert "lease = *movementLease" in movement
     assert "mechanic = intent.Id.Mechanic" in movement
     assert "lease.Owner" in movement
@@ -2313,23 +2317,27 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     assert 'context.Action = "pillar_evade"' not in movement
     for assignment in (
         "movement.Key = intent.Id.Key();",
-        "movement.Source = intent.Id.Strategy;",
+        "movement.Source = BotEncounter::ToString(proposalOrigin);",
         "movement.ActionPriority = intent.ActionPriority;",
         "movement.UtilityScore = intent.Utility;",
         "movement.RequiredResources = intent.Resources();",
         "movement.ExpiresAtMs = intent.ExpiresAtMs;",
     ):
         assert assignment in movement
-    assert movement.index("if (movementLease)") < movement.index(
+    assert movement.index("bool const movementMechanicMapped") < movement.index(
         "context.State.DecisionKernel.Submit(std::move(movement));"
     )
 
 
 def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
-    strategy = bot_source(
-        "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
-        "BotAdaptiveMagmawStrategy.h"
-    )
+    strategy = "\n".join(bot_source(
+        "Content/Raids/BlackwingDescent/Encounters/Magmaw/" + name
+    ) for name in (
+        "BotAdaptiveMagmawStrategy.h",
+        "BotAdaptiveMagmawStrategySupport.h",
+        "BotAdaptiveMagmawStrategyHazard.h",
+        "BotAdaptiveMagmawStrategyHook.h",
+    ))
     parasite_policy = bot_source(
         "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
         "BotAdaptiveMagmawParasitePolicy.h"
@@ -2347,7 +2355,7 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
 
     candidates = bot_source("BotWorldPopulationMgrUpdateBotKernelCandidates.cpp")
     movement_start = candidates.index(
-        "if (context.AdaptiveMagmawMovement"
+        "bool adaptiveMagmawSafetyMovementPending"
     )
     movement_end = candidates.index(
         "if (context.AdaptiveMagmawInteraction", movement_start
@@ -2360,7 +2368,7 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
     assert "movement.RetryBaseMs = 250;" in retry
     assert "movement.RetryMaxMs = 2000;" in retry
     assert "movement.EscalateAfter = 4;" in retry
-    assert "movement receipts" in retry
+    assert "Native receipts" in retry
 
     assert "KiteLeadDistance = 22.0f" in parasite_policy
     parasite_start = parasite_policy.index(

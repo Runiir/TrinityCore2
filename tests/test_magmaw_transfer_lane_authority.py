@@ -179,6 +179,67 @@ int main()
     std::string const stableTaskCandidateKey = enabled.Movement->Id.Key();
     assert(enabled.Binding->CandidateKey == stableTaskCandidateKey);
 
+    // Collection authority replaces only the exact legacy transfer intent.
+    // Unrelated safety and formation proposals remain byte-for-byte visible.
+    BotNativeAction::Candidate safetyCandidate = legacy;
+    safetyCandidate.Id.Mechanic = "pillar_evade";
+    safetyCandidate.Id.EventGeneration = 900;
+    safetyCandidate.Utility = 650.0f;
+    BotNativeAction::Candidate formation = legacy;
+    formation.Id.Mechanic = "ranged_formation_restore";
+    formation.Id.EventGeneration = 901;
+    formation.ActionPriority = BotActionArbitration::Priority::Mechanic;
+    formation.Utility = 275.0f;
+    MagmawMovementIntentCollection legacyMovements;
+    legacyMovements.Propose(MagmawMovementProposalOrigin::Hazard,
+        safetyCandidate);
+    legacyMovements.Propose(MagmawMovementProposalOrigin::Hazard, legacy);
+    legacyMovements.Propose(MagmawMovementProposalOrigin::FormationRestore,
+        formation);
+    auto collectionEnabled = SelectMagmawTransferLaneAuthority(true, tasks,
+        task.Id.ActorGuid, legacyMovements, LegacyGeneration);
+    assert(collectionEnabled.TaskAuthoritySelected);
+    assert(collectionEnabled.Movements.Size() == 3);
+    assert(collectionEnabled.Movements.Proposals()[0].Id.Key()
+        == safetyCandidate.Id.Key());
+    assert(collectionEnabled.Movements.Proposals()[1].Id.Key()
+        == stableTaskCandidateKey);
+    assert(collectionEnabled.Movements.Origin(1)
+        == MagmawMovementProposalOrigin::TransferLaneTask);
+    assert(collectionEnabled.Movements.Proposals()[2].Id.Key()
+        == formation.Id.Key());
+
+    // A safety winner preempts this tick without reconstructing the running
+    // task. The same task/candidate identity is available on the next tick.
+    BotActionArbitration::Kernel preemptionKernel;
+    preemptionKernel.Begin(1050);
+    for (BotNativeAction::Candidate const& candidate :
+            collectionEnabled.Movements.Proposals())
+    {
+        BotActionArbitration::Candidate queued;
+        queued.Key = candidate.Id.Key();
+        queued.Source = candidate.Id.Mechanic;
+        queued.ActionPriority = candidate.ActionPriority;
+        queued.UtilityScore = candidate.Utility;
+        queued.RequiredResources = candidate.Resources();
+        queued.Attempt = []()
+        {
+            return BotActionArbitration::Outcome::Committed("submitted");
+        };
+        preemptionKernel.Submit(std::move(queued));
+    }
+    auto const& preemptionResolution = preemptionKernel.Resolve();
+    assert(preemptionResolution.CommittedCandidates.size() == 1);
+    assert(preemptionResolution.CommittedCandidates.front()
+        == safetyCandidate.Id.Key());
+    assert(collectionEnabled.Movements.Proposals()[1].Id.Key()
+        == stableTaskCandidateKey);
+    auto resumedSelection = SelectMagmawTransferLaneAuthority(true, tasks,
+        task.Id.ActorGuid, legacyMovements, LegacyGeneration);
+    assert(resumedSelection.TaskAuthoritySelected);
+    assert(resumedSelection.Movements.Proposals()[1].Id.Key()
+        == stableTaskCandidateKey);
+
     // The production bridge fails closed before kernel submission when any
     // exact correlation component is altered.
     MagmawTransferLaneExecutionBinding wrongCandidate = *enabled.Binding;

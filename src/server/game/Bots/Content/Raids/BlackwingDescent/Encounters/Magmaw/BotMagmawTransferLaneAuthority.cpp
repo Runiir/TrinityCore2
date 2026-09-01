@@ -48,6 +48,41 @@ MagmawTransferLaneExecutionBinding BuildBinding(
 MagmawTransferLaneAuthoritySelection SelectMagmawTransferLaneAuthority(
     bool taskAuthorityEnabled,
     std::vector<MagmawTransferLaneTask> const& tasks, ObjectGuid actor,
+    MagmawMovementIntentCollection const& legacyMovements,
+    uint64 legacyTransitionGeneration)
+{
+    size_t matchingIndex = 0;
+    BotNativeAction::Candidate const* matchingLegacy = nullptr;
+    uint32 matchingCount = 0;
+    for (size_t index = 0; index < legacyMovements.Size(); ++index)
+    {
+        BotNativeAction::Candidate const& candidate =
+            legacyMovements.Proposals()[index];
+        if (candidate.Id.Actor != actor
+            || LegacyMagmawMovementDiagnosticCandidateKey(candidate).empty())
+            continue;
+        ++matchingCount;
+        matchingIndex = index;
+        matchingLegacy = &candidate;
+    }
+
+    std::optional<BotNativeAction::Candidate> legacy;
+    if (matchingCount == 1)
+        legacy = *matchingLegacy;
+    MagmawTransferLaneAuthoritySelection result =
+        SelectMagmawTransferLaneAuthority(taskAuthorityEnabled, tasks, actor,
+            legacy, legacyTransitionGeneration);
+    result.Movements = legacyMovements;
+    if (result.TaskAuthoritySelected && result.Movement)
+        result.Movements.Replace(matchingIndex,
+            MagmawMovementProposalOrigin::TransferLaneTask,
+            *result.Movement);
+    return result;
+}
+
+MagmawTransferLaneAuthoritySelection SelectMagmawTransferLaneAuthority(
+    bool taskAuthorityEnabled,
+    std::vector<MagmawTransferLaneTask> const& tasks, ObjectGuid actor,
     std::optional<BotNativeAction::Candidate> const& legacy,
     uint64 legacyTransitionGeneration)
 {

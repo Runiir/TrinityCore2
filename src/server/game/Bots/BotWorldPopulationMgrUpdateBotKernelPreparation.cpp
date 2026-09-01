@@ -457,9 +457,6 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 &magmawLaneOwner->MagmawLaneTransition,
                 &context.State.MagmawParasiteHazard,
                 &context.State.MagmawEventMovement, magmawMobility);
-            ObserveMagmawTransferLaneIntentComparison(context.State,
-                context.Bot->GetGUID(), magmawPlan.Movement,
-                magmawLaneOwner->MagmawLaneTransition.TransitionId);
             static std::vector<BotEncounter::MagmawTransferLaneTask> const
                 noMagmawTransferLaneTasks;
             auto const& transferLaneShadow =
@@ -473,7 +470,11 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                         transferLaneTasks, context.Bot->GetGUID(),
                         magmawPlan.Movement,
                         magmawLaneOwner->MagmawLaneTransition.TransitionId);
-            magmawPlan.Movement = std::move(transferLaneSelection.Movement);
+            context.State.MagmawTransferLaneIntentComparison =
+                transferLaneSelection.Comparison;
+            BotEncounter::ObserveMagmawTransferLaneIntentEpisode(
+                context.State.MagmawTransferLaneIntentEpisodeAccumulator,
+                transferLaneSelection.Comparison);
             context.AdaptiveMagmawTransferLaneBinding =
                 std::move(transferLaneSelection.Binding);
             context.AdaptiveMagmawOwnsNode = magmawPlan.OwnsNode;
@@ -482,7 +483,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             context.AdaptiveMagmawSuppressReason = magmawPlan.SuppressReason;
             context.AdaptiveMagmawPriorityHealTargetGuid =
                 magmawPlan.PriorityHealTarget;
-            context.AdaptiveMagmawMovement = std::move(magmawPlan.Movement);
+            context.AdaptiveMagmawMovements =
+                std::move(transferLaneSelection.Movements);
             context.AdaptiveMagmawDirectionalMobility =
                 std::move(magmawPlan.DirectionalMobility);
             context.AdaptiveMagmawInteraction = std::move(magmawPlan.Interaction);
@@ -590,12 +592,17 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             && !raid.ValidationPrepullCheckpoint.Released())
         {
             bool formationPending = false;
-            if (context.AdaptiveMagmawMovement)
+            for (size_t movementIndex = 0;
+                movementIndex < context.AdaptiveMagmawMovements.Size();
+                ++movementIndex)
             {
-                std::string const& mechanic =
-                    context.AdaptiveMagmawMovement->Id.Mechanic;
-                formationPending = mechanic == "prepull_ranged_stage"
-                    || mechanic == "ranged_formation_restore";
+                BotEncounter::MagmawMovementProposalOrigin const origin =
+                    context.AdaptiveMagmawMovements.Origin(movementIndex);
+                formationPending = formationPending
+                    || origin == BotEncounter::MagmawMovementProposalOrigin::
+                        PrepullFormation
+                    || origin == BotEncounter::MagmawMovementProposalOrigin::
+                        FormationRestore;
             }
             BotValidationPrepullCheckpoint::MemberReceipt receipt;
             receipt.Guid = context.Bot->GetGUID().GetCounter();

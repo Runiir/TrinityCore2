@@ -318,5 +318,5 @@ def test_magmaw_runtime_join_uses_native_cooldown_and_two_candidates() -> None:
     assert "info->GetRecoveryTime()" in preparation
     assert "AdaptiveMagmawDirectionalMobility" in context
     assert "context.AdaptiveMagmawDirectionalMobility" in candidates
-    assert "context.AdaptiveMagmawMovement" in candidates
+    assert "context.AdaptiveMagmawMovements" in candidates
     assert "parasite_directional_mobility" in candidates

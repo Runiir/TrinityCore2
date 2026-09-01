@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_UPDATE_CONTEXT_H
 
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementIntents.h"
 
 #include <optional>
 #include <string>
@@ -67,7 +68,7 @@ struct BotWorldPopulationMgr::BotUpdateContext
     std::optional<BotNativeAction::Candidate> AdaptiveAtramedesMovement;
     std::optional<BotNativeAction::Candidate> AdaptiveAtramedesInteraction;
     std::optional<BotNativeAction::Candidate> AdaptiveChimaeronMovement;
-    std::optional<BotNativeAction::Candidate> AdaptiveMagmawMovement;
+    BotEncounter::MagmawMovementIntentCollection AdaptiveMagmawMovements;
     std::optional<BotEncounter::MagmawTransferLaneExecutionBinding>
         AdaptiveMagmawTransferLaneBinding;
     std::optional<BotNativeAction::Candidate> AdaptiveMagmawDirectionalMobility;

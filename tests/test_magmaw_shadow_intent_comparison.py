@@ -453,8 +453,8 @@ def test_production_shadow_comparison_is_post_plan_and_non_executing() -> None:
     intent = intent_header + intent_source
 
     plan = "BotEncounter::AdaptiveMagmawPlan magmawPlan = magmawStrategy.Propose("
-    observe = "ObserveMagmawTransferLaneIntentComparison(context.State,"
-    move = "context.AdaptiveMagmawMovement = std::move(magmawPlan.Movement);"
+    observe = "context.State.MagmawTransferLaneIntentComparison ="
+    move = "context.AdaptiveMagmawMovements ="
     reset = "BotEncounter::ResetMagmawTransferLaneIntentComparison("
     snapshot = "if (Cohort().EncounterSnapshot)"
     assert preparation.index(reset) < preparation.index(snapshot)
