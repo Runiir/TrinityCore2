@@ -1,0 +1,78 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "review:observe_native_endpoint_resolution",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "implementation_pending_review",
+  "source": {
+    "commit": "cd69b57f300f156f1ce38005e8a6fd3c8ad96368",
+    "tree": "c987a1e6c579137d25e5d6423d751ad65634f800",
+    "runtime_observation_commit": "cd69b57f300f156f1ce38005e8a6fd3c8ad96368",
+    "terminal_receipt_repair_commit": "eb9b455e4413c6712ba0fdf19f16de59fb01f825",
+    "workflow_guidance_commit": "1aa19817a26bb4b4ca5f46316ebcf7da2dd14ad9",
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_79b2b0594b_connected_surface_endpoint_terminal_20260901.dvc",
+    "dvc_pointer_sha256": "1e60dd4e01dda7c064d4514edecdcee58fbb54a90104034ec0bc7e930f35fae8"
+  },
+  "first_broken_edge": {
+    "component": "PathGenerator point-path terminal observation",
+    "prior_terminal": "native_descent_complete_path_required",
+    "requested_destination": {
+      "x": -302.471405,
+      "y": -31.8600292,
+      "z": 210.098007
+    },
+    "actual_endpoint": {
+      "x": -305.600037,
+      "y": -34.9334412,
+      "z": 210.521393
+    },
+    "endpoint_distance": 4.40606976,
+    "endpoint_horizontal_distance": 4.38568068,
+    "endpoint_vertical_distance": 0.42338562,
+    "missing_signal": "The retained replay could not distinguish reaching Detour's projected end-poly point from early smooth-path termination."
+  },
+  "implementation": {
+    "behavior_changed": false,
+    "admission_changed": false,
+    "tolerances_changed": false,
+    "new_outcomes": [
+      "reached_requested",
+      "reached_projected_end_poly",
+      "no_steer",
+      "corridor_exhausted",
+      "capacity",
+      "failure"
+    ],
+    "new_observations": [
+      "corridor_reached_end_poly",
+      "resolved_end_poly_position",
+      "actual_endpoint_matches_resolved"
+    ],
+    "source_split": {
+      "path_generator_lines": 877,
+      "path_generator_smooth_lines": 285
+    },
+    "focused_result": "75 coordinator-selected tests passed on the integrated master"
+  },
+  "review_contract": {
+    "required": [
+      "verify every PathGenerator exit assigns a truthful typed endpoint result and each CalculatePath resets stale state",
+      "verify the exact 4.40606976-yard retained case is reached_projected_end_poly while requested EndpointMatched and admission remain false",
+      "verify no path, floor, endpoint, connected-surface, fallback, or executor admission behavior changed",
+      "verify diagnostics serialize the typed result, resolved point, corridor reach, and actual-to-resolved match",
+      "run focused pixi tests and exact affected translation-unit syntax compilation",
+      "verify every touched C/C++ file remains below 1000 lines"
+    ],
+    "forbidden": [
+      "widening endpoint or floor tolerances",
+      "treating a projected endpoint as logical destination completion",
+      "adding encounter, class, owner, retry, or coordinate exceptions",
+      "starting authserver or worldserver, mutating the database, publishing new evidence, or running gameplay"
+    ]
+  },
+  "next_work_unit": {
+    "id": "shard:observe_map669_projected_endpoint_terminal",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "After a GO review, build the exact source with at most eight jobs and run one sealed no-retry checkpoint observation that proves the live terminal outcome without changing gameplay admission.",
+    "required_postcondition": "source-bound ReachedProjectedEndPoly or another truthful typed first edge, immutable terminal receipt, DVC publication, no retry"
+  }
+}

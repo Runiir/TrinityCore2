@@ -1,62 +1,63 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:map669_connected_surface_checkpoint_replay",
-  "owner_skill": "raid-shard-architecture",
-  "next_work_unit": "evidence:classify_map669_connected_surface_checkpoint_terminal",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "live_recurrence_quarantined",
-  "epoch_id": "map669_connected_surface_checkpoint_20260901",
+  "work_unit": "review:observe_native_endpoint_resolution",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "next_work_unit": "shard:observe_map669_projected_endpoint_terminal",
+  "next_owner_skill": "raid-shard-architecture",
+  "classification": "implemented",
+  "epoch_id": "native_endpoint_resolution_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "exact_build_and_one_fixture_replay",
-  "immutable_input_commit": "1fa82847ba8c70ca8323fcf0d0e254173692d62b",
-  "observed_at_commit": "1fa82847ba8c70ca8323fcf0d0e254173692d62b",
+  "gate_state": "independent_review_only",
+  "immutable_input_commit": "cd69b57f300f156f1ce38005e8a6fd3c8ad96368",
+  "observed_at_commit": "cd69b57f300f156f1ce38005e8a6fd3c8ad96368",
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "next_action": "Build the exact clean source with eight compiler jobs and run one sealed no-retry native-path checkpoint replay for actor 30007; stop at the first typed terminal.",
+  "evidence_contract_change": true,
+  "next_action": "Independently review the typed PathGenerator endpoint-resolution observation. Prove that projected end-poly reach, early termination, and requested-destination reach are distinct while admission and tolerances remain unchanged.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_native_connected_surface_replay_handoff_v1.json",
-    "sha256": "0df84a4dab5254520f88a14357e47fe0969baa47513b8411557180f202a3b439",
-    "source_commit": "1fa82847ba8c70ca8323fcf0d0e254173692d62b",
-    "source_tree": "e8f60adca463281156964d5a50f56a158a70814b"
+    "path": "experiments/configs/cata_raid_native_endpoint_resolution_review_handoff_v1.json",
+    "sha256": "d7646be575a85ab4e516dbf3df8d72740ba324e6fd35697aeeaeb2bf06ee554c",
+    "source_commit": "cd69b57f300f156f1ce38005e8a6fd3c8ad96368",
+    "source_tree": "c987a1e6c579137d25e5d6423d751ad65634f800"
   },
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": true,
-    "fixture_prerequisite_build_authorized": true,
+    "fixture_expansion_replay_admitted": false,
+    "fixture_prerequisite_build_authorized": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "worldserver_start_admitted": true,
+    "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
     "database_provisioning_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": true
+    "dvc_publication_required_after_terminal": false
   },
   "scope_lock": {
-    "allowed_change": "No code change. Produce an exact -j8 worldserver build, source-bound recurrence/seal inputs, and one observation-only map-669 checkpoint terminal.",
+    "allowed_change": "No edit. Independently review the observation-only native endpoint result, its exact compiled counterexample, diagnostics, source split, and adjacent negative states.",
     "forbidden": [
-      "retrying after any terminal or starting more than one worldserver",
-      "starting authserver or mutating the database",
-      "ordinary gameplay, Magmaw acceptance, class tuning, encounter changes, movement changes, tolerance changes, or fixture revision changes",
-      "claiming success without native launch and measured physical progress"
+      "changing movement admission, endpoint or floor tolerances, fallback behavior, encounter logic, class behavior, arbitration, or retry policy",
+      "treating a projected endpoint as logical task completion",
+      "adding Magmaw coordinates, actor owners, class exceptions, or helper-only success paths",
+      "building or starting authserver/worldserver, mutating the database, publishing DVC evidence, or running gameplay"
     ],
     "required_postconditions": [
-      "exact clean commit, tree, binary, build receipt, runtime config, route, profile, recurrence decision, and seal identities verify",
-      "one controller-armed checkpoint terminates with correlated planner, executor, spline, and progress evidence or an exact typed first failed gate",
-      "no retry, authserver start, database mutation, or gameplay mutation occurs",
-      "DVC evidence is remote-verified and bulky local raw data is evicted"
+      "the exact retained 4.40606976-yard miss remains requested EndpointMatched=false and Accepted=false",
+      "requested reach, projected end-poly reach, no-steer, corridor exhaustion, capacity, and failure remain distinguishable",
+      "stale endpoint state resets for every CalculatePath call and diagnostics preserve the typed result",
+      "focused tests and exact affected translation-unit syntax compilation pass",
+      "all touched C/C++ files remain below 1000 lines and independent Sol-high review returns GO"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "one_start_no_retry",
+    "repair_policy": "independent_review_no_runtime_action",
     "terminal_edges": [
-      "native_path_checkpoint_launch_progress_verified",
-      "typed_checkpoint_terminal_failure",
-      "identity_or_authority_failure",
-      "infrastructure_loss",
-      "explicit_interruption"
+      "independent_review_go",
+      "typed_outcome_incorrect",
+      "admission_or_tolerance_changed",
+      "stale_state_found",
+      "scope_drift"
     ]
   }
 }
