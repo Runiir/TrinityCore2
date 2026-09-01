@@ -1,0 +1,73 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:observe_hardened_magmaw_transfer_checkpoint_once",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "map669_transfer_checkpoint_completed_publication_verified",
+  "source": {
+    "commit": "5c0b33c4d7055de5de06d1a9d7f1df5ca34ef436",
+    "tree": "ca23d5f39feaa1fc9dfad344cbf59dda6965e984",
+    "binary_sha256": "b118c9330f046a7b9b460c9127ace598016f24df0c8fae8fecd95f44ab3e9116",
+    "build_receipt_sha256": "a9370850dd102354ef14ab4ad523a993d4dc38339d2f78a3c3bdf496b1253508"
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_5c0b33c4d7_completed_20260901.dvc",
+    "dvc_md5": "62382f5c235d30fa6b50b7f8eda65317.dir",
+    "size_bytes": 4243841,
+    "file_count": 20,
+    "remote_verified": true,
+    "capture_report_sha256": "b5905434dc624711ffae7844653878c225cfcb98bc4bac94b79ffc76e91d7e75",
+    "capture_raw_sha256": "ebba273cf1b151beebc467f120718e3cc85093c51cb7b8d0c45abf4e5a9ab752",
+    "worldserver_log_sha256": "1a6e7b8c404ea6c78bfa1e226ce901426a17dcd304cd077602ff6c4db9a98d64"
+  },
+  "fixture": {
+    "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
+    "revision": 2,
+    "case_id": "entrance_polygon_short_lane_v1",
+    "actor_guid": 30007,
+    "task_authority_enabled": false
+  },
+  "terminal": {
+    "stage": "completed",
+    "outcome": "magmaw_transfer_checkpoint_completed",
+    "queue_count": 1,
+    "candidate_attempt_count": 1,
+    "native_submission_count": 1,
+    "planner_receipt_id": 1,
+    "spline_id": 29,
+    "progress_samples": 3,
+    "decreasing_progress_samples": 3,
+    "wrong_floor_samples": 0,
+    "task_state": "succeeded"
+  },
+  "cleanup": {
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "the bot followed the native map-669 terrain path and completed the same-floor persistent transfer task",
+      "the hardened checkpoint accepted one exact complete non-fallback planner and spline receipt",
+      "the revision-2 suite, clean build, bundle, provisioning, roster, map probe, terminal, cleanup, and DVC remote gates passed"
+    ],
+    "refuted": [
+      "the retained failure was caused by an MMAP floor or physical movement failure",
+      "the requested logical Z must exactly equal the native terrain-projected Z"
+    ],
+    "unproven": [
+      "two-baiter transfer behavior during a normal Magmaw encounter",
+      "Magmaw strategy, DPS, healing, tanking, or boss completion",
+      "task-authority cutover from the legacy strategy"
+    ]
+  },
+  "required_next_work_unit": {
+    "id": "coordination:review_completed_magmaw_transfer_checkpoint",
+    "owner_skill": "raid-performance-loop",
+    "allowed_change": "Review the immutable evidence and either promote the recurrence fixture boundary or name the exact missing proof. Then route the separate legacy-only normal Magmaw shadow observation.",
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "database_mutations_allowed": false,
+    "gameplay_mutations_allowed": false
+  }
+}

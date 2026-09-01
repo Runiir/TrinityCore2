@@ -1,0 +1,6 @@
+outs:
+- md5: 62382f5c235d30fa6b50b7f8eda65317.dir
+  size: 4243841
+  nfiles: 20
+  hash: md5
+  path: map669_transfer_checkpoint_5c0b33c4d7_completed_20260901

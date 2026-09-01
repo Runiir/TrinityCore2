@@ -1,38 +1,38 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:observe_hardened_magmaw_transfer_checkpoint_once",
-  "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "coordination:classify_hardened_magmaw_transfer_checkpoint",
-  "next_owner_skill": "raid-performance-loop",
-  "classification": "reviewed_observation_only_replay_admitted",
+  "work_unit": "coordination:review_completed_magmaw_transfer_checkpoint",
+  "owner_skill": "raid-performance-loop",
+  "next_work_unit": "evidence:magmaw_shadow_authority_off_live_observation",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_boundary_completed_gameplay_claims_quarantined",
   "epoch_id": "magmaw_transfer_lane_task_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "one_clean_build_prepare_and_checkpoint_start_admitted",
-  "observed_at_commit": "e920c28b8af88f039c8e200dae7afffefe441d1a",
+  "gate_state": "all_build_provisioning_bundle_and_start_tickets_consumed",
+  "observed_at_commit": "5c0b33c4d7055de5de06d1a9d7f1df5ca34ef436",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "next_action": "Commit this exact admission, run the revision-2 recurrence suite, build the clean source with at most eight compiler jobs, create and verify one authority-off bundle, apply one canonical prepare-only reset with strict readback, then consume one worldserver start with zero retries.",
+  "next_action": "Independently review the published completed checkpoint and decide whether revision 2 may be promoted from pending observation-only evidence. No build, provisioning, or server start is admitted by this descriptor.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_terrain_projection_false_reject_handoff_v1.json",
-    "dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_1485b51d30_terrain_projection_false_reject_20260901.dvc"
+    "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_completed_handoff_v1.json",
+    "dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_5c0b33c4d7_completed_20260901.dvc"
   },
   "program_scope": {
-    "fixture_expansion_replay_admitted": true,
+    "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "configure_admitted": true,
-    "configure_limit": 1,
-    "worldserver_build_admitted": true,
-    "worldserver_build_limit": 1,
-    "prestart_bundle_create_limit": 1,
-    "worldserver_start_admitted": true,
-    "worldserver_start_limit": 1,
+    "configure_admitted": false,
+    "configure_limit": 0,
+    "worldserver_build_admitted": false,
+    "worldserver_build_limit": 0,
+    "prestart_bundle_create_limit": 0,
+    "worldserver_start_admitted": false,
+    "worldserver_start_limit": 0,
     "authserver_start_admitted": false,
     "authserver_start_limit": 0,
-    "canonical_prepare_only_provisioning_admitted": true,
-    "canonical_prepare_only_provisioning_limit": 1,
+    "canonical_prepare_only_provisioning_admitted": false,
+    "canonical_prepare_only_provisioning_limit": 0,
     "other_database_mutations_allowed": false,
     "retry_admitted": false,
     "retry_limit": 0,
@@ -56,26 +56,26 @@
     "certifies_boss_fidelity": false
   },
   "scope_lock": {
-    "allowed_change": "Run one source-bound observation-only replay of the hardened Magmaw transfer checkpoint and publish its typed terminal evidence.",
+    "allowed_change": "Review and classify the immutable completed checkpoint evidence. Update only recurrence and next-work authority after an independent verdict.",
     "forbidden": [
       "changing movement planning, global tolerances, Magmaw gameplay strategy, priorities, route geometry, class behavior, or database state",
-      "starting an authserver, more than one worldserver, or retrying a failed stage",
-      "claiming the successful native movement as boss fidelity, gameplay success, or fixture promotion"
+      "starting an authserver or worldserver, building, reprovisioning, or retrying the completed checkpoint",
+      "claiming the successful native movement as boss fidelity, gameplay success, or Magmaw completion"
     ],
     "required_postconditions": [
-      "the clean source, binary, runtime config, route, recurrence suite, seal, provisioning, and roster identities verify before start",
-      "the dedicated checkpoint emits a typed terminal or a new first-broken edge",
-      "worldserver cleanup is complete and compact evidence is remotely verified in DVC"
+      "the independent reviewer verifies source, binary, route, receipt, progress, terminal, cleanup, and DVC identities",
+      "the recurrence ledger records either a reviewed production-boundary pass or the exact remaining defect",
+      "normal gameplay authority remains legacy-only until its separate shadow observation passes"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "configure_tickets": 1,
-    "worldserver_build_tickets": 1,
-    "bundle_create_attempts": 1,
-    "canonical_prepare_only_invocations": 1,
-    "worldserver_starts": 1,
+    "configure_tickets": 0,
+    "worldserver_build_tickets": 0,
+    "bundle_create_attempts": 0,
+    "canonical_prepare_only_invocations": 0,
+    "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0
   }
