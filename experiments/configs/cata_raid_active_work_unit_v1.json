@@ -25,6 +25,13 @@
     "cause": "Ordinary sub-yard actor or parasite displacement rearmed a terminally rejected personal escape as a new generation inside one semantic hazard wave.",
     "evidence": "artifacts/cata_raid_program/magmaw_parasite_task_rearm_f86358e742_20260901.dvc"
   },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "configure_receipt": "external_run_root/configure_receipt.json",
+    "worldserver_build_receipt": "external_run_root/worldserver_build_receipt.json"
+  },
   "live_diagnostic": {
     "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
     "attempts": 1,

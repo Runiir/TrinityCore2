@@ -54,6 +54,19 @@ def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
     assert scope["acceptance_admitted"] is False
     assert scope["dvc_publication_required_after_terminal"] is True
 
+    assert active["build"] == {
+        "policy": (
+            "experiments/configs/"
+            "cata_raid_build_resource_policy_fast8_v4.json"
+        ),
+        "compiler_jobs": 8,
+        "linker_jobs": 1,
+        "configure_receipt": "external_run_root/configure_receipt.json",
+        "worldserver_build_receipt": (
+            "external_run_root/worldserver_build_receipt.json"
+        ),
+    }
+
     clock = active["validation_clock"]
     assert clock == {
         "fixed_success_timer_seconds": None,
