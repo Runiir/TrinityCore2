@@ -303,6 +303,7 @@ def test_incomplete_or_wrong_manifest_completion_does_not_hide_action_gate() -> 
         failure_reason="validation_active_hunter_pet_admission_identity_drift",
     )
     report["completion_reason"] = "validation_route_manifest_complete"
+    report["acceptable_final_evidence"] = True
     report["validation_route_manifest"] = {
         "routes": [
             {
@@ -339,6 +340,7 @@ def test_missing_final_completion_does_not_hide_action_gate() -> None:
         failure_reason="validation_active_hunter_pet_admission_identity_drift",
     )
     report["completion_reason"] = "validation_route_manifest_complete"
+    report["acceptable_final_evidence"] = True
     report["validation_route_manifest"] = {
         "routes": [
             {

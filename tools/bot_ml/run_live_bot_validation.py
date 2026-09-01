@@ -4596,7 +4596,8 @@ def raid_terminal_watchdog_failure(
         except (TypeError, ValueError):
             strict_clear = False
     independently_accepted_clear = (
-        bool(report.get("acceptable_final_evidence"))
+        not manifest
+        and bool(report.get("acceptable_final_evidence"))
         and str(report.get("completion_reason") or "")
         == "validation_route_manifest_complete"
     )
