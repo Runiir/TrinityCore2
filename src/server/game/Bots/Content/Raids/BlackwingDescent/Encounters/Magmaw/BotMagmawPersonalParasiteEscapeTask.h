@@ -102,6 +102,7 @@ struct MagmawPersonalParasiteEscapeTask
     uint64 TaskGeneration = 0;
     uint64 NextCandidateGeneration = 0;
     uint64 CandidateGeneration = 0;
+    uint64 CandidateExpiresAtMs = 0;
     ObjectGuid DangerGuid;
     Vector3 DangerPosition;
     Vector3 Destination;

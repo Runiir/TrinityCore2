@@ -75,6 +75,8 @@ std::string BuildMagmawPersonalParasiteEscapeDiagnosticsJson(
          << ",\"wave_generation\":" << task.WaveGeneration
          << ",\"task_generation\":" << task.TaskGeneration
          << ",\"candidate_generation\":" << task.CandidateGeneration
+         << ",\"candidate_expires_at_ms\":"
+         << task.CandidateExpiresAtMs
          << ",\"candidate_key\":\""
          << JsonEscape(candidateKey) << "\""
          << ",\"lifecycle\":\"" << ToString(diagnostics.Lifecycle)

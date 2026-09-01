@@ -261,6 +261,14 @@ int main()
     // changing its actor, wave, task, candidate, destination, or deadline.
     uint64 const actor30010CandidateGeneration =
         actor30010Task.CandidateGeneration;
+    uint64 const actor30010CandidateExpiresAtMs =
+        actor30010Candidate->ExpiresAtMs;
+    assert(actor30010Task.CandidateExpiresAtMs
+        == actor30010CandidateExpiresAtMs);
+    assert(BuildMagmawPersonalParasiteEscapeDiagnosticsJson(actor30010Task,
+        &sharedWave).find("\"candidate_expires_at_ms\":"
+            + std::to_string(actor30010CandidateExpiresAtMs))
+        != std::string::npos);
     uint64 const actor30010StartedAtMs = actor30010Task.StartedAtMs;
     uint64 const actor30010LastProgressAtMs =
         actor30010Task.LastProgressAtMs;
@@ -278,6 +286,8 @@ int main()
     assert(actor30010Task.TaskGeneration == actor30010TaskGeneration);
     assert(actor30010Task.CandidateGeneration
         == actor30010CandidateGeneration);
+    assert(actor30010Task.CandidateExpiresAtMs
+        == actor30010CandidateExpiresAtMs);
     assert(actor30010Task.StartedAtMs == actor30010StartedAtMs);
     assert(actor30010Task.LastProgressAtMs
         == actor30010LastProgressAtMs);
@@ -293,6 +303,10 @@ int main()
     actor30010Candidate = EscapeFor(authorityRestored, PlayerGuid(30010));
     assert(actor30010Candidate);
     assert(actor30010Candidate->Id.Key() == actor30010CandidateKey);
+    assert(actor30010Candidate->ExpiresAtMs
+        == actor30010CandidateExpiresAtMs);
+    assert(actor30010Task.CandidateExpiresAtMs
+        == actor30010CandidateExpiresAtMs);
 
     SubmitThroughProductionAdapter(*actor30010Candidate,
         board.ObservedAtMs, actor30010Task);
@@ -412,6 +426,15 @@ int main()
     assert(alternateCandidate && task.AlternateUsed);
     assert(task.WaveGeneration == wave);
     assert(task.CandidateGeneration != primaryGeneration);
+    assert(alternateCandidate->ExpiresAtMs == task.CandidateExpiresAtMs);
+    assert(task.Diagnostics.CandidateKey.empty());
+    std::string const alternateKey = alternateCandidate->Id.Key();
+    std::string const alternateJson =
+        BuildMagmawPersonalParasiteEscapeDiagnosticsJson(task);
+    assert(alternateJson.find("\"candidate_key\":\"" + alternateKey
+        + "\"") != std::string::npos);
+    assert(alternateJson.find("\"candidate_generation\":"
+        + std::to_string(task.CandidateGeneration)) != std::string::npos);
     assert(!MagmawPersonalParasiteEscapeTask::SamePoint(
         primaryDestination, task.Destination));
 

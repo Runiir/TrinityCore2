@@ -237,6 +237,7 @@ MagmawPersonalParasiteEscapeTask::Tick(
         if (!TaskGeneration)
             TaskGeneration = ++NextTaskGeneration;
         CandidateGeneration = 0;
+        CandidateExpiresAtMs = 0;
         AlternateUsed = false;
         AlternatePending = false;
         Failure = MagmawPersonalParasiteEscapeFailure::None;
@@ -253,6 +254,7 @@ MagmawPersonalParasiteEscapeTask::Tick(
     {
         Started = false;
         CandidateGeneration = 0;
+        CandidateExpiresAtMs = 0;
         AlternateUsed = false;
         AlternatePending = false;
         Failure = MagmawPersonalParasiteEscapeFailure::None;
@@ -369,6 +371,7 @@ MagmawPersonalParasiteEscapeTask::Tick(
         CandidateGeneration = ++NextCandidateGeneration;
         if (!CandidateGeneration)
             CandidateGeneration = ++NextCandidateGeneration;
+        CandidateExpiresAtMs = board.ObservedAtMs + 750;
         BestClearance = clearance;
         BestDistance = Distance2d(bot.Position, Destination);
         StartedAtMs = board.ObservedAtMs;
@@ -403,6 +406,8 @@ MagmawPersonalParasiteEscapeTask::Tick(
         CandidateGeneration = ++NextCandidateGeneration;
         if (!CandidateGeneration)
             CandidateGeneration = ++NextCandidateGeneration;
+        CandidateExpiresAtMs = board.ObservedAtMs + 750;
+        Diagnostics.CandidateKey.clear();
         BestDistance = Distance2d(bot.Position, Destination);
         LastProgressAtMs = board.ObservedAtMs;
         MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::CandidateBuilt,
@@ -421,7 +426,7 @@ MagmawPersonalParasiteEscapeTask::Tick(
     candidate.Id.EventGeneration = CandidateGeneration;
     candidate.ActionPriority = BotActionArbitration::Priority::Survival;
     candidate.Utility = 450.0f;
-    candidate.ExpiresAtMs = board.ObservedAtMs + 750;
+    candidate.ExpiresAtMs = CandidateExpiresAtMs;
     candidate.Action = BotNativeAction::Move{ Destination.X, Destination.Y,
         Destination.Z, "parasite_contact_evade", preemptCasting };
     if (BotNativeAction::Move* move =
