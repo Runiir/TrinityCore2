@@ -81,12 +81,29 @@ These shutdown and persistence duties belong to the capture controller or coordi
   promptly, request the final evidence bundle, and classify the result as a
   non-successful fixture observation; do not wait for the generic semantic
   stall clock and do not relabel it as gameplay success or gameplay failure.
-  Validate all status rows already received in the same batch before stopping,
-  so an admission or preflight infrastructure failure keeps precedence. If
-  the fixture terminal's forced evidence is incomplete, classify the run as
-  an infrastructure abort while retaining the typed terminal. Do not apply
-  that override to an already-proven gameplay failure: preserve its gameplay
-  classification and mark its terminal evidence incomplete.
+  Classify the complete received batch before stopping: admission/preflight
+  infrastructure failure has first precedence, an already-proven gameplay
+  failure has second precedence, and only then may the fixture terminal own
+  the result. If the fixture terminal's forced evidence is incomplete,
+  classify the run as an infrastructure abort while retaining the typed
+  terminal. Do not apply that override to an already-proven gameplay failure:
+  preserve its gameplay classification and mark its terminal evidence
+  incomplete.
+- For a sealed movement fixture, treat the generic controller hold as transport
+  lifecycle only. Fixture success must come from the dedicated native response,
+  never from a generic `ok`, `checkpoint_terminal`, or release receipt. Freeze
+  wipe generation and instance identity from the stable native status pair and
+  reject later status or terminal drift. Accept the core's normal abbreviated
+  binary revision only when its native comparison proves it is a prefix of the
+  exact 40-character source identity; do not assume the runtime revision itself
+  is always 40 characters.
+- Validate movement-fixture success against the producer's real accounting:
+  exact actor/task/candidate/planner/spline identity, one queue/attempt/native
+  submission, compiled task generations, finite same-floor logical arrival,
+  and at least two decreasing same-floor samples. Total samples may include
+  wrong-floor observations, but wrong-floor samples must never count as
+  decreasing semantic progress. Keep failed dedicated stages as failed fixture
+  observations even when the generic hold terminalizes cleanly.
 - Reconstruct milestones from ordered native observations rather than trusting aggregate completion flags.
 - Preserve both `first_broken_edge` and `terminal_edge` when they differ. A
   later admission receipt, identity, recovery, or watchdog failure must not
