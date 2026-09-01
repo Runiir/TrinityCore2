@@ -1,0 +1,31 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:native_recovery_ghost_flight_prestart_gate_20260901",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "prestart_recurrence_contract_failure_repaired",
+  "source_identity": "6b6cb1cabaf713a2333a9231307a5b8ea58a0862",
+  "build": {
+    "classification": "success",
+    "compiler_jobs": 8,
+    "worldserver_sha256": "71bf65dd0aad9e5f17fa8eee4ac0c2c632a07a8e9655ac28839b1703f26c4ba6",
+    "configure_receipt_sha256": "fdf849fafff54a4056623ece062f7d2a5e7da482edaf9cf7e10f1b05e2fa6429",
+    "worldserver_build_receipt_sha256": "acf592022acf117630257640711dea816388dde23ecf11e57971189254234dad"
+  },
+  "recurrence": {
+    "fixture_commands_passed": 24,
+    "fixture_commands_failed": 0,
+    "suite_receipt_sha256": "eec90298cd72390f208c8af45eda00327f6da8e60936c6dc68c09113a587664c",
+    "decision_sha256": "acae6929449f1dede2b28429d008f4915cacc9dfb5fb10e393d0c2395450d52d",
+    "canary_admitted": false,
+    "first_gate_failure": "missing retained fixture for native_recovery_flight_eligibility_rising_edge_retains_ground_path"
+  },
+  "repair": {
+    "gameplay_code_changed": false,
+    "ledger_change": "registered native_recovery_ghost_flight_rising_edge_v1 with its four exact existing deterministic tests and causal invariant",
+    "focused_result": "4 passed",
+    "forbidden_changes": "No Z, route, MMAP, floor, tolerance, encounter, class, or server mutation."
+  },
+  "server_start_count": 0,
+  "authserver_start_count": 0,
+  "next_action": "Commit the repaired recurrence contract, produce one exact build receipt for that clean identity, rerun the 25-fixture bank, and use only its fixture-expansion admission for the single no-retry live diagnostic."
+}

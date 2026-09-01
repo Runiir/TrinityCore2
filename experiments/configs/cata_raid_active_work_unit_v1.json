@@ -10,7 +10,7 @@
   "boss": "magmaw",
   "mode": "10N",
   "architecture_scope": "Repair one shared corpse-run task transition: when exact scoped ghost-flight eligibility rises during a retained cross-map Recovery/native_long_path, replace only that retained path with the same typed destination so the existing native aerial executor can run.",
-  "gate_state": "exact repair commit passed independent Sol-high review; one exact fast8_v4 configure/build and one no-retry completion-watchdog live diagnostic are admitted; authserver, retry, and unrelated gameplay mutation remain forbidden",
+  "gate_state": "the first exact build passed but its prestart recurrence decision failed because the newly observed ghost-flight signature lacked a retained fixture; that contract is now repaired with four passing deterministic tests; one exact clean-identity build and recurrence decision remain required before any worldserver start",
   "observed_at_commit": "7175cd0bccb377f4636fe43a01037020c4b20674",
   "behavior_change": true,
   "evidence_contract_change": false,
@@ -23,6 +23,11 @@
     "path": "experiments/configs/cata_raid_native_recovery_ghost_flight_review_handoff_20260901.json",
     "verdict": "GO",
     "reviewed_commit": "7175cd0bccb377f4636fe43a01037020c4b20674"
+  },
+  "prestart_gate_handoff": {
+    "path": "experiments/configs/cata_raid_native_recovery_ghost_flight_prestart_gate_handoff_20260901.json",
+    "classification": "prestart_recurrence_contract_failure_repaired",
+    "worldserver_starts": 0
   },
   "first_broken_edge": {
     "run_id": "magmaw-personal-escape-fixture-febee38218-20260901",
@@ -60,7 +65,7 @@
     "a frozen replacement still reaches native_runback_no_progress after the existing bounded window",
     "all touched C and C++ files remain below 1000 lines"
   ],
-  "next_action": "Build the exact clean descriptor source with fast8_v4 and 8 compiler jobs, run the deterministic recurrence gate, then perform one no-retry Magmaw diagnostic under the completion watchdog. Capture physical movement progress and DPS/HPS; publish and evict the terminal evidence.",
+  "next_action": "Commit the repaired recurrence contract, build that exact clean source with fast8_v4 and 8 compiler jobs, and rerun the 25-fixture bank. Start one no-retry Magmaw diagnostic only if the resulting fixture-expansion admission is valid.",
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,

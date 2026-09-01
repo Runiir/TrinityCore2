@@ -148,6 +148,7 @@
       "phase1_capture_single_start_contract_v1",
       "deferred_candidate_capture_lifetime_v1",
       "native_bwd_partial_death_recovery_lifecycle_v1",
+      "native_recovery_ghost_flight_rising_edge_v1",
       "current_route_combat_authority_precedence_v1"
     ],
     "fixtures": [
@@ -561,6 +562,22 @@
         ]
       },
       {
+        "fixture_id": "native_recovery_ghost_flight_rising_edge_v1",
+        "revision": 1,
+        "causal_signature": "native_recovery_flight_eligibility_rising_edge_retains_ground_path",
+        "revision_basis": "The compiled helper and production-wiring fixtures prove that only an exact false-to-true scoped ghost-flight eligibility edge on a matching retained Recovery/native_long_path invalidates path evidence once, preserves the same XYZ destination, and leaves the existing aerial executor and bounded no-progress terminal authoritative.",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_native_ghost_flight_recovery.py::test_flight_eligibility_rising_edge_replans_only_matching_retained_recovery",
+          "tests/test_native_ghost_flight_recovery.py::test_recovery_wires_rising_edge_before_same_destination_submission",
+          "tests/test_native_ghost_flight_recovery.py::test_aerial_submission_is_gated_and_ordinary_recovery_stays_grounded",
+          "tests/test_native_runback_long_path.py::test_stalled_native_generator_gets_one_repath_then_terminal_bound"
+        ]
+      },
+      {
         "fixture_id": "current_route_combat_authority_precedence_v1",
         "causal_signature": "current_route_combat_authority_preempted",
         "command": [
@@ -768,6 +785,13 @@
       "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_canary113_native_recovery_architecture_stop_20260829.md",
       "historical_unique_run_count": 10,
       "counting_note": "Ten retained failures span reset admission, cross-map movement, trigger/reclaim, and rejoin. Canary97 is retained separately as one nondeterministic success on the same binary as failed Canary98 and does not close the family."
+    },
+    "native_recovery_flight_eligibility_rising_edge_retains_ground_path": {
+      "owner": "shared_native_recovery_and_movement_executor",
+      "parent": "native_partial_death_recovery_lifecycle_failure",
+      "invariant": "when scoped ghost-flight eligibility rises during one matching retained ground Recovery/native_long_path, the recovery brain invalidates only retained path evidence and resubmits the unchanged entrance destination once so the existing aerial executor can follow terrain; eligibility remaining true cannot churn movement",
+      "architecture_reviewed_through_occurrence_count": 1,
+      "architecture_review_evidence": "experiments/configs/cata_raid_native_recovery_ghost_flight_review_handoff_20260901.json"
     }
   },
   "runs": [
