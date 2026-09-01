@@ -7,6 +7,7 @@
   "first_broken_edge": {
     "route_node_id": "bwd.entry.regroup",
     "failure_reason": "validation_raid_admission_receipt_size_mismatch",
+    "causal_predecessor": "validation_active_hunter_pet_observation_stored_owner_mismatch",
     "expected_member_count": 10,
     "provisioned_member_count": 10,
     "receipt_size": 0,
@@ -32,7 +33,17 @@
     "runtime_hunter_observer_reason": "identity_observed",
     "shared_hunter_observer_status": 2,
     "shared_hunter_observer_reason": "validation_active_hunter_pet_observation_stored_owner_mismatch",
-    "hunter_observer_failed_admission": false
+    "hunter_observer_failed_admission": true,
+    "receipt_effect": "The shared hunter observer failure clears the candidate receipt before the aggregate size check. The later 0/10 size mismatch is downstream."
+  },
+  "post_run_read_only_database_check": {
+    "character_pet_id": 8700009,
+    "entry": 8959,
+    "owner": 30009,
+    "slot": 0,
+    "active": 1,
+    "pet_type": 1,
+    "boundary": "This proves current persisted state after deterministic provisioning, but the run did not serialize the selected in-memory PlayerPetData owner value."
   },
   "gameplay_observation": {
     "active_bots": 0,
@@ -45,7 +56,8 @@
     "cleanup_complete": true
   },
   "scope_guardrails": [
-    "repair only the receipt construction or admission ordering defect proven by this run",
+    "do not change receipt ordering; the size mismatch is downstream",
+    "capture the exact stored and live owner, pet ID, and entry values used by the shared observer",
     "do not relax any readiness predicate or receipt membership requirement",
     "do not change pet AI, class behavior, encounter behavior, movement, MMAP, coordinates, or Z handling",
     "native movement continues to follow terrain"

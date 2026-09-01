@@ -1,52 +1,52 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:repair_admission_receipt_ordering",
+  "work_unit": "evidence:hunter_persistent_owner_fact_capture",
   "owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "shard:magmaw_post_receipt_repair_one_start",
-  "next_owner_skill": "raid-shard-architecture",
+  "next_work_unit": "runtime:repair_exact_hunter_owner_boundary",
+  "next_owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
-  "epoch_id": "magmaw_admission_receipt_size_20260901",
+  "epoch_id": "magmaw_hunter_stored_owner_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N_canary_for_universal_architecture",
-  "architecture_scope": "Repair the shared admission receipt ordering edge without weakening readiness. Magmaw is only the canary.",
-  "gate_state": "dvc_bound_receipt_size_mismatch_admits_one_bounded_repair",
+  "architecture_scope": "Expose the exact facts at a shared pet-identity admission boundary. Do not tune Magmaw or the hunter rotation.",
+  "gate_state": "dvc_bound_stored_owner_mismatch_admits_one_diagnostic_implementation",
   "observed_at_commit": "84d2b98e4a9099cead89ab98931036c057f6bd26",
-  "behavior_change": true,
-  "evidence_contract_change": false,
+  "behavior_change": false,
+  "evidence_contract_change": true,
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_84d2b98e4a_admission_receipt_size_handoff_20260901.json",
-    "sha256": "48e526017545991a3db6690f0399bf6cc1d805994891745d7f2234f05162684c"
+    "sha256": "9e6b84d7c92077687231b83668aca6f9658febe2097aa022cef17b3472e3a9ce"
   },
   "first_broken_edge": {
     "run_id": "magmaw-admission-diag-84d2b98e4a-20260901",
     "route_node_id": "bwd.entry.regroup",
-    "cause": "All ten members and every non-receipt readiness predicate passed, but readiness evaluated receipt_size=0 against receipt_expected_size=10 before admission could commit.",
-    "terminal": "validation_raid_admission_receipt_size_mismatch",
+    "cause": "Hunter 30009 loads a live ordinary pet, but the shared observer returns stored_owner_mismatch and clears the candidate receipt. The later receipt_size=0 failure is downstream.",
+    "terminal": "validation_active_hunter_pet_observation_stored_owner_mismatch",
     "evidence": "artifacts/cata_raid_program/magmaw_admission_diag_84d2b98e4a_20260901.dvc"
   },
-  "next_action": "Implement one minimal shared-runtime correction so readiness validates the candidate admission receipt for the same cohort instead of an empty pre-commit receipt. Preserve every readiness predicate, add compiled counterexamples, and stop before build or live execution.",
+  "next_action": "Extend the existing shared observer and admission member receipt with the exact bot, live-owner, stored-owner, stored/live pet ID, and stored/live entry values. Extend strict shard readback with the exact character_pet row. Add focused serialization and counterexample tests, then stop before build or live execution.",
   "implementation_scope": {
     "allowed": [
-      "inspect the DVC-bound admission receipt and exact source path",
-      "change only admission receipt construction, validation ordering, or a small pure helper required by that ordering",
-      "add focused compiled tests for ten exact members, missing member, duplicate member, and failed pre-commit validation",
-      "split touched C++ by concern to keep every file below 1000 physical lines",
+      "extend the existing hunter identity snapshot with raw diagnostic facts already read by the observer",
+      "serialize those facts through the existing per-member admission readiness receipt",
+      "extend the existing strict BWD shard readback with the exact expected hunter character_pet row",
+      "add focused compiled and Python tests for correct owner, wrong owner, missing row, and exact serialization",
+      "split by concern so every touched C/C++ file remains below 1000 physical lines",
       "one independent read-only review after implementation"
     ],
     "forbidden": [
-      "relaxing receipt size, roster, lease, role, spec, difficulty, native group, entrance placement, or alive-state predicates",
-      "manufacturing or post-hoc patching an admission receipt",
-      "pet AI, hunter-pet identity, class, encounter, movement, MMAP, route coordinate, or Z changes",
-      "configure, build, worldserver, authserver, database, or DVC mutation during implementation",
-      "claiming live closure from unit tests"
+      "changing owner comparison, receipt construction, admission predicates, pet lifecycle, pet AI, or gameplay behavior",
+      "changing class, encounter, movement, MMAP, route coordinates, terrain following, or Z",
+      "configure, build, worldserver, authserver, database mutation, or DVC mutation during implementation",
+      "claiming the owner mismatch fixed from diagnostics alone"
     ]
   },
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": true,
+    "gameplay_mutations_allowed": false,
     "configure_admitted": false,
     "worldserver_build_admitted": false,
     "worldserver_start_admitted": false,
@@ -56,14 +56,13 @@
     "dvc_publication_required_after_terminal": false
   },
   "acceptance": [
-    "readiness evaluates a candidate receipt built from the same provisioned cohort and exact ten unique members",
-    "a ten-member candidate can pass only when every existing readiness predicate passes",
-    "a missing or duplicate member fails before commit with a typed receipt reason",
-    "a failed candidate never overwrites the last committed admission receipt or enables bot actions",
-    "all aggregate and per-member diagnostic fields remain available before rollback",
-    "native pathing continues to follow terrain; no bot-authored Z correction exists",
-    "focused compiled tests pass and every touched C/C++ file remains below 1000 physical lines",
-    "independent review confirms no predicate relaxation or unrelated gameplay change"
+    "the shared observer snapshot records bot GUID counter, live owner counter, stored owner, stored/live pet ID, and stored/live entry",
+    "the pre-rollback admission receipt emits those values for hunter 30009 without changing classification",
+    "strict readback records the exact persisted character_pet owner, ID, entry, active flag, slot, and pet type",
+    "counterexamples distinguish wrong stored owner from wrong live owner and missing persistent row",
+    "no readiness predicate, admission outcome, pet behavior, combat behavior, movement, terrain following, or Z handling changes",
+    "focused tests pass and every touched C/C++ file remains below 1000 physical lines",
+    "independent review confirms the next live run can distinguish provisioning, loader, and representation failures"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
