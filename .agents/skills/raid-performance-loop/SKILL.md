@@ -155,6 +155,15 @@ side vertical steering, height correction, teleportation, or global tolerance
 loosening. A verifier may accept a bounded, same-floor native projection only
 after correlated generator/spline progress proves the bot followed that path.
 
+Before routing a stalled retained path to floor or coordinate repair, compare
+the task's execution capabilities across ticks: alive/ghost state, scoped
+flight eligibility, transport, map/instance, owner, traversal mode, generator,
+and spline finalization. A false-to-true capability edge can require one
+same-destination executor resubmission even when policy and coordinates are
+correct. Route that case to shared runtime lifecycle repair, require a one-shot
+edge fixture plus no-churn negatives, and forbid encounter-specific Z/MMAP or
+route-coordinate changes.
+
 Do not route a hazard endpoint rejection to implementation until one retained
 receipt joins the acting bot and stable hazard to the requested destination,
 native resolved endpoint, path/floor result, clearance change, and terminal

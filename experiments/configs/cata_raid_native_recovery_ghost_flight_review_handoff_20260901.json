@@ -1,0 +1,41 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "review:native_recovery_ghost_flight_transition_20260901",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "passed_implementation_pending_live_verification",
+  "implementation_source": {
+    "commit": "7175cd0bcc",
+    "tree": "c7fd0127fa8d4ac441fbabe486f357a0270b045e"
+  },
+  "review": {
+    "model": "sol-high",
+    "verdict": "GO",
+    "scope": "bounded shared-recovery repair only; not a live-clear claim",
+    "first_broken_edge_verified": "A retained ground Recovery/native_long_path prevented the recovery brain from re-entering the existing aerial executor after exact scoped ghost-flight eligibility rose.",
+    "repair_verified": "The false-to-true edge invalidates only matching retained path evidence and resubmits the unchanged entrance XYZ once. Eligibility remaining true cannot churn the path.",
+    "unchanged": [
+      "destination XYZ and route coordinates",
+      "MMAP floor and endpoint handling",
+      "movement tolerances",
+      "teleport and resurrection behavior",
+      "the 30000 ms native recovery no-progress terminal"
+    ]
+  },
+  "validation": {
+    "ghost_flight_and_native_long_path": "18 passed",
+    "bounded_recovery_and_diagnosis": "3 passed",
+    "local_focused_suite_after_stale_assertion_repair": "25 passed",
+    "cpp_line_counts": {
+      "BotWorldPopulationMgrGhostFlight.h": 74,
+      "BotWorldPopulationMgrRecovery.cpp": 739,
+      "BotWorldPopulationMgrMovementExecutor.cpp": 291
+    }
+  },
+  "remaining_unproven_claim": "A built worldserver must show the same destination entering the existing aerial executor and producing physical distance improvement after the eligibility edge.",
+  "next_work_unit": {
+    "id": "shard:verify_native_recovery_ghost_flight_transition_20260901",
+    "owner_skill": "raid-shard-architecture",
+    "authorization": "One exact fast8_v4 configure/build and one no-retry completion-watchdog Magmaw diagnostic. No authserver.",
+    "required_evidence": "false-to-true eligibility edge, one replacement receipt with unchanged XYZ, aerial generatePath=false submission, physical progress or the existing typed no-progress terminal, route progression, deaths, DPS/HPS, and clean shutdown"
+  }
+}

@@ -96,6 +96,18 @@ scoped execution state instead of substituting a short-lived generic spline.
 Expose current/active motion type, spline-finalized state, flight/gravity
 flags, actual position, requested destination, and exact recovery episode.
 
+Treat an execution-capability change during a retained task as its own traced
+lifecycle edge. For cross-map corpse recovery, record flight eligibility before
+and after the tick plus the retained owner, traversal mode, attempt/wipe/route
+scope, destination, generator, spline, and physical progress. If eligibility
+rises while an exact matching ground `Recovery/native_long_path` is retained,
+invalidate only that retained path evidence and resubmit the same typed
+destination once through the existing executor. Eligibility remaining true
+must not restart movement. Do not alter X/Y/Z, fabricate height, relax MMAP or
+floor admission, or move flight/gravity ownership into encounter policy. Cover
+living, same-map, wrong-scope, indoor, transport, stale-episode, other-owner,
+already-aerial, successful-progress, and bounded-no-progress cases.
+
 For shared movement admission, do not repair one owner or distance band at a
 time when route, combat-range, hazard, and mechanic receipts fail at the same
 native path or floor-proof gate. Define the invariant once below the owners,

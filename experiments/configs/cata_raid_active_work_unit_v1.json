@@ -1,23 +1,28 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "implementation:repair_native_recovery_ghost_flight_transition",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "review:verify_native_recovery_ghost_flight_transition",
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "work_unit": "shard:verify_native_recovery_ghost_flight_transition",
+  "owner_skill": "raid-shard-architecture",
+  "next_work_unit": "evidence:classify_native_recovery_ghost_flight_transition",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_pending_live_verification",
   "epoch_id": "native_recovery_ghost_flight_transition_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "architecture_scope": "Repair one shared corpse-run task transition: when exact scoped ghost-flight eligibility rises during a retained cross-map Recovery/native_long_path, replace only that retained path with the same typed destination so the existing native aerial executor can run.",
-  "gate_state": "latest no-retry fixture-expansion run is closed, remotely verified, target-evicted, and independently diagnosed; implementation and independent review are pending; configure, build, worldserver start, authserver start, retry, and gameplay mutation are not admitted",
-  "observed_at_commit": "05c146f36d6441444438494f633f4639491a1851",
+  "gate_state": "exact repair commit passed independent Sol-high review; one exact fast8_v4 configure/build and one no-retry completion-watchdog live diagnostic are admitted; authserver, retry, and unrelated gameplay mutation remain forbidden",
+  "observed_at_commit": "7175cd0bcc",
   "behavior_change": true,
   "evidence_contract_change": false,
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_personal_escape_fixture_febee38218_live_handoff_20260901.json",
     "sha256": "093f8b04dd14a287915f6ed21cfa181bbf6644098ddcd4dd29d30a1c6d268886",
     "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_fixture_febee38218_20260901.dvc"
+  },
+  "review_handoff": {
+    "path": "experiments/configs/cata_raid_native_recovery_ghost_flight_review_handoff_20260901.json",
+    "verdict": "GO",
+    "reviewed_commit": "7175cd0bcc"
   },
   "first_broken_edge": {
     "run_id": "magmaw-personal-escape-fixture-febee38218-20260901",
@@ -55,25 +60,25 @@
     "a frozen replacement still reaches native_runback_no_progress after the existing bounded window",
     "all touched C and C++ files remain below 1000 lines"
   ],
-  "next_action": "Complete the focused shared-runtime implementation, run deterministic compiled tests, and obtain an independent exact-commit review. Do not configure, build, or start a server before that review updates admission.",
+  "next_action": "Build the exact clean descriptor source with fast8_v4 and 8 compiler jobs, run the deterministic recurrence gate, then perform one no-retry Magmaw diagnostic under the completion watchdog. Capture physical movement progress and DPS/HPS; publish and evict the terminal evidence.",
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
-    "gameplay_canary_admitted": false,
-    "live_diagnostic_admitted": false,
+    "gameplay_canary_admitted": true,
+    "live_diagnostic_admitted": true,
     "gameplay_mutations_allowed": false,
-    "configure_admitted": false,
-    "worldserver_build_admitted": false,
-    "worldserver_start_admitted": false,
+    "configure_admitted": true,
+    "worldserver_build_admitted": true,
+    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "retry_admitted": false,
     "database_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": false
+    "dvc_publication_required_after_terminal": true
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "worldserver_starts": 0,
+    "worldserver_starts": 1,
     "authserver_starts": 0,
     "retries": 0
   }
