@@ -1,0 +1,46 @@
+{
+  "schema": "cata_raid_mysql_proven_fresh_build_handoff_v1",
+  "created_at_utc": "2026-09-01T09:25:00Z",
+  "source_commit": "7da458782dd8d8b00f610af44d0b202bc3f10fac",
+  "source_tree": "e042143584d1055fb6c389c762aac8b5b76ebf50",
+  "classification": "schema_v3_gate_bearing_build_receipt_verified",
+  "configure": {
+    "ticket_id": "raid-build-8ca3fcda134d4699ae4c95910f45fa48",
+    "receipt_sha256": "c47848990dd3a0cc5633539c7e39c3ef1c8e1f1a9d4f8b967c5ded53f074d862",
+    "classification": "success"
+  },
+  "worldserver_build": {
+    "ticket_id": "raid-build-cb9847e0efb646aea9ccbc209a4571b3",
+    "receipt_sha256": "1eeead6ebe1077353aed2d0ea7920f9a39d3d18745217606ad670b00a08d0752",
+    "classification": "success",
+    "gate_bearing": true,
+    "schema_version": 3,
+    "worldserver_sha256": "df61ac636f132465aae362251b34121b692a7d7f9c2b2089fab85f42da4da565",
+    "mysql_identity_sha256": "8c98c09a98d49560be61b52819d8e9aa7037706738de9394bbd6b5958db0c1e4",
+    "compile_version_id": 80411,
+    "configured_runtime_version_id": 80411,
+    "binary_runtime_version_id": 80411,
+    "recreated_object_count": 2,
+    "recreated_depfile_count": 2,
+    "relinked_outputs": ["database_archive", "worldserver"]
+  },
+  "limits_observed": {
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "database_mutations": 0,
+    "dvc_mutations": 0
+  },
+  "required_next_work_unit": {
+    "id": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_build_one_start",
+    "owner_skill": "raid-evidence-lifecycle",
+    "reason_fresh_build_required": "the tracked one-start admission changes the source identity and therefore requires its own exact configure/build receipt",
+    "configure_ticket_budget": 1,
+    "worldserver_build_ticket_budget": 1,
+    "canonical_prepare_only_budget": 1,
+    "worldserver_start_budget": 1,
+    "authserver_start_budget": 0,
+    "retry_budget": 0
+  }
+}

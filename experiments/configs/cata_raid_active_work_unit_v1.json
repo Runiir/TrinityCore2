@@ -1,70 +1,89 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_fresh_build",
+  "work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_build_one_start",
   "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_start",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "mysql_identity_gate_reviewed_fresh_build_required",
+  "next_work_unit": "evidence:magmaw_transfer_lane_authority_off_shadow_decision",
+  "next_owner_skill": "raid-performance-loop",
+  "classification": "mysql_proven_build_complete_exact_one_start_admission_required",
   "epoch_id": "magmaw_transfer_lane_task_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "one_configure_one_worldserver_build_admitted",
-  "immutable_input_commit": "3b4686bb34a7ef59d902c079a5d2852f15cbfa86",
-  "observed_at_commit": "3b4686bb34a7ef59d902c079a5d2852f15cbfa86",
+  "gate_state": "one_build_one_prepare_only_one_worldserver_start_admitted",
+  "immutable_input_commit": "7da458782dd8d8b00f610af44d0b202bc3f10fac",
+  "observed_at_commit": "7da458782dd8d8b00f610af44d0b202bc3f10fac",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "next_action": "Run one current-source configure ticket and one fast8_v4 worldserver build ticket. Require a verified schema-v3 receipt proving the exact MySQL object/archive/binary recreation chain. Do not start a server or mutate the database in this work unit.",
-  "source_handoff": {
-    "path": "experiments/configs/cata_raid_mysql_build_identity_gate_handoff_v1.json",
-    "implementation_commit": "3b4686bb34a7ef59d902c079a5d2852f15cbfa86",
-    "reviewed_agent_commit": "8d6b32b999cac15eca18306d88949ac4bdc5bbbf"
-  },
+  "next_action": "At this admission's clean source identity, run one configure and one fast8_v4 worldserver build, create and verify the exact map-669 prestart bundle, apply exactly one canonical prepare-only provisioning reset, require strict provisioning and shard readback, then start one worldserver with zero retries and capture the typed Magmaw transfer checkpoint terminal.",
+  "source_handoffs": [
+    "experiments/configs/cata_raid_mysql_proven_fresh_build_handoff_v1.json",
+    "experiments/configs/cata_raid_magmaw_transfer_lane_prestart_bundle_handoff_v1.json"
+  ],
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": false,
+    "fixture_expansion_replay_admitted": true,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
     "configure_admitted": true,
     "configure_limit": 1,
     "worldserver_build_admitted": true,
     "worldserver_build_limit": 1,
-    "worldserver_start_admitted": false,
-    "worldserver_start_limit": 0,
+    "worldserver_start_admitted": true,
+    "worldserver_start_limit": 1,
     "authserver_start_admitted": false,
-    "database_provisioning_mutations_allowed": false,
+    "authserver_start_limit": 0,
+    "canonical_prepare_only_provisioning_admitted": true,
+    "canonical_prepare_only_provisioning_limit": 1,
+    "other_database_mutations_allowed": false,
     "retry_admitted": false,
-    "dvc_publication_required_after_terminal": false
+    "retry_limit": 0,
+    "dvc_publication_required_after_terminal": true
+  },
+  "fixture_contract": {
+    "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
+    "case_id": "entrance_polygon_short_lane_v1",
+    "actor_guid": 30007,
+    "map_id": 669,
+    "task_authority_enabled": false,
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "certifies_gameplay_success": false,
+    "certifies_boss_fidelity": false
   },
   "scope_lock": {
-    "allowed_change": "Produce and verify one current-source schema-v3 gate-bearing worldserver build receipt under fast8_v4.",
+    "allowed_change": "Produce one exact fixture-only map-bound checkpoint terminal and its compact remotely verified evidence.",
     "forbidden": [
-      "changing gameplay C or C++, class rotations, encounter behavior, task authority, fixture semantics, database contents, or DVC state",
-      "starting worldserver or authserver",
-      "clean-rebuilding unrelated targets or exceeding eight compiler jobs and one linker",
-      "retrying a failed configure or build ticket without a new typed work unit"
+      "changing gameplay C or C++, class rotations, encounter behavior, task authority, movement tolerances, fixture semantics, or database content outside the canonical prepare-only reset",
+      "starting an authserver or more than one worldserver",
+      "retrying a failed build, prestart, provisioning, or worldserver start",
+      "using a 300-second raid timer or claiming fixture evidence as gameplay success",
+      "retaining large raw evidence locally after DVC remote verification"
     ],
     "required_postconditions": [
-      "configure and build receipts bind the current clean source identity",
-      "the build receipt uses schema version 3 and verifies before any prestart bundle is admitted",
-      "request, admission, prebuild, and completion MySQL identities match",
-      "the exact two objects, two depfiles, libdatabase.a, and worldserver are proven recreated",
-      "the built worldserver resolves the same hashed MySQL client library and version as the compile header"
+      "schema-v3 build receipt and current binary MySQL identity verify before launch",
+      "pinned map-669 preflight, recurrence admission, canonical four-node route, runtime config, checkpoint seal, and atomic bundle all verify",
+      "exactly one canonical prepare-only provisioning reset is followed by strict provisioning and shard readback",
+      "the worldserver start count is one, authserver count zero, and retry count zero",
+      "the typed terminal and cleanup state are captured even when the fixture fails",
+      "compact evidence is pushed to DVC, remotely verified, and locally evicted"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "one_configure_ticket_then_one_fast8_worldserver_build_ticket",
+    "policy": "typed_checkpoint_terminal_with_completion_watchdog",
     "configure_tickets": 1,
     "worldserver_build_tickets": 1,
-    "worldserver_starts": 0,
+    "canonical_prepare_only_invocations": 1,
+    "worldserver_starts": 1,
     "authserver_starts": 0,
     "retries": 0,
     "terminal_edges": [
-      "schema_v3_gate_bearing_build_receipt_verified",
-      "configure_or_build_provenance_abort",
-      "mysql_identity_or_recreation_proof_failed",
-      "source_or_policy_drift"
+      "fixture_checkpoint_completed_and_cleaned",
+      "fixture_checkpoint_failed_and_cleaned",
+      "prestart_or_provisioning_abort_before_start",
+      "worldserver_infrastructure_abort_before_checkpoint",
+      "source_config_build_or_identity_drift"
     ]
   }
 }
