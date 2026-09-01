@@ -1,0 +1,52 @@
+{
+  "schema": "cata_raid_handoff_v1",
+  "work_unit": "runtime:retire_rejected_parasite_escape_endpoint",
+  "source_run_id": "magmaw-hunter-owner-closure-29b54a2188-20260901",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "mode": "10N_canary_for_universal_architecture",
+  "implementation_commits": [
+    "1e5dbe15bb",
+    "af33c23fd0"
+  ],
+  "first_broken_edge": "The native planner permanently rejects an actor-local parasite escape endpoint, but retained hazard ownership re-emits the same endpoint and defers useful combat range and line-of-sight recovery.",
+  "repair": [
+    "Preserve the exact typed native movement rejection through ExecuteNativeActionIntent.",
+    "Retire only the exact actor, generation, and destination for endpoint mismatch, unreachable, partial path, or missing MMAP.",
+    "Suppress the unchanged rejected endpoint until actor or hazard geometry changes.",
+    "Preserve successful and transient movement ownership until measured safety or arrival.",
+    "Release useful fallback combat in the same kernel resolution after terminal retirement."
+  ],
+  "verification": {
+    "independent_review": "GO",
+    "production_path_compiled": true,
+    "historical_tests_passed": 29,
+    "git_diff_check": "clean",
+    "maximum_touched_cpp_lines": 842
+  },
+  "excluded_changes": [
+    "movement coordinates",
+    "Z resolution or vertical steering",
+    "terrain following",
+    "floor or MMAP admission",
+    "native path tolerances",
+    "route anchors or fallback sampling",
+    "action priorities",
+    "class rotations or encounter scripts"
+  ],
+  "live_acceptance": [
+    "the first terminal parasite escape rejection reaches actor-local feedback",
+    "the same actor, generation, and endpoint do not repeat indefinitely",
+    "transient or submitted movement remains retained",
+    "combat damage resumes when no admitted hazard movement owns the actor",
+    "the completion watchdog records a typed terminal and verified cleanup",
+    "the report includes party and per-actor DPS and HPS"
+  ],
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "worldserver_builds": 1,
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "retries": 0
+  }
+}
