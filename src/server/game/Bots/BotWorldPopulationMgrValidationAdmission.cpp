@@ -265,7 +265,8 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
         return;
     }
 
-    auto terminalFailure = [this, &terminateValidationAdmission](char const* reason)
+    auto terminalFailure = [this, &terminateValidationAdmission](
+        std::string const& reason)
     {
         Cohort().ValidationRaidAdmissionComplete = false;
         Cohort().ValidationRaidAdmissionFailed = true;

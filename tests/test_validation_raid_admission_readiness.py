@@ -89,6 +89,13 @@ int main()
         "shared_hunter_observer_reason", "identity_invalid",
         "identity_observed"})
         assert(receipt.find(value) != std::string::npos);
+    assert(receipt.find("\"planned_slot_present\":true") != std::string::npos);
+    assert(receipt.find("\"planned_role_matches\":true") != std::string::npos);
+    assert(receipt.find("\"declared_spec_matches\":true") != std::string::npos);
+    assert(receipt.find("\"runtime_hunter_observer_matches\":false")
+        != std::string::npos);
+    assert(receipt.find("\"shared_hunter_observer_status\":3")
+        != std::string::npos);
 
     facts = passingFacts(); facts.ExpectedMemberCount = 0;
     expectFailure(facts, Failure::ExpectedMemberCountZero,
