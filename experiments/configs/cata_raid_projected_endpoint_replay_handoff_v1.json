@@ -1,0 +1,52 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:observe_map669_projected_endpoint_terminal",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_reviewed_pending_live_observation",
+  "source": {
+    "commit": "2e134d3fab4343acfdee57f89c7a4e1957e63272",
+    "tree": "6274a3b5c58e3972c3006daf1fcfb6975a6f9b63",
+    "runtime_observation_commit": "cd69b57f300f156f1ce38005e8a6fd3c8ad96368",
+    "review_verdict": "GO",
+    "prior_terminal_dvc_pointer": "artifacts/cata_raid_program/phase1_79b2b0594b_connected_surface_endpoint_terminal_20260901.dvc"
+  },
+  "observation_contract": {
+    "purpose": "fixture_expansion_replay",
+    "checkpoint_fixture_id": "map669_native_path_production_boundary_v1",
+    "case_id": "a506_receipt636_incomplete_same_floor",
+    "actor_guid": 30007,
+    "start_policy": "one_worldserver_start_no_retry",
+    "validation_clock": "completion_watchdog",
+    "authserver_required": false,
+    "database_mutation_allowed": false,
+    "gameplay_admitted": false,
+    "expected_first_edge": {
+      "endpoint_result": "reached_projected_end_poly",
+      "corridor_reached_end_poly": true,
+      "resolved_endpoint_available": true,
+      "actual_endpoint_matched_resolved": true,
+      "requested_endpoint_matched": false,
+      "planner_admission": "rejected"
+    }
+  },
+  "required_evidence": [
+    "exact clean source, tree, binary, build policy, and build receipt identity",
+    "source-bound complete recurrence receipt, exact checkpoint requests, decision, and seal",
+    "one immutable checkpoint terminal for actor 30007 with typed endpoint_resolution JSON",
+    "requested, resolved, and actual endpoint coordinates plus component distances",
+    "truthful checkpoint terminal classification that later queued status cannot overwrite",
+    "compact DVC publication and remote verification before explicit local raw eviction"
+  ],
+  "forbidden": [
+    "retrying after any terminal or starting more than one worldserver",
+    "starting authserver, mutating the database, or entering ordinary Magmaw gameplay",
+    "changing movement admission, tolerances, endpoint semantics, encounter logic, classes, arbitration, retries, or fixtures during the replay",
+    "claiming logical task completion, movement launch, or gameplay success from a projected endpoint observation"
+  ],
+  "next_work_unit": {
+    "id": "evidence:classify_map669_projected_endpoint_terminal",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Publish and classify the one-run typed terminal, then route the exact result into the persistent transfer-lane task input contract.",
+    "required_postcondition": "remote-verified immutable terminal and no replay retry"
+  }
+}

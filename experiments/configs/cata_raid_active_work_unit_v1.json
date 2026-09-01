@@ -1,63 +1,62 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "review:observe_native_endpoint_resolution",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "shard:observe_map669_projected_endpoint_terminal",
-  "next_owner_skill": "raid-shard-architecture",
-  "classification": "implemented",
-  "epoch_id": "native_endpoint_resolution_20260901",
+  "work_unit": "shard:observe_map669_projected_endpoint_terminal",
+  "owner_skill": "raid-shard-architecture",
+  "next_work_unit": "evidence:classify_map669_projected_endpoint_terminal",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_pending_live_verification",
+  "epoch_id": "map669_projected_endpoint_observation_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "independent_review_only",
-  "immutable_input_commit": "cd69b57f300f156f1ce38005e8a6fd3c8ad96368",
-  "observed_at_commit": "cd69b57f300f156f1ce38005e8a6fd3c8ad96368",
+  "gate_state": "exact_build_and_one_fixture_replay",
+  "immutable_input_commit": "2e134d3fab4343acfdee57f89c7a4e1957e63272",
+  "observed_at_commit": "2e134d3fab4343acfdee57f89c7a4e1957e63272",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "next_action": "Independently review the typed PathGenerator endpoint-resolution observation. Prove that projected end-poly reach, early termination, and requested-destination reach are distinct while admission and tolerances remain unchanged.",
+  "next_action": "Build the exact clean source with at most eight compiler jobs and run one sealed no-retry checkpoint observation for actor 30007; stop at the first typed endpoint terminal.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_native_endpoint_resolution_review_handoff_v1.json",
-    "sha256": "d7646be575a85ab4e516dbf3df8d72740ba324e6fd35697aeeaeb2bf06ee554c",
-    "source_commit": "cd69b57f300f156f1ce38005e8a6fd3c8ad96368",
-    "source_tree": "c987a1e6c579137d25e5d6423d751ad65634f800"
+    "path": "experiments/configs/cata_raid_projected_endpoint_replay_handoff_v1.json",
+    "sha256": "c2ddfcb328b968b9433904c440b30b9aa3f15d95ccce1ca41f853de6c743f00c",
+    "source_commit": "2e134d3fab4343acfdee57f89c7a4e1957e63272",
+    "source_tree": "6274a3b5c58e3972c3006daf1fcfb6975a6f9b63"
   },
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": false,
-    "fixture_prerequisite_build_authorized": false,
+    "fixture_expansion_replay_admitted": true,
+    "fixture_prerequisite_build_authorized": true,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "worldserver_start_admitted": false,
+    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "database_provisioning_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": false
+    "dvc_publication_required_after_terminal": true
   },
   "scope_lock": {
-    "allowed_change": "No edit. Independently review the observation-only native endpoint result, its exact compiled counterexample, diagnostics, source split, and adjacent negative states.",
+    "allowed_change": "No code or configuration change. Produce an exact -j8-or-lower worldserver build, source-bound recurrence/seal inputs, and one observation-only map-669 typed endpoint terminal.",
     "forbidden": [
-      "changing movement admission, endpoint or floor tolerances, fallback behavior, encounter logic, class behavior, arbitration, or retry policy",
-      "treating a projected endpoint as logical task completion",
-      "adding Magmaw coordinates, actor owners, class exceptions, or helper-only success paths",
-      "building or starting authserver/worldserver, mutating the database, publishing DVC evidence, or running gameplay"
+      "retrying after any terminal or starting more than one worldserver",
+      "starting authserver, mutating the database, or entering ordinary Magmaw gameplay",
+      "changing movement admission, endpoint or floor tolerances, fallback behavior, encounter logic, class behavior, arbitration, retry policy, or fixture revisions",
+      "claiming logical task completion, executor launch, physical progress, or gameplay success from a projected endpoint observation"
     ],
     "required_postconditions": [
-      "the exact retained 4.40606976-yard miss remains requested EndpointMatched=false and Accepted=false",
-      "requested reach, projected end-poly reach, no-steer, corridor exhaustion, capacity, and failure remain distinguishable",
-      "stale endpoint state resets for every CalculatePath call and diagnostics preserve the typed result",
-      "focused tests and exact affected translation-unit syntax compilation pass",
-      "all touched C/C++ files remain below 1000 lines and independent Sol-high review returns GO"
+      "exact clean commit, tree, binary, build receipt, runtime config, route, profile, recurrence decision, and checkpoint seal identities verify",
+      "one controller-armed checkpoint terminal records requested, resolved, and actual endpoints plus a typed endpoint result",
+      "the terminal receipt remains immutable after queued telemetry and no retry, authserver start, database mutation, or gameplay occurs",
+      "compact DVC evidence is remote-verified before explicit local raw eviction"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "independent_review_no_runtime_action",
+    "repair_policy": "one_start_no_retry",
     "terminal_edges": [
-      "independent_review_go",
-      "typed_outcome_incorrect",
-      "admission_or_tolerance_changed",
-      "stale_state_found",
-      "scope_drift"
+      "typed_endpoint_terminal_observed",
+      "typed_endpoint_outcome_unexpected",
+      "identity_or_authority_failure",
+      "infrastructure_loss",
+      "explicit_interruption"
     ]
   }
 }
