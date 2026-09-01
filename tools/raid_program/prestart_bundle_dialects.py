@@ -49,6 +49,51 @@ MAGMAW_TRANSFER_ROUTE_FIELDS = (
     ("bwd.magmaw.drudges", 669, "trash", 42362),
     ("bwd.magmaw.encounter", 669, "boss", 41570),
 )
+MAGMAW_TRANSFER_FIXTURE_REVISION = 2
+MAGMAW_TRANSFER_FIXTURE_COMMAND = [
+    "pixi",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_magmaw_transfer_lane_checkpoint.py",
+    "tests/test_magmaw_transfer_checkpoint_capture.py",
+]
+MAGMAW_TRANSFER_RETAINED_RUNS = [
+    {
+        "run_id": "magmaw-transfer-lane-offline-capture-dialect-v1",
+        "route_completed": False,
+        "blockers": {
+            "magmaw_transfer_lane_map_bound_checkpoint_missing": "occurred",
+        },
+        "admission": {"fixture_revisions": {}},
+    },
+    {
+        "run_id": (
+            "map669-transfer-checkpoint-1485b51d30-"
+            "terrain-projection-false-reject"
+        ),
+        "route_completed": False,
+        "blockers": {
+            "magmaw_transfer_lane_map_bound_checkpoint_missing": "occurred",
+        },
+        "admission": {
+            "source_identity": "1485b51d304498f25b02504854b1ffc7c6f6077e",
+            "config_identity": _canonical_config_identity(),
+            "fixture_revisions": {
+                MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID: 1,
+            },
+        },
+        "evidence": (
+            "artifacts/cata_raid_program/"
+            "map669_transfer_checkpoint_1485b51d30_"
+            "terrain_projection_false_reject_20260901.dvc"
+        ),
+        "first_broken_edge": (
+            "magmaw_transfer_checkpoint_planner_receipt_failed_"
+            "after_selected_endpoint_reached"
+        ),
+    },
+]
 
 
 class DialectError(RuntimeError):
@@ -115,10 +160,6 @@ def validate_ledger_manifest(
     bank = ledger_value.get("regression_bank") if isinstance(ledger_value, dict) else None
     fixtures = bank.get("fixtures") if isinstance(bank, dict) else None
     ledger_runs = ledger_value.get("runs") if isinstance(ledger_value, dict) else None
-    expected_command = [
-        "pixi", "run", "pytest", "-q",
-        "tests/test_magmaw_transfer_checkpoint_capture.py",
-    ]
     if (
         not isinstance(ledger_value, dict)
         or ledger_value.get("schema") != "trinity_raid_blocker_recurrence_v1"
@@ -126,6 +167,11 @@ def validate_ledger_manifest(
             != "blackwing_descent_10n_magmaw_diagnostic"
         or not isinstance(bank, dict)
         or bank.get("schema") != "trinity_raid_regression_bank_v1"
+        or bank.get("route")
+            != "blackwing_descent_10n_magmaw_diagnostic"
+        or bank.get("current_identity") != {
+            "config_identity": _canonical_config_identity(),
+        }
         or bank.get("fixture_history")
             != [MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID]
         or bank.get("fixture_expansion_requests") != []
@@ -134,13 +180,12 @@ def validate_ledger_manifest(
         or not isinstance(fixtures[0], dict)
         or fixtures[0].get("fixture_id")
             != MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID
-        or fixtures[0].get("revision") != 1
+        or fixtures[0].get("revision")
+            != MAGMAW_TRANSFER_FIXTURE_REVISION
         or fixtures[0].get("evidence_boundary") != "observation_only"
-        or fixtures[0].get("command") != expected_command
+        or fixtures[0].get("command") != MAGMAW_TRANSFER_FIXTURE_COMMAND
         or not isinstance(ledger_runs, list)
-        or len(ledger_runs) != 1
-        or not isinstance(ledger_runs[0], dict)
-        or not isinstance(ledger_runs[0].get("run_id"), str)
+        or ledger_runs != MAGMAW_TRANSFER_RETAINED_RUNS
     ):
         raise DialectError("magmaw_transfer_ledger_manifest_mismatch")
     if (
@@ -182,7 +227,8 @@ def validate_ledger_manifest(
         or set(rows[0]) != row_fields
         or rows[0].get("fixture_id")
             != MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID
-        or rows[0].get("fixture_revision") != 1
+        or rows[0].get("fixture_revision")
+            != MAGMAW_TRANSFER_FIXTURE_REVISION
         or rows[0].get("passed") is not True
         or rows[0].get("returncode") != 0
         or rows[0].get("timed_out") is not False

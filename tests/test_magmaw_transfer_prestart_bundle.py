@@ -15,6 +15,8 @@ from tools.raid_program.blocker_recurrence_ledger import (
     _sha256,
 )
 from tools.raid_program.prestart_bundle_dialects import (
+    MAGMAW_TRANSFER_FIXTURE_COMMAND,
+    MAGMAW_TRANSFER_FIXTURE_REVISION,
     MAGMAW_TRANSFER_LEDGER_RELATIVE_PATH,
     MAGMAW_TRANSFER_ROUTE_NODE_IDS,
 )
@@ -44,7 +46,40 @@ def _stub_build_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def _transfer_fixture(tmp_path: Path) -> dict[str, object]:
+def _mutate_transfer_ledger(value: dict[str, object], mutation: str) -> None:
+    bank = value["regression_bank"]
+    assert isinstance(bank, dict)
+    fixture_rows = bank["fixtures"]
+    assert isinstance(fixture_rows, list)
+    fixture_row = fixture_rows[0]
+    assert isinstance(fixture_row, dict)
+    runs = value["runs"]
+    assert isinstance(runs, list)
+    if mutation == "stale_revision":
+        fixture_row["revision"] = 1
+    elif mutation == "altered_command":
+        fixture_row["command"] = MAGMAW_TRANSFER_FIXTURE_COMMAND[:-1]
+    elif mutation == "missing_first_run":
+        value["runs"] = runs[1:]
+    elif mutation == "reordered_runs":
+        runs.reverse()
+    elif mutation == "forged_retained_run":
+        retained = runs[1]
+        assert isinstance(retained, dict)
+        admission = retained["admission"]
+        assert isinstance(admission, dict)
+        admission["source_identity"] = "forged"
+    elif mutation == "wrong_fixture":
+        fixture_row["fixture_id"] = "foreign_fixture"
+    elif mutation == "extra_fixture":
+        fixture_rows.append(dict(fixture_row))
+    else:  # pragma: no cover - exhaustive parameter guard
+        raise AssertionError(mutation)
+
+
+def _transfer_fixture(
+    tmp_path: Path, *, ledger_mutation: str | None = None,
+) -> dict[str, object]:
     fixture = _fixture(tmp_path)
     root = fixture["root"]
     probe = root / MAGMAW_TRANSFER_CHECKPOINT_PROBE
@@ -59,6 +94,10 @@ def _transfer_fixture(tmp_path: Path) -> dict[str, object]:
         / MAGMAW_TRANSFER_LEDGER_RELATIVE_PATH,
         ledger,
     )
+    if ledger_mutation is not None:
+        ledger_value = json.loads(ledger.read_text(encoding="utf-8"))
+        _mutate_transfer_ledger(ledger_value, ledger_mutation)
+        _write_json(ledger, ledger_value)
     _git(root, "add", MAGMAW_TRANSFER_CHECKPOINT_PROBE.as_posix())
     _git(root, "add", MAGMAW_TRANSFER_LEDGER_RELATIVE_PATH.as_posix())
     _git(root, "commit", "-m", "track transfer inputs")
@@ -92,7 +131,7 @@ def _transfer_fixture(tmp_path: Path) -> dict[str, object]:
         "fixture_ids": [MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID],
         "verifications": [{
             "fixture_id": MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID,
-            "fixture_revision": 1,
+            "fixture_revision": MAGMAW_TRANSFER_FIXTURE_REVISION,
             "passed": True,
             "returncode": 0,
             "timed_out": False,
@@ -266,13 +305,36 @@ def test_transfer_rejects_minimal_hand_authored_suite_receipt(
     receipt = json.loads(suite.read_text(encoding="utf-8"))
     receipt["verifications"] = [{
         "fixture_id": MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID,
-        "fixture_revision": 1,
+        "fixture_revision": MAGMAW_TRANSFER_FIXTURE_REVISION,
         "passed": True,
     }]
     _write_json(suite, receipt)
     fixture["kwargs"]["suite_receipt_sha256"] = sha256_file(suite)
     with pytest.raises(
         bundle.BundleError, match="magmaw_transfer_suite_receipt_mismatch",
+    ):
+        _create(fixture)
+    assert not fixture["output"].exists()
+
+
+@pytest.mark.parametrize(
+    ("mutation"),
+    [
+        "stale_revision",
+        "altered_command",
+        "missing_first_run",
+        "reordered_runs",
+        "forged_retained_run",
+        "wrong_fixture",
+        "extra_fixture",
+    ],
+)
+def test_transfer_rejects_revision_two_manifest_drift(
+    tmp_path: Path, mutation: str,
+) -> None:
+    fixture = _transfer_fixture(tmp_path, ledger_mutation=mutation)
+    with pytest.raises(
+        bundle.BundleError, match="magmaw_transfer_ledger_manifest_mismatch",
     ):
         _create(fixture)
     assert not fixture["output"].exists()
