@@ -14,7 +14,7 @@
   "observed_at_commit": "0475cff84c0711416ad8cc49075388f15546a1b2",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "next_action": "Build the independently reviewed narrow admission repair once, then run one watchdog-controlled Chainwielder gameplay replay. Require actual marker/summoner current-pack authority and a shared PlanMovementPath receipt; stop at the first typed terminal and do not retry.",
+  "next_action": "After two fast8_v4 resource-pressure aborts, build the independently reviewed narrow admission repair with the tracked fast4_v1 fallback, then run one watchdog-controlled Chainwielder gameplay replay. Require actual marker/summoner current-pack authority and a shared PlanMovementPath receipt; stop at the first typed terminal and do not retry.",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_task_state_canary_a725c82d96_summary_v1.json",
     "sha256": "b4c162e72566a23837bb61ff9903101469d6fab932174de640cd847f9837e756"
@@ -22,7 +22,7 @@
   "implementation_scope": {
     "allowed": [
       "run the fixed recurrence suite and author a fixture-expansion admission for chainwielder_pre_admission_rejection_isolation_v1 revision 2",
-      "configure and build the exact current source once with fast8_v4 and eight compiler jobs",
+      "configure and build the exact current source with fast4_v1 after the two retained fast8_v4 memory-reserve abort receipts",
       "reuse the deterministic Blackwing Descent 10N Magmaw roster and strict provisioning readback",
       "start exactly one worldserver and zero authservers under the completion watchdog",
       "capture the actual entry-42690 marker and native summoner identity, current pack membership, destination authority, exact hazard request, shared planner receipt, native submission, route outcome, DPS, and HPS",
@@ -31,7 +31,7 @@
     "forbidden": [
       "bot Z adjustment, target height normalization, MMAP tolerance, fallback fraction, or encounter coordinate changes",
       "any gameplay, class, pet, consumable, boss-strategy, or planner mutation",
-      "a second configure, build, worldserver start, authserver start, or live retry",
+      "a third configure, a fourth build attempt, a second worldserver start, any authserver start, or any live retry",
       "promoting unrelated quarantined floor fixtures from this run",
       "treating helper tests, action submission, or elapsed wall time as gameplay success"
     ]
@@ -42,9 +42,9 @@
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
     "configure_admitted": true,
-    "configure_limit": 1,
+    "configure_limit": 2,
     "worldserver_build_admitted": true,
-    "worldserver_build_limit": 1,
+    "worldserver_build_limit": 3,
     "prestart_bundle_create_limit": 1,
     "database_provisioning_mutations_allowed": false,
     "other_database_mutations_allowed": false,
@@ -66,8 +66,8 @@
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "configure_tickets": 1,
-    "worldserver_build_tickets": 1,
+    "configure_tickets": 2,
+    "worldserver_build_tickets": 3,
     "prestart_bundle_create_limit": 1,
     "worldserver_starts": 0,
     "authserver_starts": 0,
