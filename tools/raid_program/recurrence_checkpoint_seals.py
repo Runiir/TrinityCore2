@@ -152,7 +152,13 @@ def fixture_expansion_contract(
         request_ids.append(fixture_id)
     if len(request_ids) != len(set(request_ids)):
         raise RecurrenceAdmissionError(f"{label}_request_duplicate")
-    if set(targets) != set(pending) | set(request_ids):
+    quarantined = value.get("quarantined_fixture_ids", [])
+    if not isinstance(quarantined, list) or any(
+        not isinstance(fixture_id, str) or not fixture_id
+        for fixture_id in quarantined
+    ):
+        raise RecurrenceAdmissionError(f"{label}_quarantined_invalid")
+    if set(targets) != (set(pending) - set(quarantined)) | set(request_ids):
         raise RecurrenceAdmissionError(f"{label}_request_target_mismatch")
     return requests
 

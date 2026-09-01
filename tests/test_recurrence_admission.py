@@ -34,6 +34,9 @@ from tools.raid_program.recurrence_admission import (
     sha256_file,
     verify_recurrence_admission,
 )
+from tools.raid_program.recurrence_checkpoint_seals import (
+    fixture_expansion_contract,
+)
 
 
 def _git(root: Path, *args: str) -> str:
@@ -246,6 +249,18 @@ def _replacement_request() -> dict[str, object]:
             "point generator, and launched spline observed over multiple ticks"
         ),
     }
+
+
+def test_fixture_expansion_contract_excludes_quarantined_pending_targets() -> None:
+    request = _replacement_request()
+    value = {
+        "pending_fixture_ids": ["quarantined_floor_fixture"],
+        "quarantined_fixture_ids": ["quarantined_floor_fixture"],
+        "fixture_expansion_target_ids": [request["fixture_id"]],
+        "fixture_expansion_requests": [request],
+    }
+
+    assert fixture_expansion_contract(value, label="fixture_expansion") == [request]
 
 
 def _map669_expansion_requests() -> list[dict[str, object]]:
