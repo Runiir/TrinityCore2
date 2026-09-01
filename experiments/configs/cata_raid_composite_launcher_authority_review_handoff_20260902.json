@@ -1,0 +1,40 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "review:generalize_composite_fixture_replay_authority",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "independent_review_go_integration_pending",
+  "source": {
+    "commit": "3a316691abbdd83fdd7c6f19dec5df85919a75ae",
+    "tree": "77776603c611453dffc94f23611e5f6f5f6c7121"
+  },
+  "review": {
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "high",
+    "verdict": "go_for_launcher_boundary_integration_pending",
+    "implementation_commits": [
+      "a644a1af32a021173752aae92389829ccfa938b9",
+      "3a316691abbdd83fdd7c6f19dec5df85919a75ae"
+    ],
+    "focused_command": "pixi run python -m pytest -q tests/test_composite_fixture_replay_launcher.py",
+    "focused_result": "40 passed in 0.95s"
+  },
+  "verified": [
+    "historical work-unit, commit, tree, and prose branches were removed from launcher source",
+    "a nonhistorical fixture request crosses compose_plan, _request_context, and _source_authority without executing commands",
+    "the handoff source commit must exist, own the bound tree, and be an ancestor of clean HEAD",
+    "owner, classification, canonical scenario, complete observation-only program scope, one-start watchdog clock, handoff bytes, required action, and required postcondition fail closed",
+    "the launcher remains below 1000 lines and no build, database, authserver, worldserver, or DVC action occurred"
+  ],
+  "integration_finding": {
+    "status": "verified",
+    "first_broken_edge": "composite_fixture_replay_launcher requires descriptor classification fixture_replay_authorized, but raid_workloop.active_work_unit_status sets ready_for_fixture_expansion only for live_recurrence_quarantined",
+    "failure_postcondition": "a descriptor valid for the launcher cannot receive the workloop fixture-ready signal without weakening or bypassing one of the two contracts",
+    "forbidden_resolution": "do not lie with live_recurrence_quarantined, bypass ready_for_fixture_expansion, or relax launcher classification authority"
+  },
+  "next_work_unit": {
+    "id": "evidence:admit_fixture_replay_authorized_status",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Teach the authoritative raid workloop that the exact fixture_replay_authorized classification is fixture-expansion-ready when and only when the descriptor is otherwise valid; retain all existing dirty, stale, source, clock, and live-verification gates.",
+    "required_postcondition": "one focused workloop test proves a valid fixture_replay_authorized descriptor reports ready_for_fixture_expansion=true while dirty, stale, invalid-clock, unrelated classifications, and implementation-pending-live-verification retain their prior outcomes"
+  }
+}

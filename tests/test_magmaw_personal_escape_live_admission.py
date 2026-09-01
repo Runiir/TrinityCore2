@@ -36,7 +36,7 @@ def test_reviewed_personal_escape_waits_for_generic_launcher_authority() -> None
     ).hexdigest()
 
     scope = active["program_scope"]
-    assert active["classification"] == "prestart_command_composition_repair_required"
+    assert active["classification"] == "control_plane_integration_required"
     assert scope["configure_admitted"] is False
     assert scope["worldserver_build_admitted"] is False
     assert scope["worldserver_start_admitted"] is False
@@ -108,7 +108,7 @@ def test_fresh_fixture_expansion_keeps_launcher_plans_outside_run_root() -> None
     layout = active["fixture_expansion"]["canonical_launcher_layout"]
 
     assert active["work_unit"] == (
-        "evidence:generalize_composite_fixture_replay_authority"
+        "evidence:admit_fixture_replay_authorized_status"
     )
     assert active["preflight_handoff"]["configure_runs"] == 0
     assert active["preflight_handoff"]["worldserver_starts"] == 0

@@ -1,17 +1,17 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:generalize_composite_fixture_replay_authority",
+  "work_unit": "evidence:admit_fixture_replay_authorized_status",
   "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "review:generalize_composite_fixture_replay_authority",
+  "next_work_unit": "review:admit_fixture_replay_authorized_status",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "prestart_command_composition_repair_required",
+  "classification": "control_plane_integration_required",
   "epoch_id": "magmaw_personal_escape_await_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Generalize the canonical composite fixture-replay launch authority so a versioned committed descriptor and hash-bound handoff can authorize any conforming raid fixture work unit without adding canary-specific branches. Preserve every existing fail-closed build, provisioning, recurrence, capture, and cleanup gate.",
-  "gate_state": "the recurrence bank passed 26 of 26 and no build or server budget was consumed; the canonical launcher cannot represent the current descriptor because it enumerates three historical work units and their frozen handoff prose; live fixture expansion is closed until a generic authority contract passes focused negative and positive tests plus independent review",
-  "observed_at_commit": "afad59eba3f890ab8267efe063657cf4947d37b2",
+  "architecture_scope": "Align the authoritative raid workloop with the reviewed generic launcher state fixture_replay_authorized. Change only readiness classification; preserve all descriptor validity, source, clock, implementation-pending, and live-verification semantics.",
+  "gate_state": "the generic launcher authority is independently reviewed GO with 40 focused tests; live remains closed because raid_workloop recognizes only live_recurrence_quarantined as fixture-expansion-ready while the launcher requires fixture_replay_authorized",
+  "observed_at_commit": "3a316691abbdd83fdd7c6f19dec5df85919a75ae",
   "behavior_change": false,
   "evidence_contract_change": true,
   "implementation_handoff": {
@@ -21,10 +21,10 @@
     "verdict": "go"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_composite_launcher_authority_audit_handoff_20260902.json",
-    "sha256": "9465955cf43d9eca5862e19f1bf61fe328d2bb959b812441e232ebf40d5b7752",
-    "source_commit": "afad59eba3f890ab8267efe063657cf4947d37b2",
-    "source_tree": "06386306ad470b9c61ef8747dfeddd3fe0707553"
+    "path": "experiments/configs/cata_raid_composite_launcher_authority_review_handoff_20260902.json",
+    "sha256": "8952a074b3a4486d72c44b29b0abbb7c23d0b8e73997600eb1d81d47836834ca",
+    "source_commit": "3a316691abbdd83fdd7c6f19dec5df85919a75ae",
+    "source_tree": "77776603c611453dffc94f23611e5f6f5f6c7121"
   },
   "preflight_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_personal_escape_plan_layout_preflight_handoff_20260902.json",
@@ -38,7 +38,7 @@
     "authserver_starts": 0,
     "live_retries": 0
   },
-  "first_broken_edge": {
+  "pending_live_edge": {
     "run_id": "magmaw-authority-5cad51fa40-20260902",
     "route_node_id": "bwd.magmaw.encounter",
     "actor_guid": 30008,
@@ -50,12 +50,21 @@
     "cause": "Under one active provisional parent, actor 30008 completed child generation 1 at safe_clearance, then later contact, infection, and death occurred without an authoritative actor-local absence followed by one later rising-edge rearm.",
     "evidence": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc"
   },
+  "first_broken_edge": {
+    "owner": "raid-evidence-lifecycle",
+    "file": "tools/raid_program/raid_workloop.py",
+    "function": "active_work_unit_status",
+    "cause": "ready_for_fixture_expansion requires classification live_recurrence_quarantined, while the reviewed launcher accepts only the canonical fixture_replay_authorized classification",
+    "first_downstream_state": "a descriptor cannot be simultaneously fixture-ready in the workloop and valid for launcher composition",
+    "failure_postcondition": "the reviewed generic launcher cannot receive a valid live fixture-expansion handoff without bypassing one control-plane gate"
+  },
   "repair_contract": {
-    "rule": "Replace historical work-unit enumeration with one versioned committed launcher-authority contract that binds the active descriptor and source handoff generically while retaining all existing safety checks.",
+    "rule": "Treat the exact fixture_replay_authorized classification as fixture-expansion-ready when and only when the active descriptor has no validity issues. Preserve all other readiness classifications and gates.",
     "forbidden": [
-      "a fourth Magmaw-specific or current-work-unit-specific branch",
-      "weakening committed-byte, clean-tree, source, handoff-hash, or input-location checks",
-      "loosening build, provisioning, recurrence, seal, capture, cleanup, no-authserver, no-retry, or completion-watchdog gates",
+      "Magmaw-specific, boss-specific, route-specific, or work-unit-ID-specific readiness logic",
+      "weakening descriptor schema, committed-byte, clean-tree, source-hash, ancestry, or validation-clock checks",
+      "changing ready_for_live_verification or implementation-pending semantics",
+      "loosening launcher, build, provisioning, recurrence, seal, capture, cleanup, no-authserver, no-retry, or completion-watchdog gates",
       "builds, database mutations, authserver starts, or worldserver starts",
       "gameplay, route, class, encounter, movement, Z, floor, MMAP, endpoint, or tolerance changes"
     ]
@@ -105,7 +114,7 @@
     "configure_receipt": "external_run_root/configure_receipt.json",
     "worldserver_build_receipt": "external_run_root/worldserver_build_receipt.json"
   },
-  "next_action": "Implement one generic versioned launcher-authority contract for a clean committed active descriptor and hash-bound source handoff. Prove a valid synthetic current work unit can compose without executing commands, and prove dirty, stale, hash-mismatched, wrong-owner, wrong-classification, wrong-budget, wrong-scenario, and historical-prose-substitution cases fail closed. Do not build, provision, or start a server. Require independent review before restoring the fixture-expansion shard unit.",
+  "next_action": "Update only the workloop fixture-readiness classification to admit a valid fixture_replay_authorized descriptor. Add focused positives and negatives for valid, dirty, stale, invalid-clock, unrelated classification, and implementation-pending-live-verification states. Do not edit the launcher, build, provision, publish, or start a server. Independently review the result before restoring the shard unit.",
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
@@ -121,11 +130,11 @@
     "database_mutation_scope": "none",
     "dvc_publication_required_after_terminal": false,
     "admission_conditions": [
-      "a versioned launcher-authority schema replaces historical work-unit enumeration",
-      "the generic path binds committed descriptor bytes, source-handoff bytes and hash, clean source commit and tree, owner, classification, budgets, scenario, and required postcondition",
-      "the existing historical launcher modes remain valid through the same generic validator or explicit compatibility fixtures",
-      "focused positive and negative tests pass without executing a build, database mutation, authserver, or worldserver",
-      "an independent reviewer returns GO before any shard authorization"
+      "fixture_replay_authorized joins the existing fixture-readiness state set only after all descriptor issues are empty",
+      "dirty, stale, missing-source, bad-hash, nonancestor, and invalid-clock descriptors remain not ready",
+      "unrelated and implementation-pending-live-verification classifications retain their prior readiness results",
+      "focused workloop tests pass without executing a build, database mutation, authserver, or worldserver",
+      "an independent reviewer returns GO before shard authorization"
     ]
   },
   "live_diagnostic": {
@@ -134,10 +143,10 @@
     "failure_condition": "A dropped child, generation churn without a new authoritative episode, infection before correlated native progress or terminal outcome, semantic stall, route failure, death loop, or infrastructure loss closes the single run as evidence and does not certify gameplay success."
   },
   "acceptance": [
-    "one versioned generic authority schema represents the current and future conforming raid fixture work units without source-code branches per canary",
-    "authority remains bound to exact committed descriptor and source-handoff bytes, clean source commit and tree, declared owner, classification, scenario, budgets, and postcondition",
-    "dirty, stale, hash-mismatched, wrong-owner, wrong-classification, wrong-budget, wrong-scenario, and substituted-prose cases fail closed",
-    "existing build-policy, external-input, empty-run-root, recurrence, provisioning, seal, no-authserver, no-retry, completion-watchdog, capture, and cleanup checks remain intact",
+    "a valid fixture_replay_authorized descriptor reports ready_for_fixture_expansion true without boss or work-unit-specific logic",
+    "dirty, stale, missing-source, bad-hash, nonancestor, and invalid-clock descriptors remain not ready",
+    "unrelated classifications remain not fixture-ready and implementation_pending_live_verification keeps only its existing live-verification meaning",
+    "the reviewed generic launcher and all build, provisioning, recurrence, seal, capture, cleanup, no-authserver, no-retry, and completion-watchdog checks remain unchanged",
     "no build, database mutation, authserver, worldserver, gameplay, route, class, encounter, movement, Z, floor, MMAP, endpoint, or tolerance change occurs in this unit"
   ],
   "validation_clock": {
