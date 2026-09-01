@@ -64,7 +64,7 @@ def test_reviewed_personal_escape_waits_for_generic_launcher_authority() -> None
     clock = active["validation_clock"]
     assert clock == {
         "fixed_success_timer_seconds": None,
-        "policy": "offline_focused_tests_only",
+        "policy": "completion_watchdog",
         "worldserver_starts": 0,
         "authserver_starts": 0,
         "retries": 0,

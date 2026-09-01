@@ -142,7 +142,7 @@
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "offline_focused_tests_only",
+    "policy": "completion_watchdog",
     "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0
