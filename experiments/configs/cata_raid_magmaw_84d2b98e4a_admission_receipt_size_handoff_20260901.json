@@ -1,0 +1,64 @@
+{
+  "schema": "cata_raid_magmaw_admission_receipt_size_handoff_v1",
+  "run_id": "magmaw-admission-diag-84d2b98e4a-20260901",
+  "source_commit": "84d2b98e4a9099cead89ab98931036c057f6bd26",
+  "binary_sha256": "b7db1f9956abbfea04e36bd404058992342b53ce5fb9ef127e96d6b02310fcd9",
+  "classification": "infrastructure_failure",
+  "first_broken_edge": {
+    "route_node_id": "bwd.entry.regroup",
+    "failure_reason": "validation_raid_admission_receipt_size_mismatch",
+    "expected_member_count": 10,
+    "provisioned_member_count": 10,
+    "receipt_size": 0,
+    "receipt_expected_size": 10
+  },
+  "readiness_terms": {
+    "roster_complete": true,
+    "unique_leases": true,
+    "roster_composition_valid": true,
+    "difficulty_matches": true,
+    "native_group_exact": true,
+    "entrance_placement_exact": true,
+    "initial_alive_state_exact": true,
+    "receipt_check_enabled": true
+  },
+  "member_observations": {
+    "all_planned_slots_present": true,
+    "all_roles_match": true,
+    "all_class_specs_match": true,
+    "all_declared_specs_match": true,
+    "hunter_guid": 30009,
+    "runtime_hunter_observer_matches": true,
+    "runtime_hunter_observer_reason": "identity_observed",
+    "shared_hunter_observer_status": 2,
+    "shared_hunter_observer_reason": "validation_active_hunter_pet_observation_stored_owner_mismatch",
+    "hunter_observer_failed_admission": false
+  },
+  "gameplay_observation": {
+    "active_bots": 0,
+    "decisions": 0,
+    "party_damage": 0,
+    "party_healing": 0,
+    "worldserver_runtime_seconds": 4,
+    "worldserver_exit_code": 0,
+    "timed_out": false,
+    "cleanup_complete": true
+  },
+  "scope_guardrails": [
+    "repair only the receipt construction or admission ordering defect proven by this run",
+    "do not relax any readiness predicate or receipt membership requirement",
+    "do not change pet AI, class behavior, encounter behavior, movement, MMAP, coordinates, or Z handling",
+    "native movement continues to follow terrain"
+  ],
+  "evidence": {
+    "dvc_path": "artifacts/cata_raid_program/magmaw_admission_diag_84d2b98e4a_20260901.dvc",
+    "dvc_directory_digest": "4baa2f0e06af62be30e2bfc4926e562f.dir",
+    "file_count": 13,
+    "byte_count": 647137,
+    "report_sha256": "9ca854529b971fc834789c33fd7906fc117aae23d7f3b3bab8a3433e0441232c",
+    "worldserver_log_sha256": "463093fbdbcd9ba0549b4852f2fb6e99b95d9d6b5d5aa78a4cc582c28c4775ca",
+    "build_receipt_sha256": "c0daa9ea5fc7d75f72082b4cde119789464443e123e0cd19ecf06fea7234a8d9",
+    "strict_provisioning_sha256": "82e832500156f7b29509d27fa3ed5b20b6b5e7e03af11cf78a78f33e1d45b22b",
+    "shard_readback_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bf5f7f302df0dcbc437fff109eaa0"
+  }
+}
