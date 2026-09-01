@@ -125,6 +125,7 @@
       }
     ],
     "fixture_history": [
+      "magmaw_personal_parasite_escape_task_rearm_v1",
       "rejected_hazard_endpoint_task_termination_v1",
       "magmaw_parasite_lane_paths_v1",
       "magmaw_parasite_lane_transition_full_replay_v1",
@@ -150,6 +151,19 @@
       "current_route_combat_authority_precedence_v1"
     ],
     "fixtures": [
+      {
+        "fixture_id": "magmaw_personal_parasite_escape_task_rearm_v1",
+        "revision": 1,
+        "causal_signature": "magmaw_personal_parasite_escape_task_rearm_churn",
+        "revision_basis": "The compiled replay crosses the production Magmaw strategy, actor-local persistent task, shared movement adapter, real arbiter, and typed native-outcome feedback. It proves that same-wave actor, hazard, GUID, and raw-generation drift cannot rearm a terminal task, while authoritative absence permits one later wave.",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_magmaw_personal_parasite_escape_task.py::test_personal_parasite_escape_task_crosses_production_adapter"
+        ]
+      },
       {
         "fixture_id": "rejected_hazard_endpoint_task_termination_v1",
         "revision": 1,
