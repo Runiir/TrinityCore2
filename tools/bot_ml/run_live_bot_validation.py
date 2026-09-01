@@ -5677,6 +5677,54 @@ def persist_rolling_heartbeat(
     write_json(output_dir / "report.json", report)
 
 
+def persist_final_timeout_liveness(
+    output_dir: Path,
+    heartbeat_index: int,
+    output: str,
+    returncode: int,
+    command: list[str],
+    scenario_reports: dict[str, dict[str, Any]],
+    validation_context: dict[str, Any],
+    duration_policy: str,
+    heartbeat_sec: int,
+    no_progress_window_sec: int,
+    max_repeated_decisions: int,
+    max_death_loops: int,
+    validation_route_manifest: dict[str, Any] | None,
+    expected_cohort_id: str,
+    liveness_clock: Mapping[str, Any],
+) -> None:
+    """Persist one bounded emergency-cap receipt before an early timeout exit."""
+    report = rolling_heartbeat_report(
+        output_dir,
+        heartbeat_index,
+        output,
+        returncode,
+        True,
+        command,
+        scenario_reports,
+        validation_context,
+        duration_policy,
+        heartbeat_sec,
+        no_progress_window_sec,
+        max_repeated_decisions,
+        max_death_loops,
+        validation_route_manifest,
+        expected_cohort_id=expected_cohort_id,
+        persist=False,
+    )
+    advanced_liveness = advance_semantic_liveness(
+        report,
+        observed_monotonic=time.monotonic(),
+        observed_unix=int(time.time()),
+        no_progress_window_sec=no_progress_window_sec,
+        emergency_cap_reached=True,
+        **dict(liveness_clock),
+    )
+    report["semantic_liveness"] = advanced_liveness.pop("receipt")
+    persist_rolling_heartbeat(output_dir, report)
+
+
 def combat_log_export_complete(output: str) -> bool:
     status = combat_log_transport_status(parse_json_objects(output))
     return bool(status.get("reassembled"))
@@ -5785,10 +5833,34 @@ def run_transport_completion_watchdog(
         return returncode, timed_out
 
     def finish(returncode: int, timed_out: bool) -> tuple[str, int, bool, list[str]]:
+        def persist_timeout(code: int) -> None:
+            persist_final_timeout_liveness(
+                output_dir,
+                heartbeat_index + 1,
+                output_parts.render(),
+                code,
+                command,
+                scenario_reports,
+                validation_context,
+                duration_policy,
+                heartbeat_sec,
+                no_progress_window_sec,
+                max_repeated_decisions,
+                max_death_loops,
+                validation_route_manifest,
+                expected_cohort_id,
+                liveness_clock,
+            )
+
+        if timed_out:
+            persist_timeout(returncode)
+            return output_parts.render(), returncode, timed_out, command
         if not timed_out:
             for command_text in cleanup_commands:
                 cleanup_returncode, cleanup_timed_out = send(command_text)
                 if cleanup_returncode != 0 or cleanup_timed_out:
+                    if cleanup_timed_out:
+                        persist_timeout(cleanup_returncode)
                     return output_parts.render(), cleanup_returncode, cleanup_timed_out, command
         return output_parts.render(), returncode, timed_out, command
 
@@ -5908,25 +5980,6 @@ def run_transport_completion_watchdog(
             finalize_heartbeat(output_dir, report)
             write_json(output_dir / "report.json", report)
             return finish(0, False)
-    heartbeat_index += 1
-    report = rolling_heartbeat_report(
-        output_dir, heartbeat_index, output_parts.render(), 0, True, command,
-        scenario_reports, validation_context, duration_policy, heartbeat_sec,
-        no_progress_window_sec, max_repeated_decisions, max_death_loops,
-        validation_route_manifest,
-        expected_cohort_id=expected_cohort_id,
-        persist=False,
-    )
-    advanced_liveness = advance_semantic_liveness(
-        report,
-        observed_monotonic=time.monotonic(),
-        observed_unix=int(time.time()),
-        no_progress_window_sec=no_progress_window_sec,
-        emergency_cap_reached=True,
-        **liveness_clock,
-    )
-    report["semantic_liveness"] = advanced_liveness.pop("receipt")
-    persist_rolling_heartbeat(output_dir, report)
     return finish(124, True)
 
 
@@ -6032,6 +6085,25 @@ def run_worldserver_completion_watchdog(
                 ),
                 cleanup=cleanup,
             )
+
+    def persist_timeout(code: int) -> None:
+        persist_final_timeout_liveness(
+            output_dir,
+            heartbeat_index + 1,
+            joined_output(),
+            code,
+            command,
+            scenario_reports,
+            validation_context,
+            duration_policy,
+            heartbeat_sec,
+            no_progress_window_sec,
+            max_repeated_decisions,
+            max_death_loops,
+            validation_route_manifest,
+            expected_cohort_id,
+            liveness_clock,
+        )
 
     try:
         output_parts.append(read_until_console_prompt(process, deadline))
@@ -6225,6 +6297,8 @@ def run_worldserver_completion_watchdog(
         if process.stdout:
             output_parts.append_cleanup(process.stdout.read())
         returncode = process.returncode if process.returncode is not None else (124 if timed_out else 0)
+        if timed_out:
+            persist_timeout(returncode)
         return joined_output(), returncode, timed_out, command
     except (BrokenPipeError, subprocess.TimeoutExpired) as exc:
         process.kill()
@@ -6232,6 +6306,7 @@ def run_worldserver_completion_watchdog(
         if not output and process.stdout:
             output = process.stdout.read()
         output_parts.append_cleanup(output)
+        persist_timeout(124)
         return joined_output(), 124, True, command
 
 

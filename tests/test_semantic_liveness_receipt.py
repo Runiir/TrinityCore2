@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import json
+import subprocess
 
+import tools.bot_ml.run_live_bot_validation as validation
 from tools.bot_ml.run_live_bot_validation import (
     advance_semantic_liveness,
+    command_script,
     persist_rolling_heartbeat,
+    run_transport_completion_watchdog,
+    run_worldserver_completion_watchdog,
 )
 
 
@@ -145,3 +150,58 @@ def test_compact_heartbeat_and_latest_retain_only_liveness_receipt(tmp_path) -> 
     assert "status" not in stream_row
     assert "diagnosis" not in stream_row
     assert "trace" not in stream_row
+
+
+def test_transport_heartbeat_command_timeout_persists_final_receipt(tmp_path) -> None:
+    def execute_command(_command: str, _remaining: int) -> tuple[str, int, bool]:
+        return "", 124, True
+
+    _output, returncode, timed_out, _command = run_transport_completion_watchdog(
+        execute_command,
+        ["SOAP", "local"],
+        30,
+        command_script(selector="all", trace_limit=1, start=False, stop=False),
+        tmp_path,
+        {},
+        {"scenario_id": "blackwing_descent_10n_magmaw_diagnostic"},
+        heartbeat_sec=1,
+        no_progress_window_sec=300,
+        sleep=lambda _seconds: None,
+    )
+
+    report = json.loads((tmp_path / "report.json").read_text())
+    assert (returncode, timed_out) == (124, True)
+    assert report["semantic_liveness"]["emergency_cap_reached"] is True
+    assert report["completion_reason"] == "emergency_wall_clock_timeout"
+
+
+def test_process_startup_timeout_persists_final_receipt(tmp_path, monkeypatch) -> None:
+    fake_worldserver = tmp_path / "fake_worldserver.py"
+    fake_worldserver.write_text(
+        "#!/usr/bin/env python3\nimport time\ntime.sleep(60)\n",
+        encoding="utf-8",
+    )
+    fake_worldserver.chmod(0o755)
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+
+    def startup_timeout(*_args, **_kwargs):
+        raise subprocess.TimeoutExpired([str(fake_worldserver)], 1)
+
+    monkeypatch.setattr(validation, "read_until_console_prompt", startup_timeout)
+    _output, returncode, timed_out, _command = run_worldserver_completion_watchdog(
+        fake_worldserver,
+        config,
+        30,
+        command_script(selector="all", trace_limit=1, start=False, stop=False),
+        tmp_path,
+        {},
+        {"scenario_id": "blackwing_descent_10n_magmaw_diagnostic"},
+        heartbeat_sec=1,
+        no_progress_window_sec=300,
+    )
+
+    report = json.loads((tmp_path / "report.json").read_text())
+    assert (returncode, timed_out) == (124, True)
+    assert report["semantic_liveness"]["emergency_cap_reached"] is True
+    assert report["completion_reason"] == "emergency_wall_clock_timeout"
