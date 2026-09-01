@@ -1668,6 +1668,40 @@
       "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_69db62a09d_native_path_floor_probe_terminal_20260901.dvc",
       "evidence": "experiments/configs/cata_raid_native_path_terminal_classification_failed_handoff_v1.json",
       "note": "The sealed native-path replay stopped before hazard submission. Actor 30007 at Z 193.126999 requested the connected upper-room staging point at Z 210.098007, but the request-level GetHeight probe resolved unrelated lower geometry at Z -106.245819. The planner rejected target_z_transition before PathGenerator, MotionMaster, or physical movement. This is a new adjacent variant of the shared target-floor false-negative family; the two Hazard production boundaries remain not exercised."
+    },
+    {
+      "run_id": "trinity-magmaw-a725c82d96-task-state-canary.attempt1",
+      "route_completed": false,
+      "classification": "gameplay_failure_repeated_decision_watchdog",
+      "admission": {
+        "source_identity": "a725c82d96463e185a8a47c98d4cd61e59aa28a2",
+        "source_tree": "25b634be6a0825ad367bf7cc89afd0f4f0d272f5",
+        "suite_receipt_sha256": "36f5f2f47db56669883cef1a6ec6e0bef73d54428bde305b6a04263d0114c841",
+        "recurrence_admission_sha256": "eeed5f69f7aa2be4e528ce17c21496476ca5c826887c38f2640d0901163a238f",
+        "fixture_revisions": {
+          "chainwielder_pre_admission_rejection_isolation_v1": 1,
+          "targeted_movement_receipt_retention_v1": 1,
+          "same_level_floor_observation_v1": 4,
+          "same_level_hazard_path_admission_v1": 4,
+          "same_level_native_path_proof_v1": 4
+        }
+      },
+      "blockers": {
+        "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "occurred",
+        "movement_receipt_terminal_join_eviction": "not_exercised",
+        "magmaw_lethal_movement_safe_completion_missing": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "not_exercised",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_native_path_proof_false_negative": "not_exercised",
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "native_planner_executor_launch_divergence": "not_exercised"
+      },
+      "report_sha256": "e03da9f696e323af225bbef4cbead21bae509c2bfdcee55201075e4c50739297",
+      "raw_jsonl_sha256": "a8b527a731bdefa0c946d8432a53b1832f331c25b3f76878d211b759823e7389",
+      "worldserver_log_sha256": "93219aeea38941132d95707f5cfbdaa7a0d27b0970790a686bba751a6b646474",
+      "dvc_pointer": "artifacts/cata_raid_program/magmaw_task_state_canary_a725c82d96_20260901.dvc",
+      "evidence": "experiments/configs/cata_raid_magmaw_task_state_canary_a725c82d96_summary_v1.json",
+      "note": "The normal gameplay canary stopped at Chainwielder after actor 30008 repeated hazard_exit_failed 20 times. The route hazard action was rejected by future_pack_destination before PathGenerator, MotionMaster, a native launch receipt, or progress sampling. This is a recurrence of the receiptless hazard-rejection ownership boundary, not evidence for a Z or MMAP-floor fix. Drudges and Magmaw were not exercised."
     }
   ]
 }
