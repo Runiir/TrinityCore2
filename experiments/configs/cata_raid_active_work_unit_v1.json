@@ -17,7 +17,7 @@
   "next_action": "Implement and independently review one deterministic MySQL compile-header/runtime-library identity gate with precise stale database-object invalidation. Do not build or start a server in this work unit.",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_map669_transfer_checkpoint_mysql_abi_abort_summary_v1.json",
-    "sha256": "f58ee18672f8279fa4adb8b5c6957661265b5e7fc3f5686c372472e41f0d9e42",
+    "sha256": "7bae5671b0fc7181938199dcad136304ecd71987f22ecec8922f2d2823b18fcc",
     "source_commit": "7d27b14ba9503dab30fe41e0e708f78c8abed8d5",
     "source_tree": "cd5272277a9ebf98534f5a5671506b4d5a28894b"
   },
