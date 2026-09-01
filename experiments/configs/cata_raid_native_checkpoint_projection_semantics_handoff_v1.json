@@ -1,0 +1,52 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:repair_native_checkpoint_projection_semantics",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "prebuild_request_projection_mismatch",
+  "source": {
+    "commit": "835f4851bbd4864b667811ab77dbcb93a33d56b0",
+    "tree": "77f5b0d14d42aa1915073028325d67d06532aee4",
+    "recurrence_suite_sha256": "5dacd6acb2f1fa3d66f56ba275993155899d028b949795fd24be6ace4adcc5df",
+    "recurrence_decision_sha256": "c03dbc81dc0ddd6e13d919486cd966c425747283d1e2c5e696d517d024c3bbfa"
+  },
+  "first_broken_edge": {
+    "component": "native checkpoint request projection validator",
+    "reason": "the contract conflates requested fixture expansions with the ledger's pending-state subset",
+    "authoritative_projection": {
+      "fixture_expansion_target_ids": [
+        "same_level_floor_observation_v1",
+        "same_level_hazard_path_admission_v1",
+        "same_level_native_path_proof_v1"
+      ],
+      "fixture_expansion_requests": {
+        "same_level_floor_observation_v1": "4_to_5",
+        "same_level_hazard_path_admission_v1": "4_to_5",
+        "same_level_native_path_proof_v1": "4_to_5"
+      },
+      "pending_fixture_ids": [
+        "same_level_hazard_path_admission_v1",
+        "same_level_native_path_proof_v1"
+      ],
+      "floor_observation_state": "invalidated_and_failing_not_pending"
+    }
+  },
+  "implementation_contract": {
+    "required": [
+      "require exactly the three target IDs and three 4-to-5 request objects",
+      "require exactly the two authoritative pending IDs without floor observation",
+      "preserve generic fixture-expansion target=request-union-pending validation",
+      "add the exact current decision as a positive seal/create/verify/arm case",
+      "reject moving floor into pending, removing a pending ID, adding any pending ID, and every existing missing/extra/stale/duplicate/wrong-purpose/wrong-target mutation"
+    ],
+    "forbidden": [
+      "changing recurrence ledger output, fixture states, requests, gameplay, C++, build, server, database, or DVC",
+      "accepting arbitrary request/target/pending subsets or supersets"
+    ]
+  },
+  "next_work_unit": {
+    "id": "review:repair_native_checkpoint_projection_semantics",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Independently compare the validator to the exact source-bound decision and adversarial projection mutations.",
+    "required_postcondition": "GO review and focused tests before restoring build authorization"
+  }
+}
