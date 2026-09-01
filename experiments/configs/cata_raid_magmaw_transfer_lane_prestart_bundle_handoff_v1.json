@@ -1,0 +1,93 @@
+{
+  "schema": "cata_raid_magmaw_transfer_lane_prestart_bundle_handoff_v1",
+  "created_at_utc": "2026-09-01T08:00:00Z",
+  "source_commit": "c28a1a9931ce6d3530984509c6a5494b458ddf85",
+  "source_tree": "57b5e81dca5ae08b62baba0e6f2133738262977c",
+  "classification": "prestart_bundle_and_tracked_runtime_identity_implemented_independently_reviewed",
+  "implementation_commits": [
+    "1ce7e45d5e",
+    "c28a1a9931"
+  ],
+  "independent_reviews": {
+    "tracked_runtime_config_identity": {
+      "verdict": "go",
+      "reviewed_commit": "2be920b68d3f6923eb6772dea4aef68c2b2f7285"
+    },
+    "magmaw_prestart_bundle": {
+      "verdict": "go",
+      "reviewed_commit": "1f93f4d2aedaab1d44e38ef69e9f3eafd332ba73"
+    }
+  },
+  "fixture": {
+    "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
+    "case_id": "entrance_polygon_short_lane_v1",
+    "actor_guid": 30007,
+    "map_id": 669,
+    "task_authority_enabled": false,
+    "certifies_gameplay_success": false,
+    "certifies_boss_fidelity": false
+  },
+  "route_contract": {
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "ordered_nodes": [
+      "bwd.entry.regroup",
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ],
+    "map_id": 669,
+    "kinds": [
+      "regroup",
+      "trash",
+      "trash",
+      "boss"
+    ]
+  },
+  "authenticated_runtime_config": {
+    "template_path": "src/server/worldserver/worldserver.conf.dist",
+    "template_length": 156788,
+    "template_sha256": "ab0bf9adac893c97ce1c8c78034e70311ed98f4b3e32e52b998cf479122f80cd",
+    "derived_output_length": 156886,
+    "derived_output_sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f",
+    "contract_sha256": "716cb5f34a76ba3c5cef2108a92d3a12387dd5d2bd00cf32b2712d9d68dd580b"
+  },
+  "verified_fail_closed_contract": [
+    "suite receipt binds the current source, canonical config identity, ledger manifest, fixture command and result, revision, and latest run boundary",
+    "forged config identity, manifest hash, or minimal stored-pass receipt rejects at create, pre-rename verification, and standalone verification",
+    "the exact four-node route binds order, map, kind, and source entry semantics even when caller hashes are recomputed",
+    "actor, fixture, case, authority-off config, seal, runtime profile, capture option, and recurrence admission are exact",
+    "existing Chainwielder behavior remains compatible",
+    "fixture completion remains observation-only and cannot certify gameplay or boss success"
+  ],
+  "master_validation": {
+    "tests_passed": 366,
+    "suites": [
+      "tests/test_magmaw_transfer_prestart_bundle.py",
+      "tests/test_blocker_recurrence_ledger.py",
+      "tests/test_recurrence_admission.py",
+      "tests/test_magmaw_transfer_checkpoint_capture.py",
+      "tests/test_native_path_checkpoint.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_chainwielder_derived_runtime_config_bundle.py",
+      "tests/test_canonical_route_staging.py"
+    ],
+    "production_modules_under_1000_lines": true,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "database_mutations": 0,
+    "dvc_mutations": 0
+  },
+  "required_next_work_unit": {
+    "id": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_build_one_start",
+    "owner_skill": "raid-evidence-lifecycle",
+    "build_policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+    "build_budget": 1,
+    "worldserver_start_budget": 1,
+    "authserver_start_budget": 0,
+    "retry_budget": 0,
+    "database_mutations_allowed": false,
+    "classification": "fixture_only_not_gameplay"
+  }
+}
