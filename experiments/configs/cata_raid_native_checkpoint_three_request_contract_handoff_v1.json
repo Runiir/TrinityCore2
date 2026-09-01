@@ -1,0 +1,41 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:repair_native_checkpoint_three_request_contract",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "evidence_contract_repair_pending",
+  "source": {
+    "commit": "5d51b318ec0da665d270aceaa2d0b46c474f5e73",
+    "tree": "555ff10e65908596ff085ffd3921fbe5592f5fe1",
+    "runtime_repair_commit": "5d51b318ec0da665d270aceaa2d0b46c474f5e73",
+    "runtime_repair_handoff": "experiments/configs/cata_raid_native_connected_surface_floor_repair_handoff_v1.json",
+    "recurrence_decision_sha256": "351e64d673e1db206f0a61dc2b8c831e92b939008a64abad07f8f9ce5b018510"
+  },
+  "first_broken_edge": {
+    "component": "native checkpoint admission/seal/controller request validation",
+    "reason": "the controller contract still recognizes the superseded two-request projection and rejects the current authoritative three-request recurrence decision",
+    "current_authoritative_requests": {
+      "same_level_floor_observation_v1": "4_to_5",
+      "same_level_hazard_path_admission_v1": "4_to_5",
+      "same_level_native_path_proof_v1": "4_to_5"
+    }
+  },
+  "implementation_contract": {
+    "required": [
+      "bind seal creation, admission creation, admission verification, and controller arming to exactly the current three authoritative requests",
+      "require each request to remain pending with the exact 4-to-5 revision and nonempty causal signature and production boundary",
+      "keep missing, extra, stale, wrong-purpose, wrong-target, and duplicate projections fail-closed",
+      "replace the obsolete closed-floor negative with a stale-floor-revision negative"
+    ],
+    "forbidden": [
+      "changing gameplay C++, movement admission, encounter logic, class behavior, database state, build outputs, server state, or DVC evidence",
+      "loosening the native checkpoint to accept arbitrary pending requests or a subset/superset of the authoritative projection",
+      "running a build or server before independent review"
+    ]
+  },
+  "next_work_unit": {
+    "id": "review:repair_native_checkpoint_three_request_contract",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Independently review the exact three-request seal/admission/controller contract and adversarial negatives.",
+    "required_postcondition": "GO review and focused Python tests with no gameplay, build, server, database, or DVC mutation"
+  }
+}
