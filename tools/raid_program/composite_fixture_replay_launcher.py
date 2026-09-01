@@ -46,6 +46,29 @@ PREBUILD_SCHEMA = "cata_raid_composite_fixture_replay_prebuild_plan_v1"
 REALIZED_SCHEMA = "cata_raid_composite_fixture_replay_realized_plan_v1"
 REQUEST_SCHEMA = "cata_raid_composite_fixture_replay_request_v1"
 LAUNCHER_AUTHORITY_SCHEMA = "cata_raid_composite_fixture_replay_launcher_authority_v1"
+FIXTURE_DESCRIPTOR_OWNER = "raid-shard-architecture"
+FIXTURE_DESCRIPTOR_CLASSIFICATION = "fixture_replay_authorized"
+FIXTURE_SCENARIO = {
+    "scenario_id": SCENARIO_ID,
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N",
+}
+FIXTURE_PROGRAM_SCOPE = {
+    "acceptance_admitted": False,
+    "fixture_expansion_replay_admitted": True,
+    "gameplay_canary_admitted": False,
+    "gameplay_mutations_allowed": False,
+    "live_diagnostic_admitted": True,
+    "configure_admitted": True,
+    "worldserver_build_admitted": True,
+    "worldserver_start_admitted": True,
+    "authserver_start_admitted": False,
+    "retry_admitted": False,
+    "database_mutations_allowed": True,
+    "database_mutation_scope": "validation_provisioning_only",
+    "dvc_publication_required_after_terminal": True,
+}
 POLICY_RELATIVE_PATH = Path(
     "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json"
 )
@@ -211,12 +234,12 @@ def _source_authority(
     descriptor_fixture_expansion = descriptor.get("fixture_expansion")
     descriptor_program_scope = descriptor.get("program_scope")
     if (
-        scenario != {
-            "scenario_id": SCENARIO_ID,
-            "raid": descriptor.get("raid"),
-            "boss": descriptor.get("boss"),
-            "mode": descriptor.get("mode"),
-        }
+        authority.get("descriptor_owner_skill") != FIXTURE_DESCRIPTOR_OWNER
+        or authority.get("descriptor_classification")
+        != FIXTURE_DESCRIPTOR_CLASSIFICATION
+        or scenario != FIXTURE_SCENARIO
+        or {key: descriptor.get(key) for key in ("raid", "boss", "mode")}
+        != {key: FIXTURE_SCENARIO[key] for key in ("raid", "boss", "mode")}
         or fixture_expansion != {
             "purpose": "fixture_expansion_replay",
             "attempts": 1,
@@ -230,20 +253,15 @@ def _source_authority(
             descriptor_fixture_expansion.get(key) != value
             for key, value in fixture_expansion.items()
         )
-        or program_scope != {
-            "fixture_expansion_replay_admitted": True,
-            "configure_admitted": True,
-            "worldserver_build_admitted": True,
-            "worldserver_start_admitted": True,
-            "authserver_start_admitted": False,
-            "retry_admitted": False,
-            "database_mutations_allowed": True,
-            "database_mutation_scope": "validation_provisioning_only",
-        }
+        or program_scope != FIXTURE_PROGRAM_SCOPE
         or not isinstance(descriptor_program_scope, dict)
+        or frozenset(descriptor_program_scope) not in {
+            frozenset(FIXTURE_PROGRAM_SCOPE),
+            frozenset((*FIXTURE_PROGRAM_SCOPE, "admission_conditions")),
+        }
         or any(
             descriptor_program_scope.get(key) != value
-            for key, value in program_scope.items()
+            for key, value in FIXTURE_PROGRAM_SCOPE.items()
         )
         or validation_clock != {
             "fixed_success_timer_seconds": None,
@@ -263,8 +281,30 @@ def _source_authority(
     ):
         raise ReplayPlanError("source_handoff_identity_invalid")
     _hash(source_handoff.get("sha256"), "source_handoff")
-    _git_object(source_handoff.get("source_commit"), "handoff_source_commit")
-    _git_object(source_handoff.get("source_tree"), "handoff_source_tree")
+    handoff_source_commit = _git_object(
+        source_handoff.get("source_commit"), "handoff_source_commit"
+    )
+    handoff_source_tree = _git_object(
+        source_handoff.get("source_tree"), "handoff_source_tree"
+    )
+    try:
+        resolved_handoff_commit = str(git_output(
+            worktree, "rev-parse", f"{handoff_source_commit}^{{commit}}"
+        ))
+        resolved_handoff_tree = str(git_output(
+            worktree, "rev-parse", f"{handoff_source_commit}^{{tree}}"
+        ))
+        git_output(
+            worktree, "merge-base", "--is-ancestor",
+            handoff_source_commit, commit,
+        )
+    except subprocess.SubprocessError as error:
+        raise ReplayPlanError("source_handoff_provenance_invalid") from error
+    if (
+        resolved_handoff_commit != handoff_source_commit
+        or resolved_handoff_tree != handoff_source_tree
+    ):
+        raise ReplayPlanError("source_handoff_provenance_invalid")
     handoff_relative = Path(str(source_handoff.get("path") or ""))
     if (
         handoff_relative.is_absolute()

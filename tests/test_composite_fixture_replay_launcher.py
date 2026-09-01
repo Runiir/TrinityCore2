@@ -416,9 +416,7 @@ def test_build_realization_verifies_both_external_receipts(
     assert result["configure_receipt"]["sha256"] == "5" * 64
 
 
-def _authority_fixture() -> tuple[dict, dict]:
-    source_commit = "1" * 40
-    source_tree = "2" * 40
+def _authority_fixture(source_commit: str, source_tree: str) -> tuple[dict, dict]:
     required_action = "Run one future fixture through the canonical launcher."
     required_postcondition = (
         "One hash-bound future fixture reaches its typed completion watchdog."
@@ -439,8 +437,8 @@ def _authority_fixture() -> tuple[dict, dict]:
     authority = {
         "schema": launcher.LAUNCHER_AUTHORITY_SCHEMA,
         "expected_work_unit": TEST_WORK_UNIT,
-        "descriptor_owner_skill": "raid-shard-architecture",
-        "descriptor_classification": "fixture_replay_authorized",
+        "descriptor_owner_skill": launcher.FIXTURE_DESCRIPTOR_OWNER,
+        "descriptor_classification": launcher.FIXTURE_DESCRIPTOR_CLASSIFICATION,
         "source_handoff_schema": handoff["schema"],
         "source_handoff_work_unit": handoff["work_unit_id"],
         "source_handoff_owner_skill": handoff["owner_skill"],
@@ -451,12 +449,7 @@ def _authority_fixture() -> tuple[dict, dict]:
         "required_postcondition_sha256": launcher._sha256_bytes(
             required_postcondition.encode()
         ),
-        "scenario": {
-            "scenario_id": launcher.SCENARIO_ID,
-            "raid": "blackwing_descent",
-            "boss": "magmaw",
-            "mode": "10N",
-        },
+        "scenario": dict(launcher.FIXTURE_SCENARIO),
         "fixture_expansion": {
             "purpose": "fixture_expansion_replay",
             "attempts": 1,
@@ -465,16 +458,7 @@ def _authority_fixture() -> tuple[dict, dict]:
             "worldserver_starts": 1,
             "duration_policy": "completion_watchdog",
         },
-        "program_scope": {
-            "fixture_expansion_replay_admitted": True,
-            "configure_admitted": True,
-            "worldserver_build_admitted": True,
-            "worldserver_start_admitted": True,
-            "authserver_start_admitted": False,
-            "retry_admitted": False,
-            "database_mutations_allowed": True,
-            "database_mutation_scope": "validation_provisioning_only",
-        },
+        "program_scope": dict(launcher.FIXTURE_PROGRAM_SCOPE),
         "validation_clock": {
             "fixed_success_timer_seconds": None,
             "policy": "completion_watchdog",
@@ -521,9 +505,18 @@ def _commit_authority_fixture(
         configs / "cata_raid_active_work_unit_v1.json",
         launcher._canonical_bytes(descriptor),
     )
-    policy = ROOT / launcher.POLICY_RELATIVE_PATH
-    _write(root / launcher.POLICY_RELATIVE_PATH, policy.read_bytes())
-    subprocess.run(["git", "init", str(root)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+    subprocess.run(
+        ["git", "-C", str(root), "commit", "-m", "fixture"],
+        check=True, capture_output=True,
+    )
+
+
+def _init_source_repo(root: Path) -> tuple[str, str]:
+    subprocess.run(
+        ["git", "init", "-b", "main", str(root)],
+        check=True, capture_output=True,
+    )
     subprocess.run(
         ["git", "-C", str(root), "config", "user.email", "test@example.invalid"],
         check=True,
@@ -531,11 +524,49 @@ def _commit_authority_fixture(
     subprocess.run(
         ["git", "-C", str(root), "config", "user.name", "Test"], check=True,
     )
+    policy = ROOT / launcher.POLICY_RELATIVE_PATH
+    _write(root / launcher.POLICY_RELATIVE_PATH, policy.read_bytes())
+    _write(root / "provenance.txt", b"reviewed source\n")
     subprocess.run(["git", "-C", str(root), "add", "."], check=True)
     subprocess.run(
-        ["git", "-C", str(root), "commit", "-m", "fixture"],
+        ["git", "-C", str(root), "commit", "-m", "reviewed source"],
         check=True, capture_output=True,
     )
+    commit = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    tree = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "HEAD^{tree}"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    return commit, tree
+
+
+def _divergent_source(root: Path) -> tuple[str, str]:
+    subprocess.run(
+        ["git", "-C", str(root), "checkout", "--orphan", "divergent"],
+        check=True, capture_output=True,
+    )
+    _write(root / "divergent.txt", b"unrelated source\n")
+    subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+    subprocess.run(
+        ["git", "-C", str(root), "commit", "-m", "divergent source"],
+        check=True, capture_output=True,
+    )
+    commit = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    tree = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "HEAD^{tree}"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    subprocess.run(
+        ["git", "-C", str(root), "checkout", "main"],
+        check=True, capture_output=True,
+    )
+    return commit, tree
 
 
 def _production_request(tmp_path: Path, root: Path) -> dict:
@@ -549,8 +580,9 @@ def test_generic_authority_composes_nonhistorical_fixture_through_production_pat
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
 ) -> None:
     monkeypatch.undo()
-    descriptor, handoff = _authority_fixture()
     root = (tmp_path / "source").resolve()
+    source_commit, source_tree = _init_source_repo(root)
+    descriptor, handoff = _authority_fixture(source_commit, source_tree)
     _commit_authority_fixture(root, descriptor, handoff)
     monkeypatch.setattr(launcher, "ROOT", root)
     plan = launcher.compose_plan(_production_request(tmp_path, root))
@@ -579,13 +611,25 @@ def test_generic_authority_composes_nonhistorical_fixture_through_production_pat
         ("handoff", "source_handoff_identity_invalid"),
         ("prose", "source_handoff_identity_invalid"),
         ("request", "active_work_unit_mismatch"),
+        ("nonexistent_source", "source_handoff_provenance_invalid"),
+        ("wrong_source_tree", "source_handoff_provenance_invalid"),
+        ("nonancestor_source", "source_handoff_provenance_invalid"),
+        ("coherent_owner", "launcher_authority_scope_invalid"),
+        ("coherent_classification", "launcher_authority_scope_invalid"),
+        ("coherent_scenario", "launcher_authority_scope_invalid"),
+        ("coherent_gameplay", "launcher_authority_scope_invalid"),
+        ("coherent_acceptance", "launcher_authority_scope_invalid"),
     ],
 )
 def test_generic_authority_mismatches_fail_before_plan_or_runner_action(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, case: str, reason: str,
 ) -> None:
     monkeypatch.undo()
-    descriptor, handoff = _authority_fixture()
+    root = (tmp_path / "source").resolve()
+    source_commit, source_tree = _init_source_repo(root)
+    if case == "nonancestor_source":
+        source_commit, source_tree = _divergent_source(root)
+    descriptor, handoff = _authority_fixture(source_commit, source_tree)
     bind_hash = case != "hash"
     if case == "stale":
         descriptor["observed_at_commit"] = "3" * 40
@@ -605,7 +649,42 @@ def test_generic_authority_mismatches_fail_before_plan_or_runner_action(
         handoff["next_work_unit"]["required_action"] = (
             "Use a historical canary's caller-authored prose instead."
         )
-    root = (tmp_path / "source").resolve()
+    elif case == "nonexistent_source":
+        nonexistent = "3" * 40
+        descriptor["observed_at_commit"] = nonexistent
+        descriptor["immutable_input_commit"] = nonexistent
+        descriptor["source_handoff"]["source_commit"] = nonexistent
+        handoff["source"]["commit"] = nonexistent
+    elif case == "wrong_source_tree":
+        wrong_tree = "4" * 40
+        descriptor["source_handoff"]["source_tree"] = wrong_tree
+        handoff["source"]["tree"] = wrong_tree
+    elif case == "coherent_owner":
+        wrong_owner = "raid-evidence-lifecycle"
+        descriptor["owner_skill"] = wrong_owner
+        descriptor["launcher_authority"]["descriptor_owner_skill"] = wrong_owner
+        handoff["next_work_unit"]["owner_skill"] = wrong_owner
+    elif case == "coherent_classification":
+        wrong_classification = "historical_fixture"
+        descriptor["classification"] = wrong_classification
+        descriptor["launcher_authority"][
+            "descriptor_classification"
+        ] = wrong_classification
+    elif case == "coherent_scenario":
+        descriptor["raid"] = "historical_raid"
+        descriptor["launcher_authority"]["scenario"][
+            "raid"
+        ] = "historical_raid"
+    elif case == "coherent_gameplay":
+        descriptor["program_scope"]["gameplay_mutations_allowed"] = True
+        descriptor["launcher_authority"]["program_scope"][
+            "gameplay_mutations_allowed"
+        ] = True
+    elif case == "coherent_acceptance":
+        descriptor["program_scope"]["acceptance_admitted"] = True
+        descriptor["launcher_authority"]["program_scope"][
+            "acceptance_admitted"
+        ] = True
     _commit_authority_fixture(root, descriptor, handoff, bind_hash=bind_hash)
     if case == "dirty":
         (root / "dirty.txt").write_text("dirty\n", encoding="utf-8")
