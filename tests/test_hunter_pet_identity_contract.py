@@ -19,6 +19,15 @@ def test_hunter_pet_identity_contract_is_compiled_and_behavioral() -> None:
 
 using namespace BotHunterPetIdentityContract;
 
+struct PetRow
+{
+    unsigned PetId = 0;
+    unsigned Entry = 0;
+    unsigned Owner = 0;
+    bool Hunter = false;
+    bool Active = false;
+};
+
 PersistentIdentityFacts validIdentity()
 {
     PersistentIdentityFacts facts;
@@ -52,10 +61,58 @@ FrozenReceiptComparison validReceipt()
 
 int main()
 {
+    // Production selection is keyed by the live CharmInfo pet number. An
+    // unrelated active row must not displace the admitted inactive row.
+    std::array<PetRow, 2> rows = {{
+        {8700009, 8959, 30009, true, false},
+        {42, 1, 30009, true, true},
+    }};
+    auto lookup = [&rows](unsigned petId) -> PetRow const*
+    {
+        for (PetRow const& row : rows)
+            if (row.PetId == petId)
+                return &row;
+        return nullptr;
+    };
+    PetRow const* selected =
+        SelectPersistentRowForLivePet<PetRow>(8700009, lookup);
+    assert(selected == &rows[0]);
+    assert(!selected->Active);
+
     PersistentIdentityFacts identity = validIdentity();
+    identity.PersistentRowPresent = selected != nullptr;
+    identity.StoredLifecycleActive = selected && selected->Active;
+    identity.StoredTypeHunter = selected && selected->Hunter;
+    identity.StoredOwnerMatches = selected && selected->Owner == 30009;
+    identity.StoredPetId = selected ? selected->PetId : 0;
+    identity.StoredEntry = selected ? selected->Entry : 0;
     assert(ClassifyPersistentIdentity(identity) == PersistentIdentityStatus::Observed);
 
-    // The exact Canary 48abb counterexample: the same permanent owned live
+    FrozenReceiptComparison receipt = validReceipt();
+    receipt.PetIdMatches = selected && selected->PetId == 8700009;
+    receipt.PetEntryMatches = selected && selected->Entry == 8959;
+    receipt.OwnerMatches = selected && selected->Owner == 30009;
+    assert(ClassifyFrozenReceipt(receipt) == FrozenReceiptStatus::Matches);
+
+    // No live instance (including an ordinarily dismissed pet before it is
+    // called again) has no live pet number and cannot select any row.
+    assert(SelectPersistentRowForLivePet<PetRow>(0, lookup) == nullptr);
+
+    // A lookup that violates its key contract is rejected at the selection
+    // boundary rather than being classified as the requested pet.
+    auto wrongLookup = [&rows](unsigned) -> PetRow const* { return &rows[1]; };
+    assert(SelectPersistentRowForLivePet<PetRow>(8700009, wrongLookup) == nullptr);
+
+    // A different live pet may select its own valid row, but must still fail
+    // reconciliation against the frozen admitted pet.
+    selected = SelectPersistentRowForLivePet<PetRow>(42, lookup);
+    assert(selected == &rows[1]);
+    receipt = validReceipt();
+    receipt.PetIdMatches = selected->PetId == 8700009;
+    assert(ClassifyFrozenReceipt(receipt) == FrozenReceiptStatus::PetIdMismatch);
+
+    // The exact Canary 48abb counterexample remains explicit: the same
+    // permanent owned live
     // pet and row remain identity-valid after ordinary lifecycle code changes
     // PlayerPetData::Active to false.
     identity.StoredLifecycleActive = false;
@@ -84,7 +141,7 @@ int main()
     identity = validIdentity(); identity.LiveEntry = 42;
     expectIdentityFailure(identity, PersistentIdentityStatus::PetEntryMismatch);
 
-    FrozenReceiptComparison receipt = validReceipt();
+    receipt = validReceipt();
     assert(ClassifyFrozenReceipt(receipt) == FrozenReceiptStatus::Matches);
     auto expectReceiptFailure = [](FrozenReceiptComparison comparison,
         FrozenReceiptStatus expected)
@@ -140,7 +197,8 @@ def test_runtime_observer_uses_live_pet_number_not_mutable_current_flag() -> Non
         GAME / "Bots/BotWorldPopulationMgrValidationCohortGroup.cpp"
     ).read_text(encoding="utf-8")
 
-    assert "GetPlayerPetDataById(snapshot.PetId)" in observer
+    assert "SelectPersistentRowForLivePet<PlayerPetData>" in observer
+    assert "GetPlayerPetDataById(petId)" in observer
     assert "GetPlayerPetDataCurrent()" not in observer[
         observer.index("ObserveActiveOrdinaryHunterPetStatus") :
     ]

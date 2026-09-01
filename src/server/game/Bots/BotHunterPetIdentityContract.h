@@ -5,6 +5,19 @@
 
 namespace BotHunterPetIdentityContract
 {
+// Select the persisted row whose immutable pet number belongs to the live
+// pet. The caller owns storage and lookup; selection deliberately does not
+// consult the mutable current/dismissed flag on that row.
+template <typename PetRow, typename Lookup>
+PetRow const* SelectPersistentRowForLivePet(std::uint32_t livePetId,
+    Lookup lookup)
+{
+    if (!livePetId)
+        return nullptr;
+    PetRow const* row = lookup(livePetId);
+    return row && row->PetId == livePetId ? row : nullptr;
+}
+
 enum class PersistentIdentityStatus : std::uint8_t
 {
     Observed = 0,

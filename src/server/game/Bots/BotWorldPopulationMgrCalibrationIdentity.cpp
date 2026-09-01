@@ -16,6 +16,7 @@ namespace BotWorldPopulationMgrCalibrationIdentity
 using BotHunterPetIdentityContract::ClassifyPersistentIdentity;
 using BotHunterPetIdentityContract::PersistentIdentityFacts;
 using BotHunterPetIdentityContract::PersistentIdentityStatus;
+using BotHunterPetIdentityContract::SelectPersistentRowForLivePet;
 std::string OrdinaryPetSpellbookSha256(
     std::vector<OrdinaryPetSpellIdentity> const& spellbook)
 {
@@ -141,9 +142,12 @@ HunterPetObservationStatus ObserveActiveOrdinaryHunterPetStatus(
     // A native dismiss/call transition flips PlayerPetData::Active. Resolve
     // the live permanent pet's stable row by pet number instead of treating
     // that mutable lifecycle flag as immutable admission identity.
-    PlayerPetData const* stored = snapshot.PetId
-        ? const_cast<Player*>(bot)->GetPlayerPetDataById(snapshot.PetId)
-        : nullptr;
+    PlayerPetData const* stored =
+        SelectPersistentRowForLivePet<PlayerPetData>(snapshot.PetId,
+            [bot](uint32 petId)
+            {
+                return const_cast<Player*>(bot)->GetPlayerPetDataById(petId);
+            });
     // Family passives are deterministically derived from world DBC data and
     // are intentionally never persisted by Pet::_SaveSpells.  The pinned
     // provisioning identity is the mutable, persistable runtime spellbook;
