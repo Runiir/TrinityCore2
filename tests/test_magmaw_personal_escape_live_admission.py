@@ -36,15 +36,15 @@ def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
     ).hexdigest()
 
     scope = active["program_scope"]
-    assert active["classification"] == "implementation_pending_live_verification"
+    assert active["classification"] == "live_recurrence_quarantined"
     assert scope["configure_admitted"] is True
     assert scope["worldserver_build_admitted"] is True
     assert scope["worldserver_start_admitted"] is True
     assert scope["live_diagnostic_admitted"] is True
     assert scope["authserver_start_admitted"] is False
     assert scope["retry_admitted"] is False
-    assert scope["fixture_expansion_replay_admitted"] is False
-    assert scope["gameplay_canary_admitted"] is True
+    assert scope["fixture_expansion_replay_admitted"] is True
+    assert scope["gameplay_canary_admitted"] is False
     assert scope["acceptance_admitted"] is False
     assert scope["dvc_publication_required_after_terminal"] is True
 

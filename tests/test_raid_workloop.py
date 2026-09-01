@@ -343,10 +343,10 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "verification:magmaw_personal_escape_await_authority"
+        "fixture:observe_personal_escape_authority_and_parasite_control_live"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["classification"] == "implementation_pending_live_verification"
+    assert active["classification"] == "live_recurrence_quarantined"
     assert active["next_owner_skill"] == "raid-evidence-lifecycle"
     assert active["program_scope"]["gameplay_mutations_allowed"] is False
     assert active["program_scope"]["worldserver_start_admitted"] is True
@@ -357,7 +357,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["validation_clock"]["policy"] == "completion_watchdog"
-    assert "complete retained recurrence bank" in (
+    assert "complete retained bank" in (
         active["next_action"].lower()
     )
     assert any(

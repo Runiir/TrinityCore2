@@ -1,16 +1,16 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "verification:magmaw_personal_escape_await_authority",
-  "owner_skill": "raid-shard-architecture",
-  "next_work_unit": "live:magmaw_personal_escape_await_authority",
+  "work_unit": "fixture:observe_personal_escape_authority_and_parasite_control_live",
+  "owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "fixture:classify_personal_escape_authority_and_parasite_control_live",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "implementation_pending_live_verification",
+  "classification": "live_recurrence_quarantined",
   "epoch_id": "magmaw_personal_escape_await_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "architecture_scope": "Retain one actor-keyed personal parasite escape task after first threat observation. Transient facts-authority loss must enter AwaitingAuthoritativeFacts and later emit one stable candidate or an explicit terminal, instead of silently dropping the escape request.",
-  "gate_state": "implementation and independent Sol-high review are GO; the registered full recurrence bank must pass at the exact clean descriptor commit, then one fast8 build and one no-retry completion-watchdog Magmaw canary are admitted",
+  "gate_state": "implementation and independent Sol-high review are GO; the full bank admits one observation-only fixture-expansion replay for the four exact Chainwielder and Magmaw production boundaries, but it does not admit a gameplay canary",
   "observed_at_commit": "b133fae4c61208a57cd4714fb8f9a4dc7805d090",
   "behavior_change": true,
   "evidence_contract_change": false,
@@ -78,14 +78,14 @@
   },
   "live_diagnostic": {
     "required_observation": "For every personal parasite threat, retain actor, wave, task generation, candidate key, fixed expiry, destination, authority state, arbitration result, native receipt, same-floor progress while the native executor follows terrain, semantic clearance or typed terminal, deaths, route progression, DPS/HPS, and cleanup.",
-    "success_condition": "The exact authority-gap signature is absent, native progress precedes safe clearance, and the completion watchdog reaches a normal Magmaw clear without a repeated-decision, semantic-stall, death-loop, infrastructure, or contamination terminal.",
-    "failure_condition": "Any dropped actor child, key or deadline churn within one wave, infection before a candidate/native outcome, semantic stall, death loop, or route failure closes the single run and selects the next trace-backed edge."
+    "success_condition": "The run records the four exact fixture-expansion boundaries with correlated task/native outcomes and cleanup. Promotion still requires the production-boundary predicates, including zero player infection for parasite-control revision 8.",
+    "failure_condition": "Any dropped actor child, key or deadline churn within one wave, infection before a candidate/native outcome, semantic stall, death loop, or route failure closes the single observation run and remains evidence. It does not certify gameplay success."
   },
-  "next_action": "At this exact clean descriptor commit, run the complete retained recurrence bank after the 813bdc7acd boundary. If it passes, configure and build worldserver with fast8, then run one no-retry completion-watchdog Magmaw canary and publish its terminal evidence.",
+  "next_action": "At this exact clean descriptor commit, rerun the complete retained bank after the 813bdc7acd boundary with the fixture-expansion gate. If admitted, configure and build worldserver with fast8, then run one no-retry completion-watchdog observation replay for chainwielder_pre_admission_rejection_isolation_v1 revision 2, magmaw_parasite_control_full_runtime_v1 revision 8, magmaw_parasite_lane_paths_v1 revision 9, and magmaw_parasite_lane_transition_full_replay_v1 revision 8.",
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": false,
-    "gameplay_canary_admitted": true,
+    "fixture_expansion_replay_admitted": true,
+    "gameplay_canary_admitted": false,
     "live_diagnostic_admitted": true,
     "gameplay_mutations_allowed": false,
     "configure_admitted": true,
@@ -98,9 +98,10 @@
     "dvc_publication_required_after_terminal": true,
     "admission_conditions": [
       "the exact clean descriptor commit passes every registered recurrence fixture after run magmaw-task-canary-813bdc7acd-20260901",
-      "the recurrence evaluator admits the canary for the canonical Magmaw config identity",
+      "the recurrence evaluator admits fixture expansion for the four exact target fixture revisions under the canonical Magmaw config identity",
       "configure and worldserver build receipts bind the same clean source identity and fast8 policy",
-      "the generated runtime config, route manifest, roster readback, and recurrence admission verify before process creation"
+      "the generated runtime config, route manifest, roster readback, and recurrence admission verify before process creation",
+      "the replay cannot certify gameplay success or close Magmaw acceptance"
     ]
   },
   "validation_clock": {
