@@ -133,6 +133,12 @@ native outcome feedback. Keep authority default-off until exact shadow-versus-
 legacy identity and outcome evidence passes. A native projected endpoint is
 progress evidence, not logical task completion; require its typed terminal
 classification rather than inferring it from a normal path flag or tolerance.
+Require the task identity to remain stable under ordinary actor motion,
+moving-hazard drift, and nearest-hazard GUID churn within one mechanic wave.
+An exact rejected coordinate disappearing is not closure when the same semantic
+task immediately rearms toward a slightly changed coordinate. Admit at most one
+explicitly bounded distinct alternate before typed failure, and rearm only for
+a new stable wave or lifecycle scope.
 
 Reject a vertical-slice handoff when its compiled fixture manually recreates
 the manager's admission/submission adapter. Require one shared production

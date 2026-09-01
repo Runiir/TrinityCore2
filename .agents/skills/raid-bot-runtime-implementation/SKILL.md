@@ -358,6 +358,16 @@ the same transition resumes afterward. Retire it only on observed native
 arrival, a later mechanic generation after arrival, or exact attempt reset.
 Validate the full traversed corridor, not only endpoints.
 
+Treat observed geometry as task input, not task identity. After a terminal
+native rejection, ordinary actor motion, moving-hazard drift, or nearest-hazard
+GUID churn inside the same mechanic wave must not silently increment the task
+generation and retry forever. A persistent task may use one explicitly bounded,
+distinct alternate route, then reaches a typed failed state and releases its
+resources. Rearm only for a new stable mechanic wave or lifecycle scope. Add a
+multi-tick replay with sub-yard actor and hazard movement after rejection;
+exact-endpoint non-repetition alone is insufficient because it can hide
+semantic task churn behind slightly different coordinates.
+
 When an encounter strategy uses ordered conditionals to choose one movement
 before the action kernel sees alternatives, treat source order as an implicit
 priority system. Migrate one mechanic vertically: normalized facts, sticky
