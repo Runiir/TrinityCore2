@@ -17991,7 +17991,7 @@ void Player::LoadPetsFromDB(PreparedQueryResult result)
 
         playerPetData->PetId         = petId;
         playerPetData->CreatureId    = fields[1].GetUInt32();
-        playerPetData->Owner         = fields[2].GetUInt64();
+        playerPetData->Owner         = fields[2].GetUInt32();
         playerPetData->DisplayId     = fields[3].GetUInt32();
         playerPetData->Petlevel      = fields[4].GetUInt16();
         playerPetData->PetExp        = fields[5].GetUInt32();
