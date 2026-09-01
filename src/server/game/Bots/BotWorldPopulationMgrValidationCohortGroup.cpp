@@ -43,6 +43,7 @@ using BotHunterPetIdentityContract::FrozenReceiptStatus;
 using BotValidationRaidAdmissionReadiness::Evaluate;
 using BotValidationRaidAdmissionReadiness::Facts;
 using BotValidationRaidAdmissionReadiness::FailureReason;
+using BotValidationRaidAdmissionReadiness::MemberReceipt;
 using BotValidationRaidAdmissionReadiness::Result;
 using BotValidationRaidAdmissionReadiness::ToJson;
 
@@ -735,9 +736,28 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         {
             sealedAdmissionReadinessFailure = FailureReason(
                 readiness.FirstFailure);
+            std::vector<MemberReceipt> memberReceipts;
+            memberReceipts.reserve(raid.RosterByGuid.size());
+            for (auto const& [guid, slot] : raid.RosterByGuid)
+            {
+                MemberReceipt member;
+                member.Guid = guid;
+                member.RosterSlotId = slot.RosterSlotId;
+                member.ClassSpec = slot.ClassSpec;
+                member.PlannedSlotPresent = slot.AdmissionPlannedSlotPresent;
+                member.PlannedRoleMatches = slot.AdmissionPlannedRoleMatches;
+                member.PlannedClassSpecMatches = slot.AdmissionPlannedClassSpecMatches;
+                member.DeclaredSpecMatches = slot.AdmissionDeclaredSpecMatches;
+                member.RuntimeHunterObserverApplicable = slot.AdmissionRuntimeHunterObserverApplicable;
+                member.RuntimeHunterObserverMatches = slot.AdmissionRuntimeHunterObserverMatches;
+                member.RuntimeHunterObserverReason = slot.AdmissionRuntimeHunterObserverReason;
+                member.SharedHunterObserverStatus = slot.AdmissionSharedHunterObserverStatus;
+                member.SharedHunterObserverReason = slot.AdmissionSharedHunterObserverReason;
+                memberReceipts.push_back(std::move(member));
+            }
             TC_LOG_ERROR("server",
                 "BotWorld validation raid admission readiness failed receipt=%s",
-                ToJson(readiness).c_str());
+                ToJson(readiness, memberReceipts).c_str());
         }
     }
     bool const currentAttemptFailed = !Cohort().ValidationAttemptFailureReason.empty()

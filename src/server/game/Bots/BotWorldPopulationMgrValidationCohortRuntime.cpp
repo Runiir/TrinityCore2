@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
+#include "Bots/BotWorldPopulationMgrCalibrationIdentity.h"
 
 #include "CharmInfo.h"
 #include "Creature.h"
@@ -355,19 +356,56 @@ void BotWorldPopulationMgr::UpdateValidationCohortRaidRuntime(
         slot.GlyphIdentity = glyphIdentity.str();
         slot.Active = bot->IsInWorld();
         slot.LeaseOwned = LeaseOwnedByCurrentCohort(guid, slot.LeaseRoleSlot);
+        slot.AdmissionPlannedSlotPresent = plannedSlot != nullptr;
+        slot.AdmissionPlannedRoleMatches = plannedSlot
+            && slot.Role == plannedSlot->Role;
+        slot.AdmissionPlannedClassSpecMatches = plannedSlot
+            && (Cohort().Config.PoolClassSpecFilter.empty()
+                || (plannedSlot->SlotIndex
+                        < Cohort().Config.PoolClassSpecFilter.size()
+                    && slot.ClassSpec == Cohort().Config.PoolClassSpecFilter[
+                        plannedSlot->SlotIndex]));
+        slot.AdmissionDeclaredSpecMatches =
+            LoadedBotMatchesDeclaredSpec(bot, slot.ClassSpec);
+        slot.AdmissionRuntimeHunterObserverApplicable =
+            !activeObservationOnly && bot->getClass() == CLASS_HUNTER;
+        slot.AdmissionRuntimeHunterObserverMatches =
+            !slot.AdmissionRuntimeHunterObserverApplicable
+            || LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec);
+        slot.AdmissionRuntimeHunterObserverReason =
+            !slot.AdmissionRuntimeHunterObserverApplicable ? "not_applicable"
+            : (slot.AdmissionRuntimeHunterObserverMatches
+                ? "identity_observed" : "identity_invalid");
+        if (bot->getClass() == CLASS_HUNTER)
+        {
+            BotWorldPopulationMgrCalibrationIdentity::HunterPetIdentitySnapshot sharedPet;
+            auto const sharedStatus =
+                BotWorldPopulationMgrCalibrationIdentity::ObserveActiveOrdinaryHunterPetStatus(
+                    bot, sharedPet);
+            slot.AdmissionSharedHunterObserverStatus = uint8(sharedStatus);
+            slot.AdmissionSharedHunterObserverReason =
+                sharedStatus == BotWorldPopulationMgrCalibrationIdentity::HunterPetObservationStatus::IdentityObserved
+                    ? "identity_observed"
+                    : (sharedStatus == BotWorldPopulationMgrCalibrationIdentity::HunterPetObservationStatus::LifecycleUnavailable
+                        ? "lifecycle_unavailable"
+                        : (sharedPet.PersistentIdentityFailureReason
+                            && *sharedPet.PersistentIdentityFailureReason
+                                ? sharedPet.PersistentIdentityFailureReason
+                                : "identity_invalid"));
+        }
+        else
+            slot.AdmissionSharedHunterObserverReason = "not_applicable";
         raid.RosterByGuid.emplace(guid, slot);
         if (!observedGuids.insert(guid).second || !observedSlots.insert(slot.RosterSlotId).second
             || slot.RosterSlotId.empty() || !slot.LeaseOwned)
             raid.UniqueLeases = false;
 
         if (Cohort().Config.ValidationRouteEnable
-            && (!plannedSlot || slot.Role != plannedSlot->Role
-                || (!Cohort().Config.PoolClassSpecFilter.empty()
-                    && (plannedSlot->SlotIndex >= Cohort().Config.PoolClassSpecFilter.size()
-                        || slot.ClassSpec != Cohort().Config.PoolClassSpecFilter[plannedSlot->SlotIndex]))
-                || !LoadedBotMatchesDeclaredSpec(bot, slot.ClassSpec)
-                || (!activeObservationOnly
-                    && !LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec))))
+            && (!slot.AdmissionPlannedSlotPresent
+                || !slot.AdmissionPlannedRoleMatches
+                || !slot.AdmissionPlannedClassSpecMatches
+                || !slot.AdmissionDeclaredSpecMatches
+                || !slot.AdmissionRuntimeHunterObserverMatches))
             raid.RosterCompositionValid = false;
 
         RaidNativeSignalState currentSignal;

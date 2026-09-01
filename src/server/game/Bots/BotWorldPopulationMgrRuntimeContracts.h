@@ -191,6 +191,15 @@
         std::vector<RaidRosterItemIdentity> GearManifest;
         bool Active = false;
         bool LeaseOwned = false;
+        bool AdmissionPlannedSlotPresent = false;
+        bool AdmissionPlannedRoleMatches = false;
+        bool AdmissionPlannedClassSpecMatches = false;
+        bool AdmissionDeclaredSpecMatches = false;
+        bool AdmissionRuntimeHunterObserverApplicable = false;
+        bool AdmissionRuntimeHunterObserverMatches = false;
+        std::string AdmissionRuntimeHunterObserverReason;
+        uint8 AdmissionSharedHunterObserverStatus = 0;
+        std::string AdmissionSharedHunterObserverReason;
     };
 
     // Raid preparation receipts retain native item-use evidence per exact

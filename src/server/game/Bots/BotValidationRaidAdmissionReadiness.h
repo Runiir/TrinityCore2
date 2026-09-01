@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace BotValidationRaidAdmissionReadiness
 {
@@ -45,9 +46,27 @@ struct Result
     bool Ready() const { return FirstFailure == Failure::None; }
 };
 
+struct MemberReceipt
+{
+    std::uint32_t Guid = 0;
+    std::string RosterSlotId;
+    std::string ClassSpec;
+    bool PlannedSlotPresent = false;
+    bool PlannedRoleMatches = false;
+    bool PlannedClassSpecMatches = false;
+    bool DeclaredSpecMatches = false;
+    bool RuntimeHunterObserverApplicable = false;
+    bool RuntimeHunterObserverMatches = false;
+    std::string RuntimeHunterObserverReason;
+    std::uint8_t SharedHunterObserverStatus = 0;
+    std::string SharedHunterObserverReason;
+};
+
 Result Evaluate(Facts const& facts);
 char const* FailureReason(Failure failure);
 std::string ToJson(Result const& result);
+std::string ToJson(Result const& result,
+    std::vector<MemberReceipt> const& members);
 }
 
 #endif

@@ -10,6 +10,7 @@ GAME = ROOT / "src/server/game"
 HELPER = GAME / "Bots/BotValidationRaidAdmissionReadiness.cpp"
 GROUP = GAME / "Bots/BotWorldPopulationMgrValidationCohortGroup.cpp"
 ADMISSION = GAME / "Bots/BotWorldPopulationMgrValidationAdmission.cpp"
+RUNTIME = GAME / "Bots/BotWorldPopulationMgrValidationCohortRuntime.cpp"
 
 
 def test_validation_raid_admission_readiness_is_compiled_and_typed() -> None:
@@ -64,6 +65,30 @@ int main()
         "entrance_placement_exact", "initial_alive_state_exact",
         "receipt_size", "receipt_expected_size"})
         assert(receipt.find(field) != std::string::npos);
+    MemberReceipt member;
+    member.Guid = 30009;
+    member.RosterSlotId = "raid_dps_4";
+    member.ClassSpec = "marksmanship_hunter";
+    member.PlannedSlotPresent = true;
+    member.PlannedRoleMatches = true;
+    member.PlannedClassSpecMatches = true;
+    member.DeclaredSpecMatches = true;
+    member.RuntimeHunterObserverApplicable = true;
+    member.RuntimeHunterObserverMatches = false;
+    member.RuntimeHunterObserverReason = "identity_invalid";
+    member.SharedHunterObserverStatus = 3;
+    member.SharedHunterObserverReason = "identity_observed";
+    receipt = ToJson(result, {member});
+    for (char const* value : {
+        "\"guid\":30009", "raid_dps_4", "marksmanship_hunter",
+        "planned_slot_present", "planned_role_matches",
+        "planned_class_spec_matches", "declared_spec_matches",
+        "runtime_hunter_observer_matches",
+        "runtime_hunter_observer_reason",
+        "shared_hunter_observer_status",
+        "shared_hunter_observer_reason", "identity_invalid",
+        "identity_observed"})
+        assert(receipt.find(value) != std::string::npos);
 
     facts = passingFacts(); facts.ExpectedMemberCount = 0;
     expectFailure(facts, Failure::ExpectedMemberCountZero,
@@ -133,6 +158,7 @@ int main()
 def test_live_admission_wires_actual_values_and_preserves_typed_failure() -> None:
     group = GROUP.read_text(encoding="utf-8")
     admission = ADMISSION.read_text(encoding="utf-8")
+    runtime = RUNTIME.read_text(encoding="utf-8")
 
     for assignment in (
         "readinessFacts.ExpectedMemberCount = raid.ExpectedSize",
@@ -149,7 +175,20 @@ def test_live_admission_wires_actual_values_and_preserves_typed_failure() -> Non
     ):
         assert assignment in group
     assert "raid.ServerProvisioningComplete = readiness.Ready()" in group
-    assert "ToJson(readiness).c_str()" in group
+    assert "ToJson(readiness, memberReceipts).c_str()" in group
+    for field in (
+        "member.Guid = guid",
+        "member.RosterSlotId = slot.RosterSlotId",
+        "member.ClassSpec = slot.ClassSpec",
+        "member.PlannedSlotPresent = slot.AdmissionPlannedSlotPresent",
+        "member.PlannedRoleMatches = slot.AdmissionPlannedRoleMatches",
+        "member.DeclaredSpecMatches = slot.AdmissionDeclaredSpecMatches",
+        "member.RuntimeHunterObserverMatches = slot.AdmissionRuntimeHunterObserverMatches",
+        "member.RuntimeHunterObserverReason = slot.AdmissionRuntimeHunterObserverReason",
+        "member.SharedHunterObserverStatus = slot.AdmissionSharedHunterObserverStatus",
+        "member.SharedHunterObserverReason = slot.AdmissionSharedHunterObserverReason",
+    ):
+        assert field in group
     assert "sealedAdmissionReadinessFailure = FailureReason(" in group
     assert "Cohort().LastPopulationFailureReason =\n            sealedAdmissionReadinessFailure" in group
 
@@ -158,3 +197,28 @@ def test_live_admission_wires_actual_values_and_preserves_typed_failure() -> Non
     ]
     assert "rollbackAdmission(readinessFailure.empty()" in admission
     assert '"validation_raid_admission_activation_failed"' in admission
+
+    for field in (
+        "slot.AdmissionPlannedSlotPresent = plannedSlot != nullptr",
+        "slot.AdmissionPlannedRoleMatches = plannedSlot",
+        "slot.AdmissionPlannedClassSpecMatches = plannedSlot",
+        "slot.AdmissionDeclaredSpecMatches =",
+        "LoadedBotMatchesDeclaredSpec(bot, slot.ClassSpec)",
+        "slot.AdmissionRuntimeHunterObserverMatches =",
+        "LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec)",
+        "ObserveActiveOrdinaryHunterPetStatus(",
+        "slot.AdmissionSharedHunterObserverReason =",
+    ):
+        assert field in runtime
+    runtime_gate = runtime[
+        runtime.index("if (Cohort().Config.ValidationRouteEnable") :
+        runtime.index("RaidNativeSignalState currentSignal")
+    ]
+    for field in (
+        "AdmissionPlannedSlotPresent",
+        "AdmissionPlannedRoleMatches",
+        "AdmissionPlannedClassSpecMatches",
+        "AdmissionDeclaredSpecMatches",
+        "AdmissionRuntimeHunterObserverMatches",
+    ):
+        assert field in runtime_gate

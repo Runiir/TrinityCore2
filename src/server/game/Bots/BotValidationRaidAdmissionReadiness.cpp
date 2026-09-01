@@ -4,6 +4,25 @@
 
 namespace BotValidationRaidAdmissionReadiness
 {
+namespace
+{
+std::string JsonEscape(std::string const& value)
+{
+    std::string escaped;
+    for (char c : value)
+        switch (c)
+        {
+            case '\\': escaped += "\\\\"; break;
+            case '"': escaped += "\\\""; break;
+            case '\n': escaped += "\\n"; break;
+            case '\r': escaped += "\\r"; break;
+            case '\t': escaped += "\\t"; break;
+            default: escaped += c; break;
+        }
+    return escaped;
+}
+}
+
 Result Evaluate(Facts const& facts)
 {
     Result result;
@@ -64,6 +83,12 @@ char const* FailureReason(Failure failure)
 
 std::string ToJson(Result const& result)
 {
+    return ToJson(result, {});
+}
+
+std::string ToJson(Result const& result,
+    std::vector<MemberReceipt> const& members)
+{
     Facts const& facts = result.Receipt;
     std::ostringstream json;
     json << "{\"ready\":" << (result.Ready() ? "true" : "false")
@@ -80,6 +105,27 @@ std::string ToJson(Result const& result)
          << ",\"receipt_check_enabled\":" << (facts.ReceiptCheckEnabled ? "true" : "false")
          << ",\"receipt_size\":" << facts.ReceiptSize
          << ",\"receipt_expected_size\":" << facts.ReceiptExpectedSize
+         << ",\"members\":[";
+    bool first = true;
+    for (MemberReceipt const& member : members)
+    {
+        if (!first)
+            json << ',';
+        first = false;
+        json << "{\"guid\":" << member.Guid
+             << ",\"roster_slot_id\":\"" << JsonEscape(member.RosterSlotId) << "\""
+             << ",\"class_spec\":\"" << JsonEscape(member.ClassSpec) << "\""
+             << ",\"planned_slot_present\":" << (member.PlannedSlotPresent ? "true" : "false")
+             << ",\"planned_role_matches\":" << (member.PlannedRoleMatches ? "true" : "false")
+             << ",\"planned_class_spec_matches\":" << (member.PlannedClassSpecMatches ? "true" : "false")
+             << ",\"declared_spec_matches\":" << (member.DeclaredSpecMatches ? "true" : "false")
+             << ",\"runtime_hunter_observer_applicable\":" << (member.RuntimeHunterObserverApplicable ? "true" : "false")
+             << ",\"runtime_hunter_observer_matches\":" << (member.RuntimeHunterObserverMatches ? "true" : "false")
+             << ",\"runtime_hunter_observer_reason\":\"" << JsonEscape(member.RuntimeHunterObserverReason) << "\""
+             << ",\"shared_hunter_observer_status\":" << uint32_t(member.SharedHunterObserverStatus)
+             << ",\"shared_hunter_observer_reason\":\"" << JsonEscape(member.SharedHunterObserverReason) << "\"}";
+    }
+    json << ']'
          << '}';
     return json.str();
 }
