@@ -370,7 +370,9 @@ private:
         std::string_view diagnosticCandidateKey = {},
         BotWorldMovement::ValidationRouteDestinationAuthority
             destinationAuthority = BotWorldMovement::
-                ValidationRouteDestinationAuthority::None);
+                ValidationRouteDestinationAuthority::None,
+        std::optional<BotWorldMovement::HazardEscapeBasis> hazardEscape =
+            std::nullopt);
     bool MoveBotToPointWithReferenceFloor(
         WorldBotState& state, Player* bot, float x, float y, float z,
         std::optional<float> referenceFloorZ, bool terminalOnFailure,
@@ -381,7 +383,9 @@ private:
         std::string_view diagnosticCandidateKey = {},
         BotWorldMovement::ValidationRouteDestinationAuthority
             destinationAuthority = BotWorldMovement::
-                ValidationRouteDestinationAuthority::None);
+                ValidationRouteDestinationAuthority::None,
+        std::optional<BotWorldMovement::HazardEscapeBasis> hazardEscape =
+            std::nullopt);
     bool ExecuteMovementIntent(WorldBotState& state, Player* bot,
         BotWorldMovement::Intent const& intent);
     void ObserveChainwielderOwnerCheckpointBeforeUpdate(

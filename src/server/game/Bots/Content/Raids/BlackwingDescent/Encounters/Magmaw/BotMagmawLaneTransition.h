@@ -143,6 +143,8 @@ struct MagmawParasiteHazardState
     uint32 InstanceId = 0;
     ObjectGuid ActorGuid;
     ObjectGuid DangerGuid;
+    Vector3 DangerPosition;
+    bool DangerPositionAvailable = false;
     uint64 IntentId = 0;
     Vector3 Destination;
     bool Active = false;
@@ -202,7 +204,7 @@ struct MagmawParasiteHazardState
             Active = false;
     }
 
-    void Begin(ObjectGuid danger, Vector3 destination)
+    void Begin(ObjectGuid danger, Vector3 dangerPosition, Vector3 destination)
     {
         if (Active)
             return;
@@ -210,8 +212,18 @@ struct MagmawParasiteHazardState
         if (!IntentId)
             ++IntentId;
         DangerGuid = danger;
+        DangerPosition = dangerPosition;
+        DangerPositionAvailable = true;
         Destination = destination;
         Active = true;
+    }
+
+    // Compatibility for value fixtures that intentionally do not bind source
+    // geometry. Such an intent remains strict at native endpoint admission.
+    void Begin(ObjectGuid danger, Vector3 destination)
+    {
+        Begin(danger, {}, destination);
+        DangerPositionAvailable = false;
     }
 
     bool HasRetainedIntent() const

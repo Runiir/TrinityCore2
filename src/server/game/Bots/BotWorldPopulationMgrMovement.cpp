@@ -9,12 +9,13 @@ bool BotWorldPopulationMgr::MoveBotToPoint(
     float dynamicTargetRange, std::string_view movementReason,
     std::string_view diagnosticCandidateKey,
     BotWorldMovement::ValidationRouteDestinationAuthority
-        destinationAuthority)
+        destinationAuthority,
+    std::optional<BotWorldMovement::HazardEscapeBasis> hazardEscape)
 {
     return MoveBotToPointWithReferenceFloor(state, bot, x, y, z,
         std::nullopt, terminalOnFailure, movementOwner, movementPriority,
         dynamicTarget, dynamicTargetRange, movementReason,
-        diagnosticCandidateKey, destinationAuthority);
+        diagnosticCandidateKey, destinationAuthority, hazardEscape);
 }
 
 bool BotWorldPopulationMgr::MoveBotToPointWithReferenceFloor(
@@ -25,7 +26,8 @@ bool BotWorldPopulationMgr::MoveBotToPointWithReferenceFloor(
     float dynamicTargetRange, std::string_view movementReason,
     std::string_view diagnosticCandidateKey,
     BotWorldMovement::ValidationRouteDestinationAuthority
-        destinationAuthority)
+        destinationAuthority,
+    std::optional<BotWorldMovement::HazardEscapeBasis> hazardEscape)
 {
     if (!bot)
         return false;
@@ -110,6 +112,7 @@ bool BotWorldPopulationMgr::MoveBotToPointWithReferenceFloor(
         nativeRecoveryEntranceRequired
         && state.ValidationCohortLocked
         && bot->GetMapId() != state.ValidationCohortMapId;
+    intent.HazardEscape = hazardEscape;
     intent.DestinationAuthority = destinationAuthority;
     return ExecuteMovementIntent(state, bot, intent);
 }

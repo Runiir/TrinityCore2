@@ -49,6 +49,14 @@ std::uint64_t MovementIntentFingerprint(
     appendByte(intent.AllowRecentFailureRetry);
     appendByte(intent.AllowNativeLongPath);
     appendByte(intent.NativeRecoveryCrossMapPending);
+    appendByte(intent.HazardEscape.has_value());
+    if (intent.HazardEscape)
+    {
+        appendUint64(intent.HazardEscape->HazardGuid);
+        appendFloat(intent.HazardEscape->HazardX);
+        appendFloat(intent.HazardEscape->HazardY);
+        appendFloat(intent.HazardEscape->HazardZ);
+    }
     appendUint64(intent.IntentReason.size());
     for (char value : intent.IntentReason)
         appendByte(std::uint8_t(value));
@@ -138,6 +146,7 @@ std::uint64_t MovementPlannerDiagnosticSidecar::BeginReceipt(
     observation.RequireCompletePath = intent.RequireCompletePath;
     observation.AllowNativeLongPath = intent.AllowNativeLongPath;
     observation.DynamicTarget = intent.DynamicTarget != nullptr;
+    observation.HazardEscape = intent.HazardEscape;
     observation.LaunchReceipt.Id = receiptId;
     observation.LaunchReceipt.DiagnosticCandidateKey =
         intent.DiagnosticCandidateKey;
@@ -265,7 +274,18 @@ bool MatchesRequest(MovementPlannerObservation const& observation,
             == intent.AllowProgressiveSegments
         && observation.RequireCompletePath == intent.RequireCompletePath
         && observation.AllowNativeLongPath == intent.AllowNativeLongPath
-        && observation.DynamicTarget == (intent.DynamicTarget != nullptr);
+        && observation.DynamicTarget == (intent.DynamicTarget != nullptr)
+        && observation.HazardEscape.has_value()
+            == intent.HazardEscape.has_value()
+        && (!intent.HazardEscape
+            || (observation.HazardEscape->HazardGuid
+                    == intent.HazardEscape->HazardGuid
+                && observation.HazardEscape->HazardX
+                    == intent.HazardEscape->HazardX
+                && observation.HazardEscape->HazardY
+                    == intent.HazardEscape->HazardY
+                && observation.HazardEscape->HazardZ
+                    == intent.HazardEscape->HazardZ));
 }
 }
 
@@ -309,6 +329,7 @@ void MovementPlannerDiagnosticSidecar::FinalizeExecutor(
     observation.RequireCompletePath = intent.RequireCompletePath;
     observation.AllowNativeLongPath = intent.AllowNativeLongPath;
     observation.DynamicTarget = intent.DynamicTarget != nullptr;
+    observation.HazardEscape = intent.HazardEscape;
     observation.Gate = gate ? gate : "executor_admission";
     observation.Result = result ? result : "unavailable";
     observation.Reason = reason ? reason : "";
@@ -343,6 +364,7 @@ void MovementPlannerDiagnosticSidecar::RecordPlannerOutcome(
     if (primaryNativeProof)
         observation.PrimaryNativeProof = *primaryNativeProof;
     observation.LocalFallbackAttempted = localFallbackAttempted;
+    observation.HazardEscapeProgress = plan.HazardEscapeProgress;
     observation.FinalTraversalMode = plan.TraversalMode.empty()
         ? "unavailable" : plan.TraversalMode;
     observation.PlannerGate = gate ? gate : "planner_admission";

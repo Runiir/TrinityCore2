@@ -137,6 +137,30 @@ void AppendNativeProofJson(std::ostringstream& json,
          << ",\"accepted\":" << (proof.Accepted ? "true" : "false")
          << "}";
 }
+
+void AppendHazardEscapeProgressJson(std::ostringstream& json,
+    std::optional<BotWorldMovement::HazardEscapeBasis> const& basis,
+    BotWorldMovement::HazardEscapeProgressObservation const& progress)
+{
+    json << "{\"basis_available\":"
+         << (basis && basis->Available() ? "true" : "false")
+         << ",\"hazard_guid\":" << (basis ? basis->HazardGuid : 0)
+         << ",\"hazard\":{\"x\":"
+         << (basis ? basis->HazardX : 0.0f) << ",\"y\":"
+         << (basis ? basis->HazardY : 0.0f) << ",\"z\":"
+         << (basis ? basis->HazardZ : 0.0f) << "}"
+         << ",\"progress_available\":"
+         << (progress.Available ? "true" : "false")
+         << ",\"actor_clearance\":" << progress.ActorClearance
+         << ",\"resolved_endpoint\":{\"x\":" << progress.EndpointX
+         << ",\"y\":" << progress.EndpointY << ",\"z\":"
+         << progress.EndpointZ << "}"
+         << ",\"endpoint_clearance\":" << progress.EndpointClearance
+         << ",\"clearance_progress\":" << progress.ClearanceProgress
+         << ",\"required_progress\":" << progress.RequiredProgress
+         << ",\"proof_qualified\":"
+         << (progress.ProofQualified ? "true" : "false") << "}";
+}
 }
 
 namespace BotWorldMovement
@@ -181,6 +205,10 @@ std::string MovementPlannerObservationJson(
          << (observation.AllowNativeLongPath ? "true" : "false")
          << ",\"dynamic_target\":"
          << (observation.DynamicTarget ? "true" : "false") << "}"
+         << ",\"hazard_escape_progress\":";
+    AppendHazardEscapeProgressJson(json, observation.HazardEscape,
+        observation.HazardEscapeProgress);
+    json
          << ",\"primary_path\":{\"disposition\":\""
          << PrimaryDispositionName(observation.PrimaryPathDisposition)
          << "\",\"proof\":";

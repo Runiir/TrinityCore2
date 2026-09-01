@@ -2,8 +2,10 @@
 #define TRINITY_BOT_NATIVE_ACTION_INTENT_H
 
 #include "Bots/BotActionArbiter.h"
+#include "Bots/BotHazardEscapeEvidence.h"
 #include "ObjectGuid.h"
 #include <cmath>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -25,6 +27,10 @@ struct Move
     // escape inside a lethal envelope instead owns cast and GCD resources so
     // a hard cast cannot replace the submitted path in the same kernel tick.
     bool PreemptCasting = false;
+    // Optional semantic basis for a point escape. Native diagnostics retain
+    // this immutable source snapshot so a terrain-resolved endpoint can be
+    // reviewed against the exact hazard. It never changes path Z.
+    std::optional<BotWorldMovement::HazardEscapeBasis> HazardEscape;
     // Diagnostic-only copy of the selected arbitration candidate identity.
     // Native movement must never consult this field.
     std::string DiagnosticCandidateKey;

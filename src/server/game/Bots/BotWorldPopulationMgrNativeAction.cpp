@@ -128,7 +128,9 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
         {
             bool moved = MoveBotToPoint(state, bot, action.X, action.Y, action.Z,
                 false, movementOwner, movementPriority, nullptr, 0.0f,
-                action.IntentReason, action.DiagnosticCandidateKey);
+                action.IntentReason, action.DiagnosticCandidateKey,
+                BotWorldMovement::ValidationRouteDestinationAuthority::None,
+                action.HazardEscape);
             return moved
                 ? BotActionArbitration::Outcome::Submitted("native_move_submitted")
                 : BotActionArbitration::Outcome::Retryable("native_move_retryable");

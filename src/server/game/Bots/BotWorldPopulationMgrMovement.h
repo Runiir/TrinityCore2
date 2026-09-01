@@ -1,6 +1,7 @@
 #ifndef TRINITY_BOT_WORLD_POPULATION_MGR_MOVEMENT_H
 #define TRINITY_BOT_WORLD_POPULATION_MGR_MOVEMENT_H
 
+#include "Bots/BotHazardEscapeEvidence.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Movement/PathEndpoint.h"
 
@@ -205,6 +206,7 @@ struct Intent
     bool AllowRecentFailureRetry = false;
     bool AllowNativeLongPath = false;
     bool NativeRecoveryCrossMapPending = false;
+    std::optional<HazardEscapeBasis> HazardEscape;
     ValidationRouteDestinationAuthority DestinationAuthority =
         ValidationRouteDestinationAuthority::None;
     std::string IntentReason;
@@ -233,6 +235,7 @@ struct PathPlan
     std::string RejectReason;
     bool RecentFailure = false;
     bool NativeLongPath = false;
+    HazardEscapeProgressObservation HazardEscapeProgress;
     ExecutionObservation Execution;
 };
 

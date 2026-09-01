@@ -302,6 +302,21 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     nativeProof = diagnoseCompleteNativePath(pathOk, path,
         G3D::Vector3(intent.X, intent.Y, intent.Z));
     primaryNativeProof = nativeProof;
+    if (intent.HazardEscape)
+    {
+        G3D::Vector3 const& endpoint = path.GetActualEndPosition();
+        plan.HazardEscapeProgress =
+            BotWorldMovement::ObserveHazardEscapeProgress(
+                *intent.HazardEscape, bot->GetPositionX(),
+                bot->GetPositionY(), endpoint.x, endpoint.y, endpoint.z);
+        plan.HazardEscapeProgress.ProofQualified =
+            BotWorldMovement::NativePathProvesSameSurfaceHazardEscape(
+                intent.Owner, sameLevelDeclaredMechanicRequest,
+                nativeProof.Complete,
+                BotWorldMovement::NativePathHasForbiddenAdmissionFlag(
+                    path.GetPathType()),
+                nativeProof, plan.HazardEscapeProgress);
+    }
     bool const connectedPolyCorridor = path.HasConnectedPolyCorridor();
     bool const primaryFallbackEligible = progressivePathAdmission
         && !strictNativeDescent && pathOk

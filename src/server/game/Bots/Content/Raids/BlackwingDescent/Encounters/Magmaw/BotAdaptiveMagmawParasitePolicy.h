@@ -556,6 +556,14 @@ private:
             actor && ObserveRouteFacts(board, *actor).EmergencyClearance);
         candidate.Id.Actor = hazardState.ActorGuid;
         candidate.Id.EventGeneration = hazardState.IntentId;
+        if (hazardState.DangerPositionAvailable)
+            if (BotNativeAction::Move* move =
+                    std::get_if<BotNativeAction::Move>(&candidate.Action))
+                move->HazardEscape = BotWorldMovement::HazardEscapeBasis{
+                    hazardState.DangerGuid.GetRawValue(),
+                    hazardState.DangerPosition.X,
+                    hazardState.DangerPosition.Y,
+                    hazardState.DangerPosition.Z };
         return candidate;
     }
 
@@ -579,7 +587,7 @@ private:
             bot.Position.Z };
         if (hazardState)
         {
-            hazardState->Begin(danger.Guid, destination);
+            hazardState->Begin(danger.Guid, danger.Position, destination);
             return BuildRetainedMove(board, *hazardState);
         }
         BotNativeAction::Candidate candidate;
@@ -594,6 +602,11 @@ private:
         candidate.Action = BotNativeAction::Move{ destination.X, destination.Y,
             destination.Z, "parasite_contact_evade",
             ObserveRouteFacts(board, bot).EmergencyClearance };
+        if (BotNativeAction::Move* move =
+                std::get_if<BotNativeAction::Move>(&candidate.Action))
+            move->HazardEscape = BotWorldMovement::HazardEscapeBasis{
+                danger.Guid.GetRawValue(), danger.Position.X,
+                danger.Position.Y, danger.Position.Z };
         return candidate;
     }
 };

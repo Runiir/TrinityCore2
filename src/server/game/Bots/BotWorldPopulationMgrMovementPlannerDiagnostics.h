@@ -145,6 +145,8 @@ struct MovementPlannerObservation
     bool RequireCompletePath = false;
     bool AllowNativeLongPath = false;
     bool DynamicTarget = false;
+    std::optional<HazardEscapeBasis> HazardEscape;
+    HazardEscapeProgressObservation HazardEscapeProgress;
     PrimaryDisposition PrimaryPathDisposition =
         PrimaryDisposition::Forbidden;
     NativePathProofObservation PrimaryNativeProof;

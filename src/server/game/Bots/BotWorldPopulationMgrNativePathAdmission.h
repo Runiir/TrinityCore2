@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_NATIVE_PATH_ADMISSION_H
 
 #include "BotMovementArbiter.h"
+#include "BotWorldPopulationMgrMovement.h"
 #include "BotWorldPopulationMgrNativeFloor.h"
 
 #include <cmath>
@@ -17,12 +18,70 @@ constexpr float NativeLocalMechanicEndpointDistanceTolerance = 2.75f;
 constexpr float NativeLocalMechanicEndpointMinimumProgress = 2.0f;
 constexpr float NativeLocalMechanicEndpointMinimumTravel = 1.5f;
 constexpr float NativeLocalMechanicEndpointProgressEpsilon = 0.001f;
+constexpr float NativeHazardEscapeMinimumClearanceProgress = 1.0f;
 // A complete native hazard path can already be at its semantic destination
 // even when MMAP misses the requested X/Y by a small amount.  This arrival
 // envelope is local to mechanic/hazard admission; the shared 0.5-yard
 // endpoint identity proof remains strict for ordinary movement.
 constexpr float NativeLocalMechanicEndpointArrivalHorizontalTolerance = 1.0f;
 constexpr float NativeLocalMechanicEndpointArrivalDistanceTolerance = 1.5f;
+
+inline HazardEscapeProgressObservation ObserveHazardEscapeProgress(
+    HazardEscapeBasis const& basis, float actorX, float actorY,
+    float endpointX, float endpointY, float endpointZ)
+{
+    HazardEscapeProgressObservation observation;
+    observation.HazardGuid = basis.HazardGuid;
+    observation.HazardX = basis.HazardX;
+    observation.HazardY = basis.HazardY;
+    observation.HazardZ = basis.HazardZ;
+    observation.EndpointX = endpointX;
+    observation.EndpointY = endpointY;
+    observation.EndpointZ = endpointZ;
+    observation.RequiredProgress = NativeHazardEscapeMinimumClearanceProgress;
+    if (!basis.Available() || !std::isfinite(actorX)
+        || !std::isfinite(actorY) || !std::isfinite(endpointX)
+        || !std::isfinite(endpointY) || !std::isfinite(endpointZ))
+        return observation;
+
+    observation.Available = true;
+    observation.ActorClearance = std::hypot(actorX - basis.HazardX,
+        actorY - basis.HazardY);
+    observation.EndpointClearance = std::hypot(endpointX - basis.HazardX,
+        endpointY - basis.HazardY);
+    observation.ClearanceProgress = observation.EndpointClearance
+        - observation.ActorClearance;
+    return observation;
+}
+
+// This is a value-only proof for a future planner admission. It deliberately
+// does not compare the endpoint with an arbitrary declared point: a projected
+// end-polygon result is useful only when it is a complete, same-surface native
+// route and measurably increases clearance from the exact bound hazard.
+inline bool NativePathProvesSameSurfaceHazardEscape(
+    BotMovementArbitration::Owner owner, bool sameLevelDeclaredRequest,
+    bool completeNativePath, bool forbiddenNativePath,
+    NativePathProofObservation const& path,
+    HazardEscapeProgressObservation const& progress)
+{
+    if (owner != BotMovementArbitration::Owner::Hazard
+        || !sameLevelDeclaredRequest || !completeNativePath
+        || forbiddenNativePath || !path.Available || !path.Calculated
+        || !path.Complete || path.EndpointMatched || !path.EndpointFloorValid
+        || path.EndpointResult != PathEndpointResult::ReachedProjectedEndPoly
+        || !path.CorridorReachedEndPoly || !path.ResolvedEndpointAvailable
+        || !path.ActualEndpointMatchedResolved
+        || NativePathFloorObservationBlocksCompleteProof(path.FloorObservation)
+        || !progress.Available || progress.HazardGuid == 0)
+        return false;
+
+    return std::isfinite(progress.ActorClearance)
+        && std::isfinite(progress.EndpointClearance)
+        && std::isfinite(progress.ClearanceProgress)
+        && progress.ClearanceProgress
+            >= progress.RequiredProgress
+                - NativeLocalMechanicEndpointProgressEpsilon;
+}
 
 // Progressive local steps may repair an incomplete primary path. A complete
 // path that failed endpoint identity or floor admission already resolved a
