@@ -1,0 +1,6 @@
+outs:
+- md5: c16a010579dcc637842392fb777c5516.dir
+  size: 2739628
+  nfiles: 12
+  hash: md5
+  path: phase1_raid_foundation_48abb13c6d_magmaw_task_canary_20260901
