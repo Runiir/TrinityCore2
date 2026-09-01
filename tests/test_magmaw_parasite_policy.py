@@ -1668,16 +1668,18 @@ int main()
         "personally_threatened_profile"));
 
     // Replacing the parasite GUID inside the same unsafe episode neither
-    // changes the actor-owned key nor replans the local destination.
+    // changes the actor-owned key nor replans the local destination, even
+    // when victim attribution is briefly absent beyond contact range.
     Blackboard guidChurn = threatened;
     guidChurn.Revision += 1;
     guidChurn.ObservedAtMs += 100;
     guidChurn.Hostiles[1] = Parasite(9101,
-        threatened.Hostiles[1].Position);
-    guidChurn.Hostiles[1].VictimGuid = PlayerGuid(30008);
+        { 0.0f, -25.0f, 210.0f });
     AdaptiveMagmawPlan churnPlan = strategy.Propose(guidChurn,
         PlayerGuid(30008), "dps", nullptr, false, false, &nonownerLane,
         &nonownerHazard);
+    assert(churnPlan.DamageTarget == guidChurn.Hostiles.front().Guid);
+    assert(churnPlan.ParasiteCombat.PersonalThreatGuid.IsEmpty());
     assert(MoveOf(churnPlan));
     assert(churnPlan.Movement->Id.Key()
         == threatenedPlan.Movement->Id.Key());

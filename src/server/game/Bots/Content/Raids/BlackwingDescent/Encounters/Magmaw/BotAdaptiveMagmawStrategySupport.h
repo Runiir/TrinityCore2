@@ -137,8 +137,19 @@
         MagmawParasiteHazardState* hazardState,
         MagmawMovementIntentCollection& intents)
     {
-        if (IsPillarBaiter(board, bot.Guid)
-            || !observed.PersonalParasiteThreat)
+        if (IsPillarBaiter(board, bot.Guid))
+            return;
+        if (hazardState && hazardState->HasRetainedIntent())
+        {
+            std::optional<BotNativeAction::Candidate> retained =
+                MagmawParasitePolicy::RetainedHazardMovement(board,
+                    *hazardState);
+            if (retained)
+                intents.Propose(MagmawMovementProposalOrigin::Hazard,
+                    std::move(*retained));
+            return;
+        }
+        if (!observed.PersonalParasiteThreat)
             return;
         std::optional<BotNativeAction::Candidate> escape =
             MagmawParasitePolicy::ProposePersonalEscape(board, bot,

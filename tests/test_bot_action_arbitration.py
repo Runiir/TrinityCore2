@@ -1231,13 +1231,13 @@ int main()
     auto marksAdd = magmawStrategy.Propose(
         mobileAddOwnership, marks.Guid, "dps", nullptr, false, false,
         &mobileTransition);
-    auto secondFireKeepsBoss = magmawStrategy.Propose(
+    auto secondFireHandlesPersonalParasite = magmawStrategy.Propose(
         mobileAddOwnership, secondFire.Guid, "dps", nullptr, false, false,
         &mobileTransition);
-    auto afflictionKeepsBoss = magmawStrategy.Propose(
+    auto afflictionHandlesPersonalParasite = magmawStrategy.Propose(
         mobileAddOwnership, affliction.Guid, "dps", nullptr, false, false,
         &mobileTransition);
-    auto elementalKeepsBoss = magmawStrategy.Propose(
+    auto elementalHandlesPersonalParasite = magmawStrategy.Propose(
         mobileAddOwnership, elemental.Guid, "dps", nullptr, false, false,
         &mobileTransition);
     auto restoSupport = magmawStrategy.Propose(
@@ -1251,12 +1251,13 @@ int main()
         false, false, &mobileTransition);
     assert(firstFireAdd.DamageTarget == parasite.Guid);
     assert(marksAdd.DamageTarget == parasite.Guid);
-    assert(secondFireKeepsBoss.DamageTarget == magmawBoss.Guid);
-    assert(afflictionKeepsBoss.DamageTarget == magmawBoss.Guid);
-    assert(elementalKeepsBoss.DamageTarget == magmawBoss.Guid);
+    assert(secondFireHandlesPersonalParasite.DamageTarget == parasite.Guid);
+    assert(afflictionHandlesPersonalParasite.DamageTarget == parasite.Guid);
+    assert(elementalHandlesPersonalParasite.DamageTarget == parasite.Guid);
     for (BotEncounter::AdaptiveMagmawPlan const* supportPlan : {
-             &secondFireKeepsBoss, &afflictionKeepsBoss,
-             &elementalKeepsBoss, &restoSupport, &holySupport,
+             &secondFireHandlesPersonalParasite,
+             &afflictionHandlesPersonalParasite,
+             &elementalHandlesPersonalParasite, &restoSupport, &holySupport,
              &disciplineSupport })
     {
         assert(supportPlan->Movement.has_value());
