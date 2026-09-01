@@ -2,6 +2,22 @@
   "schema": "cata_raid_magmaw_admission_receipt_size_handoff_v1",
   "run_id": "magmaw-admission-diag-84d2b98e4a-20260901",
   "source_commit": "84d2b98e4a9099cead89ab98931036c057f6bd26",
+  "diagnostic_implementation": {
+    "commit": "22319ba0a1204aae0e4720b18e14c41c4dfea4a1",
+    "review": "GO",
+    "behavior_change": false,
+    "focused_tests": "16 passed",
+    "captures": [
+      "bot_guid_counter",
+      "live_pet_owner_counter",
+      "selected_stored_owner",
+      "stored_pet_id",
+      "live_pet_id",
+      "stored_pet_entry",
+      "live_pet_entry",
+      "character_pet_owner_id_entry_active_slot_pet_type"
+    ]
+  },
   "binary_sha256": "b7db1f9956abbfea04e36bd404058992342b53ce5fb9ef127e96d6b02310fcd9",
   "classification": "infrastructure_failure",
   "first_broken_edge": {
@@ -62,6 +78,16 @@
     "do not change pet AI, class behavior, encounter behavior, movement, MMAP, coordinates, or Z handling",
     "native movement continues to follow terrain"
   ],
+  "next_capture": {
+    "purpose": "Distinguish persisted-row, in-memory loader, and live-owner representation failures at the exact admission boundary.",
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 1,
+    "authserver_start_count": 0,
+    "retry_count": 0,
+    "watchdog": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
   "evidence": {
     "dvc_path": "artifacts/cata_raid_program/magmaw_admission_diag_84d2b98e4a_20260901.dvc",
     "dvc_directory_digest": "4baa2f0e06af62be30e2bfc4926e562f.dir",

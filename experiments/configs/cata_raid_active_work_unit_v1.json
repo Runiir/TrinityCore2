@@ -1,22 +1,22 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:hunter_persistent_owner_fact_capture",
+  "work_unit": "evidence:hunter_persistent_owner_matched_capture",
   "owner_skill": "raid-bot-runtime-implementation",
   "next_work_unit": "runtime:repair_exact_hunter_owner_boundary",
   "next_owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "classification": "ready",
   "epoch_id": "magmaw_hunter_stored_owner_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N_canary_for_universal_architecture",
   "architecture_scope": "Expose the exact facts at a shared pet-identity admission boundary. Do not tune Magmaw or the hunter rotation.",
-  "gate_state": "dvc_bound_stored_owner_mismatch_admits_one_diagnostic_implementation",
-  "observed_at_commit": "84d2b98e4a9099cead89ab98931036c057f6bd26",
+  "gate_state": "reviewed_owner_fact_capture_admits_one_build_and_one_no_retry_start",
+  "observed_at_commit": "22319ba0a1204aae0e4720b18e14c41c4dfea4a1",
   "behavior_change": false,
   "evidence_contract_change": true,
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_84d2b98e4a_admission_receipt_size_handoff_20260901.json",
-    "sha256": "9e6b84d7c92077687231b83668aca6f9658febe2097aa022cef17b3472e3a9ce"
+    "sha256": "88784c0f21388acc0a561eb034499e6f51eb48e5916275ff8c7092676cc0153a"
   },
   "first_broken_edge": {
     "run_id": "magmaw-admission-diag-84d2b98e4a-20260901",
@@ -25,51 +25,53 @@
     "terminal": "validation_active_hunter_pet_observation_stored_owner_mismatch",
     "evidence": "artifacts/cata_raid_program/magmaw_admission_diag_84d2b98e4a_20260901.dvc"
   },
-  "next_action": "Extend the existing shared observer and admission member receipt with the exact bot, live-owner, stored-owner, stored/live pet ID, and stored/live entry values. Extend strict shard readback with the exact character_pet row. Add focused serialization and counterexample tests, then stop before build or live execution.",
+  "next_action": "Configure and build exact clean source with fast8_v4, deterministically prepare and read back the frozen Magmaw shard, then start exactly one worldserver under the completion watchdog. Publish the compact typed terminal and cleanup evidence to DVC. Do not retry.",
   "implementation_scope": {
     "allowed": [
-      "extend the existing hunter identity snapshot with raw diagnostic facts already read by the observer",
-      "serialize those facts through the existing per-member admission readiness receipt",
-      "extend the existing strict BWD shard readback with the exact expected hunter character_pet row",
-      "add focused compiled and Python tests for correct owner, wrong owner, missing row, and exact serialization",
-      "split by concern so every touched C/C++ file remains below 1000 physical lines",
-      "one independent read-only review after implementation"
+      "one exact fast8_v4 configure and one exact worldserver build with eight compiler jobs",
+      "deterministic reset and provisioning of only the frozen Magmaw diagnostic shard",
+      "strict provisioning verification and exact roster plus character_pet readback",
+      "one worldserver start under the generated completion watchdog plan",
+      "compact DVC publication after a typed terminal and verified cleanup",
+      "exact local payload eviction only after remote verification"
     ],
     "forbidden": [
       "changing owner comparison, receipt construction, admission predicates, pet lifecycle, pet AI, or gameplay behavior",
       "changing class, encounter, movement, MMAP, route coordinates, terrain following, or Z",
-      "configure, build, worldserver, authserver, database mutation, or DVC mutation during implementation",
-      "claiming the owner mismatch fixed from diagnostics alone"
+      "authserver start, worldserver retry, manual gameplay intervention, or a second canary",
+      "changing class, encounter, pet, movement, terrain-following, MMAP, route, or Z behavior",
+      "claiming gameplay success from an admission diagnostic"
     ]
   },
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
-    "gameplay_canary_admitted": false,
+    "gameplay_canary_admitted": true,
     "gameplay_mutations_allowed": false,
-    "configure_admitted": false,
-    "worldserver_build_admitted": false,
-    "worldserver_start_admitted": false,
+    "configure_admitted": true,
+    "worldserver_build_admitted": true,
+    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": false
+    "database_mutations_allowed": true,
+    "database_mutation_scope": "only deterministic reset and provisioning for the frozen blackwing_descent_10n_magmaw_diagnostic shard",
+    "dvc_publication_required_after_terminal": true
   },
   "acceptance": [
-    "the shared observer snapshot records bot GUID counter, live owner counter, stored owner, stored/live pet ID, and stored/live entry",
-    "the pre-rollback admission receipt emits those values for hunter 30009 without changing classification",
-    "strict readback records the exact persisted character_pet owner, ID, entry, active flag, slot, and pet type",
-    "counterexamples distinguish wrong stored owner from wrong live owner and missing persistent row",
-    "no readiness predicate, admission outcome, pet behavior, combat behavior, movement, terrain following, or Z handling changes",
-    "focused tests pass and every touched C/C++ file remains below 1000 physical lines",
-    "independent review confirms the next live run can distinguish provisioning, loader, and representation failures"
+    "build receipt binds the exact clean source commit and worldserver binary",
+    "strict prestart readback records the expected and observed character_pet row",
+    "the terminal pre-rollback receipt emits the exact bot, live-owner, stored-owner, pet-ID, and entry values",
+    "the matched DB and in-memory values distinguish provisioning, loader, and representation failures",
+    "worldserver cleanup is complete with zero active bots and no surviving process",
+    "compact evidence is remotely verified in DVC before exact local payload eviction",
+    "no gameplay, movement, terrain-following, MMAP, route, or Z behavior changes"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "configure_tickets": 0,
-    "worldserver_build_tickets": 0,
-    "worldserver_starts": 0,
+    "configure_tickets": 1,
+    "worldserver_build_tickets": 1,
+    "worldserver_starts": 1,
     "authserver_starts": 0,
     "retries": 0
   }
