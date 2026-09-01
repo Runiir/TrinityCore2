@@ -1,6 +1,6 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_build_one_start",
+  "work_unit": "evidence:magmaw_transfer_checkpoint_corrected_contract_locator_one_start",
   "owner_skill": "raid-evidence-lifecycle",
   "next_work_unit": "evidence:magmaw_transfer_lane_authority_off_shadow_decision",
   "next_owner_skill": "raid-performance-loop",
@@ -9,14 +9,14 @@
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "one_exact_build_prepare_only_and_checkpoint_start_admitted",
-  "observed_at_commit": "002df380fe0e3255559efcd6f9d10bdd3446a271",
+  "gate_state": "one_corrected_contract_locator_build_prepare_only_and_checkpoint_start_admitted",
+  "observed_at_commit": "013fea472ccd155e453bfe7b3b0fc0472477b111",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "next_action": "At this clean tracked admission, run one fast8 configure/build, create and verify the exact authority-off map-669 checkpoint bundle, apply one canonical prepare-only reset, require strict provisioning/readback, then consume one worldserver start with zero retries and publish the typed terminal compactly.",
+  "next_action": "At this clean tracked admission, run one fast8 configure/build, create the exact authority-off bundle using the corrected tracked runtime-config contract path ending in .json, verify it, apply one canonical prepare-only reset, require strict provisioning/readback, then consume one worldserver start with zero retries.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_success_sentinel_repair_handoff_v1.json",
-    "sha256": "61e4062d2ea35fad4ec16fa4984e8e894e97fbcc1321ce4728807443203ec500"
+    "path": "experiments/configs/cata_raid_magmaw_prestart_contract_locator_typo_abort_v1.json",
+    "sha256": "cab6e9150f4d8f195a91e1a0b1e551ae961c957432b086e891cde76eda488e1b"
   },
   "program_scope": {
     "fixture_expansion_replay_admitted": true,
@@ -55,9 +55,10 @@
     "certifies_boss_fidelity": false
   },
   "scope_lock": {
-    "allowed_change": "Produce one exact fixture-only map-bound checkpoint terminal from the reviewed capture dialect and publish compact evidence.",
+    "allowed_change": "Repeat the source-bound build, restore the omitted .json suffix in the bundle-create contract locator, and produce one fixture-only map-bound checkpoint terminal.",
     "forbidden": [
       "changing code, tests, gameplay, Magmaw strategy, movement, task authority, priorities, or database content outside the canonical prepare-only reset",
+      "changing any prior verified input or bundle argument other than restoring the omitted .json suffix",
       "starting an authserver, more than one worldserver, or retrying any failed stage",
       "weakening runtime-config, build, route, seal, roster, or checkpoint identity",
       "using a 300-second raid timer or claiming fixture evidence as gameplay success"

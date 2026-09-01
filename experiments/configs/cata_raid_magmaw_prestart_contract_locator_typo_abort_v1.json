@@ -1,0 +1,32 @@
+{
+  "schema": "cata_raid_magmaw_prestart_contract_locator_typo_abort_v1",
+  "created_at_utc": "2026-09-01T06:04:47Z",
+  "source_commit": "013fea472ccd155e453bfe7b3b0fc0472477b111",
+  "source_tree": "0e0a02c6166204879848260b93bb595c3d1b152a",
+  "classification": "operator_invocation_abort_before_bundle_exposure",
+  "failure_reason": "contract_tracked_blob_invalid",
+  "failure_receipt_sha256": "771e7d4c4fb28cabf1353c1615eb01736148beee674ecdace0024c9e246d09bb",
+  "cause": "The bundle-create argv omitted the .json suffix from the tracked runtime-config contract locator. Git correctly rejected the nonexistent tracked path; the CLI collapsed the actionable Git error into a generic reason.",
+  "incorrect_argument": "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1",
+  "corrected_argument": "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json",
+  "diagnostic_evidence": {
+    "process_log": "/home/runiir/.codex/logs_2.sqlite",
+    "process_log_row_id": 184925260,
+    "process_log_body_sha256": "6c00987de08cd83f2f46ca8ae49d38d6dbde805f4b3680b3390587cda474a858",
+    "completion_log_row_id": 184925265
+  },
+  "effects": {
+    "bundle_exposed": false,
+    "staging_directory_created": false,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "gameplay_observed": false
+  },
+  "unchanged_verified_inputs": {
+    "build_receipt_sha256": "f8d57b7ccf8948696b0d9855ceebd79ce8593ec8e45b728b3fd995f4514d0b05",
+    "worldserver_sha256": "6b7037f2f9b83577715a7e81c409919745e51b394ac03a67eca3b4b47793b2e2",
+    "runtime_config_receipt_sha256": "e04589e420ada275987b2e4e42afffe43bd54060f1b0c86e02002a8b40781ba8"
+  },
+  "required_next_work_unit": "evidence:magmaw_transfer_checkpoint_corrected_contract_locator_one_start"
+}
