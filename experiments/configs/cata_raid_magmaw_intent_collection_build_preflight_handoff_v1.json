@@ -1,0 +1,36 @@
+{
+  "schema": "cata_raid_magmaw_intent_collection_build_preflight_handoff_v1",
+  "work_unit": "evidence:magmaw_task_state_build_receipt_review",
+  "classification": "configure_lineage_preflight_required",
+  "source_commit": "ecd4a560a7fc618662b099011a223ec42e33b7d1",
+  "attempted_action": "one queued fast8_v4 worldserver build",
+  "command_started": false,
+  "gameplay_or_code_failure": false,
+  "receipt": {
+    "external_path": "/tmp/magmaw_task_state_build_ecd4a560a7_fast8_v4.json",
+    "file_sha256": "1841690c4ae86a24b5eea65abdd7b453537a397d2d1de75cdde3635368a37738",
+    "receipt_sha256": "b38961e956c86568550440b3f138f1515a3d5cd1a826701afcb812e0fff81c96",
+    "ticket_id": "raid-build-5396ed2e17794aa4919aadc61794219c",
+    "classification": "build_provenance_abort",
+    "exit_code": 76,
+    "error": "build_configuration_or_configure_lineage_missing_before_admission"
+  },
+  "verified_facts": [
+    "request, admission, and completion remained the same clean source commit",
+    "the CMake cache matches fast8_v4 settings and has a valid generated build graph",
+    "the coordinator did not launch the build command",
+    "no server or database process was started or changed",
+    "the only missing prerequisite is a same-commit successful queued configure receipt"
+  ],
+  "successor_budget": {
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "build_policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "retries": 0
+  },
+  "next_action": "Run one exact policy-owned queued configure, then one exact queued worldserver build at the same clean successor commit. Verify both receipts before admitting any server start."
+}

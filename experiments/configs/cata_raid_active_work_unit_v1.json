@@ -1,22 +1,22 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "build:magmaw_task_state_intent_collection",
+  "work_unit": "build:magmaw_task_state_configure_then_build",
   "owner_skill": "raid-performance-loop",
-  "next_work_unit": "evidence:magmaw_task_state_build_receipt_review",
+  "next_work_unit": "evidence:magmaw_task_state_configure_and_build_receipt_review",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "independent_review_go_build_only",
+  "classification": "configure_lineage_preflight_recovery",
   "epoch_id": "magmaw_task_state_migration_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N canary, architecture intended for all raid sizes and difficulties",
-  "gate_state": "one_fast8_v4_worldserver_build_admitted",
-  "observed_at_commit": "8f177787c965a190cbd70b4368ac371b1db5b557",
+  "gate_state": "one_fast8_v4_configure_then_one_worldserver_build_admitted",
+  "observed_at_commit": "ecd4a560a7fc618662b099011a223ec42e33b7d1",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "next_action": "Run exactly one queued worldserver build under cata_raid_build_resource_policy_fast8_v4, verify its receipt, and keep all server starts closed pending a separate completion-watchdog canary admission.",
+  "next_action": "Run one exact queued configure and then one queued worldserver build under cata_raid_build_resource_policy_fast8_v4 at the same clean successor commit. Verify both receipts and keep all server starts closed.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_intent_collection_review_handoff_v1.json",
-    "sha256": "fb4660ad1e190eb79c8d3826ffb93a330207dec46f95d1a4e4f58cac5b35f528"
+    "path": "experiments/configs/cata_raid_magmaw_intent_collection_build_preflight_handoff_v1.json",
+    "sha256": "ff6bac34071f98a4306540fa86311c13d90e4282e03e766c649e65586258e19d"
   },
   "existing_foundation": [
     "pure MagmawFacts reducer and snapshot cache",
@@ -27,15 +27,15 @@
   ],
   "implementation_scope": {
     "allowed": [
-      "run one queued incremental worldserver build with fast8_v4",
-      "write and verify one hash-bound build receipt",
+      "run one exact queued configure with fast8_v4",
+      "run one queued incremental worldserver build with fast8_v4 after configure succeeds",
+      "write and verify both hash-bound receipts",
       "retain the reviewed source identity and clean-tree proof"
     ],
     "forbidden": [
       "global path tolerance or bot-Z changes",
       "new encounter coordinates without evidence",
       "class rotation, DPS coefficient, consumable, pet, database, boss-script, path, geometry, or Z changes",
-      "configure unless the existing generated build graph fails the fast8_v4 lineage preflight",
       "starting worldserver or authserver",
       "gameplay canary or fixture replay",
       "retrying a failed build without a new reviewed work unit"
@@ -45,8 +45,8 @@
     "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": true,
-    "configure_admitted": false,
-    "configure_limit": 0,
+    "configure_admitted": true,
+    "configure_limit": 1,
     "worldserver_build_admitted": true,
     "worldserver_build_limit": 1,
     "prestart_bundle_create_limit": 0,
@@ -60,7 +60,8 @@
   },
   "acceptance": [
     "no changed C or C++ file reaches 1000 physical lines",
-    "the queued build request, admission, and completion identities are the same clean commit",
+    "the queued configure and build request, admission, and completion identities are the same clean commit",
+    "the configure receipt establishes the exact fast8_v4 cache and build-graph lineage",
     "the receipt proves fast8_v4 with eight compiler jobs and one linker",
     "the worldserver target builds and links successfully",
     "the receipt verifier passes",
@@ -69,7 +70,7 @@
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "configure_tickets": 0,
+    "configure_tickets": 1,
     "worldserver_build_tickets": 1,
     "worldserver_starts": 0,
     "authserver_starts": 0,
