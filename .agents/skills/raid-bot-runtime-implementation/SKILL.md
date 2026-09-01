@@ -142,6 +142,20 @@ navigation-floor anchor before changing state. Test post-retention actor Z drift
 at the same X/Y as well as a nearby legitimate terrain offset; 2D proximity
 alone must never advance or complete a route on another floor.
 
+Apply that floor check before mutating semantic progress, not only before
+declaring arrival. A same-X/Y actor on the wrong floor must not improve best
+distance, refresh the no-progress clock, increment progress samples, or postpone
+the original terminal deadline. Preserve ordinary terrain following: this is a
+completion/progress proof and never a command to move vertically.
+
+Initialize a fresh destination-bound native execution observation at every
+selected movement-attempt boundary before calling an adapter that may reject
+early. Null actors, unavailable sessions, and other pre-planner exits must
+produce current unavailable evidence instead of inheriting the previous
+attempt's receipt, endpoint, or submission state. Keep a negative replay with a
+valid prior receipt followed by an early rejection and prove no prior evidence
+is rebound under a new timestamp.
+
 A successful wait, suppression, or consumable candidate can coexist with a
 failed movement candidate in the same kernel resolution. Do not use the
 top-level `ok` result as proof of progress. When the failed candidate repeats,
