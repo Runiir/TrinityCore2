@@ -1,23 +1,23 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "fixture:observe_personal_escape_authority_and_parasite_control_live",
-  "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "fixture:classify_personal_escape_authority_and_parasite_control_live",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "live_recurrence_quarantined",
+  "work_unit": "runtime:magmaw_personal_escape_rearm_after_provisional_wave",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "next_work_unit": "review:magmaw_personal_escape_rearm_after_provisional_wave",
+  "next_owner_skill": "raid-bot-runtime-implementation",
+  "classification": "trace_backed_implementation_in_progress",
   "epoch_id": "magmaw_personal_escape_await_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Retain one actor-keyed personal parasite escape task after first threat observation. Transient facts-authority loss must enter AwaitingAuthoritativeFacts and later emit one stable candidate or an explicit terminal, instead of silently dropping the escape request.",
-  "gate_state": "implementation and independent Sol-high review are GO; the full bank admits one observation-only fixture-expansion replay for the four exact Chainwielder and Magmaw production boundaries, but it does not admit a gameplay canary",
-  "observed_at_commit": "b133fae4c61208a57cd4714fb8f9a4dc7805d090",
+  "architecture_scope": "Allow one actor-local personal escape child to rearm for a genuinely new personal-threat episode when the shared parasite wave remains provisional and non-authoritative. Preserve one stable destination and bounded native retry inside each episode.",
+  "gate_state": "the exact-source live observation is closed and DVC-published; Chainwielder and Drudges cleared, Magmaw failed the death-loop watchdog, and one bounded trace-backed lifecycle correction is in progress; no build or live retry is admitted before implementation review",
+  "observed_at_commit": "5cad51fa4001398096bf2fba5bb2130071fef00d",
   "behavior_change": true,
   "evidence_contract_change": false,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_personal_escape_authority_review_handoff_20260901.json",
-    "sha256": "615d913df70eb9e7790d84a97bbb661ad9bb10c947c49eb4f1adbfdfdec81046",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_task_canary_813bdc7acd_20260901.dvc"
+    "path": "experiments/configs/cata_raid_magmaw_authority_5cad51fa40_death_loop_handoff_20260902.json",
+    "sha256": "de80e76ef23ad463a6993843725baf9a66a03dfb114baeeb3e22a401920404c0",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc"
   },
   "review_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_personal_escape_authority_review_handoff_20260901.json",
@@ -31,22 +31,22 @@
     "worldserver_starts": 1
   },
   "first_broken_edge": {
-    "run_id": "magmaw-task-canary-813bdc7acd-20260901",
+    "run_id": "magmaw-authority-5cad51fa40-20260902",
     "route_node_id": "bwd.magmaw.encounter",
     "causal_signature": "magmaw_personal_escape_authority_gap_drops_candidate",
-    "actor_guid": 30010,
-    "observed_at_ms": 1788289809757,
-    "cause": "A personal parasite threat was observed, but transient facts authority made the persistent task emit no candidate and EmitPersonalParasiteEscape returned without retaining an awaiting state; no movement owner, candidate key, planner receipt, or native launch existed.",
+    "actor_guid": 30008,
+    "observed_at_ms": 1788297038615,
+    "cause": "The actor-keyed child completed one native escape as safe_clearance, but the shared parent remained one provisional non-authoritative generation for the rest of the fight. Later personal-threat episodes could not rearm the terminal child, after which parasite infection and Infectious Vomit reached the stack.",
     "terminal_reason": "death_loop_watchdog",
-    "evidence": "artifacts/cata_raid_program/magmaw_task_canary_813bdc7acd_20260901.dvc"
+    "evidence": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc"
   },
   "implementation_contract": {
     "allowed": [
-      "create and retain one actor-keyed personal escape child on first threat",
-      "represent transient facts authority as AwaitingAuthoritativeFacts",
-      "emit one stable actor candidate when authority becomes current",
-      "publish typed task-created, awaiting, candidate, native-progress, safe-clearance, infected, and failed lifecycle edges",
-      "retain bounded progress and failure semantics"
+      "detect a genuine actor-local personal-threat rising edge after a terminal child",
+      "rearm exactly once for the new personal-threat episode even if the parent generation remains provisional",
+      "keep one stable actor candidate and destination inside an episode",
+      "preserve typed task-created, awaiting, candidate, native-progress, safe-clearance, infected, and failed lifecycle edges",
+      "retain bounded progress and alternate-route failure semantics"
     ],
     "forbidden": [
       "manual Z offsets or vertical steering",
@@ -59,9 +59,9 @@
     ]
   },
   "acceptance": [
-    "a first personal threat creates an actor-keyed task even when facts authority is transiently unavailable",
-    "AwaitingAuthoritativeFacts retains the same actor and wave identity without emitting an unsafe candidate",
-    "current authoritative facts emit one stable candidate before infection",
+    "a stable personal threat cannot rearm a terminal child every tick",
+    "clearance followed by a real no-threat interval and a new personal-threat rising edge rearms exactly one new task generation",
+    "the new task can progress while the shared parent generation remains provisional without changing its parent identity",
     "the lifecycle is traceable from task creation through native progress to safe clearance or an explicit terminal",
     "physical clearance or endpoint-distance improvement, not submission, remains semantic progress",
     "stale lifecycle, wrong actor, new wave, death, and missing threat cannot reuse an old task",
@@ -88,37 +88,36 @@
     "bots_started": 0,
     "gameplay_observed": false
   },
-  "next_action": "At this exact clean descriptor commit, rerun the complete retained bank after the 813bdc7acd boundary with the fixture-expansion gate, configure and build worldserver so its embedded Git revision equals this control commit, regenerate the atomic bundle, require strict provisioning and shard readback, then run one replacement no-retry completion-watchdog observation replay for the four admitted fixture expansions. The prior process was an infrastructure abort before profile selection or bot creation and is not gameplay evidence.",
+  "next_action": "Finish and independently review only the actor-local personal-threat episode rearm correction. Run focused multi-wave and no-churn tests. Do not build or start a server until the reviewed implementation and an updated recurrence admission explicitly authorize one next observation.",
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": true,
     "gameplay_canary_admitted": false,
     "live_diagnostic_admitted": true,
-    "gameplay_mutations_allowed": false,
-    "configure_admitted": true,
-    "worldserver_build_admitted": true,
-    "worldserver_start_admitted": true,
+    "gameplay_mutations_allowed": true,
+    "configure_admitted": false,
+    "worldserver_build_admitted": false,
+    "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": true,
-    "database_mutation_scope": "one repository-owned prepare-only provisioning reset limited to the frozen blackwing_descent_10n_magmaw_diagnostic ten-player cohort; no world, encounter, route, spell, gear-profile, or unrelated account/character mutation",
+    "database_mutations_allowed": false,
+    "database_mutation_scope": "none",
     "dvc_publication_required_after_terminal": true,
     "admission_conditions": [
-      "the exact clean descriptor commit passes every registered recurrence fixture after run magmaw-task-canary-813bdc7acd-20260901",
-      "the recurrence evaluator admits fixture expansion for the four exact target fixture revisions under the canonical Magmaw config identity",
-      "configure and worldserver build receipts bind the same clean source identity and fast8 policy, and the embedded worldserver Git revision equals the sealed control commit",
-      "one deterministic scoped provisioning reset restores exact start position, health, power, auras, corpse, instance, group, gear, consumable, spellbook, talent, glyph, pet, and pool identity before both DB readbacks pass",
-      "the generated runtime config, route manifest, roster readback, and recurrence admission verify before process creation",
-      "the replay cannot certify gameplay success or close Magmaw acceptance"
+      "the implementation changes only the actor-local personal-escape lifecycle and focused tests",
+      "a same-episode stable threat cannot create generation churn",
+      "a new threat rising edge after clearance creates exactly one new task generation under a provisional parent",
+      "an independent review confirms no Z, route, MMAP, floor, tolerance, planner, executor, or damage change",
+      "a later recurrence decision, not this descriptor, must authorize the next build and live run"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "worldserver_starts": 2,
+    "worldserver_starts": 3,
     "authserver_starts": 0,
     "retries": 0,
     "infrastructure_replacement_starts": 1,
-    "gameplay_attempts": 1
+    "gameplay_attempts": 2
   }
 }
