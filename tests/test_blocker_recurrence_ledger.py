@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -7,6 +8,7 @@ import sys
 
 import pytest
 
+import tools.raid_program.blocker_recurrence_ledger as recurrence_ledger
 from tools.raid_program.blocker_recurrence_ledger import (
     _command_sha256,
     _canonical_config_identity,
@@ -37,6 +39,59 @@ def test_checked_in_magmaw_ledger_uses_supported_observation_states() -> None:
     assert "magmaw_lethal_movement_safe_completion_missing" not in (
         decision["missing_causal_signature_ids"]
     )
+
+
+def test_transfer_checkpoint_ledger_is_singleton_and_main_ledger_is_unchanged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main = ROOT / "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json"
+    assert hashlib.sha256(main.read_bytes()).hexdigest() == (
+        "d88d858eee182be0f27151038ef41ec9aa9c5a2da9162ae6b4d5dad198ac747e"
+    )
+    path = ROOT / (
+        "experiments/configs/"
+        "cata_raid_magmaw_transfer_lane_checkpoint_recurrence_v1.json"
+    )
+    ledger = json.loads(path.read_text(encoding="utf-8"))
+    identity = {
+        "source_identity": "later-clean-source-identity",
+        "config_identity": CANONICAL_CONFIG_IDENTITY,
+    }
+    observed = {
+        "returncode": 0,
+        "timed_out": False,
+        "stdout_sha256": _sha256("transfer-checkpoint-suite-pass\n"),
+        "stderr_sha256": _sha256(""),
+    }
+    observed["result_sha256"] = _result_sha256(
+        observed["returncode"], observed["timed_out"],
+        observed["stdout_sha256"], observed["stderr_sha256"],
+    )
+    monkeypatch.setattr(
+        recurrence_ledger, "_execute_argv", lambda _command, _root: observed,
+    )
+    receipt = tmp_path / "transfer-suite-receipt.json"
+    run_id = "magmaw-transfer-lane-offline-capture-dialect-v1"
+    _run_suite(ledger, identity, run_id, "after", receipt)
+    effective = _ledger_with_suite_receipt(ledger, receipt, identity)
+    first = evaluate_ledger(
+        effective, current_identity=identity, suite_receipt_verified=True,
+    )
+    second = evaluate_ledger(
+        effective, current_identity=identity, suite_receipt_verified=True,
+    )
+    assert first == second
+    assert first["fixture_expansion_admitted"] is True
+    assert first["fixture_expansion_target_ids"] == [
+        "map669_magmaw_transfer_lane_authority_off_v1"
+    ]
+    assert first["pending_fixture_ids"] == [
+        "map669_magmaw_transfer_lane_authority_off_v1"
+    ]
+    assert first["fixture_expansion_requests"] == []
+    assert first["missing_fixture_ids"] == []
+    assert first["stale_fixture_ids"] == []
+    assert first["failing_fixture_ids"] == []
 
 
 def _ledger(

@@ -1,0 +1,57 @@
+{
+  "schema": "trinity_raid_blocker_recurrence_v1",
+  "route": "blackwing_descent_10n_magmaw_diagnostic",
+  "investigation_epoch": "magmaw_transfer_lane_task_authority_20260901",
+  "occurrence_limit": 10,
+  "clear_streak_required": 2,
+  "closure_policy": "This sealed checkpoint remains observation-only until one identity-bound worldserver capture crosses the map-669 planner, MotionMaster, spline-progress, and logical-arrival boundary with task authority disabled.",
+  "regression_bank": {
+    "schema": "trinity_raid_regression_bank_v1",
+    "route": "blackwing_descent_10n_magmaw_diagnostic",
+    "current_identity": {
+      "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36"
+    },
+    "fixture_expansion_requests": [],
+    "fixture_history": [
+      "map669_magmaw_transfer_lane_authority_off_v1"
+    ],
+    "fixtures": [
+      {
+        "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
+        "revision": 1,
+        "causal_signature": "magmaw_transfer_lane_map_bound_checkpoint_missing",
+        "evidence_boundary": "observation_only",
+        "verification_status": "offline_capture_dialect_verified_live_boundary_pending",
+        "required_production_boundary": "one sealed worldserver-backed map-669 entrance movement by actor 30007 with TransferLaneTaskAuthority disabled must join the exact fixture and case through the production action kernel, complete primary MMAP planner receipt, MotionMaster point generator, spline identity, at least two decreasing same-floor samples, and finite logical arrival without certifying gameplay or boss success",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_magmaw_transfer_checkpoint_capture.py"
+        ]
+      }
+    ],
+    "verifications": []
+  },
+  "causal_signatures": {
+    "magmaw_transfer_lane_map_bound_checkpoint_missing": {
+      "owner": "shared_bot_runtime_magmaw_transfer_lane_checkpoint",
+      "invariant": "the authority-off Magmaw transfer candidate must cross one sealed map-669 production movement lifecycle and only same-floor logical arrival may complete its persistent task",
+      "architecture_reviewed_through_occurrence_count": 1,
+      "fixture_status": "observation_only_production_boundary_pending"
+    }
+  },
+  "runs": [
+    {
+      "run_id": "magmaw-transfer-lane-offline-capture-dialect-v1",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_transfer_lane_map_bound_checkpoint_missing": "occurred"
+      },
+      "admission": {
+        "fixture_revisions": {}
+      }
+    }
+  ]
+}

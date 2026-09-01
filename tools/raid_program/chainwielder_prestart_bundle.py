@@ -34,16 +34,34 @@ from tools.raid_program.queued_build import (
     verify_receipt,
 )
 from tools.raid_program.recurrence_admission import (
-    CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX,
     CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
     FIXTURE_EXPANSION_PURPOSE,
     PROFILE_MANIFEST_RELATIVE_PATH,
     RecurrenceAdmissionError,
-    chainwielder_checkpoint_seal,
     build_runtime_profile_suffix_manifest,
     create_recurrence_admission,
     sha256_file,
     verify_recurrence_admission,
+)
+from tools.raid_program.prestart_bundle_dialects import (
+    CHAINWIELDER,
+    CHAINWIELDER_ACTOR_GUID,
+    CHAINWIELDER_LEDGER_RELATIVE_PATH,
+    DialectError,
+    MAGMAW_TRANSFER,
+    capture_option,
+    config_values as dialect_config_values,
+    create_seal,
+    dialect_from_identity,
+    identity as dialect_identity,
+    initial_node_id,
+    ledger_relative_path,
+    lifecycle_predicates,
+    route_node_ids,
+    sealed_config_values,
+    select_dialect,
+    validate_ledger_manifest,
+    validate_route_rows,
 )
 
 
@@ -53,13 +71,13 @@ MANIFEST_SCHEMA = "cata_raid_chainwielder_bundle_manifest_v1"
 FAILURE_SCHEMA = "cata_raid_chainwielder_prestart_failure_v1"
 SCENARIO_ID = "blackwing_descent_10n_magmaw_diagnostic"
 NODE_ID = "bwd.magmaw.chainwielder"
-ACTOR_GUID = 30008
+ACTOR_GUID = CHAINWIELDER_ACTOR_GUID
 MAP_ID = 669
 TARGET_ENTRY = 42649
 ACTOR_COUNT = 10
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 TRACKED_LEDGER_RELATIVE_PATH = Path(
-    "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json")
+    CHAINWIELDER_LEDGER_RELATIVE_PATH)
 BUNDLE_NAMES = {
     "source_route_manifest": "source_route_manifest.json",
     "route_manifest": "route_manifest.json", "profile_manifest": "runtime_profiles.json",
@@ -72,8 +90,6 @@ BUNDLE_NAMES = {
     "launch_contract": "launch_contract.json", "bundle_manifest": "bundle_manifest.json",
 }
 
-REQUIRED_SUFFIX_NODE_IDS = (
-    NODE_ID, "bwd.magmaw.drudges", "bwd.magmaw.encounter")
 ROUTE_INVARIANT_FIELDS = (
     "bot_start_map_id", "bot_start_x", "bot_start_y", "bot_start_z",
     "bot_start_o", "roster_identity", "diagnostic_only",
@@ -88,14 +104,10 @@ CONFIG_VALUES = {
     "BotWorld.ValidationRoute.Enable": "1",
     "BotWorld.ValidationRoute.AdvanceMode": '"terminal"',
     "BotWorld.ValidationRoute.ScenarioId": f'"{SCENARIO_ID}"',
-    "BotWorld.ValidationRoute.NodeId": f'"{NODE_ID}"',
     "BotWorld.ValidationRoute.Map": str(MAP_ID),
     "BotWorld.ValidationRoute.TargetEntry": str(TARGET_ENTRY),
     "BotWorld.ValidationRoute.PrepullCheckpointEnable": "1",
     "BotProgression.AllowRaids": "1",
-    f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.Enable": "1",
-    f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.FixtureId":
-        f'"{CHAINWIELDER_CHECKPOINT_FIXTURE_ID}"',
 }
 
 
@@ -114,6 +126,7 @@ def _capture_paths(output_dir: Path) -> list[Path]:
 
 def expected_launch_argv(
     *, worktree: Path, binary: Path, output_dir: Path, admission_sha256: str,
+    dialect: str = CHAINWIELDER,
 ) -> list[str]:
     """Return the only capture command admitted by this atomic bundle."""
 
@@ -130,7 +143,7 @@ def expected_launch_argv(
         "--build-receipt", str(output_dir / BUNDLE_NAMES["build_receipt"]),
         "--recurrence-admission", str(output_dir / BUNDLE_NAMES["admission"]),
         "--recurrence-admission-sha256", admission_sha256,
-        "--chainwielder-checkpoint-actor-guid", str(ACTOR_GUID),
+        *capture_option(dialect),
         "--fixture-expansion-replay",
         "--scenario-id", SCENARIO_ID,
         "--runtime-profile", SCENARIO_ID,
@@ -244,17 +257,16 @@ def _validate_locations(
 
 def _render_config(
     base: bytes, *, route_path: Path, profile_manifest_path: Path,
-    seal: dict[str, str], source_commit: str,
+    seal: dict[str, str], source_commit: str, dialect: str,
 ) -> bytes:
     values = {
         **CONFIG_VALUES,
+        **dialect_config_values(dialect),
+        "BotWorld.ValidationRoute.NodeId": f'"{initial_node_id(dialect)}"',
         "BotWorld.ValidationRoute.ManifestPath": f'"{route_path}"',
         "BotWorld.ProfileManifest": f'"{profile_manifest_path}"',
-        f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.SealSha256": (
-            f'"{seal["seal_sha256"]}"'
-        ),
-        f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.SourceCommit": (
-            f'"{source_commit}"'
+        **sealed_config_values(
+            dialect, seal=seal, source_commit=source_commit,
         ),
     }
     return render_runtime_config(base, values, BundleError)
@@ -285,6 +297,7 @@ def _validate_route(path: Path, scenario: str, profile: str) -> dict[str, Any]:
 
 def _target_route_suffix(
     source: dict[str, Any], scenario: str, profile: str,
+    dialect: str = CHAINWIELDER,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Return the exact checkpoint suffix and its separated identities."""
 
@@ -293,14 +306,20 @@ def _target_route_suffix(
         raise BundleError("source_route_rows_missing_or_empty")
     if any(not isinstance(row, dict) for row in rows):
         raise BundleError("source_route_row_invalid")
+    try:
+        validate_route_rows(dialect, rows)
+    except DialectError as error:
+        raise BundleError(str(error)) from error
+    required_node_ids = route_node_ids(dialect)
+    target_node_id = required_node_ids[0]
     targets = [index for index, row in enumerate(rows)
-               if row.get("route_node_id") == NODE_ID]
+               if row.get("route_node_id") == target_node_id]
     if len(targets) != 1:
         raise BundleError("route_checkpoint_node_missing_or_ambiguous")
     source_initial = rows[0]
     suffix_rows = rows[targets[0]:]
     suffix_node_ids = [str(row.get("route_node_id") or "") for row in suffix_rows]
-    if suffix_node_ids != list(REQUIRED_SUFFIX_NODE_IDS):
+    if suffix_node_ids != list(required_node_ids):
         raise BundleError("route_checkpoint_required_suffix_mismatch")
 
     source_invariants = {
@@ -340,7 +359,7 @@ def _target_route_suffix(
     return suffix, {
         "source_initial_node_id": str(source_initial.get("route_node_id") or ""),
         "runtime_initial_node_id": suffix_node_ids[0],
-        "checkpoint_target_node_id": NODE_ID,
+        "checkpoint_target_node_id": target_node_id,
         "retained_node_ids": suffix_node_ids,
     }
 
@@ -385,18 +404,17 @@ def _logical_bindings(root: Path) -> dict[str, Path]:
 
 def _verify_config(
     path: Path, *, route_path: Path, profile_manifest_path: Path,
-    seal: dict[str, Any], source_commit: str,
+    seal: dict[str, Any], source_commit: str, dialect: str,
 ) -> None:
     text = path.read_text(encoding="utf-8")
     expected = {
         **CONFIG_VALUES,
+        **dialect_config_values(dialect),
+        "BotWorld.ValidationRoute.NodeId": f'"{initial_node_id(dialect)}"',
         "BotWorld.ValidationRoute.ManifestPath": f'"{route_path}"',
         "BotWorld.ProfileManifest": f'"{profile_manifest_path}"',
-        f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.SealSha256": (
-            f'"{seal.get("seal_sha256")}"'
-        ),
-        f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.SourceCommit": (
-            f'"{source_commit}"'
+        **sealed_config_values(
+            dialect, seal=seal, source_commit=source_commit,
         ),
     }
     for key, value in expected.items():
@@ -464,15 +482,12 @@ def verify_bundle(
     commit, tree = _source_identity(
         worktree, str(source.get("commit") or ""), str(source.get("tree") or "")
     )
-    identities = launch.get("identity") or {}
-    if identities != {
-        "scenario_id": SCENARIO_ID,
-        "runtime_profile_id": SCENARIO_ID,
-        "pool_tag": SCENARIO_ID,
-        "actor_guid": ACTOR_GUID,
-        "checkpoint_fixture_id": CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
-    }:
-        raise BundleError("launch_identity_mismatch")
+    try:
+        dialect = dialect_from_identity(
+            launch.get("identity"), scenario_id=SCENARIO_ID,
+        )
+    except DialectError as error:
+        raise BundleError(str(error)) from error
     paths = launch.get("paths") or {}
     logical = {
         key: logical_root / BUNDLE_NAMES[key]
@@ -496,11 +511,17 @@ def verify_bundle(
     _verify_gate_bearing_build_receipt(
         root / BUNDLE_NAMES["build_receipt"], policy
     )
+    validate_ledger_manifest(
+        dialect,
+        ledger=root / BUNDLE_NAMES["ledger"],
+        decision=root / BUNDLE_NAMES["decision"],
+        suite_receipt=root / BUNDLE_NAMES["suite_receipt"],
+    )
     source_route = _validate_route(
         root / BUNDLE_NAMES["source_route_manifest"], SCENARIO_ID, SCENARIO_ID
     )
     expected_runtime_route, route_identity = _target_route_suffix(
-        source_route, SCENARIO_ID, SCENARIO_ID
+        source_route, SCENARIO_ID, SCENARIO_ID, dialect
     )
     runtime_route_path = root / BUNDLE_NAMES["route_manifest"]
     if runtime_route_path.read_bytes() != _canonical_pretty_json(expected_runtime_route):
@@ -543,13 +564,13 @@ def verify_bundle(
         root / BUNDLE_NAMES["runtime_config"],
         route_path=logical["route_manifest"],
         profile_manifest_path=logical["profile_manifest"],
-        seal=seal, source_commit=commit,
+        seal=seal, source_commit=commit, dialect=dialect,
     )
     reconstructed = _render_config(
         (root / BUNDLE_NAMES["base_runtime_config"]).read_bytes(),
         route_path=logical["route_manifest"],
         profile_manifest_path=logical["profile_manifest"],
-        seal=seal, source_commit=commit,
+        seal=seal, source_commit=commit, dialect=dialect,
     )
     if reconstructed != (root / BUNDLE_NAMES["runtime_config"]).read_bytes():
         raise BundleError("runtime_config_reconstruction_mismatch")
@@ -588,33 +609,24 @@ def verify_bundle(
         raise BundleError("launch_watchdog_or_start_budget_invalid")
     if launch.get("expected_arm_predicates") != {
         "required": True, "command_sent": True, "emission_count": 1,
-        "actor_guid": ACTOR_GUID, "seal_sha256": seal["seal_sha256"],
+        "actor_guid": dialect_identity(
+            dialect, scenario_id=SCENARIO_ID,
+        )["actor_guid"],
+        "seal_sha256": seal["seal_sha256"],
         "source_commit": commit,
     }:
         raise BundleError("launch_arm_predicates_invalid")
-    if launch.get("expected_lifecycle_predicates") != {
-        "stage": "completed", "terminal": True, "injection_count": 1,
-        "actor_guid": ACTOR_GUID,
-        "authority": "chainwielder_fixture_observation_only_not_gameplay",
-        "trigger": "active_route_path",
-        "triggered_by_active_route_path": True,
-        "triggered_by_armed_route_hazard_retry": False,
-        "rejection_owner": "hazard",
-        "rejection_gate": "future_pack_destination",
-        "rejection_reason": "route_destination_future_pack_unsafe",
-        "planner_receipt_id": 0,
-        "before_after_identity_preserved": True,
-        "outcome": (
-            "route_identity_preserved_after_receiptless_hazard_rejection"
-        ),
-    }:
+    actor_guid = dialect_identity(dialect, scenario_id=SCENARIO_ID)["actor_guid"]
+    if launch.get("expected_lifecycle_predicates") != lifecycle_predicates(
+        dialect, actor_guid=actor_guid,
+    ):
         raise BundleError("launch_lifecycle_predicates_invalid")
     argv = launch.get("launch_argv")
     if not isinstance(argv, list) or any(not isinstance(value, str) for value in argv):
         raise BundleError("launch_argv_invalid")
     if argv != expected_launch_argv(
         worktree=worktree, binary=binary, output_dir=logical_root,
-        admission_sha256=admission_sha,
+        admission_sha256=admission_sha, dialect=dialect,
     ):
         raise BundleError("launch_argv_exact_binding_mismatch")
     return {
@@ -655,12 +667,27 @@ def create_bundle(
     base_runtime_config_receipt_sha256: str, ledger: Path,
     ledger_sha256: str, scenario_id: str, runtime_profile_id: str,
     pool_tag: str, actor_guid: int, checkpoint_fixture_id: str,
+    checkpoint_case_id: str | None = None,
     base_runtime_config_authority: object = LEGACY_TRACKED_SNAPSHOT_AUTHORITY,
     base_runtime_config_contract_relative_path: str | None = None,
 ) -> dict[str, Any]:
     output_dir = output_dir.resolve()
     staging: Path | None = None
     try:
+        if (
+            scenario_id != SCENARIO_ID or runtime_profile_id != SCENARIO_ID
+            or pool_tag != SCENARIO_ID
+        ):
+            raise BundleError("bundle_profile_identity_input_mismatch")
+        dialect = select_dialect(
+            actor_guid=actor_guid,
+            checkpoint_fixture_id=checkpoint_fixture_id,
+            checkpoint_case_id=checkpoint_case_id,
+        )
+        if dialect == MAGMAW_TRANSFER and Path(os.path.abspath(ledger)) != (
+            worktree.resolve() / ledger_relative_path(dialect)
+        ):
+            raise BundleError("magmaw_transfer_ledger_source_path_mismatch")
         copied_inputs = {
             "build_receipt": build_receipt, "decision": decision,
             "suite_receipt": suite_receipt, "route_manifest": route_manifest,
@@ -672,7 +699,7 @@ def create_bundle(
             "binary": binary, "capture_paths": capture_paths,
             "read_only_source_inputs": {"build_policy", "ledger"},
             "exact_read_only_source_inputs": {
-                "ledger": TRACKED_LEDGER_RELATIVE_PATH,
+                "ledger": ledger_relative_path(dialect),
             },
         }
         _validate_locations(material_inputs=copied_inputs, **location_args)
@@ -685,12 +712,6 @@ def create_bundle(
             expected_source_commit=source_commit,
             expected_source_tree=source_tree,
         )
-        if (
-            scenario_id != SCENARIO_ID or runtime_profile_id != SCENARIO_ID
-            or pool_tag != SCENARIO_ID or actor_guid != ACTOR_GUID
-            or checkpoint_fixture_id != CHAINWIELDER_CHECKPOINT_FIXTURE_ID
-        ):
-            raise BundleError("chainwielder_identity_input_mismatch")
         _validate_locations(material_inputs=copied_inputs, **location_args)
         commit, tree = _source_identity(worktree, source_commit, source_tree)
         hashes = {
@@ -704,6 +725,10 @@ def create_bundle(
         }
         for label, (path, digest) in hashes.items():
             _require_hash(path.resolve(), digest, label)
+        validate_ledger_manifest(
+            dialect, ledger=ledger, decision=decision,
+            suite_receipt=suite_receipt,
+        )
         _verify_gate_bearing_build_receipt(build_receipt, build_policy)
         _validate_route(route_manifest, scenario_id, runtime_profile_id)
         parent = output_dir.parent
@@ -713,7 +738,7 @@ def create_bundle(
             route_manifest, scenario_id, runtime_profile_id
         )
         runtime_route, route_identity = _target_route_suffix(
-            source_route, scenario_id, runtime_profile_id
+            source_route, scenario_id, runtime_profile_id, dialect
         )
         for key in (
             "build_receipt", "build_policy", "decision", "suite_receipt",
@@ -745,7 +770,8 @@ def create_bundle(
         profile_identity["runtime_route_manifest_sha256"] = sha256_file(
             staging / BUNDLE_NAMES["route_manifest"]
         )
-        seal = chainwielder_checkpoint_seal(
+        seal = create_seal(
+            dialect,
             worktree=worktree,
             binary=binary,
             build_receipt=staging / BUNDLE_NAMES["build_receipt"],
@@ -763,7 +789,7 @@ def create_bundle(
                 runtime_config_authority.payload,
                 route_path=logical["route_manifest"],
                 profile_manifest_path=logical["profile_manifest"],
-                seal=seal, source_commit=commit,
+                seal=seal, source_commit=commit, dialect=dialect,
             )
         )
         materialized = _logical_bindings(staging)
@@ -797,13 +823,7 @@ def create_bundle(
             "schema": LAUNCH_SCHEMA,
             "bundle_schema": SCHEMA,
             "source": {"worktree": str(worktree.resolve()), "commit": commit, "tree": tree},
-            "identity": {
-                "scenario_id": scenario_id,
-                "runtime_profile_id": runtime_profile_id,
-                "pool_tag": pool_tag,
-                "actor_guid": actor_guid,
-                "checkpoint_fixture_id": checkpoint_fixture_id,
-            },
+            "identity": dialect_identity(dialect, scenario_id=scenario_id),
             "route_identity": {
                 **route_identity,
                 "source_route_sha256": sha256_file(
@@ -847,22 +867,12 @@ def create_bundle(
                 "actor_guid": actor_guid, "seal_sha256": seal["seal_sha256"],
                 "source_commit": commit,
             },
-            "expected_lifecycle_predicates": {
-                "stage": "completed", "terminal": True, "injection_count": 1,
-                "actor_guid": actor_guid, "authority": "chainwielder_fixture_observation_only_not_gameplay",
-                "trigger": "active_route_path",
-                "triggered_by_active_route_path": True,
-                "triggered_by_armed_route_hazard_retry": False,
-                "rejection_owner": "hazard", "rejection_gate": "future_pack_destination",
-                "rejection_reason": "route_destination_future_pack_unsafe",
-                "planner_receipt_id": 0, "before_after_identity_preserved": True,
-                "outcome": (
-                    "route_identity_preserved_after_receiptless_hazard_rejection"
-                ),
-            },
+            "expected_lifecycle_predicates": lifecycle_predicates(
+                dialect, actor_guid=actor_guid,
+            ),
             "launch_argv": expected_launch_argv(
                 worktree=worktree, binary=binary, output_dir=output_dir,
-                admission_sha256=admission_sha,
+                admission_sha256=admission_sha, dialect=dialect,
             ),
         }
         _write_json(staging / BUNDLE_NAMES["launch_contract"], launch)
@@ -886,7 +896,8 @@ def create_bundle(
             "pre_rename_verified": result["valid"],
         }
     except (
-        BundleError, CanonicalRouteStagingError, RecurrenceAdmissionError,
+        BundleError, CanonicalRouteStagingError, DialectError,
+        RecurrenceAdmissionError,
         RuntimeConfigAuthorityError, OSError, subprocess.SubprocessError,
     ) as error:
         if staging is not None and staging.exists():
@@ -923,6 +934,7 @@ def parser() -> argparse.ArgumentParser:
     create.add_argument("--pool-tag", required=True)
     create.add_argument("--actor-guid", type=int, required=True)
     create.add_argument("--checkpoint-fixture-id", required=True)
+    create.add_argument("--checkpoint-case-id")
     create.add_argument(
         "--base-runtime-config-authority",
         default=LEGACY_TRACKED_SNAPSHOT_AUTHORITY,
@@ -940,7 +952,7 @@ def main() -> int:
             values = vars(args)
             values.pop("command")
             value = create_bundle(**values)
-    except BundleError as error:
+    except (BundleError, DialectError) as error:
         print(json.dumps({"valid": False, "reason": str(error)}, sort_keys=True))
         return 2
     print(json.dumps(value, indent=2, sort_keys=True))
