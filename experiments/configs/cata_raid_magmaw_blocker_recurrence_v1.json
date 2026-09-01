@@ -125,6 +125,7 @@
       }
     ],
     "fixture_history": [
+      "rejected_hazard_endpoint_task_termination_v1",
       "magmaw_parasite_lane_paths_v1",
       "magmaw_parasite_lane_transition_full_replay_v1",
       "magmaw_parasite_control_full_runtime_v1",
@@ -149,6 +150,19 @@
       "current_route_combat_authority_precedence_v1"
     ],
     "fixtures": [
+      {
+        "fixture_id": "rejected_hazard_endpoint_task_termination_v1",
+        "revision": 1,
+        "causal_signature": "permanently_rejected_hazard_endpoint_retains_task_ownership",
+        "revision_basis": "The compiled replay crosses the production planner-rejection observation, native action outcome mapper, actor-local task feedback, real arbiter, and same-resolution fallback. It distinguishes terminal rejection from transient retry without changing path admission or terrain behavior.",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_containment_replays_full_runtime_contract"
+        ]
+      },
       {
         "fixture_id": "magmaw_parasite_lane_paths_v1",
         "revision": 8,
@@ -546,6 +560,13 @@
     ]
   },
   "causal_signatures": {
+    "permanently_rejected_hazard_endpoint_retains_task_ownership": {
+      "owner": "shared_task_and_native_outcome_feedback",
+      "parent": "magmaw_parasite_containment_failure",
+      "invariant": "a terminally rejected actor-local hazard endpoint ends ownership of that exact actor, generation, and destination before lower compatible actions are evaluated; transient or submitted movement remains owned until its measured postcondition",
+      "architecture_reviewed_through_occurrence_count": 1,
+      "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_parasite_rejection_repair_handoff_20260901.json"
+    },
     "magmaw_parasite_containment_failure": {
       "owner": "encounter_combat_and_movement_authority",
       "invariant": "exactly the fixed Fire Mage and Marksman Hunter team owns parasite targeting, threat, damage, and stable lane movement through final native path admission while every other player remains outside infection range and suppresses parasite-reaching area damage",
@@ -1792,6 +1813,43 @@
       "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_5ea9bb9b8e_chainwielder_hazard_clear_magmaw_death_loop_20260901.dvc",
       "evidence": "experiments/configs/cata_raid_chainwielder_hazard_clear_5ea9bb9b8e_summary_v1.json",
       "note": "The exact current binary cleared Chainwielder and Drudges. Current-pack validation_route_hazard_exit requests reached native planner submission and terrain-following spline progress; the prior receiptless future_pack_destination gameplay blocker was absent. Magmaw then ran for 121 combat seconds and terminated at the three-death-loop gate. Parasitic Infection and Infectious Vomit reached the raid and Massive Crash hit multiple non-tanks while Magmaw task authority was disabled for this Chainwielder-scoped capture. This is not a Z, MMAP-floor, class-throughput, or Magmaw-clear claim."
+    },
+    {
+      "run_id": "magmaw-hunter-owner-closure-29b54a2188-20260901",
+      "route_completed": false,
+      "classification": "gameplay_failure_after_chainwielder_and_drudges_cleared",
+      "admission": {
+        "source_identity": "29b54a2188d2ecbda3673628fe88d646c19117b4",
+        "source_tree": "78096733c259eb89e65e409d883c94abb29cb425",
+        "fixture_revisions": {}
+      },
+      "blockers": {
+        "permanently_rejected_hazard_endpoint_retains_task_ownership": "occurred",
+        "magmaw_parasite_control_allows_player_infection": "not_exercised",
+        "magmaw_lethal_movement_identity_churn": "not_exercised",
+        "magmaw_lethal_movement_safe_completion_missing": "not_exercised",
+        "stationary_combat_masks_movement_nonprogress": "not_exercised",
+        "movement_receipt_terminal_join_eviction": "absent",
+        "chainwielder_future_drudge_contamination": "absent",
+        "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "absent",
+        "current_route_combat_authority_preempted": "absent",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "not_exercised",
+        "same_level_native_endpoint_z_normalization_false_negative": "not_exercised",
+        "same_level_native_path_proof_false_negative": "not_exercised",
+        "native_planner_executor_launch_divergence": "absent",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "not_exercised",
+        "raid_partial_wipe_waits_for_last_survivor": "absent",
+        "phase1_capture_duplicate_autostart_lifecycle": "absent",
+        "deferred_candidate_dangling_reference_capture": "absent",
+        "native_partial_death_recovery_lifecycle_failure": "not_exercised"
+      },
+      "report_sha256": "98b501bb1018bee7ffbdd220ce57e4bb9f796a5ff9ce53a6a058f788eaa63228",
+      "heartbeat_events_sha256": "4df8c4c9f4480ff2fded4b10428c1686e9a00cfa38a32db6b0072603c9062410",
+      "worldserver_log_sha256": "9d01db830d5ca94d06eb069a5d12da1a841eff17497defc521f98e0554271d83",
+      "dvc_pointer": "artifacts/cata_raid_program/magmaw_hunter_owner_closure_29b54a2188_20260901.dvc",
+      "evidence": "experiments/configs/cata_raid_magmaw_hunter_owner_closure_handoff_20260901.json",
+      "note": "Entrance, Chainwielder, and Drudges cleared. At Magmaw the first trace-backed edge was actor 30001 parasite_contact_evade rejected as route_destination_endpoint_mismatch, followed by baiter unreachable rejections. Across the encounter, 719 terminal parasite escape rejections affected all ten bots while exact rejected ownership remained active and deferred useful recovery. Later infections, deaths, and the emergency timeout are retained as downstream evidence under the parent containment invariant. This is task-lifecycle feedback failure, not a Z, floor, MMAP-admission, or terrain-following fix."
     }
   ]
 }
