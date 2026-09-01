@@ -1,0 +1,60 @@
+{
+  "schema": "cata_raid_hunter_owner_width_handoff_v1",
+  "run_id": "magmaw-hunter-owner-2688e5a0f9-20260901",
+  "source_commit": "2688e5a0f9868d9414e95bcbd6889edc5ecbe54a",
+  "classification": "infrastructure_failure",
+  "first_broken_edge": "validation_active_hunter_pet_observation_stored_owner_mismatch",
+  "downstream_failure": "validation_raid_admission_receipt_size_mismatch",
+  "facts": {
+    "persisted_owner": 30009,
+    "bot_guid_counter": 30009,
+    "live_owner_counter": 30009,
+    "stored_owner_raw": 17712445158713,
+    "stored_owner_hex": "0x101c00007539",
+    "stored_owner_low_counter": 30009,
+    "modelid": 4124,
+    "pet_id": 8700009,
+    "entry": 8959
+  },
+  "root_cause": {
+    "file": "src/server/game/Entities/Player/Player.cpp",
+    "function": "Player::LoadPetsFromDB",
+    "current_expression": "fields[2].GetUInt64()",
+    "database_field": "character_pet.owner",
+    "database_width": "uint32",
+    "release_failure": "Prepared Field::GetUInt64 reinterprets eight raw bytes, combining owner with the following modelid field.",
+    "exact_derivation": "(4124 << 32) | 30009 = 17712445158713"
+  },
+  "bounded_repair": {
+    "goal": "Read character_pet.owner with the exact database field width and preserve the existing semantic owner identity check.",
+    "required_tests": [
+      "compiled raw prepared-field regression proving a 32-bit owner does not consume the following modelid",
+      "correct owner remains admitted",
+      "wrong owner remains rejected",
+      "focused hunter identity and admission tests"
+    ],
+    "forbidden": [
+      "relaxing or deleting the owner comparison",
+      "changing pet AI or pet gameplay",
+      "changing encounter, class, movement, MMAP, route, terrain following, or Z",
+      "building or starting a server before independent review"
+    ]
+  },
+  "execution": {
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "retries": 0,
+    "runtime_seconds": 4,
+    "cleanup_complete": true,
+    "decisions": 0,
+    "damage": 0,
+    "healing": 0
+  },
+  "evidence": {
+    "dvc_path": "artifacts/cata_raid_program/magmaw_hunter_owner_width_2688e5a0f9_20260901.dvc",
+    "dvc_directory_digest": "91ee4ccae46ca249c858b2fff5fa5595.dir",
+    "file_count": 14,
+    "byte_count": 652306,
+    "remote_verified": true
+  }
+}
