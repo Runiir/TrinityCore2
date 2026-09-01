@@ -323,7 +323,8 @@ def test_magmaw_movement_collection_source_contract() -> None:
     assert "AdaptiveMagmawMovements" in context
     assert "transferLaneSelection.Movements" in preparation
     assert "AdaptiveMagmawMovements.Size()" in preparation
-    assert "AdaptiveMagmawMovements.Size()" in fallback
+    assert "HasRetainedMagmawHazardOwnership(" in fallback
+    assert "MagmawPersonalParasiteEscape" in fallback
     assert "SubmitMagmawMovementKernelCandidates(" in candidates
     assert "HasPendingMagmawSurvivalMovement(" in kernel_adapter
     assert "magmaw_survival_movement_pending" in movement_intents
