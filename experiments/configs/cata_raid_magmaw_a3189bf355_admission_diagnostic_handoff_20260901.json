@@ -1,0 +1,51 @@
+{
+  "schema": "cata_raid_magmaw_admission_diagnostic_handoff_v1",
+  "run_id": "magmaw-repaired-evidence-a3189bf355-canary1",
+  "source_commit": "a3189bf355ee7c9e85f5e1f3122d3885ee9f81d5",
+  "classification": "infrastructure_failure",
+  "elapsed": {
+    "worldserver_runtime_seconds": 4,
+    "build_started_at": "2026-09-01T16:44:28+03:00",
+    "build_finished_at": "2026-09-01T16:44:59+03:00",
+    "failed_report_written_at": "2026-09-01T16:49:04+03:00"
+  },
+  "observations": {
+    "expected_bots": 10,
+    "loaded_bots_before_rollback": 10,
+    "active_bots_after_rollback": 0,
+    "decisions": 0,
+    "party_damage": 0,
+    "party_healing": 0,
+    "watchdog_reason": "bot_pool_underfilled",
+    "native_failure_reason": "validation_raid_admission_activation_failed",
+    "cleanup_complete": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "all ten exact roster members loaded into map 669 and one native raid group before rollback",
+      "the native admission gate did not become active",
+      "rollback erased the pre-rollback RaidRuntime values and exposed only a generic activation failure",
+      "the run exercised no encounter, movement, task-state, rotation, DPS, HPS, or pet-lifecycle behavior"
+    ],
+    "refuted": [
+      "the stale PlayerPetData.Active predicate caused this initial activation failure; provisioning readback had active=1 and the live hunter pet loaded"
+    ],
+    "unproven": [
+      "which admission-readiness predicate failed"
+    ]
+  },
+  "diagnostic_repairs": {
+    "aggregate_readiness_commit": "afede97955",
+    "per_member_readiness_commit": "2bd5ceeb28",
+    "typed_failure_compile_fix_commit": "471d53f3ca",
+    "behavior_change": false,
+    "receipt": "Preserve every aggregate admission term and the actual per-member slot, role, spec, declared-spec, local hunter-observer, and shared hunter-observer evaluations before rollback; retain the typed reason through status and logs."
+  },
+  "next_work_unit": {
+    "id": "shard:magmaw_admission_diagnostic_one_start",
+    "purpose": "Build the exact diagnostic source once, reprovision the exact cohort, and run one no-retry completion-watchdog start. If admission fails, retain the exact typed readiness receipt. If admission succeeds, continue the ordinary Magmaw route until its first typed terminal.",
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "retries": 0
+  }
+}

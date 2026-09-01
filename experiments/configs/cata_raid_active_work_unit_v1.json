@@ -1,31 +1,31 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:magmaw_repaired_evidence_one_start",
+  "work_unit": "shard:magmaw_admission_diagnostic_one_start",
   "owner_skill": "raid-shard-architecture",
   "next_work_unit": "runtime:first_trace_backed_magmaw_failure_or_acceptance",
   "next_owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_pending_live_verification",
-  "epoch_id": "magmaw_repaired_evidence_20260901",
+  "classification": "diagnostic_implemented_pending_live_observation",
+  "epoch_id": "magmaw_admission_diagnostic_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N_canary_for_universal_architecture",
   "architecture_scope": "Magmaw is only the first vertical slice. Accept only reusable facts, sticky assignments, persistent tasks, independent intents, shared arbitration, and measured native outcomes.",
-  "gate_state": "reviewed_repairs_admit_one_exact_build_and_one_completion_watchdog_start",
-  "observed_at_commit": "b39c82f1c7ddb2c29a43bdf383d5bbb3995a89d6",
-  "behavior_change": true,
+  "gate_state": "typed_admission_receipt_admits_one_exact_build_and_one_completion_watchdog_start",
+  "observed_at_commit": "471d53f3ca817e7b718adcdd7e305e6e2f42c419",
+  "behavior_change": false,
   "evidence_contract_change": true,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_48abb13c6d_live2_repair_handoff_20260901.json",
-    "sha256": "a3e8de0710c41055595bd3c8d3b22fcd0bb3eda0be7098e25ed0c1792783c41d"
+    "path": "experiments/configs/cata_raid_magmaw_a3189bf355_admission_diagnostic_handoff_20260901.json",
+    "sha256": "9eec618a152a95898c00f527cfc38712c1f588bd4a515d76e00c18a3e9c53517"
   },
   "first_broken_edge": {
-    "run_id": "magmaw-task-state-canary-48abb13c6d-live2",
-    "route_node_id": "bwd.magmaw.encounter",
-    "cause": "Actor 30010 submitted parasite_contact_evade, the native planner rejected route_destination_endpoint_mismatch, and Parasitic Infection followed. The retained packet lacked the exact hazard-bound request/resolved geometry needed to classify the rejection.",
-    "terminal": "validation_active_hunter_pet_admission_identity_drift",
-    "evidence": "experiments/configs/cata_raid_magmaw_48abb13c6d_live2_repair_handoff_20260901.json"
+    "run_id": "magmaw-repaired-evidence-a3189bf355-canary1",
+    "route_node_id": "bwd.entry.regroup",
+    "cause": "All ten bots loaded, admission did not activate, and rollback erased the failed prerequisite behind validation_raid_admission_activation_failed.",
+    "terminal": "bot_pool_underfilled",
+    "evidence": "experiments/configs/cata_raid_magmaw_a3189bf355_admission_diagnostic_handoff_20260901.json"
   },
-  "next_action": "Configure/build the clean descriptor commit once under fast8_v4, derive and hash one canary config with TransferLaneTaskAuthority enabled, provision only the scenario-owned cohort if strict readback requires it, and run one autonomous completion-watchdog Magmaw canary. Publish compact evidence and evict raw data at terminal.",
+  "next_action": "Configure/build the clean diagnostic commit once under fast8_v4, deterministically reprovision and read back the exact cohort, then run one no-retry completion-watchdog start. Preserve the typed pre-rollback admission receipt or, if admission succeeds, continue to the first ordinary route terminal.",
   "implementation_scope": {
     "allowed": [
       "one queued incremental configure if CMake regeneration is required",
@@ -33,19 +33,20 @@
       "one validation-only BotWorld.Magmaw.TransferLaneTaskAuthority=1 runtime overlay while the repository default remains off",
       "one deterministic scenario-owned provisioning/reset followed by strict roster and instance readback when required",
       "one autonomous 10N Magmaw completion-watchdog worldserver start",
-      "DPS, HPS, deaths, infections, vomit, task identity, action outcomes, native movement progress, exposed-head targeting, stall, and route terminal capture",
+      "typed aggregate and per-member admission-readiness capture before rollback",
+      "ordinary DPS, HPS, deaths, infections, task outcomes, movement progress, and route terminal capture only if admission succeeds",
       "compact DVC publication, remote verification, local raw-payload eviction, and server cleanup"
     ],
     "forbidden": [
       "bot-side Z adjustment, vertical steering, target-height normalization, teleportation, MMAP tolerance, fallback fraction, route coordinate, or global movement-planner changes",
-      "source, SQL, roster-definition, encounter, class, pet-gameplay, consumable, or healer mutation during this evidence unit",
+      "source, SQL, roster-definition, encounter, class, pet-gameplay, consumable, healer, or admission-predicate mutation during this evidence unit",
       "changing the fixed Mage/Hunter bait pair or granting lane ownership to a non-baiter",
       "authserver start, manual assistance, retry, fixed raid success timer, or treating action submission as progress",
       "claiming success from build completion or synthetic replay alone"
     ]
   },
   "program_scope": {
-    "acceptance_admitted": true,
+    "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": true,
     "gameplay_mutations_allowed": false,
@@ -60,10 +61,10 @@
   },
   "acceptance": [
     "the exact descriptor source and built binary identities match",
-    "the fixed Mage/Hunter pair owns bait lanes and ordinary bots never acquire lane ownership",
-    "a personally pursued non-baiter retains one actor-owned escape identity and destination until measured safety or typed terminal failure",
+    "an admission failure names its exact aggregate predicate and any implicated member before rollback",
+    "the diagnostic changes no admission predicate and does not manufacture activation",
     "native pathing follows terrain; no bot-authored vertical movement or Z correction occurs",
-    "the exposed head wins damage targeting during its window",
+    "if admission succeeds, the ordinary route continues without diagnostic assistance",
     "the terminal report contains DPS and HPS plus deaths, infections, vomit, task outcomes, movement progress, and stall/clear status",
     "an endpoint rejection retains one exact actor/hazard/request/primary-resolved/path-floor/clearance/terminal receipt in the trace stream",
     "hunter pet identity remains stable across ordinary Active lifecycle changes and does not close the cohort action gate",
