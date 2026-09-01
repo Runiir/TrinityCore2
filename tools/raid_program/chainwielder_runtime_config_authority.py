@@ -19,7 +19,7 @@ from tools.raid_program.tracked_runtime_config_derivation import OUTPUT_SHA256
 
 LEGACY_TRACKED_SNAPSHOT_AUTHORITY = "tracked_snapshot_v1"
 TRACKED_DERIVED_AUTHORITY = "tracked_derived_runtime_config_v1"
-DERIVED_OUTPUT_LENGTH = 156_488
+DERIVED_OUTPUT_LENGTH = 156_886
 
 
 class RuntimeConfigAuthorityError(RuntimeError):

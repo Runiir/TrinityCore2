@@ -23,11 +23,11 @@ from tools.raid_program.canonical_route_staging import (
 CONTRACT_SCHEMA = "cata_raid_tracked_base_runtime_config_v1"
 RECEIPT_SCHEMA = "cata_raid_tracked_runtime_config_derivation_receipt_v1"
 TEMPLATE_PATH = "src/server/worldserver/worldserver.conf.dist"
-TEMPLATE_SHA256 = "944b69d1a22e0a55c88800ac73233aa3de75ede0058f6e2ebf96615ca285dfef"
+TEMPLATE_SHA256 = "ab0bf9adac893c97ce1c8c78034e70311ed98f4b3e32e52b998cf479122f80cd"
 RECIPE_PATH = "Makefile"
 RECIPE_SHA256 = "76c854e1c4e7dcbc4fc9f5a2444ede512ca65a7d1ff6e2514be8941641ea918a"
 RECIPE_TARGET = "test-configs"
-OUTPUT_SHA256 = "1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8"
+OUTPUT_SHA256 = "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 SAFE_NAME_RE = re.compile(r"[a-z0-9][a-z0-9_.-]*")
 CONTRACT_FIELDS = {

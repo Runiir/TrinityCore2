@@ -1,6 +1,6 @@
 {
   "contract_id": "cata_raid_tracked_base_runtime_config_v1",
-  "expected_output_sha256": "1458202762a3abb4b656b1ccb95c1b38e23e55dcd8c63b234e74ce32188300f8",
+  "expected_output_sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f",
   "external_secret_inputs": false,
   "fixed_recipe_substitutions": {
     "allow_dungeons": false,
@@ -30,7 +30,7 @@
   "schema": "cata_raid_tracked_base_runtime_config_v1",
   "template": {
     "relative_path": "src/server/worldserver/worldserver.conf.dist",
-    "sha256": "944b69d1a22e0a55c88800ac73233aa3de75ede0058f6e2ebf96615ca285dfef"
+    "sha256": "ab0bf9adac893c97ce1c8c78034e70311ed98f4b3e32e52b998cf479122f80cd"
   },
   "typed_inputs": {
     "bot_policy_model_enable": false,
