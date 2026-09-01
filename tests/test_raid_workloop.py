@@ -343,23 +343,23 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "shard:observe_map669_projected_endpoint_terminal"
+        "runtime:magmaw_transfer_lane_default_off_authority_selector"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["classification"] == "implementation_pending_live_verification"
+    assert active["classification"] == "typed_projected_endpoint_observed"
     assert active["next_owner_skill"] == "raid-evidence-lifecycle"
     assert active["ready_for_bounded_repair"] is False
     assert active["program_scope"]["gameplay_mutations_allowed"] is False
-    assert active["program_scope"]["worldserver_start_admitted"] is True
+    assert active["program_scope"]["worldserver_start_admitted"] is False
     assert active["program_scope"]["authserver_start_admitted"] is False
     assert active["source_handoff"]["path"].endswith(
-        "cata_raid_projected_endpoint_replay_handoff_v1.json"
+        "cata_raid_projected_endpoint_terminal_summary_v1.json"
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["validation_clock"]["policy"] == "completion_watchdog"
-    assert "one sealed no-retry" in active["next_action"].lower()
+    assert "persistent transfer-lane task runner" in active["next_action"].lower()
     assert any(
-        "claiming logical task completion" in rule.lower()
+        "reached_projected_end_poly" in rule.lower()
         for rule in active["scope_lock"]["forbidden"]
     )
     assert sinestra["task_kind"] == "implement_missing_boss_script"

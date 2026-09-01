@@ -1,0 +1,60 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:classify_map669_projected_endpoint_terminal",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "typed_projected_endpoint_terminal_observed",
+  "source": {
+    "commit": "439ddda593b675ba358708d6a45953da81fe071a",
+    "tree": "8ad28d478c7827586c59fc019863a8d992e6a7a1",
+    "binary_sha256": "29fba55126804fe4e3d11e355dd6ad758a88efe0edfba00dcca5ff404c24e932"
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_439ddda593_projected_endpoint_terminal_20260901.dvc",
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "database_provisioning_mutations": 0,
+    "retries": 0,
+    "actor_guid": 30007,
+    "fixture_id": "map669_native_path_production_boundary_v1",
+    "case_id": "a506_receipt636_incomplete_same_floor",
+    "controller_terminal_preserved": true,
+    "checkpoint_outcome": "native_path_checkpoint_stage_submit_failed",
+    "planner_result": "rejected",
+    "planner_gate": "complete_path_required",
+    "planner_reason": "native_descent_complete_path_required",
+    "endpoint_resolution": {
+      "outcome": "reached_projected_end_poly",
+      "corridor_reached_end_poly": true,
+      "resolved_endpoint_available": true,
+      "actual_endpoint_matched_resolved": true,
+      "requested_endpoint_matched": false
+    },
+    "cleanup_verified": true,
+    "remote_dvc_verified": true
+  },
+  "claim_ledger": {
+    "verified": [
+      "the live map-669 path reached the projected Detour end polygon",
+      "the observed actual endpoint matched the resolved projected endpoint",
+      "the strict requested-destination gate remained closed",
+      "the truthful failed terminal remained immutable after queued telemetry"
+    ],
+    "not_verified": [
+      "executor submission",
+      "physical spline progress",
+      "logical lane arrival",
+      "Magmaw gameplay or acceptance"
+    ]
+  },
+  "workflow_finding": {
+    "classification": "fixture_terminal_not_outer_loop_terminal",
+    "observed": "The controller completed with checkpoint_terminal_failed, but the outer capture loop continued until the generic 300-second semantic-stall watchdog because unrelated gameplay-stability gates were still false.",
+    "required_repair": "Treat a verified typed fixture terminal as the terminal result of a fixture-expansion capture without promoting it to gameplay success."
+  },
+  "next_work_unit": {
+    "id": "runtime:magmaw_transfer_lane_default_off_authority_selector",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_action": "Feed typed native selection and outcome into the existing persistent transfer-lane task, keep authority default off, and treat reached_projected_end_poly as progress rather than logical task completion.",
+    "required_postcondition": "A compiled multi-tick replay proves exact identity correlation, stable task continuation across projected endpoints and safety preemption, logical-arrival-only success, and byte-equivalent legacy behavior while authority is disabled."
+  }
+}
