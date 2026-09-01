@@ -60,13 +60,15 @@ def test_validation_cohort_group_reconciles_hunter_pet_against_frozen_receipt():
         "frozenPet.PetSpellbook == observedPet.Spellbook",
         "frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256",
         "frozenPet.PetAutocastSpellIds == observedPet.AutocastSpellIds",
-        '"validation_active_hunter_pet_admission_identity_drift"',
+        "PersistentIdentityFailureReason",
+        "FrozenReceiptFailureReason",
     ):
         assert marker in module
     assert "ResolveExpectedHunterPetIdentity" not in module
     assert '"validation_active_hunter_pet_canonical_identity_drift"' not in module
     assert "BotWorldPopulationMgrCalibrationIdentity.h" in module
     assert "HunterPetObservationStatus::LifecycleUnavailable" in module
+    assert "ClassifyFrozenReceipt(comparison)" in module
 
 
 def test_validation_cohort_group_reconciles_gear_against_frozen_receipt():

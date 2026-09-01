@@ -320,8 +320,10 @@ def test_hunter_admission_observes_exact_ordinary_pet_without_manufacturing_stat
         "stored->Type == HUNTER_PET",
         "pet->getPetType() == HUNTER_PET",
         "pet->IsPermanentPetFor",
-        "snapshot.PetId == stored->PetId",
-        "snapshot.PetEntry == stored->CreatureId",
+        "facts.StoredPetId = stored ? stored->PetId : 0",
+        "facts.StoredEntry = stored ? stored->CreatureId : 0",
+        "facts.LivePetId = snapshot.PetId",
+        "facts.LiveEntry = snapshot.PetEntry",
         "petSpell.state != PETSPELL_REMOVED",
         "petSpell.type != PETSPELL_FAMILY",
         "PetOwnerGuid",
@@ -401,7 +403,8 @@ def test_active_hunter_pet_identity_is_reconciled_against_frozen_receipt() -> No
         "frozenPet.PetAutocastSpellIds == observedPet.AutocastSpellIds",
         '"validation_active_hunter_pet_receipt_missing"',
         '"validation_active_hunter_pet_lifecycle_unavailable"',
-        '"validation_active_hunter_pet_admission_identity_drift"',
+        "PersistentIdentityFailureReason",
+        "FrozenReceiptFailureReason",
         "MarkValidationCohortViolation(*invalidState, invalidBot, invalidReason)",
     ):
         assert token in active
@@ -476,7 +479,7 @@ def test_active_hunter_pet_lifecycle_is_typed_and_not_admission_drift() -> None:
 
     for token in (
         "HunterPetObservationStatus::LifecycleUnavailable",
-        "HunterPetObservationStatus::IdentityInvalid",
+        "HunterPetObservationStatus::PersistentIdentityInvalid",
         "HunterPetObservationStatus::IdentityObserved",
         "!bot->IsInWorld()",
         "!pet->IsInWorld()",

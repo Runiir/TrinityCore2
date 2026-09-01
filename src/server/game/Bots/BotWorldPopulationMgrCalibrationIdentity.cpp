@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgrCalibrationIdentity.h"
+#include "Bots/BotHunterPetIdentityContract.h"
 
 #include "CharmInfo.h"
 #include "Cryptography/CryptoHash.h"
@@ -12,6 +13,9 @@
 
 namespace BotWorldPopulationMgrCalibrationIdentity
 {
+using BotHunterPetIdentityContract::ClassifyPersistentIdentity;
+using BotHunterPetIdentityContract::PersistentIdentityFacts;
+using BotHunterPetIdentityContract::PersistentIdentityStatus;
 std::string OrdinaryPetSpellbookSha256(
     std::vector<OrdinaryPetSpellIdentity> const& spellbook)
 {
@@ -131,10 +135,15 @@ HunterPetObservationStatus ObserveActiveOrdinaryHunterPetStatus(
     if (!bot->IsInWorld() || !pet || !pet->IsInWorld() || !pet->IsAlive())
         return HunterPetObservationStatus::LifecycleUnavailable;
 
-    PlayerPetData const* stored = const_cast<Player*>(bot)->GetPlayerPetDataCurrent();
     snapshot.PetOwnerGuid = pet->GetOwner() ? pet->GetOwner()->GetGUID() : ObjectGuid();
     snapshot.PetId = pet->GetCharmInfo() ? pet->GetCharmInfo()->GetPetNumber() : 0;
     snapshot.PetEntry = pet->GetEntry();
+    // A native dismiss/call transition flips PlayerPetData::Active. Resolve
+    // the live permanent pet's stable row by pet number instead of treating
+    // that mutable lifecycle flag as immutable admission identity.
+    PlayerPetData const* stored = snapshot.PetId
+        ? const_cast<Player*>(bot)->GetPlayerPetDataById(snapshot.PetId)
+        : nullptr;
     // Family passives are deterministically derived from world DBC data and
     // are intentionally never persisted by Pet::_SaveSpells.  The pinned
     // provisioning identity is the mutable, persistable runtime spellbook;
@@ -153,18 +162,28 @@ HunterPetObservationStatus ObserveActiveOrdinaryHunterPetStatus(
     snapshot.AutocastSpellIds.erase(std::unique(
         snapshot.AutocastSpellIds.begin(), snapshot.AutocastSpellIds.end()),
         snapshot.AutocastSpellIds.end());
-    bool const validPersistentIdentity = stored && stored->Active
-        && stored->Type == HUNTER_PET
-        && pet->getPetType() == HUNTER_PET
-        && pet->IsPermanentPetFor(const_cast<Player*>(bot))
-        && pet->GetOwner() == bot
-        && pet->GetCharmInfo()
-        && stored->PetId && stored->CreatureId
-        && snapshot.PetId == stored->PetId
-        && snapshot.PetEntry == stored->CreatureId;
-    return validPersistentIdentity
+    PersistentIdentityFacts facts;
+    facts.CharmInfoPresent = pet->GetCharmInfo() != nullptr;
+    facts.PersistentRowPresent = stored != nullptr;
+    facts.StoredLifecycleActive = stored && stored->Active;
+    facts.StoredTypeHunter = stored && stored->Type == HUNTER_PET;
+    facts.LiveTypeHunter = pet->getPetType() == HUNTER_PET;
+    facts.Permanent = pet->IsPermanentPetFor(const_cast<Player*>(bot));
+    facts.LiveOwnerMatches = pet->GetOwner() == bot;
+    facts.StoredOwnerMatches = stored
+        && stored->Owner == bot->GetGUID().GetCounter();
+    facts.StoredPetId = stored ? stored->PetId : 0;
+    facts.StoredEntry = stored ? stored->CreatureId : 0;
+    facts.LivePetId = snapshot.PetId;
+    facts.LiveEntry = snapshot.PetEntry;
+    PersistentIdentityStatus const identityStatus =
+        ClassifyPersistentIdentity(facts);
+    snapshot.PersistentIdentityFailureReason =
+        BotHunterPetIdentityContract::PersistentIdentityFailureReason(
+            identityStatus);
+    return identityStatus == PersistentIdentityStatus::Observed
         ? HunterPetObservationStatus::IdentityObserved
-        : HunterPetObservationStatus::IdentityInvalid;
+        : HunterPetObservationStatus::PersistentIdentityInvalid;
 }
 
 bool ObserveActiveOrdinaryHunterPet(Player const* bot,

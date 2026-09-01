@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
+#include "Bots/BotHunterPetIdentityContract.h"
 #include "Bots/BotWorldPopulationMgrCalibrationIdentity.h"
 #include "Bots/BotMgr.h"
 
@@ -35,6 +36,9 @@ using BotWorldPopulationMgrCalibrationIdentity::HunterPetIdentitySnapshot;
 using BotWorldPopulationMgrCalibrationIdentity::HunterPetObservationStatus;
 using BotWorldPopulationMgrCalibrationIdentity::ObserveActiveOrdinaryHunterPet;
 using BotWorldPopulationMgrCalibrationIdentity::ObserveActiveOrdinaryHunterPetStatus;
+using BotHunterPetIdentityContract::ClassifyFrozenReceipt;
+using BotHunterPetIdentityContract::FrozenReceiptComparison;
+using BotHunterPetIdentityContract::FrozenReceiptStatus;
 
 float Distance2d(float ax, float ay, float bx, float by)
 {
@@ -225,7 +229,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 if (petStatus != HunterPetObservationStatus::IdentityObserved)
                 {
                     invalidate(state, bot,
-                        "validation_active_hunter_pet_admission_identity_drift");
+                        observedPet.PersistentIdentityFailureReason);
                     continue;
                 }
 
@@ -234,16 +238,20 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 // reference world's row and cannot identify a disjoint
                 // shard's pet. Reconcile only against that frozen copy.
                 CohortAdmissionMemberReceipt const& frozenPet = admittedPet->second;
-                bool const frozenPetMatches = frozenPet.PetId == observedPet.PetId
-                    && frozenPet.PetEntry == observedPet.PetEntry
-                    && frozenPet.PetOwnerGuid == observedPet.PetOwnerGuid
-                    && frozenPet.PetSpellCount == observedPet.Spellbook.size()
-                    && frozenPet.PetSpellbook == observedPet.Spellbook
-                    && frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256
-                    && frozenPet.PetAutocastSpellIds == observedPet.AutocastSpellIds;
-                if (!frozenPetMatches)
+                FrozenReceiptComparison comparison;
+                comparison.PetIdMatches = frozenPet.PetId == observedPet.PetId;
+                comparison.PetEntryMatches = frozenPet.PetEntry == observedPet.PetEntry;
+                comparison.OwnerMatches = frozenPet.PetOwnerGuid == observedPet.PetOwnerGuid;
+                comparison.SpellCountMatches = frozenPet.PetSpellCount == observedPet.Spellbook.size();
+                comparison.SpellbookMatches = frozenPet.PetSpellbook == observedPet.Spellbook;
+                comparison.SpellbookDigestMatches = frozenPet.PetSpellbookSha256 == observedPet.SpellbookSha256;
+                comparison.AutocastMatches = frozenPet.PetAutocastSpellIds == observedPet.AutocastSpellIds;
+                FrozenReceiptStatus const receiptStatus =
+                    ClassifyFrozenReceipt(comparison);
+                if (receiptStatus != FrozenReceiptStatus::Matches)
                     invalidate(state, bot,
-                        "validation_active_hunter_pet_admission_identity_drift");
+                        BotHunterPetIdentityContract::FrozenReceiptFailureReason(
+                            receiptStatus));
             }
         }
 

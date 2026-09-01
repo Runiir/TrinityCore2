@@ -19,7 +19,7 @@ enum class HunterPetObservationStatus : uint8
 {
     NotHunter = 0,
     LifecycleUnavailable,
-    IdentityInvalid,
+    PersistentIdentityInvalid,
     IdentityObserved
 };
 
@@ -31,6 +31,7 @@ struct HunterPetIdentitySnapshot
     std::vector<std::pair<uint32, uint8>> Spellbook;
     std::string SpellbookSha256;
     std::vector<uint32> AutocastSpellIds;
+    char const* PersistentIdentityFailureReason = "";
 };
 
 struct OrdinaryPetSpellIdentity
