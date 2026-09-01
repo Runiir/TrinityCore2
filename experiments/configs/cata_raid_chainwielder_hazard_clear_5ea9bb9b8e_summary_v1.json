@@ -1,0 +1,90 @@
+{
+  "schema": "cata_raid_chainwielder_hazard_clear_summary_v1",
+  "source_commit": "5ea9bb9b8e78e381a99d5da0f2d1381b4e3a383b",
+  "behavior_commit": "51ca92dbcb1671f14e7bbc0690e5c69cfd27a4d6",
+  "capture_id": "prestart_bundle",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "classification": "gameplay_failure_after_requested_boundary_cleared",
+  "requested_boundary": {
+    "route_node_id": "bwd.magmaw.chainwielder",
+    "result": "trash_cluster_cleared",
+    "production_observations": {
+      "hazard_owner": "hazard",
+      "intent_reason": "validation_route_hazard_exit",
+      "planner_result": "native_movement_submitted",
+      "native_progress_observed": true,
+      "selected_endpoint_reached": true
+    },
+    "party_dps": 85142.745,
+    "party_hps": 4055.855
+  },
+  "continued_route_observations": [
+    {
+      "route_node_id": "bwd.magmaw.drudges",
+      "result": "trash_cluster_cleared",
+      "party_dps": 102560.294,
+      "party_hps": 38419.382
+    },
+    {
+      "route_node_id": "bwd.magmaw.encounter",
+      "result": "death_loop_watchdog",
+      "combat_duration_seconds": 121,
+      "party_dps": 106799.653,
+      "party_hps": 19237.256,
+      "deaths_at_terminal": 3,
+      "new_task_authority_enabled": false,
+      "dominant_observed_failure_signals": [
+        "parasitic_infection_and_infectious_vomit_reached_the_raid",
+        "massive_crash_hit_multiple_non_tanks",
+        "magmaw_task_authority_was_outside_this_chainwielder_scoped_run"
+      ]
+    }
+  ],
+  "terrain_contract": {
+    "bot_authored_vertical_movement": false,
+    "z_or_mmap_policy_changed": false,
+    "contract": "encounter logic requests a destination; the native planner, MMAP, MotionMaster, and spline follow terrain",
+    "live_observation": "native floor samples varied along the route while horizontal movement progressed to selected_endpoint_reached"
+  },
+  "watchdog": {
+    "fixed_success_timer_seconds": null,
+    "terminal": "death_loop_watchdog",
+    "elapsed_seconds": 463.785,
+    "repeated_decision_count": 0,
+    "death_loop_count": 3
+  },
+  "cleanup": {
+    "worldserver_exit_code": 0,
+    "stop_observed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "build": {
+    "policy": "fast4_v1_after_two_fast8_memory_reserve_aborts",
+    "binary_sha256": "759a578ef1de5fe42d98682e55f491b40fe437834520db2971d262adbb2f097b",
+    "ticket_id": "raid-build-ebb031090dfe498fafed2ea9eefe0e49"
+  },
+  "evidence": {
+    "artifact_directory": "artifacts/cata_raid_program/phase1_raid_foundation_5ea9bb9b8e_chainwielder_hazard_clear_magmaw_death_loop_20260901",
+    "capture_sha256": "25a66b77ac705b7a42f52acd744719aa06e81fe8d247355dc9b90ae1d705733f",
+    "raw_zstd_sha256": "1922621f3851203004d56ce24b3aa077e60be0172404a6e1f1e2bcdb6dca44b2",
+    "worldserver_log_zstd_sha256": "d7dc50b75dc396f68cbb6ea5eacf85f2101c8c345562ec84723567da53d30da6"
+  },
+  "claim_limits": [
+    "This run proves the requested Chainwielder boundary and subsequent Drudge route progression, not a Magmaw clear.",
+    "The Chainwielder checkpoint also contains an intentional receiptless negative control; it is not the production hazard result.",
+    "This run does not qualify class throughput or the new Magmaw task-state authority."
+  ],
+  "next_work_unit": {
+    "owner_skill": "raid-bot-runtime-implementation",
+    "work_unit": "runtime:magmaw_task_state_authority_vertical_slice",
+    "first_broken_edge": "Magmaw reached combat with task authority disabled; parasite infection and Massive Crash caused a death loop.",
+    "forbidden": [
+      "bot-side Z adjustment",
+      "MMAP tolerance changes",
+      "global movement fallback changes",
+      "class throughput tuning in the same work unit"
+    ]
+  }
+}

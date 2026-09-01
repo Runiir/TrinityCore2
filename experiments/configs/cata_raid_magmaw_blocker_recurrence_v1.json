@@ -101,6 +101,27 @@
         "to_revision": 2,
         "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state",
         "required_production_boundary": "one worldserver-backed map-669 Chainwielder gameplay replay on the exact current binary must observe an entry-42690 configured marker bound through its native TempSummon summoner or direct membership to the active current route-pack generation, submit the resulting point-only Hazard exit through ExecuteMovementIntent into shared PlanMovementPath, and show that the five retained hazard-fan requests are no longer rejected by future_pack_destination; the same run must either clear Chainwielder or stop at one typed watchdog terminal, while deterministic negatives continue rejecting stale, absent, dead, transitioned, unbound, dynamic-target, and ordinary-owner movement"
+      },
+      {
+        "fixture_id": "magmaw_parasite_lane_paths_v1",
+        "from_revision": 8,
+        "to_revision": 9,
+        "causal_signature": "magmaw_parasite_containment_failure",
+        "required_production_boundary": "one exact-current-source worldserver Magmaw replay with task authority enabled must show that the sticky Fire Mage and Marksman Hunter assignments retain one lane task and destination across observation revisions and safety preemption, submit through the shared production candidate adapter and arbiter, make measured terrain-following progress, and keep every non-owner outside the parasite movement fallback"
+      },
+      {
+        "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
+        "from_revision": 7,
+        "to_revision": 8,
+        "causal_signature": "magmaw_parasite_containment_failure",
+        "required_production_boundary": "one exact-current-source worldserver Magmaw replay must correlate facts revision, sticky assignment nonce, persistent task generation, emitted intent identity, arbitration result, native movement receipt, multi-tick progress, and typed lane completion or failure without source-ordered conditional pre-arbitration"
+      },
+      {
+        "fixture_id": "magmaw_parasite_control_full_runtime_v1",
+        "from_revision": 7,
+        "to_revision": 8,
+        "causal_signature": "magmaw_parasite_control_allows_player_infection",
+        "required_production_boundary": "one exact-current-source worldserver Magmaw replay with task authority enabled must show only the fixed Mage and Hunter bait and control parasites, all players can select and damage a threatening parasite without entering infection range, zero player Parasitic Infection or Infectious Vomit events occur, and the task outcome is joined to the same actor and parasite-wave identity"
       }
     ],
     "fixture_history": [
@@ -1709,6 +1730,68 @@
       "dvc_pointer": "artifacts/cata_raid_program/magmaw_task_state_canary_a725c82d96_20260901.dvc",
       "evidence": "experiments/configs/cata_raid_magmaw_task_state_canary_a725c82d96_summary_v1.json",
       "note": "The normal gameplay canary stopped at Chainwielder after actor 30008 repeated hazard_exit_failed 20 times. The route hazard action was rejected by future_pack_destination before the shared PlanMovementPath boundary, MotionMaster submission, a native launch receipt, or progress sampling. Earlier hazard-corridor validation may use PathGenerator. This is a recurrence of the receiptless hazard-rejection ownership boundary, not evidence for a Z or MMAP-floor fix. Drudges and Magmaw were not exercised."
+    },
+    {
+      "run_id": "trinity-magmaw-5ea9bb9b8e-chainwielder-hazard-clear.attempt1",
+      "route_completed": false,
+      "classification": "gameplay_failure_after_chainwielder_and_drudges_cleared",
+      "admission": {
+        "source_identity": "5ea9bb9b8e78e381a99d5da0f2d1381b4e3a383b",
+        "source_tree": "7313f4c14b04d83ee72a27a86e5bddfa91dde9b3",
+        "suite_receipt_sha256": "1d78dbc5fc47f90aaab26e3ae8a7348eb2338f750a961e814ad254d6fb68af23",
+        "recurrence_admission_sha256": "4efcc4a7f33dd2767379955ff49b4a1951b37f86d260b85d6c75313bd6e52413",
+        "fixture_revisions": {
+          "chainwielder_future_drudge_guard_v1": 1,
+          "chainwielder_pre_admission_rejection_isolation_v1": 1,
+          "current_route_combat_authority_precedence_v1": 1,
+          "deferred_candidate_capture_lifetime_v1": 1,
+          "magmaw_lethal_movement_safe_completion_v1": 1,
+          "magmaw_lethal_movement_transition_v1": 1,
+          "magmaw_parasite_control_full_runtime_v1": 7,
+          "magmaw_parasite_lane_paths_v1": 8,
+          "magmaw_parasite_lane_transition_full_replay_v1": 7,
+          "magmaw_prepot_formation_endpoint_v1": 1,
+          "magmaw_prepot_formation_gate_v1": 1,
+          "magmaw_prepot_stall_watchdog_v1": 1,
+          "movement_progress_witness_v1": 1,
+          "native_bwd_partial_death_recovery_lifecycle_v1": 1,
+          "native_planner_executor_launch_proof_v1": 3,
+          "partial_wipe_native_reset_gate_v1": 1,
+          "phase1_capture_single_start_contract_v1": 1,
+          "same_level_endpoint_normalization_v1": 1,
+          "same_level_floor_observation_v1": 4,
+          "same_level_hazard_path_admission_v1": 4,
+          "same_level_native_path_proof_v1": 4,
+          "targeted_movement_receipt_retention_v1": 1
+        }
+      },
+      "blockers": {
+        "magmaw_parasite_containment_failure": "occurred",
+        "magmaw_parasite_control_allows_player_infection": "occurred",
+        "magmaw_lethal_movement_identity_churn": "not_exercised",
+        "magmaw_lethal_movement_safe_completion_missing": "occurred",
+        "stationary_combat_masks_movement_nonprogress": "not_exercised",
+        "movement_receipt_terminal_join_eviction": "absent",
+        "chainwielder_future_drudge_contamination": "absent",
+        "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "absent",
+        "current_route_combat_authority_preempted": "absent",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "not_exercised",
+        "same_level_native_endpoint_z_normalization_false_negative": "not_exercised",
+        "same_level_native_path_proof_false_negative": "not_exercised",
+        "native_planner_executor_launch_divergence": "absent",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "not_exercised",
+        "raid_partial_wipe_waits_for_last_survivor": "absent",
+        "phase1_capture_duplicate_autostart_lifecycle": "absent",
+        "deferred_candidate_dangling_reference_capture": "absent",
+        "native_partial_death_recovery_lifecycle_failure": "not_exercised"
+      },
+      "report_sha256": "ce17291397fb2b90053f0d968af4b66083ee82ae77e5ce69a1c69e691b213c3d",
+      "raw_jsonl_sha256": "5b6678948fac97ad0b3b8cdf2f128cfd4b23c54520c9a1a44585cc659d907aa5",
+      "worldserver_log_sha256": "265e11f8051eb68243f4b386ce0e3cf45d83dec81ce1c4d238c66b079ae7daa5",
+      "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_5ea9bb9b8e_chainwielder_hazard_clear_magmaw_death_loop_20260901.dvc",
+      "evidence": "experiments/configs/cata_raid_chainwielder_hazard_clear_5ea9bb9b8e_summary_v1.json",
+      "note": "The exact current binary cleared Chainwielder and Drudges. Current-pack validation_route_hazard_exit requests reached native planner submission and terrain-following spline progress; the prior receiptless future_pack_destination gameplay blocker was absent. Magmaw then ran for 121 combat seconds and terminated at the three-death-loop gate. Parasitic Infection and Infectious Vomit reached the raid and Massive Crash hit multiple non-tanks while Magmaw task authority was disabled for this Chainwielder-scoped capture. This is not a Z, MMAP-floor, class-throughput, or Magmaw-clear claim."
     }
   ]
 }
