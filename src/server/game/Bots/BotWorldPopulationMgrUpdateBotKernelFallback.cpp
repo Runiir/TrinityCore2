@@ -30,7 +30,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 return false;
             return BotEncounter::HasRetainedMagmawHazardOwnership(
                 context.AdaptiveMagmawMovements,
-                context.State.MagmawParasiteHazard,
+                context.State.MagmawPersonalParasiteEscape,
                 context.Bot->GetGUID());
         };
         struct RouteAttempt

@@ -143,6 +143,11 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
         {
             if (outcome.Mechanic != "parasite_contact_evade")
                 return;
+            if (context.State.MagmawPersonalParasiteEscape.
+                    ObserveNativeOutcome(outcome.Actor,
+                        outcome.EventGeneration, outcome.Destination,
+                        outcome.Result.Reason))
+                return;
             context.State.MagmawParasiteHazard.
                 ObserveTerminalNativeRejection(outcome.Actor,
                     outcome.EventGeneration, outcome.Destination,

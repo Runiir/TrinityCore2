@@ -9,6 +9,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleSupportGeometry.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementIntents.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawObservations.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -76,7 +77,9 @@ public:
         std::optional<MagmawDirectionalMobilityInput> const& mobility =
             std::nullopt,
         MovementProducerOrder const& producerOrder =
-            DefaultMovementProducerOrder) const
+            DefaultMovementProducerOrder,
+        MagmawFacts const* facts = nullptr,
+        MagmawPersonalParasiteEscapeTask* personalEscapeTask = nullptr) const
     {
         AdaptiveMagmawPlan plan;
         if (board.Route.NodeId != "bwd.magmaw.encounter")
@@ -214,8 +217,8 @@ public:
             if (proposal && *proposal)
                 plan.Movement.Propose(origin, std::move(**proposal));
         }
-        EmitPersonalParasiteEscape(board, *bot, observed, hazardState,
-            plan.Movement);
+        EmitPersonalParasiteEscape(board, *bot, observed, facts,
+            personalEscapeTask, hazardState, plan.Movement);
         return plan;
     }
 private:

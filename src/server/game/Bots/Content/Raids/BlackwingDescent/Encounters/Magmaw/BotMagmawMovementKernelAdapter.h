@@ -12,6 +12,7 @@
 namespace BotEncounter
 {
 struct MagmawParasiteHazardState;
+struct MagmawPersonalParasiteEscapeTask;
 
 struct MagmawMovementNativeLease
 {
@@ -61,6 +62,10 @@ std::optional<MagmawMovementNativeLease> MagmawMovementNativeLeaseFor(
 bool HasRetainedMagmawHazardOwnership(
     MagmawMovementIntentCollection const& movements,
     MagmawParasiteHazardState const& hazardState, ObjectGuid actor);
+
+bool HasRetainedMagmawHazardOwnership(
+    MagmawMovementIntentCollection const& movements,
+    MagmawPersonalParasiteEscapeTask const& task, ObjectGuid actor);
 
 // Shared final adapter used by the live manager and compiled fixtures. It
 // submits every visible movement proposal to the real kernel, preserves typed

@@ -1,5 +1,6 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h"
 
 #include <utility>
 
@@ -123,6 +124,28 @@ bool HasRetainedMagmawHazardOwnership(
             continue;
         }
         return true;
+    }
+    return false;
+}
+
+bool HasRetainedMagmawHazardOwnership(
+    MagmawMovementIntentCollection const& movements,
+    MagmawPersonalParasiteEscapeTask const& task, ObjectGuid actor)
+{
+    if (!task.OwnsMovement() || task.ActorGuid != actor)
+        return false;
+    for (size_t index = 0; index < movements.Size(); ++index)
+    {
+        BotNativeAction::Candidate const& intent = movements.Proposals()[index];
+        if (movements.Origin(index) != MagmawMovementProposalOrigin::Hazard
+            || intent.Id.Mechanic != "parasite_contact_evade"
+            || intent.Id.Actor != actor
+            || intent.Id.EventGeneration != task.CandidateGeneration)
+            continue;
+        BotNativeAction::Move const* move =
+            std::get_if<BotNativeAction::Move>(&intent.Action);
+        return move && MagmawPersonalParasiteEscapeTask::SamePoint(
+            task.Destination, { move->X, move->Y, move->Z });
     }
     return false;
 }

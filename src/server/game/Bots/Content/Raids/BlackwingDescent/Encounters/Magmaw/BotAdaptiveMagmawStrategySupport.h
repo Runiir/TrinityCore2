@@ -134,11 +134,27 @@
 
     static void EmitPersonalParasiteEscape(Blackboard const& board,
         ActorSnapshot const& bot, MagmawActorObservation const& observed,
+        MagmawFacts const* facts,
+        MagmawPersonalParasiteEscapeTask* personalEscapeTask,
         MagmawParasiteHazardState* hazardState,
         MagmawMovementIntentCollection& intents)
     {
         if (IsPillarBaiter(board, bot.Guid))
             return;
+        if (facts && personalEscapeTask)
+        {
+            std::optional<BotNativeAction::Candidate> escape =
+                personalEscapeTask->Tick(board, *facts, bot,
+                    observed.PersonalParasiteThreat,
+                    MagmawParasitePolicy::SafeClearance,
+                    MagmawParasitePolicy::DestinationTolerance,
+                    MagmawParasitePolicy::ObserveRouteFacts(board, bot).
+                        EmergencyClearance);
+            if (escape)
+                intents.Propose(MagmawMovementProposalOrigin::Hazard,
+                    std::move(*escape));
+            return;
+        }
         if (hazardState && hazardState->HasRetainedIntent())
         {
             std::optional<BotNativeAction::Candidate> retained =

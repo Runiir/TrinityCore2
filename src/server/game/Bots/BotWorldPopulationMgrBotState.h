@@ -10,6 +10,7 @@
 #include "Bots/BotTypes.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeTauntConfirmation.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawEventMovementTransition.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
 #include "ObjectGuid.h"
@@ -492,6 +493,8 @@ namespace BotWorldPopulationMgrBotState
         // survive a planner rejection without being replaced by combat-range
         // movement while the shared bait transition remains untouched.
         BotEncounter::MagmawParasiteHazardState MagmawParasiteHazard;
+        BotEncounter::MagmawPersonalParasiteEscapeTask
+            MagmawPersonalParasiteEscape;
         std::string LastDecisionKernelJson = "{}";
         std::string LastActionCategory = "wait";
         std::string LastClassSpecProfile = "{}";

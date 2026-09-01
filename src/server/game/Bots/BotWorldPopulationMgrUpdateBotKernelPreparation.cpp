@@ -456,7 +456,12 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 context.State.ActivePathValid, context.State.IsMoving,
                 &magmawLaneOwner->MagmawLaneTransition,
                 &context.State.MagmawParasiteHazard,
-                &context.State.MagmawEventMovement, magmawMobility);
+                &context.State.MagmawEventMovement, magmawMobility,
+                BotEncounter::AdaptiveMagmawStrategy::
+                    DefaultMovementProducerOrder,
+                Cohort().MagmawFacts
+                    ? &Cohort().MagmawFacts->Facts() : nullptr,
+                &context.State.MagmawPersonalParasiteEscape);
             static std::vector<BotEncounter::MagmawTransferLaneTask> const
                 noMagmawTransferLaneTasks;
             auto const& transferLaneShadow =
