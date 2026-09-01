@@ -17,9 +17,13 @@ SUMMARY = ROOT / (
     "experiments/configs/"
     "cata_raid_magmaw_task_state_canary_a725c82d96_summary_v1.json"
 )
+RAW_REQUESTS = ROOT / (
+    "experiments/configs/"
+    "cata_raid_chainwielder_hazard_exit_raw_requests_a725c82d96_v1.json"
+)
 
 
-def test_recorded_current_pack_hazard_exit_crosses_production_gate(
+def test_local_authority_and_future_gate_truth_table_compiles(
     tmp_path: Path,
 ) -> None:
     source = tmp_path / "chainwielder_hazard_exit_admission.cpp"
@@ -41,17 +45,14 @@ int main()
     using BotWorldPopulationMgrValidationRoute::
         OwnsActiveCurrentPackHazardExit;
 
-    // magmaw_task_state_canary_a725c82d96 recurrence: actor 30008,
-    // bwd.magmaw.chainwielder generation 2, point (-333,-99,214.091).
-    // Before the repair the correctly classified Hazard owner had no
-    // current-pack authority, so the spatial overlap was terminal here.
+    // Local policy counterexample only. The server-bound writer/consumer
+    // chain needs Map, Player, TempSummon, manager, and native movement state
+    // and is not claimed by this compiled truth table.
     assert(EvaluateFutureDestinationGate(
         Owner::Hazard, Authority::None, false, false)
         == Decision::RejectFuturePack);
 
-    // Entry 42690 is a native marker summon. Its summoner is the enrolled,
-    // active generation-2 Chainwielder, so the point exit continues to the
-    // ordinary lease and planner boundary after the repair.
+    // A current-generation active summoner admits the narrow typed authority.
     assert(OwnsActiveCurrentPackHazardExit(
         true, true, false, true));
     assert(EvaluateFutureDestinationGate(
@@ -102,9 +103,14 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
-def test_recorded_failure_identity_remains_pinned() -> None:
+def test_recorded_raw_movement_requests_remain_pinned() -> None:
     summary = json.loads(SUMMARY.read_text(encoding="utf-8"))
+    raw = json.loads(RAW_REQUESTS.read_text(encoding="utf-8"))
     edge = summary["first_broken_edge"]
+    assert raw["source_commit"] == summary["source_commit"]
+    assert raw["raw_jsonl_sha256"] == summary["evidence"][
+        "raw_jsonl_sha256"
+    ]
     assert summary["source_commit"] == (
         "a725c82d96463e185a8a47c98d4cd61e59aa28a2"
     )
@@ -120,12 +126,64 @@ def test_recorded_failure_identity_remains_pinned() -> None:
         "y": -99.0,
         "z": 214.091,
     }
+    assert raw["route_level_diagnostic_destination"] == (
+        edge["requested_destination"]
+    )
+    requests = raw["rejected_movement_requests"]
+    assert requests == [
+        {
+            "first_event_sequence": 336,
+            "x": -320.384918,
+            "y": -92.0700684,
+            "z": 213.945786,
+        },
+        {
+            "first_event_sequence": 339,
+            "x": -321.650116,
+            "y": -90.1487732,
+            "z": 213.959915,
+        },
+        {
+            "first_event_sequence": 341,
+            "x": -333.321442,
+            "y": -84.6103821,
+            "z": 213.758911,
+        },
+        {
+            "first_event_sequence": 343,
+            "x": -335.609863,
+            "y": -84.8453903,
+            "z": 213.82692,
+        },
+        {
+            "first_event_sequence": 350,
+            "x": -319.441986,
+            "y": -94.168396,
+            "z": 213.909698,
+        },
+    ]
+    route_destination = tuple(
+        raw["route_level_diagnostic_destination"][axis]
+        for axis in ("x", "y", "z")
+    )
+    assert route_destination not in {
+        (row["x"], row["y"], row["z"]) for row in requests
+    }
+    assert raw["shared_observation"] == {
+        "movement_owner": "hazard",
+        "gate": "future_pack_destination",
+        "result": "rejected",
+        "reason": "route_destination_future_pack_unsafe",
+        "launch_receipt_id": 0,
+        "shared_plan_movement_path_reached": False,
+        "motion_master_submission_reached": False,
+    }
     assert edge["native_planner_result"] == "unavailable"
     assert edge["native_launch_count"] == 0
     assert edge["progress_sample_count"] == 0
 
 
-def test_current_pack_authority_is_wired_before_lease_and_planner() -> None:
+def test_current_pack_authority_source_wiring_audit() -> None:
     producer = PRODUCER.read_text(encoding="utf-8")
     executor = EXECUTOR.read_text(encoding="utf-8")
     contract = PRODUCER_CONTRACT.read_text(encoding="utf-8")

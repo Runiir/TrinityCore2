@@ -2,7 +2,7 @@
   "schema": "cata_raid_specialist_handoff_v1",
   "work_unit_id": "runtime:chainwielder_hazard_exit_future_pack_admission",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "passed_implementation_pending_independent_review",
+  "classification": "implementation_scope_retained_production_fixture_not_admitted",
   "source_base": {
     "commit": "f17ba9b9065efe22ba5eede34bfee96b903e7983",
     "tree": "48fe5d5b1db1c7dce7d7fd1b2233f5b034e2ee65",
@@ -22,12 +22,22 @@
     "route_generation": 2,
     "movement_owner": "hazard",
     "movement_gate": "future_pack_destination",
-    "requested_destination": {
+    "route_level_diagnostic_destination": {
       "map": 669,
       "x": -333.0,
       "y": -99.0,
       "z": 214.091
     },
+    "raw_request_fixture": "experiments/configs/cata_raid_chainwielder_hazard_exit_raw_requests_a725c82d96_v1.json",
+    "raw_request_fixture_sha256": "2f77b3cd08b00e1ca82efea4651381863272b57e2bc3e92b664fd4984d1104d6",
+    "raw_jsonl_sha256": "a8b527a731bdefa0c946d8432a53b1832f331c25b3f76878d211b759823e7389",
+    "rejected_movement_requests": [
+      [-320.384918, -92.0700684, 213.945786],
+      [-321.650116, -90.1487732, 213.959915],
+      [-333.321442, -84.6103821, 213.758911],
+      [-335.609863, -84.8453903, 213.82692],
+      [-319.441986, -94.168396, 213.909698]
+    ],
     "native_planner_result": "unavailable",
     "native_launch_count": 0,
     "progress_sample_count": 0
@@ -51,6 +61,11 @@
       "encounter_coordinates_or_route_geometry",
       "class_pet_rotation_or_boss_logic",
       "configure_build_worldserver_authserver_database_or_live_canary"
+    ],
+    "proof_correction_files": [
+      "experiments/configs/cata_raid_chainwielder_hazard_exit_raw_requests_a725c82d96_v1.json",
+      "tests/test_chainwielder_hazard_exit_future_pack_admission.py",
+      "experiments/configs/cata_raid_chainwielder_hazard_exit_future_pack_admission_repair_handoff_v1.json"
     ]
   },
   "causal_receipt": [
@@ -60,7 +75,7 @@
     },
     {
       "state": "verified",
-      "claim": "The rejection had launch receipt zero and occurred before BuildMovementRequest, PlanMovementPath, PathGenerator, or MotionMaster submission."
+      "claim": "Each exact rejected movement request had launch receipt zero and stopped before the shared BuildMovementRequest/PlanMovementPath boundary and MotionMaster submission. The earlier hazard corridor validator may have used PathGenerator."
     },
     {
       "state": "verified",
@@ -84,25 +99,46 @@
     "coordinates_changed": false,
     "z_or_floor_policy_changed": false
   },
-  "production_boundary_fixture": {
-    "test": "tests/test_chainwielder_hazard_exit_future_pack_admission.py::test_recorded_current_pack_hazard_exit_crosses_production_gate",
-    "fixture_identity": "magmaw_task_state_canary_a725c82d96_current_pack_hazard_exit_v1",
-    "fail_before": "Hazard plus no authority plus the observed unsafe spatial result returns RejectFuturePack.",
-    "pass_after": "Hazard plus active-current-pack authority plus point-only destination returns Continue, after which the production executor reaches BuildMovementRequest and PlanMovementPath.",
-    "negative_cases": [
+  "local_predicate_checks": {
+    "test": "tests/test_chainwielder_hazard_exit_future_pack_admission.py::test_local_authority_and_future_gate_truth_table_compiles",
+    "classification": "local_value_check_not_production_behavioral_fixture",
+    "proves": "The typed owner/gate truth table rejects unbound or dynamic Hazard intents and ordinary owners while admitting the authority-bound point case.",
+    "does_not_prove": "TryValidationRouteMovementCheck with an actual TempSummon/current pack calls MoveBotToPoint and crosses ExecuteMovementIntent into shared PlanMovementPath."
+  },
+  "production_fixture_gap": {
+    "review_result": "no_go",
+    "reason": "The no-server compiled tests cannot instantiate the required Map, Player, active TempSummon, BotWorldPopulationMgr route-pack state, PathGenerator dependencies, and MotionMaster lifecycle. The existing libgame.a contains the symbols but does not initialize that object graph or world state.",
+    "required_chain": [
+      "TryValidationRouteMovementCheck",
+      "actual_active_marker_TempSummon",
+      "current_route_pack_generation_and_member_lifecycle",
+      "MoveBotToPoint",
+      "ExecuteMovementIntent",
+      "BuildMovementRequest",
+      "PlanMovementPath",
+      "MotionMaster_or_typed_planner_rejection"
+    ],
+    "required_negative_cases": [
       "stale_pack_generation",
-      "missing_active_pack_member_or_summoner",
-      "unconfigured_hazard",
-      "dynamic_future_target",
-      "route_owner",
-      "combat_range_owner"
-    ]
+      "absent_member",
+      "dead_member",
+      "transitioned_member",
+      "unbound_hazard",
+      "dynamic_hazard_target",
+      "ordinary_route_formation_combat_mechanic_and_support_owners"
+    ],
+    "minimal_seam_proposal": {
+      "owner": "raid-bot-runtime-implementation plus raid-evidence-lifecycle review",
+      "change": "Add a gated environment-backed integration checkpoint inside BotWorldPopulationMgr that invokes TryValidationRouteMovementCheck with an initialized Map, Player, active TempSummon, real Party route-pack containers, and the ordinary movement executor. Correlate marker GUID/entry, TempSummon summoner GUID, route and pack generation, member/death/transition membership, destination authority, exact requested endpoint, shared planner receipt, and MotionMaster result under one receipt ID.",
+      "fixture": "Use a dedicated isolated fixture cohort. Arm actor 30008 before an actual entry-42690 marker owned by enrolled Chainwielder GUID 27 becomes active. Build each negative as a separate pre-invocation fixture state in the real Party containers, then restore or discard the isolated cohort before the next case. Do not modify destination coordinates, Z, path policy, or live gameplay state outside that fixture cohort.",
+      "admission": "Requires a separately admitted build and one completion-watchdog worldserver start. It cannot be certified by the current no-build/no-server work unit."
+    }
   },
   "validation": {
     "focused_command": "pixi run pytest -q tests/test_chainwielder_hazard_exit_future_pack_admission.py tests/test_chainwielder_central_future_guard.py tests/test_validation_route_movement_owner.py tests/test_bot_world_population_mgr_movement_module.py",
-    "result": "17 passed in 0.78s",
+    "result": "17 passed in 0.77s; local checks only, production fixture remains unproven",
     "correction_rerun_used": true,
-    "correction": "The first fixture incorrectly equated the retained route-level destination with a static future-spawn distance calculation. The corrected fixture pins the retained summary and exercises the production gate with the observed unsafe result.",
+    "correction": "The proof correction pins all five exact raw movement requests, separates them from the route-level diagnostic destination, allows earlier hazard corridor PathGenerator use, and reclassifies the compiled truth table and source scan as local checks rather than production behavioral proof.",
     "git_diff_check": "passed",
     "changed_cpp_under_1000_lines": true,
     "configure_count": 0,
@@ -113,27 +149,32 @@
   },
   "claim_ledger": {
     "verified": [
-      "the first broken edge is pre-planner ownership/admission rather than PathGenerator MotionMaster MMAP or Z handling",
+      "the first broken shared movement edge is before PlanMovementPath and MotionMaster submission rather than evidence of MMAP Z or native launch failure",
+      "the route-level diagnostic destination is distinct from all five exact rejected movement requests",
       "the pre-fix value case rejects the recorded unbound Hazard intent",
       "the repaired value case continues only for an authority-bound current-pack point hazard exit",
       "genuine dynamic future targets and ordinary movement owners remain forbidden",
-      "the focused compiled and source-wiring regression set passes",
+      "the focused compiled truth table and source-wiring audit pass but are not a production behavioral fixture",
       "no changed C or C++ file reaches 1000 physical lines"
     ],
     "refuted": [
       "a bot-side Z correction or wider path tolerance is indicated",
-      "all Hazard-owned destinations should bypass the future-pack guard"
+      "all Hazard-owned destinations should bypass the future-pack guard",
+      "the route-level destination minus333_minus99_214091 is itself one of the requests rejected by ExecuteMovementIntent",
+      "no PathGenerator call occurred anywhere in the hazard decision"
     ],
     "unproven": [
       "a freshly built worldserver reaches native planner submission for the live Chainwielder marker",
+      "the live marker 163 TempSummon summoner GUID is 27 because the retained normalized trace does not serialize that relation",
+      "the current tests exercise TryValidationRouteMovementCheck through actual TempSummon pack state and MotionMaster",
       "the repaired shard clears the Chainwielder node",
       "the implementation is eligible for a new canary before independent review"
     ]
   },
   "next_work_unit": {
-    "id": "review:chainwielder_hazard_exit_future_pack_admission",
-    "owner_skill": "raid-performance-loop",
-    "required_review": "Confirm the authority is local to active current-pack point hazards, genuine future encounter targets remain guarded, and no action-arbiter or native terrain pathing boundary is bypassed.",
+    "id": "runtime:chainwielder_hazard_exit_production_fixture_seam",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "required_review": "Admit the server-bound correlation checkpoint seam and its one-build/one-start fixture through raid-evidence-lifecycle and shard review. Do not admit the implementation or a canary from helper/source tests alone.",
     "live_retry_admitted": false
   }
 }

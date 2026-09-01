@@ -1,0 +1,58 @@
+{
+  "schema": "cata_raid_chainwielder_hazard_exit_raw_requests_v1",
+  "run_id": "trinity-magmaw-a725c82d96-task-state-canary.attempt1",
+  "source_commit": "a725c82d96463e185a8a47c98d4cd61e59aa28a2",
+  "raw_jsonl_sha256": "a8b527a731bdefa0c946d8432a53b1832f331c25b3f76878d211b759823e7389",
+  "raw_jsonl_lines": [30, 31, 32],
+  "actor_guid": 30008,
+  "route_node_id": "bwd.magmaw.chainwielder",
+  "route_generation": 2,
+  "route_level_diagnostic_destination": {
+    "map": 669,
+    "x": -333.0,
+    "y": -99.0,
+    "z": 214.091
+  },
+  "rejected_movement_requests": [
+    {
+      "first_event_sequence": 336,
+      "x": -320.384918,
+      "y": -92.0700684,
+      "z": 213.945786
+    },
+    {
+      "first_event_sequence": 339,
+      "x": -321.650116,
+      "y": -90.1487732,
+      "z": 213.959915
+    },
+    {
+      "first_event_sequence": 341,
+      "x": -333.321442,
+      "y": -84.6103821,
+      "z": 213.758911
+    },
+    {
+      "first_event_sequence": 343,
+      "x": -335.609863,
+      "y": -84.8453903,
+      "z": 213.82692
+    },
+    {
+      "first_event_sequence": 350,
+      "x": -319.441986,
+      "y": -94.168396,
+      "z": 213.909698
+    }
+  ],
+  "shared_observation": {
+    "movement_owner": "hazard",
+    "gate": "future_pack_destination",
+    "result": "rejected",
+    "reason": "route_destination_future_pack_unsafe",
+    "launch_receipt_id": 0,
+    "shared_plan_movement_path_reached": false,
+    "motion_master_submission_reached": false
+  },
+  "interpretation": "The route-level destination is not a rejected movement request. The five fan endpoints above are the exact requests rejected by the shared future-pack gate. The hazard corridor validator may have used PathGenerator before these submissions reached the shared movement executor."
+}
