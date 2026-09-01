@@ -1,78 +1,67 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_build_one_start",
-  "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "runtime:magmaw_transfer_lane_authority_off_shadow",
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "classification": "reviewed_prestart_contract_one_build_one_start_admitted",
+  "work_unit": "infra:mysql_client_build_identity_gate",
+  "owner_skill": "trinity-orchestrator",
+  "next_work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_build_one_start",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "classification": "worldserver_start_consumed_mysql_compile_runtime_identity_mismatch",
   "epoch_id": "magmaw_transfer_lane_task_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "one_build_then_one_fixture_checkpoint_start_admitted",
-  "immutable_input_commit": "c28a1a9931ce6d3530984509c6a5494b458ddf85",
-  "observed_at_commit": "c28a1a9931ce6d3530984509c6a5494b458ddf85",
+  "gate_state": "build_identity_repair_required_before_new_start",
+  "immutable_input_commit": "7d27b14ba9503dab30fe41e0e708f78c8abed8d5",
+  "observed_at_commit": "7d27b14ba9503dab30fe41e0e708f78c8abed8d5",
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "next_action": "Commit this descriptor, run one fast8_v4 gate-bearing build for the exact clean source, atomically compose and verify the sealed prestart bundle, then execute its one worldserver launch contract without authserver or retry.",
+  "evidence_contract_change": true,
+  "next_action": "Implement and independently review one deterministic MySQL compile-header/runtime-library identity gate with precise stale database-object invalidation. Do not build or start a server in this work unit.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_transfer_lane_prestart_bundle_handoff_v1.json",
-    "sha256": "63b311ea4ac4c79d073900ae2c8f358e2ef8534123dc902c76e20d5a7625161a",
-    "source_commit": "c28a1a9931ce6d3530984509c6a5494b458ddf85",
-    "source_tree": "57b5e81dca5ae08b62baba0e6f2133738262977c"
+    "path": "experiments/configs/cata_raid_map669_transfer_checkpoint_mysql_abi_abort_summary_v1.json",
+    "sha256": "f58ee18672f8279fa4adb8b5c6957661265b5e7fc3f5686c372472e41f0d9e42",
+    "source_commit": "7d27b14ba9503dab30fe41e0e708f78c8abed8d5",
+    "source_tree": "cd5272277a9ebf98534f5a5671506b4d5a28894b"
   },
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": true,
+    "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "build_admitted": true,
-    "build_limit": 1,
-    "worldserver_start_admitted": true,
-    "worldserver_start_limit": 1,
+    "build_admitted": false,
+    "build_limit": 0,
+    "worldserver_start_admitted": false,
+    "worldserver_start_limit": 0,
     "authserver_start_admitted": false,
     "database_provisioning_mutations_allowed": false,
     "retry_admitted": false,
     "dvc_publication_required_after_terminal": true
   },
   "scope_lock": {
-    "allowed_change": "Produce and publish one source-bound observation-only map-669 Magmaw transfer checkpoint from the exact atomic bundle and launch contract.",
+    "allowed_change": "Bind the MySQL compile-header and runtime-library identities into queued configure/build admission and force only the required stale cached database objects to rebuild before success can be gate-bearing.",
     "forbidden": [
-      "changing gameplay C or C++, movement tolerances, class rotations, encounter strategy, task authority, fixture semantics, or database state",
-      "starting authserver, starting a second worldserver, retrying a failed start, or manually editing generated bundle bytes",
-      "using elapsed time as success or classifying fixture completion as gameplay, boss, raid, or task-authority success",
-      "publishing before a typed terminal and complete cleanup proof",
-      "retaining bulky raw evidence locally after verified DVC publication"
+      "changing Trinity's MySQL runtime safety check, gameplay C or C++, class rotations, encounter logic, task authority, database contents, or fixture semantics",
+      "clean-rebuilding unrelated targets when precise invalidation is sufficient",
+      "starting worldserver or authserver, provisioning, or retrying the consumed checkpoint start",
+      "weakening source, toolchain, build-receipt, binary, or configuration identity checks"
     ],
     "required_postconditions": [
-      "the exact clean source receives one gate-bearing fast8_v4 worldserver build with at most eight compiler jobs and one linker",
-      "the recurrence suite and admission bind the singleton observation-only fixture at the exact source identity",
-      "the atomic bundle independently verifies route, runtime config, build receipt, profile, seal, admission, and launch contract before start",
-      "the launch starts exactly one worldserver and zero authservers with no retry",
-      "the typed terminal records exact actor/candidate/planner/MotionMaster/spline identity and either a valid same-floor logical arrival or one explicit checkpoint failure",
-      "normal cleanup proves the process exited and no bot/lease ownership remains",
-      "the compact evidence is DVC-pushed, remotely verified, and local raw payload is safely evicted"
+      "the build identity records the current mysql header version/hash and runtime client version/library hash",
+      "equal or older external-header mtimes cannot hide a changed MySQL identity",
+      "stale cached database objects are rejected or precisely invalidated before the build runs",
+      "a gate-bearing build receipt cannot be produced when compiled and runtime MySQL version IDs differ",
+      "tampered identity evidence fails closed and existing fast8_v4 resource limits remain unchanged"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "typed_checkpoint_terminal_with_infrastructure_emergency_cap_only",
-    "builds": 1,
-    "worldserver_starts": 1,
+    "policy": "bounded_implementation_and_independent_review",
+    "builds": 0,
+    "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0,
     "terminal_edges": [
-      "fixture_checkpoint_completed",
-      "fixture_checkpoint_failed",
-      "prestart_identity_or_scope_failure",
-      "build_resource_abort",
-      "infrastructure_loss",
-      "explicit_interruption"
+      "mysql_identity_gate_tests_passed_and_independently_reviewed",
+      "identity_bypass_or_stale_object_reproduction_failed",
+      "scope_or_size_violation"
     ]
-  },
-  "build_policy": {
-    "path": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
-    "maximum_compiler_jobs": 8,
-    "maximum_linker_jobs": 1
   }
 }

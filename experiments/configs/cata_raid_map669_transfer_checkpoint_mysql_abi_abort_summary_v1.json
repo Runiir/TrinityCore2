@@ -1,0 +1,67 @@
+{
+  "schema": "cata_raid_map669_transfer_checkpoint_mysql_abi_abort_summary_v1",
+  "source_commit": "7d27b14ba9503dab30fe41e0e708f78c8abed8d5",
+  "source_tree": "cd5272277a9ebf98534f5a5671506b4d5a28894b",
+  "classification": "infrastructure_abort_before_worldserver_readiness",
+  "fixture": {
+    "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
+    "case_id": "entrance_polygon_short_lane_v1",
+    "actor_guid": 30007,
+    "task_authority_enabled": false
+  },
+  "prestart": {
+    "merged_python_gate_tests_passed": 366,
+    "configure_classification": "success",
+    "worldserver_build_classification": "success",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "binary_sha256": "229403214c9ac34e8bbd775cc8e6955b244394c90fc9f773224fc14577002efb",
+    "recurrence_fixture_expansion_admitted": true,
+    "mmap_preflight_passed": true,
+    "atomic_bundle_verified": true,
+    "initial_strict_provisioning_passed": false,
+    "initial_strict_provisioning_failure": "retained character_spell rows were stale for all ten actors",
+    "canonical_prepare_only_invocations": 1,
+    "strict_provisioning_after_reset_passed": true,
+    "shard_readback_after_reset_passed": true
+  },
+  "live_attempt": {
+    "worldserver_start_count": 1,
+    "authserver_start_count": 0,
+    "retry_count": 0,
+    "worldserver_exit_code": -11,
+    "startup_error": "worldserver exited before readiness",
+    "checkpoint_command_sent": false,
+    "accepted_stable_statuses": 0,
+    "bot_actions_observed": false,
+    "gameplay_result": "not_reached",
+    "cleanup_worldserver_process_absent": true
+  },
+  "first_broken_edge": {
+    "component": "gate_bearing_incremental_build_external_mysql_identity",
+    "compiled_mysql_version_id": 80410,
+    "runtime_mysql_version_id": 80411,
+    "runtime_mysql_version": "8.4.11",
+    "cause": "the system package upgrade installed mysql headers with an older preserved mtime than cached database objects, so Make reused objects compiled against 8.4.10 while linking libmysqlclient 8.4.11",
+    "workflow_gap": "the queued build receipt did not bind MySQL header/runtime library identities or invalidate stale database objects"
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_7d27b14ba9_mysql_abi_abort_20260901.dvc",
+    "dvc_pointer_sha256": "82531fe9a8864f19c7184a1b993e3612fe9677ce842b274125e7e2ced6690e0e",
+    "directory_md5": "556b0c4b51bdc8f22349e1af4b49cd1c.dir",
+    "file_count": 27,
+    "size_bytes": 646929,
+    "capture_file_sha256": "8288d0d1f013422d8b3c34d2d3673edf903547ef56228dc321dedbf5aead2231",
+    "worldserver_log_sha256": "7c9ad8c21b81689a40821c2f6b691f5e365be46f87e9bb69735aa9e697c3bbfb",
+    "strict_provisioning_after_reset_sha256": "82e832500156f7b29509d27fa3ed5b20b6b5e7e03af11cf78a78f33e1d45b22b",
+    "shard_readback_after_reset_sha256": "869834d15ce0a79cd86a0bfe7a55c2113a0bfe7f302df0dcbc437fff109eaa0"
+  },
+  "required_next_work_unit": {
+    "id": "infra:mysql_client_build_identity_gate",
+    "owner_skill": "trinity-orchestrator",
+    "action": "Bind the compile-header and runtime-library MySQL identities in queued build admission and force precise stale-object invalidation before a build can become gate-bearing.",
+    "worldserver_start_admitted": false,
+    "authserver_start_admitted": false,
+    "database_mutations_allowed": false
+  }
+}

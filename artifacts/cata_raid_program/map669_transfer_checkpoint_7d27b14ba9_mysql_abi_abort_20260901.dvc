@@ -1,0 +1,6 @@
+outs:
+- md5: 556b0c4b51bdc8f22349e1af4b49cd1c.dir
+  size: 646929
+  nfiles: 27
+  hash: md5
+  path: map669_transfer_checkpoint_7d27b14ba9_mysql_abi_abort_20260901
