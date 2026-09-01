@@ -40,6 +40,24 @@
       "building or starting a server before independent review"
     ]
   },
+  "implementation": {
+    "commit": "67b54b4b80fa24998e7b08bcdbf5623c6da461e3",
+    "review": "GO",
+    "production_change": "Player::LoadPetsFromDB uses fields[2].GetUInt32() for character_pet.owner",
+    "strict_owner_comparison_changed": false,
+    "focused_tests": "18 passed in independent review",
+    "live_verified": false
+  },
+  "next_capture": {
+    "purpose": "Verify admission retains all ten members with stored owner 30009, then observe the next typed route outcome.",
+    "configure_count": 1,
+    "worldserver_build_count": 1,
+    "worldserver_start_count": 1,
+    "authserver_start_count": 0,
+    "retry_count": 0,
+    "watchdog": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
   "execution": {
     "worldserver_starts": 1,
     "authserver_starts": 0,

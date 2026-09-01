@@ -1,22 +1,22 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:repair_hunter_pet_owner_field_width",
+  "work_unit": "evidence:verify_hunter_pet_owner_field_width",
   "owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "evidence:verify_hunter_pet_owner_field_width",
+  "next_work_unit": "runtime:repair_next_trace_backed_edge",
   "next_owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "classification": "ready",
   "epoch_id": "magmaw_hunter_stored_owner_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N_canary_for_universal_architecture",
   "architecture_scope": "Expose the exact facts at a shared pet-identity admission boundary. Do not tune Magmaw or the hunter rotation.",
-  "gate_state": "dvc_bound_field_width_failure_admits_one_bounded_core_repair",
-  "observed_at_commit": "2688e5a0f9868d9414e95bcbd6889edc5ecbe54a",
-  "behavior_change": true,
+  "gate_state": "reviewed_field_width_repair_admits_one_build_and_one_no_retry_start",
+  "observed_at_commit": "67b54b4b80fa24998e7b08bcdbf5623c6da461e3",
+  "behavior_change": false,
   "evidence_contract_change": false,
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_hunter_owner_width_handoff_20260901.json",
-    "sha256": "be707f76160d0c79ccf92d85ae55ebee6e11360862b384521887702a20b4d18b"
+    "sha256": "6a17f30d38b0f5f6567f98037740f427ab332276061462b068dd7bfc0eca804e"
   },
   "first_broken_edge": {
     "run_id": "magmaw-hunter-owner-2688e5a0f9-20260901",
@@ -25,50 +25,51 @@
     "terminal": "validation_active_hunter_pet_observation_stored_owner_mismatch",
     "evidence": "artifacts/cata_raid_program/magmaw_hunter_owner_width_2688e5a0f9_20260901.dvc"
   },
-  "next_action": "Repair the exact Player::LoadPetsFromDB field-width mismatch, add a compiled raw prepared-field regression plus owner counterexamples, run focused tests, and stop before configure, build, or live execution.",
+  "next_action": "Configure and build exact clean source with fast8_v4, deterministically prepare and read back the frozen Magmaw shard, then start exactly one worldserver under the completion watchdog. Verify the ten-member receipt and capture the next typed route outcome. Publish compact evidence to DVC. Do not retry.",
   "implementation_scope": {
     "allowed": [
-      "change only the character_pet.owner load expression at the proven core field-width boundary",
-      "add a compiled regression proving a 32-bit raw owner cannot consume the following modelid",
-      "retain positive correct-owner and negative wrong-owner identity checks",
-      "run focused hunter identity, pet load, and admission tests",
-      "keep every touched C/C++ file below 1000 physical lines",
-      "one independent read-only review after implementation"
+      "one exact fast8_v4 configure and one exact worldserver build with eight compiler jobs",
+      "deterministic reset and provisioning of only the frozen Magmaw diagnostic shard",
+      "strict provisioning verification and exact roster plus character_pet readback",
+      "one worldserver start under the generated completion watchdog plan",
+      "compact DVC publication after a typed terminal and verified cleanup",
+      "exact local payload eviction only after remote verification"
     ],
     "forbidden": [
-      "relaxing or deleting the semantic owner comparison",
-      "changing pet AI, pet commands, pet damage, class rotation, or encounter behavior",
-      "changing movement, MMAP, route coordinates, terrain following, or Z",
-      "configure, build, worldserver, authserver, database mutation, or DVC mutation during implementation",
-      "claiming the repair live-verified before the next matched capture"
+      "authserver start, worldserver retry, manual gameplay intervention, or a second canary",
+      "changing owner comparison, pet AI, class, encounter, movement, MMAP, route coordinates, terrain following, or Z",
+      "claiming boss success unless the watchdog records a real boss clear"
     ]
   },
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
-    "gameplay_canary_admitted": false,
+    "gameplay_canary_admitted": true,
     "gameplay_mutations_allowed": false,
-    "configure_admitted": false,
-    "worldserver_build_admitted": false,
-    "worldserver_start_admitted": false,
+    "configure_admitted": true,
+    "worldserver_build_admitted": true,
+    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": false
+    "database_mutations_allowed": true,
+    "database_mutation_scope": "only deterministic reset and provisioning for the frozen blackwing_descent_10n_magmaw_diagnostic shard",
+    "dvc_publication_required_after_terminal": true
   },
   "acceptance": [
-    "Player::LoadPetsFromDB reads character_pet.owner using the exact 32-bit database field width",
-    "a compiled release-like raw-field test proves owner 30009 remains 30009 when the following modelid is 4124",
-    "the existing semantic owner comparison remains strict and still rejects a wrong owner",
-    "focused tests pass and every touched C/C++ file remains below 1000 physical lines",
-    "independent review confirms no pet-AI, class, encounter, movement, terrain-following, MMAP, route, or Z changes"
+    "build receipt binds the exact clean source commit and worldserver binary",
+    "strict prestart readback records persisted owner 30009 for pet 8700009",
+    "the admission receipt retains all ten members and records hunter stored owner 30009",
+    "the old stored-owner mismatch and downstream zero-size receipt do not recur",
+    "the completion watchdog records the next typed route terminal and complete cleanup",
+    "compact evidence is remotely verified in DVC before exact local payload eviction",
+    "no pet-AI, class, encounter, movement, terrain-following, MMAP, route, or Z behavior changes"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "configure_tickets": 0,
-    "worldserver_build_tickets": 0,
-    "worldserver_starts": 0,
+    "configure_tickets": 1,
+    "worldserver_build_tickets": 1,
+    "worldserver_starts": 1,
     "authserver_starts": 0,
     "retries": 0
   }
