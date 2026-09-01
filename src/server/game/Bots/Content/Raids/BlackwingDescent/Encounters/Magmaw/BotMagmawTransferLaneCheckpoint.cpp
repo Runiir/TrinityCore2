@@ -11,6 +11,10 @@ namespace BotEncounter::MagmawTransferLaneCheckpoint
 {
 namespace
 {
+// Serialized PathType value for PATHFIND_NORMAL. Exact equality rejects every
+// incomplete or forbidden composite flag without importing planner machinery.
+constexpr uint32 CompleteNormalPathType = 0x01u;
+
 bool IsLowerHex(std::string_view value, size_t length)
 {
     if (value.size() != length)
@@ -44,7 +48,9 @@ bool ExactRequestedPrimaryProof(
     // Destination identity is horizontal. MMAP may normalize Z to the
     // walkable polygon, but the native proof must keep that projection within
     // the strict endpoint component bound and on the admitted floor.
-    return proof.Available && proof.Calculated && proof.Complete
+    return proof.Available && proof.Calculated
+        && proof.PathType == CompleteNormalPathType
+        && proof.Complete
         && proof.EndpointResult == PathEndpointResult::ReachedRequested
         && proof.CorridorReachedEndPoly && proof.ResolvedEndpointAvailable
         && proof.ResolvedEndpointX == task.Destination.X
@@ -68,6 +74,44 @@ bool ExactRequestedPrimaryProof(
             proof.EndpointVerticalDistance)
         && Near(selectedZ, task.Destination.Z,
             BotWorldMovement::NativePathEndpointVerticalTolerance);
+}
+
+bool ExactWorldControls(BotWorldMovement::NativePathControlSequence const& row,
+    size_t count)
+{
+    return row.Available && row.CoordinateSpace == "world"
+        && row.ControlCount == count && row.Fingerprint;
+}
+
+bool ExactWorldPosition(BotWorldMovement::NativePathPosition const& row)
+{
+    return row.Available && row.CoordinateSpace == "world";
+}
+
+bool SamePosition(BotWorldMovement::NativePathPosition const& left,
+    BotWorldMovement::NativePathPosition const& right)
+{
+    return left.X == right.X && left.Y == right.Y && left.Z == right.Z;
+}
+
+bool ExactCompleteSplineLaunch(
+    BotWorldMovement::NativeSplineLaunchObservation const& launch,
+    BotWorldMovement::NativePathLaunchReceipt const& receipt)
+{
+    return launch.SecondPathAttempted && launch.SecondPathCalculated
+        && launch.SecondPathType == CompleteNormalPathType
+        && ExactWorldControls(launch.SecondPathControls, 3)
+        && launch.SecondPathControls.Fingerprint
+            == receipt.PlannerControls.Fingerprint
+        && !launch.DirectTwoPointSelected
+        && !launch.DirectTwoPointFallback && launch.LaunchAttempted
+        && launch.LaunchSucceeded && !launch.SplineFinalizedAfterLaunch
+        && launch.SplineInitialized && launch.SplineId
+        && ExactWorldControls(launch.LaunchedControls, 3)
+        && ExactWorldPosition(launch.ActorAfterLaunch)
+        && launch.SplineFinalX == receipt.PlannerSelectedX
+        && launch.SplineFinalY == receipt.PlannerSelectedY
+        && launch.SplineFinalZ == receipt.PlannerSelectedZ;
 }
 }
 
@@ -222,13 +266,10 @@ bool CaptureExactPlannerReceipt(PlannerReceiptSnapshot& snapshot,
         planner.PrimaryNativeProof;
     BotWorldMovement::NativePathProofObservation const& receiptProof =
         receipt.PrimaryNativeProof;
-    BotWorldMovement::NativeSplineLaunchObservation const* launched = nullptr;
-    for (BotWorldMovement::NativeSplineLaunchObservation const& row
-        : receipt.Launches)
-        if (row.LaunchAttempted && row.LaunchSucceeded
-            && row.SplineInitialized && row.SplineId)
-            launched = &row;
+    BotWorldMovement::NativeSplineLaunchObservation const* launched =
+        receipt.Launches.size() == 1 ? &receipt.Launches.front() : nullptr;
     bool const exact = planner.Available && receipt.Id
+        && receipt.Version == BotWorldMovement::NativePathLaunchReceiptVersion
         && planner.BotGuid == task.Id.ActorGuid.GetCounter()
         && planner.RequestedMapId == MapId
         && planner.MovementOwner == BotMovementArbitration::Owner::Hazard
@@ -244,9 +285,10 @@ bool CaptureExactPlannerReceipt(PlannerReceiptSnapshot& snapshot,
             == BotWorldMovement::PrimaryDisposition::CompleteTerminal
         && !planner.LocalFallbackAttempted
         && !receipt.LocalFallbackAttempted
-        && receipt.PlannerControls.Available
-        && receipt.PlannerControls.CoordinateSpace == "world"
-        && receipt.PlannerControls.ControlCount >= 2
+        && planner.FinalTraversalMode == "native_complete_path"
+        && receipt.FinalTraversalMode == "native_complete_path"
+        && receipt.LaunchAttemptOverflowCount == 0
+        && ExactWorldControls(receipt.PlannerControls, 3)
         && receipt.PlannerSelectedEndpointAvailable
         && receipt.PlannerSelectedX == task.Destination.X
         && receipt.PlannerSelectedY == task.Destination.Y
@@ -254,6 +296,9 @@ bool CaptureExactPlannerReceipt(PlannerReceiptSnapshot& snapshot,
             receipt.PlannerSelectedX, receipt.PlannerSelectedY,
             receipt.PlannerSelectedZ)
         && ExactRequestedPrimaryProof(receiptProof, task,
+            receipt.PlannerSelectedX, receipt.PlannerSelectedY,
+            receipt.PlannerSelectedZ)
+        && ExactRequestedPrimaryProof(planner.NativeProof, task,
             receipt.PlannerSelectedX, receipt.PlannerSelectedY,
             receipt.PlannerSelectedZ)
         && receipt.ExecutorDestinationAvailable
@@ -265,8 +310,16 @@ bool CaptureExactPlannerReceipt(PlannerReceiptSnapshot& snapshot,
         && planner.PlannerResult == "accepted"
         && planner.Result == "submitted"
         && receipt.MotionMasterSubmissionObserved
+        && receipt.MotionMasterSlot
         && receipt.MotionMasterGeneratorType
-        && receipt.PointGeneratorInitialized && launched;
+        && receipt.PointGeneratorInitialized && launched
+        && ExactCompleteSplineLaunch(*launched, receipt)
+        && ExactWorldPosition(receipt.ActorBeforePlanning)
+        && ExactWorldPosition(receipt.ActorBeforeNativeSubmission)
+        && SamePosition(receipt.ActorBeforePlanning,
+            receipt.ActorBeforeNativeSubmission)
+        && SamePosition(receipt.ActorBeforeNativeSubmission,
+            launched->ActorAfterLaunch);
     if (!exact)
         return false;
     snapshot.Available = true;
