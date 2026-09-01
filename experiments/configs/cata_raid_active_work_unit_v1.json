@@ -1,17 +1,17 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:verify_rejected_hazard_endpoint_fixture",
-  "owner_skill": "raid-performance-loop",
-  "next_work_unit": "evidence:verify_rejected_parasite_escape_repair",
-  "next_owner_skill": "raid-shard-architecture",
+  "work_unit": "evidence:run_rejected_hazard_endpoint_fixture_expansion",
+  "owner_skill": "raid-shard-architecture",
+  "next_work_unit": "evidence:review_rejected_parasite_escape_live_result",
+  "next_owner_skill": "raid-evidence-lifecycle",
   "classification": "live_recurrence_quarantined",
   "epoch_id": "magmaw_parasite_rejection_lifecycle_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N_canary_for_universal_architecture",
   "architecture_scope": "Repair the generic native-outcome feedback edge for one actor-local encounter hazard episode. Magmaw is the canary; do not encode route coordinates or alter terrain behavior.",
-  "gate_state": "latest_closure_inserted; current_fixture_suite_and_recurrence_admission_required",
-  "observed_at_commit": "e2a4d95d2f114e53e6effea9a3d03f4ba412df5a",
+  "gate_state": "latest_closure_inserted; fixed_suite_passed; one_fixture_expansion_build_and_start_admitted",
+  "observed_at_commit": "121d25c49fa2ff02ed2a70484213202553af75ea",
   "behavior_change": false,
   "evidence_contract_change": false,
   "source_handoff": {
@@ -25,17 +25,21 @@
     "terminal": "route_destination_endpoint_mismatch",
     "evidence": "artifacts/cata_raid_program/magmaw_hunter_owner_closure_29b54a2188_20260901.dvc"
   },
-  "next_action": "Run the fixed recurrence fixture suite after the newly inserted closure boundary, evaluate the exact terminal-task-ownership signature, and generate a source-bound recurrence admission. Do not build or start a server until that gate passes.",
+  "next_action": "Run the fixed recurrence fixture suite at this descriptor commit, configure and build exact source with fast8_v4, deterministically prepare and read back the frozen Magmaw shard, create and verify a fixture-expansion recurrence admission, then start exactly one worldserver under the completion watchdog. Publish compact evidence after a typed terminal and do not retry.",
   "implementation_scope": {
     "allowed": [
-      "the append-only Magmaw recurrence ledger",
-      "the production-path rejected-hazard endpoint fixture",
       "one fixed regression-suite receipt and recurrence decision",
-      "one source-bound recurrence admission"
+      "one exact fast8_v4 configure and one exact worldserver build with eight compiler jobs",
+      "deterministic reset and provisioning of only the frozen Magmaw diagnostic shard",
+      "strict provisioning verification and exact roster plus hunter-pet readback",
+      "one source-bound fixture-expansion recurrence admission",
+      "one worldserver start under the completion watchdog",
+      "compact DVC publication after a typed terminal and verified cleanup"
     ],
     "forbidden": [
-      "configure, worldserver build, worldserver start, or authserver start",
-      "database mutation, DVC publication, or gameplay mutation",
+      "authserver start, worldserver retry, manual gameplay intervention, or a second canary",
+      "database mutation outside deterministic preparation of the frozen Magmaw shard",
+      "gameplay mutation",
       "class, pet, boss script, consumable, DPS, priority, or route tuning",
       "route-coordinate, fallback-coordinate, movement-admission, MMAP-tolerance, terrain-following, or Z changes",
       "claiming boss success unless the watchdog records a real boss clear"
@@ -43,16 +47,17 @@
   },
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": false,
+    "fixture_expansion_replay_admitted": true,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "configure_admitted": false,
-    "worldserver_build_admitted": false,
-    "worldserver_start_admitted": false,
+    "configure_admitted": true,
+    "worldserver_build_admitted": true,
+    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": false
+    "database_mutations_allowed": true,
+    "database_mutation_scope": "only deterministic reset and provisioning for the frozen blackwing_descent_10n_magmaw_diagnostic shard",
+    "dvc_publication_required_after_terminal": true
   },
   "acceptance": [
     "the same permanently rejected parasite endpoint is not retained or re-emitted indefinitely",
@@ -62,17 +67,19 @@
     "the fix is actor-local and cannot suppress another bot's hazard attempt",
     "the hunter-owner closure run is present once under the terminal-task-ownership signature",
     "the new fixture crosses the production native outcome path and passes after that run",
-    "the evaluator returns an explicit next action from a current suite receipt",
+    "the evaluator returns fixture-expansion admission from a current suite receipt",
     "the recurrence admission binds the exact source, configuration, suite, and fixture revisions",
+    "the completion watchdog records a typed terminal, DPS, HPS, movement outcomes, and complete cleanup",
+    "compact evidence is remotely verified in DVC before exact local payload eviction",
     "all touched C and C++ files remain below 1000 lines",
     "no priority, route, movement admission, MMAP, terrain-following, or Z behavior changes"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "configure_tickets": 0,
-    "worldserver_build_tickets": 0,
-    "worldserver_starts": 0,
+    "configure_tickets": 1,
+    "worldserver_build_tickets": 1,
+    "worldserver_starts": 1,
     "authserver_starts": 0,
     "retries": 0
   }
