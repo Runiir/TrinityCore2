@@ -46,7 +46,7 @@ def test_transfer_checkpoint_ledger_is_promoted_and_main_ledger_is_bound(
 ) -> None:
     main = ROOT / "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json"
     assert hashlib.sha256(main.read_bytes()).hexdigest() == (
-        "95989df45e3ac681bafd26cf5732b8da5f58bed6de6e21943efbc432b4bfa954"
+        "cd2715b55d93e20de78077b775efe859f62e9dcb4aca815e2e1daacb4508b06c"
     )
     path = ROOT / (
         "experiments/configs/"

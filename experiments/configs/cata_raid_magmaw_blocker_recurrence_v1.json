@@ -94,6 +94,13 @@
         "to_revision": 5,
         "causal_signature": "same_level_movement_path_floor_false_negative",
         "required_production_boundary": "one identity-bound worldserver-backed map-669 replay must move actor 30007 from the entrance surface at Z 193.126999 toward the connected upper-room staging point at Z 210.098007 without accepting the unrelated GetHeight result at Z -106.245819, then cross PathGenerator, native endpoint and floor proof, executor submission, MotionMaster, launched-spline progress, and terminal outcome; the same replay must retain the existing same-level SampleFloorGap proof and reject genuine cross-floor, missing-mmap, and forbidden-path cases"
+      },
+      {
+        "fixture_id": "chainwielder_pre_admission_rejection_isolation_v1",
+        "from_revision": 1,
+        "to_revision": 2,
+        "causal_signature": "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state",
+        "required_production_boundary": "one worldserver-backed map-669 Chainwielder gameplay replay on the exact current binary must observe an entry-42690 configured marker bound through its native TempSummon summoner or direct membership to the active current route-pack generation, submit the resulting point-only Hazard exit through ExecuteMovementIntent into shared PlanMovementPath, and show that the five retained hazard-fan requests are no longer rejected by future_pack_destination; the same run must either clear Chainwielder or stop at one typed watchdog terminal, while deterministic negatives continue rejecting stale, absent, dead, transitioned, unbound, dynamic-target, and ordinary-owner movement"
       }
     ],
     "fixture_history": [
@@ -1701,7 +1708,7 @@
       "worldserver_log_sha256": "93219aeea38941132d95707f5cfbdaa7a0d27b0970790a686bba751a6b646474",
       "dvc_pointer": "artifacts/cata_raid_program/magmaw_task_state_canary_a725c82d96_20260901.dvc",
       "evidence": "experiments/configs/cata_raid_magmaw_task_state_canary_a725c82d96_summary_v1.json",
-      "note": "The normal gameplay canary stopped at Chainwielder after actor 30008 repeated hazard_exit_failed 20 times. The route hazard action was rejected by future_pack_destination before PathGenerator, MotionMaster, a native launch receipt, or progress sampling. This is a recurrence of the receiptless hazard-rejection ownership boundary, not evidence for a Z or MMAP-floor fix. Drudges and Magmaw were not exercised."
+      "note": "The normal gameplay canary stopped at Chainwielder after actor 30008 repeated hazard_exit_failed 20 times. The route hazard action was rejected by future_pack_destination before the shared PlanMovementPath boundary, MotionMaster submission, a native launch receipt, or progress sampling. Earlier hazard-corridor validation may use PathGenerator. This is a recurrence of the receiptless hazard-rejection ownership boundary, not evidence for a Z or MMAP-floor fix. Drudges and Magmaw were not exercised."
     }
   ]
 }
