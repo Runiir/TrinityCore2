@@ -34,6 +34,11 @@ Before live execution, require:
   those auxiliary bindings without adding unrelated fixture targets; reject
   partial profile authority where only some of the manifest, overlay, or
   expected profile identity are present.
+- Supply generated runtime-profile authority only for a fixture replay that
+  actually uses a generated suffix manifest. A normal gameplay canary binds
+  its canonical profile through the runtime config and route-manifest hashes;
+  do not pass the canonical profile manifest as if it were an unsealed fixture
+  overlay.
 - Carry fixture quarantine through every downstream admission and prestart
   verifier. A quarantined fixture remains visible, invalidated, and ineligible
   as evidence for its own claim, but it must not be reinterpreted as a blocking

@@ -86,6 +86,28 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     execute_capture_run,
     finalize_capture,
 )
+from tools.raid_program.capture_setup import recurrence_profile_authority
+
+
+def test_normal_gameplay_admission_does_not_supply_fixture_profile_authority():
+    profile, expected = recurrence_profile_authority(
+        fixture_expansion_replay=False,
+        configured_profile_manifest="dataset/bot_runtime_profiles/profiles.json",
+        runtime_profile="blackwing_descent_10n_magmaw_diagnostic",
+    )
+    assert profile is None
+    assert expected is None
+
+
+def test_fixture_replay_admission_supplies_exact_profile_authority(tmp_path: Path):
+    manifest = tmp_path / "profiles.json"
+    profile, expected = recurrence_profile_authority(
+        fixture_expansion_replay=True,
+        configured_profile_manifest=str(manifest),
+        runtime_profile="blackwing_descent_10n_magmaw_diagnostic",
+    )
+    assert profile == manifest.resolve()
+    assert expected == "blackwing_descent_10n_magmaw_diagnostic"
 
 
 def _scheduler_status(*, route_index: int = 0, encounter: bool = False) -> dict:

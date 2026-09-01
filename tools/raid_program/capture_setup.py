@@ -49,6 +49,21 @@ ROOT = Path(__file__).resolve().parents[2]
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 
 
+def recurrence_profile_authority(
+    *, fixture_expansion_replay: bool, configured_profile_manifest: str,
+    runtime_profile: str,
+) -> tuple[Path | None, str | None]:
+    """Return profile authority only for a generated fixture replay overlay."""
+
+    if not fixture_expansion_replay:
+        return None, None
+    return (
+        Path(configured_profile_manifest).resolve()
+        if configured_profile_manifest else None,
+        runtime_profile,
+    )
+
+
 @dataclass(frozen=True)
 class CaptureSetup:
     args: argparse.Namespace
@@ -329,6 +344,13 @@ def prepare_capture_setup(
             configured_profile_manifest = trinity_config_string(
                 config, "BotWorld.ProfileManifest",
             )
+            profile_manifest, expected_runtime_profile_id = (
+                recurrence_profile_authority(
+                    fixture_expansion_replay=args.fixture_expansion_replay,
+                    configured_profile_manifest=configured_profile_manifest,
+                    runtime_profile=profile_name,
+                )
+            )
             recurrence_admission = verify_recurrence_admission(
                 admission_path=args.recurrence_admission,
                 expected_sha256=args.recurrence_admission_sha256,
@@ -336,13 +358,8 @@ def prepare_capture_setup(
                 binary=binary,
                 build_receipt=args.build_receipt.resolve(),
                 runtime_config=config,
-                profile_manifest=(
-                    Path(configured_profile_manifest).resolve()
-                    if configured_profile_manifest else None
-                ),
-                expected_runtime_profile_id=(
-                    profile_name if args.fixture_expansion_replay else None
-                ),
+                profile_manifest=profile_manifest,
+                expected_runtime_profile_id=expected_runtime_profile_id,
                 required_purpose=(
                     FIXTURE_EXPANSION_PURPOSE
                     if args.fixture_expansion_replay
