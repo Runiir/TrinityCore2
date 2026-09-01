@@ -84,8 +84,8 @@ struct MagmawPersonalParasiteEscapeDiagnostics
     uint64 NativeOutcomeCount = 0;
 };
 
-// One actor owns one semantic escape for one authoritative parasite wave.
-// Observed actor/hazard geometry is task input, never task identity.
+// One actor owns one semantic escape for one personal-threat episode within a
+// parasite wave. Observed actor/hazard geometry is input, never task identity.
 struct MagmawPersonalParasiteEscapeTask
 {
     std::string ScopeKey;
@@ -116,6 +116,7 @@ struct MagmawPersonalParasiteEscapeTask
     bool ActorLifeObserved = false;
     bool ActorAlive = false;
     uint64 ActorLifeGeneration = 0;
+    bool PersonalThreatEpisodeOpen = false;
     bool AlternateUsed = false;
     bool AlternatePending = false;
     float BestClearance = 0.0f;

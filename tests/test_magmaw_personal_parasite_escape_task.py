@@ -348,6 +348,93 @@ int main()
         "wave_generation" })
         assert(lifecycleJson.find(field) != std::string::npos);
 
+    // The shared provisional wave can outlive more than one actor-local
+    // contact episode. Continuous personal threat after terminal clearance
+    // is still the same episode and must not rearm.
+    uint64 const clearedTaskGeneration = actor30010Task.TaskGeneration;
+    uint64 const clearedCandidateGeneration =
+        actor30010Task.CandidateGeneration;
+    uint64 const provisionalWaveGeneration = sharedWave.Generation;
+    assert(sharedWave.Active && !sharedWave.GenerationAuthoritative);
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan continuousContact = contactStrategy.Propose(board,
+        PlayerGuid(30010), "dps", nullptr, false, false, &contactLane,
+        &contactLegacy, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &actor30010Task, &sharedWave);
+    assert(!EscapeFor(continuousContact, PlayerGuid(30010)));
+    assert(actor30010Task.TaskGeneration == clearedTaskGeneration);
+
+    // An authoritative actor-local absence is the falling edge. It does not
+    // close or replace the still-provisional cohort wave.
+    board.Hostiles[1].VictimGuid = PlayerGuid(30008);
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan contactAbsent = contactStrategy.Propose(board,
+        PlayerGuid(30010), "dps", nullptr, false, false, &contactLane,
+        &contactLegacy, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &actor30010Task, &sharedWave);
+    assert(!EscapeFor(contactAbsent, PlayerGuid(30010)));
+    assert(actor30010Task.TaskGeneration == clearedTaskGeneration);
+    assert(sharedWave.Active
+        && sharedWave.Generation == provisionalWaveGeneration
+        && !sharedWave.GenerationAuthoritative);
+
+    // A later personal-contact rising edge rearms exactly once. Stable
+    // presence, including hazard GUID churn, retains the task and its sticky
+    // destination instead of creating per-tick or per-GUID generations.
+    board.Players[3].Position = { 2.0f, -20.0f, 210.0f };
+    board.Hostiles[1].VictimGuid = PlayerGuid(30010);
+    board.Hostiles[1].Guid = ObjectGuid(HighGuid::Unit, uint32(41806),
+        uint32(102));
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan nextContact = contactStrategy.Propose(board,
+        PlayerGuid(30010), "dps", nullptr, false, false, &contactLane,
+        &contactLegacy, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &actor30010Task, &sharedWave);
+    BotNativeAction::Candidate const* nextContactCandidate = EscapeFor(
+        nextContact, PlayerGuid(30010));
+    assert(nextContactCandidate);
+    assert(actor30010Task.TaskGeneration == clearedTaskGeneration + 1);
+    assert(actor30010Task.CandidateGeneration
+        != clearedCandidateGeneration);
+    assert(actor30010Task.WaveGeneration == provisionalWaveGeneration);
+    uint64 const nextContactTaskGeneration = actor30010Task.TaskGeneration;
+    uint64 const nextContactCandidateGeneration =
+        actor30010Task.CandidateGeneration;
+    uint64 const nextContactExpiresAtMs = nextContactCandidate->ExpiresAtMs;
+    std::string const nextContactKey = nextContactCandidate->Id.Key();
+    Vector3 const nextContactDestination = actor30010Task.Destination;
+
+    board.Hostiles[1].Guid = ObjectGuid(HighGuid::Unit, uint32(41806),
+        uint32(103));
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan stableNextContact = contactStrategy.Propose(board,
+        PlayerGuid(30010), "dps", nullptr, false, false, &contactLane,
+        &contactLegacy, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &actor30010Task, &sharedWave);
+    BotNativeAction::Candidate const* stableNextContactCandidate = EscapeFor(
+        stableNextContact, PlayerGuid(30010));
+    assert(stableNextContactCandidate);
+    assert(actor30010Task.TaskGeneration == nextContactTaskGeneration);
+    assert(actor30010Task.CandidateGeneration
+        == nextContactCandidateGeneration);
+    assert(stableNextContactCandidate->Id.Key() == nextContactKey);
+    assert(stableNextContactCandidate->ExpiresAtMs
+        == nextContactExpiresAtMs);
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        actor30010Task.Destination, nextContactDestination));
+
     // Infection while authority is still missing is an explicit terminal
     // child outcome. It cannot masquerade as another dropped intent.
     MagmawPersonalParasiteEscapeTask infectedTask;

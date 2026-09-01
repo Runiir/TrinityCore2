@@ -170,6 +170,7 @@ inline void MagmawPersonalParasiteEscapeTask::ObserveActorLife(
     ActorAlive = alive;
     ++ActorLifeGeneration;
     Started = false;
+    PersonalThreatEpisodeOpen = false;
     AlternateUsed = false;
     AlternatePending = false;
     Failure = MagmawPersonalParasiteEscapeFailure::None;
@@ -242,6 +243,7 @@ MagmawPersonalParasiteEscapeTask::Tick(
         AlternatePending = false;
         Failure = MagmawPersonalParasiteEscapeFailure::None;
         State = BotDecision::PersistentTaskState::Suspended;
+        PersonalThreatEpisodeOpen = true;
         DangerGuid = personalThreat->Guid;
         DangerPosition = personalThreat->Position;
         Diagnostics = {};
@@ -303,6 +305,19 @@ MagmawPersonalParasiteEscapeTask::Tick(
         }
         return std::nullopt;
     }
+
+    // A terminal child is a tombstone for its current personal-threat
+    // episode. Only an authoritative absence closes that episode; the next
+    // presence can then create one new child even if the shared wave remains
+    // on its provisional generation. Continuous presence and hazard GUID
+    // churn cannot rearm it.
+    if (Started && BotDecision::IsTerminal(State))
+    {
+        if (!personalThreat)
+            PersonalThreatEpisodeOpen = false;
+        else if (!PersonalThreatEpisodeOpen && wave.Active)
+            beginTask();
+    }
     if (!Started || BotDecision::IsTerminal(State))
         return std::nullopt;
 
@@ -337,6 +352,8 @@ MagmawPersonalParasiteEscapeTask::Tick(
         {
             State = BotDecision::PersistentTaskState::Succeeded;
             AlternatePending = false;
+            if (!personalThreat)
+                PersonalThreatEpisodeOpen = false;
             MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::
                 SafeClearance, board.ObservedAtMs);
             return std::nullopt;
