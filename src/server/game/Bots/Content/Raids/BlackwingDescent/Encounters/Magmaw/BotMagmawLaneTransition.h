@@ -16,9 +16,9 @@ namespace BotEncounter
 // Magmaw's route manifest is a focus-fire contract.  Adaptive ownership used
 // to bypass the generic boss-mechanics resolver, so keep the same immutable
 // constraints beside the encounter assignment that selects the bait pair.
-// The assigned fire mage and marksmanship hunter are the only explicit
-// exception: they may target and damage a parasite while every other actor is
-// confined to Magmaw/the head and single-target profile actions.
+// The assigned fire mage and marksmanship hunter retain broad parasite
+// ownership. Every other DPS is confined to Magmaw/the head unless one exact
+// live parasite is attributable as that actor's personal threat.
 struct MagmawParasiteCombatContract
 {
     struct ProfileParameters
@@ -52,6 +52,7 @@ struct MagmawParasiteCombatContract
     bool AllowPetAreaDamage = false;
     bool AllowPersistentAreaDamage = false;
     ObjectGuid ActorGuid;
+    ObjectGuid PersonalThreatGuid;
     ObjectGuid FireMageGuid;
     ObjectGuid MarksmanshipHunterGuid;
 
@@ -60,18 +61,21 @@ struct MagmawParasiteCombatContract
         return guid == FireMageGuid || guid == MarksmanshipHunterGuid;
     }
 
-    bool AllowsParasiteTarget(ObjectGuid guid) const
+    bool AllowsParasiteTarget(ObjectGuid guid, ObjectGuid targetGuid) const
     {
-        return !Active || IsAssignedBaiter(guid);
+        return !Active || IsAssignedBaiter(guid)
+            || (guid == ActorGuid && !PersonalThreatGuid.IsEmpty()
+                && targetGuid == PersonalThreatGuid);
     }
 
-    bool TargetAllowed(ObjectGuid guid, uint32 entry) const
+    bool TargetAllowed(ObjectGuid guid, ObjectGuid targetGuid,
+        uint32 entry) const
     {
         if (!Active)
             return true;
         if (entry == BossEntry || entry == HeadEntry)
             return true;
-        return IsAssignedBaiter(guid)
+        return AllowsParasiteTarget(guid, targetGuid)
             && (entry == ParasiteEntry || entry == ParasiteAltEntry);
     }
 
@@ -108,11 +112,12 @@ struct MagmawParasiteCombatContract
     }
 
     ProfileParameters ResolveProfileParameters(ObjectGuid guid,
-        uint32 targetEntry, bool hazardIntentRetained,
+        ObjectGuid targetGuid, uint32 targetEntry, bool hazardIntentRetained,
         bool outsideLegalMaxRange, bool noLineOfSight) const
     {
         ProfileParameters parameters;
-        parameters.TargetAllowed = TargetAllowed(guid, targetEntry);
+        parameters.TargetAllowed = TargetAllowed(guid, targetGuid,
+            targetEntry);
         parameters.ForbidAreaDamage = Active
             && (!AllowsAreaDamageFor(guid)
                 || !AllowsPetAreaDamageFor(guid)

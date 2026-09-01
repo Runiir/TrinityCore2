@@ -14,9 +14,10 @@
 
 namespace BotEncounter
 {
-// The parasite policy owns the fixed mobile-DPS lane transition. Formation
-// and pincer policy remain in the encounter strategy; this small value type is
-// the hand-off between those owners.
+// The parasite policy owns the fixed mobile-DPS lane transition and the
+// distinct actor-local contact escape. Formation and pincer policy remain in
+// the encounter strategy; this small value type is the hand-off between those
+// owners.
 class MagmawParasitePolicy
 {
 public:
@@ -36,6 +37,27 @@ public:
     static float ImmediateContactRange(bool pillarBaiter)
     {
         return pillarBaiter ? KiteLeadDistance : LocalContactRange;
+    }
+
+    static bool PersonallyThreatens(ActorSnapshot const& bot,
+        ActorSnapshot const& parasite)
+    {
+        return parasite.Alive && IsParasiteEntry(parasite.Entry)
+            && (parasite.VictimGuid == bot.Guid
+                || Distance2d(bot.Position, parasite.Position)
+                    <= LocalContactRange);
+    }
+
+    static std::optional<BotNativeAction::Candidate> ProposePersonalEscape(
+        Blackboard const& board, ActorSnapshot const& bot,
+        ActorSnapshot const& parasite,
+        MagmawParasiteHazardState* hazardState)
+    {
+        if (!hazardState || !PersonallyThreatens(bot, parasite)
+            || Distance2d(bot.Position, parasite.Position) >= SafeClearance)
+            return std::nullopt;
+        return BuildMoveAway(board, bot, parasite,
+            "parasite_contact_evade", SafeClearance, hazardState);
     }
 
     static std::pair<ObjectGuid, ObjectGuid> ResolveFixedBaiters(

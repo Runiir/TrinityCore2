@@ -729,7 +729,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             bool const hazardRetained = hasRetainedMagmawHazard();
             BotEncounter::MagmawParasiteCombatContract::ProfileParameters
                 magmawProfile = magmawContract.ResolveProfileParameters(
-                    context.Bot->GetGUID(),
+                    context.Bot->GetGUID(), context.Target->GetGUID(),
                     targetCreature ? targetCreature->GetEntry() : 0,
                     hazardRetained, false, false);
             if (magmawContractActive
@@ -751,7 +751,8 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 bool const noLineOfSight =
                     !context.Bot->IsWithinLOSInMap(context.Target);
                 magmawProfile = magmawContract.ResolveProfileParameters(
-                    context.Bot->GetGUID(), targetCreature->GetEntry(),
+                    context.Bot->GetGUID(), context.Target->GetGUID(),
+                    targetCreature->GetEntry(),
                     hazardRetained, outsideLegalMaxRange, noLineOfSight);
                 if (magmawProfile.DeferCombatRange)
                     return BotActionArbitration::Outcome::Retryable(

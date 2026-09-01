@@ -37,6 +37,14 @@
                     observed.NearestParasite = &actor;
                     observed.NearestParasiteDistance = distance;
                 }
+                if (MagmawParasitePolicy::PersonallyThreatens(bot, actor)
+                    && (!observed.PersonalParasiteThreat
+                        || distance
+                            < observed.PersonalParasiteThreatDistance))
+                {
+                    observed.PersonalParasiteThreat = &actor;
+                    observed.PersonalParasiteThreatDistance = distance;
+                }
             }
         };
         for (ActorSnapshot const& actor : board.Hostiles)
@@ -103,11 +111,41 @@
     {
         if (observed.Head)
             return observed.Head->Guid;
-        if (role == "dps" && contract.AllowsParasiteTarget(botGuid)
-            && observed.NearestParasite
-            && observed.NearestParasiteDistance <= RangedParasiteTargetDistance)
-            return observed.NearestParasite->Guid;
+        ActorSnapshot const* parasite = contract.IsAssignedBaiter(botGuid)
+            ? observed.NearestParasite : observed.PersonalParasiteThreat;
+        float const distance = contract.IsAssignedBaiter(botGuid)
+            ? observed.NearestParasiteDistance
+            : observed.PersonalParasiteThreatDistance;
+        if (role == "dps" && parasite
+            && contract.AllowsParasiteTarget(botGuid, parasite->Guid)
+            && distance <= RangedParasiteTargetDistance)
+            return parasite->Guid;
         return observed.Boss->Guid;
+    }
+
+    static void BindPersonalParasiteDamageTarget(std::string_view role,
+        MagmawActorObservation const& observed,
+        MagmawParasiteCombatContract& contract)
+    {
+        if (role == "dps" && observed.PersonalParasiteThreat)
+            contract.PersonalThreatGuid =
+                observed.PersonalParasiteThreat->Guid;
+    }
+
+    static void EmitPersonalParasiteEscape(Blackboard const& board,
+        ActorSnapshot const& bot, MagmawActorObservation const& observed,
+        MagmawParasiteHazardState* hazardState,
+        MagmawMovementIntentCollection& intents)
+    {
+        if (IsPillarBaiter(board, bot.Guid)
+            || !observed.PersonalParasiteThreat)
+            return;
+        std::optional<BotNativeAction::Candidate> escape =
+            MagmawParasitePolicy::ProposePersonalEscape(board, bot,
+                *observed.PersonalParasiteThreat, hazardState);
+        if (escape)
+            intents.Propose(MagmawMovementProposalOrigin::Hazard,
+                std::move(*escape));
     }
 
     static bool Finite(Vector3 const& point)

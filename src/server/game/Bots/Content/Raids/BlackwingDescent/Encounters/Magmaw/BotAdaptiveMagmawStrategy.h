@@ -124,6 +124,8 @@ public:
             MagmawParasitePolicy::ResolveFixedBaiters(board);
         plan.ParasiteCombat.FireMageGuid = baiters.first;
         plan.ParasiteCombat.MarksmanshipHunterGuid = baiters.second;
+        BindPersonalParasiteDamageTarget(role, observed,
+            plan.ParasiteCombat);
         PrepullDecision prepull = EvaluatePrepull(board, *observed.Boss);
         if (IsPrepull(board, *observed.Boss))
         {
@@ -212,6 +214,8 @@ public:
             if (proposal && *proposal)
                 plan.Movement.Propose(origin, std::move(**proposal));
         }
+        EmitPersonalParasiteEscape(board, *bot, observed, hazardState,
+            plan.Movement);
         return plan;
     }
 private:
