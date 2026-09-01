@@ -78,19 +78,57 @@ def initialized_git_repo(path: Path) -> Path:
     return path
 
 
-def configured_git_repo(path: Path, flags: str = "-O1 -DNDEBUG") -> Path:
+def configured_git_repo(
+    path: Path, flags: str = "-O1 -DNDEBUG", *, mysql_chain: bool = False
+) -> Path:
     repo = initialized_git_repo(path)
     (repo / ".gitignore").write_text("build/\n", encoding="utf-8")
+    if mysql_chain:
+        cmake_body = (
+            "add_library(database STATIC\n"
+            "  src/server/database/Database/DatabaseWorkerPool.cpp\n"
+            "  src/server/database/Database/MySQLThreading.cpp)\n"
+            "set_target_properties(database PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "
+            "${CMAKE_BINARY_DIR}/src/server/database)\n"
+            "add_executable(worldserver main.cpp)\n"
+            "target_link_libraries(worldserver PRIVATE database)\n"
+            "set_target_properties(worldserver PROPERTIES RUNTIME_OUTPUT_DIRECTORY "
+            "${CMAKE_BINARY_DIR}/src/server/worldserver)\n"
+        )
+    else:
+        cmake_body = (
+            "add_executable(raid_fixture main.cpp)\n"
+            "file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/src/server/worldserver)\n"
+            "add_custom_target(worldserver COMMAND ${CMAKE_COMMAND} -E copy /bin/true "
+            "${CMAKE_BINARY_DIR}/src/server/worldserver/worldserver)\n"
+        )
     (repo / "CMakeLists.txt").write_text(
         "cmake_minimum_required(VERSION 3.16)\n"
         "project(raid_fixture CXX)\n"
-        "add_executable(raid_fixture main.cpp)\n"
-        "file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/src/server/worldserver)\n"
-        "add_custom_target(worldserver COMMAND ${CMAKE_COMMAND} -E copy /bin/true "
-        "${CMAKE_BINARY_DIR}/src/server/worldserver/worldserver)\n",
+        + cmake_body,
         encoding="utf-8",
     )
-    (repo / "main.cpp").write_text("int main() { return 0; }\n", encoding="utf-8")
+    (repo / "main.cpp").write_text(
+        (
+            "int db_pool_identity(); int mysql_thread_identity();\n"
+            "int main() { return db_pool_identity() + mysql_thread_identity() == 3 ? 0 : 1; }\n"
+            if mysql_chain else "int main() { return 0; }\n"
+        ),
+        encoding="utf-8",
+    )
+    if mysql_chain:
+        mysql_sources = {
+            "src/server/database/Database/DatabaseWorkerPool.cpp": (
+                "int db_pool_identity() { return 1; }\n"
+            ),
+            "src/server/database/Database/MySQLThreading.cpp": (
+                "int mysql_thread_identity() { return 2; }\n"
+            ),
+        }
+        for relative, content in mysql_sources.items():
+            source = repo / relative
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text(content, encoding="utf-8")
     cache = repo / "build/CMakeCache.txt"
     cache.parent.mkdir(parents=True)
     cache.write_text(
@@ -124,10 +162,7 @@ def configured_git_repo(path: Path, flags: str = "-O1 -DNDEBUG") -> Path:
         encoding="utf-8",
     )
     (repo / "build/Makefile").write_text("# generated fixture\n", encoding="utf-8")
-    subprocess.run(
-        ["git", "-C", str(repo), "add", ".gitignore", "CMakeLists.txt", "main.cpp"],
-        check=True,
-    )
+    subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
     subprocess.run(["git", "-C", str(repo), "commit", "-qm", "freeze cmake cache"], check=True)
     return repo
 
@@ -477,7 +512,7 @@ def test_successful_command_that_mutates_source_is_provenance_abort(
         repo, policy(), "synthetic", command, None, receipt_path, 2.0,
     )
     assert code == 76
-    assert receipt["schema_version"] == 2
+    assert receipt["schema_version"] == 3
     assert receipt["classification"] == "build_provenance_abort"
     assert receipt["source_identity"]["request"] != receipt["source_identity"]["completion"]
     assert "source_identity_changed_or_dirty_before_completion" in receipt["provenance_reasons"]
@@ -593,6 +628,113 @@ def test_v8_receipt_binds_effective_cmake_settings_and_current_cache(
     cache = repo / "build/CMakeCache.txt"
     cache.write_text(cache.read_text().replace("-O1", "-O3"), encoding="utf-8")
     with pytest.raises(qb.CoordinatorError, match="current effective CMake settings"):
+        qb.verify_receipt(receipt_path, frozen, allow_test_mode=True)
+
+
+def test_worldserver_receipt_binds_mysql_rebuild_and_prestart_identity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_paths(tmp_path, monkeypatch)
+    repo = configured_git_repo(tmp_path / "repo", mysql_chain=True)
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+    seed_configure_lineage(repo, frozen, tmp_path)
+    command = exact_worldserver_build(frozen)
+    subprocess.run(command, cwd=repo, check=True, capture_output=True)
+    worldserver = repo / "build/src/server/worldserver/worldserver"
+    archive = repo / "build/src/server/database/libdatabase.a"
+    before_worldserver_hash = qb.sha256_file(worldserver)
+    before_archive_hash = qb.sha256_file(archive)
+    runtime = {
+        "configured_path": "/fixture/libmysqlclient.so",
+        "configured_symlink_target": "libmysqlclient.so.24",
+        "resolved_path": "/fixture/libmysqlclient.so.24.0.11",
+        "sha256": "b" * 64,
+        "size_bytes": 1234,
+        "runtime_version_id": 80411,
+        "client_info": "8.4.11",
+    }
+    identity = {
+        "header": {
+            "include_dir": "/fixture/include/mysql",
+            "path": "/fixture/include/mysql/mysql_version.h",
+            "sha256": "a" * 64,
+            "size_bytes": 100,
+            "version_macro": "MYSQL_VERSION_ID",
+            "compile_version_id": 80411,
+        },
+        "runtime_library": runtime,
+        "identity_sha256": "c" * 64,
+    }
+    binary_runtime = {"needed_soname": "libmysqlclient.so.24", **runtime}
+    current_identity = copy.deepcopy(identity)
+    monkeypatch.setattr(
+        qb, "mysql_build_identity_snapshot", lambda _repo: copy.deepcopy(current_identity)
+    )
+    monkeypatch.setattr(
+        qb, "binary_runtime_identity", lambda _binary: copy.deepcopy(binary_runtime)
+    )
+    receipt_path = tmp_path / "mysql-bound-build.json"
+    code, receipt = qb.run_ticket(
+        repo, frozen, "worldserver_build", command, None, receipt_path, 2.0,
+    )
+    assert code == 0
+    assert receipt["classification"] == "success"
+    assert receipt["mysql_build_identity"]["stable"] is True
+    assert receipt["mysql_build_identity"]["snapshots"]["completion"] == identity
+    contract = receipt["mysql_build_identity"]
+    assert all(
+        row["object_removed"] and row["dependency_removed"]
+        for row in contract["targeted_invalidation"]["objects"]
+    )
+    assert all(
+        row["absent_before_child"]
+        for row in contract["targeted_invalidation"]["chain_outputs"].values()
+    )
+    assert contract["relinked_outputs"]["database_archive"]["sha256"] == (
+        before_archive_hash
+    )
+    assert contract["relinked_outputs"]["worldserver"]["sha256"] == (
+        before_worldserver_hash
+    )
+    assert receipt["output_artifacts"][0]["sha256"] == before_worldserver_hash
+    assert qb.verify_receipt(
+        receipt_path, frozen, allow_test_mode=True
+    )["valid"] is True
+
+    forged_object = copy.deepcopy(receipt)
+    forged_object["mysql_build_identity"]["targeted_invalidation"]["objects"][0][
+        "object"
+    ] = "/tmp/forged-DatabaseWorkerPool.cpp.o"
+    forged_object["mysql_build_identity"]["rebuilt_objects"][0][
+        "object"
+    ] = "/tmp/forged-DatabaseWorkerPool.cpp.o"
+    with pytest.raises(qb.CoordinatorError, match="source/object/depfile binding"):
+        qb.verify_mysql_build_identity(forged_object, repo)
+
+    forged_depfile = copy.deepcopy(receipt)
+    forged_depfile["mysql_build_identity"]["targeted_invalidation"]["objects"][1][
+        "dependency"
+    ] = str(repo / "build/forged-MySQLThreading.cpp.o.d")
+    with pytest.raises(qb.CoordinatorError, match="source/object/depfile binding"):
+        qb.verify_mysql_build_identity(forged_depfile, repo)
+
+    tampered = copy.deepcopy(receipt)
+    tampered["mysql_build_identity"]["snapshots"]["completion"]["header"][
+        "compile_version_id"
+    ] = 80410
+    tampered.pop("receipt_sha256")
+    tampered["receipt_sha256"] = qb.sha256_bytes(qb.canonical_json(tampered))
+    receipt_path.write_text(json.dumps(tampered), encoding="utf-8")
+    with pytest.raises(qb.CoordinatorError, match="canonical record"):
+        qb.verify_receipt(receipt_path, frozen, allow_test_mode=True)
+
+    qb.atomic_json(receipt_path, receipt)
+    current_identity["header"]["sha256"] = "f" * 64
+    with pytest.raises(qb.CoordinatorError, match="current MySQL header/library identity"):
         qb.verify_receipt(receipt_path, frozen, allow_test_mode=True)
 
 
@@ -1081,9 +1223,21 @@ def test_receipt_rejects_worldserver_not_produced_by_ticket(tmp_path: Path) -> N
             "source_identity_stable": True,
             "provenance_reasons": [],
         "build_configuration": {"request": None, "admission": None, "completion": None},
-        "build_configuration_stable": True,
-        "configure_lineage": None,
-        "toolchain_identity": {
+            "build_configuration_stable": True,
+            "configure_lineage": None,
+            "mysql_build_identity": {
+                "required": False,
+                "snapshots": {
+                    "request": None, "admission": None,
+                    "prebuild": None, "completion": None,
+                },
+                "stable": True,
+                "targeted_invalidation": None,
+                "rebuilt_objects": None,
+                "binary_runtime": None,
+                "error": None,
+            },
+            "toolchain_identity": {
             "admission": {"expected": {}, "actual": {}, "matches_policy": True},
             "completion": {"expected": {}, "actual": {}, "matches_policy": True},
             "stable": True,

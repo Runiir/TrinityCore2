@@ -30,6 +30,33 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Iterable, Sequence
 
+try:
+    from .mysql_build_identity import (
+        MySQLIdentityError,
+        binary_runtime_identity,
+        build_identity_snapshot,
+        identity_required as mysql_identity_required,
+        invalidate_version_sensitive_objects,
+        rebuilt_object_identity,
+        relinked_chain_identity,
+        same_runtime_library,
+        version_chain_outputs,
+        version_sensitive_objects,
+    )
+except ImportError:  # Direct execution: python tools/raid_program/queued_build.py
+    from mysql_build_identity import (  # type: ignore[no-redef]
+        MySQLIdentityError,
+        binary_runtime_identity,
+        build_identity_snapshot,
+        identity_required as mysql_identity_required,
+        invalidate_version_sensitive_objects,
+        rebuilt_object_identity,
+        relinked_chain_identity,
+        same_runtime_library,
+        version_chain_outputs,
+        version_sensitive_objects,
+    )
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_POLICY = ROOT / "experiments/configs/cata_raid_build_resource_policy_v1.json"
@@ -382,6 +409,11 @@ def parse_cmake_cache(path: Path) -> dict[str, str]:
     return values
 
 
+def mysql_build_identity_snapshot(worktree: Path) -> dict[str, object]:
+    cache = parse_cmake_cache((worktree / "build/CMakeCache.txt").resolve())
+    return build_identity_snapshot(worktree, cache)
+
+
 def build_configuration_snapshot(worktree: Path, policy: dict) -> dict | None:
     expected = expected_build_configuration(policy)
     if expected is None:
@@ -423,7 +455,10 @@ def build_graph_snapshot(worktree: Path, expected: dict[str, str]) -> dict:
         for candidate in cmake_files.rglob("*"):
             if candidate.is_file() and (
                 candidate.name in {"flags.make", "link.txt", "build.make", "Makefile2"}
-                or candidate.suffix in {".cmake", ".make", ".rsp"}
+                or (
+                    candidate.suffix in {".cmake", ".make", ".rsp"}
+                    and candidate.name not in {"compiler_depend.make", "depend.make"}
+                )
             ):
                 paths.append(candidate)
     entries = [
@@ -958,6 +993,9 @@ def finalize_ticket(paths: Paths, ticket_id: str, receipt: dict) -> None:
             "configure_lineage_sha256": sha256_bytes(
                 canonical_json(receipt["configure_lineage"])
             ),
+            "mysql_build_identity_sha256": sha256_bytes(
+                canonical_json(receipt["mysql_build_identity"])
+            ),
             "toolchain_identity_sha256": sha256_bytes(
                 canonical_json(receipt["toolchain_identity"])
             ),
@@ -990,6 +1028,7 @@ def run_ticket(
 ) -> tuple[int, dict]:
     paths = Paths.for_worktree(worktree)
     compiler_jobs = int(policy["parallelism"]["maximum_compiler_jobs"])
+    mysql_required = mysql_identity_required(worktree, resource_class)
     validate_command(
         command, compiler_jobs, resource_class=resource_class, policy=policy
     )
@@ -997,11 +1036,15 @@ def run_ticket(
         raise CoordinatorError("synthetic resource class is test-only")
     if resource_class not in policy["resource_classes"]:
         raise CoordinatorError(f"unknown resource class {resource_class}")
+    requested_mysql_identity = (
+        mysql_build_identity_snapshot(worktree) if mysql_required else None
+    )
     if ticket_id is None:
         ticket = new_ticket(worktree, resource_class, command)
         ticket["build_configuration"] = {
             "request": build_configuration_snapshot(worktree, policy)
         }
+        ticket["mysql_build_identity"] = {"request": requested_mysql_identity}
         ticket_id = ticket["ticket_id"]
         enqueue(paths, ticket)
     else:
@@ -1017,6 +1060,7 @@ def run_ticket(
             ticket["build_configuration"] = {
                 "request": build_configuration_snapshot(worktree, policy)
             }
+            ticket["mysql_build_identity"] = {"request": requested_mysql_identity}
     started_wait = time.monotonic()
     wait_timeout = admission_timeout or float(policy["coordination"]["default_admission_timeout_seconds"])
     poll = float(policy["coordination"]["admission_poll_seconds"])
@@ -1032,6 +1076,14 @@ def run_ticket(
             raise CoordinatorError(f"admission timeout for {ticket_id}: {','.join(reasons)}")
         time.sleep(poll)
     admitted_monotonic = time.monotonic()
+    admitted_mysql_error: str | None = None
+    try:
+        admitted_mysql_identity = (
+            mysql_build_identity_snapshot(worktree) if mysql_required else None
+        )
+    except MySQLIdentityError as error:
+        admitted_mysql_identity = None
+        admitted_mysql_error = str(error)
     with locked_state(paths) as state:
         admission_configuration = build_configuration_snapshot(worktree, policy)
         state["tickets"][ticket_id].setdefault("build_configuration", {})[
@@ -1054,6 +1106,9 @@ def run_ticket(
             else None
         )
         state["tickets"][ticket_id]["configure_lineage"] = configure_lineage
+        state["tickets"][ticket_id].setdefault("mysql_build_identity", {})[
+            "admission"
+        ] = admitted_mysql_identity
         admitted_at_utc = state["tickets"][ticket_id]["admission"]["admitted_at_utc"]
         ticket = dict(state["tickets"][ticket_id])
     log_path = paths.logs / f"{ticket_id}.log"
@@ -1104,6 +1159,13 @@ def run_ticket(
         )
     else:
         configuration_admissible = True
+    mysql_prebuild_identity: dict[str, object] | None = None
+    mysql_completion_identity: dict[str, object] | None = None
+    mysql_targeted_invalidation: dict[str, object] | None = None
+    mysql_rebuilt_objects: list[dict[str, object]] | None = None
+    mysql_relinked_outputs: dict[str, dict[str, object]] | None = None
+    mysql_binary_runtime: dict[str, object] | None = None
+    mysql_error = admitted_mysql_error
     worldserver_path = (worktree / "build/src/server/worldserver/worldserver").resolve()
     worldserver_before: dict[str, object] | None = None
     if resource_class in {"worldserver_build", "integration_build"} and worldserver_path.is_file():
@@ -1125,14 +1187,44 @@ def run_ticket(
             classification = "build_provenance_abort"
             error_message = "build_configuration_or_configure_lineage_missing_before_admission"
             log_path.write_text(error_message + "\n", encoding="utf-8")
+        elif mysql_required and admitted_mysql_error:
+            returncode = 76
+            classification = "build_provenance_abort"
+            error_message = f"mysql_identity_unavailable_at_admission: {admitted_mysql_error}"
+            log_path.write_text(error_message + "\n", encoding="utf-8")
         else:
+            if mysql_required:
+                mysql_prebuild_identity = mysql_build_identity_snapshot(worktree)
+                if not (
+                    requested_mysql_identity
+                    == admitted_mysql_identity
+                    == mysql_prebuild_identity
+                ):
+                    raise MySQLIdentityError(
+                        "MySQL header/library identity changed before child launch"
+                    )
+                mysql_targeted_invalidation = invalidate_version_sensitive_objects(
+                    worktree
+                )
             returncode, classification, process_samples, terminal_reasons = execute_process(
                 command, worktree, environment, log_path, policy, paths, ticket_id
             )
             samples.extend(process_samples)
+            if mysql_required:
+                mysql_completion_identity = mysql_build_identity_snapshot(worktree)
+                mysql_rebuilt_objects = rebuilt_object_identity(
+                    mysql_targeted_invalidation or {}
+                )
+                mysql_relinked_outputs = relinked_chain_identity(
+                    mysql_targeted_invalidation or {}
+                )
     except BaseException as error:
         classification = "coordinator_error"
         error_message = f"{type(error).__name__}: {error}"
+        if isinstance(error, MySQLIdentityError):
+            classification = "build_provenance_abort"
+            returncode = 76
+            mysql_error = str(error)
         with locked_state(paths) as state:
             safe_kill_process_group(state["tickets"][ticket_id], signal.SIGTERM)
         if isinstance(error, KeyboardInterrupt):
@@ -1217,6 +1309,29 @@ def run_ticket(
     )
     if not toolchain_stable:
         provenance_reasons.append("toolchain_identity_changed_or_mismatched")
+    mysql_identity_snapshots = {
+        "request": requested_mysql_identity,
+        "admission": admitted_mysql_identity,
+        "prebuild": mysql_prebuild_identity,
+        "completion": mysql_completion_identity,
+    }
+    mysql_identity_stable = bool(
+        not mysql_required
+        or (
+            mysql_error is None
+            and requested_mysql_identity
+            == admitted_mysql_identity
+            == mysql_prebuild_identity
+            == mysql_completion_identity
+            and isinstance(mysql_targeted_invalidation, dict)
+            and isinstance(mysql_rebuilt_objects, list)
+            and len(mysql_rebuilt_objects) == 2
+            and isinstance(mysql_relinked_outputs, dict)
+            and set(mysql_relinked_outputs) == {"database_archive", "worldserver"}
+        )
+    )
+    if mysql_required and not mysql_identity_stable:
+        provenance_reasons.append("mysql_build_identity_changed_or_unproven")
     if classification == "success" and not source_identity_stable:
         classification = "build_provenance_abort"
         returncode = 76
@@ -1224,6 +1339,9 @@ def run_ticket(
         classification = "build_provenance_abort"
         returncode = 76
     if classification == "success" and not toolchain_stable:
+        classification = "build_provenance_abort"
+        returncode = 76
+    if classification == "success" and not mysql_identity_stable:
         classification = "build_provenance_abort"
         returncode = 76
     log_hash = sha256_bytes(log_path.read_bytes()) if log_path.exists() else None
@@ -1240,7 +1358,37 @@ def run_ticket(
                     or after_stat.st_size != int(worldserver_before["size_bytes"])
                 )
             )
+            chain_worldserver = (
+                (mysql_relinked_outputs or {}).get("worldserver")
+                if mysql_required else None
+            )
+            mysql_chain_fresh = bool(
+                isinstance(chain_worldserver, dict)
+                and chain_worldserver.get("path") == str(worldserver)
+                and chain_worldserver.get("sha256") == after_hash
+                and chain_worldserver.get("size_bytes") == after_stat.st_size
+            )
+            produced_by_ticket = produced_by_ticket or mysql_chain_fresh
             if produced_by_ticket:
+                if mysql_required:
+                    try:
+                        mysql_binary_runtime = binary_runtime_identity(worldserver)
+                        configured_runtime = (
+                            mysql_completion_identity or {}
+                        ).get("runtime_library")
+                        if not isinstance(configured_runtime, dict) or not same_runtime_library(
+                            configured_runtime, mysql_binary_runtime
+                        ):
+                            raise MySQLIdentityError(
+                                "worldserver resolves a different MySQL runtime library"
+                            )
+                    except MySQLIdentityError as error:
+                        mysql_error = str(error)
+                        provenance_reasons.append(
+                            "mysql_binary_runtime_identity_mismatch"
+                        )
+                        classification = "build_provenance_abort"
+                        returncode = 76
                 output_artifacts.append(
                     {
                         "kind": "worldserver_elf",
@@ -1252,8 +1400,22 @@ def run_ticket(
                         "preexisting_artifact": worldserver_before,
                     }
                 )
+        if not output_artifacts:
+            provenance_reasons.append("worldserver_artifact_not_produced_by_ticket")
+            classification = "build_provenance_abort"
+            returncode = 76
+    mysql_build_identity = {
+        "required": mysql_required,
+        "snapshots": mysql_identity_snapshots,
+        "stable": mysql_identity_stable,
+        "targeted_invalidation": mysql_targeted_invalidation,
+        "rebuilt_objects": mysql_rebuilt_objects,
+        "relinked_outputs": mysql_relinked_outputs,
+        "binary_runtime": mysql_binary_runtime,
+        "error": mysql_error,
+    }
     receipt_without_hash = {
-        "schema_version": 2,
+        "schema_version": 3,
         "policy_id": policy["policy_id"],
         "ticket_id": ticket_id,
         "resource_class": resource_class,
@@ -1267,6 +1429,7 @@ def run_ticket(
         "build_configuration": configuration_snapshots,
         "build_configuration_stable": build_configuration_stable,
         "configure_lineage": configure_lineage,
+        "mysql_build_identity": mysql_build_identity,
         "toolchain_identity": {
             "admission": admitted_toolchain,
             "completion": completion_toolchain,
@@ -1328,6 +1491,149 @@ def run_ticket(
     return mapped_returncode, receipt
 
 
+def verify_mysql_build_identity(receipt: dict, worktree: Path) -> None:
+    resource_class = str(receipt.get("resource_class", ""))
+    required = mysql_identity_required(worktree, resource_class)
+    contract = receipt.get("mysql_build_identity")
+    if not isinstance(contract, dict) or contract.get("required") is not required:
+        raise CoordinatorError("receipt MySQL identity requirement mismatch")
+    if not required:
+        return
+    if receipt.get("classification") != "success":
+        return
+    snapshots = contract.get("snapshots")
+    if not isinstance(snapshots, dict):
+        raise CoordinatorError("receipt MySQL identity snapshots are missing")
+    values = [
+        snapshots.get(stage)
+        for stage in ("request", "admission", "prebuild", "completion")
+    ]
+    if any(not isinstance(value, dict) for value in values) or not (
+        values[0] == values[1] == values[2] == values[3]
+    ):
+        raise CoordinatorError("receipt MySQL identity changed during build")
+    identity = values[3]
+    header = identity.get("header")
+    configured_runtime = identity.get("runtime_library")
+    if (
+        contract.get("stable") is not True
+        or contract.get("error") is not None
+        or not isinstance(header, dict)
+        or not isinstance(configured_runtime, dict)
+        or header.get("compile_version_id")
+            != configured_runtime.get("runtime_version_id")
+    ):
+        raise CoordinatorError("receipt MySQL compile/runtime identity is invalid")
+    invalidation = contract.get("targeted_invalidation")
+    invalidated_rows = (
+        invalidation.get("objects") if isinstance(invalidation, dict) else None
+    )
+    rebuilt_rows = contract.get("rebuilt_objects")
+    relinked_outputs = contract.get("relinked_outputs")
+    try:
+        expected_objects = version_sensitive_objects(worktree)
+        expected_outputs = version_chain_outputs(worktree)
+    except MySQLIdentityError as error:
+        raise CoordinatorError(
+            f"cannot reconstruct canonical MySQL build paths: {error}"
+        ) from error
+    if (
+        not isinstance(invalidation, dict)
+        or invalidation.get("strategy")
+            != "unlink_exact_mysql_object_archive_binary_chain_before_child"
+        or not isinstance(invalidated_rows, list)
+        or not isinstance(rebuilt_rows, list)
+        or len(invalidated_rows) != len(expected_objects)
+        or len(rebuilt_rows) != len(expected_objects)
+    ):
+        raise CoordinatorError("receipt MySQL targeted rebuild proof is invalid")
+    for expected, invalidated, rebuilt in zip(
+        expected_objects, invalidated_rows, rebuilt_rows, strict=True
+    ):
+        canonical_binding = {
+            key: expected[key] for key in ("source", "object", "dependency")
+        }
+        dependency_state = (
+            rebuilt.get("dependency_state") if isinstance(rebuilt, dict) else None
+        )
+        invalidated_at = int(invalidation.get("invalidated_at_unix_ns") or 0)
+        if (
+            not isinstance(invalidated, dict)
+            or not isinstance(rebuilt, dict)
+            or {
+                key: invalidated.get(key)
+                for key in ("source", "object", "dependency")
+            } != canonical_binding
+            or {
+                key: rebuilt.get(key)
+                for key in ("source", "object", "dependency")
+            } != canonical_binding
+            or invalidated.get("absent_before_child") is not True
+            or not isinstance(rebuilt.get("sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", rebuilt["sha256"])
+            or int(rebuilt.get("size_bytes") or 0) <= 0
+            or int(rebuilt.get("mtime_ns") or 0) < invalidated_at
+            or not isinstance(dependency_state, dict)
+            or not isinstance(dependency_state.get("sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", dependency_state["sha256"])
+            or int(dependency_state.get("size_bytes") or 0) <= 0
+            or int(dependency_state.get("mtime_ns") or 0) < invalidated_at
+        ):
+            raise CoordinatorError(
+                "receipt MySQL source/object/depfile binding is invalid"
+            )
+        current_depfile = Path(expected["dependency"])
+        if (
+            not current_depfile.is_file()
+            or sha256_file(current_depfile) != dependency_state["sha256"]
+            or current_depfile.stat().st_size != dependency_state["size_bytes"]
+        ):
+            raise CoordinatorError(
+                "current MySQL rebuilt depfile differs from receipt"
+            )
+    invalidated_outputs = invalidation.get("chain_outputs")
+    if (
+        not isinstance(invalidated_outputs, dict)
+        or set(invalidated_outputs) != set(expected_outputs)
+        or not isinstance(relinked_outputs, dict)
+        or set(relinked_outputs) != set(expected_outputs)
+    ):
+        raise CoordinatorError("receipt MySQL relink chain proof is invalid")
+    for name, expected_path in expected_outputs.items():
+        invalidated = invalidated_outputs.get(name)
+        relinked = relinked_outputs.get(name)
+        if (
+            not isinstance(invalidated, dict)
+            or invalidated.get("path") != expected_path
+            or invalidated.get("absent_before_child") is not True
+            or not isinstance(relinked, dict)
+            or relinked.get("path") != expected_path
+            or not isinstance(relinked.get("sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", relinked["sha256"])
+        ):
+            raise CoordinatorError("receipt MySQL relink chain path is invalid")
+        current_path = Path(expected_path)
+        if (
+            not current_path.is_file()
+            or sha256_file(current_path) != relinked["sha256"]
+            or current_path.stat().st_size != relinked.get("size_bytes")
+        ):
+            raise CoordinatorError(
+                f"current MySQL relink chain output differs from receipt: {name}"
+            )
+    binary_runtime = contract.get("binary_runtime")
+    if not isinstance(binary_runtime, dict) or not same_runtime_library(
+        configured_runtime, binary_runtime
+    ):
+        raise CoordinatorError("receipt worldserver MySQL runtime identity is invalid")
+    try:
+        current = mysql_build_identity_snapshot(worktree)
+    except MySQLIdentityError as error:
+        raise CoordinatorError(f"current MySQL identity is invalid: {error}") from error
+    if current != identity:
+        raise CoordinatorError("current MySQL header/library identity differs from receipt")
+
+
 def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> dict:
     receipt = load_json(path)
     required = {
@@ -1345,6 +1651,7 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         "build_configuration",
         "build_configuration_stable",
         "configure_lineage",
+        "mysql_build_identity",
         "toolchain_identity",
         "environment_contract",
         "command_sha256",
@@ -1391,6 +1698,9 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
             "configure_lineage_sha256": sha256_bytes(
                 canonical_json(receipt.get("configure_lineage"))
             ),
+            "mysql_build_identity_sha256": sha256_bytes(
+                canonical_json(receipt.get("mysql_build_identity"))
+            ),
             "toolchain_identity_sha256": sha256_bytes(
                 canonical_json(receipt.get("toolchain_identity"))
             ),
@@ -1422,8 +1732,10 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         raise CoordinatorError("receipt policy content hash mismatch")
     if receipt.get("command_arguments_retained") is not False:
         raise CoordinatorError("receipt retained command arguments")
-    if receipt.get("schema_version") != 2:
-        raise CoordinatorError("legacy receipt cannot satisfy the production source-provenance gate")
+    if receipt.get("schema_version") != 3:
+        raise CoordinatorError(
+            "legacy receipt cannot satisfy the production source/MySQL provenance gate"
+        )
     source_identity = receipt.get("source_identity")
     if not isinstance(source_identity, dict):
         raise CoordinatorError("receipt is missing source identity snapshots")
@@ -1598,6 +1910,7 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
             raise CoordinatorError("current CMake cache hash differs from receipt")
     elif receipt.get("build_configuration_stable") is not True:
         raise CoordinatorError("receipt unexpectedly reports unstable build configuration")
+    verify_mysql_build_identity(receipt, receipt_worktree)
     expected_toolchain = toolchain_snapshot(policy)
     toolchain = receipt.get("toolchain_identity")
     if not isinstance(toolchain, dict) or not (
@@ -1651,6 +1964,25 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
             or worldserver.get("produced_by_ticket") is not True
         ):
             raise CoordinatorError("receipt is missing the required worldserver artifact identity")
+        current_worldserver = Path(worldserver["path"])
+        if (
+            not current_worldserver.is_file()
+            or current_worldserver.read_bytes()[:4] != b"\x7fELF"
+            or sha256_file(current_worldserver) != worldserver["sha256"]
+        ):
+            raise CoordinatorError("current worldserver artifact differs from receipt")
+        mysql_contract = receipt.get("mysql_build_identity")
+        if isinstance(mysql_contract, dict) and mysql_contract.get("required") is True:
+            try:
+                current_binary_runtime = binary_runtime_identity(current_worldserver)
+            except MySQLIdentityError as error:
+                raise CoordinatorError(
+                    f"current worldserver MySQL runtime identity is invalid: {error}"
+                ) from error
+            if current_binary_runtime != mysql_contract.get("binary_runtime"):
+                raise CoordinatorError(
+                    "current worldserver MySQL runtime identity differs from receipt"
+                )
     return {
         "valid": True,
         "local_semantics_valid": True,
