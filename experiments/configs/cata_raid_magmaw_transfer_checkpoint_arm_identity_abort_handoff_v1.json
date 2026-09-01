@@ -1,15 +1,15 @@
 {
   "schema": "cata_raid_magmaw_transfer_checkpoint_arm_identity_abort_handoff_v1",
-  "created_at_utc": "2026-09-01T09:48:00Z",
+  "created_at_utc": "2026-09-01T05:45:00Z",
   "source_commit": "49c12bda976685d6b8781efe0a4114e9e79f51fc",
   "source_tree": "2333eaf86bfad97d06947ed35d97cd29815194bf",
   "classification": "capture_protocol_abort_after_valid_native_arm",
   "evidence": {
     "dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_49c12bda97_arm_identity_abort_20260901.dvc",
-    "dvc_md5": "8a3ccd2e708ebc63b5dae6abbe5d3ee6.dir",
+    "dvc_md5": "dc75867cd55daa2cf77227bd2cd8c20e.dir",
     "size_bytes": 944016,
     "file_count": 20,
-    "summary_sha256": "b222b068186d8bac17374534997e8c947018b38ffc894d7125a1d7088cb83ac8"
+    "summary_sha256": "47c39f979f822483a38524ee13e6f5b92dcc66b15e8f7934d0da1e2cef00e3c3"
   },
   "observations": {
     "worldserver_start_count": 1,

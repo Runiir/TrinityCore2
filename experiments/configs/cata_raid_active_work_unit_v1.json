@@ -16,7 +16,7 @@
   "next_action": "Align the capture controller's successful identity sentinel with the production native value 'none', replace the synthetic empty-string fixture, add adversarial rejection coverage, and obtain independent review before admitting another build or worldserver start.",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_arm_identity_abort_handoff_v1.json",
-    "sha256": "2312675a780cfdba4dc99c87d4b4cb87ddf186312ca734beb240274fce468ea3"
+    "sha256": "162dfb7ff706fac26e82d0512f429d92fad8935f9e40af8ee8a8832d9d499197"
   },
   "program_scope": {
     "fixture_expansion_replay_admitted": false,
