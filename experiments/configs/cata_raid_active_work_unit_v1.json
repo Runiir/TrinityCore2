@@ -1,82 +1,79 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "fixture:observe_personal_parasite_escape_task_live",
-  "owner_skill": "raid-shard-architecture",
-  "next_work_unit": "evidence:classify_personal_parasite_escape_live_observation",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "live_recurrence_quarantined",
-  "epoch_id": "magmaw_personal_escape_task_lifecycle_20260901",
+  "work_unit": "implementation:repair_native_recovery_ghost_flight_transition",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "next_work_unit": "review:verify_native_recovery_ghost_flight_transition",
+  "next_owner_skill": "raid-bot-runtime-implementation",
+  "classification": "failed",
+  "epoch_id": "native_recovery_ghost_flight_transition_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Observe one actor-local multi-tick parasite-escape task through the existing arbiter and native terrain-following executor. This is a bounded evidence-only fixture expansion, not Magmaw-clear, DPS acceptance, or a gameplay canary.",
-  "gate_state": "implementation independently reviewed GO; exact-source recurrence suite at 999b089c7c55aef7fba125b2d85fcc447e5e7c36 passed all 24 fixtures and admitted one evidence-only fixture-expansion replay; exact-source build and one no-retry live observation remain",
-  "observed_at_commit": "999b089c7c55aef7fba125b2d85fcc447e5e7c36",
-  "behavior_change": false,
+  "architecture_scope": "Repair one shared corpse-run task transition: when exact scoped ghost-flight eligibility rises during a retained cross-map Recovery/native_long_path, replace only that retained path with the same typed destination so the existing native aerial executor can run.",
+  "gate_state": "latest no-retry fixture-expansion run is closed, remotely verified, target-evicted, and independently diagnosed; implementation and independent review are pending; configure, build, worldserver start, authserver start, retry, and gameplay mutation are not admitted",
+  "observed_at_commit": "05c146f36d6441444438494f633f4639491a1851",
+  "behavior_change": true,
   "evidence_contract_change": false,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_personal_parasite_escape_task_review_handoff_20260901.json",
-    "sha256": "2f12be31e6c889be398671061530a8cb56137c108c79a109160e41b9617256e5"
+    "path": "experiments/configs/cata_raid_magmaw_personal_escape_fixture_febee38218_live_handoff_20260901.json",
+    "sha256": "093f8b04dd14a287915f6ed21cfa181bbf6644098ddcd4dd29d30a1c6d268886",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_fixture_febee38218_20260901.dvc"
   },
   "first_broken_edge": {
-    "run_id": "magmaw-parasite-task-rearm-f86358e742-20260901",
-    "route_node_id": "bwd.magmaw.encounter",
-    "causal_signature": "magmaw_personal_parasite_escape_task_rearm_churn",
-    "cause": "Ordinary sub-yard actor or parasite displacement rearmed a terminally rejected personal escape as a new generation inside one semantic hazard wave.",
-    "evidence": "artifacts/cata_raid_program/magmaw_parasite_task_rearm_f86358e742_20260901.dvc"
+    "run_id": "magmaw-personal-escape-fixture-febee38218-20260901",
+    "route_node_id": "bwd.magmaw.drudges",
+    "causal_signature": "native_recovery_flight_eligibility_rising_edge_retains_ground_path",
+    "cause": "Scoped ghost-flight eligibility changed from false to true while a matching retained ground native_long_path still owned recovery, preventing the recovery brain from re-entering the existing aerial executor.",
+    "terminal_reason": "native_runback_no_progress",
+    "best_remaining_distance_yards": 217.653,
+    "no_progress_seconds": 30,
+    "evidence": "artifacts/cata_raid_program/magmaw_personal_escape_fixture_febee38218_20260901.dvc"
   },
-  "build": {
-    "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
-    "compiler_jobs": 8,
-    "linker_jobs": 1,
-    "configure_receipt": "external_run_root/configure_receipt.json",
-    "worldserver_build_receipt": "external_run_root/worldserver_build_receipt.json"
-  },
-  "live_diagnostic": {
-    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "attempts": 1,
-    "retries": 0,
-    "authserver_starts": 0,
-    "worldserver_starts": 1,
-    "duration_policy": "completion_watchdog",
-    "terminal_policy": "Stop on normal route clear, typed semantic or no-progress stall, repeated decisions, excessive death loops, infrastructure loss, contamination, explicit interruption, or the bounded emergency wall-clock as noncompletion.",
-    "required_observation": "For every personal parasite escape, retain actor, stable wave, task generation, hazard GUID, requested and native-resolved endpoints, planner outcome, MotionMaster or point-generator identity, same-floor progress samples, clearance change, task terminal, death outcome, and whether that actor and wave rearmed. Also retain route-node progression plus segment and party DPS/HPS.",
-    "non_claims": [
-      "not a gameplay canary",
-      "not a Magmaw-clear acceptance run",
-      "not a DPS or HPS acceptance run",
-      "no fixture revision is promoted unless its exact live production-boundary contract is observed"
+  "implementation_contract": {
+    "allowed": [
+      "detect the exact scoped false-to-true ghost-flight eligibility transition",
+      "invalidate only a matching Recovery/native_long_path receipt",
+      "resubmit the same typed destination exactly once",
+      "use the existing native aerial MovePoint branch",
+      "retain the existing bounded no-progress terminal"
+    ],
+    "forbidden": [
+      "manual Z offsets or vertical steering",
+      "destination or route-coordinate changes",
+      "teleport or direct resurrection",
+      "MMAP, floor, endpoint, or path-tolerance changes",
+      "route advancement with an incomplete roster",
+      "Magmaw encounter-policy changes"
     ]
   },
-  "next_action": "At this descriptor's exact clean commit, perform one queued configure/build using eight jobs, create and verify the source-bound fixture-expansion admission and fresh deterministic shard, then start exactly one worldserver and no authserver under the completion watchdog. Do not retry. Classify and publish through DVC only after a typed terminal and verified cleanup.",
+  "acceptance": [
+    "one false-to-true scoped eligibility edge produces exactly one replacement movement receipt",
+    "the replacement preserves the exact XYZ destination and uses the existing aerial generatePath=false executor",
+    "eligibility remaining true does not restart movement",
+    "living, same-map, wrong-map, indoor, transport, stale-episode, and non-Recovery movement cannot enter the branch",
+    "physical distance improvement, not action submission, remains semantic progress",
+    "a frozen replacement still reaches native_runback_no_progress after the existing bounded window",
+    "all touched C and C++ files remain below 1000 lines"
+  ],
+  "next_action": "Complete the focused shared-runtime implementation, run deterministic compiled tests, and obtain an independent exact-commit review. Do not configure, build, or start a server before that review updates admission.",
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": true,
+    "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
-    "live_diagnostic_admitted": true,
+    "live_diagnostic_admitted": false,
     "gameplay_mutations_allowed": false,
-    "configure_admitted": true,
-    "worldserver_build_admitted": true,
-    "worldserver_start_admitted": true,
+    "configure_admitted": false,
+    "worldserver_build_admitted": false,
+    "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": true,
-    "database_mutation_scope": "fresh deterministic pre-admission shard provisioning and strict readback only",
-    "dvc_publication_required_after_terminal": true
+    "database_mutations_allowed": false,
+    "dvc_publication_required_after_terminal": false
   },
-  "acceptance": [
-    "the exact clean source, build receipt, binary, runtime config, route manifest, and roster identities match",
-    "the native executor follows terrain; no bot-side vertical steering, Z correction, teleport, tolerance relaxation, route-coordinate change, or fallback-coordinate change is present",
-    "one actor-local task identity remains stable through same-wave hazard GUID, raw generation, and ordinary actor or hazard displacement",
-    "native submission is not counted as semantic progress; same-floor progress or a typed bounded failure is retained",
-    "after typed terminal failure the same actor and wave cannot rearm; authoritative absence followed by a new wave may arm exactly one new task",
-    "trash and boss progression, deaths, DPS, and HPS are retained without treating them as acceptance",
-    "the single worldserver and exact cohort are cleaned before DVC publication"
-  ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "worldserver_starts": 1,
+    "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0
   }

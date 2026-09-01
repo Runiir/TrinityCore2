@@ -181,7 +181,8 @@ def test_native_long_path_keeps_motionmaster_in_executor_and_preserves_active_pa
     assert "active.NativePointPathActive" in executor
     assert "active.MatchingDestination" in executor
     assert "plan.NativeLongPath" in executor
-    assert "MovePoint(0, intent.X, intent.Y, intent.Z,\n            true)" in executor
+    assert "MovePoint(0, x, y, z, generatePath" in executor
+    assert "submitPoint(intent.X, intent.Y, intent.Z, true);" in executor
     assert executor.index("ObserveActiveMovement") < executor.index(
         "PlanMovementPath"
     )
@@ -311,7 +312,8 @@ def test_repath_keeps_native_executor_and_no_cheat_boundaries() -> None:
     assert "GetMotionMaster()->MovePoint" not in recovery
     for forbidden in ("TeleportTo(", "NearTeleportTo(", "ResurrectPlayer"):
         assert forbidden not in recovery
-    assert "MovePoint(0, intent.X, intent.Y, intent.Z," in executor
+    assert "MovePoint(0, x, y, z, generatePath" in executor
+    assert "submitPoint(intent.X, intent.Y, intent.Z, true);" in executor
 
 
 def test_native_repath_match_ignores_lease_expiry_but_preserves_scope() -> None:
