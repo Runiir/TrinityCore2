@@ -129,6 +129,7 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
     resource_sampling_error_count = run.resource_sampling_error_count
     resource_tick_rate = run.resource_tick_rate
     forced_evidence_report = run.forced_evidence_report
+    fixture_terminal = run.fixture_terminal
     terminal_failure = run.terminal_failure
     semantic_stall = run.semantic_stall
     controller_watchdog = run.controller_watchdog
@@ -267,6 +268,7 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
         and not forbidden_entries
         and profile_selection_accepted
         and identity_stable
+        and fixture_terminal.get("detected") is not True
         and terminal_failure.get("detected") is not True
         and telemetry_abort.get("detected") is not True
         and bool(diagnoses)
@@ -319,6 +321,10 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
         or not postflight["passed"]
         or not cleanup_ok
         or not identity_stable
+        or (
+            fixture_terminal.get("detected") is True
+            and telemetry_abort.get("detected") is True
+        )
         or terminal_failure.get("classification") == "infrastructure_abort"
     )
     if args.trace_transport_smoke:
@@ -334,6 +340,9 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
         capture_classification = _capture_classification(
             success=success,
             forbidden_entries=forbidden_entries,
+            fixture_terminal_observed=(
+                fixture_terminal.get("detected") is True
+            ),
             primary_gameplay_failure=primary_gameplay_failure,
             operational_infrastructure_abort=operational_infrastructure_abort,
             evidence_incomplete=evidence_incomplete,
@@ -410,6 +419,7 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
         "drudge_contract_accepted": drudge_accepted,
         "drudge_contract_required": drudge_required,
         "drudge_contract_rejections": drudge_rejections,
+        "fixture_terminal": fixture_terminal,
         "terminal_failure": terminal_failure,
         "semantic_stall": semantic_stall,
         "telemetry_abort": telemetry_abort,

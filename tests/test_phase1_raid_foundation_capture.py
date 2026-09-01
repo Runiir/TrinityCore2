@@ -1,4 +1,5 @@
 import ast
+from dataclasses import replace
 import hashlib
 import json
 import io
@@ -566,7 +567,9 @@ def test_capture_finalization_uses_focused_production_module():
         assert owner.__module__ == finalization_module
 
 
-def test_finalize_capture_writes_canonical_golden_report(tmp_path: Path, monkeypatch, capsys):
+def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
+    tmp_path: Path, monkeypatch, capsys,
+):
     from tools.raid_program import capture_finalization
 
     config = tmp_path / "worldserver.conf"
@@ -645,6 +648,7 @@ def test_finalize_capture_writes_canonical_golden_report(tmp_path: Path, monkeyp
         resource_sampling_error_count=0,
         resource_tick_rate=100,
         forced_evidence_report={"requested": True, "gate_passed": True},
+        fixture_terminal={"detected": False},
         terminal_failure={"detected": False},
         semantic_stall={"detected": False},
         controller_watchdog={"detected": False},
@@ -764,6 +768,86 @@ def test_finalize_capture_writes_canonical_golden_report(tmp_path: Path, monkeyp
     assert hashlib.sha256(
         json.dumps(hash_payload, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest() == expected_hash
+
+    abort_output = tmp_path / "fixture-terminal-abort.json"
+    abort_raw_output = tmp_path / "fixture-terminal-abort.raw.jsonl"
+    abort_server_log = tmp_path / "fixture-terminal-abort.worldserver.log"
+    abort_server_log.write_bytes(b"fixture-log")
+    abort_setup = replace(
+        setup,
+        output=abort_output,
+        raw_output=abort_raw_output,
+        server_log_output=abort_server_log,
+    )
+    abort_run = replace(
+        run,
+        forced_evidence_report={"requested": True, "gate_passed": False},
+        fixture_terminal={
+            "detected": True,
+            "classification": "fixture_terminal_observation",
+            "terminal_kind": "native_path_checkpoint_failed_terminal",
+            "success": False,
+            "gate_passed": False,
+            "outcome": "native_path_checkpoint_stage_submit_failed",
+        },
+        telemetry_abort={
+            "detected": True,
+            "classification": "infrastructure_abort",
+            "reason": "fixture_terminal_forced_evidence_incomplete",
+        },
+    )
+
+    abort_exit_code = finalize_capture(abort_setup, abort_run)
+    abort_stdout_report = json.loads(capsys.readouterr().out)
+    abort_stored_report = json.loads(abort_output.read_text(encoding="utf-8"))
+    assert abort_exit_code == 2
+    assert abort_stdout_report == abort_stored_report
+    assert abort_stored_report["classification"] == "infrastructure_abort"
+    assert abort_stored_report["fixture_terminal"]["detected"] is True
+    assert abort_stored_report["telemetry_abort"]["reason"] == (
+        "fixture_terminal_forced_evidence_incomplete"
+    )
+
+    gameplay_output = tmp_path / "gameplay-terminal-incomplete.json"
+    gameplay_raw_output = tmp_path / "gameplay-terminal-incomplete.raw.jsonl"
+    gameplay_server_log = (
+        tmp_path / "gameplay-terminal-incomplete.worldserver.log"
+    )
+    gameplay_server_log.write_bytes(b"fixture-log")
+    gameplay_setup = replace(
+        setup,
+        output=gameplay_output,
+        raw_output=gameplay_raw_output,
+        server_log_output=gameplay_server_log,
+    )
+    gameplay_run = replace(
+        run,
+        forced_evidence_report={"requested": True, "gate_passed": False},
+        fixture_terminal={"detected": False},
+        terminal_failure={
+            "detected": True,
+            "classification": "gameplay_failure",
+            "failure_reason": "death_loop_watchdog",
+        },
+        telemetry_abort={
+            "detected": True,
+            "classification": "infrastructure_abort",
+            "reason": "terminal_failure_forced_evidence_incomplete",
+        },
+    )
+
+    gameplay_exit_code = finalize_capture(gameplay_setup, gameplay_run)
+    gameplay_stdout_report = json.loads(capsys.readouterr().out)
+    gameplay_stored_report = json.loads(
+        gameplay_output.read_text(encoding="utf-8")
+    )
+    assert gameplay_exit_code == 2
+    assert gameplay_stdout_report == gameplay_stored_report
+    assert gameplay_stored_report["classification"] == "gameplay_failure"
+    assert gameplay_stored_report["terminal_evidence_incomplete"] is True
+    assert gameplay_stored_report["telemetry_abort"]["reason"] == (
+        "terminal_failure_forced_evidence_incomplete"
+    )
 
     try:
         finalize_capture(setup, run)

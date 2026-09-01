@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import io
 import json
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -14,6 +16,12 @@ from tools.raid_program.controller_route_hold import (
     ControllerRouteHoldLaunchIdentity,
     ControllerRouteHoldScheduler,
 )
+from tools.raid_program.capture_live_run import (
+    controller_fixture_terminal_observation,
+    execute_capture_run,
+)
+from tools.raid_program.capture_run_outcome import _capture_classification
+from tools.raid_program.capture_setup import CaptureSetup
 from tools.raid_program import recurrence_admission
 
 
@@ -440,6 +448,216 @@ def test_native_scheduler_records_truthful_failed_terminal_without_gate_pass() -
         "result": "rejected",
         "reason": "route_destination_invalid_z_transition",
     }
+
+
+def test_failed_checkpoint_is_a_non_gameplay_capture_terminal_without_stable_gates() -> None:
+    scheduler = _native_scheduler()
+    scheduler.start()
+    scheduler.observe(_native_hold())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_status())
+    scheduler.observe(_native_checkpoint_row(
+        phase="armed", native_stage="armed",
+    ))
+    scheduler.observe(_native_failed_terminal_row())
+
+    stable_statuses: list[dict[str, object]] = []
+    required_stable_statuses = 3
+    assert len(stable_statuses) < required_stable_statuses
+    assert scheduler.complete is True
+    assert scheduler.failed is False
+
+    terminal = controller_fixture_terminal_observation(
+        scheduler, elapsed_seconds=1.23456,
+    )
+    assert terminal == {
+        "detected": True,
+        "classification": "fixture_terminal_observation",
+        "terminal_kind": "native_path_checkpoint_failed_terminal",
+        "success": False,
+        "gate_passed": False,
+        "scheduler_phase": "checkpoint_terminal_failed",
+        "fixture_id": recurrence_admission.NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+        "case_id": "a842_receipt519_complete_wrong_floor",
+        "stage": "failed",
+        "outcome": "native_path_checkpoint_stage_submit_failed",
+        "movement_planner": _native_failed_terminal_row()["movement_planner"],
+        "elapsed_seconds": 1.235,
+    }
+    assert _capture_classification(
+        success=False,
+        forbidden_entries=[],
+        fixture_terminal_observed=True,
+        primary_gameplay_failure=False,
+        operational_infrastructure_abort=False,
+        evidence_incomplete=True,
+    ) == "fixture_terminal_observation"
+    assert _capture_classification(
+        success=False,
+        forbidden_entries=[],
+        fixture_terminal_observed=True,
+        primary_gameplay_failure=False,
+        operational_infrastructure_abort=True,
+        evidence_incomplete=True,
+    ) == "infrastructure_abort"
+
+
+@pytest.mark.parametrize("same_batch_preflight_failure", [False, True])
+def test_capture_stops_on_failed_checkpoint_before_stable_or_semantic_stall(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    same_batch_preflight_failure: bool,
+) -> None:
+    scheduler = _native_scheduler()
+    binary = tmp_path / "worldserver"
+    config = tmp_path / "worldserver.conf"
+    binary.write_bytes(b"fixture")
+    config.write_bytes(b"fixture")
+    setup = CaptureSetup(
+        args=SimpleNamespace(
+            trace_transport_smoke=False,
+            telemetry_timeout_sec=60,
+            observe_sec=0,
+            status_interval_sec=5.0,
+            diagnose_interval_sec=30.0,
+            trace_interval_sec=10.0,
+            required_stable_statuses=3,
+            resource_sample_interval_sec=5.0,
+            max_repeated_decision_count=20,
+            max_death_loop_count=3,
+            semantic_stall_min_samples=12,
+            semantic_stall_sec=300,
+            startup_timeout_sec=180,
+            chainwielder_checkpoint_actor_guid=30006,
+        ),
+        binary=binary,
+        config=config,
+        output=tmp_path / "capture.json",
+        worktree=tmp_path,
+        profile_name="blackwing_descent_10n_magmaw_diagnostic",
+        scenario_id="blackwing_descent_10n_magmaw_diagnostic",
+        raw_output=tmp_path / "capture.raw.jsonl",
+        server_log_output=tmp_path / "capture.worldserver.log",
+        recurrence_admission=_native_admission(),
+        checkpoint_arm_command=(
+            "botautonativepathcheckpoint arm 30006 "
+            f"a842_receipt519_complete_wrong_floor {'a' * 64} {'b' * 40}"
+        ),
+        preflight={"passed": True, "reasons": []},
+        identity_before={"clean": True},
+        runtime_assets={"route_partition": "magmaw"},
+        controller_route_hold_scheduler=scheduler,
+        drudge_observed=False,
+        drudge_required=False,
+        drudge_navmesh_preflight={"required": False, "all_passed": None},
+        drudge_frozen_anchors={},
+        build_provenance={"valid": True},
+    )
+
+    class FakeProcess:
+        pid = 4321
+
+        def __init__(self) -> None:
+            self.stdin = io.BytesIO()
+            self.returncode: int | None = None
+
+        def poll(self) -> int | None:
+            return self.returncode
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.returncode = 0
+            return 0
+
+    process = FakeProcess()
+    terminal_row = _native_failed_terminal_row()
+    queued_status = _native_status(
+        phase="checkpoint_terminal", native_stage="failed",
+    )
+    queued_status["raid_runtime"]["controller_route_hold"] = json.loads(
+        json.dumps(terminal_row["controller_route_hold"])
+    )
+    batches = iter([
+        [SimpleNamespace(row=_native_hold())],
+        [SimpleNamespace(row=_native_status())],
+        [SimpleNamespace(row=_native_status())],
+        [SimpleNamespace(row=_native_checkpoint_row(
+            phase="armed", native_stage="armed",
+        ))],
+        [
+            SimpleNamespace(row=terminal_row),
+            SimpleNamespace(row=queued_status),
+        ],
+    ])
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.subprocess.Popen",
+        lambda *args, **kwargs: process,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.wait_for_prompt",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.time.sleep", lambda seconds: None,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.collect_log_observations",
+        lambda *args, **kwargs: next(batches, []),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.process_resource_sample",
+        lambda pid, **kwargs: {"process_pid": pid, **kwargs},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.validate_forced_evidence_bundle",
+        lambda *args, **kwargs: {
+            "gate_passed": True, "missing_channels": [], "rejections": [],
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.validate_forced_combat_log_bundle",
+        lambda *args, **kwargs: {"gate_passed": True, "rejections": []},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.terminal_preflight_failure_reason",
+        lambda *args, **kwargs: (
+            ("validation_raid_preflight_fixture_failure", [])
+            if same_batch_preflight_failure else (None, [])
+        ),
+    )
+
+    def fake_shutdown(child: FakeProcess, timeout_seconds: float) -> dict:
+        child.returncode = 0
+        return {
+            "commands_sent": ["botauto stop", "botauto status", "server exit"],
+            "error": None,
+            "operator_interrupted": False,
+        }
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.bounded_native_shutdown",
+        fake_shutdown,
+    )
+
+    run = execute_capture_run(setup)
+
+    assert run.stable == []
+    if same_batch_preflight_failure:
+        assert run.fixture_terminal == {"detected": False}
+        assert run.terminal_failure["classification"] == "infrastructure_abort"
+        assert run.terminal_failure["failure_reason"] == (
+            "validation_raid_preflight_fixture_failure"
+        )
+    else:
+        assert run.fixture_terminal["classification"] == (
+            "fixture_terminal_observation"
+        )
+        assert run.fixture_terminal["outcome"] == (
+            "native_path_checkpoint_stage_submit_failed"
+        )
+        assert run.fixture_terminal["final_forced_evidence"] is True
+        assert run.terminal_failure == {"detected": False}
+    assert run.semantic_stall == {"detected": False}
+    assert run.process_return_code == 0
+    assert scheduler.receipt()["phase"] == "checkpoint_terminal_failed"
 
 
 def test_connected_surface_failed_terminal_is_immutable_after_queued_status() -> None:

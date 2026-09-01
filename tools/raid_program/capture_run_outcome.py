@@ -54,6 +54,7 @@ def _capture_classification(
     *,
     success: bool,
     forbidden_entries: list[Any],
+    fixture_terminal_observed: bool = False,
     primary_gameplay_failure: bool,
     operational_infrastructure_abort: bool,
     evidence_incomplete: bool,
@@ -61,7 +62,8 @@ def _capture_classification(
     """Classify a capture without letting evidence gaps erase causality.
 
     Evidence gates remain independent from this label through ``success``.
-    An operational abort still takes precedence; otherwise a retained primary
+    An operational abort still takes precedence. A verified fixture terminal
+    then keeps its non-gameplay classification, while a retained primary
     gameplay terminal takes precedence over incomplete terminal evidence.
     """
 
@@ -71,6 +73,8 @@ def _capture_classification(
         return "diagnostic_only"
     if operational_infrastructure_abort:
         return "infrastructure_abort"
+    if fixture_terminal_observed:
+        return "fixture_terminal_observation"
     if primary_gameplay_failure:
         return "gameplay_failure"
     if evidence_incomplete:
