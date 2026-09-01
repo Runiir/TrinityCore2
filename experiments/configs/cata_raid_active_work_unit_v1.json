@@ -1,67 +1,70 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "infra:mysql_client_build_identity_gate",
-  "owner_skill": "trinity-orchestrator",
-  "next_work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_build_one_start",
+  "work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_fresh_build",
+  "owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_start",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "worldserver_start_consumed_mysql_compile_runtime_identity_mismatch",
+  "classification": "mysql_identity_gate_reviewed_fresh_build_required",
   "epoch_id": "magmaw_transfer_lane_task_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "build_identity_repair_required_before_new_start",
-  "immutable_input_commit": "7d27b14ba9503dab30fe41e0e708f78c8abed8d5",
-  "observed_at_commit": "7d27b14ba9503dab30fe41e0e708f78c8abed8d5",
+  "gate_state": "one_configure_one_worldserver_build_admitted",
+  "immutable_input_commit": "3b4686bb34a7ef59d902c079a5d2852f15cbfa86",
+  "observed_at_commit": "3b4686bb34a7ef59d902c079a5d2852f15cbfa86",
   "behavior_change": false,
-  "evidence_contract_change": true,
-  "next_action": "Implement and independently review one deterministic MySQL compile-header/runtime-library identity gate with precise stale database-object invalidation. Do not build or start a server in this work unit.",
+  "evidence_contract_change": false,
+  "next_action": "Run one current-source configure ticket and one fast8_v4 worldserver build ticket. Require a verified schema-v3 receipt proving the exact MySQL object/archive/binary recreation chain. Do not start a server or mutate the database in this work unit.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_map669_transfer_checkpoint_mysql_abi_abort_summary_v1.json",
-    "sha256": "7bae5671b0fc7181938199dcad136304ecd71987f22ecec8922f2d2823b18fcc",
-    "source_commit": "7d27b14ba9503dab30fe41e0e708f78c8abed8d5",
-    "source_tree": "cd5272277a9ebf98534f5a5671506b4d5a28894b"
+    "path": "experiments/configs/cata_raid_mysql_build_identity_gate_handoff_v1.json",
+    "implementation_commit": "3b4686bb34a7ef59d902c079a5d2852f15cbfa86",
+    "reviewed_agent_commit": "8d6b32b999cac15eca18306d88949ac4bdc5bbbf"
   },
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "build_admitted": false,
-    "build_limit": 0,
+    "configure_admitted": true,
+    "configure_limit": 1,
+    "worldserver_build_admitted": true,
+    "worldserver_build_limit": 1,
     "worldserver_start_admitted": false,
     "worldserver_start_limit": 0,
     "authserver_start_admitted": false,
     "database_provisioning_mutations_allowed": false,
     "retry_admitted": false,
-    "dvc_publication_required_after_terminal": true
+    "dvc_publication_required_after_terminal": false
   },
   "scope_lock": {
-    "allowed_change": "Bind the MySQL compile-header and runtime-library identities into queued configure/build admission and force only the required stale cached database objects to rebuild before success can be gate-bearing.",
+    "allowed_change": "Produce and verify one current-source schema-v3 gate-bearing worldserver build receipt under fast8_v4.",
     "forbidden": [
-      "changing Trinity's MySQL runtime safety check, gameplay C or C++, class rotations, encounter logic, task authority, database contents, or fixture semantics",
-      "clean-rebuilding unrelated targets when precise invalidation is sufficient",
-      "starting worldserver or authserver, provisioning, or retrying the consumed checkpoint start",
-      "weakening source, toolchain, build-receipt, binary, or configuration identity checks"
+      "changing gameplay C or C++, class rotations, encounter behavior, task authority, fixture semantics, database contents, or DVC state",
+      "starting worldserver or authserver",
+      "clean-rebuilding unrelated targets or exceeding eight compiler jobs and one linker",
+      "retrying a failed configure or build ticket without a new typed work unit"
     ],
     "required_postconditions": [
-      "the build identity records the current mysql header version/hash and runtime client version/library hash",
-      "equal or older external-header mtimes cannot hide a changed MySQL identity",
-      "stale cached database objects are rejected or precisely invalidated before the build runs",
-      "a gate-bearing build receipt cannot be produced when compiled and runtime MySQL version IDs differ",
-      "tampered identity evidence fails closed and existing fast8_v4 resource limits remain unchanged"
+      "configure and build receipts bind the current clean source identity",
+      "the build receipt uses schema version 3 and verifies before any prestart bundle is admitted",
+      "request, admission, prebuild, and completion MySQL identities match",
+      "the exact two objects, two depfiles, libdatabase.a, and worldserver are proven recreated",
+      "the built worldserver resolves the same hashed MySQL client library and version as the compile header"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "bounded_implementation_and_independent_review",
-    "builds": 0,
+    "policy": "one_configure_ticket_then_one_fast8_worldserver_build_ticket",
+    "configure_tickets": 1,
+    "worldserver_build_tickets": 1,
     "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0,
     "terminal_edges": [
-      "mysql_identity_gate_tests_passed_and_independently_reviewed",
-      "identity_bypass_or_stale_object_reproduction_failed",
-      "scope_or_size_violation"
+      "schema_v3_gate_bearing_build_receipt_verified",
+      "configure_or_build_provenance_abort",
+      "mysql_identity_or_recreation_proof_failed",
+      "source_or_policy_drift"
     ]
   }
 }

@@ -1,0 +1,53 @@
+{
+  "schema": "cata_raid_mysql_build_identity_gate_handoff_v1",
+  "created_at_utc": "2026-09-01T09:10:00Z",
+  "implementation_commit": "3b4686bb34a7ef59d902c079a5d2852f15cbfa86",
+  "implementation_tree": "eb5574305446b16aa5e2ffe1ebec01b640ba9e1a",
+  "reviewed_agent_commit": "8d6b32b999cac15eca18306d88949ac4bdc5bbbf",
+  "classification": "mysql_compile_runtime_identity_gate_implemented_independently_reviewed",
+  "independent_review": {
+    "verdict": "go",
+    "focused_tests_passed": 39,
+    "missing_depfile_rejected": true,
+    "tampered_depfile_rejected": true,
+    "forged_object_and_depfile_paths_rejected": true,
+    "byte_identical_archive_and_binary_recreation_admitted": true
+  },
+  "master_validation": {
+    "tests_passed": 120,
+    "builds": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "database_mutations": 0,
+    "dvc_mutations": 0
+  },
+  "gate_contract": {
+    "identity_snapshots": ["request", "admission", "prebuild", "completion"],
+    "content_bound_inputs": [
+      "CMake-selected MySQL version header",
+      "resolved MySQL client library",
+      "worldserver-resolved MySQL client library"
+    ],
+    "precisely_invalidated_outputs": [
+      "DatabaseWorkerPool.cpp.o",
+      "DatabaseWorkerPool.cpp.o.d",
+      "MySQLThreading.cpp.o",
+      "MySQLThreading.cpp.o.d",
+      "libdatabase.a",
+      "worldserver"
+    ],
+    "receipt_schema_version": 3,
+    "compiler_jobs": 8,
+    "linker_jobs": 1
+  },
+  "required_next_work_unit": {
+    "id": "evidence:magmaw_transfer_lane_map_bound_checkpoint_fresh_build",
+    "owner_skill": "raid-evidence-lifecycle",
+    "configure_ticket_budget": 1,
+    "worldserver_build_ticket_budget": 1,
+    "worldserver_start_budget": 0,
+    "authserver_start_budget": 0,
+    "database_mutations_allowed": false,
+    "required_terminal": "schema_v3_gate_bearing_build_receipt_verified"
+  }
+}
