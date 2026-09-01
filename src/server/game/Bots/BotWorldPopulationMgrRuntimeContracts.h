@@ -474,6 +474,10 @@
         // Incomplete here by design: encounter facts stay out of the manager
         // header and are reduced only by the snapshot publisher.
         std::shared_ptr<BotEncounter::MagmawFactsCache const> MagmawFacts;
+        // A wave is cohort-scoped. Per-bot escape tasks bind their actor-keyed
+        // child identity to this retained parent before fact authority is
+        // complete.
+        BotEncounter::MagmawParasiteWaveTask MagmawParasiteWave;
         // Immutable, diagnostics-only migration state. No strategy, action
         // candidate, target, or movement owner consumes either projection.
         std::shared_ptr<BotEncounter::MagmawCoordinator const>

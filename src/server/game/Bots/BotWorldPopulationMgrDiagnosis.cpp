@@ -12,6 +12,7 @@
 #include "Movement/Spline/MoveSpline.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
@@ -364,6 +365,10 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << ",\"decision_kernel\":" << (state.LastDecisionKernelJson.empty() ? "{}" : state.LastDecisionKernelJson)
          << ",\"magmaw_transfer_lane_intent_comparison\":"
          << BuildMagmawTransferLaneIntentComparisonJson(state)
+         << ",\"magmaw_personal_parasite_escape\":"
+         << BotEncounter::BuildMagmawPersonalParasiteEscapeDiagnosticsJson(
+                state.MagmawPersonalParasiteEscape,
+                &Cohort().MagmawParasiteWave)
          << ",\"evidence\":["
          << "{\"name\":\"loaded\",\"value\":" << (bot ? "true" : "false") << "},"
          << "{\"name\":\"in_world\",\"value\":" << (bot && bot->IsInWorld() ? "true" : "false") << "},"
@@ -564,6 +569,10 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << BotWorldMovement::MovementProgressPublicationJson(
                 BotWorldMovement::MovementProgressDiagnostics().RecentForBot(
                     state.Guid.GetCounter()))
+         << ",\"magmaw_personal_parasite_escape\":"
+         << BotEncounter::BuildMagmawPersonalParasiteEscapeDiagnosticsJson(
+                state.MagmawPersonalParasiteEscape,
+                &Cohort().MagmawParasiteWave)
          << ",\"native_recovery_episode\":"
          << BuildNativeRecoveryEpisodeJson(&state)
          << ",\"validation_cohort\":{\"locked\":" << (state.ValidationCohortLocked ? "true" : "false")

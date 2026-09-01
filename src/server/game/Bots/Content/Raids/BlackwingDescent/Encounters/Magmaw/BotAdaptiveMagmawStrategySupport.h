@@ -136,6 +136,7 @@
         ActorSnapshot const& bot, MagmawActorObservation const& observed,
         MagmawFacts const* facts,
         MagmawPersonalParasiteEscapeTask* personalEscapeTask,
+        MagmawParasiteWaveTask* parasiteWaveTask,
         MagmawParasiteHazardState* hazardState,
         MagmawMovementIntentCollection& intents)
     {
@@ -149,7 +150,7 @@
                     MagmawParasitePolicy::SafeClearance,
                     MagmawParasitePolicy::DestinationTolerance,
                     MagmawParasitePolicy::ObserveRouteFacts(board, bot).
-                        EmergencyClearance);
+                        EmergencyClearance, parasiteWaveTask);
             if (escape)
                 intents.Propose(MagmawMovementProposalOrigin::Hazard,
                     std::move(*escape));

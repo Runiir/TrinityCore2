@@ -23,6 +23,7 @@ def test_personal_parasite_escape_task_crosses_production_adapter(
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.h"
 
 #include <cassert>
 #include <string>
@@ -118,6 +119,44 @@ static BotNativeAction::Candidate const* Escape(
     return nullptr;
 }
 
+static BotNativeAction::Candidate const* EscapeFor(
+    AdaptiveMagmawPlan const& plan, ObjectGuid actor)
+{
+    for (BotNativeAction::Candidate const& candidate :
+        plan.Movement.Proposals())
+        if (candidate.Id.Mechanic == "parasite_contact_evade"
+            && candidate.Id.Actor == actor)
+            return &candidate;
+    return nullptr;
+}
+
+static void SubmitThroughProductionAdapter(
+    BotNativeAction::Candidate const& candidate, uint64 now,
+    MagmawPersonalParasiteEscapeTask& task)
+{
+    MagmawMovementIntentCollection movements;
+    movements.Propose(MagmawMovementProposalOrigin::Hazard, candidate);
+    MagmawMovementKernelAdapterContext context;
+    context.ObservedAtMs = now;
+    context.Execute = [](BotNativeAction::Intent const&,
+        MagmawMovementNativeLease,
+        BotWorldMovement::ExecutionObservation*)
+    {
+        return BotActionArbitration::Outcome::Submitted(
+            "native_move_submitted");
+    };
+    context.ObserveNativeOutcome = [&task](
+        MagmawMovementNativeOutcome const& outcome)
+    {
+        ObserveMagmawPersonalParasiteEscapeNativeOutcome(task, outcome);
+    };
+    BotActionArbitration::Kernel kernel;
+    kernel.Begin(now);
+    assert(SubmitMagmawMovementKernelCandidates(kernel, movements,
+        std::move(context)) == 1);
+    kernel.Resolve();
+}
+
 static void RejectThroughProductionAdapter(
     BotNativeAction::Candidate const& candidate, uint64 now,
     MagmawPersonalParasiteEscapeTask& task, char const* reason)
@@ -150,20 +189,172 @@ int main()
     auto cache = MagmawFactsCache::ForSnapshot(nullptr, board);
     assert(!cache->Facts().Parasites.Generation.Authoritative());
 
-    // A visible first-active parasite is authoritative even though its edge
-    // generation is intentionally unknown. Partial or stale projections may
-    // not establish an actor-local wave or task.
+    // A visible first contact creates an actor-local task even when the facts
+    // projection is partial or stale. The task waits without producing a
+    // candidate until the same revision becomes authoritative.
     MagmawFacts partial = cache->Facts();
     partial.ProjectionAuthoritative = false;
     MagmawPersonalParasiteEscapeTask partialTask;
     assert(!partialTask.Tick(board, partial, board.Players[2],
         &board.Hostiles[1], 16.0f, 4.0f, false));
-    assert(!partialTask.Started && partialTask.WaveGeneration == 0);
+    assert(partialTask.Started);
+    assert(partialTask.State == TaskState::Suspended);
+    uint64 const pendingWave = partialTask.WaveGeneration;
+    assert(pendingWave != 0);
     MagmawFacts stale = cache->Facts();
     --stale.ObservationRevision;
     assert(!partialTask.Tick(board, stale, board.Players[2],
         &board.Hostiles[1], 16.0f, 4.0f, false));
-    assert(!partialTask.Started && partialTask.WaveGeneration == 0);
+    assert(partialTask.Started);
+    assert(partialTask.State == TaskState::Suspended);
+    assert(partialTask.WaveGeneration == pendingWave);
+    auto resumedFromStaleFacts = partialTask.Tick(board, cache->Facts(),
+        board.Players[2], &board.Hostiles[1], 16.0f, 4.0f, false);
+    assert(resumedFromStaleFacts);
+    assert(partialTask.State == TaskState::Running);
+    assert(partialTask.WaveGeneration == pendingWave);
+
+    // Reproduce the live 30010 edge through the production strategy and
+    // kernel adapter. The cohort wave and actor child survive one stale fact
+    // tick, then produce one stable actor candidate before Infection.
+    board.Hostiles[1].VictimGuid = PlayerGuid(30010);
+    MagmawFacts staleContact = cache->Facts();
+    --staleContact.ObservationRevision;
+    MagmawParasiteWaveTask sharedWave;
+    MagmawPersonalParasiteEscapeTask actor30010Task;
+    AdaptiveMagmawStrategy contactStrategy;
+    MagmawLaneTransitionState contactLane;
+    MagmawParasiteHazardState contactLegacy;
+    AdaptiveMagmawPlan awaiting = contactStrategy.Propose(board,
+        PlayerGuid(30010), "dps", nullptr, false, false, &contactLane,
+        &contactLegacy, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &staleContact, &actor30010Task, &sharedWave);
+    assert(!EscapeFor(awaiting, PlayerGuid(30010)));
+    assert(sharedWave.Active && sharedWave.AwaitingAuthoritativeFacts);
+    assert(actor30010Task.Started);
+    assert(actor30010Task.State == TaskState::Suspended);
+    assert(actor30010Task.Diagnostics.Lifecycle ==
+        MagmawPersonalParasiteEscapeLifecycle::AwaitingAuthoritativeFacts);
+    uint64 const actor30010TaskGeneration = actor30010Task.TaskGeneration;
+    uint64 const actor30010WaveGeneration = actor30010Task.WaveGeneration;
+
+    AdaptiveMagmawPlan authoritative = contactStrategy.Propose(board,
+        PlayerGuid(30010), "dps", nullptr, false, false, &contactLane,
+        &contactLegacy, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &actor30010Task, &sharedWave);
+    BotNativeAction::Candidate const* actor30010Candidate = EscapeFor(
+        authoritative, PlayerGuid(30010));
+    assert(actor30010Candidate);
+    assert(actor30010Task.TaskGeneration == actor30010TaskGeneration);
+    assert(actor30010Task.WaveGeneration == actor30010WaveGeneration);
+    assert(actor30010Task.Diagnostics.Lifecycle ==
+        MagmawPersonalParasiteEscapeLifecycle::CandidateBuilt);
+    std::string const actor30010CandidateKey = actor30010Candidate->Id.Key();
+    assert(actor30010Task.CandidateGeneration
+        == actor30010Candidate->Id.EventGeneration);
+    assert(BuildMagmawPersonalParasiteEscapeDiagnosticsJson(actor30010Task,
+        &sharedWave).find(actor30010CandidateKey) != std::string::npos);
+
+    // A later partial snapshot suspends the already-built child without
+    // changing its actor, wave, task, candidate, destination, or deadline.
+    uint64 const actor30010CandidateGeneration =
+        actor30010Task.CandidateGeneration;
+    uint64 const actor30010StartedAtMs = actor30010Task.StartedAtMs;
+    uint64 const actor30010LastProgressAtMs =
+        actor30010Task.LastProgressAtMs;
+    Vector3 const actor30010InitialDestination =
+        actor30010Task.Destination;
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    AdaptiveMagmawPlan authorityLost = contactStrategy.Propose(board,
+        PlayerGuid(30010), "dps", nullptr, false, false, &contactLane,
+        &contactLegacy, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &actor30010Task, &sharedWave);
+    assert(!EscapeFor(authorityLost, PlayerGuid(30010)));
+    assert(actor30010Task.State == TaskState::Suspended);
+    assert(actor30010Task.TaskGeneration == actor30010TaskGeneration);
+    assert(actor30010Task.CandidateGeneration
+        == actor30010CandidateGeneration);
+    assert(actor30010Task.StartedAtMs == actor30010StartedAtMs);
+    assert(actor30010Task.LastProgressAtMs
+        == actor30010LastProgressAtMs);
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        actor30010Task.Destination, actor30010InitialDestination));
+
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan authorityRestored = contactStrategy.Propose(board,
+        PlayerGuid(30010), "dps", nullptr, false, false, &contactLane,
+        &contactLegacy, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &actor30010Task, &sharedWave);
+    actor30010Candidate = EscapeFor(authorityRestored, PlayerGuid(30010));
+    assert(actor30010Candidate);
+    assert(actor30010Candidate->Id.Key() == actor30010CandidateKey);
+
+    SubmitThroughProductionAdapter(*actor30010Candidate,
+        board.ObservedAtMs, actor30010Task);
+    assert(actor30010Task.Diagnostics.Lifecycle ==
+        MagmawPersonalParasiteEscapeLifecycle::Submitted);
+    assert(actor30010Task.Diagnostics.CandidateKey == actor30010CandidateKey);
+    assert(actor30010Task.Diagnostics.SubmittedAtMs == board.ObservedAtMs);
+
+    Vector3 const actor30010Destination = actor30010Task.Destination;
+    board.Players[3].Position.X +=
+        (actor30010Destination.X - board.Players[3].Position.X) * 0.25f;
+    board.Players[3].Position.Y +=
+        (actor30010Destination.Y - board.Players[3].Position.Y) * 0.25f;
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    auto progressing = actor30010Task.Tick(board, cache->Facts(),
+        board.Players[3], &board.Hostiles[1], 16.0f, 4.0f, false,
+        &sharedWave);
+    assert(progressing);
+    assert(progressing->Id.Key() == actor30010CandidateKey);
+    assert(actor30010Task.Diagnostics.Lifecycle ==
+        MagmawPersonalParasiteEscapeLifecycle::NativeProgress);
+
+    board.Players[3].Position = actor30010Destination;
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    assert(!actor30010Task.Tick(board, cache->Facts(), board.Players[3],
+        &board.Hostiles[1], 16.0f, 4.0f, false, &sharedWave));
+    assert(actor30010Task.Diagnostics.Lifecycle ==
+        MagmawPersonalParasiteEscapeLifecycle::SafeClearance);
+    std::string lifecycleJson =
+        BuildMagmawPersonalParasiteEscapeDiagnosticsJson(actor30010Task,
+            &sharedWave);
+    for (char const* field : { "task_created", "awaiting_facts",
+        "candidate_built", "submitted", "native_progress",
+        "safe_clearance", "candidate_key", "actor_guid",
+        "wave_generation" })
+        assert(lifecycleJson.find(field) != std::string::npos);
+
+    // Infection while authority is still missing is an explicit terminal
+    // child outcome. It cannot masquerade as another dropped intent.
+    MagmawPersonalParasiteEscapeTask infectedTask;
+    board.Players[3].Position = { 2.0f, -20.0f, 210.0f };
+    board.Players[3].Auras.clear();
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    MagmawFacts infectedStale = cache->Facts();
+    --infectedStale.ObservationRevision;
+    assert(!infectedTask.Tick(board, infectedStale, board.Players[3],
+        &board.Hostiles[1], 16.0f, 4.0f, false, &sharedWave));
+    board.Players[3].Auras.push_back({ 78941, {}, 1, 0 });
+    assert(!infectedTask.Tick(board, infectedStale, board.Players[3],
+        &board.Hostiles[1], 16.0f, 4.0f, false, &sharedWave));
+    assert(infectedTask.Diagnostics.Lifecycle ==
+        MagmawPersonalParasiteEscapeLifecycle::Infected);
+    assert(infectedTask.Failure ==
+        MagmawPersonalParasiteEscapeFailure::InfectedBeforeClearance);
+    board.Players[3].Auras.clear();
+    board.Hostiles[1].VictimGuid = PlayerGuid(30008);
 
     // Exact overlap uses the actor's facing, matching the legacy move-away
     // formula instead of inventing a fixed axis.
@@ -366,6 +557,9 @@ int main()
             "Encounters/Magmaw/BotMagmawFacts.cpp"),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
             "Encounters/Magmaw/BotMagmawMovementKernelAdapter.cpp"),
+        str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+            "Encounters/Magmaw/"
+            "BotMagmawPersonalParasiteEscapeDiagnostics.cpp"),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
             "Encounters/Magmaw/BotMagmawTransferLaneKernelBridge.cpp"),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"

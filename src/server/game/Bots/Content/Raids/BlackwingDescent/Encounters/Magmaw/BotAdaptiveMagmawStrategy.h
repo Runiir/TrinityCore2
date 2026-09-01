@@ -79,7 +79,8 @@ public:
         MovementProducerOrder const& producerOrder =
             DefaultMovementProducerOrder,
         MagmawFacts const* facts = nullptr,
-        MagmawPersonalParasiteEscapeTask* personalEscapeTask = nullptr) const
+        MagmawPersonalParasiteEscapeTask* personalEscapeTask = nullptr,
+        MagmawParasiteWaveTask* parasiteWaveTask = nullptr) const
     {
         AdaptiveMagmawPlan plan;
         if (board.Route.NodeId != "bwd.magmaw.encounter")
@@ -220,7 +221,7 @@ public:
                 plan.Movement.Propose(origin, std::move(**proposal));
         }
         EmitPersonalParasiteEscape(board, *bot, observed, facts,
-            personalEscapeTask, hazardState, plan.Movement);
+            personalEscapeTask, parasiteWaveTask, hazardState, plan.Movement);
         return plan;
     }
 private:

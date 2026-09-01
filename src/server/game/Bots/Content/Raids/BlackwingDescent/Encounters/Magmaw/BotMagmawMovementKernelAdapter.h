@@ -38,6 +38,7 @@ struct MagmawMovementNativeOutcome
     std::string Mechanic;
     ObjectGuid Actor;
     uint64 EventGeneration = 0;
+    uint64 ObservedAtMs = 0;
     Vector3 Destination;
     BotActionArbitration::Outcome Result;
 };

@@ -70,7 +70,8 @@ bool SubmitGeneric(BotActionArbitration::Kernel& kernel,
             std::get_if<BotNativeAction::Move>(&intent.Action))
         nativeOutcome = MagmawMovementNativeOutcome{
             intent.Id.Key(), intent.Id.Mechanic, intent.Id.Actor,
-            intent.Id.EventGeneration, { move->X, move->Y, move->Z }, {} };
+            intent.Id.EventGeneration, context.ObservedAtMs,
+            { move->X, move->Y, move->Z }, {} };
     BotActionArbitration::Candidate candidate =
         BuildMagmawMovementKernelCandidate(intent, origin, lease.has_value(),
             transferBindingRequired, safetyPending,
@@ -157,7 +158,8 @@ bool ObserveMagmawPersonalParasiteEscapeNativeOutcome(
     return outcome.Mechanic == "parasite_contact_evade"
         && task.ObserveNativeOutcome(outcome.Actor,
             outcome.EventGeneration, outcome.Destination,
-            outcome.Result.Reason);
+            outcome.CandidateKey, outcome.Result.LifecyclePhase,
+            outcome.Result.Reason, outcome.ObservedAtMs);
 }
 
 size_t SubmitMagmawMovementKernelCandidates(

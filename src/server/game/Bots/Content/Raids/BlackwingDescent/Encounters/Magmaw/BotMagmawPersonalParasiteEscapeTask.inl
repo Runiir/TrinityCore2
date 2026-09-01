@@ -37,6 +37,93 @@ MagmawActorFact const* NearestParasite(MagmawFacts const& facts,
     return nearest;
 }
 
+uint32 AuthorityGapMask(Blackboard const& board, MagmawFacts const& facts)
+{
+    using Gap = MagmawPersonalParasiteAuthorityGap;
+    uint32 mask = 0;
+    auto add = [&mask](Gap gap) { mask |= uint32(gap); };
+    if (facts.ObservationRevision != board.Revision)
+        add(Gap::ObservationRevision);
+    if (!(facts.Lifecycle == board.CurrentScope))
+        add(Gap::LifecycleScope);
+    if (!facts.LifecycleAuthoritative)
+        add(Gap::LifecycleAuthority);
+    if (!facts.ProjectionAuthoritative)
+        add(Gap::ProjectionAuthority);
+    if (!facts.Parasites.Authoritative)
+        add(Gap::ParasiteAuthority);
+    if (facts.Parasites.Active == MagmawTruth::True
+        && facts.Parasites.Sources.empty())
+        add(Gap::ParasiteSource);
+    return mask;
+}
+
+uint32 LifecycleBit(MagmawPersonalParasiteEscapeLifecycle lifecycle)
+{
+    return uint32{1} << uint32(lifecycle);
+}
+
+}
+
+inline void MagmawParasiteWaveTask::ObserveScope(Blackboard const& board)
+{
+    if (ScopeKey == board.CurrentScope.Key()
+        && AttemptId == board.CurrentScope.AttemptId
+        && WipeGeneration == board.CurrentScope.WipeGeneration
+        && RouteGeneration == board.CurrentScope.RouteGeneration
+        && MapId == board.CurrentScope.MapId
+        && InstanceId == board.CurrentScope.InstanceId)
+        return;
+
+    uint64 const nextGeneration = NextGeneration;
+    *this = {};
+    NextGeneration = nextGeneration;
+    ScopeKey = board.CurrentScope.Key();
+    AttemptId = board.CurrentScope.AttemptId;
+    WipeGeneration = board.CurrentScope.WipeGeneration;
+    RouteGeneration = board.CurrentScope.RouteGeneration;
+    MapId = board.CurrentScope.MapId;
+    InstanceId = board.CurrentScope.InstanceId;
+}
+
+inline void MagmawParasiteWaveTask::Reconcile(Blackboard const& board,
+    MagmawFacts const& facts, bool personalThreatObserved)
+{
+    ObserveScope(board);
+    LastObservedAtMs = board.ObservedAtMs;
+    uint32 const authorityGaps = AuthorityGapMask(board, facts);
+    if (!authorityGaps)
+    {
+        AwaitingAuthoritativeFacts = false;
+        if (facts.Parasites.Active != MagmawTruth::True)
+        {
+            Active = false;
+            return;
+        }
+        if (Active)
+            return;
+
+        Active = true;
+        GenerationAuthoritative =
+            facts.Parasites.Generation.Authoritative();
+        Generation = GenerationAuthoritative
+            ? facts.Parasites.Generation.Value
+            : (uint64{1} << 63) | ++NextGeneration;
+        if (!Generation)
+            Generation = (uint64{1} << 63) | ++NextGeneration;
+        CreatedAtMs = board.ObservedAtMs;
+        return;
+    }
+
+    if (personalThreatObserved && !Active)
+    {
+        Active = true;
+        GenerationAuthoritative = false;
+        Generation = (uint64{1} << 63) | ++NextGeneration;
+        CreatedAtMs = board.ObservedAtMs;
+    }
+    if (Active)
+        AwaitingAuthoritativeFacts = true;
 }
 
 inline void MagmawPersonalParasiteEscapeTask::ObserveScope(
@@ -51,10 +138,12 @@ inline void MagmawPersonalParasiteEscapeTask::ObserveScope(
         && ActorGuid == actor)
         return;
 
-    uint64 const nextLocalWaveToken = NextLocalWaveToken;
+    uint64 const nextLocalWaveGeneration = LocalWave.NextGeneration;
+    uint64 const nextTaskGeneration = NextTaskGeneration;
     uint64 const nextCandidateGeneration = NextCandidateGeneration;
     *this = {};
-    NextLocalWaveToken = nextLocalWaveToken;
+    LocalWave.NextGeneration = nextLocalWaveGeneration;
+    NextTaskGeneration = nextTaskGeneration;
     NextCandidateGeneration = nextCandidateGeneration;
     ScopeKey = board.CurrentScope.Key();
     AttemptId = board.CurrentScope.AttemptId;
@@ -87,64 +176,140 @@ inline void MagmawPersonalParasiteEscapeTask::ObserveActorLife(
     State = BotDecision::PersistentTaskState::Aborted;
 }
 
+inline void MagmawPersonalParasiteEscapeTask::MarkLifecycle(
+    MagmawPersonalParasiteEscapeLifecycle lifecycle, uint64 observedAtMs)
+{
+    Diagnostics.Lifecycle = lifecycle;
+    Diagnostics.ObservedLifecycleMask |= LifecycleBit(lifecycle);
+    switch (lifecycle)
+    {
+        case MagmawPersonalParasiteEscapeLifecycle::TaskCreated:
+            if (!Diagnostics.CreatedAtMs)
+                Diagnostics.CreatedAtMs = observedAtMs;
+            break;
+        case MagmawPersonalParasiteEscapeLifecycle::
+            AwaitingAuthoritativeFacts:
+            if (!Diagnostics.AwaitingFactsAtMs)
+                Diagnostics.AwaitingFactsAtMs = observedAtMs;
+            break;
+        case MagmawPersonalParasiteEscapeLifecycle::CandidateBuilt:
+            Diagnostics.CandidateBuiltAtMs = observedAtMs;
+            break;
+        case MagmawPersonalParasiteEscapeLifecycle::Submitted:
+            if (!Diagnostics.SubmittedAtMs)
+                Diagnostics.SubmittedAtMs = observedAtMs;
+            break;
+        case MagmawPersonalParasiteEscapeLifecycle::NativeProgress:
+            Diagnostics.NativeProgressAtMs = observedAtMs;
+            break;
+        case MagmawPersonalParasiteEscapeLifecycle::SafeClearance:
+        case MagmawPersonalParasiteEscapeLifecycle::Infected:
+        case MagmawPersonalParasiteEscapeLifecycle::Failed:
+            Diagnostics.TerminalAtMs = observedAtMs;
+            break;
+        case MagmawPersonalParasiteEscapeLifecycle::Inactive:
+            break;
+    }
+}
+
 inline std::optional<BotNativeAction::Candidate>
 MagmawPersonalParasiteEscapeTask::Tick(
     Blackboard const& board, MagmawFacts const& facts,
     ActorSnapshot const& bot, ActorSnapshot const* personalThreat,
-    float safeClearance, float arrivalTolerance, bool preemptCasting)
+    float safeClearance, float arrivalTolerance, bool preemptCasting,
+    MagmawParasiteWaveTask* sharedWave)
 {
     ObserveActorLife(board, bot.Guid, bot.Alive);
     if (!bot.Alive)
         return std::nullopt;
-    bool const factsCurrentAndAuthoritative =
-        facts.ObservationRevision == board.Revision
-        && facts.Lifecycle == board.CurrentScope
-        && facts.LifecycleAuthoritative
-        && facts.ProjectionAuthoritative
-        && facts.Parasites.Authoritative;
-    if (!factsCurrentAndAuthoritative)
+
+    MagmawParasiteWaveTask& wave = sharedWave ? *sharedWave : LocalWave;
+    wave.Reconcile(board, facts, personalThreat != nullptr);
+    WaveEnded = !wave.Active;
+
+    auto beginTask = [&]()
+    {
+        Started = true;
+        WaveEnded = false;
+        WaveGeneration = wave.Generation;
+        WaveGenerationAuthoritative = wave.GenerationAuthoritative;
+        TaskGeneration = ++NextTaskGeneration;
+        if (!TaskGeneration)
+            TaskGeneration = ++NextTaskGeneration;
+        CandidateGeneration = 0;
+        AlternateUsed = false;
+        AlternatePending = false;
+        Failure = MagmawPersonalParasiteEscapeFailure::None;
+        State = BotDecision::PersistentTaskState::Suspended;
+        DangerGuid = personalThreat->Guid;
+        DangerPosition = personalThreat->Position;
+        Diagnostics = {};
+        Diagnostics.TaskGeneration = TaskGeneration;
+        MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::TaskCreated,
+            board.ObservedAtMs);
+    };
+
+    if (Started && WaveGeneration != wave.Generation)
+    {
+        Started = false;
+        CandidateGeneration = 0;
+        AlternateUsed = false;
+        AlternatePending = false;
+        Failure = MagmawPersonalParasiteEscapeFailure::None;
+        State = BotDecision::PersistentTaskState::Aborted;
+    }
+    if (!Started)
+    {
+        WaveGeneration = wave.Generation;
+        WaveGenerationAuthoritative = wave.GenerationAuthoritative;
+    }
+    if (!Started && personalThreat && wave.Active)
+        beginTask();
+    if (Started && HasParasiticInfection(bot)
+        && !BotDecision::IsTerminal(State))
+    {
+        State = BotDecision::PersistentTaskState::Failed;
+        Failure = MagmawPersonalParasiteEscapeFailure::
+            InfectedBeforeClearance;
+        AlternatePending = false;
+        MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::Infected,
+            board.ObservedAtMs);
         return std::nullopt;
+    }
+
+    uint32 const authorityGaps = AuthorityGapMask(board, facts);
+    if (authorityGaps)
+    {
+        if (Started && !BotDecision::IsTerminal(State))
+        {
+            State = BotDecision::PersistentTaskState::Suspended;
+            Diagnostics.AuthorityGapMask = authorityGaps;
+            MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::
+                AwaitingAuthoritativeFacts, board.ObservedAtMs);
+        }
+        return std::nullopt;
+    }
+    Diagnostics.AuthorityGapMask = 0;
     if (facts.Parasites.Active != MagmawTruth::True)
     {
-        if (facts.Parasites.Authoritative)
+        WaveEnded = true;
+        if (Started && !BotDecision::IsTerminal(State))
         {
-            WaveEnded = true;
-            if (Started && State == BotDecision::PersistentTaskState::Running)
-                State = BotDecision::PersistentTaskState::Succeeded;
+            State = BotDecision::PersistentTaskState::Succeeded;
+            MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::
+                SafeClearance, board.ObservedAtMs);
         }
         return std::nullopt;
     }
-
-    bool const observedGenerationAuthoritative =
-        facts.Parasites.Generation.Authoritative();
-    uint64 observedWave = facts.Parasites.Generation.Value;
-    if (!observedGenerationAuthoritative)
-        observedWave = WaveGeneration && !WaveEnded
-            ? WaveGeneration
-            : (uint64{1} << 63) | ++NextLocalWaveToken;
-    bool const newWave = !WaveGeneration || WaveEnded;
-    if (newWave)
-    {
-        if (Started)
-        {
-            Started = false;
-            AlternateUsed = false;
-            AlternatePending = false;
-            Failure = MagmawPersonalParasiteEscapeFailure::None;
-            State = BotDecision::PersistentTaskState::Aborted;
-        }
-        WaveGeneration = observedWave;
-        WaveGenerationAuthoritative = observedGenerationAuthoritative;
-        WaveEnded = false;
-    }
-    uint64 const wave = WaveGeneration;
-
-    if (Started && WaveGeneration == wave
-        && BotDecision::IsTerminal(State))
+    if (!Started || BotDecision::IsTerminal(State))
         return std::nullopt;
+
+    if (State == BotDecision::PersistentTaskState::Suspended)
+        State = BotDecision::PersistentTaskState::Running;
 
     float const clearance = ParasiteClearance(facts, bot.Position);
-    if (Started && State == BotDecision::PersistentTaskState::Running)
+    if (CandidateGeneration
+        && State == BotDecision::PersistentTaskState::Running)
     {
         float const distance = Distance2d(bot.Position, Destination);
         if (clearance > BestClearance + 0.5f)
@@ -152,18 +317,26 @@ MagmawPersonalParasiteEscapeTask::Tick(
             BestClearance = clearance;
             LastProgressAtMs = board.ObservedAtMs;
             LastProgressRevision = board.Revision;
+            if (Diagnostics.SubmittedAtMs)
+                MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::
+                    NativeProgress, board.ObservedAtMs);
         }
         if (distance + 0.5f < BestDistance)
         {
             BestDistance = distance;
             LastProgressAtMs = board.ObservedAtMs;
             LastProgressRevision = board.Revision;
+            if (Diagnostics.SubmittedAtMs)
+                MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::
+                    NativeProgress, board.ObservedAtMs);
         }
         if (clearance >= safeClearance
             || distance <= arrivalTolerance)
         {
             State = BotDecision::PersistentTaskState::Succeeded;
             AlternatePending = false;
+            MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::
+                SafeClearance, board.ObservedAtMs);
             return std::nullopt;
         }
         if (board.ObservedAtMs > LastProgressAtMs
@@ -172,22 +345,24 @@ MagmawPersonalParasiteEscapeTask::Tick(
             State = BotDecision::PersistentTaskState::Failed;
             Failure = MagmawPersonalParasiteEscapeFailure::NoSemanticProgress;
             AlternatePending = false;
+            MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::Failed,
+                board.ObservedAtMs);
             return std::nullopt;
         }
     }
 
     MagmawActorFact const* nearest = NearestParasite(facts, bot.Position);
-    if (!Started)
+    if (!CandidateGeneration)
     {
-        if (!personalThreat || !nearest)
+        if (!nearest)
+        {
+            State = BotDecision::PersistentTaskState::Suspended;
+            Diagnostics.AuthorityGapMask = uint32(
+                MagmawPersonalParasiteAuthorityGap::ParasiteSource);
+            MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::
+                AwaitingAuthoritativeFacts, board.ObservedAtMs);
             return std::nullopt;
-        Started = true;
-        WaveEnded = false;
-        WaveGeneration = wave;
-        State = BotDecision::PersistentTaskState::Running;
-        Failure = MagmawPersonalParasiteEscapeFailure::None;
-        DangerGuid = personalThreat->Guid;
-        DangerPosition = personalThreat->Position;
+        }
         Destination = MagmawMoveAwayDestination(bot.Position, bot.Facing,
             DangerPosition, safeClearance);
         PrimaryDestination = Destination;
@@ -199,6 +374,8 @@ MagmawPersonalParasiteEscapeTask::Tick(
         StartedAtMs = board.ObservedAtMs;
         LastProgressAtMs = board.ObservedAtMs;
         LastProgressRevision = board.Revision;
+        MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::CandidateBuilt,
+            board.ObservedAtMs);
     }
     else if (AlternatePending)
     {
@@ -217,6 +394,8 @@ MagmawPersonalParasiteEscapeTask::Tick(
             State = BotDecision::PersistentTaskState::Failed;
             Failure = MagmawPersonalParasiteEscapeFailure::NoDistinctAlternate;
             AlternatePending = false;
+            MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::Failed,
+                board.ObservedAtMs);
             return std::nullopt;
         }
         AlternateUsed = true;
@@ -226,6 +405,8 @@ MagmawPersonalParasiteEscapeTask::Tick(
             CandidateGeneration = ++NextCandidateGeneration;
         BestDistance = Distance2d(bot.Position, Destination);
         LastProgressAtMs = board.ObservedAtMs;
+        MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::CandidateBuilt,
+            board.ObservedAtMs);
     }
 
     if (State != BotDecision::PersistentTaskState::Running
@@ -253,12 +434,24 @@ MagmawPersonalParasiteEscapeTask::Tick(
 
 inline bool MagmawPersonalParasiteEscapeTask::ObserveNativeOutcome(
     ObjectGuid actor, uint64 candidateGeneration,
-    Vector3 const& destination, std::string_view reason)
+    Vector3 const& destination, std::string_view candidateKey,
+    BotActionArbitration::Phase phase, std::string_view reason,
+    uint64 observedAtMs)
 {
-    if (!IsPermanentNativeRejection(reason) || !Started
-        || State != BotDecision::PersistentTaskState::Running
+    if (!Started || State != BotDecision::PersistentTaskState::Running
         || ActorGuid != actor || CandidateGeneration != candidateGeneration
         || !SamePoint(Destination, destination))
+        return false;
+    Diagnostics.CandidateKey = candidateKey;
+    Diagnostics.LastNativeReason = reason;
+    ++Diagnostics.NativeOutcomeCount;
+    if (phase == BotActionArbitration::Phase::Submitted
+        || phase == BotActionArbitration::Phase::Started
+        || phase == BotActionArbitration::Phase::Progressed
+        || phase == BotActionArbitration::Phase::Completed)
+        MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::Submitted,
+            observedAtMs);
+    if (!IsPermanentNativeRejection(reason))
         return false;
     if (!AlternateUsed)
     {
@@ -268,6 +461,8 @@ inline bool MagmawPersonalParasiteEscapeTask::ObserveNativeOutcome(
     State = BotDecision::PersistentTaskState::Failed;
     Failure = MagmawPersonalParasiteEscapeFailure::
         AlternateNativeRouteRejected;
+    MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::Failed,
+        observedAtMs);
     return true;
 }
 
@@ -286,5 +481,63 @@ inline bool MagmawPersonalParasiteEscapeTask::SamePoint(
     return std::fabs(left.X - right.X) <= 0.001f
         && std::fabs(left.Y - right.Y) <= 0.001f
         && std::fabs(left.Z - right.Z) <= 0.001f;
+}
+
+inline bool MagmawPersonalParasiteEscapeTask::HasParasiticInfection(
+    ActorSnapshot const& actor)
+{
+    for (AuraSnapshot const& aura : actor.Auras)
+        if (aura.SpellId == 78097 || aura.SpellId == 78941
+            || aura.SpellId == 91913 || aura.SpellId == 94678
+            || aura.SpellId == 94679)
+            return true;
+    return false;
+}
+
+inline char const* ToString(
+    MagmawPersonalParasiteEscapeLifecycle value)
+{
+    switch (value)
+    {
+        case MagmawPersonalParasiteEscapeLifecycle::Inactive:
+            return "inactive";
+        case MagmawPersonalParasiteEscapeLifecycle::TaskCreated:
+            return "task_created";
+        case MagmawPersonalParasiteEscapeLifecycle::
+            AwaitingAuthoritativeFacts:
+            return "awaiting_facts";
+        case MagmawPersonalParasiteEscapeLifecycle::CandidateBuilt:
+            return "candidate_built";
+        case MagmawPersonalParasiteEscapeLifecycle::Submitted:
+            return "submitted";
+        case MagmawPersonalParasiteEscapeLifecycle::NativeProgress:
+            return "native_progress";
+        case MagmawPersonalParasiteEscapeLifecycle::SafeClearance:
+            return "safe_clearance";
+        case MagmawPersonalParasiteEscapeLifecycle::Infected:
+            return "infected";
+        case MagmawPersonalParasiteEscapeLifecycle::Failed:
+            return "failed";
+    }
+    return "unknown";
+}
+
+inline char const* ToString(MagmawPersonalParasiteEscapeFailure value)
+{
+    switch (value)
+    {
+        case MagmawPersonalParasiteEscapeFailure::None:
+            return "none";
+        case MagmawPersonalParasiteEscapeFailure::InfectedBeforeClearance:
+            return "infected_before_clearance";
+        case MagmawPersonalParasiteEscapeFailure::NoDistinctAlternate:
+            return "no_distinct_alternate";
+        case MagmawPersonalParasiteEscapeFailure::NoSemanticProgress:
+            return "no_semantic_progress";
+        case MagmawPersonalParasiteEscapeFailure::
+            AlternateNativeRouteRejected:
+            return "alternate_native_route_rejected";
+    }
+    return "unknown";
 }
 }

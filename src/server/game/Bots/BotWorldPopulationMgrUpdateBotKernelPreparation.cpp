@@ -461,7 +461,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                     DefaultMovementProducerOrder,
                 Cohort().MagmawFacts
                     ? &Cohort().MagmawFacts->Facts() : nullptr,
-                &context.State.MagmawPersonalParasiteEscape);
+                &context.State.MagmawPersonalParasiteEscape,
+                &Cohort().MagmawParasiteWave);
             static std::vector<BotEncounter::MagmawTransferLaneTask> const
                 noMagmawTransferLaneTasks;
             auto const& transferLaneShadow =
