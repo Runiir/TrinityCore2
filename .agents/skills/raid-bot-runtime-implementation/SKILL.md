@@ -111,6 +111,16 @@ plus endpoint-floor validity; do not collapse those facts into one unexplained
 3D tolerance. Retain the exact rejected endpoint deltas as a compiled
 counterexample and serialize both components for future traces.
 
+Also distinguish requested-destination reach from Detour end-polygon
+projection. A complete polygon corridor can legitimately terminate at
+`closestPointOnPolyBoundary` when the declared point is outside the final
+walkable polygon. Require a typed point-path terminal result such as exact
+request reached, projected end-poly reached, no steer target, corridor
+exhausted, capacity, or failure; carry the resolved end-poly point separately.
+Never infer projected reach from point count, `PATHFIND_NORMAL`, or a wider 3D
+tolerance. A projected endpoint may prove native movement progress, but it is
+not semantic arrival at the task's logical destination.
+
 A complete primary path with an inadmissible endpoint is terminal for that
 route attempt. Do not reinterpret it as permission to probe or launch a shorter
 progressive-local fallback: completeness says the native planner resolved the
@@ -297,6 +307,19 @@ not choose a new destination. A typed lethal-safety action may preempt it, but
 the same transition resumes afterward. Retire it only on observed native
 arrival, a later mechanic generation after arrival, or exact attempt reset.
 Validate the full traversed corridor, not only endpoints.
+
+When an encounter strategy uses ordered conditionals to choose one movement
+before the action kernel sees alternatives, treat source order as an implicit
+priority system. Migrate one mechanic vertically: normalized facts, sticky
+raid assignment, persistent per-bot task, passive intent collection, existing
+kernel, and exact action/native outcome feedback. Keep lethal safety as an
+independent high-priority intent that suspends and later resumes the same task.
+Do not build a generic framework from one encounter or replace the existing
+arbiter. Use a default-off authority selector until the shadow task and legacy
+candidate match for the same actor, lifecycle, destination, and resource
+claims. Submission alone is never task progress; projected native reach keeps
+the task running until position or another semantic postcondition proves
+logical arrival.
 
 If that live signature recurs while the focused fixture passes, do not patch a
 new helper or run another canary. First replace the incomplete fixture with a

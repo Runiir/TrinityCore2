@@ -125,6 +125,15 @@ resource claims, stable movement intents, and observable outcomes. Require
 before/after CCN for touched high-risk functions and the repository's
 sub-1,000-line C/C++ limit.
 
+If an encounter strategy selects one movement through ordered `if` branches
+before the real arbiter runs, route one persistent-task vertical slice instead
+of tuning branch order. The slice must separate facts, sticky assignment,
+multi-tick task state, passive intent emission, existing arbitration, and
+native outcome feedback. Keep authority default-off until exact shadow-versus-
+legacy identity and outcome evidence passes. A native projected endpoint is
+progress evidence, not logical task completion; require its typed terminal
+classification rather than inferring it from a normal path flag or tolerance.
+
 Do not schedule a rerun merely because a specialist reports green focused
 tests. If the blocker previously returned after a green run, require the same
 causal signature, an incremented retained-fixture revision, an exact recorded
