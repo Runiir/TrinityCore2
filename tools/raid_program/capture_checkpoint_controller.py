@@ -667,6 +667,27 @@ def checkpoint_controller_dialect(
     if not isinstance(recurrence_admission, dict):
         raise ValueError("checkpoint_controller_verified_admission_missing")
     fixture_id = recurrence_admission.get("checkpoint_fixture_id")
+    if fixture_id is None:
+        try:
+            requests = _fixture_expansion_contract(
+                recurrence_admission,
+                label="checkpoint_free_fixture_expansion",
+            )
+        except RecurrenceAdmissionError as error:
+            raise ValueError(
+                "checkpoint_free_fixture_expansion_invalid"
+            ) from error
+        if (
+            recurrence_admission.get("valid") is not True
+            or recurrence_admission.get("purpose")
+                != FIXTURE_EXPANSION_PURPOSE
+            or not requests
+            or actor_guid is not None
+            or recurrence_admission.get("checkpoint_seal_sha256") is not None
+            or recurrence_admission.get("checkpoint_case_id") is not None
+        ):
+            raise ValueError("checkpoint_free_fixture_expansion_invalid")
+        return None
     if fixture_id == CHAINWIELDER_CHECKPOINT_FIXTURE_ID:
         return {
             "fixture_id": fixture_id,

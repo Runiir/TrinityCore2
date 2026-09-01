@@ -459,33 +459,34 @@ def prepare_capture_setup(
                 recurrence_admission,
                 checkpoint_actor_guid,
             )
-            if not isinstance(checkpoint_dialect, dict):
-                raise ValueError("checkpoint_controller_dialect_missing")
-            controller_hold_identity = controller_route_hold_launch_identity(
-                recurrence_admission=recurrence_admission,
-                required_purpose=FIXTURE_EXPANSION_PURPOSE,
-                actor_guid=checkpoint_actor_guid,
-                scenario_id=scenario_id,
-                runtime_profile=profile_name,
-                pool_tag=str(runtime_assets.get("pool_tag_filter") or ""),
-                route_manifest_sha256=runtime_route_identity[
-                    "route_manifest_sha256"
-                ],
-                route_node_id=runtime_route_identity["initial_route_node_id"],
-                expected_checkpoint_fixture_id=checkpoint_dialect["fixture_id"],
-            )
+            controller_hold_identity = None
+            if checkpoint_dialect is not None:
+                controller_hold_identity = controller_route_hold_launch_identity(
+                    recurrence_admission=recurrence_admission,
+                    required_purpose=FIXTURE_EXPANSION_PURPOSE,
+                    actor_guid=checkpoint_actor_guid,
+                    scenario_id=scenario_id,
+                    runtime_profile=profile_name,
+                    pool_tag=str(runtime_assets.get("pool_tag_filter") or ""),
+                    route_manifest_sha256=runtime_route_identity[
+                        "route_manifest_sha256"
+                    ],
+                    route_node_id=runtime_route_identity["initial_route_node_id"],
+                    expected_checkpoint_fixture_id=checkpoint_dialect["fixture_id"],
+                )
         except ValueError as error:
             raise SystemExit(
                 f"capture preflight rejected: controller_route_hold:{error}"
             ) from error
-        if controller_hold_identity is None:
-            raise SystemExit(
-                "capture preflight rejected: controller_route_hold_identity_missing"
+        if checkpoint_dialect is not None:
+            if controller_hold_identity is None:
+                raise SystemExit(
+                    "capture preflight rejected: controller_route_hold_identity_missing"
+                )
+            controller_route_hold_scheduler = ControllerRouteHoldScheduler(
+                controller_hold_identity,
+                **checkpoint_dialect["scheduler_kwargs"],
             )
-        controller_route_hold_scheduler = ControllerRouteHoldScheduler(
-            controller_hold_identity,
-            **checkpoint_dialect["scheduler_kwargs"],
-        )
     drudge_observed = not args.trace_transport_smoke and (
         profile_name == "blackwing_descent_10n"
         or profile_name.endswith("_magmaw_diagnostic")

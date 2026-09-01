@@ -9,6 +9,8 @@ import subprocess
 import sys
 from types import SimpleNamespace
 
+import pytest
+
 from tools.raid_program.capture_phase1_raid_foundation import (
     accepted_foundation_status,
     accepted_drudge_contract,
@@ -87,6 +89,9 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     finalize_capture,
 )
 from tools.raid_program.capture_setup import recurrence_profile_authority
+from tools.raid_program.capture_checkpoint_controller import (
+    checkpoint_controller_dialect,
+)
 
 
 def test_normal_gameplay_admission_does_not_supply_fixture_profile_authority():
@@ -108,6 +113,51 @@ def test_fixture_replay_admission_supplies_exact_profile_authority(tmp_path: Pat
     )
     assert profile == manifest.resolve()
     assert expected == "blackwing_descent_10n_magmaw_diagnostic"
+
+
+def test_checkpoint_free_fixture_expansion_has_no_synthetic_controller():
+    admission = {
+        "valid": True,
+        "purpose": "fixture_expansion_replay",
+        "fixture_expansion_target_ids": [
+            "magmaw_parasite_control_full_runtime_v1",
+        ],
+        "fixture_expansion_requests": [{
+            "fixture_id": "magmaw_parasite_control_full_runtime_v1",
+            "from_revision": 7,
+            "to_revision": 8,
+            "causal_signature": "magmaw_parasite_control_allows_player_infection",
+            "required_production_boundary": "observe production behavior",
+        }],
+        "checkpoint_fixture_id": None,
+        "checkpoint_seal_sha256": None,
+        "checkpoint_case_id": None,
+    }
+
+    assert checkpoint_controller_dialect(admission, None) is None
+
+
+def test_checkpoint_free_fixture_expansion_rejects_synthetic_actor():
+    admission = {
+        "valid": True,
+        "purpose": "fixture_expansion_replay",
+        "fixture_expansion_target_ids": [
+            "magmaw_parasite_control_full_runtime_v1",
+        ],
+        "fixture_expansion_requests": [{
+            "fixture_id": "magmaw_parasite_control_full_runtime_v1",
+            "from_revision": 7,
+            "to_revision": 8,
+            "causal_signature": "magmaw_parasite_control_allows_player_infection",
+            "required_production_boundary": "observe production behavior",
+        }],
+        "checkpoint_fixture_id": None,
+        "checkpoint_seal_sha256": None,
+        "checkpoint_case_id": None,
+    }
+
+    with pytest.raises(ValueError, match="checkpoint_free_fixture_expansion_invalid"):
+        checkpoint_controller_dialect(admission, 30008)
 
 
 def _scheduler_status(*, route_index: int = 0, encounter: bool = False) -> dict:
