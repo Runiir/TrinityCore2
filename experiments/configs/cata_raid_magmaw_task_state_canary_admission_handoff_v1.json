@@ -36,5 +36,5 @@
     "implementation_commit": "23b5a2d9a3cbd3078b6a01bbf8113f68629fd3cc",
     "rule": "The next binary is built at the final descriptor commit. Later clean control-only descendants may reuse it only through the shared fail-closed build/control compatibility verifier."
   },
-  "next_action": "At the final clean descriptor commit, run the exact retained recurrence suite once. If canary_admitted is true, verify the existing fast8_v4 binary as a control-only compatible ancestor, reseal the verified normal Magmaw 10N prestart inputs, and start one worldserver under the completion watchdog with no retry and no authserver."
+  "next_action": "At the final clean descriptor commit, run the exact retained recurrence suite once. If canary_admitted is true, issue fresh fast8_v4 configure and build receipts, reseal the verified normal Magmaw 10N prestart inputs, and start one worldserver under the completion watchdog with no retry and no authserver."
 }
