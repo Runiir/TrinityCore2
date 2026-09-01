@@ -1,61 +1,62 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:repair_native_checkpoint_three_request_contract",
-  "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "review:repair_native_checkpoint_three_request_contract",
+  "work_unit": "shard:map669_connected_surface_checkpoint_replay",
+  "owner_skill": "raid-shard-architecture",
+  "next_work_unit": "evidence:classify_map669_connected_surface_checkpoint_terminal",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "epoch_id": "map669_native_checkpoint_three_request_20260901",
+  "classification": "live_recurrence_quarantined",
+  "epoch_id": "map669_connected_surface_checkpoint_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "evidence_contract_implementation_and_review_only",
-  "immutable_input_commit": "5d51b318ec0da665d270aceaa2d0b46c474f5e73",
-  "observed_at_commit": "5d51b318ec0da665d270aceaa2d0b46c474f5e73",
+  "gate_state": "exact_build_and_one_fixture_replay",
+  "immutable_input_commit": "ef83c1782d7601579dc58a3376b960201e440df7",
+  "observed_at_commit": "ef83c1782d7601579dc58a3376b960201e440df7",
   "behavior_change": false,
-  "evidence_contract_change": true,
-  "next_action": "Bind the sealed native checkpoint path to exactly the current three authoritative 4-to-5 recurrence requests before any build or replay.",
+  "evidence_contract_change": false,
+  "next_action": "Build the exact clean source with eight compiler jobs and run one sealed no-retry native-path checkpoint replay for actor 30007; stop at the first typed terminal.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_native_checkpoint_three_request_contract_handoff_v1.json",
-    "sha256": "19aab2ae0c8b12eabfa681e6bca2373b140b82f80e58d4e0e2086f2cb8bbace9",
-    "source_commit": "5d51b318ec0da665d270aceaa2d0b46c474f5e73",
-    "source_tree": "555ff10e65908596ff085ffd3921fbe5592f5fe1"
+    "path": "experiments/configs/cata_raid_native_connected_surface_replay_handoff_v1.json",
+    "sha256": "da89133ee1b00ab44dda804b24c8bf8a4d179032b69c609523d701dd0942ee75",
+    "source_commit": "ef83c1782d7601579dc58a3376b960201e440df7",
+    "source_tree": "fc5c741e0968de2941c5e944f2976ac0ef10eb28"
   },
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": false,
-    "fixture_prerequisite_build_authorized": false,
+    "fixture_expansion_replay_admitted": true,
+    "fixture_prerequisite_build_authorized": true,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "worldserver_start_admitted": false,
+    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "database_provisioning_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": false
+    "dvc_publication_required_after_terminal": true
   },
   "scope_lock": {
-    "allowed_change": "Repair only the native checkpoint seal/admission/controller request contract and focused tests for the exact three authoritative recurrence requests.",
+    "allowed_change": "No code change. Produce an exact -j8 worldserver build, source-bound recurrence/seal inputs, and one observation-only map-669 checkpoint terminal.",
     "forbidden": [
-      "gameplay C++, movement admission, encounter strategy, class behavior, database state, build outputs, server state, or DVC mutation",
-      "accepting arbitrary request subsets, supersets, stale revisions, duplicates, wrong purposes, or wrong targets",
-      "building or starting authserver/worldserver before independent review"
+      "retrying after any terminal or starting more than one worldserver",
+      "starting authserver or mutating the database",
+      "ordinary gameplay, Magmaw acceptance, class tuning, encounter changes, movement changes, tolerance changes, or fixture revision changes",
+      "claiming success without native launch and measured physical progress"
     ],
     "required_postconditions": [
-      "the exact floor-observation, hazard-admission, and native-proof 4-to-5 requests create, verify, seal, and arm",
-      "missing, extra, stale, duplicate, wrong-purpose, and wrong-target projections reject",
-      "focused Python tests pass and independent Sol-high review returns GO",
-      "no gameplay, build, server, database, or DVC mutation occurs"
+      "exact clean commit, tree, binary, build receipt, runtime config, route, profile, recurrence decision, and seal identities verify",
+      "one controller-armed checkpoint terminates with correlated planner, executor, spline, and progress evidence or an exact typed first failed gate",
+      "no retry, authserver start, database mutation, or gameplay mutation occurs",
+      "DVC evidence is remote-verified and bulky local raw data is evicted"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "repair_policy": "one_bounded_evidence_contract_repair_then_review",
+    "repair_policy": "one_start_no_retry",
     "terminal_edges": [
-      "focused_tests_failed",
-      "scope_drift",
-      "request_contract_weakened",
-      "independent_review_no_go",
-      "repair_verified"
+      "native_path_checkpoint_launch_progress_verified",
+      "typed_checkpoint_terminal_failure",
+      "identity_or_authority_failure",
+      "infrastructure_loss",
+      "explicit_interruption"
     ]
   }
 }

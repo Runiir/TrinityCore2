@@ -1,0 +1,49 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:map669_connected_surface_checkpoint_replay",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "sealed_fixture_replay_pending",
+  "source": {
+    "commit": "ef83c1782d7601579dc58a3376b960201e440df7",
+    "tree": "fc5c741e0968de2941c5e944f2976ac0ef10eb28",
+    "runtime_repair_commit": "5d51b318ec0da665d270aceaa2d0b46c474f5e73",
+    "evidence_contract_commit": "ef83c1782d7601579dc58a3376b960201e440df7",
+    "prior_terminal_evidence": "artifacts/cata_raid_program/phase1_raid_foundation_69db62a09d_native_path_floor_probe_terminal_20260901.dvc"
+  },
+  "replay_contract": {
+    "purpose": "fixture_expansion_replay",
+    "checkpoint_fixture_id": "map669_native_path_production_boundary_v1",
+    "case_id": "a506_receipt636_incomplete_same_floor",
+    "actor_guid": 30007,
+    "authoritative_requests": {
+      "same_level_floor_observation_v1": "4_to_5",
+      "same_level_hazard_path_admission_v1": "4_to_5",
+      "same_level_native_path_proof_v1": "4_to_5"
+    },
+    "start_policy": "one_worldserver_start_no_retry",
+    "validation_clock": "completion_watchdog",
+    "authserver_required": false,
+    "database_mutation_allowed": false
+  },
+  "required_evidence": [
+    "exact clean source and built binary identity",
+    "source-bound complete recurrence receipt and exact three-request decision",
+    "verified checkpoint seal and controller arm identity",
+    "request-level floor observation and native PathGenerator path type/corridor outcome",
+    "strict selected endpoint identity, executor submission, MotionMaster/spline initialization, and physical progress or exact typed terminal failure",
+    "compact terminal summary published to DVC and remote-verified before local raw evidence eviction"
+  ],
+  "forbidden": [
+    "retrying the replay after any terminal",
+    "starting authserver",
+    "mutating the database, gameplay, recurrence revisions, tolerances, encounter logic, or class behavior",
+    "claiming success from path submission without physical progress",
+    "starting ordinary Magmaw gameplay or acceptance validation"
+  ],
+  "next_work_unit": {
+    "id": "evidence:classify_map669_connected_surface_checkpoint_terminal",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_action": "Publish the one-run terminal, compare it to the exact recurrence signature, and route only the first proven edge.",
+    "required_postcondition": "remote-verified DVC evidence, compact claim ledger, raw local eviction, and no retry"
+  }
+}
