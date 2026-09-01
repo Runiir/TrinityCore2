@@ -680,6 +680,7 @@ def compact_published_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "evidence_envelope",
         "session",
         "validation_context",
+        "semantic_liveness",
         "decision_receipts",
         "validation_route_manifest",
         "requested_calibration",
@@ -3054,6 +3055,164 @@ def terminal_catchup_progress_advanced(
         if current_distance < previous_distance - 0.01:
             return True
     return False
+
+
+def advance_semantic_liveness(
+    report: Mapping[str, Any],
+    *,
+    observed_monotonic: float,
+    observed_unix: int,
+    no_progress_window_sec: int,
+    last_progress_total: int,
+    last_progress_monotonic: float,
+    last_progress_unix: int = 0,
+    last_progress_type: str = "",
+    last_progress_value: Any = None,
+    last_progress_route_node_id: str = "",
+    last_progress_route_generation: int = 0,
+    previous_live_combat_progress: Mapping[str, Any] | None = None,
+    previous_terminal_catchup_progress: Mapping[str, Any] | None = None,
+    emergency_cap_reached: bool = False,
+) -> dict[str, Any]:
+    """Advance the controller-owned liveness clock and emit one compact receipt."""
+    watchdog = report.get("watchdog_state")
+    watchdog = watchdog if isinstance(watchdog, Mapping) else {}
+    progress_total = int(watchdog.get("progress_total") or 0)
+    status = report.get("status")
+    status = status if isinstance(status, Mapping) else {}
+    runtime = status.get("raid_runtime")
+    runtime = runtime if isinstance(runtime, Mapping) else {}
+    route = status.get("validation_route")
+    route = route if isinstance(route, Mapping) else {}
+
+    def safe_int(value: Any) -> int:
+        if value is None or isinstance(value, bool):
+            return 0
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
+
+    route_node_id = str(route.get("node_id") or "")
+    route_generation = safe_int(route.get("generation"))
+
+    def record(kind: str, value: Any, node_id: str = "", generation: int = 0) -> None:
+        nonlocal last_progress_monotonic, last_progress_unix
+        nonlocal last_progress_type, last_progress_value
+        nonlocal last_progress_route_node_id, last_progress_route_generation
+        last_progress_monotonic = observed_monotonic
+        last_progress_unix = observed_unix
+        last_progress_type = kind
+        last_progress_value = value
+        last_progress_route_node_id = node_id or route_node_id
+        last_progress_route_generation = generation or route_generation
+
+    if progress_total > last_progress_total:
+        last_progress_total = progress_total
+        last_progress_monotonic = observed_monotonic
+        if progress_total > 0:
+            record("durable_progress_total", progress_total)
+
+    live_progress = watchdog.get("live_combat_progress")
+    live_progress = live_progress if isinstance(live_progress, Mapping) else None
+    if live_combat_progress_advanced(
+        dict(previous_live_combat_progress) if isinstance(previous_live_combat_progress, Mapping) else None,
+        dict(live_progress) if isinstance(live_progress, Mapping) else None,
+    ):
+        damage_rows = live_progress.get("damage") if live_progress else []
+        damage_rows = damage_rows if isinstance(damage_rows, list) else []
+        damage = max(
+            (int(row.get("party_damage") or 0) for row in damage_rows if isinstance(row, Mapping)),
+            default=0,
+        )
+        scope_row = next((row for row in damage_rows if isinstance(row, Mapping)), {})
+        record(
+            "route_party_damage",
+            damage,
+            str(scope_row.get("route_node_id") or ""),
+            safe_int(scope_row.get("route_generation")),
+        )
+
+    catchup_progress = terminal_catchup_progress_snapshot(dict(report))
+    if terminal_catchup_progress_advanced(
+        dict(previous_terminal_catchup_progress)
+        if isinstance(previous_terminal_catchup_progress, Mapping)
+        else None,
+        catchup_progress,
+    ):
+        distances = catchup_progress.get("distances")
+        distances = distances if isinstance(distances, Mapping) else {}
+        record(
+            "terminal_catchup_distance",
+            min((float(value) for value in distances.values()), default=0.0),
+            str(catchup_progress.get("route_node_id") or ""),
+            safe_int(catchup_progress.get("route_generation")),
+        )
+
+    elapsed = max(0.0, observed_monotonic - last_progress_monotonic)
+    window = max(0, int(no_progress_window_sec))
+    remaining = max(0.0, float(window) - elapsed)
+    recovery_state = str(runtime.get("recovery_state") or "")
+    active_recovery = recovery_state not in {"", "none", "recovered_ready_check"}
+
+    def optional_int(*keys: str) -> int | None:
+        for key in keys:
+            value = runtime.get(key)
+            if value is None or isinstance(value, bool):
+                continue
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                continue
+        return None
+
+    receipt = {
+        "schema": "bot_semantic_liveness_v1",
+        "cohort_id": str(status.get("cohort_id") or report.get("expected_cohort_id") or ""),
+        "server_epoch": safe_int(status.get("server_epoch") or runtime.get("server_epoch")),
+        "profile_generation": safe_int(status.get("profile_generation") or runtime.get("profile_generation")),
+        "profile_content_hash": str(status.get("profile_content_hash") or runtime.get("profile_content_hash") or ""),
+        "route_node_id": route_node_id,
+        "route_generation": route_generation,
+        "attempt_id": safe_int(status.get("attempt_id") or runtime.get("attempt_id")),
+        "wipe_generation": safe_int(runtime.get("wipe_generation")),
+        "alive_count": optional_int("alive_size"),
+        "expected_count": optional_int("expected_size"),
+        "wipe_state": str(runtime.get("wipe_state") or ""),
+        "recovery_state": recovery_state,
+        "recovery_generation": optional_int("recovery_generation"),
+        "recovery_budget_remaining": optional_int(
+            "recovery_attempts_remaining",
+            "recovery_budget_remaining",
+            "remaining_recovery_budget",
+        ),
+        "last_progress_at_unix": last_progress_unix or None,
+        "last_progress_type": last_progress_type or "none",
+        "last_progress_value": last_progress_value,
+        "last_progress_route_node_id": last_progress_route_node_id,
+        "last_progress_route_generation": last_progress_route_generation,
+        "elapsed_no_progress_sec": round(elapsed, 3),
+        "remaining_no_progress_sec": round(remaining, 3),
+        "no_progress_window_sec": window,
+        "semantic_progress_expired": elapsed >= window,
+        "emergency_cap_reached": bool(emergency_cap_reached),
+        "emergency_cap_interrupted_recent_progress_or_recovery": bool(
+            emergency_cap_reached
+            and ((last_progress_unix > 0 and elapsed < window) or active_recovery)
+        ),
+    }
+    return {
+        "last_progress_total": last_progress_total,
+        "last_progress_monotonic": last_progress_monotonic,
+        "last_progress_unix": last_progress_unix,
+        "last_progress_type": last_progress_type,
+        "last_progress_value": last_progress_value,
+        "last_progress_route_node_id": last_progress_route_node_id,
+        "last_progress_route_generation": last_progress_route_generation,
+        "previous_live_combat_progress": dict(live_progress) if isinstance(live_progress, Mapping) else None,
+        "previous_terminal_catchup_progress": catchup_progress,
+        "receipt": receipt,
+    }
 
 
 DEATH_LOOP_ACTIONS = {"repeated_death", "death_loop"}
@@ -5464,6 +5623,7 @@ def rolling_heartbeat_report(
     validation_route_manifest: dict[str, Any] | None = None,
     completion_reason_override: str = "",
     expected_cohort_id: str = "",
+    persist: bool = True,
 ) -> dict[str, Any]:
     report = live_validation_report(
         output,
@@ -5487,6 +5647,16 @@ def rolling_heartbeat_report(
     raid_terminal = raid_terminal_watchdog_failure(report)
     if raid_terminal:
         apply_raid_terminal_watchdog(report, raid_terminal)
+    if persist:
+        persist_rolling_heartbeat(output_dir, report)
+    return report
+
+
+def persist_rolling_heartbeat(
+    output_dir: Path,
+    report: dict[str, Any],
+) -> None:
+    """Persist one already-classified heartbeat and its bounded receipts."""
     decision_receipts = compact_decision_receipts(report)
     previous_decision_receipts: list[Mapping[str, Any]] = []
     latest_path = output_dir / "latest.json"
@@ -5505,7 +5675,6 @@ def rolling_heartbeat_report(
         report["decision_receipts"] = retained_decision_receipts
     append_heartbeat(output_dir, report, decision_receipts=decision_receipts)
     write_json(output_dir / "report.json", report)
-    return report
 
 
 def combat_log_export_complete(output: str) -> bool:
@@ -5560,8 +5729,17 @@ def run_transport_completion_watchdog(
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
-    last_live_combat_progress: dict[str, Any] | None = None
-    last_terminal_catchup_progress: dict[str, Any] | None = None
+    liveness_clock: dict[str, Any] = {
+        "last_progress_total": last_progress_total,
+        "last_progress_monotonic": last_progress_at,
+        "last_progress_unix": 0,
+        "last_progress_type": "",
+        "last_progress_value": None,
+        "last_progress_route_node_id": "",
+        "last_progress_route_generation": 0,
+        "previous_live_combat_progress": None,
+        "previous_terminal_catchup_progress": None,
+    }
     last_calibration_blocker = ""
     calibration_blocker_repeats = 0
 
@@ -5660,23 +5838,27 @@ def run_transport_completion_watchdog(
             no_progress_window_sec, max_repeated_decisions, max_death_loops,
             validation_route_manifest,
             expected_cohort_id=expected_cohort_id,
+            persist=False,
         )
+        observed_monotonic = time.monotonic()
+        advanced_liveness = advance_semantic_liveness(
+            report,
+            observed_monotonic=observed_monotonic,
+            observed_unix=int(time.time()),
+            no_progress_window_sec=no_progress_window_sec,
+            emergency_cap_reached=False,
+            **liveness_clock,
+        )
+        report["semantic_liveness"] = advanced_liveness.pop("receipt")
+        liveness_clock = advanced_liveness
+        last_progress_total = int(liveness_clock["last_progress_total"])
+        last_progress_at = float(liveness_clock["last_progress_monotonic"])
+        progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
+        persist_rolling_heartbeat(output_dir, report)
         raid_terminal = raid_terminal_watchdog_failure(report)
         if raid_terminal:
             finalize_raid_terminal_watchdog(output_dir, report, raid_terminal)
             return finish(0, False)
-        progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
-        if progress_total > last_progress_total:
-            last_progress_total = progress_total
-            last_progress_at = time.monotonic()
-        live_combat_progress = report.get("watchdog_state", {}).get("live_combat_progress")
-        if live_combat_progress_advanced(last_live_combat_progress, live_combat_progress):
-            last_progress_at = time.monotonic()
-        last_live_combat_progress = live_combat_progress if isinstance(live_combat_progress, dict) else None
-        terminal_catchup_progress = terminal_catchup_progress_snapshot(report)
-        if terminal_catchup_progress_advanced(last_terminal_catchup_progress, terminal_catchup_progress):
-            last_progress_at = time.monotonic()
-        last_terminal_catchup_progress = terminal_catchup_progress
         no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
         semantic_progress_plateau = (
             last_progress_total >= 0
@@ -5726,6 +5908,25 @@ def run_transport_completion_watchdog(
             finalize_heartbeat(output_dir, report)
             write_json(output_dir / "report.json", report)
             return finish(0, False)
+    heartbeat_index += 1
+    report = rolling_heartbeat_report(
+        output_dir, heartbeat_index, output_parts.render(), 0, True, command,
+        scenario_reports, validation_context, duration_policy, heartbeat_sec,
+        no_progress_window_sec, max_repeated_decisions, max_death_loops,
+        validation_route_manifest,
+        expected_cohort_id=expected_cohort_id,
+        persist=False,
+    )
+    advanced_liveness = advance_semantic_liveness(
+        report,
+        observed_monotonic=time.monotonic(),
+        observed_unix=int(time.time()),
+        no_progress_window_sec=no_progress_window_sec,
+        emergency_cap_reached=True,
+        **liveness_clock,
+    )
+    report["semantic_liveness"] = advanced_liveness.pop("receipt")
+    persist_rolling_heartbeat(output_dir, report)
     return finish(124, True)
 
 
@@ -5753,8 +5954,17 @@ def run_worldserver_completion_watchdog(
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
-    last_live_combat_progress: dict[str, Any] | None = None
-    last_terminal_catchup_progress: dict[str, Any] | None = None
+    liveness_clock: dict[str, Any] = {
+        "last_progress_total": last_progress_total,
+        "last_progress_monotonic": last_progress_at,
+        "last_progress_unix": 0,
+        "last_progress_type": "",
+        "last_progress_value": None,
+        "last_progress_route_node_id": "",
+        "last_progress_route_generation": 0,
+        "previous_live_combat_progress": None,
+        "previous_terminal_catchup_progress": None,
+    }
     last_calibration_blocker = ""
     calibration_blocker_repeats = 0
     process = subprocess.Popen(
@@ -5834,7 +6044,7 @@ def run_worldserver_completion_watchdog(
         while time.monotonic() < deadline:
             if process.poll() is not None:
                 heartbeat_index += 1
-                rolling_heartbeat_report(
+                report = rolling_heartbeat_report(
                     output_dir,
                     heartbeat_index,
                     joined_output(),
@@ -5851,7 +6061,18 @@ def run_worldserver_completion_watchdog(
                     validation_route_manifest,
                     completion_reason_override="worldserver_process_exit",
                     expected_cohort_id=expected_cohort_id,
+                    persist=False,
                 )
+                advanced_liveness = advance_semantic_liveness(
+                    report,
+                    observed_monotonic=time.monotonic(),
+                    observed_unix=int(time.time()),
+                    no_progress_window_sec=no_progress_window_sec,
+                    emergency_cap_reached=False,
+                    **liveness_clock,
+                )
+                report["semantic_liveness"] = advanced_liveness.pop("receipt")
+                persist_rolling_heartbeat(output_dir, report)
                 return joined_output(), process.returncode if process.returncode is not None else 0, False, command
 
             sleep_until = min(deadline, time.monotonic() + max(1, heartbeat_sec))
@@ -5892,23 +6113,27 @@ def run_worldserver_completion_watchdog(
                 max_death_loops,
                 validation_route_manifest,
                 expected_cohort_id=expected_cohort_id,
+                persist=False,
             )
+            observed_monotonic = time.monotonic()
+            advanced_liveness = advance_semantic_liveness(
+                report,
+                observed_monotonic=observed_monotonic,
+                observed_unix=int(time.time()),
+                no_progress_window_sec=no_progress_window_sec,
+                emergency_cap_reached=bool(report.get("timed_out")),
+                **liveness_clock,
+            )
+            report["semantic_liveness"] = advanced_liveness.pop("receipt")
+            liveness_clock = advanced_liveness
+            last_progress_total = int(liveness_clock["last_progress_total"])
+            last_progress_at = float(liveness_clock["last_progress_monotonic"])
+            progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
+            persist_rolling_heartbeat(output_dir, report)
             raid_terminal = raid_terminal_watchdog_failure(report)
             if raid_terminal:
                 finalize_raid_terminal_watchdog(output_dir, report, raid_terminal)
                 break
-            progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
-            if progress_total > last_progress_total:
-                last_progress_total = progress_total
-                last_progress_at = time.monotonic()
-            live_combat_progress = report.get("watchdog_state", {}).get("live_combat_progress")
-            if live_combat_progress_advanced(last_live_combat_progress, live_combat_progress):
-                last_progress_at = time.monotonic()
-            last_live_combat_progress = live_combat_progress if isinstance(live_combat_progress, dict) else None
-            terminal_catchup_progress = terminal_catchup_progress_snapshot(report)
-            if terminal_catchup_progress_advanced(last_terminal_catchup_progress, terminal_catchup_progress):
-                last_progress_at = time.monotonic()
-            last_terminal_catchup_progress = terminal_catchup_progress
             no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
             semantic_progress_plateau = (
                 last_progress_total >= 0

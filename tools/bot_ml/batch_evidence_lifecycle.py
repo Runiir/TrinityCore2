@@ -1330,6 +1330,9 @@ def append_heartbeat(
         "progress_counters": dict(latest.get("progress_counters") or {}),
         "acceptance_result_sha256": str(((latest.get("acceptance_verification") or {}).get("result_sha256") or "")),
     }
+    semantic_liveness = latest.get("semantic_liveness")
+    if isinstance(semantic_liveness, Mapping):
+        compact["semantic_liveness"] = dict(semantic_liveness)
     if decision_receipts:
         compact["decision_receipts"] = [dict(row) for row in decision_receipts[:64]]
     with stream.open("a", encoding="utf-8") as handle:
