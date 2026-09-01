@@ -79,6 +79,7 @@ def _mutate_transfer_ledger(value: dict[str, object], mutation: str) -> None:
 
 def _transfer_fixture(
     tmp_path: Path, *, ledger_mutation: str | None = None,
+    historical_snapshot: bool = True,
 ) -> dict[str, object]:
     fixture = _fixture(tmp_path)
     root = fixture["root"]
@@ -94,6 +95,21 @@ def _transfer_fixture(
         / MAGMAW_TRANSFER_LEDGER_RELATIVE_PATH,
         ledger,
     )
+    if historical_snapshot:
+        ledger_value = json.loads(ledger.read_text(encoding="utf-8"))
+        fixture_row = ledger_value["regression_bank"]["fixtures"][0]
+        fixture_row["evidence_boundary"] = "observation_only"
+        fixture_row["verification_status"] = (
+            "recorded_terrain_projection_counterexample_passes_hardened_"
+            "value_verifier_postfix_live_boundary_pending"
+        )
+        fixture_row.pop("production_evidence", None)
+        ledger_value["regression_bank"]["verifications"] = []
+        ledger_value["causal_signatures"][
+            "magmaw_transfer_lane_map_bound_checkpoint_missing"
+        ]["fixture_status"] = "observation_only_production_boundary_pending"
+        ledger_value["runs"] = ledger_value["runs"][:2]
+        _write_json(ledger, ledger_value)
     if ledger_mutation is not None:
         ledger_value = json.loads(ledger.read_text(encoding="utf-8"))
         _mutate_transfer_ledger(ledger_value, ledger_mutation)
@@ -168,6 +184,17 @@ def _transfer_fixture(
     fixture["kwargs"]["suite_receipt_sha256"] = sha256_file(suite)
     _restage_base_runtime_config(fixture)
     return fixture
+
+
+def test_promoted_canonical_ledger_is_rejected_by_retired_expansion_path(
+    tmp_path: Path,
+) -> None:
+    fixture = _transfer_fixture(tmp_path, historical_snapshot=False)
+    with pytest.raises(
+        bundle.BundleError, match="magmaw_transfer_ledger_manifest_mismatch",
+    ):
+        _create(fixture)
+    assert not fixture["output"].exists()
 
 
 def test_exact_transfer_dialect_composes_and_verifies_atomically(

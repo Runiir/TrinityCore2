@@ -4,7 +4,7 @@
   "investigation_epoch": "magmaw_transfer_lane_task_authority_20260901",
   "occurrence_limit": 10,
   "clear_streak_required": 2,
-  "closure_policy": "This sealed checkpoint remains observation-only until one identity-bound worldserver capture crosses the map-669 planner, MotionMaster, spline-progress, and logical-arrival boundary with task authority disabled.",
+  "closure_policy": "This sealed authority-off checkpoint is a production regression boundary for one identity-bound map-669 terrain-following movement lifecycle. It does not certify task authority, encounter behavior, gameplay success, boss fidelity, DPS, or a Magmaw clear.",
   "regression_bank": {
     "schema": "trinity_raid_regression_bank_v1",
     "route": "blackwing_descent_10n_magmaw_diagnostic",
@@ -20,9 +20,25 @@
         "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
         "revision": 2,
         "causal_signature": "magmaw_transfer_lane_map_bound_checkpoint_missing",
-        "evidence_boundary": "observation_only",
-        "verification_status": "recorded_terrain_projection_counterexample_passes_hardened_value_verifier_postfix_live_boundary_pending",
+        "evidence_boundary": "production",
+        "verification_status": "production_boundary_met_identity_bound_worldserver_capture_and_offline_demux_reviewed",
         "required_production_boundary": "one sealed worldserver-backed map-669 entrance movement by actor 30007 with TransferLaneTaskAuthority disabled must join the exact fixture and case through the production action kernel, complete primary MMAP planner receipt, MotionMaster point generator, spline identity, at least two decreasing same-floor samples, and finite logical arrival without certifying gameplay or boss success",
+        "production_evidence": {
+          "source_commit": "5c0b33c4d7055de5de06d1a9d7f1df5ca34ef436",
+          "binary_sha256": "b118c9330f046a7b9b460c9127ace598016f24df0c8fae8fecd95f44ab3e9116",
+          "build_receipt_sha256": "a9370850dd102354ef14ab4ad523a993d4dc38339d2f78a3c3bdf496b1253508",
+          "dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_5c0b33c4d7_completed_20260901.dvc",
+          "derived_audit_dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_5c0b33c4d7_demux_audit_20260901.dvc",
+          "derived_audit_sha256": "f82baf670adf99728d91474dcb0688f8755e3969dba81ea4a528f0cbd8900d13",
+          "actor_guid": 30007,
+          "planner_receipt_id": 1,
+          "spline_id": 29,
+          "progress_samples": 3,
+          "decreasing_progress_samples": 3,
+          "wrong_floor_samples": 0,
+          "terminal_task_state": "succeeded",
+          "finding": "The exact actor and fixture crossed one complete native terrain path, MotionMaster point generator, launched spline, monotonic same-floor progress, and logical arrival; the corrected offline demux bound all 19 retained rows and all 50 actor bindings with no rejection or unchecked evidence."
+        },
         "command": [
           "pixi",
           "run",
@@ -33,14 +49,24 @@
         ]
       }
     ],
-    "verifications": []
+    "verifications": [
+      {
+        "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
+        "revision": 2,
+        "passed_after_run_id": "map669-transfer-checkpoint-5c0b33c4d7-completed",
+        "source_identity": "5c0b33c4d7055de5de06d1a9d7f1df5ca34ef436",
+        "evidence": "artifacts/cata_raid_program/map669_transfer_checkpoint_5c0b33c4d7_completed_20260901.dvc",
+        "derived_audit": "artifacts/cata_raid_program/map669_transfer_checkpoint_5c0b33c4d7_demux_audit_20260901.dvc",
+        "derived_audit_sha256": "f82baf670adf99728d91474dcb0688f8755e3969dba81ea4a528f0cbd8900d13"
+      }
+    ]
   },
   "causal_signatures": {
     "magmaw_transfer_lane_map_bound_checkpoint_missing": {
       "owner": "shared_bot_runtime_magmaw_transfer_lane_checkpoint",
       "invariant": "the authority-off Magmaw transfer candidate must cross one sealed map-669 production movement lifecycle and only same-floor logical arrival may complete its persistent task",
       "architecture_reviewed_through_occurrence_count": 1,
-      "fixture_status": "observation_only_production_boundary_pending"
+      "fixture_status": "production_boundary_met"
     }
   },
   "runs": [
@@ -69,6 +95,26 @@
       },
       "evidence": "artifacts/cata_raid_program/map669_transfer_checkpoint_1485b51d30_terrain_projection_false_reject_20260901.dvc",
       "first_broken_edge": "magmaw_transfer_checkpoint_planner_receipt_failed_after_selected_endpoint_reached"
+    },
+    {
+      "run_id": "map669-transfer-checkpoint-5c0b33c4d7-completed",
+      "route_completed": false,
+      "classification": "fixture_checkpoint_completed_gameplay_claims_quarantined",
+      "blockers": {
+        "magmaw_transfer_lane_map_bound_checkpoint_missing": "absent"
+      },
+      "admission": {
+        "source_identity": "5c0b33c4d7055de5de06d1a9d7f1df5ca34ef436",
+        "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+        "fixture_revisions": {
+          "map669_magmaw_transfer_lane_authority_off_v1": 2
+        }
+      },
+      "evidence": "artifacts/cata_raid_program/map669_transfer_checkpoint_5c0b33c4d7_completed_20260901.dvc",
+      "derived_audit": "artifacts/cata_raid_program/map669_transfer_checkpoint_5c0b33c4d7_demux_audit_20260901.dvc",
+      "report_sha256": "b5905434dc624711ffae7844653878c225cfcb98bc4bac94b79ffc76e91d7e75",
+      "raw_jsonl_sha256": "ebba273cf1b151beebc467f120718e3cc85093c51cb7b8d0c45abf4e5a9ab752",
+      "note": "The authority-off fixture completed one exact native terrain-following movement lifecycle. This is not a Magmaw gameplay or clear result."
     }
   ]
 }

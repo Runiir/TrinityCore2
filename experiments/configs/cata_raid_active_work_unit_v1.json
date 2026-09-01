@@ -1,22 +1,22 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "coordination:review_completed_magmaw_transfer_checkpoint",
-  "owner_skill": "raid-performance-loop",
-  "next_work_unit": "evidence:magmaw_shadow_authority_off_live_observation",
+  "work_unit": "shard:map669_current_incomplete_primary_complete_fallback",
+  "owner_skill": "raid-shard-architecture",
+  "next_work_unit": "evidence:review_map669_current_fallback_lifecycle",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "fixture_boundary_completed_gameplay_claims_quarantined",
-  "epoch_id": "magmaw_transfer_lane_task_authority_20260901",
+  "classification": "one_current_source_native_fallback_boundary_missing",
+  "epoch_id": "map669_current_fallback_path_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "all_build_provisioning_bundle_and_start_tickets_consumed",
-  "observed_at_commit": "5c0b33c4d7055de5de06d1a9d7f1df5ca34ef436",
+  "gate_state": "design_and_admission_review_required_before_build_or_start",
+  "observed_at_commit": "94d95f4638",
   "behavior_change": false,
-  "evidence_contract_change": true,
-  "next_action": "Independently review the published completed checkpoint and decide whether revision 2 may be promoted from pending observation-only evidence. No build, provisioning, or server start is admitted by this descriptor.",
+  "evidence_contract_change": false,
+  "next_action": "Inspect the current fixture and retained 69db, 439dd, and afd09 evidence; remove only the fixture Formation-staging preemption so one admitted Hazard request can exercise incomplete primary to complete shorter native fallback. No build or server start is admitted yet.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_completed_handoff_v1.json",
-    "dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_5c0b33c4d7_completed_20260901.dvc"
+    "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_promotion_handoff_v1.json",
+    "promoted_fixture_ledger": "experiments/configs/cata_raid_magmaw_transfer_lane_checkpoint_recurrence_v1.json"
   },
   "program_scope": {
     "fixture_expansion_replay_admitted": false,
@@ -38,39 +38,31 @@
     "retry_limit": 0,
     "dvc_publication_required_after_terminal": true
   },
-  "exact_bundle_authority": {
-    "base_runtime_config_authority": "tracked_derived_runtime_config_v1",
-    "base_runtime_config_contract_relative_path": "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json"
-  },
-  "fixture_contract": {
-    "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
-    "fixture_revision": 2,
-    "case_id": "entrance_polygon_short_lane_v1",
-    "actor_guid": 30007,
-    "map_id": 669,
-    "task_authority_enabled": false,
-    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
-    "certifies_gameplay_success": false,
-    "certifies_boss_fidelity": false
+  "missing_boundary": {
+    "actor_identity": "stable bot actor GUID",
+    "required_sequence": [
+      "Hazard candidate admitted",
+      "primary native path incomplete",
+      "local_fallback_attempted=true",
+      "fresh shorter native path complete and accepted",
+      "selected fallback submitted through the executor",
+      "MotionMaster point generator and spline launched",
+      "multiple measured progress samples",
+      "typed terminal outcome"
+    ],
+    "forbidden_interpretation": "Bots do not choose or repair vertical movement. Native terrain and MMAP resolve path height."
   },
   "scope_lock": {
-    "allowed_change": "Review and classify the immutable completed checkpoint evidence. Update only recurrence and next-work authority after an independent verdict.",
+    "allowed_change": "Read-only diagnosis followed by a separately reviewed minimal fixture-only admission repair if required.",
     "forbidden": [
-      "changing movement planning, global tolerances, Magmaw gameplay strategy, priorities, route geometry, class behavior, or database state",
-      "starting an authserver or worldserver, building, reprovisioning, or retrying the completed checkpoint",
-      "claiming the successful native movement as boss fidelity, gameplay success, or Magmaw completion"
-    ],
-    "required_postconditions": [
-      "the independent reviewer verifies source, binary, route, receipt, progress, terminal, cleanup, and DVC identities",
-      "the recurrence ledger records either a reviewed production-boundary pass or the exact remaining defect",
-      "normal gameplay authority remains legacy-only until its separate shadow observation passes"
+      "changing global path tolerances, bot Z coordinates, terrain following, Magmaw gameplay strategy, class behavior, or database state",
+      "starting an authserver or worldserver, configuring, building, provisioning, or retrying before a new reviewed admission",
+      "claiming the completed transfer checkpoint as boss fidelity, gameplay success, or Magmaw completion"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "completion_watchdog",
+    "policy": "typed_terminal_completion_watchdog",
     "configure_tickets": 0,
     "worldserver_build_tickets": 0,
     "bundle_create_attempts": 0,

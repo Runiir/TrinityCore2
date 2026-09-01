@@ -1,0 +1,44 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "coordination:promote_magmaw_transfer_checkpoint_revision_2",
+  "owner_skill": "raid-performance-loop",
+  "classification": "terrain_following_checkpoint_production_boundary_met_gameplay_claims_quarantined",
+  "fixture": {
+    "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
+    "revision": 2,
+    "case_id": "entrance_polygon_short_lane_v1",
+    "actor_guid": 30007,
+    "task_authority_enabled": false,
+    "evidence_boundary": "production"
+  },
+  "evidence": {
+    "capture_dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_5c0b33c4d7_completed_20260901.dvc",
+    "capture_report_sha256": "b5905434dc624711ffae7844653878c225cfcb98bc4bac94b79ffc76e91d7e75",
+    "capture_raw_sha256": "ebba273cf1b151beebc467f120718e3cc85093c51cb7b8d0c45abf4e5a9ab752",
+    "derived_audit_dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_5c0b33c4d7_demux_audit_20260901.dvc",
+    "derived_audit_sha256": "f82baf670adf99728d91474dcb0688f8755e3969dba81ea4a528f0cbd8900d13",
+    "retained_rows": 19,
+    "bound_rows": 19,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "actor_bindings": 50,
+    "actor_binding_rejections": 0
+  },
+  "verified_claim": "The exact authority-off checkpoint crossed the current map-669 native pathfinder, MotionMaster point generator, spline progress, and same-floor logical arrival while following terrain.",
+  "quarantined_claims": [
+    "Magmaw encounter correctness or completion",
+    "task-authority cutover",
+    "DPS, healing, tanking, consumables, or class behavior",
+    "the current incomplete-primary to shorter-fallback planner boundary"
+  ],
+  "required_next_work_unit": {
+    "id": "shard:map669_current_incomplete_primary_complete_fallback",
+    "owner_skill": "raid-shard-architecture",
+    "goal": "Obtain one current-source identity-bound observation where a Hazard request has an incomplete primary native path, selects a fresh complete shorter terrain-following fallback, physically progresses, and reaches one typed terminal.",
+    "first_action": "Diagnose and remove only the fixture Formation-staging preemption that prevented prior observations from entering the Hazard branch.",
+    "worldserver_starts_currently_admitted": 0,
+    "authserver_starts": 0,
+    "database_mutations_allowed": false,
+    "gameplay_mutations_allowed": false
+  }
+}
