@@ -167,31 +167,42 @@ def _native_admission(
     }
 
 
-def _native_identity() -> ControllerRouteHoldLaunchIdentity:
+def _native_identity(
+    *,
+    actor_guid: int = 30006,
+    route_manifest_sha256: str = "c" * 64,
+    route_node_id: str = "bwd.magmaw.chainwielder",
+    seal_sha256: str = "a" * 64,
+    source_commit: str = "b" * 40,
+) -> ControllerRouteHoldLaunchIdentity:
     return ControllerRouteHoldLaunchIdentity(
         scenario_id="blackwing_descent_10n_magmaw_diagnostic",
         runtime_profile="blackwing_descent_10n_magmaw_diagnostic",
         pool_tag="blackwing_descent_10n_magmaw_diagnostic",
-        route_manifest_sha256="c" * 64,
-        route_node_id="bwd.magmaw.chainwielder",
-        actor_guid=30006,
+        route_manifest_sha256=route_manifest_sha256,
+        route_node_id=route_node_id,
+        actor_guid=actor_guid,
         fixture_id=recurrence_admission.NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
-        seal_sha256="a" * 64,
-        source_commit="b" * 40,
+        seal_sha256=seal_sha256,
+        source_commit=source_commit,
     )
 
 
 def _native_hold(
     *, phase: str = "held", generation: int = 1,
     native_stage: str = "disabled",
+    identity: ControllerRouteHoldLaunchIdentity | None = None,
+    case_id: str = "a842_receipt519_complete_wrong_floor",
+    server_epoch: int = 71,
+    attempt_id: int = 9,
 ) -> dict[str, object]:
-    identity = _native_identity()
+    identity = identity or _native_identity()
     terminal = phase == "checkpoint_terminal"
     submitted = native_stage == "completed"
     lifecycle = {
         "stage": native_stage,
         "terminal": terminal,
-        "case_id": "a842_receipt519_complete_wrong_floor",
+        "case_id": case_id,
         "stage_submit_count": 1 if submitted else 0,
         "hazard_submit_count": 1 if submitted else 0,
         "stage_receipt_id": 41 if submitted else 0,
@@ -206,8 +217,8 @@ def _native_hold(
         "ok": True,
         "phase": phase,
         "cohort_id": "default",
-        "server_epoch": 71,
-        "attempt_id": 9,
+        "server_epoch": server_epoch,
+        "attempt_id": attempt_id,
         "scenario_id": identity.scenario_id,
         "runtime_profile": identity.runtime_profile,
         "route_manifest_sha256": identity.route_manifest_sha256,
@@ -231,19 +242,26 @@ def _native_hold(
 def _native_status(
     *, phase: str = "held", generation: int = 1,
     native_stage: str = "disabled",
+    identity: ControllerRouteHoldLaunchIdentity | None = None,
+    case_id: str = "a842_receipt519_complete_wrong_floor",
+    server_epoch: int = 71,
+    attempt_id: int = 9,
 ) -> dict[str, object]:
+    identity = identity or _native_identity()
     hold = _native_hold(
         phase=phase, generation=generation,
         native_stage=native_stage,
+        identity=identity, case_id=case_id,
+        server_epoch=server_epoch, attempt_id=attempt_id,
     )
     return {
         "ok": True,
         "action": "botauto_status",
-        "active_profile": _native_identity().runtime_profile,
+        "active_profile": identity.runtime_profile,
         "raid_runtime": {
             "active": True,
-            "server_epoch": 71,
-            "attempt_id": 9,
+            "server_epoch": server_epoch,
+            "attempt_id": attempt_id,
             "route_progress": {"generation": generation},
             "controller_route_hold": hold,
         },
@@ -255,15 +273,23 @@ def _native_checkpoint_row(
     *, phase: str, native_stage: str,
     action: str = "botauto_native_path_checkpoint",
     case_id: str = "a842_receipt519_complete_wrong_floor",
+    identity: ControllerRouteHoldLaunchIdentity | None = None,
+    server_epoch: int = 71,
+    attempt_id: int = 9,
 ) -> dict[str, object]:
-    hold = _native_hold(phase=phase, native_stage=native_stage)
+    identity = identity or _native_identity()
+    hold = _native_hold(
+        phase=phase, native_stage=native_stage,
+        identity=identity, case_id=case_id,
+        server_epoch=server_epoch, attempt_id=attempt_id,
+    )
     lifecycle = hold["checkpoint_lifecycle"]
     return {
         "ok": True,
         "action": action,
         "authority": "sealed_compiled_map669_native_path_observation_only",
-        "actor_guid": 30006,
-        "fixture_id": recurrence_admission.NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+        "actor_guid": identity.actor_guid,
+        "fixture_id": identity.fixture_id,
         "case_id": case_id,
         **{
             field: lifecycle[field]
@@ -284,9 +310,17 @@ def _native_failed_terminal_row(
     hazard_submit_count: int = 0,
     stage_receipt_id: int = 0,
     hazard_receipt_id: int = 0,
+    identity: ControllerRouteHoldLaunchIdentity | None = None,
+    case_id: str = "a842_receipt519_complete_wrong_floor",
+    server_epoch: int = 71,
+    attempt_id: int = 9,
+    planner_gate: str = "target_z_transition",
+    planner_reason: str = "route_destination_invalid_z_transition",
 ) -> dict[str, object]:
     row = _native_checkpoint_row(
         phase="checkpoint_terminal", native_stage="failed",
+        identity=identity, case_id=case_id,
+        server_epoch=server_epoch, attempt_id=attempt_id,
     )
     lifecycle = row["controller_route_hold"]["checkpoint_lifecycle"]
     row["controller_route_hold"]["checkpoint_stage"] = "failed"
@@ -314,20 +348,26 @@ def _native_failed_terminal_row(
             "target_floor": {"sampled": True, "z": -106.245819},
             "z_delta": {"available": True, "absolute": 316.343811},
             "planner": {
-                "gate": "target_z_transition",
+                "gate": planner_gate,
                 "result": "rejected",
-                "reason": "route_destination_invalid_z_transition",
+                "reason": planner_reason,
             },
         },
     })
     return row
 
 
-def _native_scheduler() -> ControllerRouteHoldScheduler:
-    dialect = checkpoint_controller_dialect(_native_admission(), 30006)
+def _native_scheduler(
+    *,
+    identity: ControllerRouteHoldLaunchIdentity | None = None,
+    admission: dict[str, object] | None = None,
+) -> ControllerRouteHoldScheduler:
+    identity = identity or _native_identity()
+    admission = admission or _native_admission()
+    dialect = checkpoint_controller_dialect(admission, identity.actor_guid)
     assert isinstance(dialect, dict)
     return ControllerRouteHoldScheduler(
-        _native_identity(), **dialect["scheduler_kwargs"],
+        identity, **dialect["scheduler_kwargs"],
     )
 
 
@@ -400,6 +440,96 @@ def test_native_scheduler_records_truthful_failed_terminal_without_gate_pass() -
         "result": "rejected",
         "reason": "route_destination_invalid_z_transition",
     }
+
+
+def test_connected_surface_failed_terminal_is_immutable_after_queued_status() -> None:
+    case_id = "a506_receipt636_incomplete_same_floor"
+    seal = "b8a79df18229977faa976b8927d5349a59b24d7e87acfb063feab1542997e0fb"
+    source = "79b2b0594b2a8f217ec2dcfcfecfb91aaef71413"
+    route_manifest = (
+        "20f093e10d95478817d8dfdfd3fe67fc05b24be50196aecce04ac2a1875dc29a"
+    )
+    server_epoch = 11510036788040262
+    identity = _native_identity(
+        actor_guid=30007,
+        route_manifest_sha256=route_manifest,
+        route_node_id="bwd.entry.regroup",
+        seal_sha256=seal,
+        source_commit=source,
+    )
+    admission = _native_admission(case_id)
+    admission["checkpoint_seal_sha256"] = seal
+    admission["source_commit"] = source
+    scheduler = _native_scheduler(identity=identity, admission=admission)
+
+    scheduler.start()
+    scheduler.observe(_native_hold(
+        identity=identity, case_id=case_id,
+        server_epoch=server_epoch, attempt_id=1,
+    ))
+    scheduler.observe(_native_status(
+        identity=identity, case_id=case_id,
+        server_epoch=server_epoch, attempt_id=1,
+    ))
+    scheduler.observe(_native_status(
+        identity=identity, case_id=case_id,
+        server_epoch=server_epoch, attempt_id=1,
+    ))
+    scheduler.observe(_native_checkpoint_row(
+        phase="armed", native_stage="armed",
+        identity=identity, case_id=case_id,
+        server_epoch=server_epoch, attempt_id=1,
+    ))
+
+    terminal = _native_failed_terminal_row(
+        identity=identity, case_id=case_id,
+        server_epoch=server_epoch, attempt_id=1,
+        planner_gate="complete_path_required",
+        planner_reason="native_descent_complete_path_required",
+    )
+    terminal["movement_planner"].update({
+        "bot_guid": 30007,
+        "intent_reason": f"native_path_checkpoint_stage:{case_id}",
+        "request": {
+            "map": 669,
+            "x": -302.471405,
+            "y": -31.8600292,
+            "z": 210.098007,
+        },
+        "target_floor": {
+            "sampled": True,
+            "valid": True,
+            "z": -106.245819,
+        },
+        "z_delta": {
+            "available": True,
+            "absolute": 316.343811,
+            "threshold": 4,
+        },
+    })
+    assert scheduler.observe(terminal) == []
+    terminal_receipt = scheduler.receipt()
+    assert terminal_receipt["phase"] == "checkpoint_terminal_failed"
+    assert terminal_receipt["gate_passed"] is False
+    assert terminal_receipt["failure_reason"] is None
+    assert terminal_receipt["checkpoint_terminal_observation"] == {
+        "ok": False,
+        "stage": "failed",
+        "terminal": True,
+        "outcome": "native_path_checkpoint_stage_submit_failed",
+        "movement_planner": terminal["movement_planner"],
+    }
+
+    queued_status = _native_status(
+        phase="checkpoint_terminal", native_stage="failed",
+        identity=identity, case_id=case_id,
+        server_epoch=server_epoch, attempt_id=1,
+    )
+    queued_status["raid_runtime"]["controller_route_hold"] = json.loads(
+        json.dumps(terminal["controller_route_hold"])
+    )
+    assert scheduler.observe(queued_status) == []
+    assert scheduler.receipt() == terminal_receipt
 
 
 @pytest.mark.parametrize(

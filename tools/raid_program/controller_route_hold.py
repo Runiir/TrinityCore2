@@ -543,7 +543,7 @@ class ControllerRouteHoldScheduler:
     def observe(self, row: dict[str, Any]) -> list[str]:
         """Consume one actual native JSON row and return ordered commands."""
 
-        if self.failed or not isinstance(row, dict):
+        if self.failed or self.complete or not isinstance(row, dict):
             return []
         if row.get("action") == "botauto_status":
             return self._observe_status(row)
