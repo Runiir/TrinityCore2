@@ -18,6 +18,10 @@ from tools.raid_program.capture_forced_evidence import (
     validate_forced_combat_log_bundle,
     validate_forced_evidence_bundle,
 )
+from tools.raid_program.capture_fixture_terminal import (
+    bind_fixture_terminal_evidence,
+    controller_fixture_terminal_observation,
+)
 from tools.raid_program.capture_progress import (
     observe_monotonic_semantic_progress,
     ready_for_native_readycheck,
@@ -76,55 +80,6 @@ class CaptureRunResult:
     trace_transport_gate: dict[str, Any] | None
     telemetry_abort: dict[str, Any]
     log_bytes: bytes
-
-
-def controller_fixture_terminal_observation(
-    scheduler: Any, *, elapsed_seconds: float,
-) -> dict[str, Any]:
-    """Project one verified failed checkpoint into a typed capture terminal.
-
-    ``checkpoint_terminal_failed`` is set only after the scheduler validates
-    the native receipt, lifecycle, identity, and planner payload. It is a
-    completed fixture observation, not a successful gameplay gate and not a
-    gameplay failure. Keeping this projection separate prevents the generic
-    semantic-stall watchdog from relabelling an already terminal fixture.
-    """
-
-    if scheduler is None or scheduler.phase != "checkpoint_terminal_failed":
-        return {"detected": False}
-    receipt = scheduler.receipt()
-    observation = receipt.get("checkpoint_terminal_observation")
-    lifecycle = receipt.get("checkpoint_terminal_lifecycle")
-    if (
-        scheduler.complete is not True
-        or scheduler.failed is True
-        or receipt.get("gate_passed") is not False
-        or receipt.get("checkpoint_terminal_count") != 1
-        or receipt.get("checkpoint_terminal_stage") != "failed"
-        or not isinstance(observation, dict)
-        or observation.get("ok") is not False
-        or observation.get("terminal") is not True
-        or observation.get("stage") != "failed"
-        or not isinstance(lifecycle, dict)
-        or lifecycle.get("terminal") is not True
-        or lifecycle.get("stage") != "failed"
-        or observation.get("outcome") != lifecycle.get("outcome")
-    ):
-        raise RuntimeError("controller route hold failed terminal invalid")
-    return {
-        "detected": True,
-        "classification": "fixture_terminal_observation",
-        "terminal_kind": "native_path_checkpoint_failed_terminal",
-        "success": False,
-        "gate_passed": False,
-        "scheduler_phase": receipt["phase"],
-        "fixture_id": receipt["launch_identity"]["fixture_id"],
-        "case_id": lifecycle.get("case_id"),
-        "stage": observation["stage"],
-        "outcome": observation["outcome"],
-        "movement_planner": observation.get("movement_planner"),
-        "elapsed_seconds": round(elapsed_seconds, 3),
-    }
 
 
 def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
@@ -712,29 +667,15 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                         forced_evidence_report = request_final_evidence(
                             "controller_route_hold_fixture_terminal"
                         )
-                        fixture_terminal["final_forced_evidence"] = (
-                            forced_evidence_report.get("gate_passed") is True
+                        fixture_terminal, telemetry_abort = (
+                            bind_fixture_terminal_evidence(
+                                fixture_terminal,
+                                forced_evidence_report,
+                                elapsed_seconds=(
+                                    time.monotonic() - monitor_started_at
+                                ),
+                            )
                         )
-                        fixture_terminal["final_forced_evidence_report"] = (
-                            forced_evidence_report
-                        )
-                        if forced_evidence_report.get("gate_passed") is not True:
-                            telemetry_abort = {
-                                "detected": True,
-                                "classification": "infrastructure_abort",
-                                "reason": (
-                                    "fixture_terminal_forced_evidence_incomplete"
-                                ),
-                                "missing_channels": forced_evidence_report.get(
-                                    "missing_channels", []
-                                ),
-                                "rejections": forced_evidence_report.get(
-                                    "rejections", []
-                                ),
-                                "elapsed_seconds": round(
-                                    time.monotonic() - monitor_started_at, 3
-                                ),
-                            }
                         break
                     for status in new_statuses:
                         if args.trace_transport_smoke:
