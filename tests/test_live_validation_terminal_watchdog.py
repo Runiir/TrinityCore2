@@ -242,6 +242,33 @@ def test_underfilled_or_nonunique_cohort_cannot_terminalize() -> None:
     )
     assert raid_terminal_watchdog_failure(nonunique) is None
 
+    duplicate_runtime = _report(
+        {"admission_phase": "terminal", "bot_actions_enabled": False},
+        failure_reason="validation_active_hunter_pet_admission_identity_drift",
+    )
+    duplicate_runtime["status"]["raid_runtime"]["roster"][1]["guid"] = 1000
+    assert raid_terminal_watchdog_failure(duplicate_runtime) is None
+
+    duplicate_admission = _report(
+        {"admission_phase": "terminal", "bot_actions_enabled": False},
+        failure_reason="validation_active_hunter_pet_admission_identity_drift",
+    )
+    duplicate_admission["status"]["raid_runtime"]["admission_receipt"][
+        "members"
+    ][1]["guid"] = 1000
+    assert raid_terminal_watchdog_failure(duplicate_admission) is None
+
+
+def test_explicit_zero_active_bots_never_falls_back_to_legacy_bots_count() -> None:
+    report = _report(
+        {"admission_phase": "terminal", "bot_actions_enabled": False},
+        failure_reason="validation_active_hunter_pet_admission_identity_drift",
+    )
+    report["status"]["active_bots"] = 0
+    report["status"]["bots"] = 10
+
+    assert raid_terminal_watchdog_failure(report) is None
+
 
 def test_successful_clear_precedes_later_action_gate_failure() -> None:
     report = _report(
@@ -285,15 +312,54 @@ def test_incomplete_or_wrong_manifest_completion_does_not_hide_action_gate() -> 
             }
         ]
     }
-    report["evidence"]["manifest_completion_evidence"] = [
-        {"route_node_id": "wrong.node", "route_generation": 4}
-    ]
+    correct_scope = {
+        "route_node_id": "bwd.magmaw.encounter",
+        "route_generation": 4,
+    }
+    report["evidence"].update(
+        {
+            "manifest_completion_evidence": [
+                {"route_node_id": "wrong.node", "route_generation": 4}
+            ],
+            "route_terminal_evidence": [correct_scope],
+            "real_boss_kill_evidence": [correct_scope],
+        }
+    )
 
     terminal = raid_terminal_watchdog_failure(report)
     assert terminal is not None
     assert terminal["failure_reason"] == (
         "validation_active_hunter_pet_admission_identity_drift"
     )
+
+
+def test_missing_final_completion_does_not_hide_action_gate() -> None:
+    report = _report(
+        {"admission_phase": "terminal", "bot_actions_enabled": False},
+        failure_reason="validation_active_hunter_pet_admission_identity_drift",
+    )
+    report["completion_reason"] = "validation_route_manifest_complete"
+    report["validation_route_manifest"] = {
+        "routes": [
+            {
+                "route_node_id": "bwd.magmaw.encounter",
+                "route_generation": 4,
+                "kind": "boss",
+            }
+        ]
+    }
+    scope = {"route_node_id": "bwd.magmaw.encounter", "route_generation": 4}
+    report["evidence"].update(
+        {
+            "manifest_completion_evidence": [],
+            "route_terminal_evidence": [scope],
+            "real_boss_kill_evidence": [scope],
+        }
+    )
+
+    terminal = raid_terminal_watchdog_failure(report)
+    assert terminal is not None
+    assert terminal["kind"] == "cohort_action_gate_failure"
 
 
 def test_terminal_gate_still_captures_and_cleans_up(tmp_path) -> None:

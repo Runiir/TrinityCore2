@@ -4573,11 +4573,28 @@ def raid_terminal_watchdog_failure(
         )
     )
     if isinstance(evidence, Mapping) and complete_manifest_shape:
-        strict = strict_manifest_evidence(dict(evidence), dict(manifest))
-        strict_clear = (
-            not strict["missing_terminal_route_nodes"]
-            and not strict["missing_boss_route_nodes"]
-        )
+        try:
+            strict = strict_manifest_evidence(dict(evidence), dict(manifest))
+            final_route = routes[-1]
+            final_scope = (
+                str(final_route.get("route_node_id") or ""),
+                int(final_route.get("route_generation") or len(routes)),
+            )
+            completion_scopes = {
+                (
+                    str(row.get("route_node_id") or ""),
+                    int(row.get("route_generation") or 0),
+                )
+                for row in evidence.get("manifest_completion_evidence") or []
+                if isinstance(row, Mapping)
+            }
+            strict_clear = (
+                not strict["missing_terminal_route_nodes"]
+                and not strict["missing_boss_route_nodes"]
+                and final_scope in completion_scopes
+            )
+        except (TypeError, ValueError):
+            strict_clear = False
     independently_accepted_clear = (
         bool(report.get("acceptable_final_evidence"))
         and str(report.get("completion_reason") or "")
@@ -4644,9 +4661,10 @@ def raid_terminal_watchdog_failure(
         expected_size = int(runtime.get("expected_size") or 0)
         active_size = int(runtime.get("active_size") or 0)
         provisioned_size = int(runtime.get("provisioned_member_count") or 0)
-        reported_active_size = int(
-            status.get("active_bots") or status.get("bots") or 0
-        )
+        reported_active_value = status.get("active_bots")
+        if reported_active_value is None:
+            reported_active_value = status.get("bots")
+        reported_active_size = int(reported_active_value or 0)
         target_size = int(status.get("target_bots") or 0)
         lease_count = int(status.get("lease_count") or 0)
         group_guid = int(runtime.get("group_guid") or 0)
@@ -4683,6 +4701,10 @@ def raid_terminal_watchdog_failure(
         roster_guids_match = (
             runtime_roster_bound
             and receipt_roster_bound
+            and len({int(member["guid"]) for member in runtime_roster})
+            == expected_size
+            and len({int(member["guid"]) for member in receipt_members})
+            == expected_size
             and {int(member["guid"]) for member in runtime_roster}
             == {int(member["guid"]) for member in receipt_members}
         )
