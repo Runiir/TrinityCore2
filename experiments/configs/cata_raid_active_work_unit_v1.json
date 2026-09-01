@@ -1,20 +1,20 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_start",
+  "work_unit": "evidence:magmaw_transfer_lane_prestart_bundle_dialect",
   "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "runtime:magmaw_transfer_lane_authority_off_live_shadow",
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "classification": "capture_dialect_reviewed_exact_build_and_one_start_required",
+  "next_work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_start",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "classification": "capture_dialect_reviewed_prestart_bundle_and_ledger_missing",
   "epoch_id": "magmaw_transfer_lane_task_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "exact_build_profile_seal_and_one_start_required",
+  "gate_state": "prestart_bundle_and_ledger_registration_required",
   "immutable_input_commit": "ef7e944c9337565b1513b356776156f32a6d515a",
   "observed_at_commit": "ef7e944c9337565b1513b356776156f32a6d515a",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "next_action": "Create the exact clean fast8_v4 build and sealed fixture profile, then run one no-auth/no-retry worldserver checkpoint and publish compact evidence.",
+  "next_action": "Add one enumerated Magmaw checkpoint dialect to the existing atomic prestart bundle flow and register its observation-only recurrence boundary; independently review before building.",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_transfer_lane_capture_dialect_handoff_v1.json",
     "sha256": "ab90429e14c6200563031670721939cb13860ae47dc0a9c0b3751207803c3768",
@@ -23,48 +23,45 @@
   },
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": true,
+    "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "worldserver_start_admitted": true,
-    "worldserver_start_limit": 1,
+    "worldserver_start_admitted": false,
+    "worldserver_start_limit": 0,
     "authserver_start_admitted": false,
     "database_provisioning_mutations_allowed": false,
     "retry_admitted": false,
-    "dvc_publication_required_after_terminal": true
+    "dvc_publication_required_after_terminal": false
   },
   "scope_lock": {
-    "allowed_change": "No gameplay change. Produce exact build/profile/seal inputs outside the worktree, execute the dedicated map-669 fixture once, cleanly stop, publish compact evidence, and evict raw payloads.",
+    "allowed_change": "Add one fail-closed, enumerated map-669 Magmaw transfer-checkpoint dialect to the existing atomic prestart bundle/composer, register its observation-only recurrence boundary, and add focused tests.",
     "forbidden": [
-      "changing tracked source, runtime behavior, movement tolerances, class rotations, encounter strategy, database state, or authority configuration after the exact build commit",
-      "starting authserver or more than one worldserver",
-      "retrying a failed or incomplete checkpoint in this work unit",
+      "changing C or C++ runtime behavior, movement tolerances, class rotations, encounter strategy, database state, or task authority",
+      "starting worldserver or authserver, building, provisioning, or publishing DVC evidence in this work unit",
+      "generalizing the bundle into a new fixture framework or accepting unenumerated actor, fixture, case, route, or config values",
       "using generic controller lifecycle as fixture success authority",
       "classifying fixture completion as gameplay, boss, raid, or task-authority success",
       "retaining bulky raw evidence locally after verified DVC publication"
     ],
     "required_postconditions": [
-      "the fast8_v4 build receipt, binary, config, profile, seal, source, and clean tree share exact identity",
-      "pinned map-669 assets pass before startup",
-      "one dedicated candidate crosses the sole kernel, native planner, MotionMaster, spline, and later progress observations",
-      "wipe generation and instance identity remain frozen through terminal",
-      "terminal classification preserves complete-batch preflight and gameplay-failure precedence",
-      "worldserver cleanup is observed and no authserver or worldserver remains",
-      "compact evidence is DVC-published, remotely verified, and raw local payloads are evicted"
+      "the atomic bundle emits the exact actor 30007, fixture, case, full selected route, authority-off config, seal, admission, and capture option",
+      "actor 30008, route-suffix substitution, authority-on config, seal drift, fixture drift, and case drift fail closed",
+      "the recurrence ledger can author exactly one observation-only fixture-expansion target with no unrelated request",
+      "existing Chainwielder and native-path bundle dialects remain compatible",
+      "all modified production modules remain below 1000 lines"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "prompt_typed_fixture_terminal",
-    "worldserver_starts": 1,
+    "policy": "bounded_implementation_and_independent_review",
+    "worldserver_starts": 0,
     "retries": 0,
     "terminal_edges": [
-      "dedicated_fixture_terminal_passed",
-      "dedicated_fixture_terminal_failed",
+      "prestart_bundle_dialect_tests_passed",
+      "recurrence_registration_tests_passed",
+      "existing_dialect_compatibility_failed",
       "identity_or_scope_drift",
-      "planner_spline_or_progress_join_failed",
-      "preflight_or_gameplay_failure_precedence",
-      "infrastructure_loss_or_explicit_interruption"
+      "scope_or_size_violation"
     ]
   }
 }
