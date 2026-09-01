@@ -1,0 +1,31 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:map669_current_incomplete_primary_complete_fallback",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "quarantined_low_value_fixture_staging_gap",
+  "verdict": "Do not implement the multi-leg fixture now. It does not materially unblock the universal task-state migration or Magmaw gameplay canary.",
+  "first_broken_edge": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgrNativePathCheckpoint.cpp",
+    "stage": "Formation staging before Hazard submission",
+    "reason": "The long terrain-following path resolved approximately 4.39 yards short of the historical source point, while the fixture required exact X/Y arrival within 0.25 yards.",
+    "planner_outcome": "native_descent_complete_path_required",
+    "hazard_submit_count": 0,
+    "interpretation": "Formation did not preempt Hazard. Hazard was never submitted. This is a fixture prerequisite defect, not a priority-arbitration or bot-Z defect."
+  },
+  "preserved_runtime_rule": "Bots choose planar movement intent; TrinityCore PathGenerator, MotionMaster, and the spline follow terrain and own resolved Z.",
+  "deferred_repair": {
+    "shape": "Two terrain-following Formation legs followed by one historical Hazard request, with leg-specific receipts and multi-tick progress proof.",
+    "revisit_only_if": "A reviewed production admission explicitly makes the incomplete-primary to complete-shorter-fallback boundary mandatory for a gameplay decision.",
+    "forbidden": [
+      "bot-side Z correction",
+      "teleporting the fixture actor",
+      "global path tolerance changes",
+      "inventing an unobserved entrance-local incomplete-path coordinate"
+    ]
+  },
+  "evidence": [
+    "artifacts/cata_raid_program/phase1_raid_foundation_69db62a09d_native_path_floor_probe_terminal_20260901.dvc",
+    "artifacts/cata_raid_program/phase1_439ddda593_projected_endpoint_terminal_20260901.dvc",
+    "artifacts/cata_raid_program/phase1_raid_foundation_afd09bacaa_map669_composite_replay_gameplay_failure_20260831.dvc"
+  ]
+}

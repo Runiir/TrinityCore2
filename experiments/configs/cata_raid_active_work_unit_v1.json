@@ -1,27 +1,50 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:map669_current_incomplete_primary_complete_fallback",
-  "owner_skill": "raid-shard-architecture",
-  "next_work_unit": "evidence:review_map669_current_fallback_lifecycle",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "one_current_source_native_fallback_boundary_missing",
-  "epoch_id": "map669_current_fallback_path_20260901",
+  "work_unit": "runtime:magmaw_task_state_intent_collection_vertical_slice",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "next_work_unit": "review:magmaw_task_state_intent_collection",
+  "next_owner_skill": "raid-performance-loop",
+  "classification": "resume_universal_task_state_migration",
+  "epoch_id": "magmaw_task_state_migration_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
-  "mode": "10N",
-  "gate_state": "design_and_admission_review_required_before_build_or_start",
-  "observed_at_commit": "94d95f4638",
-  "behavior_change": false,
+  "mode": "10N canary, architecture intended for all raid sizes and difficulties",
+  "gate_state": "offline_implementation_only_independent_review_required",
+  "observed_at_commit": "30ea03542c",
+  "behavior_change": true,
   "evidence_contract_change": false,
-  "next_action": "Inspect the current fixture and retained 69db, 439dd, and afd09 evidence; remove only the fixture Formation-staging preemption so one admitted Hazard request can exercise incomplete primary to complete shorter native fallback. No build or server start is admitted yet.",
+  "next_action": "Use the existing MagmawFacts, MagmawCoordinator, persistent TransferLaneTask, and BotIntentSink foundations to remove one bounded hidden pre-arbitration slice from AdaptiveMagmawStrategy. Preserve legacy behavior outside the exact slice and make every eligible candidate visible to the existing action arbiter and decision trace.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_promotion_handoff_v1.json",
-    "promoted_fixture_ledger": "experiments/configs/cata_raid_magmaw_transfer_lane_checkpoint_recurrence_v1.json"
+    "completed_checkpoint_promotion": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_promotion_handoff_v1.json",
+    "quarantined_fallback_fixture": "experiments/configs/cata_raid_map669_fallback_fixture_quarantine_handoff_v1.json"
+  },
+  "existing_foundation": [
+    "pure MagmawFacts reducer and snapshot cache",
+    "raid-wide MagmawCoordinator and sticky assignments",
+    "persistent TransferLaneTask and runner",
+    "BotIntentSink",
+    "default-off task-authority selector with legacy equivalence checks"
+  ],
+  "implementation_scope": {
+    "allowed": [
+      "split BotAdaptiveMagmawStrategy.h by concern before it exceeds 1000 lines",
+      "replace one ordered optional-Movement chain with independently emitted typed movement intents",
+      "preserve safety priority, resource masks, expiry, utility, deterministic tie-breaks, and legacy compatibility",
+      "add compiled deterministic tests that expose every eligible proposal and prove the arbiter selects the intended winner",
+      "add typed rejection/progress diagnostics for the migrated slice"
+    ],
+    "forbidden": [
+      "global path tolerance or bot-Z changes",
+      "new encounter coordinates without evidence",
+      "class rotation, DPS coefficient, consumable, pet, database, or boss-script changes",
+      "building or starting worldserver/authserver before independent source review",
+      "rewriting all encounters into a generic framework in one change"
+    ]
   },
   "program_scope": {
     "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": false,
+    "gameplay_mutations_allowed": true,
     "configure_admitted": false,
     "configure_limit": 0,
     "worldserver_build_admitted": false,
@@ -31,42 +54,23 @@
     "worldserver_start_limit": 0,
     "authserver_start_admitted": false,
     "authserver_start_limit": 0,
-    "canonical_prepare_only_provisioning_admitted": false,
-    "canonical_prepare_only_provisioning_limit": 0,
     "other_database_mutations_allowed": false,
     "retry_admitted": false,
-    "retry_limit": 0,
-    "dvc_publication_required_after_terminal": true
+    "retry_limit": 0
   },
-  "missing_boundary": {
-    "actor_identity": "stable bot actor GUID",
-    "required_sequence": [
-      "Hazard candidate admitted",
-      "primary native path incomplete",
-      "local_fallback_attempted=true",
-      "fresh shorter native path complete and accepted",
-      "selected fallback submitted through the executor",
-      "MotionMaster point generator and spline launched",
-      "multiple measured progress samples",
-      "typed terminal outcome"
-    ],
-    "forbidden_interpretation": "Bots do not choose or repair vertical movement. Native terrain and MMAP resolve path height."
-  },
-  "scope_lock": {
-    "allowed_change": "Read-only diagnosis followed by a separately reviewed minimal fixture-only admission repair if required.",
-    "forbidden": [
-      "changing global path tolerances, bot Z coordinates, terrain following, Magmaw gameplay strategy, class behavior, or database state",
-      "starting an authserver or worldserver, configuring, building, provisioning, or retrying before a new reviewed admission",
-      "claiming the completed transfer checkpoint as boss fidelity, gameplay success, or Magmaw completion"
-    ]
-  },
+  "acceptance": [
+    "no changed C or C++ file reaches 1000 physical lines",
+    "the migrated producers no longer hide alternatives through source-code order",
+    "the existing arbiter receives and traces all eligible candidates",
+    "persistent task state survives safety preemption and resumes without reconstructing identity",
+    "focused deterministic tests and git diff checks pass",
+    "an independent Sol-high review returns GO before any build or live run"
+  ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "typed_terminal_completion_watchdog",
+    "policy": "offline_tests_then_review",
     "configure_tickets": 0,
     "worldserver_build_tickets": 0,
-    "bundle_create_attempts": 0,
-    "canonical_prepare_only_invocations": 0,
     "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0
