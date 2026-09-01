@@ -1,43 +1,44 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:magmaw_task_state_authority_one_start",
+  "work_unit": "shard:magmaw_repaired_evidence_one_start",
   "owner_skill": "raid-shard-architecture",
-  "next_work_unit": "runtime:first_trace_backed_magmaw_failure",
+  "next_work_unit": "runtime:first_trace_backed_magmaw_failure_or_acceptance",
   "next_owner_skill": "raid-bot-runtime-implementation",
   "classification": "implementation_pending_live_verification",
-  "epoch_id": "magmaw_task_state_migration_20260901",
+  "epoch_id": "magmaw_repaired_evidence_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N_canary_for_universal_architecture",
   "architecture_scope": "Magmaw is only the first vertical slice. Accept only reusable facts, sticky assignments, persistent tasks, independent intents, shared arbitration, and measured native outcomes.",
-  "gate_state": "one_incremental_build_and_one_completion_watchdog_start_admitted",
-  "observed_at_commit": "3e6d638cd8bf4330efd13c70e36dcec0fdb845a2",
-  "behavior_change": false,
-  "evidence_contract_change": false,
+  "gate_state": "reviewed_repairs_admit_one_exact_build_and_one_completion_watchdog_start",
+  "observed_at_commit": "b39c82f1c7ddb2c29a43bdf383d5bbb3995a89d6",
+  "behavior_change": true,
+  "evidence_contract_change": true,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_task_state_shadow_comparison_blocked_handoff_v1.json",
-    "sha256": "bd18e917df232879299a683236fc0f8c0b4b097b251b82cae493d195077f64c8"
+    "path": "experiments/configs/cata_raid_magmaw_48abb13c6d_live2_repair_handoff_20260901.json",
+    "sha256": "a3e8de0710c41055595bd3c8d3b22fcd0bb3eda0be7098e25ed0c1792783c41d"
   },
   "first_broken_edge": {
-    "run_id": "trinity-magmaw-5ea9bb9b8e-chainwielder-hazard-clear.attempt1",
+    "run_id": "magmaw-task-state-canary-48abb13c6d-live2",
     "route_node_id": "bwd.magmaw.encounter",
-    "cause": "The prior binary lacked the admitted task-state adapter and actor-specific persistent parasite response now present at commit 3e6d638cd8.",
-    "terminal": "death_loop_watchdog",
-    "evidence": "experiments/configs/cata_raid_magmaw_task_state_shadow_comparison_blocked_handoff_v1.json"
+    "cause": "Actor 30010 submitted parasite_contact_evade, the native planner rejected route_destination_endpoint_mismatch, and Parasitic Infection followed. The retained packet lacked the exact hazard-bound request/resolved geometry needed to classify the rejection.",
+    "terminal": "validation_active_hunter_pet_admission_identity_drift",
+    "evidence": "experiments/configs/cata_raid_magmaw_48abb13c6d_live2_repair_handoff_20260901.json"
   },
-  "next_action": "Incrementally configure/build the exact descriptor commit once under fast8_v4, enable TransferLaneTaskAuthority only in the generated canary runtime config, and run one autonomous completion-watchdog Magmaw canary. Publish compact evidence and evict raw data at terminal.",
+  "next_action": "Configure/build the clean descriptor commit once under fast8_v4, derive and hash one canary config with TransferLaneTaskAuthority enabled, provision only the scenario-owned cohort if strict readback requires it, and run one autonomous completion-watchdog Magmaw canary. Publish compact evidence and evict raw data at terminal.",
   "implementation_scope": {
     "allowed": [
       "one queued incremental configure if CMake regeneration is required",
       "one queued incremental worldserver build with eight compiler jobs and one linker",
       "one validation-only BotWorld.Magmaw.TransferLaneTaskAuthority=1 runtime overlay while the repository default remains off",
+      "one deterministic scenario-owned provisioning/reset followed by strict roster and instance readback when required",
       "one autonomous 10N Magmaw completion-watchdog worldserver start",
       "DPS, HPS, deaths, infections, vomit, task identity, action outcomes, native movement progress, exposed-head targeting, stall, and route terminal capture",
       "compact DVC publication, remote verification, local raw-payload eviction, and server cleanup"
     ],
     "forbidden": [
       "bot-side Z adjustment, vertical steering, target-height normalization, teleportation, MMAP tolerance, fallback fraction, route coordinate, or global movement-planner changes",
-      "source, SQL, roster, database, encounter, class, pet, consumable, or healer mutation during this evidence unit",
+      "source, SQL, roster-definition, encounter, class, pet-gameplay, consumable, or healer mutation during this evidence unit",
       "changing the fixed Mage/Hunter bait pair or granting lane ownership to a non-baiter",
       "authserver start, manual assistance, retry, fixed raid success timer, or treating action submission as progress",
       "claiming success from build completion or synthetic replay alone"
@@ -53,7 +54,8 @@
     "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": false,
+    "database_mutations_allowed": true,
+    "database_mutation_scope": "Only deterministic provisioning/reset of the named blackwing_descent_10n_magmaw_diagnostic scenario-owned cohort and instance state before the single start; strict readback is mandatory.",
     "dvc_publication_required_after_terminal": true
   },
   "acceptance": [
@@ -63,6 +65,8 @@
     "native pathing follows terrain; no bot-authored vertical movement or Z correction occurs",
     "the exposed head wins damage targeting during its window",
     "the terminal report contains DPS and HPS plus deaths, infections, vomit, task outcomes, movement progress, and stall/clear status",
+    "an endpoint rejection retains one exact actor/hazard/request/primary-resolved/path-floor/clearance/terminal receipt in the trace stream",
+    "hunter pet identity remains stable across ordinary Active lifecycle changes and does not close the cohort action gate",
     "the completion watchdog stops on normal clear or the first typed gameplay/infrastructure terminal",
     "cleanup proves no owned worldserver remains and raw evidence is evicted after verified DVC publication"
   ],

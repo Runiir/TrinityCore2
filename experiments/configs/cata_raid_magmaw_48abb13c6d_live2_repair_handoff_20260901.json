@@ -1,0 +1,80 @@
+{
+  "schema": "cata_raid_magmaw_repair_handoff_v1",
+  "run_id": "magmaw-task-state-canary-48abb13c6d-live2",
+  "source_commit": "48abb13c6d",
+  "classification": "gameplay_failure",
+  "route_results": {
+    "entrance": "complete",
+    "chainwielder": {
+      "result": "clear",
+      "deaths": 0,
+      "party_damage": 4649400,
+      "party_dps": 84534.545,
+      "party_hps": 3006.218
+    },
+    "drudges": {
+      "result": "clear",
+      "deaths": 0,
+      "party_damage": 6974100,
+      "party_dps": 112485.484,
+      "party_hps": 33244.871
+    },
+    "magmaw": {
+      "result": "wipe_then_terminal_plateau",
+      "party_damage": 23634824,
+      "party_dps": 58502.04,
+      "party_healing": 7265882,
+      "party_hps": 17984.856
+    }
+  },
+  "first_broken_edge": {
+    "actor_guid": 30010,
+    "candidate": "parasite_contact_evade",
+    "native_submission_ms": 1788265565117,
+    "planner_rejection_ms": 1788265567117,
+    "planner_reason": "route_destination_endpoint_mismatch",
+    "first_parasitic_infection_ms": 1788265571284,
+    "missing_evidence": [
+      "exact requested destination",
+      "native primary resolved endpoint",
+      "same-floor proof",
+      "bound parasite GUID and position",
+      "hazard-clearance delta"
+    ],
+    "movement_contract": "The policy selects a logical planar destination. Native PathGenerator, MMAP, MotionMaster, and the movement spline follow terrain. Z is floor evidence only and is never a bot movement command."
+  },
+  "terminal_edge": {
+    "failure_reason": "validation_active_hunter_pet_admission_identity_drift",
+    "actor_guid": 30009,
+    "interpretation": "PlayerPetData.Active was treated as immutable identity even though ordinary pet dismiss/save can clear it."
+  },
+  "reviewed_repairs": {
+    "hunter_pet_identity": {
+      "implementation_commit": "164abfedfd",
+      "review": "GO for exact-source build",
+      "contract": "Resolve the live pet number to the exact persisted row; compare stable pet ID, owner, entry, spellbook, autocasts, and receipt hash; exclude mutable Active lifecycle state."
+    },
+    "hazard_path_diagnostics": {
+      "implementation_commit": "9517eee614",
+      "review": "GO for exact-source build",
+      "contract": "Retain the exact rejected hazard receipt across same-tick movement attempts and publish bound actor, hazard, request, primary resolved endpoint, path/floor proof, clearance delta, and terminal reason without changing movement admission."
+    },
+    "terminal_watchdog": {
+      "implementation_commit": "b39c82f1c7",
+      "review": "GO for exact-source build",
+      "contract": "Classify an exact cohort action-gate terminal before heartbeat append; require strict manifest proof for clear precedence; preserve cleanup and use no fixed raid success timer."
+    }
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_48abb13c6d_magmaw_task_canary_20260901.dvc",
+    "remote_verified": true,
+    "workspace_payload_evicted": true
+  },
+  "next_work_unit": {
+    "id": "shard:magmaw_repaired_evidence_one_start",
+    "purpose": "Build the exact reviewed source once and run one autonomous completion-watchdog canary to verify the pet lifecycle repair and capture the decisive hazard-bound planner receipt.",
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "retries": 0
+  }
+}
