@@ -136,11 +136,12 @@ These shutdown and persistence duties belong to the capture controller or coordi
   the detector-induced terminal edge.
 - In uncapped mode, use channel-freshness and monotonic semantic-progress clocks. Activity churn, casting toggles, or changing victim GUIDs are not progress.
 - Treat an authoritative terminal cohort action gate as a completion-watchdog
-  terminal on the next heartbeat. Treat a full wipe as terminal only when no
-  typed recovery state or explicit recovery budget remains. Preserve the final
-  heartbeat, diagnosis, trace, combat log, bot cleanup, and server shutdown;
-  do not wait for the broader semantic-stall clock after either terminal is
-  proven.
+  terminal on the next heartbeat, and classify it before appending that
+  heartbeat. Do not infer an unrecoverable terminal from `all_dead` plus an
+  absent recovery field; require a native typed recovery-failed outcome and
+  never override a proven clear. Preserve the final heartbeat, diagnosis,
+  trace, combat log, bot cleanup, and server shutdown; do not wait for the
+  broader semantic-stall clock after a terminal is proven.
 - Inspect the resolved candidate set when a top-level decision reports `ok`.
   A successful wait or suppression lane does not erase a failed movement or
   interaction candidate in the same tick. After the configured repeated-action
