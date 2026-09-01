@@ -10,13 +10,13 @@
   "boss": "magmaw",
   "mode": "10N canary, architecture intended for all raid sizes and difficulties",
   "gate_state": "offline_implementation_only_independent_review_required",
-  "observed_at_commit": "30ea03542c",
+  "observed_at_commit": "30ea03542c65dd4fac8e8ed6e555a9831707bffb",
   "behavior_change": true,
   "evidence_contract_change": false,
   "next_action": "Use the existing MagmawFacts, MagmawCoordinator, persistent TransferLaneTask, and BotIntentSink foundations to remove one bounded hidden pre-arbitration slice from AdaptiveMagmawStrategy. Preserve legacy behavior outside the exact slice and make every eligible candidate visible to the existing action arbiter and decision trace.",
   "source_handoff": {
-    "completed_checkpoint_promotion": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_promotion_handoff_v1.json",
-    "quarantined_fallback_fixture": "experiments/configs/cata_raid_map669_fallback_fixture_quarantine_handoff_v1.json"
+    "path": "experiments/configs/cata_raid_map669_fallback_fixture_quarantine_handoff_v1.json",
+    "sha256": "8125d12c907c26940bd475b460904a59cd60f47d33903d7dd0ad0fcad0370a6d"
   },
   "existing_foundation": [
     "pure MagmawFacts reducer and snapshot cache",
@@ -68,7 +68,7 @@
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "offline_tests_then_review",
+    "policy": "completion_watchdog",
     "configure_tickets": 0,
     "worldserver_build_tickets": 0,
     "worldserver_starts": 0,
