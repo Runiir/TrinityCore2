@@ -144,7 +144,7 @@ static std::vector<MagmawTransferLaneActorObservation> Observations(
             { board.CurrentScope.WipeGeneration,
                 actor.Alive ? 0u : mageLife + 1,
                 actor.Guid == PlayerGuid(400) ? hunterLife : mageLife, true },
-            actor.Position, true, actor.Alive, {} });
+            actor.Position, true, actor.Alive, {}, std::nullopt });
     return result;
 }
 
@@ -595,18 +595,21 @@ int main()
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
             "Encounters/Magmaw/BotMagmawTransferLaneTask.cpp"),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+            "Encounters/Magmaw/BotMagmawTransferLaneTaskRunner.cpp"),
+        str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
             "Encounters/Magmaw/BotMagmawTransferLaneMovementObservation.cpp"),
         "-o", str(binary),
     ], check=True, cwd=ROOT)
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
-def test_magmaw_task_shadow_is_production_wired_and_behavior_neutral() -> None:
+def test_magmaw_task_shadow_is_production_wired_with_default_off_authority() -> None:
     bots = ROOT / "src/server/game/Bots"
     publisher = (bots / "BotWorldPopulationMgrEncounterBlackboard.cpp").read_text()
     runtime = (bots / "BotWorldPopulationMgrRuntimeContracts.h").read_text()
     adapter = (bots / "BotWorldPopulationMgrMagmawTaskShadow.cpp").read_text()
     preparation = (bots / "BotWorldPopulationMgrUpdateBotKernelPreparation.cpp").read_text()
+    config = (bots / "BotWorldPopulationMgrConfig.h").read_text()
     task = (bots / "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
         "BotMagmawTransferLaneTask.cpp").read_text()
 
@@ -625,7 +628,8 @@ def test_magmaw_task_shadow_is_production_wired_and_behavior_neutral() -> None:
         "                    == snapshot.CurrentScope.InstanceId") in adapter
     assert "MagmawRaidMode" in adapter
     assert "BuildMagmawTransferLaneTaskShadowJson" in adapter
-    assert "MagmawTransferLaneTaskShadow" not in preparation
+    assert "SelectMagmawTransferLaneAuthority(" in preparation
+    assert "bool MagmawTransferLaneTaskAuthority = false;" in config
     assert "MagmawCoordinatorShadow" not in preparation
     assert "BotAdaptiveMagmawStrategy" not in task
     assert "MagmawLaneTransitionState" not in task

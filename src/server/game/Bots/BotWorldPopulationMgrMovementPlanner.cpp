@@ -37,6 +37,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     std::uint64_t const launchReceiptId = plan.LaunchReceiptId;
     plan = {};
     plan.LaunchReceiptId = launchReceiptId;
+    plan.Execution = BotWorldMovement::BeginExecutionObservation(intent.X,
+        intent.Y, intent.Z, launchReceiptId);
 
     float sampledTargetFloorZ = 0.0f;
     bool targetFloorSampled = false;
@@ -50,6 +52,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
 
     auto reject = [&](char const* reason, char const* gate)
     {
+        BotWorldMovement::ObserveExecutionProof(plan.Execution, nativeProof);
         plan.RejectReason = reason ? reason : "route_destination_unreachable";
         RecordMovementPlannerOutcome(plan.LaunchReceiptId,
             PlannerBotGuid(bot), PlannerBotMapId(bot),
@@ -78,6 +81,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         plan.SegmentZ = intent.Z;
         plan.TraversalMode = "native_target_chase";
         plan.Selected = true;
+        plan.Execution.PlannerAccepted = true;
         RecordMovementPlannerOutcome(plan.LaunchReceiptId,
             PlannerBotGuid(bot), PlannerBotMapId(bot),
             intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
@@ -101,6 +105,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         plan.TraversalMode = "native_long_path";
         plan.NativeLongPath = true;
         plan.Selected = true;
+        plan.Execution.PlannerAccepted = true;
         RecordMovementPlannerOutcome(plan.LaunchReceiptId,
             PlannerBotGuid(bot), PlannerBotMapId(bot),
             intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,
@@ -585,6 +590,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     plan.SegmentZ = segmentZ;
     plan.TraversalMode = traversalMode;
     plan.Selected = true;
+    plan.Execution.PlannerAccepted = true;
+    BotWorldMovement::ObserveExecutionProof(plan.Execution, nativeProof);
     RecordMovementPlannerOutcome(plan.LaunchReceiptId, PlannerBotGuid(bot),
         PlannerBotMapId(bot),
         intent, targetFloorSampled, sampledTargetFloorZ, targetFloorValid,

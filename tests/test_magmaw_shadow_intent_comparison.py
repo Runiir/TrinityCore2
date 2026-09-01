@@ -427,6 +427,8 @@ int main()
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
             "Encounters/Magmaw/BotMagmawTransferLaneTask.cpp"),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+            "Encounters/Magmaw/BotMagmawTransferLaneTaskRunner.cpp"),
+        str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
             "Encounters/Magmaw/BotMagmawTransferLaneMovementObservation.cpp"),
         "-o", str(binary),
     ], check=True, cwd=ROOT)

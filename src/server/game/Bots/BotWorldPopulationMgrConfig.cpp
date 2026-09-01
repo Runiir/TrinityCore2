@@ -155,6 +155,10 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     Cohort().Config.CombatCalibrationSelfProvidedBaseline = sConfigMgr->GetBoolDefault(
         "BotWorld.CombatCalibration.SelfProvidedBaseline", Cohort().Config.CombatCalibrationSelfProvidedBaseline);
     Cohort().Config.ValidationRouteEnable = sConfigMgr->GetBoolDefault("BotWorld.ValidationRoute.Enable", Cohort().Config.ValidationRouteEnable);
+    Cohort().Config.MagmawTransferLaneTaskAuthority =
+        sConfigMgr->GetBoolDefault(
+            "BotWorld.Magmaw.TransferLaneTaskAuthority",
+            Cohort().Config.MagmawTransferLaneTaskAuthority);
     Cohort().Config.ValidationPrepullCheckpointEnable = sConfigMgr->GetBoolDefault(
         "BotWorld.ValidationRoute.PrepullCheckpointEnable",
         Cohort().Config.ValidationPrepullCheckpointEnable);

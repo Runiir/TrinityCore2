@@ -52,6 +52,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrMovement.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrMovementLease.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrMovementPlanner.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrMovementExecution.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrMovementPlannerDiagnosticsJson.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrMovementReceiptRetention.cpp
@@ -99,8 +100,11 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCoordinator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCoordinatorAssignments.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneTask.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneTaskRunner.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneMovementObservation.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneIntent.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneAuthority.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneKernelBridge.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneDiagnostics.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrRecordingWindow.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrPolicyDeployment.cpp

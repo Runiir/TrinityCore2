@@ -3,11 +3,13 @@
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneMovementObservation.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneNativeOutcome.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawRaidPlan.h"
 #include "Bots/Decision/BotPersistentTask.h"
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace BotEncounter
@@ -23,6 +25,16 @@ enum class MagmawTransferLaneFailure : uint8
 {
     None,
     NoSemanticProgress
+};
+
+enum class MagmawTransferLaneNativeDisposition : uint8
+{
+    None,
+    PlannerRejected,
+    Retained,
+    Submitted,
+    ReachedRequestedEndpointEvidence,
+    ReachedProjectedEndPolyEvidence
 };
 
 enum class MagmawTransferLaneRetirement : uint8
@@ -105,6 +117,14 @@ struct MagmawTransferLaneTask
     uint32 ProgressSamples = 0;
     MagmawTransferLaneMovementDisposition MovementDisposition =
         MagmawTransferLaneMovementDisposition::NoLease;
+    MagmawTransferLaneNativeDisposition NativeDisposition =
+        MagmawTransferLaneNativeDisposition::None;
+    uint64 LastNativeReceiptId = 0;
+    uint64 LastNativeObservedAtMs = 0;
+    uint64 NativeEvidenceRevision = 0;
+    uint32 NativeOutcomeSamples = 0;
+    uint32 ProjectedEndpointEvidenceSamples = 0;
+    std::string LastNativeCandidateKey;
 };
 
 struct MagmawRetiredTransferLaneTask
@@ -123,6 +143,17 @@ struct MagmawTransferLaneActorObservation
     bool PositionObserved = false;
     bool Alive = false;
     MagmawTransferLaneMovementObservation Movement;
+    std::optional<MagmawTransferLaneNativeOutcome> NativeOutcome;
+};
+
+// Magmaw-specific multi-tick executor. It owns task progress/suspension and
+// terminal state, while the existing action kernel remains the sole arbiter.
+class MagmawTransferLaneTaskRunner
+{
+public:
+    static void Observe(MagmawTransferLaneTask& task,
+        MagmawTransferLaneActorObservation const& actor,
+        Blackboard const& board);
 };
 
 class MagmawTransferLaneTaskShadow
@@ -163,6 +194,7 @@ private:
 
 char const* ToString(MagmawTransferLaneDirection value);
 char const* ToString(MagmawTransferLaneFailure value);
+char const* ToString(MagmawTransferLaneNativeDisposition value);
 char const* ToString(MagmawTransferLaneRetirement value);
 char const* ToString(BotDecision::PersistentTaskState value);
 char const* ToString(BotDecision::PersistentTaskSuspension value);

@@ -3567,6 +3567,7 @@ BotWorld.AutoRecordingNamePrefix = "autonomy_window"
 BotWorld.TargetPopulation = 5
 BotWorld.PoolTagFilter = ""
 BotWorld.ValidationRoute.Enable = 0
+BotWorld.Magmaw.TransferLaneTaskAuthority = 0
 BotWorld.ValidationRoute.ManifestPath = ""
 BotWorld.ValidationRoute.AdvanceMode = "disabled"
 BotWorld.ValidationRoute.ScenarioId = ""

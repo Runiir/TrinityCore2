@@ -199,94 +199,6 @@ MagmawTransferLaneRetirement EpisodeRetirement(
     return MagmawTransferLaneRetirement::RaidPlanChanged;
 }
 
-void SuspendTask(MagmawTransferLaneTask& task,
-    BotDecision::PersistentTaskSuspension suspension, uint64 observedAtMs)
-{
-    if (task.State != BotDecision::PersistentTaskState::Suspended
-        || !task.SuspendedAtMs)
-        task.SuspendedAtMs = observedAtMs;
-    task.State = BotDecision::PersistentTaskState::Suspended;
-    task.Suspension = suspension;
-}
-
-void ResumeTask(MagmawTransferLaneTask& task, uint64 observedAtMs)
-{
-    if (task.State == BotDecision::PersistentTaskState::Suspended
-        && task.SuspendedAtMs && observedAtMs > task.SuspendedAtMs)
-        task.LastProgressAtMs += observedAtMs - task.SuspendedAtMs;
-    task.SuspendedAtMs = 0;
-    task.State = BotDecision::PersistentTaskState::Running;
-    task.Suspension = BotDecision::PersistentTaskSuspension::None;
-}
-
-bool ObserveDistance(MagmawTransferLaneTask& task,
-    MagmawTransferLaneActorObservation const& actor,
-    Blackboard const& board)
-{
-    float const distance = Distance2d(actor.Position, task.Destination);
-    task.LastDistance = distance;
-    task.LastObservedAtMs = board.ObservedAtMs;
-    ++task.ObservationSamples;
-    if (distance + MagmawTransferLaneTaskShadow::ProgressEpsilon
-        < task.BestDistance)
-    {
-        task.BestDistance = distance;
-        task.LastProgressAtMs = board.ObservedAtMs;
-        task.ProgressRevision = board.Revision;
-        ++task.ProgressSamples;
-        if (task.State == BotDecision::PersistentTaskState::Suspended)
-            task.SuspendedAtMs = board.ObservedAtMs;
-    }
-    return distance <= MagmawTransferLaneTaskShadow::ArrivalTolerance;
-}
-
-void ObserveTask(MagmawTransferLaneTask& task,
-    MagmawTransferLaneActorObservation const& actor,
-    Blackboard const& board)
-{
-    if (BotDecision::IsTerminal(task.State))
-        return;
-    task.MovementDisposition =
-        ClassifyMagmawTransferLaneMovementObservation(board.ObservedAtMs,
-            MagmawTransferLaneMovementScope(task.Id.Episode.Lifecycle),
-            task.Destination, actor.Movement);
-    if (!actor.PositionObserved)
-    {
-        SuspendTask(task,
-            BotDecision::PersistentTaskSuspension::ObservationUnavailable,
-            board.ObservedAtMs);
-        return;
-    }
-
-    bool const safetyPreempted = IsMagmawTransferLaneSafetyPreemption(
-        task.MovementDisposition);
-    if (!safetyPreempted)
-        ResumeTask(task, board.ObservedAtMs);
-    bool const arrived = ObserveDistance(task, actor, board);
-    if (safetyPreempted)
-    {
-        SuspendTask(task,
-            BotDecision::PersistentTaskSuspension::SafetyPreempted,
-            board.ObservedAtMs);
-        return;
-    }
-    if (arrived)
-    {
-        task.State = BotDecision::PersistentTaskState::Succeeded;
-        task.Suspension = BotDecision::PersistentTaskSuspension::None;
-        task.SuspendedAtMs = 0;
-        return;
-    }
-
-    if (board.ObservedAtMs > task.LastProgressAtMs
-        && board.ObservedAtMs - task.LastProgressAtMs
-            >= MagmawTransferLaneTaskShadow::NoProgressFailureMs)
-    {
-        task.State = BotDecision::PersistentTaskState::Failed;
-        task.Failure = MagmawTransferLaneFailure::NoSemanticProgress;
-    }
-}
-
 void RetireEpisodeTasks(std::vector<MagmawTransferLaneTask>& tasks,
     std::vector<MagmawRetiredTransferLaneTask>& retired,
     MagmawTransferLaneRetirement reason, uint64 revision)
@@ -389,7 +301,7 @@ void ReconcileActorTask(ObjectGuid guid,
     if (!task)
         return;
     if (actor)
-        ObserveTask(*task, *actor, board);
+        MagmawTransferLaneTaskRunner::Observe(*task, *actor, board);
     else
     {
         task->State = BotDecision::PersistentTaskState::Suspended;
@@ -446,6 +358,26 @@ char const* ToString(MagmawTransferLaneFailure value)
 {
     return value == MagmawTransferLaneFailure::NoSemanticProgress
         ? "no_semantic_progress" : "none";
+}
+
+char const* ToString(MagmawTransferLaneNativeDisposition value)
+{
+    switch (value)
+    {
+        case MagmawTransferLaneNativeDisposition::PlannerRejected:
+            return "planner_rejected";
+        case MagmawTransferLaneNativeDisposition::Retained:
+            return "retained";
+        case MagmawTransferLaneNativeDisposition::Submitted:
+            return "submitted";
+        case MagmawTransferLaneNativeDisposition::
+                ReachedRequestedEndpointEvidence:
+            return "reached_requested_endpoint_evidence";
+        case MagmawTransferLaneNativeDisposition::
+                ReachedProjectedEndPolyEvidence:
+            return "reached_projected_end_poly_evidence";
+        default: return "none";
+    }
 }
 
 char const* ToString(MagmawTransferLaneRetirement value)

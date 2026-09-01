@@ -5,6 +5,7 @@
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotWorldPopulationMgrNativeFloor.h"
+#include "Bots/BotWorldPopulationMgrMovement.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTypes.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeTauntConfirmation.h"
@@ -16,6 +17,7 @@
 #include <deque>
 #include <limits>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -464,6 +466,10 @@ namespace BotWorldPopulationMgrBotState
         std::string LastDecisionHandler = "none";
         BotActionArbitration::Kernel DecisionKernel;
         BotMovementArbitration::Lease MovementLease;
+        // Latest typed result written directly by the native movement path.
+        // Encounter tasks may correlate this value to their selected intent;
+        // they never parse the diagnostic JSON sidecar.
+        BotWorldMovement::ExecutionObservation LastMovementExecution;
         // The fixed Magmaw mage/hunter bait pair shares one semantic lane
         // transition.  It is deliberately separate from the short generic
         // MovementLease and is retained by the stable pair owner across
@@ -476,6 +482,8 @@ namespace BotWorldPopulationMgrBotState
             MagmawTransferLaneIntentComparison;
         BotEncounter::MagmawTransferLaneIntentEpisodeAccumulator
             MagmawTransferLaneIntentEpisodeAccumulator;
+        std::optional<BotEncounter::MagmawTransferLaneNativeOutcome>
+            MagmawTransferLaneNativeOutcome;
         // Adaptive ownership bypasses the generic boss-mechanics candidate;
         // carry its immutable focus-fire/area authority into profile
         // resolution on every bot instead of leaving a default-open lane.

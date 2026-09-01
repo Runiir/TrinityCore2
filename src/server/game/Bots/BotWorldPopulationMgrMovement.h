@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_MOVEMENT_H
 
 #include "Bots/BotMovementArbiter.h"
+#include "Movement/PathEndpoint.h"
 
 #include <cstdint>
 #include <optional>
@@ -17,6 +18,49 @@ class Unit;
 // requirements.
 namespace BotWorldMovement
 {
+struct NativePathProofObservation;
+
+enum class ExecutionDisposition : std::uint8_t
+{
+    Unavailable,
+    Rejected,
+    Retained,
+    Submitted
+};
+
+// Typed policy-to-native feedback. This value is written directly by the
+// movement planner/executor; diagnostic JSON is only a serializer and is
+// never read back into gameplay state.
+struct ExecutionObservation
+{
+    bool Available = false;
+    ExecutionDisposition Disposition = ExecutionDisposition::Unavailable;
+    std::uint64_t ReceiptId = 0;
+    float RequestedX = 0.0f;
+    float RequestedY = 0.0f;
+    float RequestedZ = 0.0f;
+    bool PlannerAccepted = false;
+    bool NativeSubmitted = false;
+    PathEndpointResult EndpointResult = PathEndpointResult::Unavailable;
+    bool CorridorReachedEndPoly = false;
+    bool ResolvedEndpointAvailable = false;
+    float ResolvedEndpointX = 0.0f;
+    float ResolvedEndpointY = 0.0f;
+    float ResolvedEndpointZ = 0.0f;
+    bool ActualEndpointMatchedResolved = false;
+    bool RequestedEndpointMatched = false;
+};
+
+// This is the production planner/executor observation seam.  It contains no
+// policy and cannot admit a path; it only converts the already-computed native
+// proof into the typed execution record consumed by encounter task feedback.
+ExecutionObservation BeginExecutionObservation(float requestedX,
+    float requestedY, float requestedZ, std::uint64_t receiptId = 0);
+ExecutionObservation BeginUnavailableExecutionObservation(float requestedX,
+    float requestedY, float requestedZ);
+void ObserveExecutionProof(ExecutionObservation& execution,
+    NativePathProofObservation const& proof);
+
 // Hazard movement models a player's decision to abandon a hard cast for an
 // imminent lethal mechanic. Other movement owners remain compatible with an
 // already-running cast and must not cancel it implicitly.
@@ -152,6 +196,7 @@ struct PathPlan
     std::string RejectReason;
     bool RecentFailure = false;
     bool NativeLongPath = false;
+    ExecutionObservation Execution;
 };
 
 struct ActivePathObservation

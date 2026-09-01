@@ -35,6 +35,9 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
 {
     using namespace BotWorldPopulationMgrBotState::MovementRejectionIsolation;
 
+    state.LastMovementExecution = BotWorldMovement::BeginExecutionObservation(
+        intent.X, intent.Y, intent.Z);
+
     if (!bot)
         return false;
     if (!bot->IsInWorld() || !bot->GetMap())
@@ -145,6 +148,8 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         state.LastRecoveryMode = "native_active_path";
         state.LastRecoveryResult = "native_movement_retained";
         BotMovementArbitration::Apply(state.MovementLease, request);
+        state.LastMovementExecution.Disposition =
+            BotWorldMovement::ExecutionDisposition::Retained;
         RecordMovementPlannerExecutorOutcome(MovementExecutorBotGuid(bot),
             MovementExecutorMapId(bot), intent, "active_path", "retained",
             "native_movement_retained");
@@ -157,7 +162,9 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         request.MovementScope, request.DynamicTargetGuid,
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(),
         Cohort().Config.ValidationRouteEnable);
-    if (!PlanMovementPath(bot, intent, plan))
+    bool const planned = PlanMovementPath(bot, intent, plan);
+    state.LastMovementExecution = plan.Execution;
+    if (!planned)
     {
         char const* reason = plan.RejectReason.empty()
             ? "route_destination_unreachable" : plan.RejectReason.c_str();
@@ -238,6 +245,8 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
             && !bot->movespline->Finalized();
         if (!pointGeneratorActive)
         {
+            state.LastMovementExecution.Disposition =
+                BotWorldMovement::ExecutionDisposition::Rejected;
             RecordMovementPlannerExecutorOutcome(
                 MovementExecutorBotGuid(bot), MovementExecutorMapId(bot), intent,
                 "native_aerial_point_submission", "rejected",
@@ -250,6 +259,9 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
             MovementExecutorBotGuid(bot), MovementExecutorMapId(bot), intent,
             "native_aerial_point_submission", "submitted",
             "native_aerial_point_movement_submitted", plan.LaunchReceiptId);
+        state.LastMovementExecution.Disposition =
+            BotWorldMovement::ExecutionDisposition::Submitted;
+        state.LastMovementExecution.NativeSubmitted = true;
         return true;
     }
     else if (plan.NativeLongPath)
@@ -260,6 +272,9 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         submitPoint(plan.SegmentX, plan.SegmentY, plan.SegmentZ, true);
     else
         submitPoint(intent.X, intent.Y, intent.Z, true);
+    state.LastMovementExecution.Disposition =
+        BotWorldMovement::ExecutionDisposition::Submitted;
+    state.LastMovementExecution.NativeSubmitted = true;
     RecordMovementPlannerExecutorOutcome(MovementExecutorBotGuid(bot),
         MovementExecutorMapId(bot), intent, "native_path_submission", "submitted",
         "native_movement_submitted", plan.LaunchReceiptId);

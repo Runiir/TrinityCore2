@@ -87,6 +87,9 @@ struct BotWorldExperimentConfig
     bool CombatCalibrationReferenceConditions = false;
     bool CombatCalibrationSelfProvidedBaseline = false;
     bool ValidationRouteEnable = false;
+    // Default-off cutover for the single Magmaw transfer-lane task. The
+    // selector still requires a same-tick equivalent legacy candidate.
+    bool MagmawTransferLaneTaskAuthority = false;
     // Validation-only boss-node checkpoint. Disabled for ordinary runtime.
     bool ValidationPrepullCheckpointEnable = false;
     // Default-off observation seam for one recurrence fixture. The capture

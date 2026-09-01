@@ -4,6 +4,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotAdaptiveDrudgeStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeActivationState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneAuthority.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotAdaptiveOmnotronStrategy.h"
@@ -458,6 +459,22 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             ObserveMagmawTransferLaneIntentComparison(context.State,
                 context.Bot->GetGUID(), magmawPlan.Movement,
                 magmawLaneOwner->MagmawLaneTransition.TransitionId);
+            static std::vector<BotEncounter::MagmawTransferLaneTask> const
+                noMagmawTransferLaneTasks;
+            auto const& transferLaneShadow =
+                Cohort().MagmawTransferLaneTaskShadow;
+            auto const& transferLaneTasks = transferLaneShadow
+                ? transferLaneShadow->Tasks() : noMagmawTransferLaneTasks;
+            BotEncounter::MagmawTransferLaneAuthoritySelection
+                transferLaneSelection =
+                    BotEncounter::SelectMagmawTransferLaneAuthority(
+                        Cohort().Config.MagmawTransferLaneTaskAuthority,
+                        transferLaneTasks, context.Bot->GetGUID(),
+                        magmawPlan.Movement,
+                        magmawLaneOwner->MagmawLaneTransition.TransitionId);
+            magmawPlan.Movement = std::move(transferLaneSelection.Movement);
+            context.AdaptiveMagmawTransferLaneBinding =
+                std::move(transferLaneSelection.Binding);
             context.AdaptiveMagmawOwnsNode = magmawPlan.OwnsNode;
             context.State.MagmawParasiteCombat = magmawPlan.ParasiteCombat;
             context.AdaptiveMagmawSuppressOffense = magmawPlan.SuppressOffense;

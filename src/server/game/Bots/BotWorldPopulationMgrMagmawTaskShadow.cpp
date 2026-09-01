@@ -112,7 +112,10 @@ BotWorldPopulationMgr::BuildMagmawShadowActorObservations(
                 return candidate.Guid.GetCounter() == guid;
             });
         if (state != Party().Bots.end())
+        {
             observation.Movement.CurrentLease = state->MovementLease;
+            observation.NativeOutcome = state->MagmawTransferLaneNativeOutcome;
+        }
         result.push_back(std::move(observation));
     }
     return result;

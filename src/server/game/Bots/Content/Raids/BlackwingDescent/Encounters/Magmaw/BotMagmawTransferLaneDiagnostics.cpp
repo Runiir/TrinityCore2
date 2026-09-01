@@ -209,6 +209,18 @@ std::string BuildMagmawTransferLaneTaskDiagnosticsJson(
          << ",\"failure\":\"" << ToString(task.Failure) << "\""
          << ",\"movement_observation\":\""
          << ToString(task.MovementDisposition) << "\""
+         << ",\"native_disposition\":\""
+         << ToString(task.NativeDisposition) << "\""
+         << ",\"last_native_receipt_id\":" << task.LastNativeReceiptId
+         << ",\"last_native_observed_at_ms\":"
+         << task.LastNativeObservedAtMs
+         << ",\"native_evidence_revision\":"
+         << task.NativeEvidenceRevision
+         << ",\"native_outcome_samples\":" << task.NativeOutcomeSamples
+         << ",\"projected_endpoint_evidence_samples\":"
+         << task.ProjectedEndpointEvidenceSamples
+         << ",\"last_native_candidate_key\":\""
+         << JsonEscape(task.LastNativeCandidateKey) << "\""
          << ",\"started_at_ms\":" << task.StartedAtMs
          << ",\"last_progress_at_ms\":" << task.LastProgressAtMs
          << ",\"last_observed_at_ms\":" << task.LastObservedAtMs
