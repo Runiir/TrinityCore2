@@ -140,6 +140,16 @@ task immediately rearms toward a slightly changed coordinate. Admit at most one
 explicitly bounded distinct alternate before typed failure, and rearm only for
 a new stable wave or lifecycle scope.
 
+When a threat is observed but the trace has no actor-scoped candidate, owner,
+or native receipt, inspect the reducer-to-task authority boundary before
+routing movement or priority changes. A transient non-authoritative facts
+snapshot may suspend a created task, but it must not erase it through an early
+return. Route one task-lifecycle unit that retains `AwaitingAuthoritativeFacts`
+and requires a correlated `task_created -> awaiting_facts -> candidate_built ->
+native_progress -> terminal` trace. Do not admit a live canary from a fixture
+that starts only after facts are already authoritative; it misses the live
+first-contact boundary.
+
 Reject a vertical-slice handoff when its compiled fixture manually recreates
 the manager's admission/submission adapter. Require one shared production
 adapter used by both the real manager and the compiled test, then exercise it

@@ -380,6 +380,19 @@ multi-tick replay with sub-yard actor and hazard movement after rejection;
 exact-endpoint non-repetition alone is insufficient because it can hide
 semantic task churn behind slightly different coordinates.
 
+Treat reducer authority as task input, not task existence. Once an
+authoritative threat or assignment creates an actor-keyed task, a later
+temporarily stale, partial, or non-authoritative facts snapshot must transition
+that same task to a typed `AwaitingAuthoritativeFacts` or suspended state. It
+must not make the strategy return as though the task never existed. Retain the
+actor, lifecycle, mechanic wave, deadline, and last semantic progress while
+waiting; emit no unsafe candidate until authority is current, then resume the
+same task identity. Trace `task_created`, `awaiting_facts`, `candidate_built`,
+arbitration, native submission/progress, and `succeeded`/`infected`/`failed`
+with one correlation key. Add a multi-tick counterexample where first contact
+creates the task, the next snapshot loses authority, and a later authoritative
+snapshot must emit the stable candidate before the lethal outcome.
+
 When an encounter strategy uses ordered conditionals to choose one movement
 before the action kernel sees alternatives, treat source order as an implicit
 priority system. Migrate one mechanic vertically: normalized facts, sticky
