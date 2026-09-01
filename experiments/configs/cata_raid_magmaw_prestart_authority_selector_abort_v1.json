@@ -1,0 +1,24 @@
+{
+  "schema": "cata_raid_magmaw_prestart_authority_selector_abort_v1",
+  "created_at_utc": "2026-09-01T09:32:00Z",
+  "source_commit": "3109edefaf6d0a70ac2d863a0cd8a870a33b5e67",
+  "source_tree": "85b27e50a6200aef3938afd5293c379bbee69fe3",
+  "classification": "prestart_invocation_abort_before_bundle_exposure",
+  "worldserver_build_receipt_sha256": "018103eb7a043b8d058a6d1951e0d41db46a9d8bd5f8aacde5a952fb6c858895",
+  "worldserver_sha256": "55174ce4f1a76e4cdd1e15d56e155f8ceb235ad24f45b5be6b3f1232f78ce6f0",
+  "failure_receipt_sha256": "9bf36d26de82dbff8b9cf64388559404081159ad5ec4173ea5922869d88183e2",
+  "failure_reason": "tracked_snapshot_receipt_invalid",
+  "cause": "the invocation supplied a tracked-derived runtime-config receipt but omitted the explicit tracked_derived_runtime_config_v1 authority selector and contract path, so the fail-closed default attempted legacy tracked-snapshot verification",
+  "corrected_arguments": {
+    "base_runtime_config_authority": "tracked_derived_runtime_config_v1",
+    "base_runtime_config_contract_relative_path": "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json"
+  },
+  "effects": {
+    "bundle_exposed": false,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "gameplay_observed": false
+  },
+  "required_next_work_unit": "evidence:magmaw_transfer_lane_checkpoint_corrected_authority_one_build_one_start"
+}
