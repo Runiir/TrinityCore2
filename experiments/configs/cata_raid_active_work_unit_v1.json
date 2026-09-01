@@ -1,54 +1,82 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_transfer_checkpoint_success_sentinel_repair",
+  "work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_build_one_start",
   "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_start",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
+  "next_work_unit": "evidence:magmaw_transfer_lane_authority_off_shadow_decision",
+  "next_owner_skill": "raid-performance-loop",
+  "classification": "implementation_pending_live_verification",
   "epoch_id": "magmaw_transfer_lane_task_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "capture_protocol_repair_only",
-  "observed_at_commit": "49c12bda976685d6b8781efe0a4114e9e79f51fc",
+  "gate_state": "one_exact_build_prepare_only_and_checkpoint_start_admitted",
+  "observed_at_commit": "002df380fe0e3255559efcd6f9d10bdd3446a271",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "next_action": "Align the capture controller's successful identity sentinel with the production native value 'none', replace the synthetic empty-string fixture, add adversarial rejection coverage, and obtain independent review before admitting another build or worldserver start.",
+  "next_action": "At this clean tracked admission, run one fast8 configure/build, create and verify the exact authority-off map-669 checkpoint bundle, apply one canonical prepare-only reset, require strict provisioning/readback, then consume one worldserver start with zero retries and publish the typed terminal compactly.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_arm_identity_abort_handoff_v1.json",
-    "sha256": "162dfb7ff706fac26e82d0512f429d92fad8935f9e40af8ee8a8832d9d499197"
+    "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_success_sentinel_repair_handoff_v1.json",
+    "sha256": "61e4062d2ea35fad4ec16fa4984e8e894e97fbcc1321ce4728807443203ec500"
   },
   "program_scope": {
-    "fixture_expansion_replay_admitted": false,
+    "fixture_expansion_replay_admitted": true,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "configure_admitted": false,
-    "worldserver_build_admitted": false,
-    "worldserver_start_admitted": false,
+    "configure_admitted": true,
+    "configure_limit": 1,
+    "worldserver_build_admitted": true,
+    "worldserver_build_limit": 1,
+    "prestart_bundle_create_limit": 1,
+    "worldserver_start_admitted": true,
+    "worldserver_start_limit": 1,
     "authserver_start_admitted": false,
-    "canonical_prepare_only_provisioning_admitted": false,
+    "authserver_start_limit": 0,
+    "canonical_prepare_only_provisioning_admitted": true,
+    "canonical_prepare_only_provisioning_limit": 1,
     "other_database_mutations_allowed": false,
     "retry_admitted": false,
+    "retry_limit": 0,
     "dvc_publication_required_after_terminal": true
   },
+  "exact_bundle_authority": {
+    "base_runtime_config_authority": "tracked_derived_runtime_config_v1",
+    "base_runtime_config_contract_relative_path": "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json"
+  },
+  "fixture_contract": {
+    "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
+    "case_id": "entrance_polygon_short_lane_v1",
+    "actor_guid": 30007,
+    "map_id": 669,
+    "task_authority_enabled": false,
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "certifies_gameplay_success": false,
+    "certifies_boss_fidelity": false
+  },
   "scope_lock": {
-    "allowed_change": "Repair only the capture-side success-sentinel dialect and its focused tests.",
+    "allowed_change": "Produce one exact fixture-only map-bound checkpoint terminal from the reviewed capture dialect and publish compact evidence.",
     "forbidden": [
-      "changing native C or C++, gameplay, Magmaw strategy, movement, task authority, priorities, or database state",
-      "weakening any actor, fixture, case, seal, source, route, or detailed identity check",
-      "treating arm acknowledgement as fixture terminal success",
-      "starting authserver or worldserver before independent review and a new tracked admission"
+      "changing code, tests, gameplay, Magmaw strategy, movement, task authority, priorities, or database content outside the canonical prepare-only reset",
+      "starting an authserver, more than one worldserver, or retrying any failed stage",
+      "weakening runtime-config, build, route, seal, roster, or checkpoint identity",
+      "using a 300-second raid timer or claiming fixture evidence as gameplay success"
     ],
     "required_postconditions": [
-      "the exact production native arm payload with failure_field none passes identity validation",
-      "empty, missing, arbitrary, or contradictory identity fields fail closed",
-      "focused tests pass and an independent reviewer approves the repair"
+      "current-source schema-v3 build and MySQL runtime identity verify",
+      "the atomic authority-off bundle, map-669 preflight, provisioning, and readback verify before start",
+      "the dedicated checkpoint emits a typed terminal or a new first-broken edge",
+      "worldserver cleanup is complete and compact evidence is remotely verified in DVC"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "worldserver_starts": 0,
+    "configure_tickets": 1,
+    "worldserver_build_tickets": 1,
+    "bundle_create_attempts": 1,
+    "canonical_prepare_only_invocations": 1,
+    "worldserver_starts": 1,
     "authserver_starts": 0,
     "retries": 0
   }

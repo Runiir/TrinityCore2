@@ -1,0 +1,45 @@
+{
+  "schema": "cata_raid_magmaw_transfer_checkpoint_success_sentinel_repair_handoff_v1",
+  "created_at_utc": "2026-09-01T05:51:02Z",
+  "source_commit": "002df380fe0e3255559efcd6f9d10bdd3446a271",
+  "source_tree": "1e15e69cd0e96fd194cdd97448ad00d56f2405b2",
+  "classification": "capture_success_sentinel_repaired_and_independently_reviewed",
+  "failure_evidence_handoff": {
+    "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_arm_identity_abort_handoff_v1.json",
+    "sha256": "162dfb7ff706fac26e82d0512f429d92fad8935f9e40af8ee8a8832d9d499197"
+  },
+  "implementation": {
+    "commit": "002df380fe0e3255559efcd6f9d10bdd3446a271",
+    "accepted_success_sentinel": "none",
+    "native_code_changed": false,
+    "gameplay_code_changed": false,
+    "database_changed": false
+  },
+  "independent_review": {
+    "verdict": "go",
+    "focused_tests_passed": 103,
+    "producer_contract_tests_passed": 1,
+    "additional_static_tests_passed": 2,
+    "adversarial_cases_passed": 54,
+    "empty_missing_arbitrary_and_non_string_sentinels_rejected": true,
+    "all_identity_boolean_false_or_missing_cases_rejected": true,
+    "armed_ack_remains_nonterminal": true,
+    "terminal_mirror_checks_remain_fail_closed": true
+  },
+  "file_limits": {
+    "tools/raid_program/capture_checkpoint_controller.py": 924,
+    "tests/test_magmaw_transfer_checkpoint_capture.py": 936,
+    "limit": 1000
+  },
+  "required_next_work_unit": {
+    "id": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_build_one_start",
+    "owner_skill": "raid-evidence-lifecycle",
+    "configure_limit": 1,
+    "worldserver_build_limit": 1,
+    "canonical_prepare_only_limit": 1,
+    "worldserver_start_limit": 1,
+    "authserver_start_limit": 0,
+    "retry_limit": 0,
+    "certifies_gameplay": false
+  }
+}
