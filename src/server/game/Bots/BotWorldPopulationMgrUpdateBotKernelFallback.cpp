@@ -3,6 +3,7 @@
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotRouteCombatTargetPolicy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotAdaptiveDrudgeStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeEntranceMovement.h"
 
@@ -27,16 +28,10 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
         {
             if (!context.State.MagmawParasiteCombat.Active)
                 return false;
-            for (size_t movementIndex = 0;
-                movementIndex < context.AdaptiveMagmawMovements.Size();
-                ++movementIndex)
-                if (context.AdaptiveMagmawMovements.Origin(movementIndex)
-                        == BotEncounter::MagmawMovementProposalOrigin::Hazard
-                    || context.AdaptiveMagmawMovements.Origin(movementIndex)
-                        == BotEncounter::MagmawMovementProposalOrigin::
-                            TransferLaneTask)
-                    return true;
-            return false;
+            return BotEncounter::HasRetainedMagmawHazardOwnership(
+                context.AdaptiveMagmawMovements,
+                context.State.MagmawParasiteHazard,
+                context.Bot->GetGUID());
         };
         struct RouteAttempt
         {

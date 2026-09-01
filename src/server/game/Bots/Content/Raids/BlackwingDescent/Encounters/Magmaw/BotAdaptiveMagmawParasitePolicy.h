@@ -567,7 +567,7 @@ private:
         return candidate;
     }
 
-    static BotNativeAction::Candidate BuildMoveAway(
+    static std::optional<BotNativeAction::Candidate> BuildMoveAway(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& danger, std::string mechanic,
         float exitDistance, MagmawParasiteHazardState* hazardState = nullptr)
@@ -587,7 +587,9 @@ private:
             bot.Position.Z };
         if (hazardState)
         {
-            hazardState->Begin(danger.Guid, danger.Position, destination);
+            if (!hazardState->Begin(danger.Guid, danger.Position,
+                    bot.Position, destination))
+                return std::nullopt;
             return BuildRetainedMove(board, *hazardState);
         }
         BotNativeAction::Candidate candidate;

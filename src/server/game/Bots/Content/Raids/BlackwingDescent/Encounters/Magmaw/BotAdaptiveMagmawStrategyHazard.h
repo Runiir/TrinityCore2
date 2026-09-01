@@ -244,9 +244,9 @@
             && !(observed.Crash && pillarBaiter && parasiteWave))
             return std::nullopt;
 
-        // A native rejection keeps the same actor-owned movement lifecycle
-        // and endpoint. Do not replace it with a freshly sampled lane merely
-        // because the observation revision or parasite GUID changed.
+        // Lease expiry and observation churn keep the actor-owned lifecycle.
+        // The native adapter separately retires a permanently rejected exact
+        // endpoint before a fresh route may be sampled.
         if (pillarBaiter && hazardState && !observed.Crash)
             if (std::optional<BotNativeAction::Candidate> const retained =
                     MagmawParasitePolicy::RetainedHazardMovement(board,

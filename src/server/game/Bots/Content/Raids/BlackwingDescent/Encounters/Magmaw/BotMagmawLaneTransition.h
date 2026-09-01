@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace BotEncounter
@@ -130,8 +131,9 @@ struct MagmawParasiteCombatContract
 };
 
 // Local contact evasion is per-bot, unlike the shared two-baiter lane.  Keep
-// its destination and danger identity across a native rejection, a generic
-// movement-lease expiry, and one or more observation ticks.  The state is
+// its destination and danger identity across a generic movement-lease expiry
+// and one or more observation ticks. Permanent native path rejection retires
+// the exact endpoint until the actor or danger geometry changes. The state is
 // deliberately value-only so replay can exercise the production transition.
 struct MagmawParasiteHazardState
 {
@@ -145,9 +147,18 @@ struct MagmawParasiteHazardState
     ObjectGuid DangerGuid;
     Vector3 DangerPosition;
     bool DangerPositionAvailable = false;
+    Vector3 ActorPosition;
+    bool ActorPositionAvailable = false;
     uint64 IntentId = 0;
     Vector3 Destination;
     bool Active = false;
+    Vector3 RejectedDestination;
+    Vector3 RejectedActorPosition;
+    Vector3 RejectedDangerPosition;
+    bool Rejected = false;
+    bool RejectedGeometryAvailable = false;
+
+    static constexpr float GeometryChangeTolerance = 0.25f;
 
     void Reset()
     {
@@ -204,26 +215,65 @@ struct MagmawParasiteHazardState
             Active = false;
     }
 
-    void Begin(ObjectGuid danger, Vector3 dangerPosition, Vector3 destination)
+    bool Begin(ObjectGuid danger, Vector3 dangerPosition,
+        Vector3 actorPosition, Vector3 destination)
     {
         if (Active)
-            return;
+            return true;
+        if (Rejected
+            && SamePoint(destination, RejectedDestination)
+            && (!RejectedGeometryAvailable
+                || (!GeometryChanged(actorPosition, RejectedActorPosition)
+                    && !GeometryChanged(dangerPosition,
+                        RejectedDangerPosition))))
+            return false;
         ++IntentId;
         if (!IntentId)
             ++IntentId;
         DangerGuid = danger;
         DangerPosition = dangerPosition;
         DangerPositionAvailable = true;
+        ActorPosition = actorPosition;
+        ActorPositionAvailable = true;
         Destination = destination;
         Active = true;
+        Rejected = false;
+        RejectedGeometryAvailable = false;
+        return true;
+    }
+
+    bool Begin(ObjectGuid danger, Vector3 dangerPosition, Vector3 destination)
+    {
+        bool const begun = Begin(danger, dangerPosition, {}, destination);
+        ActorPositionAvailable = false;
+        return begun;
     }
 
     // Compatibility for value fixtures that intentionally do not bind source
     // geometry. Such an intent remains strict at native endpoint admission.
-    void Begin(ObjectGuid danger, Vector3 destination)
+    bool Begin(ObjectGuid danger, Vector3 destination)
     {
-        Begin(danger, {}, destination);
+        bool const begun = Begin(danger, {}, {}, destination);
         DangerPositionAvailable = false;
+        ActorPositionAvailable = false;
+        return begun;
+    }
+
+    bool ObserveTerminalNativeRejection(ObjectGuid actor, uint64 intentId,
+        Vector3 const& destination, std::string_view reason)
+    {
+        if (!IsPermanentNativeRejection(reason) || !Active
+            || ActorGuid != actor || IntentId != intentId
+            || !SamePoint(Destination, destination))
+            return false;
+        RejectedDestination = Destination;
+        RejectedActorPosition = ActorPosition;
+        RejectedDangerPosition = DangerPosition;
+        Rejected = true;
+        RejectedGeometryAvailable = ActorPositionAvailable
+            && DangerPositionAvailable;
+        Active = false;
+        return true;
     }
 
     bool HasRetainedIntent() const
@@ -239,6 +289,28 @@ struct MagmawParasiteHazardState
     static float Distance2d(Vector3 const& left, Vector3 const& right)
     {
         return std::hypot(left.X - right.X, left.Y - right.Y);
+    }
+
+    static bool IsPermanentNativeRejection(std::string_view reason)
+    {
+        return reason == "route_destination_endpoint_mismatch"
+            || reason == "route_destination_unreachable"
+            || reason == "route_destination_partial_path"
+            || reason == "route_destination_missing_mmap";
+    }
+
+    static bool SamePoint(Vector3 const& left, Vector3 const& right)
+    {
+        return std::fabs(left.X - right.X) <= 0.001f
+            && std::fabs(left.Y - right.Y) <= 0.001f
+            && std::fabs(left.Z - right.Z) <= 0.001f;
+    }
+
+    static bool GeometryChanged(Vector3 const& current,
+        Vector3 const& rejected)
+    {
+        return Distance2d(current, rejected) > GeometryChangeTolerance
+            || std::fabs(current.Z - rejected.Z) > GeometryChangeTolerance;
     }
 };
 

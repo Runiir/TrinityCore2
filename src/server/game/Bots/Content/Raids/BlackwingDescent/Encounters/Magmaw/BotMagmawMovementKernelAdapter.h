@@ -6,10 +6,13 @@
 
 #include <functional>
 #include <optional>
+#include <string>
 #include <string_view>
 
 namespace BotEncounter
 {
+struct MagmawParasiteHazardState;
+
 struct MagmawMovementNativeLease
 {
     BotMovementArbitration::Owner Owner =
@@ -28,18 +31,36 @@ using MagmawMovementCandidateObserver = std::function<void(
 using MagmawMovementQueuedPredicate = std::function<bool(
     BotNativeAction::Candidate const&)>;
 
+struct MagmawMovementNativeOutcome
+{
+    std::string CandidateKey;
+    std::string Mechanic;
+    ObjectGuid Actor;
+    uint64 EventGeneration = 0;
+    Vector3 Destination;
+    BotActionArbitration::Outcome Result;
+};
+
+using MagmawMovementNativeOutcomeObserver = std::function<void(
+    MagmawMovementNativeOutcome const&)>;
+
 struct MagmawMovementKernelAdapterContext
 {
     uint64 ObservedAtMs = 0;
     std::optional<MagmawTransferLaneExecutionBinding> TransferBinding;
     MagmawMovementNativeExecutor Execute;
     MagmawTransferLaneOutcomeObserver ObserveTransferOutcome;
+    MagmawMovementNativeOutcomeObserver ObserveNativeOutcome;
     MagmawMovementCandidateObserver BeforeSubmit;
     MagmawMovementQueuedPredicate AlreadyQueued;
 };
 
 std::optional<MagmawMovementNativeLease> MagmawMovementNativeLeaseFor(
     std::string_view mechanic);
+
+bool HasRetainedMagmawHazardOwnership(
+    MagmawMovementIntentCollection const& movements,
+    MagmawParasiteHazardState const& hazardState, ObjectGuid actor);
 
 // Shared final adapter used by the live manager and compiled fixtures. It
 // submits every visible movement proposal to the real kernel, preserves typed

@@ -1,4 +1,5 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
 
 #include <utility>
 
@@ -63,22 +64,67 @@ bool SubmitGeneric(BotActionArbitration::Kernel& kernel,
 {
     MagmawMovementNativeLease const selectedLease = lease.value_or(
         MagmawMovementNativeLease{});
+    std::optional<MagmawMovementNativeOutcome> nativeOutcome;
+    if (BotNativeAction::Move const* move =
+            std::get_if<BotNativeAction::Move>(&intent.Action))
+        nativeOutcome = MagmawMovementNativeOutcome{
+            intent.Id.Key(), intent.Id.Mechanic, intent.Id.Actor,
+            intent.Id.EventGeneration, { move->X, move->Y, move->Z }, {} };
     BotActionArbitration::Candidate candidate =
         BuildMagmawMovementKernelCandidate(intent, origin, lease.has_value(),
             transferBindingRequired, safetyPending,
             [nativeIntent = NativeIntent(intent), selectedLease,
-                execute = context.Execute]()
+                execute = context.Execute,
+                observe = context.ObserveNativeOutcome,
+                nativeOutcome = std::move(nativeOutcome)]() mutable
             {
                 if (!execute)
                     return BotActionArbitration::Outcome::Retryable(
                         "magmaw_movement_executor_unavailable");
-                return execute(nativeIntent, selectedLease, nullptr);
+                BotActionArbitration::Outcome outcome = execute(nativeIntent,
+                    selectedLease, nullptr);
+                if (observe && nativeOutcome)
+                {
+                    nativeOutcome->Result = outcome;
+                    observe(*nativeOutcome);
+                }
+                return outcome;
             });
     ApplyRetryPolicy(candidate, intent.Id.Mechanic);
     if (context.BeforeSubmit)
         context.BeforeSubmit(kernel, candidate, intent);
     return kernel.Submit(std::move(candidate));
 }
+}
+
+bool HasRetainedMagmawHazardOwnership(
+    MagmawMovementIntentCollection const& movements,
+    MagmawParasiteHazardState const& hazardState, ObjectGuid actor)
+{
+    for (size_t index = 0; index < movements.Size(); ++index)
+    {
+        MagmawMovementProposalOrigin const origin = movements.Origin(index);
+        if (origin != MagmawMovementProposalOrigin::Hazard
+            && origin != MagmawMovementProposalOrigin::TransferLaneTask)
+            continue;
+        BotNativeAction::Candidate const& intent = movements.Proposals()[index];
+        if (origin == MagmawMovementProposalOrigin::Hazard
+            && intent.Id.Mechanic == "parasite_contact_evade")
+        {
+            BotNativeAction::Move const* move =
+                std::get_if<BotNativeAction::Move>(&intent.Action);
+            if (move && hazardState.HasRetainedIntent()
+                && hazardState.ActorGuid == actor && intent.Id.Actor == actor
+                && hazardState.IntentId == intent.Id.EventGeneration
+                && MagmawParasiteHazardState::SamePoint(
+                    hazardState.Destination,
+                    { move->X, move->Y, move->Z }))
+                return true;
+            continue;
+        }
+        return true;
+    }
+    return false;
 }
 
 size_t SubmitMagmawMovementKernelCandidates(

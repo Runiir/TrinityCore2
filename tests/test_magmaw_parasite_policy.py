@@ -15,6 +15,7 @@ def test_magmaw_lane_transition_replays_selection_to_reset(tmp_path: Path) -> No
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 
@@ -1001,6 +1002,7 @@ def test_magmaw_containment_replays_full_runtime_contract(tmp_path: Path) -> Non
 #include "Bots/BotWorldPopulationMgrMovement.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <functional>
@@ -1159,13 +1161,15 @@ static void SubmitMovementThroughProductionAdapter(
     BotNativeAction::Candidate const& native,
     Blackboard const& board,
     BotWorldMovement::NativePathProofObservation const& proof,
-    bool& nativeAttempted)
+    bool& nativeAttempted,
+    MagmawParasiteHazardState* hazardState = nullptr,
+    char const* forcedReason = nullptr)
 {
     MagmawMovementIntentCollection movements;
     movements.Propose(MagmawMovementProposalOrigin::Hazard, native);
     MagmawMovementKernelAdapterContext context;
     context.ObservedAtMs = board.ObservedAtMs;
-    context.Execute = [&nativeAttempted, proof](
+    context.Execute = [&nativeAttempted, proof, forcedReason](
         BotNativeAction::Intent const& intent, MagmawMovementNativeLease lease,
         BotWorldMovement::ExecutionObservation* movement)
     {
@@ -1173,7 +1177,17 @@ static void SubmitMovementThroughProductionAdapter(
         assert(lease.Owner == BotMovementArbitration::Owner::Hazard);
         assert(!movement);
         nativeAttempted = true;
+        if (forcedReason)
+            return BotActionArbitration::Outcome::Retryable(forcedReason);
         return ObserveNativePathAttempt(proof);
+    };
+    context.ObserveNativeOutcome = [hazardState](
+        MagmawMovementNativeOutcome const& outcome)
+    {
+        if (hazardState && outcome.Mechanic == "parasite_contact_evade")
+            hazardState->ObserveTerminalNativeRejection(outcome.Actor,
+                outcome.EventGeneration, outcome.Destination,
+                outcome.Result.Reason);
     };
     assert(SubmitMagmawMovementKernelCandidates(kernel, movements,
         std::move(context)) == 1);
@@ -1295,8 +1309,8 @@ int main()
     AssertContainedTick(contact, nonbaitMagePlan, PlayerGuid(30007));
 
     // (2) At the exact generic lease boundary and at +1ms, the typed hazard
-    // request is still admissible. A rejected native path keeps its identity
-    // and destination; combat-range movement is hard-masked by the contract.
+    // request is still admissible. A permanent native rejection retires only
+    // that actor's exact endpoint and releases lower combat-range recovery.
     Blackboard retryBoard = board;
     retryBoard.Players[5].Position = {
         -307.531f, -35.4375f, 211.218f };
@@ -1323,7 +1337,8 @@ int main()
     // boundary; the following strategy ticks must not replan it.
     retryHazard.ObserveScope(retryBoard, PlayerGuid(30006));
     retryHazard.Begin(retryBoard.Hostiles[1].Guid,
-        retryBoard.Hostiles[1].Position, requestedDestination);
+        retryBoard.Hostiles[1].Position, retryBoard.Players[5].Position,
+        requestedDestination);
     BotMovementArbitration::Lease expiredLease;
     expiredLease.MovementOwner = BotMovementArbitration::Owner::Hazard;
     expiredLease.MovementPriority = BotMovementArbitration::Priority::Hazard;
@@ -1465,7 +1480,12 @@ int main()
 
     bool rejectedNativeAttempted = false;
     SubmitMovementThroughProductionAdapter(rejectedTick, *firstRetry.Movement,
-        retryBoard, rejectedProof, rejectedNativeAttempted);
+        retryBoard, rejectedProof, rejectedNativeAttempted, &retryHazard);
+    MagmawMovementIntentCollection rejectedOwnership;
+    rejectedOwnership.Propose(MagmawMovementProposalOrigin::Hazard,
+        *firstRetry.Movement);
+    assert(HasRetainedMagmawHazardOwnership(rejectedOwnership, retryHazard,
+        PlayerGuid(30006)));
     BotActionArbitration::Candidate combatRange;
     combatRange.Key = "world.profile_combat_range";
     combatRange.Source = "db_class_spec_profile";
@@ -1475,103 +1495,91 @@ int main()
     combatRange.ExpiresAtMs = retryBoard.ObservedAtMs + 500;
     MagmawParasiteCombatContract::ProfileParameters const retryProfile =
         firstRetry.ParasiteCombat.ResolveProfileParameters(PlayerGuid(30006),
-            ObjectGuid{},
-            MagmawParasiteCombatContract::BossEntry,
+            ObjectGuid{}, MagmawParasiteCombatContract::BossEntry,
             retryHazard.HasRetainedIntent(), true, false);
     assert(!retryProfile.ForbidAreaDamage);
     assert(retryProfile.AllowMultidot);
     assert(retryProfile.TargetAllowed);
     assert(retryProfile.DeferCombatRange);
-    combatRange.Allowed = !retryProfile.DeferCombatRange;
-    combatRange.RejectReason = "magmaw_hazard_movement_retry";
     bool combatRangeRan = false;
-    combatRange.Attempt = [&combatRangeRan]()
+    combatRange.Attempt = [&combatRangeRan, &rejectedOwnership,
+        &retryHazard]()
     {
+        if (HasRetainedMagmawHazardOwnership(rejectedOwnership, retryHazard,
+                PlayerGuid(30006)))
+            return BotActionArbitration::Outcome::Retryable(
+                "magmaw_hazard_movement_retry");
         combatRangeRan = true;
         return BotActionArbitration::Outcome::Started(
             "profile_combat_range_reconciled");
     };
     rejectedTick.Submit(std::move(combatRange));
     BotActionArbitration::Resolution const& rejected = rejectedTick.Resolve();
-    assert(!rejected.AnyCommitted);
+    assert(rejected.AnyCommitted);
     assert(rejectedNativeAttempted);
-    assert(!combatRangeRan);
-    assert(retryHazard.HasRetainedIntent());
+    assert(combatRangeRan);
+    assert(!retryHazard.HasRetainedIntent());
+    assert(!HasRetainedMagmawHazardOwnership(rejectedOwnership, retryHazard,
+        PlayerGuid(30006)));
     assert(HasTrace(rejected,
         firstRetry.Movement->Id.Key(), "attempted",
         "route_destination_endpoint_mismatch"));
-    assert(HasTrace(rejected, "world.profile_combat_range", "hard_masked",
-        "magmaw_hazard_movement_retry"));
+    assert(HasTrace(rejected, "world.profile_combat_range", "attempted",
+        "profile_combat_range_reconciled"));
 
     Blackboard retry = retryBoard;
     retry.Revision += 1;
     retry.ObservedAtMs += 1;
-    // The same danger remains present: a repeated wrong-floor proof must not
-    // be treated as progress merely because the observation revision moved.
+    // The same danger and actor geometry remain present. Revision churn alone
+    // cannot recreate the retired endpoint.
     retry.Hostiles[1] = Parasite(9001, retryBoard.Hostiles[1].Position);
     AdaptiveMagmawPlan secondRetry = strategy.Propose(retry,
         PlayerGuid(30006), "dps", &expiredLease, false, false, &transition,
         &retryHazard);
     Move const* secondMove = MoveOf(secondRetry);
-    assert(secondMove);
-    assert(secondRetry.Movement->Id.EventGeneration == firstEvent);
-    assert(secondRetry.Movement->Id.Actor == firstRetry.Movement->Id.Actor);
-    assert(secondMove->X == firstDestination.X);
-    assert(secondMove->Y == firstDestination.Y);
-    BotActionArbitration::Kernel repeatedTick;
-    repeatedTick.Begin(retry.ObservedAtMs);
-    bool repeatedNativeAttempted = false;
-    SubmitMovementThroughProductionAdapter(repeatedTick,
-        *secondRetry.Movement, retry, rejectedProof,
-        repeatedNativeAttempted);
-    BotActionArbitration::Resolution const& repeated = repeatedTick.Resolve();
-    assert(!repeated.AnyCommitted);
-    assert(repeatedNativeAttempted);
-    assert(HasTrace(repeated,
-        secondRetry.Movement->Id.Key(), "attempted",
-        "route_destination_endpoint_mismatch"));
+    if (secondMove)
+        assert(!MagmawParasiteHazardState::SamePoint(firstDestination,
+            { secondMove->X, secondMove->Y, secondMove->Z }));
+    assert(!retryHazard.HasRetainedIntent());
 
-    // The existing deterministic 12-yard same-floor search is admitted only
-    // for this typed bounded hazard. Its verified local alternative is safe,
-    // makes progress toward the retained destination, and is not that old
-    // endpoint, so safety observation clears the retained intent afterward.
-    float const dx = requestedDestination.X
-        - retry.Players[5].Position.X;
-    float const dy = requestedDestination.Y
-        - retry.Players[5].Position.Y;
-    Vector3 const localSafe{
-        retry.Players[5].Position.X + dx / requestedDistance * 12.0f,
-        retry.Players[5].Position.Y + dy / requestedDistance * 12.0f,
-        retry.Players[5].Position.Z };
-    assert(MagmawParasiteHazardState::Distance2d(localSafe,
-        retry.Hostiles[1].Position) >= MagmawParasitePolicy::SafeClearance);
-    assert(MagmawParasiteHazardState::Distance2d(localSafe,
-        firstDestination) > MagmawParasitePolicy::DestinationTolerance);
-    BotNativeAction::Candidate localIntent = *secondRetry.Movement;
-    localIntent.Action = Move{ localSafe.X, localSafe.Y, localSafe.Z,
-        "parasite_contact_evade" };
-    BotActionArbitration::Kernel localTick;
-    localTick.Begin(retry.ObservedAtMs + 1);
-    bool localNativeAttempted = false;
-    SubmitMovementThroughProductionAdapter(localTick, localIntent, retry,
-        PathProof(localSafe, true,
+    // Measurable actor geometry change opens one fresh actor-owned episode.
+    Blackboard movedActor = retry;
+    movedActor.Revision += 1;
+    movedActor.ObservedAtMs += 100;
+    movedActor.Players[5].Position.X += 1.0f;
+    ActorSnapshot const* movedActorSnapshot =
+        movedActor.FindActor(PlayerGuid(30006));
+    assert(movedActorSnapshot);
+    std::optional<BotNativeAction::Candidate> freshEscape =
+        MagmawParasitePolicy::ProposePersonalEscape(movedActor,
+            *movedActorSnapshot, movedActor.Hostiles[1], &retryHazard);
+    Move const* freshMove = freshEscape
+        ? std::get_if<Move>(&freshEscape->Action) : nullptr;
+    assert(freshMove);
+    assert(retryHazard.HasRetainedIntent());
+    assert(freshEscape->Id.Actor == PlayerGuid(30006));
+    assert(freshEscape->Id.EventGeneration > firstEvent);
+    BotActionArbitration::Kernel admittedTick;
+    admittedTick.Begin(movedActor.ObservedAtMs);
+    bool admittedNativeAttempted = false;
+    SubmitMovementThroughProductionAdapter(admittedTick,
+        *freshEscape, movedActor,
+        PathProof({ freshMove->X, freshMove->Y, freshMove->Z }, true,
             BotWorldMovement::NativePathFloorFailure::None),
-        localNativeAttempted);
-    BotActionArbitration::Resolution const& local = localTick.Resolve();
-    assert(local.AnyCommitted);
-    assert(localNativeAttempted);
-    assert(localIntent.Id.Actor == firstRetry.Movement->Id.Actor);
-    assert(localIntent.Id.EventGeneration == firstEvent);
+        admittedNativeAttempted, &retryHazard);
+    assert(admittedTick.Resolve().AnyCommitted);
+    assert(admittedNativeAttempted);
+    assert(retryHazard.HasRetainedIntent());
 
-    Blackboard safe = retry;
+    Blackboard safe = movedActor;
     safe.Revision += 1;
     safe.ObservedAtMs += 1;
-    safe.Players[5].Position = localSafe;
-    AdaptiveMagmawPlan safePlan = strategy.Propose(safe,
-        PlayerGuid(30006), "dps", &expiredLease, false, false, &transition,
-        &retryHazard);
+    safe.Players[5].Position = {
+        freshMove->X, freshMove->Y, freshMove->Z };
+    retryHazard.ObserveNativeProgress(safe, safe.Players[5].Position,
+        MagmawParasitePolicy::DestinationTolerance,
+        MagmawParasitePolicy::SafeClearance);
     assert(!retryHazard.HasRetainedIntent());
-    assert(safePlan.OwnsNode);
 
     // (3) The fixed 30006/30009 lane remains one identity across GUID churn,
     // midpoint observation, pillar preemption/resume, arrival, next event,
@@ -1818,7 +1826,24 @@ int main()
         != guidChurn.Hostiles[1].Guid.GetRawValue());
     assert(!nonownerLane.Committed);
 
-    // A rejected native result fails closed while retaining the same episode.
+    // A result for another actor cannot retire this actor's episode.
+    BotNativeAction::Candidate foreignActorMove = *churnPlan.Movement;
+    foreignActorMove.Id.Actor = PlayerGuid(30007);
+    BotActionArbitration::Kernel foreignActorTick;
+    foreignActorTick.Begin(guidChurn.ObservedAtMs);
+    bool foreignActorAttempted = false;
+    SubmitMovementThroughProductionAdapter(foreignActorTick,
+        foreignActorMove, guidChurn,
+        PathProof({ MoveOf(churnPlan)->X, MoveOf(churnPlan)->Y,
+            MoveOf(churnPlan)->Z }, false,
+            BotWorldMovement::NativePathFloorFailure::SampleFloorGap),
+        foreignActorAttempted, &nonownerHazard,
+        "route_destination_missing_mmap");
+    foreignActorTick.Resolve();
+    assert(foreignActorAttempted);
+    assert(nonownerHazard.HasRetainedIntent());
+
+    // The exact actor-owned permanent native rejection retires the episode.
     BotActionArbitration::Kernel failedThreatTick;
     failedThreatTick.Begin(guidChurn.ObservedAtMs);
     bool failedThreatAttempted = false;
@@ -1827,14 +1852,80 @@ int main()
         PathProof({ MoveOf(churnPlan)->X, MoveOf(churnPlan)->Y,
             MoveOf(churnPlan)->Z }, false,
             BotWorldMovement::NativePathFloorFailure::SampleFloorGap),
-        failedThreatAttempted);
+        failedThreatAttempted, &nonownerHazard);
     BotActionArbitration::Resolution const& failedThreatResolution =
         failedThreatTick.Resolve();
     assert(failedThreatAttempted);
     assert(!failedThreatResolution.AnyCommitted);
-    assert(nonownerHazard.HasRetainedIntent());
+    assert(!nonownerHazard.HasRetainedIntent());
     assert(HasTrace(failedThreatResolution, churnPlan.Movement->Id.Key(),
         "attempted", "route_destination_endpoint_mismatch"));
+
+    AdaptiveMagmawPlan unchangedRejected = strategy.Propose(guidChurn,
+        PlayerGuid(30008), "dps", nullptr, false, false, &nonownerLane,
+        &nonownerHazard);
+    Move const* unchangedRejectedMove = MoveOf(unchangedRejected);
+    assert(!unchangedRejectedMove
+        || !MagmawParasiteHazardState::SamePoint(
+            { unchangedRejectedMove->X, unchangedRejectedMove->Y,
+                unchangedRejectedMove->Z },
+            { MoveOf(churnPlan)->X, MoveOf(churnPlan)->Y,
+                MoveOf(churnPlan)->Z }));
+    assert(!nonownerHazard.HasRetainedIntent());
+
+    // Moving only the danger geometry permits one fresh escape with a new
+    // generation; unchanged geometry above could not recreate the endpoint.
+    Blackboard dangerMoved = guidChurn;
+    dangerMoved.Revision += 1;
+    dangerMoved.ObservedAtMs += 100;
+    dangerMoved.Hostiles[1].Position.X += 1.0f;
+    dangerMoved.Hostiles[1].VictimGuid = PlayerGuid(30008);
+    AdaptiveMagmawPlan dangerMovedPlan = strategy.Propose(dangerMoved,
+        PlayerGuid(30008), "dps", nullptr, false, false, &nonownerLane,
+        &nonownerHazard);
+    assert(MoveOf(dangerMovedPlan));
+    assert(nonownerHazard.HasRetainedIntent());
+    assert(dangerMovedPlan.Movement->Id.EventGeneration
+        > churnPlan.Movement->Id.EventGeneration);
+
+    // All four planner-terminal reasons cross policy -> production adapter ->
+    // kernel feedback and retire only their matching actor-local episode.
+    std::array<char const*, 4> const terminalReasons = {
+        "route_destination_endpoint_mismatch",
+        "route_destination_unreachable",
+        "route_destination_partial_path",
+        "route_destination_missing_mmap" };
+    for (size_t reasonIndex = 0; reasonIndex < terminalReasons.size();
+        ++reasonIndex)
+    {
+        Blackboard terminalBoard = threatened;
+        terminalBoard.Revision += 100 + reasonIndex;
+        terminalBoard.ObservedAtMs += 1000 + reasonIndex;
+        MagmawLaneTransitionState terminalLane;
+        MagmawParasiteHazardState terminalHazard;
+        AdaptiveMagmawPlan terminalPlan = strategy.Propose(terminalBoard,
+            PlayerGuid(30008), "dps", nullptr, false, false,
+            &terminalLane, &terminalHazard);
+        Move const* terminalMove = MoveOf(terminalPlan);
+        assert(terminalMove && terminalHazard.HasRetainedIntent());
+        BotActionArbitration::Kernel terminalTick;
+        terminalTick.Begin(terminalBoard.ObservedAtMs);
+        bool terminalAttempted = false;
+        SubmitMovementThroughProductionAdapter(terminalTick,
+            *terminalPlan.Movement, terminalBoard,
+            PathProof({ terminalMove->X, terminalMove->Y, terminalMove->Z },
+                true, BotWorldMovement::NativePathFloorFailure::None),
+            terminalAttempted, &terminalHazard,
+            terminalReasons[reasonIndex]);
+        BotActionArbitration::Resolution const& terminalResolution =
+            terminalTick.Resolve();
+        assert(terminalAttempted);
+        assert(!terminalResolution.AnyCommitted);
+        assert(!terminalHazard.HasRetainedIntent());
+        assert(HasTrace(terminalResolution,
+            terminalPlan.Movement->Id.Key(), "attempted",
+            terminalReasons[reasonIndex]));
+    }
 
     // The exposed head remains first even while a parasite pursues the actor.
     Blackboard exposed = threatened;

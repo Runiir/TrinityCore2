@@ -138,6 +138,16 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
         {
             context.State.MagmawTransferLaneNativeOutcome = outcome;
         };
+        magmawAdapter.ObserveNativeOutcome = [&context](BotEncounter::
+            MagmawMovementNativeOutcome const& outcome)
+        {
+            if (outcome.Mechanic != "parasite_contact_evade")
+                return;
+            context.State.MagmawParasiteHazard.
+                ObserveTerminalNativeRejection(outcome.Actor,
+                    outcome.EventGeneration, outcome.Destination,
+                    outcome.Result.Reason);
+        };
         magmawAdapter.BeforeSubmit = [this](BotActionArbitration::Kernel& kernel,
             BotActionArbitration::Candidate const& candidate,
             BotNativeAction::Candidate const& intent)
