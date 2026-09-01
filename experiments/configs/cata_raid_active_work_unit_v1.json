@@ -11,7 +11,7 @@
   "mode": "10N",
   "architecture_scope": "Repair one shared corpse-run task transition: when exact scoped ghost-flight eligibility rises during a retained cross-map Recovery/native_long_path, replace only that retained path with the same typed destination so the existing native aerial executor can run.",
   "gate_state": "exact repair commit passed independent Sol-high review; one exact fast8_v4 configure/build and one no-retry completion-watchdog live diagnostic are admitted; authserver, retry, and unrelated gameplay mutation remain forbidden",
-  "observed_at_commit": "7175cd0bcc",
+  "observed_at_commit": "7175cd0bccb377f4636fe43a01037020c4b20674",
   "behavior_change": true,
   "evidence_contract_change": false,
   "source_handoff": {
@@ -22,7 +22,7 @@
   "review_handoff": {
     "path": "experiments/configs/cata_raid_native_recovery_ghost_flight_review_handoff_20260901.json",
     "verdict": "GO",
-    "reviewed_commit": "7175cd0bcc"
+    "reviewed_commit": "7175cd0bccb377f4636fe43a01037020c4b20674"
   },
   "first_broken_edge": {
     "run_id": "magmaw-personal-escape-fixture-febee38218-20260901",

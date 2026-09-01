@@ -4,7 +4,7 @@
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "passed_implementation_pending_live_verification",
   "implementation_source": {
-    "commit": "7175cd0bcc",
+    "commit": "7175cd0bccb377f4636fe43a01037020c4b20674",
     "tree": "c7fd0127fa8d4ac441fbabe486f357a0270b045e"
   },
   "review": {
