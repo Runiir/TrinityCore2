@@ -1,0 +1,61 @@
+{
+  "schema": "cata_raid_magmaw_transfer_lane_checkpoint_implementation_handoff_v1",
+  "created_at_utc": "2026-09-01T03:04:00Z",
+  "source_commit": "9f54223828f2b4405e9c1573cc5f1097b026dbd3",
+  "source_tree": "19d1ec42b198dda29f4c08a2c9022bbec68478e6",
+  "checkpoint_implementation_commit": "3b8ad47c53",
+  "capture_layout_test_commit": "9f54223828",
+  "classification": "map_bound_checkpoint_implemented_reviewed_capture_dialect_missing",
+  "independent_review": "go_for_merge_and_capture_dialect",
+  "fixture": {
+    "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
+    "case_id": "entrance_polygon_short_lane_v1",
+    "actor_guid": 30007,
+    "map_id": 669,
+    "task_authority_enabled": false,
+    "certifies_gameplay_success": false,
+    "certifies_boss_fidelity": false
+  },
+  "pinned_route": {
+    "start": [-345.872009, -224.343994, 193.126999],
+    "destination": [-345.872009, -218.343994, 193.126999],
+    "detour_polygons": 1,
+    "complete": true,
+    "terminal_2d_error": 0.0,
+    "terminal_z_error": 0.0,
+    "probe_receipt": "experiments/configs/map669_magmaw_transfer_lane_entrance_probe_v1.json",
+    "probe_receipt_sha256": "996f64ad0072eb389fd39afc0b3907757298993b6690399c77a3db2cd94b4cb7",
+    "native_stdout_sha256": "1a708f783eff6b576425575b476955810902f49dd9a23fd05c523aa7fd02c8bf"
+  },
+  "verified_runtime_contract": [
+    "authority-off selection preserves the exact legacy pillar_bait_switch candidate",
+    "only the sealed checkpoint candidate receives controller-checkpoint admission",
+    "the existing action kernel remains the sole arbiter",
+    "normal Magmaw submission cannot replace the queued checkpoint candidate",
+    "planner evidence is read by exact receipt id and requires a complete primary MMAP path with no local fallback",
+    "MotionMaster point generator and spline identities are joined to later samples",
+    "wrong-floor and regressing samples cannot count as semantic progress",
+    "completion requires two genuine same-floor decreases and logical task arrival",
+    "terminal JSON explicitly cannot certify gameplay or boss success"
+  ],
+  "validation": {
+    "focused_tests_passed_after_merge": 19,
+    "pinned_detour_probe_passed": true,
+    "all_touched_cpp_under_1000_lines": true,
+    "largest_touched_cpp_lines": 946,
+    "adaptive_strategy_header_lines": 994
+  },
+  "required_next_work_unit": {
+    "id": "evidence:magmaw_transfer_lane_map_bound_capture_dialect",
+    "owner_skill": "raid-evidence-lifecycle",
+    "summary": "Add the exact sealed command/parser/controller/capture terminal dialect. Generic controller lifecycle must never spoof fixture success.",
+    "worldserver_start_admitted": false,
+    "authserver_start_admitted": false,
+    "database_provisioning_mutations_allowed": false
+  },
+  "following_work_unit": {
+    "id": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_start",
+    "owner_skill": "raid-evidence-lifecycle",
+    "admission": "Only after the capture dialect receives independent review, the exact merged revision is built, and the checkpoint seal/profile passes prestart validation."
+  }
+}

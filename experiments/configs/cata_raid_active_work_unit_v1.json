@@ -1,25 +1,25 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:magmaw_transfer_lane_map_bound_checkpoint_seam",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "work_unit": "evidence:magmaw_transfer_lane_map_bound_capture_dialect",
+  "owner_skill": "raid-evidence-lifecycle",
   "next_work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_start",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "default_off_authority_merged_built_live_gate_closed",
+  "classification": "map_bound_checkpoint_implemented_reviewed_capture_dialect_missing",
   "epoch_id": "magmaw_transfer_lane_task_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "map_bound_checkpoint_implementation_required",
-  "immutable_input_commit": "3a485bf34f95d71f096c1c296b9b19af2c741791",
-  "observed_at_commit": "3a485bf34f95d71f096c1c296b9b19af2c741791",
+  "gate_state": "capture_dialect_implementation_required",
+  "immutable_input_commit": "9f54223828f2b4405e9c1573cc5f1097b026dbd3",
+  "observed_at_commit": "9f54223828f2b4405e9c1573cc5f1097b026dbd3",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "next_action": "Implement one sealed fixture-only map-669 entrance movement that proves the default-off transfer task crosses the production kernel, MMAP planner, MotionMaster/spline, later progress ticks, and task outcome.",
+  "next_action": "Implement and independently review the exact fixture command/parser/controller/capture-terminal dialect before admitting one worldserver start.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_transfer_lane_authority_build_handoff_v1.json",
-    "sha256": "e6ecb1f344378180d8fe38d84553d9f15d9e2000f7a889c0d664e6a801a2012c",
-    "source_commit": "3a485bf34f95d71f096c1c296b9b19af2c741791",
-    "source_tree": "c236d6001b437838be97d315345d03fe035d4d63"
+    "path": "experiments/configs/cata_raid_magmaw_transfer_lane_checkpoint_implementation_handoff_v1.json",
+    "sha256": "95f43681e2c1ef92103ff582224e026857afa16a6b1238bcbc54de8d74b028dd",
+    "source_commit": "9f54223828f2b4405e9c1573cc5f1097b026dbd3",
+    "source_tree": "19d1ec42b198dda29f4c08a2c9022bbec68478e6"
   },
   "program_scope": {
     "acceptance_admitted": false,
@@ -32,32 +32,32 @@
     "dvc_publication_required_after_terminal": false
   },
   "scope_lock": {
-    "allowed_change": "Add the smallest Magmaw-specific sealed checkpoint seam that exercises a short safe map-669 entrance movement through the existing default-off selector, sole arbiter, native planner, MotionMaster/spline, progress sampler, and task runner. Keep the 994-line strategy header unchanged.",
+    "allowed_change": "Add the smallest dedicated Python capture dialect for the sealed map-669 transfer checkpoint, preserving every existing capture dialect.",
     "forbidden": [
-      "creating a second action arbiter, offline core bootstrap, or generic encounter framework",
-      "changing movement admission, endpoint or floor tolerances, fallback behavior, or Detour semantics",
-      "changing class rotations, encounter mechanics, raid strategy, database state, or consumables",
-      "treating reached_projected_end_poly or action submission as logical task completion",
-      "starting worldserver or authserver before checkpoint implementation review and a clean gate-bearing build"
+      "changing C or C++ gameplay, movement, planner, or encounter behavior",
+      "starting worldserver or authserver before independent review and an exact gate-bearing build",
+      "using generic controller hold lifecycle as fixture success authority",
+      "classifying fixture completion as gameplay, boss, raid, or task-authority success",
+      "adding a fixed 300-second raid or fixture success timer"
     ],
     "required_postconditions": [
-      "authority remains disabled and preserves the exact legacy candidate and decision trace",
-      "one exact actor/task/candidate/receipt crosses the production planner and native movement submission",
-      "MotionMaster point generation, spline launch, and at least two later decreasing-distance ticks are correlated",
-      "wrong-floor proximity cannot refresh semantic progress or its deadline",
-      "only same-floor logical arrival completes the task",
-      "all touched C and C++ files remain below 1000 lines and focused CCN remains small"
+      "only the exact botauto_magmaw_transfer_lane_checkpoint response can establish fixture success",
+      "fixture, case, actor, source, seal, controller, candidate, planner, spline, progress, and task outcome identities are exact",
+      "queue, attempt, and native submission counts are exactly one",
+      "failed checkpoint stages remain failures even after generic hold terminalization",
+      "terminal fixture success stops capture promptly and emits fixture-only evidence",
+      "all modified Python modules remain below 1000 physical lines"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "completion_watchdog",
+    "policy": "prompt_typed_fixture_terminal",
     "repair_policy": "bounded_implementation_and_independent_review",
     "terminal_edges": [
-      "focused_replay_passed",
-      "legacy_equivalence_failed",
-      "identity_correlation_failed",
-      "projected_endpoint_misclassified",
+      "dedicated_fixture_terminal_passed",
+      "dedicated_fixture_terminal_failed",
+      "identity_or_count_mismatch",
+      "generic_hold_spoof_detected",
       "scope_or_size_violation"
     ]
   }
