@@ -4552,6 +4552,115 @@ def watchdog_state(
     }
 
 
+ACTIVE_NATIVE_RECOVERY_STATES = {
+    "awaiting_native_reset",
+    "release_resurrection_pending",
+    "native_resurrection_runback",
+    "recovery_evidence_pending",
+}
+
+
+def raid_terminal_watchdog_failure(
+    report: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """Return a typed, immediately terminal raid/dungeon runtime edge.
+
+    A native terminal admission/action gate cannot recover by waiting for the
+    semantic-progress clock.  A full wipe remains recoverable only while the
+    runtime reports a typed recovery episode (or an explicit remaining
+    recovery budget).  Diagnosis-only death rows are deliberately insufficient
+    because they can lag behind a successful native resurrection.
+    """
+    status = report.get("status")
+    if not isinstance(status, Mapping):
+        return None
+    runtime = status.get("raid_runtime")
+    if not isinstance(runtime, Mapping):
+        return None
+    if str(runtime.get("instance_kind") or "").lower() not in {"raid", "dungeon"}:
+        return None
+
+    failure_reason = str(status.get("failure_reason") or "").strip()
+    action_gate_terminal = (
+        failure_reason
+        and str(runtime.get("admission_phase") or "").lower() == "terminal"
+        and runtime.get("bot_actions_enabled") is False
+    )
+    if action_gate_terminal:
+        return {
+            "kind": "cohort_action_gate_failure",
+            "completion_reason": "cohort_action_gate_failure_watchdog",
+            "failure_reason": failure_reason,
+        }
+
+    if not _cohort_all_dead_wiped(runtime):
+        return None
+
+    recovery_state = str(runtime.get("recovery_state") or "").lower()
+    try:
+        wipe_generation = int(runtime.get("wipe_generation") or 0)
+    except (TypeError, ValueError):
+        wipe_generation = 0
+    typed_recovery_active = (
+        wipe_generation > 0
+        and recovery_state in ACTIVE_NATIVE_RECOVERY_STATES
+    )
+    if typed_recovery_active:
+        return None
+
+    remaining_budget = 0
+    for key in (
+        "recovery_budget_remaining",
+        "recovery_attempts_remaining",
+        "death_loop_budget_remaining",
+    ):
+        value = runtime.get(key)
+        if isinstance(value, bool):
+            continue
+        try:
+            remaining_budget = max(remaining_budget, int(value or 0))
+        except (TypeError, ValueError):
+            continue
+    if remaining_budget > 0:
+        return None
+
+    return {
+        "kind": "cohort_wiped_without_active_recovery",
+        "completion_reason": "cohort_wipe_without_recovery_watchdog",
+        "failure_reason": "cohort_wiped_without_active_recovery",
+        "recovery_state": recovery_state or "none",
+        "wipe_generation": wipe_generation,
+    }
+
+
+def finalize_raid_terminal_watchdog(
+    output_dir: Path,
+    report: dict[str, Any],
+    terminal: Mapping[str, Any],
+) -> None:
+    """Persist one terminal edge before normal evidence cleanup executes."""
+    completion = str(terminal.get("completion_reason") or "")
+    reason = str(terminal.get("failure_reason") or "")
+    report["completion_reason"] = completion
+    report.setdefault("watchdog_state", {})["terminal_failure"] = dict(terminal)
+    labels = report.setdefault("failure_labels", [])
+    if reason and reason not in labels:
+        labels.insert(0, reason)
+    report["failure_reason"] = reason or (labels[0] if labels else None)
+    report["failed"] = max(int(report.get("failed") or 0), 1)
+    report["all_passed"] = False
+    report["acceptable_final_evidence"] = False
+    rejections = report.setdefault("final_evidence_rejections", [])
+    for rejection in (
+        "failure_labels_present",
+        "watchdog_failure_is_not_final_evidence",
+    ):
+        if rejection not in rejections:
+            rejections.append(rejection)
+    finalize_heartbeat(output_dir, report)
+    write_json(output_dir / "report.json", report)
+
+
 def calibration_pre_scoring_blocker(
     report: Mapping[str, Any],
 ) -> dict[str, Any] | None:
@@ -4713,7 +4822,15 @@ def final_evidence_rejections(
         rejections.append("failure_labels_present")
     if context.get("segment_id") or context.get("route_node_id"):
         rejections.append("segment_or_route_context_is_debug_only")
-    if completion in {"emergency_wall_clock_timeout", "no_progress_watchdog", "repeated_decision_watchdog", "death_loop_watchdog", "calibration_pre_scoring_blocker_watchdog"}:
+    if completion in {
+        "emergency_wall_clock_timeout",
+        "no_progress_watchdog",
+        "repeated_decision_watchdog",
+        "death_loop_watchdog",
+        "calibration_pre_scoring_blocker_watchdog",
+        "cohort_action_gate_failure_watchdog",
+        "cohort_wipe_without_recovery_watchdog",
+    }:
         rejections.append("watchdog_failure_is_not_final_evidence")
     if evidence.get("forbidden_completion_assists"):
         rejections.append("forced_or_teacher_kill_evidence")
@@ -5408,6 +5525,10 @@ def run_transport_completion_watchdog(
             no_progress_window_sec, max_repeated_decisions, max_death_loops,
             validation_route_manifest,
         )
+        raid_terminal = raid_terminal_watchdog_failure(report)
+        if raid_terminal:
+            finalize_raid_terminal_watchdog(output_dir, report, raid_terminal)
+            return finish(0, False)
         progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
         if progress_total > last_progress_total:
             last_progress_total = progress_total
@@ -5633,6 +5754,10 @@ def run_worldserver_completion_watchdog(
                 max_death_loops,
                 validation_route_manifest,
             )
+            raid_terminal = raid_terminal_watchdog_failure(report)
+            if raid_terminal:
+                finalize_raid_terminal_watchdog(output_dir, report, raid_terminal)
+                break
             progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
             if progress_total > last_progress_total:
                 last_progress_total = progress_total
