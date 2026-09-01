@@ -10,20 +10,20 @@
   "boss": "magmaw",
   "mode": "10N",
   "architecture_scope": "Universal task-state architecture intended for all raid sizes and difficulties; Magmaw 10N is only the canary.",
-  "gate_state": "current_suite_then_one_build_and_one_no_retry_canary",
-  "observed_at_commit": "8760bf02ad10ea1001f4b05ec6fa66b54722433f",
+  "gate_state": "current_suite_then_verified_control_only_build_reuse_and_one_no_retry_canary",
+  "observed_at_commit": "23b5a2d9a3cbd3078b6a01bbf8113f68629fd3cc",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "next_action": "Run the exact retained recurrence suite once at this clean descriptor commit. Continue only when canary_admitted is true. Then run one fast8_v4 configure and worldserver build, one verified prestart bundle, and one normal Magmaw 10N completion-watchdog canary without retry or authserver.",
+  "next_action": "Run the exact retained recurrence suite once at this clean descriptor commit. Continue only when canary_admitted is true. Verify the existing fast8_v4 binary as a control-only compatible ancestor, reseal the existing verified prestart inputs, and run one normal Magmaw 10N completion-watchdog canary without retry or authserver.",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_task_state_canary_admission_handoff_v1.json",
-    "sha256": "83941c5f864dc99758f02c336d2c4651cc08140d4f915bcc9571a2a434fb3829"
+    "sha256": "f9c8e5f1e970ecab6fc01682f5dd8456c9eb15ac1a3b040fab215ee1060b0213"
   },
   "implementation_scope": {
     "allowed": [
       "run the exact 22-fixture retained recurrence suite once",
-      "run one exact queued fast8_v4 configure and one queued worldserver build",
-      "create and verify one normal Magmaw 10N prestart bundle",
+      "verify the existing fast8_v4 binary as a control-only compatible ancestor",
+      "reseal the already verified normal Magmaw 10N prestart inputs",
       "apply deterministic canonical roster provisioning and strict readback",
       "start one worldserver under the completion watchdog",
       "retain DPS, HPS, deaths, stalls, mechanic proposals, selected candidates, native outcomes, and cleanup evidence",
@@ -61,7 +61,7 @@
   },
   "acceptance": [
     "the exact current recurrence suite reports 22 of 22 passing and canary_admitted true",
-    "the configure and build receipts bind the final descriptor commit and fast8_v4 with eight compiler jobs and one linker",
+    "the fast8_v4 configure and build receipts use eight compiler jobs and one linker, and the shared verifier proves exact control-only compatibility with the final descriptor commit",
     "no changed C or C++ file reaches 1000 physical lines",
     "the prestart bundle binds the canonical route, frozen roster, config, recurrence decision, build receipt, and binary",
     "the normal gameplay canary starts exactly one worldserver and zero authservers",

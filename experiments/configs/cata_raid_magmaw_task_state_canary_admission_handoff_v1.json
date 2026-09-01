@@ -2,19 +2,20 @@
   "schema": "cata_raid_specialist_handoff_v1",
   "work_unit_id": "coordination:magmaw_task_state_first_gameplay_canary",
   "owner_skill": "raid-performance-loop",
-  "classification": "prestart_verifier_repaired_canary_conditionally_admitted",
-  "source_commit": "8760bf02ad10ea1001f4b05ec6fa66b54722433f",
+  "classification": "gameplay_prestart_authority_repaired_canary_conditionally_admitted",
+  "source_commit": "23b5a2d9a3cbd3078b6a01bbf8113f68629fd3cc",
   "implemented_commits": [
     "faff8ad65e027bf39bf2c983f78919971d1d095e",
     "f5e6e1713998f60f0c945ae6bc8e76e6b2eb1a49",
-    "8760bf02ad10ea1001f4b05ec6fa66b54722433f"
+    "8760bf02ad10ea1001f4b05ec6fa66b54722433f",
+    "23b5a2d9a3cbd3078b6a01bbf8113f68629fd3cc"
   ],
   "review": {
     "verdict": "GO",
-    "focused_result": "254 passed",
+    "focused_result": "256 passed",
     "full_magmaw_result": "199 passed",
     "production_boundary": "the production manager and compiled fixture use the same Magmaw movement-candidate adapter and real arbitration kernel",
-    "prestart_repair": "the gameplay admission verifier now subtracts only explicitly quarantined fixture IDs and still fails closed on every nonquarantined remainder"
+    "prestart_repair": "the gameplay admission verifier subtracts only explicitly quarantined fixture IDs, and normal gameplay capture no longer supplies fixture-only generated profile authority"
   },
   "recurrence": {
     "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
@@ -32,8 +33,8 @@
     "quarantine_meaning": "These fixtures remain unresolved and cannot support an incomplete-path or floor-proof claim. Their reviewed low-value staging gap does not block this gameplay canary."
   },
   "build_control_identity": {
-    "implementation_commit": "8760bf02ad10ea1001f4b05ec6fa66b54722433f",
+    "implementation_commit": "23b5a2d9a3cbd3078b6a01bbf8113f68629fd3cc",
     "rule": "The next binary is built at the final descriptor commit. Later clean control-only descendants may reuse it only through the shared fail-closed build/control compatibility verifier."
   },
-  "next_action": "At the final clean descriptor commit, run the exact retained recurrence suite once. If canary_admitted is true, run one fast8_v4 configure and worldserver build, create one verified normal Magmaw 10N bundle, and start one worldserver under the completion watchdog with no retry and no authserver."
+  "next_action": "At the final clean descriptor commit, run the exact retained recurrence suite once. If canary_admitted is true, verify the existing fast8_v4 binary as a control-only compatible ancestor, reseal the verified normal Magmaw 10N prestart inputs, and start one worldserver under the completion watchdog with no retry and no authserver."
 }
