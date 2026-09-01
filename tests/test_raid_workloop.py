@@ -343,24 +343,24 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "runtime:magmaw_transfer_lane_default_off_authority_selector"
+        "evidence:magmaw_task_state_first_gameplay_canary"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["classification"] == "typed_projected_endpoint_observed"
-    assert active["next_owner_skill"] == "raid-evidence-lifecycle"
+    assert active["classification"] == "implementation_pending_live_verification"
+    assert active["next_owner_skill"] == "raid-performance-loop"
     assert active["ready_for_bounded_repair"] is False
     assert active["program_scope"]["gameplay_mutations_allowed"] is False
-    assert active["program_scope"]["worldserver_start_admitted"] is False
+    assert active["program_scope"]["worldserver_start_admitted"] is True
     assert active["program_scope"]["authserver_start_admitted"] is False
     assert active["source_handoff"]["path"].endswith(
-        "cata_raid_projected_endpoint_terminal_summary_v1.json"
+        "cata_raid_magmaw_task_state_canary_admission_handoff_v1.json"
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["validation_clock"]["policy"] == "completion_watchdog"
-    assert "persistent transfer-lane task runner" in active["next_action"].lower()
+    assert "retained recurrence suite" in active["next_action"].lower()
     assert any(
-        "reached_projected_end_poly" in rule.lower()
-        for rule in active["scope_lock"]["forbidden"]
+        "bot-z" in rule.lower()
+        for rule in active["implementation_scope"]["forbidden"]
     )
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False

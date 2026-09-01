@@ -1,0 +1,37 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "coordination:magmaw_task_state_first_gameplay_canary",
+  "owner_skill": "raid-performance-loop",
+  "classification": "implementation_reviewed_canary_conditionally_admitted",
+  "source_commit": "edc69ed76581c2efd20c46be78e9c233b579ac10",
+  "implemented_commits": [
+    "faff8ad65e027bf39bf2c983f78919971d1d095e",
+    "f5e6e1713998f60f0c945ae6bc8e76e6b2eb1a49"
+  ],
+  "review": {
+    "verdict": "GO",
+    "focused_result": "21 passed",
+    "full_magmaw_result": "199 passed",
+    "production_boundary": "the production manager and compiled fixture use the same Magmaw movement-candidate adapter and real arbitration kernel"
+  },
+  "recurrence": {
+    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "parasite_fixture_revisions": {
+      "magmaw_parasite_lane_paths_v1": 8,
+      "magmaw_parasite_lane_transition_full_replay_v1": 7,
+      "magmaw_parasite_control_full_runtime_v1": 7
+    },
+    "quarantine_handoff": "experiments/configs/cata_raid_map669_fallback_fixture_quarantine_handoff_v1.json",
+    "quarantined_fixtures": [
+      "same_level_hazard_path_admission_v1",
+      "same_level_floor_observation_v1",
+      "same_level_native_path_proof_v1"
+    ],
+    "quarantine_meaning": "These fixtures remain unresolved and cannot support an incomplete-path or floor-proof claim. Their reviewed low-value staging gap does not block this gameplay canary."
+  },
+  "build_control_identity": {
+    "implementation_commit": "edc69ed76581c2efd20c46be78e9c233b579ac10",
+    "rule": "The next binary is built at the final descriptor commit. Later clean control-only descendants may reuse it only through the shared fail-closed build/control compatibility verifier."
+  },
+  "next_action": "At the final clean descriptor commit, run the exact retained recurrence suite once. If canary_admitted is true, run one fast8_v4 configure and worldserver build, create one verified normal Magmaw 10N bundle, and start one worldserver under the completion watchdog with no retry and no authserver."
+}

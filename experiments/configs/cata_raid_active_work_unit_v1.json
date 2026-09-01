@@ -1,79 +1,91 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "build:magmaw_task_state_configure_then_build",
-  "owner_skill": "raid-performance-loop",
-  "next_work_unit": "evidence:magmaw_task_state_configure_and_build_receipt_review",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "configure_lineage_preflight_recovery",
+  "work_unit": "evidence:magmaw_task_state_first_gameplay_canary",
+  "owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "review:magmaw_task_state_first_gameplay_canary",
+  "next_owner_skill": "raid-performance-loop",
+  "classification": "implementation_pending_live_verification",
   "epoch_id": "magmaw_task_state_migration_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
-  "mode": "10N canary, architecture intended for all raid sizes and difficulties",
-  "gate_state": "one_fast8_v4_configure_then_one_worldserver_build_admitted",
-  "observed_at_commit": "ecd4a560a7fc618662b099011a223ec42e33b7d1",
+  "mode": "10N",
+  "architecture_scope": "Universal task-state architecture intended for all raid sizes and difficulties; Magmaw 10N is only the canary.",
+  "gate_state": "current_suite_then_one_build_and_one_no_retry_canary",
+  "observed_at_commit": "edc69ed76581c2efd20c46be78e9c233b579ac10",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "next_action": "Run one exact queued configure and then one queued worldserver build under cata_raid_build_resource_policy_fast8_v4 at the same clean successor commit. Verify both receipts and keep all server starts closed.",
+  "next_action": "Run the exact retained recurrence suite once at this clean descriptor commit. Continue only when canary_admitted is true. Then run one fast8_v4 configure and worldserver build, one verified prestart bundle, and one normal Magmaw 10N completion-watchdog canary without retry or authserver.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_intent_collection_build_preflight_handoff_v1.json",
-    "sha256": "ff6bac34071f98a4306540fa86311c13d90e4282e03e766c649e65586258e19d"
+    "path": "experiments/configs/cata_raid_magmaw_task_state_canary_admission_handoff_v1.json",
+    "sha256": "996df1b7fed4f140d4128ed05c09cd53ff676a627687fded5d54ea33c7bd732a"
   },
-  "existing_foundation": [
-    "pure MagmawFacts reducer and snapshot cache",
-    "raid-wide MagmawCoordinator and sticky assignments",
-    "persistent TransferLaneTask and runner",
-    "BotIntentSink",
-    "default-off task-authority selector with legacy equivalence checks"
-  ],
   "implementation_scope": {
     "allowed": [
-      "run one exact queued configure with fast8_v4",
-      "run one queued incremental worldserver build with fast8_v4 after configure succeeds",
-      "write and verify both hash-bound receipts",
-      "retain the reviewed source identity and clean-tree proof"
+      "run the exact 22-fixture retained recurrence suite once",
+      "run one exact queued fast8_v4 configure and one queued worldserver build",
+      "create and verify one normal Magmaw 10N prestart bundle",
+      "apply deterministic canonical roster provisioning and strict readback",
+      "start one worldserver under the completion watchdog",
+      "retain DPS, HPS, deaths, stalls, mechanic proposals, selected candidates, native outcomes, and cleanup evidence",
+      "publish one compact terminal bundle through DVC and evict its exact local payload after remote verification"
     ],
     "forbidden": [
-      "global path tolerance or bot-Z changes",
-      "new encounter coordinates without evidence",
-      "class rotation, DPS coefficient, consumable, pet, database, boss-script, path, geometry, or Z changes",
-      "starting worldserver or authserver",
-      "gameplay canary or fixture replay",
-      "retrying a failed build without a new reviewed work unit"
+      "gameplay, class, encounter, movement, planner, geometry, path-tolerance, or bot-Z changes before this canary",
+      "authserver start or manual login",
+      "fixture-expansion replay",
+      "a second worldserver start or automatic retry",
+      "fixed-duration raid success",
+      "claiming a failed, stalled, or not-exercised run as gameplay success",
+      "broad DVC garbage collection or unrelated artifact cleanup"
     ]
   },
   "program_scope": {
+    "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
-    "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": true,
+    "gameplay_canary_admitted": true,
+    "gameplay_mutations_allowed": false,
     "configure_admitted": true,
     "configure_limit": 1,
     "worldserver_build_admitted": true,
     "worldserver_build_limit": 1,
-    "prestart_bundle_create_limit": 0,
-    "worldserver_start_admitted": false,
-    "worldserver_start_limit": 0,
+    "prestart_bundle_create_limit": 1,
+    "database_provisioning_mutations_allowed": true,
+    "other_database_mutations_allowed": false,
+    "worldserver_start_admitted": true,
+    "worldserver_start_limit": 1,
     "authserver_start_admitted": false,
     "authserver_start_limit": 0,
-    "other_database_mutations_allowed": false,
     "retry_admitted": false,
-    "retry_limit": 0
+    "retry_limit": 0,
+    "dvc_publication_required_after_terminal": true
   },
   "acceptance": [
+    "the exact current recurrence suite reports 22 of 22 passing and canary_admitted true",
+    "the configure and build receipts bind the final descriptor commit and fast8_v4 with eight compiler jobs and one linker",
     "no changed C or C++ file reaches 1000 physical lines",
-    "the queued configure and build request, admission, and completion identities are the same clean commit",
-    "the configure receipt establishes the exact fast8_v4 cache and build-graph lineage",
-    "the receipt proves fast8_v4 with eight compiler jobs and one linker",
-    "the worldserver target builds and links successfully",
-    "the receipt verifier passes",
-    "no worldserver or authserver starts"
+    "the prestart bundle binds the canonical route, frozen roster, config, recurrence decision, build receipt, and binary",
+    "the normal gameplay canary starts exactly one worldserver and zero authservers",
+    "the completion watchdog records normal clear or the first typed gameplay, semantic-stall, repeated-decision, death-loop, infrastructure, contamination, or interruption terminal",
+    "the report includes DPS and HPS plus task, proposal, arbitration, native execution, progress, death, and cleanup evidence",
+    "raw evidence is DVC-pushed and remotely verified before exact local eviction"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
     "configure_tickets": 1,
     "worldserver_build_tickets": 1,
-    "worldserver_starts": 0,
+    "prestart_bundle_create_limit": 1,
+    "worldserver_starts": 1,
     "authserver_starts": 0,
-    "retries": 0
+    "retries": 0,
+    "terminal_edges": [
+      "normal_clear",
+      "monotonic_no_progress_or_semantic_stall",
+      "repeated_decision_watchdog",
+      "excessive_death_loop",
+      "infrastructure_loss",
+      "identity_or_contamination_failure",
+      "explicit_interruption"
+    ]
   }
 }
