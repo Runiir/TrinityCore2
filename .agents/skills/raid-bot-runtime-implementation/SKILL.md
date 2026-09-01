@@ -213,6 +213,15 @@ database, or world lifecycle state, use those initialized production
 dependencies; a preconstructed path proof or mocked successful observation is
 not the production fixture.
 
+A compiled test that manually reconstructs a production admission or submission
+adapter is still a parallel implementation and may remain green while runtime
+drifts. Extract the smallest shared value-level production adapter, call it from
+the real manager path, and link/call that same symbol from the compiled test.
+Exercise the real arbiter with reordered producers, retryable high-priority
+safety, hard-masked lower alternatives, unmapped mechanics, and rejected typed
+bindings. Source-presence assertions may guard wiring, but they cannot be the
+behavioral proof used to admit a build.
+
 Trace every fixture claim through the production writer and the live consumer.
 A test that manually copies a before snapshot into an after snapshot, manually
 constructs a successful observation, or checks production calls only as source
@@ -347,6 +356,22 @@ candidate match for the same actor, lifecycle, destination, and resource
 claims. Submission alone is never task progress; projected native reach keeps
 the task running until position or another semantic postcondition proves
 logical arrival.
+
+Keep the layer questions disjoint: reducers answer what is true; coordinators
+answer who owns the mechanic; persistent tasks own multi-tick progress and
+deadlines; policies emit every currently eligible action; the arbiter chooses
+compatible actions for this tick; executors report what actually started and
+progressed. Do not let one ordered conditional chain perform several of those
+jobs, and do not let a task preselect the one candidate the arbiter is allowed
+to see.
+
+Movement policy never commands a bot to move vertically. It selects a logical
+destination and may carry the route anchor's Z only as floor identity. Native
+`PathGenerator`, MMAP, `MotionMaster`, and the movement spline follow walkable
+terrain and select the executed height. Never add per-tick Z steering, vertical
+offset correction, a teleport, or a wider global tolerance to make an encounter
+route pass. Verify requested X/Y, selected terrain endpoint, same-floor proof,
+native progress, and semantic arrival as separate facts.
 
 If that live signature recurs while the focused fixture passes, do not patch a
 new helper or run another canary. First replace the incomplete fixture with a

@@ -94,6 +94,13 @@ If the break is boss authority, route ownership, native script timing, or
 reference identity, return it to the owning specialist instead of compensating
 inside the class rotation.
 
+Class and role policies do not compute terrain height or issue vertical
+movement. They may emit class mobility or ordinary movement candidates toward a
+logical encounter/route destination, but native pathing owns the traversed Z.
+Return wrong-floor, path-generation, or missing movement-progress evidence to
+`raid-bot-runtime-implementation`; do not compensate with spell priority,
+teleportation, or a height offset.
+
 ## Implement the smallest policy change
 
 If the policy lives in a high-CCN decision function, reduce the decision graph

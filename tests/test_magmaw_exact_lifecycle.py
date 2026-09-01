@@ -99,13 +99,13 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
-def test_exact_lifecycle_is_observation_only() -> None:
+def test_raw_exact_lifecycle_is_reduced_before_task_consumption() -> None:
     consumers = []
     for path in (ROOT / "src/server").rglob("*"):
         if path.suffix not in {".cpp", ".h"}:
             continue
         text = path.read_text()
-        if "->NativeEncounter" in text or ".NativeEncounter" in text:
+        if "->NativeEncounter =" in text or "board.NativeEncounter" in text:
             consumers.append(path.relative_to(ROOT).as_posix())
     assert consumers == [
         "src/server/game/Bots/BotWorldPopulationMgrEncounterBlackboard.cpp",

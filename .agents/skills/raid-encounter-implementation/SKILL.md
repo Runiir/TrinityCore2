@@ -76,6 +76,13 @@ Cover only the mechanics needed by the reviewed contract:
 
 Prefer helpers used by both production execution and native replay/tests. A test-only reimplementation is not proof of the production state machine.
 
+Keep boss truth separate from bot control. The boss/instance script owns event
+scheduling, native actors, targetability, summons, damage, phases, and credit;
+it publishes observable facts and authoritative timers. It must not assign bot
+tasks, rank bot actions, move players, or repair a bot policy. When bot behavior
+needs hierarchical tasks, hand that slice to `raid-bot-runtime-implementation`
+with the encounter facts it may consume.
+
 ### 3. Add observation, not control
 
 Expose enough deterministic state for bot arbitration and evidence:
@@ -86,6 +93,12 @@ Expose enough deterministic state for bot arbitration and evidence:
 - submitted native action, rejection reason, completion, and landed outcome.
 
 The encounter script publishes facts. The priority queue remains responsible for candidate ranking and action choice.
+
+Do not encode vertical bot motion in an encounter hook. Bot destinations are
+logical anchors; Trinity's normal path generator and movement spline follow the
+terrain. Preserve floor identity in observations, and report a genuine
+wrong-floor/native-path failure to the runtime owner instead of adding height
+correction, teleportation, or a wider path tolerance.
 
 When movement policy must reserve a class mobility spell for an upcoming
 lethal mechanic, publish the authoritative native time-to-event and an active

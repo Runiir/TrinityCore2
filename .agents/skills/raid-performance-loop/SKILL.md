@@ -134,6 +134,21 @@ legacy identity and outcome evidence passes. A native projected endpoint is
 progress evidence, not logical task completion; require its typed terminal
 classification rather than inferring it from a normal path flag or tolerance.
 
+Reject a vertical-slice handoff when its compiled fixture manually recreates
+the manager's admission/submission adapter. Require one shared production
+adapter used by both the real manager and the compiled test, then exercise it
+through the real arbiter with producer-order reversal, retryable safety, lower
+movement masking, unknown mechanics, and rejected task bindings. A source-text
+call-site assertion is supplemental evidence only. This gate prevents a worker
+from proving a cleaner test-only priority system than the server actually runs.
+
+Treat terrain height as native execution, not encounter policy. Bots select a
+logical destination; normal path generation and splines follow the terrain.
+Route-defined Z may identify the intended floor, but workers must not add bot-
+side vertical steering, height correction, teleportation, or global tolerance
+loosening. A verifier may accept a bounded, same-floor native projection only
+after correlated generator/spline progress proves the bot followed that path.
+
 Do not schedule a rerun merely because a specialist reports green focused
 tests. If the blocker previously returned after a green run, require the same
 causal signature, an incremented retained-fixture revision, an exact recorded
