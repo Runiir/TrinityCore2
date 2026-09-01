@@ -1,22 +1,22 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:magmaw_task_state_intent_collection_vertical_slice",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "review:magmaw_task_state_intent_collection",
-  "next_owner_skill": "raid-performance-loop",
-  "classification": "resume_universal_task_state_migration",
+  "work_unit": "build:magmaw_task_state_intent_collection",
+  "owner_skill": "raid-performance-loop",
+  "next_work_unit": "evidence:magmaw_task_state_build_receipt_review",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "classification": "independent_review_go_build_only",
   "epoch_id": "magmaw_task_state_migration_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N canary, architecture intended for all raid sizes and difficulties",
-  "gate_state": "offline_implementation_only_independent_review_required",
-  "observed_at_commit": "30ea03542c65dd4fac8e8ed6e555a9831707bffb",
-  "behavior_change": true,
+  "gate_state": "one_fast8_v4_worldserver_build_admitted",
+  "observed_at_commit": "8f177787c965a190cbd70b4368ac371b1db5b557",
+  "behavior_change": false,
   "evidence_contract_change": false,
-  "next_action": "Use the existing MagmawFacts, MagmawCoordinator, persistent TransferLaneTask, and BotIntentSink foundations to remove one bounded hidden pre-arbitration slice from AdaptiveMagmawStrategy. Preserve legacy behavior outside the exact slice and make every eligible candidate visible to the existing action arbiter and decision trace.",
+  "next_action": "Run exactly one queued worldserver build under cata_raid_build_resource_policy_fast8_v4, verify its receipt, and keep all server starts closed pending a separate completion-watchdog canary admission.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_map669_fallback_fixture_quarantine_handoff_v1.json",
-    "sha256": "8125d12c907c26940bd475b460904a59cd60f47d33903d7dd0ad0fcad0370a6d"
+    "path": "experiments/configs/cata_raid_magmaw_intent_collection_review_handoff_v1.json",
+    "sha256": "fb4660ad1e190eb79c8d3826ffb93a330207dec46f95d1a4e4f58cac5b35f528"
   },
   "existing_foundation": [
     "pure MagmawFacts reducer and snapshot cache",
@@ -27,18 +27,18 @@
   ],
   "implementation_scope": {
     "allowed": [
-      "split BotAdaptiveMagmawStrategy.h by concern before it exceeds 1000 lines",
-      "replace one ordered optional-Movement chain with independently emitted typed movement intents",
-      "preserve safety priority, resource masks, expiry, utility, deterministic tie-breaks, and legacy compatibility",
-      "add compiled deterministic tests that expose every eligible proposal and prove the arbiter selects the intended winner",
-      "add typed rejection/progress diagnostics for the migrated slice"
+      "run one queued incremental worldserver build with fast8_v4",
+      "write and verify one hash-bound build receipt",
+      "retain the reviewed source identity and clean-tree proof"
     ],
     "forbidden": [
       "global path tolerance or bot-Z changes",
       "new encounter coordinates without evidence",
-      "class rotation, DPS coefficient, consumable, pet, database, or boss-script changes",
-      "building or starting worldserver/authserver before independent source review",
-      "rewriting all encounters into a generic framework in one change"
+      "class rotation, DPS coefficient, consumable, pet, database, boss-script, path, geometry, or Z changes",
+      "configure unless the existing generated build graph fails the fast8_v4 lineage preflight",
+      "starting worldserver or authserver",
+      "gameplay canary or fixture replay",
+      "retrying a failed build without a new reviewed work unit"
     ]
   },
   "program_scope": {
@@ -47,8 +47,8 @@
     "gameplay_mutations_allowed": true,
     "configure_admitted": false,
     "configure_limit": 0,
-    "worldserver_build_admitted": false,
-    "worldserver_build_limit": 0,
+    "worldserver_build_admitted": true,
+    "worldserver_build_limit": 1,
     "prestart_bundle_create_limit": 0,
     "worldserver_start_admitted": false,
     "worldserver_start_limit": 0,
@@ -60,17 +60,17 @@
   },
   "acceptance": [
     "no changed C or C++ file reaches 1000 physical lines",
-    "the migrated producers no longer hide alternatives through source-code order",
-    "the existing arbiter receives and traces all eligible candidates",
-    "persistent task state survives safety preemption and resumes without reconstructing identity",
-    "focused deterministic tests and git diff checks pass",
-    "an independent Sol-high review returns GO before any build or live run"
+    "the queued build request, admission, and completion identities are the same clean commit",
+    "the receipt proves fast8_v4 with eight compiler jobs and one linker",
+    "the worldserver target builds and links successfully",
+    "the receipt verifier passes",
+    "no worldserver or authserver starts"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
     "configure_tickets": 0,
-    "worldserver_build_tickets": 0,
+    "worldserver_build_tickets": 1,
     "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0

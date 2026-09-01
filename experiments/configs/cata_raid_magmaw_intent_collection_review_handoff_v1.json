@@ -1,0 +1,45 @@
+{
+  "schema": "cata_raid_magmaw_intent_collection_review_handoff_v1",
+  "work_unit": "review:magmaw_task_state_intent_collection",
+  "classification": "independent_review_go",
+  "program_scope": "universal raid task-state architecture; Magmaw 10N is the canary only",
+  "source": {
+    "implementation_commit": "faff8ad65e027bf39bf2c983f78919971d1d095e",
+    "production_adapter_repair_commit": "f5e6e1713998f60f0c945ae6bc8e76e6b2eb1a49",
+    "workflow_commit": "8f177787c965a190cbd70b4368ac371b1db5b557"
+  },
+  "verified_contract": [
+    "hazard, hook preposition, hook approach, and formation restore emit independent typed movement intents",
+    "the production manager and compiled fixture use the same Magmaw movement kernel adapter",
+    "retryable Survival movement hard-masks lower movement for the tick",
+    "unknown mechanics and rejected transfer bindings remain trace-visible and cannot execute generically",
+    "producer order does not change the selected candidate or decision trace",
+    "persistent transfer-task identity survives safety preemption",
+    "no bot-side Z, geometry, teleport, or global path-tolerance behavior changed",
+    "every touched C or C++ file remains below 1000 physical lines"
+  ],
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_magmaw_movement_intent_collection.py tests/test_magmaw_transfer_lane_authority.py tests/test_bot_action_arbitration.py tests/test_magmaw_shadow_intent_comparison.py tests/test_magmaw_directional_mobility_integration.py",
+    "focused_result": "21 passed",
+    "magmaw_command": "pixi run pytest -q tests/test_magmaw_*.py",
+    "magmaw_result": "199 passed",
+    "skill_contract_command": "pixi run pytest -q tests/test_raid_agent_skill_runtime_bounds.py tests/test_magmaw_exact_lifecycle.py",
+    "skill_contract_result": "7 passed",
+    "independent_review": "GO"
+  },
+  "build_admission": {
+    "admitted": true,
+    "build_count": 1,
+    "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+    "policy_sha256": "06847f4cc78b6b3b2e13dd6ecb60e7a2810a44adc35e4107cb9b7cd611286d74",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "target": "worldserver"
+  },
+  "live_admission": {
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "gameplay_canary_admitted": false
+  },
+  "next_action": "Produce and verify one clean fast8_v4 worldserver build receipt. Do not start a server until the build receipt and a separate completion-watchdog canary admission are reviewed."
+}
