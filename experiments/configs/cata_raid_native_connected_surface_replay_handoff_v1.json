@@ -4,10 +4,10 @@
   "owner_skill": "raid-shard-architecture",
   "classification": "sealed_fixture_replay_pending",
   "source": {
-    "commit": "ef83c1782d7601579dc58a3376b960201e440df7",
-    "tree": "fc5c741e0968de2941c5e944f2976ac0ef10eb28",
+    "commit": "1fa82847ba8c70ca8323fcf0d0e254173692d62b",
+    "tree": "e8f60adca463281156964d5a50f56a158a70814b",
     "runtime_repair_commit": "5d51b318ec0da665d270aceaa2d0b46c474f5e73",
-    "evidence_contract_commit": "ef83c1782d7601579dc58a3376b960201e440df7",
+    "evidence_contract_commit": "1fa82847ba8c70ca8323fcf0d0e254173692d62b",
     "prior_terminal_evidence": "artifacts/cata_raid_program/phase1_raid_foundation_69db62a09d_native_path_floor_probe_terminal_20260901.dvc"
   },
   "replay_contract": {
