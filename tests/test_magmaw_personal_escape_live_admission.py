@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+CONFIGS = ROOT / "experiments" / "configs"
+
+
+def _load(name: str) -> dict:
+    return json.loads((CONFIGS / name).read_text(encoding="utf-8"))
+
+
+def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
+    handoff_name = (
+        "cata_raid_magmaw_personal_parasite_escape_task_review_"
+        "handoff_20260901.json"
+    )
+    handoff_path = CONFIGS / handoff_name
+    handoff = _load(handoff_name)
+    active = _load("cata_raid_active_work_unit_v1.json")
+
+    assert handoff["reviewer"] == {
+        "agent": "/root/review_magmaw_task_canary_48abb",
+        "model_tier": "sol_high",
+        "reviewed_commit": "040652736970b422f87eaa034b6dbb5e4de10bc1",
+        "reviewed_tree": "5ba638a43f501531dd249637f11c5b48acceddcd",
+        "verdict": "GO",
+    }
+    assert handoff["current_source"]["commit"] == (
+        "eaf93fc988c9b4fc73d696771c14b20288985e78"
+    )
+    assert handoff["current_source"]["relationship"] == (
+        "test_only_descendant_of_reviewed_implementation"
+    )
+    assert active["source_handoff"]["path"] == (
+        f"experiments/configs/{handoff_name}"
+    )
+    assert active["source_handoff"]["sha256"] == hashlib.sha256(
+        handoff_path.read_bytes()
+    ).hexdigest()
+
+    scope = active["program_scope"]
+    assert scope["configure_admitted"] is True
+    assert scope["worldserver_build_admitted"] is True
+    assert scope["worldserver_start_admitted"] is True
+    assert scope["live_diagnostic_admitted"] is True
+    assert scope["authserver_start_admitted"] is False
+    assert scope["retry_admitted"] is False
+    assert scope["fixture_expansion_replay_admitted"] is False
+    assert scope["gameplay_canary_admitted"] is False
+    assert scope["acceptance_admitted"] is False
+    assert scope["dvc_publication_required_after_terminal"] is True
+
+    clock = active["validation_clock"]
+    assert clock == {
+        "fixed_success_timer_seconds": None,
+        "policy": "completion_watchdog",
+        "worldserver_starts": 1,
+        "authserver_starts": 0,
+        "retries": 0,
+    }
+    observation = active["live_diagnostic"]["required_observation"]
+    for signal in ("task generation", "same-floor progress", "DPS/HPS"):
+        assert signal in observation
+
+
+def test_live_diagnostic_keeps_native_terrain_ownership_explicit() -> None:
+    active = _load("cata_raid_active_work_unit_v1.json")
+    acceptance = "\n".join(active["acceptance"])
+
+    assert "native executor follows terrain" in acceptance
+    for forbidden in (
+        "bot-side vertical steering",
+        "Z correction",
+        "teleport",
+        "tolerance relaxation",
+        "route-coordinate change",
+        "fallback-coordinate change",
+    ):
+        assert forbidden in acceptance

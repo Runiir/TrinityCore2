@@ -1,73 +1,75 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:make_personal_parasite_escape_a_persistent_task",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "review:personal_parasite_escape_task_replay",
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "classification": "trace_backed_implementation_ready",
+  "work_unit": "shard:observe_personal_parasite_escape_task_live",
+  "owner_skill": "raid-shard-architecture",
+  "next_work_unit": "evidence:classify_personal_parasite_escape_live_observation",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "classification": "implementation_pending_live_verification",
   "epoch_id": "magmaw_personal_escape_task_lifecycle_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Move one actor-local multi-tick safety mechanic into the persistent task layer. Keep the existing arbiter and native terrain-following executor.",
-  "gate_state": "terminal_capture_published_and_remote_verified; independent_sol_review_no_go; one bounded implementation and compiled recurrence replay admitted",
-  "observed_at_commit": "f86358e742dea86d6c776ca0e105ae6b10c64f22",
-  "behavior_change": true,
-  "evidence_contract_change": true,
+  "architecture_scope": "Observe one actor-local multi-tick parasite-escape task through the existing arbiter and native terrain-following executor. This is a bounded diagnostic, not Magmaw-clear, DPS acceptance, or fixture-promotion evidence.",
+  "gate_state": "implementation fixture-green and independently reviewed GO at 040652736970b422f87eaa034b6dbb5e4de10bc1; current eaf93fc988c9b4fc73d696771c14b20288985e78 is a verified test-only descendant; exact-source build and one no-retry live diagnostic remain",
+  "observed_at_commit": "eaf93fc988c9b4fc73d696771c14b20288985e78",
+  "behavior_change": false,
+  "evidence_contract_change": false,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_parasite_task_rearm_handoff_20260901.json",
-    "sha256": "104d354b6c31375793263d99652aada3a6af96b798f4c19f0bb5e9ca009b6c4d"
+    "path": "experiments/configs/cata_raid_magmaw_personal_parasite_escape_task_review_handoff_20260901.json",
+    "sha256": "2f12be31e6c889be398671061530a8cb56137c108c79a109160e41b9617256e5"
   },
   "first_broken_edge": {
     "run_id": "magmaw-parasite-task-rearm-f86358e742-20260901",
     "route_node_id": "bwd.magmaw.encounter",
-    "cause": "Ordinary sub-yard actor or parasite displacement rearms a terminally rejected personal escape as a new generation inside the same semantic hazard wave.",
+    "causal_signature": "magmaw_personal_parasite_escape_task_rearm_churn",
+    "cause": "Ordinary sub-yard actor or parasite displacement rearmed a terminally rejected personal escape as a new generation inside one semantic hazard wave.",
     "evidence": "artifacts/cata_raid_program/magmaw_parasite_task_rearm_f86358e742_20260901.dvc"
   },
-  "next_action": "Implement one actor-local persistent personal-parasite escape task with stable wave identity, measured progress, bounded alternate route, and typed terminal outcomes. Add a compiled production-boundary replay and obtain independent review before any build or live run.",
-  "implementation_scope": {
-    "allowed": [
-      "one small actor-local persistent task type and runner",
-      "production wiring through existing Magmaw facts, intents, arbiter, and typed native outcome feedback",
-      "one deterministic stable parasite-wave identity",
-      "one bounded distinct alternate route after terminal rejection",
-      "compiled recurrence tests and diagnostics for task progress and terminal state",
-      "skill guidance that generalizes task identity, progress, and failure semantics"
-    ],
-    "forbidden": [
-      "worldserver, authserver, database, or DVC mutation during implementation",
-      "bot-side vertical steering or Z correction",
-      "route-coordinate, fallback-coordinate, MMAP, floor, endpoint-tolerance, path-admission, or terrain-following changes",
-      "priority, class, pet, boss-script, DPS, consumable, or raid-route tuning",
-      "unbounded retries or geometry-change-based task rearming"
+  "live_diagnostic": {
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "attempts": 1,
+    "retries": 0,
+    "authserver_starts": 0,
+    "worldserver_starts": 1,
+    "duration_policy": "completion_watchdog",
+    "terminal_policy": "Stop on normal route clear, typed semantic or no-progress stall, repeated decisions, excessive death loops, infrastructure loss, contamination, explicit interruption, or the bounded emergency wall-clock as noncompletion.",
+    "required_observation": "For every personal parasite escape, retain actor, stable wave, task generation, hazard GUID, requested and native-resolved endpoints, planner outcome, MotionMaster or point-generator identity, same-floor progress samples, clearance change, task terminal, death outcome, and whether that actor and wave rearmed. Also retain route-node progression plus segment and party DPS/HPS.",
+    "non_claims": [
+      "not a promoted recurrence fixture",
+      "not a gameplay canary",
+      "not a Magmaw-clear acceptance run",
+      "not a DPS or HPS acceptance run"
     ]
   },
+  "next_action": "At this descriptor's exact clean commit, perform one queued configure/build using eight jobs, fresh deterministic shard provisioning and strict readback, then start exactly one worldserver and no authserver under the completion watchdog. Do not retry. Classify and publish through DVC only after a typed terminal and verified cleanup.",
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": true,
-    "configure_admitted": false,
-    "worldserver_build_admitted": false,
-    "worldserver_start_admitted": false,
+    "live_diagnostic_admitted": true,
+    "gameplay_mutations_allowed": false,
+    "configure_admitted": true,
+    "worldserver_build_admitted": true,
+    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": false
+    "database_mutations_allowed": true,
+    "database_mutation_scope": "fresh deterministic pre-admission shard provisioning and strict readback only",
+    "dvc_publication_required_after_terminal": true
   },
   "acceptance": [
-    "small actor and hazard displacement cannot rearm the same wave after terminal rejection",
-    "a new stable hazard wave may create one new task",
-    "successful movement remains owned until measured safety or arrival",
-    "a second bot reacting to the same wave has a distinct actor-local task",
-    "ordinary combat recovery resumes after the task reaches a terminal state",
-    "all touched C and C++ files remain below 1000 lines",
-    "no priority, route, movement admission, MMAP, terrain-following, or Z behavior changes"
+    "the exact clean source, build receipt, binary, runtime config, route manifest, and roster identities match",
+    "the native executor follows terrain; no bot-side vertical steering, Z correction, teleport, tolerance relaxation, route-coordinate change, or fallback-coordinate change is present",
+    "one actor-local task identity remains stable through same-wave hazard GUID, raw generation, and ordinary actor or hazard displacement",
+    "native submission is not counted as semantic progress; same-floor progress or a typed bounded failure is retained",
+    "after typed terminal failure the same actor and wave cannot rearm; authoritative absence followed by a new wave may arm exactly one new task",
+    "trash and boss progression, deaths, DPS, and HPS are retained without treating them as acceptance",
+    "the single worldserver and exact cohort are cleaned before DVC publication"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "compiled_recurrence_only_until_independent_review",
-    "worldserver_starts": 0,
+    "policy": "completion_watchdog",
+    "worldserver_starts": 1,
     "authserver_starts": 0,
     "retries": 0
   }

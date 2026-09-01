@@ -1,0 +1,67 @@
+{
+  "schema": "cata_raid_runtime_implementation_review_handoff_v1",
+  "work_unit": "runtime:make_personal_parasite_escape_a_persistent_task",
+  "classification": "independent_review_go_pending_source_bound_live_diagnostic",
+  "reviewer": {
+    "agent": "/root/review_magmaw_task_canary_48abb",
+    "model_tier": "sol_high",
+    "reviewed_commit": "040652736970b422f87eaa034b6dbb5e4de10bc1",
+    "reviewed_tree": "5ba638a43f501531dd249637f11c5b48acceddcd",
+    "verdict": "GO"
+  },
+  "current_source": {
+    "commit": "eaf93fc988c9b4fc73d696771c14b20288985e78",
+    "tree": "68c90b4f93b3a3c8ae2d43bebdf3a70051c4e35b",
+    "relationship": "test_only_descendant_of_reviewed_implementation",
+    "descendant_change": "The movement-collection source contract now asserts the shared HasRetainedMagmawHazardOwnership adapter and personal task instead of a stale direct AdaptiveMagmawMovements.Size() string."
+  },
+  "verified_findings": [
+    "The shared move-away geometry preserves radial distance, actor Z, and the legacy cos(facing)/sin(facing) behavior for both the legacy policy and persistent task.",
+    "Actor life is observed before the dead return; death or resurrection advances ActorLifeGeneration and aborts or clears a stale task attempt.",
+    "A first authoritative active parasite wave with unknown raw generation receives one local actor-wave latch; stale or partial facts cannot establish a task.",
+    "Raw generation, hazard GUID, and ordinary geometry churn cannot rearm the same wave; an authoritative absence arms the next wave.",
+    "The task admits one distinct alternate after the primary native rejection, then emits a typed no-distinct-alternate or second-rejection failure.",
+    "Semantic progress uses parasite clearance and destination distance. Action submission is not progress.",
+    "The production Magmaw movement adapter feeds typed native outcomes to the task in both the manager and compiled replay, and terminal tasks release movement ownership.",
+    "No priority, route, path admission, MMAP, floor, terrain-following, or Z behavior changed. Survival priority remains 450 and task destinations retain actor Z.",
+    "Every touched C or C++ file remains below 1000 physical lines."
+  ],
+  "validation": [
+    {
+      "scope": "reviewed_implementation",
+      "command": "pixi run pytest -q tests/test_magmaw_personal_parasite_escape_task.py tests/test_magmaw_parasite_policy.py tests/test_bot_action_arbitration.py",
+      "result": "20 passed"
+    },
+    {
+      "scope": "reviewed_facts_contract",
+      "command": "pixi run pytest -q tests/test_magmaw_shadow_facts.py",
+      "result": "1 passed"
+    },
+    {
+      "scope": "current_test_only_descendant_combined_bank",
+      "command": "pixi run pytest -q tests/test_magmaw_personal_parasite_escape_task.py tests/test_magmaw_parasite_policy.py tests/test_bot_action_arbitration.py tests/test_magmaw_shadow_facts.py tests/test_magmaw_movement_intent_collection.py",
+      "result": "25 passed"
+    }
+  ],
+  "live_boundary": {
+    "compiled_status": "fixture_green",
+    "live_status": "unproven",
+    "required_next_observation": "One exact-current-source, no-retry, completion-watchdog Magmaw diagnostic must carry an actor-local stable parasite-wave task through the production adapter, arbiter, native planner, MotionMaster or point generator, multi-tick terrain-following progress, and a typed success or bounded failure. The same actor and wave must not rearm from hazard GUID, raw generation, or sub-yard geometry churn after terminal failure. Retain deaths, route progression, DPS, and HPS for diagnosis.",
+    "forbidden_inference": "The compiled replay does not prove live map path generation, spline launch, terrain progress, parasite clearance, or Magmaw completion."
+  },
+  "routing_decision": {
+    "selected": "one_start_completion_watchdog_live_diagnostic",
+    "reason": "The retained regression bank has lane, containment, and generic native-path fixtures, but no existing live fixture producer and consumer for the new actor-local personal-escape task lifecycle. Registering a fixture ID without a production checkpoint would manufacture admission rather than exercise the claimed boundary.",
+    "result_limit": "The observation may select the next production fixture boundary or show a live regression. It cannot promote a fixture, admit a gameplay canary, or close the causal signature."
+  },
+  "program_scope": {
+    "configure_and_build": "admitted_for_exact_clean_descriptor_commit",
+    "live_diagnostic_count": 1,
+    "live_diagnostic_retries": 0,
+    "authserver_starts": 0,
+    "gameplay_canary_admitted": false,
+    "fixture_promotion_admitted": false,
+    "database_mutation_admitted": "deterministic pre-admission shard provisioning only",
+    "dvc_publication": "required_only_after_typed_terminal"
+  }
+}
