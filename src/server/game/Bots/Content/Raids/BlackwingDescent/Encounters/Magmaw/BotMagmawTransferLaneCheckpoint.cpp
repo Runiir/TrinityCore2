@@ -35,6 +35,40 @@ bool ExactScope(BotMovementArbitration::Scope const& left,
         && left.RouteGeneration == right.RouteGeneration
         && left.MapId == right.MapId && left.InstanceId == right.InstanceId;
 }
+
+bool ExactRequestedPrimaryProof(
+    BotWorldMovement::NativePathProofObservation const& proof,
+    MagmawTransferLaneTask const& task, float selectedX, float selectedY,
+    float selectedZ)
+{
+    // Destination identity is horizontal. MMAP may normalize Z to the
+    // walkable polygon, but the native proof must keep that projection within
+    // the strict endpoint component bound and on the admitted floor.
+    return proof.Available && proof.Calculated && proof.Complete
+        && proof.EndpointResult == PathEndpointResult::ReachedRequested
+        && proof.CorridorReachedEndPoly && proof.ResolvedEndpointAvailable
+        && proof.ResolvedEndpointX == task.Destination.X
+        && proof.ResolvedEndpointY == task.Destination.Y
+        && proof.ResolvedEndpointZ == task.Destination.Z
+        && proof.ActualEndpointMatchedResolved && proof.EndpointMatched
+        && proof.EndpointFloorValid && proof.Accepted
+        && BotWorldMovement::NativePathProofPassesAdmission(proof)
+        && proof.EndpointX == task.Destination.X
+        && proof.EndpointY == task.Destination.Y
+        && proof.EndpointX == selectedX && proof.EndpointY == selectedY
+        && proof.EndpointZ == selectedZ
+        && proof.EndpointHorizontalDistance == 0.0f
+        && proof.ResolvedEndpointHorizontalDistance == 0.0f
+        && proof.EndpointVerticalDistance
+            == std::fabs(proof.EndpointZ - task.Destination.Z)
+        && proof.ResolvedEndpointVerticalDistance
+            == proof.EndpointVerticalDistance
+        && BotWorldMovement::NativePathEndpointComponentsMatch(
+            proof.EndpointHorizontalDistance,
+            proof.EndpointVerticalDistance)
+        && Near(selectedZ, task.Destination.Z,
+            BotWorldMovement::NativePathEndpointVerticalTolerance);
+}
 }
 
 char const* StageName(Stage stage)
@@ -184,6 +218,10 @@ bool CaptureExactPlannerReceipt(PlannerReceiptSnapshot& snapshot,
         planner.LaunchReceipt;
     BotMovementArbitration::Scope const expectedScope =
         MagmawTransferLaneMovementScope(task.Id.Episode.Lifecycle);
+    BotWorldMovement::NativePathProofObservation const& plannerProof =
+        planner.PrimaryNativeProof;
+    BotWorldMovement::NativePathProofObservation const& receiptProof =
+        receipt.PrimaryNativeProof;
     BotWorldMovement::NativeSplineLaunchObservation const* launched = nullptr;
     for (BotWorldMovement::NativeSplineLaunchObservation const& row
         : receipt.Launches)
@@ -202,14 +240,8 @@ bool CaptureExactPlannerReceipt(PlannerReceiptSnapshot& snapshot,
         && ExactScope(receipt.Scope, expectedScope)
         && planner.PrimaryPathDisposition
             == BotWorldMovement::PrimaryDisposition::CompleteTerminal
-        && planner.PrimaryNativeProof.Available
-        && planner.PrimaryNativeProof.Calculated
-        && planner.PrimaryNativeProof.Complete
         && receipt.PrimaryPathDisposition
             == BotWorldMovement::PrimaryDisposition::CompleteTerminal
-        && receipt.PrimaryNativeProof.Available
-        && receipt.PrimaryNativeProof.Calculated
-        && receipt.PrimaryNativeProof.Complete
         && !planner.LocalFallbackAttempted
         && !receipt.LocalFallbackAttempted
         && receipt.PlannerControls.Available
@@ -218,7 +250,12 @@ bool CaptureExactPlannerReceipt(PlannerReceiptSnapshot& snapshot,
         && receipt.PlannerSelectedEndpointAvailable
         && receipt.PlannerSelectedX == task.Destination.X
         && receipt.PlannerSelectedY == task.Destination.Y
-        && receipt.PlannerSelectedZ == task.Destination.Z
+        && ExactRequestedPrimaryProof(plannerProof, task,
+            receipt.PlannerSelectedX, receipt.PlannerSelectedY,
+            receipt.PlannerSelectedZ)
+        && ExactRequestedPrimaryProof(receiptProof, task,
+            receipt.PlannerSelectedX, receipt.PlannerSelectedY,
+            receipt.PlannerSelectedZ)
         && receipt.ExecutorDestinationAvailable
         && receipt.ExecutorSelectedX == task.Destination.X
         && receipt.ExecutorSelectedY == task.Destination.Y

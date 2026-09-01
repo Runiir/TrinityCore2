@@ -26,6 +26,7 @@ def test_compiled_seal_selector_kernel_receipt_and_task_terminal(
 #include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 
 #include <cassert>
+#include <cmath>
 #include <optional>
 #include <string>
 #include <utility>
@@ -93,9 +94,35 @@ static BotWorldMovement::MovementPlannerObservation Planner(
     planner.Result = "submitted";
     planner.PrimaryPathDisposition =
         BotWorldMovement::PrimaryDisposition::CompleteTerminal;
-    planner.PrimaryNativeProof.Available = true;
-    planner.PrimaryNativeProof.Calculated = true;
-    planner.PrimaryNativeProof.Complete = true;
+    BotWorldMovement::NativePathProofObservation proof;
+    proof.Available = true;
+    proof.Calculated = true;
+    proof.PathType = 1;
+    proof.Complete = true;
+    proof.EndpointResult = PathEndpointResult::ReachedRequested;
+    proof.CorridorReachedEndPoly = true;
+    proof.ResolvedEndpointAvailable = true;
+    proof.ResolvedEndpointX = task.Destination.X;
+    proof.ResolvedEndpointY = task.Destination.Y;
+    proof.ResolvedEndpointZ = task.Destination.Z;
+    proof.EndpointX = task.Destination.X;
+    proof.EndpointY = task.Destination.Y;
+    proof.EndpointZ = 193.098587f;
+    proof.EndpointHorizontalDistance = 0.0f;
+    proof.EndpointVerticalDistance = std::fabs(
+        proof.EndpointZ - task.Destination.Z);
+    proof.EndpointDistance = proof.EndpointVerticalDistance;
+    proof.ResolvedEndpointHorizontalDistance =
+        proof.EndpointHorizontalDistance;
+    proof.ResolvedEndpointVerticalDistance = proof.EndpointVerticalDistance;
+    proof.ActualEndpointMatchedResolved =
+        BotWorldMovement::NativePathEndpointComponentsMatch(
+            proof.EndpointHorizontalDistance,
+            proof.EndpointVerticalDistance);
+    proof.EndpointMatched = proof.ActualEndpointMatchedResolved;
+    proof.EndpointFloorValid = true;
+    proof.Accepted = BotWorldMovement::NativePathProofPassesAdmission(proof);
+    planner.PrimaryNativeProof = proof;
     planner.LaunchReceipt.Id = receipt;
     planner.LaunchReceipt.DiagnosticCandidateKey = binding.CandidateKey;
     planner.LaunchReceipt.Scope = MagmawTransferLaneMovementScope(
@@ -109,7 +136,7 @@ static BotWorldMovement::MovementPlannerObservation Planner(
     planner.LaunchReceipt.PlannerSelectedEndpointAvailable = true;
     planner.LaunchReceipt.PlannerSelectedX = task.Destination.X;
     planner.LaunchReceipt.PlannerSelectedY = task.Destination.Y;
-    planner.LaunchReceipt.PlannerSelectedZ = task.Destination.Z;
+    planner.LaunchReceipt.PlannerSelectedZ = proof.EndpointZ;
     planner.LaunchReceipt.ExecutorDestinationAvailable = true;
     planner.LaunchReceipt.ExecutorSelectedX = task.Destination.X;
     planner.LaunchReceipt.ExecutorSelectedY = task.Destination.Y;
@@ -124,7 +151,7 @@ static BotWorldMovement::MovementPlannerObservation Planner(
     launch.LaunchAttempted = true;
     launch.LaunchSucceeded = true;
     launch.SplineInitialized = true;
-    launch.SplineId = 73;
+    launch.SplineId = 28;
     planner.LaunchReceipt.Launches.push_back(launch);
     return planner;
 }
@@ -151,7 +178,7 @@ static BotWorldMovement::NativeMovementProgressSample Sample(
     sample.SelectedPlatformCompatible = true;
     sample.PointGeneratorActive = !terminal;
     sample.SplineInitialized = true;
-    sample.SplineId = 73;
+    sample.SplineId = 28;
     sample.MatchesLaunchedSpline = true;
     sample.SplineFinalized = terminal;
     sample.EndpointDistance = distance;
@@ -299,7 +326,7 @@ int main()
                 std::get<BotNativeAction::Move>(intent);
             assert(move.DiagnosticCandidateKey
                 == selection.Binding->CandidateKey);
-            movement = Submitted(task, 91);
+            movement = Submitted(task, 1);
             return BotActionArbitration::Outcome::Submitted("submitted");
         }, [&](MagmawTransferLaneNativeOutcome const& outcome)
         {
@@ -315,10 +342,10 @@ int main()
         == Checkpoint::LegacyTransitionGeneration);
 
     Checkpoint::PlannerReceiptSnapshot receipt;
-    auto planner = Planner(task, *selection.Binding, 91);
+    auto planner = Planner(task, *selection.Binding, 1);
     assert(Checkpoint::CaptureExactPlannerReceipt(receipt, planner,
         *selection.Binding, task));
-    assert(receipt.ReceiptId == 91 && receipt.SplineId == 73);
+    assert(receipt.ReceiptId == 1 && receipt.SplineId == 28);
     auto wrongReceipt = planner;
     wrongReceipt.LaunchReceipt.Id = 92;
     wrongReceipt.LaunchReceipt.DiagnosticCandidateKey = "other";
@@ -335,6 +362,74 @@ int main()
     assert(!Checkpoint::CaptureExactPlannerReceipt(rejectedReceipt,
         missingMmap, *selection.Binding, task));
 
+    auto unacceptedProof = planner;
+    unacceptedProof.PrimaryNativeProof.Accepted = false;
+    unacceptedProof.LaunchReceipt.PrimaryNativeProof.Accepted = false;
+    assert(!Checkpoint::CaptureExactPlannerReceipt(rejectedReceipt,
+        unacceptedProof, *selection.Binding, task));
+
+    auto nonmatchingProof = planner;
+    nonmatchingProof.PrimaryNativeProof.EndpointMatched = false;
+    nonmatchingProof.PrimaryNativeProof.Accepted = false;
+    nonmatchingProof.LaunchReceipt.PrimaryNativeProof.EndpointMatched = false;
+    nonmatchingProof.LaunchReceipt.PrimaryNativeProof.Accepted = false;
+    assert(!Checkpoint::CaptureExactPlannerReceipt(rejectedReceipt,
+        nonmatchingProof, *selection.Binding, task));
+
+    auto wrongFloorReceipt = planner;
+    wrongFloorReceipt.PrimaryNativeProof.EndpointFloorValid = false;
+    wrongFloorReceipt.PrimaryNativeProof.Accepted = false;
+    wrongFloorReceipt.LaunchReceipt.PrimaryNativeProof.EndpointFloorValid =
+        false;
+    wrongFloorReceipt.LaunchReceipt.PrimaryNativeProof.Accepted = false;
+    assert(!Checkpoint::CaptureExactPlannerReceipt(rejectedReceipt,
+        wrongFloorReceipt, *selection.Binding, task));
+
+    auto excessiveZ = planner;
+    excessiveZ.LaunchReceipt.PlannerSelectedZ = task.Destination.Z
+        + BotWorldMovement::NativePathEndpointVerticalTolerance + 0.001f;
+    excessiveZ.PrimaryNativeProof.EndpointZ =
+        excessiveZ.LaunchReceipt.PlannerSelectedZ;
+    excessiveZ.PrimaryNativeProof.EndpointVerticalDistance =
+        BotWorldMovement::NativePathEndpointVerticalTolerance + 0.001f;
+    excessiveZ.LaunchReceipt.PrimaryNativeProof =
+        excessiveZ.PrimaryNativeProof;
+    assert(!Checkpoint::CaptureExactPlannerReceipt(rejectedReceipt,
+        excessiveZ, *selection.Binding, task));
+
+    auto horizontalDrift = planner;
+    horizontalDrift.LaunchReceipt.PlannerSelectedX = task.Destination.X
+        + BotWorldMovement::NativePathEndpointHorizontalTolerance + 0.001f;
+    horizontalDrift.PrimaryNativeProof.EndpointX =
+        horizontalDrift.LaunchReceipt.PlannerSelectedX;
+    horizontalDrift.PrimaryNativeProof.EndpointHorizontalDistance =
+        BotWorldMovement::NativePathEndpointHorizontalTolerance + 0.001f;
+    horizontalDrift.LaunchReceipt.PrimaryNativeProof =
+        horizontalDrift.PrimaryNativeProof;
+    assert(!Checkpoint::CaptureExactPlannerReceipt(rejectedReceipt,
+        horizontalDrift, *selection.Binding, task));
+
+    auto wrongActor = planner;
+    wrongActor.BotGuid = Checkpoint::ActorGuid + 1;
+    assert(!Checkpoint::CaptureExactPlannerReceipt(rejectedReceipt,
+        wrongActor, *selection.Binding, task));
+    auto wrongMap = planner;
+    wrongMap.RequestedMapId = Checkpoint::MapId + 1;
+    assert(!Checkpoint::CaptureExactPlannerReceipt(rejectedReceipt,
+        wrongMap, *selection.Binding, task));
+    auto wrongScope = planner;
+    ++wrongScope.LaunchReceipt.Scope.RouteGeneration;
+    assert(!Checkpoint::CaptureExactPlannerReceipt(rejectedReceipt,
+        wrongScope, *selection.Binding, task));
+    auto wrongCandidate = planner;
+    wrongCandidate.LaunchReceipt.DiagnosticCandidateKey += ":wrong";
+    assert(!Checkpoint::CaptureExactPlannerReceipt(rejectedReceipt,
+        wrongCandidate, *selection.Binding, task));
+    auto missingReceiptIdentity = planner;
+    missingReceiptIdentity.LaunchReceipt.Id = 0;
+    assert(!Checkpoint::CaptureExactPlannerReceipt(rejectedReceipt,
+        missingReceiptIdentity, *selection.Binding, task));
+
     Checkpoint::State state;
     assert(state.Arm(Checkpoint::Cases[0].Id, Checkpoint::ActorGuid, 9));
     state.CurrentStage = Checkpoint::Stage::NativeSubmitted;
@@ -344,7 +439,7 @@ int main()
     state.NativeOutcome = native;
     state.PlannerReceipt = receipt;
 
-    auto wrongFloor = Sample(91, 1100, -219.343994f, 1.0f);
+    auto wrongFloor = Sample(1, 1100, -219.343994f, 1.0f);
     wrongFloor.Z = 210.0f;
     wrongFloor.FloorZ = 210.0f;
     wrongFloor.SelectedPlatformCompatible = false;
@@ -356,16 +451,16 @@ int main()
     assert(state.LastProgressObservedAtMs == 0);
     assert(!state.NativeOutcomeConsumed);
 
-    auto validProgress1 = Sample(91, 1200, -223.343994f, 5.0f);
+    auto validProgress1 = Sample(1, 1200, -223.343994f, 5.0f);
     validProgress1.EndpointProgressed = false;
     assert(Checkpoint::ConsumeProgressSample(state, validProgress1));
-    auto validProgress2 = Sample(91, 1300, -221.343994f, 3.0f);
+    auto validProgress2 = Sample(1, 1300, -221.343994f, 3.0f);
     validProgress2.EndpointProgressed = false;
     assert(Checkpoint::ConsumeProgressSample(state, validProgress2));
     assert(state.DecreasingProgressSamples == 2);
     assert(state.CurrentStage == Checkpoint::Stage::Completed);
     assert(state.Task.State == BotDecision::PersistentTaskState::Succeeded);
-    assert(!Sample(91, 1300, -221.343994f, 3.0f).Terminal);
+    assert(!Sample(1, 1300, -221.343994f, 3.0f).Terminal);
     assert(state.CandidateAttemptCount == 0); // manager owns live counters.
 
     Checkpoint::State early;
@@ -377,7 +472,7 @@ int main()
     early.NativeOutcome = native;
     early.PlannerReceipt = receipt;
     assert(Checkpoint::ConsumeProgressSample(early,
-        Sample(91, 1200, -218.343994f, 0.0f, true)));
+        Sample(1, 1200, -218.343994f, 0.0f, true)));
     assert(early.CurrentStage == Checkpoint::Stage::Failed);
     assert(early.Outcome
         == "magmaw_transfer_checkpoint_early_semantic_success");
@@ -392,11 +487,11 @@ int main()
     regression.NativeOutcome = native;
     regression.PlannerReceipt = receipt;
     assert(Checkpoint::ConsumeProgressSample(regression,
-        Sample(91, 1100, -228.343994f, 10.0f)));
+        Sample(1, 1100, -228.343994f, 10.0f)));
     assert(regression.DecreasingProgressSamples == 0);
     assert(regression.LastProgressDistance == 6.0f);
     assert(Checkpoint::ConsumeProgressSample(regression,
-        Sample(91, 1200, -221.343994f, 3.0f)));
+        Sample(1, 1200, -221.343994f, 3.0f)));
     assert(regression.DecreasingProgressSamples == 1);
     assert(regression.CurrentStage == Checkpoint::Stage::Failed);
     assert(regression.Outcome
