@@ -1,0 +1,80 @@
+{
+  "schema": "cata_raid_runtime_implementation_review_handoff_v1",
+  "work_unit": "runtime:magmaw_personal_escape_rearm_after_provisional_wave",
+  "classification": "independent_review_go_pending_live_fixture_expansion",
+  "review": {
+    "verdict": "go",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "high",
+    "reviewed_commit": "38976c172c4deff27b0e0b559d3f641bd3868ce4",
+    "reviewed_tree": "0654e84a3fa14bfae913fab041ba4ec9e4dd0a7f",
+    "implementation_commits": [
+      "45ba520bd1ff87b37dffb3ca842a975a5f78875a",
+      "38976c172c4deff27b0e0b559d3f641bd3868ce4"
+    ]
+  },
+  "causal_receipt": {
+    "status": "verified_for_actor_30008_only",
+    "source_run_id": "magmaw-authority-5cad51fa40-20260902",
+    "source_handoff": "experiments/configs/cata_raid_magmaw_authority_5cad51fa40_death_loop_handoff_20260902.json",
+    "source_handoff_sha256": "de80e76ef23ad463a6993843725baf9a66a03dfb114baeeb3e22a401920404c0",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc",
+    "actor_guid": 30008,
+    "shared_wave_generation": 9223372036854775809,
+    "shared_wave_generation_authoritative": false,
+    "shared_wave_awaiting_authoritative_facts": true,
+    "personal_escape_task_generation": 1,
+    "personal_escape_terminal": "safe_clearance",
+    "later_observations": [
+      "personal parasite contact recurred while the same provisional parent remained active",
+      "Parasitic Infection and Lava Parasite melee reached actor 30008",
+      "actor 30008 later died",
+      "no later personal-escape child generation was observed for actor 30008"
+    ],
+    "first_broken_edge": "The terminal actor-local child could not rearm for a later distinct personal-threat episode while the shared parent remained one provisional non-authoritative generation."
+  },
+  "repaired_invariant": {
+    "causal_signature": "magmaw_personal_escape_authority_gap_drops_candidate",
+    "parent": "magmaw_parasite_containment_failure",
+    "scope": "actor-local child lifecycle under one active provisional shared wave",
+    "rule": "After a terminal child, rearm is forbidden until an authoritative actor-local no-threat observation creates a falling edge. A later authoritative personal-threat rising edge may create exactly one new child generation. Death cannot erase the terminal tombstone or manufacture either edge.",
+    "non_claims": [
+      "no claim for actors other than 30008",
+      "no Magmaw-clear claim",
+      "no parasite-containment closure claim",
+      "no class-throughput acceptance claim"
+    ]
+  },
+  "reviewed_scope": {
+    "allowed_changes": [
+      "actor-local personal-threat falling-edge latch",
+      "one later personal-threat rising-edge rearm under the unchanged provisional parent",
+      "terminal tombstone retention across death",
+      "focused lifecycle and no-churn regression coverage"
+    ],
+    "forbidden_changes": [
+      "Z or coordinate changes",
+      "floor or MMAP changes",
+      "endpoint or tolerance changes",
+      "planner or executor changes",
+      "route, class, damage, consumable, or encounter-strategy tuning"
+    ]
+  },
+  "fixture_contract": {
+    "fixture_id": "magmaw_personal_parasite_authority_gap_v1",
+    "current_revision": 1,
+    "requested_revision": 2,
+    "revision_1_status": "invalidated_by_later_live_recurrence",
+    "required_production_boundary": "One exact-current-source worldserver Magmaw replay must retain shared wave generation and authority, actor-local episode falling and rising edges, task and candidate generations and keys, native submission, same-floor progress and terminal, clearance, infection and death, route progression, DPS/HPS, and cleanup. For actor 30008, terminal safe_clearance generation 1 cannot rearm until an authoritative no-threat falling edge; the later authoritative threat rising edge rearms exactly one child."
+  },
+  "next_validation": {
+    "build_policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+    "configure_count": 1,
+    "build_count": 1,
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "dvc_publication": "after typed terminal and verified cleanup only"
+  }
+}

@@ -122,6 +122,13 @@
         "to_revision": 8,
         "causal_signature": "magmaw_parasite_control_allows_player_infection",
         "required_production_boundary": "one exact-current-source worldserver Magmaw replay with task authority enabled must show only the fixed Mage and Hunter bait and control parasites, all players can select and damage a threatening parasite without entering infection range, zero player Parasitic Infection or Infectious Vomit events occur, and the task outcome is joined to the same actor and parasite-wave identity"
+      },
+      {
+        "fixture_id": "magmaw_personal_parasite_authority_gap_v1",
+        "from_revision": 1,
+        "to_revision": 2,
+        "causal_signature": "magmaw_personal_escape_authority_gap_drops_candidate",
+        "required_production_boundary": "one exact-current-source worldserver Magmaw replay must retain shared wave generation and authority, actor-local episode falling and rising edges, task and candidate generations and keys, native submission, same-floor progress and terminal, clearance, infection and death, route progression, DPS/HPS, and cleanup; for actor 30008, terminal safe_clearance child generation 1 cannot rearm until an authoritative actor-local no-threat falling edge, and the later authoritative threat rising edge may rearm exactly one child while the shared parent remains active and provisional"
       }
     ],
     "fixture_history": [
@@ -622,7 +629,7 @@
     "magmaw_personal_escape_authority_gap_drops_candidate": {
       "owner": "encounter_personal_escape_task_lifecycle",
       "parent": "magmaw_parasite_containment_failure",
-      "invariant": "once personal parasite threat creates an actor-keyed escape child, a transient stale, partial, or non-authoritative facts snapshot suspends the same child as AwaitingAuthoritativeFacts and authority restoration resumes the same wave, task, candidate, destination, and fixed expiry before infection or an explicit terminal",
+      "invariant": "once personal parasite threat creates an actor-keyed escape child, transient non-authoritative facts cannot drop it; after a terminal child under an active provisional parent, rearm is forbidden until an authoritative actor-local no-threat falling edge, and one later authoritative personal-threat rising edge may create exactly one new child generation",
       "fixture_verifications": [
         {
           "fixture_id": "magmaw_personal_parasite_authority_gap_v1",
@@ -2045,6 +2052,53 @@
       "dvc_pointer": "artifacts/cata_raid_program/magmaw_task_canary_813bdc7acd_20260901.dvc",
       "evidence": "experiments/configs/cata_raid_magmaw_task_canary_813bdc7acd_handoff_20260901.json",
       "note": "Chainwielder and Drudges cleared, all ten bots used real flask, food, and prepot inventory, and the run reached Magmaw. The first trace-backed edge was actor 30010 observing personal parasite contact while no actor-scoped task candidate, movement owner, planner receipt, or native launch existed. Transient facts authority caused the personal-escape task call to produce no candidate and the strategy silently returned; infection and death followed. Other actors proved terrain-following native path progress with valid floor observations. The run ended at death_loop_watchdog with 79.6k party DPS. Ghost-flight recovery was not exercised. This admits a persistent AwaitingAuthoritativeFacts task edge and typed task lifecycle telemetry, not a Z, floor, MMAP, tolerance, exposed-head, or throughput change."
+    },
+    {
+      "run_id": "magmaw-authority-5cad51fa40-20260902",
+      "route_completed": false,
+      "classification": "gameplay_failure_after_chainwielder_and_drudges_cleared",
+      "admission": {
+        "source_identity": "5cad51fa4001398096bf2fba5bb2130071fef00d",
+        "source_tree": "15bb8799e1573f53831595581b701201ecca93c0"
+      },
+      "blockers": {
+        "native_recovery_flight_eligibility_rising_edge_retains_ground_path": "not_exercised",
+        "native_partial_death_recovery_lifecycle_failure": "not_exercised",
+        "permanently_rejected_hazard_endpoint_retains_task_ownership": "not_exercised",
+        "magmaw_personal_parasite_escape_task_rearm_churn": "absent",
+        "magmaw_personal_escape_authority_gap_drops_candidate": "occurred",
+        "magmaw_parasite_containment_failure": "occurred",
+        "magmaw_parasite_control_allows_player_infection": "occurred",
+        "magmaw_lethal_movement_identity_churn": "not_exercised",
+        "magmaw_lethal_movement_safe_completion_missing": "not_exercised",
+        "stationary_combat_masks_movement_nonprogress": "not_exercised",
+        "movement_receipt_terminal_join_eviction": "absent",
+        "chainwielder_future_drudge_contamination": "absent",
+        "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "absent",
+        "current_route_combat_authority_preempted": "absent",
+        "same_level_encounter_hazard_path_rejection": "not_exercised",
+        "same_level_movement_path_floor_false_negative": "not_exercised",
+        "same_level_native_endpoint_z_normalization_false_negative": "not_exercised",
+        "same_level_native_path_proof_false_negative": "not_exercised",
+        "native_planner_executor_launch_divergence": "absent",
+        "magmaw_prepot_geometry_conflicts_with_bait_formation": "not_exercised",
+        "raid_partial_wipe_waits_for_last_survivor": "not_exercised",
+        "phase1_capture_duplicate_autostart_lifecycle": "absent",
+        "deferred_candidate_dangling_reference_capture": "absent"
+      },
+      "terminal_reason": "death_loop_watchdog",
+      "terminal_elapsed_seconds": 664.891,
+      "throughput": {
+        "chainwielder_party_dps": 81568.421,
+        "chainwielder_party_hps": 2901.105,
+        "drudges_party_dps": 105668.182,
+        "drudges_party_hps": 44695.5,
+        "magmaw_party_dps": 72854.725,
+        "magmaw_party_hps": 27553.835
+      },
+      "dvc_pointer": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc",
+      "evidence": "experiments/configs/cata_raid_magmaw_authority_5cad51fa40_death_loop_handoff_20260902.json",
+      "note": "Chainwielder and Drudges cleared. Actor 30008 completed one actor-keyed child generation through native progress to safe_clearance while shared generation 9223372036854775809 remained provisional and non-authoritative. Later personal contact, Parasitic Infection, Lava Parasite melee, and death occurred without a later actor child. This is a recurrence of the authority-gap child-lifecycle signature and invalidates revision 1 of magmaw_personal_parasite_authority_gap_v1. Native terrain following worked; no Z, coordinate, floor, MMAP, tolerance, planner, executor, route, or throughput change is admitted."
     }
   ]
 }

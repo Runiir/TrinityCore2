@@ -15,19 +15,19 @@ def _load(name: str) -> dict:
 
 def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
     handoff_name = (
-        "cata_raid_magmaw_personal_escape_authority_review_"
-        "handoff_20260901.json"
+        "cata_raid_magmaw_personal_escape_episode_rearm_review_"
+        "handoff_20260902.json"
     )
     handoff_path = CONFIGS / handoff_name
     handoff = _load(handoff_name)
     active = _load("cata_raid_active_work_unit_v1.json")
 
-    assert handoff["review_model"] == "gpt-5.6-sol"
-    assert handoff["review_reasoning_effort"] == "high"
-    assert handoff["input_identities"]["final_reviewed_commit"] == (
-        "b133fae4c61208a57cd4714fb8f9a4dc7805d090"
+    assert handoff["review"]["model"] == "gpt-5.6-sol"
+    assert handoff["review"]["reasoning_effort"] == "high"
+    assert handoff["review"]["reviewed_commit"] == (
+        "38976c172c4deff27b0e0b559d3f641bd3868ce4"
     )
-    assert handoff["review_history"][-1]["verdict"] == "go"
+    assert handoff["review"]["verdict"] == "go"
     assert active["source_handoff"]["path"] == (
         f"experiments/configs/{handoff_name}"
     )
@@ -70,7 +70,12 @@ def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
         "retries": 0,
     }
     observation = active["live_diagnostic"]["required_observation"]
-    for signal in ("task generation", "same-floor progress", "DPS/HPS"):
+    for signal in (
+        "episode falling and rising edges",
+        "task and candidate generations",
+        "same-floor progress",
+        "DPS/HPS",
+    ):
         assert signal in observation
 
 
@@ -80,11 +85,12 @@ def test_live_diagnostic_keeps_native_terrain_ownership_explicit() -> None:
 
     assert "native executor follows terrain" in acceptance
     for forbidden in (
-        "bot-side vertical steering",
-        "Z correction",
-        "teleport",
-        "tolerance relaxation",
-        "route-coordinate change",
-        "fallback-coordinate change",
+        "Z",
+        "coordinate",
+        "floor",
+        "MMAP",
+        "tolerance",
+        "planner",
+        "executor",
     ):
         assert forbidden in acceptance

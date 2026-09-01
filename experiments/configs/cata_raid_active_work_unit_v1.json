@@ -1,74 +1,76 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:magmaw_personal_escape_rearm_after_provisional_wave",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "review:magmaw_personal_escape_rearm_after_provisional_wave",
-  "next_owner_skill": "raid-bot-runtime-implementation",
-  "classification": "trace_backed_implementation_in_progress",
+  "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion",
+  "owner_skill": "raid-shard-architecture",
+  "next_work_unit": "evidence:classify_magmaw_personal_escape_episode_rearm",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "classification": "live_recurrence_quarantined",
   "epoch_id": "magmaw_personal_escape_await_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Allow one actor-local personal escape child to rearm for a genuinely new personal-threat episode when the shared parasite wave remains provisional and non-authoritative. Preserve one stable destination and bounded native retry inside each episode.",
-  "gate_state": "the exact-source live observation is closed and DVC-published; Chainwielder and Drudges cleared, Magmaw failed the death-loop watchdog, and one bounded trace-backed lifecycle correction is in progress; no build or live retry is admitted before implementation review",
-  "observed_at_commit": "5cad51fa4001398096bf2fba5bb2130071fef00d",
-  "behavior_change": true,
-  "evidence_contract_change": false,
+  "architecture_scope": "Validate one actor-local personal-threat falling and rising edge under an active provisional parasite parent. Keep the existing arbiter, planner, executor, route, and native terrain following unchanged.",
+  "gate_state": "actor 30008 recurrence is recorded in the executable ledger; revision 1 of magmaw_personal_parasite_authority_gap_v1 is invalidated; exact implementation 38976c172c4deff27b0e0b559d3f641bd3868ce4 is independently reviewed GO; one exact-source full-suite receipt, fast8_v4 build, and no-retry fixture-expansion diagnostic remain",
+  "observed_at_commit": "38976c172c4deff27b0e0b559d3f641bd3868ce4",
+  "behavior_change": false,
+  "evidence_contract_change": true,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_authority_5cad51fa40_death_loop_handoff_20260902.json",
-    "sha256": "de80e76ef23ad463a6993843725baf9a66a03dfb114baeeb3e22a401920404c0",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc"
-  },
-  "review_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_personal_escape_authority_review_handoff_20260901.json",
-    "sha256": "615d913df70eb9e7790d84a97bbb661ad9bb10c947c49eb4f1adbfdfdec81046",
-    "verdict": "go",
-    "reviewed_commit": "b133fae4c61208a57cd4714fb8f9a4dc7805d090"
-  },
-  "prestart_gate_handoff": {
-    "path": "experiments/configs/cata_raid_native_recovery_ghost_flight_prestart_gate_handoff_20260901.json",
-    "classification": "consumed_by_terminal_live_canary",
-    "worldserver_starts": 1
+    "path": "experiments/configs/cata_raid_magmaw_personal_escape_episode_rearm_review_handoff_20260902.json",
+    "sha256": "e0a3b8599c72b299cb8c21294616a78b9c43b0c3b96e565dd21cf11fe433206a",
+    "reviewed_commit": "38976c172c4deff27b0e0b559d3f641bd3868ce4",
+    "verdict": "go"
   },
   "first_broken_edge": {
     "run_id": "magmaw-authority-5cad51fa40-20260902",
     "route_node_id": "bwd.magmaw.encounter",
-    "causal_signature": "magmaw_personal_escape_authority_gap_drops_candidate",
     "actor_guid": 30008,
-    "observed_at_ms": 1788297038615,
-    "cause": "The actor-keyed child completed one native escape as safe_clearance, but the shared parent remained one provisional non-authoritative generation for the rest of the fight. Later personal-threat episodes could not rearm the terminal child, after which parasite infection and Infectious Vomit reached the stack.",
-    "terminal_reason": "death_loop_watchdog",
+    "causal_signature": "magmaw_personal_escape_authority_gap_drops_candidate",
+    "shared_wave_generation": 9223372036854775809,
+    "shared_wave_generation_authoritative": false,
+    "task_generation": 1,
+    "task_terminal": "safe_clearance",
+    "cause": "Under one active provisional parent, actor 30008 completed child generation 1 at safe_clearance, then later contact, infection, and death occurred without an authoritative actor-local absence followed by one later rising-edge rearm.",
     "evidence": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc"
   },
-  "implementation_contract": {
-    "allowed": [
-      "detect a genuine actor-local personal-threat rising edge after a terminal child",
-      "rearm exactly once for the new personal-threat episode even if the parent generation remains provisional",
-      "keep one stable actor candidate and destination inside an episode",
-      "preserve typed task-created, awaiting, candidate, native-progress, safe-clearance, infected, and failed lifecycle edges",
-      "retain bounded progress and alternate-route failure semantics"
-    ],
+  "repair_contract": {
+    "rule": "A terminal child remains tombstoned until an authoritative actor-local no-threat observation creates a falling edge. One later authoritative personal-threat rising edge may create exactly one new child under the unchanged provisional parent.",
     "forbidden": [
-      "manual Z offsets or vertical steering",
-      "destination or route-coordinate changes",
-      "teleport or direct resurrection",
-      "MMAP, floor, endpoint, or path-tolerance changes",
-      "route advancement with an incomplete roster",
-      "exposed-head targeting or throughput tuning",
-      "class rotation changes"
+      "Z or coordinate changes",
+      "floor or MMAP changes",
+      "endpoint or tolerance changes",
+      "planner or executor changes",
+      "route, class, damage, consumable, or encounter-strategy tuning"
     ]
   },
-  "acceptance": [
-    "a stable personal threat cannot rearm a terminal child every tick",
-    "clearance followed by a real no-threat interval and a new personal-threat rising edge rearms exactly one new task generation",
-    "the new task can progress while the shared parent generation remains provisional without changing its parent identity",
-    "the lifecycle is traceable from task creation through native progress to safe clearance or an explicit terminal",
-    "physical clearance or endpoint-distance improvement, not submission, remains semantic progress",
-    "stale lifecycle, wrong actor, new wave, death, and missing threat cannot reuse an old task",
-    "the bot submits a logical destination and the native executor follows terrain without bot-side vertical steering or Z correction",
-    "teleport, tolerance relaxation, route-coordinate change, and fallback-coordinate change remain forbidden",
-    "all touched C and C++ files remain below 1000 lines"
-  ],
+  "fixture_expansion": {
+    "primary_target": "magmaw_personal_parasite_authority_gap_v1",
+    "from_revision": 1,
+    "to_revision": 2,
+    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "purpose": "fixture_expansion_replay",
+    "target_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1",
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "magmaw_personal_parasite_authority_gap_v1"
+    ],
+    "attempts": 1,
+    "retries": 0,
+    "authserver_starts": 0,
+    "worldserver_starts": 1,
+    "duration_policy": "completion_watchdog",
+    "required_live_fields": [
+      "shared wave generation and authority",
+      "actor-local episode falling and rising edges",
+      "task and candidate generations and keys",
+      "native submitted, progress, and terminal outcomes",
+      "clearance, infection, and death",
+      "route progression",
+      "DPS and HPS",
+      "cleanup"
+    ]
+  },
   "build": {
     "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
     "compiler_jobs": 8,
@@ -76,48 +78,47 @@
     "configure_receipt": "external_run_root/configure_receipt.json",
     "worldserver_build_receipt": "external_run_root/worldserver_build_receipt.json"
   },
-  "live_diagnostic": {
-    "required_observation": "For every personal parasite threat, retain actor, wave, task generation, candidate key, fixed expiry, destination, authority state, arbitration result, native receipt, same-floor progress while the native executor follows terrain, semantic clearance or typed terminal, deaths, route progression, DPS/HPS, and cleanup.",
-    "success_condition": "The run records the four exact fixture-expansion boundaries with correlated task/native outcomes and cleanup. Promotion still requires the production-boundary predicates, including zero player infection for parasite-control revision 8.",
-    "failure_condition": "Any dropped actor child, key or deadline churn within one wave, infection before a candidate/native outcome, semantic stall, death loop, or route failure closes the single observation run and remains evidence. It does not certify gameplay success."
-  },
-  "last_infrastructure_abort": {
-    "handoff": "experiments/configs/cata_raid_magmaw_authority_e98829b64c_bootstrap_abort_handoff_20260901.json",
-    "reason": "controller_route_hold_git_revision_mismatch",
-    "profile_selection_observed": false,
-    "bots_started": 0,
-    "gameplay_observed": false
-  },
-  "next_action": "Finish and independently review only the actor-local personal-threat episode rearm correction. Run focused multi-wave and no-churn tests. Do not build or start a server until the reviewed implementation and an updated recurrence admission explicitly authorize one next observation.",
+  "next_action": "At this descriptor's exact clean commit, run the full recurrence bank with gate fixture_expansion. Only if it emits fixture_expansion_admitted=true, run exactly one queued fast8_v4 configure and worldserver build, fresh deterministic shard provisioning and strict readback, one fixture-expansion recurrence seal, and one completion-watchdog worldserver start. Start no authserver and do not retry. DVC-publish only after a typed terminal and verified cleanup.",
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": true,
     "gameplay_canary_admitted": false,
+    "gameplay_mutations_allowed": false,
     "live_diagnostic_admitted": true,
-    "gameplay_mutations_allowed": true,
-    "configure_admitted": false,
-    "worldserver_build_admitted": false,
-    "worldserver_start_admitted": false,
+    "configure_admitted": true,
+    "worldserver_build_admitted": true,
+    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": false,
-    "database_mutation_scope": "none",
+    "database_mutations_allowed": true,
+    "database_mutation_scope": "fresh deterministic pre-admission shard provisioning and strict readback only",
     "dvc_publication_required_after_terminal": true,
     "admission_conditions": [
-      "the implementation changes only the actor-local personal-escape lifecycle and focused tests",
-      "a same-episode stable threat cannot create generation churn",
-      "a new threat rising edge after clearance creates exactly one new task generation under a provisional parent",
-      "an independent review confirms no Z, route, MMAP, floor, tolerance, planner, executor, or damage change",
-      "a later recurrence decision, not this descriptor, must authorize the next build and live run"
+      "the exact clean descriptor commit and full-suite source identity match",
+      "the recurrence decision admits fixture expansion and includes all five declared target IDs",
+      "configure, build, binary, runtime config, route manifest, roster, and recurrence seal identities match",
+      "one worldserver start remains and no authserver or retry is permitted"
     ]
   },
+  "live_diagnostic": {
+    "required_observation": "Retain actor 30008 shared-wave generation and authority, actor-local episode falling and rising edges, task and candidate generations and keys, native submission, same-floor progress and terminal outcome, clearance, infection and death, route progression, party DPS/HPS, and cleanup.",
+    "success_condition": "The exact-source run shows one authoritative actor-local no-threat falling edge followed by one later threat rising edge, exactly one new child under the unchanged provisional parent, stable candidate identity within the episode, native progress, and safe clearance without infection for the correlated actor episode.",
+    "failure_condition": "A dropped child, generation churn without a new authoritative episode, infection before correlated native progress or terminal outcome, semantic stall, route failure, death loop, or infrastructure loss closes the single run as evidence and does not certify gameplay success."
+  },
+  "acceptance": [
+    "actor 30008 terminal safe_clearance generation 1 remains tombstoned until an authoritative actor-local no-threat falling edge",
+    "one later authoritative threat rising edge creates exactly one new child under the unchanged provisional parent",
+    "task and candidate generations and keys remain stable within each episode",
+    "native submission, same-floor progress, terminal, clearance, infection, and death remain correlated",
+    "route progression and party DPS/HPS are retained as diagnostic signals, not acceptance claims",
+    "the native executor follows terrain without Z, coordinate, floor, MMAP, tolerance, planner, or executor changes",
+    "the single worldserver and exact cohort are cleaned before DVC publication"
+  ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "worldserver_starts": 3,
+    "worldserver_starts": 1,
     "authserver_starts": 0,
-    "retries": 0,
-    "infrastructure_replacement_starts": 1,
-    "gameplay_attempts": 2
+    "retries": 0
   }
 }
