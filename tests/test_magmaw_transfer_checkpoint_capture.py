@@ -67,7 +67,7 @@ def _config_comparison(
 ) -> dict[str, object]:
     return {
         "accepted": True,
-        "failure_field": "",
+        "failure_field": "none",
         "fixture_configured_present": True,
         "fixture_requested_present": True,
         "fixture_matches": True,
@@ -248,6 +248,17 @@ def test_launch_identity_validation_rejects_invalid_native_authority() -> None:
 def _awaiting_terminal(
     *, binary_revision_length: int = 40,
 ) -> ControllerRouteHoldScheduler:
+    scheduler = _awaiting_arm_ack()
+    assert scheduler.observe(_checkpoint_row(
+        "armed", binary_revision_length=binary_revision_length,
+    )) == [
+        "botautomagmawtransfercheckpoint status"
+    ]
+    assert scheduler.phase == "awaiting_terminal"
+    return scheduler
+
+
+def _awaiting_arm_ack() -> ControllerRouteHoldScheduler:
     scheduler = _scheduler()
     assert scheduler.start()
     assert scheduler.observe(_direct_hold()) == ["botauto status"]
@@ -255,12 +266,7 @@ def _awaiting_terminal(
     assert scheduler.observe(_status()) == [
         f"botautomagmawtransfercheckpoint arm {ACTOR} {CASE} {SEAL} {SOURCE}"
     ]
-    assert scheduler.observe(_checkpoint_row(
-        "armed", binary_revision_length=binary_revision_length,
-    )) == [
-        "botautomagmawtransfercheckpoint status"
-    ]
-    assert scheduler.phase == "awaiting_terminal"
+    assert scheduler.phase == "awaiting_arm_ack"
     return scheduler
 
 
@@ -318,6 +324,56 @@ def test_generic_hold_terminal_cannot_spoof_fixture_success() -> None:
     assert controller_fixture_terminal_observation(
         scheduler, elapsed_seconds=1.0,
     ) == {"detected": False}
+
+
+def test_production_identity_success_sentinel_arms_without_terminalizing() -> None:
+    scheduler = _awaiting_arm_ack()
+    assert scheduler.observe(_checkpoint_row("armed")) == [
+        "botautomagmawtransfercheckpoint status"
+    ]
+    assert scheduler.phase == "awaiting_terminal"
+    assert scheduler.complete is False
+    assert scheduler.receipt()["checkpoint_terminal_count"] == 0
+    assert controller_fixture_terminal_observation(
+        scheduler, elapsed_seconds=1.0,
+    ) == {"detected": False}
+
+
+@pytest.mark.parametrize("failure_field", ["", "fixture_matches"])
+def test_arm_ack_rejects_nonproduction_identity_failure_field(
+    failure_field: str,
+) -> None:
+    scheduler = _awaiting_arm_ack()
+    row = _checkpoint_row("armed")
+    comparison = row["controller_route_hold"]["config_identity_comparison"]
+    comparison["failure_field"] = failure_field
+    assert scheduler.observe(row) == []
+    assert scheduler.failure_reason == "magmaw_transfer_checkpoint_identity_invalid"
+
+
+def test_arm_ack_rejects_missing_identity_failure_field() -> None:
+    scheduler = _awaiting_arm_ack()
+    row = _checkpoint_row("armed")
+    comparison = row["controller_route_hold"]["config_identity_comparison"]
+    comparison.pop("failure_field")
+    assert scheduler.observe(row) == []
+    assert scheduler.failure_reason == "magmaw_transfer_checkpoint_identity_invalid"
+
+
+@pytest.mark.parametrize("field", [
+    "accepted", "fixture_configured_present", "fixture_requested_present",
+    "fixture_matches", "seal_configured_present", "seal_requested_present",
+    "seal_matches", "source_configured_present", "source_requested_present",
+    "source_matches", "binary_revision_present",
+    "binary_revision_format_valid", "binary_revision_matches_source",
+])
+def test_arm_ack_rejects_each_contradictory_identity_boolean(field: str) -> None:
+    scheduler = _awaiting_arm_ack()
+    row = _checkpoint_row("armed")
+    comparison = row["controller_route_hold"]["config_identity_comparison"]
+    comparison[field] = False
+    assert scheduler.observe(row) == []
+    assert scheduler.failure_reason == "magmaw_transfer_checkpoint_identity_invalid"
 
 
 def test_exact_dedicated_success_stops_as_non_gameplay_fixture_observation() -> None:

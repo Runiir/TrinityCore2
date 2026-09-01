@@ -479,7 +479,7 @@ def _magmaw_transfer_checkpoint_identity_rejections(
         or not isinstance(lifecycle, dict)
         or lifecycle.get("case_id") != MAGMAW_TRANSFER_CHECKPOINT_CASE_ID
         or not isinstance(comparison, dict)
-        or comparison.get("failure_field") != ""
+        or comparison.get("failure_field") != "none"
         or any(comparison.get(field) is not True for field in exact_config_bools)
         or comparison.get("configured_source_length") != 40
         or comparison.get("requested_source_length") != 40
