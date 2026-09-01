@@ -76,6 +76,17 @@ These shutdown and persistence duties belong to the capture controller or coordi
   terminal edge: normal clear, monotonic semantic/no-progress stall, repeated
   decisions, excessive death loops, infrastructure loss, contamination, or
   explicit interruption. An emergency wall-clock expiry is noncompletion.
+- In a fixture-expansion capture, a verified typed fixture terminal is the
+  terminal result even when ordinary gameplay-stability gates are false. Stop
+  promptly, request the final evidence bundle, and classify the result as a
+  non-successful fixture observation; do not wait for the generic semantic
+  stall clock and do not relabel it as gameplay success or gameplay failure.
+  Validate all status rows already received in the same batch before stopping,
+  so an admission or preflight infrastructure failure keeps precedence. If
+  the fixture terminal's forced evidence is incomplete, classify the run as
+  an infrastructure abort while retaining the typed terminal. Do not apply
+  that override to an already-proven gameplay failure: preserve its gameplay
+  classification and mark its terminal evidence incomplete.
 - Reconstruct milestones from ordered native observations rather than trusting aggregate completion flags.
 - Preserve both `first_broken_edge` and `terminal_edge` when they differ. A
   later admission receipt, identity, recovery, or watchdog failure must not
