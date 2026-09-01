@@ -1,0 +1,61 @@
+{
+  "schema": "cata_raid_magmaw_transfer_lane_capture_dialect_handoff_v1",
+  "created_at_utc": "2026-09-01T07:15:00Z",
+  "source_commit": "ef7e944c9337565b1513b356776156f32a6d515a",
+  "source_tree": "fa38015a05eb8a062b13e193d041e0473fccead9",
+  "checkpoint_implementation_handoff": {
+    "path": "experiments/configs/cata_raid_magmaw_transfer_lane_checkpoint_implementation_handoff_v1.json",
+    "sha256": "95f43681e2c1ef92103ff582224e026857afa16a6b1238bcbc54de8d74b028dd"
+  },
+  "implementation_commits": [
+    "95d5e0f74a",
+    "701c4fa415",
+    "8d42313a11",
+    "72a2d78d00"
+  ],
+  "skill_guard_commit": "ef7e944c93",
+  "classification": "capture_dialect_implemented_independently_reviewed",
+  "independent_review": {
+    "verdict": "go",
+    "reviewed_commit": "363f461682de595395489d413b33cf2f3b7720e7",
+    "adversarial_tests_passed": 178,
+    "offline_blockers_remaining": 0
+  },
+  "master_validation": {
+    "tests_passed": 322,
+    "suites": [
+      "tests/test_magmaw_transfer_checkpoint_capture.py",
+      "tests/test_recurrence_admission.py",
+      "tests/test_native_path_checkpoint.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "diff_check_clean": true,
+    "production_python_modules_under_1000_lines": true,
+    "capture_live_run_lines": 914,
+    "controller_route_hold_max_measured_branches": 22
+  },
+  "verified_contract": [
+    "only the dedicated botauto_magmaw_transfer_lane_checkpoint response can establish fixture success",
+    "generic controller hold lifecycle cannot spoof success",
+    "native 12-character or full 40-character binary revision is accepted only through exact source-prefix comparison",
+    "wipe generation and instance identity are frozen from stable native status and cannot drift before terminal",
+    "preflight and gameplay failures in the complete received batch retain precedence over fixture terminal",
+    "progress accounting distinguishes total, wrong-floor, same-floor, and decreasing samples",
+    "success requires exact candidate/planner/spline identity and finite same-floor logical arrival",
+    "fixture completion cannot certify gameplay, boss fidelity, or task-authority cutover"
+  ],
+  "pinned_probe": {
+    "path": "experiments/configs/map669_magmaw_transfer_lane_entrance_probe_v1.json",
+    "sha256": "996f64ad0072eb389fd39afc0b3907757298993b6690399c77a3db2cd94b4cb7"
+  },
+  "required_next_work_unit": {
+    "id": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_start",
+    "owner_skill": "raid-evidence-lifecycle",
+    "build_policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "retries": 0,
+    "database_mutations_allowed": false,
+    "classification": "fixture_only_not_gameplay"
+  }
+}
