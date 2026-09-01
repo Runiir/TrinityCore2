@@ -1,0 +1,81 @@
+{
+  "schema": "cata_raid_magmaw_task_state_shadow_comparison_handoff_v1",
+  "work_unit": "evidence:magmaw_parasite_task_state_shadow_comparison",
+  "classification": "blocked_required_production_boundary_not_admitted",
+  "verified_at_utc": "2026-09-01T11:43:44Z",
+  "source_identity": "9596ac8d47f2965f37c00bef86a1a0e354c01d60",
+  "source_tree": "2b2cbc93b29d6380942c40f1833b44ad2c93f7d7",
+  "implementation_commit": "be13bef97823ab1d892a2223e0d34dc712ab99ae",
+  "active_descriptor": "experiments/configs/cata_raid_active_work_unit_v1.json",
+  "focused_compiled_replay": {
+    "command": [
+      "pixi",
+      "run",
+      "pytest",
+      "-q",
+      "tests/test_bot_action_arbitration.py",
+      "tests/test_magmaw_directional_mobility_integration.py",
+      "tests/test_magmaw_movement_intent_collection.py",
+      "tests/test_magmaw_parasite_policy.py",
+      "tests/test_magmaw_persistent_task_shadow.py",
+      "tests/test_magmaw_transfer_lane_authority.py"
+    ],
+    "command_json_sha256": "ea9ff7aabf0d23f185559d1410fdbdfde484800b5b2f108d5c83d0d3b022b856",
+    "exit_code": 0,
+    "passed": 26,
+    "failed": 0,
+    "duration_seconds": 53.97,
+    "boundary": "compiled_shared_production_adapter_and_real_action_kernel",
+    "synthetic_scope": "deterministic_shadow_and_native_outcome_replay_only_not_live_boss_fidelity"
+  },
+  "verified_compiled_claims": {
+    "shared_adapter": "The live manager and compiled fixtures call SubmitMagmawMovementKernelCandidates from the same committed adapter.",
+    "stable_identity": "Task identity binds encounter lifecycle, both sticky assignment nonces, actor GUID, actor-life identity, task generation, candidate key, and native movement receipt.",
+    "sticky_assignments": "The fixed Fire Mage and Marksman Hunter retain task generations and destinations across ordinary observation revisions.",
+    "suspend_resume": "Safety preemption suspends the task and clearing safety resumes the same task identity and destination.",
+    "native_outcome": "Native outcomes are accepted only when scope, actor, episode, task generation, both assignment nonces, candidate key, requested destination, and observation identity correlate.",
+    "semantic_progress": "Submission alone does not increment task progress; only same-floor measured distance improvement or a correlated terminal endpoint observation advances the task.",
+    "terminal_outcomes": "The replay covers success and bounded no-semantic-progress failure.",
+    "default_off": "BotWorld.Magmaw.TransferLaneTaskAuthority remains false by default.",
+    "terrain_contract": "No bot-side Z adjustment, vertical steering, target-height normalization, MMAP tolerance, fallback fraction, or path-geometry change was made by this work unit."
+  },
+  "fixture_promotion": [
+    {
+      "fixture_id": "magmaw_parasite_lane_paths_v1",
+      "requested_revision": 9,
+      "promoted": false,
+      "reason": "The recurrence ledger requires an exact-current-source worldserver Magmaw replay with task authority enabled and measured terrain-following progress; this work unit forbids configure, build, server start, and live retry."
+    },
+    {
+      "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
+      "requested_revision": 8,
+      "promoted": false,
+      "reason": "The recurrence ledger requires a worldserver replay correlating the task identity through native movement and a typed terminal; the green compiled replay does not satisfy that live production boundary."
+    },
+    {
+      "fixture_id": "magmaw_parasite_control_full_runtime_v1",
+      "requested_revision": 8,
+      "promoted": false,
+      "reason": "The recurrence ledger requires a task-authority-enabled worldserver replay with zero Parasitic Infection and Infectious Vomit events; no live gameplay was admitted or run."
+    }
+  ],
+  "first_broken_edge": {
+    "kind": "workflow_contract_mismatch",
+    "detail": "The active work unit requests compiled shadow verification while the exact three promotion requests still require task-authority-enabled worldserver evidence that the same work unit forbids.",
+    "not_a_code_failure": true
+  },
+  "residual_behavior_gap": {
+    "work_unit": "role:magmaw_safe_range_parasite_offense",
+    "owner_skill": "raid-role-implementation",
+    "detail": "Non-owner safe-range parasite offense and personal escape remain a separate gameplay-policy work unit. They were not changed or treated as a fixture failure in this evidence gate."
+  },
+  "correction_cycles_used": 0,
+  "mutations": {
+    "cpp_or_gameplay": false,
+    "recurrence_promotions": false,
+    "z_or_mmap": false,
+    "server_or_database": false,
+    "dvc_publication": false
+  },
+  "next_action": "Split the workflow into a deterministic shadow-comparison gate and a separately authorized live production gate. Keep revisions 9/8/8 pending until the exact ledger-defined worldserver boundaries run; do not weaken those boundaries to convert the compiled pass into live evidence."
+}
