@@ -343,25 +343,26 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
     assert active["work_unit"] == (
-        "evidence:chainwielder_hazard_exit_live_proof"
+        "runtime:make_personal_parasite_escape_a_persistent_task"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["classification"] == (
-        "implementation_reviewed_pending_environment_proof"
-    )
+    assert active["classification"] == "trace_backed_implementation_ready"
     assert active["next_owner_skill"] == "raid-bot-runtime-implementation"
-    assert active["ready_for_bounded_repair"] is False
-    assert active["program_scope"]["gameplay_mutations_allowed"] is False
-    assert active["program_scope"]["worldserver_start_admitted"] is True
+    assert active["program_scope"]["gameplay_mutations_allowed"] is True
+    assert active["program_scope"]["worldserver_start_admitted"] is False
     assert active["program_scope"]["authserver_start_admitted"] is False
     assert active["source_handoff"]["path"].endswith(
-        "cata_raid_magmaw_task_state_canary_a725c82d96_summary_v1.json"
+        "cata_raid_magmaw_parasite_task_rearm_handoff_20260901.json"
     )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
-    assert active["validation_clock"]["policy"] == "completion_watchdog"
-    assert "chainwielder gameplay replay" in active["next_action"].lower()
+    assert active["validation_clock"]["policy"] == (
+        "compiled_recurrence_only_until_independent_review"
+    )
+    assert "persistent personal-parasite escape task" in (
+        active["next_action"].lower()
+    )
     assert any(
-        "bot z" in rule.lower()
+        "z correction" in rule.lower()
         for rule in active["implementation_scope"]["forbidden"]
     )
     assert sinestra["task_kind"] == "implement_missing_boss_script"

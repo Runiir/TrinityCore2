@@ -1,0 +1,78 @@
+{
+  "schema": "cata_raid_runtime_repair_handoff_v1",
+  "run_id": "magmaw-parasite-task-rearm-f86358e742-20260901",
+  "source_commit": "f86358e742dea86d6c776ca0e105ae6b10c64f22",
+  "source_tree": "e34455b21c934d052202d4a4f652b65f92430a97",
+  "classification": "gameplay_failure_after_chainwielder_and_drudges_cleared",
+  "terminal_reason": "death_loop_watchdog",
+  "first_broken_edge": {
+    "component": "actor_local_personal_parasite_escape_task_lifecycle",
+    "cause": "Terminal native rejection retires the exact actor, intent generation, and destination, but ordinary sub-yard actor or parasite displacement rearms the same semantic escape episode as a new intent generation.",
+    "evidence": {
+      "distinct_escape_generations_by_actor": {
+        "30001": 13,
+        "30002": 18,
+        "30003": 99,
+        "30004": 52,
+        "30005": 53,
+        "30006": 7,
+        "30007": 19,
+        "30008": 59,
+        "30009": 7,
+        "30010": 15
+      },
+      "exact_first_rejected_endpoint_reemitted": false,
+      "task_authority_enabled": true,
+      "active_or_retired_personal_escape_tasks_observed": false
+    }
+  },
+  "run_result": {
+    "chainwielder_cleared": true,
+    "drudges_cleared": true,
+    "magmaw_cleared": false,
+    "magmaw_combat_seconds": 208,
+    "magmaw_active_window_party_dps": 55815.692,
+    "magmaw_elapsed_party_dps": 50641.495,
+    "magmaw_active_window_party_hps": 15577.303,
+    "magmaw_elapsed_party_hps": 14133.264,
+    "cleanup_verified": true
+  },
+  "repair_contract": {
+    "required": [
+      "represent personal parasite escape as one actor-local persistent task keyed by route and wipe scope plus a stable parasite wave",
+      "retain one logical destination while the task is running",
+      "treat action submission as execution evidence but not semantic progress",
+      "use measured clearance or arrival as semantic progress",
+      "transition a terminal native rejection to one bounded alternate route or a typed failed outcome",
+      "prevent ordinary actor or parasite displacement from creating a fresh task generation",
+      "release task ownership after success, typed failure, abort, or scope change",
+      "preserve actor-local isolation and existing action arbitration"
+    ],
+    "forbidden": [
+      "bot-side vertical steering or Z correction",
+      "route-coordinate or fallback-coordinate tuning",
+      "MMAP, floor, endpoint-tolerance, or path-admission changes",
+      "priority changes",
+      "class, pet, boss-script, DPS, consumable, or raid-route tuning",
+      "a live server run before independent review and recurrence admission"
+    ]
+  },
+  "acceptance": [
+    "a compiled replay proves small actor and hazard displacement cannot rearm the same wave after terminal rejection",
+    "a new stable hazard wave may create one new task",
+    "successful movement remains owned until measured safety or arrival",
+    "a second bot reacting to the same wave has a distinct actor-local task",
+    "ordinary combat recovery resumes after the escape task reaches a terminal state",
+    "all touched C and C++ files remain below 1000 lines"
+  ],
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_parasite_task_rearm_f86358e742_20260901.dvc",
+    "dvc_directory_md5": "f0a920dd6689b44df1f498ac509f451e.dir",
+    "file_count": 24,
+    "size_bytes": 322164097,
+    "report_sha256": "45e8507e20647eadfa0132848ba041e03ab75b1c2db4ae7c5f0390b94f81f91c",
+    "raw_jsonl_sha256": "ab884017f1d2b25729e655bfc4b83bbdb61f8edc75a4914a7b897f85dd4c25b8",
+    "worldserver_log_sha256": "c03b643ae88e5f84592a1fc8843354093a42af68b776f1de2f4fe62ae4fcaa7e",
+    "remote_verified": true
+  }
+}
