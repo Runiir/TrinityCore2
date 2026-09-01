@@ -65,8 +65,9 @@ int main()
     // unrelated active row must not displace the admitted inactive row.
     std::array<PetRow, 2> rows = {{
         {8700009, 8959, 30009, true, false},
-        {42, 1, 30009, true, true},
+        {42, 8959, 30009, true, true},
     }};
+    PetRow const frozenReceiptRow = {8700009, 8959, 30009, true, true};
     auto lookup = [&rows](unsigned petId) -> PetRow const*
     {
         for (PetRow const& row : rows)
@@ -89,9 +90,12 @@ int main()
     assert(ClassifyPersistentIdentity(identity) == PersistentIdentityStatus::Observed);
 
     FrozenReceiptComparison receipt = validReceipt();
-    receipt.PetIdMatches = selected && selected->PetId == 8700009;
-    receipt.PetEntryMatches = selected && selected->Entry == 8959;
-    receipt.OwnerMatches = selected && selected->Owner == 30009;
+    receipt.PetIdMatches = selected
+        && selected->PetId == frozenReceiptRow.PetId;
+    receipt.PetEntryMatches = selected
+        && selected->Entry == frozenReceiptRow.Entry;
+    receipt.OwnerMatches = selected
+        && selected->Owner == frozenReceiptRow.Owner;
     assert(ClassifyFrozenReceipt(receipt) == FrozenReceiptStatus::Matches);
 
     // No live instance (including an ordinarily dismissed pet before it is
@@ -108,13 +112,20 @@ int main()
     selected = SelectPersistentRowForLivePet<PetRow>(42, lookup);
     assert(selected == &rows[1]);
     receipt = validReceipt();
-    receipt.PetIdMatches = selected->PetId == 8700009;
+    receipt.PetIdMatches = selected
+        && selected->PetId == frozenReceiptRow.PetId;
+    receipt.PetEntryMatches = selected
+        && selected->Entry == frozenReceiptRow.Entry;
+    receipt.OwnerMatches = selected
+        && selected->Owner == frozenReceiptRow.Owner;
+    assert(!receipt.PetIdMatches);
+    assert(receipt.PetEntryMatches);
+    assert(receipt.OwnerMatches);
     assert(ClassifyFrozenReceipt(receipt) == FrozenReceiptStatus::PetIdMismatch);
 
     // The exact Canary 48abb counterexample remains explicit: the same
-    // permanent owned live
-    // pet and row remain identity-valid after ordinary lifecycle code changes
-    // PlayerPetData::Active to false.
+    // permanent owned live pet and row remain identity-valid after ordinary
+    // lifecycle code changes PlayerPetData::Active to false.
     identity.StoredLifecycleActive = false;
     assert(ClassifyPersistentIdentity(identity) == PersistentIdentityStatus::Observed);
 
@@ -124,6 +135,8 @@ int main()
         assert(ClassifyPersistentIdentity(facts) == expected);
         assert(*PersistentIdentityFailureReason(expected));
     };
+    identity = validIdentity(); identity.CharmInfoPresent = false;
+    expectIdentityFailure(identity, PersistentIdentityStatus::CharmInfoMissing);
     identity = validIdentity(); identity.PersistentRowPresent = false;
     expectIdentityFailure(identity, PersistentIdentityStatus::PersistentRowMissing);
     identity = validIdentity(); identity.StoredTypeHunter = false;
@@ -136,6 +149,10 @@ int main()
     expectIdentityFailure(identity, PersistentIdentityStatus::LiveOwnerMismatch);
     identity = validIdentity(); identity.StoredOwnerMatches = false;
     expectIdentityFailure(identity, PersistentIdentityStatus::StoredOwnerMismatch);
+    identity = validIdentity(); identity.StoredPetId = 0;
+    expectIdentityFailure(identity, PersistentIdentityStatus::StoredPetIdMissing);
+    identity = validIdentity(); identity.StoredEntry = 0;
+    expectIdentityFailure(identity, PersistentIdentityStatus::StoredEntryMissing);
     identity = validIdentity(); identity.StoredPetId = 42;
     expectIdentityFailure(identity, PersistentIdentityStatus::PetIdMismatch);
     identity = validIdentity(); identity.LiveEntry = 42;
