@@ -7,6 +7,11 @@ import subprocess
 
 import pytest
 
+from tools.raid_program.build_control_compatibility import (
+    compatibility_projection,
+    verify_build_control_compatibility,
+)
+
 from tools.raid_program.capture_checkpoint_controller import (
     chainwielder_checkpoint_arm_command,
     native_path_checkpoint_arm_command,
@@ -80,12 +85,24 @@ def _fixture(tmp_path: Path) -> dict[str, Path | str]:
     suite = tmp_path / "suite.json"
     profile_manifest = tmp_path / "runtime_profiles.json"
     binary.write_bytes(b"\x7fELFtest")
+    build_commit = _git(root, "rev-parse", "HEAD")
+    build_snapshot = {
+        "commit": build_commit,
+        "tree": _git(root, "rev-parse", "HEAD^{tree}"),
+        "clean": True,
+        "dirty": False,
+        "porcelain_sha256": hashlib.sha256(b"").hexdigest(),
+    }
     _write_json(
         build_receipt,
         {
             "classification": "success",
             "exit_code": 0,
-            "commit": _git(root, "rev-parse", "HEAD"),
+            "commit": build_commit,
+            "source_identity": {
+                stage: dict(build_snapshot)
+                for stage in ("request", "admission", "completion")
+            },
             "output_artifacts": [
                 {
                     "kind": "worldserver_elf",
@@ -138,6 +155,11 @@ def _fixture(tmp_path: Path) -> dict[str, Path | str]:
     }.items():
         bindings[name] = {"path": str(path.resolve()), "sha256": sha256_file(path)}
     admission = tmp_path / "admission.json"
+    compatibility = verify_build_control_compatibility(
+        worktree=root,
+        receipt=json.loads(build_receipt.read_text(encoding="utf-8")),
+    )
+    assert compatibility["valid"] is True
     _write_json(
         admission,
         {
@@ -150,6 +172,9 @@ def _fixture(tmp_path: Path) -> dict[str, Path | str]:
                 "tree": _git(root, "rev-parse", "HEAD^{tree}"),
                 "porcelain_sha256": hashlib.sha256(b"").hexdigest(),
             },
+            "build_control_compatibility": compatibility_projection(
+                compatibility
+            ),
             "bindings": bindings,
             "fixture_revisions": {
                 "magmaw_parasite_control_full_runtime_v1": 4,
@@ -180,6 +205,34 @@ def _verify(paths: dict[str, Path | str]) -> dict[str, object]:
         build_receipt=Path(paths["build_receipt"]),
         runtime_config=Path(paths["config"]),
     )
+
+
+def _refresh_admission_for_control_head(
+    paths: dict[str, Path | str],
+) -> dict[str, object]:
+    root = Path(paths["root"])
+    suite = Path(paths["suite"])
+    admission = Path(paths["admission"])
+    build_receipt = Path(paths["build_receipt"])
+    suite_value = json.loads(suite.read_text(encoding="utf-8"))
+    suite_value["source_identity"] = _git(root, "rev-parse", "HEAD")
+    _write_json(suite, suite_value)
+    compatibility = verify_build_control_compatibility(
+        worktree=root,
+        receipt=json.loads(build_receipt.read_text(encoding="utf-8")),
+    )
+    admission_value = json.loads(admission.read_text(encoding="utf-8"))
+    admission_value["source"] = {
+        "commit": _git(root, "rev-parse", "HEAD"),
+        "tree": _git(root, "rev-parse", "HEAD^{tree}"),
+        "porcelain_sha256": hashlib.sha256(b"").hexdigest(),
+    }
+    admission_value["bindings"]["suite_receipt"]["sha256"] = sha256_file(suite)
+    admission_value["build_control_compatibility"] = compatibility_projection(
+        compatibility
+    )
+    _write_json(admission, admission_value)
+    return compatibility
 
 
 def _replacement_request() -> dict[str, object]:
@@ -1105,6 +1158,46 @@ def test_recurrence_admission_rejects_new_head(tmp_path: Path) -> None:
     _git(root, "commit", "-m", "new identity")
 
     with pytest.raises(RecurrenceAdmissionError, match="source_identity_stale"):
+        _verify(paths)
+
+
+def test_recurrence_admission_accepts_control_only_descendant_build(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    root = Path(paths["root"])
+    descriptor = root / "experiments/configs/active.json"
+    descriptor.parent.mkdir(parents=True)
+    descriptor.write_text("{}\n", encoding="utf-8")
+    _git(root, "add", descriptor.relative_to(root).as_posix())
+    _git(root, "commit", "-m", "advance control descriptor")
+    compatibility = _refresh_admission_for_control_head(paths)
+    assert compatibility["valid"] is True
+
+    verified = _verify(paths)
+
+    assert verified["control_commit"] == _git(root, "rev-parse", "HEAD")
+    assert verified["build_source_commit"] != verified["control_commit"]
+    assert verified["build_control_relationship"] == "control_only_descendant"
+
+
+def test_recurrence_admission_rejects_native_descendant_build(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    root = Path(paths["root"])
+    native = root / "src/server/native.cpp"
+    native.parent.mkdir(parents=True)
+    native.write_text("int changed;\n", encoding="utf-8")
+    _git(root, "add", native.relative_to(root).as_posix())
+    _git(root, "commit", "-m", "native change")
+    compatibility = _refresh_admission_for_control_head(paths)
+    assert compatibility["valid"] is False
+
+    with pytest.raises(
+        RecurrenceAdmissionError,
+        match="build_source_incompatible:control_path_not_allowed:src/server/native.cpp",
+    ):
         _verify(paths)
 
 

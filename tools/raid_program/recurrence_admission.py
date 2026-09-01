@@ -7,6 +7,11 @@ from pathlib import Path
 import subprocess
 from typing import Any
 
+from tools.raid_program.build_control_compatibility import (
+    compatibility_projection,
+    verify_build_control_compatibility,
+)
+
 from tools.raid_program.recurrence_checkpoint_seals import (
     ADMISSION_PURPOSES,
     CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX,
@@ -393,6 +398,14 @@ def create_recurrence_admission(
     assert isinstance(porcelain, bytes)
     if porcelain:
         raise RecurrenceAdmissionError("source_worktree_dirty")
+    build = _load(build_receipt.resolve(), "build_receipt")
+    source_compatibility = verify_build_control_compatibility(
+        worktree=worktree, receipt=build,
+    )
+    if not source_compatibility["valid"]:
+        raise RecurrenceAdmissionError(
+            "build_source_incompatible:" + source_compatibility["rejections"][0]
+        )
     decision_value = _load(decision.resolve(), "decision")
     if purpose not in ADMISSION_PURPOSES:
         raise RecurrenceAdmissionError("admission_purpose_invalid")
@@ -572,6 +585,9 @@ def create_recurrence_admission(
             "tree": tree,
             "porcelain_sha256": hashlib.sha256(porcelain).hexdigest(),
         },
+        "build_control_compatibility": compatibility_projection(
+            source_compatibility
+        ),
         "bindings": {
             name: {
                 "path": str(
@@ -859,10 +875,20 @@ def verify_recurrence_admission(
     # invalid JSON must not be accepted merely because a stale digest matches.
     _load(ledger_path, "ledger")
     build = _load(build_receipt_path, "build_receipt")
+    source_compatibility = verify_build_control_compatibility(
+        worktree=worktree, receipt=build,
+    )
+    if not source_compatibility["valid"]:
+        raise RecurrenceAdmissionError(
+            "build_source_incompatible:" + source_compatibility["rejections"][0]
+        )
+    if admission.get("build_control_compatibility") != compatibility_projection(
+        source_compatibility
+    ):
+        raise RecurrenceAdmissionError("build_control_compatibility_mismatch")
     if (
         build.get("classification") != "success"
         or build.get("exit_code") != 0
-        or build.get("commit") != head
     ):
         raise RecurrenceAdmissionError("build_receipt_not_admitted")
     binary_hash = sha256_file(binary_path)
@@ -881,6 +907,10 @@ def verify_recurrence_admission(
         "admission_sha256": expected_sha256,
         "source_commit": head,
         "source_tree": tree,
+        "control_commit": source_compatibility["control_commit"],
+        "build_source_commit": source_compatibility["build_source_commit"],
+        "build_source_tree": source_compatibility["build_source_tree"],
+        "build_control_relationship": source_compatibility["relationship"],
         "fixture_revisions": actual_revisions,
         "purpose": required_purpose,
         "fixture_expansion_target_ids": admission.get(

@@ -9,6 +9,11 @@ import re
 import subprocess
 from typing import Any
 
+from tools.raid_program.build_control_compatibility import (
+    compatibility_projection,
+    verify_build_control_compatibility,
+)
+
 try:
     from tools.raid_program.capture_value_types import (
         _canonical_object_sha256,
@@ -107,7 +112,9 @@ def validate_build_receipt(
                 None,
                 allow_test_mode=False,
             )
-        identity = git_identity(worktree)
+        source_compatibility = verify_build_control_compatibility(
+            worktree=worktree, receipt=receipt,
+        )
         rejections: list[str] = []
         if verification.get("classification") != "success" or receipt.get("classification") != "success":
             rejections.append("build_receipt_not_success")
@@ -115,8 +122,7 @@ def validate_build_receipt(
             rejections.append("build_receipt_test_mode")
         if receipt.get("exit_code") != 0:
             rejections.append("build_receipt_nonzero_exit")
-        if receipt.get("commit") != identity["head"]:
-            rejections.append("build_receipt_commit_mismatch")
+        rejections.extend(source_compatibility["rejections"])
         if Path(str(receipt.get("worktree", ""))).resolve() != worktree.resolve():
             rejections.append("build_receipt_worktree_mismatch")
         if receipt.get("worktree_dirty_at_request") is not False:
@@ -132,15 +138,6 @@ def validate_build_receipt(
                 rejections.append("build_receipt_source_identity_changed")
             else:
                 completion = snapshots[2]
-                current_source = {
-                    "commit": identity["head"],
-                    "tree": identity["tree"],
-                    "clean": identity["clean"],
-                    "dirty": identity["dirty"],
-                    "porcelain_sha256": identity["porcelain_sha256"],
-                }
-                if completion != current_source:
-                    rejections.append("build_receipt_completion_source_mismatch")
                 if completion.get("clean") is not True or completion.get("dirty") is not False:
                     rejections.append("build_receipt_completion_source_dirty")
         controls = policy.get("mechanical_controls", {})
@@ -305,6 +302,7 @@ def validate_build_receipt(
             "privileged_attestation": privileged_verification,
             "receipt_trust_model": verification.get("receipt_trust_model"),
             "operator_identity": verification.get("operator_identity"),
+            **compatibility_projection(source_compatibility),
         }
     except Exception as error:  # fail closed, while retaining a useful rejection
         return {
