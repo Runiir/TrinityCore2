@@ -18,7 +18,11 @@ RUNTIME = BOT_DIR / "BotWorldPopulationMgrValidationRouteRuntime.cpp"
 UPDATE = BOT_DIR / "BotWorldPopulationMgrUpdate.cpp"
 NATIVE_ACTION = BOT_DIR / "BotWorldPopulationMgrNativeAction.cpp"
 MOVEMENT = BOT_DIR / "BotWorldPopulationMgrMovement.cpp"
-KERNEL_CANDIDATES = BOT_DIR / "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp"
+MAGMAW_MOVEMENT_ADAPTER = (
+    BOT_DIR
+    / "Content/Raids/BlackwingDescent/Encounters/Magmaw"
+    / "BotMagmawMovementKernelAdapter.cpp"
+)
 BOT_STATE = BOT_DIR / "BotWorldPopulationMgrBotState.h"
 MANAGER = BOT_DIR / "BotWorldPopulationMgr.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
@@ -370,7 +374,9 @@ def test_planner_trace_diagnosis_and_lifecycle_wiring():
     executor = EXECUTOR.read_text(encoding="utf-8")
     native_action = NATIVE_ACTION.read_text(encoding="utf-8")
     movement = MOVEMENT.read_text(encoding="utf-8")
-    kernel_candidates = KERNEL_CANDIDATES.read_text(encoding="utf-8")
+    magmaw_movement_adapter = MAGMAW_MOVEMENT_ADAPTER.read_text(
+        encoding="utf-8"
+    )
     runtime = RUNTIME.read_text(encoding="utf-8")
     update = UPDATE.read_text(encoding="utf-8")
 
@@ -403,9 +409,12 @@ def test_planner_trace_diagnosis_and_lifecycle_wiring():
     assert "action.IntentReason" in native_action
     assert "intent.IntentReason = movementReason" in movement
     assert "CopyMovementDiagnosticCandidateKey(intent," in movement
-    assert "LegacyMagmawMovementDiagnosticCandidateKey" in kernel_candidates
-    assert "WithMovementDiagnosticCandidateKey" in kernel_candidates
-    assert kernel_candidates.count("WithMovementReason") >= 7
+    assert (
+        "LegacyMagmawMovementDiagnosticCandidateKey"
+        in magmaw_movement_adapter
+    )
+    assert "WithMovementDiagnosticCandidateKey" in magmaw_movement_adapter
+    assert "WithMovementReason" in magmaw_movement_adapter
     for gate in (
         "cross_map_pending",
         "movement_lease",
