@@ -1,25 +1,25 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:magmaw_transfer_lane_default_off_authority_selector",
+  "work_unit": "runtime:magmaw_transfer_lane_map_bound_checkpoint_seam",
   "owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "evidence:magmaw_transfer_lane_authority_off_shadow_verification",
+  "next_work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_start",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "typed_projected_endpoint_observed",
+  "classification": "default_off_authority_merged_built_live_gate_closed",
   "epoch_id": "magmaw_transfer_lane_task_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "implementation_default_off",
-  "immutable_input_commit": "439ddda593b675ba358708d6a45953da81fe071a",
-  "observed_at_commit": "439ddda593b675ba358708d6a45953da81fe071a",
-  "behavior_change": true,
+  "gate_state": "map_bound_checkpoint_implementation_required",
+  "immutable_input_commit": "3a485bf34f95d71f096c1c296b9b19af2c741791",
+  "observed_at_commit": "3a485bf34f95d71f096c1c296b9b19af2c741791",
+  "behavior_change": false,
   "evidence_contract_change": true,
-  "next_action": "Implement one Magmaw-specific persistent transfer-lane task runner and default-off authority selector; preserve the legacy path exactly while disabled.",
+  "next_action": "Implement one sealed fixture-only map-669 entrance movement that proves the default-off transfer task crosses the production kernel, MMAP planner, MotionMaster/spline, later progress ticks, and task outcome.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_projected_endpoint_terminal_summary_v1.json",
-    "sha256": "ac01dbcd9a029746ade15d85e8566cfb2b6dd019237bb8b664a2319de39532a3",
-    "source_commit": "439ddda593b675ba358708d6a45953da81fe071a",
-    "source_tree": "8ad28d478c7827586c59fc019863a8d992e6a7a1"
+    "path": "experiments/configs/cata_raid_magmaw_transfer_lane_authority_build_handoff_v1.json",
+    "sha256": "e6ecb1f344378180d8fe38d84553d9f15d9e2000f7a889c0d664e6a801a2012c",
+    "source_commit": "3a485bf34f95d71f096c1c296b9b19af2c741791",
+    "source_tree": "c236d6001b437838be97d315345d03fe035d4d63"
   },
   "program_scope": {
     "acceptance_admitted": false,
@@ -32,20 +32,20 @@
     "dvc_publication_required_after_terminal": false
   },
   "scope_lock": {
-    "allowed_change": "Add the smallest Magmaw-specific task runner and default-off selector that correlates exact task/candidate/native outcomes through the existing arbiter. Extract concerns instead of growing the 994-line strategy header.",
+    "allowed_change": "Add the smallest Magmaw-specific sealed checkpoint seam that exercises a short safe map-669 entrance movement through the existing default-off selector, sole arbiter, native planner, MotionMaster/spline, progress sampler, and task runner. Keep the 994-line strategy header unchanged.",
     "forbidden": [
-      "creating a second action arbiter or generic encounter framework",
+      "creating a second action arbiter, offline core bootstrap, or generic encounter framework",
       "changing movement admission, endpoint or floor tolerances, fallback behavior, or Detour semantics",
       "changing class rotations, encounter mechanics, raid strategy, database state, or consumables",
       "treating reached_projected_end_poly or action submission as logical task completion",
-      "starting worldserver or authserver before focused implementation review"
+      "starting worldserver or authserver before checkpoint implementation review and a clean gate-bearing build"
     ],
     "required_postconditions": [
-      "authority disabled preserves the exact legacy candidate and decision trace",
-      "authority enabled can replace only identity-equivalent legacy pillar_bait_switch intent",
-      "typed projected endpoint is retained as task progress while logical lane arrival remains pending",
-      "safety preemption suspends and resumes the same task identity and destination",
-      "candidate rejection, launch, progress, logical arrival, and reset are exactly correlated",
+      "authority remains disabled and preserves the exact legacy candidate and decision trace",
+      "one exact actor/task/candidate/receipt crosses the production planner and native movement submission",
+      "MotionMaster point generation, spline launch, and at least two later decreasing-distance ticks are correlated",
+      "wrong-floor proximity cannot refresh semantic progress or its deadline",
+      "only same-floor logical arrival completes the task",
       "all touched C and C++ files remain below 1000 lines and focused CCN remains small"
     ]
   },

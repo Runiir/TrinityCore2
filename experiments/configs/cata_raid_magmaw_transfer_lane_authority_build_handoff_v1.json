@@ -1,0 +1,57 @@
+{
+  "schema": "cata_raid_magmaw_transfer_lane_authority_build_handoff_v1",
+  "created_at_utc": "2026-09-01T02:24:00Z",
+  "source_commit": "3a485bf34f95d71f096c1c296b9b19af2c741791",
+  "source_tree": "c236d6001b437838be97d315345d03fe035d4d63",
+  "implementation_commit": "83b4ebca18",
+  "skill_guard_commit": "3a485bf34f",
+  "classification": "default_off_authority_merged_built_live_gate_closed",
+  "authority": {
+    "config_key": "BotWorld.Magmaw.TransferLaneTaskAuthority",
+    "default_enabled": false,
+    "gameplay_cutover_admitted": false,
+    "independent_merge_review": "go",
+    "live_shadow_review": "no_go_pending_initialized_map_bound_checkpoint"
+  },
+  "validation": {
+    "focused_tests_passed": 215,
+    "touched_cpp_under_1000_lines": true,
+    "largest_touched_cpp_lines": 921,
+    "strategy_header_lines": 994,
+    "worldserver_build": {
+      "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+      "compiler_job_ceiling": 8,
+      "configure_receipt_file_sha256": "00a4dd01ebbbc951e06b98fd55681afd4b3da39caa6a589f5cdb8b4dedc19eba",
+      "build_receipt_file_sha256": "5e9590867796b1917fb957627f9bf9d7c0ddf81c4f359dbebaf66b036381c421",
+      "build_receipt_sha256": "d00eff4e21f30e3d64403c9a0183c5d3c11e5354b7582f21ad01cf29c5bbb31c",
+      "binary_sha256": "369586b040a31465031c1bbd62da7ec7f10846c387b8c78a30ff9d91bd534997",
+      "gate_bearing": true,
+      "verified": true
+    }
+  },
+  "retained_negative_evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/phase1_439ddda593_projected_endpoint_terminal_20260901.dvc",
+    "meaning": "The initialized upper-room map-669 path reached a projected Detour endpoint but remained rejected as logical destination completion. It must not be rerun for this checkpoint."
+  },
+  "required_next_work_unit": {
+    "id": "runtime:magmaw_transfer_lane_map_bound_checkpoint_seam",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "summary": "Add one sealed, fixture-only map-669 entrance movement that joins default-off transfer-lane selection to the real kernel, native planner, MotionMaster/spline progress, and task outcome.",
+    "server_start_admitted": false,
+    "authserver_start_admitted": false,
+    "gameplay_mutations_allowed": false
+  },
+  "following_work_unit": {
+    "id": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_start",
+    "owner_skill": "raid-evidence-lifecycle",
+    "admission": "Only after checkpoint implementation receives independent review and a clean build receipt at one committed identity."
+  },
+  "terminal_requirements": [
+    "authority remains disabled and the exact legacy candidate is preserved",
+    "one candidate attempt crosses the sole production kernel and native movement executor",
+    "exact receipt joins PathGenerator/MMAP, MotionMaster point generator, spline, and at least two later progress ticks",
+    "wrong-floor proximity cannot mutate task progress or its deadline",
+    "only same-floor logical arrival may complete the persistent task",
+    "the terminal is fixture evidence and never Magmaw gameplay success"
+  ]
+}
