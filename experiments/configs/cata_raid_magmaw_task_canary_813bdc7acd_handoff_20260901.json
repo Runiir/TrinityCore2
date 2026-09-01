@@ -1,0 +1,121 @@
+{
+  "schema": "cata_raid_live_failure_handoff_v1",
+  "work_unit": "evidence:magmaw_task_canary_813bdc7acd",
+  "classification": "gameplay_failure_after_chainwielder_and_drudges_cleared",
+  "source_commit": "813bdc7acde69cb9d9ab8d362d7dc5524675bc9d",
+  "source_tree": "c82d9ad1f76e4e7934865fff3cec15245e6ffed9",
+  "binary_sha256": "d5685f7251a564d99749abcc099045ce7c14167280bc3f06839f8352f31b0a01",
+  "config_sha256": "99aa2b16834c2c663edee44b507ed55f2504deb2020aeadc88c6c5c2ba7a5264",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "result": {
+    "terminal_reason": "death_loop_watchdog",
+    "elapsed_seconds": 467.627,
+    "chainwielder_cleared": true,
+    "drudges_cleared": true,
+    "magmaw_reached": true,
+    "magmaw_killed": false,
+    "alive_size_at_terminal": 8,
+    "active_size": 10,
+    "wipe_state": "partial_deaths",
+    "death_transitions": [
+      [30010],
+      [30003],
+      [30006, 30008]
+    ]
+  },
+  "prepull": {
+    "flask_native_uses": 10,
+    "food_native_uses": 10,
+    "prepot_native_uses": 10,
+    "failed": false
+  },
+  "combat": {
+    "chainwielder": {
+      "party_dps": 59607.692,
+      "party_hps": 3792.128
+    },
+    "drudges": {
+      "party_dps": 120243.103,
+      "party_hps": 28481.672
+    },
+    "magmaw": {
+      "duration_seconds": 196.411,
+      "party_dps": 79618.354,
+      "party_hps": 20326.5,
+      "party_damage": 15764434,
+      "party_healing": 4024647,
+      "lowest_dps_uptime": [
+        {
+          "guid": 30010,
+          "class_spec": "elemental_shaman",
+          "damage_uptime": 0.106061,
+          "dps": 5133.258
+        },
+        {
+          "guid": 30009,
+          "class_spec": "marksmanship_hunter",
+          "damage_uptime": 0.323232,
+          "dps": 6904.409
+        },
+        {
+          "guid": 30006,
+          "class_spec": "fire_mage",
+          "damage_uptime": 0.489899,
+          "dps": 10448.01
+        }
+      ]
+    }
+  },
+  "independent_review": {
+    "verdict": "first_broken_edge_is_personal_parasite_task_admission_not_terrain",
+    "first_broken_edge": {
+      "actor_guid": 30010,
+      "observed_at_ms": 1788289809757,
+      "decision": "parasite_contact_evade",
+      "movement_owner": "none",
+      "planner_gate": "unavailable",
+      "candidate_key_present": false,
+      "native_launch_receipt_present": false,
+      "cause": "EmitPersonalParasiteEscape returned after the persistent task Tick produced no candidate under transient facts authority, silently dropping the actor-scoped escape intent."
+    },
+    "causal_followup": "Target selection churned across parasite GUIDs before Parasitic Infection, Infectious Vomit, and death.",
+    "movement_control": "Other actors submitted actor-scoped native paths with valid floor observations and improved parasite clearance.",
+    "pillar_bait_ownership": "coherent_fixed_baiters_30006_and_30009",
+    "exposed_head_targeting": "not_directly_observed_and_not_part_of_this_work_unit",
+    "ghost_flight_repair_exercised": false,
+    "ghost_flight_reason": "Recovery generation remained zero and the watchdog stopped the run before corpse or ghost recovery."
+  },
+  "movement_scope": {
+    "terrain_or_z_failure_observed": false,
+    "bots_submit_logical_destinations_and_native_pathing_follows_terrain": true,
+    "manual_z_offsets_forbidden": true,
+    "vertical_steering_forbidden": true,
+    "MMAP_floor_or_tolerance_changes_forbidden": true
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_task_canary_813bdc7acd_20260901.dvc",
+    "dvc_directory_md5": "2f01fb6b9ff3ed1328126b358650268e.dir",
+    "file_count": 15,
+    "byte_count": 287465985,
+    "remote": "object",
+    "remote_verified": true,
+    "isolated_reconstruction_verified": true,
+    "capture_sha256": "250a01888b237e3e42492817744bdcfc4a8ccb640423cd39de1a6a7433d8475c",
+    "raw_sha256": "aabbab09dc08de1c75c3eeb078ce156b535cef238dde73dadf6d342581738453",
+    "worldserver_log_sha256": "1cd204f255ebf411cb342961be7f66decc705e5807286db2e464b00df36da530"
+  },
+  "cleanup": {
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "dvc_targeted_eviction": "complete",
+    "hydrated_workspace_evicted": true,
+    "duplicate_external_run_evicted": true,
+    "uniquely_referenced_local_cache_objects_evicted": 13,
+    "uniquely_referenced_local_cache_bytes_evicted": 287257544,
+    "shared_cache_objects_retained": 3
+  },
+  "next_action": "Retain an actor-keyed personal-escape child task in AwaitingAuthoritativeFacts after first personal threat, then require a typed task_created-to-safe_clearance or explicit infected/failed lifecycle; do not combine this unit with Z, pathing, exposed-head, or throughput changes."
+}

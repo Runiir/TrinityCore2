@@ -1,0 +1,6 @@
+outs:
+- md5: 2f01fb6b9ff3ed1328126b358650268e.dir
+  size: 287465985
+  nfiles: 15
+  hash: md5
+  path: magmaw_task_canary_813bdc7acd_20260901

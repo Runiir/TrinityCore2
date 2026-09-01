@@ -1,51 +1,51 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:verify_native_recovery_ghost_flight_transition",
-  "owner_skill": "raid-shard-architecture",
-  "next_work_unit": "evidence:classify_native_recovery_ghost_flight_transition",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "implementation_pending_live_verification",
-  "epoch_id": "native_recovery_ghost_flight_transition_20260901",
+  "work_unit": "implementation:magmaw_personal_escape_await_authority",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "next_work_unit": "review:magmaw_personal_escape_await_authority",
+  "next_owner_skill": "raid-performance-loop",
+  "classification": "trace_reviewed_implementation_in_progress",
+  "epoch_id": "magmaw_personal_escape_await_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Repair one shared corpse-run task transition: when exact scoped ghost-flight eligibility rises during a retained cross-map Recovery/native_long_path, replace only that retained path with the same typed destination so the existing native aerial executor can run.",
-  "gate_state": "the 25-fixture expansion gate passes, but strict read-only provisioning found the ten Magmaw bots missing required learned-spell rows; one deterministic reset/provisioning application for blackwing_descent_10n_magmaw_diagnostic is admitted before resealing the exact build and recurrence identities; worldserver start remains forbidden until strict readback passes",
-  "observed_at_commit": "7175cd0bccb377f4636fe43a01037020c4b20674",
+  "architecture_scope": "Retain one actor-keyed personal parasite escape task after first threat observation. Transient facts-authority loss must enter AwaitingAuthoritativeFacts and later emit one stable candidate or an explicit terminal, instead of silently dropping the escape request.",
+  "gate_state": "the exact 813bdc7acd live canary and independent review are published; implementation and independent review are required before any configure, build, fixture expansion, or live start is admitted",
+  "observed_at_commit": "813bdc7acde69cb9d9ab8d362d7dc5524675bc9d",
   "behavior_change": true,
   "evidence_contract_change": false,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_personal_escape_fixture_febee38218_live_handoff_20260901.json",
-    "sha256": "093f8b04dd14a287915f6ed21cfa181bbf6644098ddcd4dd29d30a1c6d268886",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_fixture_febee38218_20260901.dvc"
+    "path": "experiments/configs/cata_raid_magmaw_task_canary_813bdc7acd_handoff_20260901.json",
+    "sha256": "ac40d3e3f40ff620910d7b82801a0fee31f293113eaea2af82075de8e5aa48d7",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_task_canary_813bdc7acd_20260901.dvc"
   },
   "review_handoff": {
-    "path": "experiments/configs/cata_raid_native_recovery_ghost_flight_review_handoff_20260901.json",
-    "verdict": "GO",
-    "reviewed_commit": "7175cd0bccb377f4636fe43a01037020c4b20674"
+    "path": "experiments/configs/cata_raid_magmaw_task_canary_813bdc7acd_handoff_20260901.json",
+    "verdict": "first_broken_edge_verified",
+    "reviewed_commit": "813bdc7acde69cb9d9ab8d362d7dc5524675bc9d"
   },
   "prestart_gate_handoff": {
     "path": "experiments/configs/cata_raid_native_recovery_ghost_flight_prestart_gate_handoff_20260901.json",
-    "classification": "prestart_recurrence_contract_failure_repaired",
-    "worldserver_starts": 0
+    "classification": "consumed_by_terminal_live_canary",
+    "worldserver_starts": 1
   },
   "first_broken_edge": {
-    "run_id": "magmaw-personal-escape-fixture-febee38218-20260901",
-    "route_node_id": "bwd.magmaw.drudges",
-    "causal_signature": "native_recovery_flight_eligibility_rising_edge_retains_ground_path",
-    "cause": "Scoped ghost-flight eligibility changed from false to true while a matching retained ground native_long_path still owned recovery, preventing the recovery brain from re-entering the existing aerial executor.",
-    "terminal_reason": "native_runback_no_progress",
-    "best_remaining_distance_yards": 217.653,
-    "no_progress_seconds": 30,
-    "evidence": "artifacts/cata_raid_program/magmaw_personal_escape_fixture_febee38218_20260901.dvc"
+    "run_id": "magmaw-task-canary-813bdc7acd-20260901",
+    "route_node_id": "bwd.magmaw.encounter",
+    "causal_signature": "magmaw_personal_escape_authority_gap_drops_candidate",
+    "actor_guid": 30010,
+    "observed_at_ms": 1788289809757,
+    "cause": "A personal parasite threat was observed, but transient facts authority made the persistent task emit no candidate and EmitPersonalParasiteEscape returned without retaining an awaiting state; no movement owner, candidate key, planner receipt, or native launch existed.",
+    "terminal_reason": "death_loop_watchdog",
+    "evidence": "artifacts/cata_raid_program/magmaw_task_canary_813bdc7acd_20260901.dvc"
   },
   "implementation_contract": {
     "allowed": [
-      "detect the exact scoped false-to-true ghost-flight eligibility transition",
-      "invalidate only a matching Recovery/native_long_path receipt",
-      "resubmit the same typed destination exactly once",
-      "use the existing native aerial MovePoint branch",
-      "retain the existing bounded no-progress terminal"
+      "create and retain one actor-keyed personal escape child on first threat",
+      "represent transient facts authority as AwaitingAuthoritativeFacts",
+      "emit one stable actor candidate when authority becomes current",
+      "publish typed task-created, awaiting, candidate, native-progress, safe-clearance, infected, and failed lifecycle edges",
+      "retain bounded progress and failure semantics"
     ],
     "forbidden": [
       "manual Z offsets or vertical steering",
@@ -53,32 +53,33 @@
       "teleport or direct resurrection",
       "MMAP, floor, endpoint, or path-tolerance changes",
       "route advancement with an incomplete roster",
-      "Magmaw encounter-policy changes"
+      "exposed-head targeting or throughput tuning",
+      "class rotation changes"
     ]
   },
   "acceptance": [
-    "one false-to-true scoped eligibility edge produces exactly one replacement movement receipt",
-    "the replacement preserves the exact XYZ destination and uses the existing aerial generatePath=false executor",
-    "eligibility remaining true does not restart movement",
-    "living, same-map, wrong-map, indoor, transport, stale-episode, and non-Recovery movement cannot enter the branch",
-    "physical distance improvement, not action submission, remains semantic progress",
-    "a frozen replacement still reaches native_runback_no_progress after the existing bounded window",
+    "a first personal threat creates an actor-keyed task even when facts authority is transiently unavailable",
+    "AwaitingAuthoritativeFacts retains the same actor and wave identity without emitting an unsafe candidate",
+    "current authoritative facts emit one stable candidate before infection",
+    "the lifecycle is traceable from task creation through native progress to safe clearance or an explicit terminal",
+    "physical clearance or endpoint-distance improvement, not submission, remains semantic progress",
+    "stale lifecycle, wrong actor, new wave, death, and missing threat cannot reuse an old task",
     "all touched C and C++ files remain below 1000 lines"
   ],
-  "next_action": "Apply the tracked deterministic Magmaw scenario provisioning once, require strict database and roster readback, then produce the final exact build and recurrence admission before the single no-retry live diagnostic.",
+  "next_action": "Complete the bounded AwaitingAuthoritativeFacts task repair and independent review, then register its deterministic recurrence fixture before considering one exact build and no-retry live diagnostic.",
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
-    "gameplay_canary_admitted": true,
-    "live_diagnostic_admitted": true,
+    "gameplay_canary_admitted": false,
+    "live_diagnostic_admitted": false,
     "gameplay_mutations_allowed": false,
-    "configure_admitted": true,
-    "worldserver_build_admitted": true,
-    "worldserver_start_admitted": true,
+    "configure_admitted": false,
+    "worldserver_build_admitted": false,
+    "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": true,
-    "database_mutation_scope": "one deterministic reset/provisioning application for blackwing_descent_10n_magmaw_diagnostic only",
+    "database_mutations_allowed": false,
+    "database_mutation_scope": "none",
     "dvc_publication_required_after_terminal": true
   },
   "validation_clock": {

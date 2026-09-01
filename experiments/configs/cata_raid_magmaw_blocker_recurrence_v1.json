@@ -1982,6 +1982,39 @@
       "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_fixture_febee38218_20260901.dvc",
       "evidence": "experiments/configs/cata_raid_magmaw_personal_escape_fixture_febee38218_live_handoff_20260901.json",
       "note": "Chainwielder and Drudges cleared, but two DPS died. Native reset authority correctly released both ghosts and they made real cross-map corpse-run progress. Scoped ghost-flight eligibility then rose while the retained ground native_long_path still owned recovery, so the existing aerial executor was not re-entered. The ground spline finalized 217.653 yards short; after 30 seconds without progress the server emitted native_runback_no_progress. Full-roster route hold was correct. This admits only a shared recovery lifecycle repair; it does not admit a Z, floor, MMAP, tolerance, route-coordinate, teleport, or Magmaw-mechanic change."
+    },
+    {
+      "run_id": "magmaw-task-canary-813bdc7acd-20260901",
+      "route_completed": false,
+      "classification": "gameplay_failure_after_chainwielder_and_drudges_cleared",
+      "admission": {
+        "source_identity": "813bdc7acde69cb9d9ab8d362d7dc5524675bc9d",
+        "source_tree": "c82d9ad1f76e4e7934865fff3cec15245e6ffed9",
+        "suite_receipt_sha256": "b56e9c6c3efd1aa29150644d6bacc446411e1447dea2e012b731df496b7b3d32",
+        "recurrence_admission_sha256": "a7a584adcb4830470e0bbd4f7245d4bd1a603cec4a8af364f939f2324ad2d090"
+      },
+      "blockers": {
+        "native_recovery_flight_eligibility_rising_edge_retains_ground_path": "not_exercised",
+        "native_partial_death_recovery_lifecycle_failure": "not_exercised",
+        "permanently_rejected_hazard_endpoint_retains_task_ownership": "absent",
+        "magmaw_personal_parasite_escape_task_rearm_churn": "absent",
+        "magmaw_parasite_containment_failure": "occurred",
+        "magmaw_parasite_control_allows_player_infection": "occurred",
+        "magmaw_lethal_movement_safe_completion_missing": "occurred",
+        "movement_receipt_terminal_join_eviction": "absent",
+        "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "absent",
+        "current_route_combat_authority_preempted": "absent",
+        "same_level_movement_path_floor_false_negative": "absent",
+        "same_level_native_endpoint_z_normalization_false_negative": "absent",
+        "same_level_native_path_proof_false_negative": "absent",
+        "native_planner_executor_launch_divergence": "absent"
+      },
+      "report_sha256": "250a01888b237e3e42492817744bdcfc4a8ccb640423cd39de1a6a7433d8475c",
+      "raw_jsonl_sha256": "aabbab09dc08de1c75c3eeb078ce156b535cef238dde73dadf6d342581738453",
+      "worldserver_log_sha256": "1cd204f255ebf411cb342961be7f66decc705e5807286db2e464b00df36da530",
+      "dvc_pointer": "artifacts/cata_raid_program/magmaw_task_canary_813bdc7acd_20260901.dvc",
+      "evidence": "experiments/configs/cata_raid_magmaw_task_canary_813bdc7acd_handoff_20260901.json",
+      "note": "Chainwielder and Drudges cleared, all ten bots used real flask, food, and prepot inventory, and the run reached Magmaw. The first trace-backed edge was actor 30010 observing personal parasite contact while no actor-scoped task candidate, movement owner, planner receipt, or native launch existed. Transient facts authority caused the personal-escape task call to produce no candidate and the strategy silently returned; infection and death followed. Other actors proved terrain-following native path progress with valid floor observations. The run ended at death_loop_watchdog with 79.6k party DPS. Ghost-flight recovery was not exercised. This admits a persistent AwaitingAuthoritativeFacts task edge and typed task lifecycle telemetry, not a Z, floor, MMAP, tolerance, exposed-head, or throughput change."
     }
   ]
 }
