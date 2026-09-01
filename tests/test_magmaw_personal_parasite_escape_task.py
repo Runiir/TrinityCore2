@@ -400,6 +400,7 @@ int main()
     assert(primary && task.OwnsMovement());
     uint64 const wave = task.WaveGeneration;
     uint64 const primaryGeneration = task.CandidateGeneration;
+    uint64 const primaryExpiresAtMs = primary->ExpiresAtMs;
     Vector3 const primaryDestination = task.Destination;
     assert(HasRetainedMagmawHazardOwnership(first.Movement, task,
         PlayerGuid(30008)));
@@ -427,8 +428,11 @@ int main()
     assert(task.WaveGeneration == wave);
     assert(task.CandidateGeneration != primaryGeneration);
     assert(alternateCandidate->ExpiresAtMs == task.CandidateExpiresAtMs);
+    assert(alternateCandidate->ExpiresAtMs != primaryExpiresAtMs);
     assert(task.Diagnostics.CandidateKey.empty());
     std::string const alternateKey = alternateCandidate->Id.Key();
+    uint64 const alternateGeneration = task.CandidateGeneration;
+    uint64 const alternateExpiresAtMs = alternateCandidate->ExpiresAtMs;
     std::string const alternateJson =
         BuildMagmawPersonalParasiteEscapeDiagnosticsJson(task);
     assert(alternateJson.find("\"candidate_key\":\"" + alternateKey
@@ -438,8 +442,26 @@ int main()
     assert(!MagmawPersonalParasiteEscapeTask::SamePoint(
         primaryDestination, task.Destination));
 
-    RejectThroughProductionAdapter(*alternateCandidate, board.ObservedAtMs,
-        task, "route_destination_unreachable");
+    // Re-emitting the same alternate on a later authoritative tick retains
+    // both its candidate generation and its fixed expiry.
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan retainedAlternate = strategy.Propose(board,
+        PlayerGuid(30008), "dps", nullptr, false, false, &lane, &legacy,
+        nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &task);
+    BotNativeAction::Candidate const* retainedAlternateCandidate =
+        Escape(retainedAlternate);
+    assert(retainedAlternateCandidate);
+    assert(task.CandidateGeneration == alternateGeneration);
+    assert(retainedAlternateCandidate->Id.Key() == alternateKey);
+    assert(retainedAlternateCandidate->ExpiresAtMs == alternateExpiresAtMs);
+    assert(task.CandidateExpiresAtMs == alternateExpiresAtMs);
+
+    RejectThroughProductionAdapter(*retainedAlternateCandidate,
+        board.ObservedAtMs, task, "route_destination_unreachable");
     assert(task.State == TaskState::Failed);
     assert(task.Failure == MagmawPersonalParasiteEscapeFailure::
         AlternateNativeRouteRejected);
