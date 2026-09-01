@@ -10,7 +10,7 @@
   "boss": "magmaw",
   "mode": "10N",
   "architecture_scope": "Repair one shared corpse-run task transition: when exact scoped ghost-flight eligibility rises during a retained cross-map Recovery/native_long_path, replace only that retained path with the same typed destination so the existing native aerial executor can run.",
-  "gate_state": "the first exact build passed but its prestart recurrence decision failed because the newly observed ghost-flight signature lacked a retained fixture; that contract is now repaired with four passing deterministic tests; one exact clean-identity build and recurrence decision remain required before any worldserver start",
+  "gate_state": "the 25-fixture expansion gate passes, but strict read-only provisioning found the ten Magmaw bots missing required learned-spell rows; one deterministic reset/provisioning application for blackwing_descent_10n_magmaw_diagnostic is admitted before resealing the exact build and recurrence identities; worldserver start remains forbidden until strict readback passes",
   "observed_at_commit": "7175cd0bccb377f4636fe43a01037020c4b20674",
   "behavior_change": true,
   "evidence_contract_change": false,
@@ -65,7 +65,7 @@
     "a frozen replacement still reaches native_runback_no_progress after the existing bounded window",
     "all touched C and C++ files remain below 1000 lines"
   ],
-  "next_action": "Commit the repaired recurrence contract, build that exact clean source with fast8_v4 and 8 compiler jobs, and rerun the 25-fixture bank. Start one no-retry Magmaw diagnostic only if the resulting fixture-expansion admission is valid.",
+  "next_action": "Apply the tracked deterministic Magmaw scenario provisioning once, require strict database and roster readback, then produce the final exact build and recurrence admission before the single no-retry live diagnostic.",
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
@@ -77,7 +77,8 @@
     "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": false,
+    "database_mutations_allowed": true,
+    "database_mutation_scope": "one deterministic reset/provisioning application for blackwing_descent_10n_magmaw_diagnostic only",
     "dvc_publication_required_after_terminal": true
   },
   "validation_clock": {

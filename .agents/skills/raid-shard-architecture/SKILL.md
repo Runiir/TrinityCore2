@@ -202,6 +202,14 @@ canonical glyph identity and compares it after actions start.
 
 ## Start and hand off a live shard
 
+Before sealing an exact build/run identity, perform the scenario's read-only
+strict provisioning check. If the frozen roster is absent or stale, admit and
+apply only the tracked deterministic scenario provisioning, then require the
+strict database and roster readbacks to pass. Do this before the final build
+receipt and recurrence admission so a discovered roster defect does not force
+an otherwise identical rebuild. Never repair provisioning drift during or
+after a live shard start.
+
 Before preparation, read `required_next_work_unit` from `raid_workloop status`
 and the boss work unit's `active_program_work_unit`. They must agree on the
 same first-broken edge and source-handoff hash. A stale or missing active
