@@ -1,0 +1,103 @@
+{
+  "schema": "cata_raid_live_failure_handoff_v1",
+  "work_unit_id": "live:magmaw_personal_escape_rearm_after_provisional_wave",
+  "source_commit": "5cad51fa4001398096bf2fba5bb2130071fef00d",
+  "source_tree": "15bb8799e1573f53831595581b701201ecca93c0",
+  "classification": "gameplay_failure",
+  "terminal_reason": "death_loop_watchdog",
+  "terminal_elapsed_seconds": 664.891,
+  "worldserver_exit_code": 0,
+  "cleanup": {
+    "gate_passed": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "route_outcome": {
+    "chainwielder": "trash_cluster_cleared",
+    "drudges": "trash_cluster_cleared",
+    "magmaw": "not_killed",
+    "terminal_alive_size_before_forced_diagnosis": 8,
+    "forced_diagnosis_dead_guids": [
+      30003,
+      30008,
+      30010
+    ]
+  },
+  "throughput": {
+    "chainwielder": {
+      "combat_seconds": 57,
+      "party_dps": 81568.421,
+      "party_hps": 2901.105
+    },
+    "drudges": {
+      "combat_seconds": 66,
+      "party_dps": 105668.182,
+      "party_hps": 44695.5
+    },
+    "magmaw": {
+      "combat_seconds": 407,
+      "party_dps": 72854.725,
+      "party_hps": 27553.835,
+      "party_damage": 29651873,
+      "party_damage_taken": 12559960,
+      "affliction_warlock_dps": 17513.143,
+      "affliction_warlock_damage_uptime": 0.471744
+    }
+  },
+  "verified_positive_results": [
+    "the binary and sealed source identity matched exactly",
+    "the Chainwielder checkpoint completed and preserved route identity after the injected receiptless hazard rejection",
+    "Chainwielder and Drudges cleared without a route or infrastructure terminal",
+    "actor 30008 emitted one actor-keyed personal escape lifecycle through task_created, candidate_built, submitted, native_progress, and safe_clearance",
+    "native movement resolved terrain through the existing planner; no bot-side Z correction was required"
+  ],
+  "first_broken_edge": {
+    "hypothesis": "a terminal personal-escape child cannot rearm for a later personal-threat episode while the shared parasite wave remains one provisional non-authoritative generation",
+    "live_observation": {
+      "shared_wave_generation": 9223372036854775809,
+      "shared_wave_generation_authoritative": false,
+      "shared_wave_awaiting_authoritative_facts": true,
+      "actor_30008_task_generation": 1,
+      "actor_30008_terminal": "safe_clearance",
+      "actor_30008_later_dead": true
+    },
+    "causal_support": [
+      "the three dead actors ended near the raid stack around x=-309 y=-37",
+      "all three took repeated Lava Parasite melee and Parasitic Infection damage",
+      "Infectious Vomit propagated between stacked players",
+      "the dead actors had zero or near-zero movement fraction during the encounter",
+      "no later personal-escape task generation was observed for actor 30008"
+    ],
+    "review_required": "independently verify the rising-edge semantics before changing production code"
+  },
+  "repair_scope": {
+    "allowed": [
+      "actor-local personal-threat episode detection",
+      "bounded rearm after a completed or failed child when a genuinely new personal-threat episode begins",
+      "typed diagnostics and focused multi-wave regression coverage"
+    ],
+    "forbidden": [
+      "bot-side Z rewriting",
+      "route-coordinate changes",
+      "MMAP or floor changes",
+      "planner tolerance changes",
+      "teleportation",
+      "damage tuning",
+      "unrelated encounter behavior"
+    ]
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc",
+    "dvc_md5": "6955061c05604c122d4d55d177f51251.dir",
+    "file_count": 24,
+    "bytes": 405695482,
+    "remote_status": "in_sync"
+  },
+  "claim_limits": {
+    "magmaw_clear": false,
+    "gameplay_acceptance": false,
+    "fixture_promotion": false,
+    "class_throughput_acceptance": false
+  }
+}
