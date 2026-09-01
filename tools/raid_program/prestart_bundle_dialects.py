@@ -275,6 +275,10 @@ def validate_route_rows(dialect: str, rows: list[dict[str, Any]]) -> None:
 def config_values(dialect: str) -> dict[str, str]:
     if dialect == CHAINWIELDER:
         return {
+            # The composite replay continues from Chainwielder through Magmaw.
+            # Its admitted Magmaw fixtures require the persistent task runner;
+            # bind that authority in the same authenticated runtime config.
+            "BotWorld.Magmaw.TransferLaneTaskAuthority": "1",
             f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.Enable": "1",
             f"{CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX}.FixtureId": (
                 f'"{CHAINWIELDER_CHECKPOINT_FIXTURE_ID}"'
@@ -344,6 +348,7 @@ def identity(dialect: str, *, scenario_id: str) -> dict[str, Any]:
             "pool_tag": scenario_id,
             "actor_guid": CHAINWIELDER_ACTOR_GUID,
             "checkpoint_fixture_id": CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+            "task_authority_enabled": True,
         }
     if dialect == MAGMAW_TRANSFER:
         return {

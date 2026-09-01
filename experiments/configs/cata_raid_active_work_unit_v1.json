@@ -10,7 +10,7 @@
   "boss": "magmaw",
   "mode": "10N_canary_for_universal_architecture",
   "architecture_scope": "Repair the generic native-outcome feedback edge for one actor-local encounter hazard episode. Magmaw is the canary; do not encode route coordinates or alter terrain behavior.",
-  "gate_state": "latest_closure_inserted; fixed_suite_passed; one_fixture_expansion_build_and_start_admitted",
+  "gate_state": "latest_closure_inserted; fixed_suite_passed; first prestart rejected before server launch because the composite Chainwielder-to-Magmaw bundle did not bind required Magmaw task authority; one corrected replacement build and the original single start are admitted",
   "observed_at_commit": "121d25c49fa2ff02ed2a70484213202553af75ea",
   "behavior_change": false,
   "evidence_contract_change": false,
@@ -25,11 +25,13 @@
     "terminal": "route_destination_endpoint_mismatch",
     "evidence": "artifacts/cata_raid_program/magmaw_hunter_owner_closure_29b54a2188_20260901.dvc"
   },
-  "next_action": "Run the fixed recurrence fixture suite at this descriptor commit, configure and build exact source with fast8_v4, deterministically prepare and read back the frozen Magmaw shard, create and verify a fixture-expansion recurrence admission, then start exactly one worldserver under the completion watchdog. Publish compact evidence after a typed terminal and do not retry.",
+  "next_action": "Bind Magmaw task authority in the authenticated composite Chainwielder-to-Magmaw fixture runtime config, run the focused prestart tests, configure and build the corrected exact source with fast8_v4, create and verify the atomic fixture-expansion bundle, then start exactly one worldserver under the completion watchdog. Publish compact evidence after a typed terminal and do not retry.",
   "implementation_scope": {
     "allowed": [
       "one fixed regression-suite receipt and recurrence decision",
       "one exact fast8_v4 configure and one exact worldserver build with eight compiler jobs",
+      "one replacement configure and worldserver build after the first prestart gate stopped before any server launch",
+      "authenticated fixture-only activation of the existing Magmaw task authority required by the admitted recurrence targets",
       "deterministic reset and provisioning of only the frozen Magmaw diagnostic shard",
       "strict provisioning verification and exact roster plus hunter-pet readback",
       "one source-bound fixture-expansion recurrence admission",
@@ -77,8 +79,8 @@
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "configure_tickets": 1,
-    "worldserver_build_tickets": 1,
+    "configure_tickets": 2,
+    "worldserver_build_tickets": 2,
     "worldserver_starts": 1,
     "authserver_starts": 0,
     "retries": 0
