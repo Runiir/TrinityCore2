@@ -1228,3 +1228,57 @@ def test_recurrence_admission_rejects_closed_gate(
 
     with pytest.raises(RecurrenceAdmissionError, match=reason):
         _verify(paths)
+
+
+def test_recurrence_admission_accepts_only_quarantined_stale_fixtures(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    admission = Path(paths["admission"])
+    decision = Path(paths["decision"])
+    admission.unlink()
+    decision_value = json.loads(decision.read_text(encoding="utf-8"))
+    decision_value.update({
+        "invalidated_fixture_ids": ["deferred_floor_fixture"],
+        "failing_fixture_ids": ["deferred_floor_fixture"],
+        "pending_fixture_ids": ["deferred_floor_fixture"],
+        "quarantined_fixture_ids": ["deferred_floor_fixture"],
+        "blocking_invalidated_fixture_ids": [],
+    })
+    _write_json(decision, decision_value)
+
+    create_recurrence_admission(
+        output=admission,
+        worktree=Path(paths["root"]),
+        binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        runtime_config=Path(paths["config"]),
+        route_manifest=Path(paths["route"]),
+        ledger=Path(paths["ledger"]),
+        decision=decision,
+        suite_receipt=Path(paths["suite"]),
+    )
+
+    result = _verify(paths)
+    assert result["valid"] is True
+    assert result["quarantined_fixture_ids"] == ["deferred_floor_fixture"]
+    assert result["blocking_invalidated_fixture_ids"] == []
+
+
+def test_recurrence_admission_rejects_nonquarantined_fixture_mixed_with_quarantine(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    admission = Path(paths["admission"])
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    value.update({
+        "invalidated_fixture_ids": ["deferred", "required"],
+        "quarantined_fixture_ids": ["deferred"],
+        "blocking_invalidated_fixture_ids": ["required"],
+    })
+    _write_json(admission, value)
+
+    with pytest.raises(
+        RecurrenceAdmissionError, match="invalidated_fixture_ids_present"
+    ):
+        _verify(paths)

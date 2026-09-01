@@ -55,6 +55,10 @@ FIXTURE_STATE_FIELDS = (
     "pending_fixture_ids",
     "stale_fixture_ids",
 )
+QUARANTINE_STATE_FIELDS = (
+    "quarantined_fixture_ids",
+    "blocking_invalidated_fixture_ids",
+)
 PROFILE_MANIFEST_RELATIVE_PATH = Path("dataset/bot_runtime_profiles/profiles.json")
 
 
@@ -580,6 +584,10 @@ def create_recurrence_admission(
         "runtime_profile_overlay": verified_overlay,
         "expected_runtime_profile_id": expected_runtime_profile_id,
         **{key: decision_value.get(key) for key in FIXTURE_STATE_FIELDS},
+        **{
+            key: decision_value.get(key) or []
+            for key in QUARANTINE_STATE_FIELDS
+        },
         "source": {
             "commit": head,
             "tree": tree,
@@ -685,9 +693,39 @@ def verify_recurrence_admission(
             raise RecurrenceAdmissionError("build_not_admitted")
         if admission.get("canary_admitted") is not True:
             raise RecurrenceAdmissionError("canary_not_admitted")
+        quarantined_rows = admission.get("quarantined_fixture_ids", [])
+        if (
+            not isinstance(quarantined_rows, list)
+            or any(
+                not isinstance(fixture_id, str) or not fixture_id
+                for fixture_id in quarantined_rows
+            )
+            or len(quarantined_rows) != len(set(quarantined_rows))
+        ):
+            raise RecurrenceAdmissionError("quarantined_fixture_ids_invalid")
+        quarantined = set(quarantined_rows)
         for key in FIXTURE_STATE_FIELDS:
-            if admission.get(key) != []:
+            rows = admission.get(key)
+            if (
+                not isinstance(rows, list)
+                or any(
+                    not isinstance(fixture_id, str) or not fixture_id
+                    for fixture_id in rows
+                )
+                or len(rows) != len(set(rows))
+            ):
+                raise RecurrenceAdmissionError(f"{key}_invalid")
+            if set(rows) - quarantined:
                 raise RecurrenceAdmissionError(f"{key}_present")
+        expected_blocking_invalidated = sorted(
+            set(admission.get("invalidated_fixture_ids") or []) - quarantined
+        )
+        if admission.get(
+            "blocking_invalidated_fixture_ids", expected_blocking_invalidated
+        ) != expected_blocking_invalidated:
+            raise RecurrenceAdmissionError(
+                "blocking_invalidated_fixture_ids_mismatch"
+            )
         checkpoint_targeted = False
         chainwielder_checkpoint_targeted = False
         magmaw_transfer_checkpoint_targeted = False
@@ -809,6 +847,9 @@ def verify_recurrence_admission(
     for key in FIXTURE_STATE_FIELDS:
         if admission.get(key) != decision.get(key):
             raise RecurrenceAdmissionError(f"decision_{key}_mismatch")
+    for key in QUARANTINE_STATE_FIELDS:
+        if admission.get(key, []) != decision.get(key, []):
+            raise RecurrenceAdmissionError(f"decision_{key}_mismatch")
     checkpoint_seal = admission.get("checkpoint_seal")
     if checkpoint_targeted or profile_authority_recorded:
         assert profile_path is not None and verified_overlay is not None
@@ -920,6 +961,12 @@ def verify_recurrence_admission(
             "fixture_expansion_requests"
         ) or [],
         "pending_fixture_ids": admission.get("pending_fixture_ids") or [],
+        "quarantined_fixture_ids": admission.get(
+            "quarantined_fixture_ids"
+        ) or [],
+        "blocking_invalidated_fixture_ids": admission.get(
+            "blocking_invalidated_fixture_ids"
+        ) or [],
         "checkpoint_seal_sha256": (
             checkpoint_seal["seal_sha256"]
             if isinstance(checkpoint_seal, dict) else None

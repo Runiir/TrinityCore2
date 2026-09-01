@@ -287,6 +287,9 @@ def _evaluate_regression_bank(
         "stale_fixture_ids": [],
         "failing_fixture_ids": [],
         "invalidated_fixture_ids": [],
+        "blocking_invalidated_fixture_ids": [],
+        "quarantined_fixture_ids": [],
+        "quarantined_causal_signatures": [],
         "pending_fixture_ids": [],
         "missing_causal_signature_ids": [],
         "invalidated_causal_signatures": {},
@@ -1047,6 +1050,12 @@ def evaluate_ledger(
         "stale_fixture_ids": regression_bank["stale_fixture_ids"],
         "failing_fixture_ids": regression_bank["failing_fixture_ids"],
         "invalidated_fixture_ids": regression_bank["invalidated_fixture_ids"],
+        "blocking_invalidated_fixture_ids": regression_bank.get(
+            "blocking_invalidated_fixture_ids", []
+        ),
+        "quarantined_fixture_ids": regression_bank.get(
+            "quarantined_fixture_ids", []
+        ),
         "pending_fixture_ids": regression_bank["pending_fixture_ids"],
         "missing_causal_signature_ids": regression_bank["missing_causal_signature_ids"],
         "build_admitted": build_admitted,

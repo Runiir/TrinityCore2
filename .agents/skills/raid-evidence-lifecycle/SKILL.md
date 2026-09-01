@@ -34,6 +34,12 @@ Before live execution, require:
   those auxiliary bindings without adding unrelated fixture targets; reject
   partial profile authority where only some of the manifest, overlay, or
   expected profile identity are present.
+- Carry fixture quarantine through every downstream admission and prestart
+  verifier. A quarantined fixture remains visible, invalidated, and ineligible
+  as evidence for its own claim, but it must not be reinterpreted as a blocking
+  fixture after the recurrence decision has admitted an unrelated gameplay
+  canary. Recompute and reject any nonquarantined remainder instead of requiring
+  every raw fixture-state list to be empty.
 - native-loadable character identity: normalized 2–12-letter player names and `at_login == 0`; a digit or rename flag makes `Player::LoadFromDB` fail even when ordinary row equality passes.
 - provisioning/reset SQL that freezes every native group containing an exact
   cohort member, including a foreign-leader group, and deletes in dependency

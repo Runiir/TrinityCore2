@@ -223,6 +223,8 @@ def test_quarantined_fixture_remains_retained_without_blocking_canary() -> None:
     assert decision["regression_bank"]["quarantined_fixture_ids"] == [
         "deferred"
     ]
+    assert decision["quarantined_fixture_ids"] == ["deferred"]
+    assert decision["blocking_invalidated_fixture_ids"] == []
     assert decision["required_next_action"] == "run_clean_full_clear"
 
 
