@@ -1,0 +1,105 @@
+{
+  "schema": "cata_raid_live_failure_handoff_v1",
+  "work_unit": "evidence:magmaw_personal_escape_fixture_febee38218",
+  "classification": "gameplay_failure_before_target_fixture",
+  "source_commit": "febee3821876fffa32efa4398de012b594ec0e7e",
+  "source_tree": "4ce8b869228ee889b0ac82c2d4b4b4a85496f5cc",
+  "binary_sha256": "ceaf6656b0b8e44fe6d969fd5744a878f0b593b8470551726e6d60cd759a269f",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+  "result": {
+    "terminal_reason": "native_runback_no_progress",
+    "chainwielder_cleared": true,
+    "drudges_cleared": true,
+    "magmaw_reached": false,
+    "alive_size": 8,
+    "active_size": 10,
+    "wipe_state": "partial_deaths",
+    "dead_actors": [
+      {
+        "guid": 30007,
+        "name": "Mgwdpsb",
+        "class_spec": "fire_mage"
+      },
+      {
+        "guid": 30008,
+        "name": "Mgwdpsc",
+        "class_spec": "affliction_warlock"
+      }
+    ],
+    "dead_actor_recovery_mode": "native_full_wipe_only",
+    "dead_actor_recovery_result": "native_recovery_wait_hostile_activity",
+    "cleared_route_node_retained": "bwd.magmaw.drudges",
+    "independent_root_cause_review": "go_shared_recovery_lifecycle_edge"
+  },
+  "combat": {
+    "chainwielder": {
+      "party_dps": 99635.128,
+      "elapsed_party_dps": 78200.007,
+      "party_hps": 4105.34,
+      "elapsed_party_hps": 3222.133
+    },
+    "drudges": {
+      "party_dps": 95535.616,
+      "elapsed_party_dps": 87285.357,
+      "party_hps": 25528.151,
+      "elapsed_party_hps": 23323.592
+    }
+  },
+  "movement_scope": {
+    "terrain_or_z_failure_observed": false,
+    "bots_select_xy_and_native_pathing_follows_terrain": true,
+    "manual_z_offsets_forbidden": true,
+    "teleports_forbidden": true,
+    "floor_tolerance_changes_forbidden": true,
+    "path_admission_changes_forbidden": true
+  },
+  "independent_review": {
+    "capture_classification_accurate": true,
+    "route_hold_intentional": true,
+    "full_roster_required_before_magmaw": true,
+    "first_broken_edge": "scoped ghost-flight eligibility changed from false to true while a matching retained ground native_long_path still owned recovery; the recovery brain therefore did not re-enter the existing aerial executor branch",
+    "observed_progress": {
+      "initial_entrance_distance_yards": 337.781,
+      "best_entrance_distance_yards": 217.653,
+      "terminal_no_progress_seconds": 30
+    },
+    "smallest_repair": "on the exact scoped false-to-true ghost-flight eligibility edge, invalidate only the matching retained recovery path evidence and resubmit the same typed destination exactly once",
+    "unchanged": [
+      "destination_xyz",
+      "route_nodes",
+      "native_full_wipe_only_reset_authority",
+      "MMAP_and_floor_logic",
+      "path_tolerances",
+      "resurrection_rules",
+      "no_progress_terminal"
+    ],
+    "unproven_and_not_to_be_guessed": [
+      "which_individual_flight_eligibility_predicate_became_true_late",
+      "why_the_ground_spline_finalized_short"
+    ]
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_fixture_febee38218_20260901.dvc",
+    "dvc_directory_md5": "b739b6b1c99cab6424e610f8229e2474.dir",
+    "file_count": 16,
+    "byte_count": 212602130,
+    "remote": "object",
+    "remote_verified": true,
+    "isolated_reconstruction_verified": true,
+    "capture_sha256": "935be3bf4e49adb665324d8c5fe70ae98c973bb28b25791b927da6befc3f7f08",
+    "raw_sha256": "00151e61ee2eeeaf65d1649f9264e2e7b8835ca583a21c021a5c653e706c8455",
+    "worldserver_log_sha256": "b90d30c02a17bac7f22976b7a349062b3b84c8dba851d21d21df864d5a033e9c"
+  },
+  "cleanup": {
+    "worldserver_exit_code": 0,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "dvc_targeted_eviction": "complete",
+    "hydrated_workspace_evicted": true,
+    "duplicate_external_run_evicted": true,
+    "uniquely_referenced_local_cache_objects_evicted": true
+  },
+  "next_action": "repair the shared scoped ghost-flight false-to-true transition, preserving the exact destination and existing aerial executor; do not change encounter Z, MMAP floors, route coordinates, path tolerances, Magmaw mechanics, or full-roster route readiness"
+}
