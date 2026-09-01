@@ -43,6 +43,7 @@ def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
     ).hexdigest()
 
     scope = active["program_scope"]
+    assert active["classification"] == "live_recurrence_quarantined"
     assert scope["configure_admitted"] is True
     assert scope["worldserver_build_admitted"] is True
     assert scope["worldserver_start_admitted"] is True

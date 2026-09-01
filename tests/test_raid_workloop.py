@@ -346,9 +346,7 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
         "fixture:observe_personal_parasite_escape_task_live"
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["classification"] == (
-        "fixture_expansion_admitted_pending_live_verification"
-    )
+    assert active["classification"] == "live_recurrence_quarantined"
     assert active["next_owner_skill"] == "raid-evidence-lifecycle"
     assert active["program_scope"]["gameplay_mutations_allowed"] is False
     assert active["program_scope"]["worldserver_start_admitted"] is True
