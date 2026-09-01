@@ -4,20 +4,20 @@
   "owner_skill": "raid-evidence-lifecycle",
   "next_work_unit": "review:magmaw_task_state_first_gameplay_canary",
   "next_owner_skill": "raid-performance-loop",
-  "classification": "implementation_pending_live_verification",
+  "classification": "prestart_verifier_repaired_pending_live_verification",
   "epoch_id": "magmaw_task_state_migration_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "architecture_scope": "Universal task-state architecture intended for all raid sizes and difficulties; Magmaw 10N is only the canary.",
   "gate_state": "current_suite_then_one_build_and_one_no_retry_canary",
-  "observed_at_commit": "edc69ed76581c2efd20c46be78e9c233b579ac10",
+  "observed_at_commit": "8760bf02ad10ea1001f4b05ec6fa66b54722433f",
   "behavior_change": false,
-  "evidence_contract_change": false,
+  "evidence_contract_change": true,
   "next_action": "Run the exact retained recurrence suite once at this clean descriptor commit. Continue only when canary_admitted is true. Then run one fast8_v4 configure and worldserver build, one verified prestart bundle, and one normal Magmaw 10N completion-watchdog canary without retry or authserver.",
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_task_state_canary_admission_handoff_v1.json",
-    "sha256": "996df1b7fed4f140d4128ed05c09cd53ff676a627687fded5d54ea33c7bd732a"
+    "sha256": "83941c5f864dc99758f02c336d2c4651cc08140d4f915bcc9571a2a434fb3829"
   },
   "implementation_scope": {
     "allowed": [
