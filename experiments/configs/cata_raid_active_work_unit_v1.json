@@ -1,66 +1,69 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:retain_compact_heartbeat_causal_sequence",
-  "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "runtime:repair_first_trace_backed_magmaw_edge",
+  "work_unit": "runtime:retire_rejected_parasite_escape_endpoint",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "next_work_unit": "evidence:review_rejected_parasite_escape_repair",
   "next_owner_skill": "raid-bot-runtime-implementation",
-  "classification": "ready",
-  "epoch_id": "magmaw_heartbeat_causal_sequence_20260901",
+  "classification": "failed",
+  "epoch_id": "magmaw_parasite_rejection_lifecycle_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N_canary_for_universal_architecture",
-  "architecture_scope": "Preserve the first causal route, survival, combat, and diagnosis transition for every raid or dungeon watchdog run. Do not encode Magmaw-specific strategy in the evidence contract.",
-  "gate_state": "hunter_owner_repair_closed_live; next_gameplay_mutation_blocked_on_missing_heartbeat_sequence",
-  "observed_at_commit": "29b54a2188d2ecbda3673628fe88d646c19117b4",
-  "behavior_change": false,
-  "evidence_contract_change": true,
+  "architecture_scope": "Repair the generic native-outcome feedback edge for one actor-local encounter hazard episode. Magmaw is the canary; do not encode route coordinates or alter terrain behavior.",
+  "gate_state": "trace_backed_permanent_rejection_repeats_and_retains_hazard_ownership",
+  "observed_at_commit": "53fb55be0d",
+  "behavior_change": true,
+  "evidence_contract_change": false,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_hunter_owner_closure_handoff_20260901.json",
-    "sha256": "c386c86a2adca7dd9794697ae652074f037a8dba118db7525ef6c625adc3e709"
+    "path": "experiments/configs/cata_raid_magmaw_parasite_rejection_handoff_20260901.json",
+    "sha256": "230ee723819291e863aafc22c1c27fd8662dcdc1ef45c9bc0556a565f53392f8"
   },
   "first_broken_edge": {
     "run_id": "magmaw-hunter-owner-closure-29b54a2188-20260901",
     "route_node_id": "bwd.magmaw.encounter",
-    "cause": "The retained heartbeat ledger contains changing counters and hashes but omits the compact route, survival, combat, and per-bot diagnosis state needed to attribute the ten-death and recovery transition.",
-    "terminal": "emergency_wall_clock_timeout",
+    "cause": "A permanently rejected actor-local parasite_contact_evade destination remains retained, is re-emitted, and continues to defer ordinary combat range and line-of-sight recovery.",
+    "terminal": "route_destination_endpoint_mismatch",
     "evidence": "artifacts/cata_raid_program/magmaw_hunter_owner_closure_29b54a2188_20260901.dvc"
   },
-  "next_action": "Add and test one compact, bounded heartbeat causal receipt. It must expose route scope, alive count, death and wipe state, recovery generation, boss health or originated damage, party DPS and HPS, and per-bot diagnosis codes without retaining duplicate raw payloads. No gameplay mutation or live retry is admitted by this unit.",
+  "next_action": "Record terminal rejection identity in MagmawParasiteHazardState, retire the exact rejected endpoint for mismatch, unreachable, partial-path, or missing-MMAP outcomes, allow one fresh escape after actor or danger geometry changes, and release combat-range deferral when no admitted hazard movement remains. Prove the behavior with focused deterministic policy-to-kernel tests and independent review before admitting any build or live run.",
   "implementation_scope": {
     "allowed": [
-      "completion-watchdog heartbeat event schema and compact serializer",
-      "focused deterministic tests for death, wipe, recovery, stall, and resumed-damage transitions",
-      "documentation and skill guidance for consuming the compact receipt",
-      "DVC pointer publication and exact local payload eviction for the completed closure canary"
+      "actor-local Magmaw parasite hazard episode state",
+      "typed native execution-outcome feedback at the existing kernel or adapter boundary",
+      "focused deterministic C++ replay or unit tests",
+      "direct skill guidance for terminal rejection ownership"
     ],
     "forbidden": [
-      "class, pet, encounter, task, movement, route, MMAP, terrain-following, or Z behavior changes",
+      "global priority changes",
+      "class, pet, boss script, consumable, or DPS tuning",
+      "route-coordinate, fallback-coordinate, movement-admission, MMAP-tolerance, terrain-following, or Z changes",
       "worldserver or authserver starts",
       "database mutation",
-      "new build tickets",
-      "claiming the terminal snapshot proves the first wipe cause"
+      "configure or worldserver build tickets"
     ]
   },
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": false,
+    "gameplay_mutations_allowed": true,
     "configure_admitted": false,
     "worldserver_build_admitted": false,
     "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
     "retry_admitted": false,
     "database_mutations_allowed": false,
-    "dvc_publication_required_after_terminal": true
+    "dvc_publication_required_after_terminal": false
   },
   "acceptance": [
-    "the compact heartbeat event records route, survival, recovery, combat, and per-bot diagnosis state",
-    "the event remains bounded and excludes duplicate raw diagnosis, trace, and combat-log payloads",
-    "focused tests reconstruct a first death, full-wipe or partial-death state, recovery, damage plateau, and resumed damage",
-    "existing completion-watchdog terminal semantics remain fail closed",
-    "the completed closure evidence is remotely verified in DVC before exact local eviction",
-    "no gameplay, movement, terrain-following, MMAP, route, or Z behavior changes"
+    "the same permanently rejected parasite endpoint is not retained or re-emitted indefinitely",
+    "a changed actor or danger observation may create exactly one fresh escape attempt",
+    "ordinary combat range and line-of-sight recovery resumes when no admitted hazard movement owns the actor",
+    "successful native hazard movement remains retained until measured safety or arrival",
+    "the fix is actor-local and cannot suppress another bot's hazard attempt",
+    "focused regression and counterexample tests pass",
+    "all touched C and C++ files remain below 1000 lines",
+    "no priority, route, movement admission, MMAP, terrain-following, or Z behavior changes"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,

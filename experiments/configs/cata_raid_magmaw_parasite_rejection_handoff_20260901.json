@@ -1,0 +1,77 @@
+{
+  "schema": "cata_raid_handoff_v1",
+  "run_id": "magmaw-hunter-owner-closure-29b54a2188-20260901",
+  "evidence_commit": "b41995672c61c63d3fe09553c0d10b822c492ae2",
+  "liveness_receipt_commit": "53fb55be0d",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "mode": "10N_canary_for_universal_architecture",
+  "first_trace_backed_edge": {
+    "route_node_id": "bwd.magmaw.encounter",
+    "route_generation": 4,
+    "engagement_damage_started_at_ms": 1788274784731,
+    "first_rejection_at_ms": 1788274829666,
+    "first_actor_guid": 30001,
+    "intent": "parasite_contact_evade",
+    "result": "route_destination_endpoint_mismatch",
+    "first_baiter_rejections": [
+      {
+        "actor_guid": 30006,
+        "timestamp_ms": 1788274835191,
+        "result": "route_destination_unreachable"
+      },
+      {
+        "actor_guid": 30009,
+        "timestamp_ms": 1788274835675,
+        "result": "route_destination_unreachable"
+      }
+    ],
+    "precedes": [
+      "first_mangle",
+      "first_massive_crash",
+      "first_parasitic_infection",
+      "first_infectious_vomit"
+    ]
+  },
+  "rejection_counts": {
+    "route_destination_endpoint_mismatch": 615,
+    "route_destination_unreachable": 57,
+    "route_destination_partial_path": 45,
+    "route_destination_missing_mmap": 2,
+    "affected_bot_count": 10
+  },
+  "causal_code_path": [
+    "BotMagmawLaneTransition retains the local hazard intent across native rejection",
+    "BotAdaptiveMagmawStrategyHazard re-emits the retained intent",
+    "the kernel adapter does not feed permanent native rejection into MagmawParasiteHazardState",
+    "the fallback defers combat range and line-of-sight recovery while the rejected hazard remains retained"
+  ],
+  "bounded_repair": "Record the rejected endpoint identity in the actor-local parasite hazard episode. Retire exact endpoints rejected as mismatch, unreachable, partial path, or missing MMAP. Do not immediately re-emit the same destination. Allow one fresh escape only after actor or danger geometry changes, and release combat-range deferral when no admitted hazard movement owns the actor.",
+  "acceptance": [
+    "the same permanently rejected endpoint is not retained or re-emitted indefinitely",
+    "a changed actor or hazard observation may create one fresh escape attempt",
+    "ordinary combat range and line-of-sight recovery resumes when no admitted hazard movement owns the actor",
+    "successful native hazard movement remains retained until measured safety or arrival",
+    "no global priority, movement admission, fallback coordinates, MMAP tolerance, route, terrain-following, or Z behavior changes"
+  ],
+  "evidence_boundary": {
+    "direct": [
+      "timestamps and typed native rejection outcomes",
+      "rejection counts by type and actor",
+      "Magmaw, exposed-head, parasite, damage, healing, and terminal diagnosis metrics"
+    ],
+    "inferred": [
+      "retained permanently rejected hazard ownership causes later range and line-of-sight degradation",
+      "individual death causes reconstructed from last incoming damage because the combat schema has no explicit death event"
+    ],
+    "not_actionable_from_terminal_snapshot": [
+      "stale prepull intent fields",
+      "sticky tank out-of-range diagnosis",
+      "terminal line-of-sight as the first failure"
+    ]
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_hunter_owner_closure_29b54a2188_20260901.dvc",
+    "dvc_directory_md5": "ace387286ffd4da691d94b8e89fd1776.dir",
+    "remote_verified": true
+  }
+}
