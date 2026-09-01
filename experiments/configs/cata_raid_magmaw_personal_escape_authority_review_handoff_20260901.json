@@ -1,0 +1,80 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "review:magmaw_personal_escape_await_authority",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "passed",
+  "review_model": "gpt-5.6-sol",
+  "review_reasoning_effort": "high",
+  "worker_complexity": "large",
+  "input_identities": {
+    "live_run_id": "magmaw-task-canary-813bdc7acd-20260901",
+    "live_evidence": "artifacts/cata_raid_program/magmaw_task_canary_813bdc7acd_20260901.dvc",
+    "implementation_commit": "b06236eebe6efae89255b7655819b999c3ac7fb7",
+    "correction_commit": "b06d26b5c998d5e7b71521221d7341ef1393b49a",
+    "final_reviewed_commit": "b133fae4c61208a57cd4714fb8f9a4dc7805d090"
+  },
+  "first_broken_edge_before": "actor 30010 observed a personal parasite threat while transient facts authority caused the strategy to return without retaining an actor task or emitting a candidate; no movement owner, planner receipt, or native launch existed before infection",
+  "implemented_hypothesis": "retain an actor-keyed personal escape child under a cohort parasite-wave parent as AwaitingAuthoritativeFacts, then resume the same task, candidate, destination, and fixed deadline when authority returns",
+  "review_history": [
+    {
+      "commit": "b06236eebe6efae89255b7655819b999c3ac7fb7",
+      "verdict": "no_go",
+      "findings": [
+        "candidate expiry moved forward after authority restoration",
+        "alternate diagnostics could retain the primary candidate key"
+      ]
+    },
+    {
+      "commit": "b06d26b5c998d5e7b71521221d7341ef1393b49a",
+      "verdict": "no_go",
+      "findings": [
+        "production corrections were sound but the test did not prove that the alternate owned a distinct fixed expiry across a later authoritative tick"
+      ]
+    },
+    {
+      "commit": "b133fae4c61208a57cd4714fb8f9a4dc7805d090",
+      "verdict": "go",
+      "findings": []
+    }
+  ],
+  "validation": {
+    "command": [
+      "pixi",
+      "run",
+      "pytest",
+      "-q",
+      "tests/test_magmaw_personal_parasite_escape_task.py",
+      "tests/test_magmaw_parasite_policy.py",
+      "tests/test_magmaw_movement_intent_collection.py",
+      "tests/test_magmaw_exact_lifecycle.py",
+      "tests/test_bot_action_arbitration.py",
+      "-x"
+    ],
+    "result": "25 passed",
+    "decisive_signal": "the compiled replay crosses the production strategy, shared movement adapter, and real arbiter; it retains actor, wave, task, candidate, destination, and expiry across authority loss, gives the bounded alternate a distinct stable expiry and key, and treats measured clearance rather than submission as semantic success"
+  },
+  "scope_audit": {
+    "c_cpp_under_1000_lines": true,
+    "z_or_vertical_steering_changed": false,
+    "geometry_or_route_coordinates_changed": false,
+    "mmap_floor_or_tolerance_changed": false,
+    "teleport_changed": false,
+    "planner_or_executor_changed": false,
+    "throughput_or_class_policy_changed": false
+  },
+  "runtime_verification_plan": {
+    "policy": "completion_watchdog",
+    "required_trace": "task_created -> awaiting_authoritative_facts -> candidate_built -> submitted -> native_progress -> safe_clearance, infected, or failed under one actor/wave/task correlation chain",
+    "required_outcome": "the exact authority-gap signature is absent in a matched live run; submission alone is not success",
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "retries": 0
+  },
+  "dvc_publication": {
+    "pointer": "artifacts/cata_raid_program/magmaw_task_canary_813bdc7acd_20260901.dvc",
+    "remote_verified": true,
+    "local_payload_evicted": true
+  },
+  "remaining_blocker": "live native task lifecycle and Magmaw completion remain unproven",
+  "next_work_unit": "register the authority-gap fixture, run the full recurrence bank, build once, and run one no-retry completion-watchdog Magmaw canary"
+}

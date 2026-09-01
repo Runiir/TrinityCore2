@@ -15,26 +15,19 @@ def _load(name: str) -> dict:
 
 def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
     handoff_name = (
-        "cata_raid_magmaw_personal_parasite_escape_task_review_"
+        "cata_raid_magmaw_personal_escape_authority_review_"
         "handoff_20260901.json"
     )
     handoff_path = CONFIGS / handoff_name
     handoff = _load(handoff_name)
     active = _load("cata_raid_active_work_unit_v1.json")
 
-    assert handoff["reviewer"] == {
-        "agent": "/root/review_magmaw_task_canary_48abb",
-        "model_tier": "sol_high",
-        "reviewed_commit": "040652736970b422f87eaa034b6dbb5e4de10bc1",
-        "reviewed_tree": "5ba638a43f501531dd249637f11c5b48acceddcd",
-        "verdict": "GO",
-    }
-    assert handoff["current_source"]["commit"] == (
-        "eaf93fc988c9b4fc73d696771c14b20288985e78"
+    assert handoff["review_model"] == "gpt-5.6-sol"
+    assert handoff["review_reasoning_effort"] == "high"
+    assert handoff["input_identities"]["final_reviewed_commit"] == (
+        "b133fae4c61208a57cd4714fb8f9a4dc7805d090"
     )
-    assert handoff["current_source"]["relationship"] == (
-        "test_only_descendant_of_reviewed_implementation"
-    )
+    assert handoff["review_history"][-1]["verdict"] == "go"
     assert active["source_handoff"]["path"] == (
         f"experiments/configs/{handoff_name}"
     )
@@ -43,15 +36,15 @@ def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
     ).hexdigest()
 
     scope = active["program_scope"]
-    assert active["classification"] == "live_recurrence_quarantined"
+    assert active["classification"] == "implementation_pending_live_verification"
     assert scope["configure_admitted"] is True
     assert scope["worldserver_build_admitted"] is True
     assert scope["worldserver_start_admitted"] is True
     assert scope["live_diagnostic_admitted"] is True
     assert scope["authserver_start_admitted"] is False
     assert scope["retry_admitted"] is False
-    assert scope["fixture_expansion_replay_admitted"] is True
-    assert scope["gameplay_canary_admitted"] is False
+    assert scope["fixture_expansion_replay_admitted"] is False
+    assert scope["gameplay_canary_admitted"] is True
     assert scope["acceptance_admitted"] is False
     assert scope["dvc_publication_required_after_terminal"] is True
 

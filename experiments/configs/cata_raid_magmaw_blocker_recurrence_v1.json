@@ -126,6 +126,7 @@
     ],
     "fixture_history": [
       "magmaw_personal_parasite_escape_task_rearm_v1",
+      "magmaw_personal_parasite_authority_gap_v1",
       "rejected_hazard_endpoint_task_termination_v1",
       "magmaw_parasite_lane_paths_v1",
       "magmaw_parasite_lane_transition_full_replay_v1",
@@ -157,6 +158,19 @@
         "revision": 1,
         "causal_signature": "magmaw_personal_parasite_escape_task_rearm_churn",
         "revision_basis": "The compiled replay crosses the production Magmaw strategy, actor-local persistent task, shared movement adapter, real arbiter, and typed native-outcome feedback. It proves that same-wave actor, hazard, GUID, and raw-generation drift cannot rearm a terminal task, while authoritative absence permits one later wave.",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_magmaw_personal_parasite_escape_task.py::test_personal_parasite_escape_task_crosses_production_adapter"
+        ]
+      },
+      {
+        "fixture_id": "magmaw_personal_parasite_authority_gap_v1",
+        "revision": 1,
+        "causal_signature": "magmaw_personal_escape_authority_gap_drops_candidate",
+        "revision_basis": "The compiled replay starts at first personal contact with stale facts, crosses the production Magmaw strategy, actor child and cohort wave, shared movement adapter, and real arbiter, then proves stable task, candidate, destination, and expiry identity through authority loss and restoration before measured native progress or an explicit terminal.",
         "command": [
           "pixi",
           "run",
@@ -604,6 +618,21 @@
       "invariant": "one actor-local personal parasite escape remains one persistent task for a stable hazard wave; ordinary actor or parasite displacement cannot create a new task generation after terminal rejection, and only a bounded distinct alternate or a new wave may rearm it",
       "architecture_reviewed_through_occurrence_count": 1,
       "architecture_review_evidence": "experiments/configs/cata_raid_magmaw_parasite_task_rearm_handoff_20260901.json"
+    },
+    "magmaw_personal_escape_authority_gap_drops_candidate": {
+      "owner": "encounter_personal_escape_task_lifecycle",
+      "parent": "magmaw_parasite_containment_failure",
+      "invariant": "once personal parasite threat creates an actor-keyed escape child, a transient stale, partial, or non-authoritative facts snapshot suspends the same child as AwaitingAuthoritativeFacts and authority restoration resumes the same wave, task, candidate, destination, and fixed expiry before infection or an explicit terminal",
+      "fixture_verifications": [
+        {
+          "fixture_id": "magmaw_personal_parasite_authority_gap_v1",
+          "revision": 1,
+          "passed_after_run_id": "magmaw-task-canary-813bdc7acd-20260901",
+          "evidence": "tests/test_magmaw_personal_parasite_escape_task.py::test_personal_parasite_escape_task_crosses_production_adapter",
+          "source_identity": "b133fae4c61208a57cd4714fb8f9a4dc7805d090",
+          "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36"
+        }
+      ]
     },
     "magmaw_parasite_containment_failure": {
       "owner": "encounter_combat_and_movement_authority",
@@ -1998,6 +2027,7 @@
         "native_partial_death_recovery_lifecycle_failure": "not_exercised",
         "permanently_rejected_hazard_endpoint_retains_task_ownership": "absent",
         "magmaw_personal_parasite_escape_task_rearm_churn": "absent",
+        "magmaw_personal_escape_authority_gap_drops_candidate": "occurred",
         "magmaw_parasite_containment_failure": "occurred",
         "magmaw_parasite_control_allows_player_infection": "occurred",
         "magmaw_lethal_movement_safe_completion_missing": "occurred",
