@@ -135,6 +135,18 @@ int main()
     assert(keyedJson.find("\"diagnostic_candidate_key\":\"scope:adaptive_magmaw")
         != std::string::npos);
 
+    Intent laterRequest = keyedRequest;
+    laterRequest.X = 9.0f;
+    std::uint64_t laterReceipt = sidecar.BeginReceipt(30100, 669,
+        laterRequest, receiptScope, 0, 0.0f, 0.0f, 0.0f);
+    assert(laterReceipt != keyedReceipt);
+    assert(sidecar.Latest(30100).LaunchReceipt.Id == laterReceipt);
+    MovementPlannerObservation exactReceipt = sidecar.ForReceipt(keyedReceipt);
+    assert(exactReceipt.Available);
+    assert(exactReceipt.LaunchReceipt.Id == keyedReceipt);
+    assert(exactReceipt.RequestedX == 1.0f);
+    assert(!sidecar.ForReceipt(999999).Available);
+
     Intent otherKeyRequest = keyedRequest;
     CopyMovementDiagnosticCandidateKey(otherKeyRequest,
         "different-diagnostic-key");

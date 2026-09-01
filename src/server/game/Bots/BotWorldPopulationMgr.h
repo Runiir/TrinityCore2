@@ -8,6 +8,7 @@
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotChainwielderOwnerCheckpoint.h"
 #include "Bots/BotNativePathCheckpoint.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneCheckpoint.h"
 #include "Bots/BotValidationPrepullCheckpoint.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotEncounterBlackboard.h"
@@ -114,6 +115,12 @@ public:
         std::string const& caseId, std::string const& sealSha256,
         std::string const& sourceCommit);
     std::string GetNativePathCheckpointJsonForCohort(
+        std::string const& cohortId) const;
+    std::string ArmMagmawTransferLaneCheckpointForCohort(
+        std::string const& cohortId, uint32 actorGuid,
+        std::string const& caseId, std::string const& sealSha256,
+        std::string const& sourceCommit);
+    std::string GetMagmawTransferLaneCheckpointJsonForCohort(
         std::string const& cohortId) const;
     std::string GetCombatLogJsonForCohort(std::string const& cohortId) const;
     std::string StartCombatCalibrationForCohort(std::string const& cohortId, std::string const& mode = "single_target_300", std::string const& targetSpec = "", uint32 seed = 1);
@@ -375,6 +382,22 @@ private:
         WorldBotState& state, Player* bot);
     void ObserveNativePathCheckpointBeforeUpdate(
         WorldBotState& state, Player* bot);
+    void SubmitMagmawTransferLaneCheckpointAfterKernelBegin(
+        BotUpdateContext& context);
+    void QueueMagmawTransferLaneCheckpoint(
+        BotUpdateContext& context,
+        BotEncounter::MagmawTransferLaneCheckpoint::State& checkpoint,
+        BotEncounter::MagmawTransferLaneCheckpoint::Case const& selected);
+    bool ObserveMagmawTransferLaneCheckpointSubmission(
+        BotUpdateContext& context,
+        BotEncounter::MagmawTransferLaneCheckpoint::State& checkpoint);
+    void ObserveMagmawTransferLaneCheckpointProgress(
+        BotEncounter::MagmawTransferLaneCheckpoint::State& checkpoint);
+    void FailMagmawTransferLaneCheckpoint(
+        BotEncounter::MagmawTransferLaneCheckpoint::State& checkpoint,
+        std::string reason);
+    void PublishMagmawTransferLaneCheckpointTerminal(
+        BotEncounter::MagmawTransferLaneCheckpoint::State& checkpoint);
     void MaybeInjectChainwielderOwnerCheckpointAfterUpdate(
         WorldBotState& state, Player* bot);
     std::string ArmChainwielderOwnerCheckpoint(
@@ -382,6 +405,7 @@ private:
         std::string const& sourceCommit);
     std::string BuildChainwielderOwnerCheckpointJson() const;
     std::string BuildNativePathCheckpointJson() const;
+    std::string BuildMagmawTransferLaneCheckpointJson() const;
     std::string BuildControllerRouteHoldJson() const;
     BotControllerRouteHold::Identity CurrentControllerRouteHoldIdentity(
         uint32 actorGuid) const;

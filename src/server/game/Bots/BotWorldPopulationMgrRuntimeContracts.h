@@ -481,6 +481,8 @@
         uint64 TraceTransportTestPressureAttemptId = 0;
         BotChainwielderOwnerCheckpoint::State ChainwielderOwnerCheckpoint;
         BotNativePathCheckpoint::State NativePathCheckpoint;
+        BotEncounter::MagmawTransferLaneCheckpoint::State
+            MagmawTransferLaneCheckpoint;
         BotExperienceLearningConfig LearningConfig;
         BotPolicyModelConfig PolicyModelConfig;
         bool CalibrationActive = false;

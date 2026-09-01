@@ -138,8 +138,12 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 AdaptiveMagmawMovementLeaseFor(intent.Id.Mechanic);
             if (movementLease)
             {
-                bool transferLaneSubmitted = false;
-                if (intent.Id.Mechanic == "pillar_bait_switch"
+                bool transferLaneSubmitted = BotEncounter::
+                    MagmawTransferLaneCheckpoint::OwnsQueuedKernelCandidate(
+                        Cohort().MagmawTransferLaneCheckpoint,
+                        intent.Id.Key(), context.State.Guid.GetCounter());
+                if (!transferLaneSubmitted
+                    && intent.Id.Mechanic == "pillar_bait_switch"
                     && context.AdaptiveMagmawTransferLaneBinding)
                 {
                     transferLaneSubmitted = BotEncounter::

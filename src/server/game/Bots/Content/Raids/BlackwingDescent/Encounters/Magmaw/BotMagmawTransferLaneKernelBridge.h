@@ -4,6 +4,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneAuthority.h"
 
 #include <functional>
+#include <string>
 
 namespace BotEncounter
 {
@@ -22,7 +23,8 @@ bool SubmitMagmawTransferLaneKernelCandidate(
     BotNativeAction::Candidate const& candidate,
     MagmawTransferLaneExecutionBinding const& binding, uint64 observedAtMs,
     MagmawTransferLaneNativeExecutor execute,
-    MagmawTransferLaneOutcomeObserver observe);
+    MagmawTransferLaneOutcomeObserver observe,
+    std::string arbitrationSource = {});
 }
 
 #endif

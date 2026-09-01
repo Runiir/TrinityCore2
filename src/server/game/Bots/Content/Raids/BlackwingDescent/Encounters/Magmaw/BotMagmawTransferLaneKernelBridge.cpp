@@ -44,7 +44,8 @@ bool SubmitMagmawTransferLaneKernelCandidate(
     BotNativeAction::Candidate const& candidate,
     MagmawTransferLaneExecutionBinding const& binding, uint64 observedAtMs,
     MagmawTransferLaneNativeExecutor execute,
-    MagmawTransferLaneOutcomeObserver observe)
+    MagmawTransferLaneOutcomeObserver observe,
+    std::string arbitrationSource)
 {
     if (!Correlates(candidate, binding) || !execute || !observe)
         return false;
@@ -57,7 +58,8 @@ bool SubmitMagmawTransferLaneKernelCandidate(
 
     BotActionArbitration::Candidate queued;
     queued.Key = candidate.Id.Key();
-    queued.Source = candidate.Id.Strategy;
+    queued.Source = arbitrationSource.empty()
+        ? candidate.Id.Strategy : std::move(arbitrationSource);
     queued.ActionPriority = candidate.ActionPriority;
     queued.UtilityScore = candidate.Utility;
     queued.RequiredResources = candidate.Resources();

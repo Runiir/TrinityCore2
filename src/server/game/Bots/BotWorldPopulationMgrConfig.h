@@ -90,6 +90,11 @@ struct BotWorldExperimentConfig
     // Default-off cutover for the single Magmaw transfer-lane task. The
     // selector still requires a same-tick equivalent legacy candidate.
     bool MagmawTransferLaneTaskAuthority = false;
+    bool MagmawTransferLaneCheckpointEnable = false;
+    std::string MagmawTransferLaneCheckpointFixtureId;
+    std::string MagmawTransferLaneCheckpointCaseId;
+    std::string MagmawTransferLaneCheckpointSealSha256;
+    std::string MagmawTransferLaneCheckpointSourceCommit;
     // Validation-only boss-node checkpoint. Disabled for ordinary runtime.
     bool ValidationPrepullCheckpointEnable = false;
     // Default-off observation seam for one recurrence fixture. The capture

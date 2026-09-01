@@ -1,0 +1,40 @@
+{
+  "schema": "map669_magmaw_transfer_lane_navmesh_probe_v1",
+  "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
+  "case_id": "entrance_polygon_short_lane_v1",
+  "map_id": 669,
+  "probe": {
+    "tool": "tools/raid_program/probe_drudge_navmesh_recovery.py",
+    "native_source": "tools/raid_program/drudge_navmesh_recovery_probe.cpp",
+    "native_source_sha256": "6aa97ecd530245d486a428f582241c91df058d0e030e7afcb6e1c9abba00dd28",
+    "invocation": "pixi run python tools/raid_program/probe_drudge_navmesh_recovery.py",
+    "raw_stdout_sha256": "1a708f783eff6b576425575b476955810902f49dd9a23fd05c523aa7fd02c8bf",
+    "asset_sha256": {
+      "669.mmap": "3b794515424ff374f2fc2fb9bc75c9d0bcdfa355c712894d5b73c582671ea421",
+      "6693131.mmtile": "ec53ab238b671d2b41f707648adcc1cd9b69699a6a424d7c673bed8aeb31b1ef",
+      "6693132.mmtile": "0879cbb27dce969579f789796c6c63a8ffd3c81ff66c303ea3dde1321f852ec5",
+      "6693133.mmtile": "116e3649739b423536fd3ba746dde75655aae3f140f64096aa4cbc9a8bbb6196",
+      "6693231.mmtile": "9bf7e5e6b956886a96d19b8672595ce53246ee975466b4e231dd85fd71cd4019",
+      "6693232.mmtile": "d444daf82f09d2e4d7c8708f7f3c4f4420c0f96ce1db604c722689fa4e57cb32",
+      "6693233.mmtile": "c9a0a2787aaefe0cff05d7d2877d82995a5317eda0ed496ee3323f1ad0bf3467",
+      "6693332.mmtile": "f91db1f81a7f95a824f9bd3c4eca6e665e3a80954cb4b472cab80214c19efbeb"
+    }
+  },
+  "start": [-345.872009, -224.343994, 193.126999],
+  "destination": [-345.872009, -218.343994, 193.126999],
+  "detour": {
+    "start_nearest": [-345.872, -224.344, 193.462],
+    "start_nearest_distance": 0.33522,
+    "destination_nearest": [-345.872, -218.344, 193.462],
+    "destination_nearest_distance": 0.33522,
+    "find_path_status": "0x40000000",
+    "corridor_polygons": 1,
+    "complete": true,
+    "smooth_status": "0x40000000",
+    "smooth_points": 3,
+    "smooth_terminal": [-345.872, -218.344, 193.127],
+    "terminal_2d_error": 0.0,
+    "terminal_z_error": 0.0
+  },
+  "claim": "Real pinned map-669 Detour assets admit a complete short same-polygon entrance path. This is static MMAP evidence only; MotionMaster, spline progress, and task completion still require the one-start live checkpoint."
+}

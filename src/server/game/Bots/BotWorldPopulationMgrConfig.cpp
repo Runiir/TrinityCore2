@@ -159,6 +159,26 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
         sConfigMgr->GetBoolDefault(
             "BotWorld.Magmaw.TransferLaneTaskAuthority",
             Cohort().Config.MagmawTransferLaneTaskAuthority);
+    Cohort().Config.MagmawTransferLaneCheckpointEnable =
+        sConfigMgr->GetBoolDefault(
+            "BotWorld.ValidationFixture.MagmawTransferLaneCheckpoint.Enable",
+            false);
+    Cohort().Config.MagmawTransferLaneCheckpointFixtureId =
+        sConfigMgr->GetStringDefault(
+            "BotWorld.ValidationFixture.MagmawTransferLaneCheckpoint.FixtureId",
+            "");
+    Cohort().Config.MagmawTransferLaneCheckpointCaseId =
+        sConfigMgr->GetStringDefault(
+            "BotWorld.ValidationFixture.MagmawTransferLaneCheckpoint.CaseId",
+            "");
+    Cohort().Config.MagmawTransferLaneCheckpointSealSha256 =
+        sConfigMgr->GetStringDefault(
+            "BotWorld.ValidationFixture.MagmawTransferLaneCheckpoint.SealSha256",
+            "");
+    Cohort().Config.MagmawTransferLaneCheckpointSourceCommit =
+        sConfigMgr->GetStringDefault(
+            "BotWorld.ValidationFixture.MagmawTransferLaneCheckpoint.SourceCommit",
+            "");
     Cohort().Config.ValidationPrepullCheckpointEnable = sConfigMgr->GetBoolDefault(
         "BotWorld.ValidationRoute.PrepullCheckpointEnable",
         Cohort().Config.ValidationPrepullCheckpointEnable);

@@ -234,6 +234,7 @@ public:
         float splineFinalZ, float actorX, float actorY, float actorZ) override;
     void AssociateTrace(std::uint64_t botGuid, std::uint64_t traceSequence);
     MovementPlannerObservation Latest(std::uint64_t botGuid) const;
+    MovementPlannerObservation ForReceipt(std::uint64_t receiptId) const;
     MovementPlannerObservation ForTrace(std::uint64_t botGuid,
         std::uint64_t traceSequence) const;
     void ClearBot(std::uint64_t botGuid);

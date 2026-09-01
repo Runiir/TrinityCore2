@@ -66,6 +66,16 @@ def test_recorded_drudge_returns_match_native_navmesh(tmp_path):
         "NAV_WATER",
         "NAV_MAGMA_SLIME",
     ]
+    assert payload["validated_returns"][
+        "magmaw_transfer_entrance_short_lane"
+    ] == {
+        "detour_nearest_requested_z_delta": 0.33522,
+        "detour_nearest_terminal": [-345.872, -218.344, 193.462],
+        "polygons": 1,
+        "smooth_points": 3,
+        "start": [-345.872009, -224.343994, 193.126999],
+        "terminal": [-345.872009, -218.343994, 193.126999],
+    }
     assert payload["validated_returns"]["30003"]["terminal"] == [
         -295.0,
         -71.5,

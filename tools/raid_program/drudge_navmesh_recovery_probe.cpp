@@ -181,6 +181,9 @@ int main()
     filter.setIncludeFlags(0x1 | 0x4 | 0x8);
     filter.setExcludeFlags(0);
     TestPoint tests[] = {
+        {"magmaw_transfer_entrance_short_lane",
+            -345.872009f, -224.343994f, 193.126999f,
+            -345.872009f, -218.343994f, 193.126999f},
         {"30003", -288.800f, -86.483f, 214.150f, -295.0f, -71.5f, 213.25f},
         {"30008", -338.018f, -64.932f, 212.751f, -325.0f, -64.0f, 212.82f},
         {"30003_reposition", -295.0f, -71.5f, 213.25f,

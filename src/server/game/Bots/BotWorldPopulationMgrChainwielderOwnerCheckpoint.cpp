@@ -311,6 +311,8 @@ BotWorldPopulationMgr::CurrentControllerRouteHoldIdentity(
         Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
     bool const nativePathCheckpoint = hold.Scope.FixtureId
         == BotNativePathCheckpoint::FixtureId;
+    bool const magmawTransferCheckpoint = hold.Scope.FixtureId
+        == BotEncounter::MagmawTransferLaneCheckpoint::FixtureId;
     return {
         Cohort().Id,
         _serverEpoch,
@@ -322,13 +324,19 @@ BotWorldPopulationMgr::CurrentControllerRouteHoldIdentity(
         Party().ValidationRouteGeneration,
         Cohort().Config.ValidationRouteNodeId,
         actorGuid,
-        nativePathCheckpoint
+        magmawTransferCheckpoint
+            ? Cohort().Config.MagmawTransferLaneCheckpointFixtureId
+            : nativePathCheckpoint
             ? Cohort().Config.NativePathCheckpointFixtureId
             : Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
-        nativePathCheckpoint
+        magmawTransferCheckpoint
+            ? Cohort().Config.MagmawTransferLaneCheckpointSealSha256
+            : nativePathCheckpoint
             ? Cohort().Config.NativePathCheckpointSealSha256
             : Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
-        nativePathCheckpoint
+        magmawTransferCheckpoint
+            ? Cohort().Config.MagmawTransferLaneCheckpointSourceCommit
+            : nativePathCheckpoint
             ? Cohort().Config.NativePathCheckpointSourceCommit
             : Cohort().Config.ChainwielderOwnerCheckpointSourceCommit,
     };
@@ -456,17 +464,25 @@ std::string BotWorldPopulationMgr::BuildControllerRouteHoldJson() const
     Identity const& scope = AdmittedIdentity(hold);
     bool const nativePathCheckpoint = scope.FixtureId
         == BotNativePathCheckpoint::FixtureId;
+    bool const magmawTransferCheckpoint = scope.FixtureId
+        == BotEncounter::MagmawTransferLaneCheckpoint::FixtureId;
     BotControllerRouteHoldConfigIdentity::Comparison const configComparison =
         BotControllerRouteHoldConfigIdentity::Compare(
-            nativePathCheckpoint
+            magmawTransferCheckpoint
+                ? Cohort().Config.MagmawTransferLaneCheckpointFixtureId
+                : nativePathCheckpoint
                 ? Cohort().Config.NativePathCheckpointFixtureId
                 : Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
             scope.FixtureId,
-            nativePathCheckpoint
+            magmawTransferCheckpoint
+                ? Cohort().Config.MagmawTransferLaneCheckpointSealSha256
+                : nativePathCheckpoint
                 ? Cohort().Config.NativePathCheckpointSealSha256
                 : Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
             scope.SealSha256,
-            nativePathCheckpoint
+            magmawTransferCheckpoint
+                ? Cohort().Config.MagmawTransferLaneCheckpointSourceCommit
+                : nativePathCheckpoint
                 ? Cohort().Config.NativePathCheckpointSourceCommit
                 : Cohort().Config.ChainwielderOwnerCheckpointSourceCommit,
             scope.SourceCommit, GitRevision::GetHash());
@@ -531,7 +547,29 @@ std::string BotWorldPopulationMgr::BuildControllerRouteHoldJson() const
          << ",\"checkpoint_identity_preserved\":"
          << (hold.CheckpointIdentityPreserved ? "true" : "false")
          << ",\"checkpoint_lifecycle\":";
-    if (nativePathCheckpoint)
+    if (magmawTransferCheckpoint)
+    {
+        BotEncounter::MagmawTransferLaneCheckpoint::State const& checkpoint =
+            Cohort().MagmawTransferLaneCheckpoint;
+        json << "{\"stage\":\""
+             << BotEncounter::MagmawTransferLaneCheckpoint::StageName(
+                    checkpoint.CurrentStage)
+             << "\",\"terminal\":"
+             << (checkpoint.Terminal() ? "true" : "false")
+             << ",\"case_id\":\"" << JsonEscape(checkpoint.CaseId) << "\""
+             << ",\"queue_count\":" << checkpoint.QueueCount
+             << ",\"candidate_attempt_count\":"
+             << checkpoint.CandidateAttemptCount
+             << ",\"native_submission_count\":"
+             << checkpoint.NativeSubmissionCount
+             << ",\"planner_receipt_id\":"
+             << checkpoint.PlannerReceipt.ReceiptId
+             << ",\"progress_samples\":"
+             << checkpoint.ConsumedProgressSamples
+             << ",\"outcome\":\"" << JsonEscape(checkpoint.Outcome)
+             << "\"}";
+    }
+    else if (nativePathCheckpoint)
     {
         BotNativePathCheckpoint::State const& checkpoint =
             Cohort().NativePathCheckpoint;

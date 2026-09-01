@@ -39,6 +39,10 @@ EXPECTED_RECOVERY_ANCHORS = {
 
 EXPECTED_OUTPUT = (
     "loaded=7",
+    "magmaw_transfer_entrance_short_lane start_status=0x40000000",
+    "magmaw_transfer_entrance_short_lane nearest_terminal=-345.872,-218.344,193.462 requested_endz=0.33522",
+    "magmaw_transfer_entrance_short_lane findPath=0x40000000 polys=1 complete=1",
+    "magmaw_transfer_entrance_short_lane smooth=0x40000000 points=3 terminal=-345.872,-218.344,193.127 end2d=0 endz=0",
     "30003 findPath=0x40000000 polys=4 complete=1",
     "30003 smooth=0x40000000 points=5 terminal=-295,-71.5,213.25 end2d=0 endz=0",
     "30008 findPath=0x40000000 polys=2 complete=1",
@@ -273,6 +277,14 @@ def run_probe(root: Path = ROOT) -> dict[str, object]:
         "smooth_step": 4.0,
         "smooth_slop": 0.3,
         "validated_returns": {
+            "magmaw_transfer_entrance_short_lane": {
+                "start": [-345.872009, -224.343994, 193.126999],
+                "terminal": [-345.872009, -218.343994, 193.126999],
+                "detour_nearest_terminal": [-345.872, -218.344, 193.462],
+                "detour_nearest_requested_z_delta": 0.33522,
+                "polygons": 1,
+                "smooth_points": 3,
+            },
             "30003": {
                 "start": [-288.8, -86.483, 214.15],
                 "terminal": [-295.0, -71.5, 213.25],

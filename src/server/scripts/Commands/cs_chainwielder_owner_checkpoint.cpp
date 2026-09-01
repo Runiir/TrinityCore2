@@ -23,11 +23,53 @@ public:
             { "botautonativepathcheckpoint",
                 rbac::RBAC_PERM_COMMAND_HEALERBOT, true,
                 &HandleNativePathCheckpointCommand, "" },
+            { "botautomagmawtransfercheckpoint",
+                rbac::RBAC_PERM_COMMAND_HEALERBOT, true,
+                &HandleMagmawTransferCheckpointCommand, "" },
         };
         return commandTable;
     }
 
 private:
+    static bool HandleMagmawTransferCheckpointCommand(
+        ChatHandler* handler, char const* args)
+    {
+        std::istringstream parser(args ? args : "");
+        std::string action;
+        parser >> action;
+        std::string const cohortId =
+            sBotWorldPopulationMgr->ResolveGlobalCohortId();
+        std::string result;
+        if (action == "status")
+            result = sBotWorldPopulationMgr
+                ->GetMagmawTransferLaneCheckpointJsonForCohort(cohortId);
+        else if (action == "arm")
+        {
+            uint32 actorGuid = 0;
+            std::string caseId;
+            std::string sealSha256;
+            std::string sourceCommit;
+            std::string extra;
+            parser >> actorGuid >> caseId >> sealSha256
+                >> sourceCommit >> extra;
+            if (!actorGuid || caseId.empty() || sealSha256.empty()
+                || sourceCommit.empty() || !extra.empty())
+                result = "{\"ok\":false,\"action\":"
+                    "\"botauto_magmaw_transfer_lane_checkpoint\","
+                    "\"failure_reason\":\"invalid_arguments\"}";
+            else
+                result = sBotWorldPopulationMgr
+                    ->ArmMagmawTransferLaneCheckpointForCohort(cohortId,
+                        actorGuid, caseId, sealSha256, sourceCommit);
+        }
+        else
+            result = "{\"ok\":false,\"action\":"
+                "\"botauto_magmaw_transfer_lane_checkpoint\","
+                "\"failure_reason\":\"arm_or_status_required\"}";
+        handler->SendSysMessage(result.c_str());
+        return true;
+    }
+
     static bool HandleNativePathCheckpointCommand(
         ChatHandler* handler, char const* args)
     {

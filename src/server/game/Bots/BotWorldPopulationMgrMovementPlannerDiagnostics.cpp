@@ -606,6 +606,14 @@ MovementPlannerObservation MovementPlannerDiagnosticSidecar::Latest(
                                        : itr->second;
 }
 
+MovementPlannerObservation MovementPlannerDiagnosticSidecar::ForReceipt(
+    std::uint64_t receiptId) const
+{
+    auto receipt = _receiptById.find(receiptId);
+    return receipt == _receiptById.end()
+        ? MovementPlannerObservation() : receipt->second;
+}
+
 MovementPlannerObservation MovementPlannerDiagnosticSidecar::ForTrace(
     std::uint64_t botGuid, std::uint64_t traceSequence) const
 {

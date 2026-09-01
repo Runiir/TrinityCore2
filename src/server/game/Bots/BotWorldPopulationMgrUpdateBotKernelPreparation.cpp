@@ -30,6 +30,7 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
 {
     context.DecisionNowMs = NowMs();
     context.State.DecisionKernel.Begin(context.DecisionNowMs);
+    SubmitMagmawTransferLaneCheckpointAfterKernelBegin(context);
     BotEncounter::ResetMagmawTransferLaneIntentComparison(
         context.State.MagmawTransferLaneIntentComparison);
     RaidRuntime& raid = Cohort().Raid;
