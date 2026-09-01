@@ -135,8 +135,7 @@ static void RejectThroughProductionAdapter(
     context.ObserveNativeOutcome = [&task](
         MagmawMovementNativeOutcome const& outcome)
     {
-        task.ObserveNativeOutcome(outcome.Actor, outcome.EventGeneration,
-            outcome.Destination, outcome.Result.Reason);
+        ObserveMagmawPersonalParasiteEscapeNativeOutcome(task, outcome);
     };
     BotActionArbitration::Kernel kernel;
     kernel.Begin(now);

@@ -67,6 +67,10 @@ bool HasRetainedMagmawHazardOwnership(
     MagmawMovementIntentCollection const& movements,
     MagmawPersonalParasiteEscapeTask const& task, ObjectGuid actor);
 
+bool ObserveMagmawPersonalParasiteEscapeNativeOutcome(
+    MagmawPersonalParasiteEscapeTask& task,
+    MagmawMovementNativeOutcome const& outcome);
+
 // Shared final adapter used by the live manager and compiled fixtures. It
 // submits every visible movement proposal to the real kernel, preserves typed
 // transfer bindings, and hard-masks rejected or unmapped proposals.

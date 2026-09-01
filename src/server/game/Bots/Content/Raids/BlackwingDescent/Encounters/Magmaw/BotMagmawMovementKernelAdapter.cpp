@@ -150,6 +150,16 @@ bool HasRetainedMagmawHazardOwnership(
     return false;
 }
 
+bool ObserveMagmawPersonalParasiteEscapeNativeOutcome(
+    MagmawPersonalParasiteEscapeTask& task,
+    MagmawMovementNativeOutcome const& outcome)
+{
+    return outcome.Mechanic == "parasite_contact_evade"
+        && task.ObserveNativeOutcome(outcome.Actor,
+            outcome.EventGeneration, outcome.Destination,
+            outcome.Result.Reason);
+}
+
 size_t SubmitMagmawMovementKernelCandidates(
     BotActionArbitration::Kernel& kernel,
     MagmawMovementIntentCollection const& movements,
