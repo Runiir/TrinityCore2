@@ -37,7 +37,6 @@ from tools.raid_program.controller_route_hold import (
 )
 from tools.raid_program.probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
 from tools.raid_program.recurrence_admission import (
-    NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
     FIXTURE_EXPANSION_PURPOSE,
     GAMEPLAY_CANARY_PURPOSE,
     RecurrenceAdmissionError,
@@ -185,6 +184,7 @@ def build_capture_parser(*, root: Path = ROOT) -> argparse.ArgumentParser:
     parser.add_argument("--recurrence-admission", type=Path)
     parser.add_argument("--recurrence-admission-sha256")
     parser.add_argument("--chainwielder-checkpoint-actor-guid", type=int)
+    parser.add_argument("--magmaw-transfer-checkpoint-actor-guid", type=int)
     parser.add_argument(
         "--fixture-expansion-replay",
         action="store_true",
@@ -260,6 +260,17 @@ def prepare_capture_setup(
     argv: Sequence[str] | None = None, *, root: Path = ROOT,
 ) -> CaptureSetup:
     args = build_capture_parser(root=root).parse_args(argv)
+    checkpoint_actors = [
+        actor for actor in (
+            args.chainwielder_checkpoint_actor_guid,
+            args.magmaw_transfer_checkpoint_actor_guid,
+        ) if actor is not None
+    ]
+    if len(checkpoint_actors) > 1:
+        raise SystemExit(
+            "capture preflight rejected: multiple_checkpoint_actor_dialects"
+        )
+    checkpoint_actor_guid = checkpoint_actors[0] if checkpoint_actors else None
 
     binary = args.binary.resolve()
     config = args.config.resolve()
@@ -343,14 +354,14 @@ def prepare_capture_setup(
                 f"capture preflight rejected: recurrence_admission:{error}"
             ) from error
     try:
-        native_checkpoint = isinstance(recurrence_admission, dict) and (
+        checkpoint_fixture = (
             recurrence_admission.get("checkpoint_fixture_id")
-            == NATIVE_PATH_CHECKPOINT_FIXTURE_ID
+            if isinstance(recurrence_admission, dict) else None
         )
-        if native_checkpoint:
+        if checkpoint_fixture is not None:
             checkpoint_dialect = checkpoint_controller_dialect(
                 recurrence_admission,
-                args.chainwielder_checkpoint_actor_guid,
+                checkpoint_actor_guid,
             )
             checkpoint_arm_command = (
                 checkpoint_dialect.get("arm_command")
@@ -359,7 +370,7 @@ def prepare_capture_setup(
         else:
             checkpoint_arm_command = chainwielder_checkpoint_arm_command(
                 recurrence_admission,
-                args.chainwielder_checkpoint_actor_guid,
+                checkpoint_actor_guid,
             )
     except ValueError as error:
         raise SystemExit(
@@ -429,14 +440,14 @@ def prepare_capture_setup(
             )
             checkpoint_dialect = checkpoint_controller_dialect(
                 recurrence_admission,
-                args.chainwielder_checkpoint_actor_guid,
+                checkpoint_actor_guid,
             )
             if not isinstance(checkpoint_dialect, dict):
                 raise ValueError("checkpoint_controller_dialect_missing")
             controller_hold_identity = controller_route_hold_launch_identity(
                 recurrence_admission=recurrence_admission,
                 required_purpose=FIXTURE_EXPANSION_PURPOSE,
-                actor_guid=args.chainwielder_checkpoint_actor_guid,
+                actor_guid=checkpoint_actor_guid,
                 scenario_id=scenario_id,
                 runtime_profile=profile_name,
                 pool_tag=str(runtime_assets.get("pool_tag_filter") or ""),

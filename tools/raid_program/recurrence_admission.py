@@ -4,17 +4,45 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import re
 import subprocess
 from typing import Any
 
+from tools.raid_program.recurrence_checkpoint_seals import (
+    ADMISSION_PURPOSES,
+    CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX,
+    CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+    CHECKPOINT_SEAL_SCHEMA,
+    FIXTURE_EXPANSION_PURPOSE,
+    GAMEPLAY_CANARY_PURPOSE,
+    MAGMAW_TRANSFER_CHECKPOINT_ACTOR_GUID,
+    MAGMAW_TRANSFER_CHECKPOINT_AUTHORITY,
+    MAGMAW_TRANSFER_CHECKPOINT_CASE_ID,
+    MAGMAW_TRANSFER_CHECKPOINT_CONFIG_PREFIX,
+    MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID,
+    MAGMAW_TRANSFER_CHECKPOINT_PROBE,
+    NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX,
+    NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+    NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS,
+    NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
+    RecurrenceAdmissionError,
+    SHA256_RE,
+    build_case_checkpoint_seal,
+    build_chainwielder_checkpoint_seal,
+    canonical_object_sha256 as _canonical_object_sha256,
+    config_bool as _config_bool,
+    config_string as _config_string,
+    fixture_expansion_contract as _fixture_expansion_contract,
+    git_value as _git,
+    load_object as _load,
+    magmaw_transfer_checkpoint_contract as _magmaw_transfer_checkpoint_contract,
+    magmaw_transfer_checkpoint_requested as _magmaw_transfer_checkpoint_requested,
+    native_path_checkpoint_request_contract as _native_path_checkpoint_request_contract,
+    native_path_checkpoint_requested as _native_path_checkpoint_requested,
+    sha256_file,
+    verify_case_checkpoint_config,
+)
 
 SCHEMA = "cata_raid_recurrence_admission_v1"
-CHECKPOINT_SEAL_SCHEMA = "cata_raid_checkpoint_seal_v1"
-SHA256_RE = re.compile(r"[0-9a-f]{64}")
-GAMEPLAY_CANARY_PURPOSE = "gameplay_canary"
-FIXTURE_EXPANSION_PURPOSE = "fixture_expansion_replay"
-ADMISSION_PURPOSES = {GAMEPLAY_CANARY_PURPOSE, FIXTURE_EXPANSION_PURPOSE}
 FIXTURE_STATE_FIELDS = (
     "invalidated_fixture_ids",
     "failing_fixture_ids",
@@ -22,124 +50,7 @@ FIXTURE_STATE_FIELDS = (
     "pending_fixture_ids",
     "stale_fixture_ids",
 )
-CHAINWIELDER_CHECKPOINT_FIXTURE_ID = (
-    "chainwielder_pre_admission_rejection_isolation_v1"
-)
-CHAINWIELDER_CHECKPOINT_CONFIG_PREFIX = (
-    "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint"
-)
-NATIVE_PATH_CHECKPOINT_FIXTURE_ID = (
-    "map669_native_path_production_boundary_v1"
-)
-NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX = (
-    "BotWorld.ValidationFixture.NativePathCheckpoint"
-)
-NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS = {
-    "same_level_floor_observation_v1": (4, 5),
-    "same_level_hazard_path_admission_v1": (4, 5),
-    "same_level_native_path_proof_v1": (4, 5),
-}
-NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS = (
-    "same_level_hazard_path_admission_v1",
-    "same_level_native_path_proof_v1",
-)
 PROFILE_MANIFEST_RELATIVE_PATH = Path("dataset/bot_runtime_profiles/profiles.json")
-
-
-def _fixture_expansion_contract(
-    value: dict[str, Any], *, label: str
-) -> list[dict[str, Any]]:
-    targets = value.get("fixture_expansion_target_ids")
-    requests = value.get("fixture_expansion_requests", [])
-    pending = value.get("pending_fixture_ids", [])
-    if not isinstance(targets, list) or not targets or any(
-        not isinstance(fixture_id, str) or not fixture_id for fixture_id in targets
-    ):
-        raise RecurrenceAdmissionError(f"{label}_target_invalid")
-    if len(targets) != len(set(targets)):
-        raise RecurrenceAdmissionError(f"{label}_target_duplicate")
-    if not isinstance(pending, list) or any(
-        not isinstance(fixture_id, str) or not fixture_id for fixture_id in pending
-    ):
-        raise RecurrenceAdmissionError(f"{label}_pending_invalid")
-    if not isinstance(requests, list):
-        raise RecurrenceAdmissionError(f"{label}_request_invalid")
-    request_ids: list[str] = []
-    for request in requests:
-        if not isinstance(request, dict):
-            raise RecurrenceAdmissionError(f"{label}_request_invalid")
-        fixture_id = request.get("fixture_id")
-        from_revision = request.get("from_revision")
-        to_revision = request.get("to_revision")
-        if (
-            not isinstance(fixture_id, str)
-            or not fixture_id
-            or not isinstance(from_revision, int)
-            or isinstance(from_revision, bool)
-            or from_revision <= 0
-            or not isinstance(to_revision, int)
-            or isinstance(to_revision, bool)
-            or to_revision != from_revision + 1
-            or not isinstance(request.get("causal_signature"), str)
-            or not request["causal_signature"].strip()
-            or not isinstance(request.get("required_production_boundary"), str)
-            or not request["required_production_boundary"].strip()
-        ):
-            raise RecurrenceAdmissionError(f"{label}_request_invalid")
-        request_ids.append(fixture_id)
-    if len(request_ids) != len(set(request_ids)):
-        raise RecurrenceAdmissionError(f"{label}_request_duplicate")
-    if set(targets) != set(pending) | set(request_ids):
-        raise RecurrenceAdmissionError(f"{label}_request_target_mismatch")
-    return requests
-
-
-def _native_path_checkpoint_request_contract(
-    value: dict[str, Any], *, label: str
-) -> list[dict[str, Any]]:
-    """Require exact native-path target, request, and pending projections."""
-
-    requests = _fixture_expansion_contract(value, label=label)
-    expected_ids = set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
-    expected_pending_ids = set(
-        NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS
-    )
-    request_contract = {
-        row["fixture_id"]: (row["from_revision"], row["to_revision"])
-        for row in requests
-    }
-    pending_ids = value.get("pending_fixture_ids", [])
-    if (
-        set(value["fixture_expansion_target_ids"]) != expected_ids
-        or len(pending_ids) != len(expected_pending_ids)
-        or set(pending_ids) != expected_pending_ids
-        or request_contract != NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
-    ):
-        raise RecurrenceAdmissionError(f"{label}_request_contract_mismatch")
-    return requests
-
-
-def _native_path_checkpoint_requested(value: dict[str, Any]) -> bool:
-    targets = value.get("fixture_expansion_target_ids")
-    native_ids = set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
-    return isinstance(targets, list) and bool(set(targets) & native_ids)
-
-
-class RecurrenceAdmissionError(RuntimeError):
-    pass
-
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def _canonical_object_sha256(value: object) -> str:
-    payload = json.dumps(value, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def build_runtime_profile_suffix_manifest(
@@ -228,53 +139,6 @@ def _verified_runtime_profile_overlay(
     return expected
 
 
-def _git(worktree: Path, *args: str, binary: bool = False) -> str | bytes:
-    result = subprocess.run(
-        ["git", "-C", str(worktree), *args],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    return result.stdout if binary else result.stdout.decode().strip()
-
-
-def _load(path: Path, label: str) -> dict[str, Any]:
-    if not path.is_file():
-        raise RecurrenceAdmissionError(f"{label}_missing")
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        raise RecurrenceAdmissionError(f"{label}_invalid") from error
-    if not isinstance(value, dict):
-        raise RecurrenceAdmissionError(f"{label}_invalid")
-    return value
-
-
-def _config_bool(path: Path, key: str, default: bool = False) -> bool:
-    value = default
-    pattern = re.compile(
-        rf"^\s*{re.escape(key)}\s*=\s*(0|1|false|true)\s*(?:#.*)?$",
-        re.IGNORECASE,
-    )
-    for line in path.read_text(encoding="utf-8").splitlines():
-        match = pattern.match(line)
-        if match:
-            value = match.group(1).lower() in {"1", "true"}
-    return value
-
-
-def _config_string(path: Path, key: str, default: str = "") -> str:
-    value = default
-    pattern = re.compile(
-        rf'^\s*{re.escape(key)}\s*=\s*"([^"\r\n]*)"\s*(?:#.*)?$'
-    )
-    for line in path.read_text(encoding="utf-8").splitlines():
-        match = pattern.match(line)
-        if match:
-            value = match.group(1)
-    return value
-
-
 def chainwielder_checkpoint_seal(
     *,
     worktree: Path,
@@ -285,50 +149,13 @@ def chainwielder_checkpoint_seal(
     runtime_profile_overlay: dict[str, Any] | None = None,
     expected_runtime_profile_id: str | None = None,
 ) -> dict[str, str]:
-    """Return the immutable seal that must exist before config admission.
-
-    The runtime config is deliberately absent from this payload. Its final
-    bytes contain the resulting seal and are independently hash-bound by the
-    recurrence admission created afterward.
-    """
-
-    worktree = worktree.resolve()
-    head = str(_git(worktree, "rev-parse", "HEAD"))
-    tree = str(_git(worktree, "rev-parse", "HEAD^{tree}"))
-    payload = {
-        "schema": CHECKPOINT_SEAL_SCHEMA,
-        "fixture_id": CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
-        "purpose": FIXTURE_EXPANSION_PURPOSE,
-        "source_commit": head,
-        "source_tree": tree,
-        "binary_sha256": sha256_file(binary.resolve()),
-        "build_receipt_sha256": sha256_file(build_receipt.resolve()),
-        "decision_sha256": sha256_file(decision.resolve()),
-    }
-    authority_present = (
-        profile_manifest is not None,
-        runtime_profile_overlay is not None,
-        expected_runtime_profile_id is not None,
+    return build_chainwielder_checkpoint_seal(
+        worktree=worktree, binary=binary, build_receipt=build_receipt,
+        decision=decision, profile_manifest=profile_manifest,
+        runtime_profile_overlay=runtime_profile_overlay,
+        expected_runtime_profile_id=expected_runtime_profile_id,
+        git_fn=_git,
     )
-    if any(authority_present) and not all(authority_present):
-        raise RecurrenceAdmissionError("checkpoint_profile_authority_incomplete")
-    if all(authority_present):
-        assert profile_manifest is not None \
-            and runtime_profile_overlay is not None \
-            and expected_runtime_profile_id is not None
-        if not expected_runtime_profile_id:
-            raise RecurrenceAdmissionError("expected_runtime_profile_invalid")
-        payload.update({
-            "profile_manifest_sha256": sha256_file(profile_manifest.resolve()),
-            "expected_runtime_profile_id": expected_runtime_profile_id,
-            "runtime_profile_overlay_sha256": _canonical_object_sha256(
-                runtime_profile_overlay
-            ),
-        })
-    canonical = json.dumps(
-        payload, sort_keys=True, separators=(",", ":"),
-    ).encode("utf-8")
-    return {**payload, "seal_sha256": hashlib.sha256(canonical).hexdigest()}
 
 
 def native_path_checkpoint_seal(
@@ -337,36 +164,19 @@ def native_path_checkpoint_seal(
     runtime_profile_overlay: dict[str, Any],
     expected_runtime_profile_id: str,
 ) -> dict[str, str]:
-    """Seal one compiled case and the exact same-level expansion request set."""
-
-    if not isinstance(case_id, str) or not case_id.strip():
-        raise RecurrenceAdmissionError("native_path_checkpoint_case_invalid")
     decision_value = _load(decision.resolve(), "decision")
     requests = _native_path_checkpoint_request_contract(
         decision_value, label="native_path_checkpoint"
     )
-    worktree = worktree.resolve()
-    payload = {
-        "schema": CHECKPOINT_SEAL_SCHEMA,
-        "fixture_id": NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
-        "case_id": case_id,
-        "purpose": FIXTURE_EXPANSION_PURPOSE,
-        "source_commit": str(_git(worktree, "rev-parse", "HEAD")),
-        "source_tree": str(_git(worktree, "rev-parse", "HEAD^{tree}")),
-        "binary_sha256": sha256_file(binary.resolve()),
-        "build_receipt_sha256": sha256_file(build_receipt.resolve()),
-        "decision_sha256": sha256_file(decision.resolve()),
-        "fixture_expansion_requests_sha256": _canonical_object_sha256(requests),
-        "profile_manifest_sha256": sha256_file(profile_manifest.resolve()),
-        "expected_runtime_profile_id": expected_runtime_profile_id,
-        "runtime_profile_overlay_sha256": _canonical_object_sha256(
-            runtime_profile_overlay
-        ),
-    }
-    canonical = json.dumps(
-        payload, sort_keys=True, separators=(",", ":"),
-    ).encode("utf-8")
-    return {**payload, "seal_sha256": hashlib.sha256(canonical).hexdigest()}
+    return build_case_checkpoint_seal(
+        fixture_id=NATIVE_PATH_CHECKPOINT_FIXTURE_ID, case_id=case_id,
+        label="native_path_checkpoint", worktree=worktree, binary=binary,
+        build_receipt=build_receipt, decision=decision,
+        profile_manifest=profile_manifest,
+        runtime_profile_overlay=runtime_profile_overlay,
+        expected_runtime_profile_id=expected_runtime_profile_id,
+        requests=requests, git_fn=_git,
+    )
 
 
 def _verify_native_path_checkpoint_seal(
@@ -384,29 +194,62 @@ def _verify_native_path_checkpoint_seal(
         runtime_profile_overlay=runtime_profile_overlay,
         expected_runtime_profile_id=expected_runtime_profile_id,
     )
-    if seal != expected:
-        raise RecurrenceAdmissionError(
-            "native_path_checkpoint_seal_identity_mismatch"
-        )
-    prefix = NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX
-    expected_config = {
-        "FixtureId": NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
-        "CaseId": expected["case_id"],
-        "SealSha256": expected["seal_sha256"],
-        "SourceCommit": expected["source_commit"],
-    }
-    if not _config_bool(runtime_config, f"{prefix}.Enable"):
-        raise RecurrenceAdmissionError("native_path_checkpoint_config_disabled")
-    if not _config_bool(runtime_config, "BotWorld.ValidationRoute.Enable"):
-        raise RecurrenceAdmissionError(
-            "native_path_checkpoint_progress_sampling_disabled"
-        )
-    if any(
-        _config_string(runtime_config, f"{prefix}.{key}") != value
-        for key, value in expected_config.items()
-    ):
-        raise RecurrenceAdmissionError("native_path_checkpoint_config_mismatch")
-    return expected
+    return verify_case_checkpoint_config(
+        seal=seal, expected=expected, runtime_config=runtime_config,
+        prefix=NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX,
+        label="native_path_checkpoint",
+        fixture_id=NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+    )
+
+
+def magmaw_transfer_checkpoint_seal(
+    *, worktree: Path, binary: Path, build_receipt: Path, decision: Path,
+    case_id: str, profile_manifest: Path,
+    runtime_profile_overlay: dict[str, Any],
+    expected_runtime_profile_id: str,
+) -> dict[str, str]:
+    """Seal the one compiled map-bound authority-off transfer-lane case."""
+
+    decision_value = _load(decision.resolve(), "decision")
+    requests = _magmaw_transfer_checkpoint_contract(
+        decision_value, label="magmaw_transfer_checkpoint"
+    )
+    if case_id != MAGMAW_TRANSFER_CHECKPOINT_CASE_ID:
+        raise RecurrenceAdmissionError("magmaw_transfer_checkpoint_case_invalid")
+    return build_case_checkpoint_seal(
+        fixture_id=MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID, case_id=case_id,
+        label="magmaw_transfer_checkpoint", worktree=worktree,
+        binary=binary, build_receipt=build_receipt, decision=decision,
+        profile_manifest=profile_manifest,
+        runtime_profile_overlay=runtime_profile_overlay,
+        expected_runtime_profile_id=expected_runtime_profile_id,
+        requests=requests, git_fn=_git,
+        probe_receipt=worktree.resolve() / MAGMAW_TRANSFER_CHECKPOINT_PROBE,
+    )
+
+
+def _verify_magmaw_transfer_checkpoint_seal(
+    *, seal: object, worktree: Path, binary: Path, build_receipt: Path,
+    decision: Path, runtime_config: Path, profile_manifest: Path,
+    runtime_profile_overlay: dict[str, Any],
+    expected_runtime_profile_id: str,
+) -> dict[str, str]:
+    if not isinstance(seal, dict) or not isinstance(seal.get("case_id"), str):
+        raise RecurrenceAdmissionError("magmaw_transfer_checkpoint_seal_missing")
+    expected = magmaw_transfer_checkpoint_seal(
+        worktree=worktree, binary=binary, build_receipt=build_receipt,
+        decision=decision, case_id=seal["case_id"],
+        profile_manifest=profile_manifest,
+        runtime_profile_overlay=runtime_profile_overlay,
+        expected_runtime_profile_id=expected_runtime_profile_id,
+    )
+    return verify_case_checkpoint_config(
+        seal=seal, expected=expected, runtime_config=runtime_config,
+        prefix=MAGMAW_TRANSFER_CHECKPOINT_CONFIG_PREFIX,
+        label="magmaw_transfer_checkpoint",
+        fixture_id=MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID,
+        require_authority_off=True,
+    )
 
 
 def _verify_chainwielder_checkpoint_seal(
@@ -566,21 +409,33 @@ def create_recurrence_admission(
         chainwielder_checkpoint_targeted = (
             CHAINWIELDER_CHECKPOINT_FIXTURE_ID in target_ids
         )
+        magmaw_transfer_checkpoint_targeted = (
+            not chainwielder_checkpoint_targeted
+            and _magmaw_transfer_checkpoint_requested(decision_value)
+        )
         native_path_checkpoint_targeted = (
             not chainwielder_checkpoint_targeted
+            and not magmaw_transfer_checkpoint_targeted
             and _native_path_checkpoint_requested(decision_value)
         )
-        if native_path_checkpoint_targeted:
+        if magmaw_transfer_checkpoint_targeted:
+            _magmaw_transfer_checkpoint_contract(
+                decision_value, label="magmaw_transfer_checkpoint"
+            )
+        elif native_path_checkpoint_targeted:
             _native_path_checkpoint_request_contract(
                 decision_value, label="native_path_checkpoint"
             )
         checkpoint_targeted = (
-            chainwielder_checkpoint_targeted or native_path_checkpoint_targeted
+            chainwielder_checkpoint_targeted
+            or magmaw_transfer_checkpoint_targeted
+            or native_path_checkpoint_targeted
         )
     else:
         expansion_requests = []
         checkpoint_targeted = False
         chainwielder_checkpoint_targeted = False
+        magmaw_transfer_checkpoint_targeted = False
         native_path_checkpoint_targeted = False
     suite = _load(suite_receipt.resolve(), "suite_receipt")
     if suite.get("source_identity") != head:
@@ -635,7 +490,27 @@ def create_recurrence_admission(
             verified_overlay["runtime_profile_id"]
         ):
             raise RecurrenceAdmissionError("runtime_profile_not_bound_by_config")
-        if native_path_checkpoint_targeted:
+        if magmaw_transfer_checkpoint_targeted:
+            case_id = _config_string(
+                runtime_config,
+                f"{MAGMAW_TRANSFER_CHECKPOINT_CONFIG_PREFIX}.CaseId",
+            )
+            checkpoint_seal = _verify_magmaw_transfer_checkpoint_seal(
+                seal=magmaw_transfer_checkpoint_seal(
+                    worktree=worktree, binary=binary,
+                    build_receipt=build_receipt, decision=decision,
+                    case_id=case_id, profile_manifest=profile_manifest,
+                    runtime_profile_overlay=verified_overlay,
+                    expected_runtime_profile_id=expected_runtime_profile_id,
+                ),
+                worktree=worktree, binary=binary,
+                build_receipt=build_receipt, decision=decision,
+                runtime_config=runtime_config,
+                profile_manifest=profile_manifest,
+                runtime_profile_overlay=verified_overlay,
+                expected_runtime_profile_id=expected_runtime_profile_id,
+            )
+        elif native_path_checkpoint_targeted:
             case_id = _config_string(
                 runtime_config,
                 f"{NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX}.CaseId",
@@ -767,16 +642,27 @@ def verify_recurrence_admission(
         chainwielder_checkpoint_targeted = (
             CHAINWIELDER_CHECKPOINT_FIXTURE_ID in target_ids
         )
+        magmaw_transfer_checkpoint_targeted = (
+            not chainwielder_checkpoint_targeted
+            and _magmaw_transfer_checkpoint_requested(admission)
+        )
         native_path_checkpoint_targeted = (
             not chainwielder_checkpoint_targeted
+            and not magmaw_transfer_checkpoint_targeted
             and _native_path_checkpoint_requested(admission)
         )
-        if native_path_checkpoint_targeted:
+        if magmaw_transfer_checkpoint_targeted:
+            _magmaw_transfer_checkpoint_contract(
+                admission, label="magmaw_transfer_checkpoint"
+            )
+        elif native_path_checkpoint_targeted:
             _native_path_checkpoint_request_contract(
                 admission, label="native_path_checkpoint"
             )
         checkpoint_targeted = (
-            chainwielder_checkpoint_targeted or native_path_checkpoint_targeted
+            chainwielder_checkpoint_targeted
+            or magmaw_transfer_checkpoint_targeted
+            or native_path_checkpoint_targeted
         )
     else:
         if admission.get("build_admitted") is not True:
@@ -788,6 +674,7 @@ def verify_recurrence_admission(
                 raise RecurrenceAdmissionError(f"{key}_present")
         checkpoint_targeted = False
         chainwielder_checkpoint_targeted = False
+        magmaw_transfer_checkpoint_targeted = False
         native_path_checkpoint_targeted = False
 
     worktree = worktree.resolve()
@@ -909,7 +796,16 @@ def verify_recurrence_admission(
     checkpoint_seal = admission.get("checkpoint_seal")
     if checkpoint_targeted or profile_authority_recorded:
         assert profile_path is not None and verified_overlay is not None
-        if native_path_checkpoint_targeted:
+        if magmaw_transfer_checkpoint_targeted:
+            checkpoint_seal = _verify_magmaw_transfer_checkpoint_seal(
+                seal=checkpoint_seal, worktree=worktree,
+                binary=binary_path, build_receipt=build_receipt_path,
+                decision=decision_path, runtime_config=runtime_config,
+                profile_manifest=profile_path,
+                runtime_profile_overlay=verified_overlay,
+                expected_runtime_profile_id=expected_runtime_profile_id,
+            )
+        elif native_path_checkpoint_targeted:
             checkpoint_seal = _verify_native_path_checkpoint_seal(
                 seal=checkpoint_seal, worktree=worktree,
                 binary=binary_path, build_receipt=build_receipt_path,

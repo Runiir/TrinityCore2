@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import math
 import re
 from typing import Any
 
@@ -18,9 +19,14 @@ try:
     from tools.raid_program.recurrence_admission import (
         CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
         FIXTURE_EXPANSION_PURPOSE,
+        MAGMAW_TRANSFER_CHECKPOINT_ACTOR_GUID,
+        MAGMAW_TRANSFER_CHECKPOINT_AUTHORITY,
+        MAGMAW_TRANSFER_CHECKPOINT_CASE_ID,
+        MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID,
         NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
         RecurrenceAdmissionError,
         _fixture_expansion_contract,
+        _magmaw_transfer_checkpoint_contract,
         _native_path_checkpoint_request_contract,
     )
 except ModuleNotFoundError:
@@ -31,9 +37,14 @@ except ModuleNotFoundError:
     from recurrence_admission import (
         CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
         FIXTURE_EXPANSION_PURPOSE,
+        MAGMAW_TRANSFER_CHECKPOINT_ACTOR_GUID,
+        MAGMAW_TRANSFER_CHECKPOINT_AUTHORITY,
+        MAGMAW_TRANSFER_CHECKPOINT_CASE_ID,
+        MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID,
         NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
         RecurrenceAdmissionError,
         _fixture_expansion_contract,
+        _magmaw_transfer_checkpoint_contract,
         _native_path_checkpoint_request_contract,
     )
 
@@ -133,6 +144,46 @@ def native_path_checkpoint_arm_command(
     return (
         f"botautonativepathcheckpoint arm {actor_guid} {case_id} "
         f"{seal} {source}"
+    )
+
+
+def magmaw_transfer_checkpoint_arm_command(
+    recurrence_admission: dict[str, Any] | None,
+    actor_guid: int | None,
+) -> str | None:
+    """Build the coordinate-free command for the one sealed map-bound case."""
+
+    if recurrence_admission is None and actor_guid is None:
+        return None
+    if not isinstance(recurrence_admission, dict):
+        raise ValueError("magmaw_transfer_checkpoint_verified_admission_missing")
+    try:
+        _magmaw_transfer_checkpoint_contract(
+            recurrence_admission,
+            label="magmaw_transfer_checkpoint_verified_admission",
+        )
+    except RecurrenceAdmissionError as error:
+        raise ValueError(
+            "magmaw_transfer_checkpoint_verified_admission_invalid"
+        ) from error
+    seal = recurrence_admission.get("checkpoint_seal_sha256")
+    source = recurrence_admission.get("source_commit")
+    if (
+        recurrence_admission.get("valid") is not True
+        or recurrence_admission.get("purpose") != FIXTURE_EXPANSION_PURPOSE
+        or recurrence_admission.get("checkpoint_fixture_id")
+            != MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID
+        or recurrence_admission.get("checkpoint_case_id")
+            != MAGMAW_TRANSFER_CHECKPOINT_CASE_ID
+        or actor_guid != MAGMAW_TRANSFER_CHECKPOINT_ACTOR_GUID
+        or isinstance(actor_guid, bool)
+        or not isinstance(seal, str) or not re.fullmatch(r"[0-9a-f]{64}", seal)
+        or not isinstance(source, str) or not re.fullmatch(r"[0-9a-f]{40}", source)
+    ):
+        raise ValueError("magmaw_transfer_checkpoint_verified_admission_invalid")
+    return (
+        "botautomagmawtransfercheckpoint arm "
+        f"{actor_guid} {MAGMAW_TRANSFER_CHECKPOINT_CASE_ID} {seal} {source}"
     )
 
 
@@ -329,6 +380,209 @@ def observe_native_path_checkpoint_row(
     return commands
 
 
+MAGMAW_TRANSFER_START = (-345.872009, -224.343994, 193.126999)
+MAGMAW_TRANSFER_DESTINATION = (-345.872009, -218.343994, 193.126999)
+
+
+def _exact_position(value: object, expected: tuple[float, float, float]) -> bool:
+    if not isinstance(value, dict) or set(value) != {"x", "y", "z"}:
+        return False
+    return all(
+        isinstance(value.get(axis), (int, float))
+        and not isinstance(value.get(axis), bool)
+        and math.isfinite(float(value[axis]))
+        and math.isclose(float(value[axis]), target, abs_tol=0.0001)
+        for axis, target in zip(("x", "y", "z"), expected)
+    )
+
+
+def _magmaw_transfer_checkpoint_identity_rejections(
+    scheduler: Any, row: dict[str, Any], hold: dict[str, Any],
+) -> list[str]:
+    lifecycle = hold.get("checkpoint_lifecycle")
+    comparison = hold.get("config_identity_comparison")
+    reasons = scheduler._hold_rejections(hold)
+    exact_config_bools = (
+        "accepted", "fixture_configured_present", "fixture_requested_present",
+        "fixture_matches", "seal_configured_present", "seal_requested_present",
+        "seal_matches", "source_configured_present", "source_requested_present",
+        "source_matches", "binary_revision_present",
+        "binary_revision_format_valid", "binary_revision_matches_source",
+    )
+    if (
+        row.get("action") != "botauto_magmaw_transfer_lane_checkpoint"
+        or row.get("terminal_kind") != "fixture_checkpoint"
+        or row.get("certifies_gameplay_success") is not False
+        or row.get("certifies_boss_fidelity") is not False
+        or row.get("authority") != MAGMAW_TRANSFER_CHECKPOINT_AUTHORITY
+        or row.get("fixture_id") != MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID
+        or row.get("case_id") != MAGMAW_TRANSFER_CHECKPOINT_CASE_ID
+        or row.get("actor_guid") != MAGMAW_TRANSFER_CHECKPOINT_ACTOR_GUID
+        or row.get("task_authority_enabled") is not False
+        or not isinstance(lifecycle, dict)
+        or lifecycle.get("case_id") != MAGMAW_TRANSFER_CHECKPOINT_CASE_ID
+        or not isinstance(comparison, dict)
+        or comparison.get("failure_field") != ""
+        or any(comparison.get(field) is not True for field in exact_config_bools)
+    ):
+        reasons.append("magmaw_transfer_checkpoint_identity_invalid")
+    return list(dict.fromkeys(reasons))
+
+
+def _magmaw_transfer_checkpoint_terminal_rejections(
+    scheduler: Any, row: dict[str, Any], hold: dict[str, Any],
+) -> list[str]:
+    reasons = _magmaw_transfer_checkpoint_identity_rejections(
+        scheduler, row, hold,
+    )
+    lifecycle = hold.get("checkpoint_lifecycle")
+    lifecycle = lifecycle if isinstance(lifecycle, dict) else {}
+    stage = row.get("stage")
+    mirrored = (
+        "stage", "terminal", "queue_count", "candidate_attempt_count",
+        "native_submission_count", "planner_receipt_id", "progress_samples",
+        "outcome",
+    )
+    if (
+        row.get("terminal") is not True
+        or stage not in {"completed", "failed"}
+        or hold.get("phase") != "checkpoint_terminal"
+        or hold.get("checkpoint_terminal") is not True
+        or hold.get("checkpoint_identity_preserved") is not True
+        or hold.get("checkpoint_stage") != stage
+        or any(row.get(field) != lifecycle.get(field) for field in mirrored)
+    ):
+        reasons.append("magmaw_transfer_checkpoint_terminal_lifecycle_invalid")
+        return list(dict.fromkeys(reasons))
+    if stage == "completed":
+        if (
+            row.get("ok") is not True
+            or row.get("fixture_gate_passed") is not True
+            or row.get("queue_count") != 1
+            or row.get("candidate_attempt_count") != 1
+            or row.get("native_submission_count") != 1
+            or not _positive_int(row.get("planner_receipt_id"))
+            or not _positive_int(row.get("spline_id"))
+            or row.get("motion_master_slot") != 1
+            or row.get("motion_master_generator_type") != 8
+            or not isinstance(row.get("candidate_key"), str)
+            or not row["candidate_key"]
+            or row.get("candidate_key") != row.get("planner_candidate_key")
+            or not isinstance(row.get("progress_samples"), int)
+            or isinstance(row.get("progress_samples"), bool)
+            or row["progress_samples"] < 2
+            or row.get("decreasing_progress_samples")
+                != row.get("progress_samples")
+            or not isinstance(row.get("wrong_floor_samples"), int)
+            or isinstance(row.get("wrong_floor_samples"), bool)
+            or row["wrong_floor_samples"] < 0
+            or row.get("task_state") != "succeeded"
+            or row.get("outcome") != "magmaw_transfer_checkpoint_completed"
+            or not _exact_position(
+                row.get("requested_destination"), MAGMAW_TRANSFER_DESTINATION,
+            )
+            or not _exact_position(row.get("actor_start"), MAGMAW_TRANSFER_START)
+        ):
+            reasons.append("magmaw_transfer_checkpoint_success_payload_invalid")
+    else:
+        counts = (
+            row.get("queue_count"), row.get("candidate_attempt_count"),
+            row.get("native_submission_count"), row.get("planner_receipt_id"),
+            row.get("progress_samples"),
+            row.get("decreasing_progress_samples"),
+            row.get("wrong_floor_samples"),
+        )
+        if (
+            row.get("ok") is not False
+            or row.get("fixture_gate_passed") is not False
+            or any(
+                not isinstance(value, int) or isinstance(value, bool) or value < 0
+                for value in counts
+            )
+            or not isinstance(row.get("outcome"), str)
+            or not row["outcome"]
+            or row.get("outcome") == "magmaw_transfer_checkpoint_completed"
+        ):
+            reasons.append("magmaw_transfer_checkpoint_failure_payload_invalid")
+    return list(dict.fromkeys(reasons))
+
+
+def observe_magmaw_transfer_checkpoint_row(
+    scheduler: Any, row: dict[str, Any],
+) -> list[str]:
+    """Consume only the dedicated map-bound checkpoint response."""
+
+    hold = scheduler._hold_from_checkpoint(row)
+    if hold is None:
+        return scheduler._fail(
+            "controller_route_hold_checkpoint_receipt_missing"
+        )
+    if scheduler.phase == "awaiting_arm_ack":
+        rejections = _magmaw_transfer_checkpoint_identity_rejections(
+            scheduler, row, hold,
+        )
+        if (
+            row.get("ok") is not True
+            or row.get("terminal") is not False
+            or row.get("stage") != "armed"
+            or row.get("fixture_gate_passed") is not False
+        ):
+            rejections.append("magmaw_transfer_checkpoint_arm_ack_invalid")
+        commands = scheduler._fail(rejections[0]) if rejections \
+            else scheduler._observe_arm_ack(row)
+    elif scheduler.phase == "awaiting_terminal":
+        if row.get("terminal") is not True:
+            if (
+                row.get("ok") is not True
+                or row.get("stage") not in {
+                    "armed", "queued", "native_submitted", "progressing",
+                }
+                or _magmaw_transfer_checkpoint_identity_rejections(
+                    scheduler, row, hold,
+                )
+            ):
+                return scheduler._fail(
+                    "magmaw_transfer_checkpoint_progress_payload_invalid"
+                )
+            commands = []
+        else:
+            rejections = _magmaw_transfer_checkpoint_terminal_rejections(
+                scheduler, row, hold,
+            )
+            if rejections:
+                return scheduler._fail(rejections[0])
+            scheduler._terminal_count = 1
+            scheduler._terminal_stage = row["stage"]
+            scheduler._terminal_lifecycle = copy.deepcopy(
+                hold["checkpoint_lifecycle"]
+            )
+            scheduler._terminal_observation = copy.deepcopy(row)
+            scheduler._record(
+                "checkpoint_terminal_success"
+                if row["stage"] == "completed"
+                else "checkpoint_terminal_failure",
+                row, hold,
+            )
+            scheduler.phase = (
+                "complete" if row["stage"] == "completed"
+                else "checkpoint_terminal_failed"
+            )
+            commands = []
+    else:
+        return scheduler._fail(
+            "magmaw_transfer_checkpoint_duplicate_or_stale_receipt"
+        )
+    if (
+        scheduler.phase == "awaiting_terminal"
+        and not scheduler.failed
+        and not commands
+    ):
+        command = scheduler._checkpoint_terminal_status_command
+        scheduler.command_transcript.append(command)
+        return [command]
+    return commands
+
+
 def checkpoint_controller_dialect(
     recurrence_admission: dict[str, Any] | None,
     actor_guid: int | None,
@@ -347,6 +601,29 @@ def checkpoint_controller_dialect(
                 recurrence_admission, actor_guid,
             ),
             "scheduler_kwargs": {},
+        }
+    if fixture_id == MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID:
+        arm_command = magmaw_transfer_checkpoint_arm_command(
+            recurrence_admission, actor_guid,
+        )
+        return {
+            "fixture_id": fixture_id,
+            "arm_command": arm_command,
+            "scheduler_kwargs": {
+                "checkpoint_action": (
+                    "botauto_magmaw_transfer_lane_checkpoint"
+                ),
+                "checkpoint_arm_command": arm_command,
+                "checkpoint_receipt_field": "case_id",
+                "checkpoint_receipt_value": MAGMAW_TRANSFER_CHECKPOINT_CASE_ID,
+                "lifecycle_rejections": lambda _hold: [],
+                "checkpoint_observer": observe_magmaw_transfer_checkpoint_row,
+                "checkpoint_terminal_status_command": (
+                    "botautomagmawtransfercheckpoint status"
+                ),
+                "release_after_terminal": False,
+                "checkpoint_terminal_from_status": False,
+            },
         }
     if fixture_id == NATIVE_PATH_CHECKPOINT_FIXTURE_ID:
         arm_command = native_path_checkpoint_arm_command(

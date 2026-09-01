@@ -379,7 +379,10 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
         "recurrence_admission": recurrence_admission,
         "chainwielder_checkpoint_arm": {
             "required": checkpoint_arm_command is not None,
-            "actor_guid": args.chainwielder_checkpoint_actor_guid,
+            "actor_guid": (
+                getattr(args, "magmaw_transfer_checkpoint_actor_guid", None)
+                or args.chainwielder_checkpoint_actor_guid
+            ),
             "seal_sha256": (
                 recurrence_admission.get("checkpoint_seal_sha256")
                 if isinstance(recurrence_admission, dict) else None

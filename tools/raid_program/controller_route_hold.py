@@ -133,6 +133,7 @@ class ControllerRouteHoldScheduler:
         ] | None = None,
         checkpoint_terminal_status_command: str = "",
         release_after_terminal: bool = True,
+        checkpoint_terminal_from_status: bool = True,
     ):
         identity.validate()
         self.identity = identity
@@ -160,6 +161,9 @@ class ControllerRouteHoldScheduler:
             checkpoint_terminal_status_command
         )
         self._release_after_terminal = release_after_terminal
+        self._checkpoint_terminal_from_status = (
+            checkpoint_terminal_from_status
+        )
         self.phase = "ready"
         self.failure_reason: str | None = None
         self.command_counts = {
@@ -495,6 +499,8 @@ class ControllerRouteHoldScheduler:
             if hold.get("phase") == "armed":
                 if hold.get("arm_ack_count") != 1:
                     return self._fail("controller_route_hold_arm_ack_lost")
+                return []
+            if not self._checkpoint_terminal_from_status:
                 return []
             return self._observe_checkpoint_terminal(hold)
         if self.phase == "awaiting_release_ack":
