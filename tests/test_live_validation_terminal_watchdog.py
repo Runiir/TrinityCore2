@@ -20,14 +20,29 @@ def _report(runtime: dict, *, failure_reason: str = "") -> dict:
         "runtime_profile": scenario_id,
         "profile_generation": 3,
         "profile_content_hash": profile_hash,
+        "group_guid": 501,
+        "instance_id": 23,
+        "members": [
+            {
+                "guid": 1000 + index,
+                "group_guid": 501,
+                "instance_id": 23,
+            }
+            for index in range(10)
+        ],
     }
     return {
         "returncode": 0,
         "timed_out": False,
+        "expected_cohort_id": "default",
         "status": {
             "ok": True,
             "action": "botauto_status",
             "active": True,
+            "cohort_id": "default",
+            "active_bots": 10,
+            "target_bots": 10,
+            "lease_count": 10,
             "attempt_id": 7,
             "server_epoch": 41,
             "active_profile": scenario_id,
@@ -46,6 +61,19 @@ def _report(runtime: dict, *, failure_reason: str = "") -> dict:
                 "admission_receipt": receipt,
                 "expected_size": 10,
                 "active_size": 10,
+                "provisioned_member_count": 10,
+                "roster_complete": True,
+                "unique_leases": True,
+                "group_guid": 501,
+                "instance_id": 23,
+                "roster": [
+                    {
+                        "guid": 1000 + index,
+                        "active": True,
+                        "lease_owned": True,
+                    }
+                    for index in range(10)
+                ],
                 "alive_size": 10,
                 "wipe_state": "engaged",
                 "wipe_generation": 0,
@@ -55,6 +83,7 @@ def _report(runtime: dict, *, failure_reason: str = "") -> dict:
         },
         "validation_context": {"scenario_id": scenario_id},
         "evidence": {"manifest_completion_evidence": []},
+        "validation_route_manifest": {},
         "completion_reason": "incomplete_evidence",
         "watchdog_state": {"progress_total": 0},
     }
@@ -168,17 +197,103 @@ def test_action_gate_requires_exact_botauto_status_identity() -> None:
     assert raid_terminal_watchdog_failure(report) is None
 
 
+def test_same_profile_concurrent_cohort_group_or_instance_cannot_terminalize() -> None:
+    def terminal_report() -> dict:
+        return _report(
+            {"admission_phase": "terminal", "bot_actions_enabled": False},
+            failure_reason="validation_active_hunter_pet_admission_identity_drift",
+        )
+
+    wrong_cohort = terminal_report()
+    wrong_cohort["status"]["cohort_id"] = "concurrent"
+    assert raid_terminal_watchdog_failure(wrong_cohort) is None
+
+    wrong_group = terminal_report()
+    wrong_group["status"]["raid_runtime"]["group_guid"] = 777
+    assert raid_terminal_watchdog_failure(wrong_group) is None
+
+    wrong_instance = terminal_report()
+    wrong_instance["status"]["raid_runtime"]["instance_id"] = 24
+    assert raid_terminal_watchdog_failure(wrong_instance) is None
+
+    wrong_roster = terminal_report()
+    wrong_roster["status"]["raid_runtime"]["roster"][0]["guid"] = 9001
+    assert raid_terminal_watchdog_failure(wrong_roster) is None
+
+
+def test_underfilled_or_nonunique_cohort_cannot_terminalize() -> None:
+    underfilled = _report(
+        {
+            "admission_phase": "terminal",
+            "bot_actions_enabled": False,
+            "active_size": 9,
+        },
+        failure_reason="validation_active_hunter_pet_admission_identity_drift",
+    )
+    assert raid_terminal_watchdog_failure(underfilled) is None
+
+    nonunique = _report(
+        {
+            "admission_phase": "terminal",
+            "bot_actions_enabled": False,
+            "unique_leases": False,
+        },
+        failure_reason="validation_active_hunter_pet_admission_identity_drift",
+    )
+    assert raid_terminal_watchdog_failure(nonunique) is None
+
+
 def test_successful_clear_precedes_later_action_gate_failure() -> None:
     report = _report(
         {"admission_phase": "terminal", "bot_actions_enabled": False},
         failure_reason="validation_active_hunter_pet_admission_identity_drift",
     )
     report["completion_reason"] = "validation_route_manifest_complete"
-    report["evidence"]["manifest_completion_evidence"] = [
-        {"route_node_id": "bwd.magmaw.encounter", "route_generation": 4}
-    ]
+    report["validation_route_manifest"] = {
+        "routes": [
+            {
+                "route_node_id": "bwd.magmaw.encounter",
+                "route_generation": 4,
+                "kind": "boss",
+            }
+        ]
+    }
+    scope = {"route_node_id": "bwd.magmaw.encounter", "route_generation": 4}
+    report["evidence"].update(
+        {
+            "manifest_completion_evidence": [scope],
+            "route_terminal_evidence": [scope],
+            "real_boss_kill_evidence": [scope],
+        }
+    )
 
     assert raid_terminal_watchdog_failure(report) is None
+
+
+def test_incomplete_or_wrong_manifest_completion_does_not_hide_action_gate() -> None:
+    report = _report(
+        {"admission_phase": "terminal", "bot_actions_enabled": False},
+        failure_reason="validation_active_hunter_pet_admission_identity_drift",
+    )
+    report["completion_reason"] = "validation_route_manifest_complete"
+    report["validation_route_manifest"] = {
+        "routes": [
+            {
+                "route_node_id": "bwd.magmaw.encounter",
+                "route_generation": 4,
+                "kind": "boss",
+            }
+        ]
+    }
+    report["evidence"]["manifest_completion_evidence"] = [
+        {"route_node_id": "wrong.node", "route_generation": 4}
+    ]
+
+    terminal = raid_terminal_watchdog_failure(report)
+    assert terminal is not None
+    assert terminal["failure_reason"] == (
+        "validation_active_hunter_pet_admission_identity_drift"
+    )
 
 
 def test_terminal_gate_still_captures_and_cleans_up(tmp_path) -> None:

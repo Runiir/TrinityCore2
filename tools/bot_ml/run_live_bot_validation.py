@@ -4559,12 +4559,31 @@ def raid_terminal_watchdog_failure(
     if int(report.get("returncode") or 0) != 0 or bool(report.get("timed_out")):
         return None
     evidence = report.get("evidence")
-    if (
-        isinstance(evidence, Mapping)
-        and evidence.get("manifest_completion_evidence")
+    manifest = report.get("validation_route_manifest")
+    manifest = manifest if isinstance(manifest, Mapping) else {}
+    routes = manifest.get("routes")
+    strict_clear = False
+    complete_manifest_shape = (
+        isinstance(routes, list)
+        and bool(routes)
+        and all(
+            isinstance(route, Mapping)
+            and bool(str(route.get("route_node_id") or ""))
+            for route in routes
+        )
+    )
+    if isinstance(evidence, Mapping) and complete_manifest_shape:
+        strict = strict_manifest_evidence(dict(evidence), dict(manifest))
+        strict_clear = (
+            not strict["missing_terminal_route_nodes"]
+            and not strict["missing_boss_route_nodes"]
+        )
+    independently_accepted_clear = (
+        bool(report.get("acceptable_final_evidence"))
         and str(report.get("completion_reason") or "")
         == "validation_route_manifest_complete"
-    ):
+    )
+    if strict_clear or independently_accepted_clear:
         # A later status-side lifecycle failure cannot overwrite a proven
         # ordered clear terminal from this exact capture.
         return None
@@ -4594,6 +4613,7 @@ def raid_terminal_watchdog_failure(
         return None
     context = report.get("validation_context")
     context = context if isinstance(context, Mapping) else {}
+    expected_cohort_id = str(report.get("expected_cohort_id") or "")
     scenario_id = str(context.get("scenario_id") or "")
     receipt_scenario_id = str(receipt.get("scenario_id") or "")
     active_profile = str(status.get("active_profile") or "")
@@ -4603,6 +4623,8 @@ def raid_terminal_watchdog_failure(
         and status.get("ok") is True
         and status.get("active") is True
         and runtime.get("active") is True
+        and bool(expected_cohort_id)
+        and str(status.get("cohort_id") or "") == expected_cohort_id
         and attempt_id > 0
         and attempt_id == runtime_attempt_id == receipt_attempt_id
         and server_epoch > 0
@@ -4618,7 +4640,70 @@ def raid_terminal_watchdog_failure(
         and profile_content_hash == str(runtime.get("profile_content_hash") or "")
         and profile_content_hash == str(receipt.get("profile_content_hash") or "")
     )
-    if not identity_bound:
+    try:
+        expected_size = int(runtime.get("expected_size") or 0)
+        active_size = int(runtime.get("active_size") or 0)
+        provisioned_size = int(runtime.get("provisioned_member_count") or 0)
+        reported_active_size = int(
+            status.get("active_bots") or status.get("bots") or 0
+        )
+        target_size = int(status.get("target_bots") or 0)
+        lease_count = int(status.get("lease_count") or 0)
+        group_guid = int(runtime.get("group_guid") or 0)
+        receipt_group_guid = int(receipt.get("group_guid") or 0)
+        instance_id = int(runtime.get("instance_id") or 0)
+        receipt_instance_id = int(receipt.get("instance_id") or 0)
+    except (TypeError, ValueError):
+        return None
+    runtime_roster = runtime.get("roster")
+    receipt_members = receipt.get("members")
+    try:
+        runtime_roster_bound = (
+            isinstance(runtime_roster, list)
+            and len(runtime_roster) == expected_size
+            and all(
+                isinstance(member, Mapping)
+                and int(member.get("guid") or 0) > 0
+                and member.get("active") is True
+                and member.get("lease_owned") is True
+                for member in runtime_roster
+            )
+        )
+        receipt_roster_bound = (
+            isinstance(receipt_members, list)
+            and len(receipt_members) == expected_size
+            and all(
+                isinstance(member, Mapping)
+                and int(member.get("guid") or 0) > 0
+                and int(member.get("group_guid") or 0) == group_guid
+                and int(member.get("instance_id") or 0) == instance_id
+                for member in receipt_members
+            )
+        )
+        roster_guids_match = (
+            runtime_roster_bound
+            and receipt_roster_bound
+            and {int(member["guid"]) for member in runtime_roster}
+            == {int(member["guid"]) for member in receipt_members}
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
+    cohort_bound = (
+        expected_size > 0
+        and active_size == expected_size
+        and provisioned_size == expected_size
+        and reported_active_size == expected_size
+        and target_size == expected_size
+        and lease_count == expected_size
+        and runtime.get("roster_complete") is True
+        and runtime.get("unique_leases") is True
+        and group_guid > 0
+        and group_guid == receipt_group_guid
+        and instance_id > 0
+        and instance_id == receipt_instance_id
+        and roster_guids_match
+    )
+    if not identity_bound or not cohort_bound:
         return None
 
     failure_reason = str(status.get("failure_reason") or "").strip()
@@ -5330,6 +5415,15 @@ def heartbeat_commands_from_script(script: str) -> tuple[list[str], list[str], l
     return startup, heartbeat, cleanup
 
 
+def expected_cohort_id_from_heartbeat_commands(commands: Sequence[str]) -> str:
+    for command in commands:
+        tokens = command.split()
+        if tokens[:2] != [".botauto", "status"]:
+            continue
+        return tokens[2] if len(tokens) >= 3 else "default"
+    return ""
+
+
 def rolling_heartbeat_report(
     output_dir: Path,
     heartbeat_index: int,
@@ -5346,6 +5440,7 @@ def rolling_heartbeat_report(
     max_death_loops: int,
     validation_route_manifest: dict[str, Any] | None = None,
     completion_reason_override: str = "",
+    expected_cohort_id: str = "",
 ) -> dict[str, Any]:
     report = live_validation_report(
         output,
@@ -5365,6 +5460,7 @@ def rolling_heartbeat_report(
         report["completion_reason"] = completion_reason_override
     report["heartbeat_index"] = heartbeat_index
     report["heartbeat_generated_at_unix"] = int(time.time())
+    report["expected_cohort_id"] = expected_cohort_id
     raid_terminal = raid_terminal_watchdog_failure(report)
     if raid_terminal:
         apply_raid_terminal_watchdog(report, raid_terminal)
@@ -5436,6 +5532,7 @@ def run_transport_completion_watchdog(
         None if timeout_sec is None else time.monotonic() + timeout_sec
     )
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
+    expected_cohort_id = expected_cohort_id_from_heartbeat_commands(heartbeat_commands)
     output_parts = WatchdogOutputBuffer(heartbeat_commands=heartbeat_commands)
     heartbeat_index = 0
     last_progress_total = -1
@@ -5539,6 +5636,7 @@ def run_transport_completion_watchdog(
             scenario_reports, validation_context, duration_policy, heartbeat_sec,
             no_progress_window_sec, max_repeated_decisions, max_death_loops,
             validation_route_manifest,
+            expected_cohort_id=expected_cohort_id,
         )
         raid_terminal = raid_terminal_watchdog_failure(report)
         if raid_terminal:
@@ -5627,6 +5725,7 @@ def run_worldserver_completion_watchdog(
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
+    expected_cohort_id = expected_cohort_id_from_heartbeat_commands(heartbeat_commands)
     output_parts = WatchdogOutputBuffer(heartbeat_commands=heartbeat_commands)
     heartbeat_index = 0
     last_progress_total = -1
@@ -5728,6 +5827,7 @@ def run_worldserver_completion_watchdog(
                     max_death_loops,
                     validation_route_manifest,
                     completion_reason_override="worldserver_process_exit",
+                    expected_cohort_id=expected_cohort_id,
                 )
                 return joined_output(), process.returncode if process.returncode is not None else 0, False, command
 
@@ -5768,6 +5868,7 @@ def run_worldserver_completion_watchdog(
                 max_repeated_decisions,
                 max_death_loops,
                 validation_route_manifest,
+                expected_cohort_id=expected_cohort_id,
             )
             raid_terminal = raid_terminal_watchdog_failure(report)
             if raid_terminal:
