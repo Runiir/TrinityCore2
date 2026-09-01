@@ -1,7 +1,9 @@
 from pathlib import Path
 
 from tools.raid_program.capture_phase1_provisioning_readback import (
+    expected_hunter_pet_rows,
     load_materialized_readback_contract,
+    validate_hunter_pet_readback,
     validate_readback,
 )
 from tools.bot_ml.build_validation_provisioning import VALIDATION_FULL_STAT_SEED
@@ -137,6 +139,44 @@ def test_materialized_magmaw_readback_contract_is_exact_and_boss_scoped():
         "raid_dps_1", "raid_dps_2", "raid_dps_3", "raid_dps_4", "raid_dps_5",
     }
     assert contract["shard"]["predecessor_state"]["precompleted_boss_entries"] == []
+    assert expected_hunter_pet_rows(contract["expected"]) == [{
+        "id": 8700009,
+        "entry": 8959,
+        "owner": 30009,
+        "active": 1,
+        "slot": 0,
+        "pet_type": 1,
+    }]
+
+
+def test_hunter_character_pet_readback_is_exact_and_field_typed():
+    expected = [{
+        "id": 8700009, "entry": 8959, "owner": 30009,
+        "active": 1, "slot": 0, "pet_type": 1,
+    }]
+    assert validate_hunter_pet_readback(expected, [dict(expected[0])]) == []
+    assert validate_hunter_pet_readback(expected, []) == [
+        "hunter_character_pet:8700009:missing",
+    ]
+    for field, wrong in (
+        ("owner", 20009), ("entry", 1), ("active", 0),
+        ("slot", 2), ("pet_type", 0),
+    ):
+        observed = {**expected[0], field: wrong}
+        assert validate_hunter_pet_readback(expected, [observed]) == [
+            f"hunter_character_pet:8700009:{field}",
+        ]
+
+
+def test_hunter_character_pet_readback_query_and_payload_are_wired():
+    source = (
+        ROOT / "tools/raid_program/capture_phase1_provisioning_readback.py"
+    ).read_text(encoding="utf-8")
+    assert "SELECT id, entry, owner, active, slot, PetType AS pet_type" in source
+    assert "FROM character_pet WHERE id IN" in source
+    assert '"expected_hunter_character_pet_rows": expected_hunter_pets' in source
+    assert '"observed_hunter_character_pet_rows": observed_hunter_pets' in source
+    assert '"schema": "cata_raid_phase1_bwd_provisioning_readback_v6"' in source
 
 
 def test_materialized_canonical_readback_contract_is_positive_and_exact():

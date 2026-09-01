@@ -16,6 +16,7 @@ def test_hunter_pet_identity_contract_is_compiled_and_behavioral() -> None:
 
 #include <array>
 #include <cassert>
+#include <string>
 
 using namespace BotHunterPetIdentityContract;
 
@@ -139,6 +140,9 @@ int main()
     expectIdentityFailure(identity, PersistentIdentityStatus::CharmInfoMissing);
     identity = validIdentity(); identity.PersistentRowPresent = false;
     expectIdentityFailure(identity, PersistentIdentityStatus::PersistentRowMissing);
+    assert(std::string(PersistentIdentityFailureReason(
+        PersistentIdentityStatus::PersistentRowMissing)) ==
+        "validation_active_hunter_pet_observation_persistent_row_missing");
     identity = validIdentity(); identity.StoredTypeHunter = false;
     expectIdentityFailure(identity, PersistentIdentityStatus::StoredTypeMismatch);
     identity = validIdentity(); identity.LiveTypeHunter = false;
@@ -147,8 +151,14 @@ int main()
     expectIdentityFailure(identity, PersistentIdentityStatus::NotPermanent);
     identity = validIdentity(); identity.LiveOwnerMatches = false;
     expectIdentityFailure(identity, PersistentIdentityStatus::LiveOwnerMismatch);
+    assert(std::string(PersistentIdentityFailureReason(
+        PersistentIdentityStatus::LiveOwnerMismatch)) ==
+        "validation_active_hunter_pet_observation_live_owner_mismatch");
     identity = validIdentity(); identity.StoredOwnerMatches = false;
     expectIdentityFailure(identity, PersistentIdentityStatus::StoredOwnerMismatch);
+    assert(std::string(PersistentIdentityFailureReason(
+        PersistentIdentityStatus::StoredOwnerMismatch)) ==
+        "validation_active_hunter_pet_observation_stored_owner_mismatch");
     identity = validIdentity(); identity.StoredPetId = 0;
     expectIdentityFailure(identity, PersistentIdentityStatus::StoredPetIdMissing);
     identity = validIdentity(); identity.StoredEntry = 0;
@@ -220,6 +230,16 @@ def test_runtime_observer_uses_live_pet_number_not_mutable_current_flag() -> Non
         observer.index("ObserveActiveOrdinaryHunterPetStatus") :
     ]
     assert "ClassifyPersistentIdentity(facts)" in observer
+    for assignment in (
+        "snapshot.BotGuidCounter = bot->GetGUID().GetCounter()",
+        "snapshot.LivePetOwnerCounter = snapshot.PetOwnerGuid.GetCounter()",
+        "snapshot.StoredOwner = stored ? stored->Owner : 0",
+        "snapshot.StoredPetId = stored ? stored->PetId : 0",
+        "snapshot.StoredPetEntry = stored ? stored->CreatureId : 0",
+        "snapshot.LivePetId = snapshot.PetId",
+        "snapshot.LivePetEntry = snapshot.PetEntry",
+    ):
+        assert assignment in observer
     assert "ClassifyFrozenReceipt(comparison)" in cohort
     assert "PersistentIdentityFailureReason" in cohort
     assert "FrozenReceiptFailureReason" in cohort

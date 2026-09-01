@@ -25,6 +25,13 @@ enum class HunterPetObservationStatus : uint8
 
 struct HunterPetIdentitySnapshot
 {
+    uint64 BotGuidCounter = 0;
+    uint64 LivePetOwnerCounter = 0;
+    uint64 StoredOwner = 0;
+    uint32 StoredPetId = 0;
+    uint32 StoredPetEntry = 0;
+    uint32 LivePetId = 0;
+    uint32 LivePetEntry = 0;
     uint32 PetId = 0;
     uint32 PetEntry = 0;
     ObjectGuid PetOwnerGuid;

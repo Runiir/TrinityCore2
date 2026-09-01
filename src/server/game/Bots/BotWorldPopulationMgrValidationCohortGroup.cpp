@@ -753,6 +753,13 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 member.RuntimeHunterObserverReason = slot.AdmissionRuntimeHunterObserverReason;
                 member.SharedHunterObserverStatus = slot.AdmissionSharedHunterObserverStatus;
                 member.SharedHunterObserverReason = slot.AdmissionSharedHunterObserverReason;
+                member.SharedHunterBotGuidCounter = slot.AdmissionSharedHunterBotGuidCounter;
+                member.SharedHunterLiveOwnerCounter = slot.AdmissionSharedHunterLiveOwnerCounter;
+                member.SharedHunterStoredOwner = slot.AdmissionSharedHunterStoredOwner;
+                member.SharedHunterStoredPetId = slot.AdmissionSharedHunterStoredPetId;
+                member.SharedHunterLivePetId = slot.AdmissionSharedHunterLivePetId;
+                member.SharedHunterStoredEntry = slot.AdmissionSharedHunterStoredEntry;
+                member.SharedHunterLiveEntry = slot.AdmissionSharedHunterLiveEntry;
                 memberReceipts.push_back(std::move(member));
             }
             TC_LOG_ERROR("server",

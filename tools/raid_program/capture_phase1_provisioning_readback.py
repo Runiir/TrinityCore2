@@ -139,6 +139,46 @@ def _single(rows: list[dict[str, Any]], key: str, value: str) -> dict[str, Any]:
     return matches[0]
 
 
+def expected_hunter_pet_rows(expected: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for member in expected:
+        pet = member.get("pet")
+        if int(member.get("class") or 0) != 3 or not isinstance(pet, dict):
+            continue
+        rows.append({
+            "id": int(member.get("expected_pet_id") or 0),
+            "entry": int(pet.get("entry") or 0),
+            "owner": int(member.get("guid") or member.get("expected_character_guid") or 0),
+            "active": int(pet.get("active", 1)),
+            "slot": int(pet.get("slot", 0)),
+            "pet_type": 1,
+        })
+    return rows
+
+
+def validate_hunter_pet_readback(
+    expected: list[dict[str, Any]], observed: list[dict[str, Any]],
+) -> list[str]:
+    reasons: list[str] = []
+    expected_by_id = {int(row["id"]): row for row in expected}
+    observed_by_id = {int(row["id"]): row for row in observed}
+    if len(expected_by_id) != len(expected):
+        reasons.append("hunter_character_pet_expected_duplicate_id")
+    if len(observed_by_id) != len(observed):
+        reasons.append("hunter_character_pet_observed_duplicate_id")
+    for pet_id in sorted(set(expected_by_id) - set(observed_by_id)):
+        reasons.append(f"hunter_character_pet:{pet_id}:missing")
+    for pet_id in sorted(set(observed_by_id) - set(expected_by_id)):
+        reasons.append(f"hunter_character_pet:{pet_id}:unexpected")
+    for pet_id in sorted(set(expected_by_id) & set(observed_by_id)):
+        expected_row = expected_by_id[pet_id]
+        observed_row = observed_by_id[pet_id]
+        for field in ("owner", "id", "entry", "active", "slot", "pet_type"):
+            if int(observed_row.get(field) or 0) != int(expected_row[field]):
+                reasons.append(f"hunter_character_pet:{pet_id}:{field}")
+    return sorted(set(reasons))
+
+
 def load_materialized_readback_contract(
     provisioning_config: Path,
     scenario_config: Path,
@@ -163,7 +203,7 @@ def load_materialized_readback_contract(
             source = provisioned_by_name.get(name)
             if source is None:
                 raise ValueError(f"canonical_bwd_roster_name_missing:{name}")
-            expected.append({
+            expected_row = {
                 **frozen_row,
                 "class": int(source["class"]),
                 "account": str(source["account"]),
@@ -172,7 +212,14 @@ def load_materialized_readback_contract(
                 "runtime_profile_id": scenario_id,
                 "pool_tag": scenario_id,
                 "experiment_tags": scenario_id,
-            })
+            }
+            if source.get("pet"):
+                expected_row["pet"] = source["pet"]
+                expected_row["expected_pet_id"] = (
+                    int(base_config.get("pet_guid_base", 0))
+                    + int(source["pet"].get("id_offset", 0))
+                )
+            expected.append(expected_row)
         shard = None
         source_start = scenario["start_position"]
     else:
@@ -220,11 +267,13 @@ def main() -> int:
     expected = contract["expected"]
     scenario = contract["scenario"]
     expected_by_name = {str(row["name"]): row for row in expected}
+    expected_hunter_pets = expected_hunter_pet_rows(expected)
     names = [str(row["name"]) for row in expected]
     character_url = database_url_from_worldserver_conf(args.worldserver_conf, "CharacterDatabaseInfo")
     connection = connect_mysql(character_url)
     character_instance_rows = group_member_rows = ghost_aura_rows = corpse_rows = corpse_phase_rows = 0
     group_instance_rows = group_rows = 0
+    observed_hunter_pets: list[dict[str, Any]] = []
     try:
         placeholders = ", ".join(["%s"] * len(names))
         with connection.cursor() as cursor:
@@ -255,6 +304,15 @@ def main() -> int:
                 group_instance_rows = int(cursor.fetchone()["count"])
                 cursor.execute("SELECT COUNT(*) AS count FROM groups g LEFT JOIN group_member gm ON gm.guid = g.guid " + f"WHERE g.leaderGuid IN ({guid_placeholders}) OR gm.memberGuid IN ({guid_placeholders})", tuple(guids) + tuple(guids))
                 group_rows = int(cursor.fetchone()["count"])
+            pet_ids = [int(row["id"]) for row in expected_hunter_pets]
+            if pet_ids:
+                pet_placeholders = ", ".join(["%s"] * len(pet_ids))
+                cursor.execute(
+                    "SELECT id, entry, owner, active, slot, PetType AS pet_type "
+                    f"FROM character_pet WHERE id IN ({pet_placeholders}) ORDER BY id",
+                    tuple(pet_ids),
+                )
+                observed_hunter_pets = [dict(row) for row in cursor.fetchall()]
     finally:
         connection.close()
 
@@ -290,8 +348,10 @@ def main() -> int:
         group_instance_rows=group_instance_rows,
         group_rows=group_rows,
     )
+    reasons = sorted(set(reasons + validate_hunter_pet_readback(
+        expected_hunter_pets, observed_hunter_pets)))
     payload = {
-        "schema": "cata_raid_phase1_bwd_provisioning_readback_v5",
+        "schema": "cata_raid_phase1_bwd_provisioning_readback_v6",
         "scenario_id": args.scenario_id,
         "passed": not reasons,
         "reasons": reasons,
@@ -304,6 +364,8 @@ def main() -> int:
         },
         "expected_roster": expected,
         "observed_roster": observed,
+        "expected_hunter_character_pet_rows": expected_hunter_pets,
+        "observed_hunter_character_pet_rows": observed_hunter_pets,
         "identity_contract_provenance": {
             "database_observed": ["guid", "account_id", "account_registry_id", "account", "name", "role", "class_spec", "class_id", "pool_tag"],
             "contract_derived": ["canonical_roster_slot_id", "roster_slot_id", "runtime_profile_id"],
@@ -317,7 +379,7 @@ def main() -> int:
         "group_instance_rows": group_instance_rows,
         "group_rows": group_rows,
         "selected_name_count": len(names),
-        "query_contract": "exact selected ten names joined to character_bot_pool plus exact selected ten auth usernames; ordered; exact character-instance/group/ghost-aura/corpse/corpse-phase residue counts",
+        "query_contract": "exact selected ten names joined to character_bot_pool plus exact selected ten auth usernames; exact expected hunter character_pet IDs with owner/id/entry/active/slot/PetType; ordered; exact character-instance/group/ghost-aura/corpse/corpse-phase residue counts",
     }
     write_json(args.output, payload)
     print(json.dumps(payload, sort_keys=True))

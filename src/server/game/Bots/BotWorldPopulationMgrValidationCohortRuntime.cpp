@@ -383,6 +383,13 @@ void BotWorldPopulationMgr::UpdateValidationCohortRaidRuntime(
                 BotWorldPopulationMgrCalibrationIdentity::ObserveActiveOrdinaryHunterPetStatus(
                     bot, sharedPet);
             slot.AdmissionSharedHunterObserverStatus = uint8(sharedStatus);
+            slot.AdmissionSharedHunterBotGuidCounter = sharedPet.BotGuidCounter;
+            slot.AdmissionSharedHunterLiveOwnerCounter = sharedPet.LivePetOwnerCounter;
+            slot.AdmissionSharedHunterStoredOwner = sharedPet.StoredOwner;
+            slot.AdmissionSharedHunterStoredPetId = sharedPet.StoredPetId;
+            slot.AdmissionSharedHunterLivePetId = sharedPet.LivePetId;
+            slot.AdmissionSharedHunterStoredEntry = sharedPet.StoredPetEntry;
+            slot.AdmissionSharedHunterLiveEntry = sharedPet.LivePetEntry;
             slot.AdmissionSharedHunterObserverReason =
                 sharedStatus == BotWorldPopulationMgrCalibrationIdentity::HunterPetObservationStatus::IdentityObserved
                     ? "identity_observed"

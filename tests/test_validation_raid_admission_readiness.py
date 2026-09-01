@@ -78,6 +78,13 @@ int main()
     member.RuntimeHunterObserverReason = "identity_invalid";
     member.SharedHunterObserverStatus = 3;
     member.SharedHunterObserverReason = "identity_observed";
+    member.SharedHunterBotGuidCounter = 30009;
+    member.SharedHunterLiveOwnerCounter = 30009;
+    member.SharedHunterStoredOwner = 20009;
+    member.SharedHunterStoredPetId = 8700009;
+    member.SharedHunterLivePetId = 8700009;
+    member.SharedHunterStoredEntry = 8959;
+    member.SharedHunterLiveEntry = 8959;
     receipt = ToJson(result, {member});
     for (char const* value : {
         "\"guid\":30009", "raid_dps_4", "marksmanship_hunter",
@@ -96,6 +103,15 @@ int main()
         != std::string::npos);
     assert(receipt.find("\"shared_hunter_observer_status\":3")
         != std::string::npos);
+    for (char const* field : {
+        "\"shared_hunter_bot_guid_counter\":30009",
+        "\"shared_hunter_live_owner_counter\":30009",
+        "\"shared_hunter_stored_owner\":20009",
+        "\"shared_hunter_stored_pet_id\":8700009",
+        "\"shared_hunter_live_pet_id\":8700009",
+        "\"shared_hunter_stored_entry\":8959",
+        "\"shared_hunter_live_entry\":8959"})
+        assert(receipt.find(field) != std::string::npos);
 
     facts = passingFacts(); facts.ExpectedMemberCount = 0;
     expectFailure(facts, Failure::ExpectedMemberCountZero,
@@ -194,6 +210,13 @@ def test_live_admission_wires_actual_values_and_preserves_typed_failure() -> Non
         "member.RuntimeHunterObserverReason = slot.AdmissionRuntimeHunterObserverReason",
         "member.SharedHunterObserverStatus = slot.AdmissionSharedHunterObserverStatus",
         "member.SharedHunterObserverReason = slot.AdmissionSharedHunterObserverReason",
+        "member.SharedHunterBotGuidCounter = slot.AdmissionSharedHunterBotGuidCounter",
+        "member.SharedHunterLiveOwnerCounter = slot.AdmissionSharedHunterLiveOwnerCounter",
+        "member.SharedHunterStoredOwner = slot.AdmissionSharedHunterStoredOwner",
+        "member.SharedHunterStoredPetId = slot.AdmissionSharedHunterStoredPetId",
+        "member.SharedHunterLivePetId = slot.AdmissionSharedHunterLivePetId",
+        "member.SharedHunterStoredEntry = slot.AdmissionSharedHunterStoredEntry",
+        "member.SharedHunterLiveEntry = slot.AdmissionSharedHunterLiveEntry",
     ):
         assert field in group
     assert "sealedAdmissionReadinessFailure = FailureReason(" in group
@@ -215,6 +238,13 @@ def test_live_admission_wires_actual_values_and_preserves_typed_failure() -> Non
         "LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec)",
         "ObserveActiveOrdinaryHunterPetStatus(",
         "slot.AdmissionSharedHunterObserverReason =",
+        "slot.AdmissionSharedHunterBotGuidCounter = sharedPet.BotGuidCounter",
+        "slot.AdmissionSharedHunterLiveOwnerCounter = sharedPet.LivePetOwnerCounter",
+        "slot.AdmissionSharedHunterStoredOwner = sharedPet.StoredOwner",
+        "slot.AdmissionSharedHunterStoredPetId = sharedPet.StoredPetId",
+        "slot.AdmissionSharedHunterLivePetId = sharedPet.LivePetId",
+        "slot.AdmissionSharedHunterStoredEntry = sharedPet.StoredPetEntry",
+        "slot.AdmissionSharedHunterLiveEntry = sharedPet.LivePetEntry",
     ):
         assert field in runtime
     runtime_gate = runtime[

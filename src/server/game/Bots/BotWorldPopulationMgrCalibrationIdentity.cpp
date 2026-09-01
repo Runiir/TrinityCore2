@@ -132,6 +132,7 @@ HunterPetObservationStatus ObserveActiveOrdinaryHunterPetStatus(
     if (!bot || bot->getClass() != CLASS_HUNTER)
         return HunterPetObservationStatus::NotHunter;
 
+    snapshot.BotGuidCounter = bot->GetGUID().GetCounter();
     Pet* pet = bot->GetPet();
     if (!bot->IsInWorld() || !pet || !pet->IsInWorld() || !pet->IsAlive())
         return HunterPetObservationStatus::LifecycleUnavailable;
@@ -139,6 +140,9 @@ HunterPetObservationStatus ObserveActiveOrdinaryHunterPetStatus(
     snapshot.PetOwnerGuid = pet->GetOwner() ? pet->GetOwner()->GetGUID() : ObjectGuid();
     snapshot.PetId = pet->GetCharmInfo() ? pet->GetCharmInfo()->GetPetNumber() : 0;
     snapshot.PetEntry = pet->GetEntry();
+    snapshot.LivePetOwnerCounter = snapshot.PetOwnerGuid.GetCounter();
+    snapshot.LivePetId = snapshot.PetId;
+    snapshot.LivePetEntry = snapshot.PetEntry;
     // A native dismiss/call transition flips PlayerPetData::Active. Resolve
     // the live permanent pet's stable row by pet number instead of treating
     // that mutable lifecycle flag as immutable admission identity.
@@ -148,6 +152,9 @@ HunterPetObservationStatus ObserveActiveOrdinaryHunterPetStatus(
             {
                 return const_cast<Player*>(bot)->GetPlayerPetDataById(petId);
             });
+    snapshot.StoredOwner = stored ? stored->Owner : 0;
+    snapshot.StoredPetId = stored ? stored->PetId : 0;
+    snapshot.StoredPetEntry = stored ? stored->CreatureId : 0;
     // Family passives are deterministically derived from world DBC data and
     // are intentionally never persisted by Pet::_SaveSpells.  The pinned
     // provisioning identity is the mutable, persistable runtime spellbook;

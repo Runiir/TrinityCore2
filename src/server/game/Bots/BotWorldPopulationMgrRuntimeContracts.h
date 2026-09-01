@@ -200,6 +200,13 @@
         std::string AdmissionRuntimeHunterObserverReason;
         uint8 AdmissionSharedHunterObserverStatus = 0;
         std::string AdmissionSharedHunterObserverReason;
+        uint64 AdmissionSharedHunterBotGuidCounter = 0;
+        uint64 AdmissionSharedHunterLiveOwnerCounter = 0;
+        uint64 AdmissionSharedHunterStoredOwner = 0;
+        uint32 AdmissionSharedHunterStoredPetId = 0;
+        uint32 AdmissionSharedHunterLivePetId = 0;
+        uint32 AdmissionSharedHunterStoredEntry = 0;
+        uint32 AdmissionSharedHunterLiveEntry = 0;
     };
 
     // Raid preparation receipts retain native item-use evidence per exact

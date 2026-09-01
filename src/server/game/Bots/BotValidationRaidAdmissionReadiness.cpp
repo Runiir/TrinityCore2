@@ -123,7 +123,14 @@ std::string ToJson(Result const& result,
              << ",\"runtime_hunter_observer_matches\":" << (member.RuntimeHunterObserverMatches ? "true" : "false")
              << ",\"runtime_hunter_observer_reason\":\"" << JsonEscape(member.RuntimeHunterObserverReason) << "\""
              << ",\"shared_hunter_observer_status\":" << uint32_t(member.SharedHunterObserverStatus)
-             << ",\"shared_hunter_observer_reason\":\"" << JsonEscape(member.SharedHunterObserverReason) << "\"}";
+             << ",\"shared_hunter_observer_reason\":\"" << JsonEscape(member.SharedHunterObserverReason) << "\""
+             << ",\"shared_hunter_bot_guid_counter\":" << member.SharedHunterBotGuidCounter
+             << ",\"shared_hunter_live_owner_counter\":" << member.SharedHunterLiveOwnerCounter
+             << ",\"shared_hunter_stored_owner\":" << member.SharedHunterStoredOwner
+             << ",\"shared_hunter_stored_pet_id\":" << member.SharedHunterStoredPetId
+             << ",\"shared_hunter_live_pet_id\":" << member.SharedHunterLivePetId
+             << ",\"shared_hunter_stored_entry\":" << member.SharedHunterStoredEntry
+             << ",\"shared_hunter_live_entry\":" << member.SharedHunterLiveEntry << '}';
     }
     json << ']'
          << '}';

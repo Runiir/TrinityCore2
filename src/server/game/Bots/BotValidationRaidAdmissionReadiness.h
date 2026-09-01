@@ -60,6 +60,13 @@ struct MemberReceipt
     std::string RuntimeHunterObserverReason;
     std::uint8_t SharedHunterObserverStatus = 0;
     std::string SharedHunterObserverReason;
+    std::uint64_t SharedHunterBotGuidCounter = 0;
+    std::uint64_t SharedHunterLiveOwnerCounter = 0;
+    std::uint64_t SharedHunterStoredOwner = 0;
+    std::uint32_t SharedHunterStoredPetId = 0;
+    std::uint32_t SharedHunterLivePetId = 0;
+    std::uint32_t SharedHunterStoredEntry = 0;
+    std::uint32_t SharedHunterLiveEntry = 0;
 };
 
 Result Evaluate(Facts const& facts);
