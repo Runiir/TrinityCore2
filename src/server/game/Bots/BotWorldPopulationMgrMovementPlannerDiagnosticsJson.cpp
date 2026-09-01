@@ -82,7 +82,34 @@ void AppendNativeProofJson(std::ostringstream& json,
          << ",\"calculated\":" << (proof.Calculated ? "true" : "false")
          << ",\"path_type\":" << proof.PathType
          << ",\"complete\":" << (proof.Complete ? "true" : "false")
-         << ",\"endpoint\":{\"x\":" << proof.EndpointX
+         << ",\"endpoint_resolution\":{\"outcome\":\""
+         << PathEndpointResultName(proof.EndpointResult)
+         << "\",\"corridor_reached_end_poly\":"
+         << (proof.CorridorReachedEndPoly ? "true" : "false")
+         << ",\"resolved\":{\"available\":"
+         << (proof.ResolvedEndpointAvailable ? "true" : "false")
+         << ",\"x\":";
+    if (proof.ResolvedEndpointAvailable)
+        json << proof.ResolvedEndpointX;
+    else
+        json << "null";
+    json << ",\"y\":";
+    if (proof.ResolvedEndpointAvailable)
+        json << proof.ResolvedEndpointY;
+    else
+        json << "null";
+    json << ",\"z\":";
+    if (proof.ResolvedEndpointAvailable)
+        json << proof.ResolvedEndpointZ;
+    else
+        json << "null";
+    json << "},\"actual_horizontal_distance\":"
+         << proof.ResolvedEndpointHorizontalDistance
+         << ",\"actual_vertical_distance\":"
+         << proof.ResolvedEndpointVerticalDistance
+         << ",\"actual_matched\":"
+         << (proof.ActualEndpointMatchedResolved ? "true" : "false")
+         << "},\"endpoint\":{\"x\":" << proof.EndpointX
          << ",\"y\":" << proof.EndpointY << ",\"z\":" << proof.EndpointZ
          << ",\"distance\":" << proof.EndpointDistance
          << ",\"horizontal_distance\":"

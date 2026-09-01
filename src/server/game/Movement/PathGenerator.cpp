@@ -34,7 +34,11 @@
 PathGenerator::PathGenerator(WorldObject const* owner) :
     _polyLength(0), _type(PATHFIND_BLANK), _useStraightPath(false),
     _forceDestination(false), _pointPathLimit(MAX_POINT_PATH_LENGTH), _useRaycast(false),
-    _endPosition(G3D::Vector3::zero()), _source(owner), _navMesh(nullptr),
+    _endPosition(G3D::Vector3::zero()),
+    _resolvedEndPosition(G3D::Vector3::zero()),
+    _endpointResult(PathEndpointResult::Unavailable),
+    _corridorReachedEndPoly(false), _resolvedEndPositionAvailable(false),
+    _resolvedEndPositionProjected(false), _source(owner), _navMesh(nullptr),
     _navMeshQuery(nullptr)
 {
     memset(_pathPolyRefs, 0, sizeof(_pathPolyRefs));
@@ -74,8 +78,12 @@ bool PathGenerator::CalculatePath(Position const& startPosition, Position const&
 
 bool PathGenerator::CalculatePath(G3D::Vector3 const& startPoint, G3D::Vector3 const& endPoint, bool forceDest /*= false*/)
 {
+    ResetEndpointObservation();
     if (!Trinity::IsValidMapCoord(startPoint.x, startPoint.y, startPoint.z) || !Trinity::IsValidMapCoord(endPoint.x, endPoint.y, endPoint.z))
+    {
+        _endpointResult = PathEndpointResult::Failure;
         return false;
+    }
 
     TC_METRIC_EVENT("mmap_events", "CalculatePath", "");
 
@@ -216,6 +224,7 @@ void PathGenerator::BuildPolyPath(G3D::Vector3 const& startPos, G3D::Vector3 con
         // raycast doesn't need endPoly to be valid
         if (!_useRaycast)
         {
+            _endpointResult = PathEndpointResult::Failure;
             _type = PATHFIND_NOPATH;
             return;
         }
@@ -299,7 +308,10 @@ void PathGenerator::BuildPolyPath(G3D::Vector3 const& startPos, G3D::Vector3 con
             AddFarFromPolyFlags(startFarFromPoly, endFarFromPoly);
         }
         else
-         _type = PATHFIND_NORMAL;
+        {
+            _type = PATHFIND_NORMAL;
+            _corridorReachedEndPoly = true;
+        }
 
         BuildPointPath(startPoint, endPoint);
         return;
@@ -534,7 +546,10 @@ void PathGenerator::BuildPolyPath(G3D::Vector3 const& startPos, G3D::Vector3 con
 
     // by now we know what type of path we can get
     if (_pathPolyRefs[_polyLength - 1] == endPoly && !(_type & PATHFIND_INCOMPLETE))
+    {
         _type = PATHFIND_NORMAL;
+        _corridorReachedEndPoly = true;
+    }
     else
         _type = PATHFIND_INCOMPLETE;
 
@@ -547,6 +562,7 @@ void PathGenerator::BuildPolyPath(G3D::Vector3 const& startPos, G3D::Vector3 con
 void PathGenerator::BuildPointPath(const float *startPoint, const float *endPoint)
 {
     float pathPoints[MAX_POINT_PATH_LENGTH*VERTEX_SIZE];
+    unsigned char straightPathFlags[MAX_POINT_PATH_LENGTH] = {};
     uint32 pointCount = 0;
     dtStatus dtResult = DT_FAILURE;
     if (_useRaycast)
@@ -565,10 +581,27 @@ void PathGenerator::BuildPointPath(const float *startPoint, const float *endPoin
                 _pathPolyRefs,     // current path
                 _polyLength,       // lenth of current path
                 pathPoints,         // [out] path corner points
-                nullptr,               // [out] flags
+                straightPathFlags,     // [out] flags
                 nullptr,               // [out] shortened path
                 (int*)&pointCount,
                 _pointPathLimit);   // maximum number of points/polygons to use
+        if (dtStatusFailed(dtResult))
+            _endpointResult = PathEndpointResult::Failure;
+        else if (pointCount >= _pointPathLimit)
+            _endpointResult = PathEndpointResult::Capacity;
+        else if (pointCount)
+        {
+            float const* resolved = &pathPoints[
+                (pointCount - 1) * VERTEX_SIZE];
+            bool const projected = resolved[0] != endPoint[0]
+                || resolved[1] != endPoint[1]
+                || resolved[2] != endPoint[2];
+            SetResolvedEndPosition(resolved, projected);
+            if (straightPathFlags[pointCount - 1] & DT_STRAIGHTPATH_END)
+                MarkResolvedEndPositionReached();
+            else
+                _endpointResult = PathEndpointResult::CorridorExhausted;
+        }
     }
     else
     {
@@ -588,6 +621,8 @@ void PathGenerator::BuildPointPath(const float *startPoint, const float *endPoin
         // First point is start position, append end position
         dtVcopy(&pathPoints[1 * VERTEX_SIZE], endPoint);
         pointCount++;
+        SetResolvedEndPosition(endPoint, false);
+        MarkResolvedEndPositionReached();
     }
     else if (pointCount < 2 || dtStatusFailed(dtResult))
     {
@@ -595,6 +630,8 @@ void PathGenerator::BuildPointPath(const float *startPoint, const float *endPoin
         // single point paths can be generated here
         /// @todo check the exact cases
         TC_LOG_DEBUG("maps.mmaps", "++ PathGenerator::BuildPointPath FAILED! path sized %d returned", pointCount);
+        if (_endpointResult != PathEndpointResult::Capacity)
+            _endpointResult = PathEndpointResult::Failure;
         BuildShortcut();
         _type = PathType(_type | PATHFIND_NOPATH);
         return;
@@ -602,6 +639,7 @@ void PathGenerator::BuildPointPath(const float *startPoint, const float *endPoin
     else if (pointCount >= _pointPathLimit)
     {
         TC_LOG_DEBUG("maps.mmaps", "++ PathGenerator::BuildPointPath FAILED! path sized %d returned, lower than limit set to %d", pointCount, _pointPathLimit);
+        _endpointResult = PathEndpointResult::Capacity;
         BuildShortcut();
         _type = PathType(_type | PATHFIND_SHORT);
         return;
@@ -748,232 +786,6 @@ bool PathGenerator::HaveTile(const G3D::Vector3& p) const
         return false;
 
     return (_navMesh->getTileAt(tx, ty, 0) != nullptr);
-}
-
-uint32 PathGenerator::FixupCorridor(dtPolyRef* path, uint32 npath, uint32 maxPath, dtPolyRef const* visited, uint32 nvisited)
-{
-    int32 furthestPath = -1;
-    int32 furthestVisited = -1;
-
-    // Find furthest common polygon.
-    for (int32 i = npath-1; i >= 0; --i)
-    {
-        bool found = false;
-        for (int32 j = nvisited-1; j >= 0; --j)
-        {
-            if (path[i] == visited[j])
-            {
-                furthestPath = i;
-                furthestVisited = j;
-                found = true;
-            }
-        }
-        if (found)
-            break;
-    }
-
-    // If no intersection found just return current path.
-    if (furthestPath == -1 || furthestVisited == -1)
-        return npath;
-
-    // Concatenate paths.
-
-    // Adjust beginning of the buffer to include the visited.
-    uint32 req = nvisited - furthestVisited;
-    uint32 orig = uint32(furthestPath + 1) < npath ? furthestPath + 1 : npath;
-    uint32 size = npath > orig ? npath - orig : 0;
-    if (req + size > maxPath)
-        size = maxPath-req;
-
-    if (size)
-        memmove(path + req, path + orig, size * sizeof(dtPolyRef));
-
-    // Store visited
-    for (uint32 i = 0; i < req; ++i)
-        path[i] = visited[(nvisited - 1) - i];
-
-    return req+size;
-}
-
-bool PathGenerator::GetSteerTarget(float const* startPos, float const* endPos,
-                              float minTargetDist, dtPolyRef const* path, uint32 pathSize,
-                              float* steerPos, unsigned char& steerPosFlag, dtPolyRef& steerPosRef)
-{
-    // Find steer target.
-    static const uint32 MAX_STEER_POINTS = 3;
-    float steerPath[MAX_STEER_POINTS*VERTEX_SIZE];
-    unsigned char steerPathFlags[MAX_STEER_POINTS];
-    dtPolyRef steerPathPolys[MAX_STEER_POINTS];
-    uint32 nsteerPath = 0;
-    dtStatus dtResult = _navMeshQuery->findStraightPath(startPos, endPos, path, pathSize,
-                                                steerPath, steerPathFlags, steerPathPolys, (int*)&nsteerPath, MAX_STEER_POINTS);
-    if (!nsteerPath || dtStatusFailed(dtResult))
-        return false;
-
-    // Find vertex far enough to steer to.
-    uint32 ns = 0;
-    while (ns < nsteerPath)
-    {
-        // Stop at Off-Mesh link or when point is further than slop away.
-        if ((steerPathFlags[ns] & DT_STRAIGHTPATH_OFFMESH_CONNECTION) ||
-            !InRangeYZX(&steerPath[ns*VERTEX_SIZE], startPos, minTargetDist, 1000.0f))
-            break;
-        ns++;
-    }
-    // Failed to find good point to steer to.
-    if (ns >= nsteerPath)
-        return false;
-
-    dtVcopy(steerPos, &steerPath[ns*VERTEX_SIZE]);
-    steerPos[1] = startPos[1];  // keep Z value
-    steerPosFlag = steerPathFlags[ns];
-    steerPosRef = steerPathPolys[ns];
-
-    return true;
-}
-
-dtStatus PathGenerator::FindSmoothPath(float const* startPos, float const* endPos,
-                                     dtPolyRef const* polyPath, uint32 polyPathSize,
-                                     float* smoothPath, int* smoothPathSize, uint32 maxSmoothPathSize)
-{
-    *smoothPathSize = 0;
-    uint32 nsmoothPath = 0;
-
-    dtPolyRef polys[MAX_PATH_LENGTH];
-    memcpy(polys, polyPath, sizeof(dtPolyRef)*polyPathSize);
-    uint32 npolys = polyPathSize;
-
-    float iterPos[VERTEX_SIZE], targetPos[VERTEX_SIZE];
-
-    if (polyPathSize > 1)
-    {
-        // Pick the closest points on poly border
-        if (dtStatusFailed(_navMeshQuery->closestPointOnPolyBoundary(polys[0], startPos, iterPos)))
-            return DT_FAILURE;
-
-        if (dtStatusFailed(_navMeshQuery->closestPointOnPolyBoundary(polys[npolys - 1], endPos, targetPos)))
-            return DT_FAILURE;
-    }
-    else
-    {
-        // Case where the path is on the same poly
-        dtVcopy(iterPos, startPos);
-        dtVcopy(targetPos, endPos);
-    }
-
-    dtVcopy(&smoothPath[nsmoothPath*VERTEX_SIZE], iterPos);
-    nsmoothPath++;
-
-    // Move towards target a small advancement at a time until target reached or
-    // when ran out of memory to store the path.
-    while (npolys && nsmoothPath < maxSmoothPathSize)
-    {
-        // Find location to steer towards.
-        float steerPos[VERTEX_SIZE];
-        unsigned char steerPosFlag;
-        dtPolyRef steerPosRef = INVALID_POLYREF;
-
-        if (!GetSteerTarget(iterPos, targetPos, SMOOTH_PATH_SLOP, polys, npolys, steerPos, steerPosFlag, steerPosRef))
-            break;
-
-        bool endOfPath = (steerPosFlag & DT_STRAIGHTPATH_END) != 0;
-        bool offMeshConnection = (steerPosFlag & DT_STRAIGHTPATH_OFFMESH_CONNECTION) != 0;
-
-        // Find movement delta.
-        float delta[VERTEX_SIZE];
-        dtVsub(delta, steerPos, iterPos);
-        float len = dtMathSqrtf(dtVdot(delta, delta));
-        // If the steer target is end of path or off-mesh link, do not move past the location.
-        if ((endOfPath || offMeshConnection) && len < SMOOTH_PATH_STEP_SIZE)
-            len = 1.0f;
-        else
-            len = SMOOTH_PATH_STEP_SIZE / len;
-
-        float moveTgt[VERTEX_SIZE];
-        dtVmad(moveTgt, iterPos, delta, len);
-
-        // Move
-        float result[VERTEX_SIZE];
-        const static uint32 MAX_VISIT_POLY = 16;
-        dtPolyRef visited[MAX_VISIT_POLY];
-
-        uint32 nvisited = 0;
-        if (dtStatusFailed(_navMeshQuery->moveAlongSurface(polys[0], iterPos, moveTgt, &_filter, result, visited, (int*)&nvisited, MAX_VISIT_POLY)))
-            return DT_FAILURE;
-        npolys = FixupCorridor(polys, npolys, MAX_PATH_LENGTH, visited, nvisited);
-
-        if (dtStatusFailed(_navMeshQuery->getPolyHeight(polys[0], result, &result[1])))
-            TC_LOG_DEBUG("maps.mmaps", "Cannot find height at position X: %f Y: %f Z: %f for unit %u", result[2], result[0], result[1], _source->GetEntry());
-        result[1] += 0.5f;
-        dtVcopy(iterPos, result);
-
-        // Handle end of path and off-mesh links when close enough.
-        if (endOfPath && InRangeYZX(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
-        {
-            // Reached end of path.
-            dtVcopy(iterPos, targetPos);
-            if (nsmoothPath < maxSmoothPathSize)
-            {
-                dtVcopy(&smoothPath[nsmoothPath*VERTEX_SIZE], iterPos);
-                nsmoothPath++;
-            }
-            break;
-        }
-        else if (offMeshConnection && InRangeYZX(iterPos, steerPos, SMOOTH_PATH_SLOP, 1.0f))
-        {
-            // Advance the path up to and over the off-mesh connection.
-            dtPolyRef prevRef = INVALID_POLYREF;
-            dtPolyRef polyRef = polys[0];
-            uint32 npos = 0;
-            while (npos < npolys && polyRef != steerPosRef)
-            {
-                prevRef = polyRef;
-                polyRef = polys[npos];
-                npos++;
-            }
-
-            for (uint32 i = npos; i < npolys; ++i)
-                polys[i-npos] = polys[i];
-
-            npolys -= npos;
-
-            // Handle the connection.
-            float connectionStartPos[VERTEX_SIZE], connectionEndPos[VERTEX_SIZE];
-            if (dtStatusSucceed(_navMesh->getOffMeshConnectionPolyEndPoints(prevRef, polyRef, connectionStartPos, connectionEndPos)))
-            {
-                if (nsmoothPath < maxSmoothPathSize)
-                {
-                    dtVcopy(&smoothPath[nsmoothPath*VERTEX_SIZE], connectionStartPos);
-                    nsmoothPath++;
-                }
-                // Move position at the other side of the off-mesh link.
-                dtVcopy(iterPos, connectionEndPos);
-                if (dtStatusFailed(_navMeshQuery->getPolyHeight(polys[0], iterPos, &iterPos[1])))
-                    return DT_FAILURE;
-                iterPos[1] += 0.5f;
-            }
-        }
-
-        // Store results.
-        if (nsmoothPath < maxSmoothPathSize)
-        {
-            dtVcopy(&smoothPath[nsmoothPath*VERTEX_SIZE], iterPos);
-            nsmoothPath++;
-        }
-    }
-
-    *smoothPathSize = nsmoothPath;
-
-    // this is most likely a loop
-    return nsmoothPath < MAX_POINT_PATH_LENGTH ? DT_SUCCESS : DT_FAILURE;
-}
-
-bool PathGenerator::InRangeYZX(const float* v1, const float* v2, float r, float h) const
-{
-    const float dx = v2[0] - v1[0];
-    const float dy = v2[1] - v1[1]; // elevation
-    const float dz = v2[2] - v1[2];
-    return (dx * dx + dz * dz) < r * r && fabsf(dy) < h;
 }
 
 bool PathGenerator::InRange(G3D::Vector3 const& p1, G3D::Vector3 const& p2, float r, float h) const

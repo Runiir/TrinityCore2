@@ -68,6 +68,17 @@ inline bool NativePathEndpointMatches(G3D::Vector3 const& actual,
         NativePathEndpointVerticalDistance(actual, requested));
 }
 
+inline void ObserveNativePathEndpointResolution(
+    NativePathProofObservation& observation, PathEndpointResult result,
+    bool corridorReachedEndPoly, bool resolvedAvailable,
+    G3D::Vector3 const& actual, G3D::Vector3 const& resolved)
+{
+    RecordNativePathEndpointResolution(observation, result,
+        corridorReachedEndPoly, resolvedAvailable, resolved.x, resolved.y,
+        resolved.z, NativePathEndpointHorizontalDistance(actual, resolved),
+        NativePathEndpointVerticalDistance(actual, resolved));
+}
+
 template <typename EndpointFloorValidator, typename FloorObserver>
 NativePathProofObservation DiagnoseCompleteNativePathProof(bool calculated,
     PathGenerator const& path, G3D::Vector3 const& requested,
@@ -79,10 +90,16 @@ NativePathProofObservation DiagnoseCompleteNativePathProof(bool calculated,
     observation.Calculated = calculated;
     observation.PathType = static_cast<std::uint32_t>(path.GetPathType());
     observation.Complete = NativePathIsComplete(calculated, path);
+    G3D::Vector3 const& actualEndpoint = path.GetActualEndPosition();
+    ObserveNativePathEndpointResolution(observation,
+        path.GetEndpointResult(), path.CorridorReachedEndPoly(),
+        path.HasResolvedEndPosition(), actualEndpoint,
+        path.HasResolvedEndPosition() ? path.GetResolvedEndPosition()
+                                      : G3D::Vector3::zero());
     if (!observation.Complete)
         return observation;
 
-    G3D::Vector3 const& endpoint = path.GetActualEndPosition();
+    G3D::Vector3 const& endpoint = actualEndpoint;
     observation.EndpointX = endpoint.x;
     observation.EndpointY = endpoint.y;
     observation.EndpointZ = endpoint.z;

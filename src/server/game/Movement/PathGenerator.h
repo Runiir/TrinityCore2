@@ -22,6 +22,7 @@
 #include "DetourNavMeshQuery.h"
 #include "MMapDefines.h"
 #include "MoveSplineInitArgs.h"
+#include "PathEndpoint.h"
 #include <G3D/Vector3.h>
 
 class Unit;
@@ -87,6 +88,22 @@ class TC_GAME_API PathGenerator
         Movement::PointsArray const& GetPath() const { return _pathPoints; }
 
         PathType GetPathType() const { return _type; }
+        PathEndpointResult GetEndpointResult() const
+        {
+            return _endpointResult;
+        }
+        bool CorridorReachedEndPoly() const
+        {
+            return _corridorReachedEndPoly;
+        }
+        bool HasResolvedEndPosition() const
+        {
+            return _resolvedEndPositionAvailable;
+        }
+        G3D::Vector3 const& GetResolvedEndPosition() const
+        {
+            return _resolvedEndPosition;
+        }
         // Detour's findPath result is an ordered polygon corridor. Expose only
         // the value needed by admission callers; polygon ownership and route
         // construction remain private to PathGenerator.
@@ -119,6 +136,11 @@ class TC_GAME_API PathGenerator
         G3D::Vector3 _startPosition;        // {x, y, z} of current location
         G3D::Vector3 _endPosition;          // {x, y, z} of the destination
         G3D::Vector3 _actualEndPosition;    // {x, y, z} of the closest possible point to given destination
+        G3D::Vector3 _resolvedEndPosition;  // Detour's requested or end-poly target
+        PathEndpointResult _endpointResult;
+        bool _corridorReachedEndPoly;
+        bool _resolvedEndPositionAvailable;
+        bool _resolvedEndPositionProjected;
 
         WorldObject const* const _source;       // the object that is moving
         dtNavMesh const* _navMesh;              // the nav mesh
@@ -129,6 +151,9 @@ class TC_GAME_API PathGenerator
         void SetStartPosition(G3D::Vector3 const& point) { _startPosition = point; }
         void SetEndPosition(G3D::Vector3 const& point) { _actualEndPosition = point; _endPosition = point; }
         void SetActualEndPosition(G3D::Vector3 const& point) { _actualEndPosition = point; }
+        void ResetEndpointObservation();
+        void SetResolvedEndPosition(float const* point, bool projected);
+        void MarkResolvedEndPositionReached();
         void NormalizePath();
 
         void Clear()

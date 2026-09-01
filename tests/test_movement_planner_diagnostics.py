@@ -220,6 +220,9 @@ int main()
     success.NativeProof.Calculated = true;
     success.NativeProof.PathType = 1;
     success.NativeProof.Complete = true;
+    RecordNativePathEndpointResolution(success.NativeProof,
+        PathEndpointResult::ReachedRequested, true, true,
+        -333.0f, -99.0f, 214.091f, 0.0f, 0.0f);
     success.NativeProof.EndpointX = -333.0f;
     success.NativeProof.EndpointY = -99.0f;
     success.NativeProof.EndpointZ = 214.091f;
@@ -254,6 +257,13 @@ int main()
         "\"final_traversal_mode\":\"native_complete_path\"")
         != std::string::npos);
     assert(proofJson.find("\"endpoint\":{\"x\":-333")
+        != std::string::npos);
+    assert(proofJson.find(
+        "\"endpoint_resolution\":{\"outcome\":\"reached_requested\"")
+        != std::string::npos);
+    assert(proofJson.find("\"corridor_reached_end_poly\":true")
+        != std::string::npos);
+    assert(proofJson.find("\"actual_matched\":true")
         != std::string::npos);
     assert(proofJson.find("\"distance\":0.0633392")
         != std::string::npos);

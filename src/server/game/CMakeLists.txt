@@ -15,6 +15,7 @@ CollectSourceFiles(
   ${CMAKE_CURRENT_SOURCE_DIR}/PrecompiledHeaders)
 
 list(APPEND PRIVATE_SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/Movement/PathGeneratorSmooth.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotActionExecutor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotClassSpecActionProfile.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotClassSpecActionProfileCandidates.cpp

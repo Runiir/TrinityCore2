@@ -1,6 +1,8 @@
 #ifndef TRINITY_BOT_WORLD_POPULATION_MGR_NATIVE_FLOOR_H
 #define TRINITY_BOT_WORLD_POPULATION_MGR_NATIVE_FLOOR_H
 
+#include "Movement/PathEndpoint.h"
+
 #include <cmath>
 #include <cstdint>
 
@@ -78,6 +80,15 @@ struct NativePathProofObservation
     bool Calculated = false;
     std::uint32_t PathType = 0;
     bool Complete = false;
+    PathEndpointResult EndpointResult = PathEndpointResult::Unavailable;
+    bool CorridorReachedEndPoly = false;
+    bool ResolvedEndpointAvailable = false;
+    float ResolvedEndpointX = 0.0f;
+    float ResolvedEndpointY = 0.0f;
+    float ResolvedEndpointZ = 0.0f;
+    float ResolvedEndpointHorizontalDistance = 0.0f;
+    float ResolvedEndpointVerticalDistance = 0.0f;
+    bool ActualEndpointMatchedResolved = false;
     float EndpointX = 0.0f;
     float EndpointY = 0.0f;
     float EndpointZ = 0.0f;
@@ -90,6 +101,35 @@ struct NativePathProofObservation
     bool FloorObservationConflict = false;
     bool Accepted = false;
 };
+
+inline void RecordNativePathEndpointResolution(
+    NativePathProofObservation& observation, PathEndpointResult result,
+    bool corridorReachedEndPoly, bool resolvedAvailable, float resolvedX,
+    float resolvedY, float resolvedZ, float actualHorizontalDistance,
+    float actualVerticalDistance)
+{
+    observation.EndpointResult = result;
+    observation.CorridorReachedEndPoly = corridorReachedEndPoly;
+    observation.ResolvedEndpointAvailable = resolvedAvailable;
+    observation.ResolvedEndpointX = 0.0f;
+    observation.ResolvedEndpointY = 0.0f;
+    observation.ResolvedEndpointZ = 0.0f;
+    observation.ResolvedEndpointHorizontalDistance = 0.0f;
+    observation.ResolvedEndpointVerticalDistance = 0.0f;
+    observation.ActualEndpointMatchedResolved = false;
+    if (!resolvedAvailable)
+        return;
+
+    observation.ResolvedEndpointX = resolvedX;
+    observation.ResolvedEndpointY = resolvedY;
+    observation.ResolvedEndpointZ = resolvedZ;
+    observation.ResolvedEndpointHorizontalDistance =
+        actualHorizontalDistance;
+    observation.ResolvedEndpointVerticalDistance = actualVerticalDistance;
+    observation.ActualEndpointMatchedResolved =
+        NativePathEndpointComponentsMatch(actualHorizontalDistance,
+            actualVerticalDistance);
+}
 
 inline bool NativePathFloorObservationBlocksCompleteProof(
     NativePathFloorObservation const& observation)
