@@ -1,9 +1,9 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:magmaw_parasite_task_state_vertical_slice",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "next_work_unit": "evidence:magmaw_parasite_task_state_shadow_comparison",
-  "next_owner_skill": "raid-evidence-lifecycle",
+  "work_unit": "evidence:magmaw_parasite_task_state_shadow_comparison",
+  "owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "role:magmaw_safe_range_parasite_offense",
+  "next_owner_skill": "raid-role-implementation",
   "classification": "live_recurrence_quarantined",
   "epoch_id": "magmaw_task_state_migration_20260901",
   "raid": "blackwing_descent",
@@ -11,8 +11,8 @@
   "mode": "10N_canary_for_universal_architecture",
   "architecture_scope": "The task-state interfaces must remain reusable across raid sizes, difficulties, bosses, dungeons, and roles; Magmaw parasite control is only the first vertical slice.",
   "gate_state": "runtime_repair_admitted_live_build_and_canary_closed",
-  "observed_at_commit": "5ea9bb9b8e78e381a99d5da0f2d1381b4e3a383b",
-  "behavior_change": true,
+  "observed_at_commit": "be13bef97823ab1d892a2223e0d34dc712ab99ae",
+  "behavior_change": false,
   "evidence_contract_change": true,
   "source_handoff": {
     "path": "experiments/configs/cata_raid_chainwielder_hazard_clear_5ea9bb9b8e_summary_v1.json",
@@ -21,36 +21,34 @@
   "first_broken_edge": {
     "run_id": "trinity-magmaw-5ea9bb9b8e-chainwielder-hazard-clear.attempt1",
     "route_node_id": "bwd.magmaw.encounter",
-    "cause": "Magmaw reached combat with persistent task authority disabled; legacy parasite handling allowed Parasitic Infection and Infectious Vomit into the raid and did not provide a joined multi-tick task outcome.",
+    "cause": "The shared production movement-kernel adapter and stable task identity now pass the focused compiled bank, but the three invalidated parasite fixtures are not yet promoted and task authority remains default-off.",
     "terminal": "death_loop_watchdog",
     "evidence": "experiments/configs/cata_raid_chainwielder_hazard_clear_5ea9bb9b8e_summary_v1.json"
   },
-  "next_action": "Implement one authority-default-off parasite task-state vertical slice using the existing facts reducer, sticky raid coordinator, persistent task state, shared movement-candidate adapter, real arbiter, and typed native outcome feedback. Expand the three invalidated parasite fixtures at their real production adapter boundary; do not build or start a server yet.",
+  "next_action": "Verify the authority-default-off task-state slice against the shared production adapter, compare shadow and legacy identities/outcomes, promote only passing fixture revisions, and hand off the separate safe-range parasite-offense behavior gap. Do not build or start a server.",
   "implementation_scope": {
     "allowed": [
-      "Magmaw facts needed by the parasite task, without movement or assignment side effects",
-      "sticky Fire Mage and Marksman Hunter assignment with stable encounter epoch and assignment nonce",
-      "one persistent parasite bait, lane-transfer, and escape task lifecycle with explicit progress, suspension, completion, failure, and abort states",
-      "passive emission of all valid task and safety intents through the existing shared production movement-candidate adapter and BotActionArbitration kernel",
-      "typed native outcome feedback joined by actor, assignment, task generation, intent identity, and movement receipt",
-      "owner and non-owner simultaneous-hazard coverage, producer-order reversal, retryable Survival masking, rejected binding, and unknown-mechanic fail-closed coverage",
+      "read-only inspection of the committed shared movement-kernel adapter and stable task identity",
+      "one focused compiled replay bank through the shared production adapter and BotActionArbitration kernel",
+      "shadow-versus-legacy identity, destination, suspension/resume, native receipt, progress, and terminal-outcome comparison",
+      "documenting the separate non-owner safe-range parasite-offense gap without changing gameplay behavior",
       "fixture revisions magmaw_parasite_lane_paths_v1 revision 9, magmaw_parasite_lane_transition_full_replay_v1 revision 8, and magmaw_parasite_control_full_runtime_v1 revision 8",
-      "before and after CCN for every touched high-risk decision function and sub-1000-line C/C++ files"
+      "recurrence-ledger promotion only when the exact revised fixture passes"
     ],
     "forbidden": [
       "bot-side Z adjustment, vertical steering, target-height normalization, teleportation, MMAP tolerance, fallback fraction, or global movement-planner changes",
-      "class rotation, DPS coefficient, pet, consumable, healer, tank, native encounter-script, SQL, route-coordinate, or roster changes",
-      "enabling task authority by default before shadow-versus-legacy identity and outcome fixtures pass",
-      "reordering legacy if branches as the implementation",
-      "a test-only candidate adapter, manually constructed successful native receipt, source-presence-only proof, or action submission treated as progress",
+      "any C/C++ gameplay, class, pet, consumable, encounter-script, SQL, route-coordinate, or roster change",
+      "enabling task authority by default",
+      "changing the legacy containment target policy to make an evidence assertion pass",
+      "a test-only candidate adapter, source-presence-only proof, or action submission treated as progress",
       "configure, build, worldserver start, authserver start, live retry, DVC publication, or gameplay-clear claim"
     ]
   },
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": false,
+    "fixture_expansion_replay_admitted": true,
     "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": true,
+    "gameplay_mutations_allowed": false,
     "configure_admitted": false,
     "worldserver_build_admitted": false,
     "worldserver_start_admitted": false,
@@ -60,12 +58,12 @@
     "dvc_publication_required_after_terminal": false
   },
   "acceptance": [
-    "facts, assignment, task state, intent arbitration, and native outcome feedback are distinct typed stages",
-    "the real manager and compiled fixtures use one shared production candidate adapter and the real arbitration kernel",
-    "the Mage and Hunter assignment and task destination remain stable across ordinary observation revisions and resume after safety preemption",
-    "non-owners cannot acquire parasite lane movement through a generic fallback while they may still target and damage threatening parasites from safe range",
+    "the focused compiled replay bank passes through the same production adapter used by the live manager",
+    "shadow task identity includes actor, encounter, assignment nonces, task generation, candidate identity, and native receipt",
+    "the Mage and Hunter assignment and destination remain stable across ordinary observation revisions and resume after safety preemption",
     "task progress requires measured native movement or a semantic mechanic outcome; submission alone is not progress",
-    "all three revised deterministic fixtures pass and the unchanged full Magmaw regression bank remains green",
+    "each of the three revised deterministic fixtures is promoted only after its exact replay passes",
+    "the residual non-owner safe-range offense behavior gap is handed off separately",
     "authority remains default-off and no terrain-following behavior changes"
   ],
   "validation_clock": {
