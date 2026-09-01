@@ -44,6 +44,20 @@ class ControllerRouteHoldLaunchIdentity:
         for name, value in text_fields.items():
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"controller_route_hold_{name}_invalid")
+        if not isinstance(self.actor_guid, int) or isinstance(self.actor_guid, bool) \
+                or self.actor_guid <= 0:
+            raise ValueError("controller_route_hold_actor_guid_invalid")
+        if self.route_generation != 1:
+            raise ValueError("controller_route_hold_initial_generation_invalid")
+        for name, value, length in (
+            ("route_manifest_sha256", self.route_manifest_sha256, 64),
+            ("seal_sha256", self.seal_sha256, 64),
+            ("source_commit", self.source_commit, 40),
+        ):
+            if not isinstance(value, str) or not re.fullmatch(
+                rf"[0-9a-f]{{{length}}}", value
+            ):
+                raise ValueError(f"controller_route_hold_{name}_invalid")
 
 
 @dataclass(frozen=True)
@@ -72,20 +86,6 @@ class ControllerRouteHoldRuntimeScope:
         ):
             return None
         return cls(wipe_generation=wipe_generation, instance_id=instance_id)
-        if not isinstance(self.actor_guid, int) or isinstance(self.actor_guid, bool) \
-                or self.actor_guid <= 0:
-            raise ValueError("controller_route_hold_actor_guid_invalid")
-        if self.route_generation != 1:
-            raise ValueError("controller_route_hold_initial_generation_invalid")
-        for name, value, length in (
-            ("route_manifest_sha256", self.route_manifest_sha256, 64),
-            ("seal_sha256", self.seal_sha256, 64),
-            ("source_commit", self.source_commit, 40),
-        ):
-            if not isinstance(value, str) or not re.fullmatch(
-                rf"[0-9a-f]{{{length}}}", value
-            ):
-                raise ValueError(f"controller_route_hold_{name}_invalid")
 
 
 def controller_route_hold_launch_identity(
@@ -526,6 +526,8 @@ class ControllerRouteHoldScheduler:
             rejections.append("controller_route_hold_status_generation_invalid")
         if self._runtime_scope_required and runtime_scope is None:
             rejections.append("controller_route_hold_runtime_scope_invalid")
+        if self._runtime_scope is not None and runtime_scope != self._runtime_scope:
+            rejections.append("controller_route_hold_runtime_scope_drift")
         return runtime, route_generation, runtime_scope, rejections
 
     def _observe_status(self, row: dict[str, Any]) -> list[str]:
@@ -553,8 +555,6 @@ class ControllerRouteHoldScheduler:
                 self._runtime_scope = runtime_scope
                 self._held_status_count = 1
                 return self._status_command()
-            if runtime_scope != self._runtime_scope:
-                return self._fail("controller_route_hold_runtime_scope_drift")
             if status_bytes != self._held_status_bytes:
                 return self._fail("controller_route_hold_unstable_held_status")
             self._held_status_count = 2

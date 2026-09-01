@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -228,6 +229,20 @@ def _scheduler() -> ControllerRouteHoldScheduler:
     return ControllerRouteHoldScheduler(
         _identity(), **dialect["scheduler_kwargs"],
     )
+
+
+def test_launch_identity_validation_rejects_invalid_native_authority() -> None:
+    identity = _identity()
+    mutations = (
+        ({"actor_guid": 0}, "actor_guid_invalid"),
+        ({"route_generation": 2}, "initial_generation_invalid"),
+        ({"route_manifest_sha256": "short"}, "route_manifest_sha256_invalid"),
+        ({"seal_sha256": "short"}, "seal_sha256_invalid"),
+        ({"source_commit": "short"}, "source_commit_invalid"),
+    )
+    for values, expected in mutations:
+        with pytest.raises(ValueError, match=expected):
+            replace(identity, **values).validate()
 
 
 def _awaiting_terminal(
@@ -520,6 +535,20 @@ def test_second_stable_status_rejects_runtime_scope_drift(
     runtime[field] = bad
     assert scheduler.observe(status) == []
     assert scheduler.failure_reason == "controller_route_hold_runtime_scope_drift"
+
+
+def test_armed_status_scope_drift_fails_before_old_scope_terminal() -> None:
+    scheduler = _awaiting_terminal()
+    armed = _status("armed")
+    runtime = armed["raid_runtime"]
+    assert isinstance(runtime, dict)
+    runtime["wipe_generation"] = 1
+    assert scheduler.observe(armed) == []
+    assert scheduler.failure_reason == "controller_route_hold_runtime_scope_drift"
+    assert scheduler.observe(_checkpoint_row()) == []
+    assert scheduler.failed is True
+    assert scheduler.complete is False
+    assert scheduler.receipt()["checkpoint_terminal_count"] == 0
 
 
 def test_success_permits_one_wrong_floor_before_three_decreasing_samples() -> None:
