@@ -403,7 +403,9 @@ def _exact_position(value: object, expected: tuple[float, float, float]) -> bool
     )
 
 
-def _exact_magmaw_scope_key(row: dict[str, Any], hold: dict[str, Any]) -> bool:
+def _exact_magmaw_scope_key(
+    scheduler: Any, row: dict[str, Any], hold: dict[str, Any],
+) -> bool:
     """Bind the compiled task scope to the preserved controller attempt."""
 
     value = row.get("scope_key")
@@ -412,30 +414,16 @@ def _exact_magmaw_scope_key(row: dict[str, Any], hold: dict[str, Any]) -> bool:
     parts = value.split(":")
     if len(parts) != 8:
         return False
-    try:
-        attempt_id = int(parts[1])
-        wipe_epoch = int(parts[2])
-        route_generation = int(parts[3])
-        map_id = int(parts[5])
-        instance_id = int(parts[6])
-    except ValueError:
+    runtime_scope = scheduler.runtime_scope
+    if runtime_scope is None:
         return False
     expected = (
-        f"{hold.get('cohort_id')}:{attempt_id}:{wipe_epoch}:"
-        f"{route_generation}:{hold.get('route_node_id')}:669:{instance_id}:"
+        f"{hold.get('cohort_id')}:{hold.get('attempt_id')}:"
+        f"{runtime_scope.wipe_generation}:{hold.get('route_generation')}:"
+        f"{hold.get('route_node_id')}:669:{runtime_scope.instance_id}:"
         "magmaw_transfer_lane_checkpoint"
     )
-    return (
-        value == expected
-        and parts[0] == hold.get("cohort_id")
-        and attempt_id == hold.get("attempt_id")
-        and wipe_epoch >= 0
-        and route_generation == hold.get("route_generation")
-        and parts[4] == hold.get("route_node_id")
-        and map_id == 669
-        and instance_id > 0
-        and parts[7] == "magmaw_transfer_lane_checkpoint"
-    )
+    return value == expected
 
 
 def _exact_same_floor_arrival(value: object) -> bool:
@@ -495,7 +483,7 @@ def _magmaw_transfer_checkpoint_identity_rejections(
         or any(comparison.get(field) is not True for field in exact_config_bools)
         or comparison.get("configured_source_length") != 40
         or comparison.get("requested_source_length") != 40
-        or comparison.get("binary_revision_length") != 40
+        or comparison.get("binary_revision_length") not in {12, 40}
     ):
         reasons.append("magmaw_transfer_checkpoint_identity_invalid")
     return list(dict.fromkeys(reasons))
@@ -552,7 +540,7 @@ def _magmaw_transfer_checkpoint_terminal_rejections(
             or not isinstance(row.get("candidate_key"), str)
             or not row["candidate_key"]
             or row.get("candidate_key") != row.get("planner_candidate_key")
-            or not _exact_magmaw_scope_key(row, hold)
+            or not _exact_magmaw_scope_key(scheduler, row, hold)
             or not counts_are_ints
             or progress_samples < 2
             or progress_samples > MAGMAW_TRANSFER_MAX_PROGRESS_SAMPLES
@@ -708,6 +696,7 @@ def checkpoint_controller_dialect(
                 ),
                 "release_after_terminal": False,
                 "checkpoint_terminal_from_status": False,
+                "runtime_scope_required": True,
             },
         }
     if fixture_id == NATIVE_PATH_CHECKPOINT_FIXTURE_ID:

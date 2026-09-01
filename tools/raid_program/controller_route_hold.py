@@ -44,6 +44,34 @@ class ControllerRouteHoldLaunchIdentity:
         for name, value in text_fields.items():
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"controller_route_hold_{name}_invalid")
+
+
+@dataclass(frozen=True)
+class ControllerRouteHoldRuntimeScope:
+    """Authoritative instance scope frozen by the stable status pair."""
+
+    wipe_generation: int
+    instance_id: int
+
+    @classmethod
+    def from_status(
+        cls, row: dict[str, Any],
+    ) -> ControllerRouteHoldRuntimeScope | None:
+        runtime = row.get("raid_runtime")
+        if not isinstance(runtime, dict):
+            return None
+        wipe_generation = runtime.get("wipe_generation")
+        instance_id = runtime.get("instance_id")
+        if (
+            not isinstance(wipe_generation, int)
+            or isinstance(wipe_generation, bool)
+            or wipe_generation < 0
+            or not isinstance(instance_id, int)
+            or isinstance(instance_id, bool)
+            or instance_id <= 0
+        ):
+            return None
+        return cls(wipe_generation=wipe_generation, instance_id=instance_id)
         if not isinstance(self.actor_guid, int) or isinstance(self.actor_guid, bool) \
                 or self.actor_guid <= 0:
             raise ValueError("controller_route_hold_actor_guid_invalid")
@@ -134,6 +162,7 @@ class ControllerRouteHoldScheduler:
         checkpoint_terminal_status_command: str = "",
         release_after_terminal: bool = True,
         checkpoint_terminal_from_status: bool = True,
+        runtime_scope_required: bool = False,
     ):
         identity.validate()
         self.identity = identity
@@ -164,6 +193,7 @@ class ControllerRouteHoldScheduler:
         self._checkpoint_terminal_from_status = (
             checkpoint_terminal_from_status
         )
+        self._runtime_scope_required = runtime_scope_required
         self.phase = "ready"
         self.failure_reason: str | None = None
         self.command_counts = {
@@ -172,6 +202,7 @@ class ControllerRouteHoldScheduler:
         self.command_transcript: list[str] = []
         self.receipt_transcript: list[dict[str, Any]] = []
         self._native_scope: dict[str, Any] | None = None
+        self._runtime_scope: ControllerRouteHoldRuntimeScope | None = None
         self._held_status_bytes: bytes | None = None
         self._held_status_count = 0
         self._start_ack_count = 0
@@ -189,6 +220,10 @@ class ControllerRouteHoldScheduler:
     @property
     def failed(self) -> bool:
         return self.phase == "failed"
+
+    @property
+    def runtime_scope(self) -> ControllerRouteHoldRuntimeScope | None:
+        return self._runtime_scope
 
     def _fail(self, reason: str) -> list[str]:
         if self.failure_reason is None:
@@ -386,6 +421,7 @@ class ControllerRouteHoldScheduler:
 
     def _stable_status_projection(
         self, row: dict[str, Any], hold: dict[str, Any], route_generation: int,
+        runtime_scope: ControllerRouteHoldRuntimeScope | None,
     ) -> bytes:
         runtime = row["raid_runtime"]
         projection = {
@@ -395,6 +431,13 @@ class ControllerRouteHoldScheduler:
             "server_epoch": runtime.get("server_epoch"),
             "attempt_id": runtime.get("attempt_id"),
             "route_generation": route_generation,
+            "runtime_scope": (
+                {
+                    "wipe_generation": runtime_scope.wipe_generation,
+                    "instance_id": runtime_scope.instance_id,
+                }
+                if runtime_scope is not None else None
+            ),
             "controller_route_hold": {
                 field: hold.get(field) for field in self._HOLD_IDENTITY_FIELDS
             } | {
@@ -452,13 +495,23 @@ class ControllerRouteHoldScheduler:
             return self._fail("controller_route_hold_duplicate_release_ack")
         return self._fail("controller_route_hold_unexpected_direct_receipt")
 
-    def _observe_status(self, row: dict[str, Any]) -> list[str]:
-        hold = self._hold_from_status(row)
-        if hold is None:
-            return self._fail("controller_route_hold_status_receipt_missing")
+    def _status_context(
+        self, row: dict[str, Any], hold: dict[str, Any],
+    ) -> tuple[
+        dict[str, Any] | None,
+        int | None,
+        ControllerRouteHoldRuntimeScope | None,
+        list[str],
+    ]:
+        """Validate one status envelope and project its typed runtime scope."""
+
         rejections = self._hold_rejections(hold)
         runtime = row.get("raid_runtime")
         route_generation = self._status_route_generation(row)
+        runtime_scope = (
+            ControllerRouteHoldRuntimeScope.from_status(row)
+            if self._runtime_scope_required else None
+        )
         if (
             row.get("ok") is not True
             or row.get("action") != "botauto_status"
@@ -471,6 +524,17 @@ class ControllerRouteHoldScheduler:
             rejections.append("controller_route_hold_active_status_invalid")
         if route_generation is None:
             rejections.append("controller_route_hold_status_generation_invalid")
+        if self._runtime_scope_required and runtime_scope is None:
+            rejections.append("controller_route_hold_runtime_scope_invalid")
+        return runtime, route_generation, runtime_scope, rejections
+
+    def _observe_status(self, row: dict[str, Any]) -> list[str]:
+        hold = self._hold_from_status(row)
+        if hold is None:
+            return self._fail("controller_route_hold_status_receipt_missing")
+        _, route_generation, runtime_scope, rejections = self._status_context(
+            row, hold,
+        )
         if rejections:
             return self._fail(rejections[0])
         assert route_generation is not None
@@ -482,12 +546,15 @@ class ControllerRouteHoldScheduler:
             if hold.get("phase") != "held" or route_generation != 1:
                 return self._fail("controller_route_hold_unstable_held_status")
             status_bytes = self._stable_status_projection(
-                row, hold, route_generation,
+                row, hold, route_generation, runtime_scope,
             )
             if self._held_status_bytes is None:
                 self._held_status_bytes = status_bytes
+                self._runtime_scope = runtime_scope
                 self._held_status_count = 1
                 return self._status_command()
+            if runtime_scope != self._runtime_scope:
+                return self._fail("controller_route_hold_runtime_scope_drift")
             if status_bytes != self._held_status_bytes:
                 return self._fail("controller_route_hold_unstable_held_status")
             self._held_status_count = 2
@@ -588,6 +655,13 @@ class ControllerRouteHoldScheduler:
                 for field in self.identity.__dataclass_fields__
             },
             "native_scope": self._native_scope,
+            "runtime_scope": (
+                {
+                    "wipe_generation": self._runtime_scope.wipe_generation,
+                    "instance_id": self._runtime_scope.instance_id,
+                }
+                if self._runtime_scope is not None else None
+            ),
             "held_status_count": self._held_status_count,
             "held_status_identity_sha256": (
                 hashlib.sha256(self._held_status_bytes).hexdigest()

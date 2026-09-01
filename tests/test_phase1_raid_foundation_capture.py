@@ -2229,10 +2229,11 @@ def test_generic_controller_route_hold_scheduler_extraction_is_bounded():
         for node in ast.walk(tree)
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
     }
-    assert len(metrics) == 24
-    assert sum(metrics.values()) == 115
-    assert max(metrics.values()) == 24
-    assert metrics["_observe_status"] == 24
+    assert len(metrics) == 27
+    assert sum(metrics.values()) == 125
+    assert max(metrics.values()) == 23
+    assert metrics["_observe_status"] == 23
+    assert metrics["_status_context"] == 6
     assert metrics["_checkpoint_lifecycle_rejections"] == 8
 
 

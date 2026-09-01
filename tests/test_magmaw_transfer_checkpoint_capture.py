@@ -61,7 +61,9 @@ def _identity() -> ControllerRouteHoldLaunchIdentity:
     )
 
 
-def _config_comparison() -> dict[str, object]:
+def _config_comparison(
+    binary_revision_length: int = 40,
+) -> dict[str, object]:
     return {
         "accepted": True,
         "failure_field": "",
@@ -79,7 +81,7 @@ def _config_comparison() -> dict[str, object]:
         "binary_revision_matches_source": True,
         "configured_source_length": 40,
         "requested_source_length": 40,
-        "binary_revision_length": 40,
+        "binary_revision_length": binary_revision_length,
     }
 
 
@@ -146,6 +148,8 @@ def _status(phase: str = "held", stage: str = "disabled") -> dict[str, object]:
             "active": True,
             "server_epoch": 91,
             "attempt_id": 7,
+            "wipe_generation": 0,
+            "instance_id": 123,
             "route_progress": {"generation": 1},
             "controller_route_hold": hold,
         },
@@ -156,11 +160,17 @@ def _direct_hold() -> dict[str, object]:
     return _hold("held", "disabled")
 
 
-def _checkpoint_row(stage: str = "completed") -> dict[str, object]:
+def _checkpoint_row(
+    stage: str = "completed", *, binary_revision_length: int = 40,
+    scope_wipe_generation: int = 0, scope_instance_id: int = 123,
+) -> dict[str, object]:
     terminal = stage in {"completed", "failed"}
     completed = stage == "completed"
     lifecycle = _lifecycle(stage)
     hold = _hold("checkpoint_terminal" if terminal else "armed", stage)
+    hold["config_identity_comparison"] = _config_comparison(
+        binary_revision_length
+    )
     return {
         "ok": not (stage == "failed"),
         "action": "botauto_magmaw_transfer_lane_checkpoint",
@@ -176,7 +186,8 @@ def _checkpoint_row(stage: str = "completed") -> dict[str, object]:
         "actor_guid": ACTOR,
         "task_authority_enabled": False,
         "scope_key": (
-            "default:7:0:1:bwd.entry.regroup:669:123:"
+            f"default:7:{scope_wipe_generation}:1:bwd.entry.regroup:669:"
+            f"{scope_instance_id}:"
             "magmaw_transfer_lane_checkpoint"
             if completed else ""
         ),
@@ -219,7 +230,9 @@ def _scheduler() -> ControllerRouteHoldScheduler:
     )
 
 
-def _awaiting_terminal() -> ControllerRouteHoldScheduler:
+def _awaiting_terminal(
+    *, binary_revision_length: int = 40,
+) -> ControllerRouteHoldScheduler:
     scheduler = _scheduler()
     assert scheduler.start()
     assert scheduler.observe(_direct_hold()) == ["botauto status"]
@@ -227,7 +240,9 @@ def _awaiting_terminal() -> ControllerRouteHoldScheduler:
     assert scheduler.observe(_status()) == [
         f"botautomagmawtransfercheckpoint arm {ACTOR} {CASE} {SEAL} {SOURCE}"
     ]
-    assert scheduler.observe(_checkpoint_row("armed")) == [
+    assert scheduler.observe(_checkpoint_row(
+        "armed", binary_revision_length=binary_revision_length,
+    )) == [
         "botautomagmawtransfercheckpoint status"
     ]
     assert scheduler.phase == "awaiting_terminal"
@@ -311,6 +326,14 @@ def test_exact_dedicated_success_stops_as_non_gameplay_fixture_observation() -> 
     ) == "fixture_terminal_observation"
 
 
+def test_twelve_character_binary_revision_transcript_is_valid() -> None:
+    scheduler = _awaiting_terminal(binary_revision_length=12)
+    assert scheduler.observe(_checkpoint_row(
+        binary_revision_length=12,
+    )) == []
+    assert scheduler.complete is True
+
+
 @pytest.mark.parametrize(
     ("path", "bad"),
     [
@@ -341,6 +364,16 @@ def test_exact_dedicated_success_stops_as_non_gameplay_fixture_observation() -> 
         (
             ("scope_key",),
             "default:7:0:1:wrong:669:123:magmaw_transfer_lane_checkpoint",
+        ),
+        (
+            ("scope_key",),
+            "default:7:999:1:bwd.entry.regroup:669:123:"
+            "magmaw_transfer_lane_checkpoint",
+        ),
+        (
+            ("scope_key",),
+            "default:7:0:1:bwd.entry.regroup:669:999:"
+            "magmaw_transfer_lane_checkpoint",
         ),
         (
             (
@@ -438,6 +471,55 @@ def test_progress_counts_reject_incoherent_or_unbounded_wrong_floor_samples(
     lifecycle["progress_samples"] = progress
     assert scheduler.observe(row) == []
     assert scheduler.failed is True
+
+
+@pytest.mark.parametrize("bad_length", [0, 11, 13, 39, 41])
+def test_binary_revision_rejects_lengths_other_than_twelve_or_forty(
+    bad_length: int,
+) -> None:
+    scheduler = _awaiting_terminal()
+    row = _checkpoint_row(binary_revision_length=bad_length)
+    assert scheduler.observe(row) == []
+    assert scheduler.failed is True
+
+
+@pytest.mark.parametrize(
+    ("field", "bad"),
+    [
+        ("wipe_generation", None),
+        ("wipe_generation", -1),
+        ("instance_id", None),
+        ("instance_id", 0),
+    ],
+)
+def test_stable_status_requires_authoritative_runtime_scope(
+    field: str, bad: object,
+) -> None:
+    scheduler = _scheduler()
+    assert scheduler.start()
+    assert scheduler.observe(_direct_hold()) == ["botauto status"]
+    status = _status()
+    runtime = status["raid_runtime"]
+    assert isinstance(runtime, dict)
+    runtime[field] = bad
+    assert scheduler.observe(status) == []
+    assert scheduler.failure_reason == "controller_route_hold_runtime_scope_invalid"
+
+
+@pytest.mark.parametrize(("field", "bad"), [("wipe_generation", 1), ("instance_id", 124)])
+def test_second_stable_status_rejects_runtime_scope_drift(
+    field: str, bad: int,
+) -> None:
+    scheduler = _scheduler()
+    assert scheduler.start()
+    assert scheduler.observe(_direct_hold()) == ["botauto status"]
+    assert scheduler.observe(_status()) == ["botauto status"]
+    status = _status()
+    runtime = status["raid_runtime"]
+    assert isinstance(runtime, dict)
+    runtime[field] = bad
+    assert scheduler.observe(status) == []
+    assert scheduler.failure_reason == "controller_route_hold_runtime_scope_drift"
 
 
 def test_success_permits_one_wrong_floor_before_three_decreasing_samples() -> None:
