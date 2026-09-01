@@ -5,6 +5,7 @@
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMoveAwayGeometry.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -572,19 +573,8 @@ private:
         ActorSnapshot const& danger, std::string mechanic,
         float exitDistance, MagmawParasiteHazardState* hazardState = nullptr)
     {
-        float dx = bot.Position.X - danger.Position.X;
-        float dy = bot.Position.Y - danger.Position.Y;
-        float length = std::sqrt(dx * dx + dy * dy);
-        if (length < 0.01f)
-        {
-            dx = std::cos(bot.Facing);
-            dy = std::sin(bot.Facing);
-            length = 1.0f;
-        }
-        Vector3 const destination{
-            danger.Position.X + dx / length * exitDistance,
-            danger.Position.Y + dy / length * exitDistance,
-            bot.Position.Z };
+        Vector3 const destination = MagmawMoveAwayDestination(bot.Position,
+            bot.Facing, danger.Position, exitDistance);
         if (hazardState)
         {
             if (!hazardState->Begin(danger.Guid, danger.Position,

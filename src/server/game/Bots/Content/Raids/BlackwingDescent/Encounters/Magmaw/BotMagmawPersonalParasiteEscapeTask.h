@@ -3,6 +3,7 @@
 
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMoveAwayGeometry.h"
 #include "Bots/Decision/BotPersistentTask.h"
 
 #include <optional>
@@ -45,6 +46,9 @@ struct MagmawPersonalParasiteEscapeTask
         MagmawPersonalParasiteEscapeFailure::None;
     bool Started = false;
     bool WaveEnded = true;
+    bool ActorLifeObserved = false;
+    bool ActorAlive = false;
+    uint64 ActorLifeGeneration = 0;
     bool AlternateUsed = false;
     bool AlternatePending = false;
     float BestClearance = 0.0f;
@@ -54,6 +58,8 @@ struct MagmawPersonalParasiteEscapeTask
     uint64 LastProgressRevision = 0;
 
     void ObserveScope(Blackboard const& board, ObjectGuid actor);
+    void ObserveActorLife(Blackboard const& board, ObjectGuid actor,
+        bool alive);
 
     std::optional<BotNativeAction::Candidate> Tick(
         Blackboard const& board, MagmawFacts const& facts,

@@ -85,6 +85,8 @@ public:
         if (board.Route.NodeId != "bwd.magmaw.encounter")
             return plan;
         ActorSnapshot const* bot = board.FindActor(botGuid);
+        if (personalEscapeTask && bot)
+            personalEscapeTask->ObserveActorLife(board, botGuid, bot->Alive);
         if (!bot || !bot->Alive)
             return plan;
         if (eventMovement)

@@ -11,23 +11,6 @@ float Distance2d(Vector3 const& left, Vector3 const& right)
     return std::hypot(left.X - right.X, left.Y - right.Y);
 }
 
-Vector3 EscapeDestination(Vector3 const& actor, Vector3 const& danger,
-    float distance)
-{
-    float dx = actor.X - danger.X;
-    float dy = actor.Y - danger.Y;
-    float length = std::hypot(dx, dy);
-    if (length < 0.01f)
-    {
-        dx = 1.0f;
-        dy = 0.0f;
-        length = 1.0f;
-    }
-    dx /= length;
-    dy /= length;
-    return { danger.X + dx * distance, danger.Y + dy * distance, actor.Z };
-}
-
 float ParasiteClearance(MagmawFacts const& facts, Vector3 const& position)
 {
     float clearance = std::numeric_limits<float>::max();
@@ -82,13 +65,45 @@ inline void MagmawPersonalParasiteEscapeTask::ObserveScope(
     ActorGuid = actor;
 }
 
+inline void MagmawPersonalParasiteEscapeTask::ObserveActorLife(
+    Blackboard const& board, ObjectGuid actor, bool alive)
+{
+    ObserveScope(board, actor);
+    if (!ActorLifeObserved)
+    {
+        ActorLifeObserved = true;
+        ActorAlive = alive;
+        return;
+    }
+    if (ActorAlive == alive)
+        return;
+
+    ActorAlive = alive;
+    ++ActorLifeGeneration;
+    Started = false;
+    AlternateUsed = false;
+    AlternatePending = false;
+    Failure = MagmawPersonalParasiteEscapeFailure::None;
+    State = BotDecision::PersistentTaskState::Aborted;
+}
+
 inline std::optional<BotNativeAction::Candidate>
 MagmawPersonalParasiteEscapeTask::Tick(
     Blackboard const& board, MagmawFacts const& facts,
     ActorSnapshot const& bot, ActorSnapshot const* personalThreat,
     float safeClearance, float arrivalTolerance, bool preemptCasting)
 {
-    ObserveScope(board, bot.Guid);
+    ObserveActorLife(board, bot.Guid, bot.Alive);
+    if (!bot.Alive)
+        return std::nullopt;
+    bool const factsCurrentAndAuthoritative =
+        facts.ObservationRevision == board.Revision
+        && facts.Lifecycle == board.CurrentScope
+        && facts.LifecycleAuthoritative
+        && facts.ProjectionAuthoritative
+        && facts.Parasites.Authoritative;
+    if (!factsCurrentAndAuthoritative)
+        return std::nullopt;
     if (facts.Parasites.Active != MagmawTruth::True)
     {
         if (facts.Parasites.Authoritative)
@@ -173,8 +188,8 @@ MagmawPersonalParasiteEscapeTask::Tick(
         Failure = MagmawPersonalParasiteEscapeFailure::None;
         DangerGuid = personalThreat->Guid;
         DangerPosition = personalThreat->Position;
-        Destination = EscapeDestination(bot.Position, DangerPosition,
-            safeClearance);
+        Destination = MagmawMoveAwayDestination(bot.Position, bot.Facing,
+            DangerPosition, safeClearance);
         PrimaryDestination = Destination;
         CandidateGeneration = ++NextCandidateGeneration;
         if (!CandidateGeneration)
@@ -195,8 +210,8 @@ MagmawPersonalParasiteEscapeTask::Tick(
         }
         DangerGuid = nearest->Guid;
         DangerPosition = nearest->Position;
-        Destination = EscapeDestination(bot.Position, DangerPosition,
-            safeClearance);
+        Destination = MagmawMoveAwayDestination(bot.Position, bot.Facing,
+            DangerPosition, safeClearance);
         if (SamePoint(Destination, PrimaryDestination))
         {
             State = BotDecision::PersistentTaskState::Failed;

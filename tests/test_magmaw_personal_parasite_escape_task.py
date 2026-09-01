@@ -150,6 +150,39 @@ int main()
     auto cache = MagmawFactsCache::ForSnapshot(nullptr, board);
     assert(!cache->Facts().Parasites.Generation.Authoritative());
 
+    // A visible first-active parasite is authoritative even though its edge
+    // generation is intentionally unknown. Partial or stale projections may
+    // not establish an actor-local wave or task.
+    MagmawFacts partial = cache->Facts();
+    partial.ProjectionAuthoritative = false;
+    MagmawPersonalParasiteEscapeTask partialTask;
+    assert(!partialTask.Tick(board, partial, board.Players[2],
+        &board.Hostiles[1], 16.0f, 4.0f, false));
+    assert(!partialTask.Started && partialTask.WaveGeneration == 0);
+    MagmawFacts stale = cache->Facts();
+    --stale.ObservationRevision;
+    assert(!partialTask.Tick(board, stale, board.Players[2],
+        &board.Hostiles[1], 16.0f, 4.0f, false));
+    assert(!partialTask.Started && partialTask.WaveGeneration == 0);
+
+    // Exact overlap uses the actor's facing, matching the legacy move-away
+    // formula instead of inventing a fixed axis.
+    Blackboard overlapBoard = board;
+    overlapBoard.Players[2].Facing = 1.25f;
+    overlapBoard.Hostiles[1].Position = overlapBoard.Players[2].Position;
+    ++overlapBoard.Revision;
+    auto overlapFacts = MagmawFactsCache::ForSnapshot(nullptr, overlapBoard);
+    MagmawPersonalParasiteEscapeTask overlapTask;
+    auto overlapIntent = overlapTask.Tick(overlapBoard,
+        overlapFacts->Facts(), overlapBoard.Players[2],
+        &overlapBoard.Hostiles[1], 16.0f, 4.0f, true);
+    Vector3 const overlapExpected = MagmawMoveAwayDestination(
+        overlapBoard.Players[2].Position, overlapBoard.Players[2].Facing,
+        overlapBoard.Hostiles[1].Position, 16.0f);
+    assert(overlapIntent);
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        overlapTask.Destination, overlapExpected));
+
     AdaptiveMagmawStrategy strategy;
     MagmawLaneTransitionState lane;
     MagmawParasiteHazardState legacy;
@@ -224,6 +257,42 @@ int main()
         &board.Hostiles[1], 16.0f, 4.0f, true);
     assert(peerIntent && peer.ActorGuid != task.ActorGuid);
 
+    // Death and resurrection in the same wave abort the old actor-life task.
+    // The resurrected actor receives a fresh candidate rather than resuming
+    // the stale destination or generation.
+    MagmawPersonalParasiteEscapeTask lifeTask;
+    board.Hostiles[1].VictimGuid = PlayerGuid(30008);
+    auto lifeFirst = lifeTask.Tick(board, cache->Facts(), board.Players[2],
+        &board.Hostiles[1], 16.0f, 4.0f, false);
+    assert(lifeFirst);
+    uint64 const oldLifeCandidate = lifeTask.CandidateGeneration;
+    Vector3 const oldLifeDestination = lifeTask.Destination;
+    board.Players[2].Alive = false;
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    strategy.Propose(board, PlayerGuid(30008), "dps", nullptr, false,
+        false, &lane, &legacy, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &lifeTask);
+    assert(!lifeTask.Started && lifeTask.State == TaskState::Aborted);
+    assert(lifeTask.ActorLifeGeneration == 1);
+    board.Players[2].Alive = true;
+    board.Players[2].Position.X += 0.25f;
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan resurrected = strategy.Propose(board,
+        PlayerGuid(30008), "dps", nullptr, false, false, &lane, &legacy,
+        nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &lifeTask);
+    BotNativeAction::Candidate const* resurrectedEscape = Escape(resurrected);
+    assert(resurrectedEscape && lifeTask.ActorLifeGeneration == 2);
+    assert(lifeTask.CandidateGeneration != oldLifeCandidate);
+    assert(!MagmawPersonalParasiteEscapeTask::SamePoint(
+        lifeTask.Destination, oldLifeDestination));
+
     // Authoritative absence closes the tombstone; a later edge rearms once.
     board.Hostiles.resize(1);
     ++board.Revision;
@@ -275,6 +344,7 @@ int main()
     uint64 const latchedUnknownWave = unknownTask.WaveGeneration;
     ++board.Revision;
     board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
     auto authoritativeSamePresence = unknownTask.Tick(board, cache->Facts(),
         board.Players[2], &board.Hostiles[1], 16.0f, 4.0f, false);
     assert(authoritativeSamePresence);
@@ -330,6 +400,12 @@ def test_personal_escape_wiring_has_no_vertical_or_path_changes() -> None:
     assert "PathGenerator" not in task
     assert "MotionMaster" not in task
     assert "NativeFloorTolerance" not in task
-    assert "actor.Z" in task
     assert "Destination.X +=" not in task
     assert "Destination.Z +=" not in task
+    assert "dx = 1.0f" not in task
+    geometry = (encounter / "BotMagmawMoveAwayGeometry.h").read_text()
+    assert "actor.Z" in geometry
+    assert "std::cos(actorFacing)" in geometry
+    assert "std::sin(actorFacing)" in geometry
+    legacy = (encounter / "BotAdaptiveMagmawParasitePolicy.h").read_text()
+    assert "MagmawMoveAwayDestination(bot.Position" in legacy
