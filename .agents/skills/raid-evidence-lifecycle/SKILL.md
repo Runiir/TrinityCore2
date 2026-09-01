@@ -135,6 +135,12 @@ These shutdown and persistence duties belong to the capture controller or coordi
   detector itself caused the later wipe, and retain both the observed edge and
   the detector-induced terminal edge.
 - In uncapped mode, use channel-freshness and monotonic semantic-progress clocks. Activity churn, casting toggles, or changing victim GUIDs are not progress.
+- Treat an authoritative terminal cohort action gate as a completion-watchdog
+  terminal on the next heartbeat. Treat a full wipe as terminal only when no
+  typed recovery state or explicit recovery budget remains. Preserve the final
+  heartbeat, diagnosis, trace, combat log, bot cleanup, and server shutdown;
+  do not wait for the broader semantic-stall clock after either terminal is
+  proven.
 - Inspect the resolved candidate set when a top-level decision reports `ok`.
   A successful wait or suppression lane does not erase a failed movement or
   interaction candidate in the same tick. After the configured repeated-action
@@ -186,6 +192,12 @@ enable broad high-frequency tracing to recover one missing join. The compact
 extractor must join actor, intent fingerprint, planner result, native launch,
 spline progress, and terminal outcome for the requested receipt, and must say
 which fields remain unavailable.
+
+For a rejected hazard movement, publish the rejection before a later candidate
+in the same tick can overwrite an actor-level `Latest` slot. Include hazard GUID
+and sampled position, requested and resolved endpoints, path/floor proof,
+clearance delta, candidate/task generations, authority source, and typed
+terminal reason. Z is floor evidence only; it is never a bot movement command.
 
 ## Publish and minimize disk
 

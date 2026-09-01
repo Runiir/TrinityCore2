@@ -149,6 +149,12 @@ side vertical steering, height correction, teleportation, or global tolerance
 loosening. A verifier may accept a bounded, same-floor native projection only
 after correlated generator/spline progress proves the bot followed that path.
 
+Do not route a hazard endpoint rejection to implementation until one retained
+receipt joins the acting bot and stable hazard to the requested destination,
+native resolved endpoint, path/floor result, clearance change, and terminal
+outcome. A diagnostic patch must preserve ordinary movement fingerprints and
+must publish the rejected receipt before any same-tick candidate overwrites it.
+
 Do not schedule a rerun merely because a specialist reports green focused
 tests. If the blocker previously returned after a green run, require the same
 causal signature, an incremented retained-fixture revision, an exact recorded

@@ -111,6 +111,14 @@ plus endpoint-floor validity; do not collapse those facts into one unexplained
 3D tolerance. Retain the exact rejected endpoint deltas as a compiled
 counterexample and serialize both components for future traces.
 
+For hazard-relative movement, bind the diagnostic to the acting bot, stable
+hazard GUID and sampled hazard position, requested destination, planner-selected
+endpoint, path/floor proof, and clearance change. Preserve a rejected hazard
+receipt before another movement candidate from the same tick can replace the
+actor's latest observation. Diagnostic-only metadata must not change ordinary
+movement fingerprints, candidate identity, admission, or execution. Do not
+authorize a path change from an unjoined rejection and later infection.
+
 Apply that distinction in every downstream receipt/checkpoint verifier too,
 not only in planner admission. Do not require bit-exact equality between the
 requested Z and the planner-selected terrain Z after the planner has produced
@@ -309,6 +317,12 @@ spellbook identity drift and permanently close an otherwise recoverable raid.
 Apply the same split to group membership versus corpse worldports, roster
 identity versus active participation, and initial map/instance identity versus
 typed native recovery transit.
+
+`PlayerPetData::Active` is mutable lifecycle state: ordinary dismiss/save can
+clear it without changing pet identity. Resolve the live pet's stable pet
+number to its exact persisted row, then compare owner, pet ID, entry, admitted
+spellbook, autocasts, and receipt hash. Never select an unrelated currently
+active row as a substitute, and never include `Active` in immutable identity.
 
 Persistent setup may run after admission only for a typed native lifecycle
 transition that restores the same admitted identity. It must not choose a new
