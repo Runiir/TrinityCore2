@@ -197,6 +197,13 @@ def _replacement_request() -> dict[str, object]:
 def _map669_expansion_requests() -> list[dict[str, object]]:
     return [
         {
+            "fixture_id": "same_level_floor_observation_v1",
+            "from_revision": 4,
+            "to_revision": 5,
+            "causal_signature": "same_level_floor_observation_false_negative",
+            "required_production_boundary": "map_669_native_floor_observation",
+        },
+        {
             "fixture_id": "same_level_hazard_path_admission_v1",
             "from_revision": 4,
             "to_revision": 5,

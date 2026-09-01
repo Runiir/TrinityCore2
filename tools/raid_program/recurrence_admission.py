@@ -35,11 +35,9 @@ NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX = (
     "BotWorld.ValidationFixture.NativePathCheckpoint"
 )
 NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS = {
+    "same_level_floor_observation_v1": (4, 5),
     "same_level_hazard_path_admission_v1": (4, 5),
     "same_level_native_path_proof_v1": (4, 5),
-}
-NATIVE_PATH_CHECKPOINT_CLOSED_FIXTURE_IDS = {
-    "same_level_floor_observation_v1",
 }
 PROFILE_MANIFEST_RELATIVE_PATH = Path("dataset/bot_runtime_profiles/profiles.json")
 
@@ -116,10 +114,7 @@ def _native_path_checkpoint_request_contract(
 
 def _native_path_checkpoint_requested(value: dict[str, Any]) -> bool:
     targets = value.get("fixture_expansion_target_ids")
-    native_ids = (
-        set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
-        | NATIVE_PATH_CHECKPOINT_CLOSED_FIXTURE_IDS
-    )
+    native_ids = set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
     return isinstance(targets, list) and bool(set(targets) & native_ids)
 
 

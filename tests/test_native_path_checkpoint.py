@@ -658,8 +658,8 @@ def test_seal_binds_case_and_exact_pending_requests(
     [
         ("missing", "native_path_checkpoint_request_contract_mismatch"),
         ("extra", "native_path_checkpoint_request_contract_mismatch"),
-        ("stale", "native_path_checkpoint_request_contract_mismatch"),
-        ("closed_fixture", "native_path_checkpoint_request_contract_mismatch"),
+        ("stale_floor_revision", "native_path_checkpoint_request_contract_mismatch"),
+        ("duplicate", "native_path_checkpoint_request_duplicate"),
         ("wrong_target", "native_path_checkpoint_request_target_mismatch"),
     ],
 )
@@ -691,20 +691,11 @@ def test_seal_rejects_non_authoritative_pending_request_contracts(
         targets.append(extra["fixture_id"])
         pending.append(extra["fixture_id"])
         requests.append(extra)
-    elif mutation == "stale":
+    elif mutation == "stale_floor_revision":
         requests[0]["from_revision"] = 3
         requests[0]["to_revision"] = 4
-    elif mutation == "closed_fixture":
-        closed = {
-            "fixture_id": "same_level_floor_observation_v1",
-            "from_revision": 3,
-            "to_revision": 4,
-            "causal_signature": "closed_floor_observation",
-            "required_production_boundary": "closed_floor_boundary",
-        }
-        targets.append(closed["fixture_id"])
-        pending.append(closed["fixture_id"])
-        requests.append(closed)
+    elif mutation == "duplicate":
+        requests.append(dict(requests[0]))
     else:
         targets[-1] = "wrong_native_path_target_v1"
     decision_path.write_text(json.dumps(decision), encoding="utf-8")
