@@ -38,4 +38,14 @@ void ObserveExecutionProof(ExecutionObservation& execution,
         proof.ActualEndpointMatchedResolved;
     execution.RequestedEndpointMatched = proof.EndpointMatched;
 }
+
+void ObserveExecutionRejection(ExecutionObservation& execution,
+    std::string_view reason)
+{
+    execution.Available = true;
+    execution.Disposition = ExecutionDisposition::Rejected;
+    execution.NativeSubmitted = false;
+    execution.RejectionReason = reason.empty()
+        ? "route_destination_unreachable" : std::string(reason);
+}
 }

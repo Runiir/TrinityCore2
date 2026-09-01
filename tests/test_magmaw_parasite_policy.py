@@ -1001,6 +1001,7 @@ def test_magmaw_containment_replays_full_runtime_contract(tmp_path: Path) -> Non
 #include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
 #include "Bots/BotWorldPopulationMgrMovement.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/BotNativeMovementOutcome.h"
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -1146,16 +1147,6 @@ static BotWorldMovement::NativePathProofObservation PathProof(
     return proof;
 }
 
-static BotActionArbitration::Outcome ObserveNativePathAttempt(
-    BotWorldMovement::NativePathProofObservation const& proof)
-{
-    if (char const* failure = BotWorldMovement::NativePathProofFailureReason(
-            proof))
-        return BotActionArbitration::Outcome::Retryable(failure);
-    return BotActionArbitration::Outcome::Started(
-        "native_movement_submitted");
-}
-
 static void SubmitMovementThroughProductionAdapter(
     BotActionArbitration::Kernel& kernel,
     BotNativeAction::Candidate const& native,
@@ -1163,13 +1154,15 @@ static void SubmitMovementThroughProductionAdapter(
     BotWorldMovement::NativePathProofObservation const& proof,
     bool& nativeAttempted,
     MagmawParasiteHazardState* hazardState = nullptr,
-    char const* forcedReason = nullptr)
+    char const* nativeRejectionReason = nullptr,
+    bool transientFailure = false)
 {
     MagmawMovementIntentCollection movements;
     movements.Propose(MagmawMovementProposalOrigin::Hazard, native);
     MagmawMovementKernelAdapterContext context;
     context.ObservedAtMs = board.ObservedAtMs;
-    context.Execute = [&nativeAttempted, proof, forcedReason](
+    context.Execute = [&nativeAttempted, proof, nativeRejectionReason,
+        transientFailure](
         BotNativeAction::Intent const& intent, MagmawMovementNativeLease lease,
         BotWorldMovement::ExecutionObservation* movement)
     {
@@ -1177,9 +1170,29 @@ static void SubmitMovementThroughProductionAdapter(
         assert(lease.Owner == BotMovementArbitration::Owner::Hazard);
         assert(!movement);
         nativeAttempted = true;
-        if (forcedReason)
-            return BotActionArbitration::Outcome::Retryable(forcedReason);
-        return ObserveNativePathAttempt(proof);
+        BotWorldMovement::ExecutionObservation execution = transientFailure
+            ? BotWorldMovement::BeginUnavailableExecutionObservation(
+                std::get<Move>(intent).X, std::get<Move>(intent).Y,
+                std::get<Move>(intent).Z)
+            : BotWorldMovement::BeginExecutionObservation(
+                std::get<Move>(intent).X, std::get<Move>(intent).Y,
+                std::get<Move>(intent).Z);
+        if (transientFailure)
+            return BotNativeAction::NativeMoveOutcome(false, execution);
+        if (nativeRejectionReason)
+        {
+            BotWorldMovement::ObserveExecutionRejection(execution,
+                nativeRejectionReason);
+            return BotNativeAction::NativeMoveOutcome(false, execution);
+        }
+        if (char const* failure =
+                BotWorldMovement::NativePathProofFailureReason(proof))
+        {
+            BotWorldMovement::ObserveExecutionProof(execution, proof);
+            BotWorldMovement::ObserveExecutionRejection(execution, failure);
+            return BotNativeAction::NativeMoveOutcome(false, execution);
+        }
+        return BotNativeAction::NativeMoveOutcome(true, execution);
     };
     context.ObserveNativeOutcome = [hazardState](
         MagmawMovementNativeOutcome const& outcome)
@@ -1428,7 +1441,13 @@ int main()
         diagnosticSidecar.FinalizeExecutor(30006, 669, plannerIntent,
             "planner_admission", "rejected",
             "route_destination_endpoint_mismatch", diagnosticReceipt);
-        return ObserveNativePathAttempt(rejectedProof);
+        BotWorldMovement::ExecutionObservation execution =
+            BotWorldMovement::BeginExecutionObservation(move->X, move->Y,
+                move->Z, diagnosticReceipt);
+        BotWorldMovement::ObserveExecutionProof(execution, rejectedProof);
+        BotWorldMovement::ObserveExecutionRejection(execution,
+            "route_destination_endpoint_mismatch");
+        return BotNativeAction::NativeMoveOutcome(false, execution);
     };
     BotActionArbitration::Kernel diagnosticKernel;
     diagnosticKernel.Begin(retryBoard.ObservedAtMs);
@@ -1927,6 +1946,31 @@ int main()
             terminalReasons[reasonIndex]));
     }
 
+    // A native failure with no typed planner/executor rejection preserves the
+    // legacy generic retry and must not terminate the actor-owned episode.
+    MagmawLaneTransitionState transientLane;
+    MagmawParasiteHazardState transientHazard;
+    AdaptiveMagmawPlan transientPlan = strategy.Propose(threatened,
+        PlayerGuid(30008), "dps", nullptr, false, false,
+        &transientLane, &transientHazard);
+    Move const* transientMove = MoveOf(transientPlan);
+    assert(transientMove && transientHazard.HasRetainedIntent());
+    BotActionArbitration::Kernel transientTick;
+    transientTick.Begin(threatened.ObservedAtMs);
+    bool transientAttempted = false;
+    SubmitMovementThroughProductionAdapter(transientTick,
+        *transientPlan.Movement, threatened,
+        PathProof({ transientMove->X, transientMove->Y, transientMove->Z },
+            true, BotWorldMovement::NativePathFloorFailure::None),
+        transientAttempted, &transientHazard, nullptr, true);
+    BotActionArbitration::Resolution const& transientResolution =
+        transientTick.Resolve();
+    assert(transientAttempted);
+    assert(!transientResolution.AnyCommitted);
+    assert(transientHazard.HasRetainedIntent());
+    assert(HasTrace(transientResolution, transientPlan.Movement->Id.Key(),
+        "attempted", "native_move_retryable"));
+
     // The exposed head remains first even while a parasite pursues the actor.
     Blackboard exposed = threatened;
     exposed.Revision += 2;
@@ -2016,3 +2060,6 @@ int main()
         cwd=ROOT,
     )
     subprocess.run([str(binary)], check=True, cwd=ROOT)
+    native_action = (ROOT / "src/server/game/Bots/"
+        "BotWorldPopulationMgrNativeAction.cpp").read_text(encoding="utf-8")
+    assert "BotNativeAction::NativeMoveOutcome(moved" in native_action

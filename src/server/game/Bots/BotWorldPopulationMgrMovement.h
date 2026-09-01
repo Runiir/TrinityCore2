@@ -50,6 +50,10 @@ struct ExecutionObservation
     float ResolvedEndpointZ = 0.0f;
     bool ActualEndpointMatchedResolved = false;
     bool RequestedEndpointMatched = false;
+    // Exact native rejection returned to the selected action owner. Empty
+    // means the movement failed before a typed planner/executor rejection was
+    // recorded and therefore retains the generic retry contract.
+    std::string RejectionReason;
 };
 
 // This is the production planner/executor observation seam.  It contains no
@@ -61,6 +65,8 @@ ExecutionObservation BeginUnavailableExecutionObservation(float requestedX,
     float requestedY, float requestedZ);
 void ObserveExecutionProof(ExecutionObservation& execution,
     NativePathProofObservation const& proof);
+void ObserveExecutionRejection(ExecutionObservation& execution,
+    std::string_view reason);
 
 // Hazard movement models a player's decision to abandon a hard cast for an
 // imminent lethal mechanic. Other movement owners remain compatible with an

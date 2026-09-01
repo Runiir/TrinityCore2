@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotNativeMovementOutcome.h"
 
 #include "CharmInfo.h"
 #include "Corpse.h"
@@ -131,9 +132,8 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                 action.IntentReason, action.DiagnosticCandidateKey,
                 BotWorldMovement::ValidationRouteDestinationAuthority::None,
                 action.HazardEscape);
-            return moved
-                ? BotActionArbitration::Outcome::Submitted("native_move_submitted")
-                : BotActionArbitration::Outcome::Retryable("native_move_retryable");
+            return BotNativeAction::NativeMoveOutcome(moved,
+                state.LastMovementExecution);
         }
         else if constexpr (std::is_same_v<T,
             BotNativeAction::DirectionalMobility>)

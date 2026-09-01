@@ -20,6 +20,8 @@ bool BotWorldPopulationMgr::RejectMovementPath(
     BotWorldMovement::Intent const& intent, char const* reason)
 {
     uint64 const nowMs = MovementEvidenceNowMs();
+    BotWorldMovement::ObserveExecutionRejection(state.LastMovementExecution,
+        reason ? reason : "route_destination_unreachable");
     BotWorldPopulationMgrBotState::ApplyOwnedMovementPathRejection(
         state, reason ? reason : "route_destination_unreachable", nowMs);
 
