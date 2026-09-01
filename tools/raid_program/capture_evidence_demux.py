@@ -18,6 +18,10 @@ try:
         _uint64_int,
     )
     from tools.raid_program.capture_watchdog import _CONTROLLER_TERMINAL_FAILURE_REASONS
+    from tools.raid_program.capture_fixture_evidence_binding import (
+        MAGMAW_TRANSFER_CHECKPOINT_ACTION,
+        fixture_terminal_binding,
+    )
 except ModuleNotFoundError:
     from capture_runtime_identity import (
         STRATEGY_FIELD,
@@ -33,6 +37,10 @@ except ModuleNotFoundError:
         _uint64_int,
     )
     from capture_watchdog import _CONTROLLER_TERMINAL_FAILURE_REASONS
+    from capture_fixture_evidence_binding import (
+        MAGMAW_TRANSFER_CHECKPOINT_ACTION,
+        fixture_terminal_binding,
+    )
 
 
 def _controller_terminal_binding(
@@ -118,6 +126,7 @@ def normalized_batch_payload(
     channel_by_action = {
         "botauto_controller_route_hold": "controller_protocol",
         "botauto_chainwielder_checkpoint": "controller_protocol",
+        MAGMAW_TRANSFER_CHECKPOINT_ACTION: "controller_protocol",
         "botauto_status": "status",
         "botauto_diagnose": "diagnosis",
         "botauto_trace": "trace",
@@ -592,12 +601,15 @@ def _required_telemetry_envelope_report(
         "gate_passed": not unique_rejections,
     }
 
+
 def evidence_demux_report(
     rows: list[dict[str, Any]],
     *,
     profile_name: str,
     controller_terminal: dict[str, Any] | None,
     terminal_failure_validator: Callable[..., tuple[str | None, list[str]]],
+    fixture_terminal: dict[str, Any] | None = None,
+    fixture_expected_identity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Independently bind every retained JSON row to one raid lifecycle."""
 
@@ -607,6 +619,7 @@ def evidence_demux_report(
         "botauto_combatlog_chunk", "botauto_combatlog_complete",
         "botauto_readycheck", "botauto_stop",
         "botauto_controller_route_hold", "botauto_chainwielder_checkpoint",
+        MAGMAW_TRANSFER_CHECKPOINT_ACTION,
     }
     canonical_identity: tuple[Any, ...] | None = None
     canonical_roster: tuple[tuple[Any, ...], ...] | None = None
@@ -699,6 +712,19 @@ def evidence_demux_report(
         profile_name=profile_name,
     )
     reasons.extend(controller_terminal_rejections)
+    fixture_terminal_bound, fixture_terminal_rejections, fixture_row_rejections = (
+        fixture_terminal_binding(
+            fixture_terminal,
+            rows,
+            canonical_identity=canonical_identity,
+            canonical_roster_guids=roster_guids,
+            canonical_cohort=canonical_cohort,
+            canonical_active_sequence=int(canonical_active_sequence),
+            profile_name=profile_name,
+            expected_identity=fixture_expected_identity,
+        )
+    )
+    reasons.extend(fixture_terminal_rejections)
     stop_seen = False
     inactive_cleanup_seen = False
     observed_actions: set[str] = set()
@@ -751,6 +777,18 @@ def evidence_demux_report(
                     or expected_sequence >= canonical_active_sequence):
                 reject("evidence_demux_profile_selection_not_before_active_status")
             profile_selection_seen = True
+            if not row_reasons:
+                binding["state"] = "bound"
+            continue
+
+        if action == MAGMAW_TRANSFER_CHECKPOINT_ACTION:
+            binding["scope"] = "fixture_checkpoint"
+            if stop_seen:
+                reject("evidence_demux_fixture_checkpoint_after_cleanup")
+            for reason in fixture_row_rejections.get(expected_sequence, []):
+                reject(reason)
+            if not fixture_terminal_bound and not row_reasons:
+                reject("evidence_demux_fixture_terminal_unbound")
             if not row_reasons:
                 binding["state"] = "bound"
             continue
@@ -924,8 +962,9 @@ def evidence_demux_report(
         "botauto_combatlog_complete",
         "botauto_controller_route_hold",
         "botauto_chainwielder_checkpoint",
+        MAGMAW_TRANSFER_CHECKPOINT_ACTION,
     }
-    if terminal_failure_seen or controller_terminal_bound:
+    if terminal_failure_seen or controller_terminal_bound or fixture_terminal_bound:
         # A recognized failed attempt never reaches the post-wipe ready-check
         # success gate.  Its exact terminal status plus forced diagnose/trace
         # and ordinary cleanup remain mandatory evidence.

@@ -4465,6 +4465,427 @@ def test_live_evidence_demux_still_requires_readycheck_for_clear_run():
     assert report["gate_passed"] is False
 
 
+def _magmaw_fixture_demux_input():
+    profile = "blackwing_descent_10n"
+    actor = 30007
+    fixture = "map669_magmaw_transfer_lane_authority_off_v1"
+    case = "entrance_polygon_short_lane_v1"
+    authority = "sealed_map669_transfer_lane_fixture_authority_off"
+    hold_identity = {
+        "cohort_id": "default", "server_epoch": 88, "attempt_id": 1,
+        "scenario_id": profile, "runtime_profile": profile,
+        "route_manifest_sha256": "a" * 64, "route_generation": 1,
+        "route_node_id": "bwd.entry.regroup", "actor_guid": actor,
+        "fixture_id": fixture, "seal_sha256": "b" * 64,
+        "source_commit": "c" * 40,
+    }
+    comparison = {
+        "accepted": True, "fixture_configured_present": True,
+        "fixture_requested_present": True, "fixture_matches": True,
+        "seal_configured_present": True, "seal_requested_present": True,
+        "seal_matches": True, "source_configured_present": True,
+        "source_requested_present": True, "source_matches": True,
+        "binary_revision_present": True, "binary_revision_format_valid": True,
+        "binary_revision_matches_source": True, "failure_field": "none",
+        "configured_source_length": 40, "requested_source_length": 40,
+        "binary_revision_length": 40,
+    }
+
+    def checkpoint(stage: str):
+        completed = stage == "completed"
+        lifecycle = {
+            "stage": stage, "terminal": completed,
+            "queue_count": 1 if completed else 0,
+            "candidate_attempt_count": 1 if completed else 0,
+            "native_submission_count": 1 if completed else 0,
+            "planner_receipt_id": 7 if completed else 0,
+            "progress_samples": 3 if completed else 0,
+            "outcome": (
+                "magmaw_transfer_checkpoint_completed" if completed
+                else "magmaw_transfer_checkpoint_armed"
+            ),
+            "case_id": case,
+        }
+        hold = {
+            **hold_identity, "ok": True,
+            "phase": "checkpoint_terminal" if completed else "armed",
+            "checkpoint_terminal": completed,
+            "checkpoint_identity_preserved": completed,
+            "checkpoint_stage": "completed" if completed else "disabled",
+            "checkpoint_lifecycle": lifecycle,
+            "config_identity_comparison": comparison,
+        }
+        return {
+            "ok": True, "action": "botauto_magmaw_transfer_lane_checkpoint",
+            "terminal_kind": "fixture_checkpoint",
+            "certifies_gameplay_success": False,
+            "certifies_boss_fidelity": False,
+            "fixture_gate_passed": completed, "authority": authority,
+            "fixture_id": fixture, "case_id": case, "actor_guid": actor,
+            "task_authority_enabled": False, "episode_generation": 17,
+            "task_generation": 31, "legacy_generation": 43,
+            "scope_key": (
+                "default:1:0:1:bwd.entry.regroup:669:42:"
+                "magmaw_transfer_lane_checkpoint" if completed else ""
+            ),
+            "candidate_key": (
+                "default:1:0:1:bwd.entry.regroup:669:42:"
+                "magmaw_transfer_lane_checkpoint:adaptive_magmaw:"
+                "pillar_bait_switch:GUID Full: 0x0000000000007537 "
+                "Type: Player Low: 30007:43" if completed else ""
+            ),
+            "planner_candidate_key": (
+                "default:1:0:1:bwd.entry.regroup:669:42:"
+                "magmaw_transfer_lane_checkpoint:adaptive_magmaw:"
+                "pillar_bait_switch:GUID Full: 0x0000000000007537 "
+                "Type: Player Low: 30007:43" if completed else ""
+            ),
+            "stage": stage, "terminal": completed,
+            "queue_count": lifecycle["queue_count"],
+            "candidate_attempt_count": lifecycle["candidate_attempt_count"],
+            "native_submission_count": lifecycle["native_submission_count"],
+            "planner_receipt_id": lifecycle["planner_receipt_id"],
+            "progress_samples": lifecycle["progress_samples"],
+            "outcome": lifecycle["outcome"],
+            "decreasing_progress_samples": 3 if completed else 0,
+            "wrong_floor_samples": 0, "spline_id": 9 if completed else 0,
+            "motion_master_slot": 1 if completed else 0,
+            "motion_master_generator_type": 8 if completed else 0,
+            "requested_destination": {
+                "x": -345.872009, "y": -218.343994, "z": 193.126999,
+            },
+            "actor_start": {
+                "x": -345.872009, "y": -224.343994, "z": 193.126999,
+            },
+            "actor_last_same_floor": {
+                "x": -345.872009, "y": -218.343994, "z": 193.126999,
+                "floor_z": 193.126999,
+            },
+            "task_state": "succeeded" if completed else "running",
+            "controller_route_hold": hold,
+        }
+
+    active = accepted_status()
+    active.update(cohort_id="default", active_profile=profile)
+    active["raid_runtime"]["roster"][6]["guid"] = actor
+    bots = [
+        {"bot_guid": member["guid"]}
+        for member in active["raid_runtime"]["roster"]
+    ]
+    diagnosis = {
+        "ok": True, "action": "botauto_diagnose", "cohort_id": "default",
+        "raid_runtime": active["raid_runtime"], "bots": bots,
+    }
+    trace = {
+        "ok": True, "action": "botauto_trace", "cohort_id": "default",
+        "raid_runtime": active["raid_runtime"],
+        "bots": [
+            {**bot, "entries": [], "delta": True, "gap": False}
+            for bot in bots
+        ],
+    }
+    terminal_response = checkpoint("completed")
+    launch_hold = {
+        **hold_identity, "ok": True, "action": "botauto_controller_route_hold",
+        "native_action_inferred_from_exact_shape": True, "phase": "held",
+    }
+    stop = {
+        "ok": True, "action": "botauto_stop", "cohort_id": "default",
+        "server_epoch": 88, "attempt_id": 1,
+        "raid_runtime_before_cleanup": active["raid_runtime"],
+        "post_cleanup": {"active": False, "bots": 0, "lease_count": 0},
+    }
+    inactive = json.loads(json.dumps(active))
+    inactive.update(bots=0, lease_count=0, server_epoch=88, attempt_id=1)
+    inactive["raid_runtime"]["active"] = False
+    rows = normalized_batch_payload(
+        b"\n".join(json.dumps(row).encode() for row in (
+            launch_hold, active, checkpoint("armed"), terminal_response,
+            diagnosis, trace, stop, inactive,
+        )) + b"\n"
+    )
+    terminal = {
+        "detected": True, "classification": "fixture_terminal_observation",
+        "terminal_kind": "magmaw_transfer_lane_checkpoint_terminal",
+        "scheduler_phase": "complete", "stage": "completed",
+        "outcome": "magmaw_transfer_checkpoint_completed",
+        "success": False, "gate_passed": False, "fixture_gate_passed": True,
+        "fixture_id": fixture, "case_id": case, "actor_guid": actor,
+        "checkpoint_response": terminal_response,
+        "final_forced_evidence": True,
+        "final_forced_evidence_report": {"gate_passed": True},
+    }
+    expected = {
+        "actor_guid": actor, "fixture_id": fixture, "case_id": case,
+        "runtime_profile": profile, "scenario_id": profile,
+        "route_manifest_sha256": "a" * 64, "seal_sha256": "b" * 64,
+        "source_commit": "c" * 40,
+    }
+    return rows, terminal, expected
+
+
+def test_fixture_checkpoint_demux_binds_transcript_and_waives_readycheck():
+    rows, terminal, expected = _magmaw_fixture_demux_input()
+    report = evidence_demux_report(
+        rows, fixture_terminal=terminal, fixture_expected_identity=expected,
+    )
+    assert [row["evidence_channel"] for row in rows[2:4]] == [
+        "controller_protocol", "controller_protocol",
+    ]
+    assert report["bound_rows"] == report["retained_rows"] == 8
+    assert report["rejected_rows"] == report["unchecked_rows"] == 0
+    assert report["rejections"] == []
+    assert report["gate_passed"] is True
+
+
+def test_fixture_checkpoint_demux_rejects_action_only_or_unretained_terminal():
+    rows, terminal, expected = _magmaw_fixture_demux_input()
+    action_only = evidence_demux_report(json.loads(json.dumps(rows)))
+    assert "evidence_demux_fixture_terminal_missing" in action_only["rejections"]
+    assert "evidence_demux_required_action_missing:botauto_readycheck" in action_only["rejections"]
+
+    forged = json.loads(json.dumps(terminal))
+    forged["checkpoint_response"]["spline_id"] = 999
+    report = evidence_demux_report(
+        json.loads(json.dumps(rows)), fixture_terminal=forged,
+        fixture_expected_identity=expected,
+    )
+    assert "evidence_demux_fixture_terminal_response_unretained" in report["rejections"]
+    assert report["gate_passed"] is False
+
+
+def test_fixture_checkpoint_demux_rejects_cross_identity_and_authority_drift():
+    for path, value in (
+        (("payload", "actor_guid"), 9999),
+        (("payload", "authority"), "wrong"),
+        (("payload", "task_authority_enabled"), True),
+        (("payload", "controller_route_hold", "source_commit"), "d" * 40),
+        (("payload", "controller_route_hold", "seal_sha256"), "e" * 64),
+        (("payload", "controller_route_hold", "route_manifest_sha256"), "f" * 64),
+        (("payload", "controller_route_hold", "runtime_profile"), "wrong"),
+        (("payload", "controller_route_hold", "attempt_id"), 2),
+        (("payload", "controller_route_hold", "server_epoch"), 89),
+    ):
+        rows, terminal, expected = _magmaw_fixture_demux_input()
+        target = rows[2]
+        for key in path[:-1]:
+            target = target[key]
+        target[path[-1]] = value
+        report = evidence_demux_report(
+            rows, fixture_terminal=terminal, fixture_expected_identity=expected,
+        )
+        assert report["gate_passed"] is False, path
+
+
+def test_fixture_checkpoint_demux_rejects_coherent_identity_and_candidate_forgery():
+    for field, value in (
+        ("route_manifest_sha256", "d" * 64),
+        ("seal_sha256", "e" * 64),
+        ("source_commit", "f" * 40),
+        ("runtime_profile", "coherently_forged_profile"),
+    ):
+        rows, terminal, expected = _magmaw_fixture_demux_input()
+        for row in rows:
+            payload = row["payload"]
+            hold = (
+                payload if payload.get("action") == "botauto_controller_route_hold"
+                else payload.get("controller_route_hold")
+            )
+            if isinstance(hold, dict):
+                hold[field] = value
+        terminal["checkpoint_response"]["controller_route_hold"][field] = value
+        report = evidence_demux_report(
+            rows, fixture_terminal=terminal, fixture_expected_identity=expected,
+        )
+        assert "evidence_demux_fixture_expected_identity_mismatch" in report["rejections"]
+
+    rows, terminal, expected = _magmaw_fixture_demux_input()
+    for row in rows:
+        payload = row["payload"]
+        if payload.get("action") == "botauto_magmaw_transfer_lane_checkpoint":
+            payload["actor_guid"] = 30006
+            payload["controller_route_hold"]["actor_guid"] = 30006
+        bots = payload.get("bots")
+        if isinstance(bots, list):
+            for bot in bots:
+                if bot.get("bot_guid") == 30007:
+                    bot["bot_guid"] = 30006
+        roster = (payload.get("raid_runtime") or {}).get("roster")
+        if isinstance(roster, list):
+            for member in roster:
+                if member.get("guid") == 30007:
+                    member["guid"] = 30006
+    rows[0]["payload"]["actor_guid"] = 30006
+    terminal["actor_guid"] = 30006
+    terminal["checkpoint_response"]["actor_guid"] = 30006
+    terminal["checkpoint_response"]["controller_route_hold"]["actor_guid"] = 30006
+    report = evidence_demux_report(
+        rows, fixture_terminal=terminal, fixture_expected_identity=expected,
+    )
+    assert "evidence_demux_fixture_terminal_identity_mismatch" in report["rejections"]
+
+    rows, terminal, expected = _magmaw_fixture_demux_input()
+    forged = terminal["checkpoint_response"]["scope_key"] + ":forged"
+    for row in rows:
+        payload = row["payload"]
+        if payload.get("candidate_key"):
+            payload["candidate_key"] = forged
+            payload["planner_candidate_key"] = forged
+    terminal["checkpoint_response"]["candidate_key"] = forged
+    terminal["checkpoint_response"]["planner_candidate_key"] = forged
+    report = evidence_demux_report(
+        rows, fixture_terminal=terminal, fixture_expected_identity=expected,
+    )
+    assert "evidence_demux_fixture_terminal_identity_mismatch" in report["rejections"]
+
+
+def test_fixture_checkpoint_demux_rejects_forced_evidence_and_bad_ordering():
+    rows, terminal, expected = _magmaw_fixture_demux_input()
+    terminal["final_forced_evidence"] = False
+    assert evidence_demux_report(
+        rows, fixture_terminal=terminal, fixture_expected_identity=expected,
+    )["gate_passed"] is False
+
+    rows, terminal, expected = _magmaw_fixture_demux_input()
+    terminal_row = rows.pop(3)
+    rows.insert(7, terminal_row)
+    for sequence, row in enumerate(rows, start=1):
+        row["capture_sequence"] = sequence
+    report = evidence_demux_report(
+        rows, fixture_terminal=terminal, fixture_expected_identity=expected,
+    )
+    assert "evidence_demux_fixture_terminal_order_invalid" in report["rejections"]
+    assert report["gate_passed"] is False
+
+
+def test_fixture_checkpoint_demux_rejects_nonmonotonic_lifecycle():
+    rows, terminal, expected = _magmaw_fixture_demux_input()
+    queued = json.loads(json.dumps(rows[2]))
+    queued["capture_sequence"] = 4
+    queued["payload"]["stage"] = "queued"
+    queued["payload"]["queue_count"] = 1
+    queued["payload"]["controller_route_hold"]["checkpoint_lifecycle"].update(
+        stage="queued", queue_count=1,
+    )
+    rows[3]["capture_sequence"] = 5
+    rows.insert(3, queued)
+    for sequence, row in enumerate(rows, start=1):
+        row["capture_sequence"] = sequence
+    rows[4]["payload"]["queue_count"] = 0
+    rows[4]["payload"]["controller_route_hold"]["checkpoint_lifecycle"]["queue_count"] = 0
+    terminal["checkpoint_response"] = rows[4]["payload"]
+    report = evidence_demux_report(
+        rows, fixture_terminal=terminal, fixture_expected_identity=expected,
+    )
+    assert "evidence_demux_fixture_checkpoint_lifecycle_nonmonotonic" in report["rejections"]
+    assert report["gate_passed"] is False
+
+
+def test_fixture_checkpoint_demux_enforces_observed_stage_counts():
+    rows, terminal, expected = _magmaw_fixture_demux_input()
+    rows[2]["payload"]["queue_count"] = 1
+    rows[2]["payload"]["controller_route_hold"]["checkpoint_lifecycle"]["queue_count"] = 1
+    report = evidence_demux_report(
+        rows, fixture_terminal=terminal, fixture_expected_identity=expected,
+    )
+    assert "evidence_demux_fixture_checkpoint_stage_counts_invalid" in report["rejections"]
+
+    rows, terminal, expected = _magmaw_fixture_demux_input()
+    queued = json.loads(json.dumps(rows[2]))
+    queued["payload"].update(
+        stage="queued", queue_count=1, candidate_attempt_count=1,
+        native_submission_count=0,
+        scope_key=terminal["checkpoint_response"]["scope_key"],
+        candidate_key=terminal["checkpoint_response"]["candidate_key"],
+        planner_candidate_key="",
+    )
+    queued["payload"]["controller_route_hold"]["checkpoint_lifecycle"].update(
+        stage="queued", queue_count=1, candidate_attempt_count=1,
+        native_submission_count=0,
+    )
+    rows.insert(3, queued)
+    for sequence, row in enumerate(rows, start=1):
+        row["capture_sequence"] = sequence
+    report = evidence_demux_report(
+        rows, fixture_terminal=terminal, fixture_expected_identity=expected,
+    )
+    assert "evidence_demux_fixture_checkpoint_stage_counts_invalid" in report["rejections"]
+
+
+def test_fixture_checkpoint_offline_audit_binds_input_hashes(tmp_path: Path):
+    from tools.raid_program.audit_retained_evidence_demux import offline_demux_audit
+
+    rows, terminal, expected = _magmaw_fixture_demux_input()
+    raw = tmp_path / "capture_raw.jsonl"
+    report = tmp_path / "capture_report.json"
+    raw_bytes = b"".join(
+        (json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n").encode()
+        for row in rows
+    )
+    capture_report = {
+        "runtime_profile": "blackwing_descent_10n",
+        "scenario_id": "blackwing_descent_10n",
+        "fixture_terminal": terminal,
+        "identity": {
+            "clean": True, "dirty": False, "head": expected["source_commit"],
+        },
+        "build_provenance": {"valid": True, "commit": expected["source_commit"]},
+        "runtime_profile_assets": {
+            "passed": True, "profile_name": expected["runtime_profile"],
+            "scenario_id": expected["scenario_id"],
+        },
+        "recurrence_admission": {
+            "valid": True, "source_commit": expected["source_commit"],
+            "checkpoint_fixture_id": expected["fixture_id"],
+            "checkpoint_case_id": expected["case_id"],
+            "checkpoint_seal_sha256": expected["seal_sha256"],
+            "expected_runtime_profile_id": expected["runtime_profile"],
+            "bindings": {"route_manifest": {
+                "sha256": expected["route_manifest_sha256"],
+            }},
+            "runtime_profile_overlay": {
+                "runtime_route_manifest_sha256": expected["route_manifest_sha256"],
+            },
+        },
+        "controller_route_hold": {
+            "gate_passed": True,
+            "launch_identity": {
+                **expected, "source_commit": expected["source_commit"],
+            },
+        },
+    }
+    report_bytes = json.dumps(capture_report, sort_keys=True).encode()
+    raw.write_bytes(raw_bytes)
+    report.write_bytes(report_bytes)
+    audit = offline_demux_audit(
+        raw, report,
+        expected_raw_sha256=hashlib.sha256(raw_bytes).hexdigest(),
+        expected_report_sha256=hashlib.sha256(report_bytes).hexdigest(),
+        expected_actor_guid=expected["actor_guid"],
+        expected_source_commit=expected["source_commit"],
+        expected_route_sha256=expected["route_manifest_sha256"],
+        expected_seal_sha256=expected["seal_sha256"],
+        expected_profile=expected["runtime_profile"],
+    )
+    assert audit["raw_normalized_sha256"] == hashlib.sha256(raw_bytes).hexdigest()
+    assert audit["capture_report_sha256"] == hashlib.sha256(report_bytes).hexdigest()
+    assert audit["demux"]["gate_passed"] is True
+    try:
+        offline_demux_audit(
+            raw, report, expected_raw_sha256="0" * 64,
+            expected_report_sha256=hashlib.sha256(report_bytes).hexdigest(),
+            expected_actor_guid=expected["actor_guid"],
+            expected_source_commit=expected["source_commit"],
+            expected_route_sha256=expected["route_manifest_sha256"],
+            expected_seal_sha256=expected["seal_sha256"],
+            expected_profile=expected["runtime_profile"],
+        )
+    except ValueError as error:
+        assert str(error) == "offline_demux_input_sha256_mismatch"
+    else:
+        raise AssertionError("offline audit admitted an unexpected raw hash")
+
+
 def test_live_evidence_demux_reconstructs_bindings_and_rejects_missing_lifecycle_identity():
     active = accepted_status()
     active["cohort_id"] = "raid"

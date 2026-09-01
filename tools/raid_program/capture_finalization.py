@@ -44,6 +44,9 @@ from tools.raid_program.capture_telemetry_transport import (
 from tools.raid_program.capture_watchdog import (
     _CONTROLLER_TERMINAL_FAILURE_REASONS,
 )
+from tools.raid_program.recurrence_checkpoint_seals import (
+    MAGMAW_TRANSFER_CHECKPOINT_ACTOR_GUID,
+)
 from tools.raid_program import trace_transport_smoke
 
 
@@ -63,6 +66,8 @@ def normalized_batch_payload(
 def evidence_demux_report(
     rows: list[dict[str, Any]], *, profile_name: str = "blackwing_descent_10n",
     controller_terminal: dict[str, Any] | None = None,
+    fixture_terminal: dict[str, Any] | None = None,
+    fixture_expected_identity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Independently bind every retained JSON row to one raid lifecycle."""
 
@@ -71,6 +76,8 @@ def evidence_demux_report(
         profile_name=profile_name,
         controller_terminal=controller_terminal,
         terminal_failure_validator=terminal_runtime_failure_reason,
+        fixture_terminal=fixture_terminal,
+        fixture_expected_identity=fixture_expected_identity,
     )
 def evidence_demux_rejections(rows: list[dict[str, Any]]) -> list[str]:
     return evidence_demux_report(rows)["rejections"]
@@ -200,6 +207,24 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
         normalized_rows,
         profile_name=profile_name,
         controller_terminal=controller_terminal,
+        fixture_terminal=fixture_terminal,
+        fixture_expected_identity=(
+            {
+                "actor_guid": MAGMAW_TRANSFER_CHECKPOINT_ACTOR_GUID,
+                "fixture_id": recurrence_admission.get("checkpoint_fixture_id"),
+                "case_id": recurrence_admission.get("checkpoint_case_id"),
+                "runtime_profile": profile_name,
+                "scenario_id": scenario_id,
+                "route_manifest_sha256": (
+                    (recurrence_admission.get("bindings") or {}).get("route_manifest") or {}
+                ).get("sha256"),
+                "seal_sha256": recurrence_admission.get("checkpoint_seal_sha256"),
+                "source_commit": identity_before.get("head"),
+            }
+            if isinstance(recurrence_admission, dict)
+            and fixture_terminal.get("detected") is True
+            else None
+        ),
     )
     demux_rejections = demux_report["rejections"]
     default_trace_transport_gate = trace_transport_smoke.evaluate([])
