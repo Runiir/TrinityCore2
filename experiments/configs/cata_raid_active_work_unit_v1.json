@@ -11,7 +11,7 @@
   "mode": "10N_canary_for_universal_architecture",
   "architecture_scope": "Repair the generic native-outcome feedback edge for one actor-local encounter hazard episode. Magmaw is the canary; do not encode route coordinates or alter terrain behavior.",
   "gate_state": "trace_backed_permanent_rejection_repeats_and_retains_hazard_ownership",
-  "observed_at_commit": "53fb55be0d",
+  "observed_at_commit": "53fb55be0d4afec6dc4b91ebebc9c4dbbc886751",
   "behavior_change": true,
   "evidence_contract_change": false,
   "source_handoff": {
