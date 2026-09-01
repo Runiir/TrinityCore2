@@ -4,7 +4,7 @@
   "owner_skill": "raid-bot-runtime-implementation",
   "next_work_unit": "shard:magmaw_post_receipt_repair_one_start",
   "next_owner_skill": "raid-shard-architecture",
-  "classification": "trace_backed_repair_pending",
+  "classification": "failed",
   "epoch_id": "magmaw_admission_receipt_size_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
@@ -67,7 +67,7 @@
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "bounded_implementation_no_live_run",
+    "policy": "completion_watchdog",
     "configure_tickets": 0,
     "worldserver_build_tickets": 0,
     "worldserver_starts": 0,
