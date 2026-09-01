@@ -172,6 +172,10 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
         bot->GetTransport() != nullptr,
         bot->IsInFlight()
     };
+    bool const ghostFlightWasEnabled =
+        state.NativeRecoveryGhostFlightEnabled;
+    bool const ghostFlightEligible =
+        BotWorldGhostFlight::IsEligible(ghostFlightEligibility);
     auto clearGhostFlight = [&]()
     {
         if (!state.NativeRecoveryGhostFlightEnabled)
@@ -186,7 +190,7 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
             bot->SetCanFly(false);
         state.NativeRecoveryGhostFlightEnabled = false;
     };
-    if (BotWorldGhostFlight::IsEligible(ghostFlightEligibility))
+    if (ghostFlightEligible)
     {
         if (!bot->CanFly())
             bot->SetCanFly(true);
@@ -239,6 +243,30 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
             && state.ActivePathRouteNodeId
                 == Cohort().Config.ValidationRouteNodeId;
     };
+    BotWorldGhostFlight::RetainedPath const retainedRecoveryPath{
+        state.ActivePathValid,
+        state.NativeRecoveryEntranceRequired,
+        state.ActivePathTraversalMode == "native_long_path",
+        state.ActivePathTargetGuid.IsEmpty(),
+        state.MovementLease.MovementOwner
+            == BotMovementArbitration::Owner::Recovery,
+        state.ActivePathAttemptId == Cohort().AttemptId
+            && state.ActivePathWipeGeneration == wipeGeneration
+            && state.ActivePathRouteGeneration == routeGeneration
+            && state.ActivePathRouteNodeId
+                == Cohort().Config.ValidationRouteNodeId
+    };
+    bool const ghostFlightReplanRequested =
+        BotWorldGhostFlight::ShouldReplanOnEligibilityRise(
+            ghostFlightWasEnabled, ghostFlightEligible,
+            retainedRecoveryPath);
+    if (ghostFlightReplanRequested)
+    {
+        // Invalidate only retained evidence. The existing typed Recovery move
+        // below resubmits the unchanged entrance X/Y/Z once and remains the
+        // sole owner of MotionMaster and terrain-following path generation.
+        state.ActivePathValid = false;
+    }
     auto observeNativeRecoveryMovement = [&]()
     {
         if (!matchingNativeRecoveryPath())
@@ -400,7 +428,18 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
                     == BotActionArbitration::Disposition::Committed;
                 if (!moving)
                     ++state.NativeRecoveryMovementRetryCount;
-                result = moving ? "native_instance_runback_moving"
+                if (moving && ghostFlightReplanRequested)
+                {
+                    // A committed replacement generator receives the same
+                    // bounded observation window as the existing one-shot
+                    // stalled-path replan. Physical movement remains the
+                    // only later progress witness.
+                    state.NativeRecoveryEpisodeLastProgressMs = nowMs;
+                    result = "native_instance_runback_flight_repath_submitted";
+                    return true;
+                }
+                result = moving
+                    ? "native_instance_runback_moving"
                     : "native_instance_runback_path_retryable";
                 if (state.NativeRecoveryMovementRetryCount
                         >= MaximumMovementRejections

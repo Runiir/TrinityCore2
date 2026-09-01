@@ -41,6 +41,34 @@ constexpr bool IsEligible(Eligibility const& value)
         && !value.OnTransport
         && !value.InFlight;
 }
+
+// A retained ground generator predates flight authorization when eligibility
+// rises during an already-running cross-map corpse recovery.  Replan that
+// exact path once so the existing native aerial executor can consume the same
+// destination.  NativeRecoveryGhostFlightEnabled becomes true on the same
+// tick, making this a rising-edge predicate rather than a per-tick retry.
+struct RetainedPath
+{
+    bool Active = false;
+    bool EntranceRequired = false;
+    bool NativeLongPath = false;
+    bool TargetIsEmpty = false;
+    bool RecoveryOwner = false;
+    bool ScopeMatches = false;
+};
+
+constexpr bool ShouldReplanOnEligibilityRise(bool wasFlightEnabled,
+    bool flightEligible, RetainedPath const& path)
+{
+    return !wasFlightEnabled
+        && flightEligible
+        && path.Active
+        && path.EntranceRequired
+        && path.NativeLongPath
+        && path.TargetIsEmpty
+        && path.RecoveryOwner
+        && path.ScopeMatches;
+}
 }
 
 #endif

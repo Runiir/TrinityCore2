@@ -135,6 +135,119 @@ def test_ghost_flight_header_stays_small():
     assert len(HEADER.read_text(encoding="utf-8").splitlines()) < 1000
 
 
+def test_flight_eligibility_rising_edge_replans_only_matching_retained_recovery(
+    tmp_path,
+):
+    source = tmp_path / "ghost_flight_rising_edge.cpp"
+    binary = tmp_path / "ghost_flight_rising_edge"
+    source.write_text(
+        r'''
+#include "Bots/BotWorldPopulationMgrGhostFlight.h"
+#include <cassert>
+
+using BotWorldGhostFlight::RetainedPath;
+using BotWorldGhostFlight::ShouldReplanOnEligibilityRise;
+
+int main()
+{
+    RetainedPath matching;
+    matching.Active = true;
+    matching.EntranceRequired = true;
+    matching.NativeLongPath = true;
+    matching.TargetIsEmpty = true;
+    matching.RecoveryOwner = true;
+    matching.ScopeMatches = true;
+
+    // The recorded false -> true edge produces exactly one replan. Once the
+    // capability is enabled, later eligible ticks retain the aerial path.
+    assert(ShouldReplanOnEligibilityRise(false, true, matching));
+    assert(!ShouldReplanOnEligibilityRise(true, true, matching));
+    assert(!ShouldReplanOnEligibilityRise(false, false, matching));
+
+    RetainedPath livingOrOrdinary = matching;
+    livingOrOrdinary.EntranceRequired = false;
+    assert(!ShouldReplanOnEligibilityRise(false, true, livingOrOrdinary));
+
+    RetainedPath otherOwner = matching;
+    otherOwner.RecoveryOwner = false;
+    assert(!ShouldReplanOnEligibilityRise(false, true, otherOwner));
+
+    RetainedPath sameMap = matching;
+    sameMap.ScopeMatches = false;
+    assert(!ShouldReplanOnEligibilityRise(false, true, sameMap));
+
+    RetainedPath ordinaryPath = matching;
+    ordinaryPath.NativeLongPath = false;
+    assert(!ShouldReplanOnEligibilityRise(false, true, ordinaryPath));
+
+    RetainedPath dynamicTarget = matching;
+    dynamicTarget.TargetIsEmpty = false;
+    assert(!ShouldReplanOnEligibilityRise(false, true, dynamicTarget));
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/common"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
+def test_recovery_wires_rising_edge_before_same_destination_submission():
+    recovery = RECOVERY.read_text(encoding="utf-8")
+
+    edge = recovery.index("ShouldReplanOnEligibilityRise")
+    edge_flag = recovery.rindex("ghostFlightReplanRequested", 0, edge)
+    invalidate = recovery.index("state.ActivePathValid = false;", edge)
+    entrance = recovery.index('observeDistance("entrance", entranceDistance)')
+    retry_gate = recovery.index(
+        "state.NativeRecoveryMovementRetryCount == 0",
+        entrance,
+    )
+    stalled_submit = recovery.index(
+        "BotNativeAction::Move{ entranceEntry->Pos.X,",
+        entrance,
+    )
+    generic_outcome = recovery.index(
+        "BotActionArbitration::Outcome const moveOutcome",
+        stalled_submit,
+    )
+    submit = recovery.index(
+        "BotNativeAction::Move{ entranceEntry->Pos.X,",
+        generic_outcome,
+    )
+    terminal = recovery.index('terminal("native_runback_no_progress")', submit)
+
+    flight_result = recovery.index(
+        'result = "native_instance_runback_flight_repath_submitted";',
+        submit,
+    )
+
+    assert edge_flag < edge < invalidate < entrance < retry_gate < stalled_submit
+    assert stalled_submit < generic_outcome < submit
+    assert submit < flight_result < terminal
+    assert "state.ActivePathToX =" not in recovery[edge:invalidate]
+    assert "state.ActivePathToY =" not in recovery[edge:invalidate]
+    assert "state.ActivePathToZ =" not in recovery[edge:invalidate]
+    assert "MovePoint" not in recovery[edge:submit]
+    assert "++state.NativeRecoveryMovementRetryCount;" in recovery[retry_gate:submit]
+
+
 def test_aerial_submission_is_gated_and_ordinary_recovery_stays_grounded(
     tmp_path,
 ):
