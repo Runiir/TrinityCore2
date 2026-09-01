@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotHunterPetIdentityContract.h"
+#include "Bots/BotValidationRaidAdmissionReadiness.h"
 #include "Bots/BotWorldPopulationMgrCalibrationIdentity.h"
 #include "Bots/BotMgr.h"
 
@@ -39,6 +40,11 @@ using BotWorldPopulationMgrCalibrationIdentity::ObserveActiveOrdinaryHunterPetSt
 using BotHunterPetIdentityContract::ClassifyFrozenReceipt;
 using BotHunterPetIdentityContract::FrozenReceiptComparison;
 using BotHunterPetIdentityContract::FrozenReceiptStatus;
+using BotValidationRaidAdmissionReadiness::Evaluate;
+using BotValidationRaidAdmissionReadiness::Facts;
+using BotValidationRaidAdmissionReadiness::FailureReason;
+using BotValidationRaidAdmissionReadiness::Result;
+using BotValidationRaidAdmissionReadiness::ToJson;
 
 float Distance2d(float ax, float ay, float bx, float by)
 {
@@ -552,6 +558,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         }
     }
 
+    std::string sealedAdmissionReadinessFailure;
     if (!raid.ServerProvisioningComplete)
     {
         raid.ProvisionedMemberCount = 0;
@@ -592,12 +599,19 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                     exactInitialAliveState = false;
                     break;
                 }
-        raid.ServerProvisioningComplete = raid.ExpectedSize > 0
-            && raid.ProvisionedMemberCount == raid.ExpectedSize
-            && raid.RosterComplete && raid.UniqueLeases
-            && raid.RosterCompositionValid && raid.DifficultyMatches
-            && nativeGroupMembershipExact && exactEntrancePlacement
-            && exactInitialAliveState;
+        Facts readinessFacts;
+        readinessFacts.ExpectedMemberCount = raid.ExpectedSize;
+        readinessFacts.ProvisionedMemberCount = raid.ProvisionedMemberCount;
+        readinessFacts.RosterComplete = raid.RosterComplete;
+        readinessFacts.UniqueLeases = raid.UniqueLeases;
+        readinessFacts.RosterCompositionValid = raid.RosterCompositionValid;
+        readinessFacts.DifficultyMatches = raid.DifficultyMatches;
+        readinessFacts.NativeGroupExact = nativeGroupMembershipExact;
+        readinessFacts.EntrancePlacementExact = exactEntrancePlacement;
+        readinessFacts.InitialAliveStateExact = exactInitialAliveState;
+        readinessFacts.ReceiptExpectedSize = raid.ExpectedSize;
+        Result readiness = Evaluate(readinessFacts);
+        raid.ServerProvisioningComplete = readiness.Ready();
         if (raid.ServerProvisioningComplete)
         {
             std::map<uint32, CohortAdmissionMemberReceipt> receipt;
@@ -688,9 +702,11 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                     && !member->HasCorpse();
                 receipt.emplace(row.Guid.GetCounter(), row);
             }
-            if (receipt.size() != raid.ExpectedSize)
-                raid.ServerProvisioningComplete = false;
-            else
+            readinessFacts.ReceiptCheckEnabled = true;
+            readinessFacts.ReceiptSize = uint32(receipt.size());
+            readiness = Evaluate(readinessFacts);
+            raid.ServerProvisioningComplete = readiness.Ready();
+            if (raid.ServerProvisioningComplete)
             {
                 ValidationRouteManifestNode const& admissionStart =
                     Party().ValidationRouteManifest.front();
@@ -714,6 +730,15 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 raid.AdmissionEntranceO = admissionStart.BotStartO;
             }
         }
+        if (Cohort().ValidationAdmissionBatchSealed
+            && !raid.ServerProvisioningComplete)
+        {
+            sealedAdmissionReadinessFailure = FailureReason(
+                readiness.FirstFailure);
+            TC_LOG_ERROR("server",
+                "BotWorld validation raid admission readiness failed receipt=%s",
+                ToJson(readiness).c_str());
+        }
     }
     bool const currentAttemptFailed = !Cohort().ValidationAttemptFailureReason.empty()
         && Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId;
@@ -736,6 +761,9 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         Cohort().LastPopulationFailureReason = "dungeon_live_difficulty_mismatch";
     else if (!nativeGroupMembershipExact)
         Cohort().LastPopulationFailureReason = "validation_native_group_membership_mismatch";
+    if (!sealedAdmissionReadinessFailure.empty())
+        Cohort().LastPopulationFailureReason =
+            sealedAdmissionReadinessFailure;
 
     // This is the server-to-agent activation barrier. Before it succeeds the
     // loaded characters exist only as an inert provisioned cohort; UpdateBot

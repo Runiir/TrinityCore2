@@ -401,7 +401,7 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
     std::vector<ObjectGuid> spawnedGuids;
     auto rollbackAdmission = [this, &partyBeforeAdmission, &raidBeforeAdmission,
         &metricsBeforeAdmission, &failedSpawnGuidsBeforeAdmission,
-        &claimedGuids, &spawnedGuids, &terminalFailure](char const* reason)
+        &claimedGuids, &spawnedGuids, &terminalFailure](std::string const& reason)
     {
         FlushPendingDecisionFingerprintMemory();
         for (auto itr = spawnedGuids.rbegin(); itr != spawnedGuids.rend(); ++itr)
@@ -607,7 +607,11 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
     EnsureValidationCohortGroup();
     if (Cohort().ValidationAdmission != ValidationAdmissionPhase::Active)
     {
-        rollbackAdmission("validation_raid_admission_activation_failed");
+        std::string const readinessFailure =
+            Cohort().LastPopulationFailureReason;
+        rollbackAdmission(readinessFailure.empty()
+            ? "validation_raid_admission_activation_failed"
+            : readinessFailure);
         return;
     }
     Cohort().ValidationRaidAdmissionComplete = true;
