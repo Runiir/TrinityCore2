@@ -21,13 +21,25 @@ def test_missing_navmesh_assets_fail_closed(tmp_path):
 
 
 def test_capture_runs_navmesh_probe_before_worldserver_start():
-    source = (
+    setup_source = (
+        ROOT / "tools" / "raid_program" / "capture_setup.py"
+    ).read_text(encoding="utf-8")
+    entry_source = (
         ROOT / "tools" / "raid_program" / "capture_phase1_raid_foundation.py"
     ).read_text(encoding="utf-8")
-    preflight = source.index("_drudge_navmesh_probe(worktree)")
-    process_start = source.index("subprocess.Popen(", preflight)
-    assert preflight < process_start
-    assert '"drudge_navmesh_preflight": drudge_navmesh_preflight' in source
+    live_source = (
+        ROOT / "tools" / "raid_program" / "capture_live_run.py"
+    ).read_text(encoding="utf-8")
+    final_source = (
+        ROOT / "tools" / "raid_program" / "capture_finalization.py"
+    ).read_text(encoding="utf-8")
+    assert "_drudge_navmesh_probe(worktree)" in setup_source
+    assert "drudge_navmesh_preflight=drudge_navmesh_preflight" in setup_source
+    assert '"drudge_navmesh_preflight": drudge_navmesh_preflight' in final_source
+    assert entry_source.index("prepare_capture_setup(root=ROOT)") \
+        < entry_source.index("execute_capture_run(setup)")
+    assert "subprocess.Popen(" not in setup_source
+    assert "subprocess.Popen(" in live_source
 
 
 def test_navmesh_probe_is_locked_to_the_generated_route_anchors():
