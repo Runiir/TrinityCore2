@@ -4,7 +4,7 @@
   "owner_skill": "raid-bot-runtime-implementation",
   "next_work_unit": "review:chainwielder_hazard_exit_future_pack_admission",
   "next_owner_skill": "raid-performance-loop",
-  "classification": "gameplay_failure_repair_required",
+  "classification": "failed",
   "epoch_id": "magmaw_task_state_migration_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
