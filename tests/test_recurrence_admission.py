@@ -19,6 +19,7 @@ from tools.raid_program.recurrence_admission import (
     FIXTURE_EXPANSION_PURPOSE,
     NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX,
     NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+    NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS,
     NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
     RecurrenceAdmissionError,
     chainwielder_checkpoint_seal,
@@ -351,7 +352,11 @@ def _create_native_path_checkpoint_admission(
         "fixture_expansion_admitted": True,
         "fixture_expansion_target_ids": target_ids,
         "fixture_expansion_requests": requests,
-        "pending_fixture_ids": target_ids,
+        "pending_fixture_ids": list(
+            NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS
+        ),
+        "invalidated_fixture_ids": ["same_level_floor_observation_v1"],
+        "failing_fixture_ids": ["same_level_floor_observation_v1"],
     })
     _write_json(decision, decision_value)
     suite_value = json.loads(suite.read_text(encoding="utf-8"))
@@ -481,13 +486,16 @@ def test_chainwielder_checkpoint_uses_precomputed_non_circular_seal(
     assert result["runtime_profile_overlay"] == admission["runtime_profile_overlay"]
 
 
-def test_native_checkpoint_creates_and_verifies_exact_pending_requests(
+def test_native_checkpoint_creates_and_verifies_exact_request_pending_projection(
     tmp_path: Path,
 ) -> None:
     paths = _fixture(tmp_path)
     seal = _create_native_path_checkpoint_admission(paths)
 
     result = _verify_chainwielder(paths)
+    admission = json.loads(
+        Path(paths["admission"]).read_text(encoding="utf-8")
+    )
 
     assert result["valid"] is True
     assert result["purpose"] == FIXTURE_EXPANSION_PURPOSE
@@ -495,8 +503,14 @@ def test_native_checkpoint_creates_and_verifies_exact_pending_requests(
         NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
     )
     assert result["pending_fixture_ids"] == list(
-        NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+        NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS
     )
+    assert admission["invalidated_fixture_ids"] == [
+        "same_level_floor_observation_v1"
+    ]
+    assert admission["failing_fixture_ids"] == [
+        "same_level_floor_observation_v1"
+    ]
     assert result["checkpoint_fixture_id"] == NATIVE_PATH_CHECKPOINT_FIXTURE_ID
     assert result["checkpoint_seal_sha256"] == seal["seal_sha256"]
     assert seal["binary_sha256"] == sha256_file(Path(paths["binary"]))

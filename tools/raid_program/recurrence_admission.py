@@ -39,6 +39,10 @@ NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS = {
     "same_level_hazard_path_admission_v1": (4, 5),
     "same_level_native_path_proof_v1": (4, 5),
 }
+NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS = (
+    "same_level_hazard_path_admission_v1",
+    "same_level_native_path_proof_v1",
+)
 PROFILE_MANIFEST_RELATIVE_PATH = Path("dataset/bot_runtime_profiles/profiles.json")
 
 
@@ -93,10 +97,13 @@ def _fixture_expansion_contract(
 def _native_path_checkpoint_request_contract(
     value: dict[str, Any], *, label: str
 ) -> list[dict[str, Any]]:
-    """Require exactly the pending native-path production expansions."""
+    """Require exact native-path target, request, and pending projections."""
 
     requests = _fixture_expansion_contract(value, label=label)
     expected_ids = set(NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS)
+    expected_pending_ids = set(
+        NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS
+    )
     request_contract = {
         row["fixture_id"]: (row["from_revision"], row["to_revision"])
         for row in requests
@@ -104,8 +111,8 @@ def _native_path_checkpoint_request_contract(
     pending_ids = value.get("pending_fixture_ids", [])
     if (
         set(value["fixture_expansion_target_ids"]) != expected_ids
-        or len(pending_ids) != len(expected_ids)
-        or set(pending_ids) != expected_ids
+        or len(pending_ids) != len(expected_pending_ids)
+        or set(pending_ids) != expected_pending_ids
         or request_contract != NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
     ):
         raise RecurrenceAdmissionError(f"{label}_request_contract_mismatch")

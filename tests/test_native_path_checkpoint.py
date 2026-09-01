@@ -49,7 +49,7 @@ def _seal_fixture(
             recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
         ),
         "pending_fixture_ids": list(
-            recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+            recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS
         ),
         "fixture_expansion_requests": _requests(),
     }
@@ -125,7 +125,7 @@ def test_controller_emits_only_sealed_case_and_no_coordinates() -> None:
         ],
         "fixture_expansion_requests": _requests(),
         "pending_fixture_ids": [
-            *recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
+            *recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS,
         ],
         "checkpoint_fixture_id": (
             recurrence_admission.NATIVE_PATH_CHECKPOINT_FIXTURE_ID
@@ -156,7 +156,7 @@ def _native_admission(
         ),
         "fixture_expansion_requests": _requests(),
         "pending_fixture_ids": list(
-            recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS
+            recurrence_admission.NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS
         ),
         "checkpoint_fixture_id": (
             recurrence_admission.NATIVE_PATH_CHECKPOINT_FIXTURE_ID
@@ -631,7 +631,7 @@ def test_native_scheduler_rejects_terminal_row_identity_drift(field: str) -> Non
     )
 
 
-def test_seal_binds_case_and_exact_pending_requests(
+def test_seal_binds_case_and_exact_request_pending_projection(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     decision, decision_path, kwargs = _seal_fixture(tmp_path, monkeypatch)
@@ -660,6 +660,9 @@ def test_seal_binds_case_and_exact_pending_requests(
         ("extra", "native_path_checkpoint_request_contract_mismatch"),
         ("stale_floor_revision", "native_path_checkpoint_request_contract_mismatch"),
         ("duplicate", "native_path_checkpoint_request_duplicate"),
+        ("floor_added_to_pending", "native_path_checkpoint_request_contract_mismatch"),
+        ("missing_pending", "native_path_checkpoint_request_contract_mismatch"),
+        ("extra_pending", "native_path_checkpoint_request_target_mismatch"),
         ("wrong_target", "native_path_checkpoint_request_target_mismatch"),
     ],
 )
@@ -677,9 +680,8 @@ def test_seal_rejects_non_authoritative_pending_request_contracts(
     assert isinstance(pending, list)
     assert isinstance(requests, list)
     if mutation == "missing":
-        targets.pop()
-        pending.pop()
-        requests.pop()
+        targets.pop(0)
+        requests.pop(0)
     elif mutation == "extra":
         extra = {
             "fixture_id": "unexpected_native_path_fixture_v1",
@@ -689,13 +691,18 @@ def test_seal_rejects_non_authoritative_pending_request_contracts(
             "required_production_boundary": "unexpected_native_path_boundary",
         }
         targets.append(extra["fixture_id"])
-        pending.append(extra["fixture_id"])
         requests.append(extra)
     elif mutation == "stale_floor_revision":
         requests[0]["from_revision"] = 3
         requests[0]["to_revision"] = 4
     elif mutation == "duplicate":
         requests.append(dict(requests[0]))
+    elif mutation == "floor_added_to_pending":
+        pending.append("same_level_floor_observation_v1")
+    elif mutation == "missing_pending":
+        pending.pop()
+    elif mutation == "extra_pending":
+        pending.append("unexpected_pending_native_path_fixture_v1")
     else:
         targets[-1] = "wrong_native_path_target_v1"
     decision_path.write_text(json.dumps(decision), encoding="utf-8")
@@ -709,15 +716,36 @@ def test_seal_rejects_non_authoritative_pending_request_contracts(
         )
 
 
-@pytest.mark.parametrize("mutation", ["wrong_purpose", "wrong_target"])
-def test_controller_rejects_wrong_purpose_or_target(mutation: str) -> None:
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "wrong_purpose",
+        "wrong_target",
+        "floor_added_to_pending",
+        "missing_pending",
+        "extra_pending",
+    ],
+)
+def test_controller_rejects_wrong_purpose_target_or_pending_projection(
+    mutation: str,
+) -> None:
     admission = _native_admission()
     if mutation == "wrong_purpose":
         admission["purpose"] = recurrence_admission.GAMEPLAY_CANARY_PURPOSE
-    else:
+    elif mutation == "wrong_target":
         admission["fixture_expansion_target_ids"] = [
             "wrong_native_path_target_v1"
         ]
+    elif mutation == "floor_added_to_pending":
+        admission["pending_fixture_ids"].append(
+            "same_level_floor_observation_v1"
+        )
+    elif mutation == "missing_pending":
+        admission["pending_fixture_ids"].pop()
+    else:
+        admission["pending_fixture_ids"].append(
+            "unexpected_pending_native_path_fixture_v1"
+        )
     with pytest.raises(
         ValueError, match="native_path_checkpoint_verified_admission_invalid"
     ):
