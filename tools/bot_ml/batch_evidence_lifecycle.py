@@ -1325,6 +1325,7 @@ def append_heartbeat(
         "heartbeat_index": int(latest.get("heartbeat_index") or 0),
         "generated_at_unix": int(latest.get("heartbeat_generated_at_unix") or 0),
         "completion_reason": str(latest.get("completion_reason") or ""),
+        "failure_reason": str(latest.get("failure_reason") or ""),
         "failure_labels": list(latest.get("failure_labels") or []),
         "progress_counters": dict(latest.get("progress_counters") or {}),
         "acceptance_result_sha256": str(((latest.get("acceptance_verification") or {}).get("result_sha256") or "")),
