@@ -22,6 +22,7 @@ def test_magmaw_movement_intents_cross_strategy_and_real_kernel(
     binary = tmp_path / "magmaw_movement_intents"
     source.write_text(r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelCandidate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -91,11 +92,7 @@ static BotActionArbitration::Resolution Resolve(
     bool retrySafety)
 {
     using namespace BotActionArbitration;
-    bool safetyPending = std::any_of(intents.Proposals().begin(),
-        intents.Proposals().end(), [](BotNativeAction::Candidate const& value)
-        {
-            return value.ActionPriority == Priority::Survival;
-        });
+    bool const safetyPending = HasPendingMagmawSurvivalMovement(intents, 5000);
     Kernel kernel;
     kernel.Begin(5000);
     std::vector<size_t> order;
@@ -107,22 +104,20 @@ static BotActionArbitration::Resolution Resolve(
     {
         BotNativeAction::Candidate const& intent = intents.Proposals()[index];
         bool const safety = intent.ActionPriority == Priority::Survival;
-        Candidate queued;
-        queued.Key = intent.Id.Key();
-        queued.Source = ToString(intents.Origin(index));
-        queued.ActionPriority = intent.ActionPriority;
-        queued.UtilityScore = intent.Utility;
-        queued.RequiredResources = intent.Resources();
-        queued.ExpiresAtMs = intent.ExpiresAtMs;
-        queued.Allowed = !safetyPending || safety;
-        if (!queued.Allowed)
-            queued.RejectReason = "magmaw_survival_movement_pending";
-        queued.Attempt = [safety, retrySafety]()
-        {
-            return safety && retrySafety
-                ? Outcome::Retryable("planner_rejected")
-                : Outcome::Committed("submitted");
-        };
+        Candidate queued = BuildMagmawMovementKernelCandidate(intent,
+            intents.Origin(index), true, false, safetyPending,
+            [safety, retrySafety]()
+            {
+                return safety && retrySafety
+                    ? Outcome::Retryable("planner_rejected")
+                    : Outcome::Committed("submitted");
+            });
+        assert(queued.Key == intent.Id.Key());
+        assert(queued.Source == ToString(intents.Origin(index)));
+        assert(queued.ActionPriority == intent.ActionPriority);
+        assert(queued.UtilityScore == intent.Utility);
+        assert(queued.RequiredResources == intent.Resources());
+        assert(queued.ExpiresAtMs == intent.ExpiresAtMs);
         assert(kernel.Submit(std::move(queued)));
     }
     return kernel.Resolve();
@@ -202,28 +197,58 @@ int main()
     // Unknown movement mechanics still enter the real kernel and fail closed.
     Kernel unknownKernel;
     unknownKernel.Begin(5000);
-    Candidate unknown;
-    unknown.Key = "magmaw:unknown_movement";
-    unknown.Source = "adaptive_magmaw.hazard";
-    unknown.ActionPriority = Priority::Mechanic;
-    unknown.RequiredResources = Uses(Resource::Movement);
-    MagmawMovementKernelAdmission const unknownAdmission =
-        EvaluateMagmawMovementKernelAdmission(false, false, false,
-            unknown.ActionPriority);
-    unknown.Allowed = unknownAdmission
-        == MagmawMovementKernelAdmission::Admitted;
-    unknown.RejectReason = RejectionReason(unknownAdmission);
-    unknown.Attempt = []()
-    {
-        assert(false);
-        return Outcome::Committed("unreachable");
-    };
+    BotNativeAction::Candidate unknownIntent =
+        formationPlan.Movement.Proposals().back();
+    unknownIntent.Id.Mechanic = "unknown_movement";
+    Candidate unknown = BuildMagmawMovementKernelCandidate(unknownIntent,
+        MagmawMovementProposalOrigin::Hazard, false, false, false, []()
+        {
+            assert(false);
+            return Outcome::Committed("unreachable");
+        });
     assert(unknownKernel.Submit(std::move(unknown)));
     Resolution const& unknownResolution = unknownKernel.Resolve();
     assert(unknownResolution.Trace.size() == 1);
     assert(unknownResolution.Trace.front().Status == "hard_masked");
     assert(unknownResolution.Trace.front().Reason
         == "magmaw_movement_mechanic_unmapped");
+
+    // A bridge failure keeps the bound transfer proposal observable but can
+    // never fall through to the generic native executor.
+    Kernel bindingKernel;
+    bindingKernel.Begin(5000);
+    Candidate bindingRejected = BuildMagmawMovementKernelCandidate(
+        formationPlan.Movement.Proposals().front(),
+        MagmawMovementProposalOrigin::TransferLaneTask, true, true, false,
+        []()
+        {
+            assert(false);
+            return Outcome::Committed("unreachable");
+        });
+    assert(bindingKernel.Submit(std::move(bindingRejected)));
+    Resolution const& bindingResolution = bindingKernel.Resolve();
+    assert(bindingResolution.Trace.size() == 1);
+    assert(bindingResolution.Trace.front().Status == "hard_masked");
+    assert(bindingResolution.Trace.front().Reason
+        == "magmaw_transfer_binding_rejected");
+
+    // Expiry is copied to the real kernel, which owns the expiry verdict.
+    BotNativeAction::Candidate expiredIntent =
+        formationPlan.Movement.Proposals().back();
+    expiredIntent.ExpiresAtMs = 5000;
+    Kernel expiryKernel;
+    expiryKernel.Begin(5000);
+    Candidate expired = BuildMagmawMovementKernelCandidate(expiredIntent,
+        MagmawMovementProposalOrigin::FormationRestore, true, false, false,
+        []()
+        {
+            assert(false);
+            return Outcome::Committed("unreachable");
+        });
+    assert(expiryKernel.Submit(std::move(expired)));
+    Resolution const& expiryResolution = expiryKernel.Resolve();
+    assert(expiryResolution.Trace.size() == 1);
+    assert(expiryResolution.Trace.front().Status == "expired");
 }
 ''', encoding="utf-8")
     subprocess.run(
@@ -250,6 +275,10 @@ def test_magmaw_movement_collection_source_contract() -> None:
         "BotMagmawTransferLaneAuthority.cpp").read_text()
     movement_intents = (encounter /
         "BotMagmawMovementIntents.h").read_text()
+    kernel_candidate = (encounter /
+        "BotMagmawMovementKernelCandidate.h").read_text()
+    transfer_bridge = (encounter /
+        "BotMagmawTransferLaneKernelBridge.h").read_text()
 
     assert "MagmawMovementIntentCollection Movement;" in strategy
     assert "std::optional<BotNativeAction::Candidate> Movement;" not in strategy
@@ -259,11 +288,17 @@ def test_magmaw_movement_collection_source_contract() -> None:
     assert "AdaptiveMagmawMovements.Size()" in preparation
     assert "AdaptiveMagmawMovements.Size()" in fallback
     assert "AdaptiveMagmawMovements.Size()" in candidates
-    assert "movement.Source = BotEncounter::ToString(proposalOrigin);" in candidates
+    assert "BuildMagmawMovementKernelCandidate(intent, proposalOrigin" in candidates
+    assert "HasPendingMagmawSurvivalMovement(" in candidates
     assert "magmaw_survival_movement_pending" in movement_intents
     assert "magmaw_movement_mechanic_unmapped" in movement_intents
     assert "magmaw_transfer_binding_rejected" in movement_intents
-    assert "EvaluateMagmawMovementKernelAdmission(" in candidates
+    assert "EvaluateMagmawMovementKernelAdmission(" in kernel_candidate
+    assert "movement.Source = ToString(origin);" in kernel_candidate
+    assert "movement.Attempt = std::move(attempt);" in kernel_candidate
+    assert "trace-visible hard mask" in transfer_bridge
+    assert "must not execute generic movement" in transfer_bridge
+    assert "preserve\n// the legacy generic submission path" not in transfer_bridge
     assert "result.Movements.Replace(matchingIndex" in authority
     assert ".Attempt = [&]" not in candidates
 
@@ -277,8 +312,10 @@ def test_magmaw_movement_collection_source_contract() -> None:
         encounter / "BotAdaptiveMagmawStrategyHazard.h",
         encounter / "BotAdaptiveMagmawStrategyHook.h",
         encounter / "BotMagmawMovementIntents.h",
+        encounter / "BotMagmawMovementKernelCandidate.h",
         encounter / "BotMagmawTransferLaneAuthority.cpp",
         encounter / "BotMagmawTransferLaneAuthority.h",
+        encounter / "BotMagmawTransferLaneKernelBridge.h",
     ]
     for path in changed_cpp:
         assert len(path.read_text().splitlines()) < 1000, path

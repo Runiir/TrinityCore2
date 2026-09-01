@@ -4,6 +4,7 @@
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidHazardPlanner.h"
 #include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidTrashStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelCandidate.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneKernelBridge.h"
 
 #include "ObjectAccessor.h"
@@ -131,14 +132,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             context.State.DecisionKernel.Submit(std::move(mobility));
         }
 
-        bool adaptiveMagmawSafetyMovementPending = false;
-        for (BotNativeAction::Candidate const& proposal :
-                context.AdaptiveMagmawMovements.Proposals())
-            adaptiveMagmawSafetyMovementPending =
-                adaptiveMagmawSafetyMovementPending
-                || (proposal.ExpiresAtMs > context.DecisionNowMs
-                    && proposal.ActionPriority
-                        == BotActionArbitration::Priority::Survival);
+        bool const adaptiveMagmawSafetyMovementPending = BotEncounter::
+            HasPendingMagmawSurvivalMovement(
+                context.AdaptiveMagmawMovements, context.DecisionNowMs);
 
         for (size_t proposalIndex = 0;
             proposalIndex < context.AdaptiveMagmawMovements.Size();
@@ -146,8 +142,6 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
         {
             BotNativeAction::Candidate const& intent =
                 context.AdaptiveMagmawMovements.Proposals()[proposalIndex];
-            if (intent.ExpiresAtMs <= context.DecisionNowMs)
-                continue;
             BotEncounter::MagmawMovementProposalOrigin const proposalOrigin =
                 context.AdaptiveMagmawMovements.Origin(proposalIndex);
             std::optional<AdaptiveMagmawMovementLease> const movementLease =
@@ -204,22 +198,37 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             }
             if (!transferLaneSubmitted)
             {
-                BotActionArbitration::Candidate movement;
-                movement.Key = intent.Id.Key();
-                movement.Source = BotEncounter::ToString(proposalOrigin);
-                movement.ActionPriority = intent.ActionPriority;
-                movement.UtilityScore = intent.Utility;
-                movement.RequiredResources = intent.Resources();
-                movement.ExpiresAtMs = intent.ExpiresAtMs;
-                BotEncounter::MagmawMovementKernelAdmission const admission =
-                    BotEncounter::EvaluateMagmawMovementKernelAdmission(
+                BotActionArbitration::Candidate movement = BotEncounter::
+                    BuildMagmawMovementKernelCandidate(intent, proposalOrigin,
                         movementMechanicMapped, transferBindingRequired,
                         adaptiveMagmawSafetyMovementPending,
-                        intent.ActionPriority);
-                movement.Allowed = admission == BotEncounter::
-                    MagmawMovementKernelAdmission::Admitted;
-                movement.RejectReason = BotEncounter::RejectionReason(
-                    admission);
+                        [this, &context, nativeIntent =
+                            BotNativeAction::WithMovementDiagnosticCandidateKey(
+                                BotNativeAction::WithMovementReason(
+                                    intent.Action, intent.Id.Mechanic),
+                                BotEncounter::
+                                    LegacyMagmawMovementDiagnosticCandidateKey(
+                                        intent)),
+                            lease = movementLease.value_or(
+                                AdaptiveMagmawMovementLease{
+                                    BotMovementArbitration::Owner::Mechanic,
+                                    BotMovementArbitration::Priority::Mechanic }),
+                            mechanic = intent.Id.Mechanic]()
+                        {
+                            BotActionArbitration::Outcome outcome =
+                                ExecuteNativeActionIntent(context.State,
+                                    context.Bot, nativeIntent, lease.Owner,
+                                    lease.Priority);
+                            if (outcome.Result == BotActionArbitration::
+                                    Disposition::Committed)
+                            {
+                                context.Situation = "adaptive_magmaw";
+                                context.Action = mechanic;
+                                context.State.LastDecisionHandler =
+                                    "adaptive_magmaw";
+                            }
+                            return outcome;
+                        });
                 if (intent.Id.Mechanic == "prepull_ranged_stage"
                     || intent.Id.Mechanic == "ranged_formation_restore")
                 {
@@ -242,33 +251,6 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                     movement.RetryMaxMs = 2000;
                     movement.EscalateAfter = 4;
                 }
-                movement.Attempt = [this, &context, nativeIntent =
-                        BotNativeAction::WithMovementDiagnosticCandidateKey(
-                            BotNativeAction::WithMovementReason(intent.Action,
-                                intent.Id.Mechanic),
-                            BotEncounter::
-                                LegacyMagmawMovementDiagnosticCandidateKey(
-                                    intent)),
-                        lease = movementLease.value_or(
-                            AdaptiveMagmawMovementLease{
-                                BotMovementArbitration::Owner::Mechanic,
-                                BotMovementArbitration::Priority::Mechanic }),
-                        mechanic = intent.Id.Mechanic]()
-                    {
-                        BotActionArbitration::Outcome outcome =
-                            ExecuteNativeActionIntent(context.State,
-                                context.Bot, nativeIntent, lease.Owner,
-                                lease.Priority);
-                        if (outcome.Result ==
-                            BotActionArbitration::Disposition::Committed)
-                        {
-                            context.Situation = "adaptive_magmaw";
-                            context.Action = mechanic;
-                            context.State.LastDecisionHandler =
-                                "adaptive_magmaw";
-                        }
-                        return outcome;
-                };
                 context.State.DecisionKernel.Submit(std::move(movement));
             }
         }

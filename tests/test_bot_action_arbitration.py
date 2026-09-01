@@ -2301,12 +2301,16 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     assert "return std::nullopt;" in hazard
 
     movement_start = candidates.index(
-        "bool adaptiveMagmawSafetyMovementPending"
+        "bool const adaptiveMagmawSafetyMovementPending"
     )
     movement_end = candidates.index(
         "if (context.AdaptiveMagmawInteraction", movement_start
     )
     movement = candidates[movement_start:movement_end]
+    kernel_candidate = bot_source(
+        "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
+        "BotMagmawMovementKernelCandidate.h"
+    )
     assert "AdaptiveMagmawMovementLeaseFor(intent.Id.Mechanic)" in movement
     assert "bool const movementMechanicMapped = movementLease.has_value();" in movement
     assert "lease = *movementLease" in movement
@@ -2315,15 +2319,16 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     assert "lease.Priority" in movement
     assert "context.Action = mechanic;" in movement
     assert 'context.Action = "pillar_evade"' not in movement
+    assert "BuildMagmawMovementKernelCandidate(intent, proposalOrigin" in movement
     for assignment in (
         "movement.Key = intent.Id.Key();",
-        "movement.Source = BotEncounter::ToString(proposalOrigin);",
+        "movement.Source = ToString(origin);",
         "movement.ActionPriority = intent.ActionPriority;",
         "movement.UtilityScore = intent.Utility;",
         "movement.RequiredResources = intent.Resources();",
         "movement.ExpiresAtMs = intent.ExpiresAtMs;",
     ):
-        assert assignment in movement
+        assert assignment in kernel_candidate
     assert movement.index("bool const movementMechanicMapped") < movement.index(
         "context.State.DecisionKernel.Submit(std::move(movement));"
     )
@@ -2355,7 +2360,7 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
 
     candidates = bot_source("BotWorldPopulationMgrUpdateBotKernelCandidates.cpp")
     movement_start = candidates.index(
-        "bool adaptiveMagmawSafetyMovementPending"
+        "bool const adaptiveMagmawSafetyMovementPending"
     )
     movement_end = candidates.index(
         "if (context.AdaptiveMagmawInteraction", movement_start
@@ -2364,7 +2369,9 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
     retry_start = movement.index(
         'if (intent.Id.Mechanic == "pillar_bait_switch"'
     )
-    retry = movement[retry_start:movement.index("movement.Attempt", retry_start)]
+    retry = movement[retry_start:movement.index(
+        "context.State.DecisionKernel.Submit", retry_start
+    )]
     assert "movement.RetryBaseMs = 250;" in retry
     assert "movement.RetryMaxMs = 2000;" in retry
     assert "movement.EscalateAfter = 4;" in retry

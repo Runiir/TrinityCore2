@@ -16,8 +16,8 @@ using MagmawTransferLaneOutcomeObserver = std::function<void(
 
 // The production bridge between the selected Magmaw task candidate and the
 // existing action kernel. It neither selects policy nor bypasses arbitration.
-// Returning false means the binding failed closed and the caller must preserve
-// the legacy generic submission path.
+// Returning false means the binding failed closed. The caller must submit the
+// proposal as a trace-visible hard mask and must not execute generic movement.
 bool SubmitMagmawTransferLaneKernelCandidate(
     BotActionArbitration::Kernel& kernel,
     BotNativeAction::Candidate const& candidate,
