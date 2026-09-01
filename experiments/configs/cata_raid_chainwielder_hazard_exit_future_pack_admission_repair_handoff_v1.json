@@ -1,0 +1,139 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:chainwielder_hazard_exit_future_pack_admission",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "passed_implementation_pending_independent_review",
+  "source_base": {
+    "commit": "f17ba9b9065efe22ba5eede34bfee96b903e7983",
+    "tree": "48fe5d5b1db1c7dce7d7fd1b2233f5b034e2ee65",
+    "clean": true
+  },
+  "implementation_source": {
+    "commit": "51ca92dbcb1671f14e7bbc0690e5c69cfd27a4d6",
+    "tree": "c78e4688e0c4beca700d2dfbec1fbc05b7fbc902"
+  },
+  "immutable_evidence": {
+    "summary": "experiments/configs/cata_raid_magmaw_task_state_canary_a725c82d96_summary_v1.json",
+    "summary_sha256": "b4c162e72566a23837bb61ff9903101469d6fab932174de640cd847f9837e756",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_task_state_canary_a725c82d96_20260901.dvc",
+    "dvc_pointer_sha256": "a3aa9f031f5e8a5971552ab56d6317b4142facbddb63498c2820fe51a28bc7cf",
+    "actor_guid": 30008,
+    "route_node_id": "bwd.magmaw.chainwielder",
+    "route_generation": 2,
+    "movement_owner": "hazard",
+    "movement_gate": "future_pack_destination",
+    "requested_destination": {
+      "map": 669,
+      "x": -333.0,
+      "y": -99.0,
+      "z": 214.091
+    },
+    "native_planner_result": "unavailable",
+    "native_launch_count": 0,
+    "progress_sample_count": 0
+  },
+  "scope_lock": {
+    "hypothesis": "The configured Chainwielder hazard producer correctly selected Hazard ownership but supplied no current-pack destination authority, so the shared spatial future-pack gate rejected its point exit before lease arbitration and planning.",
+    "owned_behavior": "Typed current-route-pack hazard-exit ownership and the shared future-destination admission decision only.",
+    "changed_files": [
+      "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "src/server/game/Bots/BotWorldPopulationMgrMovement.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrMovement.h",
+      "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrValidationRouteMovementCheck.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrValidationRouteMovementCheck.h",
+      "tests/test_chainwielder_central_future_guard.py",
+      "tests/test_chainwielder_hazard_exit_future_pack_admission.py"
+    ],
+    "excluded": [
+      "bot_z_or_height_normalization",
+      "mmap_path_tolerance_or_fallback_fraction",
+      "encounter_coordinates_or_route_geometry",
+      "class_pet_rotation_or_boss_logic",
+      "configure_build_worldserver_authserver_database_or_live_canary"
+    ]
+  },
+  "causal_receipt": [
+    {
+      "state": "verified",
+      "claim": "Actor 30008 repeated validation_route_mechanic/hazard_exit_failed on route generation 2 with movement owner Hazard and gate future_pack_destination."
+    },
+    {
+      "state": "verified",
+      "claim": "The rejection had launch receipt zero and occurred before BuildMovementRequest, PlanMovementPath, PathGenerator, or MotionMaster submission."
+    },
+    {
+      "state": "verified",
+      "claim": "TryValidationRouteMovementCheck selected Hazard/Hazard for the configured marker and called MoveBotToPoint without a destination authority."
+    },
+    {
+      "state": "verified",
+      "claim": "ExecuteMovementIntent applied the future-pack spatial predicate to every non-Recovery owner, including the correctly classified Hazard point exit."
+    },
+    {
+      "state": "unproven",
+      "claim": "The retained normalized trace does not serialize marker GUID 163's native TempSummon summoner GUID. The repaired producer therefore checks that live native relation before issuing authority instead of assuming it."
+    }
+  ],
+  "implementation": {
+    "authority": "ValidationRouteDestinationAuthority::ActiveCurrentPackHazardExit",
+    "writer_gate": "A configured active hazard receives authority only when the marker itself or its native TempSummon summoner is an enrolled, non-dead, non-transitioned member of the current route-pack generation.",
+    "consumer_gate": "Only a point-only Hazard intent with that authority bypasses the spatial future-pack destination mask.",
+    "future_target_preservation": "Unbound Hazard intents, dynamic targets, Route, Formation, CombatRange, Mechanic, and Support intents retain the future-pack gate. The existing Recovery exception is unchanged.",
+    "native_movement_unchanged": true,
+    "coordinates_changed": false,
+    "z_or_floor_policy_changed": false
+  },
+  "production_boundary_fixture": {
+    "test": "tests/test_chainwielder_hazard_exit_future_pack_admission.py::test_recorded_current_pack_hazard_exit_crosses_production_gate",
+    "fixture_identity": "magmaw_task_state_canary_a725c82d96_current_pack_hazard_exit_v1",
+    "fail_before": "Hazard plus no authority plus the observed unsafe spatial result returns RejectFuturePack.",
+    "pass_after": "Hazard plus active-current-pack authority plus point-only destination returns Continue, after which the production executor reaches BuildMovementRequest and PlanMovementPath.",
+    "negative_cases": [
+      "stale_pack_generation",
+      "missing_active_pack_member_or_summoner",
+      "unconfigured_hazard",
+      "dynamic_future_target",
+      "route_owner",
+      "combat_range_owner"
+    ]
+  },
+  "validation": {
+    "focused_command": "pixi run pytest -q tests/test_chainwielder_hazard_exit_future_pack_admission.py tests/test_chainwielder_central_future_guard.py tests/test_validation_route_movement_owner.py tests/test_bot_world_population_mgr_movement_module.py",
+    "result": "17 passed in 0.78s",
+    "correction_rerun_used": true,
+    "correction": "The first fixture incorrectly equated the retained route-level destination with a static future-spawn distance calculation. The corrected fixture pins the retained summary and exercises the production gate with the observed unsafe result.",
+    "git_diff_check": "passed",
+    "changed_cpp_under_1000_lines": true,
+    "configure_count": 0,
+    "build_count": 0,
+    "worldserver_start_count": 0,
+    "authserver_start_count": 0,
+    "database_mutation": false
+  },
+  "claim_ledger": {
+    "verified": [
+      "the first broken edge is pre-planner ownership/admission rather than PathGenerator MotionMaster MMAP or Z handling",
+      "the pre-fix value case rejects the recorded unbound Hazard intent",
+      "the repaired value case continues only for an authority-bound current-pack point hazard exit",
+      "genuine dynamic future targets and ordinary movement owners remain forbidden",
+      "the focused compiled and source-wiring regression set passes",
+      "no changed C or C++ file reaches 1000 physical lines"
+    ],
+    "refuted": [
+      "a bot-side Z correction or wider path tolerance is indicated",
+      "all Hazard-owned destinations should bypass the future-pack guard"
+    ],
+    "unproven": [
+      "a freshly built worldserver reaches native planner submission for the live Chainwielder marker",
+      "the repaired shard clears the Chainwielder node",
+      "the implementation is eligible for a new canary before independent review"
+    ]
+  },
+  "next_work_unit": {
+    "id": "review:chainwielder_hazard_exit_future_pack_admission",
+    "owner_skill": "raid-performance-loop",
+    "required_review": "Confirm the authority is local to active current-pack point hazards, genuine future encounter targets remain guarded, and no action-arbiter or native terrain pathing boundary is bypassed.",
+    "live_retry_admitted": false
+  }
+}
