@@ -47,6 +47,9 @@ from tools.raid_program.capture_telemetry_transport import (
     collect_log_observations,
     observe_telemetry_freshness,
 )
+from tools.raid_program.capture_terminal_batch import (
+    classify_terminal_failure_batch,
+)
 from tools.raid_program.capture_watchdog import observe_capture_watchdog
 from tools.raid_program import trace_transport_smoke
 
@@ -606,59 +609,18 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                     monitor_statuses.extend(new_statuses)
                     for status in new_statuses:
                         telemetry_scheduler.observe_status(status)
-                        if args.trace_transport_smoke:
-                            continue
-                        preflight_failure_reason, preflight_rejections = (
-                            terminal_preflight_failure_reason(
-                                status, profile_name=profile_name,
-                            )
+                    if not args.trace_transport_smoke:
+                        batch_failure = classify_terminal_failure_batch(
+                            new_statuses,
+                            profile_name=profile_name,
+                            elapsed_seconds=time.monotonic() - monitor_started_at,
+                            request_final_evidence=request_final_evidence,
+                            preflight_classifier=terminal_preflight_failure_reason,
+                            runtime_classifier=terminal_runtime_failure_reason,
                         )
-                        if preflight_failure_reason is not None:
-                            forced_evidence_report = request_final_evidence(
-                                "terminal_preflight_failure"
-                            )
-                            terminal_failure = {
-                                "detected": True,
-                                "classification": "infrastructure_abort",
-                                "failure_reason": preflight_failure_reason,
-                                "terminal_kind": "admission_preflight",
-                                "terminal_status": status,
-                                "status_rejections": preflight_rejections,
-                                "route": status.get("validation_route"),
-                                "raid_runtime": status.get("raid_runtime"),
-                                "elapsed_seconds": round(
-                                    time.monotonic() - monitor_started_at, 3
-                                ),
-                                "final_forced_evidence": (
-                                    forced_evidence_report.get("gate_passed")
-                                    is True
-                                ),
-                                "final_forced_evidence_report": (
-                                    forced_evidence_report
-                                ),
-                            }
-                            if forced_evidence_report.get("gate_passed") is not True:
-                                telemetry_abort = {
-                                    "detected": True,
-                                    "classification": "infrastructure_abort",
-                                    "reason": (
-                                        "terminal_failure_forced_evidence_incomplete"
-                                    ),
-                                    "missing_channels": (
-                                        forced_evidence_report.get(
-                                            "missing_channels", []
-                                        )
-                                    ),
-                                    "rejections": forced_evidence_report.get(
-                                        "rejections", []
-                                    ),
-                                    "elapsed_seconds": round(
-                                        time.monotonic() - monitor_started_at, 3
-                                    ),
-                                }
+                        if batch_failure is not None:
+                            terminal_failure, telemetry_abort = batch_failure
                             break
-                    if terminal_failure.get("detected") is True:
-                        break
                     fixture_terminal = controller_fixture_terminal_observation(
                         controller_route_hold_scheduler,
                         elapsed_seconds=time.monotonic() - monitor_started_at,
@@ -710,46 +672,6 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                             stable.append(status)
                         else:
                             stable.clear()
-                        failure_reason, failure_rejections = terminal_runtime_failure_reason(
-                            status, profile_name=profile_name,
-                        )
-                        if failure_reason is not None:
-                            forced_evidence_report = request_final_evidence(
-                                "terminal_runtime_failure"
-                            )
-                            terminal_failure = {
-                                "detected": True,
-                                "classification": "gameplay_failure",
-                                "failure_reason": failure_reason,
-                                "terminal_status": status,
-                                "status_rejections": failure_rejections,
-                                "route": status.get("validation_route"),
-                                "raid_runtime": status.get("raid_runtime"),
-                                "elapsed_seconds": round(
-                                    time.monotonic() - monitor_started_at, 3
-                                ),
-                                "final_forced_evidence":
-                                    forced_evidence_report.get("gate_passed") is True,
-                                "final_forced_evidence_report": forced_evidence_report,
-                            }
-                            if forced_evidence_report.get("gate_passed") is not True:
-                                telemetry_abort = {
-                                    "detected": True,
-                                    "classification": "infrastructure_abort",
-                                    "reason": "terminal_failure_forced_evidence_incomplete",
-                                    "missing_channels": forced_evidence_report.get(
-                                        "missing_channels", []
-                                    ),
-                                    "rejections": forced_evidence_report.get(
-                                        "rejections", []
-                                    ),
-                                    "elapsed_seconds": round(
-                                        time.monotonic() - monitor_started_at, 3
-                                    ),
-                                }
-                            break
-                    if terminal_failure.get("detected") is True:
-                        break
                     if monitor_statuses and not args.trace_transport_smoke:
                         controller_watchdog = observe_capture_watchdog(
                             controller_watchdog_state,

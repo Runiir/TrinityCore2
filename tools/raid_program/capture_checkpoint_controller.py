@@ -382,6 +382,13 @@ def observe_native_path_checkpoint_row(
 
 MAGMAW_TRANSFER_START = (-345.872009, -224.343994, 193.126999)
 MAGMAW_TRANSFER_DESTINATION = (-345.872009, -218.343994, 193.126999)
+MAGMAW_TRANSFER_EPISODE_GENERATION = 17
+MAGMAW_TRANSFER_TASK_GENERATION = 31
+MAGMAW_TRANSFER_LEGACY_GENERATION = 43
+MAGMAW_TRANSFER_MAX_PROGRESS_SAMPLES = 300
+MAGMAW_TRANSFER_ARRIVAL_TOLERANCE = 4.0
+MAGMAW_TRANSFER_ARRIVAL_TOLERANCE_Z = 0.5
+MAGMAW_TRANSFER_FLOOR_TOLERANCE = 4.0
 
 
 def _exact_position(value: object, expected: tuple[float, float, float]) -> bool:
@@ -393,6 +400,64 @@ def _exact_position(value: object, expected: tuple[float, float, float]) -> bool
         and math.isfinite(float(value[axis]))
         and math.isclose(float(value[axis]), target, abs_tol=0.0001)
         for axis, target in zip(("x", "y", "z"), expected)
+    )
+
+
+def _exact_magmaw_scope_key(row: dict[str, Any], hold: dict[str, Any]) -> bool:
+    """Bind the compiled task scope to the preserved controller attempt."""
+
+    value = row.get("scope_key")
+    if not isinstance(value, str):
+        return False
+    parts = value.split(":")
+    if len(parts) != 8:
+        return False
+    try:
+        attempt_id = int(parts[1])
+        wipe_epoch = int(parts[2])
+        route_generation = int(parts[3])
+        map_id = int(parts[5])
+        instance_id = int(parts[6])
+    except ValueError:
+        return False
+    expected = (
+        f"{hold.get('cohort_id')}:{attempt_id}:{wipe_epoch}:"
+        f"{route_generation}:{hold.get('route_node_id')}:669:{instance_id}:"
+        "magmaw_transfer_lane_checkpoint"
+    )
+    return (
+        value == expected
+        and parts[0] == hold.get("cohort_id")
+        and attempt_id == hold.get("attempt_id")
+        and wipe_epoch >= 0
+        and route_generation == hold.get("route_generation")
+        and parts[4] == hold.get("route_node_id")
+        and map_id == 669
+        and instance_id > 0
+        and parts[7] == "magmaw_transfer_lane_checkpoint"
+    )
+
+
+def _exact_same_floor_arrival(value: object) -> bool:
+    """Require the final same-floor sample to prove logical task arrival."""
+
+    if not isinstance(value, dict) or set(value) != {"x", "y", "z", "floor_z"}:
+        return False
+    coordinates = [value.get(axis) for axis in ("x", "y", "z", "floor_z")]
+    if any(
+        not isinstance(item, (int, float))
+        or isinstance(item, bool)
+        or not math.isfinite(float(item))
+        for item in coordinates
+    ):
+        return False
+    x, y, z, floor_z = (float(item) for item in coordinates)
+    destination_x, destination_y, destination_z = MAGMAW_TRANSFER_DESTINATION
+    return (
+        math.hypot(x - destination_x, y - destination_y)
+        <= MAGMAW_TRANSFER_ARRIVAL_TOLERANCE
+        and abs(z - destination_z) <= MAGMAW_TRANSFER_ARRIVAL_TOLERANCE_Z
+        and abs(floor_z - z) <= MAGMAW_TRANSFER_FLOOR_TOLERANCE
     )
 
 
@@ -419,11 +484,18 @@ def _magmaw_transfer_checkpoint_identity_rejections(
         or row.get("case_id") != MAGMAW_TRANSFER_CHECKPOINT_CASE_ID
         or row.get("actor_guid") != MAGMAW_TRANSFER_CHECKPOINT_ACTOR_GUID
         or row.get("task_authority_enabled") is not False
+        or row.get("episode_generation")
+            != MAGMAW_TRANSFER_EPISODE_GENERATION
+        or row.get("task_generation") != MAGMAW_TRANSFER_TASK_GENERATION
+        or row.get("legacy_generation") != MAGMAW_TRANSFER_LEGACY_GENERATION
         or not isinstance(lifecycle, dict)
         or lifecycle.get("case_id") != MAGMAW_TRANSFER_CHECKPOINT_CASE_ID
         or not isinstance(comparison, dict)
         or comparison.get("failure_field") != ""
         or any(comparison.get(field) is not True for field in exact_config_bools)
+        or comparison.get("configured_source_length") != 40
+        or comparison.get("requested_source_length") != 40
+        or comparison.get("binary_revision_length") != 40
     ):
         reasons.append("magmaw_transfer_checkpoint_identity_invalid")
     return list(dict.fromkeys(reasons))
@@ -455,6 +527,18 @@ def _magmaw_transfer_checkpoint_terminal_rejections(
         reasons.append("magmaw_transfer_checkpoint_terminal_lifecycle_invalid")
         return list(dict.fromkeys(reasons))
     if stage == "completed":
+        progress_samples = row.get("progress_samples")
+        decreasing_samples = row.get("decreasing_progress_samples")
+        wrong_floor_samples = row.get("wrong_floor_samples")
+        counts_are_ints = all(
+            isinstance(value, int) and not isinstance(value, bool)
+            for value in (
+                progress_samples, decreasing_samples, wrong_floor_samples,
+            )
+        )
+        same_floor_samples = (
+            progress_samples - wrong_floor_samples if counts_are_ints else -1
+        )
         if (
             row.get("ok") is not True
             or row.get("fixture_gate_passed") is not True
@@ -468,20 +552,21 @@ def _magmaw_transfer_checkpoint_terminal_rejections(
             or not isinstance(row.get("candidate_key"), str)
             or not row["candidate_key"]
             or row.get("candidate_key") != row.get("planner_candidate_key")
-            or not isinstance(row.get("progress_samples"), int)
-            or isinstance(row.get("progress_samples"), bool)
-            or row["progress_samples"] < 2
-            or row.get("decreasing_progress_samples")
-                != row.get("progress_samples")
-            or not isinstance(row.get("wrong_floor_samples"), int)
-            or isinstance(row.get("wrong_floor_samples"), bool)
-            or row["wrong_floor_samples"] < 0
+            or not _exact_magmaw_scope_key(row, hold)
+            or not counts_are_ints
+            or progress_samples < 2
+            or progress_samples > MAGMAW_TRANSFER_MAX_PROGRESS_SAMPLES
+            or wrong_floor_samples < 0
+            or wrong_floor_samples > progress_samples
+            or decreasing_samples < 2
+            or decreasing_samples > same_floor_samples
             or row.get("task_state") != "succeeded"
             or row.get("outcome") != "magmaw_transfer_checkpoint_completed"
             or not _exact_position(
                 row.get("requested_destination"), MAGMAW_TRANSFER_DESTINATION,
             )
             or not _exact_position(row.get("actor_start"), MAGMAW_TRANSFER_START)
+            or not _exact_same_floor_arrival(row.get("actor_last_same_floor"))
         ):
             reasons.append("magmaw_transfer_checkpoint_success_payload_invalid")
     else:

@@ -94,7 +94,7 @@ def _lifecycle(stage: str) -> dict[str, object]:
         "candidate_attempt_count": 1 if completed else 0,
         "native_submission_count": 1 if completed else 0,
         "planner_receipt_id": 812 if completed else 0,
-        "progress_samples": 3 if completed else 0,
+        "progress_samples": 4 if completed else 0,
         "outcome": (
             "magmaw_transfer_checkpoint_completed" if completed
             else "magmaw_transfer_checkpoint_start_invalid" if terminal
@@ -175,7 +175,11 @@ def _checkpoint_row(stage: str = "completed") -> dict[str, object]:
         "terminal": terminal,
         "actor_guid": ACTOR,
         "task_authority_enabled": False,
-        "scope_key": "magmaw:lane:17",
+        "scope_key": (
+            "default:7:0:1:bwd.entry.regroup:669:123:"
+            "magmaw_transfer_lane_checkpoint"
+            if completed else ""
+        ),
         "episode_generation": 17,
         "task_generation": 31,
         "legacy_generation": 43,
@@ -327,8 +331,38 @@ def test_exact_dedicated_success_stops_as_non_gameplay_fixture_observation() -> 
         (("motion_master_generator_type",), 16),
         (("planner_candidate_key",), "wrong"),
         (("progress_samples",), 1),
-        (("decreasing_progress_samples",), 2),
+        (("decreasing_progress_samples",), 4),
         (("wrong_floor_samples",), -1),
+        (("actor_last_same_floor",), None),
+        (("actor_last_same_floor", "y"), -224.0),
+        (("episode_generation",), 18),
+        (("task_generation",), 32),
+        (("legacy_generation",), 44),
+        (
+            ("scope_key",),
+            "default:7:0:1:wrong:669:123:magmaw_transfer_lane_checkpoint",
+        ),
+        (
+            (
+                "controller_route_hold", "config_identity_comparison",
+                "configured_source_length",
+            ),
+            0,
+        ),
+        (
+            (
+                "controller_route_hold", "config_identity_comparison",
+                "requested_source_length",
+            ),
+            0,
+        ),
+        (
+            (
+                "controller_route_hold", "config_identity_comparison",
+                "binary_revision_length",
+            ),
+            0,
+        ),
         (("task_state",), "running"),
         (("outcome",), "wrong"),
         (("requested_destination", "y"), -219.0),
@@ -350,6 +384,70 @@ def test_every_decisive_success_mismatch_is_rejected(
     assert scheduler.observe(row) == []
     assert scheduler.failed is True
     assert scheduler.complete is False
+
+
+@pytest.mark.parametrize(
+    ("mutation", "value"),
+    [
+        ("missing", None),
+        ("extra", 1),
+        ("nan", float("nan")),
+        ("floor", 188.0),
+    ],
+)
+def test_same_floor_arrival_must_be_complete_finite_and_consistent(
+    mutation: str, value: object,
+) -> None:
+    scheduler = _awaiting_terminal()
+    row = _checkpoint_row()
+    arrival = row["actor_last_same_floor"]
+    assert isinstance(arrival, dict)
+    if mutation == "missing":
+        arrival.pop("floor_z")
+    elif mutation == "extra":
+        arrival["extra"] = value
+    elif mutation == "nan":
+        arrival["x"] = value
+    else:
+        arrival["floor_z"] = value
+    assert scheduler.observe(row) == []
+    assert scheduler.failed is True
+
+
+@pytest.mark.parametrize(
+    ("progress", "decreasing", "wrong_floor"),
+    [
+        (4, 3, 2),
+        (4, 3, 4),
+        (4, 3, 5),
+        (301, 2, 299),
+    ],
+)
+def test_progress_counts_reject_incoherent_or_unbounded_wrong_floor_samples(
+    progress: int, decreasing: int, wrong_floor: int,
+) -> None:
+    scheduler = _awaiting_terminal()
+    row = _checkpoint_row()
+    row["progress_samples"] = progress
+    row["decreasing_progress_samples"] = decreasing
+    row["wrong_floor_samples"] = wrong_floor
+    hold = row["controller_route_hold"]
+    assert isinstance(hold, dict)
+    lifecycle = hold["checkpoint_lifecycle"]
+    assert isinstance(lifecycle, dict)
+    lifecycle["progress_samples"] = progress
+    assert scheduler.observe(row) == []
+    assert scheduler.failed is True
+
+
+def test_success_permits_one_wrong_floor_before_three_decreasing_samples() -> None:
+    scheduler = _awaiting_terminal()
+    row = _checkpoint_row()
+    assert row["progress_samples"] == 4
+    assert row["decreasing_progress_samples"] == 3
+    assert row["wrong_floor_samples"] == 1
+    assert scheduler.observe(row) == []
+    assert scheduler.complete is True
 
 
 def test_failed_stage_is_fixture_failure_even_when_hold_terminalized() -> None:
@@ -387,11 +485,13 @@ def test_forced_evidence_taxonomy_preserves_fixture_and_aborts_incomplete() -> N
     assert abort["reason"] == "fixture_terminal_forced_evidence_incomplete"
 
 
-@pytest.mark.parametrize("same_batch_preflight_failure", [False, True])
+@pytest.mark.parametrize(
+    "same_batch_failure", [None, "preflight", "gameplay", "both"],
+)
 @pytest.mark.parametrize("terminal_stage", ["completed", "failed"])
-def test_prompt_loop_stops_on_dedicated_terminal_with_preflight_precedence(
+def test_prompt_loop_stops_with_full_batch_failure_precedence(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
-    same_batch_preflight_failure: bool,
+    same_batch_failure: str | None,
     terminal_stage: str,
 ) -> None:
     scheduler = _scheduler()
@@ -486,9 +586,22 @@ def test_prompt_loop_stops_on_dedicated_terminal_with_preflight_precedence(
     )
     monkeypatch.setattr(
         "tools.raid_program.capture_live_run.terminal_preflight_failure_reason",
-        lambda *args, **kwargs: (
+        lambda status, **kwargs: (
             ("validation_raid_preflight_fixture_failure", [])
-            if same_batch_preflight_failure else (None, [])
+            if same_batch_failure in {"preflight", "both"}
+            and status.get("raid_runtime", {}).get(
+                "controller_route_hold", {}
+            ).get("checkpoint_terminal") is True else (None, [])
+        ),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.terminal_runtime_failure_reason",
+        lambda status, **kwargs: (
+            ("terminal_runtime_gameplay_failure", ["raid_wipe"])
+            if same_batch_failure in {"gameplay", "both"}
+            and status.get("raid_runtime", {}).get(
+                "controller_route_hold", {}
+            ).get("checkpoint_terminal") is True else (None, [])
         ),
     )
 
@@ -507,9 +620,17 @@ def test_prompt_loop_stops_on_dedicated_terminal_with_preflight_precedence(
     assert run.stable == []
     assert run.semantic_stall == {"detected": False}
     assert run.process_return_code == 0
-    if same_batch_preflight_failure:
+    if same_batch_failure in {"preflight", "both"}:
         assert run.fixture_terminal == {"detected": False}
         assert run.terminal_failure["classification"] == "infrastructure_abort"
+        assert run.terminal_failure["terminal_kind"] == "admission_preflight"
+    elif same_batch_failure == "gameplay":
+        assert run.fixture_terminal == {"detected": False}
+        assert run.terminal_failure["classification"] == "gameplay_failure"
+        assert run.terminal_failure["failure_reason"] == (
+            "terminal_runtime_gameplay_failure"
+        )
+        assert run.terminal_failure["final_forced_evidence"] is True
     else:
         assert run.fixture_terminal["classification"] == (
             "fixture_terminal_observation"
@@ -634,6 +755,8 @@ def test_capture_modules_and_import_graph_stay_bounded() -> None:
         ROOT / "tools/raid_program/recurrence_checkpoint_seals.py",
         ROOT / "tools/raid_program/recurrence_admission.py",
         ROOT / "tools/raid_program/capture_checkpoint_controller.py",
+        ROOT / "tools/raid_program/capture_terminal_batch.py",
+        ROOT / "tools/raid_program/capture_live_run.py",
         ROOT / "tools/raid_program/controller_route_hold.py",
         ROOT / "tools/raid_program/capture_setup.py",
         ROOT / "tools/raid_program/capture_fixture_terminal.py",
