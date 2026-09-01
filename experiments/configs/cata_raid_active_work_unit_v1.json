@@ -4,7 +4,7 @@
   "owner_skill": "raid-evidence-lifecycle",
   "next_work_unit": "review:magmaw_task_state_first_gameplay_canary",
   "next_owner_skill": "raid-performance-loop",
-  "classification": "prestart_verifier_repaired_pending_live_verification",
+  "classification": "implementation_pending_live_verification",
   "epoch_id": "magmaw_task_state_migration_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
