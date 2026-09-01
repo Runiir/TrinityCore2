@@ -4,7 +4,7 @@
   "owner_skill": "raid-bot-runtime-implementation",
   "next_work_unit": "evidence:magmaw_parasite_task_state_shadow_comparison",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "live_recurrence_requires_persistent_task_fixture_expansion",
+  "classification": "live_recurrence_quarantined",
   "epoch_id": "magmaw_task_state_migration_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
@@ -14,6 +14,10 @@
   "observed_at_commit": "5ea9bb9b8e78e381a99d5da0f2d1381b4e3a383b",
   "behavior_change": true,
   "evidence_contract_change": true,
+  "source_handoff": {
+    "path": "experiments/configs/cata_raid_chainwielder_hazard_clear_5ea9bb9b8e_summary_v1.json",
+    "sha256": "e66f162352c2db70cce342bf7db35fe7ee2ed5d5c19d6eac307da2642bd793cc"
+  },
   "first_broken_edge": {
     "run_id": "trinity-magmaw-5ea9bb9b8e-chainwielder-hazard-clear.attempt1",
     "route_node_id": "bwd.magmaw.encounter",
@@ -66,7 +70,7 @@
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "focused_compiled_fixture_only",
+    "policy": "completion_watchdog",
     "configure_tickets": 0,
     "worldserver_build_tickets": 0,
     "worldserver_starts": 0,
