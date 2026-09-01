@@ -18,16 +18,17 @@
     "fixtures": [
       {
         "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
-        "revision": 1,
+        "revision": 2,
         "causal_signature": "magmaw_transfer_lane_map_bound_checkpoint_missing",
         "evidence_boundary": "observation_only",
-        "verification_status": "offline_capture_dialect_verified_live_boundary_pending",
+        "verification_status": "recorded_terrain_projection_counterexample_passes_hardened_value_verifier_postfix_live_boundary_pending",
         "required_production_boundary": "one sealed worldserver-backed map-669 entrance movement by actor 30007 with TransferLaneTaskAuthority disabled must join the exact fixture and case through the production action kernel, complete primary MMAP planner receipt, MotionMaster point generator, spline identity, at least two decreasing same-floor samples, and finite logical arrival without certifying gameplay or boss success",
         "command": [
           "pixi",
           "run",
           "pytest",
           "-q",
+          "tests/test_magmaw_transfer_lane_checkpoint.py",
           "tests/test_magmaw_transfer_checkpoint_capture.py"
         ]
       }
@@ -52,6 +53,22 @@
       "admission": {
         "fixture_revisions": {}
       }
+    },
+    {
+      "run_id": "map669-transfer-checkpoint-1485b51d30-terrain-projection-false-reject",
+      "route_completed": false,
+      "blockers": {
+        "magmaw_transfer_lane_map_bound_checkpoint_missing": "occurred"
+      },
+      "admission": {
+        "source_identity": "1485b51d304498f25b02504854b1ffc7c6f6077e",
+        "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+        "fixture_revisions": {
+          "map669_magmaw_transfer_lane_authority_off_v1": 1
+        }
+      },
+      "evidence": "artifacts/cata_raid_program/map669_transfer_checkpoint_1485b51d30_terrain_projection_false_reject_20260901.dvc",
+      "first_broken_edge": "magmaw_transfer_checkpoint_planner_receipt_failed_after_selected_endpoint_reached"
     }
   ]
 }

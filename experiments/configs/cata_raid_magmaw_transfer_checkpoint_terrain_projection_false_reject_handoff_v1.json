@@ -1,0 +1,56 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:magmaw_transfer_checkpoint_receipt_projection_and_shape",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "live_native_movement_succeeded_checkpoint_verifier_false_reject",
+  "source": {
+    "run_commit": "1485b51d304498f25b02504854b1ffc7c6f6077e",
+    "run_tree": "0c8ba9c18b561071c722c0cfa573fb291f1c5ba0",
+    "initial_repair_commit": "44b35f581f0e87d74c879adb91a92fed02edb87a",
+    "hardened_repair_commit": "e920c28b8af88f039c8e200dae7afffefe441d1a"
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_1485b51d30_terrain_projection_false_reject_20260901.dvc",
+    "dvc_md5": "0398bf3feba28298aca3e38cf7fc8f04.dir",
+    "size_bytes": 4136394,
+    "file_count": 16,
+    "remote_verified": true,
+    "capture_sha256": "60198dcf0b8f2cf52ea3100c06162843225d4d0bfe87c7d7495a150dbc2a365a",
+    "raw_sha256": "f995551a111eb5257d134d1df0af680ef640c5ae79f2a088e689a489910f8d67",
+    "worldserver_log_sha256": "83bab97b4c7aa703aa0bfd92524db0451912712117ccbd94ea607e6d8615b969"
+  },
+  "observed_native_outcome": {
+    "planner_receipt_id": 1,
+    "spline_id": 28,
+    "requested_destination": [-345.872009, -218.343994, 193.126999],
+    "planner_selected_destination": [-345.872009, -218.343994, 193.098587],
+    "vertical_projection_delta": 0.0284118652,
+    "primary_path": "complete_terminal",
+    "endpoint_result": "reached_requested",
+    "same_floor_progress_samples": 8,
+    "terminal_outcome": "selected_endpoint_reached"
+  },
+  "reported_checkpoint_outcome": "magmaw_transfer_checkpoint_planner_receipt_failed",
+  "first_broken_edge": "The post-submission checkpoint verifier required bit-exact requested and terrain-projected Z even though the exact native receipt physically reached the same-floor endpoint.",
+  "independent_review": {
+    "initial_verdict": "NO-GO",
+    "initial_reason": "The initial projection repair was directionally correct but the helper still admitted forbidden path flags, fallback traversal, and incoherent spline receipts; its positive fixture contained unavailable/default launch fields.",
+    "final_verdict": "GO_FOR_ONE_OBSERVATION_ONLY_REPLAY",
+    "reviewed_commit": "e920c28b8af88f039c8e200dae7afffefe441d1a",
+    "focused_result": "124 passed",
+    "remaining_unproven": [
+      "post-fix checkpoint completion",
+      "encounter strategy or gameplay correctness",
+      "raid completion or general movement correctness"
+    ]
+  },
+  "required_next_work_unit": {
+    "id": "evidence:observe_hardened_magmaw_transfer_checkpoint_once",
+    "owner_skill": "raid-evidence-lifecycle",
+    "allowed_change": "Build the exact clean source and run one fixture-only checkpoint to prove or refute post-fix completion through the native map-669 movement boundary.",
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "database_mutations_allowed": "canonical_prepare_only_once",
+    "gameplay_mutations_allowed": false
+  }
+}

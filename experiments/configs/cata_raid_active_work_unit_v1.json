@@ -1,22 +1,22 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_transfer_checkpoint_corrected_contract_locator_one_start",
+  "work_unit": "evidence:observe_hardened_magmaw_transfer_checkpoint_once",
   "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:magmaw_transfer_lane_authority_off_shadow_decision",
+  "next_work_unit": "coordination:classify_hardened_magmaw_transfer_checkpoint",
   "next_owner_skill": "raid-performance-loop",
-  "classification": "implementation_pending_live_verification",
+  "classification": "reviewed_observation_only_replay_admitted",
   "epoch_id": "magmaw_transfer_lane_task_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "one_corrected_contract_locator_build_prepare_only_and_checkpoint_start_admitted",
-  "observed_at_commit": "013fea472ccd155e453bfe7b3b0fc0472477b111",
+  "gate_state": "one_clean_build_prepare_and_checkpoint_start_admitted",
+  "observed_at_commit": "e920c28b8af88f039c8e200dae7afffefe441d1a",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "next_action": "At this clean tracked admission, run one fast8 configure/build, create the exact authority-off bundle using the corrected tracked runtime-config contract path ending in .json, verify it, apply one canonical prepare-only reset, require strict provisioning/readback, then consume one worldserver start with zero retries.",
+  "next_action": "Commit this exact admission, run the revision-2 recurrence suite, build the clean source with at most eight compiler jobs, create and verify one authority-off bundle, apply one canonical prepare-only reset with strict readback, then consume one worldserver start with zero retries.",
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_prestart_contract_locator_typo_abort_v1.json",
-    "sha256": "cab6e9150f4d8f195a91e1a0b1e551ae961c957432b086e891cde76eda488e1b"
+    "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_terrain_projection_false_reject_handoff_v1.json",
+    "dvc_pointer": "artifacts/cata_raid_program/map669_transfer_checkpoint_1485b51d30_terrain_projection_false_reject_20260901.dvc"
   },
   "program_scope": {
     "fixture_expansion_replay_admitted": true,
@@ -44,6 +44,7 @@
   },
   "fixture_contract": {
     "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
+    "fixture_revision": 2,
     "case_id": "entrance_polygon_short_lane_v1",
     "actor_guid": 30007,
     "map_id": 669,
@@ -55,17 +56,14 @@
     "certifies_boss_fidelity": false
   },
   "scope_lock": {
-    "allowed_change": "Repeat the source-bound build, restore the omitted .json suffix in the bundle-create contract locator, and produce one fixture-only map-bound checkpoint terminal.",
+    "allowed_change": "Run one source-bound observation-only replay of the hardened Magmaw transfer checkpoint and publish its typed terminal evidence.",
     "forbidden": [
-      "changing code, tests, gameplay, Magmaw strategy, movement, task authority, priorities, or database content outside the canonical prepare-only reset",
-      "changing any prior verified input or bundle argument other than restoring the omitted .json suffix",
-      "starting an authserver, more than one worldserver, or retrying any failed stage",
-      "weakening runtime-config, build, route, seal, roster, or checkpoint identity",
-      "using a 300-second raid timer or claiming fixture evidence as gameplay success"
+      "changing movement planning, global tolerances, Magmaw gameplay strategy, priorities, route geometry, class behavior, or database state",
+      "starting an authserver, more than one worldserver, or retrying a failed stage",
+      "claiming the successful native movement as boss fidelity, gameplay success, or fixture promotion"
     ],
     "required_postconditions": [
-      "current-source schema-v3 build and MySQL runtime identity verify",
-      "the atomic authority-off bundle, map-669 preflight, provisioning, and readback verify before start",
+      "the clean source, binary, runtime config, route, recurrence suite, seal, provisioning, and roster identities verify before start",
       "the dedicated checkpoint emits a typed terminal or a new first-broken edge",
       "worldserver cleanup is complete and compact evidence is remotely verified in DVC"
     ]

@@ -111,6 +111,19 @@ plus endpoint-floor validity; do not collapse those facts into one unexplained
 3D tolerance. Retain the exact rejected endpoint deltas as a compiled
 counterexample and serialize both components for future traces.
 
+Apply that distinction in every downstream receipt/checkpoint verifier too,
+not only in planner admission. Do not require bit-exact equality between the
+requested Z and the planner-selected terrain Z after the planner has produced
+a complete `ReachedRequested` proof with exact requested X/Y, a floor-valid
+endpoint, and a vertical projection inside the shared endpoint-component
+tolerance. Before classifying `planner_receipt_failed` as a planner or MMAP
+failure, inspect the correlated receipt, MotionMaster/spline identity, and
+physical progress samples. If the same receipt reaches its selected endpoint
+on the same floor, repair the false evidence predicate; do not change movement,
+global path tolerances, or route geometry. Keep adversarial coverage for
+excessive Z projection, horizontal drift, wrong floor, incomplete/unaccepted
+proofs, and actor/map/scope/candidate/receipt drift.
+
 Also distinguish requested-destination reach from Detour end-polygon
 projection. A complete polygon corridor can legitimately terminate at
 `closestPointOnPolyBoundary` when the declared point is outside the final

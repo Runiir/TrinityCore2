@@ -1,0 +1,6 @@
+outs:
+- md5: 0398bf3feba28298aca3e38cf7fc8f04.dir
+  size: 4136394
+  nfiles: 16
+  hash: md5
+  path: map669_transfer_checkpoint_1485b51d30_terrain_projection_false_reject_20260901

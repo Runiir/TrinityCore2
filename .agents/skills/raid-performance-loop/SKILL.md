@@ -443,6 +443,15 @@ the required world/area-trigger transition, and the final reclaim/rejoin or
 arrival postcondition. One successful bot or one successful run does not close
 an intermittent family.
 
+Conversely, a checkpoint/verifier failure is not automatically a movement
+failure. When the correlated receipt shows a complete accepted path, live
+generator/spline identity, same-floor decreasing progress, and arrival, route
+the first broken edge to the evidence predicate that rejected those facts.
+Compare requested X/Y/Z with the planner-selected terrain endpoint separately;
+bit-exact requested-Z equality is invalid when the bounded, floor-valid native
+projection differs. Do not dispatch route, MMAP, priority, or movement changes
+for that post-hoc false rejection.
+
 Record each promoted fixture pass in the signature's append-only
 `fixture_verifications` list with its evidence path and exact boundary. Use
 `passed_before_run_id` for a fixture qualified before an admitted run, and
