@@ -94,3 +94,31 @@ def test_live_diagnostic_keeps_native_terrain_ownership_explicit() -> None:
         "executor",
     ):
         assert forbidden in acceptance
+
+
+def test_fresh_fixture_expansion_keeps_launcher_plans_outside_run_root() -> None:
+    active = _load("cata_raid_active_work_unit_v1.json")
+    handoff = _load(
+        "cata_raid_magmaw_personal_escape_plan_layout_preflight_"
+        "handoff_20260902.json"
+    )
+    handoff_path = CONFIGS / active["preflight_handoff"]["path"].rsplit("/", 1)[-1]
+    layout = active["fixture_expansion"]["canonical_launcher_layout"]
+
+    assert active["work_unit"].endswith("fixture_expansion_attempt2")
+    assert active["preflight_handoff"]["configure_runs"] == 0
+    assert active["preflight_handoff"]["worldserver_starts"] == 0
+    assert active["preflight_handoff"]["sha256"] == hashlib.sha256(
+        handoff_path.read_bytes()
+    ).hexdigest()
+    assert handoff["first_broken_preflight_edge"]["reason"] == (
+        "plan_output_must_be_outside_run_root"
+    )
+    assert layout == {
+        "control_directory": "fresh_external_attempt_parent",
+        "run_root": "fresh_external_attempt_parent/launcher_execution",
+        "run_root_initial_state": "empty",
+        "material_inputs_location": "control_directory_outside_run_root",
+        "prebuild_plan_location": "control_directory/prebuild_plan.json",
+        "realized_plan_location": "control_directory/realized_plan.json",
+    }

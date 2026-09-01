@@ -1,0 +1,48 @@
+{
+  "schema": "cata_raid_fixture_expansion_preflight_handoff_v1",
+  "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion",
+  "classification": "canonical_launcher_plan_layout_failed_before_build",
+  "source_commit": "1ae6df0b9dce13e731f412d652d46b55ec7bc890",
+  "source_tree": "dd49247872e2029ffd9c719db1208c87e5c3593c",
+  "external_failed_handoff": {
+    "path": "/tmp/trinity-magmaw-personal-escape-1ae6df0b9d-0gOfsabQ/failed_handoff.json",
+    "sha256": "d26b8e257c0cf214050a8b6572297f7df37b50cfb711f1e30fa47dd441f6b649"
+  },
+  "recurrence_gate": {
+    "fixture_count": 26,
+    "passed_count": 26,
+    "fixture_expansion_admitted": true,
+    "decision_sha256": "af2ad3ba6a0d6251fa255cae9216efa38f320c2c73a0b8af1950e4d92f55b695",
+    "suite_receipt_sha256": "066cd56679197e6c4557824c217a33c7447e561c547f5c38e4a68e1fab830fee",
+    "target_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1",
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "magmaw_personal_parasite_authority_gap_v1"
+    ]
+  },
+  "first_broken_preflight_edge": {
+    "gate": "composite_fixture_replay_launcher.compose",
+    "reason": "plan_output_must_be_outside_run_root",
+    "failed_output": "/tmp/trinity-magmaw-personal-escape-1ae6df0b9d-0gOfsabQ/launcher_execution/prebuild_plan.json",
+    "rule": "The prebuild and realized plan files are immutable inputs to execution and must be siblings outside the request's empty run_root. The request, recurrence decision, suite receipt, staged route manifest, and base-runtime-config receipt must also remain outside that run_root."
+  },
+  "budgets_consumed": {
+    "configure": 0,
+    "worldserver_build": 0,
+    "provisioning": 0,
+    "recurrence_seal": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_retries": 0
+  },
+  "cleanup": {
+    "worldserver_running": false,
+    "authserver_running": false,
+    "worktree_clean": true,
+    "failed_external_payload_preserved": true
+  },
+  "next_owner_skill": "raid-shard-architecture",
+  "required_next_action": "Use a fresh external attempt root. Keep all material inputs and both plan files in its parent control directory, declare a new empty child run_root, rerun the exact-source full bank, and consume no more than one configure/build and one completion-watchdog worldserver start. This is a fresh authorized work unit, not a retry of the failed launcher invocation."
+}

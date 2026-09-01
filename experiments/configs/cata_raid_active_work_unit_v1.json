@@ -1,6 +1,6 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion",
+  "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt2",
   "owner_skill": "raid-shard-architecture",
   "next_work_unit": "evidence:classify_magmaw_personal_escape_episode_rearm",
   "next_owner_skill": "raid-evidence-lifecycle",
@@ -10,7 +10,7 @@
   "boss": "magmaw",
   "mode": "10N",
   "architecture_scope": "Validate one actor-local personal-threat falling and rising edge under an active provisional parasite parent. Keep the existing arbiter, planner, executor, route, and native terrain following unchanged.",
-  "gate_state": "actor 30008 recurrence is recorded in the executable ledger; revision 1 of magmaw_personal_parasite_authority_gap_v1 is invalidated; exact implementation 38976c172c4deff27b0e0b559d3f641bd3868ce4 is independently reviewed GO; one exact-source full-suite receipt, fast8_v4 build, and no-retry fixture-expansion diagnostic remain",
+  "gate_state": "the first fixture-expansion unit passed 26 of 26 recurrence fixtures but stopped before build because its prebuild plan output aliased the declared run root; zero build, provisioning, seal, or server budgets were consumed; a fresh exact-source unit must keep material inputs and plan files outside a new empty run root",
   "observed_at_commit": "38976c172c4deff27b0e0b559d3f641bd3868ce4",
   "behavior_change": false,
   "evidence_contract_change": true,
@@ -19,6 +19,18 @@
     "sha256": "e0a3b8599c72b299cb8c21294616a78b9c43b0c3b96e565dd21cf11fe433206a",
     "reviewed_commit": "38976c172c4deff27b0e0b559d3f641bd3868ce4",
     "verdict": "go"
+  },
+  "preflight_handoff": {
+    "path": "experiments/configs/cata_raid_magmaw_personal_escape_plan_layout_preflight_handoff_20260902.json",
+    "sha256": "484dc8f941e59d901deac57ce43c5e69b83dc6ec2f5de4a1da06ae573a2fbb90",
+    "classification": "canonical_launcher_plan_layout_failed_before_build",
+    "failed_gate": "composite_fixture_replay_launcher.compose",
+    "reason": "plan_output_must_be_outside_run_root",
+    "configure_runs": 0,
+    "worldserver_builds": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_retries": 0
   },
   "first_broken_edge": {
     "run_id": "magmaw-authority-5cad51fa40-20260902",
@@ -56,6 +68,7 @@
       "magmaw_personal_parasite_authority_gap_v1"
     ],
     "attempts": 1,
+    "preflight_attempt": 2,
     "retries": 0,
     "authserver_starts": 0,
     "worldserver_starts": 1,
@@ -69,7 +82,15 @@
       "route progression",
       "DPS and HPS",
       "cleanup"
-    ]
+    ],
+    "canonical_launcher_layout": {
+      "control_directory": "fresh_external_attempt_parent",
+      "run_root": "fresh_external_attempt_parent/launcher_execution",
+      "run_root_initial_state": "empty",
+      "material_inputs_location": "control_directory_outside_run_root",
+      "prebuild_plan_location": "control_directory/prebuild_plan.json",
+      "realized_plan_location": "control_directory/realized_plan.json"
+    }
   },
   "build": {
     "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
@@ -78,7 +99,7 @@
     "configure_receipt": "external_run_root/configure_receipt.json",
     "worldserver_build_receipt": "external_run_root/worldserver_build_receipt.json"
   },
-  "next_action": "At this descriptor's exact clean commit, run the full recurrence bank with gate fixture_expansion. Only if it emits fixture_expansion_admitted=true, run exactly one queued fast8_v4 configure and worldserver build, fresh deterministic shard provisioning and strict readback, one fixture-expansion recurrence seal, and one completion-watchdog worldserver start. Start no authserver and do not retry. DVC-publish only after a typed terminal and verified cleanup.",
+  "next_action": "At this descriptor's exact clean commit, create one fresh external control directory and a separate empty child run root. Keep the recurrence decision, suite receipt, staged route manifest, base-runtime-config receipt, prebuild plan, and realized plan outside the run root. Rerun the full recurrence bank with gate fixture_expansion. Only if it admits the exact five targets, run exactly one queued fast8_v4 configure/build, fresh deterministic shard provisioning and strict readback, one fixture-expansion recurrence seal, and one completion-watchdog worldserver start. Start no authserver and do not retry. DVC-publish only after a typed terminal and verified cleanup.",
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": true,
@@ -95,6 +116,7 @@
     "dvc_publication_required_after_terminal": true,
     "admission_conditions": [
       "the exact clean descriptor commit and full-suite source identity match",
+      "the launcher material inputs, prebuild plan, and realized plan are outside a separate initially empty run root",
       "the recurrence decision admits fixture expansion and includes all five declared target IDs",
       "configure, build, binary, runtime config, route manifest, roster, and recurrence seal identities match",
       "one worldserver start remains and no authserver or retry is permitted"
