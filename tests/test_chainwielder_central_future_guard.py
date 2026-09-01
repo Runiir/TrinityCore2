@@ -51,11 +51,11 @@ def test_central_guard_precedes_all_ordinary_movement_admission_boundaries():
         )
 
 
-def test_future_guard_keeps_recovery_exception_explicit_and_header_small():
+def test_future_guard_keeps_typed_exceptions_explicit_and_header_small():
     movement = MOVEMENT.read_text(encoding="utf-8")
     assert "AppliesValidationRoutePatrolFutureDestinationGuard" in movement
-    assert "owner != BotMovementArbitration::Owner::Recovery" in movement
-    assert "Native recovery movement is the only exception" in movement
+    assert "owner == BotMovementArbitration::Owner::Recovery" in movement
+    assert "ActiveCurrentPackHazardExit" in movement
 
     harness = r"""
 #include "Bots/BotWorldPopulationMgrMovement.h"
@@ -64,12 +64,18 @@ def test_future_guard_keeps_recovery_exception_explicit_and_header_small():
 int main()
 {
     using Owner = BotMovementArbitration::Owner;
+    using Authority =
+        BotWorldMovement::ValidationRouteDestinationAuthority;
     using BotWorldMovement::AppliesValidationRoutePatrolFutureDestinationGuard;
     assert(AppliesValidationRoutePatrolFutureDestinationGuard(Owner::Route));
     assert(AppliesValidationRoutePatrolFutureDestinationGuard(Owner::Formation));
     assert(AppliesValidationRoutePatrolFutureDestinationGuard(Owner::CombatRange));
     assert(AppliesValidationRoutePatrolFutureDestinationGuard(Owner::Hazard));
     assert(!AppliesValidationRoutePatrolFutureDestinationGuard(Owner::Recovery));
+    assert(!AppliesValidationRoutePatrolFutureDestinationGuard(
+        Owner::Hazard, Authority::ActiveCurrentPackHazardExit, false));
+    assert(AppliesValidationRoutePatrolFutureDestinationGuard(
+        Owner::Hazard, Authority::ActiveCurrentPackHazardExit, true));
 }
 """
     source = ROOT / "tests" / ".tmp_central_future_guard.cpp"

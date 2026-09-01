@@ -17,6 +17,7 @@
 #include "SpellAuras.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
+#include "TemporarySummon.h"
 #include "Unit.h"
 #include "Object.h"
 
@@ -448,6 +449,34 @@ bool BotWorldPopulationMgr::TryValidationRouteMovementCheck(
         bool feralHazardCurrentClusterBiased = false;
         auto const movementLease = BotWorldPopulationMgrValidationRoute::
             SelectValidationRouteMovementOwner(configuredHazard, bot->IsInCombat());
+        auto isActiveCurrentPackMember = [this](ObjectGuid guid) -> bool
+        {
+            return !guid.IsEmpty()
+                && Party().ValidationRoutePackGeneration
+                    == Party().ValidationRouteGeneration
+                && Party().ValidationRoutePackMemberGuids.find(guid)
+                    != Party().ValidationRoutePackMemberGuids.end()
+                && Party().ValidationRoutePackDeathGuids.find(guid)
+                    == Party().ValidationRoutePackDeathGuids.end()
+                && Party().ValidationRoutePackTransitionGuids.find(guid)
+                    == Party().ValidationRoutePackTransitionGuids.end();
+        };
+        bool const sourceIsActivePackMember = isActiveCurrentPackMember(
+            caster->GetGUID());
+        TempSummon const* hazardSummon = caster->ToCreature()
+            ? caster->ToCreature()->ToTempSummon() : nullptr;
+        bool const summonerIsActivePackMember = hazardSummon
+            && isActiveCurrentPackMember(hazardSummon->GetSummonerGUID());
+        bool const ownsActiveCurrentPackHazardExit =
+            BotWorldPopulationMgrValidationRoute::
+                OwnsActiveCurrentPackHazardExit(configuredHazard,
+                    Party().ValidationRoutePackGeneration
+                        == Party().ValidationRouteGeneration,
+                    sourceIsActivePackMember, summonerIsActivePackMember);
+        auto const destinationAuthority = ownsActiveCurrentPackHazardExit
+            ? BotWorldMovement::ValidationRouteDestinationAuthority::
+                ActiveCurrentPackHazardExit
+            : BotWorldMovement::ValidationRouteDestinationAuthority::None;
         std::vector<Position> dodgeCandidates;
         // A direct radial exit can land outside the local navmesh beside lava
         // cracks, walls, or shelf edges.  Try a small deterministic fan of
@@ -597,7 +626,9 @@ bool BotWorldPopulationMgr::TryValidationRouteMovementCheck(
         {
             if (MoveBotToPoint(state, bot, dodge.GetPositionX(),
                     dodge.GetPositionY(), dodge.GetPositionZ(), false,
-                    movementLease.Owner, movementLease.Priority))
+                    movementLease.Owner, movementLease.Priority, nullptr, 0.0f,
+                    "validation_route_hazard_exit", {},
+                    destinationAuthority))
             {
                 moved = true;
                 break;

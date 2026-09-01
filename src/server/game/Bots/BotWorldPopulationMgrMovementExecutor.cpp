@@ -69,12 +69,21 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
 
     // Every ordinary movement producer converges here before lease retention,
     // path planning, or MotionMaster submission.  Keep the future-pack mask
-    // out of caller-specific route/formation/combat/hazard branches.  Native
-    // corpse recovery remains the sole typed exception.
-    if (BotWorldMovement::AppliesValidationRoutePatrolFutureDestinationGuard(
-            intent.Owner)
-        && !IsValidationRoutePatrolCombatPointSafe(bot, intent.X, intent.Y,
-            intent.Z))
+    // out of caller-specific route/formation/combat/hazard branches. Native
+    // corpse recovery and an authority-bound current-pack hazard point exit
+    // are the only typed exceptions.
+    bool const appliesFutureDestinationGuard =
+        BotWorldMovement::AppliesValidationRoutePatrolFutureDestinationGuard(
+            intent.Owner, intent.DestinationAuthority,
+            intent.DynamicTarget != nullptr);
+    bool const validationRouteDestinationSafe =
+        !appliesFutureDestinationGuard
+        || IsValidationRoutePatrolCombatPointSafe(bot, intent.X, intent.Y,
+            intent.Z);
+    if (BotWorldMovement::EvaluateFutureDestinationGate(intent.Owner,
+            intent.DestinationAuthority, intent.DynamicTarget != nullptr,
+            validationRouteDestinationSafe)
+        == BotWorldMovement::FutureDestinationGateDecision::RejectFuturePack)
     {
         RecordMovementPlannerExecutorOutcome(MovementExecutorBotGuid(bot),
             MovementExecutorMapId(bot), intent, "future_pack_destination",

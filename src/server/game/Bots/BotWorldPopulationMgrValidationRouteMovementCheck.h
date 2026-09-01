@@ -33,6 +33,18 @@ constexpr MovementLease SelectValidationRouteMovementOwner(
         BotMovementArbitration::Priority::Idle };
 }
 
+// Configured marker creatures may be native summons rather than natural pack
+// members. Admit their exit authority only when the marker itself or its
+// native summoner is an active member of the current route-pack generation.
+// This keeps a marker owned by a future encounter fail closed.
+constexpr bool OwnsActiveCurrentPackHazardExit(
+    bool configuredHazard, bool packGenerationCurrent,
+    bool sourceIsActivePackMember, bool summonerIsActivePackMember)
+{
+    return configuredHazard && packGenerationCurrent
+        && (sourceIsActivePackMember || summonerIsActivePackMember);
+}
+
 // The route movement lane only observes the two neighboring policy services it
 // needs. Keeping those edges typed prevents the movement lease from reaching
 // into the objective's local lambda captures or the independent DPS/cast lane.

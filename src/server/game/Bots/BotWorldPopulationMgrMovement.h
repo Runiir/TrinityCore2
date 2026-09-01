@@ -113,14 +113,49 @@ constexpr bool BlocksNonRecoveryCrossMapMovement(
         && owner != BotMovementArbitration::Owner::Recovery;
 }
 
+enum class ValidationRouteDestinationAuthority : std::uint8_t
+{
+    None,
+    ActiveCurrentPackHazardExit
+};
+
+enum class FutureDestinationGateDecision : std::uint8_t
+{
+    Continue,
+    RejectFuturePack
+};
+
 // The future-pack mask belongs to ordinary movement admission, not to the
 // route, formation, combat, or hazard caller that happened to produce an
-// intent.  Native recovery movement is the only exception: it must be
-// allowed to return through the declared entrance corridor.
+// intent. Native recovery movement remains exempt for the declared entrance
+// corridor. A point-only hazard exit may also continue when its producer has
+// bound the active native hazard source to the current route-pack generation.
+// An unbound Hazard intent and every dynamic target remain guarded.
 constexpr bool AppliesValidationRoutePatrolFutureDestinationGuard(
-    BotMovementArbitration::Owner owner)
+    BotMovementArbitration::Owner owner,
+    ValidationRouteDestinationAuthority destinationAuthority =
+        ValidationRouteDestinationAuthority::None,
+    bool hasDynamicTarget = false)
 {
-    return owner != BotMovementArbitration::Owner::Recovery;
+    if (owner == BotMovementArbitration::Owner::Recovery)
+        return false;
+
+    return owner != BotMovementArbitration::Owner::Hazard
+        || destinationAuthority
+            != ValidationRouteDestinationAuthority::ActiveCurrentPackHazardExit
+        || hasDynamicTarget;
+}
+
+constexpr FutureDestinationGateDecision EvaluateFutureDestinationGate(
+    BotMovementArbitration::Owner owner,
+    ValidationRouteDestinationAuthority destinationAuthority,
+    bool hasDynamicTarget, bool destinationSafe)
+{
+    return AppliesValidationRoutePatrolFutureDestinationGuard(
+               owner, destinationAuthority, hasDynamicTarget)
+            && !destinationSafe
+        ? FutureDestinationGateDecision::RejectFuturePack
+        : FutureDestinationGateDecision::Continue;
 }
 
 // A short lethal-mechanic move may need to use the planner's existing
@@ -170,6 +205,8 @@ struct Intent
     bool AllowRecentFailureRetry = false;
     bool AllowNativeLongPath = false;
     bool NativeRecoveryCrossMapPending = false;
+    ValidationRouteDestinationAuthority DestinationAuthority =
+        ValidationRouteDestinationAuthority::None;
     std::string IntentReason;
     // Diagnostic-only correlation token copied from the already-selected
     // action candidate. It is excluded from movement behavior and identity.
