@@ -169,12 +169,11 @@ inline void MagmawPersonalParasiteEscapeTask::ObserveActorLife(
 
     ActorAlive = alive;
     ++ActorLifeGeneration;
-    Started = false;
-    PersonalThreatEpisodeOpen = false;
-    AlternateUsed = false;
-    AlternatePending = false;
-    Failure = MagmawPersonalParasiteEscapeFailure::None;
-    State = BotDecision::PersistentTaskState::Aborted;
+    if (!alive && Started && !BotDecision::IsTerminal(State))
+    {
+        State = BotDecision::PersistentTaskState::Aborted;
+        AlternatePending = false;
+    }
 }
 
 inline void MagmawPersonalParasiteEscapeTask::MarkLifecycle(

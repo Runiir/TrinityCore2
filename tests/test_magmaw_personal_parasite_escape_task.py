@@ -580,16 +580,47 @@ int main()
         &board.Hostiles[1], 16.0f, 4.0f, true);
     assert(peerIntent && peer.ActorGuid != task.ActorGuid);
 
-    // Death and resurrection in the same wave abort the old actor-life task.
-    // The resurrected actor receives a fresh candidate rather than resuming
-    // the stale destination or generation.
+    // A terminal child remains the same episode tombstone across death and
+    // resurrection. Continuous threat cannot use either stale or current
+    // facts to mint a new task generation.
     MagmawPersonalParasiteEscapeTask lifeTask;
+    MagmawParasiteWaveTask lifeWave;
     board.Hostiles[1].VictimGuid = PlayerGuid(30008);
-    auto lifeFirst = lifeTask.Tick(board, cache->Facts(), board.Players[2],
-        &board.Hostiles[1], 16.0f, 4.0f, false);
-    assert(lifeFirst);
-    uint64 const oldLifeCandidate = lifeTask.CandidateGeneration;
+    MagmawFacts lifeStale = cache->Facts();
+    --lifeStale.ObservationRevision;
+    AdaptiveMagmawPlan lifeWaiting = strategy.Propose(board,
+        PlayerGuid(30008), "dps", nullptr, false, false, &lane, &legacy,
+        nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &lifeStale, &lifeTask, &lifeWave);
+    assert(!Escape(lifeWaiting));
+    AdaptiveMagmawPlan lifeStarted = strategy.Propose(board,
+        PlayerGuid(30008), "dps", nullptr, false, false, &lane, &legacy,
+        nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &lifeTask, &lifeWave);
+    BotNativeAction::Candidate const* lifeFirst = Escape(lifeStarted);
+    assert(lifeFirst && lifeWave.Active
+        && !lifeWave.GenerationAuthoritative);
     Vector3 const oldLifeDestination = lifeTask.Destination;
+    board.Players[2].Position = oldLifeDestination;
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan lifeCleared = strategy.Propose(board,
+        PlayerGuid(30008), "dps", nullptr, false, false, &lane, &legacy,
+        nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &lifeTask, &lifeWave);
+    assert(!Escape(lifeCleared));
+    assert(lifeTask.State == TaskState::Succeeded);
+    uint64 const oldLifeTaskGeneration = lifeTask.TaskGeneration;
+    uint64 const oldLifeCandidateGeneration =
+        lifeTask.CandidateGeneration;
+    uint64 const oldLifeCandidateExpiresAtMs =
+        lifeTask.CandidateExpiresAtMs;
+    uint64 const oldLifeWaveGeneration = lifeTask.WaveGeneration;
+
     board.Players[2].Alive = false;
     ++board.Revision;
     board.ObservedAtMs += 100;
@@ -597,24 +628,93 @@ int main()
     strategy.Propose(board, PlayerGuid(30008), "dps", nullptr, false,
         false, &lane, &legacy, nullptr, std::nullopt,
         AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
-        &cache->Facts(), &lifeTask);
-    assert(!lifeTask.Started && lifeTask.State == TaskState::Aborted);
+        &cache->Facts(), &lifeTask, &lifeWave);
+    assert(lifeTask.Started && lifeTask.State == TaskState::Succeeded);
     assert(lifeTask.ActorLifeGeneration == 1);
+    assert(lifeTask.PersonalThreatEpisodeOpen);
+    assert(lifeTask.ActorGuid == PlayerGuid(30008));
+    assert(lifeTask.TaskGeneration == oldLifeTaskGeneration);
+    assert(lifeTask.CandidateGeneration == oldLifeCandidateGeneration);
+    assert(lifeTask.CandidateExpiresAtMs == oldLifeCandidateExpiresAtMs);
+
     board.Players[2].Alive = true;
-    board.Players[2].Position.X += 0.25f;
     ++board.Revision;
     board.ObservedAtMs += 100;
-    cache = MagmawFactsCache::ForSnapshot(cache, board);
-    AdaptiveMagmawPlan resurrected = strategy.Propose(board,
+    AdaptiveMagmawPlan staleResurrection = strategy.Propose(board,
         PlayerGuid(30008), "dps", nullptr, false, false, &lane, &legacy,
         nullptr, std::nullopt,
         AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
-        &cache->Facts(), &lifeTask);
-    BotNativeAction::Candidate const* resurrectedEscape = Escape(resurrected);
-    assert(resurrectedEscape && lifeTask.ActorLifeGeneration == 2);
-    assert(lifeTask.CandidateGeneration != oldLifeCandidate);
-    assert(!MagmawPersonalParasiteEscapeTask::SamePoint(
+        &cache->Facts(), &lifeTask, &lifeWave);
+    assert(!Escape(staleResurrection));
+    assert(lifeTask.ActorLifeGeneration == 2);
+    assert(lifeTask.TaskGeneration == oldLifeTaskGeneration);
+    assert(lifeTask.CandidateGeneration == oldLifeCandidateGeneration);
+    assert(lifeTask.CandidateExpiresAtMs == oldLifeCandidateExpiresAtMs);
+    assert(lifeTask.WaveGeneration == oldLifeWaveGeneration);
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
         lifeTask.Destination, oldLifeDestination));
+
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan currentResurrection = strategy.Propose(board,
+        PlayerGuid(30008), "dps", nullptr, false, false, &lane, &legacy,
+        nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &lifeTask, &lifeWave);
+    assert(!Escape(currentResurrection));
+    assert(lifeTask.TaskGeneration == oldLifeTaskGeneration);
+    assert(lifeTask.CandidateGeneration == oldLifeCandidateGeneration);
+    assert(lifeTask.CandidateExpiresAtMs == oldLifeCandidateExpiresAtMs);
+
+    // An authoritative absence closes the retained episode. Only the later
+    // personal-threat rising edge rearms it, exactly once.
+    board.Hostiles[1].VictimGuid = PlayerGuid(30010);
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan lifeAbsent = strategy.Propose(board,
+        PlayerGuid(30008), "dps", nullptr, false, false, &lane, &legacy,
+        nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &lifeTask, &lifeWave);
+    assert(!Escape(lifeAbsent));
+    assert(!lifeTask.PersonalThreatEpisodeOpen);
+    assert(lifeTask.TaskGeneration == oldLifeTaskGeneration);
+
+    board.Players[2].Position = { 0.0f, -20.0f, 210.0f };
+    board.Hostiles[1].VictimGuid = PlayerGuid(30008);
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan lifeRearmed = strategy.Propose(board,
+        PlayerGuid(30008), "dps", nullptr, false, false, &lane, &legacy,
+        nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &lifeTask, &lifeWave);
+    BotNativeAction::Candidate const* lifeRearmedCandidate =
+        Escape(lifeRearmed);
+    assert(lifeRearmedCandidate);
+    assert(lifeTask.TaskGeneration == oldLifeTaskGeneration + 1);
+    assert(lifeTask.CandidateGeneration != oldLifeCandidateGeneration);
+    assert(lifeTask.WaveGeneration == oldLifeWaveGeneration);
+    uint64 const rearmedLifeTaskGeneration = lifeTask.TaskGeneration;
+    uint64 const rearmedLifeCandidateGeneration =
+        lifeTask.CandidateGeneration;
+    Vector3 const rearmedLifeDestination = lifeTask.Destination;
+
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan lifeStable = strategy.Propose(board,
+        PlayerGuid(30008), "dps", nullptr, false, false, &lane, &legacy,
+        nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &lifeTask, &lifeWave);
+    assert(Escape(lifeStable));
+    assert(lifeTask.TaskGeneration == rearmedLifeTaskGeneration);
+    assert(lifeTask.CandidateGeneration
+        == rearmedLifeCandidateGeneration);
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        lifeTask.Destination, rearmedLifeDestination));
 
     // Authoritative absence closes the tombstone; a later edge rearms once.
     board.Hostiles.resize(1);
