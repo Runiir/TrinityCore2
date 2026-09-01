@@ -199,6 +199,10 @@ std::string BuildMagmawTransferLaneTaskDiagnosticsJson(
          << task.Id.Episode.EpisodeGeneration
          << ",\"mechanic_generation\":"
          << task.Id.Episode.MechanicGeneration
+         << ",\"fire_mage_assignment_nonce\":"
+         << task.Id.Episode.FireMageAssignmentNonce
+         << ",\"hunter_assignment_nonce\":"
+         << task.Id.Episode.HunterAssignmentNonce
          << ",\"actor_guid\":" << task.Id.ActorGuid.GetCounter()
          << ",\"task_generation\":" << task.Id.TaskGeneration
          << ",\"destination\":{\"x\":" << task.Destination.X
@@ -294,6 +298,10 @@ std::string BuildMagmawTransferLaneTaskShadowDiagnosticsJson(
              << ",\"mechanic_generation\":" << episode.Id.MechanicGeneration
              << ",\"raid_plan_generation\":" << episode.Id.RaidPlanGeneration
              << ",\"roster_generation\":" << episode.Id.RosterGeneration
+             << ",\"fire_mage_assignment_nonce\":"
+             << episode.Id.FireMageAssignmentNonce
+             << ",\"hunter_assignment_nonce\":"
+             << episode.Id.HunterAssignmentNonce
              << ",\"direction\":\"" << ToString(episode.Direction) << "\""
              << ",\"fire_mage_guid\":" << episode.FireMageGuid.GetCounter()
              << ",\"hunter_guid\":" << episode.HunterGuid.GetCounter()

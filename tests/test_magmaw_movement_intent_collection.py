@@ -22,7 +22,7 @@ def test_magmaw_movement_intents_cross_strategy_and_real_kernel(
     binary = tmp_path / "magmaw_movement_intents"
     source.write_text(r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
-#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelCandidate.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
 
 #include <algorithm>
 #include <cassert>
@@ -92,34 +92,35 @@ static BotActionArbitration::Resolution Resolve(
     bool retrySafety)
 {
     using namespace BotActionArbitration;
-    bool const safetyPending = HasPendingMagmawSurvivalMovement(intents, 5000);
     Kernel kernel;
     kernel.Begin(5000);
+    MagmawMovementIntentCollection submitted;
     std::vector<size_t> order;
     for (size_t index = 0; index < intents.Size(); ++index)
         order.push_back(index);
     if (reverseSubmission)
         std::reverse(order.begin(), order.end());
     for (size_t index : order)
+        submitted.Propose(intents.Origin(index), intents.Proposals()[index]);
+    MagmawMovementKernelAdapterContext context;
+    context.ObservedAtMs = 5000;
+    context.Execute = [retrySafety](BotNativeAction::Intent const& native,
+        MagmawMovementNativeLease lease,
+        BotWorldMovement::ExecutionObservation* movement)
     {
-        BotNativeAction::Candidate const& intent = intents.Proposals()[index];
-        bool const safety = intent.ActionPriority == Priority::Survival;
-        Candidate queued = BuildMagmawMovementKernelCandidate(intent,
-            intents.Origin(index), true, false, safetyPending,
-            [safety, retrySafety]()
-            {
-                return safety && retrySafety
-                    ? Outcome::Retryable("planner_rejected")
-                    : Outcome::Committed("submitted");
-            });
-        assert(queued.Key == intent.Id.Key());
-        assert(queued.Source == ToString(intents.Origin(index)));
-        assert(queued.ActionPriority == intent.ActionPriority);
-        assert(queued.UtilityScore == intent.Utility);
-        assert(queued.RequiredResources == intent.Resources());
-        assert(queued.ExpiresAtMs == intent.ExpiresAtMs);
-        assert(kernel.Submit(std::move(queued)));
-    }
+        assert(!movement);
+        auto const* move = std::get_if<BotNativeAction::Move>(&native);
+        assert(move);
+        bool const safety = move->IntentReason == "pillar_evade";
+        assert(lease.Priority == (safety
+            ? BotMovementArbitration::Priority::Hazard
+            : BotMovementArbitration::Priority::Mechanic));
+        return safety && retrySafety
+            ? Outcome::Retryable("planner_rejected")
+            : Outcome::Committed("submitted");
+    };
+    assert(SubmitMagmawMovementKernelCandidates(kernel, submitted,
+        std::move(context)) == submitted.Size());
     return kernel.Resolve();
 }
 
@@ -200,13 +201,20 @@ int main()
     BotNativeAction::Candidate unknownIntent =
         formationPlan.Movement.Proposals().back();
     unknownIntent.Id.Mechanic = "unknown_movement";
-    Candidate unknown = BuildMagmawMovementKernelCandidate(unknownIntent,
-        MagmawMovementProposalOrigin::Hazard, false, false, false, []()
-        {
-            assert(false);
-            return Outcome::Committed("unreachable");
-        });
-    assert(unknownKernel.Submit(std::move(unknown)));
+    MagmawMovementIntentCollection unknownMovements;
+    unknownMovements.Propose(MagmawMovementProposalOrigin::Hazard,
+        unknownIntent);
+    MagmawMovementKernelAdapterContext unknownContext;
+    unknownContext.ObservedAtMs = 5000;
+    unknownContext.Execute = [](BotNativeAction::Intent const&,
+        MagmawMovementNativeLease,
+        BotWorldMovement::ExecutionObservation*)
+    {
+        assert(false);
+        return Outcome::Committed("unreachable");
+    };
+    assert(SubmitMagmawMovementKernelCandidates(unknownKernel,
+        unknownMovements, std::move(unknownContext)) == 1);
     Resolution const& unknownResolution = unknownKernel.Resolve();
     assert(unknownResolution.Trace.size() == 1);
     assert(unknownResolution.Trace.front().Status == "hard_masked");
@@ -217,15 +225,27 @@ int main()
     // never fall through to the generic native executor.
     Kernel bindingKernel;
     bindingKernel.Begin(5000);
-    Candidate bindingRejected = BuildMagmawMovementKernelCandidate(
-        formationPlan.Movement.Proposals().front(),
-        MagmawMovementProposalOrigin::TransferLaneTask, true, true, false,
-        []()
-        {
-            assert(false);
-            return Outcome::Committed("unreachable");
-        });
-    assert(bindingKernel.Submit(std::move(bindingRejected)));
+    MagmawMovementIntentCollection rejectedMovements;
+    BotNativeAction::Candidate bound =
+        formationPlan.Movement.Proposals().front();
+    bound.Id.Mechanic = "pillar_bait_switch";
+    rejectedMovements.Propose(MagmawMovementProposalOrigin::TransferLaneTask,
+        bound);
+    MagmawMovementKernelAdapterContext rejectedContext;
+    rejectedContext.ObservedAtMs = 5000;
+    rejectedContext.TransferBinding.emplace();
+    rejectedContext.TransferBinding->ScopeKey = "wrong";
+    rejectedContext.Execute = [](BotNativeAction::Intent const&,
+        MagmawMovementNativeLease,
+        BotWorldMovement::ExecutionObservation*)
+    {
+        assert(false);
+        return Outcome::Committed("unreachable");
+    };
+    rejectedContext.ObserveTransferOutcome = [](
+        MagmawTransferLaneNativeOutcome const&) {};
+    assert(SubmitMagmawMovementKernelCandidates(bindingKernel,
+        rejectedMovements, std::move(rejectedContext)) == 1);
     Resolution const& bindingResolution = bindingKernel.Resolve();
     assert(bindingResolution.Trace.size() == 1);
     assert(bindingResolution.Trace.front().Status == "hard_masked");
@@ -238,14 +258,20 @@ int main()
     expiredIntent.ExpiresAtMs = 5000;
     Kernel expiryKernel;
     expiryKernel.Begin(5000);
-    Candidate expired = BuildMagmawMovementKernelCandidate(expiredIntent,
-        MagmawMovementProposalOrigin::FormationRestore, true, false, false,
-        []()
-        {
-            assert(false);
-            return Outcome::Committed("unreachable");
-        });
-    assert(expiryKernel.Submit(std::move(expired)));
+    MagmawMovementIntentCollection expiredMovements;
+    expiredMovements.Propose(MagmawMovementProposalOrigin::FormationRestore,
+        expiredIntent);
+    MagmawMovementKernelAdapterContext expiredContext;
+    expiredContext.ObservedAtMs = 5000;
+    expiredContext.Execute = [](BotNativeAction::Intent const&,
+        MagmawMovementNativeLease,
+        BotWorldMovement::ExecutionObservation*)
+    {
+        assert(false);
+        return Outcome::Committed("unreachable");
+    };
+    assert(SubmitMagmawMovementKernelCandidates(expiryKernel,
+        expiredMovements, std::move(expiredContext)) == 1);
     Resolution const& expiryResolution = expiryKernel.Resolve();
     assert(expiryResolution.Trace.size() == 1);
     assert(expiryResolution.Trace.front().Status == "expired");
@@ -253,7 +279,18 @@ int main()
 ''', encoding="utf-8")
     subprocess.run(
         ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", *INCLUDES,
-         str(source), "-o", str(binary)],
+         str(source),
+         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+             "Encounters/Magmaw/BotMagmawMovementKernelAdapter.cpp"),
+         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+             "Encounters/Magmaw/BotMagmawTransferLaneKernelBridge.cpp"),
+         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+             "Encounters/Magmaw/BotMagmawTransferLaneIntent.cpp"),
+         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+             "Encounters/Magmaw/BotMagmawTransferLaneAuthority.cpp"),
+         str(ROOT / "src/server/game/Bots/"
+             "BotWorldPopulationMgrMovementExecution.cpp"),
+         "-o", str(binary)],
         check=True, cwd=ROOT,
     )
     subprocess.run([str(binary)], check=True, cwd=ROOT)
@@ -275,8 +312,8 @@ def test_magmaw_movement_collection_source_contract() -> None:
         "BotMagmawTransferLaneAuthority.cpp").read_text()
     movement_intents = (encounter /
         "BotMagmawMovementIntents.h").read_text()
-    kernel_candidate = (encounter /
-        "BotMagmawMovementKernelCandidate.h").read_text()
+    kernel_adapter = (encounter /
+        "BotMagmawMovementKernelAdapter.cpp").read_text()
     transfer_bridge = (encounter /
         "BotMagmawTransferLaneKernelBridge.h").read_text()
 
@@ -287,15 +324,13 @@ def test_magmaw_movement_collection_source_contract() -> None:
     assert "transferLaneSelection.Movements" in preparation
     assert "AdaptiveMagmawMovements.Size()" in preparation
     assert "AdaptiveMagmawMovements.Size()" in fallback
-    assert "AdaptiveMagmawMovements.Size()" in candidates
-    assert "BuildMagmawMovementKernelCandidate(intent, proposalOrigin" in candidates
-    assert "HasPendingMagmawSurvivalMovement(" in candidates
+    assert "SubmitMagmawMovementKernelCandidates(" in candidates
+    assert "HasPendingMagmawSurvivalMovement(" in kernel_adapter
     assert "magmaw_survival_movement_pending" in movement_intents
     assert "magmaw_movement_mechanic_unmapped" in movement_intents
     assert "magmaw_transfer_binding_rejected" in movement_intents
-    assert "EvaluateMagmawMovementKernelAdmission(" in kernel_candidate
-    assert "movement.Source = ToString(origin);" in kernel_candidate
-    assert "movement.Attempt = std::move(attempt);" in kernel_candidate
+    assert "BuildMagmawMovementKernelCandidate(intent, origin" in kernel_adapter
+    assert "SubmitMagmawTransferLaneKernelCandidate(kernel, intent" in kernel_adapter
     assert "trace-visible hard mask" in transfer_bridge
     assert "must not execute generic movement" in transfer_bridge
     assert "preserve\n// the legacy generic submission path" not in transfer_bridge
@@ -313,6 +348,8 @@ def test_magmaw_movement_collection_source_contract() -> None:
         encounter / "BotAdaptiveMagmawStrategyHook.h",
         encounter / "BotMagmawMovementIntents.h",
         encounter / "BotMagmawMovementKernelCandidate.h",
+        encounter / "BotMagmawMovementKernelAdapter.h",
+        encounter / "BotMagmawMovementKernelAdapter.cpp",
         encounter / "BotMagmawTransferLaneAuthority.cpp",
         encounter / "BotMagmawTransferLaneAuthority.h",
         encounter / "BotMagmawTransferLaneKernelBridge.h",

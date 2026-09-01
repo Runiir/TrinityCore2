@@ -2253,15 +2253,13 @@ def test_raid_healing_is_independent_and_does_not_cancel_hazard_movement() -> No
 
 def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     candidates = bot_source("BotWorldPopulationMgrUpdateBotKernelCandidates.cpp")
-    helper_start = candidates.index("struct AdaptiveMagmawMovementLease")
-    helper_end = candidates.index(
-        "void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates",
-        helper_start,
+    adapter = bot_source(
+        "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
+        "BotMagmawMovementKernelAdapter.cpp"
     )
-    helper = candidates[helper_start:helper_end]
 
-    mechanic_start = helper.index('if (mechanic == "prepull_ranged_stage"')
-    mechanic = helper[mechanic_start:]
+    mechanic_start = adapter.index('if (mechanic == "prepull_ranged_stage"')
+    mechanic = adapter[mechanic_start:]
     for mechanic_name in (
         "prepull_ranged_stage",
         "ranged_formation_restore",
@@ -2272,8 +2270,8 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     assert "Owner::Mechanic" in mechanic
     assert "Priority::Mechanic" in mechanic
 
-    hazard_start = helper.index('if (mechanic == "pillar_evade"')
-    hazard = helper[hazard_start:]
+    hazard_start = adapter.index('if (mechanic == "pillar_evade"')
+    hazard = adapter[hazard_start:]
     assert "AdaptiveMagmawSuppressReason" in candidates
     strategy = "\n".join(bot_source(
         "Content/Raids/BlackwingDescent/Encounters/Magmaw/" + name
@@ -2300,9 +2298,7 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
     assert "Priority::Hazard" in hazard
     assert "return std::nullopt;" in hazard
 
-    movement_start = candidates.index(
-        "bool const adaptiveMagmawSafetyMovementPending"
-    )
+    movement_start = candidates.index("MagmawMovementKernelAdapterContext")
     movement_end = candidates.index(
         "if (context.AdaptiveMagmawInteraction", movement_start
     )
@@ -2311,15 +2307,14 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
         "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
         "BotMagmawMovementKernelCandidate.h"
     )
-    assert "AdaptiveMagmawMovementLeaseFor(intent.Id.Mechanic)" in movement
-    assert "bool const movementMechanicMapped = movementLease.has_value();" in movement
-    assert "lease = *movementLease" in movement
-    assert "mechanic = intent.Id.Mechanic" in movement
+    assert "SubmitMagmawMovementKernelCandidates(" in movement
+    assert "MagmawMovementNativeLeaseFor(intent.Id.Mechanic)" in adapter
+    assert "transferBindingRequired" in adapter
     assert "lease.Owner" in movement
     assert "lease.Priority" in movement
-    assert "context.Action = mechanic;" in movement
+    assert "context.Action = move ? move->IntentReason" in movement
     assert 'context.Action = "pillar_evade"' not in movement
-    assert "BuildMagmawMovementKernelCandidate(intent, proposalOrigin" in movement
+    assert "BuildMagmawMovementKernelCandidate(intent, origin" in adapter
     for assignment in (
         "movement.Key = intent.Id.Key();",
         "movement.Source = ToString(origin);",
@@ -2329,9 +2324,7 @@ def test_magmaw_movement_adapter_maps_typed_leases_and_fails_closed() -> None:
         "movement.ExpiresAtMs = intent.ExpiresAtMs;",
     ):
         assert assignment in kernel_candidate
-    assert movement.index("bool const movementMechanicMapped") < movement.index(
-        "context.State.DecisionKernel.Submit(std::move(movement));"
-    )
+    assert "SubmitMagmawTransferLaneKernelCandidate(kernel, intent" in adapter
 
 
 def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
@@ -2358,24 +2351,17 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
     assert "MagmawParasitePolicy::EnsureLaneDestination" in bait
     assert "BuildPointMovement(" in bait
 
-    candidates = bot_source("BotWorldPopulationMgrUpdateBotKernelCandidates.cpp")
-    movement_start = candidates.index(
-        "bool const adaptiveMagmawSafetyMovementPending"
+    adapter = bot_source(
+        "Content/Raids/BlackwingDescent/Encounters/Magmaw/"
+        "BotMagmawMovementKernelAdapter.cpp"
     )
-    movement_end = candidates.index(
-        "if (context.AdaptiveMagmawInteraction", movement_start
-    )
-    movement = candidates[movement_start:movement_end]
-    retry_start = movement.index(
-        'if (intent.Id.Mechanic == "pillar_bait_switch"'
-    )
-    retry = movement[retry_start:movement.index(
-        "context.State.DecisionKernel.Submit", retry_start
-    )]
-    assert "movement.RetryBaseMs = 250;" in retry
-    assert "movement.RetryMaxMs = 2000;" in retry
-    assert "movement.EscalateAfter = 4;" in retry
-    assert "Native receipts" in retry
+    retry_start = adapter.index("void ApplyRetryPolicy(")
+    retry = adapter[retry_start:adapter.index("bool SubmitGeneric", retry_start)]
+    assert 'mechanic != "pillar_bait_switch"' in retry
+    assert 'mechanic != "parasite_contact_evade"' in retry
+    assert "candidate.RetryBaseMs = 250;" in retry
+    assert "candidate.RetryMaxMs = 2000;" in retry
+    assert "candidate.EscalateAfter = 4;" in retry
 
     assert "KiteLeadDistance = 22.0f" in parasite_policy
     parasite_start = parasite_policy.index(
@@ -2393,7 +2379,7 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
     assert "OppositeLaneEndpoint" not in parasite_policy
     assert "if (!pillarBaiter)" in parasite
     assert "pillarBaiter && laneTransition && HasLivingParasite(board)" in strategy
-    assert '|| intent.Id.Mechanic == "parasite_contact_evade"' in candidates
+    assert 'mechanic != "parasite_contact_evade"' in adapter
 
 
 def test_magmaw_parasite_baiters_keep_persistent_lane_paths(tmp_path: Path) -> None:
@@ -2402,6 +2388,7 @@ def test_magmaw_parasite_baiters_keep_persistent_lane_paths(tmp_path: Path) -> N
     source.write_text(
         r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
 #include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
 #include <cassert>
 #include <cmath>
@@ -2409,6 +2396,11 @@ def test_magmaw_parasite_baiters_keep_persistent_lane_paths(tmp_path: Path) -> N
 
 using namespace BotEncounter;
 using BotNativeAction::Move;
+
+std::string ObjectGuid::ToString() const
+{
+    return std::to_string(GetRawValue());
+}
 
 static ActorSnapshot Player(uint32 guid, char const* role,
     char const* spec, Vector3 position)
@@ -2771,6 +2763,33 @@ int main()
         ordinaryRemote, ordinaryGuid, "dps", nullptr, false, false,
         &transition);
     assert(ordinaryRemotePlan.Movement.has_value());
+    for (BotNativeAction::Candidate const& candidate :
+            ordinaryRemotePlan.Movement.Proposals())
+        assert(candidate.Id.Mechanic != "pillar_bait_switch"
+            && candidate.Id.Mechanic != "parasite_contact_evade");
+    BotActionArbitration::Kernel ordinaryKernel;
+    ordinaryKernel.Begin(ordinaryRemote.ObservedAtMs);
+    MagmawMovementKernelAdapterContext ordinaryAdapter;
+    ordinaryAdapter.ObservedAtMs = ordinaryRemote.ObservedAtMs;
+    uint32 ordinaryNativeAttempts = 0;
+    ordinaryAdapter.Execute = [&ordinaryNativeAttempts](
+        BotNativeAction::Intent const& native, MagmawMovementNativeLease lease,
+        BotWorldMovement::ExecutionObservation* movement)
+    {
+        assert(!movement);
+        auto const* move = std::get_if<BotNativeAction::Move>(&native);
+        assert(move && move->IntentReason == "ranged_formation_restore");
+        assert(lease.Owner == BotMovementArbitration::Owner::Mechanic);
+        ++ordinaryNativeAttempts;
+        return BotActionArbitration::Outcome::Submitted(
+            "native_movement_submitted");
+    };
+    assert(SubmitMagmawMovementKernelCandidates(ordinaryKernel,
+        ordinaryRemotePlan.Movement, std::move(ordinaryAdapter))
+        == ordinaryRemotePlan.Movement.Size());
+    auto const& ordinaryResolution = ordinaryKernel.Resolve();
+    assert(ordinaryResolution.AnyCommitted);
+    assert(ordinaryNativeAttempts == 1);
     assert(ordinaryRemotePlan.Movement->Id.Mechanic
         == "ranged_formation_restore");
     Blackboard ordinaryContact = board;
@@ -2823,6 +2842,16 @@ int main()
             "-I",
             str(ROOT / "src/common/Debugging"),
             str(source),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawMovementKernelAdapter.cpp"),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawTransferLaneKernelBridge.cpp"),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawTransferLaneIntent.cpp"),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawTransferLaneAuthority.cpp"),
+            str(ROOT / "src/server/game/Bots/"
+                "BotWorldPopulationMgrMovementExecution.cpp"),
             "-o",
             str(binary),
         ],

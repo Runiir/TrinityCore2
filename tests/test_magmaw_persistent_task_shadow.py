@@ -183,6 +183,11 @@ int main()
     assert(shadow->Episode()->Direction == MagmawTransferLaneDirection::Right);
     assert(shadow->Episode()->FireMageGuid == PlayerGuid(300));
     assert(shadow->Episode()->HunterGuid == PlayerGuid(400));
+    uint64 const mageAssignmentNonce =
+        shadow->Episode()->Id.FireMageAssignmentNonce;
+    uint64 const hunterAssignmentNonce =
+        shadow->Episode()->Id.HunterAssignmentNonce;
+    assert(mageAssignmentNonce != 0 && hunterAssignmentNonce != 0);
     assert(Task(*shadow, 300).Id.TaskGeneration
         != Task(*shadow, 400).Id.TaskGeneration);
     assert(Task(*shadow, 300).Id.ActorGuid != Task(*shadow, 400).Id.ActorGuid);
@@ -301,6 +306,10 @@ int main()
     shadow = MagmawTransferLaneTaskShadow::Reconcile(shadow,
         facts->Facts(), board, coordinator->Plan(), observations);
     assert(shadow->Episode()->Id.EpisodeGeneration == episodeGeneration);
+    assert(shadow->Episode()->Id.FireMageAssignmentNonce
+        == mageAssignmentNonce);
+    assert(shadow->Episode()->Id.HunterAssignmentNonce
+        == hunterAssignmentNonce);
     assert(Task(*shadow, 300).Id.TaskGeneration == mageTaskGeneration);
     assert(Task(*shadow, 400).Id.TaskGeneration == hunterTaskGeneration);
     assert(Task(*shadow, 300).BestDistance

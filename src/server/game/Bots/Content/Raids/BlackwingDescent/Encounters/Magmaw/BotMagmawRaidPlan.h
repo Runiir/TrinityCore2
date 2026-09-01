@@ -58,12 +58,13 @@ struct MagmawRaidAssignment
 {
     ObjectGuid AssigneeGuid;
     uint64 Epoch = 0;
+    uint64 Nonce = 0;
 
     friend bool operator==(MagmawRaidAssignment const& left,
         MagmawRaidAssignment const& right)
     {
         return left.AssigneeGuid == right.AssigneeGuid
-            && left.Epoch == right.Epoch;
+            && left.Epoch == right.Epoch && left.Nonce == right.Nonce;
     }
 };
 
@@ -117,7 +118,10 @@ public:
             && assignment->AssigneeGuid == desired))
             return false;
         if (!assignment->AssigneeGuid.IsEmpty() || !desired.IsEmpty())
+        {
             assignment->Epoch = std::max<uint64>(1, assignment->Epoch + 1);
+            assignment->Nonce = std::max<uint64>(1, assignment->Nonce + 1);
+        }
         assignment->AssigneeGuid = desired;
         return true;
     }

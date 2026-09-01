@@ -41,6 +41,10 @@ bool Correlates(MagmawTransferLaneTask const& task,
         && binding.Actor == task.Id.ActorGuid
         && binding.EpisodeGeneration == task.Id.Episode.EpisodeGeneration
         && binding.TaskGeneration == task.Id.TaskGeneration
+        && binding.FireMageAssignmentNonce
+            == task.Id.Episode.FireMageAssignmentNonce
+        && binding.HunterAssignmentNonce
+            == task.Id.Episode.HunterAssignmentNonce
         && binding.LegacyTransitionGeneration != 0
         && binding.CandidateKey == ExpectedCandidateKey(task, binding)
         && DestinationMatches(binding.Destination, task.Destination)

@@ -24,6 +24,8 @@ struct MagmawTransferLaneExecutionBinding
     ObjectGuid Actor;
     uint64 EpisodeGeneration = 0;
     uint64 TaskGeneration = 0;
+    uint64 FireMageAssignmentNonce = 0;
+    uint64 HunterAssignmentNonce = 0;
     uint64 LegacyTransitionGeneration = 0;
     MagmawTransferLaneAuthoritySource Source =
         MagmawTransferLaneAuthoritySource::Legacy;

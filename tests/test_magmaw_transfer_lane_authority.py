@@ -24,7 +24,7 @@ def test_magmaw_transfer_lane_authority_compiled_production_bridge_replay(
     source = tmp_path / "magmaw_transfer_lane_authority.cpp"
     binary = tmp_path / "magmaw_transfer_lane_authority"
     source.write_text(r'''
-#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneKernelBridge.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
 #include "Bots/BotWorldPopulationMgrNativeFloor.h"
 
 #include <cassert>
@@ -51,6 +51,8 @@ static MagmawTransferLaneTask RunningTask()
         31, "blackwing_descent.magmaw", 95, 8 };
     task.Id.Episode.EpisodeGeneration = 12;
     task.Id.Episode.MechanicGeneration = 11;
+    task.Id.Episode.FireMageAssignmentNonce = 5;
+    task.Id.Episode.HunterAssignmentNonce = 8;
     task.Id.ActorGuid = PlayerGuid(30007);
     task.Id.TaskGeneration = 41;
     task.Destination = { -302.471405f, -31.8600292f, 210.098007f };
@@ -178,6 +180,8 @@ int main()
     assert(enabled.Movement->Id.EventGeneration == task.Id.TaskGeneration);
     std::string const stableTaskCandidateKey = enabled.Movement->Id.Key();
     assert(enabled.Binding->CandidateKey == stableTaskCandidateKey);
+    assert(enabled.Binding->FireMageAssignmentNonce == 5);
+    assert(enabled.Binding->HunterAssignmentNonce == 8);
 
     // Collection authority replaces only the exact legacy transfer intent.
     // Unrelated safety and formation proposals remain byte-for-byte visible.
@@ -277,12 +281,20 @@ int main()
     kernel.Begin(1100);
     bool executorCalled = false;
     std::optional<MagmawTransferLaneNativeOutcome> observed;
-    assert(SubmitMagmawTransferLaneKernelCandidate(kernel,
-        *enabled.Movement, *enabled.Binding, 1100,
-        [&](BotNativeAction::Intent const& nativeIntent,
-            BotWorldMovement::ExecutionObservation& execution)
+    MagmawMovementIntentCollection adapterMovements;
+    adapterMovements.Propose(MagmawMovementProposalOrigin::TransferLaneTask,
+        *enabled.Movement);
+    MagmawMovementKernelAdapterContext adapterContext;
+    adapterContext.ObservedAtMs = 1100;
+    adapterContext.TransferBinding = enabled.Binding;
+    adapterContext.Execute = [&](BotNativeAction::Intent const& nativeIntent,
+            MagmawMovementNativeLease lease,
+            BotWorldMovement::ExecutionObservation* execution)
         {
             executorCalled = true;
+            assert(lease.Owner == BotMovementArbitration::Owner::Hazard);
+            assert(lease.Priority == BotMovementArbitration::Priority::Hazard);
+            assert(execution);
             BotNativeAction::Move const* move =
                 std::get_if<BotNativeAction::Move>(&nativeIntent);
             assert(move);
@@ -290,14 +302,17 @@ int main()
             assert(move->DiagnosticCandidateKey
                 == LegacyMagmawMovementDiagnosticCandidateKey(
                     *enabled.Movement));
-            execution = projected;
+            *execution = projected;
             return BotActionArbitration::Outcome::Retryable(
                 "route_destination_endpoint_mismatch");
-        },
+        };
+    adapterContext.ObserveTransferOutcome =
         [&](MagmawTransferLaneNativeOutcome const& outcome)
         {
             observed = outcome;
-        }));
+        };
+    assert(SubmitMagmawMovementKernelCandidates(kernel, adapterMovements,
+        std::move(adapterContext)) == 1);
     BotActionArbitration::Resolution const& rejectedResolution =
         kernel.Resolve();
     assert(executorCalled);
@@ -559,6 +574,7 @@ int main()
         "g++", "-std=c++20", *INCLUDES, str(source),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneAuthority.cpp"),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneKernelBridge.cpp"),
+        str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.cpp"),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneIntent.cpp"),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneTaskRunner.cpp"),
         str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneMovementObservation.cpp"),
@@ -581,6 +597,7 @@ def test_magmaw_transfer_lane_authority_production_wiring() -> None:
     candidates = (
         ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp"
     ).read_text()
+    adapter = (encounter / "BotMagmawMovementKernelAdapter.cpp").read_text()
     executor = (
         ROOT / "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp"
     ).read_text()
@@ -592,7 +609,8 @@ def test_magmaw_transfer_lane_authority_production_wiring() -> None:
     assert "BotWorld.Magmaw.TransferLaneTaskAuthority = 0" in conf
     assert "SelectMagmawTransferLaneAuthority(" in preparation
     assert "MagmawTransferLaneTaskAuthority" in preparation
-    assert "SubmitMagmawTransferLaneKernelCandidate(" in candidates
+    assert "SubmitMagmawMovementKernelCandidates(" in candidates
+    assert "SubmitMagmawTransferLaneKernelCandidate(" in adapter
     assert "ExecuteNativeActionIntent(" in candidates
     assert "context.State.LastMovementExecution" in candidates
     assert "MovementPlannerDiagnostics().Latest" not in candidates
@@ -600,6 +618,7 @@ def test_magmaw_transfer_lane_authority_production_wiring() -> None:
     assert "BotMagmawTransferLaneTaskRunner.cpp" in cmake
     assert "BotMagmawTransferLaneAuthority.cpp" in cmake
     assert "BotMagmawTransferLaneKernelBridge.cpp" in cmake
+    assert "BotMagmawMovementKernelAdapter.cpp" in cmake
     assert "BotWorldPopulationMgrMovementExecution.cpp" in cmake
 
     strategy = encounter / "BotAdaptiveMagmawStrategy.h"

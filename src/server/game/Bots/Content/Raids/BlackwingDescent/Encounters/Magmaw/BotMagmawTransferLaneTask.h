@@ -73,6 +73,8 @@ struct MagmawTransferLaneEpisodeIdentity
     uint64 RosterGeneration = 0;
     uint64 FireMageAssignmentGeneration = 0;
     uint64 HunterAssignmentGeneration = 0;
+    uint64 FireMageAssignmentNonce = 0;
+    uint64 HunterAssignmentNonce = 0;
     uint64 MechanicGeneration = 0;
     uint64 EpisodeGeneration = 0;
 };

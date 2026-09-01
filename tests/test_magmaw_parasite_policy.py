@@ -13,12 +13,18 @@ def test_magmaw_lane_transition_replays_selection_to_reset(tmp_path: Path) -> No
     source.write_text(
         r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 
 using namespace BotEncounter;
 using BotNativeAction::Move;
+
+std::string ObjectGuid::ToString() const
+{
+    return std::to_string(GetRawValue());
+}
 
 static ActorSnapshot Player(uint32 guid, char const* role,
     char const* spec, Vector3 position)
@@ -190,6 +196,28 @@ int main()
     assert(transition.TransitionId == firstId);
     assert(transition.Destination.X == firstDestination.X);
     assert(transition.Destination.Y == firstDestination.Y);
+    BotActionArbitration::Kernel preemptKernel;
+    preemptKernel.Begin(preempt.ObservedAtMs);
+    MagmawMovementKernelAdapterContext preemptAdapter;
+    preemptAdapter.ObservedAtMs = preempt.ObservedAtMs;
+    uint32 preemptNativeAttempts = 0;
+    preemptAdapter.Execute = [&preemptNativeAttempts](
+        BotNativeAction::Intent const& intent, MagmawMovementNativeLease lease,
+        BotWorldMovement::ExecutionObservation* movement)
+    {
+        assert(!movement);
+        auto const* move = std::get_if<Move>(&intent);
+        assert(move && move->IntentReason == "pillar_evade");
+        assert(lease.Owner == BotMovementArbitration::Owner::Hazard);
+        ++preemptNativeAttempts;
+        return BotActionArbitration::Outcome::Submitted(
+            "native_movement_submitted");
+    };
+    assert(SubmitMagmawMovementKernelCandidates(preemptKernel,
+        preemptPlan.Movement, std::move(preemptAdapter))
+        == preemptPlan.Movement.Size());
+    assert(preemptKernel.Resolve().AnyCommitted);
+    assert(preemptNativeAttempts == 1);
 
     Blackboard resume = churn;
     resume.Revision += 2;
@@ -344,6 +372,16 @@ int main()
             "-I",
             str(ROOT / "src/common/Debugging"),
             str(source),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawMovementKernelAdapter.cpp"),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawTransferLaneKernelBridge.cpp"),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawTransferLaneIntent.cpp"),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawTransferLaneAuthority.cpp"),
+            str(ROOT / "src/server/game/Bots/"
+                "BotWorldPopulationMgrMovementExecution.cpp"),
             "-o",
             str(binary),
         ],
@@ -949,6 +987,7 @@ def test_magmaw_containment_replays_full_runtime_contract(tmp_path: Path) -> Non
     source.write_text(
         r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
 #include "Bots/BotWorldPopulationMgrNativeFloor.h"
 #include "Bots/BotWorldPopulationMgrMovement.h"
 #include <algorithm>
@@ -959,6 +998,11 @@ def test_magmaw_containment_replays_full_runtime_contract(tmp_path: Path) -> Non
 
 using namespace BotEncounter;
 using BotNativeAction::Move;
+
+std::string ObjectGuid::ToString() const
+{
+    return std::to_string(GetRawValue());
+}
 
 static ObjectGuid PlayerGuid(uint32 guid)
 {
@@ -1085,48 +1129,39 @@ static BotWorldMovement::NativePathProofObservation PathProof(
     return proof;
 }
 
-static BotActionArbitration::Outcome SubmitNativePath(
-    BotMovementArbitration::NativePathReceipt& receipt,
-    BotMovementArbitration::Request const& request, uint64 nowMs,
+static BotActionArbitration::Outcome ObserveNativePathAttempt(
     BotWorldMovement::NativePathProofObservation const& proof)
 {
     if (char const* failure = BotWorldMovement::NativePathProofFailureReason(
             proof))
         return BotActionArbitration::Outcome::Retryable(failure);
-    if (BotMovementArbitration::Evaluate(receipt.Path, request, nowMs)
-            == BotMovementArbitration::Decision::RejectInvalid)
-        return BotActionArbitration::Outcome::Unsafe(
-            "movement_request_invalid");
-    BotMovementArbitration::Apply(receipt.Path, request);
-    receipt.Active = true;
     return BotActionArbitration::Outcome::Started(
         "native_movement_submitted");
 }
 
-static BotActionArbitration::Candidate NativeCandidate(
+static void SubmitMovementThroughProductionAdapter(
+    BotActionArbitration::Kernel& kernel,
     BotNativeAction::Candidate const& native,
-    BotMovementArbitration::NativePathReceipt& receipt,
     Blackboard const& board,
-    BotWorldMovement::NativePathProofObservation const& proof)
+    BotWorldMovement::NativePathProofObservation const& proof,
+    bool& nativeAttempted)
 {
-    Move const* move = std::get_if<Move>(&native.Action);
-    assert(move);
-    BotActionArbitration::Candidate candidate;
-    candidate.Key = std::string("magmaw_native:")
-        + std::to_string(native.Id.Actor.GetCounter()) + ":"
-        + std::to_string(native.Id.EventGeneration);
-    candidate.Source = native.Id.Strategy;
-    candidate.ActionPriority = native.ActionPriority;
-    candidate.UtilityScore = native.Utility;
-    candidate.RequiredResources = native.Resources();
-    candidate.ExpiresAtMs = native.ExpiresAtMs;
-    BotMovementArbitration::Request const request = MovementRequest(board,
-        *move, native.ExpiresAtMs);
-    candidate.Attempt = [&, request, proof]()
+    MagmawMovementIntentCollection movements;
+    movements.Propose(MagmawMovementProposalOrigin::Hazard, native);
+    MagmawMovementKernelAdapterContext context;
+    context.ObservedAtMs = board.ObservedAtMs;
+    context.Execute = [&nativeAttempted, proof](
+        BotNativeAction::Intent const& intent, MagmawMovementNativeLease lease,
+        BotWorldMovement::ExecutionObservation* movement)
     {
-        return SubmitNativePath(receipt, request, board.ObservedAtMs, proof);
+        assert(std::get_if<Move>(&intent));
+        assert(lease.Owner == BotMovementArbitration::Owner::Hazard);
+        assert(!movement);
+        nativeAttempted = true;
+        return ObserveNativePathAttempt(proof);
     };
-    return candidate;
+    assert(SubmitMagmawMovementKernelCandidates(kernel, movements,
+        std::move(context)) == 1);
 }
 
 static BotActionArbitration::Candidate ProfileCandidate(
@@ -1296,7 +1331,6 @@ int main()
         retryBoard.ObservedAtMs + 1)
         == BotMovementArbitration::Decision::Acquire);
 
-    BotMovementArbitration::NativePathReceipt rejectedReceipt;
     BotActionArbitration::Kernel rejectedTick;
     rejectedTick.Begin(retryBoard.ObservedAtMs);
     BotWorldMovement::NativePathProofObservation const rejectedProof =
@@ -1309,8 +1343,9 @@ int main()
     assert(rejectedProof.FloorObservationConflict);
     assert(!BotWorldMovement::NativePathFloorObservationBlocksCompleteProof(
         rejectedProof.FloorObservation));
-    rejectedTick.Submit(NativeCandidate(*firstRetry.Movement,
-        rejectedReceipt, retryBoard, rejectedProof));
+    bool rejectedNativeAttempted = false;
+    SubmitMovementThroughProductionAdapter(rejectedTick, *firstRetry.Movement,
+        retryBoard, rejectedProof, rejectedNativeAttempted);
     BotActionArbitration::Candidate combatRange;
     combatRange.Key = "world.profile_combat_range";
     combatRange.Source = "db_class_spec_profile";
@@ -1338,10 +1373,11 @@ int main()
     rejectedTick.Submit(std::move(combatRange));
     BotActionArbitration::Resolution const& rejected = rejectedTick.Resolve();
     assert(!rejected.AnyCommitted);
+    assert(rejectedNativeAttempted);
     assert(!combatRangeRan);
     assert(retryHazard.HasRetainedIntent());
     assert(HasTrace(rejected,
-        "magmaw_native:30006:1", "attempted",
+        firstRetry.Movement->Id.Key(), "attempted",
         "route_destination_endpoint_mismatch"));
     assert(HasTrace(rejected, "world.profile_combat_range", "hard_masked",
         "magmaw_hazard_movement_retry"));
@@ -1361,21 +1397,18 @@ int main()
     assert(secondRetry.Movement->Id.Actor == firstRetry.Movement->Id.Actor);
     assert(secondMove->X == firstDestination.X);
     assert(secondMove->Y == firstDestination.Y);
-    BotMovementArbitration::NativePathReceipt repeatedReceipt;
     BotActionArbitration::Kernel repeatedTick;
     repeatedTick.Begin(retry.ObservedAtMs);
-    repeatedTick.Submit(NativeCandidate(*secondRetry.Movement,
-        repeatedReceipt, retry, rejectedProof));
+    bool repeatedNativeAttempted = false;
+    SubmitMovementThroughProductionAdapter(repeatedTick,
+        *secondRetry.Movement, retry, rejectedProof,
+        repeatedNativeAttempted);
     BotActionArbitration::Resolution const& repeated = repeatedTick.Resolve();
     assert(!repeated.AnyCommitted);
-    assert(!repeatedReceipt.Active);
+    assert(repeatedNativeAttempted);
     assert(HasTrace(repeated,
-        "magmaw_native:30006:1", "attempted",
+        secondRetry.Movement->Id.Key(), "attempted",
         "route_destination_endpoint_mismatch"));
-    BotMovementArbitration::Request const secondRequest = MovementRequest(
-        retry, *secondMove, secondRetry.Movement->ExpiresAtMs);
-    assert(!BotMovementArbitration::MatchesNativePath(repeatedReceipt,
-        secondRequest));
 
     // The existing deterministic 12-yard same-floor search is admitted only
     // for this typed bounded hazard. Its verified local alternative is safe,
@@ -1396,18 +1429,16 @@ int main()
     BotNativeAction::Candidate localIntent = *secondRetry.Movement;
     localIntent.Action = Move{ localSafe.X, localSafe.Y, localSafe.Z,
         "parasite_contact_evade" };
-    BotMovementArbitration::NativePathReceipt localReceipt;
     BotActionArbitration::Kernel localTick;
     localTick.Begin(retry.ObservedAtMs + 1);
-    localTick.Submit(NativeCandidate(localIntent, localReceipt, retry,
+    bool localNativeAttempted = false;
+    SubmitMovementThroughProductionAdapter(localTick, localIntent, retry,
         PathProof(localSafe, true,
-            BotWorldMovement::NativePathFloorFailure::None)));
+            BotWorldMovement::NativePathFloorFailure::None),
+        localNativeAttempted);
     BotActionArbitration::Resolution const& local = localTick.Resolve();
     assert(local.AnyCommitted);
-    BotMovementArbitration::Request const localRequest = MovementRequest(
-        retry, std::get<Move>(localIntent.Action), localIntent.ExpiresAtMs);
-    assert(BotMovementArbitration::MatchesNativePath(localReceipt,
-        localRequest));
+    assert(localNativeAttempted);
     assert(localIntent.Id.Actor == firstRetry.Movement->Id.Actor);
     assert(localIntent.Id.EventGeneration == firstEvent);
 
@@ -1521,17 +1552,18 @@ int main()
     assert(redirected.Movement->Id.EventGeneration
         == repeatedLane.TransitionId);
 
-    BotMovementArbitration::NativePathReceipt redirectedReceipt;
     BotActionArbitration::Kernel redirectedTick;
     redirectedTick.Begin(repeatedContact.ObservedAtMs);
-    redirectedTick.Submit(NativeCandidate(*redirected.Movement,
-        redirectedReceipt, repeatedContact,
+    bool redirectedNativeAttempted = false;
+    SubmitMovementThroughProductionAdapter(redirectedTick,
+        *redirected.Movement, repeatedContact,
         PathProof({ redirectedMove->X, redirectedMove->Y, redirectedMove->Z },
-            true, BotWorldMovement::NativePathFloorFailure::None)));
+            true, BotWorldMovement::NativePathFloorFailure::None),
+        redirectedNativeAttempted);
     BotActionArbitration::Resolution const& redirectedResolution =
         redirectedTick.Resolve();
     assert(redirectedResolution.AnyCommitted);
-    assert(redirectedReceipt.Active);
+    assert(redirectedNativeAttempted);
 
     AdaptiveMagmawPlan redirectedHunter = strategy.Propose(repeatedContact,
         PlayerGuid(30009), "dps", &expiredLease, false, false,
@@ -1636,6 +1668,16 @@ int main()
             "-I",
             str(ROOT / "src/common/Debugging"),
             str(source),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawMovementKernelAdapter.cpp"),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawTransferLaneKernelBridge.cpp"),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawTransferLaneIntent.cpp"),
+            str(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/"
+                "Encounters/Magmaw/BotMagmawTransferLaneAuthority.cpp"),
+            str(ROOT / "src/server/game/Bots/"
+                "BotWorldPopulationMgrMovementExecution.cpp"),
             "-o",
             str(binary),
         ],

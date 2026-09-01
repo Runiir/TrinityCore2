@@ -1,0 +1,119 @@
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
+
+#include <utility>
+
+namespace BotEncounter
+{
+std::optional<MagmawMovementNativeLease> MagmawMovementNativeLeaseFor(
+    std::string_view mechanic)
+{
+    if (mechanic == "prepull_ranged_stage"
+        || mechanic == "ranged_formation_restore"
+        || mechanic == "pincer_preposition"
+        || mechanic == "pincer_approach")
+        return MagmawMovementNativeLease{
+            BotMovementArbitration::Owner::Mechanic,
+            BotMovementArbitration::Priority::Mechanic };
+    if (mechanic == "pillar_evade"
+        || mechanic == "pillar_bait_switch"
+        || mechanic == "massive_crash_evade"
+        || mechanic == "mangle_safe_side"
+        || mechanic == "mangle_midpoint_stage"
+        || mechanic == "parasite_contact_evade"
+        || mechanic == "parasite_directional_mobility")
+        return MagmawMovementNativeLease{
+            BotMovementArbitration::Owner::Hazard,
+            BotMovementArbitration::Priority::Hazard };
+    return std::nullopt;
+}
+
+namespace
+{
+BotNativeAction::Intent NativeIntent(
+    BotNativeAction::Candidate const& candidate)
+{
+    return BotNativeAction::WithMovementDiagnosticCandidateKey(
+        BotNativeAction::WithMovementReason(candidate.Action,
+            candidate.Id.Mechanic),
+        LegacyMagmawMovementDiagnosticCandidateKey(candidate));
+}
+
+void ApplyRetryPolicy(BotActionArbitration::Candidate& candidate,
+    std::string const& mechanic)
+{
+    if (mechanic != "pillar_bait_switch"
+        && mechanic != "parasite_contact_evade")
+        return;
+    candidate.RetryBaseMs = 250;
+    candidate.RetryMaxMs = 2000;
+    candidate.EscalateAfter = 4;
+}
+
+bool SubmitGeneric(BotActionArbitration::Kernel& kernel,
+    BotNativeAction::Candidate const& intent,
+    MagmawMovementProposalOrigin origin,
+    std::optional<MagmawMovementNativeLease> lease,
+    bool transferBindingRequired, bool safetyPending,
+    MagmawMovementKernelAdapterContext const& context)
+{
+    MagmawMovementNativeLease const selectedLease = lease.value_or(
+        MagmawMovementNativeLease{});
+    BotActionArbitration::Candidate candidate =
+        BuildMagmawMovementKernelCandidate(intent, origin, lease.has_value(),
+            transferBindingRequired, safetyPending,
+            [nativeIntent = NativeIntent(intent), selectedLease,
+                execute = context.Execute]()
+            {
+                if (!execute)
+                    return BotActionArbitration::Outcome::Retryable(
+                        "magmaw_movement_executor_unavailable");
+                return execute(nativeIntent, selectedLease, nullptr);
+            });
+    ApplyRetryPolicy(candidate, intent.Id.Mechanic);
+    if (context.BeforeSubmit)
+        context.BeforeSubmit(kernel, candidate, intent);
+    return kernel.Submit(std::move(candidate));
+}
+}
+
+size_t SubmitMagmawMovementKernelCandidates(
+    BotActionArbitration::Kernel& kernel,
+    MagmawMovementIntentCollection const& movements,
+    MagmawMovementKernelAdapterContext context)
+{
+    bool const safetyPending = HasPendingMagmawSurvivalMovement(movements,
+        context.ObservedAtMs);
+    size_t submitted = 0;
+    for (size_t index = 0; index < movements.Size(); ++index)
+    {
+        BotNativeAction::Candidate const& intent = movements.Proposals()[index];
+        if (context.AlreadyQueued && context.AlreadyQueued(intent))
+            continue;
+        MagmawMovementProposalOrigin const origin = movements.Origin(index);
+        std::optional<MagmawMovementNativeLease> const lease =
+            MagmawMovementNativeLeaseFor(intent.Id.Mechanic);
+        bool const transferBindingRequired = lease
+            && intent.Id.Mechanic == "pillar_bait_switch"
+            && context.TransferBinding.has_value();
+        bool accepted = false;
+        if (transferBindingRequired && context.Execute
+            && context.ObserveTransferOutcome)
+        {
+            accepted = SubmitMagmawTransferLaneKernelCandidate(kernel, intent,
+                *context.TransferBinding, context.ObservedAtMs,
+                [execute = context.Execute, selectedLease = *lease](
+                    BotNativeAction::Intent const& nativeIntent,
+                    BotWorldMovement::ExecutionObservation& movement)
+                {
+                    return execute(nativeIntent, selectedLease, &movement);
+                }, context.ObserveTransferOutcome, ToString(origin));
+        }
+        if (!accepted)
+            accepted = SubmitGeneric(kernel, intent, origin, lease,
+                transferBindingRequired, safetyPending, context);
+        if (accepted)
+            ++submitted;
+    }
+    return submitted;
+}
+}

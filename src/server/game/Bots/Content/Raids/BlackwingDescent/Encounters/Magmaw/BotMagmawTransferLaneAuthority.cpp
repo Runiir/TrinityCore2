@@ -40,6 +40,8 @@ MagmawTransferLaneExecutionBinding BuildBinding(
 {
     return { task.Id.Episode.Lifecycle.Key(), task.Id.ActorGuid,
         task.Id.Episode.EpisodeGeneration, task.Id.TaskGeneration,
+        task.Id.Episode.FireMageAssignmentNonce,
+        task.Id.Episode.HunterAssignmentNonce,
         legacyTransitionGeneration, source, selected.Id.Key(),
         task.Destination };
 }

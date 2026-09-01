@@ -313,10 +313,13 @@ def test_magmaw_runtime_join_uses_native_cooldown_and_two_candidates() -> None:
         "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp").read_text()
     context = (ROOT / "src/server/game/Bots/"
         "BotWorldPopulationMgrUpdateContext.h").read_text()
+    adapter = (ROOT / "src/server/game/Bots/Content/Raids/"
+        "BlackwingDescent/Encounters/Magmaw/"
+        "BotMagmawMovementKernelAdapter.cpp").read_text()
 
     assert "sSpellMgr->GetSpellInfo(spellId)" in preparation
     assert "info->GetRecoveryTime()" in preparation
     assert "AdaptiveMagmawDirectionalMobility" in context
     assert "context.AdaptiveMagmawDirectionalMobility" in candidates
     assert "context.AdaptiveMagmawMovements" in candidates
-    assert "parasite_directional_mobility" in candidates
+    assert "parasite_directional_mobility" in adapter

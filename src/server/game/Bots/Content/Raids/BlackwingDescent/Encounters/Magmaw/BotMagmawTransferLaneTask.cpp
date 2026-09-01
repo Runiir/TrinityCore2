@@ -42,6 +42,8 @@ bool SameEpisodeContract(MagmawTransferLaneEpisode const& left,
         && a.FireMageAssignmentGeneration
             == b.FireMageAssignmentGeneration
         && a.HunterAssignmentGeneration == b.HunterAssignmentGeneration
+        && a.FireMageAssignmentNonce == b.FireMageAssignmentNonce
+        && a.HunterAssignmentNonce == b.HunterAssignmentNonce
         && a.MechanicGeneration == b.MechanicGeneration
         && left.FireMageGuid == right.FireMageGuid
         && left.HunterGuid == right.HunterGuid;
@@ -134,6 +136,8 @@ std::optional<MagmawTransferLaneEpisode> DesiredEpisode(
     episode.Id.RosterGeneration = plan.RosterGeneration;
     episode.Id.FireMageAssignmentGeneration = mage->Epoch;
     episode.Id.HunterAssignmentGeneration = hunter->Epoch;
+    episode.Id.FireMageAssignmentNonce = mage->Nonce;
+    episode.Id.HunterAssignmentNonce = hunter->Nonce;
     episode.Id.MechanicGeneration = facts.Pillar.Generation.Value;
     episode.FireMageGuid = mage->AssigneeGuid;
     episode.HunterGuid = hunter->AssigneeGuid;
@@ -192,7 +196,11 @@ MagmawTransferLaneRetirement EpisodeRetirement(
         || current.Id.FireMageAssignmentGeneration
             != desired.Id.FireMageAssignmentGeneration
         || current.Id.HunterAssignmentGeneration
-            != desired.Id.HunterAssignmentGeneration)
+            != desired.Id.HunterAssignmentGeneration
+        || current.Id.FireMageAssignmentNonce
+            != desired.Id.FireMageAssignmentNonce
+        || current.Id.HunterAssignmentNonce
+            != desired.Id.HunterAssignmentNonce)
         return MagmawTransferLaneRetirement::AssignmentChanged;
     if (current.Id.MechanicGeneration != desired.Id.MechanicGeneration)
         return MagmawTransferLaneRetirement::MechanicGenerationAdvanced;
