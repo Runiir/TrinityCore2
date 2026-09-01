@@ -1,84 +1,54 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_transfer_lane_checkpoint_corrected_authority_one_build_one_start",
+  "work_unit": "evidence:magmaw_transfer_checkpoint_success_sentinel_repair",
   "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "evidence:magmaw_transfer_lane_authority_off_shadow_decision",
-  "next_owner_skill": "raid-performance-loop",
-  "classification": "corrected_runtime_config_authority_invocation_admitted",
+  "next_work_unit": "evidence:magmaw_transfer_lane_map_bound_checkpoint_one_start",
+  "next_owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed",
   "epoch_id": "magmaw_transfer_lane_task_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "gate_state": "one_corrected_build_bundle_prepare_only_and_start_admitted",
-  "immutable_input_commit": "3109edefaf6d0a70ac2d863a0cd8a870a33b5e67",
-  "observed_at_commit": "3109edefaf6d0a70ac2d863a0cd8a870a33b5e67",
+  "gate_state": "capture_protocol_repair_only",
+  "observed_at_commit": "49c12bda976685d6b8781efe0a4114e9e79f51fc",
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "next_action": "Run one exact configure/build for this clean admission identity. Create the bundle once with tracked_derived_runtime_config_v1 and the tracked runtime-config contract path, verify it, apply one canonical prepare-only reset, verify strict provisioning/readback, and start one worldserver with zero retries.",
-  "source_handoffs": [
-    "experiments/configs/cata_raid_magmaw_prestart_authority_selector_abort_v1.json",
-    "experiments/configs/cata_raid_magmaw_transfer_lane_prestart_bundle_handoff_v1.json",
-    "experiments/configs/cata_raid_mysql_proven_fresh_build_handoff_v1.json"
-  ],
+  "evidence_contract_change": true,
+  "next_action": "Align the capture controller's successful identity sentinel with the production native value 'none', replace the synthetic empty-string fixture, add adversarial rejection coverage, and obtain independent review before admitting another build or worldserver start.",
+  "source_handoff": {
+    "path": "experiments/configs/cata_raid_magmaw_transfer_checkpoint_arm_identity_abort_handoff_v1.json",
+    "sha256": "2312675a780cfdba4dc99c87d4b4cb87ddf186312ca734beb240274fce468ea3"
+  },
   "program_scope": {
-    "fixture_expansion_replay_admitted": true,
+    "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "configure_admitted": true,
-    "configure_limit": 1,
-    "worldserver_build_admitted": true,
-    "worldserver_build_limit": 1,
-    "prestart_bundle_create_limit": 1,
-    "worldserver_start_admitted": true,
-    "worldserver_start_limit": 1,
+    "configure_admitted": false,
+    "worldserver_build_admitted": false,
+    "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
-    "authserver_start_limit": 0,
-    "canonical_prepare_only_provisioning_admitted": true,
-    "canonical_prepare_only_provisioning_limit": 1,
+    "canonical_prepare_only_provisioning_admitted": false,
     "other_database_mutations_allowed": false,
     "retry_admitted": false,
-    "retry_limit": 0,
     "dvc_publication_required_after_terminal": true
   },
-  "exact_bundle_authority": {
-    "base_runtime_config_authority": "tracked_derived_runtime_config_v1",
-    "base_runtime_config_contract_relative_path": "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json"
-  },
-  "fixture_contract": {
-    "fixture_id": "map669_magmaw_transfer_lane_authority_off_v1",
-    "case_id": "entrance_polygon_short_lane_v1",
-    "actor_guid": 30007,
-    "map_id": 669,
-    "task_authority_enabled": false,
-    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
-    "certifies_gameplay_success": false,
-    "certifies_boss_fidelity": false
-  },
   "scope_lock": {
-    "allowed_change": "Repeat the exact source-bound build and create one bundle with the corrected already-supported authority selector, then consume at most one worldserver start.",
+    "allowed_change": "Repair only the capture-side success-sentinel dialect and its focused tests.",
     "forbidden": [
-      "changing code, tests, gameplay, fixture semantics, task authority, movement tolerances, or database content outside the canonical prepare-only reset",
-      "falling back to tracked_snapshot_v1 or weakening runtime-config receipt verification",
-      "starting authserver or more than one worldserver, or retrying any failed terminal",
-      "using a 300-second raid timer or claiming fixture evidence as gameplay success"
+      "changing native C or C++, gameplay, Magmaw strategy, movement, task authority, priorities, or database state",
+      "weakening any actor, fixture, case, seal, source, route, or detailed identity check",
+      "treating arm acknowledgement as fixture terminal success",
+      "starting authserver or worldserver before independent review and a new tracked admission"
     ],
     "required_postconditions": [
-      "current-source schema-v3 build receipt verifies",
-      "bundle creation explicitly selects tracked_derived_runtime_config_v1 and verifies before atomic exposure",
-      "one prepare-only reset is followed by strict provisioning and readback",
-      "one typed checkpoint terminal and cleanup are captured and published compactly to DVC"
+      "the exact production native arm payload with failure_field none passes identity validation",
+      "empty, missing, arbitrary, or contradictory identity fields fail closed",
+      "focused tests pass and an independent reviewer approves the repair"
     ]
   },
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "typed_checkpoint_terminal_with_completion_watchdog",
-    "configure_tickets": 1,
-    "worldserver_build_tickets": 1,
-    "bundle_create_attempts": 1,
-    "canonical_prepare_only_invocations": 1,
-    "worldserver_starts": 1,
+    "policy": "completion_watchdog",
+    "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0
   }

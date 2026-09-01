@@ -1,0 +1,6 @@
+outs:
+- md5: 8a3ccd2e708ebc63b5dae6abbe5d3ee6.dir
+  size: 944016
+  nfiles: 20
+  hash: md5
+  path: map669_transfer_checkpoint_49c12bda97_arm_identity_abort_20260901
