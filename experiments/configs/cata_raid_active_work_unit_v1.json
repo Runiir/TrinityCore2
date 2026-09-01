@@ -1,24 +1,30 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt2",
-  "owner_skill": "raid-shard-architecture",
-  "next_work_unit": "evidence:classify_magmaw_personal_escape_episode_rearm",
+  "work_unit": "evidence:generalize_composite_fixture_replay_authority",
+  "owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "review:generalize_composite_fixture_replay_authority",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "live_recurrence_quarantined",
+  "classification": "prestart_command_composition_repair_required",
   "epoch_id": "magmaw_personal_escape_await_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Validate one actor-local personal-threat falling and rising edge under an active provisional parasite parent. Keep the existing arbiter, planner, executor, route, and native terrain following unchanged.",
-  "gate_state": "the first fixture-expansion unit passed 26 of 26 recurrence fixtures but stopped before build because its prebuild plan output aliased the declared run root; zero build, provisioning, seal, or server budgets were consumed; a fresh exact-source unit must keep material inputs and plan files outside a new empty run root",
-  "observed_at_commit": "38976c172c4deff27b0e0b559d3f641bd3868ce4",
+  "architecture_scope": "Generalize the canonical composite fixture-replay launch authority so a versioned committed descriptor and hash-bound handoff can authorize any conforming raid fixture work unit without adding canary-specific branches. Preserve every existing fail-closed build, provisioning, recurrence, capture, and cleanup gate.",
+  "gate_state": "the recurrence bank passed 26 of 26 and no build or server budget was consumed; the canonical launcher cannot represent the current descriptor because it enumerates three historical work units and their frozen handoff prose; live fixture expansion is closed until a generic authority contract passes focused negative and positive tests plus independent review",
+  "observed_at_commit": "afad59eba3f890ab8267efe063657cf4947d37b2",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "source_handoff": {
+  "implementation_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_personal_escape_episode_rearm_review_handoff_20260902.json",
     "sha256": "e0a3b8599c72b299cb8c21294616a78b9c43b0c3b96e565dd21cf11fe433206a",
     "reviewed_commit": "38976c172c4deff27b0e0b559d3f641bd3868ce4",
     "verdict": "go"
+  },
+  "source_handoff": {
+    "path": "experiments/configs/cata_raid_composite_launcher_authority_audit_handoff_20260902.json",
+    "sha256": "9465955cf43d9eca5862e19f1bf61fe328d2bb959b812441e232ebf40d5b7752",
+    "source_commit": "afad59eba3f890ab8267efe063657cf4947d37b2",
+    "source_tree": "06386306ad470b9c61ef8747dfeddd3fe0707553"
   },
   "preflight_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_personal_escape_plan_layout_preflight_handoff_20260902.json",
@@ -45,13 +51,13 @@
     "evidence": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc"
   },
   "repair_contract": {
-    "rule": "A terminal child remains tombstoned until an authoritative actor-local no-threat observation creates a falling edge. One later authoritative personal-threat rising edge may create exactly one new child under the unchanged provisional parent.",
+    "rule": "Replace historical work-unit enumeration with one versioned committed launcher-authority contract that binds the active descriptor and source handoff generically while retaining all existing safety checks.",
     "forbidden": [
-      "Z or coordinate changes",
-      "floor or MMAP changes",
-      "endpoint or tolerance changes",
-      "planner or executor changes",
-      "route, class, damage, consumable, or encounter-strategy tuning"
+      "a fourth Magmaw-specific or current-work-unit-specific branch",
+      "weakening committed-byte, clean-tree, source, handoff-hash, or input-location checks",
+      "loosening build, provisioning, recurrence, seal, capture, cleanup, no-authserver, no-retry, or completion-watchdog gates",
+      "builds, database mutations, authserver starts, or worldserver starts",
+      "gameplay, route, class, encounter, movement, Z, floor, MMAP, endpoint, or tolerance changes"
     ]
   },
   "fixture_expansion": {
@@ -99,27 +105,27 @@
     "configure_receipt": "external_run_root/configure_receipt.json",
     "worldserver_build_receipt": "external_run_root/worldserver_build_receipt.json"
   },
-  "next_action": "At this descriptor's exact clean commit, create one fresh external control directory and a separate empty child run root. Keep the recurrence decision, suite receipt, staged route manifest, base-runtime-config receipt, prebuild plan, and realized plan outside the run root. Rerun the full recurrence bank with gate fixture_expansion. Only if it admits the exact five targets, run exactly one queued fast8_v4 configure/build, fresh deterministic shard provisioning and strict readback, one fixture-expansion recurrence seal, and one completion-watchdog worldserver start. Start no authserver and do not retry. DVC-publish only after a typed terminal and verified cleanup.",
+  "next_action": "Implement one generic versioned launcher-authority contract for a clean committed active descriptor and hash-bound source handoff. Prove a valid synthetic current work unit can compose without executing commands, and prove dirty, stale, hash-mismatched, wrong-owner, wrong-classification, wrong-budget, wrong-scenario, and historical-prose-substitution cases fail closed. Do not build, provision, or start a server. Require independent review before restoring the fixture-expansion shard unit.",
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": true,
+    "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "live_diagnostic_admitted": true,
-    "configure_admitted": true,
-    "worldserver_build_admitted": true,
-    "worldserver_start_admitted": true,
+    "live_diagnostic_admitted": false,
+    "configure_admitted": false,
+    "worldserver_build_admitted": false,
+    "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": true,
-    "database_mutation_scope": "fresh deterministic pre-admission shard provisioning and strict readback only",
-    "dvc_publication_required_after_terminal": true,
+    "database_mutations_allowed": false,
+    "database_mutation_scope": "none",
+    "dvc_publication_required_after_terminal": false,
     "admission_conditions": [
-      "the exact clean descriptor commit and full-suite source identity match",
-      "the launcher material inputs, prebuild plan, and realized plan are outside a separate initially empty run root",
-      "the recurrence decision admits fixture expansion and includes all five declared target IDs",
-      "configure, build, binary, runtime config, route manifest, roster, and recurrence seal identities match",
-      "one worldserver start remains and no authserver or retry is permitted"
+      "a versioned launcher-authority schema replaces historical work-unit enumeration",
+      "the generic path binds committed descriptor bytes, source-handoff bytes and hash, clean source commit and tree, owner, classification, budgets, scenario, and required postcondition",
+      "the existing historical launcher modes remain valid through the same generic validator or explicit compatibility fixtures",
+      "focused positive and negative tests pass without executing a build, database mutation, authserver, or worldserver",
+      "an independent reviewer returns GO before any shard authorization"
     ]
   },
   "live_diagnostic": {
@@ -128,18 +134,16 @@
     "failure_condition": "A dropped child, generation churn without a new authoritative episode, infection before correlated native progress or terminal outcome, semantic stall, route failure, death loop, or infrastructure loss closes the single run as evidence and does not certify gameplay success."
   },
   "acceptance": [
-    "actor 30008 terminal safe_clearance generation 1 remains tombstoned until an authoritative actor-local no-threat falling edge",
-    "one later authoritative threat rising edge creates exactly one new child under the unchanged provisional parent",
-    "task and candidate generations and keys remain stable within each episode",
-    "native submission, same-floor progress, terminal, clearance, infection, and death remain correlated",
-    "route progression and party DPS/HPS are retained as diagnostic signals, not acceptance claims",
-    "the native executor follows terrain without Z, coordinate, floor, MMAP, tolerance, planner, or executor changes",
-    "the single worldserver and exact cohort are cleaned before DVC publication"
+    "one versioned generic authority schema represents the current and future conforming raid fixture work units without source-code branches per canary",
+    "authority remains bound to exact committed descriptor and source-handoff bytes, clean source commit and tree, declared owner, classification, scenario, budgets, and postcondition",
+    "dirty, stale, hash-mismatched, wrong-owner, wrong-classification, wrong-budget, wrong-scenario, and substituted-prose cases fail closed",
+    "existing build-policy, external-input, empty-run-root, recurrence, provisioning, seal, no-authserver, no-retry, completion-watchdog, capture, and cleanup checks remain intact",
+    "no build, database mutation, authserver, worldserver, gameplay, route, class, encounter, movement, Z, floor, MMAP, endpoint, or tolerance change occurs in this unit"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
-    "policy": "completion_watchdog",
-    "worldserver_starts": 1,
+    "policy": "offline_focused_tests_only",
+    "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0
   }

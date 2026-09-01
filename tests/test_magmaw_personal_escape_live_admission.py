@@ -13,7 +13,7 @@ def _load(name: str) -> dict:
     return json.loads((CONFIGS / name).read_text(encoding="utf-8"))
 
 
-def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
+def test_reviewed_personal_escape_waits_for_generic_launcher_authority() -> None:
     handoff_name = (
         "cata_raid_magmaw_personal_escape_episode_rearm_review_"
         "handoff_20260902.json"
@@ -28,25 +28,25 @@ def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
         "38976c172c4deff27b0e0b559d3f641bd3868ce4"
     )
     assert handoff["review"]["verdict"] == "go"
-    assert active["source_handoff"]["path"] == (
+    assert active["implementation_handoff"]["path"] == (
         f"experiments/configs/{handoff_name}"
     )
-    assert active["source_handoff"]["sha256"] == hashlib.sha256(
+    assert active["implementation_handoff"]["sha256"] == hashlib.sha256(
         handoff_path.read_bytes()
     ).hexdigest()
 
     scope = active["program_scope"]
-    assert active["classification"] == "live_recurrence_quarantined"
-    assert scope["configure_admitted"] is True
-    assert scope["worldserver_build_admitted"] is True
-    assert scope["worldserver_start_admitted"] is True
-    assert scope["live_diagnostic_admitted"] is True
+    assert active["classification"] == "prestart_command_composition_repair_required"
+    assert scope["configure_admitted"] is False
+    assert scope["worldserver_build_admitted"] is False
+    assert scope["worldserver_start_admitted"] is False
+    assert scope["live_diagnostic_admitted"] is False
     assert scope["authserver_start_admitted"] is False
     assert scope["retry_admitted"] is False
-    assert scope["fixture_expansion_replay_admitted"] is True
+    assert scope["fixture_expansion_replay_admitted"] is False
     assert scope["gameplay_canary_admitted"] is False
     assert scope["acceptance_admitted"] is False
-    assert scope["dvc_publication_required_after_terminal"] is True
+    assert scope["dvc_publication_required_after_terminal"] is False
 
     assert active["build"] == {
         "policy": (
@@ -64,8 +64,8 @@ def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
     clock = active["validation_clock"]
     assert clock == {
         "fixed_success_timer_seconds": None,
-        "policy": "completion_watchdog",
-        "worldserver_starts": 1,
+        "policy": "offline_focused_tests_only",
+        "worldserver_starts": 0,
         "authserver_starts": 0,
         "retries": 0,
     }
@@ -79,19 +79,21 @@ def test_reviewed_personal_escape_admits_one_bounded_live_diagnostic() -> None:
         assert signal in observation
 
 
-def test_live_diagnostic_keeps_native_terrain_ownership_explicit() -> None:
+def test_launcher_repair_keeps_gameplay_and_native_terrain_out_of_scope() -> None:
     active = _load("cata_raid_active_work_unit_v1.json")
-    acceptance = "\n".join(active["acceptance"])
+    acceptance = "\n".join(
+        active["acceptance"] + active["repair_contract"]["forbidden"]
+    )
 
-    assert "native executor follows terrain" in acceptance
     for forbidden in (
         "Z",
-        "coordinate",
         "floor",
         "MMAP",
-        "tolerance",
-        "planner",
-        "executor",
+        "endpoint",
+        "gameplay",
+        "route",
+        "class",
+        "encounter",
     ):
         assert forbidden in acceptance
 
@@ -105,7 +107,9 @@ def test_fresh_fixture_expansion_keeps_launcher_plans_outside_run_root() -> None
     handoff_path = CONFIGS / active["preflight_handoff"]["path"].rsplit("/", 1)[-1]
     layout = active["fixture_expansion"]["canonical_launcher_layout"]
 
-    assert active["work_unit"].endswith("fixture_expansion_attempt2")
+    assert active["work_unit"] == (
+        "evidence:generalize_composite_fixture_replay_authority"
+    )
     assert active["preflight_handoff"]["configure_runs"] == 0
     assert active["preflight_handoff"]["worldserver_starts"] == 0
     assert active["preflight_handoff"]["sha256"] == hashlib.sha256(

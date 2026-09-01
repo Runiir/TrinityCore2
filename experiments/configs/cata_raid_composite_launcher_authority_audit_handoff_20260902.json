@@ -1,0 +1,60 @@
+{
+  "schema": "cata_raid_evidence_authority_audit_handoff_v1",
+  "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt2",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "launcher_authority_incompatible_before_budget_consumption",
+  "source": {
+    "commit": "afad59eba3f890ab8267efe063657cf4947d37b2",
+    "tree": "06386306ad470b9c61ef8747dfeddd3fe0707553"
+  },
+  "ordered_receipt": [
+    {
+      "status": "verified",
+      "claim": "The first fixture-expansion unit passed 26 of 26 retained fixtures and consumed zero configure, build, provisioning, seal, authserver, or worldserver budgets."
+    },
+    {
+      "status": "verified",
+      "claim": "The first launcher invocation failed before compose_plan because its prebuild-plan output was inside the declared run root."
+    },
+    {
+      "status": "verified",
+      "claim": "After correcting that layout, _request_context accepts only EXPECTED_WORK_UNIT, LIVE_WORK_UNIT, or TARGET_RECEIPT_WORK_UNIT, and _source_authority hard-codes their historical descriptor fields, handoff paths, source commits, source trees, and required prose."
+    },
+    {
+      "status": "verified",
+      "claim": "The current committed work unit shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt2 is not one of those three identities and therefore cannot reach a canonical build or live plan."
+    },
+    {
+      "status": "unproven",
+      "claim": "The reviewed actor-local falling/rising-edge repair satisfies its live production boundary."
+    },
+    {
+      "status": "refuted",
+      "claim": "Changing only the launcher output path is sufficient to admit the current work unit."
+    }
+  ],
+  "first_broken_edge": {
+    "owner": "raid-evidence-lifecycle",
+    "file": "tools/raid_program/composite_fixture_replay_launcher.py",
+    "function": "_request_context/_source_authority",
+    "candidate": "a clean committed current fixture-expansion descriptor and hash-bound source handoff",
+    "first_downstream_state": "expected_work_unit is rejected before plan composition because authority is enumerated as three historical canary instances",
+    "failure_postcondition": "no canonical configure/build/provisioning/capture plan can be produced for the current work unit"
+  },
+  "required_repair": {
+    "rule": "Replace historical work-unit enumeration with one versioned, committed, hash-bound launcher authority contract that validates the active descriptor and source handoff generically while preserving all clean-tree, exact-source, scenario, build-policy, input-location, fixture-gate, no-authserver, no-retry, and completion-watchdog checks.",
+    "forbidden": [
+      "adding a fourth Magmaw-specific work-unit branch",
+      "weakening dirty-tree or committed-byte checks",
+      "accepting caller-authored source identities without descriptor and handoff binding",
+      "loosening recurrence, build, provisioning, seal, capture, or cleanup gates",
+      "starting a build, database mutation, authserver, or worldserver",
+      "changing gameplay, route, class, encounter, movement, Z, floor, MMAP, endpoint, or tolerance behavior"
+    ]
+  },
+  "next_work_unit": {
+    "id": "evidence:generalize_composite_fixture_replay_authority",
+    "owner_skill": "raid-evidence-lifecycle",
+    "required_postcondition": "one generic committed authority schema admits a valid current descriptor and rejects dirty, stale, hash-mismatched, wrong-owner, wrong-classification, wrong-budget, wrong-scenario, and historical-prose-substitution cases without any build or server start"
+  }
+}
