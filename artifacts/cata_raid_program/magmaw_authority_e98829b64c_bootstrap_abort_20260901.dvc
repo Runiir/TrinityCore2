@@ -1,0 +1,6 @@
+outs:
+- md5: cc3e6a275b650d7aaaf5842b1d82ba5c.dir
+  size: 1256154
+  nfiles: 22
+  hash: md5
+  path: magmaw_authority_e98829b64c_bootstrap_abort_20260901

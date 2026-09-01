@@ -81,7 +81,14 @@
     "success_condition": "The run records the four exact fixture-expansion boundaries with correlated task/native outcomes and cleanup. Promotion still requires the production-boundary predicates, including zero player infection for parasite-control revision 8.",
     "failure_condition": "Any dropped actor child, key or deadline churn within one wave, infection before a candidate/native outcome, semantic stall, death loop, or route failure closes the single observation run and remains evidence. It does not certify gameplay success."
   },
-  "next_action": "At this exact clean descriptor commit, rerun the complete retained bank after the 813bdc7acd boundary with the fixture-expansion gate. If admitted, bind the fast8 worldserver build, perform one deterministic prepare-only reset of the frozen ten-player Magmaw cohort, require strict provisioning and shard readback, then run one no-retry completion-watchdog observation replay for chainwielder_pre_admission_rejection_isolation_v1 revision 2, magmaw_parasite_control_full_runtime_v1 revision 8, magmaw_parasite_lane_paths_v1 revision 9, and magmaw_parasite_lane_transition_full_replay_v1 revision 8.",
+  "last_infrastructure_abort": {
+    "handoff": "experiments/configs/cata_raid_magmaw_authority_e98829b64c_bootstrap_abort_handoff_20260901.json",
+    "reason": "controller_route_hold_git_revision_mismatch",
+    "profile_selection_observed": false,
+    "bots_started": 0,
+    "gameplay_observed": false
+  },
+  "next_action": "At this exact clean descriptor commit, rerun the complete retained bank after the 813bdc7acd boundary with the fixture-expansion gate, configure and build worldserver so its embedded Git revision equals this control commit, regenerate the atomic bundle, require strict provisioning and shard readback, then run one replacement no-retry completion-watchdog observation replay for the four admitted fixture expansions. The prior process was an infrastructure abort before profile selection or bot creation and is not gameplay evidence.",
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": true,
@@ -99,7 +106,7 @@
     "admission_conditions": [
       "the exact clean descriptor commit passes every registered recurrence fixture after run magmaw-task-canary-813bdc7acd-20260901",
       "the recurrence evaluator admits fixture expansion for the four exact target fixture revisions under the canonical Magmaw config identity",
-      "configure and worldserver build receipts bind the same clean source identity and fast8 policy",
+      "configure and worldserver build receipts bind the same clean source identity and fast8 policy, and the embedded worldserver Git revision equals the sealed control commit",
       "one deterministic scoped provisioning reset restores exact start position, health, power, auras, corpse, instance, group, gear, consumable, spellbook, talent, glyph, pet, and pool identity before both DB readbacks pass",
       "the generated runtime config, route manifest, roster readback, and recurrence admission verify before process creation",
       "the replay cannot certify gameplay success or close Magmaw acceptance"
@@ -108,8 +115,10 @@
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "worldserver_starts": 1,
+    "worldserver_starts": 2,
     "authserver_starts": 0,
-    "retries": 0
+    "retries": 0,
+    "infrastructure_replacement_starts": 1,
+    "gameplay_attempts": 1
   }
 }

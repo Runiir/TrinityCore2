@@ -1,0 +1,38 @@
+{
+  "schema": "cata_raid_live_failure_handoff_v1",
+  "work_unit": "fixture:observe_personal_escape_authority_and_parasite_control_live",
+  "classification": "infrastructure_abort_before_bot_start",
+  "source_commit": "e98829b64c12249369518d9f7aeca8655f42750b",
+  "source_tree": "f7da362a76e09202f4d325ce00410bec8a7761c4",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "result": {
+    "failure_reason": "controller_route_hold_git_revision_mismatch",
+    "build_source_commit": "17031cdd4f49f2537896d3a2678882ce1682fa37",
+    "control_commit": "e98829b64c12249369518d9f7aeca8655f42750b",
+    "build_control_relationship": "control_only_descendant",
+    "profile_selection_observed": false,
+    "accepted_stable_statuses": 0,
+    "bots_started": 0,
+    "gameplay_observed": false,
+    "worldserver_exit_code": 0
+  },
+  "cause": "The Python build compatibility gate admitted a control-only descendant, but the native controller-route-hold bootstrap requires the embedded worldserver Git revision to equal the sealed control source exactly.",
+  "terrain_scope": {
+    "z_or_mmap_failure_observed": false,
+    "bot_side_z_correction_allowed": false,
+    "policy": "bots submit a logical destination and native pathing follows terrain"
+  },
+  "cleanup": {
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_authority_e98829b64c_bootstrap_abort_20260901.dvc",
+    "dvc_directory_md5": "cc3e6a275b650d7aaaf5842b1d82ba5c.dir",
+    "file_count": 22,
+    "byte_count": 1256154,
+    "capture_report_sha256": "35a7646632d83fc62816d93c665559895f0cc317c4fa0db989a93e7e19fd1e49"
+  },
+  "next_action": "Build worldserver at the exact final control commit, require embedded Git revision equality during prestart verification, rerun both readbacks, and allow one replacement worldserver start because this process aborted before profile selection or bot creation."
+}
