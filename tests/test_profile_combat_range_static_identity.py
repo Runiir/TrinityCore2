@@ -51,6 +51,23 @@ def test_static_readback_queries_only_persistent_spawn_identity() -> None:
     assert set(receipt["live_proof"].values()) == {"pending_live_proof"}
 
 
+@pytest.mark.parametrize("field", sorted(PENDING_LIVE_PROOF))
+def test_pending_live_proof_cannot_be_rewritten_by_a_caller(field: str) -> None:
+    with pytest.raises(TypeError):
+        PENDING_LIVE_PROOF[field] = "proven"  # type: ignore[index]
+
+    identity = _identity()
+    assert set(identity["live_proof"].values()) == {"pending_live_proof"}
+
+    identity["live_proof"][field] = "proven"
+    with pytest.raises(
+        StaticTargetIdentityError, match="target_identity_metadata_mismatch"
+    ):
+        validate_target_identity(identity)
+
+    assert set(_identity()["live_proof"].values()) == {"pending_live_proof"}
+
+
 def test_runtime_guid_cannot_be_substituted_as_static_spawn_key() -> None:
     with pytest.raises(
         StaticTargetIdentityError,
@@ -89,7 +106,7 @@ def test_static_readback_fails_closed_on_wrong_or_unbound_rows(
 
 @pytest.mark.parametrize(
     "field",
-    ["runtime_target_guid", "target_spawn_id", "target_entry", "target_map_id"],
+    ["runtime_target_guid", "target_spawn_id", "target_entry"],
 )
 @pytest.mark.parametrize("invalid", [True, False, 0, -1, "39", 39.0])
 def test_identity_rejects_bool_and_non_positive_or_non_integer_values(
@@ -97,6 +114,36 @@ def test_identity_rejects_bool_and_non_positive_or_non_integer_values(
 ) -> None:
     with pytest.raises(StaticTargetIdentityError, match=f"{field}_invalid"):
         _identity(**{field: invalid})
+
+
+def test_map_zero_is_a_valid_static_identity_domain_value() -> None:
+    identity = _identity(target_map_id=0)
+    receipt = verify_static_readback(
+        identity=identity,
+        query_target_spawn_id=250051,
+        rows=[_row(target_map_id=0)],
+    )
+
+    assert identity["target_map_id"] == 0
+    assert receipt["row"]["target_map_id"] == 0
+
+
+@pytest.mark.parametrize("invalid", [True, False, -1, "0", 0.0])
+def test_identity_rejects_invalid_map_domain_values(invalid: object) -> None:
+    with pytest.raises(StaticTargetIdentityError, match="target_map_id_invalid"):
+        _identity(target_map_id=invalid)
+
+
+@pytest.mark.parametrize("rows", [None, 7])
+def test_static_readback_rejects_non_iterable_rows_with_typed_reason(
+    rows: object,
+) -> None:
+    with pytest.raises(StaticTargetIdentityError, match="static_target_rows_invalid"):
+        verify_static_readback(
+            identity=_identity(),
+            query_target_spawn_id=250051,
+            rows=rows,  # type: ignore[arg-type]
+        )
 
 
 def test_identity_rejects_missing_or_noncanonical_metadata() -> None:

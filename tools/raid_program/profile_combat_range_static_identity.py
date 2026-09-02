@@ -8,6 +8,7 @@ separate and leaves every live relationship pending.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
+from types import MappingProxyType
 from typing import Any
 
 
@@ -20,14 +21,14 @@ TARGET_IDENTITY_FIELDS = (
     "target_entry",
     "target_map_id",
 )
-PENDING_LIVE_PROOF = {
+PENDING_LIVE_PROOF = MappingProxyType({
     "alive": "pending_live_proof",
     "current_target": "pending_live_proof",
     "positive_instance": "pending_live_proof",
     "same_instance": "pending_live_proof",
     "route_scope": "pending_live_proof",
     "runtime_spawn_relation": "pending_live_proof",
-}
+})
 STATIC_READBACK_SQL = (
     "SELECT guid AS target_spawn_id, id AS target_entry, "
     "map AS target_map_id FROM creature WHERE guid = %s"
@@ -40,6 +41,12 @@ class StaticTargetIdentityError(ValueError):
 
 def _positive_integer(value: object, *, field: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+        raise StaticTargetIdentityError(f"{field}_invalid")
+    return value
+
+
+def _nonnegative_integer(value: object, *, field: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
         raise StaticTargetIdentityError(f"{field}_invalid")
     return value
 
@@ -59,7 +66,9 @@ def target_identity(
             target_spawn_id, field="target_spawn_id"
         ),
         "target_entry": _positive_integer(target_entry, field="target_entry"),
-        "target_map_id": _positive_integer(target_map_id, field="target_map_id"),
+        "target_map_id": _nonnegative_integer(
+            target_map_id, field="target_map_id"
+        ),
         "static_readback_key": "target_spawn_id",
         "live_proof": dict(PENDING_LIVE_PROOF),
     }
@@ -128,7 +137,10 @@ def verify_static_readback(
         )
     if query_key != bound["target_spawn_id"]:
         raise StaticTargetIdentityError("target_spawn_id_query_mismatch")
-    materialized = list(rows)
+    try:
+        materialized = list(rows)
+    except (TypeError, ValueError) as error:
+        raise StaticTargetIdentityError("static_target_rows_invalid") from error
     if len(materialized) != 1:
         raise StaticTargetIdentityError("static_target_row_count_mismatch")
     row = materialized[0]
@@ -142,7 +154,10 @@ def verify_static_readback(
     if set(row) != set(expected_row):
         raise StaticTargetIdentityError("static_target_row_metadata_unbound")
     for field, expected in expected_row.items():
-        actual = _positive_integer(row[field], field=f"row_{field}")
+        validator = (
+            _nonnegative_integer if field == "target_map_id" else _positive_integer
+        )
+        actual = validator(row[field], field=f"row_{field}")
         if actual != expected:
             raise StaticTargetIdentityError(f"static_{field}_mismatch")
     return {
