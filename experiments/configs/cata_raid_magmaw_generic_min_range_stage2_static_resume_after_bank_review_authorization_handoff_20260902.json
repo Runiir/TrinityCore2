@@ -1,0 +1,285 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_generic_min_range_stage2_static_resume_after_bank_review",
+  "owner_skill": "raid-performance-loop",
+  "classification": "stage2_static_provision_readback_and_seal_resume_authorized",
+  "created_at_utc": "2026-09-02T19:23:07Z",
+  "control_identity": {
+    "preauthorization_commit": "23c4b01429eb6444f842ecd394cc4eb1c53ea276",
+    "preauthorization_tree": "8180c72fba2dc3abfab5e78a671a418cd1f5325b",
+    "clean": true,
+    "authorization_commit": "the clean commit containing this handoff and the refreshed active-work-unit descriptor"
+  },
+  "immutable_inputs": {
+    "recurrence_bank_hash_repair_review": {
+      "path": "/tmp/magmaw-recurrence-bank-hash-repair-review-23c4b014/review_handoff.json",
+      "sha256": "dd59af1121eb95df47d925e8a964355da905ed6e5a3e12eb007e1cc791396884",
+      "hash_verified": true,
+      "verdict": "GO",
+      "reviewed_commit": "23c4b01429eb6444f842ecd394cc4eb1c53ea276",
+      "reviewed_tree": "8180c72fba2dc3abfab5e78a671a418cd1f5325b"
+    },
+    "authoritative_recurrence_suite": {
+      "path": "/tmp/magmaw-generic-min-range-bank-hash-correction-suite.json",
+      "sha256": "2a31210a481fe636c7f39617201c47095b4bd297eff5ea8f03a0d8b42d5bc152",
+      "hash_verified": true,
+      "schema": "trinity_raid_regression_suite_receipt_v1",
+      "source_identity": "23c4b01429eb6444f842ecd394cc4eb1c53ea276",
+      "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
+      "verification_rows": 27,
+      "all_passed": true
+    },
+    "authoritative_recurrence_decision": {
+      "path": "/tmp/magmaw-generic-min-range-bank-hash-correction-decision.json",
+      "sha256": "f18c47c5896bd9669cc7609f6097b58741bd71752a775d8f2efbd445f997ea41",
+      "hash_verified": true,
+      "schema": "trinity_raid_blocker_recurrence_decision_v1",
+      "fixture_expansion_admitted": true,
+      "canary_admitted": false,
+      "required_next_action": "run_fixture_expansion_replay"
+    },
+    "static_live_evidence_split_authorization": {
+      "path": "experiments/configs/cata_raid_magmaw_generic_min_range_static_live_evidence_split_authorization_handoff_20260902.json",
+      "sha256": "0c8ef415e30b4baab9b567206b072c8deab959f25f17ebb6120df9c8e9a6c345",
+      "hash_verified": true,
+      "source_commit": "4e4be9889a43b9e99d7e43aaa9fefda9aed99f48",
+      "contract_retained": "Stage 2 proves static facts only; Stage 3 owns live actor-target-instance facts and remains unauthorized."
+    },
+    "prior_stage2_typed_stop": {
+      "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+      "sha256": "12963fdf23587704af3b91c06be845a83c8c4a3ad0ff8225eefb4162725f2f4f",
+      "hash_verified": true,
+      "classification": "typed_preflight_failure",
+      "terminal_reason": "fixture_expansion_recurrence_admission_closed",
+      "contained_before_provisioning": true,
+      "consumed_budgets": {
+        "configure": 0,
+        "worldserver_build": 0,
+        "deterministic_provisioning": 0,
+        "database_readbacks": 0,
+        "recurrence_seals": 0,
+        "worldserver_starts": 0,
+        "observation_only_fixture_attempts": 0,
+        "gameplay_canary_attempts": 0,
+        "dvc_operations": 0,
+        "retries": 0
+      }
+    },
+    "stage1_handoff": {
+      "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage1_handoff.json",
+      "sha256": "2130fe66e9f75b5a8a064c6b4621383a46dc0c2edf3ebd1bb95da225a2b5390f",
+      "hash_verified": true,
+      "classification": "build_ready"
+    }
+  },
+  "reviewed_binary": {
+    "source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "source_tree": "75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c",
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/worktree/build/src/server/worldserver/worldserver",
+    "sha256": "4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081",
+    "size_bytes": 64688528,
+    "build_receipt_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/identity/worldserver_build_receipt.json",
+    "build_receipt_file_sha256": "43dd3b89c2fc5497ab740e4789ee85efb925f6b45c8a3b6d96389a2880beb866",
+    "rebuild_authorized": false,
+    "immutable": true
+  },
+  "two_identity_authority": {
+    "binary_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "reviewed_control_commit": "23c4b01429eb6444f842ecd394cc4eb1c53ea276",
+    "authorization_control_commit": "the clean commit containing this handoff",
+    "required_relation": "The binary commit must be an ancestor of both control commits. Verify the exact b5752491..23c4b014 path set and then require the authorization delta to contain only this handoff and the active descriptor.",
+    "reviewed_intervening_path_allowlist_b575_to_23c4": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_one_build_sealed_observation_fixture_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_resume_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_static_live_evidence_split_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_atomic_fixture_correction_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_composition_repair_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_recurrence_bank_compatibility_correction_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_recurrence_bank_hash_binding_correction_authorization_handoff_20260902.json",
+      "tests/test_blocker_recurrence_ledger.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_native_path_launch_receipt.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/prestart_bundle_dialects.py"
+    ],
+    "path_classification": {
+      "native_gameplay_or_build_changes_after_b575": [],
+      "control_config_and_handoff_paths": [
+        "experiments/configs/cata_raid_active_work_unit_v1.json",
+        "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+        "experiments/configs/cata_raid_magmaw_generic_min_range_one_build_sealed_observation_fixture_authorization_handoff_20260902.json",
+        "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_resume_authorization_handoff_20260902.json",
+        "experiments/configs/cata_raid_magmaw_generic_min_range_static_live_evidence_split_authorization_handoff_20260902.json",
+        "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_atomic_fixture_correction_authorization_handoff_20260902.json",
+        "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_composition_repair_authorization_handoff_20260902.json",
+        "experiments/configs/cata_raid_magmaw_recurrence_bank_compatibility_correction_authorization_handoff_20260902.json",
+        "experiments/configs/cata_raid_magmaw_recurrence_bank_hash_binding_correction_authorization_handoff_20260902.json"
+      ],
+      "evidence_fixture_and_test_paths": [
+        "tests/test_blocker_recurrence_ledger.py",
+        "tests/test_chainwielder_prestart_bundle.py",
+        "tests/test_native_path_launch_receipt.py",
+        "tests/test_phase1_raid_foundation_capture.py",
+        "tools/raid_program/capture_setup.py",
+        "tools/raid_program/chainwielder_prestart_bundle.py",
+        "tools/raid_program/prestart_bundle_dialects.py"
+      ]
+    },
+    "authorization_metadata_delta_allowlist": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_static_resume_after_bank_review_authorization_handoff_20260902.json"
+    ],
+    "fail_closed": "Any native, dependency, CMake, gameplay, route-row, roster, runtime-default, SQL/database-schema, skill, unknown, dirty, non-ancestor, extra-path, binary-hash, build-receipt, suite-hash, or decision-hash mismatch revokes this authorization before provisioning."
+  },
+  "causal_receipt": {
+    "candidate_first_broken_edge": "current_recurrence_bank_did_not_admit_generic_fixture_expansion",
+    "owner": "raid-evidence-lifecycle",
+    "ordered_claims": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "The previous Stage-2 attempt failed before provisioning because its authoritative recurrence decision did not admit fixture expansion.",
+        "observation": "Typed stop SHA-256 12963fdf23587704af3b91c06be845a83c8c4a3ad0ff8225eefb4162725f2f4f records fixture_expansion_recurrence_admission_closed and zero provision/readback/seal consumption."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "The retained recurrence-bank compatibility repair is independently reviewed GO at clean commit 23c4b014.",
+        "observation": "Review SHA-256 dd59af1121eb95df47d925e8a964355da905ed6e5a3e12eb007e1cc791396884 verifies the exact three-file evidence-only repair and all focused tests."
+      },
+      {
+        "order": 3,
+        "status": "verified",
+        "claim": "The current authoritative full suite passes and the recurrence decision admits exactly fixture expansion, not a gameplay canary.",
+        "observation": "Suite SHA-256 2a31210a481fe636c7f39617201c47095b4bd297eff5ea8f03a0d8b42d5bc152 has 27 passing rows; decision SHA-256 f18c47c5896bd9669cc7609f6097b58741bd71752a775d8f2efbd445f997ea41 has fixture_expansion_admitted=true and canary_admitted=false."
+      },
+      {
+        "order": 4,
+        "status": "verified",
+        "claim": "No native gameplay or build input changed after the binary source commit.",
+        "observation": "The exact b5752491..23c4b014 diff contains only the enumerated control/config, evidence-fixture tools, and tests; binary/build receipt hashes remain unchanged."
+      },
+      {
+        "order": 5,
+        "status": "unproven",
+        "claim": "Fresh static bundle materialization, deterministic provisioning, database readback, and recurrence seal will pass.",
+        "observation": "Those three Stage-2 budgets remain unused and are the only operations authorized next."
+      }
+    ],
+    "first_downstream_state_mutation": "The single deterministic frozen-roster provisioning operation is the first authorized mutation after all source/build/suite/decision/static-route checks pass.",
+    "failure_postcondition": "Any preflight, provisioning, readback, or seal mismatch writes one typed Stage-2 failure and stops without retry, server start, live inference, or later-stage action.",
+    "implementation_hypothesis": "The reviewed recurrence-bank repair removes the prior admission blocker, allowing the existing static-only Stage-2 contract to reach one bounded provision/readback/seal sequence without rebuilding the unchanged binary.",
+    "correlation_keys": [
+      "fixture_id",
+      "fixture_revision",
+      "case_id",
+      "source_commit",
+      "source_tree",
+      "binary_sha256",
+      "build_receipt_file_sha256",
+      "suite_receipt_sha256",
+      "decision_sha256",
+      "route_manifest_sha256",
+      "runtime_profile_manifest_sha256",
+      "runtime_config_sha256",
+      "recurrence_admission_sha256",
+      "checkpoint_seal_sha256",
+      "stage2_static_readback_sha256",
+      "actor_guid",
+      "target_guid",
+      "target_entry",
+      "map_id"
+    ]
+  },
+  "authorized_stage2_work_unit": {
+    "stage": 2,
+    "work_unit_id": "shard:generic_min_range_static_fixture_provision_readback_and_seal_after_bank_review",
+    "owner_skill": "raid-shard-architecture",
+    "owner_isolation": "One fresh bounded owner using exactly raid-shard-architecture; no nested agents and no Stage-3/live ownership.",
+    "external_control_parent": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt",
+    "child_run_root": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/run",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "fixture_identity": {
+      "purpose": "fixture_expansion_replay",
+      "fixture_id": "generic_profile_min_range_production_boundary_v1",
+      "positive_revision": 1,
+      "case_id": "elemental_magmaw_too_close_v1",
+      "causal_signature": "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner",
+      "actor_guid": 30010,
+      "actor_class_spec": "elemental_shaman",
+      "target_guid": 39,
+      "target_entry": 41570,
+      "target_name": "Magmaw",
+      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+      "shard_id": "bwd_magmaw_diagnostic_10n",
+      "map_id": 669,
+      "difficulty": "10N",
+      "route_node_count": 4,
+      "target_route_node_id": "bwd.magmaw.encounter",
+      "required_bot_count": 10
+    },
+    "production_boundary": "Use the existing generic atomic prestart composition and Stage-2 static/live split. Stage 2 proves frozen roster, static actor/creature/map, route/profile/config, current recurrence-suite/decision identity, admission, and seal only. It must set live_relation_status=pending_stage3 and must not claim alive/current-target/positive-instance/runtime-scope facts.",
+    "required_actions": [
+      "Verify this committed authorization path/hash, a clean tree, the exact two-layer path allowlists, every immutable input hash, and the unchanged binary/build receipt before any mutation.",
+      "Use the authoritative source-23c4 suite and decision only as the reviewed predecessor gate. Because recurrence admission binds the clean current HEAD, execute the same unchanged full manifest once at the authorization commit to create the source-rebound suite and fixture-expansion decision; require the same 27 passing fixture identities, fixture_expansion_admitted=true, canary_admitted=false, and no missing causal signature. Any command, fixture, revision, or semantic difference is a typed stop.",
+      "Materialize the exact default-off runtime profile/config and four-node route through the reviewed generic atomic dialect; do not replace or hand-author recurrence authority.",
+      "Execute exactly one deterministic frozen-roster provisioning operation and exactly one database readback. Prove all frozen roster fields plus actor 30010 static identity/map 669 and creature spawn GUID 39/entry 41570/map 669.",
+      "Create and re-verify exactly one recurrence/admission/checkpoint seal over the supportable static identities, then write the exact Stage-2 handoff with live_relation_status=pending_stage3 and all hashes.",
+      "Stop after static_sealed_ready or one typed_preflight_failure."
+    ],
+    "acceptance_conditions": [
+      "Every immutable hash, clean-source relation, exact allowlist, route identity, current-control suite, and current-control decision passes before provisioning.",
+      "Exactly one provision and one readback prove the frozen roster, actor 30010 static identity/map 669, and creature spawn GUID 39/entry 41570/map 669.",
+      "Exactly one reverified seal and the handoff bind source/build/route/profile/config/suite/decision/admission/readback/fixture/case/actor/target static identities.",
+      "The handoff explicitly marks alive/current-target/runtime-instance/scope proof pending Stage 3 and makes no inference from static map parity.",
+      "No configure, build, server/auth start, live capture, gameplay canary, DVC operation, promotion, or retry occurs."
+    ],
+    "stop_condition": "Any mismatch returns one typed preflight failure at the exact Stage-2 output path after only the actually consumed predecessor budget."
+  },
+  "remaining_budgets": {
+    "configure": 0,
+    "worldserver_build": 0,
+    "deterministic_provisioning": 1,
+    "database_readbacks": 1,
+    "recurrence_seals": 1,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "observation_only_fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
+  "authority": {
+    "source_mutation_allowed": false,
+    "test_mutation_allowed": false,
+    "build_authorized": false,
+    "deterministic_provisioning_authorized": true,
+    "database_readback_authorized": true,
+    "recurrence_seal_authorized": true,
+    "worldserver_start_authorized": false,
+    "authserver_start_authorized": false,
+    "observation_capture_authorized": false,
+    "stage3_authorized": false,
+    "gameplay_canary_authorized": false,
+    "dvc_publication_authorized": false,
+    "fixture_promotion_authorized": false,
+    "magmaw_acceptance_authorized": false,
+    "ml_admission_authorized": false
+  },
+  "forbidden": [
+    "No repository/source/test/config/route/roster/ledger/skill/runtime-default/database-schema or gameplay mutation during Stage 2.",
+    "No configure, rebuild, server/auth start, live capture, gameplay canary, DVC operation, fixture promotion, acceptance, ML admission, or retry.",
+    "No synthetic authority/evidence, command or fixture narrowing, hand-authored pass, foreign dialect, actor/target substitution, seal reuse, or mismatch waiver.",
+    "No claim that static spawn/map data proves alive/current-target/same-instance/same-scope runtime facts.",
+    "No bot-side Z steering, teleportation, encounter-specific MMAP workaround, global tolerance change, or Magmaw-specific production conditional."
+  ],
+  "next_action": "Dispatch exactly one fresh raid-shard-architecture owner with authorized_stage2_work_unit verbatim. Stage 3 remains closed until a hash-verified static_sealed_ready handoff exists and a new performance-loop authorization admits the live contract."
+}
