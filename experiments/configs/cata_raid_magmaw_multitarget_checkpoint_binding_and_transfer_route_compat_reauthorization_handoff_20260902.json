@@ -1,0 +1,99 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:reauthorize_checkpoint_binding_with_transfer_route_compatibility",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_contract_repair_reauthorized",
+  "created_at_utc": "2026-09-02T20:22:00Z",
+  "control_base": {
+    "commit": "d106e724de93b209d3b90b5eb888a239fa249a68",
+    "tree": "d057b02f64f24f1e84fe438c51447c1df479b238"
+  },
+  "retained_uncommitted_selection_patch": {
+    "changed_file_count": 7,
+    "binary_diff_sha256": "5c5accec4612f9965746b7fadfbbc3e9d71039939635df6ae7d4e9241bc6d008",
+    "focused_results": {
+      "generic_atomic": "14 passed",
+      "admission_and_capture": "84 passed",
+      "py_compile": "passed"
+    },
+    "broad_result": "160 passed, 9 failed",
+    "held_unchanged_during_reauthorization": true
+  },
+  "baseline_diagnosis": {
+    "path": "/tmp/magmaw-transfer-route-validator-baseline-diagnosis-20260902.json",
+    "sha256": "97e2711ca797cc7ecc4019a5c28165a88f7bd844631c711ba1a67c4e7a3b2694",
+    "classification": "baseline_evidence_contract_defect_not_patch_induced",
+    "base_result": "153 passed, 9 failed",
+    "failure_set_equal_to_patched_result": true
+  },
+  "first_broken_edges": [
+    {
+      "id": "profile_combat_range_atomic_dialect_requires_singleton_projection_of_authoritative_full_bank_decision",
+      "repair": "Retain the already-authorized explicit checkpoint selection patch unchanged."
+    },
+    {
+      "id": "magmaw_transfer_preliminary_route_validator_maps_regroup_source_entry_zero_to_chainwielder_target_entry_42649",
+      "repair": "In chainwielder_prestart_bundle._validate_route, use initial expected source_entry 42649 for chainwielder, 0 for magmaw_transfer, and 41570 for profile_combat_range before the existing exact full-row dialect validation."
+    }
+  ],
+  "authorized_implementation": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "implementation_commit_budget": 1,
+    "owned_files": [
+      "tools/raid_program/prestart_bundle_dialects.py",
+      "tools/raid_program/recurrence_checkpoint_seals.py",
+      "tools/raid_program/recurrence_admission.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_recurrence_admission.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py"
+    ],
+    "newly_authorized_delta": {
+      "file": "tools/raid_program/chainwielder_prestart_bundle.py",
+      "function": "_validate_route",
+      "change": "Make the preliminary initial source-entry expectation exhaustive for all three existing dialects: chainwielder=42649, magmaw_transfer=0, profile_combat_range=41570.",
+      "preserve": "Keep validate_route_rows and every complete four-row transfer semantic check unchanged."
+    },
+    "required_commands": [
+      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py -k generic_profile_range",
+      "pixi run pytest -q tests/test_recurrence_admission.py tests/test_profile_combat_range_checkpoint_capture.py",
+      "pixi run pytest -q tests/test_magmaw_transfer_prestart_bundle.py",
+      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_magmaw_transfer_prestart_bundle.py tests/test_recurrence_admission.py tests/test_profile_combat_range_checkpoint_capture.py",
+      "pixi run python -m py_compile tools/raid_program/prestart_bundle_dialects.py tools/raid_program/recurrence_checkpoint_seals.py tools/raid_program/recurrence_admission.py tools/raid_program/chainwielder_prestart_bundle.py",
+      "git diff --check d106e724de93b209d3b90b5eb888a239fa249a68 HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Only the same seven implementation files differ from the reauthorization control commit before the implementation commit.",
+      "The authentic full-bank decision and explicit generic checkpoint selection invariants from the prior authorization remain satisfied.",
+      "Magmaw-transfer composes from bwd.entry.regroup/source_entry 0; all nine baseline failures pass with intended fail-closed reasons.",
+      "The broad command reports 169 passed and zero failed.",
+      "Chainwielder initial entry remains 42649, profile-combat-range remains 41570, and exact validate_route_rows remains unchanged.",
+      "Independent Sol-high raid-evidence-lifecycle review returns GO before Stage 2 resumes."
+    ]
+  },
+  "forbidden": [
+    "No eighth implementation file.",
+    "No route manifest/config/row mutation and no weakening of exact full-route validation.",
+    "No ledger, evaluator, fixture revision/command/history, quarantine, roster, runtime, SQL/database, gameplay, C/C++, movement, executor, or skill change.",
+    "No build, provision, database readback, recurrence seal against Stage 2, server, live capture, canary, DVC, promotion, ML admission, or retry."
+  ],
+  "budgets": {
+    "implementation_commits_remaining": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "deterministic_provisioning": 0,
+    "database_readbacks": 0,
+    "live_recurrence_seals": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "observation_only_fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
+  "next_action": "The existing raid-evidence-lifecycle implementer may add only the dialect-specific preliminary entry correction, rerun all required commands, and commit the combined seven-file repair once."
+}

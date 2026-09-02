@@ -1,6 +1,6 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:multitarget_checkpoint_fixture_binding_repair",
+  "work_unit": "evidence:multitarget_checkpoint_binding_and_transfer_route_compatibility_repair",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
@@ -12,26 +12,28 @@
   "architecture_scope": "Evidence lifecycle only: preserve an authentic multi-target recurrence decision while binding one explicit checkpoint fixture through bundle, seal, admission, and verification.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "Stage 2 stopped before provisioning because the generic dialect requires a synthetic singleton decision and downstream admission implicitly chooses Chainwielder first when supported targets coexist.",
+  "gate_state": "The explicit-selection patch is focused-green, but its mandatory compatibility suite exposed nine identical baseline Magmaw-transfer failures: the preliminary route validator maps regroup/source_entry 0 to Chainwielder entry 42649. Both evidence-contract repairs are now bounded to one combined seven-file commit.",
   "first_broken_edge": {
     "id": "profile_combat_range_atomic_dialect_requires_singleton_projection_of_authoritative_full_bank_decision",
     "stage": "stage2_atomic_prestart_decision_and_checkpoint_selection",
     "owner_classification": "raid_evidence_lifecycle",
     "cause": "The real decision contains six targets, three pending fixtures, and five unrelated requests; production validation expects only the generic target, and seal dispatch is not explicitly selected.",
-    "review_state": "trace_and_code_path_diagnosed"
+    "review_state": "selection_patch_focused_green_and_transfer_baseline_independently_reproduced"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_multitarget_checkpoint_binding_repair_authorization_handoff_20260902.json",
-    "sha256": "f092352bfc1662ca9ab755ed0ce58f07da246f88d3812a1ed17a03b6e4723b79",
+    "path": "experiments/configs/cata_raid_magmaw_multitarget_checkpoint_binding_and_transfer_route_compat_reauthorization_handoff_20260902.json",
+    "sha256": "d71c6765a63ee70d3159a47accb0177836e0b27d939587396eab59dad5197ca4",
     "source_commit": "265d46b2f754fc53248f311d47af945b8b30dfad",
     "source_tree": "f07fc058dcb005d3dcb9a038264a74babe5954c6",
     "diagnosis_path": "/tmp/magmaw-stage2-profile-range-ledger-decision-mismatch-diagnosis-20260902.json",
     "diagnosis_sha256": "e53a6a887b04b4bb42ca6e2372cdb5aa9c3267c99f102ab32bedee957879e3ab",
+    "compatibility_diagnosis_path": "/tmp/magmaw-transfer-route-validator-baseline-diagnosis-20260902.json",
+    "compatibility_diagnosis_sha256": "97e2711ca797cc7ecc4019a5c28165a88f7bd844631c711ba1a67c4e7a3b2694",
     "typed_stop_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
     "typed_stop_sha256": "167b41fbdd6a9809f0f33c9d8a6b2793be80605db8a5667c2b9ecc4340dd4f9f"
   },
   "scope_lock": {
-    "objective": "Carry an explicit eligible generic checkpoint selection through the existing evidence lifecycle without narrowing or rewriting the authoritative global decision.",
+    "objective": "Carry an explicit eligible generic checkpoint selection through the evidence lifecycle and correct the preliminary Magmaw-transfer regroup source-entry expectation without changing the route contract.",
     "owned_files": [
       "tools/raid_program/prestart_bundle_dialects.py",
       "tools/raid_program/recurrence_checkpoint_seals.py",
@@ -41,7 +43,7 @@
       "tests/test_recurrence_admission.py",
       "tests/test_profile_combat_range_checkpoint_capture.py"
     ],
-    "expected_observable_change": "The authentic broad decision passes atomic create and verification with checkpoint_fixture_id=generic_profile_min_range_production_boundary_v1; invalid, missing, ambiguous, or mutated selections fail closed.",
+    "expected_observable_change": "The authentic broad decision passes with the explicit generic selection, and Magmaw-transfer accepts only its contracted initial regroup/source_entry 0 before unchanged full-route validation.",
     "stop_condition": "Any need to change the global decision, recurrence evaluator, ledger, fixture command/revision, gameplay, database, or live state stops the work unit."
   },
   "required_commands": [
@@ -57,6 +59,7 @@
     "The full decision and suite remain unchanged through atomic materialization.",
     "The selected generic fixture is explicit, eligible, pending, nonquarantined, request-free, and seal-bound.",
     "Coexisting checkpoint targets cannot steal dispatch.",
+    "All nine independently reproduced transfer compatibility failures pass and the broad suite reports 169 passed.",
     "Positive, negative, compatibility, compile, diff, and status checks pass.",
     "Independent Sol-high review returns GO before Stage 2 resumes."
   ],
