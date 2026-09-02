@@ -1,0 +1,103 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_multitarget_checkpoint_fixture_binding_repair",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_contract_repair_authorized",
+  "created_at_utc": "2026-09-02T19:55:35Z",
+  "control_identity": {
+    "base_commit": "265d46b2f754fc53248f311d47af945b8b30dfad",
+    "base_tree": "f07fc058dcb005d3dcb9a038264a74babe5954c6",
+    "clean": true
+  },
+  "diagnosis": {
+    "path": "/tmp/magmaw-stage2-profile-range-ledger-decision-mismatch-diagnosis-20260902.json",
+    "sha256": "e53a6a887b04b4bb42ca6e2372cdb5aa9c3267c99f102ab32bedee957879e3ab",
+    "classification": "production_evidence_contract_defect_with_masking_synthetic_test_data"
+  },
+  "typed_stop": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "sha256": "167b41fbdd6a9809f0f33c9d8a6b2793be80605db8a5667c2b9ecc4340dd4f9f",
+    "terminal_reason": "profile_combat_range_ledger_decision_mismatch",
+    "provision_consumed": 0,
+    "readback_consumed": 0,
+    "seal_consumed": 0
+  },
+  "first_broken_edge": {
+    "id": "profile_combat_range_atomic_dialect_requires_singleton_projection_of_authoritative_full_bank_decision",
+    "cause": "The authentic recurrence decision has six expansion targets, three pending fixtures, and five unrelated requests, while the generic atomic dialect and downstream seal dispatch assume a synthetic singleton decision and implicit Chainwielder-first selection.",
+    "required_repair": "Preserve the complete authoritative decision and carry one explicit selected checkpoint fixture through bundle creation, checkpoint seal, recurrence admission, and verification."
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "base_commit": "265d46b2f754fc53248f311d47af945b8b30dfad",
+    "source_repair_commit_budget": 1,
+    "owned_files": [
+      "tools/raid_program/prestart_bundle_dialects.py",
+      "tools/raid_program/recurrence_checkpoint_seals.py",
+      "tools/raid_program/recurrence_admission.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_recurrence_admission.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py"
+    ],
+    "required_changes": [
+      "Replace only the generic dialect singleton projection with validation of the complete global fixture-expansion contract and exact selected-generic membership, pending, nonquarantine, and request-free invariants.",
+      "Thread an explicit checkpoint_fixture_id from atomic bundle creation into checkpoint seal and recurrence admission creation.",
+      "Bind checkpoint_fixture_id in the seal/admission and dispatch verification from the sealed selected identity, never ordered presence tests.",
+      "Remove the test helper's hand-authored singleton projection and exercise the authentic six-target, three-pending, five-request decision end to end.",
+      "Retain existing singleton Chainwielder, Magmaw-transfer, native-path, and generic compatibility."
+    ],
+    "required_fixtures": {
+      "positive": "The authentic 27-row full-bank decision crosses atomic create, both verifications, seal, admission, and capture selection unchanged while selecting generic_profile_min_range_production_boundary_v1.",
+      "negative": [
+        "generic absent from targets",
+        "generic absent from pending",
+        "generic quarantined",
+        "request row names generic",
+        "explicit selection disagrees with dialect",
+        "sealed selection mutated",
+        "multi-dialect admission omits explicit selection"
+      ],
+      "compatibility": "All existing supported singleton checkpoint dialects preserve behavior."
+    },
+    "required_commands": [
+      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py -k generic_profile_range",
+      "pixi run pytest -q tests/test_recurrence_admission.py tests/test_profile_combat_range_checkpoint_capture.py",
+      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_magmaw_transfer_prestart_bundle.py tests/test_recurrence_admission.py tests/test_profile_combat_range_checkpoint_capture.py",
+      "pixi run python -m py_compile tools/raid_program/prestart_bundle_dialects.py tools/raid_program/recurrence_checkpoint_seals.py tools/raid_program/recurrence_admission.py tools/raid_program/chainwielder_prestart_bundle.py",
+      "git diff --check 265d46b2f754fc53248f311d47af945b8b30dfad HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Only the seven owned files differ from the base before the implementation commit.",
+      "The complete decision and suite hashes and all target, pending, request, quarantine, and fixture-state lists remain unchanged through materialization.",
+      "The explicit generic selection is eligible, pending, nonquarantined, request-free, and bound to its existing profile-range seal, actor 30010, target 39, case, map 669, and source identity.",
+      "Coexisting checkpoint targets cannot steal dispatch from the explicit selection.",
+      "All positive, negative, compatibility, compile, diff, and status checks pass.",
+      "One independent Sol-high raid-evidence-lifecycle review returns GO before Stage 2 resumes."
+    ]
+  },
+  "forbidden": [
+    "No ledger, suite, decision, evaluator, fixture revision/history/command, quarantine, route, roster, runtime default, SQL, database, gameplay, C/C++, class, encounter, movement, planner, executor, or skill change.",
+    "No singleton projection, fixture/command narrowing, target/request removal, waiver, synthetic pass, or priority-based implicit selection.",
+    "No configure, build, provisioning, database readback, live Stage-2 seal, server/auth start, capture, canary, DVC, promotion, acceptance, ML admission, or retry."
+  ],
+  "budgets": {
+    "source_repair_commits": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "deterministic_provisioning": 0,
+    "database_readbacks": 0,
+    "live_recurrence_seals": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "observation_only_fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
+  "next_action": "Dispatch one raid-evidence-lifecycle implementer with this exact scope, then one independent Sol-high raid-evidence-lifecycle reviewer."
+}

@@ -1,111 +1,80 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:generic_min_range_static_fixture_provision_readback_and_seal_after_bank_review",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "fixture_replay_authorized",
+  "work_unit": "evidence:multitarget_checkpoint_fixture_binding_repair",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "failed",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "23c4b01429eb6444f842ecd394cc4eb1c53ea276",
-  "immutable_input_commit": "23c4b01429eb6444f842ecd394cc4eb1c53ea276",
-  "architecture_scope": "Stage 2 static fixture preparation only: verify the reviewed bank, materialize the generic default-off bundle, provision once, read back static facts once, and seal once.",
+  "observed_at_commit": "265d46b2f754fc53248f311d47af945b8b30dfad",
+  "immutable_input_commit": "265d46b2f754fc53248f311d47af945b8b30dfad",
+  "architecture_scope": "Evidence lifecycle only: preserve an authentic multi-target recurrence decision while binding one explicit checkpoint fixture through bundle, seal, admission, and verification.",
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "gate_state": "The recurrence-bank repair is independently reviewed GO. Its authoritative 27-row suite passes at clean source 23c4b014 and its decision admits fixture expansion while withholding gameplay-canary admission. The previous Stage-2 stop consumed zero provision/readback/seal budgets.",
+  "evidence_contract_change": true,
+  "gate_state": "Stage 2 stopped before provisioning because the generic dialect requires a synthetic singleton decision and downstream admission implicitly chooses Chainwielder first when supported targets coexist.",
   "first_broken_edge": {
-    "id": "current_recurrence_bank_did_not_admit_generic_fixture_expansion",
-    "stage": "stage2_recurrence_admission_preflight",
+    "id": "profile_combat_range_atomic_dialect_requires_singleton_projection_of_authoritative_full_bank_decision",
+    "stage": "stage2_atomic_prestart_decision_and_checkpoint_selection",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "Two retained receipt/signature compatibility mismatches prevented the current full recurrence suite from admitting the generic production-boundary fixture.",
-    "causal_chain": "stale retained receipt expectation and absent causal-signature registration -> current full bank rejected Stage-2 admission -> reviewed evidence-only repair -> exact 27-row suite passes -> fixture_expansion_admitted=true",
-    "review_state": "fixture_green_and_independently_reviewed_go"
+    "cause": "The real decision contains six targets, three pending fixtures, and five unrelated requests; production validation expects only the generic target, and seal dispatch is not explicitly selected.",
+    "review_state": "trace_and_code_path_diagnosed"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_static_resume_after_bank_review_authorization_handoff_20260902.json",
-    "sha256": "52fbacd16dabe86da85c5861b2bb090098dbed825125bc8f798445e8fda71dd7",
-    "source_commit": "23c4b01429eb6444f842ecd394cc4eb1c53ea276",
-    "source_tree": "8180c72fba2dc3abfab5e78a671a418cd1f5325b",
-    "review_path": "/tmp/magmaw-recurrence-bank-hash-repair-review-23c4b014/review_handoff.json",
-    "review_sha256": "dd59af1121eb95df47d925e8a964355da905ed6e5a3e12eb007e1cc791396884",
+    "path": "experiments/configs/cata_raid_magmaw_multitarget_checkpoint_binding_repair_authorization_handoff_20260902.json",
+    "sha256": "f092352bfc1662ca9ab755ed0ce58f07da246f88d3812a1ed17a03b6e4723b79",
+    "source_commit": "265d46b2f754fc53248f311d47af945b8b30dfad",
+    "source_tree": "f07fc058dcb005d3dcb9a038264a74babe5954c6",
+    "diagnosis_path": "/tmp/magmaw-stage2-profile-range-ledger-decision-mismatch-diagnosis-20260902.json",
+    "diagnosis_sha256": "e53a6a887b04b4bb42ca6e2372cdb5aa9c3267c99f102ab32bedee957879e3ab",
     "typed_stop_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
-    "typed_stop_sha256": "12963fdf23587704af3b91c06be845a83c8c4a3ad0ff8225eefb4162725f2f4f"
-  },
-  "reviewed_recurrence_gate": {
-    "suite_path": "/tmp/magmaw-generic-min-range-bank-hash-correction-suite.json",
-    "suite_sha256": "2a31210a481fe636c7f39617201c47095b4bd297eff5ea8f03a0d8b42d5bc152",
-    "decision_path": "/tmp/magmaw-generic-min-range-bank-hash-correction-decision.json",
-    "decision_sha256": "f18c47c5896bd9669cc7609f6097b58741bd71752a775d8f2efbd445f997ea41",
-    "source_identity": "23c4b01429eb6444f842ecd394cc4eb1c53ea276",
-    "config_identity": "sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36",
-    "verification_rows": 27,
-    "all_passed": true,
-    "fixture_expansion_admitted": true,
-    "canary_admitted": false
-  },
-  "reviewed_binary": {
-    "source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
-    "source_tree": "75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c",
-    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/worktree/build/src/server/worldserver/worldserver",
-    "sha256": "4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081",
-    "build_receipt_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/identity/worldserver_build_receipt.json",
-    "build_receipt_file_sha256": "43dd3b89c2fc5497ab740e4789ee85efb925f6b45c8a3b6d96389a2880beb866",
-    "rebuild_authorized": false,
-    "unchanged_by_this_work_unit": true
+    "typed_stop_sha256": "167b41fbdd6a9809f0f33c9d8a6b2793be80605db8a5667c2b9ecc4340dd4f9f"
   },
   "scope_lock": {
-    "objective": "Produce one hash-bound static_sealed_ready handoff for generic_profile_min_range_production_boundary_v1 without building or starting a server.",
-    "owned_outcomes": [
-      "one deterministic frozen-roster provisioning receipt",
-      "one static database readback receipt",
-      "one reverified recurrence/admission/checkpoint seal",
-      "one immutable Stage-2 handoff"
+    "objective": "Carry an explicit eligible generic checkpoint selection through the existing evidence lifecycle without narrowing or rewriting the authoritative global decision.",
+    "owned_files": [
+      "tools/raid_program/prestart_bundle_dialects.py",
+      "tools/raid_program/recurrence_checkpoint_seals.py",
+      "tools/raid_program/recurrence_admission.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_recurrence_admission.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py"
     ],
-    "fixture_identity": {
-      "fixture_id": "generic_profile_min_range_production_boundary_v1",
-      "positive_revision": 1,
-      "evidence_boundary": "observation_only",
-      "causal_signature": "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner",
-      "case_id": "elemental_magmaw_too_close_v1",
-      "actor_guid": 30010,
-      "target_guid": 39,
-      "target_entry": 41570,
-      "map_id": 669,
-      "target_route_node_id": "bwd.magmaw.encounter"
-    },
-    "production_boundary": "Stage 2 proves only static roster, actor, creature spawn, map, route, profile, config, recurrence, admission, and seal identities. It records live_relation_status=pending_stage3; alive, current-target, positive-instance, and runtime-scope proof remain Stage 3 ownership.",
-    "expected_observable_change": "The previous pre-provision admission stop is replaced by static_sealed_ready after exactly one provision, one readback, and one seal, or by one new typed first-broken preflight edge without retry.",
-    "stop_condition": "Any dirty tree, identity/hash/allowlist mismatch, suite semantic drift, provisioning/readback/seal mismatch, or need for live facts stops as typed_preflight_failure."
+    "expected_observable_change": "The authentic broad decision passes atomic create and verification with checkpoint_fixture_id=generic_profile_min_range_production_boundary_v1; invalid, missing, ambiguous, or mutated selections fail closed.",
+    "stop_condition": "Any need to change the global decision, recurrence evaluator, ledger, fixture command/revision, gameplay, database, or live state stops the work unit."
   },
   "required_commands": [
-    "Verify the committed source handoff and every immutable review/suite/decision/binary/build/route hash.",
-    "Verify b5752491 is an ancestor of the authorization commit, b5752491..23c4b014 equals the exact reviewed allowlist, and 23c4b014..authorization contains only the active descriptor and authorization handoff.",
-    "Run the unchanged full recurrence manifest once at the clean authorization commit to produce a source-rebound 27-row suite and decision; require fixture_expansion_admitted=true and canary_admitted=false.",
-    "Execute exactly one deterministic provision, one static database readback, and one recurrence/admission/checkpoint seal, then stop."
+    "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py -k generic_profile_range",
+    "pixi run pytest -q tests/test_recurrence_admission.py tests/test_profile_combat_range_checkpoint_capture.py",
+    "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_magmaw_transfer_prestart_bundle.py tests/test_recurrence_admission.py tests/test_profile_combat_range_checkpoint_capture.py",
+    "pixi run python -m py_compile tools/raid_program/prestart_bundle_dialects.py tools/raid_program/recurrence_checkpoint_seals.py tools/raid_program/recurrence_admission.py tools/raid_program/chainwielder_prestart_bundle.py",
+    "git diff --check 265d46b2f754fc53248f311d47af945b8b30dfad HEAD",
+    "git status --short"
   ],
   "acceptance_conditions": [
-    "Every immutable hash and exact clean control/binary relation passes before provisioning.",
-    "The source-rebound full suite retains the same 27 fixtures and passes with fixture_expansion_admitted=true and canary_admitted=false.",
-    "Exactly one provision and one readback prove the frozen roster, actor 30010 static identity/map 669, and creature spawn GUID 39/entry 41570/map 669.",
-    "Exactly one seal binds source/build/route/profile/config/suite/decision/admission/readback and the exact fixture/case/actor/target identities.",
-    "The handoff sets live_relation_status=pending_stage3 and makes no live inference.",
-    "No configure, build, server/auth start, live capture, gameplay canary, DVC action, promotion, or retry occurs."
+    "Only seven authorized implementation files change.",
+    "The full decision and suite remain unchanged through atomic materialization.",
+    "The selected generic fixture is explicit, eligible, pending, nonquarantined, request-free, and seal-bound.",
+    "Coexisting checkpoint targets cannot steal dispatch.",
+    "Positive, negative, compatibility, compile, diff, and status checks pass.",
+    "Independent Sol-high review returns GO before Stage 2 resumes."
   ],
   "forbidden": [
-    "No source/test/config/route/roster/ledger/skill/runtime-default/database-schema or gameplay mutation.",
-    "No configure, rebuild, server/auth start, live capture, gameplay canary, DVC operation, fixture promotion, acceptance, ML admission, or retry.",
-    "No suite/command/fixture narrowing, synthetic authority, hand-authored pass, actor/target substitution, seal reuse, or mismatch waiver.",
-    "No claim that static map/spawn data proves alive/current-target/same-instance/same-scope runtime facts.",
-    "No bot-side Z steering, teleportation, encounter-specific MMAP workaround, global tolerance change, or Magmaw-specific production conditional."
+    "No ledger/evaluator/fixture/route/roster/database/runtime/gameplay/C++/skill changes.",
+    "No singleton projection, narrowing, waiver, synthetic pass, target/request removal, or implicit priority dispatch.",
+    "No configure, build, provision, readback, seal against Stage 2, server, live capture, canary, DVC, promotion, ML admission, or retry."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
+    "source_repair_commit_budget": 1,
+    "independent_review_budget": 1,
     "configure_budget": 0,
     "worldserver_build_budget": 0,
-    "deterministic_provisioning_budget": 1,
-    "database_readback_budget": 1,
-    "recurrence_seal_budget": 1,
+    "deterministic_provisioning_budget": 0,
+    "database_readback_budget": 0,
+    "recurrence_seal_budget": 0,
     "worldserver_start_budget": 0,
     "authserver_start_budget": 0,
     "observation_only_fixture_attempt_budget": 0,
@@ -115,7 +84,7 @@
   },
   "issues": [],
   "ready_for_build": false,
-  "ready_for_fixture_expansion": true,
+  "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Dispatch exactly one fresh raid-shard-architecture owner with the authorization handoff's authorized_stage2_work_unit verbatim."
+  "next_action": "Dispatch exactly one raid-evidence-lifecycle implementer under the authorization handoff, then one independent Sol-high reviewer."
 }
