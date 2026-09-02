@@ -11,6 +11,12 @@ from types import SimpleNamespace
 
 import pytest
 
+import tools.raid_program.chainwielder_prestart_bundle as prestart_bundle
+from tests.test_chainwielder_prestart_bundle import (
+    _create as _create_prestart_bundle,
+    _generic_profile_range_fixture,
+)
+
 from tools.raid_program.capture_phase1_raid_foundation import (
     accepted_foundation_status,
     accepted_drudge_contract,
@@ -91,6 +97,9 @@ from tools.raid_program.capture_phase1_raid_foundation import (
 from tools.raid_program.capture_setup import recurrence_profile_authority
 from tools.raid_program.chainwielder_prestart_bundle import (
     PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
+)
+from tools.raid_program.prestart_bundle_dialects import (
+    PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
 )
 from tools.raid_program.capture_finalization import (
     resolve_personal_threat_episode_target,
@@ -5624,6 +5633,180 @@ def test_generic_profile_range_capture_arguments_are_explicit_and_admission_boun
     ).read_text(encoding="utf-8")
     assert "profile_combat_range_checkpoint_identity_mismatch" in source
     assert "checkpoint_target_guid = recurrence_admission.get(" in source
+
+
+def test_generic_profile_range_capture_preflight_uses_verified_bundle_admission(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    fixture = _generic_profile_range_fixture(tmp_path)
+    monkeypatch.setattr(
+        prestart_bundle, "_verify_gate_bearing_build_receipt",
+        lambda *args, **kwargs: {"valid": True, "gate_bearing": True},
+    )
+    _create_prestart_bundle(fixture)
+    bundle = fixture["output"]
+    paths = fixture["paths"]
+    root = fixture["root"]
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.preflight_runtime_exclusions",
+        lambda worktree: {"passed": True, "reasons": []},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_runtime_profile_assets",
+        lambda *args, **kwargs: {
+            "passed": True,
+            "reasons": [],
+            "route_manifest": str(bundle / "route_manifest.json"),
+            "pool_tag_filter": "blackwing_descent_10n_magmaw_diagnostic",
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup._drudge_navmesh_probe",
+        lambda worktree: {"all_passed": True},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup._frozen_drudge_member_anchors",
+        lambda route_manifest: {
+            member: (0.0, 0.0, 0.0) for member in range(1, 11)
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.build_policy_path_for_receipt",
+        lambda build_receipt, worktree: bundle / "build_policy.json",
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_build_receipt",
+        lambda *args, **kwargs: {"valid": True, "rejections": []},
+    )
+
+    setup = prepare_capture_setup([
+        "--binary", str(paths["binary"]),
+        "--config", str(bundle / "worldserver.validation.conf"),
+        "--output", str(tmp_path / "capture.json"),
+        "--build-receipt", str(bundle / "build_receipt.json"),
+        "--worktree", str(root),
+        "--recurrence-admission", str(bundle / "recurrence_admission.json"),
+        "--recurrence-admission-sha256", sha256_file(
+            bundle / "recurrence_admission.json"
+        ),
+        "--profile-combat-range-checkpoint-actor-guid", "30010",
+        "--profile-combat-range-checkpoint-target-guid", "39",
+        "--fixture-expansion-replay",
+        "--scenario-id", "blackwing_descent_10n_magmaw_diagnostic",
+        "--runtime-profile", "blackwing_descent_10n_magmaw_diagnostic",
+        "--pool-tag", "blackwing_descent_10n_magmaw_diagnostic",
+    ], root=root)
+
+    assert setup.recurrence_admission is not None
+    assert setup.recurrence_admission["valid"] is True
+    assert setup.recurrence_admission["checkpoint_fixture_id"] == (
+        PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
+    )
+    assert setup.recurrence_admission["checkpoint_actor_guid"] == 30010
+    assert setup.recurrence_admission["checkpoint_target_guid"] == 39
+    assert setup.checkpoint_target_guid == 39
+    assert setup.controller_route_hold_scheduler is not None
+
+
+@pytest.mark.parametrize(
+    ("mutation", "reason"),
+    [
+        ("missing_admission", "magmaw_recurrence_admission_required"),
+        ("unverified_admission", "recurrence_admission:fixture_expansion_not_admitted"),
+        (
+            "identity_mismatch",
+            "recurrence_admission:profile_combat_range_checkpoint_seal_identity_mismatch",
+        ),
+        ("multiple_dialects", "multiple_checkpoint_actor_dialects"),
+    ],
+)
+def test_generic_profile_range_capture_preflight_fails_closed_on_admission_mutation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str, reason: str,
+):
+    fixture = _generic_profile_range_fixture(tmp_path)
+    monkeypatch.setattr(
+        prestart_bundle, "_verify_gate_bearing_build_receipt",
+        lambda *args, **kwargs: {"valid": True, "gate_bearing": True},
+    )
+    _create_prestart_bundle(fixture)
+    bundle = fixture["output"]
+    paths = fixture["paths"]
+    root = fixture["root"]
+    admission_path = bundle / "recurrence_admission.json"
+    if mutation == "unverified_admission":
+        admission = json.loads(admission_path.read_text(encoding="utf-8"))
+        admission["fixture_expansion_admitted"] = False
+        admission_path.write_text(json.dumps(admission), encoding="utf-8")
+    elif mutation == "identity_mismatch":
+        admission = json.loads(admission_path.read_text(encoding="utf-8"))
+        admission["checkpoint_seal"]["target_guid"] = 40
+        admission_path.write_text(json.dumps(admission), encoding="utf-8")
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.preflight_runtime_exclusions",
+        lambda worktree: {"passed": True, "reasons": []},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_runtime_profile_assets",
+        lambda *args, **kwargs: {
+            "passed": True,
+            "reasons": [],
+            "route_manifest": str(bundle / "route_manifest.json"),
+            "pool_tag_filter": "blackwing_descent_10n_magmaw_diagnostic",
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup._drudge_navmesh_probe",
+        lambda worktree: {"all_passed": True},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup._frozen_drudge_member_anchors",
+        lambda route_manifest: {
+            member: (0.0, 0.0, 0.0) for member in range(1, 11)
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.build_policy_path_for_receipt",
+        lambda build_receipt, worktree: bundle / "build_policy.json",
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_build_receipt",
+        lambda *args, **kwargs: {"valid": True, "rejections": []},
+    )
+
+    argv = [
+        "--binary", str(paths["binary"]),
+        "--config", str(bundle / "worldserver.validation.conf"),
+        "--output", str(tmp_path / "capture.json"),
+        "--build-receipt", str(bundle / "build_receipt.json"),
+        "--worktree", str(root),
+        "--recurrence-admission", str(admission_path),
+        "--recurrence-admission-sha256", sha256_file(admission_path),
+        "--profile-combat-range-checkpoint-actor-guid", "30010",
+        "--profile-combat-range-checkpoint-target-guid", "39",
+        "--fixture-expansion-replay",
+        "--scenario-id", "blackwing_descent_10n_magmaw_diagnostic",
+        "--runtime-profile", "blackwing_descent_10n_magmaw_diagnostic",
+        "--pool-tag", "blackwing_descent_10n_magmaw_diagnostic",
+    ]
+    if mutation == "missing_admission":
+        argv = argv[:argv.index("--recurrence-admission")]
+        argv.extend([
+            "--profile-combat-range-checkpoint-actor-guid", "30010",
+            "--profile-combat-range-checkpoint-target-guid", "39",
+            "--fixture-expansion-replay",
+            "--scenario-id", "blackwing_descent_10n_magmaw_diagnostic",
+            "--runtime-profile", "blackwing_descent_10n_magmaw_diagnostic",
+            "--pool-tag", "blackwing_descent_10n_magmaw_diagnostic",
+        ])
+    elif mutation == "multiple_dialects":
+        argv.extend([
+            "--chainwielder-checkpoint-actor-guid", "30008",
+        ])
+
+    with pytest.raises(SystemExit, match=reason):
+        prepare_capture_setup(argv, root=root)
 
 
 def test_build_policy_path_is_bound_to_receipt_identity(tmp_path):

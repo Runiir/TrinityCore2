@@ -11,6 +11,7 @@ import pytest
 
 import tools.raid_program.canonical_route_staging as canonical_staging
 import tools.raid_program.chainwielder_prestart_bundle as prestart_bundle
+import tools.raid_program.blocker_recurrence_ledger as recurrence_ledger
 import tools.raid_program.tracked_runtime_config_derivation as runtime_config
 from tools.raid_program.canonical_route_staging import stage_tracked_snapshot
 from tools.raid_program.chainwielder_prestart_bundle import (
@@ -31,6 +32,7 @@ from tools.raid_program.prestart_bundle_dialects import (
     PROFILE_COMBAT_RANGE,
     PROFILE_COMBAT_RANGE_ACTOR_GUID,
     PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
+    PROFILE_COMBAT_RANGE_FIXTURE_COMMAND,
     PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
     PROFILE_COMBAT_RANGE_TARGET_GUID,
     select_dialect,
@@ -268,6 +270,119 @@ def _fixture(
         },
     }
 
+
+def _generic_profile_range_fixture(tmp_path: Path) -> dict[str, object]:
+    """Build the generic fixture from the tracked recurrence bank inputs."""
+
+    fixture = _fixture(tmp_path)
+    root = fixture["root"]
+    paths = fixture["paths"]
+    kwargs = fixture["kwargs"]
+    tracked_ledger = root / TRACKED_LEDGER_RELATIVE_PATH
+    tracked_ledger.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(
+        Path(__file__).resolve().parents[1] / TRACKED_LEDGER_RELATIVE_PATH,
+        tracked_ledger,
+    )
+    _git(root, "add", TRACKED_LEDGER_RELATIVE_PATH.as_posix())
+    _git(root, "commit", "-m", "track generic recurrence ledger")
+
+    source_commit = _git(root, "rev-parse", "HEAD")
+    source_tree = _git(root, "rev-parse", "HEAD^{tree}")
+    receipt = paths["build_receipt"]
+    receipt_value = json.loads(receipt.read_text(encoding="utf-8"))
+    receipt_value["commit"] = source_commit
+    source_snapshot = {
+        "commit": source_commit,
+        "tree": source_tree,
+        "clean": True,
+        "dirty": False,
+        "porcelain_sha256": hashlib.sha256(b"").hexdigest(),
+    }
+    receipt_value["source_identity"] = {
+        stage: dict(source_snapshot)
+        for stage in ("request", "admission", "completion")
+    }
+    _write_json(receipt, receipt_value)
+
+    ledger_value = json.loads(tracked_ledger.read_text(encoding="utf-8"))
+    bank = ledger_value["regression_bank"]
+    fixture_rows = bank["fixtures"]
+    generic_row = next(
+        row for row in fixture_rows
+        if row.get("fixture_id") == PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
+    )
+    assert generic_row["revision"] == 1
+    assert generic_row["command"] == PROFILE_COMBAT_RANGE_FIXTURE_COMMAND
+
+    config_identity = recurrence_ledger._canonical_config_identity()
+    stdout_sha256 = hashlib.sha256(b"manifest-derived fixture stdout").hexdigest()
+    stderr_sha256 = hashlib.sha256(b"manifest-derived fixture stderr").hexdigest()
+    suite_rows = []
+    for row in fixture_rows:
+        command = row["command"]
+        suite_rows.append({
+            "fixture_id": row["fixture_id"],
+            "passed": True,
+            "returncode": 0,
+            "timed_out": False,
+            "command_sha256": recurrence_ledger._command_sha256(command),
+            "fixture_revision": row.get("revision", 1),
+            "stdout_sha256": stdout_sha256,
+            "stderr_sha256": stderr_sha256,
+            "result_sha256": recurrence_ledger._result_sha256(
+                0, False, stdout_sha256, stderr_sha256,
+            ),
+            "source_identity": source_commit,
+            "config_identity": config_identity,
+            "passed_after_run_id": ledger_value["runs"][-1]["run_id"],
+        })
+    suite_value = {
+        "schema": recurrence_ledger.SUITE_RECEIPT_SCHEMA,
+        "manifest_sha256": recurrence_ledger._manifest_sha256(bank),
+        "source_identity": source_commit,
+        "config_identity": config_identity,
+        "fixture_ids": [row["fixture_id"] for row in fixture_rows],
+        "verifications": suite_rows,
+    }
+    _write_json(paths["suite_receipt"], suite_value)
+
+    # Evaluate the complete bank, then project the one admitted generic
+    # observation target. The suite remains complete: every registered fixture
+    # has a manifest-derived row above.
+    evaluated = recurrence_ledger.evaluate_ledger(
+        ledger_value,
+        current_identity={"source": source_commit, "config": config_identity},
+        suite_receipt_verified=True,
+    )
+    decision_value = dict(evaluated)
+    decision_value.update({
+        "fixture_expansion_admitted": True,
+        "build_admitted": False,
+        "canary_admitted": False,
+        "fixture_expansion_target_ids": [generic_row["fixture_id"]],
+        "pending_fixture_ids": [generic_row["fixture_id"]],
+        "fixture_expansion_requests": [],
+    })
+    _write_json(paths["decision"], decision_value)
+
+    paths["ledger"] = tracked_ledger
+    kwargs.update({
+        "source_commit": source_commit,
+        "source_tree": source_tree,
+        "ledger": tracked_ledger,
+        "ledger_sha256": sha256_file(tracked_ledger),
+        "decision_sha256": sha256_file(paths["decision"]),
+        "suite_receipt_sha256": sha256_file(paths["suite_receipt"]),
+        "build_receipt_sha256": sha256_file(receipt),
+        "actor_guid": PROFILE_COMBAT_RANGE_ACTOR_GUID,
+        "checkpoint_fixture_id": PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+        "checkpoint_case_id": PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
+        "checkpoint_target_guid": PROFILE_COMBAT_RANGE_TARGET_GUID,
+    })
+    _restage_base_runtime_config(fixture)
+    return fixture
+
 def _create(fixture: dict[str, object]) -> dict[str, object]:
     return create_bundle(**fixture["kwargs"])  # type: ignore[arg-type]
 
@@ -309,6 +424,138 @@ def test_generic_profile_range_dialect_binds_exact_actor_fixture_case_and_target
             checkpoint_fixture_id=PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
             checkpoint_case_id=PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
         )
+
+
+def test_generic_profile_range_manifest_crosses_atomic_create_and_verify(
+    tmp_path: Path,
+) -> None:
+    fixture = _generic_profile_range_fixture(tmp_path)
+    result = _create(fixture)
+    output = fixture["output"]
+
+    assert result["valid"] is True
+    assert result["pre_rename_verified"] is True
+    assert verify_bundle(output)["valid"] is True
+
+    source = json.loads(
+        (output / BUNDLE_NAMES["source_route_manifest"]).read_text(
+            encoding="utf-8"
+        )
+    )
+    runtime = json.loads(
+        (output / BUNDLE_NAMES["route_manifest"]).read_text(encoding="utf-8")
+    )
+    assert [row["route_node_id"] for row in source["routes"]] == [
+        "bwd.entry.regroup",
+        "bwd.magmaw.chainwielder",
+        "bwd.magmaw.drudges",
+        "bwd.magmaw.encounter",
+    ]
+    assert len(runtime["routes"]) == 1
+    assert runtime["routes"][0]["route_node_id"] == "bwd.magmaw.encounter"
+    assert runtime["routes"][0]["source_entry"] == 41570
+
+    launch = json.loads(
+        (output / BUNDLE_NAMES["launch_contract"]).read_text(encoding="utf-8")
+    )
+    argv = launch["launch_argv"]
+    assert argv.count("--profile-combat-range-checkpoint-actor-guid") == 1
+    assert argv.count("--profile-combat-range-checkpoint-target-guid") == 1
+    for option in (
+        "--chainwielder-checkpoint-actor-guid",
+        "--magmaw-transfer-checkpoint-actor-guid",
+    ):
+        assert option not in argv
+    assert argv[argv.index(
+        "--profile-combat-range-checkpoint-actor-guid"
+    ) + 1] == "30010"
+    assert argv[argv.index(
+        "--profile-combat-range-checkpoint-target-guid"
+    ) + 1] == "39"
+
+
+@pytest.mark.parametrize(
+    ("mutation", "reason"),
+    [
+        ("wrong_fixture", "chainwielder_identity_input_mismatch"),
+        ("missing_case", "chainwielder_identity_input_mismatch"),
+        ("wrong_actor", "chainwielder_identity_input_mismatch"),
+        ("wrong_target", "profile_combat_range_target_guid_mismatch"),
+        ("wrong_entry", "route_checkpoint_identity_mismatch"),
+        ("wrong_route_shape", "route_checkpoint_node_missing_or_ambiguous"),
+    ],
+)
+def test_generic_profile_range_create_fails_closed_on_identity_or_route_mutation(
+    tmp_path: Path, mutation: str, reason: str,
+) -> None:
+    fixture = _generic_profile_range_fixture(tmp_path)
+    kwargs = fixture["kwargs"]
+    if mutation == "wrong_fixture":
+        kwargs["checkpoint_fixture_id"] = "not-the-generic-fixture"
+    elif mutation == "missing_case":
+        kwargs["checkpoint_case_id"] = None
+    elif mutation == "wrong_actor":
+        kwargs["actor_guid"] = PROFILE_COMBAT_RANGE_ACTOR_GUID + 1
+    elif mutation == "wrong_target":
+        kwargs["checkpoint_target_guid"] = PROFILE_COMBAT_RANGE_TARGET_GUID + 1
+    else:
+        route = fixture["paths"]["route_manifest"]
+        payload = json.loads(route.read_text(encoding="utf-8"))
+        if mutation == "wrong_entry":
+            payload["routes"][-1]["source_entry"] = 41571
+        else:
+            payload["routes"] = payload["routes"][:2]
+        _write_json(route, payload)
+        kwargs["route_manifest_sha256"] = sha256_file(route)
+    with pytest.raises(BundleError, match=reason):
+        _create(fixture)
+
+
+@pytest.mark.parametrize("mutation", ["revision", "command"])
+def test_generic_profile_range_create_rejects_manifest_revision_or_command_drift(
+    tmp_path: Path, mutation: str,
+) -> None:
+    fixture = _generic_profile_range_fixture(tmp_path)
+    ledger = fixture["paths"]["ledger"]
+    ledger_value = json.loads(ledger.read_text(encoding="utf-8"))
+    generic = next(
+        row for row in ledger_value["regression_bank"]["fixtures"]
+        if row.get("fixture_id") == PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
+    )
+    if mutation == "revision":
+        generic["revision"] = 2
+    else:
+        generic["command"] = [*generic["command"], "--drift"]
+    _write_json(ledger, ledger_value)
+    _git(Path(fixture["root"]), "add", TRACKED_LEDGER_RELATIVE_PATH.as_posix())
+    _git(Path(fixture["root"]), "commit", "-m", "mutate generic ledger")
+    source_commit = _git(Path(fixture["root"]), "rev-parse", "HEAD")
+    source_tree = _git(Path(fixture["root"]), "rev-parse", "HEAD^{tree}")
+    receipt = fixture["paths"]["build_receipt"]
+    receipt_value = json.loads(receipt.read_text(encoding="utf-8"))
+    receipt_value["commit"] = source_commit
+    receipt_value["source_identity"] = {
+        stage: {
+            "commit": source_commit,
+            "tree": source_tree,
+            "clean": True,
+            "dirty": False,
+            "porcelain_sha256": hashlib.sha256(b"").hexdigest(),
+        }
+        for stage in ("request", "admission", "completion")
+    }
+    _write_json(receipt, receipt_value)
+    fixture["kwargs"].update({
+        "source_commit": source_commit,
+        "source_tree": source_tree,
+        "ledger_sha256": sha256_file(ledger),
+        "build_receipt_sha256": sha256_file(receipt),
+    })
+    _restage_base_runtime_config(fixture)
+    with pytest.raises(
+        BundleError, match="profile_combat_range_ledger_manifest_mismatch"
+    ):
+        _create(fixture)
 
 def _restage_base_runtime_config(fixture: dict[str, object]) -> None:
     root = fixture["root"]
