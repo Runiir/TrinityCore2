@@ -666,32 +666,45 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                     targetAttackable, sameMap, sameInstance,
                     targetCreature->GetEntry(),
                     BotEncounter::AdaptiveDrudgeStrategy::DrudgeEntry);
-            if (!ownedDrudge)
+            if (!target || !target->IsInWorld() || !targetAlive
+                || !targetAttackable || !sameMap || !sameInstance)
                 return BotActionArbitration::Outcome::NotApplicable(
-                    "not_owned_drudge_target");
+                    "profile_combat_target_invalid");
 
             ResolvedCombatAction profileAction = ResolveProfileCombatAction(
                 context.Bot, target);
+            bool const insideLegalMinRange = profileAction.MinRange > 0.0f
+                && context.Bot->GetExactDist(target) < profileAction.MinRange;
             bool const outsideLegalMaxRange = profileAction.MaxRange > 0.0f
                 && context.Bot->GetExactDist(target) > profileAction.MaxRange;
             bool const noLineOfSight = !context.Bot->IsWithinLOSInMap(target);
-            if (!outsideLegalMaxRange && !noLineOfSight)
+            if (ownedDrudge)
+            {
+                if (!outsideLegalMaxRange && !noLineOfSight)
+                    return BotActionArbitration::Outcome::NotApplicable(
+                        "drudge_profile_range_satisfied");
+            }
+            else if (!insideLegalMinRange)
                 return BotActionArbitration::Outcome::NotApplicable(
-                    "drudge_profile_range_satisfied");
+                    "profile_min_range_satisfied");
 
             bool const moved = MoveBotToProfileRange(context.State, context.Bot,
                 target, &profileAction, noLineOfSight);
             if (!moved)
                 return BotActionArbitration::Outcome::Retryable(
-                    noLineOfSight ? "drudge_profile_los_path_rejected"
-                        : "drudge_profile_range_path_rejected");
+                    ownedDrudge
+                        ? (noLineOfSight ? "drudge_profile_los_path_rejected"
+                            : "drudge_profile_range_path_rejected")
+                        : "profile_min_range_path_rejected");
 
             context.Situation = "open_world_combat";
             context.Action = "profile_combat_range_movement";
             context.State.LastDecisionHandler = "combat_range";
             return BotActionArbitration::Outcome::Started(
-                noLineOfSight ? "profile_combat_los_reconciled"
-                    : "profile_combat_range_reconciled");
+                ownedDrudge
+                    ? (noLineOfSight ? "profile_combat_los_reconciled"
+                        : "profile_combat_range_reconciled")
+                    : "profile_combat_min_range_reconciled");
         };
         context.State.DecisionKernel.Submit(std::move(combatRange));
 

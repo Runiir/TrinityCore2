@@ -107,14 +107,17 @@ def test_route_target_allow_list_is_used_only_for_declared_drudge_entry() -> Non
     assert "context.AdaptiveDrudgeOwnsNode" in fallback
 
 
-def test_owned_drudge_range_candidate_is_movement_only_and_rechecks_profile_range() -> None:
+def test_generic_range_candidate_admits_only_valid_too_close_targets() -> None:
     fallback = FALLBACK.read_text(encoding="utf-8")
     start = fallback.index('combatRange.Key = "world.profile_combat_range"')
     end = fallback.index('combat.Key = "world.profile_combat"', start)
     candidate = fallback[start:end]
     assert "BotRouteCombatTargetPolicy::IsOwnedNativeEncounterTarget" in candidate
+    assert "target->IsInWorld()" in candidate
+    assert '"profile_combat_target_invalid"' in candidate
     assert "ResolveProfileCombatAction" in candidate
     assert "ResolvedCombatAction profileAction = ResolveProfileCombatAction(" in candidate
+    assert "insideLegalMinRange" in candidate
     assert "outsideLegalMaxRange" in candidate
     assert "profileAction.MaxRange > 0.0f" in candidate
     assert "noLineOfSight" in candidate
@@ -131,6 +134,37 @@ def test_owned_drudge_range_candidate_is_movement_only_and_rechecks_profile_rang
     )
     assert candidate.index("ResolveProfileCombatAction") < candidate.index(
         "outsideLegalMaxRange"
+    )
+    assert candidate.index("insideLegalMinRange") < candidate.index(
+        "MoveBotToProfileRange"
+    )
+    assert '"profile_min_range_satisfied"' in candidate
+    assert '"profile_combat_min_range_reconciled"' in candidate
+    assert "41570" not in candidate
+    assert "Magmaw" not in candidate
+
+
+def test_generic_range_candidate_preserves_drudge_latch_and_native_guards() -> None:
+    fallback = FALLBACK.read_text(encoding="utf-8")
+    start = fallback.index('combatRange.Key = "world.profile_combat_range"')
+    end = fallback.index('combat.Key = "world.profile_combat"', start)
+    candidate = fallback[start:end]
+
+    # The typed Drudge route still has the activation latch and its original
+    # max-range/LOS reconciliation. Generic hostile admission is a separate
+    # minimum-range branch and cannot inherit an encounter identity.
+    assert '"drudge_activation_latch_closed"' in candidate
+    assert '"drudge_profile_range_satisfied"' in candidate
+    assert '"profile_combat_los_reconciled"' in candidate
+    assert '"drudge_profile_los_path_rejected"' in candidate
+    assert candidate.index("if (ownedDrudge)") < candidate.index(
+        "else if (!insideLegalMinRange)"
+    )
+    assert candidate.index("target->IsInWorld()") < candidate.index(
+        "ResolveProfileCombatAction"
+    )
+    assert candidate.index("!sameMap") < candidate.index(
+        "ResolveProfileCombatAction"
     )
 
 
