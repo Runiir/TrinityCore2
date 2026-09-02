@@ -1,0 +1,210 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "performance_loop:authorize_generic_min_range_recurrence_bank_hash_binding_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_lifecycle_hash_binding_correction_authorized",
+  "source": {
+    "commit": "97fed2ba3056ca5c9cd07ed9369ad50dccee760b",
+    "tree": "52c26a67f59bd54bf5b0acec8fea0928c3aebd80",
+    "clean": true,
+    "built_binary_unchanged": true
+  },
+  "immutable_inputs": {
+    "prior_authorization": {
+      "path": "experiments/configs/cata_raid_magmaw_recurrence_bank_compatibility_correction_authorization_handoff_20260902.json",
+      "sha256": "bcf3aebbf283c6aa23ce783919ee8ee18e2a34276e1534a193ddde90b43ab503",
+      "source_commit": "4e4be9889a43b9e99d7e43aaa9fefda9aed99f48"
+    },
+    "clean_source_ledger": {
+      "path": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+      "sha256": "6a2979a9b7f776ccfa0bf1df20198c6e7730e04d4e27400112833f689f1a87a3"
+    },
+    "retained_stale_hash_binding": {
+      "path": "tests/test_blocker_recurrence_ledger.py",
+      "test": "test_transfer_checkpoint_ledger_is_promoted_and_main_ledger_is_bound",
+      "expected_sha256": "5f37a3f8e429a58590d371db66756c7ece46980f17d92dd383546e81ba39ba66",
+      "observed_clean_source_sha256": "6a2979a9b7f776ccfa0bf1df20198c6e7730e04d4e27400112833f689f1a87a3",
+      "clean_source_result": "failed_as_expected"
+    },
+    "stage2_typed_stop": {
+      "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+      "sha256": "12963fdf23587704af3b91c06be845a83c8c4a3ad0ff8225eefb4162725f2f4f",
+      "terminal_reason": "fixture_expansion_recurrence_admission_closed"
+    },
+    "built_binary": {
+      "source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+      "source_tree": "75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c",
+      "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/worktree/build/src/server/worldserver/worldserver",
+      "sha256": "4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081",
+      "build_receipt_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/identity/worldserver_build_receipt.json",
+      "build_receipt_sha256": "43dd3b89c2fc5497ab740e4789ee85efb925f6b45c8a3b6d96389a2880beb866",
+      "rebuild_authorized": false
+    }
+  },
+  "causal_receipt": {
+    "candidate_first_broken_edge": "main_recurrence_ledger_byte_hash_binding_not_updated_with_authorized_additive_registration",
+    "owner": "raid_evidence_lifecycle",
+    "ordered_claims": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "Source 97fed2ba is clean and contains only the prior metadata authorization, not the proposed evidence repair.",
+        "observation": "git status --short was empty; HEAD and tree were recorded above."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "The transfer-checkpoint regression test binds the main Magmaw ledger by an exact SHA-256 constant.",
+        "observation": "tests/test_blocker_recurrence_ledger.py::test_transfer_checkpoint_ledger_is_promoted_and_main_ledger_is_bound compares main.read_bytes() to 5f37a3f8...."
+      },
+      {
+        "order": 3,
+        "status": "verified",
+        "claim": "That retained constant already differs from the clean-source ledger bytes and the exact hash-binding test fails at the equality before exercising its downstream assertions.",
+        "observation": "Clean-source ledger SHA-256 is 6a2979a9...; the bounded exact test produced one assertion failure showing expected 5f37a3f8... versus actual 6a2979a9...."
+      },
+      {
+        "order": 4,
+        "status": "verified",
+        "claim": "The previously authorized additive diagnostic expectation and causal-signature registration necessarily change the main ledger bytes and therefore require its existing exact consumer to be updated from the final post-edit bytes.",
+        "observation": "The ledger is one of the two prior owned files and the transfer-checkpoint test is an exact whole-file SHA consumer."
+      },
+      {
+        "order": 5,
+        "status": "refuted",
+        "claim": "The newly exposed test failure is evidence of a gameplay, planner, executor, fixture-command, or recurrence-policy defect.",
+        "observation": "The failure occurs at a byte-hash equality before ledger evaluation; it consumes no native or live state."
+      },
+      {
+        "order": 6,
+        "status": "unproven",
+        "claim": "The final three-file correction admits Stage 2 or the sealed live fixture.",
+        "observation": "No correction commit, full-bank receipt, build, provision, seal, or worldserver run exists under this authorization."
+      }
+    ],
+    "first_downstream_state_mutation": "After the authorized causal-signature registration changes the ledger bytes, the retained transfer-checkpoint exact hash assertion rejects the ledger before the full recurrence-bank gate can complete.",
+    "failure_postcondition": "The full bank/ledger/admission command remains red and Stage 2 stays closed even if both direct receipt fixtures and the generic min-range fixture pass.",
+    "implementation_hypothesis": "Apply the two previously authorized additive evidence edits and update only the one existing transfer-checkpoint whole-ledger hash constant to the SHA-256 computed from the final ledger bytes.",
+    "correlation_keys": [
+      "tests/test_native_path_launch_receipt.py::test_native_path_launch_receipt_value_and_schema",
+      "launch_receipt.identity.diagnostic_target_guid=0",
+      "generic_profile_min_range_production_boundary_v1",
+      "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner",
+      "tests/test_blocker_recurrence_ledger.py::test_transfer_checkpoint_ledger_is_promoted_and_main_ledger_is_bound",
+      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json final-byte SHA-256",
+      "source_identity=97fed2ba3056ca5c9cd07ed9369ad50dccee760b",
+      "config_identity=sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36"
+    ]
+  },
+  "scope_lock": {
+    "next_work_unit": "evidence:generic_min_range_recurrence_bank_hash_binding_correction",
+    "owner_skill": "raid-evidence-lifecycle",
+    "objective": "Restore exact-current-source full-bank execution compatibility without gameplay or policy changes by applying the two additive evidence corrections and binding the transfer-checkpoint consumer to the exact final ledger bytes.",
+    "owned_behavior": "Retained evidence-schema expectation, one causal-signature registration, and the existing exact ledger byte-hash consumer only.",
+    "expected_observable_change": "Both direct fixture groups and the generic min-range fixtures pass; the exact transfer-checkpoint ledger binding equals the final ledger SHA-256; the full blocker-recurrence and recurrence-admission suites pass; the generated clean-commit decision has fixture_expansion_admitted=true and canary_admitted=false.",
+    "owned_files": [
+      "tests/test_native_path_launch_receipt.py",
+      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+      "tests/test_blocker_recurrence_ledger.py"
+    ],
+    "required_edits": [
+      "Add expected diagnostic_target_guid=0 to the retained exact launch-receipt identity equality.",
+      "Register causal_signatures.generic_non_drudge_too_close_profile_action_has_no_range_movement_owner consistently with generic_profile_min_range_production_boundary_v1.",
+      "After the ledger has its final bytes, compute its exact SHA-256 and replace only the stale hash literal in test_transfer_checkpoint_ledger_is_promoted_and_main_ledger_is_bound with that digest."
+    ],
+    "read_only_inspection": "The recurrence evaluator, admission verifier, production diagnostic emitter, Stage-2 receipts, route, capture, runtime, encounter, class, build, and binary files may be inspected but not edited.",
+    "preexisting_dirty_files": [],
+    "stop_condition": "Any required command or hash mismatch that cannot be resolved by these exact three edits yields a failed/out-of-scope handoff; do not change commands, fixtures, revisions, policy, gameplay, build, provision, seal, or live state."
+  },
+  "production_fixture_contract": {
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "positive_revision": 1,
+    "target_causal_signature": "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner",
+    "causal_invariant": "A valid alive non-Drudge hostile current-node target that is too close for the selected profile action retains a generic world.profile_combat_range movement owner through arbitration, native launch, measured outward progress, and a later ordinary same-target cast under one correlated actor, target, scope, and checkpoint generation.",
+    "counterexample": "The direct fixtures can pass after the two additive evidence edits while the full bank remains red because a separate transfer-checkpoint consumer binds the main ledger's old whole-file digest.",
+    "fail_before": "At clean source 97fed2ba, the transfer-checkpoint exact hash test fails with expected 5f37a3f8... and observed ledger 6a2979a9...; after the two additive edits its final digest changes again.",
+    "pass_after_implementation": "The hash constant exactly equals the SHA-256 of the checked-in final ledger bytes, both direct fixture groups and generic fixtures pass, all full bank/ledger/admission tests pass, and a generated clean-commit decision admits fixture expansion but not a canary.",
+    "fixture_revision_policy": "Do not bump any fixture revision. These edits synchronize additive evidence fields and an existing exact consumer; they do not expand or promote the production boundary.",
+    "live_boundary": "The observation-only generic fixture remains target/pending until a separately authorized sealed worldserver replay proves its native outcome boundary."
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_native_path_launch_receipt.py::test_native_path_launch_receipt_value_and_schema tests/test_tactical_replay_lite.py::test_recovers_displaced_receipt_progress_history",
+    "pixi run pytest -q tests/test_native_path_launch_proof.py::test_map669_receipt_620_proves_identity_bound_consumed_launch tests/test_native_path_launch_proof.py::test_map669_receipt_56_closes_only_terminal_or_supersession_boundary tests/test_native_path_launch_receipt.py",
+    "pixi run pytest -q tests/test_blocker_recurrence_ledger.py::test_transfer_checkpoint_ledger_is_promoted_and_main_ledger_is_bound",
+    "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_profile_combat_range_checkpoint_capture.py",
+    "pixi run pytest -q tests/test_blocker_recurrence_ledger.py tests/test_recurrence_admission.py",
+    "pixi run python -m tools.raid_program.blocker_recurrence_ledger --ledger experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json --source-identity <exact-clean-correction-commit> --config-identity sha256:f8fe99e59a894894f92cc26737ca39d82670e35b35b449786132a62a27a70d36 --run-suite /tmp/magmaw-generic-min-range-bank-hash-correction-suite.json --boundary-run-id magmaw-authority-5cad51fa40-20260902 --boundary after --gate fixture_expansion --output /tmp/magmaw-generic-min-range-bank-hash-correction-decision.json",
+    "pixi run python -m json.tool experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json >/dev/null",
+    "pixi run python -m py_compile tools/raid_program/blocker_recurrence_ledger.py tools/raid_program/recurrence_admission.py",
+    "git diff --check 97fed2ba3056ca5c9cd07ed9369ad50dccee760b HEAD",
+    "pixi run python -m tools.raid_program.raid_workloop status",
+    "git status --short"
+  ],
+  "acceptance_conditions": [
+    "Only the three owned files change from clean source 97fed2ba.",
+    "The first direct fixture group reports 2 passed and the second reports 5 passed without selector, command, or fixture narrowing.",
+    "The exact transfer-checkpoint hash test passes and its retained literal exactly equals the SHA-256 computed from the final checked-in ledger bytes.",
+    "The generic fixture command remains green and the full blocker-recurrence/recurrence-admission suites pass.",
+    "Every generated suite verification row passes at the exact clean correction commit and canonical config identity.",
+    "The generic fixture has no unknown_causal_signature route failure; fixture_expansion_admitted=true and canary_admitted=false.",
+    "All fixture revisions, commands, fixture history, occurrences, invalidations, quarantines, production evidence, architecture-review counts, ten-occurrence controls, and policies remain byte-for-byte unchanged except for the one causal-signature registration.",
+    "JSON, pycompile, diff, workloop, and clean-status checks complete; independent Sol-high review returns GO before any Stage-2 resume."
+  ],
+  "forbidden": [
+    "No production/native/C/C++/gameplay/policy/movement/planner/executor/route/roster/profile/runtime-default/database/class/encounter/skill mutation.",
+    "No command change or narrowing, fixture deletion, revision bump, bank narrowing, quarantine, waiver, synthetic pass, hand-authored suite/decision, boundary promotion, or change to evaluator semantics.",
+    "No change to fixture history, prior occurrence state, invalidation history, fixture verification, production evidence, architecture-review count, ten-occurrence control, or admission policy.",
+    "No configure, build, provision, database readback or mutation, recurrence seal, server start, live capture, canary, DVC operation, ML admission, or Stage-2 retry.",
+    "No use of an anticipated or prefix-only ledger digest: the test literal must be computed from and equal the final ledger bytes."
+  ],
+  "authority": {
+    "test_mutation_allowed": true,
+    "ledger_metadata_mutation_allowed": true,
+    "exact_ledger_hash_consumer_update_allowed": true,
+    "production_source_mutation_allowed": false,
+    "gameplay_behavior_broadening_allowed": false,
+    "fixture_revision_change_allowed": false,
+    "fixture_command_change_allowed": false,
+    "quarantine_or_waiver_allowed": false,
+    "builds": 0,
+    "provisioning_operations": 0,
+    "database_readbacks": 0,
+    "recurrence_seals": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "observation_only_fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "retries": 0,
+    "dvc_publication_allowed": false,
+    "magmaw_acceptance_allowed": false,
+    "ml_admission_allowed": false
+  },
+  "preserved_stage2_budget_receipt": {
+    "configure": "0/0",
+    "worldserver_build": "0/0",
+    "deterministic_provisioning": "0/1",
+    "database_readbacks": "0/1",
+    "recurrence_seals": "0/1",
+    "worldserver_starts": "0/0",
+    "authserver_starts": "0/0",
+    "observation_only_fixture_attempts": "0/0",
+    "gameplay_canary_attempts": "0/0",
+    "retries": 0,
+    "note": "This three-file metadata repair consumes zero Stage-2 or binary budgets. The reviewed worldserver remains byte-identical and Stage 3 remains closed."
+  },
+  "review_and_next_gate": {
+    "worker_success_state": "implemented_pending_independent_review",
+    "review_requirement": "Independent Sol-high review of the exact clean three-file commit, final-byte ledger hash equality, additive diagnostic value, signature contract, unchanged fixture revisions/commands/history/policy, generated full-bank receipt, and every required command result.",
+    "build_authorized": false,
+    "stage2_resume_authorized": false,
+    "worldserver_fixture_replay_authorized": false,
+    "live_gameplay_canary_authorized": false,
+    "next_on_review_go": "raid-performance-loop may authorize a fresh Stage-2 resume with preserved provision/readback/seal budgets and the unchanged reviewed binary; Stage 3 still requires separate authority.",
+    "next_on_review_no_go": "Return only the exact evidence or metadata mismatch under a new bounded authorization; do not build, provision, seal, or run live.",
+    "validation_clock": {
+      "policy": "completion_watchdog",
+      "fixed_success_timer_seconds": null
+    }
+  },
+  "next_action": "Hand this exact three-file lock to one raid-evidence-lifecycle worker with no nested agents. Apply only the two additive evidence edits and the final-byte hash binding, run the required commands once, commit cleanly, and request independent Sol-high review."
+}
