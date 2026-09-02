@@ -220,15 +220,28 @@ When an authoritative shard bundle rejects worktree-contained inputs, use
 `tools.raid_program.canonical_route_staging` to authenticate the exact DVC
 stage/member and copy it to a new explicit run root outside the worktree.
 Validate the receipt's clean source commit, source/staged paths and hashes, and
-receipt hash before passing the staged path unchanged to that bundle. Any
-missing, conflicting, symlinked, stale, or hash-drifted input stops before its
-atomic create is invoked or counted.
+receipt hash before deriving or binding any consumer input. Any missing,
+conflicting, symlinked, stale, or hash-drifted input stops before its atomic
+create is invoked or counted.
+
+An authenticated canonical JSONL route catalog is not a single-scenario
+`bot_live_validation_route_manifest_v1` runtime object. After staging-receipt
+verification and before launcher or bundle request composition, call
+`tools.raid_program.canonical_route_catalog.materialize_scenario_route_manifest`
+over that verified receipt, then call
+`tools.raid_program.canonical_route_catalog.verify_scenario_route_manifest_receipt`.
+Bind only the verified receipt's `output_object_path` and
+`output_object_sha256` as the route-manifest authority. Never substitute the
+staging receipt's `staged_path` or raw JSONL catalog bytes for a runtime route
+manifest. If materialization or either receipt verification is absent or
+fails, stop before consuming build, provisioning, bundle-create, or live-run
+budget.
 
 The current Chainwielder/Magmaw atomic-bundle flow is such a consumer. It uses
 the compatibility export in `chainwielder_prestart_bundle` with the
-`validation_scenarios` route member, and must validate that staging receipt
-before consuming its sole create budget. This requirement does not route other
-shards through the Chainwielder module.
+`validation_scenarios` route member, and must complete the catalog-to-manifest
+boundary above before consuming its sole create budget. This requirement does
+not route other shards through the Chainwielder module.
 
 1. Reproduce the route assets before building or provisioning:
 
