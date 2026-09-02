@@ -1,0 +1,70 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_typed_target_identity_review_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_review_correction_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "base_source": {
+    "commit": "e2cd496cb79634fe00ee1400e99a776ad3271e57",
+    "tree": "8c1b84d0900c1c67188855d6a54d5a65c907af5f",
+    "clean": true
+  },
+  "review": {
+    "path": "/tmp/magmaw-typed-target-identity-review-e2cd496c/review_handoff.json",
+    "sha256": "838a0d6efba8566da7c291840e2bed74e112a301bc9d589e1371cd2f515719b6",
+    "decision": "NO-GO",
+    "blocking_findings": [
+      "F1_mutable_pending_live_proof_template",
+      "F2_valid_map_zero_rejected"
+    ],
+    "included_nonblocking_finding": "F3_malformed_row_collection_uses_untyped_exception"
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "objective": "Close all three review findings without changing the typed identity schema, projections, query semantics, or any downstream file.",
+    "owned_files": [
+      "tools/raid_program/profile_combat_range_static_identity.py",
+      "tests/test_profile_combat_range_static_identity.py"
+    ],
+    "required_change": [
+      "Replace the exported mutable canonical pending-live dictionary with caller-immutable or privately regenerated fixed pending-only semantics; validation must compare to an expectation caller state cannot rewrite.",
+      "Use a nonnegative, non-bool integer validator for target_map_id while retaining positive non-bool validation for runtime_target_guid, target_spawn_id, and target_entry.",
+      "Normalize non-iterable or malformed row collections, including None, to a stable StaticTargetIdentityError reason."
+    ],
+    "deterministic_fixtures": [
+      "An attempted caller mutation cannot cause any live_proof field to emit or validate a proven value.",
+      "target_map_id=0 is accepted; negative, bool, and non-integer map IDs are rejected.",
+      "rows=None and another non-iterable raise the exact typed error without producing success.",
+      "All prior domain-substitution, drift, query-key, projection, and positive fixtures remain green."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_profile_combat_range_static_identity.py",
+      "pixi run pytest -q tests/test_profile_combat_range_static_identity.py tests/test_recurrence_admission.py tests/test_chainwielder_prestart_bundle.py",
+      "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py tests/test_phase1_raid_foundation_capture.py",
+      "pixi run python -m py_compile tools/raid_program/profile_combat_range_static_identity.py",
+      "git diff --check e2cd496cb79634fe00ee1400e99a776ad3271e57 HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Exactly two files change in one clean implementation commit.",
+      "F1 and F2 adversarial counterexamples fail before and pass after; F3 has a stable typed rejection.",
+      "No schema/projection/query/API behavior changes beyond the three corrections and all required regressions pass.",
+      "A fresh independent Sol-high raid-evidence-lifecycle reviewer returns GO before any native repair, build, provisioning, or Stage-2 retry."
+    ]
+  },
+  "forbidden": [
+    "No third file; no seal/admission/bundle/dialect/native/gameplay/route/roster/database/SQL/build/server/live/DVC/Stage-2-retry change or action.",
+    "No Magmaw conditional, target retargeting, live inference, global mutable canonical schema, numeric inequality between typed domains, or weakening of ID validation."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "worldserver_build": 0,
+    "provisioning": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one raid-evidence-lifecycle implementer, then one fresh independent Sol-high reviewer."
+}
