@@ -256,6 +256,19 @@ def _profile_checkpoint_nonnegative_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
+_PROFILE_COMBAT_RANGE_SCOPE_MATCH_FIELDS = (
+    "runtime_target_guid_matched",
+    "target_spawn_id_matched",
+    "target_entry_matched",
+    "target_map_id_matched",
+    "positive_instance_matched",
+    "same_instance_matched",
+    "attempt_scope_matched",
+    "wipe_scope_matched",
+    "route_scope_matched",
+)
+
+
 def profile_combat_range_checkpoint_terminal_rejections(
     row: object, *, actor_guid: int, runtime_target_guid: int,
     target_spawn_id: int, target_entry: int, target_map_id: int,
@@ -487,12 +500,21 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
         ("wipe_generation", (
             runtime_scope.wipe_generation if runtime_scope is not None else None
         )),
-        ("target_instance_id", (
-            runtime_scope.instance_id if runtime_scope is not None else None
-        )),
     )
     if any(expected is not None and row.get(field) != expected
            for field, expected in scope_pairs):
+        return scheduler._fail(
+            "profile_combat_range_checkpoint_status_scope_invalid"
+        )
+    if (
+        not _positive_int(row.get("attempt_id"))
+        or not _profile_checkpoint_nonnegative_int(
+            row.get("wipe_generation")
+        )
+        or not _profile_checkpoint_nonnegative_int(
+            row.get("route_generation")
+        )
+    ):
         return scheduler._fail(
             "profile_combat_range_checkpoint_status_scope_invalid"
         )
@@ -507,7 +529,18 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
             row.get("ok") is not True
             or row.get("stage") != "armed"
             or row.get("terminal") is not False
+            or row.get("outcome")
+                != "profile_combat_range_checkpoint_armed"
             or row.get("failure_reason") not in {None, ""}
+            or row.get("scope_bound") is not False
+            or not _profile_checkpoint_nonnegative_int(
+                row.get("target_instance_id")
+            )
+            or row.get("target_instance_id") != 0
+            or any(
+                row.get(field) is not False
+                for field in _PROFILE_COMBAT_RANGE_SCOPE_MATCH_FIELDS
+            )
         ):
             return scheduler._fail(
                 "profile_combat_range_checkpoint_status_arm_ack_invalid"
@@ -521,6 +554,23 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
     if scheduler.phase != "awaiting_terminal":
         return scheduler._fail(
             "profile_combat_range_checkpoint_duplicate_or_stale_receipt"
+        )
+    if row.get("stage") == "armed" and row.get("terminal") is False:
+        return scheduler._fail(
+            "profile_combat_range_checkpoint_duplicate_or_stale_receipt"
+        )
+    if (
+        runtime_scope is None
+        or not _positive_int(runtime_scope.instance_id)
+        or row.get("scope_bound") is not True
+        or row.get("target_instance_id") != runtime_scope.instance_id
+        or any(
+            row.get(field) is not True
+            for field in _PROFILE_COMBAT_RANGE_SCOPE_MATCH_FIELDS
+        )
+    ):
+        return scheduler._fail(
+            "profile_combat_range_checkpoint_status_scope_invalid"
         )
     if row.get("terminal") is not True:
         stage = row.get("stage")

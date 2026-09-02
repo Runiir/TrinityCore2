@@ -387,9 +387,56 @@ def _profile_row(*, stage: str = "armed", terminal: bool = False) -> dict:
 
 
 def _profile_arm_ack() -> dict:
-    row = _profile_row()
-    row["action"] = PROFILE_COMBAT_RANGE_CHECKPOINT_ACTION
-    row["terminal"] = False
+    # ArmProfileCombatRangeCheckpointForCohort serializes before the first
+    # live target observation, so no target instance or match outcome is bound.
+    row = _profile_row(stage="armed", terminal=False)
+    row.update({
+        "outcome": "profile_combat_range_checkpoint_armed",
+        "scope_bound": False,
+        "target_instance_id": 0,
+        "runtime_target_guid_matched": False,
+        "target_spawn_id_matched": False,
+        "target_entry_matched": False,
+        "target_map_id_matched": False,
+        "positive_instance_matched": False,
+        "same_instance_matched": False,
+        "attempt_scope_matched": False,
+        "wipe_scope_matched": False,
+        "route_scope_matched": False,
+        "decision_timestamp_ms": 0,
+        "candidate_trace_index": 0,
+        "candidate_key": "",
+        "candidate_status": "",
+        "candidate_reason": "",
+        "movement_receipt_id": 0,
+        "native_motion_type": 0,
+        "native_spline_id": 0,
+        "movement_committed": False,
+        "movement_native_submitted": False,
+        "range_diagnostic_target_guid": 0,
+        "range_intent_fingerprint": "0",
+        "range_receipt_correlated": False,
+        "progress_sample_count": 0,
+        "movement_progress_observed": False,
+        "range_progress_observed_at_ms": 0,
+        "hazard_candidate_key": "",
+        "hazard_candidate_source": "",
+        "hazard_candidate_status": "",
+        "hazard_trace_index": 0,
+        "hazard_decision_timestamp_ms": 0,
+        "hazard_movement_receipt_id": 0,
+        "hazard_intent_fingerprint": "0",
+        "hazard_progress_sample_count": 0,
+        "hazard_native_submitted": False,
+        "hazard_progress_observed": False,
+        "hazard_progress_observed_at_ms": 0,
+        "hazard_preempted_range": False,
+        "cast_spell_id": 0,
+        "cast_target_guid": 0,
+        "cast_retry_observed": False,
+        "cast_recorded_at_ms": 0,
+        "cast_before_progress_observed": False,
+    })
     return row
 
 
@@ -465,6 +512,76 @@ def test_profile_scheduler_rejects_duplicate_active_arm_without_poll() -> None:
 
 
 @pytest.mark.parametrize(
+    "field,value",
+    [
+        ("target_instance_id", 123),
+        ("target_instance_id", False),
+        ("scope_bound", True),
+        ("runtime_target_guid_matched", True),
+        ("target_spawn_id_matched", True),
+        ("target_entry_matched", True),
+        ("target_map_id_matched", True),
+        ("positive_instance_matched", True),
+        ("same_instance_matched", True),
+        ("attempt_scope_matched", True),
+        ("wipe_scope_matched", True),
+        ("route_scope_matched", True),
+        ("terminal", True),
+    ],
+)
+def test_profile_scheduler_rejects_inconsistent_unbound_arm_ack(
+    field: str, value: object,
+) -> None:
+    scheduler = _scheduler()
+    _advance_scheduler_to_arm_ack(scheduler)
+    row = _profile_arm_ack()
+    row[field] = value
+
+    assert scheduler.observe(row) == []
+    assert scheduler.failure_reason == (
+        "profile_combat_range_checkpoint_status_arm_ack_invalid"
+    )
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("scope_bound", False),
+        ("target_instance_id", 0),
+        ("target_instance_id", 124),
+        ("runtime_target_guid_matched", False),
+        ("target_spawn_id_matched", False),
+        ("target_entry_matched", False),
+        ("target_map_id_matched", False),
+        ("positive_instance_matched", False),
+        ("same_instance_matched", False),
+        ("attempt_scope_matched", False),
+        ("wipe_scope_matched", False),
+        ("route_scope_matched", False),
+    ],
+)
+@pytest.mark.parametrize("terminal", [False, True])
+def test_profile_scheduler_requires_exact_bound_scope_after_arm(
+    field: str, value: object, terminal: bool,
+) -> None:
+    scheduler = _scheduler()
+    _advance_scheduler_to_arm_ack(scheduler)
+    assert scheduler.observe(_profile_arm_ack()) == [
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+    ]
+    row = _profile_row(
+        stage="completed" if terminal else "progress_observed",
+        terminal=terminal,
+    )
+    row[field] = value
+
+    assert scheduler.observe(row) == []
+    assert scheduler.failure_reason == (
+        "profile_combat_range_checkpoint_status_scope_invalid"
+    )
+
+
+@pytest.mark.parametrize(
     "accepted_stage,stale_stage",
     [
         ("range_observed", "range_observed"),
@@ -501,11 +618,14 @@ def test_profile_scheduler_rejects_duplicate_or_regressive_active_stage(
         "wrong_spawn",
         "wrong_entry",
         "wrong_map",
-        "zero_instance",
         "wrong_case",
         "wrong_seal",
         "wrong_source",
         "wrong_scope",
+        "wrong_wipe_scope",
+        "wrong_wipe_scope_type",
+        "wrong_route_scope",
+        "wrong_route_scope_type",
         "missing_terminal",
     ],
 )
@@ -556,8 +676,6 @@ def test_profile_scheduler_protocol_negatives_fail_closed(
         row["target_entry"] = TARGET_ENTRY + 1
     elif mutation == "wrong_map":
         row["target_map_id"] = TARGET_MAP + 1
-    elif mutation == "zero_instance":
-        row["target_instance_id"] = 0
     elif mutation == "wrong_case":
         row["case_id"] = CASE + ".stale"
     elif mutation == "wrong_seal":
@@ -566,6 +684,14 @@ def test_profile_scheduler_protocol_negatives_fail_closed(
         row["source_commit"] = "d" * 40
     elif mutation == "wrong_scope":
         row["attempt_id"] = 8
+    elif mutation == "wrong_wipe_scope":
+        row["wipe_generation"] = 1
+    elif mutation == "wrong_wipe_scope_type":
+        row["wipe_generation"] = False
+    elif mutation == "wrong_route_scope":
+        row["route_generation"] = 2
+    elif mutation == "wrong_route_scope_type":
+        row["route_generation"] = True
     scheduler.observe(row)
     assert scheduler.failed is True
     assert scheduler.failure_reason in {
