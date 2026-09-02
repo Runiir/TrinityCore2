@@ -1,0 +1,73 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_static_identity_transitive_lexical_capture",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_transitive_lexical_capture_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "base_source": {
+    "reviewed_implementation_commit": "7ae13c0d1a19dba2d4196464c75f469e7cc6d2b4",
+    "reviewed_implementation_tree": "68b92dc856e083a12d2c21b2ce8cd35b56ef1966",
+    "current_control_commit": "9a097f66a6d412a5068cce7a7a8554fd027de09a",
+    "current_control_tree": "e8a69e2580f61985a7848797b3a8ed5ffaef2160",
+    "clean": true
+  },
+  "review": {
+    "path": "/tmp/magmaw-static-identity-lexical-authority-review-7ae13c0d/review_handoff.json",
+    "sha256": "1c03536b210dacf4066477b45d17c146841f17f9e36de7eca628589035116aac",
+    "decision": "NO-GO",
+    "remaining_issue": "Reachable canonical closures still resolve semantic built-ins and caught exception types through caller-rebindable module globals."
+  },
+  "skill_correction": {
+    "commit": "9a097f66a6d412a5068cce7a7a8554fd027de09a",
+    "file": ".agents/skills/raid-evidence-lifecycle/SKILL.md",
+    "threat_boundary": "Ordinary module/global rebinding by callback code is in scope; invasive function closure mutation or reflection is out of scope."
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "objective": "Capture the full transitive semantic dependency set into lexical cells at canonical API creation so ordinary module/global rebinding cannot change identity validation, row verification, callback results, or typed errors.",
+    "owned_files": [
+      "tools/raid_program/profile_combat_range_static_identity.py",
+      "tests/test_profile_combat_range_static_identity.py"
+    ],
+    "required_change": [
+      "Capture real int, bool, dict, isinstance, list, len, set, KeyError, TypeError, and ValueError at initial canonical API creation and use only those lexical cells in all reachable production closures.",
+      "Ensure perform_static_readback uses captured type semantics and captured post-callback row verification after the callback returns.",
+      "Preserve already fixed lexical schemas, fields, pending proof, SQL capture, public compatibility views, map zero, spawn-only query parameterization, and typed output values."
+    ],
+    "deterministic_fixtures": [
+      "Inject each remaining built-in/exception name into the module before construction, validation, projection, direct row verification, and performed readback; strict canonical behavior and typed errors remain unchanged.",
+      "During query callback, inject all remaining names and return empty, duplicate, and metadata-drifted rows; none produces accepted evidence or escapes typed errors.",
+      "Callback SQL execution and retained statement remain identical.",
+      "All prior module/helper/schema/fields/SQL/proof rebinding and ordinary regressions remain green."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_profile_combat_range_static_identity.py",
+      "pixi run pytest -q tests/test_profile_combat_range_static_identity.py tests/test_recurrence_admission.py tests/test_chainwielder_prestart_bundle.py",
+      "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py tests/test_phase1_raid_foundation_capture.py",
+      "pixi run python -m py_compile tools/raid_program/profile_combat_range_static_identity.py",
+      "git diff --check 9a097f66a6d412a5068cce7a7a8554fd027de09a HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Exactly two files change in one clean commit.",
+      "Disassembly/reachable-closure audit shows no LOAD_GLOBAL for the listed semantic dependencies in canonical production paths.",
+      "Every listed pre-call and callback-time counterexample fails closed with ordinary outputs unchanged.",
+      "Fresh independent Sol-high raid-evidence-lifecycle review returns GO before native repair, build, provisioning, Stage 2, or live validation."
+    ]
+  },
+  "forbidden": [
+    "No third file; no schema/output/query/API deletion, downstream/native/gameplay/route/roster/database/SQL/build/server/live/DVC/Stage-2 change or action.",
+    "No invasive closure-reflection defenses, monkeypatch detection side effects, Magmaw conditional, live inference, target retargeting, or validation weakening."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "worldserver_build": 0,
+    "provisioning": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one fresh raid-evidence-lifecycle implementer, then one fresh independent Sol-high reviewer."
+}

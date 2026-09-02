@@ -1,46 +1,46 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:static_identity_lexical_authority_correction",
+  "work_unit": "evidence:static_identity_transitive_lexical_capture",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "2e6de6d017d5596f560358257472f136e40639a9",
-  "immutable_input_commit": "668000c86c135401d3eb992d40e2d47ff727b2d1",
-  "architecture_scope": "Evidence lifecycle only: fixed lexical authority for static identity construction, validation, projection, and callback-spanning query receipts.",
+  "observed_at_commit": "7ae13c0d1a19dba2d4196464c75f469e7cc6d2b4",
+  "immutable_input_commit": "9a097f66a6d412a5068cce7a7a8554fd027de09a",
+  "architecture_scope": "Evidence lifecycle only: capture transitive semantic built-ins and exception types for callback-safe canonical static identity evidence.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "Direct exported-proof rebinding is fixed, but independent review proved private helpers, public constructors, schema/field/SQL globals, and callback-time rebinding still control canonical evidence. The evidence skill now explicitly forbids this Python pattern.",
+  "gate_state": "Project-defined module authority is fixed, but independent review shadowed Python built-ins and exception names to fabricate typed identities and accepted rows. The updated skill now includes this transitive capture rule.",
   "first_broken_edge": {
-    "id": "canonical_static_identity_still_resolves_through_rebindable_module_state",
-    "stage": "typed_static_identity_construction_validation_and_receipt",
+    "id": "canonical_static_identity_closures_retain_rebindable_builtin_authority",
+    "stage": "typed_static_identity_validation_and_callback_readback",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "Python module-private helpers and constants are caller-rebindable; production paths still resolve canonical values through them.",
-    "review_state": "third_independent_review_no_go"
+    "cause": "Reachable closures use LOAD_GLOBAL for semantic built-ins and caught exceptions, so callback/module rebinding can change validation and row acceptance.",
+    "review_state": "fourth_independent_review_no_go"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_static_identity_lexical_authority_correction_authorization_handoff_20260903.json",
-    "review_path": "/tmp/magmaw-pending-live-rebinding-review-2e6de6d0/review_handoff.json",
-    "review_sha256": "bd3ed3f9e7864fa14f9d2023b75647f8ec21053e6d3b252aad5dcee6c10459f6",
-    "skill_update_commit": "668000c86c135401d3eb992d40e2d47ff727b2d1"
+    "path": "experiments/configs/cata_raid_magmaw_static_identity_transitive_lexical_capture_authorization_handoff_20260903.json",
+    "review_path": "/tmp/magmaw-static-identity-lexical-authority-review-7ae13c0d/review_handoff.json",
+    "review_sha256": "1c03536b210dacf4066477b45d17c146841f17f9e36de7eca628589035116aac",
+    "skill_update_commit": "9a097f66a6d412a5068cce7a7a8554fd027de09a"
   },
   "scope_lock": {
-    "objective": "Remove all module-rebindable authority from canonical static evidence and bind one query statement across callback execution and receipt.",
+    "objective": "Lexically capture the full transitive semantic dependency set and close all ordinary module/global rebinding counterexamples.",
     "owned_files": [
       "tools/raid_program/profile_combat_range_static_identity.py",
       "tests/test_profile_combat_range_static_identity.py"
     ],
-    "expected_observable_change": "All private/public/global/callback rebinding counterexamples fail closed while ordinary outputs remain byte/value compatible.",
-    "stop_condition": "Any third file, public output change, or downstream/schema expansion stops the work unit."
+    "expected_observable_change": "No listed semantic dependency remains a LOAD_GLOBAL authority in canonical production closures; callback-time rebinding cannot fabricate acceptance.",
+    "stop_condition": "Any third file, output/schema/query change, or expansion beyond ordinary module/global rebinding stops the work unit."
   },
   "acceptance_conditions": [
-    "Every exact F1/F2 rebinding fixture and all prior regressions pass.",
+    "All built-in/exception rebinding fixtures and prior regressions pass.",
     "Fresh independent review returns GO before the separately owned native GUID repair."
   ],
   "forbidden": [
-    "No downstream/native/gameplay/database/build/server/live/DVC/Stage-2 changes or actions."
+    "No downstream/native/gameplay/database/build/server/live/DVC/Stage-2 changes or actions; no invasive closure-reflection defenses."
   ],
   "validation_clock": {
     "policy": "bounded_deterministic_fixtures",
@@ -58,5 +58,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact bounded lexical-authority correction in the source handoff."
+  "next_action": "Execute the exact bounded transitive lexical-capture correction in the source handoff."
 }
