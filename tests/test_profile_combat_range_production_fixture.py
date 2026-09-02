@@ -248,6 +248,130 @@ def test_production_wiring_and_observer_are_default_off() -> None:
     assert "Teleport" not in checkpoint
 
 
+def test_production_checkpoint_transition_value_matrix(tmp_path: Path) -> None:
+    source = tmp_path / "profile_combat_range_checkpoint_transition.cpp"
+    binary = tmp_path / "profile_combat_range_checkpoint_transition"
+    source.write_text(
+        r'''
+#include "Bots/BotProfileCombatRangeCheckpoint.h"
+
+#include <cassert>
+
+using namespace BotProfileCombatRangeCheckpoint;
+
+TransitionEvidence ValidTransition()
+{
+    TransitionEvidence evidence;
+    evidence.CheckpointScope = {
+        4, 30010, 99001, 7, 0, 1, 669, 123,
+    };
+    evidence.HazardCandidate = {
+        0, 4, 811, "shared_hazard_movement:generic_hazard_exit:12:3",
+        "shared_hazard_movement", "attempted", "hazard_exit",
+    };
+    evidence.HazardReceipt = {
+        811, 0,
+        "shared_hazard_movement:generic_hazard_exit:12:3", 0x2b,
+        evidence.CheckpointScope, 0, true, true, true,
+    };
+    evidence.HazardDecisionTimestampMs = 800;
+    evidence.HazardProgressObservedAtMs = 900;
+    evidence.HazardProgressObserved = true;
+    evidence.HazardPreemptedRange = true;
+    evidence.HazardPreemptionSameResolution = true;
+    evidence.HazardPreemptionBeforeRange = true;
+    evidence.RangeCandidate = {
+        0, 4, 812, "world.profile_combat_range", "db_class_spec_profile",
+        "attempted", "profile_combat_min_range_reconciled",
+    };
+    evidence.RangeReceipt = {
+        812, 0, "world.profile_combat_range", 0x1a,
+        evidence.CheckpointScope, 99001, true, true, true,
+    };
+    evidence.RangeDecisionTimestampMs = 1000;
+    evidence.RangeProgressObservedAtMs = 1200;
+    evidence.RangeProgressObserved = true;
+    evidence.CastCandidate = {
+        1, 4, 0, "world.profile_combat", "db_class_spec_profile",
+        "attempted", "profile_cast_submitted",
+    };
+    evidence.CastScope = evidence.CheckpointScope;
+    evidence.CastSpellId = 12345;
+    evidence.CastTargetGuid = 99001;
+    evidence.CastRetryObserved = true;
+    evidence.CastRecordedAtMs = 1300;
+    evidence.CastBeforeProgressObserved = false;
+    return evidence;
+}
+
+void AssertRejected(TransitionEvidence evidence)
+{
+    assert(!IsCompletedTransition(evidence));
+}
+
+int main()
+{
+    TransitionEvidence positive = ValidTransition();
+    assert(IsCompletedTransition(positive));
+
+    TransitionEvidence wrongSource = positive;
+    wrongSource.HazardCandidate.Source = "observed_hazard_producer";
+    AssertRejected(wrongSource);
+
+    TransitionEvidence noPreemption = positive;
+    noPreemption.HazardPreemptionSameResolution = false;
+    AssertRejected(noPreemption);
+
+    TransitionEvidence reordered = positive;
+    reordered.HazardProgressObservedAtMs = 700;
+    AssertRejected(reordered);
+
+    TransitionEvidence staleTarget = positive;
+    staleTarget.RangeReceipt.DiagnosticTargetGuid = 99002;
+    AssertRejected(staleTarget);
+
+    TransitionEvidence staleReceipt = positive;
+    staleReceipt.RangeReceipt.Id = 813;
+    AssertRejected(staleReceipt);
+
+    TransitionEvidence staleScope = positive;
+    staleScope.RangeReceipt.ReceiptScope.AttemptId = 8;
+    AssertRejected(staleScope);
+
+    TransitionEvidence staleGeneration = positive;
+    staleGeneration.RangeCandidate.CheckpointGeneration = 5;
+    AssertRejected(staleGeneration);
+
+    TransitionEvidence noProgress = positive;
+    noProgress.RangeProgressObserved = false;
+    AssertRejected(noProgress);
+
+    TransitionEvidence earlyCast = positive;
+    earlyCast.CastRecordedAtMs = 1200;
+    AssertRejected(earlyCast);
+
+    TransitionEvidence wrongCastTarget = positive;
+    wrongCastTarget.CastTargetGuid = 99002;
+    AssertRejected(wrongCastTarget);
+
+    TransitionEvidence castBeforeProgress = positive;
+    castBeforeProgress.CastBeforeProgressObserved = true;
+    AssertRejected(castBeforeProgress);
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "c++", "-std=c++17", "-I", str(ROOT / "src/server/game"),
+            "-I", str(ROOT / "src/common"),
+            str(source), "-o", str(binary),
+        ],
+        check=True,
+    )
+    subprocess.run([str(binary)], check=True)
+
+
 def test_source_has_no_replacement_range_candidate() -> None:
     fallback = FALLBACK.read_text(encoding="utf-8")
     assert "BotActionArbitration::Candidate combatRange" not in fallback

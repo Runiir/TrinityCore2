@@ -345,6 +345,7 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
             checkpoint.HazardIntentFingerprint =
                 planner.LaunchReceipt.IntentFingerprint;
             checkpoint.HazardNativeSubmitted = true;
+            checkpoint.HazardNativeLaunchObserved = HasNativeLaunch(planner);
             break;
         }
 
@@ -439,6 +440,7 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
                 planner.LaunchReceipt.IntentFingerprint;
             checkpoint.MovementCommitted = true;
             checkpoint.MovementNativeSubmitted = true;
+            checkpoint.RangeNativeLaunchObserved = HasNativeLaunch(planner);
             checkpoint.RangeReceiptCorrelated = true;
             checkpoint.DecisionTimestampMs = context.DecisionNowMs;
             checkpoint.NativeMotionType =
@@ -492,18 +494,100 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
                 checkpoint.CastSpellId = context.State.LastCombatAttempt.SpellId;
                 checkpoint.CastTargetGuid = context.State.LastCombatAttempt.TargetGuid
                     .GetRawValue();
+                checkpoint.CastTraceIndex = castTraceIndex;
+                checkpoint.CastCheckpointGeneration =
+                    checkpoint.CheckpointGeneration;
+                checkpoint.CastCandidateKey = castTrace.Key;
+                checkpoint.CastCandidateSource = castTrace.Source;
+                checkpoint.CastCandidateStatus = castTrace.Status;
             }
         }
     }
 
-    if (checkpoint.HazardProgressObserved
-        && checkpoint.HazardPreemptedRange
-        && checkpoint.HazardProgressObservedAtMs
-            < checkpoint.DecisionTimestampMs
-        && checkpoint.MovementProgressObserved
-        && checkpoint.CastRetryObserved
-        && checkpoint.CastRecordedAtMs > checkpoint.RangeProgressObservedAtMs
-        && checkpoint.CastTargetGuid == checkpoint.TargetGuid)
+    BotProfileCombatRangeCheckpoint::TransitionEvidence transition;
+    transition.CheckpointScope = {
+        checkpoint.CheckpointGeneration,
+        checkpoint.ActorGuid,
+        checkpoint.TargetGuid,
+        checkpoint.AttemptId,
+        checkpoint.WipeGeneration,
+        checkpoint.RouteGeneration,
+        checkpoint.TargetMapId,
+        checkpoint.TargetInstanceId,
+    };
+    transition.HazardCandidate = {
+        checkpoint.HazardTraceIndex,
+        checkpoint.CheckpointGeneration,
+        checkpoint.HazardMovementReceiptId,
+        checkpoint.HazardCandidateKey,
+        checkpoint.HazardCandidateSource,
+        checkpoint.HazardCandidateStatus,
+        "",
+    };
+    transition.HazardReceipt = {
+        checkpoint.HazardMovementReceiptId,
+        checkpoint.HazardTraceIndex,
+        checkpoint.HazardCandidateKey,
+        checkpoint.HazardIntentFingerprint,
+        transition.CheckpointScope,
+        0,
+        true,
+        checkpoint.HazardNativeSubmitted,
+        checkpoint.HazardNativeLaunchObserved,
+    };
+    transition.HazardDecisionTimestampMs =
+        checkpoint.HazardDecisionTimestampMs;
+    transition.HazardProgressObservedAtMs =
+        checkpoint.HazardProgressObservedAtMs;
+    transition.HazardProgressObserved = checkpoint.HazardProgressObserved;
+    transition.HazardPreemptedRange = checkpoint.HazardPreemptedRange;
+    transition.HazardPreemptionSameResolution =
+        checkpoint.HazardPreemptedRange;
+    transition.HazardPreemptionBeforeRange =
+        checkpoint.HazardProgressObservedAtMs
+            < checkpoint.DecisionTimestampMs;
+    transition.RangeCandidate = {
+        checkpoint.CandidateTraceIndex,
+        checkpoint.CheckpointGeneration,
+        checkpoint.MovementReceiptId,
+        checkpoint.CandidateKey,
+        "db_class_spec_profile",
+        checkpoint.CandidateStatus,
+        checkpoint.CandidateReason,
+    };
+    transition.RangeReceipt = {
+        checkpoint.MovementReceiptId,
+        checkpoint.CandidateTraceIndex,
+        checkpoint.CandidateKey,
+        checkpoint.RangeIntentFingerprint,
+        transition.CheckpointScope,
+        checkpoint.TargetGuid,
+        true,
+        checkpoint.MovementNativeSubmitted,
+        checkpoint.RangeNativeLaunchObserved,
+    };
+    transition.RangeDecisionTimestampMs = checkpoint.DecisionTimestampMs;
+    transition.RangeProgressObservedAtMs =
+        checkpoint.RangeProgressObservedAtMs;
+    transition.RangeProgressObserved = checkpoint.MovementProgressObserved;
+    transition.CastCandidate = {
+        checkpoint.CastTraceIndex,
+        checkpoint.CastCheckpointGeneration,
+        0,
+        checkpoint.CastCandidateKey,
+        checkpoint.CastCandidateSource,
+        checkpoint.CastCandidateStatus,
+        "",
+    };
+    transition.CastScope = transition.CheckpointScope;
+    transition.CastSpellId = checkpoint.CastSpellId;
+    transition.CastTargetGuid = checkpoint.CastTargetGuid;
+    transition.CastRetryObserved = checkpoint.CastRetryObserved;
+    transition.CastRecordedAtMs = checkpoint.CastRecordedAtMs;
+    transition.CastBeforeProgressObserved =
+        checkpoint.CastBeforeProgressObserved;
+
+    if (BotProfileCombatRangeCheckpoint::IsCompletedTransition(transition))
     {
         checkpoint.CurrentStage = Stage::Completed;
         checkpoint.Outcome = "profile_combat_range_checkpoint_boundary_observed";

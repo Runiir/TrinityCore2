@@ -12,6 +12,10 @@ from tools.raid_program.capture_checkpoint_controller import (
     profile_combat_range_checkpoint_arm_command,
     profile_combat_range_checkpoint_terminal_rejections,
 )
+from tools.raid_program.controller_route_hold import (
+    ControllerRouteHoldLaunchIdentity,
+    ControllerRouteHoldScheduler,
+)
 from tools.raid_program.recurrence_checkpoint_seals import (
     PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY,
     PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
@@ -220,3 +224,239 @@ def test_terminal_consumer_accepts_exact_join() -> None:
         attempt_id=7, wipe_generation=0, route_generation=1,
         target_map_id=669, target_instance_id=123,
     ) == []
+
+
+def _scheduler_identity() -> ControllerRouteHoldLaunchIdentity:
+    return ControllerRouteHoldLaunchIdentity(
+        scenario_id="blackwing_descent_10n_magmaw_diagnostic",
+        runtime_profile="blackwing_descent_10n_magmaw_diagnostic",
+        pool_tag="blackwing_descent_10n_magmaw_diagnostic",
+        route_manifest_sha256="c" * 64,
+        route_node_id="bwd.entry.regroup",
+        actor_guid=ACTOR,
+        fixture_id=PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+        seal_sha256=SEAL,
+        source_commit=SOURCE,
+    )
+
+
+def _scheduler() -> ControllerRouteHoldScheduler:
+    dialect = checkpoint_controller_dialect(_admission(), ACTOR)
+    assert isinstance(dialect, dict)
+    return ControllerRouteHoldScheduler(
+        _scheduler_identity(), **dialect["scheduler_kwargs"],
+    )
+
+
+def _hold(*, phase: str = "held", terminal: bool = False) -> dict:
+    return {
+        "ok": True,
+        "phase": phase,
+        "cohort_id": "default",
+        "server_epoch": 91,
+        "attempt_id": 7,
+        "scenario_id": _scheduler_identity().scenario_id,
+        "runtime_profile": _scheduler_identity().runtime_profile,
+        "route_manifest_sha256": _scheduler_identity().route_manifest_sha256,
+        "route_generation": 1,
+        "route_node_id": _scheduler_identity().route_node_id,
+        "actor_guid": ACTOR,
+        "fixture_id": PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+        "seal_sha256": SEAL,
+        "source_commit": SOURCE,
+        "acquire_count": 1,
+        "arm_ack_count": 1 if phase in {"armed", "checkpoint_terminal"} else 0,
+        "checkpoint_stage": "completed" if terminal else "",
+        "checkpoint_terminal": terminal,
+        "checkpoint_identity_preserved": terminal,
+        "release_count": 0,
+    }
+
+
+def _status(*, phase: str = "held") -> dict:
+    return {
+        "ok": True,
+        "action": "botauto_status",
+        "cohort_id": "default",
+        "active_profile": _scheduler_identity().runtime_profile,
+        "validation_route": {"generation": 1},
+        "raid_runtime": {
+            "active": True,
+            "server_epoch": 91,
+            "attempt_id": 7,
+            "wipe_generation": 0,
+            "instance_id": 123,
+            "route_progress": {"generation": 1},
+            "controller_route_hold": _hold(phase=phase),
+        },
+    }
+
+
+def _profile_row(*, stage: str = "armed", terminal: bool = False) -> dict:
+    row = copy.deepcopy(_row())
+    row.update({
+        "stage": stage,
+        "terminal": terminal,
+        "outcome": (
+            "profile_combat_range_checkpoint_boundary_observed"
+            if terminal else "profile_combat_range_checkpoint_progress_observed"
+        ),
+    })
+    return row
+
+
+def _profile_arm_ack() -> dict:
+    row = _profile_row()
+    row["action"] = PROFILE_COMBAT_RANGE_CHECKPOINT_ACTION
+    row["terminal"] = False
+    return row
+
+
+def _advance_scheduler_to_arm_ack(
+    scheduler: ControllerRouteHoldScheduler,
+) -> None:
+    assert scheduler.start() == [
+        "botautochaincheckpoint start-held "
+        f"{ACTOR} {PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID} {SEAL} {SOURCE}"
+    ]
+    assert scheduler.observe(_hold()) == ["botauto status"]
+    assert scheduler.observe(_status()) == ["botauto status"]
+    assert scheduler.observe(_status()) == [
+        profile_combat_range_checkpoint_arm_command(_admission(), ACTOR, TARGET)
+    ]
+    assert scheduler.phase == "awaiting_arm_ack"
+
+
+def test_profile_scheduler_executes_exact_arm_poll_terminal_protocol() -> None:
+    scheduler = _scheduler()
+    _advance_scheduler_to_arm_ack(scheduler)
+    assert scheduler.observe(_profile_arm_ack()) == [
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+    ]
+    assert scheduler.observe(_profile_row(stage="armed")) == [
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+    ]
+    assert scheduler.observe(_profile_row(stage="progress_observed")) == [
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+    ]
+    assert scheduler.observe(_profile_row(
+        stage="completed", terminal=True,
+    )) == []
+
+    receipt = scheduler.receipt()
+    assert receipt["gate_passed"] is True
+    assert receipt["phase"] == "complete"
+    assert receipt["failure_reason"] is None
+    assert receipt["start_ack_count"] == 1
+    assert receipt["held_status_count"] == 2
+    assert receipt["arm_ack_count"] == 1
+    assert receipt["checkpoint_terminal_count"] == 1
+    assert receipt["checkpoint_terminal_stage"] == "completed"
+    assert receipt["command_counts"] == {
+        "start_held": 1, "status": 2, "arm": 1, "release": 0,
+    }
+    assert receipt["command_transcript"] == [
+        "botautochaincheckpoint start-held "
+        f"{ACTOR} {PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID} {SEAL} {SOURCE}",
+        "botauto status",
+        "botauto status",
+        profile_combat_range_checkpoint_arm_command(
+            _admission(), ACTOR, TARGET,
+        ),
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND,
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND,
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND,
+    ]
+    assert receipt["command_transcript"].count(
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+    ) == 3
+    assert receipt["checkpoint_terminal_observation"]["terminal"] is True
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "malformed_arm",
+        "unavailable_status",
+        "stale_generation",
+        "wrong_actor",
+        "wrong_target",
+        "wrong_case",
+        "wrong_seal",
+        "wrong_source",
+        "wrong_scope",
+        "missing_terminal",
+    ],
+)
+def test_profile_scheduler_protocol_negatives_fail_closed(
+    mutation: str,
+) -> None:
+    scheduler = _scheduler()
+    _advance_scheduler_to_arm_ack(scheduler)
+    if mutation == "malformed_arm":
+        row = _profile_arm_ack()
+        row.pop("target_guid")
+        scheduler.observe(row)
+        assert scheduler.failure_reason == (
+            "profile_combat_range_checkpoint_status_identity_invalid"
+        )
+        return
+    if mutation == "unavailable_status":
+        scheduler = _scheduler()
+        scheduler.start()
+        scheduler.observe({"action": "botauto_status"})
+        assert scheduler.failure_reason == "controller_route_hold_status_receipt_missing"
+        return
+    if mutation == "missing_terminal":
+        scheduler.observe(_profile_arm_ack())
+        scheduler.finish()
+        assert scheduler.failure_reason == (
+            "controller_route_hold_checkpoint_lifecycle_missing"
+        )
+        return
+    if mutation == "stale_generation":
+        scheduler.observe(_profile_arm_ack())
+        row = _profile_row(stage="armed")
+        row["checkpoint_generation"] = 2
+        scheduler.observe(row)
+        assert scheduler.failure_reason == (
+            "profile_combat_range_checkpoint_status_scope_invalid"
+        )
+        return
+
+    row = _profile_arm_ack()
+    if mutation == "wrong_actor":
+        row["actor_guid"] = ACTOR + 1
+    elif mutation == "wrong_target":
+        row["target_guid"] = TARGET + 1
+    elif mutation == "wrong_case":
+        row["case_id"] = CASE + ".stale"
+    elif mutation == "wrong_seal":
+        row["seal_sha256"] = "c" * 64
+    elif mutation == "wrong_source":
+        row["source_commit"] = "d" * 40
+    elif mutation == "wrong_scope":
+        row["attempt_id"] = 8
+    scheduler.observe(row)
+    assert scheduler.failed is True
+    assert scheduler.failure_reason in {
+        "profile_combat_range_checkpoint_status_identity_invalid",
+        "profile_combat_range_checkpoint_status_scope_invalid",
+    }
+
+
+def test_profile_scheduler_duplicate_terminal_receipt_is_ignored_after_success() -> None:
+    scheduler = _scheduler()
+    _advance_scheduler_to_arm_ack(scheduler)
+    scheduler.observe(_profile_arm_ack())
+    scheduler.observe(_profile_row(stage="armed"))
+    scheduler.observe(_profile_row(stage="progress_observed"))
+    terminal = _profile_row(stage="completed", terminal=True)
+    assert scheduler.observe(terminal) == []
+    first = scheduler.receipt()
+    assert scheduler.observe(copy.deepcopy(terminal)) == []
+    second = scheduler.receipt()
+    assert second["checkpoint_terminal_count"] == 1
+    assert second["checkpoint_terminal_observation"] == (
+        first["checkpoint_terminal_observation"]
+    )
