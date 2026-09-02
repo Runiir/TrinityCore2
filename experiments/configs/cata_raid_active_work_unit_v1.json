@@ -1,61 +1,68 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:generic_non_drudge_min_range_movement_admission",
+  "work_unit": "runtime:generic_min_range_production_fixture_expansion",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Implement one generic shared-runtime minimum-range candidate-admission repair from the hash-bound authorization. No build or live run is authorized.",
-  "gate_state": "Attempt4 is closed and published. The attempt3 cadence review plus current source verify that a valid non-Drudge hostile inside ResolvedCombatAction.MinRange is rejected before the generic range mover can emit a typed Movement-only outcome.",
-  "observed_at_commit": "f1c923ac560cde9403a9b9aa3c52fbd9e2b19ca0",
-  "immutable_input_commit": "f1c923ac560cde9403a9b9aa3c52fbd9e2b19ca0",
-  "behavior_change": true,
-  "evidence_contract_change": false,
+  "architecture_scope": "Replace the rejected source-shape proof with one shared generic production adapter and default-off observation checkpoint. No new gameplay behavior, build, or live run is authorized.",
+  "gate_state": "Independent review NO-GO at commit 7444666b: the generic minimum-range admission code exists, but retained tests do not execute the production manager-to-native boundary.",
+  "observed_at_commit": "7444666b449231c79049d071df6f8e6091e175d5",
+  "immutable_input_commit": "7444666b449231c79049d071df6f8e6091e175d5",
+  "behavior_change": false,
+  "evidence_contract_change": true,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_generic_non_drudge_min_range_movement_repair_authorization_handoff_20260902.json",
-    "sha256": "af141526b23564ab5c1375df6989f2c0f124bd86340797ccd9bf8334e6f0c0d6"
+    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_production_fixture_expansion_authorization_handoff_20260902.json",
+    "sha256": "c665e85734eacdf441df540c2caae8e26bf843e4450bfccad537260abfbe42c5"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
   "first_broken_edge": {
-    "owner_classification": "shared_runtime_movement_candidate_admission",
+    "owner_classification": "shared_runtime_production_fixture",
     "actor_guid": 30010,
-    "stage": "resolved_profile_min_range_recovery_to_typed_movement_candidate",
-    "cause": "world.profile_combat_range rejects not_owned_drudge_target before recognizing a valid hostile target inside ResolvedCombatAction.MinRange.",
-    "causal_chain": "min_range_required -> range candidate NotApplicable -> no Movement commit/native mover -> repeated no_valid_profile_action -> severely starved ordinary cast cadence",
+    "stage": "fallback_candidate_to_native_outcome_fixture_boundary",
+    "cause": "The retained tests reconstruct or inspect world.profile_combat_range instead of executing the shared production candidate through the manager, resolver, arbiter, native mover, progress, and later cast.",
+    "causal_chain": "source-shape/replacement candidate passes -> production submission unexercised -> native generator/spline progress unobserved -> later cast retry unobserved",
     "first_retained_timestamp_ms": 1788337643273,
-    "review_state": "program_authorized_for_one_bounded_shared_runtime_repair"
+    "review_state": "independent_review_no_go_fixture_expansion_authorized"
   },
   "scope_lock": {
-    "objective": "Admit one generic Movement-only arbiter candidate for a valid hostile target inside the selected action MinRange and execute the existing native range mover.",
+    "objective": "Add a behavior-preserving shared production range-candidate adapter plus a default-off observer capable of certifying the exact live production chain; keep commit 7444666b as the only gameplay admission change.",
     "owned_files": [
+      "src/server/game/Bots/BotProfileCombatRangeCandidate.h",
+      "src/server/game/Bots/BotProfileCombatRangeCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp",
       "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
-      "tests/test_bot_route_combat_target_policy.py",
-      "tests/test_bot_world_population_mgr_combat_movement_module.py"
-    ],
-    "conditionally_owned_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp only if the existing generic mover cannot satisfy the fixture"
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotDecision.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "src/server/game/Bots/BotWorldPopulationMgrConfig.h",
+      "src/server/game/Bots/BotWorldPopulationMgrConfig.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+      "src/server/game/CMakeLists.txt",
+      "tests/test_profile_combat_range_production_fixture.py",
+      "tests/test_bot_route_combat_target_policy.py"
     ],
     "required_commands": [
-      "pixi run pytest -q tests/test_bot_route_combat_target_policy.py tests/test_bot_world_population_mgr_combat_movement_module.py",
+      "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_bot_route_combat_target_policy.py tests/test_bot_world_population_mgr_combat_movement_module.py",
       "pixi run pytest -q tests/test_magmaw_parasite_policy.py",
-      "wc -l src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
-      "git diff --check",
-      "pixi run python -m tools.raid_program.raid_workloop status"
+      "wc -l src/server/game/Bots/BotProfileCombatRangeCandidate.h src/server/game/Bots/BotProfileCombatRangeCheckpoint.h src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp src/server/game/Bots/BotWorldPopulationMgrUpdateBotDecision.cpp src/server/game/Bots/BotWorldPopulationMgr.h src/server/game/Bots/BotWorldPopulationMgrConfig.h src/server/game/Bots/BotWorldPopulationMgrConfig.cpp src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+      "git diff --check 7444666b449231c79049d071df6f8e6091e175d5 HEAD",
+      "pixi run python -m tools.raid_program.raid_workloop status",
+      "git status --short"
     ]
   },
   "forbidden": [
-    "no Magmaw, boss-entry, target-entry, route-node, or encounter-specific conditional",
-    "do not weaken or delete action-profile minimum range",
-    "do not bypass the typed arbiter or recreate priority with ordered encounter conditionals",
-    "no bot-side Z steering, teleportation, global tolerance, encounter MMAP, coordinate/floor, coefficient, stat, gear, pet, consumable, class-policy, encounter-script, route, database, ledger, skill, or evidence-contract changes",
-    "no build, provisioning, database mutation, server start, live run, DVC publication, ML admission, fixture promotion, Magmaw acceptance, or closure"
+    "no Magmaw, boss-entry, creature-entry, route-node, coordinate, spell, class, spec, or encounter special cases",
+    "no hand-written replacement range candidate, duplicate priority system, or synthetic native/hazard/cast success",
+    "no gameplay behavior broadening beyond commit 7444666b and no changes to resolver, arbiter, mover, hazard producer, class policy, encounter scripts, route, database, ledger, skills, capture tools, or DVC",
+    "no bot or target teleportation, direct fixture MotionMaster commands, bot-side Z steering, MMAP workarounds, or global tolerance changes",
+    "no build, configure, provisioning, database mutation, server start, live run, DVC publication, fixture-green promotion, ML admission, Magmaw acceptance, or closure"
   ],
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Use exactly raid-bot-runtime-implementation for the hash-bound bounded repair. Commit the implementation and deterministic fixture, then obtain independent Sol review before any separately authorized build or live canary."
+  "next_action": "Use exactly raid-bot-runtime-implementation for the hash-bound fixture expansion. Commit the adapter and default-off observer after focused tests, then obtain independent Sol review before any separately authorized build or observation-only worldserver replay."
 }

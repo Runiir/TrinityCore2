@@ -1,0 +1,197 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:authorize_generic_min_range_production_fixture_expansion",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_runtime_fixture_expansion_authorized",
+  "source": {
+    "commit": "7444666b449231c79049d071df6f8e6091e175d5",
+    "tree": "3a8cc678de30b69a3748c6eb90d304b6d6c8a5b7",
+    "clean": true,
+    "implementation_under_review": "7444666b449231c79049d071df6f8e6091e175d5",
+    "implementation_parent": "042da8ca1e1aac41a98c4c322c7bbd7a7118a3cc",
+    "prior_authorization_commit": "042da8ca1e1aac41a98c4c322c7bbd7a7118a3cc",
+    "prior_authorization_is_exact_parent": true,
+    "prior_authorization_is_ancestor": true
+  },
+  "immutable_review": {
+    "external_path": "/tmp/magmaw-generic-min-range-repair-review-7444666b/review_handoff.json",
+    "sha256": "8cfbf5d883f77dd6645d53b51aeaa7efd28310cf45123dec534dc4ede93b02a4",
+    "hash_verified": true,
+    "verdict": "NO-GO",
+    "finding_id": "production_boundary_fixture_missing",
+    "reviewed_implementation_commit": "7444666b449231c79049d071df6f8e6091e175d5",
+    "reviewed_authorization_commit": "042da8ca1e1aac41a98c4c322c7bbd7a7118a3cc"
+  },
+  "causal_receipt": {
+    "candidate_first_broken_edge": "generic_profile_min_range_fixture_stops_before_production_manager_and_native_outcome",
+    "owner": "shared_runtime_production_fixture",
+    "ordered_claims": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "Commit 7444666b generalizes world.profile_combat_range admission for a valid hostile non-Drudge target inside ResolvedCombatAction.MinRange without adding an encounter identity.",
+        "observation": "Exact 042da8ca..7444666b diff and independent review claim ledger."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "The existing manager path is SubmitValidationKernelFallbackCandidates to ResolveProfileCombatAction to the typed DecisionKernel, then MoveBotToProfileRange and MoveBotToPoint/native movement.",
+        "observation": "Current production call graph in BotWorldPopulationMgrUpdateBotDecision.cpp, BotWorldPopulationMgrUpdateBotKernelFallback.cpp, BotWorldPopulationMgrCombatMovement.cpp, and BotWorldPopulationMgrMovement.cpp."
+      },
+      {
+        "order": 3,
+        "status": "verified",
+        "claim": "The retained green tests do not execute that manager-to-native chain.",
+        "observation": "The review identifies source slicing and hand-written replacement candidates in the current tests."
+      },
+      {
+        "order": 4,
+        "status": "unproven",
+        "claim": "A real valid too-close target commits the production Movement-only candidate, launches a native generator/spline, makes multi-tick progress, and permits a later ordinary cast retry.",
+        "observation": "No current fixture crosses the production boundary."
+      },
+      {
+        "order": 5,
+        "status": "unproven",
+        "claim": "An actually submitted higher-priority Hazard movement preempts the production range candidate without blocking a later cast after hazard progress.",
+        "observation": "The current Magmaw test uses a manually constructed range candidate and therefore cannot certify the production conflict."
+      }
+    ],
+    "first_downstream_state_mutation": "The test substitutes a hand-written candidate/callback and records synthetic success instead of consuming the production manager candidate and native movement outcome.",
+    "failure_postcondition": "A source-shape or replacement-candidate test can pass while the real manager, resolver, arbiter, mover, generator, spline, progress, or later cast edge remains broken.",
+    "implementation_hypothesis": "Extract only the smallest behavior-preserving generic range-candidate adapter used by SubmitValidationKernelFallbackCandidates, and add a default-off observation checkpoint that follows that exact production candidate through real arbitration and existing native movement; do not change the admitted gameplay predicate unless the fixture first proves a distinct value-level defect.",
+    "correlation_keys": [
+      "fixture_id",
+      "case_id",
+      "source_commit",
+      "actor_guid",
+      "target_guid",
+      "target_map_id",
+      "target_instance_id",
+      "decision_timestamp_ms",
+      "candidate_key",
+      "candidate_trace_index",
+      "movement_receipt_id",
+      "native_generator_type",
+      "spline_id",
+      "cast_spell_id",
+      "cast_target_guid"
+    ]
+  },
+  "scope_lock": {
+    "next_work_unit": "runtime:generic_min_range_production_fixture_expansion",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Replace the source-shape/replacement-candidate proof with one generic production fixture seam and default-off checkpoint that can observe the exact current candidate from SubmitValidationKernelFallbackCandidates through the resolver, typed arbiter, existing range mover, native generator/spline progress, and later ordinary cast retry.",
+    "owned_behavior": "Behavior-preserving extraction of world.profile_combat_range candidate construction/admission plus fixture-only observation. Commit 7444666b remains the only gameplay admission change under review.",
+    "expected_observable_change": "The focused compiled fixture executes the same production adapter for all value-level cases, and the default-off checkpoint is capable of binding the actual manager candidate to native progress and a later cast. This unit may report implemented_pending_worldserver_fixture_execution, never fixture-green.",
+    "owned_files": [
+      "src/server/game/Bots/BotProfileCombatRangeCandidate.h",
+      "src/server/game/Bots/BotProfileCombatRangeCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotDecision.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "src/server/game/Bots/BotWorldPopulationMgrConfig.h",
+      "src/server/game/Bots/BotWorldPopulationMgrConfig.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+      "src/server/game/CMakeLists.txt",
+      "tests/test_profile_combat_range_production_fixture.py",
+      "tests/test_bot_route_combat_target_policy.py"
+    ],
+    "read_only_inspection": "BotWorldPopulationMgrCombatResolver.cpp, BotWorldPopulationMgrCombatMovement.cpp, BotWorldPopulationMgrMovement.cpp, BotActionArbiter.h, movement diagnostics, and existing checkpoint fixtures may be inspected but not edited.",
+    "preexisting_dirty_files": []
+  },
+  "production_fixture_contract": {
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "positive_revision": 1,
+    "counterexample": "A real alive hostile, same-map, same-instance target is closer than the selected ResolvedCombatAction.MinRange. The real validation update submits world.profile_combat_range, the typed arbiter commits its Movement-only lane, the existing range mover selects an outward logical destination, and native movement progresses before an ordinary cast is retried.",
+    "compiled_boundary": "The compiled fixture must call the shared production candidate adapter used by SubmitValidationKernelFallbackCandidates; it must not construct a replacement world.profile_combat_range candidate or duplicate its admission branches.",
+    "worldserver_boundary": "A subsequent separately authorized observation-only worldserver replay must enter through UpdateBot and the actual SubmitValidationKernelFallbackCandidates call, invoke the real ResolveProfileCombatAction callback, resolve the real DecisionKernel, invoke the unchanged MoveBotToProfileRange and MoveBotToPoint path, retain a movement receipt plus live generator/spline identity, sample decreasing distance over at least two later ticks, and join a later ordinary cast attempt to the same actor and target.",
+    "required_positive": [
+      "the candidate key is world.profile_combat_range and its sole resource is Movement",
+      "a live valid too-close target reaches the existing range mover",
+      "the manager-owned candidate, arbiter trace, movement receipt, generator/spline, progress samples, and later cast share explicit correlation keys",
+      "a real higher-priority Hazard Movement candidate wins the same arbiter tick and the production range candidate is skipped for Movement conflict rather than attempted",
+      "after observed hazard or range progress, a later ordinary cast retry remains eligible because the movement candidate never claims GCD, Cast, Target, or Interaction"
+    ],
+    "required_negatives": [
+      "null or out-of-world target",
+      "dead target",
+      "friendly or otherwise non-attackable target",
+      "cross-map target",
+      "cross-instance target",
+      "valid target already inside the legal action band",
+      "Drudge activation latch closed",
+      "owned Drudge maximum-range recovery",
+      "owned Drudge line-of-sight recovery"
+    ],
+    "actual_hazard_requirement": "The production-boundary receipt must use a candidate emitted by the existing hazard producer. A hand-written Hazard or range replacement candidate cannot satisfy this condition.",
+    "fail_before": "The current retained tests can pass without a production manager submission, native receipt, generator/spline progress, or later cast.",
+    "pass_after_implementation": "The production adapter and default-off checkpoint exist at one clean reviewed identity, compiled value-level positives/negatives pass through the shared adapter, and no gameplay predicate beyond commit 7444666b changes.",
+    "pass_after_worldserver_replay": "A later separately authorized replay supplies the manager-to-native positive and actual-Hazard receipts. Only then may an independent reviewer call the fixture fixture-green."
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_bot_route_combat_target_policy.py tests/test_bot_world_population_mgr_combat_movement_module.py",
+    "pixi run pytest -q tests/test_magmaw_parasite_policy.py",
+    "wc -l src/server/game/Bots/BotProfileCombatRangeCandidate.h src/server/game/Bots/BotProfileCombatRangeCheckpoint.h src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp src/server/game/Bots/BotWorldPopulationMgrUpdateBotDecision.cpp src/server/game/Bots/BotWorldPopulationMgr.h src/server/game/Bots/BotWorldPopulationMgrConfig.h src/server/game/Bots/BotWorldPopulationMgrConfig.cpp src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+    "git diff --check 7444666b449231c79049d071df6f8e6091e175d5 HEAD",
+    "pixi run python -m tools.raid_program.raid_workloop status",
+    "git status --short"
+  ],
+  "acceptance": [
+    "all changed paths are within the exact owned_files list",
+    "the real fallback calls the shared production adapter and contains no duplicated competing admission implementation",
+    "the compiled fixture calls that adapter for the positive and every required value-level negative",
+    "the default-off checkpoint observes rather than manufactures targets, candidate outcomes, movement, progress, hazard ownership, or casts",
+    "the checkpoint records enough identity for a later worldserver replay to reject time-proximity-only joins",
+    "no behavior changes beyond the generic admission already present in commit 7444666b",
+    "all touched C/C++ files remain below 1000 lines",
+    "the exact required commands pass once",
+    "the worker commits one clean implementation handoff and requests independent Sol review",
+    "independent review returns GO before any separately authorized configure, build, or observation-only replay"
+  ],
+  "forbidden": [
+    "Magmaw, boss-entry, creature-entry, route-node, coordinate, spell, class, spec, or encounter special cases in the generic adapter or checkpoint",
+    "a hand-written replacement world.profile_combat_range candidate or duplicated priority system in tests",
+    "a synthetic native-success, generator, spline, progress, hazard, or cast receipt",
+    "target teleportation, bot teleportation, bot-side Z steering, direct MotionMaster calls from policy or checkpoint code, MMAP workarounds, global tolerance changes, or forced server-side effects",
+    "weakening action-profile minimum range or changing the existing generic admission predicate without a newly failed value-level production-adapter case",
+    "changing MoveBotToProfileRange, MoveBotToPoint, ResolveProfileCombatAction, the action arbiter, hazard producer, class policy/mechanics, encounter scripts, route data, database, ledger, skills, capture tools, or DVC artifacts",
+    "build, configure, provisioning, database mutation, server start, live run, DVC publication, ML admission, fixture-green promotion, Magmaw acceptance, or closure"
+  ],
+  "authority": {
+    "source_mutation_allowed": true,
+    "test_mutation_allowed": true,
+    "configuration_schema_mutation_allowed": true,
+    "gameplay_behavior_broadening_allowed": false,
+    "route_mutation_allowed": false,
+    "skill_mutation_allowed": false,
+    "ledger_mutation_allowed": false,
+    "capture_tool_mutation_allowed": false,
+    "builds": 0,
+    "provisioning_operations": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0,
+    "dvc_publication_allowed": false,
+    "fixture_green_promotion_allowed": false,
+    "magmaw_acceptance_allowed": false,
+    "ml_admission_allowed": false
+  },
+  "review_and_next_gate": {
+    "worker_success_state": "implemented_pending_independent_review_and_worldserver_fixture_execution",
+    "review_requirement": "Independent Sol high review of the exact clean commit, adapter identity, real fallback wiring, fixture-only observer, required negatives, resource ownership, and no-cheat constraints.",
+    "build_authorized": false,
+    "worldserver_fixture_replay_authorized": false,
+    "live_gameplay_canary_authorized": false,
+    "next_on_review_go": "raid-performance-loop may authorize one build plus one sealed observation-only fixture replay; that replay is not a gameplay canary and cannot accept Magmaw.",
+    "next_on_fixture_defect": "Return the exact failed production-adapter value case to raid-bot-runtime-implementation; do not broaden the generic predicate speculatively.",
+    "validation_clock": {
+      "policy": "completion_watchdog",
+      "fixed_success_timer_seconds": null
+    }
+  },
+  "next_action": "Hand exactly this lock to one raid-bot-runtime-implementation worker. The worker implements the shared adapter and observation checkpoint, runs only the required deterministic commands, commits, and requests independent review. No build or worldserver run is authorized."
+}
