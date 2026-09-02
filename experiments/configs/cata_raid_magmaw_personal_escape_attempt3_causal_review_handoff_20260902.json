@@ -1,0 +1,85 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:classify_publish_magmaw_personal_escape_attempt3",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "closed_gameplay_failure_published_pending_read_only_causal_review",
+  "source": {
+    "commit": "c5ebb24d5bf4b0a09c8c8c7d23c85287ee2ee3c8",
+    "tree": "1e28e8b7b1f6fbae1c77e67d332d1025a8b8f7f3",
+    "clean": true,
+    "active_descriptor_sha256": "eb85ca03741fc4347f8e857e70b6dd7dfa5addfb4f5cbf711f0cbf10bfc1f93c",
+    "terminal_handoff_sha256": "a599f8cc0286556363b69b626695d14bc2cb97bf3aa2a68e4af01a75c1818d0c"
+  },
+  "evidence": {
+    "summary": "experiments/configs/cata_raid_magmaw_personal_escape_attempt3_death_loop_summary_20260902.json",
+    "summary_sha256": "e66d8ba2e695f765b1630049ee10a90a885647c6e28a1fdb7654bb67e7a333d6",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_attempt3_death_loop_20260902.dvc",
+    "dvc_pointer_sha256": "2c44151b63d4c7d5a881e296abd386228707c55e1706fb0d220a2788fa5888d5",
+    "dvc_directory_md5": "44bb53ab89c6edf12d069781be27aa6d.dir",
+    "dvc_nfiles": 2,
+    "dvc_size_bytes": 2071351,
+    "archive_sha256": "d3e2d8ab5958d9a8d84cbdf5009dd724b59f3e84ab35e4312d8dc06d1767fc47",
+    "payload_manifest_sha256": "77fe3369e538066f41e8792603a0999b11411cd72a163906ecde7c3b81641da1",
+    "uncompressed_file_count": 39,
+    "uncompressed_file_bytes": 333311869,
+    "canonical_file_manifest_sha256": "bc794f2bf27c5eafd3fa2c1b686b7c9958db352033ec8b3c1c19742a8f360383",
+    "remote": "object",
+    "remote_status": "in_sync",
+    "isolated_empty_cache_reconstruction": "verified"
+  },
+  "terminal": {
+    "classification": "gameplay_failure",
+    "reason": "death_loop_watchdog",
+    "fixture_terminal_detected": false,
+    "capture_terminal_evidence_incomplete": true,
+    "trace_gap_actor": 30008,
+    "trace_gap_missing_sequence_start": 56,
+    "trace_gap_missing_sequence_end": 212
+  },
+  "earliest_retained_actor_suffix": {
+    "task_generation": 6,
+    "candidate_generation": 8,
+    "failure": "alternate_native_route_rejected",
+    "native_reason": "route_destination_endpoint_mismatch",
+    "native_submission_observed": false,
+    "native_progress_observed": false
+  },
+  "claim_boundary": {
+    "observed": "The retained actor suffix shows the endpoint rejection before native submission or progress; the route then terminates at Magmaw through the death-loop watchdog with no fixture terminal.",
+    "unresolved": "The missing actor trace interval prevents attribution of the earliest causal mismatch and prevents a supported conclusion that the retained endpoint rejection caused the absent fixture terminal or death loop.",
+    "fixture_revision_promoted": false,
+    "magmaw_accepted": false,
+    "ml_admitted": false
+  },
+  "next_work_unit": "review:magmaw_attempt3_candidate_native_terminal_causal_join",
+  "next_owner_skill": "raid-rotation-review",
+  "review_question": "Using only the immutable attempt3 evidence, identify the earliest causally supported mismatch in the ordering from actor 30008 world facts and personal task generation through candidate eligibility, arbitration, native route outcome, fixture-terminal absence, and the later death-loop terminal. Determine whether the smallest next repair routes to shared runtime movement policy, role or encounter policy, or capture and telemetry. If the actor trace discontinuity prevents that attribution, name capture and telemetry as the unresolved boundary and specify the exact missing join rather than proposing an implementation.",
+  "review_scope": {
+    "read_only": true,
+    "implementation_allowed": false,
+    "source_mutation_allowed": false,
+    "configuration_mutation_allowed": false,
+    "fixture_revision_promotion_allowed": false,
+    "ml_admission_allowed": false,
+    "builds": 0,
+    "provisioning_operations": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0
+  },
+  "required_review_output": [
+    "an ordered candidate, task, arbiter, native-outcome, fixture-terminal, death, and watchdog timeline with citations to immutable evidence paths or hashes",
+    "a separation of observed values from inferences and unavailable joins",
+    "one routed next owner among raid-bot-runtime-implementation, raid-role-implementation or raid-encounter-implementation, and raid-evidence-lifecycle",
+    "one bounded next hypothesis and exact deterministic fixture requirement, without implementation or live authorization"
+  ],
+  "forbidden": [
+    "gameplay, route, fixture, skill, launcher, bundle, Python, C++, SQL, test, or telemetry implementation changes",
+    "another build, provisioning operation, database mutation, server start, live attempt, or retry",
+    "fixture revision promotion, Magmaw acceptance, or ML admission",
+    "treating route_destination_endpoint_mismatch as causal without a complete ordered join",
+    "Magmaw-specific universal guidance"
+  ]
+}

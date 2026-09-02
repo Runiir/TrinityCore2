@@ -1,219 +1,116 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt3",
-  "owner_skill": "raid-shard-architecture",
-  "next_work_unit": "evidence:classify_publish_magmaw_personal_escape_attempt3",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "fixture_replay_authorized",
-  "epoch_id": "magmaw_personal_escape_route_manifest_materialized_20260902",
+  "work_unit": "review:magmaw_attempt3_candidate_native_terminal_causal_join",
+  "owner_skill": "raid-rotation-review",
+  "next_work_unit": "route:magmaw_attempt3_earliest_causal_mismatch",
+  "next_owner_skill": "raid-performance-loop",
+  "classification": "failed",
+  "epoch_id": "magmaw_personal_escape_attempt3_death_loop_review_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Run one observation-only production fixture expansion for the actor-local personal-threat falling and rising edge under an active provisional parasite parent, after the authenticated route catalog is materialized into one verified scenario object. Keep gameplay, arbiter, planner, executor, route rows, and native terrain following unchanged.",
-  "gate_state": "the repeated route-catalog shape assumption is corrected in reviewed reusable shard guidance; one fresh exact-source full recurrence bank, verified production scenario materialization, build, provisioning, seal, and no-retry completion-watchdog replay remain",
-  "observed_at_commit": "05eb592cec69507aaaa7a659003e3029cbffe684",
-  "immutable_input_commit": "05eb592cec69507aaaa7a659003e3029cbffe684",
+  "architecture_scope": "Read-only causal review of one closed attributable run. Order actor 30008 world facts, personal task generation, candidate eligibility, arbitration, native route outcomes, fixture-terminal absence, deaths, and the completion-watchdog terminal. Route the next bounded owner without implementing or rerunning.",
+  "gate_state": "Attempt3 is remotely published and locally evicted. The retained actor suffix shows an endpoint rejection before native submission or progress, but actor trace sequences 56 through 212 are missing, so the earliest causal mismatch and owning repair lane remain unresolved.",
+  "observed_at_commit": "c5ebb24d5bf4b0a09c8c8c7d23c85287ee2ee3c8",
+  "immutable_input_commit": "c5ebb24d5bf4b0a09c8c8c7d23c85287ee2ee3c8",
   "behavior_change": false,
-  "evidence_contract_change": true,
-  "review_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_attempt3_skill_review_authorization_handoff_20260902.json",
-    "sha256": "a113bb0aaa9d60b21bccd48e24c020883dedd8d21c1abdc135c9f9897371b8bf",
-    "reviewed_commit": "05eb592cec69507aaaa7a659003e3029cbffe684",
-    "reviewed_tree": "9ec55e383972e384ad67840ae20c447bd6665784",
-    "verdict": "go",
-    "findings": []
-  },
+  "evidence_contract_change": false,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_attempt3_skill_review_authorization_handoff_20260902.json",
-    "sha256": "a113bb0aaa9d60b21bccd48e24c020883dedd8d21c1abdc135c9f9897371b8bf",
-    "source_commit": "05eb592cec69507aaaa7a659003e3029cbffe684",
-    "source_tree": "9ec55e383972e384ad67840ae20c447bd6665784"
+    "path": "experiments/configs/cata_raid_magmaw_personal_escape_attempt3_causal_review_handoff_20260902.json",
+    "sha256": "8c7dbeb66469d1cac22e07589f6b30312eb2df5b9a714e80f82a5c5e09b73185",
+    "source_commit": "c5ebb24d5bf4b0a09c8c8c7d23c85287ee2ee3c8",
+    "source_tree": "1e28e8b7b1f6fbae1c77e67d332d1025a8b8f7f3"
   },
-  "first_broken_edge": {
-    "scope": "control_plane_route_authority",
-    "stage": "before_composite_launcher_request_composition",
-    "terminal": "canonical_launcher_bundle_create_route_manifest_invalid",
-    "cause": "The authenticated DVC JSONL route catalog must be converted by the production selector into one verified scenario route object before request composition and before any build budget is consumed.",
-    "repeated_assumption": true,
-    "gameplay_result_exists": false,
-    "prior_occurrence": "experiments/configs/cata_raid_v89_route_catalog_shape_prestart_failed_handoff_v90.json",
-    "prior_correction": "experiments/configs/cata_raid_v90_canonical_route_selector_binding_handoff_v91.json"
+  "evidence": {
+    "summary": "experiments/configs/cata_raid_magmaw_personal_escape_attempt3_death_loop_summary_20260902.json",
+    "summary_sha256": "e66d8ba2e695f765b1630049ee10a90a885647c6e28a1fdb7654bb67e7a333d6",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_attempt3_death_loop_20260902.dvc",
+    "dvc_pointer_sha256": "2c44151b63d4c7d5a881e296abd386228707c55e1706fb0d220a2788fa5888d5",
+    "dvc_directory_md5": "44bb53ab89c6edf12d069781be27aa6d.dir",
+    "remote_reconstruction": "verified_39_original_files_333311869_bytes",
+    "canonical_file_manifest_sha256": "bc794f2bf27c5eafd3fa2c1b686b7c9958db352033ec8b3c1c19742a8f360383"
   },
-  "repair_contract": {
-    "rule": "Authenticate the route catalog, materialize the selected scenario through the production selector, verify its receipt and unchanged bundle compatibility, and bind only the verified output object before consuming any build or live budget. This unit may not change behavior.",
-    "forbidden": [
-      "source, descriptor, ledger, route-row, skill, launcher, bundle, runtime-config, or gameplay behavior edits after this authorization commit",
-      "binding staged_path or raw JSONL catalog bytes as route_manifest",
-      "request composition, configure/build, provisioning, or live execution before verified scenario materialization",
-      "loosening launcher, build, provisioning, recurrence, seal, capture, cleanup, no-authserver, no-retry, or completion-watchdog gates",
-      "gameplay, class, encounter, movement, pathing, Z, floor, MMAP, endpoint, or tolerance changes",
-      "Magmaw acceptance promotion"
-    ]
+  "terminal": {
+    "classification": "gameplay_failure",
+    "reason": "death_loop_watchdog",
+    "elapsed_seconds": 542.866,
+    "fixture_terminal_detected": false,
+    "capture_terminal_evidence_incomplete": true,
+    "retry_permitted": false
   },
-  "route_manifest_preflight": {
-    "catalog_kind": "authenticated_dvc_jsonl_catalog",
-    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "expected_node_count": 4,
+  "review_contract": {
+    "question": "Using only the immutable attempt3 evidence, identify the earliest causally supported mismatch in the ordering from actor 30008 world facts and personal task generation through candidate eligibility, arbitration, native route outcome, fixture-terminal absence, and the later death-loop terminal. Determine whether the smallest next repair routes to shared runtime movement policy, role or encounter policy, or capture and telemetry. If the actor trace discontinuity prevents that attribution, name capture and telemetry as the unresolved boundary and specify the exact missing join rather than proposing an implementation.",
     "required_order": [
-      "authenticate_and_stage_catalog",
-      "verify_staging_receipt",
-      "canonical_route_catalog.materialize_scenario_route_manifest",
-      "canonical_route_catalog.verify_scenario_route_manifest_receipt",
-      "validate_selected_object_with_unchanged_bundle_route_validator",
-      "bind_output_object_path_and_output_object_sha256",
-      "compose_launcher_request"
+      "world facts and actor-local threat episode",
+      "persistent task generation and lifecycle",
+      "eligible candidate identity and arbitration",
+      "native route submission, progress, rejection, or terminal outcome",
+      "fixture-terminal observation",
+      "deaths and death-loop watchdog"
     ],
-    "forbidden_bindings": [
-      "staged_path",
-      "raw_jsonl_catalog_bytes"
+    "allowed_routing_outcomes": [
+      "shared runtime movement policy",
+      "role or encounter policy",
+      "capture and telemetry"
     ],
-    "budget_before_successful_preflight": {
-      "configure": 0,
-      "worldserver_build": 0,
-      "deterministic_provisioning": 0,
-      "recurrence_seal": 0,
-      "worldserver_starts": 0,
-      "authserver_starts": 0,
-      "live_attempts": 0,
-      "retries": 0
-    }
+    "required_claim_boundary": "Every conclusion must identify whether it is directly observed, inferred, or unavailable because of the actor trace discontinuity.",
+    "implementation_allowed": false,
+    "live_validation_allowed": false
   },
-  "fixture_expansion": {
-    "primary_target": "magmaw_personal_parasite_authority_gap_v1",
-    "from_revision": 1,
-    "to_revision": 2,
-    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "purpose": "fixture_expansion_replay",
-    "target_ids": [
-      "chainwielder_pre_admission_rejection_isolation_v1",
-      "magmaw_parasite_control_full_runtime_v1",
-      "magmaw_parasite_lane_paths_v1",
-      "magmaw_parasite_lane_transition_full_replay_v1",
-      "magmaw_personal_parasite_authority_gap_v1"
-    ],
-    "recurrence_bank_test_count": 26,
-    "attempts": 1,
-    "preflight_attempt": 3,
-    "retries": 0,
-    "authserver_starts": 0,
-    "worldserver_starts": 1,
-    "duration_policy": "completion_watchdog",
-    "required_live_fields": [
-      "shared wave generation and authority",
-      "actor-local episode falling and rising edges",
-      "task and candidate generations and keys",
-      "native submitted, progress, and terminal outcomes",
-      "clearance, infection, and death",
-      "route progression",
-      "DPS and HPS",
-      "cleanup"
-    ],
-    "canonical_launcher_layout": {
-      "control_directory": "fresh_external_attempt_parent",
-      "run_root": "fresh_external_attempt_parent/launcher_execution",
-      "run_root_initial_state": "empty",
-      "material_inputs_location": "control_directory_outside_run_root",
-      "prebuild_plan_location": "control_directory/prebuild_plan.json",
-      "realized_plan_location": "control_directory/realized_plan.json"
-    }
+  "earliest_retained_actor_suffix": {
+    "actor_guid": 30008,
+    "parent_generation": 9223372036854775809,
+    "parent_authoritative": false,
+    "task_generation": 6,
+    "candidate_generation": 8,
+    "failure": "alternate_native_route_rejected",
+    "native_reason": "route_destination_endpoint_mismatch",
+    "native_submission_observed": false,
+    "native_progress_observed": false
   },
-  "build": {
-    "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
-    "compiler_jobs": 8,
-    "linker_jobs": 1,
-    "configure_receipt": "external_run_root/configure_receipt.json",
-    "worldserver_build_receipt": "external_run_root/worldserver_build_receipt.json"
+  "trace_gap": {
+    "capture_sequence": 33,
+    "missing_sequence_start": 56,
+    "missing_sequence_end": 212,
+    "first_recovered_sequence": 213,
+    "effect": "earliest causal mismatch cannot be attributed from the retained suffix alone"
   },
-  "next_action": "At this descriptor's exact clean commit, use a fresh external control parent and empty child run root, pass the full 26-test recurrence bank with exactly the five targets, authenticate and stage the DVC JSONL catalog, materialize and verify blackwing_descent_10n_magmaw_diagnostic through the production selector before request composition, prove the selected 4-node object passes unchanged bundle validation, and bind only its verified output object. Only then consume at most one queued fast8_v4 configure/build, one deterministic provisioning/readback, one recurrence seal, and one completion-watchdog worldserver start. Start no authserver and do not retry.",
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": true,
+    "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "live_diagnostic_admitted": true,
-    "configure_admitted": true,
-    "worldserver_build_admitted": true,
-    "worldserver_start_admitted": true,
+    "source_mutations_allowed": false,
+    "configuration_mutations_allowed": false,
+    "live_diagnostic_admitted": false,
+    "configure_admitted": false,
+    "worldserver_build_admitted": false,
+    "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": true,
-    "database_mutation_scope": "validation_provisioning_only",
-    "dvc_publication_required_after_terminal": true,
-    "admission_conditions": [
-      "the exact clean descriptor, source handoff, source ancestor, and launcher authority validate",
-      "the full 26-test recurrence bank passes and admits exactly the five declared fixture targets",
-      "material inputs and immutable plans remain outside a new empty child run root",
-      "the staged route catalog receipt authenticates before production scenario materialization",
-      "the selector receipt verifies and its selected 4-node output object passes unchanged bundle route validation before request composition or build",
-      "only verified output_object_path and output_object_sha256 are bound as route_manifest authority",
-      "configure, build, provisioning, readback, recurrence seal, capture, and cleanup identities match",
-      "one worldserver start, zero authserver starts, and zero retries are enforced"
-    ]
+    "database_mutations_allowed": false,
+    "dvc_publication_admitted": false,
+    "fixture_revision_promotion_admitted": false,
+    "ml_admission_allowed": false,
+    "builds": 0,
+    "provisioning_operations": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0
   },
-  "live_diagnostic": {
-    "required_observation": "Retain actor 30008 shared-wave generation and authority, actor-local episode falling and rising edges, task and candidate generations and keys, native submission, same-floor progress and terminal outcome, clearance, infection and death, route progression, party DPS/HPS, and cleanup.",
-    "success_condition": "The exact-source run shows one authoritative actor-local no-threat falling edge followed by one later threat rising edge, exactly one new child under the unchanged provisional parent, stable candidate identity within the episode, native progress, and safe clearance without infection for the correlated actor episode.",
-    "failure_condition": "A dropped child, generation churn without a new authoritative episode, infection before correlated native progress or terminal outcome, semantic stall, route failure, death loop, infrastructure loss, or incomplete terminal evidence closes the single run and does not certify gameplay success."
-  },
-  "launcher_authority": {
-    "schema": "cata_raid_composite_fixture_replay_launcher_authority_v1",
-    "expected_work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt3",
-    "descriptor_owner_skill": "raid-shard-architecture",
-    "descriptor_classification": "fixture_replay_authorized",
-    "source_handoff_schema": "cata_raid_specialist_handoff_v1",
-    "source_handoff_work_unit": "evidence:review_and_authorize_magmaw_fixture_attempt3",
-    "source_handoff_owner_skill": "raid-evidence-lifecycle",
-    "source_handoff_classification": "fixture_authority_reviewed",
-    "required_action_sha256": "852a1819cac9692684c34fde548c4000d5127c392fc526201adb60123c5f022c",
-    "required_postcondition_sha256": "53e8131b199c94450deca92c7e2275ef76307cc509a72e9b16e173f0cfbf9c46",
-    "scenario": {
-      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-      "raid": "blackwing_descent",
-      "boss": "magmaw",
-      "mode": "10N"
-    },
-    "fixture_expansion": {
-      "purpose": "fixture_expansion_replay",
-      "attempts": 1,
-      "retries": 0,
-      "authserver_starts": 0,
-      "worldserver_starts": 1,
-      "duration_policy": "completion_watchdog"
-    },
-    "program_scope": {
-      "acceptance_admitted": false,
-      "fixture_expansion_replay_admitted": true,
-      "gameplay_canary_admitted": false,
-      "gameplay_mutations_allowed": false,
-      "live_diagnostic_admitted": true,
-      "configure_admitted": true,
-      "worldserver_build_admitted": true,
-      "worldserver_start_admitted": true,
-      "authserver_start_admitted": false,
-      "retry_admitted": false,
-      "database_mutations_allowed": true,
-      "database_mutation_scope": "validation_provisioning_only",
-      "dvc_publication_required_after_terminal": true
-    },
-    "validation_clock": {
-      "fixed_success_timer_seconds": null,
-      "policy": "completion_watchdog",
-      "worldserver_starts": 1,
-      "authserver_starts": 0,
-      "retries": 0
-    }
-  },
+  "next_action": "Perform one read-only causal review of the remote-verified attempt3 evidence. Produce an ordered observed-versus-inferred join and select exactly one next owner lane. Do not change code, configuration, fixtures, skills, routes, tests, or data; do not build, provision, start a server, retry, promote a fixture revision, admit ML data, or accept Magmaw.",
   "acceptance": [
-    "the authenticated catalog is converted through the production selector into one verified 4-node scenario object before request composition or build",
-    "actor 30008 terminal generation 1 remains tombstoned until an authoritative actor-local no-threat falling edge",
-    "one later authoritative threat rising edge creates exactly one child under the unchanged provisional parent",
-    "task, candidate, native progress, terminal, infection, death, route progress, DPS, HPS, and cleanup remain correlated",
-    "no gameplay, source, route-row, skill, launcher, bundle, runtime-config, class, encounter, movement, Z, floor, MMAP, endpoint, or tolerance change occurs in this unit"
+    "the review cites the exact evidence pointer, payload manifest, actor trace discontinuity, retained candidate identity, native rejection, absent fixture terminal, deaths, and watchdog terminal",
+    "the review distinguishes direct observations from inference and names every unavailable join",
+    "the review routes exactly one smallest next hypothesis to shared runtime movement policy, role or encounter policy, or capture and telemetry",
+    "the review performs no implementation, build, provisioning, database mutation, server start, live attempt, retry, fixture promotion, ML admission, or acceptance"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "worldserver_starts": 1,
+    "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0
   }

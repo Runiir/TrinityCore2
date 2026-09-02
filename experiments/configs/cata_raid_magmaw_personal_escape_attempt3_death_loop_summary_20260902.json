@@ -1,0 +1,210 @@
+{
+  "schema": "cata_raid_closed_evidence_summary_v1",
+  "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt3",
+  "classification": "closed_attributable_gameplay_failure_with_trace_gap",
+  "terminal": {
+    "classification": "gameplay_failure",
+    "reason": "death_loop_watchdog",
+    "elapsed_seconds": 542.866,
+    "worldserver_exit_code": 0,
+    "watchdog_healthy": true,
+    "death_loop_count": 3,
+    "death_loop_limit": 3,
+    "repeated_decision_count": 1,
+    "repeated_decision_limit": 20,
+    "fixture_terminal_detected": false,
+    "forced_terminal_evidence_gate_passed": true,
+    "capture_terminal_evidence_incomplete": true,
+    "capture_integrity_rejections": [
+      "evidence_demux_fixture_terminal_invalid",
+      "evidence_demux_trace_delta_gap"
+    ]
+  },
+  "source": {
+    "commit": "c5ebb24d5bf4b0a09c8c8c7d23c85287ee2ee3c8",
+    "tree": "1e28e8b7b1f6fbae1c77e67d332d1025a8b8f7f3",
+    "clean": true,
+    "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "active_descriptor_sha256": "eb85ca03741fc4347f8e857e70b6dd7dfa5addfb4f5cbf711f0cbf10bfc1f93c",
+    "binary_sha256": "f2319a8d108e46b42b4ab6aa5b92c401b6079f66a92cb51567c69d7041f38b31",
+    "runtime_config_sha256": "cba2c271b877ad374151add252368c95486e9f3e5fabe9a956fc79009cd2a383"
+  },
+  "recurrence": {
+    "passed_count": 26,
+    "total_count": 26,
+    "fixture_expansion_admitted": true,
+    "target_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1",
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "magmaw_personal_parasite_authority_gap_v1"
+    ],
+    "suite_receipt_sha256": "cb4d7fd53e6527cab73f50ccb7901dfd99f3dae095dfad4699353215a70f0c9b",
+    "decision_sha256": "31562874d8af28c0f0a36f5dfd649b0e4efeedd9a1e4d86f3b8c7b16f084c681",
+    "runtime_admission_sha256": "f6bf5ffdf32cad8f7956996358e1a5bbb02cc11b3033eb6e8fde5944b2bd7a49",
+    "checkpoint_seal_sha256": "fbd6de8e6ac1658d297e4eb9dbfd35d606deb17feff653a3678aea2feb82c287"
+  },
+  "route_selector": {
+    "catalog_source_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "output_object_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "catalog_row_count": 77,
+    "selected_node_count": 4,
+    "selected_nodes": [
+      "bwd.entry.regroup",
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ],
+    "bundle_route_validator_passed": true,
+    "launcher_bound_verified_output_object_only": true
+  },
+  "operations": {
+    "recurrence_bank_runs": 1,
+    "catalog_stages": 1,
+    "route_materializations": 1,
+    "route_receipt_verifications": 1,
+    "configure_operations": 1,
+    "build_operations": 1,
+    "bundle_creations": 1,
+    "bundle_verifications": 1,
+    "provisioning_operations": 1,
+    "strict_readbacks": 1,
+    "shard_readbacks": 1,
+    "checkpoint_seals": 1,
+    "completion_watchdog_worldserver_starts": 1,
+    "authserver_starts": 0,
+    "live_attempts": 1,
+    "retries": 0
+  },
+  "route_and_deaths": {
+    "completed_nodes": [
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges"
+    ],
+    "terminal_node": "bwd.magmaw.encounter",
+    "terminal_route_generation": 3,
+    "terminal_manifest_index": 2,
+    "runtime_manifest_count": 3,
+    "manifest_complete": false,
+    "kills": 3,
+    "raid_boss_kills": 0,
+    "deaths": 3,
+    "alive_at_terminal": 8,
+    "active_size": 10,
+    "observed_death_actors_in_order": [
+      30008,
+      30003,
+      30006
+    ]
+  },
+  "combat_metrics": {
+    "party_damage": 13411399,
+    "party_healing": 4568763,
+    "party_dps": 63561.133,
+    "party_hps": 21652.905,
+    "combat_duration_seconds": 211
+  },
+  "actor_30008": {
+    "target_claim": "authoritative_personal_threat_falling_then_rising_edge_rearms_exactly_one_child_under_unchanged_provisional_parent",
+    "target_status": "unproven_not_observed",
+    "authoritative_no_threat_falling_edge_observed": false,
+    "later_authoritative_threat_rising_edge_observed": false,
+    "exactly_one_rearmed_child_observed": false,
+    "safe_clearance_without_infection_observed": false,
+    "trace_gap": {
+      "capture_sequence": 33,
+      "missing_sequence_start": 56,
+      "missing_sequence_end": 212,
+      "first_recovered_sequence": 213,
+      "classification": "explicit_native_discontinuity_retained_suffix_resumed_missing_interval_rejected"
+    },
+    "earliest_retained_candidate_outcome": {
+      "parent_generation": 9223372036854775809,
+      "parent_authoritative": false,
+      "task_generation": 6,
+      "candidate_generation": 8,
+      "candidate_key": "default:1:0:3:bwd.magmaw.encounter:669:2:tank_swap_adds_raid_aoe:adaptive_magmaw:parasite_contact_evade:GUID Full: 0x0000000000007538 Type: Player Low: 30008:8",
+      "lifecycle": "failed",
+      "failure": "alternate_native_route_rejected",
+      "last_native_reason": "route_destination_endpoint_mismatch",
+      "native_outcome_count": 2,
+      "submitted_at_ms": 0,
+      "native_progress_at_ms": 0
+    },
+    "causal_isolation": "not_established_due_to_missing_trace_interval_and_death_loop_terminal"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "stop_ok": true,
+    "worldserver_process_absent": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "local_bulk_evidence_evicted_after_remote_reconstruction": true
+  },
+  "eviction": {
+    "source_control_root": "/tmp/trinity-magmaw-personal-escape-c5ebb24d5b-attempt3.OycggDZ0",
+    "source_control_root_evicted": true,
+    "isolated_remote_proof_root": "/tmp/magmaw-attempt3-remote-proof.20260902",
+    "isolated_remote_proof_root_evicted": true,
+    "dvc_workspace_output": "artifacts/cata_raid_program/magmaw_personal_escape_attempt3_death_loop_20260902",
+    "dvc_workspace_output_evicted": true,
+    "unique_cache_children_evicted": 2,
+    "shared_cache_children_retained": 0,
+    "directory_metadata_retained": ".dvc/cache/files/md5/44/bb53ab89c6edf12d069781be27aa6d.dir",
+    "broad_dvc_gc_used": false
+  },
+  "evidence": {
+    "terminal_handoff_sha256": "a599f8cc0286556363b69b626695d14bc2cb97bf3aa2a68e4af01a75c1818d0c",
+    "canonical_capture_report_sha256": "3e8db836a16db0f3f80afd5e3188b44cac2e25444cf257e06decdeb28919d2a4",
+    "raw_normalized_sha256": "ae294bbacfe1e0d6a91f07afac9e6279339ab7e5fd31541ee7d6cfb9eb8e4570",
+    "worldserver_log_sha256": "a43fd44cf73ecb51f01b58748a4bb6ae5769db0ff252a328963b69e9b0450ff1",
+    "raw_rows": 667,
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_attempt3_death_loop_20260902.dvc",
+    "dvc_pointer_sha256": "2c44151b63d4c7d5a881e296abd386228707c55e1706fb0d220a2788fa5888d5",
+    "dvc_directory_md5": "44bb53ab89c6edf12d069781be27aa6d.dir",
+    "dvc_nfiles": 2,
+    "dvc_size_bytes": 2071351,
+    "archive_sha256": "d3e2d8ab5958d9a8d84cbdf5009dd724b59f3e84ab35e4312d8dc06d1767fc47",
+    "payload_manifest_sha256": "77fe3369e538066f41e8792603a0999b11411cd72a163906ecde7c3b81641da1",
+    "uncompressed_file_count": 39,
+    "uncompressed_file_bytes": 333311869,
+    "canonical_file_manifest_sha256": "bc794f2bf27c5eafd3fa2c1b686b7c9958db352033ec8b3c1c19742a8f360383",
+    "remote": "object",
+    "remote_status": "in_sync",
+    "isolated_empty_cache_reconstruction": "verified",
+    "reconstructed_file_count": 39,
+    "reconstructed_file_bytes": 333311869
+  },
+  "training_data": {
+    "eligible": false,
+    "admitted": false,
+    "classification": "excluded_trace_gap_and_unproven_target",
+    "reason": "The run is closed and attributable, but the actor trace discontinuity prevents a complete candidate-to-native causal join and the fixture terminal is absent."
+  },
+  "claim_ledger": {
+    "observed": [
+      "the clean exact source passed all 26 recurrence fixtures and admitted exactly the five declared fixture targets",
+      "the production selector bound the verified four-node scenario object",
+      "exactly one configure, build, provisioning/readback, recurrence seal, and worldserver start completed with zero authserver starts and zero retries",
+      "Chainwielder and Drudges cleared before Magmaw, where the death-loop watchdog terminated the incomplete route after three deaths",
+      "Magmaw party output was 63561.133 DPS and 21652.905 HPS over 211 combat seconds",
+      "the retained actor 30008 suffix contains task generation 6 and candidate generation 8 failing with alternate_native_route_rejected and route_destination_endpoint_mismatch before native submission or progress",
+      "cleanup passed and the immutable bundle reconstructed from the object remote with every original file hash intact"
+    ],
+    "unresolved": [
+      "whether the missing actor sequences contain an earlier policy, capture, or native execution mismatch",
+      "whether route_destination_endpoint_mismatch is causal for the absent fixture terminal or the later death loop",
+      "whether the next repair belongs to shared runtime movement policy, role or encounter policy, or capture and telemetry",
+      "the actor-local falling and rising threat edge, exactly one rearmed child, fixture revision 2, Magmaw clear, and Magmaw acceptance"
+    ],
+    "refuted": [
+      "attempt3 proved the target fixture terminal",
+      "attempt3 is eligible for ML training",
+      "the endpoint rejection alone is sufficient evidence for an implementation change"
+    ]
+  },
+  "next_work_unit": "review:magmaw_attempt3_candidate_native_terminal_causal_join",
+  "next_owner_skill": "raid-rotation-review"
+}
