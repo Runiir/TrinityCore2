@@ -80,6 +80,11 @@ nearby explicit valid case. Search for the same bypass shape at adjacent
 ownership boundaries, but report each additional finding as a separate bounded
 work unit instead of widening the current repair.
 
+In Python runtime identity and scope validators, reject `bool` explicitly
+before accepting integers or comparing numeric identity; `True == 1` and
+`False == 0` must never satisfy an identity predicate. At each lifecycle state
+boundary, review both boolean impostors and omitted/default fields.
+
 Change the smallest shared transition, gate, owner token, or native-action
 edge that explains the evidence. Preserve ordinary player movement, corpse
 release, graveyard, entrance, resurrection, spell, threat, and encounter
@@ -251,6 +256,11 @@ the live scheduler must parse and reject every decisive predicate. Require one
 negative test proving that the fixture cannot terminalize when the claimed
 production prerequisite is absent. Do not retain a compatibility fallback as
 an alternate success path when the receipt claims a single exact trigger.
+
+Construct each deterministic lifecycle fixture from the native state
+projection it claims to represent. Do not clone a later or terminal-state row
+and mask fields to simulate an earlier acknowledgement or transition; that can
+retain impossible state and hide omitted/default behavior.
 
 When a live blocker reappears after its retained fixture passed, treat that
 fixture revision as invalidated. Before editing the runtime, add an executable
