@@ -26,6 +26,15 @@ from tools.raid_program.chainwielder_prestart_bundle import (
     PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
 )
 from tools.raid_program.capture_setup import controller_route_hold_runtime_manifest_identity
+from tools.raid_program.prestart_bundle_dialects import (
+    DialectError,
+    PROFILE_COMBAT_RANGE,
+    PROFILE_COMBAT_RANGE_ACTOR_GUID,
+    PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
+    PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+    PROFILE_COMBAT_RANGE_TARGET_GUID,
+    select_dialect,
+)
 from tools.raid_program.controller_route_hold import (
     ControllerRouteHoldScheduler,
     controller_route_hold_launch_identity,
@@ -261,6 +270,45 @@ def _fixture(
 
 def _create(fixture: dict[str, object]) -> dict[str, object]:
     return create_bundle(**fixture["kwargs"])  # type: ignore[arg-type]
+
+
+def test_generic_profile_range_dialect_binds_exact_actor_fixture_case_and_target(
+    tmp_path: Path,
+) -> None:
+    assert select_dialect(
+        actor_guid=PROFILE_COMBAT_RANGE_ACTOR_GUID,
+        checkpoint_fixture_id=PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+        checkpoint_case_id=PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
+    ) == PROFILE_COMBAT_RANGE
+    argv = prestart_bundle.expected_launch_argv(
+        worktree=tmp_path,
+        binary=tmp_path / "worldserver",
+        output_dir=tmp_path / "bundle",
+        admission_sha256="a" * 64,
+        dialect=PROFILE_COMBAT_RANGE,
+        checkpoint_target_guid=PROFILE_COMBAT_RANGE_TARGET_GUID,
+    )
+    assert argv[argv.index(
+        "--profile-combat-range-checkpoint-actor-guid"
+    ) + 1] == str(PROFILE_COMBAT_RANGE_ACTOR_GUID)
+    assert argv[argv.index(
+        "--profile-combat-range-checkpoint-target-guid"
+    ) + 1] == str(PROFILE_COMBAT_RANGE_TARGET_GUID)
+    with pytest.raises(BundleError, match="target_guid_mismatch"):
+        prestart_bundle.expected_launch_argv(
+            worktree=tmp_path,
+            binary=tmp_path / "worldserver",
+            output_dir=tmp_path / "bundle",
+            admission_sha256="a" * 64,
+            dialect=PROFILE_COMBAT_RANGE,
+            checkpoint_target_guid=PROFILE_COMBAT_RANGE_TARGET_GUID + 1,
+        )
+    with pytest.raises(DialectError):
+        select_dialect(
+            actor_guid=PROFILE_COMBAT_RANGE_ACTOR_GUID + 1,
+            checkpoint_fixture_id=PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+            checkpoint_case_id=PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
+        )
 
 def _restage_base_runtime_config(fixture: dict[str, object]) -> None:
     root = fixture["root"]

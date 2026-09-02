@@ -31,6 +31,10 @@ from tools.raid_program.capture_watchdog import (
     DEFAULT_MAX_DEATH_LOOPS,
     DEFAULT_MAX_REPEATED_DECISIONS,
 )
+from tools.raid_program.prestart_bundle_dialects import (
+    PROFILE_COMBAT_RANGE_ACTOR_GUID,
+    PROFILE_COMBAT_RANGE_TARGET_GUID,
+)
 from tools.raid_program.controller_route_hold import (
     ControllerRouteHoldScheduler,
     controller_route_hold_launch_identity,
@@ -39,6 +43,7 @@ from tools.raid_program.probe_drudge_navmesh_recovery import run_probe as _drudg
 from tools.raid_program.recurrence_admission import (
     CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
     FIXTURE_EXPANSION_PURPOSE,
+    PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
     GAMEPLAY_CANARY_PURPOSE,
     RecurrenceAdmissionError,
     verify_recurrence_admission,
@@ -129,6 +134,7 @@ class CaptureSetup:
     drudge_frozen_anchors: dict[int, tuple[float, float, float]]
     build_provenance: dict[str, Any]
     personal_threat_episode_target: dict[str, Any] | None = None
+    checkpoint_target_guid: int | None = None
 
 
 def controller_route_hold_runtime_manifest_identity(
@@ -243,6 +249,8 @@ def build_capture_parser(*, root: Path = ROOT) -> argparse.ArgumentParser:
     parser.add_argument("--recurrence-admission-sha256")
     parser.add_argument("--chainwielder-checkpoint-actor-guid", type=int)
     parser.add_argument("--magmaw-transfer-checkpoint-actor-guid", type=int)
+    parser.add_argument("--profile-combat-range-checkpoint-actor-guid", type=int)
+    parser.add_argument("--profile-combat-range-checkpoint-target-guid", type=int)
     parser.add_argument("--personal-threat-episode-actor-guid", type=int)
     parser.add_argument("--personal-threat-episode-scope-key")
     parser.add_argument("--personal-threat-episode-route-node-id")
@@ -338,6 +346,7 @@ def prepare_capture_setup(
         actor for actor in (
             args.chainwielder_checkpoint_actor_guid,
             args.magmaw_transfer_checkpoint_actor_guid,
+            args.profile_combat_range_checkpoint_actor_guid,
         ) if actor is not None
     ]
     if len(checkpoint_actors) > 1:
@@ -345,6 +354,13 @@ def prepare_capture_setup(
             "capture preflight rejected: multiple_checkpoint_actor_dialects"
         )
     checkpoint_actor_guid = checkpoint_actors[0] if checkpoint_actors else None
+    if (
+        args.profile_combat_range_checkpoint_target_guid is not None
+        and args.profile_combat_range_checkpoint_actor_guid is None
+    ):
+        raise SystemExit(
+            "capture preflight rejected: profile_combat_range_target_without_actor"
+        )
 
     binary = args.binary.resolve()
     config = args.config.resolve()
@@ -383,6 +399,7 @@ def prepare_capture_setup(
             + ",".join(trace_transport_admission_rejections)
         )
     recurrence_admission: dict[str, Any] | None = None
+    checkpoint_target_guid: int | None = None
     recurrence_required = scenario_id == "blackwing_descent_10n_magmaw_diagnostic"
     if args.fixture_expansion_replay and not recurrence_required:
         raise SystemExit(
@@ -434,6 +451,27 @@ def prepare_capture_setup(
             recurrence_admission.get("checkpoint_fixture_id")
             if isinstance(recurrence_admission, dict) else None
         )
+        if checkpoint_fixture == PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID:
+            admitted_actor = recurrence_admission.get("checkpoint_actor_guid")
+            checkpoint_target_guid = recurrence_admission.get(
+                "checkpoint_target_guid"
+            )
+            if (
+                args.profile_combat_range_checkpoint_actor_guid
+                != admitted_actor
+                or admitted_actor != PROFILE_COMBAT_RANGE_ACTOR_GUID
+                or args.profile_combat_range_checkpoint_target_guid
+                != checkpoint_target_guid
+                or checkpoint_target_guid != PROFILE_COMBAT_RANGE_TARGET_GUID
+            ):
+                raise ValueError(
+                    "profile_combat_range_checkpoint_identity_mismatch"
+                )
+        elif (
+            args.profile_combat_range_checkpoint_actor_guid is not None
+            or args.profile_combat_range_checkpoint_target_guid is not None
+        ):
+            raise ValueError("profile_combat_range_checkpoint_identity_unexpected")
         if checkpoint_fixture is not None:
             checkpoint_dialect = checkpoint_controller_dialect(
                 recurrence_admission,
@@ -605,6 +643,7 @@ def prepare_capture_setup(
         server_log_output=server_log_output,
         recurrence_admission=recurrence_admission,
         checkpoint_arm_command=checkpoint_arm_command,
+        checkpoint_target_guid=checkpoint_target_guid,
         preflight=preflight,
         identity_before=identity_before,
         runtime_assets=runtime_assets,

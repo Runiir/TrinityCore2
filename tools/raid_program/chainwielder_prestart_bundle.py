@@ -49,6 +49,9 @@ from tools.raid_program.prestart_bundle_dialects import (
     CHAINWIELDER_LEDGER_RELATIVE_PATH,
     DialectError,
     MAGMAW_TRANSFER,
+    PROFILE_COMBAT_RANGE,
+    PROFILE_COMBAT_RANGE_TARGET_ENTRY,
+    PROFILE_COMBAT_RANGE_TARGET_GUID,
     capture_option,
     config_values as dialect_config_values,
     create_seal,
@@ -207,6 +210,7 @@ def _capture_paths(output_dir: Path) -> list[Path]:
 def expected_launch_argv(
     *, worktree: Path, binary: Path, output_dir: Path, admission_sha256: str,
     dialect: str = CHAINWIELDER,
+    checkpoint_target_guid: int | None = None,
     personal_threat_episode_target: dict[str, Any] | None = None,
 ) -> list[str]:
     """Return the only capture command admitted by this atomic bundle."""
@@ -244,6 +248,10 @@ def expected_launch_argv(
             str(target["parent_wave_generation"]),
             "--no-personal-threat-episode-parent-generation-authoritative",
         ])
+    if dialect == PROFILE_COMBAT_RANGE and checkpoint_target_guid != (
+        PROFILE_COMBAT_RANGE_TARGET_GUID
+    ):
+        raise BundleError("profile_combat_range_target_guid_mismatch")
     return argv
 
 
@@ -368,14 +376,28 @@ def _render_config(
     return render_runtime_config(base, values, BundleError)
 
 
-def _validate_route(path: Path, scenario: str, profile: str) -> dict[str, Any]:
+def _validate_route(
+    path: Path, scenario: str, profile: str,
+    dialect: str = CHAINWIELDER,
+) -> dict[str, Any]:
     route = _json(path, "route_manifest")
     if route.get("scenario_id") != scenario:
         raise BundleError("route_scenario_mismatch")
     rows = route.get("routes")
     if not isinstance(rows, list):
         rows = [route]
-    matching = [row for row in rows if isinstance(row, dict) and row.get("route_node_id") == NODE_ID]
+    try:
+        expected_node_id = route_node_ids(dialect)[0]
+    except DialectError as error:
+        raise BundleError(str(error)) from error
+    expected_entry = (
+        PROFILE_COMBAT_RANGE_TARGET_ENTRY
+        if dialect == PROFILE_COMBAT_RANGE else TARGET_ENTRY
+    )
+    matching = [
+        row for row in rows
+        if isinstance(row, dict) and row.get("route_node_id") == expected_node_id
+    ]
     if len(matching) != 1:
         raise BundleError("route_checkpoint_node_missing_or_ambiguous")
     node = matching[0]
@@ -384,7 +406,7 @@ def _validate_route(path: Path, scenario: str, profile: str) -> dict[str, Any]:
         or node.get("runtime_profile_id", profile) != profile
         or int(node.get("map_id") or 0) != MAP_ID
         or int(node.get("source_entry") or node.get("target_entry") or 0)
-        != TARGET_ENTRY
+        != expected_entry
         or int(node.get("expected_bot_count") or ACTOR_COUNT) != ACTOR_COUNT
     ):
         raise BundleError("route_checkpoint_identity_mismatch")
@@ -621,7 +643,8 @@ def verify_bundle(
         suite_receipt=root / BUNDLE_NAMES["suite_receipt"],
     )
     source_route = _validate_route(
-        root / BUNDLE_NAMES["source_route_manifest"], SCENARIO_ID, SCENARIO_ID
+        root / BUNDLE_NAMES["source_route_manifest"], SCENARIO_ID, SCENARIO_ID,
+        dialect,
     )
     expected_runtime_route, route_identity = _target_route_suffix(
         source_route, SCENARIO_ID, SCENARIO_ID, dialect
@@ -629,7 +652,7 @@ def verify_bundle(
     runtime_route_path = root / BUNDLE_NAMES["route_manifest"]
     if runtime_route_path.read_bytes() != _canonical_pretty_json(expected_runtime_route):
         raise BundleError("runtime_route_suffix_reconstruction_mismatch")
-    _validate_route(runtime_route_path, SCENARIO_ID, SCENARIO_ID)
+    _validate_route(runtime_route_path, SCENARIO_ID, SCENARIO_ID, dialect)
     expected_route_identity = {
         **route_identity,
         "source_route_sha256": sha256_file(
@@ -720,6 +743,13 @@ def verify_bundle(
     }:
         raise BundleError("launch_arm_predicates_invalid")
     actor_guid = dialect_identity(dialect, scenario_id=SCENARIO_ID)["actor_guid"]
+    checkpoint_target_guid = None
+    if dialect == PROFILE_COMBAT_RANGE:
+        checkpoint_target_guid = verified.get("checkpoint_target_guid")
+        if checkpoint_target_guid != PROFILE_COMBAT_RANGE_TARGET_GUID:
+            raise BundleError("profile_combat_range_target_guid_mismatch")
+        if verified.get("checkpoint_actor_guid") != actor_guid:
+            raise BundleError("profile_combat_range_actor_guid_mismatch")
     if launch.get("expected_lifecycle_predicates") != lifecycle_predicates(
         dialect, actor_guid=actor_guid,
     ):
@@ -730,6 +760,7 @@ def verify_bundle(
     if argv != expected_launch_argv(
         worktree=worktree, binary=binary, output_dir=logical_root,
         admission_sha256=admission_sha, dialect=dialect,
+        checkpoint_target_guid=checkpoint_target_guid,
         personal_threat_episode_target=launch_target,
     ):
         raise BundleError("launch_argv_exact_binding_mismatch")
@@ -780,6 +811,7 @@ def create_bundle(
     personal_threat_episode_route_generation: int | None = None,
     personal_threat_episode_parent_wave_generation: int | None = None,
     personal_threat_episode_parent_generation_authoritative: bool | None = None,
+    checkpoint_target_guid: int | None = None,
 ) -> dict[str, Any]:
     output_dir = output_dir.resolve()
     staging: Path | None = None
@@ -804,6 +836,12 @@ def create_bundle(
             checkpoint_fixture_id=checkpoint_fixture_id,
             checkpoint_case_id=checkpoint_case_id,
         )
+        if dialect == PROFILE_COMBAT_RANGE and checkpoint_target_guid != (
+            PROFILE_COMBAT_RANGE_TARGET_GUID
+        ):
+            raise BundleError("profile_combat_range_target_guid_mismatch")
+        if dialect != PROFILE_COMBAT_RANGE and checkpoint_target_guid is not None:
+            raise BundleError("checkpoint_target_guid_unexpected")
         if dialect == MAGMAW_TRANSFER and Path(os.path.abspath(ledger)) != (
             worktree.resolve() / ledger_relative_path(dialect)
         ):
@@ -850,12 +888,14 @@ def create_bundle(
             suite_receipt=suite_receipt,
         )
         _verify_gate_bearing_build_receipt(build_receipt, build_policy)
-        _validate_route(route_manifest, scenario_id, runtime_profile_id)
+        _validate_route(
+            route_manifest, scenario_id, runtime_profile_id, dialect,
+        )
         parent = output_dir.parent
         parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=f".{output_dir.name}.staging-", dir=parent))
         source_route = _validate_route(
-            route_manifest, scenario_id, runtime_profile_id
+            route_manifest, scenario_id, runtime_profile_id, dialect,
         )
         runtime_route, route_identity = _target_route_suffix(
             source_route, scenario_id, runtime_profile_id, dialect
@@ -993,6 +1033,10 @@ def create_bundle(
             "launch_argv": expected_launch_argv(
                 worktree=worktree, binary=binary, output_dir=output_dir,
                 admission_sha256=admission_sha, dialect=dialect,
+                checkpoint_target_guid=(
+                    checkpoint_target_guid
+                    if dialect == PROFILE_COMBAT_RANGE else None
+                ),
                 personal_threat_episode_target=personal_threat_episode_target,
             ),
         }
@@ -1060,6 +1104,7 @@ def parser() -> argparse.ArgumentParser:
     create.add_argument("--actor-guid", type=int, required=True)
     create.add_argument("--checkpoint-fixture-id", required=True)
     create.add_argument("--checkpoint-case-id")
+    create.add_argument("--checkpoint-target-guid", type=int)
     create.add_argument("--personal-threat-episode-actor-guid", type=int)
     create.add_argument("--personal-threat-episode-scope-key")
     create.add_argument("--personal-threat-episode-route-node-id")

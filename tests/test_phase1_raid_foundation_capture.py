@@ -5603,6 +5603,29 @@ def test_canonical_capture_uses_receipt_bound_tracked_policy_without_an_override
     assert 'parser.add_argument("--build-attestation"' in source
 
 
+def test_generic_profile_range_capture_arguments_are_explicit_and_admission_bound():
+    parser = build_capture_parser()
+    args = parser.parse_args([
+        "--binary", "/tmp/worldserver",
+        "--config", "/tmp/worldserver.conf",
+        "--output", "/tmp/capture.json",
+        "--build-receipt", "/tmp/build.json",
+        "--profile-combat-range-checkpoint-actor-guid", "30010",
+        "--profile-combat-range-checkpoint-target-guid", "39",
+        "--fixture-expansion-replay",
+        "--scenario-id", "blackwing_descent_10n_magmaw_diagnostic",
+        "--runtime-profile", "blackwing_descent_10n_magmaw_diagnostic",
+    ])
+    assert args.profile_combat_range_checkpoint_actor_guid == 30010
+    assert args.profile_combat_range_checkpoint_target_guid == 39
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_setup.py"
+    ).read_text(encoding="utf-8")
+    assert "profile_combat_range_checkpoint_identity_mismatch" in source
+    assert "checkpoint_target_guid = recurrence_admission.get(" in source
+
+
 def test_build_policy_path_is_bound_to_receipt_identity(tmp_path):
     worktree = tmp_path / "worktree"
     policies = worktree / "experiments/configs"

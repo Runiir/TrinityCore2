@@ -157,7 +157,8 @@
       "deferred_candidate_capture_lifetime_v1",
       "native_bwd_partial_death_recovery_lifecycle_v1",
       "native_recovery_ghost_flight_rising_edge_v1",
-      "current_route_combat_authority_precedence_v1"
+      "current_route_combat_authority_precedence_v1",
+      "generic_profile_min_range_production_boundary_v1"
     ],
     "fixtures": [
       {
@@ -607,6 +608,21 @@
           "pytest",
           "-q",
           "tests/test_current_route_combat_authority.py"
+        ]
+      },
+      {
+        "fixture_id": "generic_profile_min_range_production_boundary_v1",
+        "revision": 1,
+        "causal_signature": "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner",
+        "evidence_boundary": "observation_only",
+        "required_production_boundary": "one sealed exact-current-binary worldserver replay must correlate an actual hazard producer/release, the exact world.profile_combat_range candidate, native launch and multi-tick decreasing progress, and a later ordinary same-target cast under one verified actor/target/scope/checkpoint generation; this tools-only repair cannot promote it",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_profile_combat_range_production_fixture.py",
+          "tests/test_profile_combat_range_checkpoint_capture.py"
         ]
       }
     ]
