@@ -404,8 +404,16 @@ MagmawPersonalParasiteEscapeTask::Tick(
         {
             State = BotDecision::PersistentTaskState::Succeeded;
             AlternatePending = false;
-            if (!personalThreat)
+            if (!personalThreat && PersonalThreatEpisodeOpen)
+            {
+                uint64 const priorTaskGeneration = TaskGeneration;
+                uint64 const priorCandidateGeneration = CandidateGeneration;
                 PersonalThreatEpisodeOpen = false;
+                RecordEpisodeTransition(board, facts, wave, nullptr, true,
+                    false, "falling", priorTaskGeneration,
+                    priorCandidateGeneration);
+                RisingEpisodeTransition = {};
+            }
             MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::
                 SafeClearance, board.ObservedAtMs);
             return std::nullopt;

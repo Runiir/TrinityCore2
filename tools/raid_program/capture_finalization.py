@@ -68,6 +68,7 @@ def evidence_demux_report(
     controller_terminal: dict[str, Any] | None = None,
     fixture_terminal: dict[str, Any] | None = None,
     fixture_expected_identity: dict[str, Any] | None = None,
+    personal_threat_episode_target: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Independently bind every retained JSON row to one raid lifecycle."""
 
@@ -78,6 +79,7 @@ def evidence_demux_report(
         terminal_failure_validator=terminal_runtime_failure_reason,
         fixture_terminal=fixture_terminal,
         fixture_expected_identity=fixture_expected_identity,
+        personal_threat_episode_target=personal_threat_episode_target,
     )
 def evidence_demux_rejections(rows: list[dict[str, Any]]) -> list[str]:
     return evidence_demux_report(rows)["rejections"]
@@ -225,6 +227,7 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
             and fixture_terminal.get("detected") is True
             else None
         ),
+        personal_threat_episode_target=setup.personal_threat_episode_target,
     )
     demux_rejections = demux_report["rejections"]
     default_trace_transport_gate = trace_transport_smoke.evaluate([])
@@ -564,6 +567,9 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
             "required_telemetry_envelopes": demux_report["required_telemetry_envelopes"],
             "actor_binding_counts": demux_report["actor_binding_counts"],
             "trace_discontinuities": demux_report["trace_discontinuities"],
+            "personal_threat_episode_join": demux_report[
+                "personal_threat_episode_join"
+            ],
             "channels": dict(Counter(str(row.get("evidence_channel")) for row in normalized_rows)),
             "every_retained_row_demuxed": (
                 demux_report["bound_rows"] == demux_report["retained_rows"]

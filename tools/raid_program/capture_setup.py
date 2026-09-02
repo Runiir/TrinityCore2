@@ -47,6 +47,47 @@ from tools.raid_program import trace_transport_smoke
 
 ROOT = Path(__file__).resolve().parents[2]
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
+PERSONAL_THREAT_EPISODE_TARGET_FIELDS = (
+    "actor_guid",
+    "scope_key",
+    "route_node_id",
+    "route_generation",
+    "parent_wave_generation",
+    "parent_generation_authoritative",
+)
+
+
+def _personal_threat_episode_target(
+    args: argparse.Namespace,
+) -> dict[str, Any] | None:
+    values = {
+        field: getattr(args, f"personal_threat_episode_{field}", None)
+        for field in PERSONAL_THREAT_EPISODE_TARGET_FIELDS
+    }
+    supplied = [field for field, value in values.items() if value is not None]
+    if not supplied:
+        return None
+    if len(supplied) != len(PERSONAL_THREAT_EPISODE_TARGET_FIELDS):
+        raise ValueError("incomplete")
+    if any(
+        not isinstance(values[field], int)
+        or isinstance(values[field], bool)
+        or values[field] <= 0
+        for field in (
+            "actor_guid", "route_generation", "parent_wave_generation",
+        )
+    ):
+        raise ValueError("integer_invalid")
+    if any(
+        not isinstance(values[field], str)
+        or not values[field]
+        or values[field] != values[field].strip()
+        for field in ("scope_key", "route_node_id")
+    ):
+        raise ValueError("identity_invalid")
+    if not isinstance(values["parent_generation_authoritative"], bool):
+        raise ValueError("parent_authority_invalid")
+    return values
 
 
 def recurrence_profile_authority(
@@ -86,6 +127,7 @@ class CaptureSetup:
     drudge_navmesh_preflight: dict[str, Any]
     drudge_frozen_anchors: dict[int, tuple[float, float, float]]
     build_provenance: dict[str, Any]
+    personal_threat_episode_target: dict[str, Any] | None = None
 
 
 def controller_route_hold_runtime_manifest_identity(
@@ -200,6 +242,16 @@ def build_capture_parser(*, root: Path = ROOT) -> argparse.ArgumentParser:
     parser.add_argument("--recurrence-admission-sha256")
     parser.add_argument("--chainwielder-checkpoint-actor-guid", type=int)
     parser.add_argument("--magmaw-transfer-checkpoint-actor-guid", type=int)
+    parser.add_argument("--personal-threat-episode-actor-guid", type=int)
+    parser.add_argument("--personal-threat-episode-scope-key")
+    parser.add_argument("--personal-threat-episode-route-node-id")
+    parser.add_argument("--personal-threat-episode-route-generation", type=int)
+    parser.add_argument("--personal-threat-episode-parent-wave-generation", type=int)
+    parser.add_argument(
+        "--personal-threat-episode-parent-generation-authoritative",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
     parser.add_argument(
         "--fixture-expansion-replay",
         action="store_true",
@@ -275,6 +327,12 @@ def prepare_capture_setup(
     argv: Sequence[str] | None = None, *, root: Path = ROOT,
 ) -> CaptureSetup:
     args = build_capture_parser(root=root).parse_args(argv)
+    try:
+        personal_threat_episode_target = _personal_threat_episode_target(args)
+    except ValueError as error:
+        raise SystemExit(
+            f"capture preflight rejected: personal_threat_episode_target:{error}"
+        ) from error
     checkpoint_actors = [
         actor for actor in (
             args.chainwielder_checkpoint_actor_guid,
@@ -548,4 +606,5 @@ def prepare_capture_setup(
         drudge_navmesh_preflight=drudge_navmesh_preflight,
         drudge_frozen_anchors=drudge_frozen_anchors,
         build_provenance=build_provenance,
+        personal_threat_episode_target=personal_threat_episode_target,
     )

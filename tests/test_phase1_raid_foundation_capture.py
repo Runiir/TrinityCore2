@@ -383,6 +383,12 @@ def test_capture_parser_preserves_cli_defaults(tmp_path: Path):
     assert args.resource_sample_interval_sec == 5.0
     assert args.fixture_expansion_replay is False
     assert args.trace_transport_smoke is False
+    assert args.personal_threat_episode_actor_guid is None
+    assert args.personal_threat_episode_scope_key is None
+    assert args.personal_threat_episode_route_node_id is None
+    assert args.personal_threat_episode_route_generation is None
+    assert args.personal_threat_episode_parent_wave_generation is None
+    assert args.personal_threat_episode_parent_generation_authoritative is None
 
 
 def test_prepare_capture_setup_returns_typed_admitted_state(tmp_path: Path, monkeypatch):
@@ -450,6 +456,43 @@ def test_prepare_capture_setup_returns_typed_admitted_state(tmp_path: Path, monk
     assert setup.controller_route_hold_scheduler is None
     assert setup.drudge_observed is False
     assert setup.drudge_required is False
+    assert setup.personal_threat_episode_target is None
+
+    targeted = prepare_capture_setup([
+        "--binary", str(binary),
+        "--config", str(config),
+        "--output", str(tmp_path / "targeted-capture.json"),
+        "--build-receipt", str(receipt),
+        "--worktree", str(tmp_path),
+        "--runtime-profile", "stonecore_5n",
+        "--personal-threat-episode-actor-guid", "30008",
+        "--personal-threat-episode-scope-key", "magmaw-scope",
+        "--personal-threat-episode-route-node-id", "bwd.magmaw.encounter",
+        "--personal-threat-episode-route-generation", "3",
+        "--personal-threat-episode-parent-wave-generation",
+        str((1 << 63) | 1),
+        "--no-personal-threat-episode-parent-generation-authoritative",
+    ], root=tmp_path)
+    assert targeted.personal_threat_episode_target == {
+        "actor_guid": 30008,
+        "scope_key": "magmaw-scope",
+        "route_node_id": "bwd.magmaw.encounter",
+        "route_generation": 3,
+        "parent_wave_generation": (1 << 63) | 1,
+        "parent_generation_authoritative": False,
+    }
+
+    with pytest.raises(
+        SystemExit,
+        match="personal_threat_episode_target:incomplete",
+    ):
+        prepare_capture_setup([
+            "--binary", str(binary),
+            "--config", str(config),
+            "--output", str(tmp_path / "incomplete-capture.json"),
+            "--build-receipt", str(receipt),
+            "--personal-threat-episode-actor-guid", "30008",
+        ], root=tmp_path)
 
 
 def test_capture_live_run_uses_focused_production_module():
@@ -650,6 +693,14 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     server_log = tmp_path / "capture.worldserver.log"
     config.write_bytes(b"fixture-config")
     server_log.write_bytes(b"fixture-log")
+    personal_threat_episode_target = {
+        "actor_guid": 30008,
+        "scope_key": "magmaw-scope",
+        "route_node_id": "bwd.magmaw.encounter",
+        "route_generation": 3,
+        "parent_wave_generation": (1 << 63) | 1,
+        "parent_generation_authoritative": False,
+    }
     args = SimpleNamespace(
         trace_transport_smoke=False,
         chainwielder_checkpoint_actor_guid=None,
@@ -688,6 +739,7 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
         drudge_navmesh_preflight={"required": False, "all_passed": None},
         drudge_frozen_anchors={},
         build_provenance={"valid": True, "binary_sha256": "b" * 64},
+        personal_threat_episode_target=personal_threat_episode_target,
     )
     stable_statuses = [
         {"raid_runtime": {"active": True, "sequence": sequence}}
@@ -788,10 +840,23 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
         lambda rows: [],
     )
     monkeypatch.setattr(capture_finalization, "git_identity", lambda worktree: identity)
-    monkeypatch.setattr(
-        capture_finalization,
-        "evidence_demux_report",
-        lambda *args, **kwargs: {
+    complete_join = {
+        "requested": True,
+        "target": personal_threat_episode_target,
+        "records": [
+            {"edge": "falling", "capture_sequence": 1},
+            {"edge": "rising", "capture_sequence": 2},
+        ],
+        "falling_count": 1,
+        "rising_count": 1,
+        "rejections": [],
+        "gate_passed": True,
+    }
+    demux_targets = []
+
+    def finalization_demux(*args, **kwargs):
+        demux_targets.append(kwargs.get("personal_threat_episode_target"))
+        return {
             "rejections": [],
             "retained_rows": 2,
             "bound_rows": 2,
@@ -802,8 +867,12 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
             "required_telemetry_envelopes": {"gate_passed": True},
             "actor_binding_counts": {},
             "trace_discontinuities": [],
+            "personal_threat_episode_join": complete_join,
             "gate_passed": True,
-        },
+        }
+
+    monkeypatch.setattr(
+        capture_finalization, "evidence_demux_report", finalization_demux,
     )
     monkeypatch.setattr(
         capture_finalization.trace_transport_smoke,
@@ -827,6 +896,10 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     assert exit_code == 0
     assert stdout_report == stored_report
     assert stored_report["classification"] == "success"
+    assert demux_targets == [personal_threat_episode_target]
+    assert stored_report["evidence_demux"][
+        "personal_threat_episode_join"
+    ] == complete_join
     assert stored_report["raw_normalized_batch"]["row_count"] == 2
     assert [json.loads(line) for line in raw_output.read_text().splitlines()] == normalized_rows
     assert artifact_observations == [
@@ -879,6 +952,7 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     assert abort_stored_report["telemetry_abort"]["reason"] == (
         "fixture_terminal_forced_evidence_incomplete"
     )
+    assert demux_targets[-1] == personal_threat_episode_target
 
     gameplay_output = tmp_path / "gameplay-terminal-incomplete.json"
     gameplay_raw_output = tmp_path / "gameplay-terminal-incomplete.raw.jsonl"
@@ -920,6 +994,7 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     assert gameplay_stored_report["telemetry_abort"]["reason"] == (
         "terminal_failure_forced_evidence_incomplete"
     )
+    assert demux_targets[-1] == personal_threat_episode_target
 
     try:
         finalize_capture(setup, run)
@@ -4250,6 +4325,159 @@ def test_live_evidence_demux_rejects_strategy_drift():
         (json.dumps(active) + "\n" + json.dumps(drifted) + "\n").encode()
     )
     assert "evidence_demux_strategy_transition_without_route_advancement" not in evidence_demux_rejections(rows)
+
+
+def _personal_threat_episode_demux_input():
+    target = {
+        "actor_guid": 1008,
+        "scope_key": "magmaw-scope",
+        "route_node_id": "bwd.magmaw.encounter",
+        "route_generation": 4,
+        "parent_wave_generation": (1 << 63) | 1,
+        "parent_generation_authoritative": False,
+    }
+
+    def transition(edge: str) -> dict:
+        falling = edge == "falling"
+        return {
+            **target,
+            "board_revision": 261 if falling else 265,
+            "observed_at_ms": 261000 if falling else 265000,
+            "facts_authoritative": True,
+            "authority_gap_mask": 0,
+            "personal_threat_present": not falling,
+            "personal_threat_guid": 0 if falling else 91008,
+            "prior_episode_open": falling,
+            "new_episode_open": not falling,
+            "edge": edge,
+            "prior_task_generation": 5,
+            "new_task_generation": 5 if falling else 6,
+            "prior_candidate_generation": 6,
+            "new_candidate_generation": 6 if falling else 7,
+        }
+
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    bot_rows = [{"bot_guid": 1001 + index} for index in range(10)]
+    bot_rows[7]["diagnosis"] = {
+        "magmaw_personal_parasite_escape": {
+            "personal_threat_episode_transitions": [
+                transition("falling"), transition("rising"),
+            ],
+        },
+    }
+    diagnosis = {
+        "ok": True, "action": "botauto_diagnose", "cohort_id": "raid",
+        "raid_runtime": active["raid_runtime"], "bots": bot_rows,
+    }
+    trace = {
+        "ok": True, "action": "botauto_trace", "cohort_id": "raid",
+        "raid_runtime": active["raid_runtime"],
+        "bots": [
+            {
+                "bot_guid": 1001 + index,
+                "entries": [],
+                "delta": True,
+                "cursor_before": 0,
+                "cursor_after": 0,
+                "gap": False,
+            }
+            for index in range(10)
+        ],
+    }
+    readycheck = {
+        "ok": True, "action": "botauto_readycheck", "cohort_id": "raid",
+        "raid_runtime": active["raid_runtime"],
+    }
+    stop = {
+        "ok": True, "action": "botauto_stop", "cohort_id": "raid",
+        "server_epoch": 88, "attempt_id": 1,
+        "raid_runtime_before_cleanup": active["raid_runtime"],
+        "post_cleanup": {"active": False, "bots": 0, "lease_count": 0},
+    }
+    inactive = accepted_status()
+    inactive["cohort_id"] = "raid"
+    inactive.update(bots=0, lease_count=0, server_epoch=88, attempt_id=1)
+    inactive["raid_runtime"]["active"] = False
+    rows = normalized_batch_payload(
+        b"\n".join(
+            json.dumps(row).encode()
+            for row in (active, diagnosis, trace, readycheck, stop, inactive)
+        ) + b"\n"
+    )
+    return rows, target
+
+
+def _personal_threat_episode_records(rows: list[dict]) -> list[dict]:
+    diagnosis = next(
+        row["payload"] for row in rows
+        if row["payload"].get("action") == "botauto_diagnose"
+    )
+    return diagnosis["bots"][7]["diagnosis"][
+        "magmaw_personal_parasite_escape"
+    ]["personal_threat_episode_transitions"]
+
+
+def test_public_demux_enforces_and_retains_requested_personal_threat_join():
+    rows, target = _personal_threat_episode_demux_input()
+    report = evidence_demux_report(
+        rows, personal_threat_episode_target=target,
+    )
+    join = report["personal_threat_episode_join"]
+    assert report["gate_passed"] is True
+    assert join["gate_passed"] is True
+    assert join["target"] == target
+    assert [record["edge"] for record in join["records"]] == [
+        "falling", "rising",
+    ]
+
+    ordinary = evidence_demux_report(
+        json.loads(json.dumps(rows)),
+    )
+    assert ordinary["gate_passed"] is True
+    assert ordinary["personal_threat_episode_join"] == {
+        "requested": False,
+        "records": [],
+        "rejections": [],
+        "gate_passed": True,
+    }
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_reason"),
+    [
+        ("missing", "magmaw_personal_threat_episode_complete_sequence_missing"),
+        ("malformed", "magmaw_personal_threat_episode_record_missing_fields"),
+        ("contradictory", "magmaw_personal_threat_episode_rising_contradiction"),
+        ("cross_identity", "magmaw_personal_threat_episode_cross_scope"),
+        ("non_authoritative", "magmaw_personal_threat_episode_record_non_authoritative"),
+        ("nonmonotonic", "magmaw_personal_threat_episode_nonmonotonic"),
+    ],
+)
+def test_public_demux_rejects_invalid_requested_personal_threat_join(
+    mutation: str, expected_reason: str,
+):
+    rows, target = _personal_threat_episode_demux_input()
+    records = _personal_threat_episode_records(rows)
+    if mutation == "missing":
+        records.pop()
+    elif mutation == "malformed":
+        del records[0]["observed_at_ms"]
+    elif mutation == "contradictory":
+        records[1]["prior_task_generation"] = 4
+    elif mutation == "cross_identity":
+        records[1]["scope_key"] = "other-scope"
+    elif mutation == "non_authoritative":
+        records[0]["facts_authoritative"] = False
+    else:
+        records[1]["board_revision"] = 260
+
+    report = evidence_demux_report(
+        rows, personal_threat_episode_target=target,
+    )
+    assert expected_reason in report["rejections"]
+    assert report["personal_threat_episode_join"]["gate_passed"] is False
+    assert report["gate_passed"] is False
 
 
 def test_live_evidence_demux_binds_readycheck_stop_and_inactive_cleanup():

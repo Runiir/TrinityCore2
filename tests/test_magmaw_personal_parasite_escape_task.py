@@ -486,6 +486,62 @@ int main()
     assert(stableEpisodeJson.find("\"personal_threat_guid\":103")
         == std::string::npos);
 
+    // If authoritative absence and safe clearance arrive in the same tick,
+    // retain the falling edge before returning from the terminal transition.
+    // A later threat then rejoins exactly one new child generation.
+    MagmawPersonalParasiteEscapeTask sameTickTask;
+    board.Players[1].Position = { 1.0f, -20.0f, 210.0f };
+    board.Hostiles[1].VictimGuid = PlayerGuid(30009);
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    auto sameTickCandidate = sameTickTask.Tick(board, cache->Facts(),
+        board.Players[1], &board.Hostiles[1], 16.0f, 4.0f, false,
+        &sharedWave);
+    assert(sameTickCandidate);
+    uint64 const sameTickTaskGeneration = sameTickTask.TaskGeneration;
+    board.Players[1].Position = sameTickTask.Destination;
+    board.Hostiles[1].VictimGuid = PlayerGuid(30008);
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    assert(!sameTickTask.Tick(board, cache->Facts(), board.Players[1],
+        nullptr, 16.0f, 4.0f, false, &sharedWave));
+    assert(sameTickTask.Diagnostics.Lifecycle ==
+        MagmawPersonalParasiteEscapeLifecycle::SafeClearance);
+    std::string const sameTickFallingJson =
+        BuildMagmawPersonalParasiteEscapeDiagnosticsJson(sameTickTask,
+            &sharedWave);
+    assert(sameTickFallingJson.find("\"edge\":\"falling\"")
+        != std::string::npos);
+    assert(sameTickFallingJson.find("\"personal_threat_present\":false")
+        != std::string::npos);
+
+    board.Players[1].Position = { 1.0f, -20.0f, 210.0f };
+    board.Hostiles[1].VictimGuid = PlayerGuid(30009);
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    auto sameTickRisingCandidate = sameTickTask.Tick(board, cache->Facts(),
+        board.Players[1], &board.Hostiles[1], 16.0f, 4.0f, false,
+        &sharedWave);
+    assert(sameTickRisingCandidate);
+    assert(sameTickTask.TaskGeneration == sameTickTaskGeneration + 1);
+    std::string const sameTickRisingJson =
+        BuildMagmawPersonalParasiteEscapeDiagnosticsJson(sameTickTask,
+            &sharedWave);
+    assert(sameTickRisingJson.find("\"edge\":\"falling\"")
+        != std::string::npos);
+    assert(sameTickRisingJson.find("\"edge\":\"rising\"")
+        != std::string::npos);
+    uint64 const joinedTaskGeneration = sameTickTask.TaskGeneration;
+    ++board.Revision;
+    board.ObservedAtMs += 100;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    assert(sameTickTask.Tick(board, cache->Facts(), board.Players[1],
+        &board.Hostiles[1], 16.0f, 4.0f, false, &sharedWave));
+    assert(sameTickTask.TaskGeneration == joinedTaskGeneration);
+
     // Infection while authority is still missing is an explicit terminal
     // child outcome. It cannot masquerade as another dropped intent.
     MagmawPersonalParasiteEscapeTask infectedTask;
