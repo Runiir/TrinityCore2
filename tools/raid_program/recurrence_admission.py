@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import subprocess
 from typing import Any
 
@@ -29,10 +30,14 @@ from tools.raid_program.recurrence_checkpoint_seals import (
     NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
     NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS,
     NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
+    PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY,
+    PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX,
+    PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
     RecurrenceAdmissionError,
     SHA256_RE,
     build_case_checkpoint_seal,
     build_chainwielder_checkpoint_seal,
+    build_profile_combat_range_checkpoint_seal,
     canonical_object_sha256 as _canonical_object_sha256,
     config_bool as _config_bool,
     config_string as _config_string,
@@ -43,6 +48,8 @@ from tools.raid_program.recurrence_checkpoint_seals import (
     magmaw_transfer_checkpoint_requested as _magmaw_transfer_checkpoint_requested,
     native_path_checkpoint_request_contract as _native_path_checkpoint_request_contract,
     native_path_checkpoint_requested as _native_path_checkpoint_requested,
+    profile_combat_range_checkpoint_contract as _profile_combat_range_checkpoint_contract,
+    profile_combat_range_checkpoint_requested as _profile_combat_range_checkpoint_requested,
     sha256_file,
     verify_case_checkpoint_config,
 )
@@ -186,6 +193,93 @@ def native_path_checkpoint_seal(
         expected_runtime_profile_id=expected_runtime_profile_id,
         requests=requests, git_fn=_git,
     )
+
+
+def profile_combat_range_checkpoint_seal(
+    *, worktree: Path, binary: Path, build_receipt: Path, decision: Path,
+    case_id: str, actor_guid: int, target_guid: int, profile_manifest: Path,
+    runtime_profile_overlay: dict[str, Any],
+    expected_runtime_profile_id: str,
+) -> dict[str, str]:
+    decision_value = _load(decision.resolve(), "decision")
+    requests = _profile_combat_range_checkpoint_contract(
+        decision_value, label="profile_combat_range_checkpoint"
+    )
+    if requests:
+        raise RecurrenceAdmissionError(
+            "profile_combat_range_checkpoint_request_contract_mismatch"
+        )
+    seal = build_profile_combat_range_checkpoint_seal(
+        worktree=worktree, binary=binary, build_receipt=build_receipt,
+        decision=decision, case_id=case_id, actor_guid=actor_guid,
+        target_guid=target_guid, profile_manifest=profile_manifest,
+        runtime_profile_overlay=runtime_profile_overlay,
+        expected_runtime_profile_id=expected_runtime_profile_id,
+        git_fn=_git,
+    )
+    return seal
+
+
+def _config_number(path: Path, key: str) -> int:
+    pattern = re.compile(
+        rf'^\s*{re.escape(key)}\s*=\s*"?(\d+)"?\s*(?:#.*)?$'
+    )
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = pattern.match(line)
+        if match:
+            return int(match.group(1))
+    return 0
+
+
+def _verify_profile_combat_range_checkpoint_seal(
+    *, seal: object, worktree: Path, binary: Path, build_receipt: Path,
+    decision: Path, runtime_config: Path, profile_manifest: Path,
+    runtime_profile_overlay: dict[str, Any],
+    expected_runtime_profile_id: str,
+) -> dict[str, str]:
+    if not isinstance(seal, dict) or not isinstance(seal.get("case_id"), str):
+        raise RecurrenceAdmissionError(
+            "profile_combat_range_checkpoint_seal_missing"
+        )
+    actor_guid = seal.get("actor_guid")
+    target_guid = seal.get("target_guid")
+    if (
+        not isinstance(actor_guid, int) or isinstance(actor_guid, bool)
+        or actor_guid <= 0
+        or not isinstance(target_guid, int) or isinstance(target_guid, bool)
+        or target_guid <= 0
+    ):
+        raise RecurrenceAdmissionError(
+            "profile_combat_range_checkpoint_identity_invalid"
+        )
+    expected = profile_combat_range_checkpoint_seal(
+        worktree=worktree, binary=binary, build_receipt=build_receipt,
+        decision=decision, case_id=seal["case_id"], actor_guid=actor_guid,
+        target_guid=target_guid, profile_manifest=profile_manifest,
+        runtime_profile_overlay=runtime_profile_overlay,
+        expected_runtime_profile_id=expected_runtime_profile_id,
+    )
+    verify_case_checkpoint_config(
+        seal=seal, expected=expected, runtime_config=runtime_config,
+        prefix=PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX,
+        label="profile_combat_range_checkpoint",
+        fixture_id=PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+    )
+    if (
+        _config_number(
+            runtime_config,
+            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.ActorGuid",
+        ) != actor_guid
+        or _config_number(
+            runtime_config,
+            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetGuid",
+        ) != target_guid
+        or expected.get("authority") != PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY
+    ):
+        raise RecurrenceAdmissionError(
+            "profile_combat_range_checkpoint_config_identity_mismatch"
+        )
+    return expected
 
 
 def _verify_native_path_checkpoint_seal(
@@ -435,6 +529,12 @@ def create_recurrence_admission(
             and not magmaw_transfer_checkpoint_targeted
             and _native_path_checkpoint_requested(decision_value)
         )
+        profile_combat_range_checkpoint_targeted = (
+            not chainwielder_checkpoint_targeted
+            and not magmaw_transfer_checkpoint_targeted
+            and not native_path_checkpoint_targeted
+            and _profile_combat_range_checkpoint_requested(decision_value)
+        )
         if magmaw_transfer_checkpoint_targeted:
             _magmaw_transfer_checkpoint_contract(
                 decision_value, label="magmaw_transfer_checkpoint"
@@ -443,10 +543,15 @@ def create_recurrence_admission(
             _native_path_checkpoint_request_contract(
                 decision_value, label="native_path_checkpoint"
             )
+        elif profile_combat_range_checkpoint_targeted:
+            _profile_combat_range_checkpoint_contract(
+                decision_value, label="profile_combat_range_checkpoint"
+            )
         checkpoint_targeted = (
             chainwielder_checkpoint_targeted
             or magmaw_transfer_checkpoint_targeted
             or native_path_checkpoint_targeted
+            or profile_combat_range_checkpoint_targeted
         )
     else:
         expansion_requests = []
@@ -454,6 +559,7 @@ def create_recurrence_admission(
         chainwielder_checkpoint_targeted = False
         magmaw_transfer_checkpoint_targeted = False
         native_path_checkpoint_targeted = False
+        profile_combat_range_checkpoint_targeted = False
     suite = _load(suite_receipt.resolve(), "suite_receipt")
     if suite.get("source_identity") != head:
         raise RecurrenceAdmissionError("suite_receipt_source_stale")
@@ -537,6 +643,35 @@ def create_recurrence_admission(
                     worktree=worktree, binary=binary,
                     build_receipt=build_receipt, decision=decision,
                     case_id=case_id, profile_manifest=profile_manifest,
+                    runtime_profile_overlay=verified_overlay,
+                    expected_runtime_profile_id=expected_runtime_profile_id,
+                ),
+                worktree=worktree, binary=binary,
+                build_receipt=build_receipt, decision=decision,
+                runtime_config=runtime_config,
+                profile_manifest=profile_manifest,
+                runtime_profile_overlay=verified_overlay,
+                expected_runtime_profile_id=expected_runtime_profile_id,
+            )
+        elif profile_combat_range_checkpoint_targeted:
+            case_id = _config_string(
+                runtime_config,
+                f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.CaseId",
+            )
+            actor_guid = _config_number(
+                runtime_config,
+                f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.ActorGuid",
+            )
+            target_guid = _config_number(
+                runtime_config,
+                f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetGuid",
+            )
+            checkpoint_seal = _verify_profile_combat_range_checkpoint_seal(
+                seal=profile_combat_range_checkpoint_seal(
+                    worktree=worktree, binary=binary,
+                    build_receipt=build_receipt, decision=decision,
+                    case_id=case_id, actor_guid=actor_guid,
+                    target_guid=target_guid, profile_manifest=profile_manifest,
                     runtime_profile_overlay=verified_overlay,
                     expected_runtime_profile_id=expected_runtime_profile_id,
                 ),
@@ -675,6 +810,12 @@ def verify_recurrence_admission(
             and not magmaw_transfer_checkpoint_targeted
             and _native_path_checkpoint_requested(admission)
         )
+        profile_combat_range_checkpoint_targeted = (
+            not chainwielder_checkpoint_targeted
+            and not magmaw_transfer_checkpoint_targeted
+            and not native_path_checkpoint_targeted
+            and _profile_combat_range_checkpoint_requested(admission)
+        )
         if magmaw_transfer_checkpoint_targeted:
             _magmaw_transfer_checkpoint_contract(
                 admission, label="magmaw_transfer_checkpoint"
@@ -683,10 +824,15 @@ def verify_recurrence_admission(
             _native_path_checkpoint_request_contract(
                 admission, label="native_path_checkpoint"
             )
+        elif profile_combat_range_checkpoint_targeted:
+            _profile_combat_range_checkpoint_contract(
+                admission, label="profile_combat_range_checkpoint"
+            )
         checkpoint_targeted = (
             chainwielder_checkpoint_targeted
             or magmaw_transfer_checkpoint_targeted
             or native_path_checkpoint_targeted
+            or profile_combat_range_checkpoint_targeted
         )
     else:
         if admission.get("build_admitted") is not True:
@@ -730,6 +876,7 @@ def verify_recurrence_admission(
         chainwielder_checkpoint_targeted = False
         magmaw_transfer_checkpoint_targeted = False
         native_path_checkpoint_targeted = False
+        profile_combat_range_checkpoint_targeted = False
 
     worktree = worktree.resolve()
     head = str(_git(worktree, "rev-parse", "HEAD"))
@@ -871,6 +1018,15 @@ def verify_recurrence_admission(
                 runtime_profile_overlay=verified_overlay,
                 expected_runtime_profile_id=expected_runtime_profile_id,
             )
+        elif profile_combat_range_checkpoint_targeted:
+            checkpoint_seal = _verify_profile_combat_range_checkpoint_seal(
+                seal=checkpoint_seal, worktree=worktree,
+                binary=binary_path, build_receipt=build_receipt_path,
+                decision=decision_path, runtime_config=runtime_config,
+                profile_manifest=profile_path,
+                runtime_profile_overlay=verified_overlay,
+                expected_runtime_profile_id=expected_runtime_profile_id,
+            )
         else:
             checkpoint_seal = _verify_chainwielder_checkpoint_seal(
                 seal=checkpoint_seal,
@@ -977,6 +1133,14 @@ def verify_recurrence_admission(
         ),
         "checkpoint_case_id": (
             checkpoint_seal.get("case_id")
+            if isinstance(checkpoint_seal, dict) else None
+        ),
+        "checkpoint_actor_guid": (
+            checkpoint_seal.get("actor_guid")
+            if isinstance(checkpoint_seal, dict) else None
+        ),
+        "checkpoint_target_guid": (
+            checkpoint_seal.get("target_guid")
             if isinstance(checkpoint_seal, dict) else None
         ),
         "bindings": {

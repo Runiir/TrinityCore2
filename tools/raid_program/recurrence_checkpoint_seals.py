@@ -25,6 +25,15 @@ NATIVE_PATH_CHECKPOINT_FIXTURE_ID = "map669_native_path_production_boundary_v1"
 NATIVE_PATH_CHECKPOINT_CONFIG_PREFIX = (
     "BotWorld.ValidationFixture.NativePathCheckpoint"
 )
+PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID = (
+    "generic_profile_min_range_production_boundary_v1"
+)
+PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY = (
+    "default_off_generic_profile_combat_range_observation"
+)
+PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX = (
+    "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint"
+)
 NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS = {
     "same_level_floor_observation_v1": (4, 5),
     "same_level_hazard_path_admission_v1": (4, 5),
@@ -213,6 +222,28 @@ def magmaw_transfer_checkpoint_requested(value: dict[str, Any]) -> bool:
     )
 
 
+def profile_combat_range_checkpoint_contract(
+    value: dict[str, Any], *, label: str,
+) -> list[dict[str, Any]]:
+    requests = fixture_expansion_contract(value, label=label)
+    if (
+        value.get("fixture_expansion_target_ids")
+            != [PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID]
+        or value.get("pending_fixture_ids")
+            != [PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID]
+        or requests != []
+    ):
+        raise RecurrenceAdmissionError(f"{label}_request_contract_mismatch")
+    return requests
+
+
+def profile_combat_range_checkpoint_requested(value: dict[str, Any]) -> bool:
+    targets = value.get("fixture_expansion_target_ids")
+    return isinstance(targets, list) and (
+        PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID in targets
+    )
+
+
 def _seal_payload(payload: dict[str, Any]) -> dict[str, str]:
     canonical = json.dumps(
         payload, sort_keys=True, separators=(",", ":"),
@@ -290,6 +321,49 @@ def build_case_checkpoint_seal(
     }
     if probe_receipt is not None:
         payload["probe_receipt_sha256"] = sha256_file(probe_receipt.resolve())
+    return _seal_payload(payload)
+
+
+def build_profile_combat_range_checkpoint_seal(
+    *, worktree: Path, binary: Path, build_receipt: Path, decision: Path,
+    case_id: str, actor_guid: int, target_guid: int,
+    profile_manifest: Path, runtime_profile_overlay: dict[str, Any],
+    expected_runtime_profile_id: str,
+    git_fn: Callable[..., str | bytes],
+) -> dict[str, str]:
+    """Seal the generic profile-range observation identity, including target."""
+
+    if not isinstance(case_id, str) or not case_id.strip():
+        raise RecurrenceAdmissionError("profile_combat_range_checkpoint_case_invalid")
+    if (
+        not isinstance(actor_guid, int) or isinstance(actor_guid, bool)
+        or actor_guid <= 0
+        or not isinstance(target_guid, int) or isinstance(target_guid, bool)
+        or target_guid <= 0
+    ):
+        raise RecurrenceAdmissionError(
+            "profile_combat_range_checkpoint_target_invalid"
+        )
+    worktree = worktree.resolve()
+    payload: dict[str, Any] = {
+        "schema": CHECKPOINT_SEAL_SCHEMA,
+        "fixture_id": PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+        "case_id": case_id,
+        "purpose": FIXTURE_EXPANSION_PURPOSE,
+        "authority": PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY,
+        "actor_guid": actor_guid,
+        "target_guid": target_guid,
+        "source_commit": str(git_fn(worktree, "rev-parse", "HEAD")),
+        "source_tree": str(git_fn(worktree, "rev-parse", "HEAD^{tree}")),
+        "binary_sha256": sha256_file(binary.resolve()),
+        "build_receipt_sha256": sha256_file(build_receipt.resolve()),
+        "decision_sha256": sha256_file(decision.resolve()),
+        "profile_manifest_sha256": sha256_file(profile_manifest.resolve()),
+        "expected_runtime_profile_id": expected_runtime_profile_id,
+        "runtime_profile_overlay_sha256": canonical_object_sha256(
+            runtime_profile_overlay
+        ),
+    }
     return _seal_payload(payload)
 
 

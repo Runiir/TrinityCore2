@@ -678,7 +678,8 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 noLineOfSight = decision.NoLineOfSight]() mutable
             {
                 bool const moved = MoveBotToProfileRange(context.State,
-                    context.Bot, target, &profileAction, noLineOfSight);
+                    context.Bot, target, &profileAction, noLineOfSight,
+                    BotProfileCombatRangeCandidate::Key);
                 if (moved)
                 {
                     context.Situation = "open_world_combat";

@@ -24,10 +24,13 @@ try:
         MAGMAW_TRANSFER_CHECKPOINT_CASE_ID,
         MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID,
         NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+        PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY,
+        PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
         RecurrenceAdmissionError,
         _fixture_expansion_contract,
         _magmaw_transfer_checkpoint_contract,
         _native_path_checkpoint_request_contract,
+        _profile_combat_range_checkpoint_contract,
     )
 except ModuleNotFoundError:
     from capture_runtime_acceptance import _roster_rejections
@@ -42,10 +45,13 @@ except ModuleNotFoundError:
         MAGMAW_TRANSFER_CHECKPOINT_CASE_ID,
         MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID,
         NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+        PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY,
+        PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
         RecurrenceAdmissionError,
         _fixture_expansion_contract,
         _magmaw_transfer_checkpoint_contract,
         _native_path_checkpoint_request_contract,
+        _profile_combat_range_checkpoint_contract,
     )
 
 
@@ -145,6 +151,222 @@ def native_path_checkpoint_arm_command(
         f"botautonativepathcheckpoint arm {actor_guid} {case_id} "
         f"{seal} {source}"
     )
+
+
+PROFILE_COMBAT_RANGE_CHECKPOINT_ACTION = (
+    "botauto_profile_combat_range_checkpoint"
+)
+PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND = (
+    "botautoprofilecombatrangecheckpoint status"
+)
+
+
+def profile_combat_range_checkpoint_arm_command(
+    recurrence_admission: dict[str, Any] | None,
+    actor_guid: int | None,
+    target_guid: int | None,
+) -> str | None:
+    """Build the authenticated arm command for the generic range fixture."""
+
+    if recurrence_admission is None and actor_guid is None and target_guid is None:
+        return None
+    if not isinstance(recurrence_admission, dict):
+        raise ValueError(
+            "profile_combat_range_checkpoint_verified_admission_missing"
+        )
+    try:
+        _profile_combat_range_checkpoint_contract(
+            recurrence_admission,
+            label="profile_combat_range_checkpoint_verified_admission",
+        )
+    except RecurrenceAdmissionError as error:
+        raise ValueError(
+            "profile_combat_range_checkpoint_verified_admission_invalid"
+        ) from error
+    seal = recurrence_admission.get("checkpoint_seal_sha256")
+    case_id = recurrence_admission.get("checkpoint_case_id")
+    source = recurrence_admission.get("source_commit")
+    admitted_actor = recurrence_admission.get("checkpoint_actor_guid")
+    admitted_target = recurrence_admission.get("checkpoint_target_guid")
+    if (
+        recurrence_admission.get("valid") is not True
+        or recurrence_admission.get("purpose") != FIXTURE_EXPANSION_PURPOSE
+        or recurrence_admission.get("checkpoint_fixture_id")
+            != PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
+        or not isinstance(case_id, str) or not case_id
+        or not isinstance(actor_guid, int) or isinstance(actor_guid, bool)
+        or actor_guid <= 0
+        or admitted_actor != actor_guid
+        or not isinstance(target_guid, int) or isinstance(target_guid, bool)
+        or target_guid <= 0
+        or admitted_target != target_guid
+        or not isinstance(seal, str) or not re.fullmatch(r"[0-9a-f]{64}", seal)
+        or not isinstance(source, str) or not re.fullmatch(r"[0-9a-f]{40}", source)
+    ):
+        raise ValueError(
+            "profile_combat_range_checkpoint_verified_admission_invalid"
+        )
+    return (
+        "botautoprofilecombatrangecheckpoint arm "
+        f"{actor_guid} {target_guid} {case_id} {seal} {source}"
+    )
+
+
+def _profile_checkpoint_nonzero_hex(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and re.fullmatch(r"[0-9a-f]+", value) is not None
+        and int(value, 16) != 0
+    )
+
+
+def _profile_checkpoint_nonnegative_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def profile_combat_range_checkpoint_terminal_rejections(
+    row: object, *, actor_guid: int, target_guid: int, case_id: str,
+    seal_sha256: str, source_commit: str,
+    checkpoint_generation: int | None = None,
+    attempt_id: int | None = None, wipe_generation: int | None = None,
+    route_generation: int | None = None, target_map_id: int | None = None,
+    target_instance_id: int | None = None,
+) -> list[str]:
+    """Validate one authenticated terminal status projection fail-closed."""
+
+    if not isinstance(row, dict):
+        return ["profile_combat_range_checkpoint_status_unavailable"]
+    if row.get("action") != PROFILE_COMBAT_RANGE_CHECKPOINT_ACTION:
+        return ["profile_combat_range_checkpoint_status_action_invalid"]
+    identity = (
+        row.get("authority") == PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY
+        and row.get("fixture_id") == PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
+        and row.get("case_id") == case_id
+        and row.get("seal_sha256") == seal_sha256
+        and row.get("source_commit") == source_commit
+        and row.get("actor_guid") == actor_guid
+        and row.get("target_guid") == target_guid
+    )
+    if not identity:
+        return ["profile_combat_range_checkpoint_status_identity_invalid"]
+    if (
+        not isinstance(case_id, str) or not case_id
+        or not isinstance(seal_sha256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", seal_sha256) is None
+        or not isinstance(source_commit, str)
+        or re.fullmatch(r"[0-9a-f]{40}", source_commit) is None
+    ):
+        return ["profile_combat_range_checkpoint_status_identity_invalid"]
+    expected_scoped = (
+        ("checkpoint_generation", checkpoint_generation),
+        ("attempt_id", attempt_id),
+        ("wipe_generation", wipe_generation),
+        ("route_generation", route_generation),
+        ("target_map_id", target_map_id),
+        ("target_instance_id", target_instance_id),
+    )
+    for field, expected in expected_scoped:
+        if expected is not None and row.get(field) != expected:
+            return ["profile_combat_range_checkpoint_status_scope_invalid"]
+    if (
+        not _positive_int(row.get("checkpoint_generation"))
+        or not _positive_int(row.get("attempt_id"))
+        or not isinstance(row.get("wipe_generation"), int)
+        or isinstance(row.get("wipe_generation"), bool)
+        or row["wipe_generation"] < 0
+        or not _profile_checkpoint_nonnegative_int(
+            row.get("route_generation")
+        )
+        or not _profile_checkpoint_nonnegative_int(row.get("target_map_id"))
+        or not _profile_checkpoint_nonnegative_int(
+            row.get("target_instance_id")
+        )
+        or row.get("scope_bound") is not True
+    ):
+        return ["profile_combat_range_checkpoint_status_scope_invalid"]
+    if (
+        row.get("ok") is not True
+        or row.get("stage") != "completed"
+        or row.get("terminal") is not True
+        or row.get("outcome")
+            != "profile_combat_range_checkpoint_boundary_observed"
+        or row.get("failure_reason") not in {None, ""}
+    ):
+        return ["profile_combat_range_checkpoint_status_terminal_invalid"]
+    if (
+        row.get("candidate_key") != "world.profile_combat_range"
+        or row.get("candidate_status") != "attempted"
+        or row.get("candidate_reason")
+            != "profile_combat_min_range_reconciled"
+        or not _profile_checkpoint_nonnegative_int(
+            row.get("candidate_trace_index")
+        )
+        or not _positive_int(row.get("movement_receipt_id"))
+        or row.get("movement_committed") is not True
+        or row.get("movement_native_submitted") is not True
+        or row.get("range_receipt_correlated") is not True
+        or not _positive_int(row.get("decision_timestamp_ms"))
+        or not _profile_checkpoint_nonzero_hex(
+            row.get("range_intent_fingerprint")
+        )
+        or not _positive_int(row.get("native_motion_type"))
+        or not _positive_int(row.get("native_spline_id"))
+        or not _positive_int(row.get("progress_sample_count"))
+        or row["progress_sample_count"] < 2
+        or row.get("movement_progress_observed") is not True
+        or not _positive_int(row.get("range_progress_observed_at_ms"))
+        or row["range_progress_observed_at_ms"]
+            <= row["decision_timestamp_ms"]
+    ):
+        return ["profile_combat_range_checkpoint_range_correlation_invalid"]
+    if (
+        not isinstance(row.get("hazard_candidate_key"), str)
+        or not row["hazard_candidate_key"]
+        or row["hazard_candidate_key"] == "world.profile_combat_range"
+        or not isinstance(row.get("hazard_candidate_source"), str)
+        or not row["hazard_candidate_source"]
+        or row["hazard_candidate_source"] == "db_class_spec_profile"
+        or row.get("hazard_candidate_status") != "attempted"
+        or not _profile_checkpoint_nonnegative_int(
+            row.get("hazard_trace_index")
+        )
+        or not _positive_int(row.get("hazard_decision_timestamp_ms"))
+        or not _positive_int(row.get("hazard_movement_receipt_id"))
+        or row["hazard_movement_receipt_id"] == row["movement_receipt_id"]
+        or not _profile_checkpoint_nonzero_hex(
+            row.get("hazard_intent_fingerprint")
+        )
+        or not _positive_int(row.get("hazard_progress_sample_count"))
+        or row["hazard_progress_sample_count"] < 2
+        or row.get("hazard_native_submitted") is not True
+        or row.get("hazard_progress_observed") is not True
+        or not _positive_int(row.get("hazard_progress_observed_at_ms"))
+        or row["hazard_progress_observed_at_ms"]
+            <= row["hazard_decision_timestamp_ms"]
+        or row["hazard_decision_timestamp_ms"]
+            >= row["decision_timestamp_ms"]
+        or row.get("hazard_preempted_range") is not True
+    ):
+        return ["profile_combat_range_checkpoint_hazard_correlation_invalid"]
+    if (
+        not _positive_int(row.get("cast_spell_id"))
+        or row.get("cast_target_guid") != target_guid
+        or row.get("cast_retry_observed") is not True
+        or not _positive_int(row.get("cast_recorded_at_ms"))
+        or row["cast_recorded_at_ms"]
+            <= row["range_progress_observed_at_ms"]
+        or row.get("cast_before_progress_observed") is not False
+    ):
+        return ["profile_combat_range_checkpoint_later_cast_invalid"]
+    return []
+
+
+def observe_profile_combat_range_checkpoint_row(
+    row: object, **kwargs: Any,
+) -> list[str]:
+    """Capture-side consumer for the profile checkpoint status command."""
+
+    return profile_combat_range_checkpoint_terminal_rejections(row, **kwargs)
 
 
 def magmaw_transfer_checkpoint_arm_command(

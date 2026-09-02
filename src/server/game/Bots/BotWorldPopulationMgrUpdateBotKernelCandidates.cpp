@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/BotHealSelectionDiagnostic.h"
+#include "Bots/BotNativeActionIntent.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidHazardPlanner.h"
@@ -674,7 +675,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 candidate.UtilityScore = hazard->Utility;
                 candidate.RequiredResources = hazard->Resources();
                 candidate.ExpiresAtMs = hazard->ExpiresAtMs;
-                candidate.Attempt = [this, &context, intent = hazard->Action]()
+                candidate.Attempt = [this, &context,
+                    intent = BotNativeAction::WithMovementDiagnosticCandidateKey(
+                        hazard->Action, hazard->Id.Key())]()
                 {
                     BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
                         context.State, context.Bot, intent, BotMovementArbitration::Owner::Hazard,

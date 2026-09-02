@@ -182,7 +182,8 @@ void BotWorldPopulationMgr::ResolveAndReconcileMeleeAutoAttack(
 }
 
 bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference,
-    ResolvedCombatAction const* action, bool forceRangedReposition)
+    ResolvedCombatAction const* action, bool forceRangedReposition,
+    std::string_view diagnosticCandidateKey)
 {
     if (!bot || !reference)
         return false;
@@ -206,7 +207,8 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
 
         return MoveBotToPoint(state, bot, x, y, floorZ, false,
             BotMovementArbitration::Owner::CombatRange,
-            BotMovementArbitration::Priority::Combat);
+            BotMovementArbitration::Priority::Combat, nullptr, 0.0f, {},
+            diagnosticCandidateKey);
     };
 
     std::string role = GetDungeonRole(bot);
@@ -275,10 +277,13 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         // closed while allowing normal melee closing inside the current pack.
         if (!patrolCombatPointSafe(targetX, targetY, bot->GetPositionZ()))
             return false;
+        // Keep the live dynamic target reference); diagnostic identity is
+        // carried separately and never affects native target resolution.
         return MoveBotToPoint(state, bot, targetX, targetY,
             bot->GetPositionZ(), false,
             BotMovementArbitration::Owner::CombatRange,
-            BotMovementArbitration::Priority::Combat, reference);
+            BotMovementArbitration::Priority::Combat, reference, 0.0f, {},
+            diagnosticCandidateKey);
     }
 
     // A small center-to-center offset is not enough around bosses with a large
@@ -357,7 +362,8 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
                         // the same X/Y can select the other side of the ledge.
                         if (MoveBotToPoint(state, bot, x, y, z, false,
                                 BotMovementArbitration::Owner::CombatRange,
-                                BotMovementArbitration::Priority::Combat))
+                                BotMovementArbitration::Priority::Combat,
+                                nullptr, 0.0f, {}, diagnosticCandidateKey))
                             return true;
                     }
                 }
@@ -398,7 +404,8 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
                         continue;
                     if (MoveBotToPoint(state, bot, x, y, z, false,
                             BotMovementArbitration::Owner::CombatRange,
-                            BotMovementArbitration::Priority::Combat))
+                            BotMovementArbitration::Priority::Combat,
+                            nullptr, 0.0f, {}, diagnosticCandidateKey))
                         return true;
                 }
         }

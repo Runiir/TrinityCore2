@@ -23,6 +23,9 @@ public:
             { "botautonativepathcheckpoint",
                 rbac::RBAC_PERM_COMMAND_HEALERBOT, true,
                 &HandleNativePathCheckpointCommand, "" },
+            { "botautoprofilecombatrangecheckpoint",
+                rbac::RBAC_PERM_COMMAND_HEALERBOT, true,
+                &HandleProfileCombatRangeCheckpointCommand, "" },
             { "botautomagmawtransfercheckpoint",
                 rbac::RBAC_PERM_COMMAND_HEALERBOT, true,
                 &HandleMagmawTransferCheckpointCommand, "" },
@@ -31,6 +34,47 @@ public:
     }
 
 private:
+    static bool HandleProfileCombatRangeCheckpointCommand(
+        ChatHandler* handler, char const* args)
+    {
+        std::istringstream parser(args ? args : "");
+        std::string action;
+        parser >> action;
+        std::string const cohortId =
+            sBotWorldPopulationMgr->ResolveGlobalCohortId();
+        std::string result;
+        if (action == "status")
+            result = sBotWorldPopulationMgr
+                ->GetProfileCombatRangeCheckpointJsonForCohort(cohortId);
+        else if (action == "arm")
+        {
+            uint32 actorGuid = 0;
+            uint64 targetGuid = 0;
+            std::string caseId;
+            std::string sealSha256;
+            std::string sourceCommit;
+            std::string extra;
+            parser >> actorGuid >> targetGuid >> caseId >> sealSha256
+                >> sourceCommit >> extra;
+            if (!actorGuid || !targetGuid || caseId.empty()
+                || sealSha256.empty() || sourceCommit.empty() || !extra.empty())
+                result = "{\"ok\":false,\"action\":"
+                    "\"botauto_profile_combat_range_checkpoint\","
+                    "\"failure_reason\":\"invalid_arguments\"}";
+            else
+                result = sBotWorldPopulationMgr
+                    ->ArmProfileCombatRangeCheckpointForCohort(cohortId,
+                        actorGuid, targetGuid, caseId, sealSha256,
+                        sourceCommit);
+        }
+        else
+            result = "{\"ok\":false,\"action\":"
+                "\"botauto_profile_combat_range_checkpoint\","
+                "\"failure_reason\":\"arm_or_status_required\"}";
+        handler->SendSysMessage(result.c_str());
+        return true;
+    }
+
     static bool HandleMagmawTransferCheckpointCommand(
         ChatHandler* handler, char const* args)
     {

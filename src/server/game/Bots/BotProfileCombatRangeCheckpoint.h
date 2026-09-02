@@ -41,12 +41,16 @@ inline char const* StageName(Stage stage)
 struct State
 {
     Stage CurrentStage = Stage::Disabled;
+    uint64 CheckpointGeneration = 0;
     std::string CaseId;
     std::string SealSha256;
     std::string SourceCommit;
     uint32 ActorGuid = 0;
     uint64 TargetGuid = 0;
     uint64 AttemptId = 0;
+    uint32 WipeGeneration = 0;
+    uint64 RouteGeneration = 0;
+    bool ScopeBound = false;
     uint32 TargetMapId = 0;
     uint32 TargetInstanceId = 0;
     uint64 DecisionTimestampMs = 0;
@@ -61,13 +65,26 @@ struct State
     bool MovementNativeSubmitted = false;
     uint32 ProgressSampleCount = 0;
     bool MovementProgressObserved = false;
+    uint64 RangeIntentFingerprint = 0;
+    uint64 RangeProgressObservedAtMs = 0;
+    bool RangeReceiptCorrelated = false;
     std::string HazardCandidateKey;
     std::string HazardCandidateSource;
     std::string HazardCandidateStatus;
     uint64 HazardTraceIndex = 0;
+    uint64 HazardDecisionTimestampMs = 0;
+    uint64 HazardMovementReceiptId = 0;
+    uint64 HazardIntentFingerprint = 0;
+    uint32 HazardProgressSampleCount = 0;
+    bool HazardNativeSubmitted = false;
+    bool HazardProgressObserved = false;
+    uint64 HazardProgressObservedAtMs = 0;
+    bool HazardPreemptedRange = false;
     uint32 CastSpellId = 0;
     uint64 CastTargetGuid = 0;
     bool CastRetryObserved = false;
+    uint64 CastRecordedAtMs = 0;
+    bool CastBeforeProgressObserved = false;
     uint32 RangeObservationCount = 0;
     uint32 AwaitTicks = 0;
     std::string Outcome = "disabled";

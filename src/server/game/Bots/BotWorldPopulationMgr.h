@@ -117,6 +117,10 @@ public:
         std::string const& sourceCommit);
     std::string GetNativePathCheckpointJsonForCohort(
         std::string const& cohortId) const;
+    std::string ArmProfileCombatRangeCheckpointForCohort(
+        std::string const& cohortId, uint32 actorGuid, uint64 targetGuid,
+        std::string const& caseId, std::string const& sealSha256,
+        std::string const& sourceCommit);
     std::string GetProfileCombatRangeCheckpointJsonForCohort(
         std::string const& cohortId) const;
     std::string ArmMagmawTransferLaneCheckpointForCohort(
@@ -729,7 +733,9 @@ private:
     BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false);
     BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false);
     bool MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference,
-        ResolvedCombatAction const* action = nullptr, bool forceRangedReposition = false);
+        ResolvedCombatAction const* action = nullptr,
+        bool forceRangedReposition = false,
+        std::string_view diagnosticCandidateKey = {});
     bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
     void MarkBotBlocked(WorldBotState& state, Player* bot, char const* reason) const;
     void ObserveBotCandidateFailure(WorldBotState& state, Player* bot,
