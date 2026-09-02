@@ -1,0 +1,23 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "review:admit_fixture_replay_authorized_status",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_authority_reviewed",
+  "source": {
+    "commit": "0fcbd8c5d782d7fc1d89c0c31e7b5e5f97dc2307",
+    "tree": "7619e4a34f92e31fc6de37bd2df133f37378df7f"
+  },
+  "review": {
+    "verdict": "go",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "high",
+    "focused_command": "pixi run python -m pytest -q tests/test_raid_workloop.py",
+    "focused_result": "28 passed in 0.93s"
+  },
+  "next_work_unit": {
+    "id": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt2",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "Run one fresh exact-source Magmaw fixture-expansion replay through the canonical composite launcher. Keep material inputs and both plans outside the empty run root, run the full recurrence bank, build once, provision and read back once, start one completion-watchdog worldserver, start no authserver, and do not retry.",
+    "required_postcondition": "One typed fixture terminal proves or refutes actor 30008's authoritative no-threat falling edge, later threat rising edge, single child rearm, stable task and candidate identity, correlated native progress and terminal outcome, infection and death outcome, route progress, DPS and HPS, and verified cleanup."
+  }
+}

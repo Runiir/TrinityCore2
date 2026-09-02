@@ -1,17 +1,18 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:admit_fixture_replay_authorized_status",
-  "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "review:admit_fixture_replay_authorized_status",
+  "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt2",
+  "owner_skill": "raid-shard-architecture",
+  "next_work_unit": "evidence:classify_magmaw_personal_escape_episode_rearm",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "control_plane_integration_required",
+  "classification": "fixture_replay_authorized",
   "epoch_id": "magmaw_personal_escape_await_authority_20260901",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Align the authoritative raid workloop with the reviewed generic launcher state fixture_replay_authorized. Change only readiness classification; preserve all descriptor validity, source, clock, implementation-pending, and live-verification semantics.",
-  "gate_state": "the generic launcher authority is independently reviewed GO with 40 focused tests; live remains closed because raid_workloop recognizes only live_recurrence_quarantined as fixture-expansion-ready while the launcher requires fixture_replay_authorized",
-  "observed_at_commit": "3a316691abbdd83fdd7c6f19dec5df85919a75ae",
+  "architecture_scope": "Run one observation-only production fixture expansion for the actor-local personal-threat falling and rising edge under an active provisional parasite parent. Keep gameplay, arbiter, planner, executor, route, and native terrain following unchanged.",
+  "gate_state": "the generic launcher authority and workloop fixture-ready state are independently reviewed; the previous preflight consumed zero build or server budget; one fresh exact-source full bank, build, provisioning, seal, and no-retry completion-watchdog replay remain",
+  "observed_at_commit": "0fcbd8c5d782d7fc1d89c0c31e7b5e5f97dc2307",
+  "immutable_input_commit": "0fcbd8c5d782d7fc1d89c0c31e7b5e5f97dc2307",
   "behavior_change": false,
   "evidence_contract_change": true,
   "implementation_handoff": {
@@ -21,10 +22,10 @@
     "verdict": "go"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_composite_launcher_authority_review_handoff_20260902.json",
-    "sha256": "8952a074b3a4486d72c44b29b0abbb7c23d0b8e73997600eb1d81d47836834ca",
-    "source_commit": "3a316691abbdd83fdd7c6f19dec5df85919a75ae",
-    "source_tree": "77776603c611453dffc94f23611e5f6f5f6c7121"
+    "path": "experiments/configs/cata_raid_fixture_ready_state_review_handoff_20260902.json",
+    "sha256": "f1f55b7691d54a2f55de6d0e5158762020757327a0880ced75f5463d3ab26792",
+    "source_commit": "0fcbd8c5d782d7fc1d89c0c31e7b5e5f97dc2307",
+    "source_tree": "7619e4a34f92e31fc6de37bd2df133f37378df7f"
   },
   "preflight_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_personal_escape_plan_layout_preflight_handoff_20260902.json",
@@ -38,7 +39,7 @@
     "authserver_starts": 0,
     "live_retries": 0
   },
-  "pending_live_edge": {
+  "first_broken_edge": {
     "run_id": "magmaw-authority-5cad51fa40-20260902",
     "route_node_id": "bwd.magmaw.encounter",
     "actor_guid": 30008,
@@ -50,20 +51,10 @@
     "cause": "Under one active provisional parent, actor 30008 completed child generation 1 at safe_clearance, then later contact, infection, and death occurred without an authoritative actor-local absence followed by one later rising-edge rearm.",
     "evidence": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc"
   },
-  "first_broken_edge": {
-    "owner": "raid-evidence-lifecycle",
-    "file": "tools/raid_program/raid_workloop.py",
-    "function": "active_work_unit_status",
-    "cause": "ready_for_fixture_expansion requires classification live_recurrence_quarantined, while the reviewed launcher accepts only the canonical fixture_replay_authorized classification",
-    "first_downstream_state": "a descriptor cannot be simultaneously fixture-ready in the workloop and valid for launcher composition",
-    "failure_postcondition": "the reviewed generic launcher cannot receive a valid live fixture-expansion handoff without bypassing one control-plane gate"
-  },
   "repair_contract": {
-    "rule": "Treat the exact fixture_replay_authorized classification as fixture-expansion-ready when and only when the active descriptor has no validity issues. Preserve all other readiness classifications and gates.",
+    "rule": "Observe whether an authoritative actor-local no-threat falling edge followed by a later threat rising edge creates exactly one new child under the unchanged provisional parent. This unit may not change behavior.",
     "forbidden": [
-      "Magmaw-specific, boss-specific, route-specific, or work-unit-ID-specific readiness logic",
-      "weakening descriptor schema, committed-byte, clean-tree, source-hash, ancestry, or validation-clock checks",
-      "changing ready_for_live_verification or implementation-pending semantics",
+      "source, test, descriptor, ledger, route, or runtime behavior edits after this authorization commit",
       "loosening launcher, build, provisioning, recurrence, seal, capture, cleanup, no-authserver, no-retry, or completion-watchdog gates",
       "builds, database mutations, authserver starts, or worldserver starts",
       "gameplay, route, class, encounter, movement, Z, floor, MMAP, endpoint, or tolerance changes"
@@ -114,27 +105,27 @@
     "configure_receipt": "external_run_root/configure_receipt.json",
     "worldserver_build_receipt": "external_run_root/worldserver_build_receipt.json"
   },
-  "next_action": "Update only the workloop fixture-readiness classification to admit a valid fixture_replay_authorized descriptor. Add focused positives and negatives for valid, dirty, stale, invalid-clock, unrelated classification, and implementation-pending-live-verification states. Do not edit the launcher, build, provision, publish, or start a server. Independently review the result before restoring the shard unit.",
+  "next_action": "At this descriptor's exact clean commit, rerun the full recurrence bank and require the exact five fixture-expansion targets. Use a fresh external control directory, keep material inputs and both plans outside its empty child run root, then consume at most one queued fast8_v4 configure/build, one deterministic provisioning/readback, one recurrence seal, and one completion-watchdog worldserver start. Start no authserver and do not retry.",
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": false,
+    "fixture_expansion_replay_admitted": true,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "live_diagnostic_admitted": false,
-    "configure_admitted": false,
-    "worldserver_build_admitted": false,
-    "worldserver_start_admitted": false,
+    "live_diagnostic_admitted": true,
+    "configure_admitted": true,
+    "worldserver_build_admitted": true,
+    "worldserver_start_admitted": true,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": false,
-    "database_mutation_scope": "none",
-    "dvc_publication_required_after_terminal": false,
+    "database_mutations_allowed": true,
+    "database_mutation_scope": "validation_provisioning_only",
+    "dvc_publication_required_after_terminal": true,
     "admission_conditions": [
-      "fixture_replay_authorized joins the existing fixture-readiness state set only after all descriptor issues are empty",
-      "dirty, stale, missing-source, bad-hash, nonancestor, and invalid-clock descriptors remain not ready",
-      "unrelated and implementation-pending-live-verification classifications retain their prior readiness results",
-      "focused workloop tests pass without executing a build, database mutation, authserver, or worldserver",
-      "an independent reviewer returns GO before shard authorization"
+      "the exact clean descriptor, source handoff, source ancestor, and launcher authority validate",
+      "the full recurrence bank passes and admits exactly the five declared fixture targets",
+      "material inputs and immutable plans remain outside a new empty run root",
+      "configure, build, provisioning, readback, recurrence seal, and capture identities match",
+      "one worldserver start, zero authserver starts, and zero retries are enforced"
     ]
   },
   "live_diagnostic": {
@@ -142,17 +133,32 @@
     "success_condition": "The exact-source run shows one authoritative actor-local no-threat falling edge followed by one later threat rising edge, exactly one new child under the unchanged provisional parent, stable candidate identity within the episode, native progress, and safe clearance without infection for the correlated actor episode.",
     "failure_condition": "A dropped child, generation churn without a new authoritative episode, infection before correlated native progress or terminal outcome, semantic stall, route failure, death loop, or infrastructure loss closes the single run as evidence and does not certify gameplay success."
   },
+  "launcher_authority": {
+    "schema": "cata_raid_composite_fixture_replay_launcher_authority_v1",
+    "expected_work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt2",
+    "descriptor_owner_skill": "raid-shard-architecture",
+    "descriptor_classification": "fixture_replay_authorized",
+    "source_handoff_schema": "cata_raid_specialist_handoff_v1",
+    "source_handoff_work_unit": "review:admit_fixture_replay_authorized_status",
+    "source_handoff_owner_skill": "raid-evidence-lifecycle",
+    "source_handoff_classification": "fixture_authority_reviewed",
+    "required_action_sha256": "adc0eedb1d97ff380b9ec429f7bb11a158fd6397ebfa784296759a20436649cd",
+    "required_postcondition_sha256": "4fd1b86783f79e652ceb95c5b893356d88ef97150b4cd81ee1b99f3e3992244c",
+    "scenario": {"scenario_id": "blackwing_descent_10n_magmaw_diagnostic", "raid": "blackwing_descent", "boss": "magmaw", "mode": "10N"},
+    "fixture_expansion": {"purpose": "fixture_expansion_replay", "attempts": 1, "retries": 0, "authserver_starts": 0, "worldserver_starts": 1, "duration_policy": "completion_watchdog"},
+    "program_scope": {"acceptance_admitted": false, "fixture_expansion_replay_admitted": true, "gameplay_canary_admitted": false, "gameplay_mutations_allowed": false, "live_diagnostic_admitted": true, "configure_admitted": true, "worldserver_build_admitted": true, "worldserver_start_admitted": true, "authserver_start_admitted": false, "retry_admitted": false, "database_mutations_allowed": true, "database_mutation_scope": "validation_provisioning_only", "dvc_publication_required_after_terminal": true},
+    "validation_clock": {"fixed_success_timer_seconds": null, "policy": "completion_watchdog", "worldserver_starts": 1, "authserver_starts": 0, "retries": 0}
+  },
   "acceptance": [
-    "a valid fixture_replay_authorized descriptor reports ready_for_fixture_expansion true without boss or work-unit-specific logic",
-    "dirty, stale, missing-source, bad-hash, nonancestor, and invalid-clock descriptors remain not ready",
-    "unrelated classifications remain not fixture-ready and implementation_pending_live_verification keeps only its existing live-verification meaning",
-    "the reviewed generic launcher and all build, provisioning, recurrence, seal, capture, cleanup, no-authserver, no-retry, and completion-watchdog checks remain unchanged",
+    "actor 30008 terminal generation 1 remains tombstoned until an authoritative actor-local no-threat falling edge",
+    "one later authoritative threat rising edge creates exactly one child under the unchanged provisional parent",
+    "task, candidate, native progress, terminal, infection, death, route progress, DPS, HPS, and cleanup remain correlated",
     "no build, database mutation, authserver, worldserver, gameplay, route, class, encounter, movement, Z, floor, MMAP, endpoint, or tolerance change occurs in this unit"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "worldserver_starts": 0,
+    "worldserver_starts": 1,
     "authserver_starts": 0,
     "retries": 0
   }

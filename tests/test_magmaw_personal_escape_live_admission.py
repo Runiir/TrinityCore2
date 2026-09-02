@@ -13,7 +13,7 @@ def _load(name: str) -> dict:
     return json.loads((CONFIGS / name).read_text(encoding="utf-8"))
 
 
-def test_reviewed_personal_escape_waits_for_generic_launcher_authority() -> None:
+def test_reviewed_personal_escape_admits_generic_fixture_replay() -> None:
     handoff_name = (
         "cata_raid_magmaw_personal_escape_episode_rearm_review_"
         "handoff_20260902.json"
@@ -36,17 +36,17 @@ def test_reviewed_personal_escape_waits_for_generic_launcher_authority() -> None
     ).hexdigest()
 
     scope = active["program_scope"]
-    assert active["classification"] == "control_plane_integration_required"
-    assert scope["configure_admitted"] is False
-    assert scope["worldserver_build_admitted"] is False
-    assert scope["worldserver_start_admitted"] is False
-    assert scope["live_diagnostic_admitted"] is False
+    assert active["classification"] == "fixture_replay_authorized"
+    assert scope["configure_admitted"] is True
+    assert scope["worldserver_build_admitted"] is True
+    assert scope["worldserver_start_admitted"] is True
+    assert scope["live_diagnostic_admitted"] is True
     assert scope["authserver_start_admitted"] is False
     assert scope["retry_admitted"] is False
-    assert scope["fixture_expansion_replay_admitted"] is False
+    assert scope["fixture_expansion_replay_admitted"] is True
     assert scope["gameplay_canary_admitted"] is False
     assert scope["acceptance_admitted"] is False
-    assert scope["dvc_publication_required_after_terminal"] is False
+    assert scope["dvc_publication_required_after_terminal"] is True
 
     assert active["build"] == {
         "policy": (
@@ -65,7 +65,7 @@ def test_reviewed_personal_escape_waits_for_generic_launcher_authority() -> None
     assert clock == {
         "fixed_success_timer_seconds": None,
         "policy": "completion_watchdog",
-        "worldserver_starts": 0,
+        "worldserver_starts": 1,
         "authserver_starts": 0,
         "retries": 0,
     }
@@ -108,7 +108,7 @@ def test_fresh_fixture_expansion_keeps_launcher_plans_outside_run_root() -> None
     layout = active["fixture_expansion"]["canonical_launcher_layout"]
 
     assert active["work_unit"] == (
-        "evidence:admit_fixture_replay_authorized_status"
+        "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt2"
     )
     assert active["preflight_handoff"]["configure_runs"] == 0
     assert active["preflight_handoff"]["worldserver_starts"] == 0
