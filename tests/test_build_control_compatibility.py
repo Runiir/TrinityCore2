@@ -7,6 +7,7 @@ import subprocess
 
 import pytest
 
+import tools.raid_program.build_control_compatibility as build_control_compatibility
 from tools.raid_program.build_control_compatibility import (
     LAYERED_AUTHORITY_SCHEMA,
     verify_build_control_compatibility,
@@ -148,6 +149,62 @@ def test_exact_layered_authority_accepts_reviewed_tools_and_tests(
     assert authority["build_to_review_path_count"] == 1
     assert authority["review_to_current_path_count"] == 1
     assert authority["sha256"] == digest
+
+
+def test_layered_authority_rejects_clean_head_interleaving(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, receipt, _, _, path, digest = _layered_repo(tmp_path)
+    initial_head = _git(root, "rev-parse", "HEAD")
+    original_verify = build_control_compatibility._verify_layered_authority
+
+    def interleave_clean_commit(**kwargs: object) -> dict[str, object]:
+        _commit_file(root, "docs/concurrent-drift.md", "clean drift\n")
+        return original_verify(**kwargs)
+
+    monkeypatch.setattr(
+        build_control_compatibility,
+        "_verify_layered_authority",
+        interleave_clean_commit,
+    )
+    report = verify_build_control_compatibility(
+        worktree=root, receipt=receipt,
+        authority_path=path, authority_sha256=digest,
+    )
+
+    assert report["valid"] is False
+    assert "control_source_changed_during_verification" in report["rejections"]
+    assert report["control_commit"] == initial_head
+    assert report["layered_authority"] is None
+    assert _git(root, "rev-parse", "HEAD") != initial_head
+
+
+def test_layered_authority_rejects_dirty_interleaving(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, receipt, _, _, path, digest = _layered_repo(tmp_path)
+    original_verify = build_control_compatibility._verify_layered_authority
+
+    def interleave_dirty_tree(**kwargs: object) -> dict[str, object]:
+        (root / "docs").mkdir()
+        (root / "docs" / "concurrent-dirty.md").write_text(
+            "dirty drift\n", encoding="utf-8"
+        )
+        return original_verify(**kwargs)
+
+    monkeypatch.setattr(
+        build_control_compatibility,
+        "_verify_layered_authority",
+        interleave_dirty_tree,
+    )
+    report = verify_build_control_compatibility(
+        worktree=root, receipt=receipt,
+        authority_path=path, authority_sha256=digest,
+    )
+
+    assert report["valid"] is False
+    assert "control_source_changed_during_verification" in report["rejections"]
+    assert report["layered_authority"] is None
 
 
 def test_layered_authority_rejects_hash_and_current_head_drift(

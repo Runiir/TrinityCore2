@@ -329,6 +329,9 @@ def verify_build_control_compatibility(
             "layered_authority": None,
         }
 
+    initial_control_commit = control_commit
+    initial_control_tree = control_tree
+    initial_porcelain = porcelain
     if porcelain:
         rejections.append("control_source_dirty")
     if not COMMIT_RE.fullmatch(control_commit):
@@ -370,6 +373,27 @@ def verify_build_control_compatibility(
     if relationship == "exact" and completion:
         if completion.get("tree") != control_tree:
             rejections.append("exact_source_tree_mismatch")
+
+    try:
+        final_control_commit = str(_git(worktree, "rev-parse", "HEAD"))
+        final_control_tree = str(_git(worktree, "rev-parse", "HEAD^{tree}"))
+        final_porcelain = _git(
+            worktree, "status", "--porcelain=v1", "-z", binary=True
+        )
+        assert isinstance(final_porcelain, bytes)
+    except (OSError, subprocess.SubprocessError) as error:
+        rejections.append(
+            f"control_source_identity_unavailable_after_verification:{type(error).__name__}"
+        )
+        layered_authority = None
+    else:
+        if (
+            final_control_commit != initial_control_commit
+            or final_control_tree != initial_control_tree
+            or final_porcelain != initial_porcelain
+        ):
+            rejections.append("control_source_changed_during_verification")
+            layered_authority = None
 
     changed_paths_sha256 = _paths_sha256(changed_paths)
     return {
