@@ -163,6 +163,11 @@ PROFILE_COMBAT_RANGE_HAZARD_SOURCES = frozenset({
     "adaptive_raid_trash",
     "shared_hazard_movement",
 })
+PROFILE_COMBAT_RANGE_ACTIVE_STAGE_ORDER = {
+    "armed": 0,
+    "range_observed": 1,
+    "progress_observed": 2,
+}
 
 
 def profile_combat_range_checkpoint_arm_command(
@@ -407,8 +412,14 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
 
     state = getattr(scheduler, "_profile_checkpoint_state", None)
     if not isinstance(state, dict):
-        state = {"checkpoint_generation": None, "target_map_id": None}
+        state = {
+            "checkpoint_generation": None,
+            "target_map_id": None,
+            "active_stage": None,
+        }
         scheduler._profile_checkpoint_state = state
+    else:
+        state.setdefault("active_stage", None)
     generation = row.get("checkpoint_generation")
     if not _positive_int(generation):
         return scheduler._fail(
@@ -464,6 +475,7 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
                 "profile_combat_range_checkpoint_status_arm_ack_invalid"
             )
         scheduler._arm_ack_count = 1
+        state["active_stage"] = row["stage"]
         scheduler._record("arm_ack", row, {})
         scheduler.phase = "awaiting_terminal"
         return next_status_command()
@@ -473,16 +485,25 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
             "profile_combat_range_checkpoint_duplicate_or_stale_receipt"
         )
     if row.get("terminal") is not True:
+        stage = row.get("stage")
         if (
             row.get("ok") is not True
-            or row.get("stage") not in {
-                "armed", "range_observed", "progress_observed",
-            }
+            or stage not in PROFILE_COMBAT_RANGE_ACTIVE_STAGE_ORDER
             or row.get("failure_reason") not in {None, ""}
         ):
             return scheduler._fail(
                 "profile_combat_range_checkpoint_status_progress_invalid"
             )
+        previous_stage = state.get("active_stage")
+        if (
+            previous_stage not in PROFILE_COMBAT_RANGE_ACTIVE_STAGE_ORDER
+            or PROFILE_COMBAT_RANGE_ACTIVE_STAGE_ORDER[stage]
+            <= PROFILE_COMBAT_RANGE_ACTIVE_STAGE_ORDER[previous_stage]
+        ):
+            return scheduler._fail(
+                "profile_combat_range_checkpoint_duplicate_or_stale_receipt"
+            )
+        state["active_stage"] = stage
         return next_status_command()
 
     rejections = observe_profile_combat_range_checkpoint_row(

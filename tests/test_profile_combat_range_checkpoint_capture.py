@@ -333,9 +333,6 @@ def test_profile_scheduler_executes_exact_arm_poll_terminal_protocol() -> None:
     assert scheduler.observe(_profile_arm_ack()) == [
         PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
     ]
-    assert scheduler.observe(_profile_row(stage="armed")) == [
-        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
-    ]
     assert scheduler.observe(_profile_row(stage="progress_observed")) == [
         PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
     ]
@@ -365,12 +362,51 @@ def test_profile_scheduler_executes_exact_arm_poll_terminal_protocol() -> None:
         ),
         PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND,
         PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND,
-        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND,
     ]
     assert receipt["command_transcript"].count(
         PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
-    ) == 3
+    ) == 2
     assert receipt["checkpoint_terminal_observation"]["terminal"] is True
+
+
+def test_profile_scheduler_rejects_duplicate_active_arm_without_poll() -> None:
+    scheduler = _scheduler()
+    _advance_scheduler_to_arm_ack(scheduler)
+    assert scheduler.observe(_profile_arm_ack()) == [
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+    ]
+    transcript = list(scheduler.command_transcript)
+    assert scheduler.observe(_profile_arm_ack()) == []
+    assert scheduler.failure_reason == (
+        "profile_combat_range_checkpoint_duplicate_or_stale_receipt"
+    )
+    assert scheduler.command_transcript == transcript
+
+
+@pytest.mark.parametrize(
+    "accepted_stage,stale_stage",
+    [
+        ("range_observed", "range_observed"),
+        ("progress_observed", "progress_observed"),
+        ("progress_observed", "range_observed"),
+        ("progress_observed", "armed"),
+    ],
+)
+def test_profile_scheduler_rejects_duplicate_or_regressive_active_stage(
+    accepted_stage: str, stale_stage: str,
+) -> None:
+    scheduler = _scheduler()
+    _advance_scheduler_to_arm_ack(scheduler)
+    scheduler.observe(_profile_arm_ack())
+    assert scheduler.observe(_profile_row(stage=accepted_stage)) == [
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+    ]
+    transcript = list(scheduler.command_transcript)
+    assert scheduler.observe(_profile_row(stage=stale_stage)) == []
+    assert scheduler.failure_reason == (
+        "profile_combat_range_checkpoint_duplicate_or_stale_receipt"
+    )
+    assert scheduler.command_transcript == transcript
 
 
 @pytest.mark.parametrize(
@@ -449,7 +485,6 @@ def test_profile_scheduler_duplicate_terminal_receipt_is_ignored_after_success()
     scheduler = _scheduler()
     _advance_scheduler_to_arm_ack(scheduler)
     scheduler.observe(_profile_arm_ack())
-    scheduler.observe(_profile_row(stage="armed"))
     scheduler.observe(_profile_row(stage="progress_observed"))
     terminal = _profile_row(stage="completed", terminal=True)
     assert scheduler.observe(terminal) == []
