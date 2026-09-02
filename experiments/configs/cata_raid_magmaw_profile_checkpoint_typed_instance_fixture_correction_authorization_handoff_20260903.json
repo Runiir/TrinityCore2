@@ -1,0 +1,70 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_profile_checkpoint_typed_instance_fixture_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_runtime_controller_review_correction_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "base_source": {
+    "reviewed_implementation_commit": "bf192d8211c1989611c27c1a3ef68cec974724ca",
+    "reviewed_implementation_tree": "5abc5b67c24329f50d89271b38db7b1d36f3916c",
+    "current_control_commit": "6a4d8748d89ad21cbd0c8b53c6cb00385b08ab63",
+    "current_control_tree": "076a8f754501ef14b2478eebae2326da8dfe5249",
+    "clean": true
+  },
+  "review": {
+    "path": "/tmp/magmaw-unbound-arm-ack-review-bf192d82/review_handoff.json",
+    "sha256": "df824e671a5eba42bb01e5d131015288a61fe6c53ef5b5da2fbb06dda0e7b90a",
+    "decision": "NO-GO",
+    "findings": [
+      "A bound progress target_instance_id=true is accepted when frozen instance_id=1.",
+      "The arm helper still derives from a completed-row factory and masks native defaults."
+    ]
+  },
+  "skill_correction": {
+    "commit": "6a4d8748d89ad21cbd0c8b53c6cb00385b08ab63",
+    "file": ".agents/skills/raid-bot-runtime-implementation/SKILL.md",
+    "rule": "Reject bool before integer identity checks and construct lifecycle fixtures from their authentic native state."
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Reject boolean instance impostors on all post-arm bound paths and replace the masked arm fixture with an independently constructed authentic native-arm projection.",
+    "owned_files": [
+      "tools/raid_program/capture_checkpoint_controller.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py"
+    ],
+    "required_change": [
+      "Before comparing a bound row target_instance_id to the frozen runtime instance, require a positive integer with bool explicitly rejected.",
+      "Apply the same typed predicate consistently wherever target_instance_id can advance bound progress or terminal state.",
+      "Build the arm acknowledgement fixture directly from native armed defaults and exact authenticated descriptor/scope fields; do not call or clone the completed/progress row helper.",
+      "Add scheduler regressions for True/False instance impostors and omitted/default fields at arm, progress, and terminal boundaries while retaining every prior negative."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py",
+      "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_profile_combat_range_checkpoint_capture.py tests/test_bot_world_population_mgr_combat_movement_module.py",
+      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_recurrence_admission.py",
+      "pixi run python -m py_compile tools/raid_program/capture_checkpoint_controller.py",
+      "git diff --check 6a4d8748d89ad21cbd0c8b53c6cb00385b08ab63 HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Exactly two files change in one clean commit.",
+      "The exact True==1 scheduler counterexample fails before and passes after; False/omitted/default boundary cases fail closed.",
+      "Source audit proves the arm fixture is independent of later-state helpers.",
+      "All regressions pass and fresh independent Sol-high runtime review returns GO before build/Stage 3."
+    ]
+  },
+  "forbidden": [
+    "No C/C++, third file, controller protocol broadening, bound validation weakening, config/schema/gameplay/build/server/live/DVC/Stage-3 changes or actions.",
+    "No bool coercion, synthetic completed arm state, fixture retargeting, live inference, waiver, or retry."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one fresh raid-bot-runtime-implementation implementer, then one fresh Sol-high reviewer."
+}

@@ -1,45 +1,46 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:profile_checkpoint_unbound_arm_ack_correction",
+  "work_unit": "runtime:profile_checkpoint_typed_instance_fixture_correction",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "ff1b78a09faafd7fde70d5a4df18f12227de29e0",
-  "immutable_input_commit": "ff1b78a09faafd7fde70d5a4df18f12227de29e0",
-  "architecture_scope": "Capture controller protocol only: authentic unbound arm acknowledgement followed by strict bound live progress/terminal validation.",
+  "observed_at_commit": "bf192d8211c1989611c27c1a3ef68cec974724ca",
+  "immutable_input_commit": "6a4d8748d89ad21cbd0c8b53c6cb00385b08ab63",
+  "architecture_scope": "Controller-only typed instance validation and authentic arm fixture correction.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "Native GUID normalization is locally accepted, but the controller rejects the authentic pre-observation arm response because it prematurely requires a positive instance.",
+  "gate_state": "Authentic unbound arm is accepted, but review proved True can impersonate frozen instance 1 and the arm test still masks a completed row.",
   "first_broken_edge": {
-    "id": "profile_checkpoint_controller_rejects_native_unbound_arm_ack",
-    "stage": "stage3_arm_acknowledgement",
+    "id": "boolean_instance_impostor_advances_bound_checkpoint_state",
+    "stage": "post_arm_bound_progress_validation",
     "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Native arm is intentionally unbound, while controller validation freezes target instance and match outcomes before its awaiting-arm branch.",
-    "review_state": "independent_review_no_go_with_production_shaped_counterexample"
+    "cause": "Python equality accepts True==1 before explicit non-bool integer validation.",
+    "review_state": "independent_review_no_go"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_profile_checkpoint_unbound_arm_ack_correction_authorization_handoff_20260903.json",
-    "review_path": "/tmp/magmaw-native-guid-normalization-review-ff1b78a0/review_handoff.json",
-    "review_sha256": "eaf0c69a062326d8e05e0a0b86fc4ce5602fc9f2349a2d5a99d782f1abe61188"
+    "path": "experiments/configs/cata_raid_magmaw_profile_checkpoint_typed_instance_fixture_correction_authorization_handoff_20260903.json",
+    "review_path": "/tmp/magmaw-unbound-arm-ack-review-bf192d82/review_handoff.json",
+    "review_sha256": "df824e671a5eba42bb01e5d131015288a61fe6c53ef5b5da2fbb06dda0e7b90a",
+    "skill_update_commit": "6a4d8748d89ad21cbd0c8b53c6cb00385b08ab63"
   },
   "scope_lock": {
-    "objective": "Accept one exact authenticated unbound arm acknowledgement and retain strict positive-instance/all-outcome requirements after binding.",
+    "objective": "Reject bool instance IDs and use a native-state arm fixture independent of progress/terminal factories.",
     "owned_files": [
       "tools/raid_program/capture_checkpoint_controller.py",
       "tests/test_profile_combat_range_checkpoint_capture.py"
     ],
-    "expected_observable_change": "The authentic native arm projection advances once; inconsistent arm rows and every weak bound row fail closed.",
-    "stop_condition": "Any third file, native C++ change, or bound-validation weakening stops the work unit."
+    "expected_observable_change": "True/False/omitted/default instance impostors fail; authentic unbound arm and exact bound progress/terminal remain accepted.",
+    "stop_condition": "Any third file, C++ change, or controller weakening stops."
   },
   "acceptance_conditions": [
-    "Exact arm/progress/terminal positive and negative fixtures pass.",
+    "Exact scheduler counterexamples and all regressions pass.",
     "Fresh independent review returns GO before build or Stage 3."
   ],
   "forbidden": [
-    "No C++/gameplay/config/build/server/live/DVC/Stage-3 actions or live inference."
+    "No C++/gameplay/config/build/server/live/DVC/Stage-3 action or live inference."
   ],
   "validation_clock": {
     "policy": "bounded_deterministic_fixtures",
@@ -55,5 +56,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact two-file controller protocol correction."
+  "next_action": "Execute the exact two-file typed-instance/fixture correction."
 }
