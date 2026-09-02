@@ -1,0 +1,148 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:authorize_personal_threat_target_binding_through_sealed_launcher",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "control_plane_target_binding_repair_authorized",
+  "source": {
+    "commit": "f06d949a6c6cc19a076e7368ef0b16d495d4a669",
+    "tree": "da8e0d0a59aff060089faae90a643b8cd1eec6e2",
+    "clean": true
+  },
+  "reviewed_capture_implementation": {
+    "external_path": "/tmp/magmaw-personal-threat-episode-closure-review.c39umzSL/review_handoff.json",
+    "sha256": "19830307a3098df23c237c3526826449bca5e8efa92b7dfb12addd0b3c65aed7",
+    "schema": "cata_raid_independent_review_handoff_v1",
+    "work_unit_id": "review:close_personal_threat_episode_join_capture_path",
+    "verdict": "GO",
+    "reviewed_commit": "f06d949a6c6cc19a076e7368ef0b16d495d4a669",
+    "reviewed_tree": "da8e0d0a59aff060089faae90a643b8cd1eec6e2",
+    "critical_findings": 0,
+    "high_findings": 0
+  },
+  "first_broken_edge": {
+    "layer": "sealed_composite_launcher_to_capture_target",
+    "directly_observed": [
+      "capture_phase1_raid_foundation accepts and finalization forwards a complete six-field personal-threat episode target at the reviewed source",
+      "chainwielder_prestart_bundle.expected_launch_argv emits none of the six personal-threat target flags",
+      "composite_fixture_replay_launcher accepts no personal-threat target field in its strict request schema and therefore cannot carry one into bundle creation",
+      "the attempt3 literal scope was default:1:0:3:bwd.magmaw.encounter:669:2:tank_swap_adds_raid_aoe, but instance 2 was observed only after worldserver start"
+    ],
+    "consequence": "An otherwise valid one-start recapture would run with personal_threat_episode_target=null, so the requested falling/rising join would remain non-gating and could not close the proven evidence edge."
+  },
+  "identity_analysis": {
+    "prior_exact_scope_key": "default:1:0:3:bwd.magmaw.encounter:669:2:tank_swap_adds_raid_aoe",
+    "prior_scope_evidence": "experiments/configs/cata_raid_magmaw_personal_escape_attempt3_death_loop_summary_20260902.json actor_30008.first_retained_suffix.candidate_key",
+    "instance_identity_policy": "experiments/configs/cata_raid_bwd_diagnostic_shards_10n.json and tools/raid_program/bwd_shard_fixtures.py declare no instance or save IDs in provisioning",
+    "prestart_readback_policy": "tools/raid_program/capture_phase1_provisioning_readback.py rejects any character_instance or group_instance rows before launch",
+    "conclusion": "The prior literal instance ID is not admissible authority for the next process. Exact scope must be resolved from the new process's controller-owned stable status pair; it must not be guessed, read from stale evidence, or supplied by mutable pre-provisioning state.",
+    "existing_authoritative_source": "ControllerRouteHoldScheduler freezes cohort_id, attempt_id, wipe_generation, and instance_id from two byte-identical held botauto status projections before release and rejects drift."
+  },
+  "target_contract": {
+    "declaration_time": "The complete target request and canonical scope template are included in the composite request hash, bundle-create argv, bundle launch contract, and exact verified capture argv before the sole worldserver start.",
+    "scope_key_template": "{cohort_id}:{attempt_id}:{wipe_generation}:3:bwd.magmaw.encounter:669:{instance_id}:tank_swap_adds_raid_aoe",
+    "literal_fields": {
+      "actor_guid": 30008,
+      "route_node_id": "bwd.magmaw.encounter",
+      "route_generation": 3,
+      "parent_wave_generation": 9223372036854775809,
+      "parent_generation_authoritative": false
+    },
+    "dynamic_fields": {
+      "cohort_id": "controller_route_hold.native_scope.cohort_id",
+      "attempt_id": "controller_route_hold.native_scope.attempt_id",
+      "wipe_generation": "controller_route_hold.runtime_scope.wipe_generation",
+      "instance_id": "controller_route_hold.runtime_scope.instance_id"
+    },
+    "resolution_rule": "Immediately before evidence demultiplexing, expand only the four named placeholders from the route-hold scheduler's frozen stable-status receipt. The result is the exact six-field target consumed by the existing strict personal_threat_episode_join validator.",
+    "fail_closed": [
+      "reject a partial target request or any unrecognized placeholder/template",
+      "reject absent, malformed, nonpositive, non-stable, or drifted native/runtime scope",
+      "reject disagreement between template route/map/encounter identity and the authenticated prepared route row",
+      "retain the declared template, resolved target or typed resolution rejection, and controller receipt in the final compact report",
+      "do not select a scope, parent, or episode from the observed transition records"
+    ]
+  },
+  "implementation_contract": {
+    "next_work_unit": "evidence:bind_personal_threat_target_through_sealed_launcher",
+    "owner_skill": "raid-evidence-lifecycle",
+    "behavior_change": false,
+    "owned_files": [
+      "tools/raid_program/composite_fixture_replay_launcher.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_finalization.py",
+      "tests/test_composite_fixture_replay_launcher.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "required_repair": [
+      "Add one optional, exact-schema personal_threat_episode_target object to the composite replay request without changing ordinary target-absent requests.",
+      "Hash-bind that object through plan realization and bundle creation, retain it in the sealed launch contract, and emit all six capture target flags in expected_launch_argv.",
+      "Represent scope_key only by the exact authorized template; never embed attempt3 instance 2 as the next run's instance identity.",
+      "Resolve the template in public finalization only from the route-hold controller's frozen stable-status native_scope and runtime_scope, before calling the existing evidence demux.",
+      "Pass one resolved exact six-field target to the existing strict join validator and retain both declaration and resolution receipts in the compact report.",
+      "Preserve byte-for-byte ordinary target-absent launcher and capture behavior."
+    ],
+    "deterministic_fixtures": [
+      "A complete request produces an exact bundle launch argv containing actor 30008, the canonical scope template, Magmaw node/generation, provisional parent generation, and explicit false parent authority; bundle verification rejects any altered flag or launch-contract target.",
+      "A route-hold receipt with cohort default, attempt 1, wipe 0, and instance 7 resolves to default:1:0:3:bwd.magmaw.encounter:669:7:tank_swap_adds_raid_aoe and forwards that exact six-field target to demux.",
+      "Attempt3 instance 2 is not hard-coded: changing the stable receipt instance from 2 to 7 changes only the resolved instance segment.",
+      "Missing second stable status, scope drift, malformed identity, an unknown placeholder, a partial target, route mismatch, or parent mismatch fails closed with a typed target-binding rejection and no successful join gate.",
+      "Target-absent composite requests, bundle verification, capture setup, and finalization remain compatible and non-gating."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_composite_fixture_replay_launcher.py tests/test_chainwielder_prestart_bundle.py",
+      "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py tests/test_magmaw_personal_threat_episode_capture.py",
+      "pixi run python -m py_compile tools/raid_program/composite_fixture_replay_launcher.py tools/raid_program/chainwielder_prestart_bundle.py tools/raid_program/capture_finalization.py",
+      "pixi run python -m tools.raid_program.raid_workloop status",
+      "git diff --check"
+    ],
+    "forbidden": [
+      "mutation outside the exact six owned files",
+      "literal reuse or prediction of attempt3 instance ID 2",
+      "post-hoc target selection from falling/rising transition records",
+      "weakening the all-or-none six-field target or existing strict join validator",
+      "gameplay, task, candidate, priority, native executor, endpoint, coordinate, Z, floor, MMAP, pathing, geometry, or tolerance changes",
+      "route content, encounter, class, role, skill, ledger, DVC, database, or ML changes",
+      "trace-capacity increase or parallel telemetry stream",
+      "build, configure, provisioning, server start, live recapture, retry, fixture promotion, DVC publication, or Magmaw acceptance"
+    ]
+  },
+  "acceptance": [
+    "The composite request, plan hash, bundle creation, launch contract, bundle verifier, and exact capture argv all bind the same complete target declaration.",
+    "The exact runtime scope is derived only from the route-hold controller's already-required stable status pair and is resolved before evidence demux.",
+    "The low-level join receives an exact six-field target; unresolved or drifting scope fails closed and is retained in the compact report.",
+    "No target declaration preserves ordinary behavior.",
+    "All deterministic fixtures, py_compile, workloop status, and diff checks pass before independent Sol high review.",
+    "Independent review returns GO before any build or live recapture authority is issued."
+  ],
+  "authority": {
+    "source_mutation_allowed": true,
+    "test_mutation_allowed": true,
+    "configuration_mutation_allowed": false,
+    "route_mutation_allowed": false,
+    "skill_mutation_allowed": false,
+    "ledger_mutation_allowed": false,
+    "builds": 0,
+    "configure_operations": 0,
+    "provisioning_operations": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0,
+    "dvc_publication_allowed": false,
+    "fixture_revision_promotion_allowed": false,
+    "acceptance_allowed": false,
+    "ml_admission_allowed": false
+  },
+  "evidence": {
+    "attempt3_summary": "experiments/configs/cata_raid_magmaw_personal_escape_attempt3_death_loop_summary_20260902.json",
+    "attempt3_summary_sha256": "e66d8ba2e695f765b1630049ee10a90a885647c6e28a1fdb7654bb67e7a333d6",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_attempt3_death_loop_20260902.dvc",
+    "dvc_pointer_sha256": "2c44151b63d4c7d5a881e296abd386228707c55e1706fb0d220a2788fa5888d5",
+    "dvc_directory_md5": "44bb53ab89c6edf12d069781be27aa6d.dir",
+    "workspace_payload_state": "intentionally_evicted",
+    "remote_status": "previously_verified_in_sync"
+  },
+  "next_action": "Implement only the sealed target declaration and stable-status scope resolution in the exact owned files, pass the deterministic fixtures, commit cleanly, and request independent Sol high review. Do not build or run live."
+}
