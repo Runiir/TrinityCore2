@@ -1,0 +1,118 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_stage2_after_layered_authority_review",
+  "owner_skill": "raid-performance-loop",
+  "classification": "stage2_static_provision_readback_and_seal_resume_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "reviewed_implementation": {
+    "commit": "a66083f7df74515128e384412b9b52978a79f9fe",
+    "tree": "8b010b68aba2d6e85c26d6526f1f35e3d744a2b8",
+    "review_path": "/tmp/magmaw-layered-authority-toctou-review-a66083f7/review_handoff.json",
+    "review_sha256": "1c2746afad20519f226d461d3db6677ecac077f7d675188859425ac1bea4c206",
+    "review_verdict": "GO",
+    "review_validation": "30 focused, 286 downstream, and 316 combined tests passed; clean-commit and dirty-tree interleavings fail closed"
+  },
+  "prior_stage2_stop": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "sha256": "51c0305025ff5412bd3a1cecbccec00b0238426e9a428772be80fcc64567c0d8",
+    "terminal_reason": "build_source_incompatible:control_path_not_allowed:tests/test_blocker_recurrence_ledger.py",
+    "current_control_recurrence_gate_consumed": 1,
+    "runtime_config_derivation_consumed": 1,
+    "atomic_bundle_create_consumed": 1,
+    "deterministic_provisioning_consumed": 0,
+    "database_readback_consumed": 0,
+    "recurrence_seal_consumed": 0,
+    "worldserver_starts": 0
+  },
+  "reviewed_binary": {
+    "source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "source_tree": "75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c",
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/worktree/build/src/server/worldserver/worldserver",
+    "sha256": "4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081",
+    "size_bytes": 64688528,
+    "build_receipt_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/identity/worldserver_build_receipt.json",
+    "build_receipt_sha256": "43dd3b89c2fc5497ab740e4789ee85efb925f6b45c8a3b6d96389a2880beb866",
+    "immutable": true,
+    "rebuild_authorized": false
+  },
+  "layered_build_control_authority": {
+    "schema": "cata_raid_layered_build_control_authority_v1",
+    "build_source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "reviewed_control_commit": "a66083f7df74515128e384412b9b52978a79f9fe",
+    "current_control_commit": "the exact clean commit containing this authorization and experiments/configs/cata_raid_active_work_unit_v1.json",
+    "output_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/run/build_control_authority_stage2_after_a660.json",
+    "construction": [
+      "After authenticating a clean current HEAD, compute build_to_review_paths as the sorted exact NUL-safe git diff --name-only --no-renames from b575249160ff518dac20f2a7f223110671b2dcb0 to a66083f7df74515128e384412b9b52978a79f9fe.",
+      "Compute review_to_current_paths identically from a66083f7df74515128e384412b9b52978a79f9fe to the exact authorization HEAD.",
+      "Write only the six required schema fields with canonical sorted unique path arrays, hash the exact bytes, and pass both --build-control-authority and --build-control-authority-sha256 to the atomic creator.",
+      "Require production verification to reproduce both diffs, both commit relations, every blob identity, a clean unchanged final HEAD/tree/NUL porcelain snapshot, and the exact authority hash."
+    ],
+    "expected_review_to_current_paths": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_resume_after_layered_authority_review_authorization_handoff_20260903.json"
+    ],
+    "fail_closed": "Any extra, missing, renamed, malformed, non-blob, native, dependency, CMake, SQL, worldserver-config, dirty-tree, non-ancestor, hash, commit, tree, or verification-time identity mismatch stops before provisioning."
+  },
+  "fixture_identity": {
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "fixture_revision": 1,
+    "causal_signature": "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner",
+    "case_id": "elemental_magmaw_too_close_v1",
+    "actor_guid": 30010,
+    "actor_class_spec": "elemental_shaman",
+    "target_guid": 39,
+    "target_entry": 41570,
+    "map_id": 669,
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "target_route_node_id": "bwd.magmaw.encounter",
+    "required_bot_count": 10,
+    "live_relation_status": "pending_stage3"
+  },
+  "authorized_stage2_work_unit": {
+    "owner_skill": "raid-shard-architecture",
+    "root": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "required_actions": [
+      "Verify this committed authorization, its clean exact HEAD, the GO review, prior typed stop, immutable binary/build receipt, route, roster, profile, config, fixture, case, actor, and target inputs.",
+      "Construct and hash the exact external layered authority payload as specified above; independently compare its arrays to both Git diffs before consuming a recurrence or atomic-create budget.",
+      "Run the unchanged full 27-fixture recurrence manifest exactly once at the authorization HEAD; require 27/27, authentic global decision preservation, fixture_expansion_admitted=true, canary_admitted=false, and explicit generic checkpoint eligibility.",
+      "Derive and bind one fresh current-control runtime config receipt, then execute the generic atomic bundle creator exactly once with the explicit generic checkpoint selection and exact authority path/hash.",
+      "Execute exactly one deterministic frozen-roster provision, one static database readback, and one recurrence/admission/checkpoint seal.",
+      "Write and hash-verify static_sealed_ready with live_relation_status=pending_stage3, or one typed_preflight_failure at the exact output path."
+    ],
+    "acceptance_conditions": [
+      "The admission and launch manifest bind a copied byte-identical layered authority and its SHA-256.",
+      "The atomic bundle retains the complete authoritative target, pending, request, and quarantine lists unchanged and seals the explicit generic fixture.",
+      "One provision/readback proves the frozen roster, actor 30010 static identity/map669, and target spawn GUID39/entry41570/map669.",
+      "One seal binds source/build/authority/route/profile/config/suite/decision/admission/readback/fixture/case/actor/target static identities.",
+      "No alive/current-target/positive-instance/runtime-scope inference is made; those remain Stage 3.",
+      "No build, server, live capture, DVC, retry, or gameplay mutation occurs."
+    ]
+  },
+  "budgets": {
+    "current_control_recurrence_gate": 1,
+    "atomic_bundle_create": 1,
+    "runtime_config_derivation": 1,
+    "deterministic_provisioning": 1,
+    "database_readbacks": 1,
+    "recurrence_seals": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "observation_only_fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
+  "forbidden": [
+    "No repository/source/test/config/route/roster/ledger/skill/runtime-default/database-schema/gameplay mutation during Stage 2.",
+    "No configure, rebuild, server/auth start, live capture, gameplay canary, DVC, promotion, acceptance, ML admission, or retry.",
+    "No decision projection, fixture or command narrowing, implicit checkpoint selection, seal reuse, waiver, synthetic pass, actor/target substitution, live inference, or broad path permission."
+  ],
+  "next_action": "Dispatch exactly one fresh raid-shard-architecture owner with authorized_stage2_work_unit verbatim. Stage 3 remains closed until a hash-verified static_sealed_ready handoff exists."
+}
