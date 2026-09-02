@@ -1,0 +1,202 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:authorize_generic_non_drudge_min_range_movement_admission",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_runtime_repair_authorized",
+  "source": {
+    "commit": "f1c923ac560cde9403a9b9aa3c52fbd9e2b19ca0",
+    "tree": "949ca95fd002470e1bf8c49f9ce5548a27054fda",
+    "clean": true,
+    "active_work_unit": "program:review_authorize_generic_non_drudge_min_range_movement_repair"
+  },
+  "immutable_evidence": {
+    "attempt3_rotation_review": {
+      "external_path": "/tmp/magmaw-attempt3-rotation-review-handoff-20260902/review_handoff.json",
+      "published_copy": "attempt4 archive external_review/attempt3_rotation_review_handoff.json",
+      "sha256": "32f7bbc5763c4cc2796a55b32077c38e51e4c157c54b4383d7558392a91bafa5",
+      "hash_verified": true,
+      "classification": "informational_only_identity_incomplete",
+      "allowed_use": "trace-backed movement, candidate rejection, cadence, targeting, and native-outcome diagnosis only"
+    },
+    "attempt4_summary": {
+      "path": "experiments/configs/cata_raid_magmaw_personal_threat_attempt4_death_loop_summary_20260902.json",
+      "sha256": "3bbd13d2e4a3cccfcc7486b12dd617ddb84a511d6c7a8d7e47ca2f1985725626",
+      "hash_verified": true,
+      "source_commit": "c7db5d82c9ea54eebf53f6acbfeba678a234ced5",
+      "terminal": "gameplay_failure/death_loop_watchdog",
+      "party_dps": 86446.709,
+      "party_hps": 21790.956
+    },
+    "attempt4_dvc": {
+      "pointer": "artifacts/cata_raid_program/magmaw_personal_threat_attempt4_death_loop_20260902.dvc",
+      "directory_md5": "3b18f9f9e554efb88e7e0ea26bd1c755.dir",
+      "closure_state": "published_remote_reconstruction_verified_and_exact_local_payload_evicted"
+    }
+  },
+  "review_verdict": {
+    "verdict": "GO",
+    "basis": "The retained review and current production source agree on the same generic admission gap. This authorization does not admit exact total-DPS tuning, a build, or a live canary.",
+    "source_audit": [
+      "BotWorldPopulationMgrCombatResolver.cpp preserves the selected action minimum range and records min_range_required when the actor is too close.",
+      "BotWorldPopulationMgrUpdateBotKernelFallback.cpp rejects world.profile_combat_range as not_owned_drudge_target before checking too-close range for any valid non-Drudge hostile.",
+      "BotWorldPopulationMgrCombatMovement.cpp already computes an outward logical ranged destination from ResolvedCombatAction.MinRange and delegates terrain following to native movement.",
+      "The two potentially touched C++ files are currently 822 and 564 lines and remain subject to the 1000-line ceiling."
+    ]
+  },
+  "causal_receipt": {
+    "candidate_first_broken_edge": "resolved_profile_min_range_recovery_to_typed_movement_candidate",
+    "owner": "shared_runtime_movement_candidate_admission",
+    "ordered_claims": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "Actor 30010 acquired live Magmaw target entry 41570, GUID 39, at the current route node.",
+        "observation": "Attempt3 boss start trace sequence 487 at 1788337636271 ms; the retained review records the target alive, attackable, same-map/same-instance, and in line of sight."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "Ordinary Elemental actions requiring hostile minimum range rejected min_range_required, and ResolveProfileCombatAction retained the recovery MinRange.",
+        "observation": "The review records Flame Shock, Earth Shock, and Lightning Bolt minimum-range rejection; current resolver source assigns action.MinRange before continuing."
+      },
+      {
+        "order": 3,
+        "status": "verified",
+        "claim": "world.profile_combat_range rejected not_owned_drudge_target before recognizing the valid non-Drudge too-close condition.",
+        "observation": "First retained no-valid trace sequence 492 at 1788337643273 ms; current fallback source performs the owned-Drudge return before ResolveProfileCombatAction and every range test."
+      },
+      {
+        "order": 4,
+        "status": "verified",
+        "claim": "The rejected candidate committed no Movement resource and invoked no native range mover, leaving the too-close postcondition unchanged for the next profile decision.",
+        "observation": "The candidate returns NotApplicable before MoveBotToProfileRange; the retained trace reports no ordinary native cast submission and repeated no_valid_profile_action for actor 30010."
+      },
+      {
+        "order": 5,
+        "status": "verified",
+        "claim": "The unresolved state repeated into severe cadence starvation rather than one global damage-per-event defect.",
+        "observation": "Actor 30010 had 114 no-valid rejections, maximum same-decision run 43, zero Lightning Bolts, and 1005.867 DPS in attempt3; attempt4 remained consistent at 1790.053 DPS and 14.0777% damage uptime, while Affliction reached 26479.835 DPS."
+      },
+      {
+        "order": 6,
+        "status": "unproven",
+        "claim": "This admission repair alone is sufficient to clear Magmaw or establish exact total-DPS parity.",
+        "observation": "The reviewed run lacks exact gear/effective-stat/consumable parity and retains later targeting, area-action, survival, and mechanic edges."
+      }
+    ],
+    "first_downstream_state_mutation": "The profile lane consumes the unchanged too-close world state and commits repeated no_valid_profile_action/backoff decisions instead of a Movement resource outcome.",
+    "failure_postcondition": "No logical outward destination, native movement launch/progress, or subsequent ordinary hostile cast is produced for the valid too-close non-Drudge target.",
+    "implementation_hypothesis": "Generalize only the admission predicate of world.profile_combat_range so a valid hostile target inside ResolvedCombatAction.MinRange can submit the existing movement-only candidate, while retaining the Drudge activation latch and existing max-range/LOS behavior.",
+    "correlation_keys": {
+      "actor_guid": 30010,
+      "route_node_id": "bwd.magmaw.encounter",
+      "route_generation": 3,
+      "target_entry": 41570,
+      "target_guid": 39,
+      "boss_start_trace_sequence": 487,
+      "first_rejected_trace_sequence": 492,
+      "first_rejected_timestamp_ms": 1788337643273,
+      "decision_fingerprint": 1427,
+      "candidate_key": "world.profile_combat_range",
+      "rejection_reason": "not_owned_drudge_target",
+      "native_execution_id": null,
+      "native_execution_id_status": "not_applicable_because_rejection_precedes_native_submission"
+    }
+  },
+  "scope_lock": {
+    "next_work_unit": "runtime:generic_non_drudge_min_range_movement_admission",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Admit one generic movement-only arbiter candidate when ResolveProfileCombatAction reports a too-close MinRange recovery for any valid hostile target, then execute the existing native range mover.",
+    "owned_behavior": "Only shared world.profile_combat_range candidate admission and its deterministic regression coverage.",
+    "expected_observable_change": "A valid too-close non-Drudge hostile produces one Movement-only world.profile_combat_range commit, an outward logical destination through MoveBotToProfileRange, native launch/progress, and then a legal ordinary profile cast retry.",
+    "owned_files": [
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+      "tests/test_bot_route_combat_target_policy.py",
+      "tests/test_bot_world_population_mgr_combat_movement_module.py"
+    ],
+    "conditionally_owned_files": [
+      {
+        "path": "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+        "condition": "Only if the existing generic outward mover cannot satisfy the fixture; otherwise leave it untouched."
+      }
+    ],
+    "read_only_inspection": "Other source may be inspected only to verify the admitted edge; no adjacent fix may be included.",
+    "preexisting_dirty_files": []
+  },
+  "deterministic_fixture": {
+    "counterexample": "A non-Drudge hostile is alive, attackable, same-map/same-instance, and in line of sight; the actor is inside the selected action MinRange. Before repair, world.profile_combat_range returns not_owned_drudge_target before attempting movement.",
+    "production_boundary": "Exercise the actual fallback candidate admission semantics and existing typed arbiter contract. Prove the candidate reaches MoveBotToProfileRange for the too-close case and records movement submission/progress before an ordinary cast retry; source presence alone cannot pass.",
+    "required_positive": [
+      "ResolveProfileCombatAction preserves the action MinRange.",
+      "The typed arbiter receives world.profile_combat_range with only Movement ownership.",
+      "The valid too-close non-Drudge case reaches the existing native range mover and emits a logical outward destination.",
+      "After observed movement progress, an ordinary profile action can submit while GCD, Cast, and Target were never claimed by the movement candidate."
+    ],
+    "required_negatives": [
+      "invalid, dead, friendly, cross-map, or cross-instance targets do not admit movement",
+      "a non-Drudge target already inside its legal band does not admit needless movement",
+      "higher-priority hazard movement wins Movement and the generic candidate yields",
+      "the Drudge activation latch, max-range recovery, and line-of-sight recovery retain existing behavior",
+      "no target-entry, boss, route-node, encounter, or Magmaw conditional is introduced"
+    ],
+    "fail_before": "The counterexample terminates at not_owned_drudge_target with zero Movement commit and zero native range-mover invocation.",
+    "pass_after": "The same case commits the Movement-only candidate, invokes the existing mover, observes native progress, and allows a later ordinary cast submission."
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_bot_route_combat_target_policy.py tests/test_bot_world_population_mgr_combat_movement_module.py",
+    "pixi run pytest -q tests/test_magmaw_parasite_policy.py",
+    "wc -l src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+    "git diff --check",
+    "pixi run python -m tools.raid_program.raid_workloop status"
+  ],
+  "acceptance": [
+    "the exact counterexample fails before and passes after at the declared production boundary",
+    "generic target validity and too-close admission are independent of Drudge or Magmaw identity",
+    "the candidate owns only Movement and preserves typed arbiter conflicts",
+    "existing maximum-range, line-of-sight, Drudge-latch, and Magmaw hazard tests pass",
+    "all changed files are within the exact scope lock and every touched C/C++ file remains below 1000 lines",
+    "the worker commits one clean implementation handoff and requests independent Sol review",
+    "independent Sol review returns GO before any separately authorized build or live canary"
+  ],
+  "forbidden": [
+    "Magmaw-specific, target-entry-specific, boss-specific, route-node-specific, or encounter-specific admission logic",
+    "weakening, deleting, or overriding action-profile minimum range",
+    "ordered encounter conditionals that recreate priority before the typed arbiter",
+    "claiming GCD, Cast, Target, or Interaction in the range-only candidate",
+    "bot-side Z steering, teleportation, global tolerance, encounter MMAP, coordinate/floor changes, or synthetic native success",
+    "class policy/mechanics, coefficients, stats, gear, pet, consumable, targeting, encounter script, database, route, skill, ledger, or evidence-contract changes",
+    "DVC publication, ML admission, fixture promotion, build, provisioning, database mutation, server start, live run, retry, Magmaw acceptance, or closure"
+  ],
+  "authority": {
+    "source_mutation_allowed": true,
+    "test_mutation_allowed": true,
+    "configuration_mutation_allowed": false,
+    "route_mutation_allowed": false,
+    "skill_mutation_allowed": false,
+    "ledger_mutation_allowed": false,
+    "evidence_contract_mutation_allowed": false,
+    "builds": 0,
+    "provisioning_operations": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0,
+    "dvc_publication_allowed": false,
+    "fixture_revision_promotion_allowed": false,
+    "magmaw_acceptance_allowed": false,
+    "ml_admission_allowed": false
+  },
+  "review_and_live_gate": {
+    "implementation_state_on_worker_success": "implemented_pending_independent_review",
+    "review_requirement": "Independent Sol high review of the exact clean implementation commit, production-boundary fixture, changed-file scope, resource ownership, and no-cheat constraints.",
+    "post_review_build_command": "cmake --build build --target worldserver -j2",
+    "build_authorized": false,
+    "live_canary_authorized": false,
+    "validation_clock": {
+      "policy": "completion_watchdog",
+      "fixed_success_timer_seconds": null
+    }
+  },
+  "next_action": "Hand exactly this scope lock to one raid-bot-runtime-implementation worker. Do not build or run live. If the production boundary cannot be exercised inside the owned files, return an evidence/fixture-expansion blocker instead of substituting a source-shape test."
+}
