@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+import tools.raid_program.profile_combat_range_static_identity as static_identity
 from tools.raid_program.profile_combat_range_static_identity import (
     PENDING_LIVE_PROOF,
     STATIC_READBACK_SQL,
@@ -66,6 +67,33 @@ def test_pending_live_proof_cannot_be_rewritten_by_a_caller(field: str) -> None:
         validate_target_identity(identity)
 
     assert set(_identity()["live_proof"].values()) == {"pending_live_proof"}
+
+
+def test_pending_live_proof_export_rebinding_has_no_canonical_authority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    forged_proof = {
+        field: "proven_without_live_evidence" for field in PENDING_LIVE_PROOF
+    }
+    monkeypatch.setattr(static_identity, "PENDING_LIVE_PROOF", forged_proof)
+
+    identity = _identity()
+    assert set(identity["live_proof"].values()) == {"pending_live_proof"}
+    assert validate_target_identity(identity) == identity
+
+    forged_identity = dict(identity)
+    forged_identity["live_proof"] = forged_proof
+    with pytest.raises(
+        StaticTargetIdentityError, match="target_identity_metadata_mismatch"
+    ):
+        validate_target_identity(forged_identity)
+
+    receipt = verify_static_readback(
+        identity=identity,
+        query_target_spawn_id=250051,
+        rows=[_row()],
+    )
+    assert set(receipt["live_proof"].values()) == {"pending_live_proof"}
 
 
 def test_runtime_guid_cannot_be_substituted_as_static_spawn_key() -> None:

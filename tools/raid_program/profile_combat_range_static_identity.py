@@ -21,14 +21,24 @@ TARGET_IDENTITY_FIELDS = (
     "target_entry",
     "target_map_id",
 )
-PENDING_LIVE_PROOF = MappingProxyType({
-    "alive": "pending_live_proof",
-    "current_target": "pending_live_proof",
-    "positive_instance": "pending_live_proof",
-    "same_instance": "pending_live_proof",
-    "route_scope": "pending_live_proof",
-    "runtime_spawn_relation": "pending_live_proof",
-})
+
+
+def _pending_live_proof() -> dict[str, str]:
+    """Construct canonical pending-only state without exported authority."""
+
+    return {
+        "alive": "pending_live_proof",
+        "current_target": "pending_live_proof",
+        "positive_instance": "pending_live_proof",
+        "same_instance": "pending_live_proof",
+        "route_scope": "pending_live_proof",
+        "runtime_spawn_relation": "pending_live_proof",
+    }
+
+
+# Compatibility view only. Canonical construction and validation must never
+# read this caller-rebindable module name.
+PENDING_LIVE_PROOF = MappingProxyType(_pending_live_proof())
 STATIC_READBACK_SQL = (
     "SELECT guid AS target_spawn_id, id AS target_entry, "
     "map AS target_map_id FROM creature WHERE guid = %s"
@@ -70,7 +80,7 @@ def target_identity(
             target_map_id, field="target_map_id"
         ),
         "static_readback_key": "target_spawn_id",
-        "live_proof": dict(PENDING_LIVE_PROOF),
+        "live_proof": _pending_live_proof(),
     }
     return identity
 
@@ -166,7 +176,7 @@ def verify_static_readback(
         "query": static_readback_request(bound),
         "row": expected_row,
         "target_identity": bound,
-        "live_proof": dict(PENDING_LIVE_PROOF),
+        "live_proof": _pending_live_proof(),
     }
 
 
