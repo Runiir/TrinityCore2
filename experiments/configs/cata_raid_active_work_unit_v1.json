@@ -1,51 +1,56 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:static_identity_transitive_lexical_capture",
-  "owner_skill": "raid-evidence-lifecycle",
+  "work_unit": "shard:generic_min_range_stage2_typed_identity",
+  "owner_skill": "raid-shard-architecture",
   "classification": "authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "7ae13c0d1a19dba2d4196464c75f469e7cc6d2b4",
-  "immutable_input_commit": "9a097f66a6d412a5068cce7a7a8554fd027de09a",
-  "architecture_scope": "Evidence lifecycle only: capture transitive semantic built-ins and exception types for callback-safe canonical static identity evidence.",
+  "observed_at_commit": "82235939da2b837163b255c7ff9936d248d8ef54",
+  "immutable_input_commit": "82235939da2b837163b255c7ff9936d248d8ef54",
+  "architecture_scope": "Stage 2 static only: exact authority, recurrence, atomic bundle, frozen provision, typed spawn readback, and static seal.",
   "behavior_change": false,
-  "evidence_contract_change": true,
-  "gate_state": "Project-defined module authority is fixed, but independent review shadowed Python built-ins and exception names to fabricate typed identities and accepted rows. The updated skill now includes this transitive capture rule.",
+  "evidence_contract_change": false,
+  "gate_state": "Typed runtime-target/static-spawn evidence contract has independent GO; Stage 2 may run once without starting a server.",
   "first_broken_edge": {
-    "id": "canonical_static_identity_closures_retain_rebindable_builtin_authority",
-    "stage": "typed_static_identity_validation_and_callback_readback",
-    "owner_classification": "raid_evidence_lifecycle",
-    "cause": "Reachable closures use LOAD_GLOBAL for semantic built-ins and caught exceptions, so callback/module rebinding can change validation and row acceptance.",
-    "review_state": "fourth_independent_review_no_go"
+    "id": "reviewed_typed_target_identity_not_yet_bound_to_static_launch_fixture",
+    "stage": "stage2_static_prestart",
+    "owner_classification": "raid_shard_architecture",
+    "cause": "The reviewed four-field identity contract has not yet produced a source/binary/route/roster/database-bound static sealed handoff.",
+    "review_state": "independent_review_go"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_static_identity_transitive_lexical_capture_authorization_handoff_20260903.json",
-    "review_path": "/tmp/magmaw-static-identity-lexical-authority-review-7ae13c0d/review_handoff.json",
-    "review_sha256": "1c03536b210dacf4066477b45d17c146841f17f9e36de7eca628589035116aac",
-    "skill_update_commit": "9a097f66a6d412a5068cce7a7a8554fd027de09a"
+    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_typed_identity_resume_authorization_handoff_20260903.json",
+    "review_path": "/tmp/magmaw-transitive-lexical-capture-review-82235939/review_handoff.json",
+    "review_sha256": "2fce0e3e53c2bd5af936282554aea2e33e71185451c83e84eb745a007b644dcf",
+    "prior_stop_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "prior_stop_sha256": "bdc701fd15c16107bdb83d7d7df7f638f3db684970bbb84c94e79e2cd95daad5"
   },
   "scope_lock": {
-    "objective": "Lexically capture the full transitive semantic dependency set and close all ordinary module/global rebinding counterexamples.",
-    "owned_files": [
-      "tools/raid_program/profile_combat_range_static_identity.py",
-      "tests/test_profile_combat_range_static_identity.py"
+    "objective": "Produce one hash-verified static_sealed_ready handoff preserving runtime target 39 and spawn 250051 as separate domains, or one typed failure.",
+    "owned_outputs": [
+      "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/run/build_control_authority_stage2_typed_identity.json",
+      "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json"
     ],
-    "expected_observable_change": "No listed semantic dependency remains a LOAD_GLOBAL authority in canonical production closures; callback-time rebinding cannot fabricate acceptance.",
-    "stop_condition": "Any third file, output/schema/query change, or expansion beyond ordinary module/global rebinding stops the work unit."
+    "stop_condition": "Any mismatch stops without retry, source mutation, native repair, or server start."
   },
   "acceptance_conditions": [
-    "All built-in/exception rebinding fixtures and prior regressions pass.",
-    "Fresh independent review returns GO before the separately owned native GUID repair."
+    "All four typed target fields survive authority, seal, admission, bundle, and static readback unchanged.",
+    "Static proof is keyed by spawn 250051 and all live relations remain pending Stage 3.",
+    "Frozen roster/profiles and zero-residue checks pass."
   ],
   "forbidden": [
-    "No downstream/native/gameplay/database/build/server/live/DVC/Stage-2 changes or actions; no invasive closure-reflection defenses."
+    "No source/build/server/live/DVC/retry/native/gameplay mutation or live inference."
   ],
   "validation_clock": {
-    "policy": "bounded_deterministic_fixtures",
-    "implementation_commit_budget": 1,
-    "independent_review_budget": 1,
+    "policy": "completion_watchdog",
+    "current_control_recurrence_gate_budget": 1,
+    "runtime_config_derivation_budget": 1,
+    "atomic_bundle_create_budget": 1,
+    "deterministic_provisioning_budget": 1,
+    "database_readback_budget": 1,
+    "static_seal_budget": 1,
     "worldserver_build_budget": 0,
     "worldserver_start_budget": 0,
     "live_attempt_budget": 0,
@@ -53,10 +58,10 @@
     "retries": 0
   },
   "issues": [
-    "Native GetRawValue/GetCounter normalization remains separately owned and Stage 3 remains closed."
+    "Native GetRawValue/GetCounter normalization is a known separate blocker and remains closed."
   ],
   "ready_for_build": false,
-  "ready_for_fixture_expansion": false,
+  "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact bounded transitive lexical-capture correction in the source handoff."
+  "next_action": "Execute the exact bounded Stage-2 static work unit in the source handoff."
 }

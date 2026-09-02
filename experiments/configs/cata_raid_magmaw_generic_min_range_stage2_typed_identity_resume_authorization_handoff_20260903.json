@@ -1,0 +1,110 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_stage2_typed_target_identity_resume",
+  "owner_skill": "raid-performance-loop",
+  "classification": "stage2_static_provision_readback_and_seal_resume_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "reviewed_evidence_contract": {
+    "commit": "82235939da2b837163b255c7ff9936d248d8ef54",
+    "tree": "3397038ae12c2a168160947a02f9178a7a2d9a9f",
+    "review_path": "/tmp/magmaw-transitive-lexical-capture-review-82235939/review_handoff.json",
+    "review_sha256": "2fce0e3e53c2bd5af936282554aea2e33e71185451c83e84eb745a007b644dcf",
+    "review_verdict": "GO",
+    "validation": "66 focused, 178 identity/admission/bundle, 227 capture; 13 reachable canonical functions/closures with zero global semantic authority"
+  },
+  "prior_stage2_stop": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "sha256": "bdc701fd15c16107bdb83d7d7df7f638f3db684970bbb84c94e79e2cd95daad5",
+    "terminal_reason": "static_target_spawn_identity_mismatch:requested_guid_39_observed_entry_13016_map_369",
+    "closed_by": "Typed runtime-target versus persistent-spawn contract and independently reviewed static readback keyed only by target_spawn_id."
+  },
+  "immutable_binary": {
+    "source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "source_tree": "75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c",
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/worktree/build/src/server/worldserver/worldserver",
+    "sha256": "4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081",
+    "build_receipt_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/identity/worldserver_build_receipt.json",
+    "build_receipt_sha256": "43dd3b89c2fc5497ab740e4789ee85efb925f6b45c8a3b6d96389a2880beb866",
+    "rebuild_authorized": false
+  },
+  "layered_build_control_authority": {
+    "schema": "cata_raid_layered_build_control_authority_v1",
+    "build_source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "reviewed_control_commit": "82235939da2b837163b255c7ff9936d248d8ef54",
+    "current_control_commit": "the exact clean commit containing this authorization and experiments/configs/cata_raid_active_work_unit_v1.json",
+    "output_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/run/build_control_authority_stage2_typed_identity.json",
+    "construction": "Write exactly the six schema fields using canonical sorted unique NUL-safe --no-renames Git path diffs for build-to-review and review-to-current, hash exact bytes, and pass path plus SHA-256 to the atomic creator.",
+    "expected_review_to_current_paths": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_typed_identity_resume_authorization_handoff_20260903.json"
+    ],
+    "fail_closed": "Any identity, path, rename, blob, hash, relation, dirty-tree, or verification-time drift stops before recurrence/provisioning."
+  },
+  "typed_target_identity": {
+    "runtime_target_guid": 39,
+    "target_spawn_id": 250051,
+    "target_entry": 41570,
+    "target_map_id": 669,
+    "static_relation": "spawn_id identifies persistent world row only",
+    "live_relation_status": "pending_stage3",
+    "forbidden_inference": [
+      "runtime counter equals spawn id",
+      "alive",
+      "current target",
+      "positive instance",
+      "same instance",
+      "route scope",
+      "runtime-spawn relation"
+    ]
+  },
+  "fixture_identity": {
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "fixture_revision": 1,
+    "case_id": "elemental_magmaw_too_close_v1",
+    "actor_guid": 30010,
+    "actor_class_spec": "elemental_shaman",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "required_bot_count": 10
+  },
+  "authorized_stage2_work_unit": {
+    "owner_skill": "raid-shard-architecture",
+    "root": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "required_actions": [
+      "Verify this committed authorization, clean exact HEAD, evidence-contract GO review, prior stop, immutable binary/build receipt, route, roster, profile, config, fixture, actor, and typed target inputs.",
+      "Construct/hash and independently diff-check the exact external layered authority before consuming a recurrence or atomic-create budget.",
+      "Run the unchanged full recurrence manifest once at authorization HEAD; require all fixtures pass, fixture expansion admitted, canary withheld, and explicit generic checkpoint eligible.",
+      "Derive one current-control runtime config receipt and run the atomic creator once using --checkpoint-runtime-target-guid 39 --checkpoint-target-spawn-id 250051 --checkpoint-target-entry 41570 --checkpoint-target-map-id 669 plus exact authority path/hash.",
+      "Execute one deterministic frozen-roster provision and one composed static readback using the production typed module keyed only by spawn 250051.",
+      "Write and hash-verify static_sealed_ready with all live facts pending Stage 3, or one exact typed_preflight_failure."
+    ],
+    "acceptance_conditions": [
+      "The authority, seal, admission, launch bundle, and readback preserve all four typed target fields without substitution.",
+      "The static row is exactly spawn 250051, entry 41570, map 669 and the receipt records the actual parameterized SQL executed.",
+      "The frozen 10-player roster, exact 2/3/5 roles, actor 30010 static identity/map, profiles, gear, talents, glyphs, consumables, and zero residue pass.",
+      "No live/runtime relation is inferred and no native checkpoint success is claimed."
+    ]
+  },
+  "budgets": {
+    "current_control_recurrence_gate": 1,
+    "runtime_config_derivation": 1,
+    "atomic_bundle_create": 1,
+    "deterministic_provisioning": 1,
+    "database_readbacks": 1,
+    "static_seals": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No repository/source/test/config/route/roster/ledger/skill/runtime-default/database-schema/gameplay mutation during Stage 2.",
+    "No build, server/auth start, live capture, native repair, canary, DVC, promotion, ML admission, retry, projection, waiver, target substitution, or live inference."
+  ],
+  "next_action": "Dispatch exactly one fresh raid-shard-architecture owner. The known native raw-GUID blocker remains separately owned and Stage 3 stays closed."
+}
