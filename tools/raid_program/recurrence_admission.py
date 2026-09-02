@@ -53,6 +53,11 @@ from tools.raid_program.recurrence_checkpoint_seals import (
     sha256_file,
     verify_case_checkpoint_config,
 )
+from tools.raid_program.profile_combat_range_static_identity import (
+    StaticTargetIdentityError,
+    identity_from_projection,
+    validate_target_identity,
+)
 
 SCHEMA = "cata_raid_recurrence_admission_v1"
 FIXTURE_STATE_FIELDS = (
@@ -255,10 +260,12 @@ def native_path_checkpoint_seal(
 
 def profile_combat_range_checkpoint_seal(
     *, worktree: Path, binary: Path, build_receipt: Path, decision: Path,
-    case_id: str, actor_guid: int, target_guid: int, profile_manifest: Path,
+    case_id: str, actor_guid: int, runtime_target_guid: int,
+    target_spawn_id: int, target_entry: int, target_map_id: int,
+    profile_manifest: Path,
     runtime_profile_overlay: dict[str, Any],
     expected_runtime_profile_id: str,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     decision_value = _load(decision.resolve(), "decision")
     requests = _profile_combat_range_checkpoint_contract(
         decision_value, label="profile_combat_range_checkpoint"
@@ -270,7 +277,9 @@ def profile_combat_range_checkpoint_seal(
     seal = build_profile_combat_range_checkpoint_seal(
         worktree=worktree, binary=binary, build_receipt=build_receipt,
         decision=decision, case_id=case_id, actor_guid=actor_guid,
-        target_guid=target_guid, profile_manifest=profile_manifest,
+        runtime_target_guid=runtime_target_guid,
+        target_spawn_id=target_spawn_id, target_entry=target_entry,
+        target_map_id=target_map_id, profile_manifest=profile_manifest,
         runtime_profile_overlay=runtime_profile_overlay,
         expected_runtime_profile_id=expected_runtime_profile_id,
         git_fn=_git,
@@ -289,6 +298,33 @@ def _config_number(path: Path, key: str) -> int:
     return 0
 
 
+def _checkpoint_target_projection(seal: object) -> dict[str, Any]:
+    if not isinstance(seal, dict) or seal.get("fixture_id") != (
+        PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
+    ):
+        return {
+            "checkpoint_runtime_target_guid": None,
+            "checkpoint_target_guid": None,
+            "checkpoint_target_spawn_id": None,
+            "checkpoint_target_entry": None,
+            "checkpoint_target_map_id": None,
+            "checkpoint_target_identity": None,
+        }
+    typed_identity = identity_from_projection(seal)
+    if validate_target_identity(seal.get("target_identity")) != typed_identity:
+        raise StaticTargetIdentityError("target_identity_projection_mismatch")
+    return {
+        "checkpoint_runtime_target_guid": typed_identity["runtime_target_guid"],
+        # Transitional consumer projection until the bounded native/capture
+        # normalization work unit lands.
+        "checkpoint_target_guid": typed_identity["runtime_target_guid"],
+        "checkpoint_target_spawn_id": typed_identity["target_spawn_id"],
+        "checkpoint_target_entry": typed_identity["target_entry"],
+        "checkpoint_target_map_id": typed_identity["target_map_id"],
+        "checkpoint_target_identity": typed_identity,
+    }
+
+
 def _verify_profile_combat_range_checkpoint_seal(
     *, seal: object, worktree: Path, binary: Path, build_receipt: Path,
     decision: Path, runtime_config: Path, profile_manifest: Path,
@@ -300,12 +336,19 @@ def _verify_profile_combat_range_checkpoint_seal(
             "profile_combat_range_checkpoint_seal_missing"
         )
     actor_guid = seal.get("actor_guid")
-    target_guid = seal.get("target_guid")
+    try:
+        typed_identity = identity_from_projection(seal)
+        if validate_target_identity(seal.get("target_identity")) != typed_identity:
+            raise StaticTargetIdentityError(
+                "target_identity_projection_mismatch"
+            )
+    except StaticTargetIdentityError as error:
+        raise RecurrenceAdmissionError(
+            f"profile_combat_range_checkpoint_{error}"
+        ) from error
     if (
         not isinstance(actor_guid, int) or isinstance(actor_guid, bool)
         or actor_guid <= 0
-        or not isinstance(target_guid, int) or isinstance(target_guid, bool)
-        or target_guid <= 0
     ):
         raise RecurrenceAdmissionError(
             "profile_combat_range_checkpoint_identity_invalid"
@@ -313,7 +356,11 @@ def _verify_profile_combat_range_checkpoint_seal(
     expected = profile_combat_range_checkpoint_seal(
         worktree=worktree, binary=binary, build_receipt=build_receipt,
         decision=decision, case_id=seal["case_id"], actor_guid=actor_guid,
-        target_guid=target_guid, profile_manifest=profile_manifest,
+        runtime_target_guid=typed_identity["runtime_target_guid"],
+        target_spawn_id=typed_identity["target_spawn_id"],
+        target_entry=typed_identity["target_entry"],
+        target_map_id=typed_identity["target_map_id"],
+        profile_manifest=profile_manifest,
         runtime_profile_overlay=runtime_profile_overlay,
         expected_runtime_profile_id=expected_runtime_profile_id,
     )
@@ -330,8 +377,20 @@ def _verify_profile_combat_range_checkpoint_seal(
         ) != actor_guid
         or _config_number(
             runtime_config,
-            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetGuid",
-        ) != target_guid
+            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.RuntimeTargetGuid",
+        ) != typed_identity["runtime_target_guid"]
+        or _config_number(
+            runtime_config,
+            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetSpawnId",
+        ) != typed_identity["target_spawn_id"]
+        or _config_number(
+            runtime_config,
+            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetEntry",
+        ) != typed_identity["target_entry"]
+        or _config_number(
+            runtime_config,
+            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetMapId",
+        ) != typed_identity["target_map_id"]
         or expected.get("authority") != PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY
     ):
         raise RecurrenceAdmissionError(
@@ -712,16 +771,31 @@ def create_recurrence_admission(
                 runtime_config,
                 f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.ActorGuid",
             )
-            target_guid = _config_number(
+            runtime_target_guid = _config_number(
                 runtime_config,
-                f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetGuid",
+                f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.RuntimeTargetGuid",
+            )
+            target_spawn_id = _config_number(
+                runtime_config,
+                f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetSpawnId",
+            )
+            target_entry = _config_number(
+                runtime_config,
+                f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetEntry",
+            )
+            target_map_id = _config_number(
+                runtime_config,
+                f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetMapId",
             )
             checkpoint_seal = _verify_profile_combat_range_checkpoint_seal(
                 seal=profile_combat_range_checkpoint_seal(
                     worktree=worktree, binary=binary,
                     build_receipt=build_receipt, decision=decision,
                     case_id=case_id, actor_guid=actor_guid,
-                    target_guid=target_guid, profile_manifest=profile_manifest,
+                    runtime_target_guid=runtime_target_guid,
+                    target_spawn_id=target_spawn_id,
+                    target_entry=target_entry, target_map_id=target_map_id,
+                    profile_manifest=profile_manifest,
                     runtime_profile_overlay=verified_overlay,
                     expected_runtime_profile_id=expected_runtime_profile_id,
                 ),
@@ -769,6 +843,7 @@ def create_recurrence_admission(
         "gameplay_mutations_allowed": False if fixture_expansion else None,
         "checkpoint_seal": checkpoint_seal,
         "checkpoint_fixture_id": selected_checkpoint_fixture_id,
+        **_checkpoint_target_projection(checkpoint_seal),
         "runtime_profile_overlay": verified_overlay,
         "expected_runtime_profile_id": expected_runtime_profile_id,
         **{key: decision_value.get(key) for key in FIXTURE_STATE_FIELDS},
@@ -1104,6 +1179,19 @@ def verify_recurrence_admission(
             )
     elif checkpoint_seal is not None:
         raise RecurrenceAdmissionError("checkpoint_seal_unexpected")
+    try:
+        expected_target_projection = _checkpoint_target_projection(checkpoint_seal)
+    except StaticTargetIdentityError as error:
+        raise RecurrenceAdmissionError(
+            f"profile_combat_range_checkpoint_{error}"
+        ) from error
+    if any(
+        admission.get(field) != expected
+        for field, expected in expected_target_projection.items()
+    ):
+        raise RecurrenceAdmissionError(
+            "profile_combat_range_checkpoint_admission_projection_mismatch"
+        )
 
     suite = _load(suite_path, "suite_receipt")
     if suite.get("schema") != "trinity_raid_regression_suite_receipt_v1":
@@ -1206,10 +1294,7 @@ def verify_recurrence_admission(
             checkpoint_seal.get("actor_guid")
             if isinstance(checkpoint_seal, dict) else None
         ),
-        "checkpoint_target_guid": (
-            checkpoint_seal.get("target_guid")
-            if isinstance(checkpoint_seal, dict) else None
-        ),
+        **expected_target_projection,
         "bindings": {
             "route_manifest": (admission.get("bindings") or {})["route_manifest"],
             **({"build_control_authority": authority_binding_recorded}

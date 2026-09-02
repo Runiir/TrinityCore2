@@ -37,8 +37,17 @@ from tools.raid_program.prestart_bundle_dialects import (
     PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
     PROFILE_COMBAT_RANGE_FIXTURE_COMMAND,
     PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+    PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
+    PROFILE_COMBAT_RANGE_TARGET_ENTRY,
     PROFILE_COMBAT_RANGE_TARGET_GUID,
+    PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
+    PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
     select_dialect,
+)
+from tools.raid_program.profile_combat_range_static_identity import (
+    PENDING_LIVE_PROOF,
+    perform_static_readback,
+    target_identity,
 )
 from tools.raid_program.controller_route_hold import (
     ControllerRouteHoldScheduler,
@@ -380,7 +389,12 @@ def _generic_profile_range_fixture(tmp_path: Path) -> dict[str, object]:
         "actor_guid": PROFILE_COMBAT_RANGE_ACTOR_GUID,
         "checkpoint_fixture_id": PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
         "checkpoint_case_id": PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
-        "checkpoint_target_guid": PROFILE_COMBAT_RANGE_TARGET_GUID,
+        "checkpoint_runtime_target_guid": (
+            PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID
+        ),
+        "checkpoint_target_spawn_id": PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
+        "checkpoint_target_entry": PROFILE_COMBAT_RANGE_TARGET_ENTRY,
+        "checkpoint_target_map_id": PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
     })
     _restage_base_runtime_config(fixture)
     return fixture
@@ -403,7 +417,9 @@ def test_generic_profile_range_dialect_binds_exact_actor_fixture_case_and_target
         output_dir=tmp_path / "bundle",
         admission_sha256="a" * 64,
         dialect=PROFILE_COMBAT_RANGE,
-        checkpoint_target_guid=PROFILE_COMBAT_RANGE_TARGET_GUID,
+        checkpoint_runtime_target_guid=(
+            PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID
+        ),
     )
     assert argv[argv.index(
         "--profile-combat-range-checkpoint-actor-guid"
@@ -411,14 +427,16 @@ def test_generic_profile_range_dialect_binds_exact_actor_fixture_case_and_target
     assert argv[argv.index(
         "--profile-combat-range-checkpoint-target-guid"
     ) + 1] == str(PROFILE_COMBAT_RANGE_TARGET_GUID)
-    with pytest.raises(BundleError, match="target_guid_mismatch"):
+    with pytest.raises(BundleError, match="runtime_target_guid_mismatch"):
         prestart_bundle.expected_launch_argv(
             worktree=tmp_path,
             binary=tmp_path / "worldserver",
             output_dir=tmp_path / "bundle",
             admission_sha256="a" * 64,
             dialect=PROFILE_COMBAT_RANGE,
-            checkpoint_target_guid=PROFILE_COMBAT_RANGE_TARGET_GUID + 1,
+            checkpoint_runtime_target_guid=(
+                PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID + 1
+            ),
         )
     with pytest.raises(DialectError):
         select_dialect(
@@ -469,6 +487,38 @@ def test_generic_profile_range_manifest_crosses_atomic_create_and_verify(
     assert admission["checkpoint_fixture_id"] == (
         PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
     )
+    expected_target_identity = target_identity(
+        runtime_target_guid=PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
+        target_spawn_id=PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
+        target_entry=PROFILE_COMBAT_RANGE_TARGET_ENTRY,
+        target_map_id=PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
+    )
+    seal = json.loads(
+        (output / BUNDLE_NAMES["checkpoint_seal"]).read_text(encoding="utf-8")
+    )
+    launch = json.loads(
+        (output / BUNDLE_NAMES["launch_contract"]).read_text(encoding="utf-8")
+    )
+    verified = verify_bundle(output)
+    assert seal["target_identity"] == expected_target_identity
+    assert admission["checkpoint_target_identity"] == expected_target_identity
+    assert launch["target_identity"] == expected_target_identity
+    assert verified["target_identity"] == expected_target_identity
+    assert verified["checkpoint_runtime_target_guid"] == 39
+    assert verified["checkpoint_target_spawn_id"] == 250051
+    assert verified["checkpoint_target_entry"] == 41570
+    assert verified["checkpoint_target_map_id"] == 669
+
+    receipt = perform_static_readback(
+        identity=verified["target_identity"],
+        query=lambda _statement, parameters: [{
+            "target_spawn_id": parameters[0],
+            "target_entry": 41570,
+            "target_map_id": 669,
+        }],
+    )
+    assert receipt["target_identity"] == expected_target_identity
+    assert receipt["live_proof"] == PENDING_LIVE_PROOF
 
     source = json.loads(
         (output / BUNDLE_NAMES["source_route_manifest"]).read_text(
@@ -488,9 +538,6 @@ def test_generic_profile_range_manifest_crosses_atomic_create_and_verify(
     assert runtime["routes"][0]["route_node_id"] == "bwd.magmaw.encounter"
     assert runtime["routes"][0]["source_entry"] == 41570
 
-    launch = json.loads(
-        (output / BUNDLE_NAMES["launch_contract"]).read_text(encoding="utf-8")
-    )
     argv = launch["launch_argv"]
     assert argv.count("--profile-combat-range-checkpoint-actor-guid") == 1
     assert argv.count("--profile-combat-range-checkpoint-target-guid") == 1
@@ -541,7 +588,10 @@ def test_generic_profile_range_rejects_ineligible_global_selection(
         ("wrong_fixture", "chainwielder_identity_input_mismatch"),
         ("missing_case", "chainwielder_identity_input_mismatch"),
         ("wrong_actor", "chainwielder_identity_input_mismatch"),
-        ("wrong_target", "profile_combat_range_target_guid_mismatch"),
+        ("wrong_target", "profile_combat_range_target_identity_mismatch"),
+        ("wrong_spawn", "profile_combat_range_target_identity_mismatch"),
+        ("wrong_static_entry", "profile_combat_range_target_identity_mismatch"),
+        ("wrong_map", "profile_combat_range_target_identity_mismatch"),
         ("wrong_entry", "route_checkpoint_identity_mismatch"),
         ("wrong_route_shape", "route_checkpoint_node_missing_or_ambiguous"),
     ],
@@ -558,7 +608,17 @@ def test_generic_profile_range_create_fails_closed_on_identity_or_route_mutation
     elif mutation == "wrong_actor":
         kwargs["actor_guid"] = PROFILE_COMBAT_RANGE_ACTOR_GUID + 1
     elif mutation == "wrong_target":
-        kwargs["checkpoint_target_guid"] = PROFILE_COMBAT_RANGE_TARGET_GUID + 1
+        kwargs["checkpoint_runtime_target_guid"] = (
+            PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID + 1
+        )
+    elif mutation == "wrong_spawn":
+        kwargs["checkpoint_target_spawn_id"] = (
+            PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID + 1
+        )
+    elif mutation == "wrong_static_entry":
+        kwargs["checkpoint_target_entry"] = PROFILE_COMBAT_RANGE_TARGET_ENTRY + 1
+    elif mutation == "wrong_map":
+        kwargs["checkpoint_target_map_id"] = PROFILE_COMBAT_RANGE_TARGET_MAP_ID + 1
     else:
         route = fixture["paths"]["route_manifest"]
         payload = json.loads(route.read_text(encoding="utf-8"))

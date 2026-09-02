@@ -9,6 +9,11 @@ import re
 import subprocess
 from typing import Any, Callable
 
+from tools.raid_program.profile_combat_range_static_identity import (
+    identity_from_projection,
+    target_identity,
+)
+
 
 CHECKPOINT_SEAL_SCHEMA = "cata_raid_checkpoint_seal_v1"
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
@@ -335,11 +340,12 @@ def build_case_checkpoint_seal(
 
 def build_profile_combat_range_checkpoint_seal(
     *, worktree: Path, binary: Path, build_receipt: Path, decision: Path,
-    case_id: str, actor_guid: int, target_guid: int,
+    case_id: str, actor_guid: int, runtime_target_guid: int,
+    target_spawn_id: int, target_entry: int, target_map_id: int,
     profile_manifest: Path, runtime_profile_overlay: dict[str, Any],
     expected_runtime_profile_id: str,
     git_fn: Callable[..., str | bytes],
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """Seal the generic profile-range observation identity, including target."""
 
     if not isinstance(case_id, str) or not case_id.strip():
@@ -347,12 +353,21 @@ def build_profile_combat_range_checkpoint_seal(
     if (
         not isinstance(actor_guid, int) or isinstance(actor_guid, bool)
         or actor_guid <= 0
-        or not isinstance(target_guid, int) or isinstance(target_guid, bool)
-        or target_guid <= 0
     ):
         raise RecurrenceAdmissionError(
             "profile_combat_range_checkpoint_target_invalid"
         )
+    try:
+        typed_identity = target_identity(
+            runtime_target_guid=runtime_target_guid,
+            target_spawn_id=target_spawn_id,
+            target_entry=target_entry,
+            target_map_id=target_map_id,
+        )
+    except ValueError as error:
+        raise RecurrenceAdmissionError(
+            f"profile_combat_range_checkpoint_{error}"
+        ) from error
     worktree = worktree.resolve()
     payload: dict[str, Any] = {
         "schema": CHECKPOINT_SEAL_SCHEMA,
@@ -361,7 +376,14 @@ def build_profile_combat_range_checkpoint_seal(
         "purpose": FIXTURE_EXPANSION_PURPOSE,
         "authority": PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY,
         "actor_guid": actor_guid,
-        "target_guid": target_guid,
+        **{
+            field: typed_identity[field]
+            for field in (
+                "runtime_target_guid", "target_spawn_id",
+                "target_entry", "target_map_id",
+            )
+        },
+        "target_identity": typed_identity,
         "source_commit": str(git_fn(worktree, "rev-parse", "HEAD")),
         "source_tree": str(git_fn(worktree, "rev-parse", "HEAD^{tree}")),
         "binary_sha256": sha256_file(binary.resolve()),
@@ -373,7 +395,14 @@ def build_profile_combat_range_checkpoint_seal(
             runtime_profile_overlay
         ),
     }
-    return _seal_payload(payload)
+    sealed = _seal_payload(payload)
+    # Re-project before returning so a future schema edit cannot silently
+    # desynchronize the flattened seal fields from its typed identity.
+    if identity_from_projection(sealed) != sealed["target_identity"]:
+        raise RecurrenceAdmissionError(
+            "profile_combat_range_checkpoint_identity_projection_mismatch"
+        )
+    return sealed
 
 
 def verify_case_checkpoint_config(

@@ -53,8 +53,10 @@ from tools.raid_program.prestart_bundle_dialects import (
     DialectError,
     MAGMAW_TRANSFER,
     PROFILE_COMBAT_RANGE,
+    PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
     PROFILE_COMBAT_RANGE_TARGET_ENTRY,
-    PROFILE_COMBAT_RANGE_TARGET_GUID,
+    PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
+    PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
     capture_option,
     config_values as dialect_config_values,
     create_seal,
@@ -68,6 +70,11 @@ from tools.raid_program.prestart_bundle_dialects import (
     select_dialect,
     validate_ledger_manifest,
     validate_route_rows,
+)
+from tools.raid_program.profile_combat_range_static_identity import (
+    StaticTargetIdentityError,
+    target_identity,
+    validate_target_identity,
 )
 
 
@@ -215,7 +222,7 @@ def _capture_paths(output_dir: Path) -> list[Path]:
 def expected_launch_argv(
     *, worktree: Path, binary: Path, output_dir: Path, admission_sha256: str,
     dialect: str = CHAINWIELDER,
-    checkpoint_target_guid: int | None = None,
+    checkpoint_runtime_target_guid: int | None = None,
     personal_threat_episode_target: dict[str, Any] | None = None,
 ) -> list[str]:
     """Return the only capture command admitted by this atomic bundle."""
@@ -253,10 +260,10 @@ def expected_launch_argv(
             str(target["parent_wave_generation"]),
             "--no-personal-threat-episode-parent-generation-authoritative",
         ])
-    if dialect == PROFILE_COMBAT_RANGE and checkpoint_target_guid != (
-        PROFILE_COMBAT_RANGE_TARGET_GUID
+    if dialect == PROFILE_COMBAT_RANGE and checkpoint_runtime_target_guid != (
+        PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID
     ):
-        raise BundleError("profile_combat_range_target_guid_mismatch")
+        raise BundleError("profile_combat_range_runtime_target_guid_mismatch")
     return argv
 
 
@@ -780,11 +787,30 @@ def verify_bundle(
     }:
         raise BundleError("launch_arm_predicates_invalid")
     actor_guid = dialect_identity(dialect, scenario_id=SCENARIO_ID)["actor_guid"]
-    checkpoint_target_guid = None
+    checkpoint_runtime_target_guid = None
+    checkpoint_target_identity = None
     if dialect == PROFILE_COMBAT_RANGE:
-        checkpoint_target_guid = verified.get("checkpoint_target_guid")
-        if checkpoint_target_guid != PROFILE_COMBAT_RANGE_TARGET_GUID:
-            raise BundleError("profile_combat_range_target_guid_mismatch")
+        checkpoint_runtime_target_guid = verified.get(
+            "checkpoint_runtime_target_guid"
+        )
+        checkpoint_target_identity = verified.get("checkpoint_target_identity")
+        try:
+            typed_identity = validate_target_identity(checkpoint_target_identity)
+        except StaticTargetIdentityError as error:
+            raise BundleError(f"profile_combat_range_{error}") from error
+        if typed_identity != target_identity(
+            runtime_target_guid=PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
+            target_spawn_id=PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
+            target_entry=PROFILE_COMBAT_RANGE_TARGET_ENTRY,
+            target_map_id=PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
+        ):
+            raise BundleError("profile_combat_range_target_identity_mismatch")
+        if checkpoint_runtime_target_guid != typed_identity["runtime_target_guid"]:
+            raise BundleError("profile_combat_range_runtime_target_guid_mismatch")
+        if verified.get("checkpoint_target_guid") != checkpoint_runtime_target_guid:
+            raise BundleError("profile_combat_range_legacy_target_guid_mismatch")
+        if launch.get("target_identity") != typed_identity:
+            raise BundleError("launch_target_identity_mismatch")
         if verified.get("checkpoint_actor_guid") != actor_guid:
             raise BundleError("profile_combat_range_actor_guid_mismatch")
     if launch.get("expected_lifecycle_predicates") != lifecycle_predicates(
@@ -797,7 +823,7 @@ def verify_bundle(
     if argv != expected_launch_argv(
         worktree=worktree, binary=binary, output_dir=logical_root,
         admission_sha256=admission_sha, dialect=dialect,
-        checkpoint_target_guid=checkpoint_target_guid,
+        checkpoint_runtime_target_guid=checkpoint_runtime_target_guid,
         personal_threat_episode_target=launch_target,
     ):
         raise BundleError("launch_argv_exact_binding_mismatch")
@@ -809,6 +835,15 @@ def verify_bundle(
         "source_commit": commit,
         "source_tree": tree,
         "route_identity": expected_route_identity,
+        "target_identity": checkpoint_target_identity,
+        "checkpoint_runtime_target_guid": verified.get(
+            "checkpoint_runtime_target_guid"
+        ),
+        "checkpoint_target_spawn_id": verified.get(
+            "checkpoint_target_spawn_id"
+        ),
+        "checkpoint_target_entry": verified.get("checkpoint_target_entry"),
+        "checkpoint_target_map_id": verified.get("checkpoint_target_map_id"),
         "launch_argv": argv,
     }
 
@@ -848,7 +883,10 @@ def create_bundle(
     personal_threat_episode_route_generation: int | None = None,
     personal_threat_episode_parent_wave_generation: int | None = None,
     personal_threat_episode_parent_generation_authoritative: bool | None = None,
-    checkpoint_target_guid: int | None = None,
+    checkpoint_runtime_target_guid: int | None = None,
+    checkpoint_target_spawn_id: int | None = None,
+    checkpoint_target_entry: int | None = None,
+    checkpoint_target_map_id: int | None = None,
     build_control_authority: Path | None = None,
     build_control_authority_sha256: str | None = None,
 ) -> dict[str, Any]:
@@ -875,12 +913,31 @@ def create_bundle(
             checkpoint_fixture_id=checkpoint_fixture_id,
             checkpoint_case_id=checkpoint_case_id,
         )
-        if dialect == PROFILE_COMBAT_RANGE and checkpoint_target_guid != (
-            PROFILE_COMBAT_RANGE_TARGET_GUID
-        ):
-            raise BundleError("profile_combat_range_target_guid_mismatch")
-        if dialect != PROFILE_COMBAT_RANGE and checkpoint_target_guid is not None:
-            raise BundleError("checkpoint_target_guid_unexpected")
+        checkpoint_identity_inputs = (
+            checkpoint_runtime_target_guid,
+            checkpoint_target_spawn_id,
+            checkpoint_target_entry,
+            checkpoint_target_map_id,
+        )
+        if dialect == PROFILE_COMBAT_RANGE:
+            try:
+                supplied_target_identity = target_identity(
+                    runtime_target_guid=checkpoint_runtime_target_guid,
+                    target_spawn_id=checkpoint_target_spawn_id,
+                    target_entry=checkpoint_target_entry,
+                    target_map_id=checkpoint_target_map_id,
+                )
+            except StaticTargetIdentityError as error:
+                raise BundleError(f"profile_combat_range_{error}") from error
+            if supplied_target_identity != target_identity(
+                runtime_target_guid=PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
+                target_spawn_id=PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
+                target_entry=PROFILE_COMBAT_RANGE_TARGET_ENTRY,
+                target_map_id=PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
+            ):
+                raise BundleError("profile_combat_range_target_identity_mismatch")
+        elif any(value is not None for value in checkpoint_identity_inputs):
+            raise BundleError("checkpoint_target_identity_unexpected")
         if dialect == MAGMAW_TRANSFER and Path(os.path.abspath(ledger)) != (
             worktree.resolve() / ledger_relative_path(dialect)
         ):
@@ -1111,11 +1168,15 @@ def create_bundle(
             "expected_lifecycle_predicates": lifecycle_predicates(
                 dialect, actor_guid=actor_guid,
             ),
+            "target_identity": (
+                supplied_target_identity
+                if dialect == PROFILE_COMBAT_RANGE else None
+            ),
             "launch_argv": expected_launch_argv(
                 worktree=worktree, binary=binary, output_dir=output_dir,
                 admission_sha256=admission_sha, dialect=dialect,
-                checkpoint_target_guid=(
-                    checkpoint_target_guid
+                checkpoint_runtime_target_guid=(
+                    checkpoint_runtime_target_guid
                     if dialect == PROFILE_COMBAT_RANGE else None
                 ),
                 personal_threat_episode_target=personal_threat_episode_target,
@@ -1185,7 +1246,10 @@ def parser() -> argparse.ArgumentParser:
     create.add_argument("--actor-guid", type=int, required=True)
     create.add_argument("--checkpoint-fixture-id", required=True)
     create.add_argument("--checkpoint-case-id")
-    create.add_argument("--checkpoint-target-guid", type=int)
+    create.add_argument("--checkpoint-runtime-target-guid", type=int)
+    create.add_argument("--checkpoint-target-spawn-id", type=int)
+    create.add_argument("--checkpoint-target-entry", type=int)
+    create.add_argument("--checkpoint-target-map-id", type=int)
     create.add_argument("--personal-threat-episode-actor-guid", type=int)
     create.add_argument("--personal-threat-episode-scope-key")
     create.add_argument("--personal-threat-episode-route-node-id")

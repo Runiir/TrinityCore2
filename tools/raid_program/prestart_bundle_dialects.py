@@ -31,6 +31,9 @@ from tools.raid_program.recurrence_admission import (
 from tools.raid_program.recurrence_checkpoint_seals import (
     profile_combat_range_checkpoint_contract,
 )
+from tools.raid_program.profile_combat_range_static_identity import (
+    target_identity,
+)
 
 
 CHAINWIELDER = "chainwielder"
@@ -38,8 +41,11 @@ MAGMAW_TRANSFER = "magmaw_transfer"
 PROFILE_COMBAT_RANGE = "profile_combat_range"
 CHAINWIELDER_ACTOR_GUID = 30008
 PROFILE_COMBAT_RANGE_ACTOR_GUID = 30010
-PROFILE_COMBAT_RANGE_TARGET_GUID = 39
+PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID = 39
+PROFILE_COMBAT_RANGE_TARGET_GUID = PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID
+PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID = 250051
 PROFILE_COMBAT_RANGE_TARGET_ENTRY = 41570
+PROFILE_COMBAT_RANGE_TARGET_MAP_ID = 669
 PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID = "elemental_magmaw_too_close_v1"
 CHAINWIELDER_ROUTE_NODE_IDS = (
     "bwd.magmaw.chainwielder",
@@ -496,8 +502,17 @@ def config_values(dialect: str) -> dict[str, str]:
             f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.ActorGuid": (
                 str(PROFILE_COMBAT_RANGE_ACTOR_GUID)
             ),
-            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetGuid": (
-                str(PROFILE_COMBAT_RANGE_TARGET_GUID)
+            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.RuntimeTargetGuid": (
+                str(PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID)
+            ),
+            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetSpawnId": (
+                str(PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID)
+            ),
+            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetEntry": (
+                str(PROFILE_COMBAT_RANGE_TARGET_ENTRY)
+            ),
+            f"{PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX}.TargetMapId": (
+                str(PROFILE_COMBAT_RANGE_TARGET_MAP_ID)
             ),
         }
     raise DialectError("checkpoint_dialect_invalid")
@@ -548,7 +563,10 @@ def create_seal(
         return profile_combat_range_checkpoint_seal(
             **common, case_id=PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
             actor_guid=PROFILE_COMBAT_RANGE_ACTOR_GUID,
-            target_guid=PROFILE_COMBAT_RANGE_TARGET_GUID,
+            runtime_target_guid=PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
+            target_spawn_id=PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
+            target_entry=PROFILE_COMBAT_RANGE_TARGET_ENTRY,
+            target_map_id=PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
         )
     raise DialectError("checkpoint_dialect_invalid")
 
@@ -580,9 +598,17 @@ def identity(dialect: str, *, scenario_id: str) -> dict[str, Any]:
             "runtime_profile_id": scenario_id,
             "pool_tag": scenario_id,
             "actor_guid": PROFILE_COMBAT_RANGE_ACTOR_GUID,
-            "target_guid": PROFILE_COMBAT_RANGE_TARGET_GUID,
+            "runtime_target_guid": PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
+            "target_spawn_id": PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
             "target_entry": PROFILE_COMBAT_RANGE_TARGET_ENTRY,
-            "map_id": 669,
+            "target_map_id": PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
+            "map_id": PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
+            "target_identity": target_identity(
+                runtime_target_guid=PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
+                target_spawn_id=PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
+                target_entry=PROFILE_COMBAT_RANGE_TARGET_ENTRY,
+                target_map_id=PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
+            ),
             "checkpoint_fixture_id": PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
             "checkpoint_case_id": PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
             "task_authority_enabled": False,
@@ -610,7 +636,7 @@ def capture_option(dialect: str) -> tuple[str, ...]:
             "--profile-combat-range-checkpoint-actor-guid",
             str(PROFILE_COMBAT_RANGE_ACTOR_GUID),
             "--profile-combat-range-checkpoint-target-guid",
-            str(PROFILE_COMBAT_RANGE_TARGET_GUID),
+            str(PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID),
         )
     raise DialectError("checkpoint_dialect_invalid")
 
@@ -649,8 +675,14 @@ def lifecycle_predicates(dialect: str, *, actor_guid: int) -> dict[str, Any]:
             "stage": "completed",
             "terminal": True,
             "actor_guid": actor_guid,
-            "target_guid": PROFILE_COMBAT_RANGE_TARGET_GUID,
-            "map_id": 669,
+            "runtime_target_guid": PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
+            # Transitional native response name; it is constrained to the
+            # explicitly typed runtime counter above.
+            "target_guid": PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
+            "target_spawn_id": PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
+            "target_entry": PROFILE_COMBAT_RANGE_TARGET_ENTRY,
+            "target_map_id": PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
+            "map_id": PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
             "fixture_id": PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
             "case_id": PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
             "authority": PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY,

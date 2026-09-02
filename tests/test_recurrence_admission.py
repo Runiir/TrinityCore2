@@ -27,13 +27,27 @@ from tools.raid_program.recurrence_admission import (
     NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
     NATIVE_PATH_CHECKPOINT_REQUIRED_PENDING_FIXTURE_IDS,
     NATIVE_PATH_CHECKPOINT_REQUIRED_REQUESTS,
+    PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX,
+    PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
     RecurrenceAdmissionError,
     chainwielder_checkpoint_seal,
     build_runtime_profile_suffix_manifest,
     create_recurrence_admission,
     native_path_checkpoint_seal,
+    profile_combat_range_checkpoint_seal,
     sha256_file,
     verify_recurrence_admission,
+)
+from tools.raid_program.prestart_bundle_dialects import (
+    PROFILE_COMBAT_RANGE_ACTOR_GUID,
+    PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
+    PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
+    PROFILE_COMBAT_RANGE_TARGET_ENTRY,
+    PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
+    PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
+)
+from tools.raid_program.profile_combat_range_static_identity import (
+    target_identity,
 )
 from tools.raid_program.recurrence_checkpoint_seals import (
     fixture_expansion_contract,
@@ -400,6 +414,102 @@ def _create_chainwielder_checkpoint_admission(
         runtime_profile_overlay=overlay,
         expected_runtime_profile_id="test_profile",
         checkpoint_fixture_id=checkpoint_fixture_id,
+        purpose=FIXTURE_EXPANSION_PURPOSE,
+    )
+    return seal
+
+
+def _create_profile_combat_range_checkpoint_admission(
+    paths: dict[str, Path | str],
+    *, config_overrides: dict[str, int] | None = None,
+) -> dict[str, object]:
+    admission = Path(paths["admission"])
+    decision = Path(paths["decision"])
+    suite = Path(paths["suite"])
+    config = Path(paths["config"])
+    admission.unlink()
+    decision_value = json.loads(decision.read_text(encoding="utf-8"))
+    decision_value.update({
+        "build_admitted": False,
+        "canary_admitted": False,
+        "fixture_expansion_admitted": True,
+        "fixture_expansion_target_ids": [
+            PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
+        ],
+        "fixture_expansion_requests": [],
+        "pending_fixture_ids": [PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID],
+    })
+    _write_json(decision, decision_value)
+    suite_value = json.loads(suite.read_text(encoding="utf-8"))
+    suite_value["verifications"] = [{
+        "fixture_id": PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+        "fixture_revision": 1,
+        "passed": True,
+    }]
+    _write_json(suite, suite_value)
+    profile_manifest, overlay = _runtime_profile_authority(paths)
+    identity = target_identity(
+        runtime_target_guid=PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID,
+        target_spawn_id=PROFILE_COMBAT_RANGE_TARGET_SPAWN_ID,
+        target_entry=PROFILE_COMBAT_RANGE_TARGET_ENTRY,
+        target_map_id=PROFILE_COMBAT_RANGE_TARGET_MAP_ID,
+    )
+    seal = profile_combat_range_checkpoint_seal(
+        worktree=Path(paths["root"]),
+        binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        decision=decision,
+        case_id=PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID,
+        actor_guid=PROFILE_COMBAT_RANGE_ACTOR_GUID,
+        runtime_target_guid=identity["runtime_target_guid"],
+        target_spawn_id=identity["target_spawn_id"],
+        target_entry=identity["target_entry"],
+        target_map_id=identity["target_map_id"],
+        profile_manifest=profile_manifest,
+        runtime_profile_overlay=overlay,
+        expected_runtime_profile_id="test_profile",
+    )
+    source_commit = _git(Path(paths["root"]), "rev-parse", "HEAD")
+    prefix = PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX
+    config_values = {
+        "RuntimeTargetGuid": identity["runtime_target_guid"],
+        "TargetSpawnId": identity["target_spawn_id"],
+        "TargetEntry": identity["target_entry"],
+        "TargetMapId": identity["target_map_id"],
+        **(config_overrides or {}),
+    }
+    config.write_text(
+        config.read_text(encoding="utf-8")
+        + 'BotWorld.RuntimeProfile = "test_profile"\n'
+        + f'BotWorld.ProfileManifest = "{profile_manifest.resolve()}"\n'
+        + "BotWorld.ValidationRoute.Enable = 1\n"
+        + "BotWorld.ValidationRoute.PrepullCheckpointEnable = 1\n"
+        + f"{prefix}.Enable = 1\n"
+        + f'{prefix}.FixtureId = "{PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID}"\n'
+        + f'{prefix}.CaseId = "{PROFILE_COMBAT_RANGE_CHECKPOINT_CASE_ID}"\n'
+        + f"{prefix}.ActorGuid = {PROFILE_COMBAT_RANGE_ACTOR_GUID}\n"
+        + f"{prefix}.RuntimeTargetGuid = {config_values['RuntimeTargetGuid']}\n"
+        + f"{prefix}.TargetSpawnId = {config_values['TargetSpawnId']}\n"
+        + f"{prefix}.TargetEntry = {config_values['TargetEntry']}\n"
+        + f"{prefix}.TargetMapId = {config_values['TargetMapId']}\n"
+        + f'{prefix}.SealSha256 = "{seal["seal_sha256"]}"\n'
+        + f'{prefix}.SourceCommit = "{source_commit}"\n',
+        encoding="utf-8",
+    )
+    create_recurrence_admission(
+        output=admission,
+        worktree=Path(paths["root"]),
+        binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        runtime_config=config,
+        route_manifest=Path(paths["route"]),
+        ledger=Path(paths["ledger"]),
+        decision=decision,
+        suite_receipt=suite,
+        profile_manifest=profile_manifest,
+        runtime_profile_overlay=overlay,
+        expected_runtime_profile_id="test_profile",
+        checkpoint_fixture_id=PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
         purpose=FIXTURE_EXPANSION_PURPOSE,
     )
     return seal
@@ -1428,3 +1538,63 @@ def test_recurrence_admission_rejects_nonquarantined_fixture_mixed_with_quaranti
         RecurrenceAdmissionError, match="invalidated_fixture_ids_present"
     ):
         _verify(paths)
+
+
+def test_profile_range_admission_preserves_both_target_identity_domains(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    seal = _create_profile_combat_range_checkpoint_admission(paths)
+
+    result = _verify_chainwielder(paths)
+    admission = json.loads(
+        Path(paths["admission"]).read_text(encoding="utf-8")
+    )
+    expected = target_identity(
+        runtime_target_guid=39,
+        target_spawn_id=250051,
+        target_entry=41570,
+        target_map_id=669,
+    )
+    assert seal["target_identity"] == expected
+    assert admission["checkpoint_target_identity"] == expected
+    assert result["checkpoint_target_identity"] == expected
+    assert result["checkpoint_runtime_target_guid"] == 39
+    assert result["checkpoint_target_spawn_id"] == 250051
+    assert result["checkpoint_target_entry"] == 41570
+    assert result["checkpoint_target_map_id"] == 669
+    assert result["checkpoint_target_guid"] == 39
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["RuntimeTargetGuid", "TargetSpawnId", "TargetEntry", "TargetMapId"],
+)
+def test_profile_range_seal_rejects_post_seal_config_identity_drift(
+    tmp_path: Path, field: str,
+) -> None:
+    paths = _fixture(tmp_path)
+    with pytest.raises(
+        RecurrenceAdmissionError,
+        match="profile_combat_range_checkpoint_config_mismatch",
+    ):
+        _create_profile_combat_range_checkpoint_admission(
+            paths, config_overrides={field: 999999},
+        )
+
+
+def test_profile_range_admission_rejects_projection_drift(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    _create_profile_combat_range_checkpoint_admission(paths)
+    admission_path = Path(paths["admission"])
+    admission = json.loads(admission_path.read_text(encoding="utf-8"))
+    admission["checkpoint_target_spawn_id"] = 39
+    _write_json(admission_path, admission)
+
+    with pytest.raises(
+        RecurrenceAdmissionError,
+        match="profile_combat_range_checkpoint_admission_projection_mismatch",
+    ):
+        _verify_chainwielder(paths)
