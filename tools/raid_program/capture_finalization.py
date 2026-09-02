@@ -11,6 +11,7 @@ from tools.bot_ml.analyze_combat_log import analyze_combat_log
 from tools.bot_ml.run_live_bot_validation import (
     combined_combat_log,
     combat_log_transport_status,
+    trinity_config_string,
 )
 from tools.raid_program.capture_drudge_contract import accepted_drudge_contract
 from tools.raid_program.capture_evidence_demux import (
@@ -44,10 +45,154 @@ from tools.raid_program.capture_telemetry_transport import (
 from tools.raid_program.capture_watchdog import (
     _CONTROLLER_TERMINAL_FAILURE_REASONS,
 )
+from tools.raid_program.chainwielder_prestart_bundle import (
+    BundleError,
+    PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
+    validate_personal_threat_episode_target,
+)
 from tools.raid_program.recurrence_checkpoint_seals import (
     MAGMAW_TRANSFER_CHECKPOINT_ACTOR_GUID,
 )
 from tools.raid_program import trace_transport_smoke
+
+
+def _canonical_object_sha256(value: object) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def _positive_int(value: object, *, allow_zero: bool = False) -> bool:
+    return (
+        isinstance(value, int)
+        and not isinstance(value, bool)
+        and value >= (0 if allow_zero else 1)
+    )
+
+
+def _prepared_route_rejections(
+    target: dict[str, Any], runtime_assets: dict[str, Any] | None,
+) -> list[str]:
+    """Prove the declaration's route literals against the authenticated row."""
+
+    assets = runtime_assets if isinstance(runtime_assets, dict) else {}
+    route_path = assets.get("route_manifest")
+    if not isinstance(route_path, str) or not route_path:
+        return ["personal_threat_episode_target_prepared_route_missing"]
+    try:
+        route_text = Path(route_path).read_text(encoding="utf-8")
+        try:
+            payload = json.loads(route_text)
+        except json.JSONDecodeError:
+            payload = {
+                "routes": [
+                    json.loads(line) for line in route_text.splitlines()
+                    if line.strip()
+                ]
+            }
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return ["personal_threat_episode_target_prepared_route_unreadable"]
+    rows = payload.get("routes") if isinstance(payload, dict) else None
+    scenario_id = assets.get("scenario_id")
+    matches = [
+        row for row in rows or []
+        if isinstance(row, dict)
+        and row.get("route_node_id") == target["route_node_id"]
+        and (not isinstance(scenario_id, str) or row.get("scenario_id") == scenario_id)
+    ] if isinstance(rows, list) else []
+    if len(matches) != 1:
+        return ["personal_threat_episode_target_route_row_missing_or_ambiguous"]
+    row = matches[0]
+    if row.get("step") != target["route_generation"]:
+        return ["personal_threat_episode_target_route_generation_mismatch"]
+    if row.get("map_id") != 669:
+        return ["personal_threat_episode_target_route_map_mismatch"]
+    if row.get("mechanic_profile") != "tank_swap_adds_raid_aoe":
+        return ["personal_threat_episode_target_encounter_mismatch"]
+    return []
+
+
+def resolve_personal_threat_episode_target(
+    declared_target: dict[str, Any] | None, *,
+    controller_route_hold_receipt: dict[str, Any] | None,
+    runtime_assets: dict[str, Any] | None,
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    """Resolve only the dynamic scope from the scheduler's stable status pair."""
+
+    if declared_target is None:
+        return None, {"requested": False, "gate_passed": True}
+    reasons: list[str] = []
+    try:
+        declaration = validate_personal_threat_episode_target(declared_target)
+    except BundleError as error:
+        declaration = None
+        reasons.append(f"personal_threat_episode_target_declaration_invalid:{error}")
+    if declaration is None:
+        declaration = dict(declared_target) if isinstance(declared_target, dict) else {}
+    receipt = controller_route_hold_receipt
+    if not isinstance(receipt, dict):
+        reasons.append("personal_threat_episode_target_controller_receipt_missing")
+        receipt = {}
+    if receipt.get("enabled") is not True:
+        reasons.append("personal_threat_episode_target_controller_receipt_invalid")
+    if receipt.get("held_status_count") != 2:
+        reasons.append("personal_threat_episode_target_stable_status_pair_missing")
+    if not isinstance(receipt.get("held_status_identity_sha256"), str) or len(
+        receipt.get("held_status_identity_sha256", "")
+    ) != 64:
+        reasons.append("personal_threat_episode_target_stable_status_identity_missing")
+    if receipt.get("failure_reason") is not None:
+        reasons.append("personal_threat_episode_target_controller_scope_drift")
+    native_scope = receipt.get("native_scope")
+    runtime_scope = receipt.get("runtime_scope")
+    if not isinstance(native_scope, dict) or not isinstance(runtime_scope, dict):
+        reasons.append("personal_threat_episode_target_controller_scope_missing")
+        native_scope = native_scope if isinstance(native_scope, dict) else {}
+        runtime_scope = runtime_scope if isinstance(runtime_scope, dict) else {}
+    cohort_id = native_scope.get("cohort_id")
+    attempt_id = native_scope.get("attempt_id")
+    wipe_generation = runtime_scope.get("wipe_generation")
+    instance_id = runtime_scope.get("instance_id")
+    if (
+        not isinstance(cohort_id, str) or not cohort_id or ":" in cohort_id
+        or not _positive_int(attempt_id)
+        or not _positive_int(wipe_generation, allow_zero=True)
+        or not _positive_int(instance_id)
+    ):
+        reasons.append("personal_threat_episode_target_controller_scope_invalid")
+    if not reasons:
+        resolved_scope_key = PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE.format(
+            cohort_id=cohort_id,
+            attempt_id=attempt_id,
+            wipe_generation=wipe_generation,
+            instance_id=instance_id,
+        )
+        resolved_target = {**declaration, "scope_key": resolved_scope_key}
+        reasons.extend(_prepared_route_rejections(resolved_target, runtime_assets))
+    else:
+        resolved_target = None
+    resolution_receipt = {
+        "source": "controller_route_hold_scheduler.frozen_stable_status_pair",
+        "controller_route_hold_receipt_sha256": _canonical_object_sha256(receipt),
+        "held_status_count": receipt.get("held_status_count"),
+        "held_status_identity_sha256": receipt.get("held_status_identity_sha256"),
+        "native_scope": native_scope,
+        "runtime_scope": runtime_scope,
+        "resolved_target": resolved_target,
+        "rejections": list(dict.fromkeys(reasons)),
+        "gate_passed": not reasons,
+    }
+    binding_receipt = {
+        "requested": True,
+        "declaration_receipt": {
+            "source": "sealed_capture_argv",
+            "target": declaration,
+            "scope_key_template": declaration.get("scope_key"),
+        },
+        "resolution_receipt": resolution_receipt,
+        "gate_passed": not reasons,
+    }
+    return resolved_target if not reasons else declaration, binding_receipt
 
 
 def normalized_batch_payload(
@@ -196,6 +341,35 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
     forbidden_entries = _forbidden_assistance_entries(normalized_rows)
     identity_after = git_identity(worktree)
     identity_stable = identity_before == identity_after
+    controller_route_hold_receipt = (
+        controller_route_hold_scheduler.receipt()
+        if controller_route_hold_scheduler is not None
+        else {
+            "schema": "generic_controller_route_hold_scheduler_v1",
+            "enabled": False,
+            "phase": "not_requested",
+            "gate_passed": None,
+            "failure_reason": None,
+        }
+    )
+    resolved_personal_threat_episode_target = setup.personal_threat_episode_target
+    personal_threat_episode_target_binding = None
+    if setup.personal_threat_episode_target is not None:
+        target_runtime_assets = dict(runtime_assets)
+        configured_route_manifest = trinity_config_string(
+            config, "BotWorld.ValidationRoute.ManifestPath",
+        )
+        if configured_route_manifest:
+            target_runtime_assets["route_manifest"] = configured_route_manifest
+            target_runtime_assets["scenario_id"] = scenario_id
+        (
+            resolved_personal_threat_episode_target,
+            personal_threat_episode_target_binding,
+        ) = resolve_personal_threat_episode_target(
+            setup.personal_threat_episode_target,
+            controller_route_hold_receipt=controller_route_hold_receipt,
+            runtime_assets=target_runtime_assets,
+        )
     controller_terminal = None
     if (
         isinstance(terminal_failure, dict)
@@ -227,8 +401,22 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
             and fixture_terminal.get("detected") is True
             else None
         ),
-        personal_threat_episode_target=setup.personal_threat_episode_target,
+        personal_threat_episode_target=resolved_personal_threat_episode_target,
     )
+    if (
+        personal_threat_episode_target_binding is not None
+        and personal_threat_episode_target_binding.get("gate_passed") is not True
+    ):
+        binding_rejections = (
+            personal_threat_episode_target_binding.get("resolution_receipt") or {}
+        ).get("rejections") or [
+            "personal_threat_episode_target_resolution_failed"
+        ]
+        demux_report["rejections"] = list(dict.fromkeys(
+            list(demux_report.get("rejections") or [])
+            + [str(reason) for reason in binding_rejections]
+        ))
+        demux_report["gate_passed"] = False
     demux_rejections = demux_report["rejections"]
     default_trace_transport_gate = trace_transport_smoke.evaluate([])
     if trace_transport_gate is None:
@@ -259,17 +447,6 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
     # interrupt. Any prior deferred interrupt is already reflected in the
     # variables used to construct the report and success classification.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    controller_route_hold_receipt = (
-        controller_route_hold_scheduler.receipt()
-        if controller_route_hold_scheduler is not None
-        else {
-            "schema": "generic_controller_route_hold_scheduler_v1",
-            "enabled": False,
-            "phase": "not_requested",
-            "gate_passed": None,
-            "failure_reason": None,
-        }
-    )
     profile_selection_accepted = bool(
         (
             len(profiles) == 1
@@ -579,6 +756,10 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
             "gate_passed": demux_report["gate_passed"],
         },
     }
+    if personal_threat_episode_target_binding is not None:
+        report["personal_threat_episode_target_binding"] = (
+            personal_threat_episode_target_binding
+        )
     output.parent.mkdir(parents=True, exist_ok=True)
     report["artifact_inventory"] = [
         _artifact_record(raw_output, "raw_normalized_jsonl"),

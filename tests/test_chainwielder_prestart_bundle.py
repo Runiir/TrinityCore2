@@ -22,6 +22,9 @@ from tools.raid_program.chainwielder_prestart_bundle import (
     create_bundle,
     verify_bundle,
 )
+from tools.raid_program.chainwielder_prestart_bundle import (
+    PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
+)
 from tools.raid_program.capture_setup import controller_route_hold_runtime_manifest_identity
 from tools.raid_program.controller_route_hold import (
     ControllerRouteHoldScheduler,
@@ -115,10 +118,23 @@ def _fixture(
     binary = tmp_path / "worldserver"
     binary.write_bytes(b"\x7fELFchainwielder")
     receipt = external / "build.json"
+    source_commit = _git(root, "rev-parse", "HEAD")
+    source_tree = _git(root, "rev-parse", "HEAD^{tree}")
+    source_snapshot = {
+        "commit": source_commit,
+        "tree": source_tree,
+        "clean": True,
+        "dirty": False,
+        "porcelain_sha256": hashlib.sha256(b"").hexdigest(),
+    }
     _write_json(receipt, {
         "classification": "success",
         "exit_code": 0,
-        "commit": _git(root, "rev-parse", "HEAD"),
+        "commit": source_commit,
+        "source_identity": {
+            stage: dict(source_snapshot)
+            for stage in ("request", "admission", "completion")
+        },
         "output_artifacts": [{
             "kind": "worldserver_elf", "path": str(binary.resolve()),
             "sha256": sha256_file(binary), "produced_by_ticket": True,
@@ -283,6 +299,18 @@ def _use_tracked_ledger(fixture: dict[str, object]) -> Path:
     receipt = paths["build_receipt"]
     receipt_value = json.loads(receipt.read_text(encoding="utf-8"))
     receipt_value["commit"] = source_commit
+    source_tree = _git(root, "rev-parse", "HEAD^{tree}")
+    source_snapshot = {
+        "commit": source_commit,
+        "tree": source_tree,
+        "clean": True,
+        "dirty": False,
+        "porcelain_sha256": hashlib.sha256(b"").hexdigest(),
+    }
+    receipt_value["source_identity"] = {
+        stage: dict(source_snapshot)
+        for stage in ("request", "admission", "completion")
+    }
     _write_json(receipt, receipt_value)
     suite = paths["suite_receipt"]
     suite_value = json.loads(suite.read_text(encoding="utf-8"))
@@ -292,7 +320,7 @@ def _use_tracked_ledger(fixture: dict[str, object]) -> Path:
     paths["ledger"] = ledger
     kwargs.update({
         "source_commit": source_commit,
-        "source_tree": _git(root, "rev-parse", "HEAD^{tree}"),
+        "source_tree": source_tree,
         "ledger": ledger,
         "ledger_sha256": sha256_file(ledger),
         "build_receipt_sha256": sha256_file(receipt),
@@ -367,6 +395,42 @@ def test_bundle_is_deterministic_and_does_not_mutate_inputs(tmp_path: Path) -> N
     second = {path.name: path.read_bytes() for path in output.iterdir()}
     assert first == second
     assert before == {key: sha256_file(path) for key, path in paths.items()}
+
+
+def test_expected_launch_argv_binds_the_complete_personal_threat_target(
+    tmp_path: Path,
+) -> None:
+    target = {
+        "actor_guid": 30008,
+        "scope_key": PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
+        "route_node_id": "bwd.magmaw.encounter",
+        "route_generation": 3,
+        "parent_wave_generation": (1 << 63) | 1,
+        "parent_generation_authoritative": False,
+    }
+    argv = prestart_bundle.expected_launch_argv(
+        worktree=tmp_path, binary=tmp_path / "worldserver",
+        output_dir=tmp_path / "bundle", admission_sha256="a" * 64,
+        personal_threat_episode_target=target,
+    )
+    assert argv[argv.index("--personal-threat-episode-actor-guid") + 1] == "30008"
+    assert argv[argv.index("--personal-threat-episode-scope-key") + 1] == target[
+        "scope_key"
+    ]
+    assert argv[argv.index("--personal-threat-episode-route-node-id") + 1] == (
+        "bwd.magmaw.encounter"
+    )
+    assert argv[argv.index("--personal-threat-episode-route-generation") + 1] == "3"
+    assert argv[argv.index("--personal-threat-episode-parent-wave-generation") + 1] == str(
+        (1 << 63) | 1
+    )
+    assert "--no-personal-threat-episode-parent-generation-authoritative" in argv
+    with pytest.raises(BundleError, match="scope_template_invalid"):
+        prestart_bundle.expected_launch_argv(
+            worktree=tmp_path, binary=tmp_path / "worldserver",
+            output_dir=tmp_path / "bundle", admission_sha256="a" * 64,
+            personal_threat_episode_target={**target, "scope_key": "attempt3"},
+        )
 
 def _native_hold(identity, *, route_node_id: str, route_sha256: str) -> dict:
     return {

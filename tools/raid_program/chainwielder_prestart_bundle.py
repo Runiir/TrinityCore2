@@ -76,6 +76,21 @@ MAP_ID = 669
 TARGET_ENTRY = 42649
 ACTOR_COUNT = 10
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
+PERSONAL_THREAT_EPISODE_TARGET_FIELDS = (
+    "actor_guid", "scope_key", "route_node_id", "route_generation",
+    "parent_wave_generation", "parent_generation_authoritative",
+)
+PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE = (
+    "{cohort_id}:{attempt_id}:{wipe_generation}:3:"
+    "bwd.magmaw.encounter:669:{instance_id}:tank_swap_adds_raid_aoe"
+)
+PERSONAL_THREAT_EPISODE_TARGET_LITERALS = {
+    "actor_guid": 30008,
+    "route_node_id": "bwd.magmaw.encounter",
+    "route_generation": 3,
+    "parent_wave_generation": (1 << 63) | 1,
+    "parent_generation_authoritative": False,
+}
 TRACKED_LEDGER_RELATIVE_PATH = Path(
     CHAINWIELDER_LEDGER_RELATIVE_PATH)
 BUNDLE_NAMES = {
@@ -115,6 +130,71 @@ class BundleError(RuntimeError):
     pass
 
 
+def validate_personal_threat_episode_target(
+    value: object,
+) -> dict[str, Any] | None:
+    """Validate the one authorized actor-local target declaration."""
+
+    if value is None:
+        return None
+    if not isinstance(value, dict) or set(value) != set(
+        PERSONAL_THREAT_EPISODE_TARGET_FIELDS
+    ):
+        raise BundleError("personal_threat_episode_target_schema_invalid")
+    if (
+        not isinstance(value.get("actor_guid"), int)
+        or isinstance(value.get("actor_guid"), bool)
+        or not isinstance(value.get("route_generation"), int)
+        or isinstance(value.get("route_generation"), bool)
+        or not isinstance(value.get("parent_wave_generation"), int)
+        or isinstance(value.get("parent_wave_generation"), bool)
+        or not isinstance(value.get("parent_generation_authoritative"), bool)
+        or not isinstance(value.get("scope_key"), str)
+        or not isinstance(value.get("route_node_id"), str)
+    ):
+        raise BundleError("personal_threat_episode_target_types_invalid")
+    for field, expected in PERSONAL_THREAT_EPISODE_TARGET_LITERALS.items():
+        if value.get(field) != expected:
+            raise BundleError(
+                f"personal_threat_episode_target_{field}_mismatch"
+            )
+    scope_key = value.get("scope_key")
+    if scope_key != PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE:
+        raise BundleError("personal_threat_episode_target_scope_template_invalid")
+    if not isinstance(scope_key, str) or not scope_key.strip():
+        raise BundleError("personal_threat_episode_target_scope_invalid")
+    return {
+        field: value[field] for field in PERSONAL_THREAT_EPISODE_TARGET_FIELDS
+    }
+
+
+def personal_threat_episode_target_from_fields(
+    *,
+    actor_guid: int | None = None,
+    scope_key: str | None = None,
+    route_node_id: str | None = None,
+    route_generation: int | None = None,
+    parent_wave_generation: int | None = None,
+    parent_generation_authoritative: bool | None = None,
+) -> dict[str, Any] | None:
+    """Build a target declaration from the exact bundle CLI fields."""
+
+    values = {
+        "actor_guid": actor_guid,
+        "scope_key": scope_key,
+        "route_node_id": route_node_id,
+        "route_generation": route_generation,
+        "parent_wave_generation": parent_wave_generation,
+        "parent_generation_authoritative": parent_generation_authoritative,
+    }
+    supplied = [field for field, value in values.items() if value is not None]
+    if not supplied:
+        return None
+    if len(supplied) != len(PERSONAL_THREAT_EPISODE_TARGET_FIELDS):
+        raise BundleError("personal_threat_episode_target_incomplete")
+    return validate_personal_threat_episode_target(values)
+
+
 def _capture_paths(output_dir: Path) -> list[Path]:
     capture_stem = output_dir.with_name(output_dir.name + ".capture")
     return [
@@ -127,11 +207,15 @@ def _capture_paths(output_dir: Path) -> list[Path]:
 def expected_launch_argv(
     *, worktree: Path, binary: Path, output_dir: Path, admission_sha256: str,
     dialect: str = CHAINWIELDER,
+    personal_threat_episode_target: dict[str, Any] | None = None,
 ) -> list[str]:
     """Return the only capture command admitted by this atomic bundle."""
 
     capture_paths = _capture_paths(output_dir)
-    return [
+    target = validate_personal_threat_episode_target(
+        personal_threat_episode_target
+    )
+    argv = [
         "pixi", "run", "python", "-m",
         "tools.raid_program.capture_phase1_raid_foundation",
         "--worktree", str(worktree.resolve()),
@@ -149,6 +233,18 @@ def expected_launch_argv(
         "--runtime-profile", SCENARIO_ID,
         "--pool-tag", SCENARIO_ID,
     ]
+    if target is not None:
+        argv.extend([
+            "--personal-threat-episode-actor-guid", str(target["actor_guid"]),
+            "--personal-threat-episode-scope-key", target["scope_key"],
+            "--personal-threat-episode-route-node-id", target["route_node_id"],
+            "--personal-threat-episode-route-generation",
+            str(target["route_generation"]),
+            "--personal-threat-episode-parent-wave-generation",
+            str(target["parent_wave_generation"]),
+            "--no-personal-threat-episode-parent-generation-authoritative",
+        ])
+    return argv
 
 
 def _json(path: Path, label: str) -> dict[str, Any]:
@@ -466,6 +562,13 @@ def verify_bundle(
     launch = _json(root / BUNDLE_NAMES["launch_contract"], "launch_contract")
     if launch.get("schema") != LAUNCH_SCHEMA or launch.get("bundle_schema") != SCHEMA:
         raise BundleError("launch_contract_schema_invalid")
+    launch_target = (
+        validate_personal_threat_episode_target(
+            launch["personal_threat_episode_target"]
+        )
+        if "personal_threat_episode_target" in launch
+        else None
+    )
     payload_names = [
         BUNDLE_NAMES[key] for key in (
             "source_route_manifest", "route_manifest", "profile_manifest",
@@ -627,6 +730,7 @@ def verify_bundle(
     if argv != expected_launch_argv(
         worktree=worktree, binary=binary, output_dir=logical_root,
         admission_sha256=admission_sha, dialect=dialect,
+        personal_threat_episode_target=launch_target,
     ):
         raise BundleError("launch_argv_exact_binding_mismatch")
     return {
@@ -670,10 +774,26 @@ def create_bundle(
     checkpoint_case_id: str | None = None,
     base_runtime_config_authority: object = LEGACY_TRACKED_SNAPSHOT_AUTHORITY,
     base_runtime_config_contract_relative_path: str | None = None,
+    personal_threat_episode_actor_guid: int | None = None,
+    personal_threat_episode_scope_key: str | None = None,
+    personal_threat_episode_route_node_id: str | None = None,
+    personal_threat_episode_route_generation: int | None = None,
+    personal_threat_episode_parent_wave_generation: int | None = None,
+    personal_threat_episode_parent_generation_authoritative: bool | None = None,
 ) -> dict[str, Any]:
     output_dir = output_dir.resolve()
     staging: Path | None = None
     try:
+        personal_threat_episode_target = personal_threat_episode_target_from_fields(
+            actor_guid=personal_threat_episode_actor_guid,
+            scope_key=personal_threat_episode_scope_key,
+            route_node_id=personal_threat_episode_route_node_id,
+            route_generation=personal_threat_episode_route_generation,
+            parent_wave_generation=personal_threat_episode_parent_wave_generation,
+            parent_generation_authoritative=(
+                personal_threat_episode_parent_generation_authoritative
+            ),
+        )
         if (
             scenario_id != SCENARIO_ID or runtime_profile_id != SCENARIO_ID
             or pool_tag != SCENARIO_ID
@@ -873,8 +993,13 @@ def create_bundle(
             "launch_argv": expected_launch_argv(
                 worktree=worktree, binary=binary, output_dir=output_dir,
                 admission_sha256=admission_sha, dialect=dialect,
+                personal_threat_episode_target=personal_threat_episode_target,
             ),
         }
+        if personal_threat_episode_target is not None:
+            launch["personal_threat_episode_target"] = (
+                personal_threat_episode_target
+            )
         _write_json(staging / BUNDLE_NAMES["launch_contract"], launch)
         _write_json(staging / BUNDLE_NAMES["bundle_manifest"], {
             "schema": MANIFEST_SCHEMA,
@@ -935,6 +1060,18 @@ def parser() -> argparse.ArgumentParser:
     create.add_argument("--actor-guid", type=int, required=True)
     create.add_argument("--checkpoint-fixture-id", required=True)
     create.add_argument("--checkpoint-case-id")
+    create.add_argument("--personal-threat-episode-actor-guid", type=int)
+    create.add_argument("--personal-threat-episode-scope-key")
+    create.add_argument("--personal-threat-episode-route-node-id")
+    create.add_argument("--personal-threat-episode-route-generation", type=int)
+    create.add_argument(
+        "--personal-threat-episode-parent-wave-generation", type=int
+    )
+    create.add_argument(
+        "--personal-threat-episode-parent-generation-authoritative",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
     create.add_argument(
         "--base-runtime-config-authority",
         default=LEGACY_TRACKED_SNAPSHOT_AUTHORITY,

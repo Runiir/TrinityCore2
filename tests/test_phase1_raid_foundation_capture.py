@@ -89,9 +89,109 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     finalize_capture,
 )
 from tools.raid_program.capture_setup import recurrence_profile_authority
+from tools.raid_program.chainwielder_prestart_bundle import (
+    PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
+)
+from tools.raid_program.capture_finalization import (
+    resolve_personal_threat_episode_target,
+)
 from tools.raid_program.capture_checkpoint_controller import (
     checkpoint_controller_dialect,
 )
+
+
+def _personal_threat_target_declaration() -> dict:
+    return {
+        "actor_guid": 30008,
+        "scope_key": PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
+        "route_node_id": "bwd.magmaw.encounter",
+        "route_generation": 3,
+        "parent_wave_generation": (1 << 63) | 1,
+        "parent_generation_authoritative": False,
+    }
+
+
+def _personal_threat_route_assets(tmp_path: Path) -> dict:
+    route = tmp_path / "prepared-route.json"
+    route.write_text(json.dumps({
+        "routes": [
+            {"step": 1, "route_node_id": "bwd.magmaw.chainwielder", "map_id": 669},
+            {"step": 2, "route_node_id": "bwd.magmaw.drudges", "map_id": 669},
+            {
+                "step": 3, "route_node_id": "bwd.magmaw.encounter", "map_id": 669,
+                "mechanic_profile": "tank_swap_adds_raid_aoe",
+            },
+        ],
+    }), encoding="utf-8")
+    return {
+        "route_manifest": str(route),
+        "route_partition": {
+            "node_ids": [
+                "bwd.magmaw.chainwielder", "bwd.magmaw.drudges",
+                "bwd.magmaw.encounter",
+            ],
+        },
+    }
+
+
+def _personal_threat_route_hold_receipt(*, instance_id: int = 7) -> dict:
+    return {
+        "enabled": True,
+        "phase": "complete",
+        "gate_passed": True,
+        "failure_reason": None,
+        "held_status_count": 2,
+        "held_status_identity_sha256": "e" * 64,
+        "native_scope": {"cohort_id": "default", "attempt_id": 1},
+        "runtime_scope": {"wipe_generation": 0, "instance_id": instance_id},
+    }
+
+
+def test_personal_threat_target_resolves_only_from_stable_route_hold_scope(
+    tmp_path: Path,
+) -> None:
+    resolved, binding = resolve_personal_threat_episode_target(
+        _personal_threat_target_declaration(),
+        controller_route_hold_receipt=_personal_threat_route_hold_receipt(),
+        runtime_assets=_personal_threat_route_assets(tmp_path),
+    )
+    assert resolved["scope_key"] == (
+        "default:1:0:3:bwd.magmaw.encounter:669:7:tank_swap_adds_raid_aoe"
+    )
+    assert ":2:" not in resolved["scope_key"]
+    assert binding["gate_passed"] is True
+    assert binding["declaration_receipt"]["scope_key_template"] == (
+        PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE
+    )
+    assert binding["resolution_receipt"]["runtime_scope"] == {
+        "wipe_generation": 0, "instance_id": 7,
+    }
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["missing_pair", "scope_drift", "route_mismatch", "parent_mismatch"],
+)
+def test_personal_threat_target_binding_fails_closed(
+    tmp_path: Path, mutation: str,
+) -> None:
+    receipt = _personal_threat_route_hold_receipt()
+    target = _personal_threat_target_declaration()
+    assets = _personal_threat_route_assets(tmp_path)
+    if mutation == "missing_pair":
+        receipt["held_status_count"] = 1
+    elif mutation == "scope_drift":
+        receipt["failure_reason"] = "controller_route_hold_runtime_scope_drift"
+    elif mutation == "route_mismatch":
+        target["route_node_id"] = "bwd.magmaw.drudges"
+    else:
+        target["parent_wave_generation"] += 1
+    resolved, binding = resolve_personal_threat_episode_target(
+        target, controller_route_hold_receipt=receipt, runtime_assets=assets,
+    )
+    assert binding["gate_passed"] is False
+    assert binding["resolution_receipt"]["rejections"]
+    assert resolved["scope_key"] == target["scope_key"]
 
 
 def test_normal_gameplay_admission_does_not_supply_fixture_profile_authority():
@@ -466,7 +566,8 @@ def test_prepare_capture_setup_returns_typed_admitted_state(tmp_path: Path, monk
         "--worktree", str(tmp_path),
         "--runtime-profile", "stonecore_5n",
         "--personal-threat-episode-actor-guid", "30008",
-        "--personal-threat-episode-scope-key", "magmaw-scope",
+        "--personal-threat-episode-scope-key",
+        PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
         "--personal-threat-episode-route-node-id", "bwd.magmaw.encounter",
         "--personal-threat-episode-route-generation", "3",
         "--personal-threat-episode-parent-wave-generation",
@@ -475,7 +576,7 @@ def test_prepare_capture_setup_returns_typed_admitted_state(tmp_path: Path, monk
     ], root=tmp_path)
     assert targeted.personal_threat_episode_target == {
         "actor_guid": 30008,
-        "scope_key": "magmaw-scope",
+        "scope_key": PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
         "route_node_id": "bwd.magmaw.encounter",
         "route_generation": 3,
         "parent_wave_generation": (1 << 63) | 1,
@@ -693,9 +794,20 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     server_log = tmp_path / "capture.worldserver.log"
     config.write_bytes(b"fixture-config")
     server_log.write_bytes(b"fixture-log")
+    prepared_route = tmp_path / "prepared-route.json"
+    prepared_route.write_text(json.dumps({
+        "routes": [
+            {"step": 1, "route_node_id": "bwd.magmaw.chainwielder", "map_id": 669},
+            {"step": 2, "route_node_id": "bwd.magmaw.drudges", "map_id": 669},
+                {
+                    "step": 3, "route_node_id": "bwd.magmaw.encounter", "map_id": 669,
+                    "mechanic_profile": "tank_swap_adds_raid_aoe",
+                },
+        ],
+    }), encoding="utf-8")
     personal_threat_episode_target = {
         "actor_guid": 30008,
-        "scope_key": "magmaw-scope",
+        "scope_key": PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
         "route_node_id": "bwd.magmaw.encounter",
         "route_generation": 3,
         "parent_wave_generation": (1 << 63) | 1,
@@ -718,6 +830,27 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
         telemetry_timeout_sec=60,
     )
     identity = {"clean": True, "commit": "a" * 40}
+    controller_route_hold_receipt = {
+        "schema": "generic_controller_route_hold_scheduler_v1",
+        "enabled": True,
+        "phase": "complete",
+        "gate_passed": True,
+        "failure_reason": None,
+        "held_status_count": 2,
+        "held_status_identity_sha256": "e" * 64,
+        "start_ack_count": 1,
+        "native_scope": {
+            "cohort_id": "default",
+            "attempt_id": 1,
+            "runtime_profile": "stonecore_5n",
+        },
+        "runtime_scope": {"wipe_generation": 0, "instance_id": 7},
+    }
+
+    class _RouteHold:
+        def receipt(self):
+            return controller_route_hold_receipt
+
     setup = CaptureSetup(
         args=args,
         binary=tmp_path / "worldserver",
@@ -732,8 +865,18 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
         checkpoint_arm_command=None,
         preflight={"passed": True, "reasons": []},
         identity_before=identity,
-        runtime_assets={"passed": True, "pool_tag_filter": None},
-        controller_route_hold_scheduler=None,
+        runtime_assets={
+            "passed": True,
+            "pool_tag_filter": None,
+            "route_manifest": str(prepared_route),
+            "route_partition": {
+                "node_ids": [
+                    "bwd.magmaw.chainwielder", "bwd.magmaw.drudges",
+                    "bwd.magmaw.encounter",
+                ],
+            },
+        },
+        controller_route_hold_scheduler=_RouteHold(),
         drudge_observed=False,
         drudge_required=False,
         drudge_navmesh_preflight={"required": False, "all_passed": None},
@@ -842,7 +985,13 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     monkeypatch.setattr(capture_finalization, "git_identity", lambda worktree: identity)
     complete_join = {
         "requested": True,
-        "target": personal_threat_episode_target,
+        "target": {
+            **personal_threat_episode_target,
+            "scope_key": PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE.format(
+                cohort_id="default", attempt_id=1, wipe_generation=0,
+                instance_id=7,
+            ),
+        },
         "records": [
             {"edge": "falling", "capture_sequence": 1},
             {"edge": "rising", "capture_sequence": 2},
@@ -896,7 +1045,7 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     assert exit_code == 0
     assert stdout_report == stored_report
     assert stored_report["classification"] == "success"
-    assert demux_targets == [personal_threat_episode_target]
+    assert demux_targets == [complete_join["target"]]
     assert stored_report["evidence_demux"][
         "personal_threat_episode_join"
     ] == complete_join
@@ -952,7 +1101,7 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     assert abort_stored_report["telemetry_abort"]["reason"] == (
         "fixture_terminal_forced_evidence_incomplete"
     )
-    assert demux_targets[-1] == personal_threat_episode_target
+    assert demux_targets[-1] == complete_join["target"]
 
     gameplay_output = tmp_path / "gameplay-terminal-incomplete.json"
     gameplay_raw_output = tmp_path / "gameplay-terminal-incomplete.raw.jsonl"
@@ -994,7 +1143,7 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     assert gameplay_stored_report["telemetry_abort"]["reason"] == (
         "terminal_failure_forced_evidence_incomplete"
     )
-    assert demux_targets[-1] == personal_threat_episode_target
+    assert demux_targets[-1] == complete_join["target"]
 
     try:
         finalize_capture(setup, run)

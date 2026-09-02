@@ -52,6 +52,20 @@ def _request(
     }
 
 
+def _personal_threat_target() -> dict:
+    return {
+        "actor_guid": 30008,
+        "scope_key": (
+            "{cohort_id}:{attempt_id}:{wipe_generation}:3:"
+            "bwd.magmaw.encounter:669:{instance_id}:tank_swap_adds_raid_aoe"
+        ),
+        "route_node_id": "bwd.magmaw.encounter",
+        "route_generation": 3,
+        "parent_wave_generation": (1 << 63) | 1,
+        "parent_generation_authoritative": False,
+    }
+
+
 def _write(path: Path, payload: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
@@ -88,6 +102,55 @@ def test_prebuild_is_deterministic_and_exact(tmp_path: Path) -> None:
         "/usr/bin/cmake", "--build", "build", "--target", "worldserver",
         "--parallel", "8",
     ]
+
+
+def test_personal_threat_target_is_hash_bound_and_emitted_to_bundle_command(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    request = _request(tmp_path)
+    request["personal_threat_episode_target"] = _personal_threat_target()
+    plan = launcher.compose_plan(copy.deepcopy(request))
+    assert plan["personal_threat_episode_target"] == request[
+        "personal_threat_episode_target"
+    ]
+    changed = copy.deepcopy(request)
+    changed["personal_threat_episode_target"]["parent_wave_generation"] += 1
+    with pytest.raises(
+        launcher.ReplayPlanError, match="target_parent_wave_generation_mismatch"
+    ):
+        launcher.validate_plan(plan, changed)
+
+    argv = launcher._bundle_create(
+        worktree=ROOT,
+        source=SOURCE,
+        run_root=tmp_path / "run",
+        policy_path=ROOT / launcher.POLICY_RELATIVE_PATH,
+        policy_sha256="a" * 64,
+        artifacts={
+            "binary": {"sha256": "b" * 64},
+            "build_receipt": {"sha256": "c" * 64},
+            "decision": {"path": str(tmp_path / "decision"), "sha256": "d" * 64},
+            "suite_receipt": {"path": str(tmp_path / "suite"), "sha256": "e" * 64},
+            "route_manifest": {"path": str(tmp_path / "route"), "sha256": "f" * 64},
+            "base_runtime_config_receipt": {
+                "path": str(tmp_path / "config"), "sha256": "0" * 64,
+            },
+            "ledger": {"path": str(tmp_path / "ledger"), "sha256": "1" * 64},
+        },
+        personal_threat_episode_target=request[
+            "personal_threat_episode_target"
+        ],
+    )
+    for field, value in (
+        ("actor-guid", "30008"),
+        ("scope-key", request["personal_threat_episode_target"]["scope_key"]),
+        ("route-node-id", "bwd.magmaw.encounter"),
+        ("route-generation", "3"),
+        ("parent-wave-generation", str((1 << 63) | 1)),
+    ):
+        flag = "--personal-threat-episode-" + field
+        assert argv[argv.index(flag) + 1] == value
+    assert "--no-personal-threat-episode-parent-generation-authoritative" in argv
 
 
 def test_prebuild_passes_generic_work_unit_to_source_authority(

@@ -23,6 +23,7 @@ from tools.raid_program.chainwielder_prestart_bundle import (
     BUNDLE_NAMES,
     BundleError,
     SCENARIO_ID,
+    validate_personal_threat_episode_target,
     verify_bundle,
 )
 from tools.raid_program.canonical_route_staging import git_output
@@ -92,6 +93,7 @@ REQUEST_FIELDS = {
     "base_runtime_config_receipt",
     "runtime_config_authorities",
 }
+OPTIONAL_REQUEST_FIELDS = {"personal_threat_episode_target"}
 
 
 class ReplayPlanError(RuntimeError):
@@ -151,6 +153,15 @@ def _artifact(value: object, label: str) -> dict[str, str]:
     if not isinstance(value, dict) or set(value) != {"path"}:
         raise ReplayPlanError(f"{label}_artifact_invalid")
     return {"path": str(_absolute_path(value["path"], label))}
+
+
+def _personal_threat_episode_target(
+    value: object,
+) -> dict[str, Any] | None:
+    try:
+        return validate_personal_threat_episode_target(value)
+    except BundleError as error:
+        raise ReplayPlanError(str(error)) from error
 
 
 def _bound_file(path: Path, label: str) -> dict[str, str]:
@@ -438,10 +449,11 @@ def _bundle_create(
     *, worktree: Path, source: dict[str, str], run_root: Path,
     policy_path: Path, policy_sha256: str,
     artifacts: dict[str, dict[str, str]],
+    personal_threat_episode_target: dict[str, Any] | None = None,
 ) -> list[str]:
     binary = worktree / "build/src/server/worldserver/worldserver"
     build_receipt = run_root / "worldserver_build_receipt.json"
-    return [
+    command = [
         "pixi", "run", "python", "-m",
         "tools.raid_program.chainwielder_prestart_bundle", "create",
         "--output-dir", str(run_root / "prestart_bundle"),
@@ -472,6 +484,21 @@ def _bundle_create(
         "--base-runtime-config-authority", TRACKED_DERIVED_AUTHORITY,
         "--base-runtime-config-contract-relative-path", RUNTIME_CONFIG_CONTRACT,
     ]
+    if personal_threat_episode_target is not None:
+        command.extend([
+            "--personal-threat-episode-actor-guid",
+            str(personal_threat_episode_target["actor_guid"]),
+            "--personal-threat-episode-scope-key",
+            personal_threat_episode_target["scope_key"],
+            "--personal-threat-episode-route-node-id",
+            personal_threat_episode_target["route_node_id"],
+            "--personal-threat-episode-route-generation",
+            str(personal_threat_episode_target["route_generation"]),
+            "--personal-threat-episode-parent-wave-generation",
+            str(personal_threat_episode_target["parent_wave_generation"]),
+            "--no-personal-threat-episode-parent-generation-authoritative",
+        ])
+    return command
 
 
 def _command(argv: Sequence[str], worktree: Path) -> dict[str, Any]:
@@ -480,11 +507,28 @@ def _command(argv: Sequence[str], worktree: Path) -> dict[str, Any]:
 
 def _request_context(
     request: dict[str, Any], *, check_prebuild_outputs: bool,
-) -> tuple[Path, Path, dict[str, dict[str, str]], Path, dict[str, Any], str]:
+) -> tuple[
+    Path, Path, dict[str, dict[str, str]], Path, dict[str, Any], str,
+    dict[str, Any] | None,
+]:
     """Validate typed static inputs before any external command may run."""
 
-    if set(request) != REQUEST_FIELDS or request.get("schema") != REQUEST_SCHEMA:
+    request_fields = set(request)
+    if (
+        request_fields not in (
+            REQUEST_FIELDS, REQUEST_FIELDS | OPTIONAL_REQUEST_FIELDS
+        )
+        or request.get("schema") != REQUEST_SCHEMA
+    ):
         raise ReplayPlanError("request_schema_invalid")
+    if "personal_threat_episode_target" in request:
+        if request["personal_threat_episode_target"] is None:
+            raise ReplayPlanError("personal_threat_episode_target_schema_invalid")
+        personal_threat_episode_target = _personal_threat_episode_target(
+            request["personal_threat_episode_target"]
+        )
+    else:
+        personal_threat_episode_target = None
     worktree = _absolute_path(request["worktree"], "worktree")
     if worktree != ROOT:
         raise ReplayPlanError("worktree_identity_invalid")
@@ -538,7 +582,10 @@ def _request_context(
                 raise ReplayPlanError(f"declared_output_exists:{output.name}")
         if run_root.exists() and any(run_root.iterdir()):
             raise ReplayPlanError("run_root_not_empty")
-    return worktree, run_root, artifacts, policy_path, policy, policy_sha256
+    return (
+        worktree, run_root, artifacts, policy_path, policy, policy_sha256,
+        personal_threat_episode_target,
+    )
 
 
 def compose_plan(
@@ -546,9 +593,10 @@ def compose_plan(
 ) -> dict[str, Any]:
     """Compose the immutable configure/build half of the replay."""
 
-    worktree, run_root, _artifacts, policy_path, policy, policy_sha256 = (
-        _request_context(request, check_prebuild_outputs=_check_outputs)
-    )
+    (
+        worktree, run_root, _artifacts, policy_path, policy, policy_sha256,
+        personal_threat_episode_target,
+    ) = _request_context(request, check_prebuild_outputs=_check_outputs)
     source = _source_authority(worktree, request["expected_work_unit"])
     configure_receipt = run_root / "configure_receipt.json"
     build_receipt = run_root / "worldserver_build_receipt.json"
@@ -576,6 +624,8 @@ def compose_plan(
             "postbuild_realization_required": True,
         },
     }
+    if personal_threat_episode_target is not None:
+        plan["personal_threat_episode_target"] = personal_threat_episode_target
     plan["plan_sha256"] = _sha256_bytes(_canonical_bytes(plan))
     return plan
 
@@ -658,9 +708,10 @@ def realize_plan(
     """Bind postbuild commands only after authenticating fresh build outputs."""
 
     validate_plan(prebuild, request)
-    worktree, run_root, requested, policy_path, policy, policy_sha256 = (
-        _request_context(request, check_prebuild_outputs=False)
-    )
+    (
+        worktree, run_root, requested, policy_path, policy, policy_sha256,
+        personal_threat_episode_target,
+    ) = _request_context(request, check_prebuild_outputs=False)
     source = prebuild["source"]
     current_source = _source_authority(
         worktree, request["expected_work_unit"]
@@ -701,6 +752,7 @@ def realize_plan(
             worktree=worktree, source=current_source, run_root=run_root,
             policy_path=policy_path, policy_sha256=policy_sha256,
             artifacts=artifacts,
+            personal_threat_episode_target=personal_threat_episode_target,
         ), worktree),
         "bundle_verify": _command([
             "pixi", "run", "python", "-m",
@@ -756,6 +808,8 @@ def realize_plan(
             "fixed_success_timer_seconds": None,
         },
     }
+    if personal_threat_episode_target is not None:
+        plan["personal_threat_episode_target"] = personal_threat_episode_target
     plan["plan_sha256"] = _sha256_bytes(_canonical_bytes(plan))
     return plan
 
