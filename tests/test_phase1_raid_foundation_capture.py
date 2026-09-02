@@ -98,6 +98,9 @@ from tools.raid_program.capture_finalization import (
 from tools.raid_program.capture_checkpoint_controller import (
     checkpoint_controller_dialect,
 )
+from tools.raid_program.recurrence_admission import (
+    CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+)
 
 
 def _personal_threat_target_declaration() -> dict:
@@ -594,6 +597,238 @@ def test_prepare_capture_setup_returns_typed_admitted_state(tmp_path: Path, monk
             "--build-receipt", str(receipt),
             "--personal-threat-episode-actor-guid", "30008",
         ], root=tmp_path)
+
+
+def test_targeted_chainwielder_scheduler_binds_stable_runtime_scope_before_demux(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Exercise the production setup path and its typed scheduler scope gate."""
+
+    binary = tmp_path / "worldserver"
+    config = tmp_path / "worldserver.conf"
+    receipt = tmp_path / "build.json"
+    admission_path = tmp_path / "admission.json"
+    route = tmp_path / "prepared-route.json"
+    for path in (binary, config, receipt, admission_path):
+        path.write_bytes(b"fixture")
+    route.write_text("{}", encoding="utf-8")
+    target = _personal_threat_target_declaration()
+    admission = {
+        "valid": True,
+        "purpose": "fixture_expansion_replay",
+        "fixture_expansion_target_ids": ["chainwielder_checkpoint"],
+        "checkpoint_fixture_id": CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+        "checkpoint_seal_sha256": "a" * 64,
+        "source_commit": "b" * 40,
+    }
+    identity = ControllerRouteHoldLaunchIdentity(
+        scenario_id="blackwing_descent_10n_magmaw_diagnostic",
+        runtime_profile="blackwing_descent_10n_magmaw_diagnostic",
+        pool_tag="blackwing_descent_10n_magmaw_diagnostic",
+        route_manifest_sha256="c" * 64,
+        route_node_id="bwd.magmaw.chainwielder",
+        actor_guid=30008,
+        fixture_id=CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+        seal_sha256="a" * 64,
+        source_commit="b" * 40,
+    )
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.trinity_config_string",
+        lambda _config, key: str(tmp_path / "profiles.json")
+        if key == "BotWorld.ProfileManifest" else "",
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.trinity_config_bool",
+        lambda *args, **kwargs: False,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.verify_recurrence_admission",
+        lambda *args, **kwargs: admission,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.checkpoint_controller_dialect",
+        lambda *args, **kwargs: {
+            "fixture_id": CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+            "arm_command": "botautochaincheckpoint arm",
+            "scheduler_kwargs": {},
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.controller_route_hold_runtime_manifest_identity",
+        lambda **kwargs: {
+            "route_manifest_sha256": "c" * 64,
+            "initial_route_node_id": "bwd.magmaw.chainwielder",
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.controller_route_hold_launch_identity",
+        lambda **kwargs: identity,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.preflight_runtime_exclusions",
+        lambda worktree: {"passed": True, "reasons": []},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.git_identity",
+        lambda worktree: {"clean": True, "commit": "b" * 40},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_runtime_profile_assets",
+        lambda *args, **kwargs: {
+            "passed": True,
+            "reasons": [],
+            "route_manifest": str(route),
+            "pool_tag_filter": "blackwing_descent_10n_magmaw_diagnostic",
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup._drudge_navmesh_probe",
+        lambda worktree: {"all_passed": True},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup._frozen_drudge_member_anchors",
+        lambda route_manifest: {
+            member: (0.0, 0.0, 0.0) for member in range(1, 11)
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.build_policy_path_for_receipt",
+        lambda build_receipt, worktree: tmp_path / "policy.json",
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_build_receipt",
+        lambda *args, **kwargs: {"valid": True, "rejections": []},
+    )
+
+    setup = prepare_capture_setup([
+        "--binary", str(binary),
+        "--config", str(config),
+        "--output", str(tmp_path / "capture.json"),
+        "--build-receipt", str(receipt),
+        "--recurrence-admission", str(admission_path),
+        "--recurrence-admission-sha256", "d" * 64,
+        "--chainwielder-checkpoint-actor-guid", "30008",
+        "--fixture-expansion-replay",
+        "--scenario-id", "blackwing_descent_10n_magmaw_diagnostic",
+        "--runtime-profile", "blackwing_descent_10n_magmaw_diagnostic",
+        "--pool-tag", "blackwing_descent_10n_magmaw_diagnostic",
+        "--personal-threat-episode-actor-guid", str(target["actor_guid"]),
+        "--personal-threat-episode-scope-key", target["scope_key"],
+        "--personal-threat-episode-route-node-id", target["route_node_id"],
+        "--personal-threat-episode-route-generation", str(target["route_generation"]),
+        "--personal-threat-episode-parent-wave-generation",
+        str(target["parent_wave_generation"]),
+        "--no-personal-threat-episode-parent-generation-authoritative",
+    ], root=tmp_path)
+    scheduler = setup.controller_route_hold_scheduler
+    assert scheduler is not None
+
+    def hold() -> dict[str, object]:
+        return {
+            "ok": True,
+            "phase": "held",
+            "cohort_id": "cohort-a",
+            "server_epoch": 71,
+            "attempt_id": 9,
+            "scenario_id": identity.scenario_id,
+            "runtime_profile": identity.runtime_profile,
+            "route_manifest_sha256": identity.route_manifest_sha256,
+            "route_generation": 1,
+            "route_node_id": identity.route_node_id,
+            "actor_guid": identity.actor_guid,
+            "fixture_id": identity.fixture_id,
+            "seal_sha256": identity.seal_sha256,
+            "source_commit": identity.source_commit,
+            "acquire_count": 1,
+            "arm_ack_count": 0,
+            "checkpoint_terminal": False,
+            "release_count": 0,
+        }
+
+    def status(*, instance_id: int | None = 7) -> dict[str, object]:
+        runtime = {
+            "active": True,
+            "server_epoch": 71,
+            "attempt_id": 9,
+            "route_progress": {"generation": 1},
+            "controller_route_hold": hold(),
+        }
+        if instance_id is not None:
+            runtime.update({"wipe_generation": 0, "instance_id": instance_id})
+        return {
+            "ok": True,
+            "action": "botauto_status",
+            "cohort_id": "cohort-a",
+            "active_profile": identity.runtime_profile,
+            "raid_runtime": runtime,
+            "validation_route": {"generation": 1},
+        }
+
+    assert scheduler.start()
+    assert scheduler.observe(hold()) == ["botauto status"]
+    assert scheduler.observe(status()) == ["botauto status"]
+    assert scheduler.observe(status())[0].startswith(
+        "botautochaincheckpoint arm"
+    )
+    receipt_value = scheduler.receipt()
+    assert receipt_value["runtime_scope"] == {
+        "wipe_generation": 0, "instance_id": 7,
+    }
+    assert receipt_value["held_status_count"] == 2
+    resolved, binding = resolve_personal_threat_episode_target(
+        target,
+        controller_route_hold_receipt=receipt_value,
+        runtime_assets=_personal_threat_route_assets(tmp_path),
+    )
+    assert binding["gate_passed"] is True
+    assert resolved is not None
+    assert resolved["scope_key"] == (
+        "cohort-a:9:0:3:bwd.magmaw.encounter:669:7:tank_swap_adds_raid_aoe"
+    )
+
+    missing_scope = ControllerRouteHoldScheduler(
+        identity, runtime_scope_required=True,
+    )
+    missing_scope.start()
+    missing_scope.observe(hold())
+    missing_scope.observe(status(instance_id=None))
+    assert missing_scope.failure_reason == (
+        "controller_route_hold_runtime_scope_invalid"
+    )
+    _, missing_binding = resolve_personal_threat_episode_target(
+        target,
+        controller_route_hold_receipt=missing_scope.receipt(),
+        runtime_assets=_personal_threat_route_assets(tmp_path),
+    )
+    assert missing_binding["gate_passed"] is False
+
+    drifted_scope = ControllerRouteHoldScheduler(
+        identity, runtime_scope_required=True,
+    )
+    drifted_scope.start()
+    drifted_scope.observe(hold())
+    drifted_scope.observe(status())
+    drifted_scope.observe(status(instance_id=8))
+    assert drifted_scope.failure_reason == (
+        "controller_route_hold_runtime_scope_drift"
+    )
+    _, drift_binding = resolve_personal_threat_episode_target(
+        target,
+        controller_route_hold_receipt=drifted_scope.receipt(),
+        runtime_assets=_personal_threat_route_assets(tmp_path),
+    )
+    assert drift_binding["gate_passed"] is False
+
+    target_free = ControllerRouteHoldScheduler(identity)
+    target_free.start()
+    target_free.observe(hold())
+    assert target_free.observe(status(instance_id=None)) == ["botauto status"]
+    assert target_free.observe(status(instance_id=None))[0].startswith(
+        "botautochaincheckpoint arm"
+    )
+    assert target_free.failure_reason is None
+    assert target_free.receipt()["runtime_scope"] is None
 
 
 def test_capture_live_run_uses_focused_production_module():

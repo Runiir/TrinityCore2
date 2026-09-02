@@ -432,6 +432,52 @@ def test_expected_launch_argv_binds_the_complete_personal_threat_target(
             personal_threat_episode_target={**target, "scope_key": "attempt3"},
         )
 
+
+@pytest.mark.parametrize(
+    ("mutation", "reason"),
+    [
+        ("sealed_target", "personal_threat_episode_target_route_node_id_mismatch"),
+        ("emitted_argv", "launch_argv_exact_binding_mismatch"),
+    ],
+)
+def test_target_bearing_atomic_bundle_rejects_manifest_recomputed_semantic_mutation(
+    tmp_path: Path, mutation: str, reason: str,
+) -> None:
+    fixture = _fixture(tmp_path)
+    fixture["kwargs"].update({
+        "personal_threat_episode_actor_guid": 30008,
+        "personal_threat_episode_scope_key": PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
+        "personal_threat_episode_route_node_id": "bwd.magmaw.encounter",
+        "personal_threat_episode_route_generation": 3,
+        "personal_threat_episode_parent_wave_generation": (1 << 63) | 1,
+        "personal_threat_episode_parent_generation_authoritative": False,
+    })
+    assert _create(fixture)["valid"] is True
+    output = fixture["output"]
+    assert verify_bundle(output)["valid"] is True
+
+    launch_path = output / BUNDLE_NAMES["launch_contract"]
+    launch = json.loads(launch_path.read_text(encoding="utf-8"))
+    if mutation == "sealed_target":
+        launch["personal_threat_episode_target"]["route_node_id"] = (
+            "bwd.magmaw.drudges"
+        )
+    else:
+        index = launch["launch_argv"].index(
+            "--personal-threat-episode-actor-guid"
+        ) + 1
+        launch["launch_argv"][index] = "30009"
+    _write_json(launch_path, launch)
+
+    manifest_path = output / BUNDLE_NAMES["bundle_manifest"]
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for row in manifest["files"]:
+        if row["path"] == BUNDLE_NAMES["launch_contract"]:
+            row["sha256"] = sha256_file(launch_path)
+    _write_json(manifest_path, manifest)
+    with pytest.raises(BundleError, match=reason):
+        verify_bundle(output)
+
 def _native_hold(identity, *, route_node_id: str, route_sha256: str) -> dict:
     return {
         "ok": True,

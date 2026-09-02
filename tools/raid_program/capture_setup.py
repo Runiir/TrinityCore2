@@ -37,6 +37,7 @@ from tools.raid_program.controller_route_hold import (
 )
 from tools.raid_program.probe_drudge_navmesh_recovery import run_probe as _drudge_navmesh_probe
 from tools.raid_program.recurrence_admission import (
+    CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
     FIXTURE_EXPANSION_PURPOSE,
     GAMEPLAY_CANARY_PURPOSE,
     RecurrenceAdmissionError,
@@ -541,9 +542,16 @@ def prepare_capture_setup(
                 raise SystemExit(
                     "capture preflight rejected: controller_route_hold_identity_missing"
                 )
+            scheduler_kwargs = dict(checkpoint_dialect["scheduler_kwargs"])
+            if (
+                personal_threat_episode_target is not None
+                and checkpoint_dialect.get("fixture_id")
+                    == CHAINWIELDER_CHECKPOINT_FIXTURE_ID
+            ):
+                scheduler_kwargs["runtime_scope_required"] = True
             controller_route_hold_scheduler = ControllerRouteHoldScheduler(
                 controller_hold_identity,
-                **checkpoint_dialect["scheduler_kwargs"],
+                **scheduler_kwargs,
             )
     drudge_observed = not args.trace_transport_smoke and (
         profile_name == "blackwing_descent_10n"
