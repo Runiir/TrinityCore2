@@ -1,32 +1,32 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:generic_min_range_capture_sequence_fixture_completion",
+  "work_unit": "runtime:generic_min_range_capture_duplicate_receipt_fixture_completion",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Complete only the missing deterministic pre-build proof for the generic minimum-range evidence boundary: execute the capture scheduler protocol and shared C++ checkpoint transition predicate. Preserve all gameplay behavior.",
-  "gate_state": "Independent review NO-GO at commit 309c3fc5: the production dialect and source predicates are wired, but focused tests do not execute the scheduler arm/poll/terminal protocol or the shared C++ hazard-preemption-to-range-to-cast transition.",
-  "observed_at_commit": "309c3fc5611cdd9e950f491d8ac37d7ba3a04e78",
-  "immutable_input_commit": "309c3fc5611cdd9e950f491d8ac37d7ba3a04e78",
+  "architecture_scope": "Complete only the missing active duplicate-receipt regression in the deterministic generic minimum-range capture fixture. Preserve production behavior.",
+  "gate_state": "Independent review NO-GO at commit 3aadbc25: the scheduler protocol and compiled transition fixture pass, but no test duplicates the accepted arm acknowledgement while the scheduler is still awaiting_terminal.",
+  "observed_at_commit": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
+  "immutable_input_commit": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
   "behavior_change": false,
   "evidence_contract_change": true,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_capture_sequence_fixture_completion_authorization_handoff_20260902.json",
-    "sha256": "dcdb411e46c23ad086517dda7a1d0fa74c6674ef03233c1ce7cae518e9fba100",
-    "source_commit": "309c3fc5611cdd9e950f491d8ac37d7ba3a04e78",
-    "source_tree": "4b5c425ee3c8009e32b3297a1f1e34d66d8f137d"
+    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_capture_duplicate_receipt_fixture_completion_authorization_handoff_20260902.json",
+    "sha256": "6faca68fa6685d7dc5673386cab033893c9e11ae14af4f3ea53b5ea919da78e8",
+    "source_commit": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
+    "source_tree": "91f96a71869326c71c86bbd9bd20604ec9232957"
   },
   "independent_review": {
-    "external_path": "/tmp/magmaw-generic-min-range-capture-sequence-review-309c3fc5/review_handoff.json",
-    "sha256": "9d072f07dd2beb45b410ed4bb0759865c9153b5290ac3e46e7111a972f998b28",
+    "external_path": "/tmp/magmaw-generic-min-range-capture-sequence-fixture-completion-review-3aadbc25/review_handoff.json",
+    "sha256": "c77dfe40c44e64775d44a390d97b0a1774af6b27a1b33b8b99056c3b3d72429a",
     "verdict": "NO-GO",
-    "reviewed_commit": "309c3fc5611cdd9e950f491d8ac37d7ba3a04e78",
-    "reviewed_tree": "4b5c425ee3c8009e32b3297a1f1e34d66d8f137d",
+    "reviewed_commit": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
+    "reviewed_tree": "91f96a71869326c71c86bbd9bd20604ec9232957",
     "critical_findings": 0,
-    "high_findings": 2
+    "high_findings": 1
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -36,47 +36,42 @@
     "retries": 0
   },
   "first_broken_edge": {
-    "id": "generic_profile_min_range_capture_sequence_fixture_incomplete",
+    "id": "generic_profile_min_range_active_duplicate_receipt_fixture_missing",
     "owner_classification": "shared_bot_runtime_evidence_boundary",
     "actor_guid": 30010,
-    "stage": "deterministic_capture_protocol_and_transition_fixture",
-    "cause": "The capture dialect and C++ sequence predicates are present, but focused tests do not execute the ControllerRouteHoldScheduler protocol or the shared hazard-preemption-to-range-to-cast transition predicate.",
-    "causal_chain": "wired production dialect and predicates -> source-shape/manual-row tests only -> protocol and value transitions unexercised -> build/replay gate remains closed",
+    "stage": "deterministic_capture_protocol_negative_fixture",
+    "cause": "The suite does not resend the first accepted arm acknowledgement while ControllerRouteHoldScheduler is awaiting_terminal, so the existing duplicate/stale fail-closed branch is not executed.",
+    "causal_chain": "valid arm acknowledgement -> scheduler awaiting_terminal -> same arm acknowledgement duplicated -> existing duplicate/stale branch unexercised -> build/replay gate remains closed",
     "first_retained_timestamp_ms": 1788337643273,
-    "review_state": "independent_review_no_go_fixture_completion_authorized"
+    "review_state": "independent_review_no_go_one_file_test_correction_authorized"
   },
   "scope_lock": {
-    "objective": "Complete only the missing deterministic pre-build proof: execute the generic profile ControllerRouteHoldScheduler arm/poll/terminal protocol and the shared C++ checkpoint transition predicate with the authorized negatives.",
+    "objective": "Add only the missing active duplicate arm-receipt regression and preserve post-terminal idempotency.",
     "owned_files": [
-      "src/server/game/Bots/BotProfileCombatRangeCheckpoint.h",
-      "src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp",
-      "tests/test_profile_combat_range_checkpoint_capture.py",
-      "tests/test_profile_combat_range_production_fixture.py"
+      "tests/test_profile_combat_range_checkpoint_capture.py"
     ],
     "required_commands": [
-      "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py tests/test_profile_combat_range_production_fixture.py",
-      "pixi run pytest -q tests/test_movement_planner_diagnostics.py tests/test_recurrence_admission.py tests/test_bot_route_combat_target_policy.py tests/test_bot_world_population_mgr_combat_movement_module.py tests/test_magmaw_parasite_policy.py",
-      "wc -l src/server/game/Bots/BotProfileCombatRangeCheckpoint.h src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp",
-      "git diff --check 309c3fc5611cdd9e950f491d8ac37d7ba3a04e78 HEAD",
+      "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py",
+      "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py",
+      "git diff --check 3aadbc25e5bb90791f9ad68ae4350e727f19320a HEAD",
       "pixi run python -m tools.raid_program.raid_workloop status",
       "git status --short"
     ]
   },
   "acceptance_conditions": [
-    "A focused ControllerRouteHoldScheduler fixture constructed from checkpoint_controller_dialect scheduler_kwargs asserts the exact start-held/status/status/arm/profile-status transcript, command accounting, and truthful completed terminal receipt.",
-    "Malformed or unavailable arm/status, duplicate or stale receipt, actor/target/case/seal/source/generation/lifecycle drift, finish-before-terminal, and missing terminal all fail closed.",
-    "The smallest value-only checkpoint transition predicate used by ObserveProfileCombatRangeCheckpoint is shared with and compiled by the production fixture.",
-    "The compiled transition accepts only an allowed actual hazard source with exact native receipt, decreasing progress, same-resolution Movement preemption, hazard-before-range ordering, later target-bound range progress, and still-later same-target cast.",
-    "Compiled negatives cover wrong hazard source, absent preemption, reordered evidence, stale target/receipt/scope/generation, non-progress, and early or wrong-target cast.",
-    "No gameplay predicate, fingerprint, admission, priority, resource, planning, geometry, native execution, route, encounter, class, default, seal, or ledger changes; both touched C/C++ files remain below 1000 lines; required commands pass once; independent Sol high review returns GO before any build or replay."
+    "Only tests/test_profile_combat_range_checkpoint_capture.py changes from clean source 3aadbc25.",
+    "After the first valid arm acknowledgement, the fixture asserts awaiting_terminal, resends the same arm acknowledgement, and asserts failed=true with profile_combat_range_checkpoint_duplicate_or_stale_receipt.",
+    "The existing post-terminal duplicate terminal-receipt idempotency test remains present and passes.",
+    "The focused scheduler test and adjacent compiled production fixture pass once.",
+    "No production source or behavior changes; diff check, workloop status, and clean status complete; independent Sol high review returns GO before any build or replay."
   ],
   "forbidden": [
-    "No change to range or hazard eligibility, priorities, resources, arbiter ordering, movement fingerprints, planning, admission, geometry, native execution, routes, encounters, classes, configuration defaults, seals, or recurrence ledgers.",
-    "No Magmaw, boss-entry, creature-entry, route-node, coordinate, spell, class, or spec conditional.",
-    "No synthetic native success/progress/cast, direct fixture MotionMaster action, teleportation, Z steering, MMAP workaround, or tolerance change.",
+    "No production source, gameplay behavior, protocol implementation, configuration, seal, ledger, route, encounter, class, spec, or skill change.",
+    "No weakening, deletion, or replacement of the existing post-terminal idempotency assertion.",
+    "No synthetic native success/progress/cast, movement, pathing, teleportation, Z steering, MMAP workaround, tolerance, or Magmaw-specific conditional.",
     "No configure, build, provisioning, database mutation, worldserver or authserver start, DVC publication, fixture-green promotion, gameplay canary, or Magmaw acceptance."
   ],
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Use exactly raid-bot-runtime-implementation with the hash-bound four-file scope lock. Complete only the scheduler protocol fixture and shared C++ transition fixture, then obtain independent Sol high review before any build or replay."
+  "next_action": "Use exactly raid-bot-runtime-implementation with the hash-bound one-file scope lock. Add the active duplicate arm-receipt counterexample, run the required commands once, commit cleanly, and obtain independent Sol high review before any build or replay."
 }

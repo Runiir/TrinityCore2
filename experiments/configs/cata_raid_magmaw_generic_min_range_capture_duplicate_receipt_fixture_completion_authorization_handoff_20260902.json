@@ -1,0 +1,168 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:authorize_generic_min_range_capture_duplicate_receipt_fixture_completion",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_runtime_test_correction_authorized",
+  "source": {
+    "commit": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
+    "tree": "91f96a71869326c71c86bbd9bd20604ec9232957",
+    "clean": true,
+    "implementation_under_review": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
+    "implementation_parent": "dea442f69b5406f1b011e53d2391414871d67300",
+    "prior_authorization_commit": "dea442f69b5406f1b011e53d2391414871d67300",
+    "prior_authorization_is_exact_parent": true,
+    "prior_authorization_is_ancestor": true
+  },
+  "immutable_review": {
+    "external_path": "/tmp/magmaw-generic-min-range-capture-sequence-fixture-completion-review-3aadbc25/review_handoff.json",
+    "sha256": "c77dfe40c44e64775d44a390d97b0a1774af6b27a1b33b8b99056c3b3d72429a",
+    "hash_verified": true,
+    "verdict": "NO-GO",
+    "reviewed_implementation_commit": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
+    "reviewed_authorization_commit": "dea442f69b5406f1b011e53d2391414871d67300",
+    "finding_ids": [
+      "active_duplicate_receipt_fail_closed_case_unexercised"
+    ]
+  },
+  "causal_receipt": {
+    "candidate_first_broken_edge": "generic_profile_min_range_active_duplicate_receipt_fixture_missing",
+    "owner": "shared_bot_runtime_evidence_boundary",
+    "ordered_claims": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "Commit 3aadbc25 executes the exact ControllerRouteHoldScheduler start-held, stable-status, arm, repeated profile-status, and truthful terminal protocol.",
+        "observation": "Independent review claim ledger and test_profile_scheduler_executes_exact_arm_poll_terminal_protocol."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "Malformed arm, unavailable status, stale generation, actor, target, case, seal, source, scope, and finish-without-terminal negatives execute and fail closed.",
+        "observation": "Independent review of test_profile_scheduler_protocol_negatives_fail_closed."
+      },
+      {
+        "order": 3,
+        "status": "refuted",
+        "claim": "The focused scheduler suite executes a duplicate arm acknowledgement while the scheduler remains active in awaiting_terminal.",
+        "observation": "The only duplicate receipt test resends a terminal row after phase=complete, where receipts are intentionally ignored."
+      },
+      {
+        "order": 4,
+        "status": "verified",
+        "claim": "The production observer already fails closed with profile_combat_range_checkpoint_duplicate_or_stale_receipt when an accepted arm receipt is duplicated before terminal completion.",
+        "observation": "Independent finding active_duplicate_receipt_fail_closed_case_unexercised and reviewed ControllerRouteHoldScheduler observer behavior."
+      },
+      {
+        "order": 5,
+        "status": "verified",
+        "claim": "Post-terminal duplicate receipt idempotency is separately covered and must remain unchanged.",
+        "observation": "test_profile_scheduler_duplicate_terminal_receipt_is_ignored_after_success."
+      },
+      {
+        "order": 6,
+        "status": "unproven",
+        "claim": "A sealed production worldserver episode completes the target-bound hazard-preemption, range-progress, and later-cast sequence.",
+        "observation": "No build or worldserver replay is authorized by this correction."
+      }
+    ],
+    "first_downstream_state_mutation": "The active duplicate arm acknowledgement reaches ControllerRouteHoldScheduler.observe while phase is awaiting_terminal; the expected mutation is failed=true with failure_reason profile_combat_range_checkpoint_duplicate_or_stale_receipt.",
+    "failure_postcondition": "The focused suite can remain green without proving that a duplicate already-accepted arm receipt fails closed before terminal completion.",
+    "implementation_hypothesis": "Add one test-only duplicate arm acknowledgement immediately after the first valid arm acknowledgement and assert the existing fail-closed reason, while retaining the post-terminal idempotency case unchanged.",
+    "correlation_keys": [
+      "scheduler_phase",
+      "case_id",
+      "seal_sha256",
+      "source_commit",
+      "checkpoint_generation",
+      "actor_guid",
+      "target_guid",
+      "attempt_id",
+      "wipe_generation",
+      "route_generation",
+      "instance_id",
+      "arm_ack_count",
+      "command_sequence"
+    ]
+  },
+  "scope_lock": {
+    "next_work_unit": "runtime:generic_min_range_capture_duplicate_receipt_fixture_completion",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Complete only the missing active duplicate-receipt regression without changing production behavior.",
+    "owned_behavior": "Test-only execution of an already-existing fail-closed ControllerRouteHoldScheduler duplicate/stale arm-receipt branch.",
+    "expected_observable_change": "After the first valid arm acknowledgement moves the scheduler to awaiting_terminal, resending the same arm acknowledgement produces failed=true and profile_combat_range_checkpoint_duplicate_or_stale_receipt; the existing post-completion terminal-duplicate idempotency test still passes.",
+    "owned_files": [
+      "tests/test_profile_combat_range_checkpoint_capture.py"
+    ],
+    "read_only_inspection": "Production checkpoint, capture controller, scheduler, compiled production fixture, admission, route, encounter, class, ledger, and configuration files may be inspected but not edited.",
+    "preexisting_dirty_files": []
+  },
+  "production_fixture_contract": {
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "positive_revision": 1,
+    "counterexample": "At commit 3aadbc25 the focused scheduler suite does not execute a duplicate arm acknowledgement while awaiting_terminal, although the existing observer branch should fail it closed.",
+    "required_sequence": [
+      "Construct the existing focused scheduler fixture and advance through the first valid arm acknowledgement.",
+      "Verify the scheduler is awaiting_terminal.",
+      "Resend the same arm acknowledgement before any terminal completion.",
+      "Assert failed=true and failure_reason=profile_combat_range_checkpoint_duplicate_or_stale_receipt."
+    ],
+    "required_adjacent_invariant": "Retain and pass the existing test that ignores a duplicate terminal receipt only after phase=complete.",
+    "fail_before": "Commit 3aadbc25 has no executed active duplicate arm-receipt counterexample.",
+    "pass_after_implementation": "The focused scheduler suite executes and rejects the active duplicate arm receipt, the adjacent compiled production fixture passes unchanged, and independent review returns GO.",
+    "pass_after_worldserver_replay": "Reserved for a later separately authorized build and sealed observation-only replay; not part of this work unit."
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py",
+    "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py",
+    "git diff --check 3aadbc25e5bb90791f9ad68ae4350e727f19320a HEAD",
+    "pixi run python -m tools.raid_program.raid_workloop status",
+    "git status --short"
+  ],
+  "acceptance_conditions": [
+    "Only tests/test_profile_combat_range_checkpoint_capture.py changes from clean source 3aadbc25.",
+    "After the first valid arm acknowledgement, the fixture asserts phase=awaiting_terminal, resends the same arm acknowledgement, and asserts failed=true with profile_combat_range_checkpoint_duplicate_or_stale_receipt.",
+    "The existing post-terminal duplicate receipt idempotency test remains present and passes.",
+    "The focused scheduler test and adjacent compiled production fixture pass once.",
+    "No production source or behavior changes; required diff, workloop, and clean-status checks complete; independent Sol high review returns GO before any build or replay."
+  ],
+  "forbidden": [
+    "No production source, gameplay behavior, protocol implementation, configuration, seal, recurrence ledger, route, encounter, class, spec, or skill change.",
+    "No weakening, deletion, or replacement of the existing post-terminal idempotency assertion.",
+    "No synthetic native success/progress/cast, movement, pathing, teleportation, Z steering, MMAP workaround, tolerance, or Magmaw-specific conditional.",
+    "No configure, build, provisioning, database mutation, worldserver or authserver start, DVC publication, fixture-green promotion, gameplay canary, or Magmaw acceptance."
+  ],
+  "authority": {
+    "source_mutation_allowed": false,
+    "test_mutation_allowed": true,
+    "configuration_schema_mutation_allowed": false,
+    "gameplay_behavior_broadening_allowed": false,
+    "route_mutation_allowed": false,
+    "skill_mutation_allowed": false,
+    "ledger_mutation_allowed": false,
+    "builds": 0,
+    "provisioning_operations": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0,
+    "dvc_publication_allowed": false,
+    "fixture_green_promotion_allowed": false,
+    "magmaw_acceptance_allowed": false,
+    "ml_admission_allowed": false
+  },
+  "review_and_next_gate": {
+    "worker_success_state": "implemented_pending_independent_review",
+    "review_requirement": "Independent Sol high review of the exact clean commit, one-file test-only diff, executed active duplicate arm-receipt counterexample, retained post-terminal idempotency, unchanged production tree, and required command results.",
+    "build_authorized": false,
+    "worldserver_fixture_replay_authorized": false,
+    "live_gameplay_canary_authorized": false,
+    "next_on_review_go": "raid-performance-loop may authorize exactly one build and one sealed observation-only worldserver fixture; neither is a Magmaw gameplay canary or acceptance.",
+    "next_on_review_no_go": "Return only the exact review finding under a new metadata authorization; do not build or run live.",
+    "validation_clock": {
+      "policy": "completion_watchdog",
+      "fixed_success_timer_seconds": null
+    }
+  },
+  "next_action": "Hand exactly this one-file lock to one raid-bot-runtime-implementation worker with no nested agents. Add the active duplicate arm-receipt counterexample, run the required commands once, commit cleanly, and request independent Sol high review."
+}
