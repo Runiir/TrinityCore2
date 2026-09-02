@@ -23,9 +23,13 @@ from tools.raid_program.recurrence_admission import (
     PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY,
     PROFILE_COMBAT_RANGE_CHECKPOINT_CONFIG_PREFIX,
     PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+    RecurrenceAdmissionError,
     chainwielder_checkpoint_seal,
     magmaw_transfer_checkpoint_seal,
     profile_combat_range_checkpoint_seal,
+)
+from tools.raid_program.recurrence_checkpoint_seals import (
+    profile_combat_range_checkpoint_contract,
 )
 
 
@@ -345,16 +349,20 @@ def _validate_profile_combat_range_ledger_manifest(
         or PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID not in history
     ):
         raise DialectError("profile_combat_range_ledger_manifest_mismatch")
+    if not isinstance(decision_value, dict):
+        raise DialectError("profile_combat_range_ledger_decision_mismatch")
+    try:
+        profile_combat_range_checkpoint_contract(
+            decision_value, label="profile_combat_range_checkpoint"
+        )
+    except RecurrenceAdmissionError as error:
+        raise DialectError(
+            "profile_combat_range_ledger_decision_mismatch"
+        ) from error
     if (
-        not isinstance(decision_value, dict)
-        or decision_value.get("fixture_expansion_admitted") is not True
+        decision_value.get("fixture_expansion_admitted") is not True
         or decision_value.get("build_admitted") is not False
         or decision_value.get("canary_admitted") is not False
-        or decision_value.get("fixture_expansion_target_ids")
-            != [PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID]
-        or decision_value.get("pending_fixture_ids")
-            != [PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID]
-        or decision_value.get("fixture_expansion_requests") != []
     ):
         raise DialectError("profile_combat_range_ledger_decision_mismatch")
     rows = suite_value.get("verifications") if isinstance(suite_value, dict) else None

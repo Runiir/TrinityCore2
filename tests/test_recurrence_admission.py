@@ -316,6 +316,7 @@ def _create_chainwielder_checkpoint_admission(
     *,
     expansion_requests: list[dict[str, object]] | None = None,
     include_checkpoint_target: bool = True,
+    checkpoint_fixture_id: str | None = CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
 ) -> dict[str, str]:
     admission = Path(paths["admission"])
     decision = Path(paths["decision"])
@@ -397,6 +398,7 @@ def _create_chainwielder_checkpoint_admission(
         profile_manifest=profile_manifest,
         runtime_profile_overlay=overlay,
         expected_runtime_profile_id="test_profile",
+        checkpoint_fixture_id=checkpoint_fixture_id,
         purpose=FIXTURE_EXPANSION_PURPOSE,
     )
     return seal
@@ -672,6 +674,35 @@ def test_composite_checkpoint_create_verify_projection_arms_controller(
         RecurrenceAdmissionError, match="checkpoint_seal_identity_mismatch"
     ):
         _verify_chainwielder(paths)
+
+
+def test_multidialect_checkpoint_requires_explicit_selection(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    with pytest.raises(
+        RecurrenceAdmissionError,
+        match="fixture_expansion_checkpoint_fixture_selection_required",
+    ):
+        _create_chainwielder_checkpoint_admission(
+            paths,
+            expansion_requests=_map669_expansion_requests(),
+            checkpoint_fixture_id=None,
+        )
+
+
+def test_explicit_checkpoint_selection_must_be_eligible(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    with pytest.raises(
+        RecurrenceAdmissionError,
+        match="fixture_expansion_checkpoint_fixture_ineligible",
+    ):
+        _create_chainwielder_checkpoint_admission(
+            paths,
+            checkpoint_fixture_id=NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+        )
 
 
 @pytest.mark.parametrize(

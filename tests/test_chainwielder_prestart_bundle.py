@@ -347,23 +347,22 @@ def _generic_profile_range_fixture(tmp_path: Path) -> dict[str, object]:
     }
     _write_json(paths["suite_receipt"], suite_value)
 
-    # Evaluate the complete bank, then project the one admitted generic
-    # observation target. The suite remains complete: every registered fixture
-    # has a manifest-derived row above.
-    evaluated = recurrence_ledger.evaluate_ledger(
-        ledger_value,
+    # Mirror the evaluator's production suite-receipt materialization without
+    # rerunning commands inside this atomic-bundle fixture.
+    effective_ledger = json.loads(json.dumps(ledger_value))
+    effective_bank = effective_ledger["regression_bank"]
+    effective_bank["verifications"] = [
+        *suite_rows,
+        *effective_bank.get("verifications", []),
+    ]
+    decision_value = recurrence_ledger.evaluate_ledger(
+        effective_ledger,
         current_identity={"source": source_commit, "config": config_identity},
         suite_receipt_verified=True,
     )
-    decision_value = dict(evaluated)
-    decision_value.update({
-        "fixture_expansion_admitted": True,
-        "build_admitted": False,
-        "canary_admitted": False,
-        "fixture_expansion_target_ids": [generic_row["fixture_id"]],
-        "pending_fixture_ids": [generic_row["fixture_id"]],
-        "fixture_expansion_requests": [],
-    })
+    assert decision_value["fixture_expansion_admitted"] is True
+    assert decision_value["build_admitted"] is False
+    assert decision_value["canary_admitted"] is False
     _write_json(paths["decision"], decision_value)
 
     paths["ledger"] = tracked_ledger
@@ -430,12 +429,43 @@ def test_generic_profile_range_manifest_crosses_atomic_create_and_verify(
     tmp_path: Path,
 ) -> None:
     fixture = _generic_profile_range_fixture(tmp_path)
+    decision_bytes = fixture["paths"]["decision"].read_bytes()
+    suite_bytes = fixture["paths"]["suite_receipt"].read_bytes()
     result = _create(fixture)
     output = fixture["output"]
 
     assert result["valid"] is True
     assert result["pre_rename_verified"] is True
     assert verify_bundle(output)["valid"] is True
+    assert fixture["paths"]["decision"].read_bytes() == decision_bytes
+    assert fixture["paths"]["suite_receipt"].read_bytes() == suite_bytes
+    assert (output / BUNDLE_NAMES["decision"]).read_bytes() == decision_bytes
+    assert (output / BUNDLE_NAMES["suite_receipt"]).read_bytes() == suite_bytes
+
+    source_decision = json.loads(
+        fixture["paths"]["decision"].read_text(encoding="utf-8")
+    )
+    admission = json.loads(
+        (output / BUNDLE_NAMES["admission"]).read_text(encoding="utf-8")
+    )
+    assert len(source_decision["fixture_expansion_target_ids"]) == 6
+    assert len(source_decision["pending_fixture_ids"]) == 3
+    assert len(source_decision["fixture_expansion_requests"]) == 5
+    for field in (
+        "fixture_expansion_target_ids",
+        "pending_fixture_ids",
+        "fixture_expansion_requests",
+        "quarantined_fixture_ids",
+        "invalidated_fixture_ids",
+        "failing_fixture_ids",
+        "missing_fixture_ids",
+        "stale_fixture_ids",
+        "blocking_invalidated_fixture_ids",
+    ):
+        assert admission[field] == source_decision[field]
+    assert admission["checkpoint_fixture_id"] == (
+        PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
+    )
 
     source = json.loads(
         (output / BUNDLE_NAMES["source_route_manifest"]).read_text(
@@ -472,6 +502,34 @@ def test_generic_profile_range_manifest_crosses_atomic_create_and_verify(
     assert argv[argv.index(
         "--profile-combat-range-checkpoint-target-guid"
     ) + 1] == "39"
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["target_absent", "pending_absent", "quarantined", "request_names_generic"],
+)
+def test_generic_profile_range_rejects_ineligible_global_selection(
+    tmp_path: Path, mutation: str,
+) -> None:
+    fixture = _generic_profile_range_fixture(tmp_path)
+    decision = fixture["paths"]["decision"]
+    value = json.loads(decision.read_text(encoding="utf-8"))
+    fixture_id = PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
+    if mutation == "target_absent":
+        value["fixture_expansion_target_ids"].remove(fixture_id)
+    elif mutation == "pending_absent":
+        value["pending_fixture_ids"].remove(fixture_id)
+    elif mutation == "quarantined":
+        value["quarantined_fixture_ids"].append(fixture_id)
+    else:
+        value["fixture_expansion_requests"][0]["fixture_id"] = fixture_id
+    _write_json(decision, value)
+    fixture["kwargs"]["decision_sha256"] = sha256_file(decision)
+
+    with pytest.raises(
+        BundleError, match="profile_combat_range_ledger_decision_mismatch"
+    ):
+        _create(fixture)
 
 
 @pytest.mark.parametrize(

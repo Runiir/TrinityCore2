@@ -176,6 +176,17 @@ def _transfer_fixture(
     receipt = fixture["paths"]["build_receipt"]
     receipt_value = json.loads(receipt.read_text(encoding="utf-8"))
     receipt_value["commit"] = fixture["kwargs"]["source_commit"]
+    source_snapshot = {
+        "commit": fixture["kwargs"]["source_commit"],
+        "tree": fixture["kwargs"]["source_tree"],
+        "clean": True,
+        "dirty": False,
+        "porcelain_sha256": _sha256(""),
+    }
+    receipt_value["source_identity"] = {
+        stage: dict(source_snapshot)
+        for stage in ("request", "admission", "completion")
+    }
     _write_json(receipt, receipt_value)
     suite_value = json.loads(suite.read_text(encoding="utf-8"))
     suite_value["source_identity"] = fixture["kwargs"]["source_commit"]
@@ -292,7 +303,9 @@ def test_transfer_route_suffix_substitution_fails_closed(tmp_path: Path) -> None
     route["routes"][1]["route_node_id"] = "bwd.magmaw.chainwielder.substitute"
     _write_json(route_path, route)
     fixture["kwargs"]["route_manifest_sha256"] = sha256_file(route_path)
-    with pytest.raises(bundle.BundleError, match="route_checkpoint_node_missing"):
+    with pytest.raises(
+        bundle.BundleError, match="magmaw_transfer_route_semantic_mismatch"
+    ):
         _create(fixture)
     assert not fixture["output"].exists()
 
@@ -407,9 +420,12 @@ def test_transfer_rejects_coherent_full_route_semantic_drift(
     route["routes"][row_index][field] = value
     _write_json(route_path, route)
     fixture["kwargs"]["route_manifest_sha256"] = sha256_file(route_path)
-    with pytest.raises(
-        bundle.BundleError, match="magmaw_transfer_route_semantic_mismatch",
-    ):
+    expected_reason = (
+        "route_checkpoint_identity_mismatch"
+        if row_index == 0 and field == "map_id"
+        else "magmaw_transfer_route_semantic_mismatch"
+    )
+    with pytest.raises(bundle.BundleError, match=expected_reason):
         _create(fixture)
     assert not fixture["output"].exists()
 

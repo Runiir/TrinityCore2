@@ -17,6 +17,7 @@ from tools.raid_program.controller_route_hold import (
     ControllerRouteHoldScheduler,
 )
 from tools.raid_program.recurrence_checkpoint_seals import (
+    CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
     PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY,
     PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
 )
@@ -143,6 +144,26 @@ def test_checkpoint_dialect_wires_authenticated_scheduler_observer() -> None:
     wrong_fixture["checkpoint_fixture_id"] = "unsupported_fixture"
     with pytest.raises(ValueError, match="checkpoint_controller_fixture_unsupported"):
         checkpoint_controller_dialect(wrong_fixture, ACTOR)
+
+
+def test_checkpoint_dialect_dispatches_from_explicit_selection() -> None:
+    admission = _admission()
+    admission["fixture_expansion_target_ids"] = [
+        CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+        PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+    ]
+    admission["pending_fixture_ids"] = [
+        CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+        PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+    ]
+
+    dialect = checkpoint_controller_dialect(admission, ACTOR)
+
+    assert dialect is not None
+    assert dialect["fixture_id"] == PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
+    assert dialect["arm_command"].startswith(
+        "botautoprofilecombatrangecheckpoint arm "
+    )
 
 
 @pytest.mark.parametrize(

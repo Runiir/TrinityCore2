@@ -67,6 +67,64 @@ QUARANTINE_STATE_FIELDS = (
     "blocking_invalidated_fixture_ids",
 )
 PROFILE_MANIFEST_RELATIVE_PATH = Path("dataset/bot_runtime_profiles/profiles.json")
+CHECKPOINT_FIXTURE_IDS = {
+    CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+    MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID,
+    NATIVE_PATH_CHECKPOINT_FIXTURE_ID,
+    PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+}
+
+
+def _checkpoint_fixture_selection(
+    value: dict[str, Any], explicit_fixture_id: str | None, *, label: str,
+) -> str | None:
+    """Resolve one checkpoint dialect without using target ordering as priority."""
+
+    candidates: list[str] = []
+    targets = value.get("fixture_expansion_target_ids")
+    if isinstance(targets, list):
+        if CHAINWIELDER_CHECKPOINT_FIXTURE_ID in targets:
+            candidates.append(CHAINWIELDER_CHECKPOINT_FIXTURE_ID)
+        if _magmaw_transfer_checkpoint_requested(value):
+            candidates.append(MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID)
+        if _native_path_checkpoint_requested(value):
+            candidates.append(NATIVE_PATH_CHECKPOINT_FIXTURE_ID)
+        if _profile_combat_range_checkpoint_requested(value):
+            candidates.append(PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID)
+    if explicit_fixture_id is not None and (
+        not isinstance(explicit_fixture_id, str)
+        or explicit_fixture_id not in CHECKPOINT_FIXTURE_IDS
+    ):
+        raise RecurrenceAdmissionError(f"{label}_checkpoint_fixture_invalid")
+    if explicit_fixture_id is None:
+        if len(candidates) > 1:
+            raise RecurrenceAdmissionError(
+                f"{label}_checkpoint_fixture_selection_required"
+            )
+        selected = candidates[0] if candidates else None
+    else:
+        auxiliary_chainwielder = (
+            explicit_fixture_id == CHAINWIELDER_CHECKPOINT_FIXTURE_ID
+            and not candidates
+        )
+        if explicit_fixture_id not in candidates and not auxiliary_chainwielder:
+            raise RecurrenceAdmissionError(
+                f"{label}_checkpoint_fixture_ineligible"
+            )
+        selected = explicit_fixture_id
+    if selected == MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID:
+        _magmaw_transfer_checkpoint_contract(
+            value, label="magmaw_transfer_checkpoint"
+        )
+    elif selected == NATIVE_PATH_CHECKPOINT_FIXTURE_ID:
+        _native_path_checkpoint_request_contract(
+            value, label="native_path_checkpoint"
+        )
+    elif selected == PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID:
+        _profile_combat_range_checkpoint_contract(
+            value, label="profile_combat_range_checkpoint"
+        )
+    return selected
 
 
 def build_runtime_profile_suffix_manifest(
@@ -484,6 +542,7 @@ def create_recurrence_admission(
     profile_manifest: Path | None = None,
     runtime_profile_overlay: dict[str, Any] | None = None,
     expected_runtime_profile_id: str | None = None,
+    checkpoint_fixture_id: str | None = None,
     purpose: str = GAMEPLAY_CANARY_PURPOSE,
     atomic_bundle_roots: tuple[Path, Path] | None = None,
 ) -> dict[str, Any]:
@@ -508,6 +567,12 @@ def create_recurrence_admission(
     if purpose not in ADMISSION_PURPOSES:
         raise RecurrenceAdmissionError("admission_purpose_invalid")
     fixture_expansion = purpose == FIXTURE_EXPANSION_PURPOSE
+    profile_authority_supplied = any(
+        value is not None for value in (
+            profile_manifest, runtime_profile_overlay,
+            expected_runtime_profile_id,
+        )
+    )
     if fixture_expansion:
         if decision_value.get("fixture_expansion_admitted") is not True:
             raise RecurrenceAdmissionError("fixture_expansion_not_admitted")
@@ -516,45 +581,32 @@ def create_recurrence_admission(
         expansion_requests = _fixture_expansion_contract(
             decision_value, label="fixture_expansion"
         )
-        target_ids = decision_value.get("fixture_expansion_target_ids") or []
-        chainwielder_checkpoint_targeted = (
-            CHAINWIELDER_CHECKPOINT_FIXTURE_ID in target_ids
+        selected_checkpoint_fixture_id = _checkpoint_fixture_selection(
+            decision_value, checkpoint_fixture_id, label="fixture_expansion"
         )
-        magmaw_transfer_checkpoint_targeted = (
-            not chainwielder_checkpoint_targeted
-            and _magmaw_transfer_checkpoint_requested(decision_value)
+        if selected_checkpoint_fixture_id is None and profile_authority_supplied:
+            # Preserve the established auxiliary Chainwielder seal for an
+            # otherwise checkpoint-free fixture replay.
+            selected_checkpoint_fixture_id = CHAINWIELDER_CHECKPOINT_FIXTURE_ID
+        checkpoint_targeted = selected_checkpoint_fixture_id is not None
+        chainwielder_checkpoint_targeted = selected_checkpoint_fixture_id == (
+            CHAINWIELDER_CHECKPOINT_FIXTURE_ID
         )
-        native_path_checkpoint_targeted = (
-            not chainwielder_checkpoint_targeted
-            and not magmaw_transfer_checkpoint_targeted
-            and _native_path_checkpoint_requested(decision_value)
+        magmaw_transfer_checkpoint_targeted = selected_checkpoint_fixture_id == (
+            MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID
+        )
+        native_path_checkpoint_targeted = selected_checkpoint_fixture_id == (
+            NATIVE_PATH_CHECKPOINT_FIXTURE_ID
         )
         profile_combat_range_checkpoint_targeted = (
-            not chainwielder_checkpoint_targeted
-            and not magmaw_transfer_checkpoint_targeted
-            and not native_path_checkpoint_targeted
-            and _profile_combat_range_checkpoint_requested(decision_value)
-        )
-        if magmaw_transfer_checkpoint_targeted:
-            _magmaw_transfer_checkpoint_contract(
-                decision_value, label="magmaw_transfer_checkpoint"
-            )
-        elif native_path_checkpoint_targeted:
-            _native_path_checkpoint_request_contract(
-                decision_value, label="native_path_checkpoint"
-            )
-        elif profile_combat_range_checkpoint_targeted:
-            _profile_combat_range_checkpoint_contract(
-                decision_value, label="profile_combat_range_checkpoint"
-            )
-        checkpoint_targeted = (
-            chainwielder_checkpoint_targeted
-            or magmaw_transfer_checkpoint_targeted
-            or native_path_checkpoint_targeted
-            or profile_combat_range_checkpoint_targeted
+            selected_checkpoint_fixture_id
+            == PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
         )
     else:
+        if checkpoint_fixture_id is not None:
+            raise RecurrenceAdmissionError("checkpoint_fixture_unexpected")
         expansion_requests = []
+        selected_checkpoint_fixture_id = None
         checkpoint_targeted = False
         chainwielder_checkpoint_targeted = False
         magmaw_transfer_checkpoint_targeted = False
@@ -577,12 +629,6 @@ def create_recurrence_admission(
         fixture_revisions[fixture_id] = revision
     checkpoint_seal = None
     verified_overlay: dict[str, str] | None = None
-    profile_authority_supplied = any(
-        value is not None for value in (
-            profile_manifest, runtime_profile_overlay,
-            expected_runtime_profile_id,
-        )
-    )
     if checkpoint_targeted or profile_authority_supplied:
         if profile_manifest is None or runtime_profile_overlay is None \
                 or expected_runtime_profile_id is None:
@@ -702,6 +748,8 @@ def create_recurrence_admission(
                 runtime_profile_overlay=verified_overlay,
                 expected_runtime_profile_id=expected_runtime_profile_id,
             )
+        if checkpoint_seal.get("fixture_id") != selected_checkpoint_fixture_id:
+            raise RecurrenceAdmissionError("checkpoint_seal_identity_mismatch")
     admission = {
         "schema": SCHEMA,
         "purpose": purpose,
@@ -716,6 +764,7 @@ def create_recurrence_admission(
         "fixture_expansion_requests": expansion_requests,
         "gameplay_mutations_allowed": False if fixture_expansion else None,
         "checkpoint_seal": checkpoint_seal,
+        "checkpoint_fixture_id": selected_checkpoint_fixture_id,
         "runtime_profile_overlay": verified_overlay,
         "expected_runtime_profile_id": expected_runtime_profile_id,
         **{key: decision_value.get(key) for key in FIXTURE_STATE_FIELDS},
@@ -787,6 +836,11 @@ def verify_recurrence_admission(
     if admission.get("purpose", GAMEPLAY_CANARY_PURPOSE) != required_purpose:
         raise RecurrenceAdmissionError("admission_purpose_mismatch")
     fixture_expansion = required_purpose == FIXTURE_EXPANSION_PURPOSE
+    profile_authority_recorded = (
+        admission.get("runtime_profile_overlay") is not None
+        or (admission.get("bindings") or {}).get("profile_manifest") is not None
+        or admission.get("expected_runtime_profile_id") is not None
+    )
     if fixture_expansion:
         if admission.get("fixture_expansion_admitted") is not True:
             raise RecurrenceAdmissionError("fixture_expansion_not_admitted")
@@ -797,42 +851,25 @@ def verify_recurrence_admission(
         expansion_requests = _fixture_expansion_contract(
             admission, label="fixture_expansion"
         )
-        target_ids = admission.get("fixture_expansion_target_ids") or []
-        chainwielder_checkpoint_targeted = (
-            CHAINWIELDER_CHECKPOINT_FIXTURE_ID in target_ids
+        selected_checkpoint_fixture_id = _checkpoint_fixture_selection(
+            admission, admission.get("checkpoint_fixture_id"),
+            label="fixture_expansion",
         )
-        magmaw_transfer_checkpoint_targeted = (
-            not chainwielder_checkpoint_targeted
-            and _magmaw_transfer_checkpoint_requested(admission)
+        if selected_checkpoint_fixture_id is None and profile_authority_recorded:
+            selected_checkpoint_fixture_id = CHAINWIELDER_CHECKPOINT_FIXTURE_ID
+        checkpoint_targeted = selected_checkpoint_fixture_id is not None
+        chainwielder_checkpoint_targeted = selected_checkpoint_fixture_id == (
+            CHAINWIELDER_CHECKPOINT_FIXTURE_ID
         )
-        native_path_checkpoint_targeted = (
-            not chainwielder_checkpoint_targeted
-            and not magmaw_transfer_checkpoint_targeted
-            and _native_path_checkpoint_requested(admission)
+        magmaw_transfer_checkpoint_targeted = selected_checkpoint_fixture_id == (
+            MAGMAW_TRANSFER_CHECKPOINT_FIXTURE_ID
+        )
+        native_path_checkpoint_targeted = selected_checkpoint_fixture_id == (
+            NATIVE_PATH_CHECKPOINT_FIXTURE_ID
         )
         profile_combat_range_checkpoint_targeted = (
-            not chainwielder_checkpoint_targeted
-            and not magmaw_transfer_checkpoint_targeted
-            and not native_path_checkpoint_targeted
-            and _profile_combat_range_checkpoint_requested(admission)
-        )
-        if magmaw_transfer_checkpoint_targeted:
-            _magmaw_transfer_checkpoint_contract(
-                admission, label="magmaw_transfer_checkpoint"
-            )
-        elif native_path_checkpoint_targeted:
-            _native_path_checkpoint_request_contract(
-                admission, label="native_path_checkpoint"
-            )
-        elif profile_combat_range_checkpoint_targeted:
-            _profile_combat_range_checkpoint_contract(
-                admission, label="profile_combat_range_checkpoint"
-            )
-        checkpoint_targeted = (
-            chainwielder_checkpoint_targeted
-            or magmaw_transfer_checkpoint_targeted
-            or native_path_checkpoint_targeted
-            or profile_combat_range_checkpoint_targeted
+            selected_checkpoint_fixture_id
+            == PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
         )
     else:
         if admission.get("build_admitted") is not True:
@@ -873,6 +910,7 @@ def verify_recurrence_admission(
                 "blocking_invalidated_fixture_ids_mismatch"
             )
         checkpoint_targeted = False
+        selected_checkpoint_fixture_id = None
         chainwielder_checkpoint_targeted = False
         magmaw_transfer_checkpoint_targeted = False
         native_path_checkpoint_targeted = False
@@ -907,11 +945,6 @@ def verify_recurrence_admission(
     )
     verified_overlay: dict[str, str] | None = None
     profile_path: Path | None = None
-    profile_authority_recorded = (
-        admission.get("runtime_profile_overlay") is not None
-        or (admission.get("bindings") or {}).get("profile_manifest") is not None
-        or admission.get("expected_runtime_profile_id") is not None
-    )
     if checkpoint_targeted or profile_authority_recorded:
         if profile_manifest is None or expected_runtime_profile_id is None:
             raise RecurrenceAdmissionError("checkpoint_profile_authority_missing")
@@ -1000,6 +1033,12 @@ def verify_recurrence_admission(
     checkpoint_seal = admission.get("checkpoint_seal")
     if checkpoint_targeted or profile_authority_recorded:
         assert profile_path is not None and verified_overlay is not None
+        if (
+            not isinstance(checkpoint_seal, dict)
+            or checkpoint_seal.get("fixture_id")
+                != selected_checkpoint_fixture_id
+        ):
+            raise RecurrenceAdmissionError("checkpoint_seal_identity_mismatch")
         if magmaw_transfer_checkpoint_targeted:
             checkpoint_seal = _verify_magmaw_transfer_checkpoint_seal(
                 seal=checkpoint_seal, worktree=worktree,
@@ -1128,8 +1167,7 @@ def verify_recurrence_admission(
             if isinstance(checkpoint_seal, dict) else None
         ),
         "checkpoint_fixture_id": (
-            checkpoint_seal["fixture_id"]
-            if isinstance(checkpoint_seal, dict) else None
+            selected_checkpoint_fixture_id
         ),
         "checkpoint_case_id": (
             checkpoint_seal.get("case_id")

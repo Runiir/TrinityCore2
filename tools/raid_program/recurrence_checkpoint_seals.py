@@ -226,15 +226,24 @@ def profile_combat_range_checkpoint_contract(
     value: dict[str, Any], *, label: str,
 ) -> list[dict[str, Any]]:
     requests = fixture_expansion_contract(value, label=label)
+    targets = value.get("fixture_expansion_target_ids", [])
+    pending = value.get("pending_fixture_ids", [])
+    quarantined = value.get("quarantined_fixture_ids", [])
     if (
-        value.get("fixture_expansion_target_ids")
-            != [PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID]
-        or value.get("pending_fixture_ids")
-            != [PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID]
-        or requests != []
+        PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID not in targets
+        or PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID not in pending
+        or PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID in quarantined
+        or any(
+            request.get("fixture_id")
+                == PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID
+            for request in requests
+        )
     ):
         raise RecurrenceAdmissionError(f"{label}_request_contract_mismatch")
-    return requests
+    # This checkpoint observes an already-registered pending boundary. Unrelated
+    # revision-expansion requests stay in the global decision but are not part
+    # of this selected fixture's seal.
+    return []
 
 
 def profile_combat_range_checkpoint_requested(value: dict[str, Any]) -> bool:

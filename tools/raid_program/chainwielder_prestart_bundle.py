@@ -390,10 +390,11 @@ def _validate_route(
         expected_node_id = route_node_ids(dialect)[0]
     except DialectError as error:
         raise BundleError(str(error)) from error
-    expected_entry = (
-        PROFILE_COMBAT_RANGE_TARGET_ENTRY
-        if dialect == PROFILE_COMBAT_RANGE else TARGET_ENTRY
-    )
+    expected_entry = {
+        CHAINWIELDER: TARGET_ENTRY,
+        MAGMAW_TRANSFER: 0,
+        PROFILE_COMBAT_RANGE: PROFILE_COMBAT_RANGE_TARGET_ENTRY,
+    }[dialect]
     matching = [
         row for row in rows
         if isinstance(row, dict) and row.get("route_node_id") == expected_node_id
@@ -718,6 +719,8 @@ def verify_bundle(
         raise BundleError(f"recurrence_admission:{error}") from error
     if verified.get("checkpoint_seal_sha256") != seal.get("seal_sha256"):
         raise BundleError("checkpoint_seal_verification_mismatch")
+    if verified.get("checkpoint_fixture_id") != seal.get("fixture_id"):
+        raise BundleError("checkpoint_fixture_verification_mismatch")
     admission_profile = (verified.get("bindings") or {}).get(
         "profile_manifest"
     )
@@ -966,6 +969,7 @@ def create_bundle(
             profile_manifest=materialized["profile_manifest"],
             runtime_profile_overlay=profile_identity,
             expected_runtime_profile_id=runtime_profile_id,
+            checkpoint_fixture_id=checkpoint_fixture_id,
             purpose=FIXTURE_EXPANSION_PURPOSE,
             atomic_bundle_roots=(output_dir, staging),
         )
