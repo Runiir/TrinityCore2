@@ -40,6 +40,39 @@ void AppendObservedLifecycle(std::ostringstream& json, uint32 mask)
             MagmawPersonalParasiteEscapeLifecycle(raw)) << '"';
     }
 }
+
+void AppendEpisodeTransition(std::ostringstream& json,
+    MagmawPersonalThreatEpisodeTransition const& transition)
+{
+    json << "{\"actor_guid\":" << transition.ActorGuid
+         << ",\"scope_key\":\"" << JsonEscape(transition.ScopeKey) << "\""
+         << ",\"route_node_id\":\"" << JsonEscape(transition.RouteNodeId)
+         << "\",\"route_generation\":" << transition.RouteGeneration
+         << ",\"board_revision\":" << transition.BoardRevision
+         << ",\"observed_at_ms\":" << transition.ObservedAtMs
+         << ",\"facts_authoritative\":"
+         << (transition.FactsAuthoritative ? "true" : "false")
+         << ",\"authority_gap_mask\":" << transition.AuthorityGapMask
+         << ",\"personal_threat_present\":"
+         << (transition.PersonalThreatPresent ? "true" : "false")
+         << ",\"personal_threat_guid\":" << transition.PersonalThreatGuid
+         << ",\"prior_episode_open\":"
+         << (transition.PriorEpisodeOpen ? "true" : "false")
+         << ",\"new_episode_open\":"
+         << (transition.NewEpisodeOpen ? "true" : "false")
+         << ",\"edge\":\"" << JsonEscape(transition.Edge) << "\""
+         << ",\"parent_wave_generation\":"
+         << transition.ParentWaveGeneration
+         << ",\"parent_generation_authoritative\":"
+         << (transition.ParentGenerationAuthoritative ? "true" : "false")
+         << ",\"prior_task_generation\":"
+         << transition.PriorTaskGeneration
+         << ",\"new_task_generation\":" << transition.NewTaskGeneration
+         << ",\"prior_candidate_generation\":"
+         << transition.PriorCandidateGeneration
+         << ",\"new_candidate_generation\":"
+         << transition.NewCandidateGeneration << "}";
+}
 }
 
 std::string BuildMagmawPersonalParasiteEscapeDiagnosticsJson(
@@ -70,6 +103,20 @@ std::string BuildMagmawPersonalParasiteEscapeDiagnosticsJson(
          << (wave.AwaitingAuthoritativeFacts ? "true" : "false")
          << ",\"created_at_ms\":" << wave.CreatedAtMs
          << ",\"last_observed_at_ms\":" << wave.LastObservedAtMs << "}"
+         << ",\"personal_threat_episode_transitions\":[";
+    bool transitionWritten = false;
+    if (task.FallingEpisodeTransition.Valid)
+    {
+        AppendEpisodeTransition(json, task.FallingEpisodeTransition);
+        transitionWritten = true;
+    }
+    if (task.RisingEpisodeTransition.Valid)
+    {
+        if (transitionWritten)
+            json << ',';
+        AppendEpisodeTransition(json, task.RisingEpisodeTransition);
+    }
+    json << "]"
          << ",\"child\":{\"actor_guid\":"
          << task.ActorGuid.GetCounter()
          << ",\"wave_generation\":" << task.WaveGeneration

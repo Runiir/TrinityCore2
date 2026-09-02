@@ -366,12 +366,25 @@ int main()
         &cache->Facts(), &actor30010Task, &sharedWave);
     assert(!EscapeFor(continuousContact, PlayerGuid(30010)));
     assert(actor30010Task.TaskGeneration == clearedTaskGeneration);
+    assert(BuildMagmawPersonalParasiteEscapeDiagnosticsJson(actor30010Task,
+        &sharedWave).find("\"personal_threat_episode_transitions\":[]")
+        != std::string::npos);
 
     // An authoritative actor-local absence is the falling edge. It does not
     // close or replace the still-provisional cohort wave.
     board.Hostiles[1].VictimGuid = PlayerGuid(30008);
     ++board.Revision;
     board.ObservedAtMs += 100;
+    AdaptiveMagmawPlan nonAuthoritativeAbsence = contactStrategy.Propose(board,
+        PlayerGuid(30010), "dps", nullptr, false, false, &contactLane,
+        &contactLegacy, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &actor30010Task, &sharedWave);
+    assert(!EscapeFor(nonAuthoritativeAbsence, PlayerGuid(30010)));
+    assert(actor30010Task.PersonalThreatEpisodeOpen);
+    assert(BuildMagmawPersonalParasiteEscapeDiagnosticsJson(actor30010Task,
+        &sharedWave).find("\"personal_threat_episode_transitions\":[]")
+        != std::string::npos);
     cache = MagmawFactsCache::ForSnapshot(cache, board);
     AdaptiveMagmawPlan contactAbsent = contactStrategy.Propose(board,
         PlayerGuid(30010), "dps", nullptr, false, false, &contactLane,
@@ -383,6 +396,24 @@ int main()
     assert(sharedWave.Active
         && sharedWave.Generation == provisionalWaveGeneration
         && !sharedWave.GenerationAuthoritative);
+    std::string const fallingEpisodeJson =
+        BuildMagmawPersonalParasiteEscapeDiagnosticsJson(actor30010Task,
+            &sharedWave);
+    for (char const* field : { "actor_guid", "scope_key", "route_node_id",
+        "route_generation", "board_revision", "observed_at_ms",
+        "facts_authoritative", "authority_gap_mask",
+        "personal_threat_present", "personal_threat_guid",
+        "prior_episode_open", "new_episode_open", "edge",
+        "parent_wave_generation", "parent_generation_authoritative",
+        "prior_task_generation", "new_task_generation",
+        "prior_candidate_generation", "new_candidate_generation" })
+        assert(fallingEpisodeJson.find(field) != std::string::npos);
+    assert(fallingEpisodeJson.find("\"edge\":\"falling\"")
+        != std::string::npos);
+    assert(fallingEpisodeJson.find("\"facts_authoritative\":true")
+        != std::string::npos);
+    assert(fallingEpisodeJson.find("\"personal_threat_present\":false")
+        != std::string::npos);
 
     // A later personal-contact rising edge rearms exactly once. Stable
     // presence, including hazard GUID churn, retains the task and its sticky
@@ -406,6 +437,19 @@ int main()
     assert(actor30010Task.CandidateGeneration
         != clearedCandidateGeneration);
     assert(actor30010Task.WaveGeneration == provisionalWaveGeneration);
+    std::string const risingEpisodeJson =
+        BuildMagmawPersonalParasiteEscapeDiagnosticsJson(actor30010Task,
+            &sharedWave);
+    assert(risingEpisodeJson.find("\"edge\":\"falling\"")
+        != std::string::npos);
+    assert(risingEpisodeJson.find("\"edge\":\"rising\"")
+        != std::string::npos);
+    assert(risingEpisodeJson.find("\"prior_task_generation\":"
+        + std::to_string(clearedTaskGeneration)) != std::string::npos);
+    assert(risingEpisodeJson.find("\"new_task_generation\":"
+        + std::to_string(clearedTaskGeneration + 1)) != std::string::npos);
+    assert(risingEpisodeJson.find("\"personal_threat_present\":true")
+        != std::string::npos);
     uint64 const nextContactTaskGeneration = actor30010Task.TaskGeneration;
     uint64 const nextContactCandidateGeneration =
         actor30010Task.CandidateGeneration;
@@ -434,6 +478,13 @@ int main()
         == nextContactExpiresAtMs);
     assert(MagmawPersonalParasiteEscapeTask::SamePoint(
         actor30010Task.Destination, nextContactDestination));
+    std::string const stableEpisodeJson =
+        BuildMagmawPersonalParasiteEscapeDiagnosticsJson(actor30010Task,
+            &sharedWave);
+    assert(stableEpisodeJson.find("\"personal_threat_guid\":102")
+        != std::string::npos);
+    assert(stableEpisodeJson.find("\"personal_threat_guid\":103")
+        == std::string::npos);
 
     // Infection while authority is still missing is an explicit terminal
     // child outcome. It cannot masquerade as another dropped intent.

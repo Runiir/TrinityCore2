@@ -84,6 +84,30 @@ struct MagmawPersonalParasiteEscapeDiagnostics
     uint64 NativeOutcomeCount = 0;
 };
 
+struct MagmawPersonalThreatEpisodeTransition
+{
+    bool Valid = false;
+    uint64 ActorGuid = 0;
+    std::string ScopeKey;
+    std::string RouteNodeId;
+    uint64 RouteGeneration = 0;
+    uint64 BoardRevision = 0;
+    uint64 ObservedAtMs = 0;
+    bool FactsAuthoritative = false;
+    uint32 AuthorityGapMask = 0;
+    bool PersonalThreatPresent = false;
+    uint64 PersonalThreatGuid = 0;
+    bool PriorEpisodeOpen = false;
+    bool NewEpisodeOpen = false;
+    std::string Edge;
+    uint64 ParentWaveGeneration = 0;
+    bool ParentGenerationAuthoritative = false;
+    uint64 PriorTaskGeneration = 0;
+    uint64 NewTaskGeneration = 0;
+    uint64 PriorCandidateGeneration = 0;
+    uint64 NewCandidateGeneration = 0;
+};
+
 // One actor owns one semantic escape for one personal-threat episode within a
 // parasite wave. Observed actor/hazard geometry is input, never task identity.
 struct MagmawPersonalParasiteEscapeTask
@@ -125,6 +149,11 @@ struct MagmawPersonalParasiteEscapeTask
     uint64 LastProgressAtMs = 0;
     uint64 LastProgressRevision = 0;
     MagmawPersonalParasiteEscapeDiagnostics Diagnostics;
+    MagmawPersonalThreatEpisodeTransition FallingEpisodeTransition;
+    MagmawPersonalThreatEpisodeTransition RisingEpisodeTransition;
+    bool RisingEpisodeTransitionPending = false;
+    uint64 RisingPriorTaskGeneration = 0;
+    uint64 RisingPriorCandidateGeneration = 0;
 
     void ObserveScope(Blackboard const& board, ObjectGuid actor);
     void ObserveActorLife(Blackboard const& board, ObjectGuid actor,
@@ -153,6 +182,11 @@ struct MagmawPersonalParasiteEscapeTask
 
     void MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle lifecycle,
         uint64 observedAtMs);
+    void RecordEpisodeTransition(Blackboard const& board,
+        MagmawFacts const& facts, MagmawParasiteWaveTask const& wave,
+        ActorSnapshot const* personalThreat, bool priorEpisodeOpen,
+        bool newEpisodeOpen, std::string_view edge,
+        uint64 priorTaskGeneration, uint64 priorCandidateGeneration);
 };
 
 char const* ToString(MagmawPersonalParasiteEscapeLifecycle value);

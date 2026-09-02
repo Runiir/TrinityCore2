@@ -4,6 +4,9 @@ from collections import Counter
 from typing import Any, Callable
 
 try:
+    from tools.raid_program.capture_magmaw_personal_threat_episode import (
+        personal_threat_episode_join_report,
+    )
     from tools.raid_program.capture_runtime_identity import (
         STRATEGY_FIELD,
         _roster_binding_identity,
@@ -23,6 +26,9 @@ try:
         fixture_terminal_binding,
     )
 except ModuleNotFoundError:
+    from capture_magmaw_personal_threat_episode import (
+        personal_threat_episode_join_report,
+    )
     from capture_runtime_identity import (
         STRATEGY_FIELD,
         _roster_binding_identity,
@@ -610,6 +616,7 @@ def evidence_demux_report(
     terminal_failure_validator: Callable[..., tuple[str | None, list[str]]],
     fixture_terminal: dict[str, Any] | None = None,
     fixture_expected_identity: dict[str, Any] | None = None,
+    personal_threat_episode_target: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Independently bind every retained JSON row to one raid lifecycle."""
 
@@ -628,6 +635,9 @@ def evidence_demux_report(
     canonical_identity_sha256: str | None = None
     canonical_roster_sha256: str | None = None
     canonical_active_sequence: int | None = None
+    episode_join = personal_threat_episode_join_report(
+        rows, target=personal_threat_episode_target,
+    )
 
     for row in rows:
         # An outer annotation is evidence output, not evidence input.  Replace
@@ -686,8 +696,10 @@ def evidence_demux_report(
         )
         for row in rows:
             row["identity_binding"]["reasons"] = ["evidence_demux_no_active_raid_rows"]
+        early_rejections = ["evidence_demux_no_active_raid_rows"]
+        early_rejections.extend(episode_join["rejections"])
         return {
-            "rejections": ["evidence_demux_no_active_raid_rows"],
+            "rejections": list(dict.fromkeys(early_rejections)),
             "retained_rows": len(rows),
             "bound_rows": 0,
             "rejected_rows": len(rows),
@@ -697,6 +709,7 @@ def evidence_demux_report(
             "required_telemetry_envelopes": telemetry_envelopes,
             "actor_binding_counts": telemetry_envelopes["actor_binding_counts"],
             "trace_discontinuities": telemetry_envelopes["trace_discontinuities"],
+            "personal_threat_episode_join": episode_join,
             "gate_passed": False,
         }
 
@@ -725,6 +738,7 @@ def evidence_demux_report(
         )
     )
     reasons.extend(fixture_terminal_rejections)
+    reasons.extend(episode_join["rejections"])
     stop_seen = False
     inactive_cleanup_seen = False
     observed_actions: set[str] = set()
@@ -989,5 +1003,6 @@ def evidence_demux_report(
         "required_telemetry_envelopes": telemetry_envelopes,
         "actor_binding_counts": telemetry_envelopes["actor_binding_counts"],
         "trace_discontinuities": telemetry_envelopes["trace_discontinuities"],
+        "personal_threat_episode_join": episode_join,
         "gate_passed": not unique_reasons and states.get("bound", 0) == len(rows) and unchecked == 0,
     }

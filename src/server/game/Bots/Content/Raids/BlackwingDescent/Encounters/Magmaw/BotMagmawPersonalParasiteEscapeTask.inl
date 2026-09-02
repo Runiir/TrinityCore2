@@ -212,6 +212,42 @@ inline void MagmawPersonalParasiteEscapeTask::MarkLifecycle(
     }
 }
 
+inline void MagmawPersonalParasiteEscapeTask::RecordEpisodeTransition(
+    Blackboard const& board, MagmawFacts const& facts,
+    MagmawParasiteWaveTask const& wave,
+    ActorSnapshot const* personalThreat, bool priorEpisodeOpen,
+    bool newEpisodeOpen, std::string_view edge,
+    uint64 priorTaskGeneration, uint64 priorCandidateGeneration)
+{
+    MagmawPersonalThreatEpisodeTransition transition;
+    transition.Valid = true;
+    transition.ActorGuid = ActorGuid.GetCounter();
+    transition.ScopeKey = board.CurrentScope.Key();
+    transition.RouteNodeId = board.Route.NodeId;
+    transition.RouteGeneration = board.CurrentScope.RouteGeneration;
+    transition.BoardRevision = board.Revision;
+    transition.ObservedAtMs = board.ObservedAtMs;
+    transition.AuthorityGapMask = AuthorityGapMask(board, facts);
+    transition.FactsAuthoritative = !transition.AuthorityGapMask;
+    transition.PersonalThreatPresent = personalThreat != nullptr;
+    transition.PersonalThreatGuid = personalThreat
+        ? personalThreat->Guid.GetCounter() : 0;
+    transition.PriorEpisodeOpen = priorEpisodeOpen;
+    transition.NewEpisodeOpen = newEpisodeOpen;
+    transition.Edge = edge;
+    transition.ParentWaveGeneration = wave.Generation;
+    transition.ParentGenerationAuthoritative =
+        wave.GenerationAuthoritative;
+    transition.PriorTaskGeneration = priorTaskGeneration;
+    transition.NewTaskGeneration = TaskGeneration;
+    transition.PriorCandidateGeneration = priorCandidateGeneration;
+    transition.NewCandidateGeneration = CandidateGeneration;
+    if (edge == "falling")
+        FallingEpisodeTransition = transition;
+    else
+        RisingEpisodeTransition = transition;
+}
+
 inline std::optional<BotNativeAction::Candidate>
 MagmawPersonalParasiteEscapeTask::Tick(
     Blackboard const& board, MagmawFacts const& facts,
@@ -260,6 +296,9 @@ MagmawPersonalParasiteEscapeTask::Tick(
         AlternatePending = false;
         Failure = MagmawPersonalParasiteEscapeFailure::None;
         State = BotDecision::PersistentTaskState::Aborted;
+        FallingEpisodeTransition = {};
+        RisingEpisodeTransition = {};
+        RisingEpisodeTransitionPending = false;
     }
     if (!Started)
     {
@@ -275,6 +314,7 @@ MagmawPersonalParasiteEscapeTask::Tick(
         Failure = MagmawPersonalParasiteEscapeFailure::
             InfectedBeforeClearance;
         AlternatePending = false;
+        RisingEpisodeTransitionPending = false;
         MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::Infected,
             board.ObservedAtMs);
         return std::nullopt;
@@ -312,10 +352,23 @@ MagmawPersonalParasiteEscapeTask::Tick(
     // churn cannot rearm it.
     if (Started && BotDecision::IsTerminal(State))
     {
-        if (!personalThreat)
+        if (!personalThreat && PersonalThreatEpisodeOpen)
+        {
+            uint64 const priorTaskGeneration = TaskGeneration;
+            uint64 const priorCandidateGeneration = CandidateGeneration;
             PersonalThreatEpisodeOpen = false;
-        else if (!PersonalThreatEpisodeOpen && wave.Active)
+            RecordEpisodeTransition(board, facts, wave, nullptr, true,
+                false, "falling", priorTaskGeneration,
+                priorCandidateGeneration);
+            RisingEpisodeTransition = {};
+        }
+        else if (personalThreat && !PersonalThreatEpisodeOpen && wave.Active)
+        {
+            RisingPriorTaskGeneration = TaskGeneration;
+            RisingPriorCandidateGeneration = CandidateGeneration;
+            RisingEpisodeTransitionPending = true;
             beginTask();
+        }
     }
     if (!Started || BotDecision::IsTerminal(State))
         return std::nullopt;
@@ -395,6 +448,13 @@ MagmawPersonalParasiteEscapeTask::Tick(
         LastProgressRevision = board.Revision;
         MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::CandidateBuilt,
             board.ObservedAtMs);
+        if (RisingEpisodeTransitionPending)
+        {
+            RecordEpisodeTransition(board, facts, wave, personalThreat,
+                false, true, "rising", RisingPriorTaskGeneration,
+                RisingPriorCandidateGeneration);
+            RisingEpisodeTransitionPending = false;
+        }
     }
     else if (AlternatePending)
     {
