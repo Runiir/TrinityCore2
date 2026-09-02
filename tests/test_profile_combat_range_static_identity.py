@@ -7,7 +7,9 @@ from tools.raid_program.profile_combat_range_static_identity import (
     PENDING_LIVE_PROOF,
     STATIC_READBACK_SQL,
     StaticTargetIdentityError,
+    identity_from_projection,
     perform_static_readback,
+    static_readback_request,
     target_identity,
     validate_target_identity,
     verify_static_readback,
@@ -94,6 +96,132 @@ def test_pending_live_proof_export_rebinding_has_no_canonical_authority(
         rows=[_row()],
     )
     assert set(receipt["live_proof"].values()) == {"pending_live_proof"}
+
+
+def test_private_pending_helper_and_public_constructor_have_no_authority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    canonical = _identity()
+    forged_proof = {
+        field: "proven_without_live_evidence" for field in PENDING_LIVE_PROOF
+    }
+    monkeypatch.setattr(static_identity, "_pending_live_proof", lambda: forged_proof)
+    monkeypatch.setattr(
+        static_identity,
+        "target_identity",
+        lambda **fields: {**fields, "live_proof": forged_proof},
+    )
+
+    projected = identity_from_projection(canonical)
+    assert set(projected["live_proof"].values()) == {"pending_live_proof"}
+    assert validate_target_identity(canonical) == canonical
+
+    forged = dict(canonical)
+    forged["live_proof"] = forged_proof
+    with pytest.raises(
+        StaticTargetIdentityError, match="target_identity_metadata_mismatch"
+    ):
+        validate_target_identity(forged)
+
+
+def test_all_exported_identity_authority_is_lexically_fixed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stable_api = {
+        "target_identity": target_identity,
+        "validate_target_identity": validate_target_identity,
+        "identity_from_projection": identity_from_projection,
+        "static_readback_request": static_readback_request,
+        "verify_static_readback": verify_static_readback,
+        "perform_static_readback": perform_static_readback,
+    }
+    forged = lambda *args, **kwargs: {"forged": True}
+    for name in stable_api:
+        monkeypatch.setattr(static_identity, name, forged)
+    monkeypatch.setattr(static_identity, "_canonical_identity_api", forged)
+    monkeypatch.setattr(static_identity, "_positive_integer", forged)
+    monkeypatch.setattr(static_identity, "_nonnegative_integer", forged)
+    monkeypatch.setattr(static_identity, "_pending_live_proof", forged)
+    monkeypatch.setattr(static_identity, "Mapping", int)
+    monkeypatch.setattr(static_identity, "TARGET_IDENTITY_SCHEMA", "forged_target")
+    monkeypatch.setattr(
+        static_identity, "STATIC_READBACK_REQUEST_SCHEMA", "forged_request"
+    )
+    monkeypatch.setattr(
+        static_identity, "STATIC_READBACK_RECEIPT_SCHEMA", "forged_receipt"
+    )
+    monkeypatch.setattr(static_identity, "TARGET_IDENTITY_FIELDS", ("forged",))
+    monkeypatch.setattr(static_identity, "STATIC_READBACK_SQL", "forged_sql")
+    monkeypatch.setattr(
+        static_identity,
+        "PENDING_LIVE_PROOF",
+        {"alive": "proven_without_live_evidence"},
+    )
+
+    identity = stable_api["target_identity"](
+        runtime_target_guid=39,
+        target_spawn_id=250051,
+        target_entry=41570,
+        target_map_id=0,
+    )
+    assert identity == {
+        "schema": "cata_raid_typed_target_identity_v1",
+        "runtime_target_guid": 39,
+        "target_spawn_id": 250051,
+        "target_entry": 41570,
+        "target_map_id": 0,
+        "static_readback_key": "target_spawn_id",
+        "live_proof": {
+            "alive": "pending_live_proof",
+            "current_target": "pending_live_proof",
+            "positive_instance": "pending_live_proof",
+            "same_instance": "pending_live_proof",
+            "route_scope": "pending_live_proof",
+            "runtime_spawn_relation": "pending_live_proof",
+        },
+    }
+    assert stable_api["validate_target_identity"](identity) == identity
+    assert stable_api["identity_from_projection"]({**identity, "extra": 7}) == identity
+
+    request = stable_api["static_readback_request"](identity)
+    assert request["schema"] == "cata_raid_static_target_readback_request_v1"
+    assert request["statement"] == STATIC_READBACK_SQL
+    assert request["parameters"] == [250051]
+
+    receipt = stable_api["verify_static_readback"](
+        identity=identity,
+        query_target_spawn_id=250051,
+        rows=[_row(target_map_id=0)],
+    )
+    assert receipt["schema"] == "cata_raid_static_target_readback_receipt_v1"
+    assert receipt["query"] == request
+    assert receipt["live_proof"] == identity["live_proof"]
+
+    executed: list[tuple[str, tuple[int]]] = []
+
+    def query(statement: str, parameters: tuple[int]):
+        executed.append((statement, parameters))
+        return [_row(target_map_id=0)]
+
+    performed = stable_api["perform_static_readback"](identity=identity, query=query)
+    assert executed == [(STATIC_READBACK_SQL, (250051,))]
+    assert performed == receipt
+
+
+def test_query_callback_cannot_change_executed_or_receipted_statement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, tuple[int]]] = []
+
+    def query(statement: str, parameters: tuple[int]):
+        calls.append((statement, parameters))
+        monkeypatch.setattr(static_identity, "STATIC_READBACK_SQL", "forged_sql")
+        return [_row()]
+
+    receipt = perform_static_readback(identity=_identity(), query=query)
+
+    assert calls == [(STATIC_READBACK_SQL, (250051,))]
+    assert receipt["query"]["statement"] == calls[0][0]
 
 
 def test_runtime_guid_cannot_be_substituted_as_static_spawn_key() -> None:
