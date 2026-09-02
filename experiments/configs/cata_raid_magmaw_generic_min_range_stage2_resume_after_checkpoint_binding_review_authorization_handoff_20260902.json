@@ -1,0 +1,144 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_stage2_after_checkpoint_binding_review",
+  "owner_skill": "raid-performance-loop",
+  "classification": "stage2_static_provision_readback_and_seal_resume_authorized",
+  "created_at_utc": "2026-09-02T20:48:00Z",
+  "reviewed_implementation": {
+    "commit": "518021a4ed3b478e27f9d510c152c36891ca9141",
+    "tree": "44476ab77cee96298b2d01fd3fe16a5b1bb33304",
+    "review_path": "/tmp/magmaw-multitarget-checkpoint-binding-review-518021a4/review_handoff.json",
+    "review_sha256": "041e505a5d27775af3d9f18391c6199845c476eb4b53ff115b79f2de2faea50c",
+    "review_verdict": "GO",
+    "changed_files": 8,
+    "tests": {
+      "generic_atomic": "14 passed",
+      "transfer": "25 passed",
+      "admission_capture": "84 passed",
+      "broad_compatibility": "169 passed",
+      "build_compatibility": "12 passed",
+      "py_compile": "passed"
+    }
+  },
+  "prior_stage2_stop": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "sha256": "167b41fbdd6a9809f0f33c9d8a6b2793be80605db8a5667c2b9ecc4340dd4f9f",
+    "terminal_reason": "profile_combat_range_ledger_decision_mismatch",
+    "recurrence_gate_consumed": 1,
+    "atomic_create_consumed": 1,
+    "deterministic_provisioning_consumed": 0,
+    "database_readback_consumed": 0,
+    "recurrence_seal_consumed": 0,
+    "worldserver_starts": 0
+  },
+  "reviewed_binary": {
+    "source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "source_tree": "75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c",
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/worktree/build/src/server/worldserver/worldserver",
+    "sha256": "4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081",
+    "size_bytes": 64688528,
+    "build_receipt_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/identity/worldserver_build_receipt.json",
+    "build_receipt_file_sha256": "43dd3b89c2fc5497ab740e4789ee85efb925f6b45c8a3b6d96389a2880beb866",
+    "immutable": true,
+    "rebuild_authorized": false
+  },
+  "two_identity_authority": {
+    "binary_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "reviewed_control_commit": "518021a4ed3b478e27f9d510c152c36891ca9141",
+    "required_relation": "Binary commit is an ancestor; every later path is control, evidence-lifecycle Python, or test-only and exactly allowlisted. No native gameplay, dependency, CMake, SQL schema, route data, roster, runtime default, or C/C++ path changed.",
+    "reviewed_path_allowlist": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_one_build_sealed_observation_fixture_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_resume_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_static_resume_after_bank_review_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_static_live_evidence_split_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_atomic_fixture_correction_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_composition_repair_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_multitarget_checkpoint_binding_and_transfer_route_compat_reauthorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_multitarget_checkpoint_binding_repair_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_recurrence_bank_compatibility_correction_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_recurrence_bank_hash_binding_correction_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_transfer_fixture_identity_test_correction_reauthorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_transfer_reason_assertion_correction_reauthorization_handoff_20260902.json",
+      "tests/test_blocker_recurrence_ledger.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_magmaw_transfer_prestart_bundle.py",
+      "tests/test_native_path_launch_receipt.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py",
+      "tests/test_recurrence_admission.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/prestart_bundle_dialects.py",
+      "tools/raid_program/recurrence_admission.py",
+      "tools/raid_program/recurrence_checkpoint_seals.py"
+    ],
+    "authorization_delta_allowlist": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_resume_after_checkpoint_binding_review_authorization_handoff_20260902.json"
+    ],
+    "fail_closed": "Any dirty, non-ancestor, extra-path, hash, binary, build-receipt, command, fixture, decision, route, roster, profile, config, or database mismatch stops before provisioning."
+  },
+  "fixture_identity": {
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "revision": 1,
+    "causal_signature": "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner",
+    "case_id": "elemental_magmaw_too_close_v1",
+    "actor_guid": 30010,
+    "actor_class_spec": "elemental_shaman",
+    "target_guid": 39,
+    "target_entry": 41570,
+    "map_id": 669,
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "route_node_count": 4,
+    "target_route_node_id": "bwd.magmaw.encounter",
+    "required_bot_count": 10,
+    "live_relation_status": "pending_stage3"
+  },
+  "authorized_stage2": {
+    "owner_skill": "raid-shard-architecture",
+    "root": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "required_actions": [
+      "Verify the committed authorization, clean source, exact binary/control allowlists, implementation review, prior typed stop, immutable binary/build receipt, route, roster, profile, and config inputs.",
+      "Run the unchanged full 27-fixture recurrence manifest exactly once at the authorization commit; require all pass, authentic global decision preservation, fixture_expansion_admitted=true, canary_admitted=false, and explicit generic checkpoint eligibility.",
+      "Derive and bind a fresh current-control runtime config receipt, then execute the generic atomic bundle creator exactly once with the explicit generic checkpoint selection.",
+      "Execute exactly one deterministic frozen-roster provision, one static database readback, and one recurrence/admission/checkpoint seal.",
+      "Write and verify static_sealed_ready with live_relation_status=pending_stage3, or one typed_preflight_failure at the exact output path."
+    ],
+    "acceptance_conditions": [
+      "The atomic bundle retains the complete authoritative target/pending/request/quarantine lists unchanged and seals the explicit generic fixture.",
+      "One provision/readback proves the frozen roster, actor 30010 static identity/map669, and target spawn GUID39/entry41570/map669.",
+      "One seal binds source/build/route/profile/config/suite/decision/admission/readback/fixture/case/actor/target static identities.",
+      "No alive/current-target/positive-instance/runtime-scope inference is made; those remain Stage3.",
+      "No build, server, live capture, DVC, retry, or gameplay mutation occurs."
+    ]
+  },
+  "budgets": {
+    "current_control_recurrence_gate": 1,
+    "atomic_bundle_create": 1,
+    "runtime_config_derivation": 1,
+    "deterministic_provisioning": 1,
+    "database_readbacks": 1,
+    "recurrence_seals": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "observation_only_fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
+  "forbidden": [
+    "No source/test/config/route/roster/ledger/skill/runtime-default/database-schema/gameplay mutation.",
+    "No configure, rebuild, server/auth start, live capture, gameplay canary, DVC, promotion, acceptance, ML admission, or retry.",
+    "No decision projection, fixture/command narrowing, implicit checkpoint selection, seal reuse, waiver, synthetic pass, actor/target substitution, or live inference."
+  ],
+  "next_action": "Dispatch one fresh raid-shard-architecture Stage2 owner. Stage3 remains closed until a hash-verified static_sealed_ready handoff exists."
+}
