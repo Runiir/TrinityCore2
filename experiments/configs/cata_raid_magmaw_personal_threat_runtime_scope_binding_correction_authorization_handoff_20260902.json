@@ -1,0 +1,111 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:authorize_close_chainwielder_personal_threat_runtime_scope_binding",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "evidence_runtime_scope_binding_correction_authorized",
+  "source": {
+    "commit": "a8eae40cad0d8d418314deb7e628f45a51add9b3",
+    "tree": "2d3ae8d5bf70b122a1f112645f51994fd4f861da",
+    "clean": true,
+    "reviewed_parent": "05c64097b5269f08420e7ccca2c02f09c17f2b47",
+    "reviewed_parent_is_direct_parent": true,
+    "prior_authorization_handoff": "experiments/configs/cata_raid_magmaw_personal_threat_target_binding_authorization_handoff_20260902.json",
+    "prior_authorization_handoff_sha256": "739e2ca296259548a96bc7597c8b5d0e66f9fb97d9086652ea792d5eacb4b70e",
+    "prior_authorization_source_commit": "f06d949a6c6cc19a076e7368ef0b16d495d4a669",
+    "prior_authorization_source_tree": "da8e0d0a59aff060089faae90a643b8cd1eec6e2"
+  },
+  "independent_review": {
+    "external_path": "/tmp/magmaw-personal-threat-target-binding-review.yiX9GhNv/review_handoff.json",
+    "sha256": "ac0259b01d2de98b34f06f43656a1038f06352b38bc50d0804b34e27b1c700bc",
+    "schema": "cata_raid_independent_review_handoff_v1",
+    "work_unit_id": "review:personal_threat_target_sealed_launcher_binding",
+    "verdict": "NO-GO",
+    "reviewed_commit": "a8eae40cad0d8d418314deb7e628f45a51add9b3",
+    "reviewed_tree": "2d3ae8d5bf70b122a1f112645f51994fd4f861da",
+    "critical_findings": 0,
+    "high_findings": 1,
+    "medium_findings": 1
+  },
+  "first_broken_edge": {
+    "id": "chainwielder_scheduler_drops_stable_runtime_scope",
+    "layer": "capture_setup_checkpoint_dialect_to_controller_route_hold_scheduler_stable_status_projection",
+    "directly_observed": [
+      "The sealed target declaration reaches the verified capture argv at a8eae40.",
+      "The Chainwielder checkpoint dialect returns no scheduler kwargs, so ControllerRouteHoldScheduler uses runtime_scope_required=false.",
+      "The actual two-status scheduler path deliberately returns runtime_scope=null even when held statuses carry wipe_generation and instance_id.",
+      "Public finalization then rejects the requested target as controller scope missing/invalid before evidence demultiplexing.",
+      "Existing resolution tests inject a hand-built runtime_scope and therefore do not exercise this production edge."
+    ],
+    "consequence": "A target-bearing live recapture remains non-gating even though it fails closed; no build or live attempt is admissible until the actual Chainwielder scheduler retains stable runtime scope."
+  },
+  "correction_contract": {
+    "next_work_unit": "evidence:close_chainwielder_personal_threat_runtime_scope_binding",
+    "owner_skill": "raid-evidence-lifecycle",
+    "behavior_change": false,
+    "owned_files": [
+      "tools/raid_program/capture_setup.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      "tests/test_chainwielder_prestart_bundle.py"
+    ],
+    "required_repair": [
+      "When and only when a complete personal_threat_episode_target is present, construct the existing Chainwielder ControllerRouteHoldScheduler with runtime_scope_required=true.",
+      "Preserve target-absent scheduler construction and behavior unchanged.",
+      "Exercise the actual Chainwielder scheduler path with two byte-identical held statuses carrying wipe_generation 0 and instance_id 7; retain that runtime scope and resolve the exact target before demux.",
+      "Prove missing runtime scope and second-status instance drift fail closed through the actual scheduler path.",
+      "Create and verify a target-bearing atomic Chainwielder bundle, then recompute its outer file manifest after separately altering the sealed launch-contract target and one emitted target argv flag; verify_bundle must reject both semantic mutations."
+    ],
+    "deterministic_fixtures": [
+      "A complete target makes only the Chainwielder scheduler runtime-scope-aware; two identical held statuses for wipe 0 and instance 7 produce a receipt whose runtime_scope resolves the canonical six-field target before demux.",
+      "Missing scope and second-status instance drift reject through the real scheduler/finalization path without a successful join gate.",
+      "A target-free capture retains the prior runtime_scope_required=false behavior and remains compatible.",
+      "A target-bearing atomic bundle verifies before mutation, then rejects an altered launch-contract target and an altered emitted target flag even after the outer file manifest is recomputed."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py tests/test_magmaw_personal_threat_episode_capture.py",
+      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_composite_fixture_replay_launcher.py",
+      "pixi run python -m py_compile tools/raid_program/capture_setup.py",
+      "git diff --check",
+      "pixi run python -m tools.raid_program.raid_workloop status"
+    ]
+  },
+  "acceptance": [
+    "The actual target-bearing Chainwielder scheduler retains the stable wipe 0/instance 7 pair and resolves the exact requested target before demux.",
+    "The actual scheduler path rejects missing runtime scope and second-status instance drift.",
+    "Target-none scheduler behavior is unchanged.",
+    "Target-bearing atomic bundle verification rejects both sealed target and emitted argv semantic mutations after outer manifest recomputation.",
+    "All focused tests, py_compile, diff checks, and workloop status execute successfully.",
+    "An independent Sol high review returns GO before any build or live authority is issued."
+  ],
+  "forbidden": [
+    "mutation outside the exact three owned files",
+    "gameplay, encounter, role, class, task, candidate, arbiter, executor, movement, pathing, coordinate, Z, MMAP, geometry, or tolerance changes",
+    "hard-coded, predicted, or stale runtime instance identity",
+    "target selection from observed personal-threat transitions",
+    "global runtime-scope requirements or behavior changes for target-absent captures",
+    "weakening the all-or-none six-field target, stable-status identity checks, sealed bundle verifier, or strict join validator",
+    "composite request, route content, runtime profile, configuration, skill, ledger, DVC, database, or ML changes",
+    "trace-capacity increase or parallel telemetry stream",
+    "configure, build, provisioning, database mutation, worldserver start, authserver start, live attempt, retry, DVC publication, fixture promotion, Magmaw acceptance, or ML admission"
+  ],
+  "authority": {
+    "source_mutation_allowed": true,
+    "test_mutation_allowed": true,
+    "configuration_mutation_allowed": false,
+    "route_mutation_allowed": false,
+    "skill_mutation_allowed": false,
+    "ledger_mutation_allowed": false,
+    "builds": 0,
+    "configure_operations": 0,
+    "provisioning_operations": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0,
+    "dvc_publication_allowed": false,
+    "fixture_revision_promotion_allowed": false,
+    "acceptance_allowed": false,
+    "ml_admission_allowed": false
+  },
+  "next_action": "Implement only the target-conditional Chainwielder scheduler runtime-scope binding and the exact real-path and atomic-bundle mutation fixtures in the three owned files, pass the required commands, commit cleanly, and request independent Sol high review. Do not build or run live."
+}
