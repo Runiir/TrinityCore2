@@ -53,6 +53,13 @@ Before live execution, require:
 
 Do not reuse a binary or receipt for changed native source. Do not accept stored `passed` booleans when the underlying rows cannot be reconstructed.
 
+Derive security- and evidence-canonical expectations from private fixed
+construction or literals unreachable through caller-rebindable exported state.
+An immutable object is insufficient when construction or validation reads it
+through an exported module/global name that a caller can rebind. If an exported
+convenience view exists, adversarial review must test both item mutation and
+module/global rebinding.
+
 ## Capture an immutable lifecycle
 
 These shutdown and persistence duties belong to the capture controller or coordinator, not a read-only babysitter.
