@@ -1,0 +1,109 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_layered_build_control_authority_repair",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_authority_repair_authorized",
+  "created_at_utc": "2026-09-02T20:57:00Z",
+  "base_commit": "de43bbc695b0adc50af895c417732731f9d24272",
+  "base_tree": "eeb91f6758ef175d427086a877b6bd7566ac9386",
+  "diagnosis": {
+    "path": "/tmp/magmaw-bundle-control-allowlist-diagnosis-20260902.json",
+    "sha256": "bf9bae4826bdbcf423f1b6a64cf7fea6a44b9db8488dcfd5f5c2971f7aed3ccc",
+    "classification": "production_build_control_authority_not_consumed"
+  },
+  "typed_stop": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "sha256": "51c0305025ff5412bd3a1cecbccec00b0238426e9a428772be80fcc64567c0d8",
+    "terminal_reason": "build_source_incompatible:control_path_not_allowed:tests/test_blocker_recurrence_ledger.py",
+    "entire_rejected_exact_path_count": 12,
+    "provision_readback_seal_consumed": 0
+  },
+  "first_broken_edge": {
+    "id": "authorization_allowlist_not_consumed_by_production_build_control_compatibility",
+    "cause": "Stage 2 verifies an exact 26-path build-to-review layer and exact 2-path review-to-current layer, but atomic admission and capture preflight call a hard-coded category policy with no authenticated authority input, rejecting twelve reviewed tools/tests paths."
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "implementation_commit_budget": 1,
+    "owned_production_files": [
+      "tools/raid_program/build_control_compatibility.py",
+      "tools/raid_program/recurrence_admission.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_environment_validation.py",
+      "tools/raid_program/capture_setup.py"
+    ],
+    "owned_test_files": [
+      "tests/test_build_control_compatibility.py",
+      "tests/test_recurrence_admission.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "required_behavior": [
+      "Add an optional authenticated path-plus-SHA256 two-layer authority; preserve the current hard-coded narrow policy when no authority is supplied.",
+      "Bind build-source commit, reviewed-control commit, current clean HEAD, exact sorted build-to-review paths, and exact sorted review-to-current paths.",
+      "Recompute both Git diffs with --no-renames and require exact canonical set equality. Reject missing, extra, duplicate, reordered, absolute, traversal, glob, directory, malformed, non-ancestor, dirty, commit-drift, and hash-drift inputs.",
+      "Forbid native, dep, CMake, SQL, and worldserver-config paths unconditionally even if explicitly named. Never add broad tests/ or tools/ categories and never hard-code the current twelve paths.",
+      "Copy and hash-bind authority into the atomic bundle, bind its canonical projection in recurrence admission, reconstruct during admission verification, and require capture preflight to consume the admission-bound authority rather than a disconnected caller input.",
+      "Calls without authority retain existing exact-build and narrow-control behavior."
+    ],
+    "required_tests": {
+      "positive": [
+        "Exact two-layer authority accepts the exact reviewed tools/tests lineage and reports both commits, counts, and hashes.",
+        "Atomic create/verify, admission create/verify, and capture preflight bind and reconstruct the same authority.",
+        "No-authority exact and legacy narrow-control cases remain unchanged."
+      ],
+      "negative": [
+        "authority hash mismatch",
+        "wrong build or reviewed commit",
+        "current HEAD drift",
+        "missing or extra path",
+        "duplicate or noncanonical ordering",
+        "absolute, traversal, glob, directory, or renamed path",
+        "native, dep, CMake, SQL, or conf path even if named",
+        "admission projection mutation",
+        "bundle authority mutation",
+        "capture authority not already verified and admission-bound"
+      ]
+    },
+    "required_commands": [
+      "pixi run pytest -q tests/test_build_control_compatibility.py",
+      "pixi run pytest -q tests/test_recurrence_admission.py",
+      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py",
+      "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py -k 'build_control or build_receipt or generic_controller_route_hold'",
+      "pixi run pytest -q tests/test_build_control_compatibility.py tests/test_recurrence_admission.py tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py",
+      "pixi run python -m py_compile tools/raid_program/build_control_compatibility.py tools/raid_program/recurrence_admission.py tools/raid_program/chainwielder_prestart_bundle.py tools/raid_program/capture_environment_validation.py tools/raid_program/capture_setup.py",
+      "git diff --check de43bbc695b0adc50af895c417732731f9d24272 HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Only the exact nine owned files change.",
+      "The current exact layered lineage is accepted only through a hash-bound authority; every named tamper fails before staging/database access.",
+      "No broad path category permission or current-lineage hard-code is introduced.",
+      "Capture reconstructs the same admission-bound proof.",
+      "All focused, broad, compile, diff, and status checks pass; independent Sol-high review returns GO before Stage 2 resumes."
+    ]
+  },
+  "forbidden": [
+    "No broad tests/, tools/, Python, configs, or arbitrary caller allowlist permission.",
+    "No native gameplay, C/C++, build, dependency, CMake, SQL, route, roster, runtime-default, checkpoint dialect, fixture revision/command, ledger decision, binary, build receipt, or skill change.",
+    "No rebuild, provision, readback, Stage-2 seal, server, live capture, canary, DVC, retry, waiver, promotion, or ML admission."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "deterministic_provisioning": 0,
+    "database_readbacks": 0,
+    "live_recurrence_seals": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "observation_only_fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
+  "next_action": "Dispatch one Sol-high raid-evidence-lifecycle implementer, then one independent Sol-high reviewer."
+}
