@@ -1,0 +1,192 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:authorize_generic_min_range_capture_sequence_fixture_completion",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_runtime_fixture_completion_authorized",
+  "source": {
+    "commit": "309c3fc5611cdd9e950f491d8ac37d7ba3a04e78",
+    "tree": "4b5c425ee3c8009e32b3297a1f1e34d66d8f137d",
+    "clean": true,
+    "implementation_under_review": "309c3fc5611cdd9e950f491d8ac37d7ba3a04e78",
+    "implementation_parent": "dec52402915151d369c2fc211956135e6cf77ea0",
+    "prior_authorization_commit": "dec52402915151d369c2fc211956135e6cf77ea0",
+    "prior_authorization_is_exact_parent": true,
+    "prior_authorization_is_ancestor": true
+  },
+  "immutable_review": {
+    "external_path": "/tmp/magmaw-generic-min-range-capture-sequence-review-309c3fc5/review_handoff.json",
+    "sha256": "9d072f07dd2beb45b410ed4bb0759865c9153b5290ac3e46e7111a972f998b28",
+    "hash_verified": true,
+    "verdict": "NO-GO",
+    "reviewed_implementation_commit": "309c3fc5611cdd9e950f491d8ac37d7ba3a04e78",
+    "reviewed_authorization_commit": "dec52402915151d369c2fc211956135e6cf77ea0",
+    "finding_ids": [
+      "profile_scheduler_arm_poll_terminal_sequence_unexercised",
+      "cpp_hazard_range_cast_transition_not_value_exercised"
+    ]
+  },
+  "causal_receipt": {
+    "candidate_first_broken_edge": "generic_profile_min_range_capture_sequence_fixture_incomplete",
+    "owner": "shared_bot_runtime_evidence_boundary",
+    "ordered_claims": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "Commit 309c3fc5 wires the generic profile checkpoint dialect to the existing authenticated arm command, status command, and observer through capture_setup's generic scheduler construction.",
+        "observation": "Independent review claim ledger and capture_checkpoint_controller.py at commit 309c3fc5."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "The focused Python tests assert the dialect shape but never instantiate ControllerRouteHoldScheduler and drive the exact start-held, stable-status, arm, repeated profile-status, and terminal protocol.",
+        "observation": "Independent finding profile_scheduler_arm_poll_terminal_sequence_unexercised."
+      },
+      {
+        "order": 3,
+        "status": "verified",
+        "claim": "The production C++ checkpoint source requires an allowed hazard producer, exact Movement preemption, ordered hazard and range progress, target-bound receipt identity, and a later same-target cast.",
+        "observation": "Independent review of BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp at commit 309c3fc5."
+      },
+      {
+        "order": 4,
+        "status": "refuted",
+        "claim": "The compiled fixture executes the same C++ checkpoint transition predicate and its authorized adjacent negatives.",
+        "observation": "Independent finding cpp_hazard_range_cast_transition_not_value_exercised: the compiled fixture stops at arbiter conflict and Python manually supplies a completed row."
+      },
+      {
+        "order": 5,
+        "status": "verified",
+        "claim": "The reviewed implementation preserves gameplay admission, priorities, resources, movement fingerprints, planning, native execution, and shared range adapter bytes.",
+        "observation": "Independent review blob comparison and diagnostic-target propagation review at commit 309c3fc5."
+      },
+      {
+        "order": 6,
+        "status": "unproven",
+        "claim": "One later sealed production worldserver episode will complete the exact target-bound shared-hazard preemption, range progress, and later cast sequence.",
+        "observation": "No build or replay is authorized; this unit completes only the deterministic pre-build fixture boundary."
+      }
+    ],
+    "first_downstream_state_mutation": "The current focused suite can report green without executing the capture scheduler protocol or the shared C++ transition predicate, leaving the build/replay admission decision dependent on untested protocol and value transitions.",
+    "failure_postcondition": "Malformed, stale, duplicated, reordered, or identity-drifted protocol/transition values can remain outside executable regression coverage while source-shape and manually constructed projections pass.",
+    "implementation_hypothesis": "Add one ControllerRouteHoldScheduler sequence fixture through checkpoint_controller_dialect scheduler_kwargs and extract the smallest value-only C++ checkpoint transition predicate used by ObserveProfileCombatRangeCheckpoint so the compiled fixture executes the positive sequence and every authorized negative without changing gameplay behavior.",
+    "correlation_keys": [
+      "fixture_id",
+      "case_id",
+      "seal_sha256",
+      "source_commit",
+      "checkpoint_generation",
+      "actor_guid",
+      "target_guid",
+      "attempt_id",
+      "wipe_generation",
+      "route_generation",
+      "instance_id",
+      "range_candidate_key",
+      "hazard_candidate_key",
+      "resource_conflict",
+      "hazard_decision_sequence",
+      "range_decision_sequence",
+      "movement_receipt_id",
+      "movement_intent_fingerprint",
+      "cast_recorded_at_ms",
+      "cast_target_guid",
+      "command_sequence"
+    ]
+  },
+  "scope_lock": {
+    "next_work_unit": "runtime:generic_min_range_capture_sequence_fixture_completion",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Complete only the missing deterministic pre-build proof: execute the generic profile ControllerRouteHoldScheduler arm/poll/terminal protocol and the shared C++ checkpoint transition predicate with the authorized negatives.",
+    "owned_behavior": "Test-only scheduler protocol coverage and extraction of the smallest value-only checkpoint transition predicate already consumed by the production observer. No gameplay selection or execution behavior may change.",
+    "expected_observable_change": "The exact scheduler transcript reaches a truthful completed terminal receipt and fails closed for every protocol/identity negative; the compiled fixture accepts only the exact allowed hazard-preemption-to-range-progress-to-same-target-cast sequence and rejects all adjacent negatives. This unit may report implemented_pending_independent_review, never fixture-green.",
+    "owned_files": [
+      "src/server/game/Bots/BotProfileCombatRangeCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp",
+      "tests/test_profile_combat_range_checkpoint_capture.py",
+      "tests/test_profile_combat_range_production_fixture.py"
+    ],
+    "read_only_inspection": "The existing capture dialect, ControllerRouteHoldScheduler, capture setup, arbiter fixture support, movement diagnostics, admission and recurrence tools, runtime configuration, route, encounter, class, and ledger files may be inspected but not edited.",
+    "preexisting_dirty_files": []
+  },
+  "production_fixture_contract": {
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "positive_revision": 1,
+    "counterexample": "At commit 309c3fc5 the scheduler protocol and C++ hazard-preemption/range/cast transition remain unexecuted even though source-shape and manually projected row tests pass.",
+    "required_sequence": [
+      "Construct ControllerRouteHoldScheduler from checkpoint_controller_dialect scheduler_kwargs and drive the exact start-held, stable status, authenticated arm acknowledgement, repeated exact profile status polls, and truthful terminal completion.",
+      "Exercise through the shared extracted C++ predicate an actual allowed hazard source with its exact candidate and native receipt, decreasing progress, and same-resolution Movement preemption of the exact range candidate.",
+      "Require hazard-before-range ordering, a later exact target-bound range receipt with decreasing progress, and a still-later ordinary cast on the same target in the same lifecycle scope and checkpoint generation."
+    ],
+    "required_negatives": [
+      "malformed or unavailable arm/status response",
+      "duplicate or stale receipt",
+      "missing terminal or finish before truthful terminal",
+      "wrong actor, target, case, seal, source, generation, or lifecycle scope",
+      "unallowed or unrelated hazard source",
+      "absent same-resolution Movement preemption",
+      "range-before-hazard or other reordered evidence",
+      "stale diagnostic target, receipt, scope, or generation",
+      "native submission without decreasing progress",
+      "cast before range progress or on the wrong target"
+    ],
+    "fail_before": "Commit 309c3fc5 has no executable scheduler sequence fixture and no executable value-level C++ transition fixture for the production checkpoint predicate.",
+    "pass_after_implementation": "Both focused tests execute the exact protocol and shared transition predicate; all authorized negatives fail closed; production behavior and fingerprints remain byte-equivalent; independent review returns GO.",
+    "pass_after_worldserver_replay": "Reserved for a later separately authorized build and sealed observation-only replay; not part of this work unit."
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py tests/test_profile_combat_range_production_fixture.py",
+    "pixi run pytest -q tests/test_movement_planner_diagnostics.py tests/test_recurrence_admission.py tests/test_bot_route_combat_target_policy.py tests/test_bot_world_population_mgr_combat_movement_module.py tests/test_magmaw_parasite_policy.py",
+    "wc -l src/server/game/Bots/BotProfileCombatRangeCheckpoint.h src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp",
+    "git diff --check 309c3fc5611cdd9e950f491d8ac37d7ba3a04e78 HEAD",
+    "pixi run python -m tools.raid_program.raid_workloop status",
+    "git status --short"
+  ],
+  "acceptance_conditions": [
+    "A focused ControllerRouteHoldScheduler fixture constructed from checkpoint_controller_dialect scheduler_kwargs asserts the exact start-held/status/status/arm/profile-status transcript, command accounting, and truthful completed terminal receipt.",
+    "Malformed or unavailable arm/status, duplicate or stale receipt, actor/target/case/seal/source/generation/lifecycle drift, finish-before-terminal, and missing terminal all fail closed.",
+    "The smallest value-only checkpoint transition predicate used by ObserveProfileCombatRangeCheckpoint is shared with and compiled by the production fixture.",
+    "The compiled transition accepts only an allowed actual hazard source with exact native receipt, decreasing progress, same-resolution Movement preemption, hazard-before-range ordering, later target-bound range progress, and still-later same-target cast.",
+    "Compiled negatives cover wrong hazard source, absent preemption, reordered evidence, stale target/receipt/scope/generation, non-progress, and early or wrong-target cast.",
+    "No gameplay predicate, fingerprint, admission, priority, resource, planning, geometry, native execution, route, encounter, class, default, seal, or ledger changes; both touched C/C++ files remain below 1000 lines; required commands pass once; independent Sol high review returns GO before any build or replay."
+  ],
+  "forbidden": [
+    "No change to range or hazard eligibility, priorities, resources, arbiter ordering, movement fingerprints, planning, admission, geometry, native execution, routes, encounters, classes, configuration defaults, seals, or recurrence ledgers.",
+    "No Magmaw, boss-entry, creature-entry, route-node, coordinate, spell, class, or spec conditional.",
+    "No synthetic native success/progress/cast, direct fixture MotionMaster action, teleportation, Z steering, MMAP workaround, or tolerance change.",
+    "No configure, build, provisioning, database mutation, worldserver or authserver start, DVC publication, fixture-green promotion, gameplay canary, or Magmaw acceptance."
+  ],
+  "authority": {
+    "source_mutation_allowed": true,
+    "test_mutation_allowed": true,
+    "configuration_schema_mutation_allowed": false,
+    "gameplay_behavior_broadening_allowed": false,
+    "route_mutation_allowed": false,
+    "skill_mutation_allowed": false,
+    "ledger_mutation_allowed": false,
+    "builds": 0,
+    "provisioning_operations": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0,
+    "dvc_publication_allowed": false,
+    "fixture_green_promotion_allowed": false,
+    "magmaw_acceptance_allowed": false,
+    "ml_admission_allowed": false
+  },
+  "review_and_next_gate": {
+    "worker_success_state": "implemented_pending_independent_review",
+    "review_requirement": "Independent Sol high review of the exact clean commit, executed scheduler protocol, shared production C++ transition predicate, full authorized negative matrix, unchanged gameplay predicates/fingerprints, and no-cheat constraints.",
+    "build_authorized": false,
+    "worldserver_fixture_replay_authorized": false,
+    "live_gameplay_canary_authorized": false,
+    "next_on_review_go": "raid-performance-loop may authorize one build plus one sealed observation-only fixture replay; neither is a gameplay canary or Magmaw acceptance.",
+    "next_on_review_no_go": "Return only the exact review finding to raid-bot-runtime-implementation under a new metadata authorization; do not build or run live.",
+    "validation_clock": {
+      "policy": "completion_watchdog",
+      "fixed_success_timer_seconds": null
+    }
+  },
+  "next_action": "Hand exactly this lock to one raid-bot-runtime-implementation worker with no nested agents. Complete only the two deterministic fixture gaps, run the required commands once, commit cleanly, and request independent Sol high review."
+}
