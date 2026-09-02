@@ -1,35 +1,38 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:generic_min_range_fixture_provision_and_seal",
+  "work_unit": "shard:generic_min_range_static_fixture_provision_readback_and_seal",
   "owner_skill": "raid-shard-architecture",
-  "classification": "stage2_provision_and_seal_resume_authorized",
+  "classification": "stage2_static_provision_readback_and_seal_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Resume only Stage 2 of the reviewed generic minimum-range production fixture: deterministic frozen-roster provisioning, exact database readback, and one exact recurrence/admission/checkpoint seal. Reuse the unchanged Stage-1 binary; do not build or start a server.",
-  "gate_state": "Independent Sol-high review GO closes the generic prestart composition fixture gap at db3ef47. The prior Stage-2 preflight failure consumed zero budgets, so exactly one provision, one readback, and one seal are open. Stage 3 and all live, gameplay-canary, publication, and promotion gates remain closed.",
-  "observed_at_commit": "db3ef474c6dea18ceca793466032560f7e1626cb",
-  "immutable_input_commit": "db3ef474c6dea18ceca793466032560f7e1626cb",
-  "descriptor_commit": "db3ef474c6dea18ceca793466032560f7e1626cb",
   "descriptor_path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+  "descriptor_commit": "3603a19f73b519fc36d9ae2a4a7c78670e6f8a9b",
+  "observed_at_commit": "3603a19f73b519fc36d9ae2a4a7c78670e6f8a9b",
+  "immutable_input_commit": "3603a19f73b519fc36d9ae2a4a7c78670e6f8a9b",
+  "architecture_scope": "Correct evidence ownership only: Stage 2 proves the frozen roster and static database/route/profile/config/admission identities; Stage 3, under later authority, proves live alive/current-target/same-positive-instance/same-scope facts before checkpoint arm or route release.",
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_resume_authorization_handoff_20260902.json",
-    "sha256": "3cb9366e1ed221ea87c733636f2e5a273df94ce9f98111a7336a8ff73f64b8fb",
-    "source_commit": "db3ef474c6dea18ceca793466032560f7e1626cb",
-    "source_tree": "2367adaf1a4af1649f0fc4ed5f43aa8042b8361c",
-    "review_path": "/tmp/magmaw-generic-profile-range-prestart-atomic-review-db3ef47/review_handoff.json",
-    "review_sha256": "58cd65710f2eb082bf3b3b42061dd51832f1acad95e812d80c369fa696bc39fc"
+  "evidence_contract_change": true,
+  "gate_state": "Typed Stage-2 stop b9fb6eb9 consumed zero budgets and proved the old offline live-fact requirement unsupportable. Stage 2 now has one provision, one static readback, and one seal. No build or server is authorized. Stage 3 is declared but closed.",
+  "first_broken_edge": {
+    "id": "stage2_static_readback_requires_live_runtime_target_scope",
+    "stage": "staged_fixture_evidence_ownership",
+    "owner_classification": "performance_loop_control_plane",
+    "cause": "The superseded Stage-2 contract required an offline database readback to prove live actor/target state, current-target ownership, and shared positive runtime instance.",
+    "causal_chain": "offline Stage-2 contract -> impossible live-fact acceptance condition -> typed stop before provisioning -> zero budgets consumed",
+    "review_state": "evidence_boundary_corrected_stage2_static_authorized_stage3_live_declared",
+    "actor_guid": 30010,
+    "target_guid": 39,
+    "target_entry": 41570
   },
-  "immutable_inputs": {
-    "stage1_handoff_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage1_handoff.json",
-    "stage1_handoff_sha256": "2130fe66e9f75b5a8a064c6b4621383a46dc0c2edf3ebd1bb95da225a2b5390f",
-    "prior_stage2_failure_path": "/home/runiir/Games/trinity-generic-min-range-stage2-preflight.WOwxHyE8/stage2_preflight_failure_handoff.json",
-    "prior_stage2_failure_sha256": "6102e4e8246e819251ea836f46e498b34c7e7365ad125efd06a16940d8ffba4d",
-    "prior_stage2_terminal_reason": "generic_profile_combat_range_prestart_composition_unsupported",
-    "prior_stage2_budget_consumption": "zero"
+  "source_handoff": {
+    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_static_live_evidence_split_authorization_handoff_20260902.json",
+    "sha256": "0c8ef415e30b4baab9b567206b072c8deab959f25f17ebb6120df9c8e9a6c345",
+    "source_commit": "3603a19f73b519fc36d9ae2a4a7c78670e6f8a9b",
+    "source_tree": "72ffba73ddf5fffed3b14ffd61a4d3c874d28261",
+    "typed_stop_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_resume_handoff.json",
+    "typed_stop_sha256": "b9fb6eb9ffa44919ea077479cb212b6ab46a78712139fbcef6d9ab2e70bf58a1"
   },
   "reviewed_binary": {
     "source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
@@ -41,8 +44,7 @@
     "rebuild_authorized": false
   },
   "two_identity_authority": {
-    "reviewed_intervening_path_count": 10,
-    "reviewed_intervening_path_allowlist": [
+    "reviewed_intervening_path_allowlist_b575_to_db3": [
       "experiments/configs/cata_raid_active_work_unit_v1.json",
       "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
       "experiments/configs/cata_raid_magmaw_generic_min_range_one_build_sealed_observation_fixture_authorization_handoff_20260902.json",
@@ -54,24 +56,19 @@
       "tools/raid_program/chainwielder_prestart_bundle.py",
       "tools/raid_program/prestart_bundle_dialects.py"
     ],
-    "authorization_metadata_delta_allowlist": [
+    "prior_authorization_delta_allowlist_db3_to_3603": [
       "experiments/configs/cata_raid_active_work_unit_v1.json",
       "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_resume_authorization_handoff_20260902.json"
-    ]
-  },
-  "first_broken_edge": {
-    "id": "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner",
-    "owner_classification": "shared_bot_runtime",
-    "actor_guid": 30010,
-    "target_guid": 39,
-    "target_entry": 41570,
-    "stage": "profile_action_min_range_recovery",
-    "cause": "The pre-repair fallback admitted world.profile_combat_range only for an owned Drudge target, so a valid too-close non-Drudge hostile reached no Movement owner and ordinary casts remained in min_range_required/no_valid_profile_action.",
-    "causal_chain": "valid current-node target -> ResolvedCombatAction retains MinRange -> too-close cast rejection -> pre-repair profile-range candidate not admitted -> no native range movement -> repeated no-valid cadence loss",
-    "review_state": "implemented_and_independently_reviewed_go_pending_provisioned_sealed_production_observation"
+    ],
+    "current_authorization_delta_allowlist_3603_to_authorization": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_static_live_evidence_split_authorization_handoff_20260902.json"
+    ],
+    "cumulative_unique_path_count": 12,
+    "fail_closed": true
   },
   "scope_lock": {
-    "objective": "Verify the unchanged Stage-1 build and reviewed two-identity control lineage, then perform exactly one deterministic frozen-roster provision, one database readback, and one exact generic profile-range recurrence/admission/checkpoint seal.",
+    "objective": "Using the unchanged Stage-1 binary, perform exactly one frozen-roster provision, one static database readback, and one exact generic profile-range recurrence/admission/checkpoint seal; emit the Stage-2 handoff and stop.",
     "fixture_identity": {
       "purpose": "fixture_expansion_replay",
       "fixture_id": "generic_profile_min_range_production_boundary_v1",
@@ -80,11 +77,11 @@
       "actor_guid": 30010,
       "target_guid": 39,
       "target_entry": 41570,
+      "map_id": 669,
       "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
       "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
       "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
       "shard_id": "bwd_magmaw_diagnostic_10n",
-      "map_id": 669,
       "difficulty": "10N",
       "route_node_count": 4,
       "route_node_ids": [
@@ -93,36 +90,36 @@
         "bwd.magmaw.drudges",
         "bwd.magmaw.encounter"
       ],
-      "target_route_node_id": "bwd.magmaw.encounter"
+      "target_route_node_id": "bwd.magmaw.encounter",
+      "required_bot_count": 10
     },
     "owned_outputs": [
-      "materialized runtime bundle beneath /home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/run",
-      "one deterministic provisioning receipt",
-      "one exact database readback",
+      "materialized static bundle beneath /home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/run",
+      "one deterministic frozen-roster provisioning receipt",
+      "one static database readback covering roster, actor, and creature spawn identity",
       "one exact verified recurrence/admission/checkpoint seal",
-      "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_resume_handoff.json"
+      "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json"
     ],
     "required_actions": [
-      "Verify the committed authorization, GO review, Stage-1 handoff, prior typed failure, binary, build receipt, exact ten-path reviewed allowlist, two-file authorization delta, route staging/selector receipts, and clean control identity.",
-      "Create the exact default-off runtime profile/config and manifest-derived decision, suite, and recurrence-admission inputs through the reviewed generic atomic producer.",
-      "Provision once, read back once, and prove the exact frozen roster plus actor 30010 and target GUID 39/entry 41570 on map 669 in the exact instance; fail closed rather than retarget or normalize.",
-      "Create and re-verify one exact seal, emit the immutable Stage-2 handoff and hash, and stop without starting a server."
+      "Verify the committed split authorization by exact path/SHA, typed stop, Stage-1 handoff, GO review, superseded authorization, binary/build receipt, exact layered path allowlists, clean control identity, and canonical four-node route receipts/object before mutation.",
+      "Materialize the reviewed default-off generic profile-range bundle with exact route, profile/config, decision, suite, admission, fixture/case, actor, target, and unchanged binary identities.",
+      "Provision exactly once and read back exactly once. Prove the frozen roster; actor 30010 static character identity and map 669; world creature spawn GUID 39, entry 41570, map 669; and route/profile/config/admission identities.",
+      "Do not claim target alive state, actor current-target ownership, runtime scope, a shared/nonzero instance, or any live relation from static data.",
+      "Create and reverify exactly one seal; emit the exact Stage-2 handoff with live_relation_status=pending_stage3 and all hashes; stop without server start."
     ],
-    "stop_condition": "Any mismatch returns one typed preflight-failure handoff after the actually consumed predecessor budget and without retry, server start, or adjacent repair."
+    "stop_condition": "Any mismatch yields one typed_preflight_failure handoff at the exact output path, recording only actually consumed budgets, with no retry or adjacent repair."
   },
-  "acceptance_conditions": [
-    "All exact input hashes and two-identity path sets verify at a clean authorization commit before provisioning.",
-    "Exactly one provision and one readback prove the frozen roster, actor 30010, and target GUID 39/entry 41570 in the exact runtime identity.",
-    "Exactly one re-verified seal binds source, build, route, profile, config, decision, suite, admission, readback, fixture/case, actor, and target.",
-    "No configure, build, server, live capture, gameplay canary, DVC action, promotion, or retry occurs.",
-    "One immutable sealed-ready or typed-preflight-failure handoff is written at the exact output path with its SHA-256."
-  ],
-  "forbidden": [
-    "No repository/source/test/config/route/roster/ledger/skill/runtime-default/database-schema or gameplay mutation.",
-    "No configure, rebuild, server/auth start, live capture, gameplay canary, DVC operation, fixture promotion, acceptance, ML admission, or retry.",
-    "No synthetic authority/evidence, foreign dialect, hand-authored pass, actor/target substitution, seal reuse, or mismatch waiver.",
-    "No bot-side Z steering, teleportation, encounter MMAP workaround, global tolerance change, or Magmaw-specific production conditional."
-  ],
+  "declared_stage3_contract": {
+    "authorized_now": false,
+    "future_work_unit": "shard:generic_min_range_live_prearm_fixture_capture",
+    "future_output_handoff": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage3_live_fixture_handoff.json",
+    "required_order": "After exactly one worldserver start and before checkpoint arm or route release, server-owned runtime readback must prove actor 30010 and target GUID 39/entry 41570 are alive, target 39 is the actor's current valid bwd.magmaw.encounter node target, both are on map 669, and both share the same positive instance ID and runtime scope. Bind those exact live values and correlation keys to terminal evidence; otherwise fail closed.",
+    "prerequisite": "Hash-verified Stage-2 static_sealed_ready handoff plus a new performance-loop authorization.",
+    "worldserver_start_budget": 1,
+    "observation_only_fixture_attempt_budget": 1,
+    "retries": 0,
+    "completion_watchdog_required": true
+  },
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
@@ -137,10 +134,24 @@
     "gameplay_canary_attempt_budget": 0,
     "retries": 0
   },
+  "acceptance_conditions": [
+    "All exact input hashes, layered path sets, binary/build receipt, route authority, and clean control state verify before provisioning.",
+    "Exactly one provision and one readback prove the frozen roster, actor 30010 static character identity/map 669, and creature spawn GUID 39/entry 41570/map 669.",
+    "Exactly one reverified seal and Stage-2 handoff bind source/build/route/profile/config/decision/suite/admission/readback/fixture/case/actor/target static identities.",
+    "The Stage-2 handoff explicitly leaves alive/current-target/runtime-instance/runtime-scope proof pending Stage 3.",
+    "No configure, build, server/auth start, capture, gameplay canary, DVC action, promotion, or retry occurs."
+  ],
+  "forbidden": [
+    "No repository/source/test/config/route/roster/ledger/skill/runtime-default/database-schema or gameplay mutation.",
+    "No configure, rebuild, server/auth start, live capture, gameplay canary, DVC operation, fixture promotion, acceptance, ML admission, or retry during Stage 2.",
+    "No synthetic authority/evidence, foreign dialect, hand-authored pass, actor/target substitution, seal reuse, or mismatch waiver.",
+    "No inference that static spawn/map data proves alive/current-target/same-instance/same-scope runtime facts.",
+    "No bot-side Z steering, teleportation, encounter MMAP workaround, global tolerance change, or Magmaw-specific production conditional."
+  ],
   "issues": [],
   "ready_for_bounded_repair": false,
   "ready_for_build": false,
-  "ready_for_fixture_expansion": true,
+  "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Dispatch exactly one fresh raid-shard-architecture owner with the resume handoff scope. It must verify every predecessor, provision/read back/seal once, emit the exact Stage-2 handoff, and stop."
+  "next_action": "Dispatch exactly one fresh raid-shard-architecture owner with scope_lock. It must verify predecessors, provision once, perform one static readback, seal once, emit /home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json, and stop."
 }
