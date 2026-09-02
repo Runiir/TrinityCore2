@@ -1,0 +1,69 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:reauthorize_transfer_fixture_identity_test_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_test_fixture_correction_reauthorized",
+  "created_at_utc": "2026-09-02T20:31:00Z",
+  "control_base_commit": "64d67cf53a504afba27c59b2e261a2cf5d0eb58f",
+  "retained_seven_file_patch": {
+    "binary_diff_sha256": "f9c3df8d67a1359fd5115182cd67a46dca0502b1f4b3206e6ec0f06ae29235d0",
+    "includes_authorized_transfer_route_mapping": true,
+    "focused_results": ["generic 14 passed", "admission/capture 84 passed", "transfer 18 passed, 7 failed"]
+  },
+  "diagnosis": {
+    "path": "/tmp/magmaw-transfer-fixture-build-identity-diagnosis-20260902.json",
+    "sha256": "76baabca9c509084f8c2a0641362115c3aec8ef209f3b1ed68c2616365145041",
+    "classification": "baseline_latent_synthetic_test_fixture_defect"
+  },
+  "first_broken_edge": {
+    "id": "magmaw_transfer_test_fixture_second_commit_leaves_build_source_snapshots_at_parent_identity",
+    "cause": "The helper updates only receipt.commit after its tracked-input commit; request, admission, and completion source snapshots retain the parent commit and tree, so strict production verification correctly fails closed."
+  },
+  "authorized_delta": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "new_eighth_file": "tests/test_magmaw_transfer_prestart_bundle.py",
+    "change": "In _transfer_fixture only, replace request/admission/completion source_identity snapshots with three equal clean current commit/tree snapshots after the helper's tracked-input commit, mirroring the existing generic fixture. Recompute only the already-supported outer build receipt hash/restaging through existing helper flow.",
+    "production_changes": 0,
+    "implementation_commit_budget_remaining": 1
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_magmaw_transfer_prestart_bundle.py",
+    "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py -k generic_profile_range",
+    "pixi run pytest -q tests/test_recurrence_admission.py tests/test_profile_combat_range_checkpoint_capture.py",
+    "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_magmaw_transfer_prestart_bundle.py tests/test_recurrence_admission.py tests/test_profile_combat_range_checkpoint_capture.py",
+    "pixi run python -m py_compile tools/raid_program/prestart_bundle_dialects.py tools/raid_program/recurrence_checkpoint_seals.py tools/raid_program/recurrence_admission.py tools/raid_program/chainwielder_prestart_bundle.py",
+    "git diff --check",
+    "git status --short"
+  ],
+  "acceptance_conditions": [
+    "Only the retained seven files plus the exact transfer test file differ before the single combined implementation commit.",
+    "All three source snapshots equal the current clean fixture commit and tree; production build identity verification is unchanged.",
+    "The transfer suite passes all 25 tests and the broad compatibility suite passes all 169 tests.",
+    "All prior explicit-selection, authentic-decision, route-entry, negative, compile, and diff conditions remain green.",
+    "Independent Sol-high raid-evidence-lifecycle review returns GO before Stage 2 resumes."
+  ],
+  "forbidden": [
+    "No production build-identity relaxation and no generated synthetic pass.",
+    "No ninth implementation file.",
+    "No ledger/evaluator/route data/fixture command/revision/roster/database/runtime/gameplay/C++/skill change.",
+    "No build, provision, readback, Stage-2 seal, server, live capture, canary, DVC, promotion, ML admission, or retry."
+  ],
+  "budgets": {
+    "implementation_commits_remaining": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "deterministic_provisioning": 0,
+    "database_readbacks": 0,
+    "live_recurrence_seals": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "observation_only_fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
+  "next_action": "The existing implementer may change the one test helper, run every required command, and commit all eight authorized files once."
+}

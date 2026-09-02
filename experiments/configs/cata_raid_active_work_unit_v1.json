@@ -1,6 +1,6 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:multitarget_checkpoint_binding_and_transfer_route_compatibility_repair",
+  "work_unit": "evidence:checkpoint_binding_transfer_route_and_fixture_identity_repair",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
@@ -12,7 +12,7 @@
   "architecture_scope": "Evidence lifecycle only: preserve an authentic multi-target recurrence decision while binding one explicit checkpoint fixture through bundle, seal, admission, and verification.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "The explicit-selection patch is focused-green, but its mandatory compatibility suite exposed nine identical baseline Magmaw-transfer failures: the preliminary route validator maps regroup/source_entry 0 to Chainwielder entry 42649. Both evidence-contract repairs are now bounded to one combined seven-file commit.",
+  "gate_state": "The explicit-selection patch and transfer route mapping are focused-green through route validation. The next seven transfer failures are a latent synthetic helper defect: its second commit leaves all three build source snapshots on the parent identity. One test-only eighth-file correction is authorized without weakening production verification.",
   "first_broken_edge": {
     "id": "profile_combat_range_atomic_dialect_requires_singleton_projection_of_authoritative_full_bank_decision",
     "stage": "stage2_atomic_prestart_decision_and_checkpoint_selection",
@@ -21,14 +21,16 @@
     "review_state": "selection_patch_focused_green_and_transfer_baseline_independently_reproduced"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_multitarget_checkpoint_binding_and_transfer_route_compat_reauthorization_handoff_20260902.json",
-    "sha256": "d71c6765a63ee70d3159a47accb0177836e0b27d939587396eab59dad5197ca4",
+    "path": "experiments/configs/cata_raid_magmaw_transfer_fixture_identity_test_correction_reauthorization_handoff_20260902.json",
+    "sha256": "6555f320b919d0b39bcaaac93eb74c40dfa853a5914ca68c3d7076950c286c65",
     "source_commit": "265d46b2f754fc53248f311d47af945b8b30dfad",
     "source_tree": "f07fc058dcb005d3dcb9a038264a74babe5954c6",
     "diagnosis_path": "/tmp/magmaw-stage2-profile-range-ledger-decision-mismatch-diagnosis-20260902.json",
     "diagnosis_sha256": "e53a6a887b04b4bb42ca6e2372cdb5aa9c3267c99f102ab32bedee957879e3ab",
     "compatibility_diagnosis_path": "/tmp/magmaw-transfer-route-validator-baseline-diagnosis-20260902.json",
     "compatibility_diagnosis_sha256": "97e2711ca797cc7ecc4019a5c28165a88f7bd844631c711ba1a67c4e7a3b2694",
+    "fixture_identity_diagnosis_path": "/tmp/magmaw-transfer-fixture-build-identity-diagnosis-20260902.json",
+    "fixture_identity_diagnosis_sha256": "76baabca9c509084f8c2a0641362115c3aec8ef209f3b1ed68c2616365145041",
     "typed_stop_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
     "typed_stop_sha256": "167b41fbdd6a9809f0f33c9d8a6b2793be80605db8a5667c2b9ecc4340dd4f9f"
   },
@@ -42,6 +44,7 @@
       "tests/test_chainwielder_prestart_bundle.py",
       "tests/test_recurrence_admission.py",
       "tests/test_profile_combat_range_checkpoint_capture.py"
+      ,"tests/test_magmaw_transfer_prestart_bundle.py"
     ],
     "expected_observable_change": "The authentic broad decision passes with the explicit generic selection, and Magmaw-transfer accepts only its contracted initial regroup/source_entry 0 before unchanged full-route validation.",
     "stop_condition": "Any need to change the global decision, recurrence evaluator, ledger, fixture command/revision, gameplay, database, or live state stops the work unit."
@@ -59,7 +62,7 @@
     "The full decision and suite remain unchanged through atomic materialization.",
     "The selected generic fixture is explicit, eligible, pending, nonquarantined, request-free, and seal-bound.",
     "Coexisting checkpoint targets cannot steal dispatch.",
-    "All nine independently reproduced transfer compatibility failures pass and the broad suite reports 169 passed.",
+    "All transfer tests use a current clean source identity, all 25 pass, and the broad suite reports 169 passed.",
     "Positive, negative, compatibility, compile, diff, and status checks pass.",
     "Independent Sol-high review returns GO before Stage 2 resumes."
   ],
