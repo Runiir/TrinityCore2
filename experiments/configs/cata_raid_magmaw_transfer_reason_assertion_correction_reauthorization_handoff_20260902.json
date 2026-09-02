@@ -1,0 +1,48 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:reauthorize_transfer_fail_closed_reason_assertions",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_test_assertion_correction_reauthorized",
+  "created_at_utc": "2026-09-02T20:39:00Z",
+  "control_base_commit": "3ce23ccf9246b5fa872f7103071bab7d4e42e94e",
+  "retained_eight_file_patch": {
+    "binary_diff_sha256": "994d799674ba28688a81fd4b42418df4a78933933c653f5c565534e7acd460f5",
+    "transfer_result": "23 passed, 2 failed",
+    "held_unchanged_during_diagnosis": true
+  },
+  "diagnosis": {
+    "path": "/tmp/magmaw-transfer-reason-ordering-diagnosis-20260902/review_handoff.json",
+    "sha256": "6a810a681ae28323dc84ab463f2a95680393bcb8f196d13e382f34ef9ca1486a",
+    "classification": "stale_test_reason_expectations_with_correct_fail_closed_production_ordering"
+  },
+  "authorized_delta": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "only_file": "tests/test_magmaw_transfer_prestart_bundle.py",
+    "changes": [
+      "For test_transfer_route_suffix_substitution_fails_closed, expect magmaw_transfer_route_semantic_mismatch because the substituted row reaches exact full-row validation.",
+      "For the coherent full-route drift parameters, expect route_checkpoint_identity_mismatch only for initial row map_id 670; retain magmaw_transfer_route_semantic_mismatch for the other mutations."
+    ],
+    "implementation_commit_budget_remaining": 1
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_magmaw_transfer_prestart_bundle.py",
+    "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py -k generic_profile_range",
+    "pixi run pytest -q tests/test_recurrence_admission.py tests/test_profile_combat_range_checkpoint_capture.py",
+    "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_magmaw_transfer_prestart_bundle.py tests/test_recurrence_admission.py tests/test_profile_combat_range_checkpoint_capture.py",
+    "pixi run python -m py_compile tools/raid_program/prestart_bundle_dialects.py tools/raid_program/recurrence_checkpoint_seals.py tools/raid_program/recurrence_admission.py tools/raid_program/chainwielder_prestart_bundle.py",
+    "git diff --check",
+    "git status --short"
+  ],
+  "acceptance_conditions": [
+    "The two exact mutations remain rejected at their intended earliest fail-closed layer.",
+    "Transfer reports 25 passed and the broad suite reports 169 passed.",
+    "All prior selection, route, fixture-identity, negative, compile, diff, and scope conditions remain green.",
+    "Exactly the same eight implementation files are committed once and independent Sol-high review returns GO."
+  ],
+  "forbidden": [
+    "No production reason or validation-order change.",
+    "No ninth implementation file and no additional test relaxation.",
+    "No build, provision, readback, Stage-2 seal, server, live capture, canary, DVC, promotion, or retry."
+  ],
+  "next_action": "The existing implementer may update only the two expected-reason assertions, rerun every command, and commit the eight-file repair once."
+}
