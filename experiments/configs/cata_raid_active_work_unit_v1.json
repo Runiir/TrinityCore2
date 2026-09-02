@@ -1,229 +1,67 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:magmaw_personal_threat_episode_fixture_recapture_attempt4",
-  "owner_skill": "raid-shard-architecture",
-  "next_work_unit": "evidence:classify_publish_magmaw_personal_threat_episode_attempt4",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "fixture_replay_authorized",
-  "epoch_id": "magmaw_personal_threat_episode_fixture_recapture_attempt4_20260902",
+  "work_unit": "program:review_authorize_generic_non_drudge_min_range_movement_repair",
+  "owner_skill": "raid-performance-loop",
+  "next_work_unit": "runtime:generic_non_drudge_min_range_movement_admission",
+  "next_owner_skill": "raid-bot-runtime-implementation",
+  "classification": "closed_attempt4_pending_bounded_runtime_repair_authorization",
+  "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Run one observation-only Magmaw fixture recapture through the reviewed personal-threat capture path. Retain the exact actor-local falling/rising episode join, its one task-generation increment, candidate and native outcome, infection/death, throughput, route, terminal, and cleanup evidence without changing gameplay.",
-  "gate_state": "The sealed six-field target and production runtime-scope resolution are implemented at acd8afedeb05aaec5547eb28cd876a629059d5da and independently reviewed GO with no findings. Exactly one preflight-gated configure, build, provisioning/readback, seal, and completion-watchdog worldserver recapture is authorized; acceptance and promotion remain disabled.",
-  "observed_at_commit": "acd8afedeb05aaec5547eb28cd876a629059d5da",
-  "immutable_input_commit": "acd8afedeb05aaec5547eb28cd876a629059d5da",
+  "architecture_scope": "Review the published attempt4 closure and the independent cadence review, then authorize one bounded generic shared-runtime repair if the trace-backed first edge remains valid. No implementation, build, or live run belongs to this metadata unit.",
+  "gate_state": "Attempt4 is closed, remotely reconstructed, and evicted. Three authoritative personal-threat pairs directly prove the actor-local rearm lifecycle. Magmaw still ends in a death loop with low, nonuniform ranged cadence. The earliest reviewed gameplay edge is generic non-Drudge minimum-range movement candidate admission, not a class coefficient or Magmaw-specific mechanic.",
+  "observed_at_commit": "c7db5d82c9ea54eebf53f6acbfeba678a234ced5",
+  "immutable_input_commit": "c7db5d82c9ea54eebf53f6acbfeba678a234ced5",
   "behavior_change": false,
-  "evidence_contract_change": true,
-  "independent_review": {
-    "external_path": "/tmp/magmaw-personal-threat-runtime-scope-review.8uDc4zdJ/review_handoff.json",
-    "sha256": "ac8ed26e1f4e528cf5e29512c67208d18a00386c11875af3550f2503078aac53",
-    "verdict": "GO",
-    "reviewed_commit": "acd8afedeb05aaec5547eb28cd876a629059d5da",
-    "reviewed_tree": "bf38732a3ab371da5635db4e73f35eceffac4087",
-    "findings": []
-  },
-  "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_personal_threat_episode_attempt4_authorization_handoff_20260902.json",
-    "sha256": "54192c02a790838da54fe35864050b12b9f00424967078381fe5ff7e28277780",
-    "source_commit": "acd8afedeb05aaec5547eb28cd876a629059d5da",
-    "source_tree": "bf38732a3ab371da5635db4e73f35eceffac4087"
+  "evidence_contract_change": false,
+  "source_evidence": {
+    "attempt4_summary": "experiments/configs/cata_raid_magmaw_personal_threat_attempt4_death_loop_summary_20260902.json",
+    "attempt4_summary_sha256": "3bbd13d2e4a3cccfcc7486b12dd617ddb84a511d6c7a8d7e47ca2f1985725626",
+    "attempt4_dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_threat_attempt4_death_loop_20260902.dvc",
+    "attempt4_dvc_directory_md5": "3b18f9f9e554efb88e7e0ea26bd1c755.dir",
+    "attempt3_rotation_review_sha256": "32f7bbc5763c4cc2796a55b32077c38e51e4c157c54b4383d7558392a91bafa5",
+    "attempt3_rotation_review_copy": "published inside attempt4 archive as external_review/attempt3_rotation_review_handoff.json"
   },
   "first_broken_edge": {
-    "scope": "evidence_capture_personal_threat_episode_join",
-    "stage": "world_observation_to_persistent_task_transition",
-    "cause": "Attempt3 did not directly retain actor 30008's authoritative personal-threat falling/rising transition, so the later task rearm was inferable but not causally attributable.",
-    "repair_state": "implemented_and_independently_reviewed_pending_one_live_recapture",
-    "gameplay_result_exists": false
+    "owner_classification": "shared_runtime_movement_candidate_admission",
+    "actor_guid": 30010,
+    "stage": "resolved_profile_min_range_recovery_to_typed_movement_candidate",
+    "cause": "A valid hostile non-Drudge target is too close for the selected action. The resolver preserves MinRange, but world.profile_combat_range rejects not_owned_drudge_target before the existing generic native range mover can emit an outward logical destination.",
+    "causal_chain": "min_range_required -> generic movement candidate not admitted -> no Movement resource commit -> repeated no_valid_profile_action -> severely starved ordinary cast cadence",
+    "first_retained_timestamp_ms": 1788337643273,
+    "latency_after_magmaw_start_ms": 7002,
+    "review_state": "independent_read_only_rotation_review_complete_pending_program_authorization"
   },
-  "sealed_personal_threat_episode_target": {
-    "actor_guid": 30008,
-    "scope_key": "{cohort_id}:{attempt_id}:{wipe_generation}:3:bwd.magmaw.encounter:669:{instance_id}:tank_swap_adds_raid_aoe",
-    "route_node_id": "bwd.magmaw.encounter",
-    "route_generation": 3,
-    "parent_wave_generation": 9223372036854775809,
-    "parent_generation_authoritative": false
-  },
-  "route_manifest_preflight": {
-    "catalog_kind": "authenticated_dvc_jsonl_catalog",
-    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-    "expected_node_count": 4,
-    "required_order": [
-      "authenticate_and_stage_catalog",
-      "verify_staging_receipt",
-      "canonical_route_catalog.materialize_scenario_route_manifest",
-      "canonical_route_catalog.verify_scenario_route_manifest_receipt",
-      "validate_selected_object_with_unchanged_bundle_route_validator",
-      "bind_output_object_path_and_output_object_sha256",
-      "compose_launcher_request",
-      "configure_and_build"
+  "proposed_implementation_unit": {
+    "objective": "Admit one generic movement-only arbiter candidate when ResolveProfileCombatAction reports a too-close MinRange recovery for any valid hostile target, then execute the existing native range mover.",
+    "owned_files": [
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp only if the existing generic mover cannot satisfy the fixture",
+      "tests/test_bot_route_combat_target_policy.py",
+      "tests/test_bot_world_population_mgr_combat_movement_module.py"
     ],
-    "forbidden_bindings": [
-      "staged_path",
-      "raw_jsonl_catalog_bytes"
+    "deterministic_fixture": "Given a non-Drudge hostile target that is alive, attackable, same-map/same-instance, and in line of sight, with the caster inside the selected action's MinRange, the resolver preserves the recovery range; the typed arbiter receives and commits a movement-only world.profile_combat_range candidate with a logical outward destination through native pathing; GCD, cast, and target resources remain free; after movement an ordinary profile action can submit. The candidate yields when higher-priority hazard movement owns Movement, and existing max-range and line-of-sight recovery remains valid.",
+    "required_commands": [
+      "pixi run pytest -q tests/test_bot_route_combat_target_policy.py tests/test_bot_world_population_mgr_combat_movement_module.py",
+      "pixi run pytest -q tests/test_magmaw_parasite_policy.py"
     ],
-    "budget_before_successful_preflight": {
-      "configure": 0,
-      "worldserver_build": 0,
-      "deterministic_provisioning": 0,
-      "database_readback": 0,
-      "recurrence_seal": 0,
-      "worldserver_starts": 0,
-      "authserver_starts": 0,
-      "live_attempts": 0,
-      "retries": 0
-    }
+    "review_requirement": "A Sol reviewer must approve the exact implementation and deterministic evidence before any build or live canary.",
+    "post_review_build_command": "cmake --build build --target worldserver -j2",
+    "acceptance": "The focused fixture proves generic too-close movement admission before cast retry, existing range/LOS and arbiter ownership behavior remain intact, all touched C/C++ files stay below 1000 lines, and independent review is GO before one separately authorized build/live canary."
   },
-  "fixture_expansion": {
-    "primary_target": "magmaw_personal_parasite_authority_gap_v1",
-    "from_revision": 1,
-    "to_revision": 2,
-    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "purpose": "fixture_expansion_replay",
-    "target_ids": [
-      "chainwielder_pre_admission_rejection_isolation_v1",
-      "magmaw_parasite_control_full_runtime_v1",
-      "magmaw_parasite_lane_paths_v1",
-      "magmaw_parasite_lane_transition_full_replay_v1",
-      "magmaw_personal_parasite_authority_gap_v1"
-    ],
-    "recurrence_bank_test_count": 26,
-    "recurrence_required_result": "26/26",
-    "attempts": 1,
-    "preflight_attempt": 4,
-    "retries": 0,
-    "authserver_starts": 0,
-    "worldserver_starts": 1,
-    "duration_policy": "completion_watchdog",
-    "required_live_fields": [
-      "actor-local authoritative personal-threat falling edge",
-      "later authoritative personal-threat rising edge",
-      "exactly one task-generation increment under the unchanged provisional parent",
-      "candidate identity and eligibility",
-      "native submission, progress, and terminal outcome",
-      "infection and death outcome",
-      "route progress",
-      "DPS and HPS",
-      "typed terminal reason",
-      "cleanup"
-    ],
-    "canonical_launcher_layout": {
-      "control_directory": "fresh_external_attempt4_parent",
-      "run_root": "fresh_external_attempt4_parent/launcher_execution",
-      "run_root_initial_state": "empty",
-      "material_inputs_location": "control_directory_outside_run_root",
-      "prebuild_plan_location": "control_directory/prebuild_plan.json",
-      "realized_plan_location": "control_directory/realized_plan.json"
-    }
-  },
-  "build": {
-    "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
-    "compiler_jobs": 8,
-    "linker_jobs": 1,
-    "configure_operations": 1,
-    "worldserver_builds": 1,
-    "configure_receipt": "external_run_root/configure_receipt.json",
-    "worldserver_build_receipt": "external_run_root/worldserver_build_receipt.json"
-  },
-  "live_diagnostic": {
-    "required_observation": "Retain actor 30008's exact authoritative personal-threat falling and rising pair, exactly one task-generation increment under parent 9223372036854775809, candidate identity, native submission/progress/terminal outcome, infection and death, route progress, DPS/HPS, typed terminal, and verified cleanup.",
-    "success_condition": "The exact-source recapture directly joins one authoritative falling edge to one later authoritative rising edge and exactly one task-generation increment under the unchanged provisional parent, then retains its candidate and native outcome plus infection/death, route, DPS/HPS, terminal, and cleanup evidence.",
-    "failure_condition": "A missing or drifting runtime scope, incomplete falling/rising pair, zero or multiple task increments, missing candidate/native outcome, infrastructure loss, semantic stall, repeated decision, death loop, contamination, interruption, or incomplete terminal evidence closes the single run without acceptance."
-  },
-  "launcher_authority": {
-    "schema": "cata_raid_composite_fixture_replay_launcher_authority_v1",
-    "expected_work_unit": "shard:magmaw_personal_threat_episode_fixture_recapture_attempt4",
-    "descriptor_owner_skill": "raid-shard-architecture",
-    "descriptor_classification": "fixture_replay_authorized",
-    "source_handoff_schema": "cata_raid_specialist_handoff_v1",
-    "source_handoff_work_unit": "evidence:authorize_magmaw_personal_threat_episode_fixture_recapture_build",
-    "source_handoff_owner_skill": "raid-evidence-lifecycle",
-    "source_handoff_classification": "fixture_authority_reviewed",
-    "required_action_sha256": "30b7512309d0337a28c1e3af0b9a81d5139da46de57fb4a89432eae195a48410",
-    "required_postcondition_sha256": "f0b33dc611dd96e14cf584ce269ae2785fab4a858394a766498e485b286f9e8e",
-    "scenario": {
-      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-      "raid": "blackwing_descent",
-      "boss": "magmaw",
-      "mode": "10N"
-    },
-    "fixture_expansion": {
-      "purpose": "fixture_expansion_replay",
-      "attempts": 1,
-      "retries": 0,
-      "authserver_starts": 0,
-      "worldserver_starts": 1,
-      "duration_policy": "completion_watchdog"
-    },
-    "program_scope": {
-      "acceptance_admitted": false,
-      "fixture_expansion_replay_admitted": true,
-      "gameplay_canary_admitted": false,
-      "gameplay_mutations_allowed": false,
-      "live_diagnostic_admitted": true,
-      "configure_admitted": true,
-      "worldserver_build_admitted": true,
-      "worldserver_start_admitted": true,
-      "authserver_start_admitted": false,
-      "retry_admitted": false,
-      "database_mutations_allowed": true,
-      "database_mutation_scope": "validation_provisioning_only",
-      "dvc_publication_required_after_terminal": true
-    },
-    "validation_clock": {
-      "fixed_success_timer_seconds": null,
-      "policy": "completion_watchdog",
-      "worldserver_starts": 1,
-      "authserver_starts": 0,
-      "retries": 0
-    }
-  },
-  "program_scope": {
-    "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": true,
-    "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": false,
-    "live_diagnostic_admitted": true,
-    "configure_admitted": true,
-    "worldserver_build_admitted": true,
-    "worldserver_start_admitted": true,
-    "authserver_start_admitted": false,
-    "retry_admitted": false,
-    "database_mutations_allowed": true,
-    "database_mutation_scope": "validation_provisioning_only",
-    "dvc_publication_required_after_terminal": true,
-    "admission_conditions": [
-      "exact source, review handoff, active descriptor, and launcher authority identities verify at a clean commit",
-      "the existing recurrence bank passes 26/26 and admits exactly the five declared targets",
-      "the canonical route catalog is staged, authenticated, materialized, selector-verified, and bundle-validated before request composition or build",
-      "only output_object_path and output_object_sha256 identify the selected four-node route manifest",
-      "the complete six-field personal-threat target is sealed and its cohort, attempt, wipe, and instance scope is resolved from the stable native status pair",
-      "exactly one configure, build, provisioning, readback, seal, worldserver start, and live attempt; zero authserver starts and retries",
-      "the closed terminal evidence is handed to raid-evidence-lifecycle for DVC publication, remote verification, and exact eviction"
-    ]
-  },
-  "acceptance": [
-    "the repaired evidence path directly retains actor 30008's authoritative falling/rising pair and exactly one task-generation increment under unchanged parent 9223372036854775809",
-    "candidate identity and native submission/progress/terminal outcome remain joined to infection/death, route progress, DPS/HPS, typed terminal, and cleanup",
-    "one closed attributable terminal bundle is handed to raid-evidence-lifecycle for DVC publication before any promotion decision",
-    "no gameplay, source, route-row, capture, launcher, bundle, class, encounter, runtime, movement, pathing, Z, floor, MMAP, endpoint, tolerance, runtime-config, database-schema, or ML mutation occurs"
-  ],
   "forbidden": [
-    "Magmaw acceptance, fixture promotion, or ML admission",
-    "request composition or budget consumption before canonical scenario materialization and verification",
-    "binding staged_path or raw JSONL catalog bytes as route_manifest",
-    "hard-coded or predicted dynamic runtime scope",
-    "fixed-duration raid scoring",
-    "a second configure, build, provisioning, readback, seal, worldserver start, live attempt, or any retry",
-    "authserver start",
-    "evidence publication or eviction before terminal classification"
+    "no gameplay implementation, build, provisioning, database mutation, or live run in this metadata review unit",
+    "no Magmaw-specific or boss-entry conditional",
+    "do not weaken or delete action-profile minimum range",
+    "do not bypass the typed arbiter or recreate priority with ordered encounter conditionals",
+    "no bot-side Z steering, teleportation, global path tolerance, encounter MMAP workaround, coefficient/stat/pet tuning, or class policy change"
   ],
-  "next_action": "At this descriptor's exact clean commit, run the 26/26 recurrence gate, then stage, authenticate, materialize, selector-verify, and bundle-validate the canonical four-node Magmaw route before request composition or build. Seal the declared six-field actor-30008 target, consume exactly one configure/build/provision/readback/seal and one completion-watchdog worldserver start with no authserver or retry, then hand the closed terminal bundle to raid-evidence-lifecycle for DVC publication and exact eviction.",
-  "validation_clock": {
-    "fixed_success_timer_seconds": null,
-    "policy": "completion_watchdog",
-    "worldserver_starts": 1,
-    "authserver_starts": 0,
-    "retries": 0
-  }
+  "evidence_backlog": {
+    "work_unit": "evidence:generalize_personal_threat_episode_validator_for_bounded_multiple_episodes",
+    "owner_skill": "raid-evidence-lifecycle",
+    "priority": "after the earliest gameplay cadence edge unless needed to gate the next live run",
+    "scope": "Accept and classify one or more ordered authoritative complete falling-to-rising pairs while retaining incomplete bounded-window records separately; do not encode Magmaw behavior as universal policy."
+  },
+  "next_action": "Use raid-performance-loop to audit the exact evidence bindings and authorize or reject the bounded generic runtime unit. If authorized, hand only that unit to raid-bot-runtime-implementation; require deterministic fixtures and independent Sol review before any separately authorized build/live canary."
 }
