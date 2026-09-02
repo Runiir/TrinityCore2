@@ -1,113 +1,228 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:close_chainwielder_personal_threat_runtime_scope_binding",
-  "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "review:chainwielder_personal_threat_runtime_scope_binding",
+  "work_unit": "shard:magmaw_personal_threat_episode_fixture_recapture_attempt4",
+  "owner_skill": "raid-shard-architecture",
+  "next_work_unit": "evidence:classify_publish_magmaw_personal_threat_episode_attempt4",
   "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "failed",
-  "epoch_id": "magmaw_personal_threat_runtime_scope_binding_correction_20260902",
+  "classification": "fixture_replay_authorized",
+  "epoch_id": "magmaw_personal_threat_episode_fixture_recapture_attempt4_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Close one evidence control-plane edge: only a complete personal-threat target may require the existing Chainwielder route-hold scheduler to retain its two-status stable wipe/instance runtime scope. Validate the actual scheduler and sealed atomic-bundle semantic boundary without changing gameplay or target-free captures.",
-  "gate_state": "Independent review of a8eae40 returned NO-GO because the production Chainwielder scheduler drops runtime scope and the target-bearing bundle verifier lacks the required semantic mutation fixture. Exactly one three-file correction is authorized; configure, build, provisioning, live, publication, fixture promotion, and acceptance remain disabled.",
-  "observed_at_commit": "a8eae40cad0d8d418314deb7e628f45a51add9b3",
-  "immutable_input_commit": "a8eae40cad0d8d418314deb7e628f45a51add9b3",
+  "architecture_scope": "Run one observation-only Magmaw fixture recapture through the reviewed personal-threat capture path. Retain the exact actor-local falling/rising episode join, its one task-generation increment, candidate and native outcome, infection/death, throughput, route, terminal, and cleanup evidence without changing gameplay.",
+  "gate_state": "The sealed six-field target and production runtime-scope resolution are implemented at acd8afedeb05aaec5547eb28cd876a629059d5da and independently reviewed GO with no findings. Exactly one preflight-gated configure, build, provisioning/readback, seal, and completion-watchdog worldserver recapture is authorized; acceptance and promotion remain disabled.",
+  "observed_at_commit": "acd8afedeb05aaec5547eb28cd876a629059d5da",
+  "immutable_input_commit": "acd8afedeb05aaec5547eb28cd876a629059d5da",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_personal_threat_runtime_scope_binding_correction_authorization_handoff_20260902.json",
-    "sha256": "7024419d6dc5d80c1f1f4990a791a140f7f9ae34d4d7a5f891e58c18bfe48dbf",
-    "source_commit": "a8eae40cad0d8d418314deb7e628f45a51add9b3",
-    "source_tree": "2d3ae8d5bf70b122a1f112645f51994fd4f861da"
-  },
   "independent_review": {
-    "external_path": "/tmp/magmaw-personal-threat-target-binding-review.yiX9GhNv/review_handoff.json",
-    "sha256": "ac0259b01d2de98b34f06f43656a1038f06352b38bc50d0804b34e27b1c700bc",
-    "verdict": "NO-GO",
-    "reviewed_commit": "a8eae40cad0d8d418314deb7e628f45a51add9b3",
-    "reviewed_tree": "2d3ae8d5bf70b122a1f112645f51994fd4f861da",
-    "critical_findings": 0,
-    "high_findings": 1,
-    "medium_findings": 1
+    "external_path": "/tmp/magmaw-personal-threat-runtime-scope-review.8uDc4zdJ/review_handoff.json",
+    "sha256": "ac8ed26e1f4e528cf5e29512c67208d18a00386c11875af3550f2503078aac53",
+    "verdict": "GO",
+    "reviewed_commit": "acd8afedeb05aaec5547eb28cd876a629059d5da",
+    "reviewed_tree": "bf38732a3ab371da5635db4e73f35eceffac4087",
+    "findings": []
+  },
+  "source_handoff": {
+    "path": "experiments/configs/cata_raid_magmaw_personal_threat_episode_attempt4_authorization_handoff_20260902.json",
+    "sha256": "54192c02a790838da54fe35864050b12b9f00424967078381fe5ff7e28277780",
+    "source_commit": "acd8afedeb05aaec5547eb28cd876a629059d5da",
+    "source_tree": "bf38732a3ab371da5635db4e73f35eceffac4087"
   },
   "first_broken_edge": {
-    "id": "chainwielder_scheduler_drops_stable_runtime_scope",
-    "layer": "capture_setup_checkpoint_dialect_to_controller_route_hold_scheduler_stable_status_projection",
-    "directly_observed": "The target-bearing sealed capture argv is correct, but the actual Chainwielder scheduler is constructed with runtime_scope_required=false, returns runtime_scope=null, and makes public finalization reject the requested target before demux.",
-    "consequence": "The requested falling/rising causal join remains non-gating until the target-conditional scheduler path is corrected and independently reviewed."
+    "scope": "evidence_capture_personal_threat_episode_join",
+    "stage": "world_observation_to_persistent_task_transition",
+    "cause": "Attempt3 did not directly retain actor 30008's authoritative personal-threat falling/rising transition, so the later task rearm was inferable but not causally attributable.",
+    "repair_state": "implemented_and_independently_reviewed_pending_one_live_recapture",
+    "gameplay_result_exists": false
   },
-  "repair_contract": {
-    "owned_files": [
-      "tools/raid_program/capture_setup.py",
-      "tests/test_phase1_raid_foundation_capture.py",
-      "tests/test_chainwielder_prestart_bundle.py"
+  "sealed_personal_threat_episode_target": {
+    "actor_guid": 30008,
+    "scope_key": "{cohort_id}:{attempt_id}:{wipe_generation}:3:bwd.magmaw.encounter:669:{instance_id}:tank_swap_adds_raid_aoe",
+    "route_node_id": "bwd.magmaw.encounter",
+    "route_generation": 3,
+    "parent_wave_generation": 9223372036854775809,
+    "parent_generation_authoritative": false
+  },
+  "route_manifest_preflight": {
+    "catalog_kind": "authenticated_dvc_jsonl_catalog",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "expected_node_count": 4,
+    "required_order": [
+      "authenticate_and_stage_catalog",
+      "verify_staging_receipt",
+      "canonical_route_catalog.materialize_scenario_route_manifest",
+      "canonical_route_catalog.verify_scenario_route_manifest_receipt",
+      "validate_selected_object_with_unchanged_bundle_route_validator",
+      "bind_output_object_path_and_output_object_sha256",
+      "compose_launcher_request",
+      "configure_and_build"
     ],
-    "required_repair": [
-      "Set runtime_scope_required=true for the existing Chainwielder ControllerRouteHoldScheduler when and only when a complete personal_threat_episode_target is present.",
-      "Through the actual scheduler path, prove byte-identical held statuses with wipe 0 and instance 7 retain scope and resolve the exact target before demux; missing scope and second-status instance drift reject.",
-      "Preserve target-none scheduler behavior unchanged.",
-      "Verify a real target-bearing atomic bundle, then reject a changed sealed launch-contract target and a changed target argv flag after the outer file manifest is recomputed."
+    "forbidden_bindings": [
+      "staged_path",
+      "raw_jsonl_catalog_bytes"
     ],
-    "required_commands": [
-      "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py tests/test_magmaw_personal_threat_episode_capture.py",
-      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_composite_fixture_replay_launcher.py",
-      "pixi run python -m py_compile tools/raid_program/capture_setup.py",
-      "git diff --check",
-      "pixi run python -m tools.raid_program.raid_workloop status"
+    "budget_before_successful_preflight": {
+      "configure": 0,
+      "worldserver_build": 0,
+      "deterministic_provisioning": 0,
+      "database_readback": 0,
+      "recurrence_seal": 0,
+      "worldserver_starts": 0,
+      "authserver_starts": 0,
+      "live_attempts": 0,
+      "retries": 0
+    }
+  },
+  "fixture_expansion": {
+    "primary_target": "magmaw_personal_parasite_authority_gap_v1",
+    "from_revision": 1,
+    "to_revision": 2,
+    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "purpose": "fixture_expansion_replay",
+    "target_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1",
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "magmaw_personal_parasite_authority_gap_v1"
     ],
-    "forbidden": [
-      "mutation outside the exact three owned files",
-      "gameplay, encounter, role, class, task, candidate, arbiter, executor, movement, pathing, coordinates, Z, MMAP, geometry, or tolerance changes",
-      "hard-coded or predicted runtime instance identity",
-      "target selection from personal-threat transitions",
-      "global runtime-scope requirements for target-absent captures",
-      "composite request, route, configuration, skill, ledger, DVC, database, ML, trace-capacity, or parallel-telemetry changes",
-      "configure, build, provisioning, database mutation, server start, live attempt, retry, publication, fixture promotion, or Magmaw acceptance"
+    "recurrence_bank_test_count": 26,
+    "recurrence_required_result": "26/26",
+    "attempts": 1,
+    "preflight_attempt": 4,
+    "retries": 0,
+    "authserver_starts": 0,
+    "worldserver_starts": 1,
+    "duration_policy": "completion_watchdog",
+    "required_live_fields": [
+      "actor-local authoritative personal-threat falling edge",
+      "later authoritative personal-threat rising edge",
+      "exactly one task-generation increment under the unchanged provisional parent",
+      "candidate identity and eligibility",
+      "native submission, progress, and terminal outcome",
+      "infection and death outcome",
+      "route progress",
+      "DPS and HPS",
+      "typed terminal reason",
+      "cleanup"
+    ],
+    "canonical_launcher_layout": {
+      "control_directory": "fresh_external_attempt4_parent",
+      "run_root": "fresh_external_attempt4_parent/launcher_execution",
+      "run_root_initial_state": "empty",
+      "material_inputs_location": "control_directory_outside_run_root",
+      "prebuild_plan_location": "control_directory/prebuild_plan.json",
+      "realized_plan_location": "control_directory/realized_plan.json"
+    }
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+    "compiler_jobs": 8,
+    "linker_jobs": 1,
+    "configure_operations": 1,
+    "worldserver_builds": 1,
+    "configure_receipt": "external_run_root/configure_receipt.json",
+    "worldserver_build_receipt": "external_run_root/worldserver_build_receipt.json"
+  },
+  "live_diagnostic": {
+    "required_observation": "Retain actor 30008's exact authoritative personal-threat falling and rising pair, exactly one task-generation increment under parent 9223372036854775809, candidate identity, native submission/progress/terminal outcome, infection and death, route progress, DPS/HPS, typed terminal, and verified cleanup.",
+    "success_condition": "The exact-source recapture directly joins one authoritative falling edge to one later authoritative rising edge and exactly one task-generation increment under the unchanged provisional parent, then retains its candidate and native outcome plus infection/death, route, DPS/HPS, terminal, and cleanup evidence.",
+    "failure_condition": "A missing or drifting runtime scope, incomplete falling/rising pair, zero or multiple task increments, missing candidate/native outcome, infrastructure loss, semantic stall, repeated decision, death loop, contamination, interruption, or incomplete terminal evidence closes the single run without acceptance."
+  },
+  "launcher_authority": {
+    "schema": "cata_raid_composite_fixture_replay_launcher_authority_v1",
+    "expected_work_unit": "shard:magmaw_personal_threat_episode_fixture_recapture_attempt4",
+    "descriptor_owner_skill": "raid-shard-architecture",
+    "descriptor_classification": "fixture_replay_authorized",
+    "source_handoff_schema": "cata_raid_specialist_handoff_v1",
+    "source_handoff_work_unit": "evidence:authorize_magmaw_personal_threat_episode_fixture_recapture_build",
+    "source_handoff_owner_skill": "raid-evidence-lifecycle",
+    "source_handoff_classification": "fixture_authority_reviewed",
+    "required_action_sha256": "30b7512309d0337a28c1e3af0b9a81d5139da46de57fb4a89432eae195a48410",
+    "required_postcondition_sha256": "f0b33dc611dd96e14cf584ce269ae2785fab4a858394a766498e485b286f9e8e",
+    "scenario": {
+      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "fixture_expansion": {
+      "purpose": "fixture_expansion_replay",
+      "attempts": 1,
+      "retries": 0,
+      "authserver_starts": 0,
+      "worldserver_starts": 1,
+      "duration_policy": "completion_watchdog"
+    },
+    "program_scope": {
+      "acceptance_admitted": false,
+      "fixture_expansion_replay_admitted": true,
+      "gameplay_canary_admitted": false,
+      "gameplay_mutations_allowed": false,
+      "live_diagnostic_admitted": true,
+      "configure_admitted": true,
+      "worldserver_build_admitted": true,
+      "worldserver_start_admitted": true,
+      "authserver_start_admitted": false,
+      "retry_admitted": false,
+      "database_mutations_allowed": true,
+      "database_mutation_scope": "validation_provisioning_only",
+      "dvc_publication_required_after_terminal": true
+    },
+    "validation_clock": {
+      "fixed_success_timer_seconds": null,
+      "policy": "completion_watchdog",
+      "worldserver_starts": 1,
+      "authserver_starts": 0,
+      "retries": 0
+    }
+  },
+  "program_scope": {
+    "acceptance_admitted": false,
+    "fixture_expansion_replay_admitted": true,
+    "gameplay_canary_admitted": false,
+    "gameplay_mutations_allowed": false,
+    "live_diagnostic_admitted": true,
+    "configure_admitted": true,
+    "worldserver_build_admitted": true,
+    "worldserver_start_admitted": true,
+    "authserver_start_admitted": false,
+    "retry_admitted": false,
+    "database_mutations_allowed": true,
+    "database_mutation_scope": "validation_provisioning_only",
+    "dvc_publication_required_after_terminal": true,
+    "admission_conditions": [
+      "exact source, review handoff, active descriptor, and launcher authority identities verify at a clean commit",
+      "the existing recurrence bank passes 26/26 and admits exactly the five declared targets",
+      "the canonical route catalog is staged, authenticated, materialized, selector-verified, and bundle-validated before request composition or build",
+      "only output_object_path and output_object_sha256 identify the selected four-node route manifest",
+      "the complete six-field personal-threat target is sealed and its cohort, attempt, wipe, and instance scope is resolved from the stable native status pair",
+      "exactly one configure, build, provisioning, readback, seal, worldserver start, and live attempt; zero authserver starts and retries",
+      "the closed terminal evidence is handed to raid-evidence-lifecycle for DVC publication, remote verification, and exact eviction"
     ]
   },
   "acceptance": [
-    "The actual target-bearing Chainwielder scheduler retains stable wipe 0/instance 7 scope and resolves the exact target before demux.",
-    "Missing scope and second-status drift fail closed in the real scheduler path.",
-    "Target-none behavior remains unchanged.",
-    "Target-bearing atomic-bundle target and argv semantic mutations reject after outer manifest recomputation.",
-    "Required commands pass and independent Sol high review returns GO before build or live authority."
+    "the repaired evidence path directly retains actor 30008's authoritative falling/rising pair and exactly one task-generation increment under unchanged parent 9223372036854775809",
+    "candidate identity and native submission/progress/terminal outcome remain joined to infection/death, route progress, DPS/HPS, typed terminal, and cleanup",
+    "one closed attributable terminal bundle is handed to raid-evidence-lifecycle for DVC publication before any promotion decision",
+    "no gameplay, source, route-row, capture, launcher, bundle, class, encounter, runtime, movement, pathing, Z, floor, MMAP, endpoint, tolerance, runtime-config, database-schema, or ML mutation occurs"
   ],
-  "program_scope": {
-    "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": false,
-    "gameplay_canary_admitted": false,
-    "gameplay_mutations_allowed": false,
-    "source_mutations_allowed": true,
-    "test_mutations_allowed": true,
-    "configuration_mutations_allowed": false,
-    "route_mutations_allowed": false,
-    "skill_mutations_allowed": false,
-    "ledger_mutations_allowed": false,
-    "live_diagnostic_admitted": false,
-    "configure_admitted": false,
-    "worldserver_build_admitted": false,
-    "worldserver_start_admitted": false,
-    "authserver_start_admitted": false,
-    "retry_admitted": false,
-    "database_mutations_allowed": false,
-    "dvc_publication_admitted": false,
-    "fixture_revision_promotion_admitted": false,
-    "ml_admission_allowed": false,
-    "builds": 0,
-    "configure_operations": 0,
-    "provisioning_operations": 0,
-    "database_mutations": 0,
-    "worldserver_starts": 0,
-    "authserver_starts": 0,
-    "live_attempts": 0,
-    "retries": 0
-  },
-  "next_action": "Implement only the three-file runtime-scope correction and deterministic fixtures, pass all required commands, commit cleanly, and request independent Sol high review. Do not build or run live.",
+  "forbidden": [
+    "Magmaw acceptance, fixture promotion, or ML admission",
+    "request composition or budget consumption before canonical scenario materialization and verification",
+    "binding staged_path or raw JSONL catalog bytes as route_manifest",
+    "hard-coded or predicted dynamic runtime scope",
+    "fixed-duration raid scoring",
+    "a second configure, build, provisioning, readback, seal, worldserver start, live attempt, or any retry",
+    "authserver start",
+    "evidence publication or eviction before terminal classification"
+  ],
+  "next_action": "At this descriptor's exact clean commit, run the 26/26 recurrence gate, then stage, authenticate, materialize, selector-verify, and bundle-validate the canonical four-node Magmaw route before request composition or build. Seal the declared six-field actor-30008 target, consume exactly one configure/build/provision/readback/seal and one completion-watchdog worldserver start with no authserver or retry, then hand the closed terminal bundle to raid-evidence-lifecycle for DVC publication and exact eviction.",
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "worldserver_starts": 0,
+    "worldserver_starts": 1,
     "authserver_starts": 0,
     "retries": 0
   }

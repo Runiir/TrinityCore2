@@ -1,0 +1,112 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:authorize_magmaw_personal_threat_episode_fixture_recapture_build",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_authority_reviewed",
+  "source": {
+    "commit": "acd8afedeb05aaec5547eb28cd876a629059d5da",
+    "tree": "bf38732a3ab371da5635db4e73f35eceffac4087"
+  },
+  "implementation_lineage": {
+    "sealed_target_base_commit": "a8eae40cad0d8d418314deb7e628f45a51add9b3",
+    "correction_authorization_commit": "320c0f3340966c61e7782a7c9a65934a14ba08f6",
+    "reviewed_final_commit": "acd8afedeb05aaec5547eb28cd876a629059d5da",
+    "reviewed_final_tree": "bf38732a3ab371da5635db4e73f35eceffac4087",
+    "base_is_ancestor_of_final": true
+  },
+  "independent_review": {
+    "external_path": "/tmp/magmaw-personal-threat-runtime-scope-review.8uDc4zdJ/review_handoff.json",
+    "sha256": "ac8ed26e1f4e528cf5e29512c67208d18a00386c11875af3550f2503078aac53",
+    "verdict": "GO",
+    "reviewed_commit": "acd8afedeb05aaec5547eb28cd876a629059d5da",
+    "reviewed_tree": "bf38732a3ab371da5635db4e73f35eceffac4087",
+    "critical_findings": 0,
+    "high_findings": 0,
+    "medium_findings": 0,
+    "low_findings": 0
+  },
+  "prior_live_evidence": {
+    "attempt": 3,
+    "terminal": "death_loop_watchdog",
+    "recurrence_bank_passed": "26/26",
+    "first_broken_edge": "evidence emission did not directly retain the actor-local authoritative personal-threat falling/rising transition that explains the later task rearm",
+    "disposition": "closed and published; this recapture may inspect the repaired join but may not reinterpret or overwrite attempt3"
+  },
+  "sealed_personal_threat_episode_target": {
+    "actor_guid": 30008,
+    "scope_key": "{cohort_id}:{attempt_id}:{wipe_generation}:3:bwd.magmaw.encounter:669:{instance_id}:tank_swap_adds_raid_aoe",
+    "route_node_id": "bwd.magmaw.encounter",
+    "route_generation": 3,
+    "parent_wave_generation": 9223372036854775809,
+    "parent_generation_authoritative": false
+  },
+  "route_manifest_preflight": {
+    "catalog_kind": "authenticated_dvc_jsonl_catalog",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "expected_node_count": 4,
+    "required_order": [
+      "authenticate_and_stage_catalog",
+      "verify_staging_receipt",
+      "canonical_route_catalog.materialize_scenario_route_manifest",
+      "canonical_route_catalog.verify_scenario_route_manifest_receipt",
+      "validate_selected_object_with_unchanged_bundle_route_validator",
+      "bind_output_object_path_and_output_object_sha256",
+      "compose_launcher_request",
+      "configure_and_build"
+    ],
+    "forbidden_bindings": [
+      "staged_path",
+      "raw_jsonl_catalog_bytes"
+    ],
+    "budget_before_successful_preflight": {
+      "configure": 0,
+      "worldserver_build": 0,
+      "deterministic_provisioning": 0,
+      "database_readback": 0,
+      "recurrence_seal": 0,
+      "worldserver_starts": 0,
+      "authserver_starts": 0,
+      "live_attempts": 0,
+      "retries": 0
+    }
+  },
+  "next_work_unit": {
+    "id": "shard:magmaw_personal_threat_episode_fixture_recapture_attempt4",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "At the exact clean active-descriptor commit, create one fresh external attempt4 control parent and an initially empty child run root. Pass the existing 26/26 recurrence bank and admit exactly the five declared targets. Before request composition or any build budget, authenticate and stage the canonical DVC JSONL route catalog, verify its staging receipt, materialize blackwing_descent_10n_magmaw_diagnostic with canonical_route_catalog.materialize_scenario_route_manifest, verify the selector receipt with verify_scenario_route_manifest_receipt, validate the selected four-node object with the unchanged bundle validator, and bind only output_object_path plus output_object_sha256. Seal the complete six-field personal-threat target declared by this handoff and let the production scheduler resolve its runtime scope. Then consume exactly one configure, one worldserver build, one deterministic validation provisioning, one fresh database readback, one recurrence seal, and one completion-watchdog worldserver start. Start no authserver and do not retry.",
+    "required_postcondition": "Close attempt4 with one typed terminal and a retained actor-30008 personal-threat episode join that directly proves or refutes one authoritative falling edge, one later authoritative rising edge, and exactly one task-generation increment under unchanged parent 9223372036854775809, joined to candidate identity, native submission/progress/terminal outcome, infection and death outcome, route progress, DPS, HPS, and cleanup. Hand the closed attributable terminal bundle to raid-evidence-lifecycle for DVC publication, remote verification, and exact eviction before any fixture promotion, Magmaw acceptance, or ML admission."
+  },
+  "budgets": {
+    "configure": 1,
+    "worldserver_build": 1,
+    "deterministic_provisioning": 1,
+    "database_readback": 1,
+    "recurrence_seal": 1,
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "live_attempts": 1,
+    "retries": 0,
+    "duration_policy": "completion_watchdog"
+  },
+  "forbidden": [
+    "Magmaw acceptance, fixture promotion, or ML admission",
+    "gameplay, capture, source, route-row, skill, launcher, bundle, class, encounter, runtime, movement, pathing, Z, floor, MMAP, endpoint, tolerance, runtime-config, or database-schema mutation",
+    "request composition, configure, build, provisioning, readback, or live execution before verified scenario materialization",
+    "binding staged_path or raw JSONL catalog bytes as route_manifest",
+    "hard-coding or predicting cohort, attempt, wipe, or instance runtime scope",
+    "fixed-duration raid scoring",
+    "a second configure, build, provisioning, readback, seal, worldserver start, live attempt, or any retry",
+    "authserver start",
+    "publishing or evicting evidence before the typed terminal is closed and classified"
+  ],
+  "gate": {
+    "source_identity_verified": true,
+    "independent_review_verified": true,
+    "build_authorized": true,
+    "live_recapture_authorized": true,
+    "dvc_publication_required_after_terminal": true,
+    "fixture_promotion_authorized": false,
+    "magmaw_acceptance_authorized": false,
+    "ml_admission_authorized": false
+  }
+}
