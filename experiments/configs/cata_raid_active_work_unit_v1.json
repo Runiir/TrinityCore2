@@ -1,87 +1,100 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "review:magmaw_attempt3_candidate_native_terminal_causal_join",
-  "owner_skill": "raid-rotation-review",
-  "next_work_unit": "route:magmaw_attempt3_earliest_causal_mismatch",
-  "next_owner_skill": "raid-performance-loop",
+  "work_unit": "evidence:capture_actor_local_personal_threat_episode_join",
+  "owner_skill": "raid-evidence-lifecycle",
+  "next_work_unit": "review:capture_actor_local_personal_threat_episode_join",
+  "next_owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
-  "epoch_id": "magmaw_personal_escape_attempt3_death_loop_review_20260902",
+  "epoch_id": "magmaw_attempt3_personal_threat_episode_join_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Read-only causal review of one closed attributable run. Order actor 30008 world facts, personal task generation, candidate eligibility, arbitration, native route outcomes, fixture-terminal absence, deaths, and the completion-watchdog terminal. Route the next bounded owner without implementing or rerunning.",
-  "gate_state": "Attempt3 is remotely published and locally evicted. The retained actor suffix shows an endpoint rejection before native submission or progress, but actor trace sequences 56 through 212 are missing, so the earliest causal mismatch and owning repair lane remain unresolved.",
-  "observed_at_commit": "c5ebb24d5bf4b0a09c8c8c7d23c85287ee2ee3c8",
-  "immutable_input_commit": "c5ebb24d5bf4b0a09c8c8c7d23c85287ee2ee3c8",
+  "architecture_scope": "Retain and validate one direct actor-local personal-threat falling/rising episode join inside the existing personal-escape diagnostics and diagnosis transport. Evidence-only: no task, priority, movement, native execution, route, or encounter behavior changes.",
+  "gate_state": "Attempt3 is closed, remotely published, and locally evicted. The causal review proves missing evidence at world_observation to persistent_task_episode_transition is the first certification blocker. Endpoint rejections are later observed failures and are not a supported death-loop cause. One bounded evidence implementation is authorized; build and live authority remain disabled.",
+  "observed_at_commit": "d2f541836c88357a927e303cfcfbcc7e75a34b45",
+  "immutable_input_commit": "d2f541836c88357a927e303cfcfbcc7e75a34b45",
   "behavior_change": false,
-  "evidence_contract_change": false,
+  "evidence_contract_change": true,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_personal_escape_attempt3_causal_review_handoff_20260902.json",
-    "sha256": "8c7dbeb66469d1cac22e07589f6b30312eb2df5b9a714e80f82a5c5e09b73185",
-    "source_commit": "c5ebb24d5bf4b0a09c8c8c7d23c85287ee2ee3c8",
-    "source_tree": "1e28e8b7b1f6fbae1c77e67d332d1025a8b8f7f3"
+    "path": "experiments/configs/cata_raid_magmaw_personal_threat_episode_join_authorization_handoff_20260902.json",
+    "sha256": "7703b920a9a40b3f11c57df15ffb445f6087d2b2cdbc73ccf04a654edbc9a5e3",
+    "source_commit": "d2f541836c88357a927e303cfcfbcc7e75a34b45",
+    "source_tree": "2125db31ec2c7462aeb119fd7fb05e3c61686c67"
+  },
+  "review_handoff": {
+    "external_path": "/tmp/magmaw-attempt3-causal-review-handoff.Th5ISE/review_handoff.json",
+    "sha256": "1ee0d391754a57d652bd4f3c25e03e06b395d73eece519c1d7ea97320f974ce5",
+    "classification": "evidence_emission_first_broken_edge",
+    "verdict": "route_to_evidence_lifecycle"
   },
   "evidence": {
-    "summary": "experiments/configs/cata_raid_magmaw_personal_escape_attempt3_death_loop_summary_20260902.json",
-    "summary_sha256": "e66d8ba2e695f765b1630049ee10a90a885647c6e28a1fdb7654bb67e7a333d6",
     "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_attempt3_death_loop_20260902.dvc",
     "dvc_pointer_sha256": "2c44151b63d4c7d5a881e296abd386228707c55e1706fb0d220a2788fa5888d5",
     "dvc_directory_md5": "44bb53ab89c6edf12d069781be27aa6d.dir",
-    "remote_reconstruction": "verified_39_original_files_333311869_bytes",
-    "canonical_file_manifest_sha256": "bc794f2bf27c5eafd3fa2c1b686b7c9958db352033ec8b3c1c19742a8f360383"
+    "payload_manifest_sha256": "77fe3369e538066f41e8792603a0999b11411cd72a163906ecde7c3b81641da1",
+    "canonical_file_manifest_sha256": "bc794f2bf27c5eafd3fa2c1b686b7c9958db352033ec8b3c1c19742a8f360383",
+    "remote_status": "in_sync",
+    "workspace_payload_state": "intentionally_evicted"
   },
-  "terminal": {
-    "classification": "gameplay_failure",
-    "reason": "death_loop_watchdog",
-    "elapsed_seconds": 542.866,
-    "fixture_terminal_detected": false,
-    "capture_terminal_evidence_incomplete": true,
-    "retry_permitted": false
-  },
-  "review_contract": {
-    "question": "Using only the immutable attempt3 evidence, identify the earliest causally supported mismatch in the ordering from actor 30008 world facts and personal task generation through candidate eligibility, arbitration, native route outcome, fixture-terminal absence, and the later death-loop terminal. Determine whether the smallest next repair routes to shared runtime movement policy, role or encounter policy, or capture and telemetry. If the actor trace discontinuity prevents that attribution, name capture and telemetry as the unresolved boundary and specify the exact missing join rather than proposing an implementation.",
-    "required_order": [
-      "world facts and actor-local threat episode",
-      "persistent task generation and lifecycle",
-      "eligible candidate identity and arbitration",
-      "native route submission, progress, rejection, or terminal outcome",
-      "fixture-terminal observation",
-      "deaths and death-loop watchdog"
-    ],
-    "allowed_routing_outcomes": [
-      "shared runtime movement policy",
-      "role or encounter policy",
-      "capture and telemetry"
-    ],
-    "required_claim_boundary": "Every conclusion must identify whether it is directly observed, inferred, or unavailable because of the actor trace discontinuity.",
-    "implementation_allowed": false,
-    "live_validation_allowed": false
-  },
-  "earliest_retained_actor_suffix": {
+  "first_broken_edge": {
+    "layer": "world_observation_to_persistent_task_episode_transition",
     "actor_guid": 30008,
-    "parent_generation": 9223372036854775809,
-    "parent_authoritative": false,
-    "task_generation": 6,
-    "candidate_generation": 8,
-    "failure": "alternate_native_route_rejected",
-    "native_reason": "route_destination_endpoint_mismatch",
-    "native_submission_observed": false,
-    "native_progress_observed": false
+    "route_node_id": "bwd.magmaw.encounter",
+    "route_generation": 3,
+    "parent_wave_generation": 9223372036854775809,
+    "parent_generation_authoritative": false,
+    "directly_observed": "Task 5/candidate 6 is at safe_clearance in capture 261. Task 6/candidate 8 is already failed in capture 265 under the same provisional parent. Candidate 7 and 8 endpoint rejections occur later.",
+    "missing_join": "Authoritative actor-local no-threat then threat observations, explicit falling/rising edges, and prior/new episode, task, and candidate generations are not retained.",
+    "inference_boundary": "Source supports absence then presence as an inference, but gameplay and death-loop causality remain uncertified."
   },
-  "trace_gap": {
-    "capture_sequence": 33,
-    "missing_sequence_start": 56,
-    "missing_sequence_end": 212,
-    "first_recovered_sequence": 213,
-    "effect": "earliest causal mismatch cannot be attributed from the retained suffix alone"
+  "implementation_contract": {
+    "owned_files": [
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.inl",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp",
+      "tools/raid_program/capture_magmaw_personal_threat_episode.py",
+      "tools/raid_program/capture_evidence_demux.py",
+      "tests/test_magmaw_personal_parasite_escape_task.py",
+      "tests/test_magmaw_personal_threat_episode_capture.py"
+    ],
+    "required_fixture": "A terminal safe-clearance child under one unchanged provisional parent receives authoritative no-threat then authoritative threat observations. Emit explicit falling then rising records, join exactly one child generation increment, and preserve actor, scope, route, and parent identity.",
+    "required_hard_negatives": [
+      "continuous threat presence",
+      "threat-GUID churn",
+      "cross-actor or cross-scope join",
+      "parent-generation drift",
+      "non-authoritative observation"
+    ],
+    "required_transport_pressure": "Drain more than 128 intervening trace entries in multiple delta batches with contiguous sequences, chained cursors, gap=false, no demux discontinuity, and the diagnosis-carried episode join intact.",
+    "required_output": "Board revision, timestamp, fact authority, threat flag and GUID, prior/new episode state, prior/new task and candidate generations, actor, scope, route generation, parent generation, and parent authority.",
+    "forbidden": [
+      "mutation outside the exact owned files",
+      "parallel telemetry or priority stream",
+      "trace-ring capacity or global capture-cadence change",
+      "gameplay, endpoint, geometry, Z, floor, MMAP, tolerance, route, encounter, class, or role changes",
+      "unsupported death-loop conclusion"
+    ]
   },
+  "acceptance": [
+    "typed diagnosis output directly retains falling and rising records and every required join field",
+    "rising produces exactly one new child under the unchanged provisional parent",
+    "continuous presence and GUID churn produce neither edge nor child churn",
+    "more than 128 intervening trace entries drain losslessly with no evidence-demux gap",
+    "focused producer, capture, trace cursor, capture demux, and workloop tests pass",
+    "all touched C and C++ files remain below 1000 lines",
+    "the clean implementation commit receives independent review before build or live recapture"
+  ],
   "program_scope": {
     "acceptance_admitted": false,
     "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "source_mutations_allowed": false,
+    "source_mutations_allowed": true,
+    "test_mutations_allowed": true,
     "configuration_mutations_allowed": false,
+    "route_mutations_allowed": false,
+    "skill_mutations_allowed": false,
+    "ledger_mutations_allowed": false,
     "live_diagnostic_admitted": false,
     "configure_admitted": false,
     "worldserver_build_admitted": false,
@@ -100,13 +113,7 @@
     "live_attempts": 0,
     "retries": 0
   },
-  "next_action": "Perform one read-only causal review of the remote-verified attempt3 evidence. Produce an ordered observed-versus-inferred join and select exactly one next owner lane. Do not change code, configuration, fixtures, skills, routes, tests, or data; do not build, provision, start a server, retry, promote a fixture revision, admit ML data, or accept Magmaw.",
-  "acceptance": [
-    "the review cites the exact evidence pointer, payload manifest, actor trace discontinuity, retained candidate identity, native rejection, absent fixture terminal, deaths, and watchdog terminal",
-    "the review distinguishes direct observations from inference and names every unavailable join",
-    "the review routes exactly one smallest next hypothesis to shared runtime movement policy, role or encounter policy, or capture and telemetry",
-    "the review performs no implementation, build, provisioning, database mutation, server start, live attempt, retry, fixture promotion, ML admission, or acceptance"
-  ],
+  "next_action": "Implement only the evidence join in the exact owned files, run deterministic tests, and submit the clean commit for independent review. Do not build, provision, start a server, recapture live evidence, publish DVC, promote a fixture, or accept Magmaw.",
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",

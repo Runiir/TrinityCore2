@@ -1,0 +1,159 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:authorize_capture_actor_local_personal_threat_episode_join",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "evidence_repair_authorized",
+  "source": {
+    "commit": "d2f541836c88357a927e303cfcfbcc7e75a34b45",
+    "tree": "2125db31ec2c7462aeb119fd7fb05e3c61686c67",
+    "clean": true,
+    "active_work_unit": "review:magmaw_attempt3_candidate_native_terminal_causal_join"
+  },
+  "causal_review": {
+    "external_path": "/tmp/magmaw-attempt3-causal-review-handoff.Th5ISE/review_handoff.json",
+    "sha256": "1ee0d391754a57d652bd4f3c25e03e06b395d73eece519c1d7ea97320f974ce5",
+    "schema": "cata_raid_causal_review_handoff_v1",
+    "classification": "evidence_emission_first_broken_edge"
+  },
+  "evidence": {
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_attempt3_death_loop_20260902.dvc",
+    "dvc_pointer_sha256": "2c44151b63d4c7d5a881e296abd386228707c55e1706fb0d220a2788fa5888d5",
+    "dvc_directory_md5": "44bb53ab89c6edf12d069781be27aa6d.dir",
+    "archive_sha256": "d3e2d8ab5958d9a8d84cbdf5009dd724b59f3e84ab35e4312d8dc06d1767fc47",
+    "payload_manifest_sha256": "77fe3369e538066f41e8792603a0999b11411cd72a163906ecde7c3b81641da1",
+    "canonical_file_manifest_sha256": "bc794f2bf27c5eafd3fa2c1b686b7c9958db352033ec8b3c1c19742a8f360383",
+    "verified_file_count": 39,
+    "verified_uncompressed_bytes": 333311869,
+    "remote_status": "in_sync",
+    "workspace_payload_state": "intentionally_evicted"
+  },
+  "first_broken_edge": {
+    "layer": "world_observation_to_persistent_task_episode_transition",
+    "actor_guid": 30008,
+    "route_node_id": "bwd.magmaw.encounter",
+    "route_generation": 3,
+    "parent_wave_generation": 9223372036854775809,
+    "parent_generation_authoritative": false,
+    "observed": "Capture 261 retains task 5/candidate 6 at safe_clearance. Capture 265 retains task 6/candidate 8 already failed under the unchanged provisional parent. Candidate 7 and 8 endpoint rejections are later observed failures before native submission; the run ended at death_loop_watchdog with no fixture terminal.",
+    "inferred": "Current source requires authoritative actor-local personal-threat absence followed by later presence before a terminal child rearms under an unchanged provisional parent.",
+    "unavailable": "No retained record carries the threat flag and GUID, fact authority, falling/rising edge, or prior/resulting episode state around task 6 creation. The endpoint rejection is not causally joined to the death-loop terminal."
+  },
+  "ownership_boundary": {
+    "principle": "Extend existing typed personal-escape diagnostics and diagnosis transport. Do not add a parallel log, alter behavior, or increase trace capacity.",
+    "owned_files": [
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.inl",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp",
+      "tools/raid_program/capture_magmaw_personal_threat_episode.py",
+      "tools/raid_program/capture_evidence_demux.py",
+      "tests/test_magmaw_personal_parasite_escape_task.py",
+      "tests/test_magmaw_personal_threat_episode_capture.py"
+    ],
+    "existing_unmodified_transport": [
+      "src/server/game/Bots/BotWorldPopulationMgrDiagnosis.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrDecisionTrace.cpp",
+      "src/server/game/Bots/BotWorldTraceExportCursor.h",
+      "tools/raid_program/capture_telemetry_transport.py"
+    ]
+  },
+  "implementation_contract": {
+    "next_work_unit": "evidence:capture_actor_local_personal_threat_episode_join",
+    "owner_skill": "raid-evidence-lifecycle",
+    "behavior_change": false,
+    "required_record_fields": [
+      "actor_guid",
+      "scope_key",
+      "route_node_id",
+      "route_generation",
+      "board_revision",
+      "observed_at_ms",
+      "facts_authoritative",
+      "authority_gap_mask",
+      "personal_threat_present",
+      "personal_threat_guid",
+      "prior_episode_open",
+      "new_episode_open",
+      "edge",
+      "parent_wave_generation",
+      "parent_generation_authoritative",
+      "prior_task_generation",
+      "new_task_generation",
+      "prior_candidate_generation",
+      "new_candidate_generation"
+    ],
+    "semantics": [
+      "emit falling only when a terminal child sees authoritative actor-local no-threat",
+      "emit rising only when later authoritative threat rearms that tombstone",
+      "write rising after task creation so one record joins prior and new generations",
+      "continuous presence and threat-GUID churn emit no edge and create no child",
+      "reject malformed, contradictory, cross-actor, cross-scope, cross-parent, non-authoritative, or nonmonotonic joins",
+      "ordinary runs without a requested episode join remain compatible; a later fixture gate requires the complete target sequence"
+    ]
+  },
+  "deterministic_fixture": {
+    "case": "A terminal safe-clearance child under one unchanged provisional parent receives authoritative no-threat then authoritative threat observations.",
+    "required_sequence": [
+      "safe_clearance",
+      "authoritative no-threat observation",
+      "falling",
+      "authoritative threat observation",
+      "rising",
+      "exactly one task-generation increment"
+    ],
+    "hard_negatives": [
+      "continuous presence",
+      "threat-GUID churn",
+      "cross-actor or cross-scope records",
+      "parent drift",
+      "non-authoritative observations"
+    ],
+    "transport_pressure": "Drain more than 128 intervening trace entries through multiple bounded delta batches; require chained cursors, contiguous actor sequences, gap=false, no demux discontinuity, and the diagnosis-carried join intact."
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_magmaw_personal_parasite_escape_task.py tests/test_magmaw_personal_threat_episode_capture.py",
+    "pixi run pytest -q tests/test_trace_export_cursor.py tests/test_phase1_raid_foundation_capture.py",
+    "pixi run python tools/raid_program/raid_workloop.py status"
+  ],
+  "acceptance": [
+    "all required fields and explicit falling/rising records are serialized",
+    "rising joins exactly one new child under the unchanged provisional parent",
+    "continuous presence and GUID churn create neither edge nor child churn",
+    "more than 128 intervening trace entries drain losslessly with no evidence-demux gap",
+    "the existing diagnosis and trace channels are used with no parallel stream",
+    "no gameplay, endpoint, geometry, floor, MMAP, tolerance, route, encounter, class, or role logic changes",
+    "all touched C and C++ files remain below 1000 lines",
+    "independent review passes before build or live recapture"
+  ],
+  "forbidden": [
+    "mutation outside the exact owned files",
+    "gameplay or native executor changes",
+    "endpoint, Z, coordinate, floor, MMAP, pathing, or tolerance changes",
+    "trace capacity increase or broad capture redesign",
+    "parallel priority or telemetry stream",
+    "Magmaw-specific universal guidance",
+    "unsupported death-loop conclusion",
+    "route, skill, configuration, ledger, DVC, database, or ML mutation",
+    "build, provisioning, server start, live recapture, retry, fixture promotion, or acceptance"
+  ],
+  "authority": {
+    "source_mutation_allowed": true,
+    "test_mutation_allowed": true,
+    "configuration_mutation_allowed": false,
+    "route_mutation_allowed": false,
+    "skill_mutation_allowed": false,
+    "ledger_mutation_allowed": false,
+    "builds": 0,
+    "provisioning_operations": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0,
+    "dvc_publication_allowed": false,
+    "fixture_revision_promotion_allowed": false,
+    "acceptance_allowed": false,
+    "ml_admission_allowed": false
+  },
+  "next_action": "Implement only the evidence join in the exact owned files, pass deterministic tests, and hand the clean commit to an independent reviewer. Do not build or run live."
+}
