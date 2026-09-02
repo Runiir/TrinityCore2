@@ -1,45 +1,46 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:typed_target_identity_review_correction",
+  "work_unit": "evidence:pending_live_global_rebinding_correction",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "e2cd496cb79634fe00ee1400e99a776ad3271e57",
-  "immutable_input_commit": "e2cd496cb79634fe00ee1400e99a776ad3271e57",
-  "architecture_scope": "Evidence lifecycle only: close three independent-review findings in the typed static identity module.",
+  "observed_at_commit": "a235383887717f6747c1d323f9e0096440def500",
+  "immutable_input_commit": "48fdef84a3bf68eb37a1ba1eed9d0db50b864433",
+  "architecture_scope": "Evidence lifecycle only: remove exported-name rebinding authority from pending-live construction and validation.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "The typed identity implementation passed all regressions, but independent adversarial review found mutable pending-live canonical state and invalid rejection of map zero.",
+  "gate_state": "Map-zero and typed malformed-row corrections pass, but independent review can still forge canonical live proof by rebinding an exported module name. The repeated assumption is now encoded in the updated evidence-lifecycle skill.",
   "first_broken_edge": {
-    "id": "mutable_pending_live_template_can_forge_canonical_live_proof",
+    "id": "exported_pending_live_name_rebinding_redefines_canonical_evidence",
     "stage": "typed_static_identity_validation",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "An exported mutable dict is shared by construction and validation, allowing caller mutation to redefine the accepted canonical pending-live schema.",
-    "review_state": "independent_review_no_go"
+    "cause": "MappingProxyType protects the referenced object but construction and validation still look up a caller-rebindable exported global name.",
+    "review_state": "second_independent_review_no_go"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_typed_target_identity_review_correction_authorization_handoff_20260903.json",
-    "review_path": "/tmp/magmaw-typed-target-identity-review-e2cd496c/review_handoff.json",
-    "review_sha256": "838a0d6efba8566da7c291840e2bed74e112a301bc9d589e1371cd2f515719b6"
+    "path": "experiments/configs/cata_raid_magmaw_pending_live_rebinding_correction_authorization_handoff_20260903.json",
+    "review_path": "/tmp/magmaw-typed-identity-correction-review-a2353838/review_handoff.json",
+    "review_sha256": "4c63559be3d5d34f917a2ff7a3f2b22788a488f058842d94142188b98def0322",
+    "skill_update_commit": "48fdef84a3bf68eb37a1ba1eed9d0db50b864433"
   },
   "scope_lock": {
-    "objective": "Make pending-live semantics immutable, accept valid map zero, and return a typed malformed-row error.",
+    "objective": "Make canonical pending-live semantics independent of exported global rebinding and preserve every prior property.",
     "owned_files": [
       "tools/raid_program/profile_combat_range_static_identity.py",
       "tests/test_profile_combat_range_static_identity.py"
     ],
-    "expected_observable_change": "The exact F1/F2 adversarial examples pass safely and rows=None produces an attributable typed rejection.",
-    "stop_condition": "Any third file or schema/projection/query expansion stops the work unit."
+    "expected_observable_change": "Rebinding the exported convenience name cannot change constructed or accepted live-proof semantics.",
+    "stop_condition": "Any third file or downstream/schema/query expansion stops the work unit."
   },
   "acceptance_conditions": [
-    "Exactly two files change and all focused and downstream regressions pass.",
-    "Fresh independent review returns GO before the separate native GUID-normalization repair."
+    "The exact module-global rebinding fixture and all prior regressions pass.",
+    "Fresh independent review returns GO before the separately owned native GUID repair."
   ],
   "forbidden": [
-    "No downstream/native/gameplay/database/build/server/live/DVC/Stage-2 retry changes or actions."
+    "No downstream/native/gameplay/database/build/server/live/DVC/Stage-2 changes or actions."
   ],
   "validation_clock": {
     "policy": "bounded_deterministic_fixtures",
@@ -57,5 +58,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact bounded two-file correction in the authorization handoff."
+  "next_action": "Execute the exact bounded rebinding correction in the source handoff."
 }

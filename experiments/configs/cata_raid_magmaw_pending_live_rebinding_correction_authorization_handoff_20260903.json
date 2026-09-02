@@ -1,0 +1,69 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_pending_live_global_rebinding_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_rebinding_correction_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "base_source": {
+    "reviewed_implementation_commit": "a235383887717f6747c1d323f9e0096440def500",
+    "reviewed_implementation_tree": "c7fd833abe9d8685f60de87f3a618fd51777e3ad",
+    "current_control_commit": "48fdef84a3bf68eb37a1ba1eed9d0db50b864433",
+    "current_control_tree": "f003b34c60141dc882e5a16ef98020f13b0d3cfe",
+    "clean": true
+  },
+  "review": {
+    "path": "/tmp/magmaw-typed-identity-correction-review-a2353838/review_handoff.json",
+    "sha256": "4c63559be3d5d34f917a2ff7a3f2b22788a488f058842d94142188b98def0322",
+    "decision": "NO-GO",
+    "remaining_blocker": "Rebinding module.PENDING_LIVE_PROOF changes the canonical source consumed by construction and validation, permitting a forged proven_without_live_evidence value."
+  },
+  "skill_correction": {
+    "commit": "48fdef84a3bf68eb37a1ba1eed9d0db50b864433",
+    "file": ".agents/skills/raid-evidence-lifecycle/SKILL.md",
+    "reason": "The same exported-invariant assumption survived two implementation/review cycles.",
+    "validation": "skill quick_validate passed; exact one-file skill change"
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "objective": "Decouple canonical pending-live construction and validation from every caller-rebindable exported module name while preserving the public convenience view, typed identity schema, map-zero support, typed malformed-row rejection, and all projections.",
+    "owned_files": [
+      "tools/raid_program/profile_combat_range_static_identity.py",
+      "tests/test_profile_combat_range_static_identity.py"
+    ],
+    "required_change": [
+      "Build and validate canonical pending-live fields only from private fixed literals or private construction that cannot be changed by rebinding an exported name.",
+      "If PENDING_LIVE_PROOF remains public for compatibility, treat it only as a convenience view and never as production authority.",
+      "Add a deterministic fixture that rebinds the module-level exported name to forged values and proves construction still emits, and validation still requires, fixed pending-only semantics.",
+      "Retain the item/nested mutation fixtures, target_map_id=0 behavior, strict ID validation, and stable static_target_rows_invalid reason."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_profile_combat_range_static_identity.py",
+      "pixi run pytest -q tests/test_profile_combat_range_static_identity.py tests/test_recurrence_admission.py tests/test_chainwielder_prestart_bundle.py",
+      "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py tests/test_phase1_raid_foundation_capture.py",
+      "pixi run python -m py_compile tools/raid_program/profile_combat_range_static_identity.py",
+      "git diff --check 48fdef84a3bf68eb37a1ba1eed9d0db50b864433 HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Exactly the two owned files change in one clean implementation commit.",
+      "The exact module-global rebinding counterexample fails before and passes after for both construction and validation.",
+      "Every previously accepted property and F2/F3 correction remains green.",
+      "A fresh independent Sol-high raid-evidence-lifecycle reviewer returns GO before native repair, build, provisioning, Stage 2, or live validation."
+    ]
+  },
+  "forbidden": [
+    "No third file; no schema, projection, query, seal, admission, bundle, dialect, native, gameplay, route, roster, database, SQL, build, server, live, DVC, or Stage-2 change or action.",
+    "No deleting the public view solely to avoid the test unless compatibility analysis proves it unused; no global rebinding hooks, Magmaw conditional, target retargeting, live inference, or validation weakening."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "worldserver_build": 0,
+    "provisioning": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one fresh raid-evidence-lifecycle implementer, then one fresh independent Sol-high reviewer."
+}
