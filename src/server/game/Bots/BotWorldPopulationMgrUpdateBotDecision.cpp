@@ -13,6 +13,7 @@ bool BotWorldPopulationMgr::RunBotDecisionKernel(BotUpdateContext& context)
         context.State.DecisionKernel.Resolve();
     context.State.LastDecisionKernelJson =
         context.State.DecisionKernel.LastResolutionJson();
+    ObserveProfileCombatRangeCheckpoint(context);
     if (!resolution.AnyCommitted)
     {
         bool const validationRouteWait =

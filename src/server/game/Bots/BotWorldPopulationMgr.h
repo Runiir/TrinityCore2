@@ -8,6 +8,7 @@
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotChainwielderOwnerCheckpoint.h"
 #include "Bots/BotNativePathCheckpoint.h"
+#include "Bots/BotProfileCombatRangeCheckpoint.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneCheckpoint.h"
 #include "Bots/BotValidationPrepullCheckpoint.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
@@ -115,6 +116,8 @@ public:
         std::string const& caseId, std::string const& sealSha256,
         std::string const& sourceCommit);
     std::string GetNativePathCheckpointJsonForCohort(
+        std::string const& cohortId) const;
+    std::string GetProfileCombatRangeCheckpointJsonForCohort(
         std::string const& cohortId) const;
     std::string ArmMagmawTransferLaneCheckpointForCohort(
         std::string const& cohortId, uint32 actorGuid,
@@ -392,6 +395,7 @@ private:
         WorldBotState& state, Player* bot);
     void ObserveNativePathCheckpointBeforeUpdate(
         WorldBotState& state, Player* bot);
+    void ObserveProfileCombatRangeCheckpoint(BotUpdateContext& context);
     void SubmitMagmawTransferLaneCheckpointAfterKernelBegin(
         BotUpdateContext& context);
     void QueueMagmawTransferLaneCheckpoint(
@@ -415,6 +419,7 @@ private:
         std::string const& sourceCommit);
     std::string BuildChainwielderOwnerCheckpointJson() const;
     std::string BuildNativePathCheckpointJson() const;
+    std::string BuildProfileCombatRangeCheckpointJson() const;
     std::string BuildMagmawTransferLaneCheckpointJson() const;
     std::string BuildControllerRouteHoldJson() const;
     BotControllerRouteHold::Identity CurrentControllerRouteHoldIdentity(

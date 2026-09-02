@@ -108,6 +108,15 @@ struct BotWorldExperimentConfig
     std::string NativePathCheckpointCaseId;
     std::string NativePathCheckpointSealSha256;
     std::string NativePathCheckpointSourceCommit;
+    // Default-off observation seam for the generic profile minimum-range
+    // production boundary. It records only live manager/native evidence.
+    bool ProfileCombatRangeCheckpointEnable = false;
+    std::string ProfileCombatRangeCheckpointFixtureId;
+    std::string ProfileCombatRangeCheckpointCaseId;
+    std::string ProfileCombatRangeCheckpointSealSha256;
+    std::string ProfileCombatRangeCheckpointSourceCommit;
+    uint32 ProfileCombatRangeCheckpointActorGuid = 0;
+    uint64 ProfileCombatRangeCheckpointTargetGuid = 0;
     std::string ValidationRouteManifestPath;
     std::string ValidationRouteAdvanceMode = "disabled";
     std::string ValidationRouteScenarioId;

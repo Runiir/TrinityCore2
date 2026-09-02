@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HEADER = ROOT / "src/server/game/Bots/BotRouteCombatTargetPolicy.h"
 FALLBACK = ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp"
+RANGE_ADAPTER = ROOT / "src/server/game/Bots/BotProfileCombatRangeCandidate.h"
 
 
 def test_owned_route_target_gate_replays_safe_admission(tmp_path: Path) -> None:
@@ -108,62 +109,50 @@ def test_route_target_allow_list_is_used_only_for_declared_drudge_entry() -> Non
 
 
 def test_generic_range_candidate_admits_only_valid_too_close_targets() -> None:
+    adapter = RANGE_ADAPTER.read_text(encoding="utf-8")
     fallback = FALLBACK.read_text(encoding="utf-8")
-    start = fallback.index('combatRange.Key = "world.profile_combat_range"')
-    end = fallback.index('combat.Key = "world.profile_combat"', start)
-    candidate = fallback[start:end]
-    assert "BotRouteCombatTargetPolicy::IsOwnedNativeEncounterTarget" in candidate
-    assert "target->IsInWorld()" in candidate
-    assert '"profile_combat_target_invalid"' in candidate
-    assert "ResolveProfileCombatAction" in candidate
-    assert "ResolvedCombatAction profileAction = ResolveProfileCombatAction(" in candidate
-    assert "insideLegalMinRange" in candidate
-    assert "outsideLegalMaxRange" in candidate
-    assert "profileAction.MaxRange > 0.0f" in candidate
-    assert "noLineOfSight" in candidate
-    assert "MoveBotToProfileRange" in candidate
-    assert "Resource::Movement" in candidate
+    assert "BotProfileCombatRangeCandidate::Build" in fallback
+    assert "BotRouteCombatTargetPolicy::IsOwnedNativeEncounterTarget" in fallback
+    assert "target->IsInWorld()" in fallback
+    assert '"profile_combat_target_invalid"' in adapter
+    assert "ResolveProfileCombatAction" in fallback
+    assert "ResolvedCombatAction profileAction = ResolveProfileCombatAction(" in fallback
+    assert "insideLegalMinRange" in adapter
+    assert "outsideLegalMaxRange" in adapter
+    assert "MoveBotToProfileRange" in fallback
+    assert "Resource::Movement" in adapter
     for resource in (
         "Resource::GlobalCooldown",
         "Resource::Cast",
         "Resource::Target",
     ):
-        assert resource not in candidate
-    assert candidate.index("outsideLegalMaxRange") < candidate.index(
-        "MoveBotToProfileRange"
-    )
-    assert candidate.index("ResolveProfileCombatAction") < candidate.index(
-        "outsideLegalMaxRange"
-    )
-    assert candidate.index("insideLegalMinRange") < candidate.index(
-        "MoveBotToProfileRange"
-    )
-    assert '"profile_min_range_satisfied"' in candidate
-    assert '"profile_combat_min_range_reconciled"' in candidate
-    assert "41570" not in candidate
-    assert "Magmaw" not in candidate
+        assert resource not in adapter
+    assert adapter.index("outsideLegalMaxRange") < adapter.index("if (!decision.Move")
+    assert adapter.index("insideLegalMinRange") < adapter.index("if (!decision.Move")
+    assert '"profile_min_range_satisfied"' in adapter
+    assert '"profile_combat_min_range_reconciled"' in adapter
+    assert "41570" not in adapter
+    assert "Magmaw" not in adapter
 
 
 def test_generic_range_candidate_preserves_drudge_latch_and_native_guards() -> None:
+    adapter = RANGE_ADAPTER.read_text(encoding="utf-8")
     fallback = FALLBACK.read_text(encoding="utf-8")
-    start = fallback.index('combatRange.Key = "world.profile_combat_range"')
-    end = fallback.index('combat.Key = "world.profile_combat"', start)
-    candidate = fallback[start:end]
 
     # The typed Drudge route still has the activation latch and its original
     # max-range/LOS reconciliation. Generic hostile admission is a separate
     # minimum-range branch and cannot inherit an encounter identity.
-    assert '"drudge_activation_latch_closed"' in candidate
-    assert '"drudge_profile_range_satisfied"' in candidate
-    assert '"profile_combat_los_reconciled"' in candidate
-    assert '"drudge_profile_los_path_rejected"' in candidate
-    assert candidate.index("if (ownedDrudge)") < candidate.index(
+    assert '"drudge_activation_latch_closed"' in adapter
+    assert '"drudge_profile_range_satisfied"' in adapter
+    assert '"profile_combat_los_reconciled"' in adapter
+    assert '"drudge_profile_los_path_rejected"' in adapter
+    assert adapter.index("if (decision.OwnedDrudge)") < adapter.index(
         "else if (!insideLegalMinRange)"
     )
-    assert candidate.index("target->IsInWorld()") < candidate.index(
+    assert fallback.index("target->IsInWorld()") < fallback.index(
         "ResolveProfileCombatAction"
     )
-    assert candidate.index("!sameMap") < candidate.index(
+    assert fallback.index("!decision.SameMap") < fallback.index(
         "ResolveProfileCombatAction"
     )
 

@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/BotActionExecutor.h"
+#include "Bots/BotProfileCombatRangeCandidate.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotRouteCombatTargetPolicy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
@@ -635,78 +636,61 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
         };
         context.State.DecisionKernel.Submit(std::move(trash));
 
-        BotActionArbitration::Candidate combatRange;
-        combatRange.Key = "world.profile_combat_range";
-        combatRange.Source = "db_class_spec_profile";
-        combatRange.ActionPriority = BotActionArbitration::Priority::CombatMovement;
-        combatRange.UtilityScore = context.Target && context.Target->IsAlive()
+        BotProfileCombatRangeCandidate::Request rangeRequest;
+        rangeRequest.UtilityScore = context.Target && context.Target->IsAlive()
             ? 0.9f : 0.0f;
-        // Range reconciliation is a movement-only lane.  A legal profile cast,
-        // support action, or threat action must be able to commit beside it.
-        combatRange.RequiredResources = BotActionArbitration::Uses(
-            BotActionArbitration::Resource::Movement);
-        combatRange.Attempt = [this, &context, typedDrudgeValidationRoute]()
+        rangeRequest.Observe = [this, &context, typedDrudgeValidationRoute]()
         {
-            if (typedDrudgeValidationRoute && context.AdaptiveDrudgeOwnsNode
-                && !context.DrudgeCombatAuthorityAllowed)
-                return BotActionArbitration::Outcome::NotApplicable(
-                    "drudge_activation_latch_closed");
+            BotProfileCombatRangeCandidate::Decision decision;
+            decision.TypedDrudgeValidationRoute = typedDrudgeValidationRoute;
+            decision.AdaptiveDrudgeOwnsNode = context.AdaptiveDrudgeOwnsNode;
+            decision.DrudgeCombatAuthorityAllowed =
+                context.DrudgeCombatAuthorityAllowed;
             Unit* const target = context.Target;
             Creature const* targetCreature = target ? target->ToCreature() : nullptr;
-            bool const targetAlive = target && target->IsAlive();
-            bool const targetAttackable = targetAlive
+            decision.TargetPresent = target != nullptr;
+            decision.TargetInWorld = target && target->IsInWorld();
+            decision.TargetAlive = target && target->IsAlive();
+            decision.TargetAttackable = decision.TargetAlive
                 && context.Bot->IsValidAttackTarget(target);
-            bool const sameMap = target
+            decision.SameMap = target
                 && target->GetMapId() == context.Bot->GetMapId();
-            bool const sameInstance = target
+            decision.SameInstance = target
                 && target->GetInstanceId() == context.Bot->GetInstanceId();
-            bool const ownedDrudge = targetCreature
+            decision.OwnedDrudge = targetCreature
                 && BotRouteCombatTargetPolicy::IsOwnedNativeEncounterTarget(
-                    context.AdaptiveDrudgeOwnsNode, targetAlive,
-                    targetAttackable, sameMap, sameInstance,
-                    targetCreature->GetEntry(),
+                    context.AdaptiveDrudgeOwnsNode, decision.TargetAlive,
+                    decision.TargetAttackable, decision.SameMap,
+                    decision.SameInstance, targetCreature->GetEntry(),
                     BotEncounter::AdaptiveDrudgeStrategy::DrudgeEntry);
-            if (!target || !target->IsInWorld() || !targetAlive
-                || !targetAttackable || !sameMap || !sameInstance)
-                return BotActionArbitration::Outcome::NotApplicable(
-                    "profile_combat_target_invalid");
+            if (!decision.TargetPresent || !decision.TargetInWorld
+                || !decision.TargetAlive || !decision.TargetAttackable
+                || !decision.SameMap || !decision.SameInstance)
+                return decision;
 
             ResolvedCombatAction profileAction = ResolveProfileCombatAction(
                 context.Bot, target);
-            bool const insideLegalMinRange = profileAction.MinRange > 0.0f
-                && context.Bot->GetExactDist(target) < profileAction.MinRange;
-            bool const outsideLegalMaxRange = profileAction.MaxRange > 0.0f
-                && context.Bot->GetExactDist(target) > profileAction.MaxRange;
-            bool const noLineOfSight = !context.Bot->IsWithinLOSInMap(target);
-            if (ownedDrudge)
+            decision.Distance = context.Bot->GetExactDist(target);
+            decision.MinRange = profileAction.MinRange;
+            decision.MaxRange = profileAction.MaxRange;
+            decision.NoLineOfSight = !context.Bot->IsWithinLOSInMap(target);
+            decision.Move = [this, &context, target, profileAction,
+                noLineOfSight = decision.NoLineOfSight]() mutable
             {
-                if (!outsideLegalMaxRange && !noLineOfSight)
-                    return BotActionArbitration::Outcome::NotApplicable(
-                        "drudge_profile_range_satisfied");
-            }
-            else if (!insideLegalMinRange)
-                return BotActionArbitration::Outcome::NotApplicable(
-                    "profile_min_range_satisfied");
-
-            bool const moved = MoveBotToProfileRange(context.State, context.Bot,
-                target, &profileAction, noLineOfSight);
-            if (!moved)
-                return BotActionArbitration::Outcome::Retryable(
-                    ownedDrudge
-                        ? (noLineOfSight ? "drudge_profile_los_path_rejected"
-                            : "drudge_profile_range_path_rejected")
-                        : "profile_min_range_path_rejected");
-
-            context.Situation = "open_world_combat";
-            context.Action = "profile_combat_range_movement";
-            context.State.LastDecisionHandler = "combat_range";
-            return BotActionArbitration::Outcome::Started(
-                ownedDrudge
-                    ? (noLineOfSight ? "profile_combat_los_reconciled"
-                        : "profile_combat_range_reconciled")
-                    : "profile_combat_min_range_reconciled");
+                bool const moved = MoveBotToProfileRange(context.State,
+                    context.Bot, target, &profileAction, noLineOfSight);
+                if (moved)
+                {
+                    context.Situation = "open_world_combat";
+                    context.Action = "profile_combat_range_movement";
+                    context.State.LastDecisionHandler = "combat_range";
+                }
+                return moved;
+            };
+            return decision;
         };
-        context.State.DecisionKernel.Submit(std::move(combatRange));
+        context.State.DecisionKernel.Submit(
+            BotProfileCombatRangeCandidate::Build(std::move(rangeRequest)));
 
         SubmitAfflictionPetAttackCandidate(context);
 

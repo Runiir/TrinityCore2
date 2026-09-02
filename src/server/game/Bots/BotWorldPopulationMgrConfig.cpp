@@ -200,6 +200,22 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
         "BotWorld.ValidationFixture.NativePathCheckpoint.SealSha256", "");
     Cohort().Config.NativePathCheckpointSourceCommit = sConfigMgr->GetStringDefault(
         "BotWorld.ValidationFixture.NativePathCheckpoint.SourceCommit", "");
+    Cohort().Config.ProfileCombatRangeCheckpointEnable = sConfigMgr->GetBoolDefault(
+        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.Enable", false);
+    Cohort().Config.ProfileCombatRangeCheckpointFixtureId = sConfigMgr->GetStringDefault(
+        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.FixtureId", "");
+    Cohort().Config.ProfileCombatRangeCheckpointCaseId = sConfigMgr->GetStringDefault(
+        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.CaseId", "");
+    Cohort().Config.ProfileCombatRangeCheckpointSealSha256 = sConfigMgr->GetStringDefault(
+        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.SealSha256", "");
+    Cohort().Config.ProfileCombatRangeCheckpointSourceCommit = sConfigMgr->GetStringDefault(
+        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.SourceCommit", "");
+    Cohort().Config.ProfileCombatRangeCheckpointActorGuid = sConfigMgr->GetIntDefault(
+        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.ActorGuid", 0);
+    std::string const profileRangeTargetGuid = sConfigMgr->GetStringDefault(
+        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.TargetGuid", "0");
+    Cohort().Config.ProfileCombatRangeCheckpointTargetGuid = std::strtoull(
+        profileRangeTargetGuid.c_str(), nullptr, 10);
     Cohort().Config.ValidationRouteManifestPath = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ManifestPath", Cohort().Config.ValidationRouteManifestPath);
     Cohort().Config.ValidationRouteAdvanceMode = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.AdvanceMode", Cohort().Config.ValidationRouteAdvanceMode);
     Cohort().Config.ValidationRouteScenarioId = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ScenarioId", Cohort().Config.ValidationRouteScenarioId);
