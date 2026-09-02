@@ -1,0 +1,78 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_static_identity_lexical_authority_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_lexical_authority_correction_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "base_source": {
+    "reviewed_implementation_commit": "2e6de6d017d5596f560358257472f136e40639a9",
+    "reviewed_implementation_tree": "a50cdbb15939dd0f21bd8b4893fe758bbfeb0db4",
+    "current_control_commit": "668000c86c135401d3eb992d40e2d47ff727b2d1",
+    "current_control_tree": "9a564e5f69833aca4584419727ce4fa13703199e",
+    "clean": true
+  },
+  "review": {
+    "path": "/tmp/magmaw-pending-live-rebinding-review-2e6de6d0/review_handoff.json",
+    "sha256": "bd3ed3f9e7864fa14f9d2023b75647f8ec21053e6d3b252aad5dcee6c10459f6",
+    "decision": "NO-GO",
+    "blocking_findings": [
+      "F1_pending_live_authority_moved_to_rebindable_private_global",
+      "F2_exported_schema_fields_and_sql_control_canonical_evidence"
+    ]
+  },
+  "skill_correction": {
+    "commit": "668000c86c135401d3eb992d40e2d47ff727b2d1",
+    "file": ".agents/skills/raid-evidence-lifecycle/SKILL.md",
+    "required_lesson": "Python underscore module names remain rebindable; use fixed lexical/function-local semantics and capture callback-spanning identity once."
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "objective": "Make every canonical static-identity construction, validation, projection, query, and receipt value independent of caller-rebindable module names while preserving public compatibility constants as non-authoritative views.",
+    "owned_files": [
+      "tools/raid_program/profile_combat_range_static_identity.py",
+      "tests/test_profile_combat_range_static_identity.py"
+    ],
+    "required_change": [
+      "Construct and validate pending-live values, schema strings, and field projection from fixed lexical or function-local literals not resolved through module globals.",
+      "Validation must build its canonical expected value directly and must not call public target_identity or any replaceable module helper.",
+      "Static readback must capture one exact fixed SQL statement before invoking the query callback and use that same captured value for execution, request identity, and receipt identity.",
+      "Public schema, fields, SQL, and pending-proof names may remain compatibility views but must not be production authority.",
+      "Preserve map zero, strict typed IDs, typed malformed-row errors, spawn-key-only parameterization, schema output values, and all downstream projections."
+    ],
+    "deterministic_fixtures": [
+      "Rebind private pending helper and public target_identity; forged live proof is neither emitted nor accepted.",
+      "Rebind every exported schema, field-list, SQL, and pending-proof name before construction/validation/readback; canonical emitted values remain fixed and forged values reject.",
+      "Have the query callback rebind STATIC_READBACK_SQL; the receipt statement exactly equals the statement actually passed to the callback.",
+      "All earlier item/nested/module mutation, map-zero, invalid-ID, row-shape, domain-substitution, drift, and projection fixtures remain green."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_profile_combat_range_static_identity.py",
+      "pixi run pytest -q tests/test_profile_combat_range_static_identity.py tests/test_recurrence_admission.py tests/test_chainwielder_prestart_bundle.py",
+      "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py tests/test_phase1_raid_foundation_capture.py",
+      "pixi run python -m py_compile tools/raid_program/profile_combat_range_static_identity.py",
+      "git diff --check 668000c86c135401d3eb992d40e2d47ff727b2d1 HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Exactly the two owned files change in one clean commit.",
+      "Every F1/F2 counterexample fails before and passes after without changing ordinary schema/output/query values.",
+      "All focused and downstream regressions pass.",
+      "A fresh independent Sol-high raid-evidence-lifecycle review returns GO before native repair, build, provisioning, Stage 2, or live validation."
+    ]
+  },
+  "forbidden": [
+    "No third file; no public API deletion, schema/output/query value change, seal/admission/bundle/dialect/native/gameplay/route/roster/database/SQL/build/server/live/DVC/Stage-2 change or action.",
+    "No Magmaw conditional, target retargeting, live inference, monkeypatch-detection side effects, or validation weakening."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "worldserver_build": 0,
+    "provisioning": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one fresh raid-evidence-lifecycle implementer, then one fresh independent Sol-high reviewer."
+}
