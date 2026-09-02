@@ -1,68 +1,87 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:generic_min_range_production_fixture_expansion",
+  "work_unit": "runtime:generic_min_range_checkpoint_correlation_command_correction",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Replace the rejected source-shape proof with one shared generic production adapter and default-off observation checkpoint. No new gameplay behavior, build, or live run is authorized.",
-  "gate_state": "Independent review NO-GO at commit 7444666b: the generic minimum-range admission code exists, but retained tests do not execute the production manager-to-native boundary.",
-  "observed_at_commit": "7444666b449231c79049d071df6f8e6091e175d5",
-  "immutable_input_commit": "7444666b449231c79049d071df6f8e6091e175d5",
+  "architecture_scope": "Correct only the default-off generic minimum-range checkpoint command, seal, and explicit production receipt/generation joins. Preserve the shared adapter and all gameplay behavior.",
+  "gate_state": "Independent review NO-GO at commit 6c1253a: the behavior-preserving adapter exists, but the checkpoint is not authenticated/capture-consumable, its seal is not identity-matched, and its range/hazard/native/cast joins are inferential.",
+  "observed_at_commit": "6c1253a6995c77ecbdfa6c109f360ee32d1efba7",
+  "immutable_input_commit": "6c1253a6995c77ecbdfa6c109f360ee32d1efba7",
   "behavior_change": false,
   "evidence_contract_change": true,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_production_fixture_expansion_authorization_handoff_20260902.json",
-    "sha256": "c665e85734eacdf441df540c2caae8e26bf843e4450bfccad537260abfbe42c5"
+    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_checkpoint_correlation_command_correction_authorization_handoff_20260902.json",
+    "sha256": "e88ee6e0a60f5570e3aa612acea2fd4bf56c3a3ac7697dd03b6a391a5c8c3c29",
+    "source_commit": "6c1253a6995c77ecbdfa6c109f360ee32d1efba7",
+    "source_tree": "e523ac722dea609b63df77784975ed7a2b516001"
+  },
+  "independent_review": {
+    "external_path": "/tmp/magmaw-generic-min-range-fixture-expansion-review-6c1253a/review_handoff.json",
+    "sha256": "4fd3226d51a31c49b78b586c8425bb316b0d19c2205b0ab32e34b6b132cc108e",
+    "verdict": "NO-GO",
+    "reviewed_commit": "6c1253a6995c77ecbdfa6c109f360ee32d1efba7",
+    "reviewed_tree": "e523ac722dea609b63df77784975ed7a2b516001",
+    "critical_findings": 0,
+    "high_findings": 2
   },
   "validation_clock": {
     "policy": "completion_watchdog",
-    "fixed_success_timer_seconds": null
+    "fixed_success_timer_seconds": null,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "retries": 0
   },
   "first_broken_edge": {
-    "owner_classification": "shared_runtime_production_fixture",
+    "id": "profile_combat_range_checkpoint_identity_and_owner_to_native_join_incomplete",
+    "owner_classification": "shared_bot_runtime_evidence_boundary",
     "actor_guid": 30010,
-    "stage": "fallback_candidate_to_native_outcome_fixture_boundary",
-    "cause": "The retained tests reconstruct or inspect world.profile_combat_range instead of executing the shared production candidate through the manager, resolver, arbiter, native mover, progress, and later cast.",
-    "causal_chain": "source-shape/replacement candidate passes -> production submission unexercised -> native generator/spline progress unobserved -> later cast retry unobserved",
+    "stage": "checkpoint_admission_candidate_to_native_outcome_correlation",
+    "cause": "The default-off observer cannot be securely armed or consumed and advances from proximity-only range, arbitrary Survival+Movement, LastMovementExecution, and later-cast observations.",
+    "causal_chain": "unverified command/seal or nearby trace -> unbound movement/hazard receipt -> unbound progress -> unbound later cast -> false or unavailable terminal checkpoint",
     "first_retained_timestamp_ms": 1788337643273,
-    "review_state": "independent_review_no_go_fixture_expansion_authorized"
+    "review_state": "independent_review_no_go_correction_authorized"
   },
   "scope_lock": {
-    "objective": "Add a behavior-preserving shared production range-candidate adapter plus a default-off observer capable of certifying the exact live production chain; keep commit 7444666b as the only gameplay admission change.",
+    "objective": "Expose the default-off checkpoint through the existing authenticated command/capture path and bind the exact range candidate, actual existing hazard producer, native receipts/progress, and later cast under one sealed checkpoint generation without changing gameplay.",
     "owned_files": [
-      "src/server/game/Bots/BotProfileCombatRangeCandidate.h",
       "src/server/game/Bots/BotProfileCombatRangeCheckpoint.h",
       "src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
       "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotDecision.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
       "src/server/game/Bots/BotWorldPopulationMgr.h",
-      "src/server/game/Bots/BotWorldPopulationMgrConfig.h",
-      "src/server/game/Bots/BotWorldPopulationMgrConfig.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
-      "src/server/game/CMakeLists.txt",
+      "src/server/scripts/Commands/cs_chainwielder_owner_checkpoint.cpp",
+      "tools/raid_program/recurrence_checkpoint_seals.py",
+      "tools/raid_program/recurrence_admission.py",
+      "tools/raid_program/capture_checkpoint_controller.py",
       "tests/test_profile_combat_range_production_fixture.py",
-      "tests/test_bot_route_combat_target_policy.py"
+      "tests/test_recurrence_admission.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py"
     ],
     "required_commands": [
-      "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_bot_route_combat_target_policy.py tests/test_bot_world_population_mgr_combat_movement_module.py",
-      "pixi run pytest -q tests/test_magmaw_parasite_policy.py",
-      "wc -l src/server/game/Bots/BotProfileCombatRangeCandidate.h src/server/game/Bots/BotProfileCombatRangeCheckpoint.h src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp src/server/game/Bots/BotWorldPopulationMgrUpdateBotDecision.cpp src/server/game/Bots/BotWorldPopulationMgr.h src/server/game/Bots/BotWorldPopulationMgrConfig.h src/server/game/Bots/BotWorldPopulationMgrConfig.cpp src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
-      "git diff --check 7444666b449231c79049d071df6f8e6091e175d5 HEAD",
+      "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_profile_combat_range_checkpoint_capture.py tests/test_recurrence_admission.py",
+      "pixi run pytest -q tests/test_bot_route_combat_target_policy.py tests/test_bot_world_population_mgr_combat_movement_module.py tests/test_movement_planner_diagnostics.py tests/test_magmaw_parasite_policy.py",
+      "pixi run python -m py_compile tools/raid_program/recurrence_checkpoint_seals.py tools/raid_program/recurrence_admission.py tools/raid_program/capture_checkpoint_controller.py",
+      "wc -l src/server/game/Bots/BotProfileCombatRangeCheckpoint.h src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp src/server/game/Bots/BotWorldPopulationMgr.h src/server/scripts/Commands/cs_chainwielder_owner_checkpoint.cpp",
+      "git diff --check 6c1253a6995c77ecbdfa6c109f360ee32d1efba7 HEAD",
       "pixi run python -m tools.raid_program.raid_workloop status",
       "git status --short"
     ]
   },
   "forbidden": [
     "no Magmaw, boss-entry, creature-entry, route-node, coordinate, spell, class, spec, or encounter special cases",
-    "no hand-written replacement range candidate, duplicate priority system, or synthetic native/hazard/cast success",
-    "no gameplay behavior broadening beyond commit 7444666b and no changes to resolver, arbiter, mover, hazard producer, class policy, encounter scripts, route, database, ledger, skills, capture tools, or DVC",
-    "no bot or target teleportation, direct fixture MotionMaster commands, bot-side Z steering, MMAP workarounds, or global tolerance changes",
-    "no build, configure, provisioning, database mutation, server start, live run, DVC publication, fixture-green promotion, ML admission, Magmaw acceptance, or closure"
+    "no change to shared adapter values, gameplay admission, priority/resources, resolver/arbiter behavior, movement geometry/pathing, hazard selection, class policy, encounter scripts, routes, database, ledger, or skills",
+    "no replacement range/hazard candidate, duplicate priority system, synthetic native outcome, or actor/time proximity correlation",
+    "no teleportation, direct fixture MotionMaster commands, bot-side Z steering, MMAP workaround, or global tolerance change",
+    "no default-on checkpoint or ordinary-run telemetry",
+    "no mutation outside the exact owned files, including prestart bundle/dialect, capture finalization/demux, DVC, or ML files",
+    "no configure, build, provisioning, database mutation, server start, live run, retry, DVC publication, fixture-green promotion, ML admission, Magmaw acceptance, or closure"
   ],
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Use exactly raid-bot-runtime-implementation for the hash-bound fixture expansion. Commit the adapter and default-off observer after focused tests, then obtain independent Sol review before any separately authorized build or observation-only worldserver replay."
+  "next_action": "Use exactly raid-bot-runtime-implementation with the hash-bound scope lock. Commit the command/seal/correlation correction after required tests, then obtain independent Sol high review before any build or observation-only replay."
 }

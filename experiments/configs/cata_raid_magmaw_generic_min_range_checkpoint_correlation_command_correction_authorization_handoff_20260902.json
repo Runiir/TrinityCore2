@@ -1,0 +1,208 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:authorize_generic_min_range_checkpoint_correlation_command_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_runtime_correction_authorized",
+  "source": {
+    "commit": "6c1253a6995c77ecbdfa6c109f360ee32d1efba7",
+    "tree": "e523ac722dea609b63df77784975ed7a2b516001",
+    "clean": true,
+    "implementation_under_review": "6c1253a6995c77ecbdfa6c109f360ee32d1efba7",
+    "implementation_parent": "8d5b7f2755dceddf149278b084f6e7882f6f04ab",
+    "prior_authorization_commit": "8d5b7f2755dceddf149278b084f6e7882f6f04ab",
+    "prior_authorization_is_exact_parent": true,
+    "prior_authorization_is_ancestor": true
+  },
+  "immutable_review": {
+    "external_path": "/tmp/magmaw-generic-min-range-fixture-expansion-review-6c1253a/review_handoff.json",
+    "sha256": "4fd3226d51a31c49b78b586c8425bb316b0d19c2205b0ab32e34b6b132cc108e",
+    "hash_verified": true,
+    "verdict": "NO-GO",
+    "reviewed_implementation_commit": "6c1253a6995c77ecbdfa6c109f360ee32d1efba7",
+    "reviewed_authorization_commit": "8d5b7f2755dceddf149278b084f6e7882f6f04ab",
+    "finding_ids": [
+      "checkpoint_not_externally_observable_or_sealed",
+      "candidate_native_hazard_correlation_is_inferential"
+    ]
+  },
+  "causal_receipt": {
+    "candidate_first_broken_edge": "generic_profile_min_range_checkpoint_admission_and_owner_to_native_correlation_incomplete",
+    "owner": "shared_bot_runtime_evidence_boundary",
+    "ordered_claims": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "Commit 6c1253a retains one shared value adapter used by the production fallback and focused target-value fixture, with the checkpoint default off.",
+        "observation": "Independent review claim ledger and exact 8d5b7f2..6c1253a diff."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "The checkpoint has no authenticated arm/status command or capture-controller dialect, and admission accepts a merely well-shaped seal instead of matching fixture, case, actor, target, and source identity.",
+        "observation": "Review finding checkpoint_not_externally_observable_or_sealed."
+      },
+      {
+        "order": 3,
+        "status": "verified",
+        "claim": "MoveBotToPoint already records candidate key, actor, dynamic target, movement scope, intent fingerprint, native launch, and progress, but the world.profile_combat_range caller does not propagate its candidate key into that existing path.",
+        "observation": "BotWorldPopulationMgrCombatMovement.cpp and movement-planner receipt contract at commit 6c1253a."
+      },
+      {
+        "order": 4,
+        "status": "verified",
+        "claim": "The checkpoint currently adopts LastMovementExecution after a nearby range trace and accepts any committed non-range Survival+Movement trace as a hazard, without an exact hazard-producer receipt or progress join.",
+        "observation": "Review finding candidate_native_hazard_correlation_is_inferential and BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp."
+      },
+      {
+        "order": 5,
+        "status": "verified",
+        "claim": "The existing adaptive/shared hazard producer already owns a stable candidate Id.Key and reaches ExecuteNativeActionIntent; correlation can be added to that intent without adding a new hazard candidate or changing selection.",
+        "observation": "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp and BotAdaptiveRaidHazardPlanner.cpp at commit 6c1253a."
+      },
+      {
+        "order": 6,
+        "status": "unproven",
+        "claim": "One sealed production episode can prove exact hazard preemption and progress, later world.profile_combat_range native progress, and a later ordinary cast on the same actor, target, scope, receipt, and checkpoint generation.",
+        "observation": "No build or observation-only worldserver replay is authorized by this work unit."
+      }
+    ],
+    "first_downstream_state_mutation": "The observer stores an unverified LastMovementExecution receipt and an arbitrary Survival+Movement trace, so its state can advance or complete without the selected range candidate or actual hazard producer owning the native outcomes.",
+    "failure_postcondition": "The checkpoint is unavailable to capture or can false-pass from wrong seal, candidate, target, scope, intent, hazard producer, receipt, generation, progress, or cast evidence.",
+    "implementation_hypothesis": "Expose the default-off checkpoint through the existing RBAC command and capture scheduler, cryptographically bind its configured fixture/case/actor/target/source identity, and carry diagnostic-only candidate identity through the existing range mover and existing hazard action into the existing native receipt/progress sidecars; require one exact checkpoint generation for hazard, range, progress, and later-cast observations.",
+    "correlation_keys": [
+      "fixture_id",
+      "case_id",
+      "seal_sha256",
+      "source_commit",
+      "checkpoint_generation",
+      "actor_guid",
+      "target_guid",
+      "attempt_id",
+      "wipe_generation",
+      "route_generation",
+      "instance_id",
+      "candidate_key",
+      "candidate_trace_index",
+      "movement_receipt_id",
+      "movement_intent_fingerprint",
+      "hazard_candidate_key",
+      "hazard_movement_receipt_id",
+      "cast_recorded_at_ms",
+      "cast_target_guid"
+    ]
+  },
+  "scope_lock": {
+    "next_work_unit": "runtime:generic_min_range_checkpoint_correlation_command_correction",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Correct only the default-off generic profile minimum-range observation boundary: make it securely armable/retrievable and require explicit range-candidate, actual-hazard-producer, native receipt/progress, and later-cast correlation while preserving all gameplay decisions.",
+    "owned_behavior": "Diagnostic-only identity propagation and checkpoint admission/observation. The shared BotProfileCombatRangeCandidate adapter and commit 7444666b gameplay predicate remain unchanged.",
+    "expected_observable_change": "Focused fixtures reject wrong or unavailable command/seal identity and reject stale, wrong-candidate, wrong-target, wrong-scope, wrong-intent, unrelated-Survival, wrong-receipt, wrong-generation, non-progress, and early/wrong-target cast observations; the exact joined sequence reaches completed. This unit may report implemented_pending_independent_review_and_worldserver_fixture_execution, never fixture-green.",
+    "owned_files": [
+      "src/server/game/Bots/BotProfileCombatRangeCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "src/server/scripts/Commands/cs_chainwielder_owner_checkpoint.cpp",
+      "tools/raid_program/recurrence_checkpoint_seals.py",
+      "tools/raid_program/recurrence_admission.py",
+      "tools/raid_program/capture_checkpoint_controller.py",
+      "tests/test_profile_combat_range_production_fixture.py",
+      "tests/test_recurrence_admission.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py"
+    ],
+    "read_only_inspection": "Existing action-arbiter, native-action, movement-intent, movement-planner/progress diagnostics, capture scheduler/finalization, runtime-config, prestart-bundle, route, encounter, class, and regression-ledger files may be inspected but not edited.",
+    "preexisting_dirty_files": []
+  },
+  "production_fixture_contract": {
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "positive_revision": 1,
+    "counterexample": "A valid too-close target emits world.profile_combat_range, but the checkpoint cannot currently prove that candidate's native range movement or distinguish the real hazard producer from an unrelated Survival+Movement candidate before a later cast.",
+    "required_sequence": [
+      "An authenticated RBAC command arms the default-off checkpoint only when fixture ID, case ID, actor, target, seal, source commit, configured identity, and native revision all match.",
+      "The existing adaptive/shared hazard producer wins Movement and its own candidate key, actor, scope, intent fingerprint, movement receipt, native submission, and progress are retained; an unrelated Survival+Movement candidate is rejected.",
+      "A later world.profile_combat_range candidate for the same actor and target carries its key through the existing MoveBotToProfileRange and MoveBotToPoint path into a scope- and intent-matched native launch receipt and multi-tick decreasing progress.",
+      "A still-later world.profile_combat cast attempt for the same target is joined to the same checkpoint generation and current attempt/wipe/route/instance scope before terminal completion.",
+      "The capture controller polls the authenticated status command and accepts only the exact terminal projection; unavailable command/status is a typed fixture failure."
+    ],
+    "required_negatives": [
+      "checkpoint disabled",
+      "incorrect or syntactically valid wrong seal",
+      "wrong fixture, case, actor, target, or source commit",
+      "unavailable or malformed arm/status command response",
+      "stale or wrong range candidate key",
+      "wrong actor, target, attempt, wipe, route generation, instance, or intent fingerprint",
+      "unrelated Survival+Movement candidate",
+      "actual hazard trace without its exact native receipt and progress",
+      "stale, overwritten, or wrong-generation receipt",
+      "cast before native progress, on the wrong target, or in a later lifecycle scope"
+    ],
+    "fail_before": "Commit 6c1253a cannot be armed or consumed by the capture controller and can complete using proximity-only range/hazard/cast observations.",
+    "pass_after_implementation": "The command, seal, capture consumer, exact correlation transition fixture, preserved shared-adapter target-value cases, and default-off/no-behavior-change checks pass at one clean commit.",
+    "pass_after_worldserver_replay": "A later separately authorized sealed observation-only replay returns the exact authenticated terminal checkpoint with real native hazard and range progress plus a later cast. Only then may independent review promote the fixture."
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_profile_combat_range_checkpoint_capture.py tests/test_recurrence_admission.py",
+    "pixi run pytest -q tests/test_bot_route_combat_target_policy.py tests/test_bot_world_population_mgr_combat_movement_module.py tests/test_movement_planner_diagnostics.py tests/test_magmaw_parasite_policy.py",
+    "pixi run python -m py_compile tools/raid_program/recurrence_checkpoint_seals.py tools/raid_program/recurrence_admission.py tools/raid_program/capture_checkpoint_controller.py",
+    "wc -l src/server/game/Bots/BotProfileCombatRangeCheckpoint.h src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp src/server/game/Bots/BotWorldPopulationMgr.h src/server/scripts/Commands/cs_chainwielder_owner_checkpoint.cpp",
+    "git diff --check 6c1253a6995c77ecbdfa6c109f360ee32d1efba7 HEAD",
+    "pixi run python -m tools.raid_program.raid_workloop status",
+    "git status --short"
+  ],
+  "acceptance": [
+    "All changed paths are within the exact owned_files list and the shared candidate adapter/value predicates remain byte-for-byte unchanged.",
+    "The authenticated command and capture consumer arm and retrieve only the exact sealed fixture/case/actor/target/source identity.",
+    "The canonical seal and runtime validation bind fixture ID, case ID, actor GUID, target GUID, source commit, build, decision, and runtime-profile identities.",
+    "world.profile_combat_range reaches the existing mover and native launch receipt with its candidate key, actor, target, scope, and intent fingerprint without changing movement behavior.",
+    "The observer accepts only the actual existing hazard producer's candidate key and exact native receipt/progress, never a generic Survival+Movement trace.",
+    "Native progress and later cast are joined to the exact receipts, target, lifecycle scope, and checkpoint generation.",
+    "Default-off state, action resources, priorities, target-value cases, pathing, and gameplay outcomes remain unchanged.",
+    "All touched C/C++ files remain below 1000 lines and required commands pass once.",
+    "Independent Sol high review returns GO before any configure, build, sealed replay, or gameplay canary."
+  ],
+  "forbidden": [
+    "Magmaw, boss-entry, creature-entry, route-node, coordinate, spell, class, spec, or encounter special cases",
+    "changes to BotProfileCombatRangeCandidate admission values, priorities, resources, resolver ordering, arbiter behavior, movement geometry, path admission, hazard selection, class policy, boss scripts, routes, databases, or ledgers",
+    "a new or hand-written hazard/range candidate, duplicate priority system, synthetic native success/progress/cast, or acceptance of actor/time proximity as correlation",
+    "bot or target teleportation, direct fixture MotionMaster commands, bot-side Z steering, MMAP workarounds, global tolerance changes, or forced server side effects",
+    "configuration defaults changed from off or any ordinary-run checkpoint emission",
+    "edits outside the exact owned_files list, including prestart bundle/dialect, capture finalization/demux, recurrence ledger, skills, DVC, encounter, role, or class files",
+    "configure, build, provisioning, database mutation, server start, live run, retry, DVC publication, fixture-green promotion, ML admission, Magmaw acceptance, or closure"
+  ],
+  "authority": {
+    "source_mutation_allowed": true,
+    "test_mutation_allowed": true,
+    "configuration_schema_mutation_allowed": false,
+    "gameplay_behavior_broadening_allowed": false,
+    "route_mutation_allowed": false,
+    "skill_mutation_allowed": false,
+    "ledger_mutation_allowed": false,
+    "builds": 0,
+    "provisioning_operations": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0,
+    "dvc_publication_allowed": false,
+    "fixture_green_promotion_allowed": false,
+    "magmaw_acceptance_allowed": false,
+    "ml_admission_allowed": false
+  },
+  "review_and_next_gate": {
+    "worker_success_state": "implemented_pending_independent_review_and_worldserver_fixture_execution",
+    "review_requirement": "Independent Sol high review of the exact clean commit, authenticated command/capture path, canonical seal identity, real range and hazard candidate receipt joins, generation-scoped progress/cast transition, target-value preservation, default-off state, and no-cheat constraints.",
+    "build_authorized": false,
+    "worldserver_fixture_replay_authorized": false,
+    "live_gameplay_canary_authorized": false,
+    "next_on_review_go": "raid-performance-loop may authorize the smallest missing prestart binding, if any, then one build plus one sealed observation-only fixture replay; neither is a gameplay canary or Magmaw acceptance.",
+    "next_on_review_no_go": "Return only the exact review finding to raid-bot-runtime-implementation under a new metadata authorization; do not build or run live.",
+    "validation_clock": {
+      "policy": "completion_watchdog",
+      "fixed_success_timer_seconds": null
+    }
+  },
+  "next_action": "Hand exactly this lock to one raid-bot-runtime-implementation worker with no nested agents. Implement only the authenticated checkpoint and explicit receipt/generation correlation correction, run the required commands once, commit cleanly, and request independent Sol high review."
+}
