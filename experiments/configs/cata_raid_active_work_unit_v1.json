@@ -1,67 +1,69 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:generic_min_range_stage2_typed_identity",
-  "owner_skill": "raid-shard-architecture",
+  "work_unit": "runtime:profile_checkpoint_native_guid_normalization",
+  "owner_skill": "raid-bot-runtime-implementation",
   "classification": "authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "82235939da2b837163b255c7ff9936d248d8ef54",
-  "immutable_input_commit": "82235939da2b837163b255c7ff9936d248d8ef54",
-  "architecture_scope": "Stage 2 static only: exact authority, recurrence, atomic bundle, frozen provision, typed spawn readback, and static seal.",
+  "observed_at_commit": "c0dd08c5fe25f4507a97e9f9f0c86872fd6594d9",
+  "immutable_input_commit": "c0dd08c5fe25f4507a97e9f9f0c86872fd6594d9",
+  "architecture_scope": "Shared runtime observation only: typed target config, low-counter normalization, live target/spawn/scope binding, and capture validation.",
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "gate_state": "Typed runtime-target/static-spawn evidence contract has independent GO; Stage 2 may run once without starting a server.",
+  "evidence_contract_change": true,
+  "gate_state": "Stage 2 is static_sealed_ready, but source diagnosis proves the default-off native observer cannot join sealed runtime counter 39 because it records/compares full raw GUIDs.",
   "first_broken_edge": {
-    "id": "reviewed_typed_target_identity_not_yet_bound_to_static_launch_fixture",
-    "stage": "stage2_static_prestart",
-    "owner_classification": "raid_shard_architecture",
-    "cause": "The reviewed four-field identity contract has not yet produced a source/binary/route/roster/database-bound static sealed handoff.",
-    "review_state": "independent_review_go"
+    "id": "native_profile_checkpoint_raw_guid_does_not_match_sealed_low_counter",
+    "stage": "stage3_prearm_native_identity_join",
+    "owner_classification": "raid_bot_runtime_implementation",
+    "cause": "The seal and telemetry use ObjectGuid::GetCounter while target, range-receipt, and cast joins use GetRawValue.",
+    "review_state": "source_and_schema_diagnosis_verified_before_live_start"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_typed_identity_resume_authorization_handoff_20260903.json",
-    "review_path": "/tmp/magmaw-transitive-lexical-capture-review-82235939/review_handoff.json",
-    "review_sha256": "2fce0e3e53c2bd5af936282554aea2e33e71185451c83e84eb745a007b644dcf",
-    "prior_stop_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
-    "prior_stop_sha256": "bdc701fd15c16107bdb83d7d7df7f638f3db684970bbb84c94e79e2cd95daad5"
+    "path": "experiments/configs/cata_raid_magmaw_profile_checkpoint_native_guid_normalization_authorization_handoff_20260903.json",
+    "diagnosis_path": "/tmp/magmaw-static-runtime-target-identity-diagnosis-20260903.json",
+    "diagnosis_sha256": "520f2fcbdf9e3efd498ad6d1ed5da2d35fdf08e3a6140f48d7fb461e2738951d",
+    "stage2_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "stage2_sha256": "f822f6d40e765a9d4f2cf01ff2b9731252ee8996510ac585f32038f63bc28857"
   },
   "scope_lock": {
-    "objective": "Produce one hash-verified static_sealed_ready handoff preserving runtime target 39 and spawn 250051 as separate domains, or one typed failure.",
-    "owned_outputs": [
-      "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/run/build_control_authority_stage2_typed_identity.json",
-      "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json"
+    "objective": "Normalize the default-off native checkpoint to the typed low-counter target contract and bind live entry/spawn/map/instance scope without changing gameplay decisions.",
+    "owned_files": [
+      "src/server/game/Bots/BotProfileCombatRangeCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrConfig.h",
+      "src/server/game/Bots/BotWorldPopulationMgrConfig.cpp",
+      "tools/raid_program/capture_checkpoint_controller.py",
+      "tests/test_profile_combat_range_production_fixture.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py",
+      "tests/test_bot_world_population_mgr_combat_movement_module.py"
     ],
-    "stop_condition": "Any mismatch stops without retry, source mutation, native repair, or server start."
+    "expected_observable_change": "A typed ObjectGuid with counter 39 joins target, range receipt, and later cast while any identity/scope drift fails closed.",
+    "stop_condition": "Any tenth file, gameplay/policy/pathing change, or need for a build/live observation stops the work unit."
   },
   "acceptance_conditions": [
-    "All four typed target fields survive authority, seal, admission, bundle, and static readback unchanged.",
-    "Static proof is keyed by spawn 250051 and all live relations remain pending Stage 3.",
-    "Frozen roster/profiles and zero-residue checks pass."
+    "All exact positive/negative compiled and controller fixtures pass.",
+    "All changed C/C++ files remain below 1000 lines.",
+    "Independent Sol-high review returns GO before build or Stage 3."
   ],
   "forbidden": [
-    "No source/build/server/live/DVC/retry/native/gameplay mutation or live inference."
+    "No gameplay/policy/pathing/encounter/DB/build/server/live/DVC changes or actions and no canary values in generic branches."
   ],
   "validation_clock": {
-    "policy": "completion_watchdog",
-    "current_control_recurrence_gate_budget": 1,
-    "runtime_config_derivation_budget": 1,
-    "atomic_bundle_create_budget": 1,
-    "deterministic_provisioning_budget": 1,
-    "database_readback_budget": 1,
-    "static_seal_budget": 1,
+    "policy": "bounded_deterministic_fixtures",
+    "implementation_commit_budget": 1,
+    "independent_review_budget": 1,
     "worldserver_build_budget": 0,
     "worldserver_start_budget": 0,
     "live_attempt_budget": 0,
     "dvc_operation_budget": 0,
     "retries": 0
   },
-  "issues": [
-    "Native GetRawValue/GetCounter normalization is a known separate blocker and remains closed."
-  ],
+  "issues": [],
   "ready_for_build": false,
-  "ready_for_fixture_expansion": true,
+  "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact bounded Stage-2 static work unit in the source handoff."
+  "next_action": "Execute the exact bounded shared-runtime implementation in the source handoff."
 }

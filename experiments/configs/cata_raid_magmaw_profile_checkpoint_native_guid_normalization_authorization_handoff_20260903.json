@@ -1,0 +1,92 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_profile_checkpoint_native_guid_normalization",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_shared_runtime_identity_repair_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "base_source": {
+    "commit": "c0dd08c5fe25f4507a97e9f9f0c86872fd6594d9",
+    "tree": "883b8cf0d7743694a82e5ae9cea822a0a8077517",
+    "clean": true
+  },
+  "stage2_static_seal": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "sha256": "f822f6d40e765a9d4f2cf01ff2b9731252ee8996510ac585f32038f63bc28857",
+    "classification": "static_sealed_ready",
+    "runtime_target_guid": 39,
+    "target_spawn_id": 250051,
+    "target_entry": 41570,
+    "target_map_id": 669,
+    "live_relation_status": "pending_stage3"
+  },
+  "causal_diagnosis": {
+    "path": "/tmp/magmaw-static-runtime-target-identity-diagnosis-20260903.json",
+    "sha256": "520f2fcbdf9e3efd498ad6d1ed5da2d35fdf08e3a6140f48d7fb461e2738951d",
+    "first_broken_edge": "native_profile_checkpoint_compares_full_raw_object_guid_with_sealed_low_counter",
+    "observed_source_mismatch": "Telemetry and seal use ObjectGuid::GetCounter(), while target observation, range receipt, and later-cast joins record or compare GetRawValue().",
+    "live_observation_status": "not_spent; deterministic source blocker proven before server start"
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Make the default-off generic profile-combat-range checkpoint consume the four typed target fields, join every runtime identity on ObjectGuid low counters, and bind live entry/spawn/map/positive-instance scope before accepting movement progress and a later cast.",
+    "owned_files": [
+      "src/server/game/Bots/BotProfileCombatRangeCheckpoint.h",
+      "src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrConfig.h",
+      "src/server/game/Bots/BotWorldPopulationMgrConfig.cpp",
+      "tools/raid_program/capture_checkpoint_controller.py",
+      "tests/test_profile_combat_range_production_fixture.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py",
+      "tests/test_bot_world_population_mgr_combat_movement_module.py"
+    ],
+    "required_change": [
+      "Replace the legacy checkpoint TargetGuid config with explicitly named RuntimeTargetGuid, TargetSpawnId, TargetEntry, and TargetMapId fields matching the already generated default-off config keys.",
+      "Admission requires the typed fields, valid source/seal/actor, and default-off enablement; do not hard-code fixture values or boss identity in generic runtime code.",
+      "At first target observation require target GUID counter, creature spawn ID, entry, map, positive instance, same actor instance, attempt, wipe, route, and checkpoint generation identities before binding scope.",
+      "Record diagnostic movement actor and target identities with GetCounter(), not GetRawValue(), and join range receipt and later cast on the same low-counter target plus full scope.",
+      "Emit runtime_target_guid, target_spawn_id, target_entry, target_map_id, target_instance_id, and exact scope outcomes for the capture controller; reject every typed identity drift before success.",
+      "Preserve existing typed action arbiter ownership, candidate priority, resource claims, logical movement destination, native pathing, cast policy, and executor side effects."
+    ],
+    "deterministic_fixtures": [
+      "Construct a nonempty typed ObjectGuid whose GetRawValue()!=39 and GetCounter()==39; prove target, range receipt, and later cast join only on counter 39.",
+      "Positive exact typed entry/spawn/map/positive-instance/same-instance/scope path reaches completed checkpoint.",
+      "Wrong counter, entry, spawn, map, instance, actor, attempt, wipe, route, checkpoint generation, range target, or cast target fails with an exact typed reason.",
+      "Generated config key compatibility is proven and legacy TargetGuid alone cannot arm the checkpoint.",
+      "No action-candidate, priority, resource, movement-destination, pathing, tolerance, Z, teleport, cast-policy, or encounter-specific branch changes."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_profile_combat_range_checkpoint_capture.py tests/test_bot_world_population_mgr_combat_movement_module.py",
+      "pixi run pytest -q tests/test_bot_route_combat_target_policy.py tests/test_magmaw_parasite_policy.py",
+      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_recurrence_admission.py",
+      "pixi run python -m py_compile tools/raid_program/capture_checkpoint_controller.py",
+      "wc -l src/server/game/Bots/BotProfileCombatRangeCheckpoint.h src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp src/server/game/Bots/BotWorldPopulationMgrConfig.h src/server/game/Bots/BotWorldPopulationMgrConfig.cpp",
+      "git diff --check c0dd08c5fe25f4507a97e9f9f0c86872fd6594d9 HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Exactly nine owned files change in one clean implementation commit.",
+      "The raw-value/low-counter counterexample fails before and passes after through target, range, and cast joins.",
+      "Every typed identity and scope mismatch fails closed with deterministic fixture coverage.",
+      "All changed C/C++ files remain below 1000 lines and all required suites pass.",
+      "A separate Sol-high raid-bot-runtime-implementation reviewer returns GO before any build, server, Stage 3, or live canary."
+    ]
+  },
+  "forbidden": [
+    "No class rotation, spell priority, arbiter ordering/resource, movement destination, native pathing, Z steering, teleport, tolerance, MMAP, encounter, boss, route, roster, SQL, database, evidence-schema, skill, build-system, or DVC changes.",
+    "No Magmaw/entry-41570/spawn-250051/runtime-39 conditional in generic native code; values belong only to sealed config/fixtures.",
+    "No configure, build, provisioning, database mutation, server/auth start, Stage-3 capture, gameplay canary, DVC, retry, promotion, acceptance, or ML admission."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "provisioning": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one Sol-high raid-bot-runtime-implementation implementer, then a separate Sol-high reviewer."
+}
