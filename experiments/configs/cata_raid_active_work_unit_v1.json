@@ -1,32 +1,23 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:generic_min_range_capture_duplicate_receipt_fixture_completion",
+  "work_unit": "runtime:generic_min_range_active_duplicate_receipt_protocol_correction",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "failed",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Complete only the missing active duplicate-receipt regression in the deterministic generic minimum-range capture fixture. Preserve production behavior.",
-  "gate_state": "Independent review NO-GO at commit 3aadbc25: the scheduler protocol and compiled transition fixture pass, but no test duplicates the accepted arm acknowledgement while the scheduler is still awaiting_terminal.",
-  "observed_at_commit": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
-  "immutable_input_commit": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
+  "architecture_scope": "Repair only the deterministic capture scheduler protocol that accepts duplicate or stale active profile-combat-range receipts while awaiting terminal completion. Preserve gameplay and completed-state idempotency.",
+  "gate_state": "The authorized counterexample failed deterministically at clean commit 7491d148: after the first arm acknowledgement entered awaiting_terminal, the identical row returned another profile status command, left failed=false, and remained active. Build and replay remain closed.",
+  "observed_at_commit": "7491d14836212569f23b35e1db8ba2da4041c9ef",
+  "immutable_input_commit": "7491d14836212569f23b35e1db8ba2da4041c9ef",
   "behavior_change": false,
   "evidence_contract_change": true,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_capture_duplicate_receipt_fixture_completion_authorization_handoff_20260902.json",
-    "sha256": "6faca68fa6685d7dc5673386cab033893c9e11ae14af4f3ea53b5ea919da78e8",
-    "source_commit": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
-    "source_tree": "91f96a71869326c71c86bbd9bd20604ec9232957"
-  },
-  "independent_review": {
-    "external_path": "/tmp/magmaw-generic-min-range-capture-sequence-fixture-completion-review-3aadbc25/review_handoff.json",
-    "sha256": "c77dfe40c44e64775d44a390d97b0a1774af6b27a1b33b8b99056c3b3d72429a",
-    "verdict": "NO-GO",
-    "reviewed_commit": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
-    "reviewed_tree": "91f96a71869326c71c86bbd9bd20604ec9232957",
-    "critical_findings": 0,
-    "high_findings": 1
+    "path": "experiments/configs/cata_raid_magmaw_generic_min_range_active_duplicate_receipt_protocol_correction_authorization_handoff_20260902.json",
+    "sha256": "420741509c85dcadff44b94de37440ebd6798b6e6c4d0abf8e5ac20a0386188b",
+    "source_commit": "7491d14836212569f23b35e1db8ba2da4041c9ef",
+    "source_tree": "79be9c71e3793f4fa2a3e5121fb8f8154e943b96"
   },
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -36,42 +27,46 @@
     "retries": 0
   },
   "first_broken_edge": {
-    "id": "generic_profile_min_range_active_duplicate_receipt_fixture_missing",
-    "owner_classification": "shared_bot_runtime_evidence_boundary",
+    "id": "generic_profile_min_range_active_duplicate_receipt_accepted",
+    "owner_classification": "shared_bot_runtime_capture_protocol",
     "actor_guid": 30010,
-    "stage": "deterministic_capture_protocol_negative_fixture",
-    "cause": "The suite does not resend the first accepted arm acknowledgement while ControllerRouteHoldScheduler is awaiting_terminal, so the existing duplicate/stale fail-closed branch is not executed.",
-    "causal_chain": "valid arm acknowledgement -> scheduler awaiting_terminal -> same arm acknowledgement duplicated -> existing duplicate/stale branch unexercised -> build/replay gate remains closed",
-    "first_retained_timestamp_ms": 1788337643273,
-    "review_state": "independent_review_no_go_one_file_test_correction_authorized"
+    "stage": "capture_scheduler_awaiting_terminal",
+    "cause": "_observe_profile_combat_range_checkpoint_scheduler_row accepts terminal=false stage=armed whenever phase is awaiting_terminal and retains no last accepted active stage or payload identity.",
+    "causal_chain": "valid arm acknowledgement -> awaiting_terminal -> identical active receipt -> generic nonterminal acceptance -> extra status command and scheduler remains active -> duplicate/stale fail-closed postcondition missing",
+    "review_state": "deterministic_counterexample_failed_protocol_correction_authorized"
   },
   "scope_lock": {
-    "objective": "Add only the missing active duplicate arm-receipt regression and preserve post-terminal idempotency.",
+    "objective": "Make active profile-combat-range receipt consumption monotonic and fail closed on duplicate or stale active receipts while preserving valid forward progress and completed-state idempotency.",
     "owned_files": [
+      "tools/raid_program/capture_checkpoint_controller.py",
       "tests/test_profile_combat_range_checkpoint_capture.py"
     ],
     "required_commands": [
       "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py",
-      "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py",
-      "git diff --check 3aadbc25e5bb90791f9ad68ae4350e727f19320a HEAD",
+      "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_recurrence_admission.py tests/test_magmaw_transfer_checkpoint_capture.py tests/test_native_path_checkpoint.py",
+      "pixi run python -m py_compile tools/raid_program/capture_checkpoint_controller.py",
+      "git diff --check 7491d14836212569f23b35e1db8ba2da4041c9ef HEAD",
       "pixi run python -m tools.raid_program.raid_workloop status",
       "git status --short"
     ]
   },
   "acceptance_conditions": [
-    "Only tests/test_profile_combat_range_checkpoint_capture.py changes from clean source 3aadbc25.",
-    "After the first valid arm acknowledgement, the fixture asserts awaiting_terminal, resends the same arm acknowledgement, and asserts failed=true with profile_combat_range_checkpoint_duplicate_or_stale_receipt.",
-    "The existing post-terminal duplicate terminal-receipt idempotency test remains present and passes.",
-    "The focused scheduler test and adjacent compiled production fixture pass once.",
-    "No production source or behavior changes; diff check, workloop status, and clean status complete; independent Sol high review returns GO before any build or replay."
+    "Only the two owned files change from clean source 7491d148.",
+    "After the first valid arm acknowledgement enters awaiting_terminal, the exact duplicate fails closed with profile_combat_range_checkpoint_duplicate_or_stale_receipt and emits no additional status command.",
+    "An active nonterminal stage cannot repeat or regress; valid forward armed -> progress_observed -> terminal completion continues, with optional range_observed accepted only in forward order.",
+    "The post-terminal duplicate terminal receipt remains idempotent: phase complete, terminal count one, terminal observation unchanged.",
+    "Malformed identity and scope receipts retain their existing typed fail-closed reasons.",
+    "Focused and adjacent commands pass once; pycompile, diff check, workloop status, and clean status complete; independent Sol high review returns GO before any build or replay."
   ],
   "forbidden": [
-    "No production source, gameplay behavior, protocol implementation, configuration, seal, ledger, route, encounter, class, spec, or skill change.",
-    "No weakening, deletion, or replacement of the existing post-terminal idempotency assertion.",
-    "No synthetic native success/progress/cast, movement, pathing, teleportation, Z steering, MMAP workaround, tolerance, or Magmaw-specific conditional.",
-    "No configure, build, provisioning, database mutation, worldserver or authserver start, DVC publication, fixture-green promotion, gameplay canary, or Magmaw acceptance."
+    "No C/C++, gameplay predicate, movement, pathing, arbiter, executor, route, encounter, class, spec, configuration, seal, ledger, skill, or database change.",
+    "No weakening or deletion of malformed identity/scope, missing-terminal, valid-forward, or post-terminal idempotency coverage.",
+    "No synthetic native success, progress, cast, teleportation, Z steering, MMAP workaround, tolerance change, or Magmaw-specific conditional.",
+    "No configure, build, provisioning, database mutation, worldserver or authserver start, DVC publication, fixture promotion, gameplay canary, or Magmaw acceptance."
   ],
+  "ready_for_bounded_repair": true,
   "ready_for_build": false,
+  "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Use exactly raid-bot-runtime-implementation with the hash-bound one-file scope lock. Add the active duplicate arm-receipt counterexample, run the required commands once, commit cleanly, and obtain independent Sol high review before any build or replay."
+  "next_action": "Use exactly raid-bot-runtime-implementation with this two-file lock. Implement active-stage monotonicity and duplicate/stale fail-closed behavior, run required commands once, commit cleanly, then obtain independent Sol high review before any build or replay."
 }

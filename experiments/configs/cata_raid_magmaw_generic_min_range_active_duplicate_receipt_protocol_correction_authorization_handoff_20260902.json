@@ -1,0 +1,169 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:authorize_generic_min_range_active_duplicate_receipt_protocol_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_runtime_protocol_correction_authorized",
+  "source": {
+    "commit": "7491d14836212569f23b35e1db8ba2da4041c9ef",
+    "tree": "79be9c71e3793f4fa2a3e5121fb8f8154e943b96",
+    "clean": true,
+    "parent_commit": "3aadbc25e5bb90791f9ad68ae4350e727f19320a",
+    "capture_controller_sha256": "340e753ab481814d3f4f30442908e18344d24670c4c6ce97e28fc6214c2a88de",
+    "focused_test_sha256": "ccd1e5385cfd0b434b494fa76b88564c0aaaa274b08a250d40e39f81148a0087"
+  },
+  "deterministic_counterexample": {
+    "status": "verified",
+    "authorized_test_result": "1 failed, 38 passed; the uncommitted counterexample was removed and the tree restored clean.",
+    "observed": {
+      "first_commands": ["botautoprofilecombatrangecheckpoint status"],
+      "phase_after_first": "awaiting_terminal",
+      "second_commands": ["botautoprofilecombatrangecheckpoint status"],
+      "phase_after_duplicate": "awaiting_terminal",
+      "failed": false,
+      "failure_reason": null,
+      "arm_ack_count": 1
+    }
+  },
+  "causal_receipt": {
+    "candidate_first_broken_edge": "generic_profile_min_range_active_duplicate_receipt_accepted",
+    "owner": "shared_bot_runtime_capture_protocol",
+    "ordered_claims": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "The first exact profile arm acknowledgement transitions awaiting_arm_ack to awaiting_terminal.",
+        "observation": "Read-only source-bound probe returned one status command and phase_after_first=awaiting_terminal."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "The byte-equivalent active arm acknowledgement is accepted again while awaiting_terminal.",
+        "observation": "The probe returned a second status command with failed=false, failure_reason=null, phase awaiting_terminal."
+      },
+      {
+        "order": 3,
+        "status": "verified",
+        "claim": "The awaiting_terminal branch accepts terminal=false stage=armed and retains no last accepted active stage or payload identity.",
+        "observation": "capture_checkpoint_controller.py at 7491d148 allows armed, range_observed, or progress_observed for every nonterminal awaiting_terminal row."
+      },
+      {
+        "order": 4,
+        "status": "refuted",
+        "claim": "The existing duplicate_or_stale branch rejects this active duplicate.",
+        "observation": "That branch executes only when phase is not awaiting_terminal; the duplicate remains in generic nonterminal acceptance."
+      },
+      {
+        "order": 5,
+        "status": "verified",
+        "claim": "A duplicate terminal receipt after phase=complete is intentionally idempotent and remains required.",
+        "observation": "The retained post-terminal test asserts terminal count one and unchanged terminal observation."
+      },
+      {
+        "order": 6,
+        "status": "unproven",
+        "claim": "The corrected scheduler rejects duplicate/regressive active receipts while accepting armed -> progress_observed -> terminal.",
+        "observation": "This is the bounded implementation and focused-test obligation."
+      },
+      {
+        "order": 7,
+        "status": "unproven",
+        "claim": "A sealed production episode completes the hazard-preemption, range-progress, and later-cast sequence.",
+        "observation": "No build or worldserver replay is authorized."
+      }
+    ],
+    "first_downstream_state_mutation": "The duplicate active row appends and returns an extra profile status command while leaving the scheduler awaiting_terminal instead of failed.",
+    "failure_postcondition": "An already consumed active receipt or regressive active stage can be replayed without profile_combat_range_checkpoint_duplicate_or_stale_receipt.",
+    "implementation_hypothesis": "Retain last accepted active stage or equivalent receipt state and require strictly forward active-stage consumption before terminal validation; reject exact duplicate or regression without another status command.",
+    "correlation_keys": [
+      "scheduler_phase", "case_id", "seal_sha256", "source_commit",
+      "checkpoint_generation", "actor_guid", "target_guid", "attempt_id",
+      "wipe_generation", "route_generation", "target_instance_id",
+      "active_stage", "active_receipt_payload", "command_sequence"
+    ]
+  },
+  "scope_lock": {
+    "next_work_unit": "runtime:generic_min_range_active_duplicate_receipt_protocol_correction",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Repair only active receipt monotonicity in the profile-combat-range capture scheduler.",
+    "owned_behavior": "Capture-side protocol state distinguishing forward active progress from duplicate or stale active receipts.",
+    "expected_observable_change": "An identical active row or active-stage regression fails with profile_combat_range_checkpoint_duplicate_or_stale_receipt and emits no new command; valid forward progress completes; post-completion terminal duplicate stays idempotent.",
+    "owned_files": [
+      "tools/raid_program/capture_checkpoint_controller.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py"
+    ],
+    "read_only_inspection": "All scheduler, admission, native runtime, route, encounter, class, ledger, and configuration files outside the lock.",
+    "preexisting_dirty_files": []
+  },
+  "production_fixture_contract": {
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "positive_revision": 1,
+    "counterexample": "At 7491d148 a valid arm acknowledgement followed by its exact duplicate returns two status commands, remains active, and reports no typed failure.",
+    "required_positive_sequence": [
+      "Advance to awaiting_arm_ack and consume one valid stage=armed acknowledgement.",
+      "Consume strictly forward stage=progress_observed and one valid terminal row.",
+      "Assert phase complete, terminal count one, no failure."
+    ],
+    "required_negative_sequence": [
+      "While awaiting_terminal, resend the exact accepted arm row and assert duplicate/stale failure with no command.",
+      "After a later active stage, send an earlier stage and assert the same failure."
+    ],
+    "required_adjacent_invariants": [
+      "Post-terminal duplicate terminal remains idempotent.",
+      "Malformed identity and scope retain their typed failures.",
+      "Compiled production fixture and adjacent checkpoint/admission suites stay green."
+    ],
+    "fail_before": "The source-bound counterexample is 1 failed, 38 passed.",
+    "pass_after_implementation": "Focused and adjacent suites prove positive, duplicate, regression, idempotency, and existing negatives; independent Sol high review returns GO.",
+    "pass_after_worldserver_replay": "Reserved for a separately authorized build and sealed replay."
+  },
+  "required_commands": {
+    "focused": "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py",
+    "adjacent": "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_recurrence_admission.py tests/test_magmaw_transfer_checkpoint_capture.py tests/test_native_path_checkpoint.py",
+    "pycompile": "pixi run python -m py_compile tools/raid_program/capture_checkpoint_controller.py",
+    "diff_check": "git diff --check 7491d14836212569f23b35e1db8ba2da4041c9ef HEAD",
+    "workloop_status": "pixi run python -m tools.raid_program.raid_workloop status",
+    "clean_status": "git status --short"
+  },
+  "acceptance_conditions": [
+    "Changed files are exactly the two owned files.",
+    "Exact active duplicate and active-stage regression fail closed with the typed duplicate/stale reason and no extra status command.",
+    "Valid armed -> progress_observed -> terminal completes; post-terminal duplicate and malformed identity/scope negatives remain green.",
+    "All required commands run once and pass; worker commits cleanly with exact results.",
+    "Independent Sol high review returns GO before build or replay."
+  ],
+  "forbidden": [
+    "No file outside the two owned files.",
+    "No C/C++, gameplay, arbiter, executor, movement, pathing, route, encounter, class, spec, config, seal, ledger, skill, or database change.",
+    "No weakening or deletion of valid-forward, malformed identity/scope, missing-terminal, or completed-state idempotency assertions.",
+    "No synthetic native outcome, teleportation, Z steering, MMAP workaround, tolerance change, or Magmaw conditional.",
+    "No configure, build, provision, database mutation, server start, DVC publication, fixture promotion, gameplay canary, or acceptance."
+  ],
+  "authority": {
+    "capture_protocol_source_mutation_allowed": true,
+    "test_mutation_allowed": true,
+    "cpp_mutation_allowed": false,
+    "gameplay_behavior_broadening_allowed": false,
+    "builds": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0,
+    "dvc_publication_allowed": false,
+    "fixture_green_promotion_allowed": false,
+    "magmaw_acceptance_allowed": false
+  },
+  "review_and_next_gate": {
+    "worker_success_state": "implemented_pending_independent_review",
+    "review_requirement": "Independent Sol high review of exact clean commit, two-file diff, active-stage state machine, duplicate/regression negatives, valid forward sequence, completed-state idempotency, unchanged gameplay tree, and command results.",
+    "build_authorized": false,
+    "worldserver_fixture_replay_authorized": false,
+    "live_gameplay_canary_authorized": false,
+    "next_on_review_go": "Return to raid-performance-loop for the next exact gate; this handoff grants no build or live authority.",
+    "next_on_review_no_go": "Authorize only the exact review finding; do not build or run live.",
+    "validation_clock": {
+      "policy": "completion_watchdog",
+      "fixed_success_timer_seconds": null
+    }
+  },
+  "next_action": "Give this exact two-file lock to one raid-bot-runtime-implementation worker with no nested agents, then obtain independent Sol high review."
+}
