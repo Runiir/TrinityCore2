@@ -628,6 +628,10 @@
     ]
   },
   "causal_signatures": {
+    "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner": {
+      "owner": "raid_evidence_lifecycle",
+      "invariant": "a valid alive non-Drudge hostile current-node target that is too close for the selected profile action retains a generic world.profile_combat_range movement owner through arbitration, native launch, measured outward progress, and a later ordinary same-target cast under one correlated actor, target, scope, and checkpoint generation"
+    },
     "permanently_rejected_hazard_endpoint_retains_task_ownership": {
       "owner": "shared_task_and_native_outcome_feedback",
       "parent": "magmaw_parasite_containment_failure",

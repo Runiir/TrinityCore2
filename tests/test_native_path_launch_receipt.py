@@ -676,6 +676,7 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
         "intent_reason": "ranged_formation_restore",
         "intent_fingerprint": "d9b154fc91572d50",
         "dynamic_target_guid": 0,
+        "diagnostic_target_guid": 0,
         "progress_capture_enabled": True,
         "scope": {
             "attempt_id": 77,
