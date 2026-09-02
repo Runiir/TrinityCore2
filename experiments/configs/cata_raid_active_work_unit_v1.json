@@ -1,55 +1,45 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:profile_checkpoint_native_guid_normalization",
+  "work_unit": "runtime:profile_checkpoint_unbound_arm_ack_correction",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "c0dd08c5fe25f4507a97e9f9f0c86872fd6594d9",
-  "immutable_input_commit": "c0dd08c5fe25f4507a97e9f9f0c86872fd6594d9",
-  "architecture_scope": "Shared runtime observation only: typed target config, low-counter normalization, live target/spawn/scope binding, and capture validation.",
+  "observed_at_commit": "ff1b78a09faafd7fde70d5a4df18f12227de29e0",
+  "immutable_input_commit": "ff1b78a09faafd7fde70d5a4df18f12227de29e0",
+  "architecture_scope": "Capture controller protocol only: authentic unbound arm acknowledgement followed by strict bound live progress/terminal validation.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "Stage 2 is static_sealed_ready, but source diagnosis proves the default-off native observer cannot join sealed runtime counter 39 because it records/compares full raw GUIDs.",
+  "gate_state": "Native GUID normalization is locally accepted, but the controller rejects the authentic pre-observation arm response because it prematurely requires a positive instance.",
   "first_broken_edge": {
-    "id": "native_profile_checkpoint_raw_guid_does_not_match_sealed_low_counter",
-    "stage": "stage3_prearm_native_identity_join",
+    "id": "profile_checkpoint_controller_rejects_native_unbound_arm_ack",
+    "stage": "stage3_arm_acknowledgement",
     "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "The seal and telemetry use ObjectGuid::GetCounter while target, range-receipt, and cast joins use GetRawValue.",
-    "review_state": "source_and_schema_diagnosis_verified_before_live_start"
+    "cause": "Native arm is intentionally unbound, while controller validation freezes target instance and match outcomes before its awaiting-arm branch.",
+    "review_state": "independent_review_no_go_with_production_shaped_counterexample"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_profile_checkpoint_native_guid_normalization_authorization_handoff_20260903.json",
-    "diagnosis_path": "/tmp/magmaw-static-runtime-target-identity-diagnosis-20260903.json",
-    "diagnosis_sha256": "520f2fcbdf9e3efd498ad6d1ed5da2d35fdf08e3a6140f48d7fb461e2738951d",
-    "stage2_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
-    "stage2_sha256": "f822f6d40e765a9d4f2cf01ff2b9731252ee8996510ac585f32038f63bc28857"
+    "path": "experiments/configs/cata_raid_magmaw_profile_checkpoint_unbound_arm_ack_correction_authorization_handoff_20260903.json",
+    "review_path": "/tmp/magmaw-native-guid-normalization-review-ff1b78a0/review_handoff.json",
+    "review_sha256": "eaf0c69a062326d8e05e0a0b86fc4ce5602fc9f2349a2d5a99d782f1abe61188"
   },
   "scope_lock": {
-    "objective": "Normalize the default-off native checkpoint to the typed low-counter target contract and bind live entry/spawn/map/instance scope without changing gameplay decisions.",
+    "objective": "Accept one exact authenticated unbound arm acknowledgement and retain strict positive-instance/all-outcome requirements after binding.",
     "owned_files": [
-      "src/server/game/Bots/BotProfileCombatRangeCheckpoint.h",
-      "src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrConfig.h",
-      "src/server/game/Bots/BotWorldPopulationMgrConfig.cpp",
       "tools/raid_program/capture_checkpoint_controller.py",
-      "tests/test_profile_combat_range_production_fixture.py",
-      "tests/test_profile_combat_range_checkpoint_capture.py",
-      "tests/test_bot_world_population_mgr_combat_movement_module.py"
+      "tests/test_profile_combat_range_checkpoint_capture.py"
     ],
-    "expected_observable_change": "A typed ObjectGuid with counter 39 joins target, range receipt, and later cast while any identity/scope drift fails closed.",
-    "stop_condition": "Any tenth file, gameplay/policy/pathing change, or need for a build/live observation stops the work unit."
+    "expected_observable_change": "The authentic native arm projection advances once; inconsistent arm rows and every weak bound row fail closed.",
+    "stop_condition": "Any third file, native C++ change, or bound-validation weakening stops the work unit."
   },
   "acceptance_conditions": [
-    "All exact positive/negative compiled and controller fixtures pass.",
-    "All changed C/C++ files remain below 1000 lines.",
-    "Independent Sol-high review returns GO before build or Stage 3."
+    "Exact arm/progress/terminal positive and negative fixtures pass.",
+    "Fresh independent review returns GO before build or Stage 3."
   ],
   "forbidden": [
-    "No gameplay/policy/pathing/encounter/DB/build/server/live/DVC changes or actions and no canary values in generic branches."
+    "No C++/gameplay/config/build/server/live/DVC/Stage-3 actions or live inference."
   ],
   "validation_clock": {
     "policy": "bounded_deterministic_fixtures",
@@ -65,5 +55,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact bounded shared-runtime implementation in the source handoff."
+  "next_action": "Execute the exact two-file controller protocol correction."
 }

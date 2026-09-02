@@ -1,0 +1,66 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_profile_checkpoint_unbound_arm_ack_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_runtime_controller_protocol_correction_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "base_source": {
+    "commit": "ff1b78a09faafd7fde70d5a4df18f12227de29e0",
+    "tree": "dae6a4ec8d8bb3c9d3f7b323b016d9f9163dcd35",
+    "clean": true
+  },
+  "review": {
+    "path": "/tmp/magmaw-native-guid-normalization-review-ff1b78a0/review_handoff.json",
+    "sha256": "eaf0c69a062326d8e05e0a0b86fc4ce5602fc9f2349a2d5a99d782f1abe61188",
+    "decision": "NO-GO",
+    "accepted_native_properties": "Low-counter normalization, four typed config fields, exact scope binding, no gameplay change, nine-file scope, line limits, and 70+12+112 tests are accepted.",
+    "blocking_edge": "profile_checkpoint_controller_rejects_native_unbound_arm_ack"
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Accept exactly one authenticated native unbound arm acknowledgement, then require the frozen positive instance and every typed target/scope outcome on bound progress and terminal rows.",
+    "owned_files": [
+      "tools/raid_program/capture_checkpoint_controller.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py"
+    ],
+    "required_change": [
+      "For the awaiting_arm_ack phase, require stage=armed, terminal=false, scope_bound=false, target_instance_id=0, all target/scope match flags false, and exact actor, four typed target fields, case, seal, source, attempt, wipe, route, and checkpoint generation.",
+      "Accept that authentic unbound acknowledgement exactly once without freezing or claiming a live target/spawn relation.",
+      "For every subsequent row declaring bound progress or terminal state, require scope_bound=true, positive target_instance_id equal to the stable actor/runtime instance, and all typed target/scope match outcomes true.",
+      "Replace the masked completed-row arm helper with the authentic native arm projection; retain all existing identity/scope negatives and add premature/nonzero/inconsistent arm-scope negatives."
+    ],
+    "deterministic_fixtures": [
+      "Advance scheduler through stable native scope and accept the exact unbound arm row once.",
+      "Reject unbound arm with nonzero instance, true match flags, wrong identity/scope, terminal state, repeated acknowledgement, or premature bound claim.",
+      "After arm, accept only bound rows with exact positive frozen instance and all match flags; reject zero/different instance or false outcome.",
+      "Preserve the full native low-counter positive/negative controller matrix."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py",
+      "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_profile_combat_range_checkpoint_capture.py tests/test_bot_world_population_mgr_combat_movement_module.py",
+      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_recurrence_admission.py",
+      "pixi run python -m py_compile tools/raid_program/capture_checkpoint_controller.py",
+      "git diff --check ff1b78a09faafd7fde70d5a4df18f12227de29e0 HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Exactly two files change in one clean commit.",
+      "The exact production-shaped unbound arm counterexample fails before and passes after without weakening bound progress/terminal checks.",
+      "All regressions pass and a fresh independent Sol-high runtime review returns GO before build or Stage 3."
+    ]
+  },
+  "forbidden": [
+    "No C/C++, native gameplay, class, encounter, candidate, priority, resource, movement, pathing, cast, executor, config key, evidence schema, build, provisioning, server, Stage-3, live, DVC, or retry changes/actions.",
+    "No live inference at arm, synthetic bound arm row, fixture retargeting, canary conditional, waiver, or validation weakening."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one raid-bot-runtime-implementation implementer, then one fresh Sol-high reviewer."
+}
