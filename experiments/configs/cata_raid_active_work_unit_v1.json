@@ -1,30 +1,30 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:authenticated_layered_build_control_authority_repair",
+  "work_unit": "evidence:layered_build_control_authority_toctou_correction",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "de43bbc695b0adc50af895c417732731f9d24272",
-  "immutable_input_commit": "de43bbc695b0adc50af895c417732731f9d24272",
-  "architecture_scope": "Evidence lifecycle only: authenticate an exact two-layer build-to-control path authority through atomic bundle, recurrence admission, verification, and capture preflight.",
+  "observed_at_commit": "e1716c1ad518d74258f67eadae524dc7381fd96c",
+  "immutable_input_commit": "e1716c1ad518d74258f67eadae524dc7381fd96c",
+  "architecture_scope": "Evidence lifecycle only: close the clean-HEAD interleaving window at the end of layered build-control authority verification.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Stage 2's 27-fixture gate passed, but atomic create stopped before staging because production build/control compatibility cannot consume the already-verified exact layered authority and rejects twelve reviewed tools/tests paths.",
+  "gate_state": "The layered authority implementation passed 314 tests, but independent review injected a clean commit during verification and proved the verifier could return valid for its stale initial HEAD snapshot.",
   "first_broken_edge": {
-    "id": "authorization_allowlist_not_consumed_by_production_build_control_compatibility",
-    "stage": "stage2_atomic_build_control_compatibility",
+    "id": "build_control_authority_verifier_does_not_recheck_clean_head_after_validation",
+    "stage": "layered_authority_verification_completion",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "The external coordinator verifies exact build-to-review and review-to-current path sets, but atomic admission and capture call a disconnected hard-coded category predicate with no authenticated authority input.",
-    "review_state": "trace_and_full_rejected_path_set_diagnosed"
+    "cause": "HEAD/tree/porcelain are captured only at verification start; a concurrent clean commit can advance HEAD before return without invalidating the result.",
+    "review_state": "independent_review_no_go_with_deterministic_interleaving"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_layered_build_control_authority_repair_authorization_handoff_20260902.json",
-    "sha256": "e6181320d22918da68f81523a34646fe63eb8845f0b0e293a13310e18dda61b6",
-    "source_commit": "de43bbc695b0adc50af895c417732731f9d24272",
-    "source_tree": "eeb91f6758ef175d427086a877b6bd7566ac9386",
+    "path": "experiments/configs/cata_raid_magmaw_layered_authority_toctou_correction_authorization_handoff_20260903.json",
+    "sha256": "eafd6d0f1bd7eeb14a5057b1269adf43a0d3000484398864371e9ab1b7abfa8c",
+    "source_commit": "e1716c1ad518d74258f67eadae524dc7381fd96c",
+    "source_tree": "0877e78273f60b972c65ffc5d4da85dffed0427a",
     "diagnosis_path": "/tmp/magmaw-stage2-profile-range-ledger-decision-mismatch-diagnosis-20260902.json",
     "diagnosis_sha256": "e53a6a887b04b4bb42ca6e2372cdb5aa9c3267c99f102ab32bedee957879e3ab",
     "compatibility_diagnosis_path": "/tmp/magmaw-transfer-route-validator-baseline-diagnosis-20260902.json",
@@ -37,29 +37,20 @@
     "typed_stop_sha256": "51c0305025ff5412bd3a1cecbccec00b0238426e9a428772be80fcc64567c0d8"
   },
   "scope_lock": {
-    "objective": "Thread one hash-bound exact two-layer authority through the evidence lifecycle while preserving the existing default narrow policy.",
+    "objective": "Recheck HEAD, tree, and NUL porcelain at verification completion and fail closed on any interleaving drift.",
     "owned_files": [
       "tools/raid_program/build_control_compatibility.py",
-      "tools/raid_program/recurrence_admission.py",
-      "tools/raid_program/chainwielder_prestart_bundle.py",
-      "tools/raid_program/capture_environment_validation.py",
-      "tools/raid_program/capture_setup.py",
-      "tests/test_build_control_compatibility.py",
-      "tests/test_recurrence_admission.py",
-      "tests/test_chainwielder_prestart_bundle.py",
-      "tests/test_phase1_raid_foundation_capture.py"
+      "tests/test_build_control_compatibility.py"
     ],
-    "expected_observable_change": "Exact authorized tools/tests paths pass only when both Git layers and the authority hash match; every tamper and forbidden path fails before staging.",
-    "stop_condition": "Any need for a broad category, current-lineage hard-code, gameplay/build/data mutation, or tenth file stops the work unit."
+    "expected_observable_change": "A deterministic clean-commit interleaving returns invalid with explicit verification-time drift instead of accepting the stale initial snapshot.",
+    "stop_condition": "Any need to change authority schema/path semantics or a third file stops the work unit."
   },
   "required_commands": [
-    "Run the exact focused, broad, py_compile, diff, and status commands in the authorization handoff."
+    "Run the exact focused, combined, pycompile, diff, and status commands in the authorization handoff."
   ],
   "acceptance_conditions": [
-    "Only the exact nine authorized files change.",
-    "Exact layered authority is hash-bound through bundle, admission, verification, and capture.",
-    "No-authority exact and narrow-control behavior remains unchanged.",
-    "Every forbidden path and authority tamper fails closed.",
+    "Only the exact two authorized files change.",
+    "The deterministic interleaving fails closed while stable verification and all prior authority behavior remain green.",
     "Independent Sol-high review returns GO before Stage 2 resumes."
   ],
   "forbidden": [

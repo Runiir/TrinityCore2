@@ -1,0 +1,65 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_layered_authority_toctou_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_toctou_correction_authorized",
+  "created_at_utc": "2026-09-02T21:08:00Z",
+  "base_commit": "e1716c1ad518d74258f67eadae524dc7381fd96c",
+  "base_tree": "0877e78273f60b972c65ffc5d4da85dffed0427a",
+  "review": {
+    "path": "/tmp/magmaw-layered-build-control-authority-review-e1716c1/review_handoff.json",
+    "sha256": "e81c3bfa6d7b56e5e1f3edd68b78b52d7f678bc64124925f9f411ffe67eeca43",
+    "verdict": "NO-GO"
+  },
+  "first_broken_edge": {
+    "id": "build_control_authority_verifier_does_not_recheck_clean_head_after_validation",
+    "counterexample": "A deterministic clean commit inserted during authority verification changed HEAD after the initial snapshot; verification returned valid=true for the old commit while the actual worktree was clean at a different HEAD."
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "implementation_commit_budget": 1,
+    "owned_files": [
+      "tools/raid_program/build_control_compatibility.py",
+      "tests/test_build_control_compatibility.py"
+    ],
+    "required_change": "At the end of verification, resnapshot HEAD, HEAD tree, and NUL-delimited porcelain. Require byte/value equality with the initial snapshots; otherwise return invalid with an explicit control-source-changed-during-verification rejection and report no stale valid authority.",
+    "required_fixture": "Deterministically interleave a clean commit after the initial snapshot but before authority verification completes; assert valid=false and the explicit drift rejection. Also cover dirty/tree drift if the same hook permits it.",
+    "required_commands": [
+      "pixi run pytest -q tests/test_build_control_compatibility.py",
+      "pixi run pytest -q tests/test_recurrence_admission.py tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py",
+      "pixi run pytest -q tests/test_build_control_compatibility.py tests/test_recurrence_admission.py tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py",
+      "pixi run python -m py_compile tools/raid_program/build_control_compatibility.py",
+      "git diff --check e1716c1ad518d74258f67eadae524dc7381fd96c HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Only the exact two files change.",
+      "The review interleaving returns invalid and cannot report the old snapshot as current authority.",
+      "Stable clean verification and every prior malformed/tamper/default compatibility test remain green.",
+      "All combined/compile/diff checks pass and independent Sol-high review returns GO before Stage2 resumes."
+    ]
+  },
+  "forbidden": [
+    "No authority schema/path policy/layer semantics broadening and no sleep/timing-dependent test.",
+    "No other source/test/config/ledger/route/roster/database/runtime/gameplay/C++/skill change.",
+    "No build, provision, readback, Stage2 seal, server, live capture, canary, DVC, retry, promotion, or ML admission."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "deterministic_provisioning": 0,
+    "database_readbacks": 0,
+    "live_recurrence_seals": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "observation_only_fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
+  "next_action": "Dispatch one raid-evidence-lifecycle implementer, then one independent Sol-high reviewer."
+}
