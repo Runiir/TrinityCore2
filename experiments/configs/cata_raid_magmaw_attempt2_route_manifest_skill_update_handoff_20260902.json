@@ -1,0 +1,85 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:classify_publish_magmaw_route_manifest_invalid_attempt2",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "closed_prestart_route_manifest_shape_failure_published",
+  "source": {
+    "commit": "8c3f7ba20355b6acc079e95d962cc6bf9c293000",
+    "tree": "86703ad81e50456d9e77a1c215cd0969a48809d6",
+    "clean": true,
+    "terminal_handoff_sha256": "82a2cbcf299ab05d1eff11fd3ed65bba1a1d3f4789a8722695261a7d332fb412"
+  },
+  "evidence": {
+    "summary": "experiments/configs/cata_raid_magmaw_personal_escape_attempt2_route_manifest_invalid_summary_20260902.json",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_attempt2_route_manifest_invalid_20260902.dvc",
+    "dvc_pointer_sha256": "cbc75f7dca7fe0472f8715e014115d74f4963633c7ce6fd9a2c5e53e1dfd15bd",
+    "dvc_directory_md5": "635d1e04a2f5e6f8da6b45c726df8e5f.dir",
+    "remote_reconstruction": "verified_12_files_141363_bytes",
+    "remote_reconstruction_file_manifest_sha256": "3c240d1e96891375afa223525fc38faeaeea712fa77c279c3416f2b10c5f0cc0"
+  },
+  "first_broken_edge": {
+    "stage": "composite_fixture_replay_launcher.realized_plan.bundle_create",
+    "terminal": "canonical_launcher_bundle_create_route_manifest_invalid",
+    "cause": "A verified staged 77-row JSONL route catalog was passed to the single-object bundle consumer without production scenario materialization and receipt verification.",
+    "prior_occurrence": "experiments/configs/cata_raid_v89_route_catalog_shape_prestart_failed_handoff_v90.json",
+    "prior_correction": "experiments/configs/cata_raid_v90_canonical_route_selector_binding_handoff_v91.json"
+  },
+  "budgets_consumed": {
+    "configure": 1,
+    "worldserver_build": 1,
+    "provisioning": 0,
+    "database_mutations": 0,
+    "recurrence_seal": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0
+  },
+  "next_work_unit": "skill:update_raid_shard_architecture_route_manifest_materialization_gate",
+  "next_owner_skill": "skill-creator",
+  "next_action": "Update the reusable raid-shard-architecture skill so an authenticated staged route catalog must be materialized through canonical_route_catalog.materialize_scenario_route_manifest, its selector receipt verified, and only output_object_path plus output_object_sha256 bound as route_manifest. Explicitly forbid binding staged_path or JSONL catalog bytes to a single-object consumer. Do not add Magmaw-specific universal guidance.",
+  "next_acceptance": [
+    "the skill states the catalog and one-scenario runtime manifest are distinct authenticated artifacts",
+    "the required order is stage catalog, verify stage receipt, materialize selected scenario, verify selector receipt, then compose the request with output_object_path and output_object_sha256",
+    "the staged JSONL path and catalog hash are explicitly forbidden route_manifest substitutes",
+    "the update is reusable for every raid and dungeon scenario and adds no gameplay guidance",
+    "no build, provisioning, database mutation, server start, or live attempt occurs"
+  ],
+  "conditional_followup": {
+    "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt3",
+    "owner_skill": "raid-shard-architecture",
+    "authorization_state": "not_authorized_until_skill_update_is_committed_and_reviewed",
+    "first_required_step": "Before request composition or build admission, stage and verify the canonical catalog, materialize blackwing_descent_10n_magmaw_diagnostic through the production selector, verify its receipt, and prove the materialized object passes the unchanged bundle validator.",
+    "minimum_fresh_budgets_after_preflight": {
+      "configure": 1,
+      "worldserver_build": 1,
+      "deterministic_provisioning": 1,
+      "database_mutation_scope": "validation_provisioning_only",
+      "recurrence_seal": 1,
+      "worldserver_starts": 1,
+      "authserver_starts": 0,
+      "live_attempts": 1,
+      "retries": 0,
+      "duration_policy": "completion_watchdog"
+    },
+    "forbidden": [
+      "reuse of attempt2 build authority",
+      "retry under the attempt2 descriptor",
+      "request composition before verified scenario materialization",
+      "gameplay, route-row, launcher, bundle, class, encounter, movement, pathing, Z, floor, MMAP, endpoint, or tolerance changes",
+      "acceptance promotion"
+    ]
+  },
+  "claim_ledger": {
+    "verified": [
+      "attempt2 is a closed attributable infrastructure prestart terminal",
+      "no live observation exists and no row is eligible for ML training",
+      "the exact failure mode repeated a previously corrected operator assumption"
+    ],
+    "unproven": [
+      "fixture revision 2",
+      "Magmaw personal escape behavior",
+      "Magmaw clear or acceptance"
+    ]
+  }
+}

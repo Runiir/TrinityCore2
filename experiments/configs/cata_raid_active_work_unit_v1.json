@@ -1,164 +1,101 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt2",
-  "owner_skill": "raid-shard-architecture",
-  "next_work_unit": "evidence:classify_magmaw_personal_escape_episode_rearm",
-  "next_owner_skill": "raid-evidence-lifecycle",
-  "classification": "fixture_replay_authorized",
-  "epoch_id": "magmaw_personal_escape_await_authority_20260901",
+  "work_unit": "skill:update_raid_shard_architecture_route_manifest_materialization_gate",
+  "owner_skill": "skill-creator",
+  "next_work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt3",
+  "next_owner_skill": "raid-shard-architecture",
+  "classification": "failed",
+  "epoch_id": "magmaw_personal_escape_route_manifest_boundary_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Run one observation-only production fixture expansion for the actor-local personal-threat falling and rising edge under an active provisional parasite parent. Keep gameplay, arbiter, planner, executor, route, and native terrain following unchanged.",
-  "gate_state": "the generic launcher authority and workloop fixture-ready state are independently reviewed; the previous preflight consumed zero build or server budget; one fresh exact-source full bank, build, provisioning, seal, and no-retry completion-watchdog replay remain",
-  "observed_at_commit": "0fcbd8c5d782d7fc1d89c0c31e7b5e5f97dc2307",
-  "immutable_input_commit": "0fcbd8c5d782d7fc1d89c0c31e7b5e5f97dc2307",
+  "observed_at_commit": "8c3f7ba20355b6acc079e95d962cc6bf9c293000",
+  "immutable_input_commit": "8c3f7ba20355b6acc079e95d962cc6bf9c293000",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "implementation_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_personal_escape_episode_rearm_review_handoff_20260902.json",
-    "sha256": "e0a3b8599c72b299cb8c21294616a78b9c43b0c3b96e565dd21cf11fe433206a",
-    "reviewed_commit": "38976c172c4deff27b0e0b559d3f641bd3868ce4",
-    "verdict": "go"
-  },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_fixture_ready_state_review_handoff_20260902.json",
-    "sha256": "f1f55b7691d54a2f55de6d0e5158762020757327a0880ced75f5463d3ab26792",
-    "source_commit": "0fcbd8c5d782d7fc1d89c0c31e7b5e5f97dc2307",
-    "source_tree": "7619e4a34f92e31fc6de37bd2df133f37378df7f"
-  },
-  "preflight_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_personal_escape_plan_layout_preflight_handoff_20260902.json",
-    "sha256": "484dc8f941e59d901deac57ce43c5e69b83dc6ec2f5de4a1da06ae573a2fbb90",
-    "classification": "canonical_launcher_plan_layout_failed_before_build",
-    "failed_gate": "composite_fixture_replay_launcher.compose",
-    "reason": "plan_output_must_be_outside_run_root",
-    "configure_runs": 0,
-    "worldserver_builds": 0,
-    "worldserver_starts": 0,
-    "authserver_starts": 0,
-    "live_retries": 0
+    "path": "experiments/configs/cata_raid_magmaw_attempt2_route_manifest_skill_update_handoff_20260902.json",
+    "sha256": "13a1d16453daa9f8fa5def5d754ddca6ddb54e0b99fae518112a3a5e5271be3d",
+    "source_commit": "8c3f7ba20355b6acc079e95d962cc6bf9c293000",
+    "source_tree": "86703ad81e50456d9e77a1c215cd0969a48809d6",
+    "classification": "closed_prestart_route_manifest_shape_failure_published"
   },
   "first_broken_edge": {
-    "run_id": "magmaw-authority-5cad51fa40-20260902",
-    "route_node_id": "bwd.magmaw.encounter",
-    "actor_guid": 30008,
-    "causal_signature": "magmaw_personal_escape_authority_gap_drops_candidate",
-    "shared_wave_generation": 9223372036854775809,
-    "shared_wave_generation_authoritative": false,
-    "task_generation": 1,
-    "task_terminal": "safe_clearance",
-    "cause": "Under one active provisional parent, actor 30008 completed child generation 1 at safe_clearance, then later contact, infection, and death occurred without an authoritative actor-local absence followed by one later rising-edge rearm.",
-    "evidence": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc"
+    "stage": "composite_fixture_replay_launcher.realized_plan.bundle_create",
+    "terminal": "canonical_launcher_bundle_create_route_manifest_invalid",
+    "cause": "The authenticated 77-row DVC JSONL route catalog was supplied as route_manifest to a consumer requiring one materialized bot_live_validation_route_manifest_v1 object.",
+    "repeated_assumption": true,
+    "prior_occurrence": "experiments/configs/cata_raid_v89_route_catalog_shape_prestart_failed_handoff_v90.json",
+    "prior_correction": "experiments/configs/cata_raid_v90_canonical_route_selector_binding_handoff_v91.json"
   },
   "repair_contract": {
-    "rule": "Observe whether an authoritative actor-local no-threat falling edge followed by a later threat rising edge creates exactly one new child under the unchanged provisional parent. This unit may not change behavior.",
+    "rule": "Update reusable shard guidance to require stage verification, production scenario materialization, selector-receipt verification, and output-object binding before request composition.",
+    "owned_files": [
+      ".agents/skills/raid-shard-architecture/SKILL.md",
+      ".agents/skills/raid-shard-architecture/references"
+    ],
+    "required_guidance": [
+      "keep canonical JSONL route catalogs distinct from one-scenario runtime route manifests",
+      "call canonical_route_catalog.materialize_scenario_route_manifest over the verified staging receipt",
+      "call verify_scenario_route_manifest_receipt",
+      "bind only the verified output_object_path and output_object_sha256 as route_manifest authority",
+      "forbid staged_path and raw JSONL catalog bytes as route_manifest substitutes"
+    ],
     "forbidden": [
-      "source, test, descriptor, ledger, route, or runtime behavior edits after this authorization commit",
-      "loosening launcher, build, provisioning, recurrence, seal, capture, cleanup, no-authserver, no-retry, or completion-watchdog gates",
-      "builds, database mutations, authserver starts, or worldserver starts",
-      "gameplay, route, class, encounter, movement, Z, floor, MMAP, endpoint, or tolerance changes"
+      "Magmaw-specific universal guidance",
+      "gameplay, route-row, launcher, bundle, test, Python, C++, SQL, runtime-config, or recurrence-ledger changes",
+      "build, provisioning, database mutation, recurrence seal, worldserver start, authserver start, live attempt, or retry",
+      "authorization of attempt3 or acceptance"
     ]
   },
-  "fixture_expansion": {
-    "primary_target": "magmaw_personal_parasite_authority_gap_v1",
-    "from_revision": 1,
-    "to_revision": 2,
-    "ledger": "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-    "purpose": "fixture_expansion_replay",
-    "target_ids": [
-      "chainwielder_pre_admission_rejection_isolation_v1",
-      "magmaw_parasite_control_full_runtime_v1",
-      "magmaw_parasite_lane_paths_v1",
-      "magmaw_parasite_lane_transition_full_replay_v1",
-      "magmaw_personal_parasite_authority_gap_v1"
-    ],
-    "attempts": 1,
-    "preflight_attempt": 2,
-    "retries": 0,
-    "authserver_starts": 0,
-    "worldserver_starts": 1,
-    "duration_policy": "completion_watchdog",
-    "required_live_fields": [
-      "shared wave generation and authority",
-      "actor-local episode falling and rising edges",
-      "task and candidate generations and keys",
-      "native submitted, progress, and terminal outcomes",
-      "clearance, infection, and death",
-      "route progression",
-      "DPS and HPS",
-      "cleanup"
-    ],
-    "canonical_launcher_layout": {
-      "control_directory": "fresh_external_attempt_parent",
-      "run_root": "fresh_external_attempt_parent/launcher_execution",
-      "run_root_initial_state": "empty",
-      "material_inputs_location": "control_directory_outside_run_root",
-      "prebuild_plan_location": "control_directory/prebuild_plan.json",
-      "realized_plan_location": "control_directory/realized_plan.json"
-    }
+  "evidence": {
+    "summary": "experiments/configs/cata_raid_magmaw_personal_escape_attempt2_route_manifest_invalid_summary_20260902.json",
+    "summary_sha256": "137762c313d78b84b8f322a90cbbb8fd25fe7c5e93bec49d2411ba9963cf6748",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_attempt2_route_manifest_invalid_20260902.dvc",
+    "dvc_pointer_sha256": "cbc75f7dca7fe0472f8715e014115d74f4963633c7ce6fd9a2c5e53e1dfd15bd",
+    "dvc_directory_md5": "635d1e04a2f5e6f8da6b45c726df8e5f.dir",
+    "remote_reconstruction_verified": true
   },
-  "build": {
-    "policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
-    "compiler_jobs": 8,
-    "linker_jobs": 1,
-    "configure_receipt": "external_run_root/configure_receipt.json",
-    "worldserver_build_receipt": "external_run_root/worldserver_build_receipt.json"
-  },
-  "next_action": "At this descriptor's exact clean commit, rerun the full recurrence bank and require the exact five fixture-expansion targets. Use a fresh external control directory, keep material inputs and both plans outside its empty child run root, then consume at most one queued fast8_v4 configure/build, one deterministic provisioning/readback, one recurrence seal, and one completion-watchdog worldserver start. Start no authserver and do not retry.",
   "program_scope": {
     "acceptance_admitted": false,
-    "fixture_expansion_replay_admitted": true,
+    "fixture_expansion_replay_admitted": false,
     "gameplay_canary_admitted": false,
     "gameplay_mutations_allowed": false,
-    "live_diagnostic_admitted": true,
-    "configure_admitted": true,
-    "worldserver_build_admitted": true,
-    "worldserver_start_admitted": true,
+    "live_diagnostic_admitted": false,
+    "configure_admitted": false,
+    "worldserver_build_admitted": false,
+    "worldserver_start_admitted": false,
     "authserver_start_admitted": false,
     "retry_admitted": false,
-    "database_mutations_allowed": true,
-    "database_mutation_scope": "validation_provisioning_only",
-    "dvc_publication_required_after_terminal": true,
-    "admission_conditions": [
-      "the exact clean descriptor, source handoff, source ancestor, and launcher authority validate",
-      "the full recurrence bank passes and admits exactly the five declared fixture targets",
-      "material inputs and immutable plans remain outside a new empty run root",
-      "configure, build, provisioning, readback, recurrence seal, and capture identities match",
-      "one worldserver start, zero authserver starts, and zero retries are enforced"
-    ]
+    "database_mutations_allowed": false
   },
-  "live_diagnostic": {
-    "required_observation": "Retain actor 30008 shared-wave generation and authority, actor-local episode falling and rising edges, task and candidate generations and keys, native submission, same-floor progress and terminal outcome, clearance, infection and death, route progression, party DPS/HPS, and cleanup.",
-    "success_condition": "The exact-source run shows one authoritative actor-local no-threat falling edge followed by one later threat rising edge, exactly one new child under the unchanged provisional parent, stable candidate identity within the episode, native progress, and safe clearance without infection for the correlated actor episode.",
-    "failure_condition": "A dropped child, generation churn without a new authoritative episode, infection before correlated native progress or terminal outcome, semantic stall, route failure, death loop, or infrastructure loss closes the single run as evidence and does not certify gameplay success."
+  "conditional_followup": {
+    "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt3",
+    "authorization_state": "not_authorized",
+    "first_required_step": "Before request composition or build admission, verify the staged catalog receipt, materialize blackwing_descent_10n_magmaw_diagnostic with the production selector, verify the selector receipt, and prove the output object passes the unchanged bundle validator.",
+    "minimum_fresh_budgets_after_separate_authorization": {
+      "configure": 1,
+      "worldserver_build": 1,
+      "deterministic_provisioning": 1,
+      "database_mutation_scope": "validation_provisioning_only",
+      "recurrence_seal": 1,
+      "worldserver_starts": 1,
+      "authserver_starts": 0,
+      "live_attempts": 1,
+      "retries": 0,
+      "duration_policy": "completion_watchdog"
+    }
   },
-  "launcher_authority": {
-    "schema": "cata_raid_composite_fixture_replay_launcher_authority_v1",
-    "expected_work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt2",
-    "descriptor_owner_skill": "raid-shard-architecture",
-    "descriptor_classification": "fixture_replay_authorized",
-    "source_handoff_schema": "cata_raid_specialist_handoff_v1",
-    "source_handoff_work_unit": "review:admit_fixture_replay_authorized_status",
-    "source_handoff_owner_skill": "raid-evidence-lifecycle",
-    "source_handoff_classification": "fixture_authority_reviewed",
-    "required_action_sha256": "adc0eedb1d97ff380b9ec429f7bb11a158fd6397ebfa784296759a20436649cd",
-    "required_postcondition_sha256": "4fd1b86783f79e652ceb95c5b893356d88ef97150b4cd81ee1b99f3e3992244c",
-    "scenario": {"scenario_id": "blackwing_descent_10n_magmaw_diagnostic", "raid": "blackwing_descent", "boss": "magmaw", "mode": "10N"},
-    "fixture_expansion": {"purpose": "fixture_expansion_replay", "attempts": 1, "retries": 0, "authserver_starts": 0, "worldserver_starts": 1, "duration_policy": "completion_watchdog"},
-    "program_scope": {"acceptance_admitted": false, "fixture_expansion_replay_admitted": true, "gameplay_canary_admitted": false, "gameplay_mutations_allowed": false, "live_diagnostic_admitted": true, "configure_admitted": true, "worldserver_build_admitted": true, "worldserver_start_admitted": true, "authserver_start_admitted": false, "retry_admitted": false, "database_mutations_allowed": true, "database_mutation_scope": "validation_provisioning_only", "dvc_publication_required_after_terminal": true},
-    "validation_clock": {"fixed_success_timer_seconds": null, "policy": "completion_watchdog", "worldserver_starts": 1, "authserver_starts": 0, "retries": 0}
-  },
+  "next_action": "Assign one bounded skill-creator unit to update raid-shard-architecture with the reusable authenticated route materialization and binding order. Commit and review that skill update before issuing any fresh attempt3 authorization.",
   "acceptance": [
-    "actor 30008 terminal generation 1 remains tombstoned until an authoritative actor-local no-threat falling edge",
-    "one later authoritative threat rising edge creates exactly one child under the unchanged provisional parent",
-    "task, candidate, native progress, terminal, infection, death, route progress, DPS, HPS, and cleanup remain correlated",
-    "no build, database mutation, authserver, worldserver, gameplay, route, class, encounter, movement, Z, floor, MMAP, endpoint, or tolerance change occurs in this unit"
+    "the skill records the mandatory catalog-to-scenario materialization boundary and verified output-object binding",
+    "the rule is reusable across raids and dungeons and contains no Magmaw-specific behavior",
+    "no gameplay, runtime, route catalog, launcher, bundle, live, build, database, or evidence mutation occurs"
   ],
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
-    "worldserver_starts": 1,
+    "worldserver_starts": 0,
     "authserver_starts": 0,
     "retries": 0
   }

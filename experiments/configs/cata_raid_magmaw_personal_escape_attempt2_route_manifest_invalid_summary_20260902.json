@@ -1,0 +1,101 @@
+{
+  "schema": "cata_raid_prestart_terminal_summary_v1",
+  "work_unit": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt2",
+  "classification": "canonical_launcher_bundle_create_route_manifest_invalid",
+  "terminal_reason": "route_manifest_invalid",
+  "source": {
+    "commit": "8c3f7ba20355b6acc079e95d962cc6bf9c293000",
+    "tree": "86703ad81e50456d9e77a1c215cd0969a48809d6",
+    "active_descriptor_sha256": "fe2bbe9423682456e3b236a83f3dd21f834774efaae524de26fd38209964b9a3",
+    "clean_at_build_request_admission_completion": true,
+    "binary_sha256": "978fe2a6d3a8b0e66a9d0af8676c1c54d7b6cd2dbcb58372daca3160cadf8065"
+  },
+  "recurrence_gate": {
+    "fixture_count": 26,
+    "passed_count": 26,
+    "fixture_expansion_admitted": true,
+    "target_ids": [
+      "chainwielder_pre_admission_rejection_isolation_v1",
+      "magmaw_parasite_control_full_runtime_v1",
+      "magmaw_parasite_lane_paths_v1",
+      "magmaw_parasite_lane_transition_full_replay_v1",
+      "magmaw_personal_parasite_authority_gap_v1"
+    ]
+  },
+  "first_broken_edge": {
+    "stage": "composite_fixture_replay_launcher.realized_plan.bundle_create",
+    "cause": "The authenticated 77-row DVC JSONL catalog was supplied as route_manifest, but chainwielder_prestart_bundle requires one materialized bot_live_validation_route_manifest_v1 JSON object for blackwing_descent_10n_magmaw_diagnostic.",
+    "missing_required_step": "canonical_route_catalog.materialize_scenario_route_manifest over the verified staged-catalog receipt, followed by verify_scenario_route_manifest_receipt and binding of output_object_path plus output_object_sha256",
+    "repeated_assumption_evidence": [
+      "experiments/configs/cata_raid_v89_route_catalog_shape_prestart_failed_handoff_v90.json",
+      "experiments/configs/cata_raid_v90_canonical_route_selector_binding_handoff_v91.json"
+    ]
+  },
+  "operations": {
+    "configure": 1,
+    "worldserver_build": 1,
+    "deterministic_provisioning": 0,
+    "database_mutations": 0,
+    "recurrence_seals": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0
+  },
+  "diagnostics": {
+    "decisions": "unobserved_failure_preceded_live_capture",
+    "movement": "unobserved_failure_preceded_live_capture",
+    "deaths": "unobserved_failure_preceded_live_capture",
+    "route_progress": "unobserved_failure_preceded_live_capture",
+    "dps": "unobserved_failure_preceded_live_capture",
+    "hps": "unobserved_failure_preceded_live_capture",
+    "gameplay_claim": "none"
+  },
+  "cleanup": {
+    "owned_worldserver_running": false,
+    "owned_authserver_running": false,
+    "owned_cohort_created": false,
+    "bundle_created": false,
+    "worktree_clean_at_terminal": true,
+    "earlier_failed_payload_preserved": "/tmp/trinity-magmaw-personal-escape-1ae6df0b9d-0gOfsabQ",
+    "earlier_failed_handoff_sha256": "d26b8e257c0cf214050a8b6572297f7df37b50cfb711f1e30fa47dd441f6b649"
+  },
+  "training_data": {
+    "eligible": false,
+    "admitted": false,
+    "classification": "excluded_infrastructure_prestart_terminal",
+    "reason": "No world facts, candidate set, native outcome, route progress, damage, healing, survival, or mechanic outcome was captured."
+  },
+  "evidence": {
+    "terminal_handoff_sha256": "82a2cbcf299ab05d1eff11fd3ed65bba1a1d3f4789a8722695261a7d332fb412",
+    "failure_receipt_sha256": "d74096ec5bb94999f4f2fe4eb76f9309c7b5377dbd2e70e5901076d9ada4fbdf",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_attempt2_route_manifest_invalid_20260902.dvc",
+    "dvc_pointer_sha256": "cbc75f7dca7fe0472f8715e014115d74f4963633c7ce6fd9a2c5e53e1dfd15bd",
+    "dvc_directory_md5": "635d1e04a2f5e6f8da6b45c726df8e5f.dir",
+    "nfiles": 12,
+    "size_bytes": 141363,
+    "remote": "object",
+    "remote_status": "in_sync",
+    "isolated_remote_reconstruction": "verified",
+    "remote_reconstruction_file_manifest_sha256": "3c240d1e96891375afa223525fc38faeaeea712fa77c279c3416f2b10c5f0cc0"
+  },
+  "claim_ledger": {
+    "verified": [
+      "the full 26-fixture bank passed and admitted the exact five fixture-expansion targets",
+      "configure and build completed once at the clean authorized source identity",
+      "the canonical bundle failed closed on route_manifest_invalid before provisioning or live execution",
+      "the DVC artifact was reconstructed from the object remote with all 12 file hashes intact"
+    ],
+    "refuted": [
+      "attempt2 executed a fixture or gameplay observation",
+      "the staged JSONL catalog is a valid single-scenario route_manifest input"
+    ],
+    "unproven": [
+      "fixture revision 2",
+      "the actor-local Magmaw personal-threat falling and rising edge",
+      "any Magmaw gameplay outcome or acceptance"
+    ]
+  },
+  "next_work_unit": "skill:update_raid_shard_architecture_route_manifest_materialization_gate",
+  "next_owner_skill": "skill-creator"
+}
