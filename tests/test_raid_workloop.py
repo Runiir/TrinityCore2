@@ -342,28 +342,23 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["policy"] == "completion_watchdog"
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
-    assert active["work_unit"] == (
-        "fixture:observe_personal_escape_authority_and_parasite_control_live"
+    expected_active = json.loads(
+        (workloop.ROOT / workloop.ACTIVE_WORK_UNIT_PATH).read_text(
+            encoding="utf-8"
+        )
+    )
+    assert all(active[key] == value for key, value in expected_active.items())
+    assert active["descriptor_valid"] is True
+    assert active["issues"] == []
+    assert active["schema"] == "cata_raid_active_work_unit_v1"
+    assert (active["raid"], active["boss"], active["mode"]) == (
+        "blackwing_descent",
+        "magmaw",
+        "10N",
     )
     assert magmaw_25h["active_program_work_unit"] is None
-    assert active["classification"] == "live_recurrence_quarantined"
-    assert active["next_owner_skill"] == "raid-evidence-lifecycle"
-    assert active["program_scope"]["gameplay_mutations_allowed"] is False
-    assert active["program_scope"]["worldserver_start_admitted"] is True
-    assert active["program_scope"]["authserver_start_admitted"] is False
-    assert active["source_handoff"]["path"].endswith(
-        "cata_raid_magmaw_personal_escape_authority_review_"
-        "handoff_20260901.json"
-    )
     assert active["validation_clock"]["fixed_success_timer_seconds"] is None
     assert active["validation_clock"]["policy"] == "completion_watchdog"
-    assert "complete retained bank" in (
-        active["next_action"].lower()
-    )
-    assert any(
-        "z correction" in rule.lower()
-        for rule in active["acceptance"]
-    )
     assert sinestra["task_kind"] == "implement_missing_boss_script"
     assert sinestra["source_present"] is False
     assert sinestra["diagnostic_shard_allowed_after_static_gates"] is False
@@ -457,7 +452,12 @@ def _git(repo: Path, *args: str) -> str:
     return subprocess.check_output(["git", "-C", str(repo), *args], text=True).strip()
 
 
-def _active_work_unit_repo(tmp_path: Path) -> tuple[Path, Path]:
+def _active_work_unit_repo(
+    tmp_path: Path,
+    *,
+    classification: str = "live_recurrence_quarantined",
+    validation_clock: dict[str, Any] | None = None,
+) -> tuple[Path, Path]:
     repo = tmp_path / "repo"
     source = repo / "evidence.md"
     active_path = repo / workloop.ACTIVE_WORK_UNIT_PATH
@@ -473,13 +473,15 @@ def _active_work_unit_repo(tmp_path: Path) -> tuple[Path, Path]:
         "schema": "cata_raid_active_work_unit_v1",
         "work_unit": "fixture:test",
         "owner_skill": "raid-shard-architecture",
-        "classification": "live_recurrence_quarantined",
+        "classification": classification,
         "observed_at_commit": observed,
         "source_handoff": {
             "path": "evidence.md",
             "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
         },
-        "validation_clock": {
+        "validation_clock": validation_clock
+        if validation_clock is not None
+        else {
             "policy": "completion_watchdog",
             "fixed_success_timer_seconds": None,
         },
@@ -500,6 +502,78 @@ def test_active_work_unit_uses_descriptor_commit_and_observed_provenance(
     assert status["descriptor_valid"] is True
     assert status["issues"] == []
     assert status["descriptor_commit"] == _git(repo, "rev-parse", "HEAD")
+    assert status["ready_for_fixture_expansion"] is True
+
+
+@pytest.mark.parametrize(
+    "classification",
+    ["live_recurrence_quarantined", "fixture_replay_authorized"],
+)
+def test_valid_fixture_classifications_are_fixture_ready(
+    tmp_path: Path, classification: str
+) -> None:
+    repo, _ = _active_work_unit_repo(tmp_path, classification=classification)
+
+    status = workloop.active_work_unit_status(repo)
+
+    assert status["descriptor_valid"] is True
+    assert status["issues"] == []
+    assert status["ready_for_fixture_expansion"] is True
+    assert status["ready_for_bounded_repair"] is False
+    assert status["ready_for_live_verification"] is False
+
+
+def test_active_work_unit_rejects_stale_source_for_fixture_expansion(
+    tmp_path: Path,
+) -> None:
+    repo, _ = _active_work_unit_repo(
+        tmp_path, classification="fixture_replay_authorized"
+    )
+    (repo / "evidence.md").write_text("changed evidence\n", encoding="utf-8")
+
+    status = workloop.active_work_unit_status(repo)
+
+    assert status["descriptor_valid"] is False
+    assert "active_work_unit_source_stale" in status["issues"]
+    assert status["ready_for_fixture_expansion"] is False
+
+
+@pytest.mark.parametrize(
+    ("case", "issue"),
+    [
+        ("missing_source", "active_work_unit_source_missing"),
+        ("bad_hash", "active_work_unit_source_stale"),
+        ("nonancestor", "active_work_unit_commit_not_ancestor"),
+    ],
+)
+def test_fixture_authorization_retains_descriptor_identity_gates(
+    tmp_path: Path, case: str, issue: str,
+) -> None:
+    repo, active_path = _active_work_unit_repo(
+        tmp_path, classification="fixture_replay_authorized"
+    )
+    active = json.loads(active_path.read_text(encoding="utf-8"))
+    if case == "missing_source":
+        active["source_handoff"]["path"] = "missing.md"
+    elif case == "bad_hash":
+        active["source_handoff"]["sha256"] = "0" * 64
+    else:
+        tree = _git(repo, "rev-parse", "HEAD^{tree}")
+        foreign = subprocess.check_output(
+            ["git", "-C", str(repo), "commit-tree", tree],
+            input="foreign provenance\n",
+            text=True,
+        ).strip()
+        active["observed_at_commit"] = foreign
+    active_path.write_text(json.dumps(active, indent=2) + "\n", encoding="utf-8")
+    _git(repo, "add", active_path.relative_to(repo).as_posix())
+    _git(repo, "commit", "-m", f"{case} descriptor")
+
+    status = workloop.active_work_unit_status(repo)
+
+    assert status["descriptor_valid"] is False
+    assert issue in status["issues"]
+    assert status["ready_for_fixture_expansion"] is False
 
 
 def test_active_work_unit_rejects_later_commit_without_descriptor_update(
@@ -514,6 +588,7 @@ def test_active_work_unit_rejects_later_commit_without_descriptor_update(
 
     assert status["descriptor_valid"] is False
     assert "active_work_unit_descriptor_stale" in status["issues"]
+    assert status["ready_for_fixture_expansion"] is False
 
 
 def test_active_work_unit_rejects_dirty_descriptor(tmp_path: Path) -> None:
@@ -524,6 +599,54 @@ def test_active_work_unit_rejects_dirty_descriptor(tmp_path: Path) -> None:
 
     assert status["descriptor_valid"] is False
     assert "active_work_unit_descriptor_dirty" in status["issues"]
+    assert status["ready_for_fixture_expansion"] is False
+
+
+def test_active_work_unit_rejects_invalid_clock_for_fixture_expansion(
+    tmp_path: Path,
+) -> None:
+    repo, _ = _active_work_unit_repo(
+        tmp_path,
+        classification="fixture_replay_authorized",
+        validation_clock={
+            "policy": "completion_watchdog",
+            "fixed_success_timer_seconds": 300,
+        },
+    )
+
+    status = workloop.active_work_unit_status(repo)
+
+    assert status["descriptor_valid"] is False
+    assert "active_work_unit_validation_clock" in status["issues"]
+    assert status["ready_for_fixture_expansion"] is False
+
+
+def test_unrelated_classification_is_not_fixture_ready(tmp_path: Path) -> None:
+    repo, _ = _active_work_unit_repo(tmp_path, classification="failed")
+
+    status = workloop.active_work_unit_status(repo)
+
+    assert status["descriptor_valid"] is True
+    assert status["issues"] == []
+    assert status["ready_for_bounded_repair"] is True
+    assert status["ready_for_fixture_expansion"] is False
+    assert status["ready_for_live_verification"] is False
+
+
+def test_implementation_pending_classification_retains_live_readiness(
+    tmp_path: Path,
+) -> None:
+    repo, _ = _active_work_unit_repo(
+        tmp_path, classification="implementation_pending_live_verification"
+    )
+
+    status = workloop.active_work_unit_status(repo)
+
+    assert status["descriptor_valid"] is True
+    assert status["issues"] == []
+    assert status["ready_for_bounded_repair"] is False
+    assert status["ready_for_fixture_expansion"] is False
+    assert status["ready_for_live_verification"] is True
 
 
 def test_script_readiness_uses_source_tree_identity() -> None:
