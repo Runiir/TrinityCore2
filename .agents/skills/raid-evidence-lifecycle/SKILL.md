@@ -63,6 +63,12 @@ it--especially SQL statement identity--and use that captured value for both
 execution and the receipt. Add adversarial fixtures that rebind schema, field,
 and SQL globals plus public and underscore-prefixed helpers, then prove callback
 execution and the receipt retain the same original canonical value.
+At a Python evidence boundary that executes caller callbacks, capture the full
+transitive dependency set as fixed lexical authority at definition/import time,
+including builtins, container constructors, predicates, length/set operations,
+and exception classes. Forward tests must inspect for module-lookup fallbacks or
+adversarially shadow them through ordinary callback-driven module/global
+rebinding; invasive closure mutation or reflection is outside this boundary.
 
 ## Capture an immutable lifecycle
 
