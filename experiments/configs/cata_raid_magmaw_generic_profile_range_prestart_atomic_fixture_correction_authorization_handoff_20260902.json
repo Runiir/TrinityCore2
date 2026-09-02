@@ -1,0 +1,129 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_generic_profile_range_prestart_atomic_fixture_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "test_only_deterministic_production_composition_fixture_correction_authorized",
+  "control_identity": {
+    "commit": "57964fb020413fd1074361da8760f6bc829ca522",
+    "tree": "6ffc81ec91bef51fcd14f2ec4bcb68d2fd705263",
+    "clean": true
+  },
+  "immutable_review": {
+    "path": "/tmp/magmaw-generic-profile-range-prestart-review-57964fb/review_handoff.json",
+    "sha256": "55bdfd4c67ef5b8dcc2e77f7d79f91ba9632d5a3bdace892b9284b0b2725b47f",
+    "hash_verified": true,
+    "verdict": "NO_GO",
+    "classification": "deterministic_production_composition_fixture_missing"
+  },
+  "immutable_stage1": {
+    "handoff_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage1_handoff.json",
+    "handoff_sha256": "2130fe66e9f75b5a8a064c6b4621383a46dc0c2edf3ebd1bb95da225a2b5390f",
+    "binary_source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "binary_sha256": "4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081",
+    "build_receipt_file_sha256": "43dd3b89c2fc5497ab740e4789ee85efb925f6b45c8a3b6d96389a2880beb866",
+    "rebuild_authorized": false
+  },
+  "scope_lock": {
+    "objective": "Complete only the deterministic fixture for the exact generic profile-range production composition by exercising manifest-derived decision/suite creation, create_bundle, verify_bundle, and capture_setup preflight.",
+    "owner_skill": "raid-evidence-lifecycle",
+    "owned_files": [
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "fixture_identity": {
+      "purpose": "fixture_expansion_replay",
+      "fixture_id": "generic_profile_min_range_production_boundary_v1",
+      "positive_revision": 1,
+      "case_id": "elemental_magmaw_too_close_v1",
+      "actor_guid": 30010,
+      "target_guid": 39,
+      "target_entry": 41570,
+      "source_route_node_ids": [
+        "bwd.entry.regroup",
+        "bwd.magmaw.chainwielder",
+        "bwd.magmaw.drudges",
+        "bwd.magmaw.encounter"
+      ],
+      "runtime_route_node_ids": ["bwd.magmaw.encounter"]
+    },
+    "ordered_causal_receipt": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "Commit 57964fb contains the exact generic dialect, four-row source-route validation, one-row encounter runtime suffix, recurrence manifest entry, and admission-bound capture options.",
+        "observation": "Independent review PASS findings."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "Its tests do not call create_bundle or verify_bundle for the generic path and do not execute admission-bound capture preflight.",
+        "observation": "Independent review HIGH findings generic_atomic_create_verify_path_not_executed_by_fixture and named_fail_closed_negatives_not_executed_end_to_end."
+      },
+      {
+        "order": 3,
+        "status": "unproven",
+        "claim": "The exact generic tuple crosses all three production owners and every named mutation fails closed.",
+        "observation": "The required deterministic test does not yet exist."
+      }
+    ],
+    "candidate_first_broken_edge": "The test stops at dialect/argv parsing before the real atomic create/verify and capture-preflight boundary.",
+    "first_observed_downstream_state_mutation": null,
+    "failure_postcondition": "Stage 2 remains closed because it would still be the first complete execution of the composed prestart path.",
+    "implementation_hypothesis": "Two test-only additions can exercise the existing production owners without changing production behavior.",
+    "required_positive_path": [
+      "Derive the fixture-expansion decision and full suite receipt from the tracked Magmaw recurrence manifest; do not hand-author a reduced bypass.",
+      "Call real create_bundle then real verify_bundle for fixture generic_profile_min_range_production_boundary_v1, case elemental_magmaw_too_close_v1, actor 30010, target GUID 39/entry 41570, and the exact four-row source route.",
+      "Require exactly one runtime route row: bwd.magmaw.encounter, map 669, boss, source_entry 41570.",
+      "Require exact expected_launch_argv equality, with exactly one generic actor option 30010 and one generic target option 39 and no other checkpoint dialect option.",
+      "Execute prepare_capture_setup far enough to return admitted state using real verify_recurrence_admission and real actor/target/entry binding; stub only unrelated environmental build/runtime checks."
+    ],
+    "required_fail_closed_mutations": [
+      "wrong or missing fixture_id or case_id",
+      "wrong actor_guid, target_guid, target_entry, or source/runtime route",
+      "manifest revision or command drift",
+      "missing, unverified, or identity-mismatched admission",
+      "multiple checkpoint dialect options"
+    ],
+    "stop_condition": "If a production defect is exposed, stop without commit and return the counterexample and first production owner for a new authorization."
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py",
+    "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_profile_combat_range_checkpoint_capture.py",
+    "pixi run python -m py_compile tools/raid_program/prestart_bundle_dialects.py tools/raid_program/chainwielder_prestart_bundle.py tools/raid_program/capture_setup.py",
+    "pixi run python -m json.tool experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "pixi run python -m json.tool experiments/configs/cata_raid_active_work_unit_v1.json",
+    "pixi run python -m json.tool experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_atomic_fixture_correction_authorization_handoff_20260902.json",
+    "pixi run python -m tools.raid_program.raid_workloop status",
+    "git diff --name-only <authorization-commit>...HEAD",
+    "git status --short"
+  ],
+  "acceptance_conditions": [
+    "Only the two owned tests differ from the authorization commit; no production byte changes.",
+    "Manifest-derived decision/suite reaches real create_bundle, verify_bundle, and admission-bound capture_setup preflight for the exact identity, route, suffix, and argv.",
+    "All named mutations fail closed and all exact validation commands pass.",
+    "Stage-1 hashes remain unchanged and independent Sol-high raid-evidence-lifecycle review returns GO before Stage 2 resumes."
+  ],
+  "forbidden": [
+    "No file outside the two-test lock and no production, gameplay, route, roster, ledger, configuration, database, dependency, CMake, or skill mutation.",
+    "No reduced hand-authored proof or stub of select_dialect, manifest validation, create_bundle, verify_bundle, verify_recurrence_admission, or generic identity comparison.",
+    "No build, provision, seal, server, live capture, DVC, promotion, gameplay canary, retry, or synthetic runtime evidence.",
+    "If a test exposes a production defect, no production repair and no commit."
+  ],
+  "validation_clock": {
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "configure_budget": 0,
+    "worldserver_build_budget": 0,
+    "deterministic_provisioning_budget": 0,
+    "database_readback_budget": 0,
+    "recurrence_seal_budget": 0,
+    "worldserver_start_budget": 0,
+    "authserver_start_budget": 0,
+    "observation_only_fixture_attempt_budget": 0,
+    "gameplay_canary_attempt_budget": 0,
+    "focused_test_runs": 1,
+    "correction_cycles": 1,
+    "retries": 0
+  },
+  "next_action": "Dispatch one bounded raid-evidence-lifecycle worker, then an independent Sol-high raid-evidence-lifecycle reviewer. Stage 2 remains closed."
+}

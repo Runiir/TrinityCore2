@@ -1,27 +1,29 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:generic_profile_range_prestart_composition_repair",
+  "work_unit": "evidence:generic_profile_range_prestart_atomic_fixture_correction",
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Repair only the missing generic evidence/prestart composition that blocked Stage 2 before provisioning. Preserve the one reviewed native binary; separately authorize Stage 2 only after independent review.",
-  "gate_state": "Stage 1 is complete. Stage 2 failed closed before mutation because the generic profile-range dialect, recurrence manifest registration, and capture binding are missing. One six-file evidence-control repair is open; all build, provisioning, seal, server, live, DVC, promotion, and gameplay-canary gates are closed.",
-  "observed_at_commit": "32c39ccfb3a2e1e5dcfe59c53fd58ad9dd1f8776",
-  "immutable_input_commit": "32c39ccfb3a2e1e5dcfe59c53fd58ad9dd1f8776",
+  "architecture_scope": "Close only the deterministic production-composition fixture gap identified by independent review; preserve all production bytes and the Stage-1 binary.",
+  "gate_state": "Generic prestart composition is implemented, but review remains NO-GO because tests do not execute atomic create/verify and admission-bound capture preflight. One two-test correction is open; Stage 2 and all runtime/live gates are closed.",
+  "observed_at_commit": "57964fb020413fd1074361da8760f6bc829ca522",
+  "immutable_input_commit": "57964fb020413fd1074361da8760f6bc829ca522",
   "behavior_change": false,
-  "evidence_contract_change": true,
+  "evidence_contract_change": false,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_composition_repair_authorization_handoff_20260902.json",
-    "sha256": "be75bc30ea5c54f1e64a2f92b37707b39d59222bf6d7a3e71fb8690074d94f73",
-    "source_commit": "32c39ccfb3a2e1e5dcfe59c53fd58ad9dd1f8776",
-    "source_tree": "ef96de9d040e33e1e12c512636717961e80cf171"
+    "path": "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_atomic_fixture_correction_authorization_handoff_20260902.json",
+    "sha256": "3b9775cc391c5c8228dcabecaa081e5ac94c1b5a9515955aa0d075241444626a",
+    "review_path": "/tmp/magmaw-generic-profile-range-prestart-review-57964fb/review_handoff.json",
+    "review_sha256": "55bdfd4c67ef5b8dcc2e77f7d79f91ba9632d5a3bdace892b9284b0b2725b47f",
+    "source_commit": "57964fb020413fd1074361da8760f6bc829ca522",
+    "source_tree": "6ffc81ec91bef51fcd14f2ec4bcb68d2fd705263"
   },
   "reviewed_binary": {
+    "stage1_handoff_sha256": "2130fe66e9f75b5a8a064c6b4621383a46dc0c2edf3ebd1bb95da225a2b5390f",
     "source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
-    "source_tree": "75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c",
     "sha256": "4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081",
     "build_receipt_file_sha256": "43dd3b89c2fc5497ab740e4789ee85efb925f6b45c8a3b6d96389a2880beb866",
     "rebuild_authorized": false
@@ -43,18 +45,18 @@
     "retries": 0
   },
   "first_broken_edge": {
-    "id": "generic_profile_combat_range_prestart_dialect_and_manifest_missing",
-    "owner_classification": "evidence_control_plane",
+    "id": "generic_profile_range_atomic_composition_fixture_boundary_missing",
+    "owner_classification": "evidence_control_plane_tests",
     "actor_guid": 30010,
     "target_guid": 39,
     "target_entry": 41570,
-    "stage": "sealed_fixture_prestart_composition",
-    "cause": "The atomic prestart path recognizes only Chainwielder and Magmaw-transfer tuples, capture setup lacks a generic profile-range binding, and the recurrence bank lacks the exact fixture manifest.",
-    "causal_chain": "verified one-build binary and route -> exact generic Stage-2 tuple -> select_dialect identity rejection -> no atomic bundle/admission/capture argv -> typed preflight failure before provisioning",
-    "review_state": "typed_preflight_failure_authorized_for_bounded_evidence_repair"
+    "stage": "deterministic_prestart_fixture_certification",
+    "cause": "Tests stop at dialect/argv parsing and source-text assertions rather than executing manifest-derived decision/suite through create_bundle, verify_bundle, and capture_setup preflight.",
+    "causal_chain": "implemented generic composition -> incomplete deterministic fixture boundary -> independent review NO-GO -> Stage 2 closed before provisioning",
+    "review_state": "independent_no_go_authorizes_test_only_fixture_completion"
   },
   "scope_lock": {
-    "objective": "Compose the exact generic profile-range prestart dialect, existing seal/admission/profile overlay, admission-verified actor/target capture binding, and append-only recurrence manifest without native or gameplay changes.",
+    "objective": "Exercise the exact generic atomic bundle and capture preflight with manifest-derived inputs and fail-closed mutations, changing tests only.",
     "fixture_identity": {
       "purpose": "fixture_expansion_replay",
       "fixture_id": "generic_profile_min_range_production_boundary_v1",
@@ -63,56 +65,38 @@
       "actor_guid": 30010,
       "target_guid": 39,
       "target_entry": 41570,
-      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
-      "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
-      "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
-      "route_node_count": 4
+      "source_route_node_count": 4,
+      "runtime_route_node_id": "bwd.magmaw.encounter",
+      "runtime_route_source_entry": 41570
     },
     "owned_files": [
-      "tools/raid_program/prestart_bundle_dialects.py",
-      "tools/raid_program/chainwielder_prestart_bundle.py",
-      "tools/raid_program/capture_setup.py",
-      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
       "tests/test_chainwielder_prestart_bundle.py",
       "tests/test_phase1_raid_foundation_capture.py"
     ],
     "required_actions": [
-      "Verify both immutable handoffs, the one-build binary/receipt, and the exact two-identity allowlist.",
-      "Add one exact generic dialect while preserving both old dialect contracts and negatives.",
-      "Reuse the existing profile-range seal, recurrence admission, runtime-profile overlay, route validation, and checkpoint controller; do not copy or synthesize them.",
-      "Register the exact revision-1 observation_only fixture, causal signature, history entry, required production boundary, and executable manifest command without changing prior rows.",
-      "Expose a distinct generic capture binding and validate actor plus target from verified recurrence admission.",
-      "Run both exact pytest commands, py_compile, JSON parse, workloop status, diff allowlist, and Git status; commit only the six-file implementation."
+      "Derive decision and full suite receipt from the tracked recurrence manifest.",
+      "Call real create_bundle and verify_bundle for actor 30010, target 39/entry 41570, exact fixture/case, and exact four-row route.",
+      "Assert the exact one-row bwd.magmaw.encounter runtime suffix and exact generic launch argv.",
+      "Execute prepare_capture_setup with real recurrence-admission verification and generic identity binding; stub only unrelated environment checks.",
+      "Exercise wrong/missing fixture/case, actor/target/entry/route, manifest revision/command, admission, and multiple-dialect mutations.",
+      "Run the exact pytest, pycompile, JSON, workloop, diff, and status commands; commit only the two tests."
     ],
-    "two_identity_allowlist": [
-      "experiments/configs/cata_raid_active_work_unit_v1.json",
-      "experiments/configs/cata_raid_magmaw_generic_min_range_one_build_sealed_observation_fixture_authorization_handoff_20260902.json",
-      "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_composition_repair_authorization_handoff_20260902.json",
-      "tools/raid_program/prestart_bundle_dialects.py",
-      "tools/raid_program/chainwielder_prestart_bundle.py",
-      "tools/raid_program/capture_setup.py",
-      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
-      "tests/test_chainwielder_prestart_bundle.py",
-      "tests/test_phase1_raid_foundation_capture.py"
-    ]
+    "stop_condition": "A production defect stops this unit without commit and requires a new bounded authorization."
   },
   "acceptance_conditions": [
-    "Only the six owned implementation files differ from this authorization commit and all exact validation commands pass.",
-    "The generic tuple creates and verifies through existing production composition owners; named identity, route, manifest, admission, and option drift fails closed.",
-    "Actor 30010 and target GUID 39/entry 41570 are validated from verified admission, not invented.",
-    "The bank adds only the pending observation-only revision-1 fixture/signature/history contract and preserves all old dialects and rows.",
-    "The Stage-1 binary/build receipt remain unchanged; no rebuild or external mutation occurs.",
-    "The committed implementation routes to independent Sol-high raid-evidence-lifecycle review before Stage 2 repeats."
+    "Only the two owned tests differ from this authorization commit; production bytes remain unchanged.",
+    "Manifest-derived decision/suite reaches real create_bundle, verify_bundle, and admission-bound capture_setup preflight for the exact tuple, route, suffix, and argv.",
+    "Every named mutation fails closed and all exact validation commands pass.",
+    "Stage-1 hashes remain unchanged and independent Sol-high raid-evidence-lifecycle review is required before Stage 2."
   ],
   "forbidden": [
-    "No path outside the six-file implementation lock.",
-    "No C/C++, native, gameplay, class, role, encounter, arbiter, movement, pathing, executor, route-row, roster, runtime-default, database-schema, or skill change.",
-    "No foreign-dialect reuse, synthetic identity/evidence/pass, existing manifest rewrite, fixture promotion, or waiver.",
-    "No configure, build, provision, database readback, recurrence seal, server start, capture, live action, DVC operation, gameplay canary, or retry."
+    "No path outside the two-test lock and no production, gameplay, route, roster, ledger, config, database, dependency, CMake, or skill mutation.",
+    "No reduced hand-authored proof, relevant owner stub, synthetic runtime evidence, build, provision, seal, server, live capture, DVC, promotion, gameplay canary, or retry.",
+    "If a test exposes a production defect, stop without commit."
   ],
   "ready_for_bounded_repair": true,
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Dispatch one raid-evidence-lifecycle implementation worker from the tracked authorization handoff, then a separate Sol-high raid-evidence-lifecycle reviewer. Do not rebuild or repeat Stage 2 yet."
+  "next_action": "Dispatch one raid-evidence-lifecycle worker from the tracked authorization, then an independent Sol-high reviewer. Stage 2 remains closed."
 }
