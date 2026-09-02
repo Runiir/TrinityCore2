@@ -1,0 +1,202 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_generic_profile_range_prestart_composition_repair",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_prestart_composition_repair_authorized",
+  "control_identity": {
+    "commit": "32c39ccfb3a2e1e5dcfe59c53fd58ad9dd1f8776",
+    "tree": "ef96de9d040e33e1e12c512636717961e80cf171",
+    "clean": true
+  },
+  "immutable_inputs": {
+    "stage1_handoff": {
+      "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage1_handoff.json",
+      "sha256": "2130fe66e9f75b5a8a064c6b4621383a46dc0c2edf3ebd1bb95da225a2b5390f",
+      "hash_verified": true
+    },
+    "stage2_failure_handoff": {
+      "path": "/home/runiir/Games/trinity-generic-min-range-stage2-preflight.WOwxHyE8/stage2_preflight_failure_handoff.json",
+      "sha256": "6102e4e8246e819251ea836f46e498b34c7e7365ad125efd06a16940d8ffba4d",
+      "hash_verified": true,
+      "terminal_reason": "generic_profile_combat_range_prestart_composition_unsupported"
+    }
+  },
+  "owner_selection": {
+    "selected_skill": "raid-evidence-lifecycle",
+    "reason": "The verified route, shard identity, build receipt, and binary already exist. The missing owner is evidence-control composition: a prestart dialect, recurrence-manifest entry, admission-bound actor/target, and capture argv. Shard architecture resumes only after this bounded producer is reviewed."
+  },
+  "reviewed_binary": {
+    "source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "source_tree": "75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c",
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/worktree/build/src/server/worldserver/worldserver",
+    "sha256": "4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081",
+    "size_bytes": 64688528,
+    "build_receipt_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/identity/worldserver_build_receipt.json",
+    "build_receipt_file_sha256": "43dd3b89c2fc5497ab740e4789ee85efb925f6b45c8a3b6d96389a2880beb866",
+    "build_receipt_canonical_sha256": "af3dd7a442746cb8c025ece529370d14a6830d2b948a09e0d022bda3403a5f93",
+    "rebuild_authorized": false
+  },
+  "two_identity_authority": {
+    "binary_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "required_relation": "The binary commit remains an ancestor of the eventual clean reviewed control commit; the binary and build-receipt hashes remain unchanged; every intervening path is on this exact allowlist.",
+    "intervening_path_allowlist": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_one_build_sealed_observation_fixture_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_composition_repair_authorization_handoff_20260902.json",
+      "tools/raid_program/prestart_bundle_dialects.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_setup.py",
+      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "fail_closed": "Any native, dependency, CMake, gameplay, route-row, roster, runtime-default, database, skill, unknown, dirty, non-ancestor, extra-path, binary-hash, or build-receipt mismatch revokes reuse. A later Stage-2 authorization must explicitly add only its own metadata paths."
+  },
+  "scope_lock": {
+    "objective": "Add exactly one generic profile-combat-range prestart composition path for fixture generic_profile_min_range_production_boundary_v1, case elemental_magmaw_too_close_v1, actor 30010, and admission/readback target GUID 39/entry 41570 by reusing the existing seal, recurrence-admission, runtime-profile-overlay, capture-controller, and atomic-bundle owners.",
+    "immutable_evidence": "/home/runiir/Games/trinity-generic-min-range-stage2-preflight.WOwxHyE8/stage2_preflight_failure_handoff.json sha256 6102e4e8246e819251ea836f46e498b34c7e7365ad125efd06a16940d8ffba4d",
+    "owned_files": [
+      "tools/raid_program/prestart_bundle_dialects.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_setup.py",
+      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "fixture_identity": {
+      "purpose": "fixture_expansion_replay",
+      "fixture_id": "generic_profile_min_range_production_boundary_v1",
+      "positive_revision": 1,
+      "case_id": "elemental_magmaw_too_close_v1",
+      "actor_guid": 30010,
+      "target_guid": 39,
+      "target_entry": 41570,
+      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+      "route_node_count": 4,
+      "causal_signature": "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner"
+    },
+    "ordered_causal_receipt": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "Stage 1 authenticated the exact four-node route and built clean b5752491 exactly once.",
+        "observation": "Stage-1 handoff sha256 2130fe66e9f75b5a8a064c6b4621383a46dc0c2edf3ebd1bb95da225a2b5390f and binary sha256 4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "Existing recurrence-admission and capture-controller owners already verify the generic seal, actor, target, and arm command when given a verified admission.",
+        "observation": "Stage-2 supportability audit."
+      },
+      {
+        "order": 3,
+        "status": "verified",
+        "claim": "select_dialect rejects actor 30010 plus the exact fixture/case, the atomic bundle has no generic composition, capture_setup has no generic binding, and the recurrence bank has no exact fixture manifest entry.",
+        "observation": "The immutable direct probe returned chainwielder_identity_input_mismatch."
+      },
+      {
+        "order": 4,
+        "status": "verified",
+        "claim": "The Stage-2 rejection was contained before provisioning, database readback, seal creation, or server start.",
+        "observation": "Stage-2 budget receipt reports zero consumption and zero retries."
+      },
+      {
+        "order": 5,
+        "status": "unproven",
+        "claim": "The exact generic tuple can cross dialect selection, manifest validation, atomic bundle create/verify, existing admission/profile overlay, and exact capture preflight without altering old dialects or synthesizing identity.",
+        "observation": "No callable producer currently crosses that boundary."
+      }
+    ],
+    "candidate_first_broken_edge": "prestart_bundle_dialects.select_dialect returns chainwielder_identity_input_mismatch for the exact actor 30010 fixture/case tuple.",
+    "first_observed_downstream_state_mutation": null,
+    "first_edge_classification": "contained_fail_closed_preflight_rejection",
+    "failure_postcondition": "Stage 2 cannot construct an exact launchable bundle, manifest-derived suite/decision, admission-bound capture argv, or recurrence seal.",
+    "implementation_hypothesis": "One exact third dialect can compose the already-reviewed generic owners, register a pending observation-only fixture, and thread only admission-verified actor/target identity while preserving all prior dialect contracts.",
+    "correlation_keys": [
+      "fixture_id",
+      "fixture_revision",
+      "case_id",
+      "source_commit",
+      "binary_sha256",
+      "suite_manifest_sha256",
+      "recurrence_admission_sha256",
+      "runtime_profile_manifest_sha256",
+      "route_manifest_sha256",
+      "checkpoint_seal_sha256",
+      "actor_guid",
+      "checkpoint_target_guid",
+      "target_entry"
+    ],
+    "production_boundary": {
+      "fail_before": "The direct probe rejects the exact tuple and no atomic bundle is launchable.",
+      "pass_after": "The focused fixture crosses the real dialect selector, ledger-manifest validator, atomic bundle create/verify, existing seal/admission/profile overlay, and capture preflight; launch argv binds actor 30010 and target GUID 39 only from verified admission.",
+      "required_negatives": [
+        "wrong or missing fixture/case",
+        "wrong actor",
+        "missing or mismatched admission actor/target/entry",
+        "wrong route shape",
+        "manifest revision or command drift",
+        "multiple dialect options",
+        "unverified admission",
+        "changed Chainwielder or Magmaw-transfer output"
+      ]
+    },
+    "retained_fixture_manifest": {
+      "fixture_id": "generic_profile_min_range_production_boundary_v1",
+      "revision": 1,
+      "causal_signature": "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner",
+      "evidence_boundary": "observation_only",
+      "command": [
+        "pixi",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_profile_combat_range_production_fixture.py",
+        "tests/test_profile_combat_range_checkpoint_capture.py"
+      ],
+      "required_production_boundary": "one sealed exact-current-binary worldserver replay must correlate an actual hazard producer/release, the exact world.profile_combat_range candidate, native launch and multi-tick decreasing progress, and a later ordinary same-target cast under one verified actor/target/scope/checkpoint generation; this tools-only repair cannot promote it"
+    }
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_phase1_raid_foundation_capture.py",
+    "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_profile_combat_range_checkpoint_capture.py",
+    "pixi run python -m py_compile tools/raid_program/prestart_bundle_dialects.py tools/raid_program/chainwielder_prestart_bundle.py tools/raid_program/capture_setup.py",
+    "pixi run python -m json.tool experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+    "pixi run python -m tools.raid_program.raid_workloop status",
+    "git diff --name-only <authorization-commit>...HEAD",
+    "git status --short"
+  ],
+  "acceptance_conditions": [
+    "Only the six owned files differ from this authorization commit and both exact pytest commands plus pycompile, JSON parse, workloop status, diff, and status checks pass.",
+    "The exact generic tuple creates and verifies through existing production composition owners; all named near-miss tuples fail closed.",
+    "capture_setup exposes a distinct generic binding and validates actor 30010 and target GUID 39/entry 41570 from verified admission without synthesis.",
+    "The recurrence bank adds only the exact pending observation-only revision-1 fixture/signature/history contract and preserves every old dialect and bank row.",
+    "The Stage-1 binary/build receipt are unchanged; no rebuild or external mutation occurs.",
+    "The six-file commit is handed to an independent Sol-high raid-evidence-lifecycle reviewer before Stage 2 repeats."
+  ],
+  "forbidden": [
+    "No file outside the six-file lock.",
+    "No C/C++, native, gameplay, class, role, encounter, arbiter, movement, pathing, executor, route-row, roster, runtime-default, database-schema, or skill change.",
+    "No foreign-dialect reuse, synthetic identity/evidence/pass, existing manifest rewrite, fixture promotion, or compatibility waiver.",
+    "No configure, build, provisioning, database mutation/readback, recurrence-seal generation, server start, capture, live action, DVC operation, gameplay canary, or retry."
+  ],
+  "validation_clock": {
+    "policy": "deterministic_tools_fixture_only",
+    "fixed_success_timer_seconds": null,
+    "configure_budget": 0,
+    "worldserver_build_budget": 0,
+    "deterministic_provisioning_budget": 0,
+    "database_readback_budget": 0,
+    "recurrence_seal_budget": 0,
+    "worldserver_start_budget": 0,
+    "authserver_start_budget": 0,
+    "observation_only_fixture_attempt_budget": 0,
+    "gameplay_canary_attempt_budget": 0,
+    "focused_test_runs": 1,
+    "correction_cycles": 1,
+    "retries": 0
+  },
+  "next_action": "Dispatch one bounded raid-evidence-lifecycle implementation worker, then a separate Sol-high raid-evidence-lifecycle reviewer. Do not rebuild or repeat Stage 2 until review GO and a new metadata authorization extends the allowlist."
+}
