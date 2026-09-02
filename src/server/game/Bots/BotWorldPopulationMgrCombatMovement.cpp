@@ -1,7 +1,9 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotProfileCombatRangeCandidate.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "ChaseMovementGenerator.h"
 #include "Creature.h"
 #include "GameTime.h"
@@ -192,6 +194,23 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     {
         return IsValidationRoutePatrolCombatPointSafe(reference, x, y, z);
     };
+    auto annotateProfileRangeReceipt = [&](bool moved)
+    {
+        if (moved && diagnosticCandidateKey
+                == BotProfileCombatRangeCandidate::Key
+            && state.LastMovementExecution.ReceiptId)
+            BotWorldMovement::MovementPlannerDiagnostics().RecordDiagnosticTarget(
+                state.LastMovementExecution.ReceiptId, bot->GetGUID().GetRawValue(),
+                bot->GetMapId(), reference->GetGUID().GetRawValue());
+        return moved;
+    };
+    auto moveProfilePoint = [&](float x, float y, float z)
+    {
+        return annotateProfileRangeReceipt(MoveBotToPoint(state, bot, x, y, z,
+            false, BotMovementArbitration::Owner::CombatRange,
+            BotMovementArbitration::Priority::Combat, nullptr, 0.0f, {},
+            diagnosticCandidateKey));
+    };
     auto moveToTerrainProjectedPoint = [&](float x, float y, float z)
     {
         Map* map = bot->GetMap();
@@ -205,10 +224,7 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         if (floorZ == INVALID_HEIGHT)
             return false;
 
-        return MoveBotToPoint(state, bot, x, y, floorZ, false,
-            BotMovementArbitration::Owner::CombatRange,
-            BotMovementArbitration::Priority::Combat, nullptr, 0.0f, {},
-            diagnosticCandidateKey);
+        return moveProfilePoint(x, y, floorZ);
     };
 
     std::string role = GetDungeonRole(bot);
@@ -360,10 +376,7 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
                             continue;
                         // Preserve its native path height: a terrain ray at
                         // the same X/Y can select the other side of the ledge.
-                        if (MoveBotToPoint(state, bot, x, y, z, false,
-                                BotMovementArbitration::Owner::CombatRange,
-                                BotMovementArbitration::Priority::Combat,
-                                nullptr, 0.0f, {}, diagnosticCandidateKey))
+                        if (moveProfilePoint(x, y, z))
                             return true;
                     }
                 }
@@ -402,10 +415,7 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
                         continue;
                     if (!patrolCombatPointSafe(x, y, z))
                         continue;
-                    if (MoveBotToPoint(state, bot, x, y, z, false,
-                            BotMovementArbitration::Owner::CombatRange,
-                            BotMovementArbitration::Priority::Combat,
-                            nullptr, 0.0f, {}, diagnosticCandidateKey))
+                    if (moveProfilePoint(x, y, z))
                         return true;
                 }
         }

@@ -159,6 +159,10 @@ PROFILE_COMBAT_RANGE_CHECKPOINT_ACTION = (
 PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND = (
     "botautoprofilecombatrangecheckpoint status"
 )
+PROFILE_COMBAT_RANGE_HAZARD_SOURCES = frozenset({
+    "adaptive_raid_trash",
+    "shared_hazard_movement",
+})
 
 
 def profile_combat_range_checkpoint_arm_command(
@@ -305,6 +309,7 @@ def profile_combat_range_checkpoint_terminal_rejections(
         or row.get("movement_committed") is not True
         or row.get("movement_native_submitted") is not True
         or row.get("range_receipt_correlated") is not True
+        or row.get("range_diagnostic_target_guid") != target_guid
         or not _positive_int(row.get("decision_timestamp_ms"))
         or not _profile_checkpoint_nonzero_hex(
             row.get("range_intent_fingerprint")
@@ -325,7 +330,8 @@ def profile_combat_range_checkpoint_terminal_rejections(
         or row["hazard_candidate_key"] == "world.profile_combat_range"
         or not isinstance(row.get("hazard_candidate_source"), str)
         or not row["hazard_candidate_source"]
-        or row["hazard_candidate_source"] == "db_class_spec_profile"
+        or row["hazard_candidate_source"]
+            not in PROFILE_COMBAT_RANGE_HAZARD_SOURCES
         or row.get("hazard_candidate_status") != "attempted"
         or not _profile_checkpoint_nonnegative_int(
             row.get("hazard_trace_index")
@@ -343,6 +349,8 @@ def profile_combat_range_checkpoint_terminal_rejections(
         or not _positive_int(row.get("hazard_progress_observed_at_ms"))
         or row["hazard_progress_observed_at_ms"]
             <= row["hazard_decision_timestamp_ms"]
+        or row["hazard_progress_observed_at_ms"]
+            >= row["decision_timestamp_ms"]
         or row["hazard_decision_timestamp_ms"]
             >= row["decision_timestamp_ms"]
         or row.get("hazard_preempted_range") is not True
@@ -367,6 +375,148 @@ def observe_profile_combat_range_checkpoint_row(
     """Capture-side consumer for the profile checkpoint status command."""
 
     return profile_combat_range_checkpoint_terminal_rejections(row, **kwargs)
+
+
+def _observe_profile_combat_range_checkpoint_scheduler_row(
+    scheduler: Any, row: dict[str, Any], *, target_guid: int, case_id: str,
+) -> list[str]:
+    """Consume profile arm/status rows through the generic hold scheduler."""
+
+    def next_status_command() -> list[str]:
+        scheduler.command_transcript.append(
+            PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+        )
+        return [PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND]
+
+    expected = {
+        "action": PROFILE_COMBAT_RANGE_CHECKPOINT_ACTION,
+        "authority": PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY,
+        "fixture_id": PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+        "case_id": case_id,
+        "seal_sha256": scheduler.identity.seal_sha256,
+        "source_commit": scheduler.identity.source_commit,
+        "actor_guid": scheduler.identity.actor_guid,
+        "target_guid": target_guid,
+    }
+    if not isinstance(row, dict) or any(
+        row.get(field) != value for field, value in expected.items()
+    ):
+        return scheduler._fail(
+            "profile_combat_range_checkpoint_status_identity_invalid"
+        )
+
+    state = getattr(scheduler, "_profile_checkpoint_state", None)
+    if not isinstance(state, dict):
+        state = {"checkpoint_generation": None, "target_map_id": None}
+        scheduler._profile_checkpoint_state = state
+    generation = row.get("checkpoint_generation")
+    if not _positive_int(generation):
+        return scheduler._fail(
+            "profile_combat_range_checkpoint_status_scope_invalid"
+        )
+    expected_generation = state.get("checkpoint_generation")
+    if expected_generation is None:
+        state["checkpoint_generation"] = generation
+    elif generation != expected_generation:
+        return scheduler._fail(
+            "profile_combat_range_checkpoint_status_scope_invalid"
+        )
+
+    native_scope = scheduler._native_scope or {}
+    runtime_scope = scheduler.runtime_scope
+    scope_pairs = (
+        ("attempt_id", native_scope.get("attempt_id")),
+        ("route_generation", scheduler.identity.route_generation),
+        ("wipe_generation", (
+            runtime_scope.wipe_generation if runtime_scope is not None else None
+        )),
+        ("target_instance_id", (
+            runtime_scope.instance_id if runtime_scope is not None else None
+        )),
+    )
+    if any(expected is not None and row.get(field) != expected
+           for field, expected in scope_pairs):
+        return scheduler._fail(
+            "profile_combat_range_checkpoint_status_scope_invalid"
+        )
+    target_map_id = row.get("target_map_id")
+    if row.get("scope_bound") is True:
+        if not _profile_checkpoint_nonnegative_int(target_map_id) or not target_map_id:
+            return scheduler._fail(
+                "profile_combat_range_checkpoint_status_scope_invalid"
+            )
+        prior_map = state.get("target_map_id")
+        if prior_map is None:
+            state["target_map_id"] = target_map_id
+        elif prior_map != target_map_id:
+            return scheduler._fail(
+                "profile_combat_range_checkpoint_status_scope_invalid"
+            )
+
+    if scheduler.phase == "awaiting_arm_ack":
+        if (
+            row.get("ok") is not True
+            or row.get("stage") != "armed"
+            or row.get("terminal") is not False
+            or row.get("failure_reason") not in {None, ""}
+        ):
+            return scheduler._fail(
+                "profile_combat_range_checkpoint_status_arm_ack_invalid"
+            )
+        scheduler._arm_ack_count = 1
+        scheduler._record("arm_ack", row, {})
+        scheduler.phase = "awaiting_terminal"
+        return next_status_command()
+
+    if scheduler.phase != "awaiting_terminal":
+        return scheduler._fail(
+            "profile_combat_range_checkpoint_duplicate_or_stale_receipt"
+        )
+    if row.get("terminal") is not True:
+        if (
+            row.get("ok") is not True
+            or row.get("stage") not in {
+                "armed", "range_observed", "progress_observed",
+            }
+            or row.get("failure_reason") not in {None, ""}
+        ):
+            return scheduler._fail(
+                "profile_combat_range_checkpoint_status_progress_invalid"
+            )
+        return next_status_command()
+
+    rejections = observe_profile_combat_range_checkpoint_row(
+        row,
+        actor_guid=scheduler.identity.actor_guid,
+        target_guid=target_guid,
+        case_id=case_id,
+        seal_sha256=scheduler.identity.seal_sha256,
+        source_commit=scheduler.identity.source_commit,
+        checkpoint_generation=expected_generation,
+        attempt_id=native_scope.get("attempt_id"),
+        wipe_generation=(
+            runtime_scope.wipe_generation if runtime_scope is not None else None
+        ),
+        route_generation=scheduler.identity.route_generation,
+        target_map_id=state.get("target_map_id"),
+        target_instance_id=(
+            runtime_scope.instance_id if runtime_scope is not None else None
+        ),
+    )
+    if rejections:
+        return scheduler._fail(rejections[0])
+    scheduler._terminal_count = 1
+    scheduler._terminal_stage = row["stage"]
+    scheduler._terminal_observation = copy.deepcopy(row)
+    scheduler.receipt_transcript.append({
+        "kind": "checkpoint_terminal_success",
+        "phase": "completed",
+        "checkpoint_stage": row.get("stage"),
+        "checkpoint_generation": row.get("checkpoint_generation"),
+        "payload_sha256": _canonical_object_sha256(row),
+    })
+    scheduler.phase = "complete"
+    return []
 
 
 def magmaw_transfer_checkpoint_arm_command(
@@ -936,6 +1086,36 @@ def checkpoint_controller_dialect(
                 "checkpoint_observer": observe_magmaw_transfer_checkpoint_row,
                 "checkpoint_terminal_status_command": (
                     "botautomagmawtransfercheckpoint status"
+                ),
+                "release_after_terminal": False,
+                "checkpoint_terminal_from_status": False,
+                "runtime_scope_required": True,
+            },
+        }
+    if fixture_id == PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID:
+        target_guid = recurrence_admission.get("checkpoint_target_guid")
+        arm_command = profile_combat_range_checkpoint_arm_command(
+            recurrence_admission, actor_guid, target_guid,
+        )
+        case_id = recurrence_admission.get("checkpoint_case_id")
+        return {
+            "fixture_id": fixture_id,
+            "arm_command": arm_command,
+            "scheduler_kwargs": {
+                "checkpoint_action": PROFILE_COMBAT_RANGE_CHECKPOINT_ACTION,
+                "checkpoint_arm_command": arm_command,
+                "checkpoint_receipt_field": "fixture_id",
+                "checkpoint_receipt_value": fixture_id,
+                "checkpoint_observer": (
+                    lambda scheduler, row: (
+                        _observe_profile_combat_range_checkpoint_scheduler_row(
+                            scheduler, row, target_guid=target_guid,
+                            case_id=case_id,
+                        )
+                    )
+                ),
+                "checkpoint_terminal_status_command": (
+                    PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
                 ),
                 "release_after_terminal": False,
                 "checkpoint_terminal_from_status": False,

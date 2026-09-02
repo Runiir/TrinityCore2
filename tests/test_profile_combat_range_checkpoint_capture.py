@@ -7,6 +7,7 @@ import pytest
 from tools.raid_program.capture_checkpoint_controller import (
     PROFILE_COMBAT_RANGE_CHECKPOINT_ACTION,
     PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND,
+    checkpoint_controller_dialect,
     observe_profile_combat_range_checkpoint_row,
     profile_combat_range_checkpoint_arm_command,
     profile_combat_range_checkpoint_terminal_rejections,
@@ -74,6 +75,7 @@ def _row() -> dict[str, object]:
         "native_spline_id": 77,
         "movement_committed": True,
         "movement_native_submitted": True,
+        "range_diagnostic_target_guid": TARGET,
         "range_intent_fingerprint": "1a",
         "range_receipt_correlated": True,
         "progress_sample_count": 4,
@@ -110,6 +112,35 @@ def test_authenticated_arm_command_and_status_command() -> None:
     assert PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND.endswith(" status")
 
 
+def test_checkpoint_dialect_wires_authenticated_scheduler_observer() -> None:
+    dialect = checkpoint_controller_dialect(_admission(), ACTOR)
+    assert dialect == {
+        "fixture_id": PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+        "arm_command": (
+            "botautoprofilecombatrangecheckpoint arm "
+            f"{ACTOR} {TARGET} {CASE} {SEAL} {SOURCE}"
+        ),
+        "scheduler_kwargs": dialect["scheduler_kwargs"],
+    }
+    kwargs = dialect["scheduler_kwargs"]
+    assert kwargs["checkpoint_action"] == PROFILE_COMBAT_RANGE_CHECKPOINT_ACTION
+    assert kwargs["checkpoint_terminal_status_command"] == (
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+    )
+    assert kwargs["checkpoint_terminal_from_status"] is False
+    assert callable(kwargs["checkpoint_observer"])
+
+    missing_target = _admission()
+    del missing_target["checkpoint_target_guid"]
+    with pytest.raises(ValueError, match="verified_admission_invalid"):
+        checkpoint_controller_dialect(missing_target, ACTOR)
+
+    wrong_fixture = _admission()
+    wrong_fixture["checkpoint_fixture_id"] = "unsupported_fixture"
+    with pytest.raises(ValueError, match="checkpoint_controller_fixture_unsupported"):
+        checkpoint_controller_dialect(wrong_fixture, ACTOR)
+
+
 @pytest.mark.parametrize(
     "actor,target,field",
     [
@@ -134,10 +165,14 @@ def test_arm_rejects_identity_drift(
         ("candidate_key", "stale.range", "range"),
         ("movement_receipt_id", 0, "range"),
         ("range_receipt_correlated", False, "range"),
+        ("range_diagnostic_target_guid", TARGET + 1, "range"),
         ("hazard_candidate_key", "", "hazard"),
         ("hazard_movement_receipt_id", 812, "hazard"),
         ("hazard_native_submitted", False, "hazard"),
         ("hazard_progress_observed", False, "hazard"),
+        ("hazard_preempted_range", False, "hazard"),
+        ("hazard_decision_timestamp_ms", 1100, "hazard"),
+        ("hazard_progress_observed_at_ms", 1000, "hazard"),
         ("movement_progress_observed", False, "range"),
         ("cast_target_guid", TARGET + 1, "cast"),
         ("cast_recorded_at_ms", 1200, "cast"),

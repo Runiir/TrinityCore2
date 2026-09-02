@@ -66,6 +66,16 @@ bool IsCommitted(BotActionArbitration::CandidateTrace const& trace)
             >= static_cast<uint8>(Phase::Submitted);
 }
 
+bool IsProfileCheckpointHazardSource(
+    BotActionArbitration::CandidateTrace const& trace)
+{
+    // These are the two shared hazard producers that attach a typed movement
+    // diagnostic key before native submission. Other Survival+Movement rows
+    // are unrelated safety actions and cannot establish this fixture edge.
+    return trace.Source == "adaptive_raid_trash"
+        || trace.Source == "shared_hazard_movement";
+}
+
 bool SameScope(BotMovementArbitration::Scope const& scope,
     State const& checkpoint)
 {
@@ -248,7 +258,7 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
             && (trace.RequiredResources
                 & BotActionArbitration::Uses(
                     BotActionArbitration::Resource::Movement))
-            && trace.Source != "db_class_spec_profile"
+            && IsProfileCheckpointHazardSource(trace)
             && IsCommitted(trace))
             hazardTraceIndices.push_back(index);
     }
@@ -365,10 +375,35 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
         BotActionArbitration::CandidateTrace const& rangeTrace =
             resolution.Trace[rangeTraceIndex];
         ++checkpoint.RangeObservationCount;
+        bool hazardPreemptedThisResolution = false;
+        if (rangeTrace.Status == "resource_conflict"
+            && rangeTrace.Reason == "resource_lane_owned")
+            for (size_t const hazardIndex : hazardTraceIndices)
+            {
+                BotActionArbitration::CandidateTrace const& hazardTrace =
+                    resolution.Trace[hazardIndex];
+                if (hazardIndex < rangeTraceIndex
+                    && hazardTrace.Key == checkpoint.HazardCandidateKey)
+                {
+                    hazardPreemptedThisResolution = true;
+                    break;
+                }
+            }
+        if (hazardPreemptedThisResolution)
+            checkpoint.HazardPreemptedRange = true;
         bool const rangeCommitted = IsCommitted(rangeTrace)
             && rangeTrace.Source == "db_class_spec_profile"
             && rangeTrace.Reason == "profile_combat_min_range_reconciled";
-        if (rangeCommitted && !checkpoint.RangeReceiptCorrelated)
+        bool const hazardProgressPrecedesRange =
+            checkpoint.HazardProgressObserved
+            && checkpoint.HazardPreemptedRange
+            && checkpoint.HazardDecisionTimestampMs
+            && checkpoint.HazardProgressObservedAtMs
+                > checkpoint.HazardDecisionTimestampMs
+            && checkpoint.HazardProgressObservedAtMs
+                < context.DecisionNowMs;
+        if (rangeCommitted && !checkpoint.RangeReceiptCorrelated
+            && hazardProgressPrecedesRange)
         {
             uint64 const receiptId = context.State.LastMovementExecution.ReceiptId;
             BotWorldMovement::MovementPlannerObservation const planner =
@@ -383,6 +418,9 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
                 && planner.MovementOwner
                     == BotMovementArbitration::Owner::CombatRange
                 && exactPlannerScope(planner)
+                && planner.LaunchReceipt.DynamicTargetGuid == 0
+                && planner.LaunchReceipt.DiagnosticTargetGuid
+                    == checkpoint.TargetGuid
                 && planner.LaunchReceipt.IntentFingerprint
                 && HasNativeLaunch(planner)
                 && context.State.LastMovementExecution.NativeSubmitted;
@@ -407,10 +445,6 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
                 planner.LaunchReceipt.MotionMasterGeneratorType;
             checkpoint.NativeSplineId = LatestSplineId(planner);
         }
-        if (!checkpoint.HazardCandidateKey.empty()
-            && rangeTrace.Status == "resource_conflict"
-            && rangeTrace.Reason == "resource_lane_owned")
-            checkpoint.HazardPreemptedRange = true;
     }
 
     if (checkpoint.RangeReceiptCorrelated)
@@ -425,6 +459,10 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
         uint64 const progressAt = LatestDecreasingProgressAt(progress,
             checkpoint.DecisionTimestampMs);
         checkpoint.MovementProgressObserved = progressAt != 0
+            && checkpoint.HazardProgressObserved
+            && checkpoint.HazardPreemptedRange
+            && checkpoint.HazardProgressObservedAtMs
+                < checkpoint.DecisionTimestampMs
             && planner.LaunchReceipt.DiagnosticCandidateKey
                 == checkpoint.CandidateKey
             && planner.LaunchReceipt.IntentFingerprint
@@ -459,8 +497,13 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
     }
 
     if (checkpoint.HazardProgressObserved
+        && checkpoint.HazardPreemptedRange
+        && checkpoint.HazardProgressObservedAtMs
+            < checkpoint.DecisionTimestampMs
         && checkpoint.MovementProgressObserved
-        && checkpoint.CastRetryObserved)
+        && checkpoint.CastRetryObserved
+        && checkpoint.CastRecordedAtMs > checkpoint.RangeProgressObservedAtMs
+        && checkpoint.CastTargetGuid == checkpoint.TargetGuid)
     {
         checkpoint.CurrentStage = Stage::Completed;
         checkpoint.Outcome = "profile_combat_range_checkpoint_boundary_observed";
@@ -535,6 +578,8 @@ std::string BotWorldPopulationMgr::BuildProfileCombatRangeCheckpointJson() const
          << (checkpoint.MovementCommitted ? "true" : "false")
          << ",\"movement_native_submitted\":"
          << (checkpoint.MovementNativeSubmitted ? "true" : "false")
+         << ",\"range_diagnostic_target_guid\":"
+         << planner.LaunchReceipt.DiagnosticTargetGuid
          << ",\"range_intent_fingerprint\":\"" << std::hex
          << checkpoint.RangeIntentFingerprint << std::dec << "\""
          << ",\"range_receipt_correlated\":"

@@ -89,6 +89,10 @@ struct NativePathLaunchReceipt
     std::string DiagnosticCandidateKey;
     BotMovementArbitration::Scope Scope;
     std::uint64_t DynamicTargetGuid = 0;
+    // Evidence-only target identity for static profile movement.  This is
+    // deliberately separate from DynamicTargetGuid: static movement must
+    // keep its point-planner/native target behavior and fingerprint intact.
+    std::uint64_t DiagnosticTargetGuid = 0;
     bool ProgressCaptureEnabled = false;
     PrimaryDisposition PrimaryPathDisposition =
         PrimaryDisposition::Forbidden;
@@ -172,7 +176,8 @@ public:
         std::uint32_t requestedMapId, Intent const& intent,
         BotMovementArbitration::Scope const& scope,
         std::uint64_t dynamicTargetGuid, float actorX, float actorY,
-        float actorZ, bool progressCaptureEnabled = false);
+        float actorZ, bool progressCaptureEnabled = false,
+        std::uint64_t diagnosticTargetGuid = 0);
     void Record(MovementPlannerObservation observation);
     Movement::NativePathLaunchContext LaunchContext(
         std::uint64_t receiptId, std::uint64_t botGuid,
@@ -200,6 +205,9 @@ public:
         std::uint32_t generatorType);
     void RecordPointGeneratorInitialize(std::uint64_t receiptId,
         std::uint64_t botGuid, std::uint32_t mapId);
+    void RecordDiagnosticTarget(std::uint64_t receiptId,
+        std::uint64_t botGuid, std::uint32_t mapId,
+        std::uint64_t targetGuid);
     void RecordSplinePreparation(std::uint64_t receiptId,
         std::uint64_t botGuid, std::uint32_t mapId,
         bool secondPathAttempted, bool secondPathCalculated,
@@ -274,7 +282,8 @@ std::uint64_t BeginMovementPlannerReceipt(std::uint64_t botGuid,
     std::uint32_t requestedMapId, Intent const& intent,
     BotMovementArbitration::Scope const& scope,
     std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ,
-    bool progressCaptureEnabled = false);
+    bool progressCaptureEnabled = false,
+    std::uint64_t diagnosticTargetGuid = 0);
 Movement::NativePathLaunchContext NativePathLaunchContextForReceipt(
     std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId);
 

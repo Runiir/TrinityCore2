@@ -130,7 +130,7 @@ std::uint64_t MovementPlannerDiagnosticSidecar::BeginReceipt(
     std::uint64_t botGuid, std::uint32_t requestedMapId, Intent const& intent,
     BotMovementArbitration::Scope const& scope,
     std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ,
-    bool progressCaptureEnabled)
+    bool progressCaptureEnabled, std::uint64_t diagnosticTargetGuid)
 {
     if (!botGuid)
         return 0;
@@ -156,6 +156,7 @@ std::uint64_t MovementPlannerDiagnosticSidecar::BeginReceipt(
         intent, requestedMapId, dynamicTargetGuid);
     observation.LaunchReceipt.Scope = scope;
     observation.LaunchReceipt.DynamicTargetGuid = dynamicTargetGuid;
+    observation.LaunchReceipt.DiagnosticTargetGuid = diagnosticTargetGuid;
     observation.LaunchReceipt.ProgressCaptureEnabled = progressCaptureEnabled;
     observation.LaunchReceipt.ActorBeforePlanning = {
         true, "world", actorX, actorY, actorZ
@@ -442,6 +443,19 @@ void MovementPlannerDiagnosticSidecar::RecordPointGeneratorInitialize(
     PublishReceiptUpdate(observation);
 }
 
+void MovementPlannerDiagnosticSidecar::RecordDiagnosticTarget(
+    std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId,
+    std::uint64_t targetGuid)
+{
+    MovementPlannerObservation* receipt = MutableReceipt(receiptId, botGuid,
+        mapId);
+    if (!receipt || !targetGuid)
+        return;
+    MovementPlannerObservation observation = *receipt;
+    observation.LaunchReceipt.DiagnosticTargetGuid = targetGuid;
+    PublishReceiptUpdate(observation);
+}
+
 void MovementPlannerDiagnosticSidecar::RecordSplinePreparation(
     std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId,
     bool secondPathAttempted, bool secondPathCalculated,
@@ -707,11 +721,11 @@ std::uint64_t BeginMovementPlannerReceipt(std::uint64_t botGuid,
     std::uint32_t requestedMapId, Intent const& intent,
     BotMovementArbitration::Scope const& scope,
     std::uint64_t dynamicTargetGuid, float actorX, float actorY, float actorZ,
-    bool progressCaptureEnabled)
+    bool progressCaptureEnabled, std::uint64_t diagnosticTargetGuid)
 {
     return MovementPlannerDiagnostics().BeginReceipt(botGuid, requestedMapId,
         intent, scope, dynamicTargetGuid, actorX, actorY, actorZ,
-        progressCaptureEnabled);
+        progressCaptureEnabled, diagnosticTargetGuid);
 }
 
 Movement::NativePathLaunchContext NativePathLaunchContextForReceipt(

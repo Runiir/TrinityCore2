@@ -251,6 +251,8 @@ std::string MovementPlannerObservationJson(
          << std::setfill(' ')
          << "\",\"dynamic_target_guid\":"
          << observation.LaunchReceipt.DynamicTargetGuid
+         << ",\"diagnostic_target_guid\":"
+         << observation.LaunchReceipt.DiagnosticTargetGuid
          << ",\"progress_capture_enabled\":"
          << (observation.LaunchReceipt.ProgressCaptureEnabled
                 ? "true" : "false")

@@ -135,8 +135,16 @@ int main()
     assert(keyed.LaunchReceipt.Id == keyedReceipt);
     assert(keyed.LaunchReceipt.DiagnosticCandidateKey
         == keyedRequest.DiagnosticCandidateKey);
+    std::uint64_t const keyedFingerprint =
+        keyed.LaunchReceipt.IntentFingerprint;
+    sidecar.RecordDiagnosticTarget(keyedReceipt, 30100, 669, 99001);
+    keyed = sidecar.ForReceipt(keyedReceipt);
+    assert(keyed.LaunchReceipt.DiagnosticTargetGuid == 99001);
+    assert(keyed.LaunchReceipt.IntentFingerprint == keyedFingerprint);
     std::string keyedJson = MovementPlannerObservationJson(keyed);
     assert(keyedJson.find("\"diagnostic_candidate_key\":\"scope:adaptive_magmaw")
+        != std::string::npos);
+    assert(keyedJson.find("\"diagnostic_target_guid\":99001")
         != std::string::npos);
 
     Intent laterRequest = keyedRequest;
