@@ -1,0 +1,286 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_generic_min_range_one_build_and_sealed_observation_fixture",
+  "owner_skill": "raid-performance-loop",
+  "classification": "one_build_and_sealed_observation_only_fixture_authorized",
+  "reviewed_source": {
+    "commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "tree": "75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c",
+    "clean": true,
+    "native_build_source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "native_build_source_tree": "75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c"
+  },
+  "immutable_review": {
+    "external_path": "/tmp/magmaw-generic-min-range-active-duplicate-protocol-review-b5752491/review_handoff.json",
+    "sha256": "f3834e13fe9ec0bed959ea1e5cdbc936e2604f01f351a317839d9545fa25a0f0",
+    "hash_verified": true,
+    "verdict": "GO",
+    "classification": "passed_with_preexisting_adjacent_failures",
+    "reviewed_implementation_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "critical_or_high_findings": 0
+  },
+  "two_identity_authority": {
+    "binary_identity": "Build only the exact clean reviewed source commit b575249160ff518dac20f2a7f223110671b2dcb0 and tree 75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c in a detached external worktree.",
+    "control_identity": "The live workflow is the clean commit that last changes this authorization and experiments/configs/cata_raid_active_work_unit_v1.json.",
+    "required_relation": "The binary commit is an ancestor of the control commit and every intervening changed path is on the exact two-file control-plane allowlist.",
+    "intervening_path_allowlist": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_one_build_sealed_observation_fixture_authorization_handoff_20260902.json"
+    ],
+    "fail_closed": "Any native, dependency, CMake, tool, test, route, ledger, runtime-config, database, unknown, dirty, non-ancestor, or allowlist mismatch revokes this authority before configure or server start."
+  },
+  "causal_receipt": {
+    "candidate_first_broken_edge": "generic_non_drudge_too_close_profile_action_has_no_range_movement_owner",
+    "owner": "shared_bot_runtime",
+    "ordered_claims": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "Attempts 3 and 4 retained actor 30010 on the alive current-node Magmaw target GUID 39 while ordinary profile spells rejected min_range_required and no generic range-movement candidate reached native execution.",
+        "observation": "The reviewed rotation handoff and the attempt4 published summary identify actor 30010, target entry 41570/GUID 39, repeated min-range/no-valid-action cadence loss, and very low Elemental throughput."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "Commit 7444666b generalized only world.profile_combat_range admission for a valid hostile non-Drudge target inside ResolvedCombatAction.MinRange and retained Movement-only ownership plus the existing outward logical-destination mover.",
+        "observation": "Reviewed implementation lineage retained through b5752491."
+      },
+      {
+        "order": 3,
+        "status": "verified",
+        "claim": "The clean b5752491 source now has a default-off authenticated checkpoint, exact fixture/case/source/actor/target seal, explicit actual-hazard and range candidate-to-native receipt/progress correlation, later same-target cast correlation, a production capture dialect, an executable shared transition fixture, and monotonic active receipt consumption.",
+        "observation": "Independent GO handoff f3834e13fe9ec0bed959ea1e5cdbc936e2604f01f351a317839d9545fa25a0f0."
+      },
+      {
+        "order": 4,
+        "status": "verified",
+        "claim": "The reviewed changes do not alter class policy, encounter policy, arbiter priorities/resources, movement geometry, pathing, native executor behavior, or configuration defaults.",
+        "observation": "Independent review reports all C/C++ and gameplay bytes unchanged by the final protocol correction and no unreviewed gameplay widening."
+      },
+      {
+        "order": 5,
+        "status": "unproven",
+        "claim": "A real production worldserver episode emits an actual hazard preemption, then the exact world.profile_combat_range native launch and decreasing progress, then a later ordinary same-target cast under one sealed checkpoint generation and lifecycle scope.",
+        "observation": "No native build or sealed production worldserver fixture has yet executed at reviewed source b5752491."
+      }
+    ],
+    "first_downstream_state_mutation": "The expected first repaired mutation is admission of world.profile_combat_range as the selected Movement owner for actor 30010 and target 39 after the actual hazard candidate releases Movement, followed by the existing native mover launching an outward logical destination.",
+    "failure_postcondition": "The sealed checkpoint fails to reach a truthful terminal record joining actual hazard preemption, exact range candidate selection, native launch, multi-tick decreasing progress, and a later ordinary cast on target 39; or the capture terminates for semantic stall, repeated decision, death loop, infrastructure loss, contamination, or interruption first.",
+    "implementation_hypothesis": "The generic non-Drudge minimum-range admission already reviewed in b5752491 is sufficient to restore the native outward-range movement and later cast chain; this work unit observes that hypothesis without any further gameplay mutation.",
+    "correlation_keys": [
+      "fixture_id",
+      "case_id",
+      "seal_sha256",
+      "source_commit",
+      "checkpoint_generation",
+      "actor_guid",
+      "target_guid",
+      "attempt_id",
+      "wipe_generation",
+      "route_generation",
+      "instance_id",
+      "range_candidate_key",
+      "hazard_candidate_key",
+      "movement_receipt_id",
+      "movement_intent_fingerprint",
+      "native_execution_id",
+      "cast_recorded_at_ms",
+      "cast_target_guid"
+    ]
+  },
+  "fixture_identity": {
+    "purpose": "fixture_expansion_replay",
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "positive_revision": 1,
+    "case_id": "elemental_magmaw_too_close_v1",
+    "actor_guid": 30010,
+    "actor_class_spec": "elemental_shaman",
+    "target_guid": 39,
+    "target_entry": 41570,
+    "target_name": "Magmaw",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "shard_id": "bwd_magmaw_diagnostic_10n",
+    "map_id": 669,
+    "difficulty": "10N",
+    "route_node_count": 4,
+    "target_route_node_id": "bwd.magmaw.encounter",
+    "required_bot_count": 10,
+    "role_counts": {
+      "tank": 2,
+      "healer": 3,
+      "dps": 5
+    },
+    "roster_authority": "The exact frozen diagnostic projection from experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json; no gear, talent, glyph, profession, pet, consumable, or assignment substitution is authorized.",
+    "target_readback_requirement": "Deterministic database and runtime prestart readback must prove target GUID 39 resolves to alive current-node creature entry 41570 in map 669 and the same instance as actor 30010. A mismatch is typed preflight failure, not permission to retarget."
+  },
+  "production_boundary": {
+    "required_sequence": [
+      "Authenticate and stage the canonical DVC JSONL route catalog, verify the staging receipt, materialize exactly blackwing_descent_10n_magmaw_diagnostic through canonical_route_catalog.materialize_scenario_route_manifest, verify the selector receipt, validate the selected four-node object with the unchanged bundle validator, and bind only output_object_path plus output_object_sha256 before consuming build budget.",
+      "Create the exact default-off fixture-expansion decision, suite receipt, recurrence admission, runtime profile overlay, runtime configuration, case/actor/target checkpoint seal, deterministic provisioning receipt, and database readback under immutable hashes.",
+      "Hold route execution until the authenticated profile checkpoint arms for actor 30010 and target 39 in the exact runtime scope.",
+      "Observe an allowed real hazard producer winning Movement with its exact candidate key, same-resolution resource-conflict receipt, native launch, and decreasing progress.",
+      "Observe the exact world.profile_combat_range candidate later winning Movement for actor 30010/target 39, carrying its candidate key and unchanged intent fingerprint into the existing native mover, live movement generator, and multi-tick decreasing progress.",
+      "Observe a still-later ordinary world.profile_combat cast attempt on target 39 under the same attempt, wipe generation, route generation, instance, checkpoint generation, and correlated receipts.",
+      "Close with exactly one typed fixture terminal and retain route progress, decisions, native outcomes, movement, deaths, DPS, HPS, process exit, and cleanup state."
+    ],
+    "success_terminal": "profile_combat_range_checkpoint_boundary_observed",
+    "non_success_terminals": [
+      "semantic_stall",
+      "repeated_decision",
+      "death_loop",
+      "infrastructure_loss",
+      "contamination",
+      "interruption"
+    ],
+    "no_inference": "Candidate acceptance or native submission alone is not success. The sealed terminal must contain real generator/progress and later-cast postconditions. A watchdog terminal is evidence and routing authority, never a pass."
+  },
+  "staged_execution": [
+    {
+      "stage": 1,
+      "work_unit_id": "shard:generic_min_range_reviewed_source_one_build",
+      "owner_skill": "raid-shard-architecture",
+      "owner_isolation": "One new bounded agent; it may not own any later stage and may not launch nested agents.",
+      "input": "This committed authorization, the immutable GO handoff, and clean reviewed commit b575249160ff518dac20f2a7f223110671b2dcb0.",
+      "actions": "Create one fresh external control parent and empty child root; complete the authenticated four-node route preflight; create one detached clean worktree at b5752491; run exactly one configure and one native worldserver build through the queued build coordinator; produce a gate-bearing receipt with configure/build argv and exits, CMake snapshots, clean source/tree identity, binary path, SHA-256, size, and mtime.",
+      "budgets": {
+        "configure": 1,
+        "worldserver_build": 1,
+        "provisioning": 0,
+        "database_mutations": 0,
+        "worldserver_starts": 0,
+        "authserver_starts": 0,
+        "retries": 0
+      },
+      "output_handoff": "An immutable build-ready JSON handoff outside the child run root, with its SHA-256 sent to the stage-2 owner. A failed configure/build consumes the only build budget and routes back to raid-performance-loop."
+    },
+    {
+      "stage": 2,
+      "work_unit_id": "shard:generic_min_range_fixture_provision_and_seal",
+      "owner_skill": "raid-shard-architecture",
+      "owner_isolation": "A different new bounded agent; no build and no server start.",
+      "input": "The exact stage-1 handoff path/SHA-256 and its verified binary/build receipt.",
+      "actions": "Verify both Git identities and the two-path allowlist; materialize the already-verified route object into the runtime bundle; create the exact runtime profile/config and fixture-expansion decision/suite/admission; execute exactly one deterministic frozen-roster provisioning operation and one database readback; prove actor 30010 and target 39/entry 41570; create and re-verify the exact case/actor/target/source/build/profile/config/route seal.",
+      "budgets": {
+        "configure": 0,
+        "worldserver_build": 0,
+        "provisioning": 1,
+        "database_readbacks": 1,
+        "recurrence_seals": 1,
+        "worldserver_starts": 0,
+        "authserver_starts": 0,
+        "retries": 0
+      },
+      "output_handoff": "An immutable sealed-ready JSON handoff outside the child run root binding every input path and SHA-256, exact database readback, runtime configuration, route, profile, actor, target, case, admission, build receipt, and binary. Any mismatch closes as typed preflight failure without starting a server."
+    },
+    {
+      "stage": 3,
+      "work_unit_id": "evidence:generic_min_range_one_sealed_observation_capture",
+      "owner_skill": "raid-evidence-lifecycle",
+      "owner_isolation": "A different new bounded agent; capture only, with no build, provisioning, repair, publication, or retry.",
+      "input": "The exact stage-2 sealed-ready handoff path and SHA-256.",
+      "actions": "Re-verify every bound byte; invoke the existing capture controller with fixture_expansion_replay, the exact recurrence admission and hash, actor GUID 30010, target GUID 39 from the admission, scenario/runtime-profile/pool blackwing_descent_10n_magmaw_diagnostic, and one completion watchdog; start exactly one worldserver and no authserver; close the process and immutable terminal bundle on the first typed terminal.",
+      "budgets": {
+        "configure": 0,
+        "worldserver_build": 0,
+        "provisioning": 0,
+        "database_mutations": 0,
+        "worldserver_starts": 1,
+        "authserver_starts": 0,
+        "fixture_attempts": 1,
+        "gameplay_canary_attempts": 0,
+        "retries": 0
+      },
+      "output_handoff": "An immutable closed-capture JSON handoff outside the child run root binding terminal reason, checkpoint transcript, decisions, rejected candidates/reasons, native launch/progress/cast outcomes, route progress, deaths, DPS/HPS, raw and demultiplexed evidence hashes, worldserver log, process exit, and cleanup status."
+    },
+    {
+      "stage": 4,
+      "work_unit_id": "evidence:generic_min_range_fixture_publish_verify_evict",
+      "owner_skill": "raid-evidence-lifecycle",
+      "owner_isolation": "A different new bounded agent; publication and cleanup only, with no build, provisioning, server, evidence reinterpretation, or fixture promotion.",
+      "input": "The exact stage-3 closed-capture handoff path and SHA-256.",
+      "actions": "Verify the run is closed and attributable; publish the exact evidence through DVC; verify the remote object by isolated reconstruction and hashes; commit only compact Git metadata/pointer records; evict the exact verified local raw/control/worktree/cache payloads; prove no duplicate large logs or worktrees remain.",
+      "budgets": {
+        "dvc_publications": 1,
+        "remote_reconstructions": 1,
+        "worldserver_starts": 0,
+        "builds": 0,
+        "retries": 0
+      },
+      "output_handoff": "An immutable publication/cleanup handoff and clean Git commit binding the DVC pointer, remote digest, reconstructed hashes, compact summary, terminal reason, and exact eviction receipt."
+    },
+    {
+      "stage": 5,
+      "work_unit_id": "review:generic_min_range_sealed_observation_fixture",
+      "owner_skill": "raid-bot-runtime-implementation",
+      "owner_isolation": "Independent Sol-high reviewer; read-only review of the published evidence and reviewed source, no source mutation and no live action.",
+      "input": "The exact stage-4 publication/cleanup handoff path and SHA-256 plus the DVC-reconstructed closed bundle.",
+      "actions": "Independently verify the full producer-to-arbiter-to-native-progress-to-later-cast join, default-off/no-gameplay-change guarantees, attribution, and typed terminal; return GO or NO-GO with the earliest newly proven edge.",
+      "output_handoff": "A hash-bound independent review. GO permits raid-performance-loop to decide fixture promotion and a separately authorized gameplay canary; NO-GO routes only the earliest proven evidence/runtime edge."
+    }
+  ],
+  "baseline_failures": [
+    {
+      "node_id": "tests/test_magmaw_transfer_checkpoint_capture.py::test_capture_modules_and_import_graph_stay_bounded",
+      "observed_at_parent_and_reviewed_source": true,
+      "detail": "capture_checkpoint_controller.py exceeded this Python-only 1000-line assertion before the reviewed protocol patch and remains above it.",
+      "disposition": "Separate bounded maintenance backlog; not waived, not repaired here, and not evidence that the generic profile-range gameplay predicate is wrong."
+    },
+    {
+      "node_id": "tests/test_native_path_checkpoint.py::test_normal_fixture_capture_installs_verified_native_dialect",
+      "observed_at_parent_and_reviewed_source": true,
+      "detail": "The exact source-string assertion about capture_setup.py failed identically at the authorization parent and reviewed source.",
+      "disposition": "Separate bounded fixture-maintenance backlog; not waived, not repaired here, and not permission to change the profile-range capture."
+    }
+  ],
+  "global_budgets": {
+    "configure": 1,
+    "worldserver_build": 1,
+    "deterministic_provisioning": 1,
+    "database_readbacks": 1,
+    "recurrence_seals": 1,
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "observation_only_fixture_attempts": 1,
+    "gameplay_canary_attempts": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
+  "forbidden": [
+    "No Magmaw gameplay canary, boss-clear attempt, acceptance, fixture promotion, ML admission, or second live observation under this authorization.",
+    "No gameplay, C/C++, class, role, encounter, boss, arbiter priority/resource, movement geometry, pathing, executor, route-row, roster, gear, consumable, database-schema, ledger, skill, or runtime default change.",
+    "No Magmaw, boss-entry, creature-entry, route-node, coordinate, spell, class, or spec conditional added to production behavior.",
+    "No synthetic candidate, native launch, progress, hazard, cast, damage, healing, success, or terminal evidence.",
+    "No bot-side Z steering, teleportation, encounter MMAP workaround, global tolerance change, direct fixture MotionMaster action, or forced server-side gameplay effect.",
+    "No retargeting actor 30010 or target GUID 39 when readback or runtime identity differs; fail closed instead.",
+    "No second configure, build, provisioning, database readback, seal, worldserver start, fixture attempt, or retry after any success or failure.",
+    "No one agent may combine build, provision/seal, capture, publication/eviction, or independent-review stages."
+  ],
+  "acceptance_conditions": [
+    "The exact reviewed b5752491 source builds once and the gate-bearing receipt verifies its clean source/tree and worldserver binary hash.",
+    "The runtime bundle binds the exact canonical four-node route, diagnostic profile/roster, actor 30010, target GUID 39/entry 41570, case, seal, database readback, runtime configuration, decision, suite, and recurrence admission.",
+    "Exactly one observation-only worldserver fixture terminates under the completion watchdog with retained DPS and HPS plus decisions, movement, deaths, route progress, checkpoint transcript, and native outcomes.",
+    "A success claim requires the exact real hazard-preemption -> range candidate -> native launch -> multi-tick decreasing progress -> later same-target cast chain in one generation and lifecycle scope; otherwise the typed first terminal is retained and routed.",
+    "The closed bundle is published through DVC, remotely reconstructed and hash-verified, then exact large local payloads are evicted and Git is clean.",
+    "Independent Sol-high review returns GO before fixture promotion or any separately authorized Magmaw gameplay canary."
+  ],
+  "authority": {
+    "source_mutation_allowed": false,
+    "test_mutation_allowed": false,
+    "gameplay_behavior_broadening_allowed": false,
+    "route_mutation_allowed": false,
+    "roster_mutation_allowed": false,
+    "skill_mutation_allowed": false,
+    "ledger_mutation_allowed": false,
+    "build_authorized": true,
+    "sealed_observation_only_fixture_authorized": true,
+    "magmaw_gameplay_canary_authorized": false,
+    "fixture_promotion_authorized": false,
+    "magmaw_acceptance_authorized": false,
+    "ml_admission_authorized": false,
+    "dvc_publication_required": true
+  },
+  "next_action": "Dispatch stage 1 only to one raid-shard-architecture owner. Each later stage remains closed until its exact predecessor emits the immutable path and SHA-256 required above."
+}
