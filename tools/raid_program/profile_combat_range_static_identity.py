@@ -64,6 +64,16 @@ def _nonnegative_integer(value: object, *, field: str) -> int:
 def _canonical_identity_api() -> tuple[Callable[..., dict[str, Any]], ...]:
     """Bind canonical evidence semantics outside caller-rebindable globals."""
 
+    integer_type = int
+    boolean_type = bool
+    dictionary_type = dict
+    is_instance = isinstance
+    list_type = list
+    length = len
+    set_type = set
+    key_error_type = KeyError
+    type_error_type = TypeError
+    value_error_type = ValueError
     target_schema = "cata_raid_typed_target_identity_v1"
     request_schema = "cata_raid_static_target_readback_request_v1"
     receipt_schema = "cata_raid_static_target_readback_receipt_v1"
@@ -92,12 +102,20 @@ def _canonical_identity_api() -> tuple[Callable[..., dict[str, Any]], ...]:
         return {field: "pending_live_proof" for field in pending_fields}
 
     def positive_integer(value: object, *, field: str) -> int:
-        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+        if (
+            not is_instance(value, integer_type)
+            or is_instance(value, boolean_type)
+            or value <= 0
+        ):
             raise error_type(f"{field}_invalid")
         return value
 
     def nonnegative_integer(value: object, *, field: str) -> int:
-        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        if (
+            not is_instance(value, integer_type)
+            or is_instance(value, boolean_type)
+            or value < 0
+        ):
             raise error_type(f"{field}_invalid")
         return value
 
@@ -122,7 +140,7 @@ def _canonical_identity_api() -> tuple[Callable[..., dict[str, Any]], ...]:
         }
 
     def validate_identity(value: object) -> dict[str, Any]:
-        if not isinstance(value, dict):
+        if not is_instance(value, dictionary_type):
             raise error_type("target_identity_unbound")
         missing = [field for field in target_fields if field not in value]
         if missing:
@@ -176,20 +194,20 @@ def _canonical_identity_api() -> tuple[Callable[..., dict[str, Any]], ...]:
         if query_key != bound["target_spawn_id"]:
             raise error_type("target_spawn_id_query_mismatch")
         try:
-            materialized = list(rows)
-        except (TypeError, ValueError) as error:
+            materialized = list_type(rows)
+        except (type_error_type, value_error_type) as error:
             raise error_type("static_target_rows_invalid") from error
-        if len(materialized) != 1:
+        if length(materialized) != 1:
             raise error_type("static_target_row_count_mismatch")
         row = materialized[0]
-        if not isinstance(row, mapping_type):
+        if not is_instance(row, mapping_type):
             raise error_type("static_target_row_invalid")
         expected_row = {
             "target_spawn_id": bound["target_spawn_id"],
             "target_entry": bound["target_entry"],
             "target_map_id": bound["target_map_id"],
         }
-        if set(row) != set(expected_row):
+        if set_type(row) != set_type(expected_row):
             raise error_type("static_target_row_metadata_unbound")
         for field, expected in expected_row.items():
             validator = (
@@ -230,7 +248,7 @@ def _canonical_identity_api() -> tuple[Callable[..., dict[str, Any]], ...]:
 
         try:
             fields = {field: value[field] for field in target_fields}
-        except KeyError as error:
+        except key_error_type as error:
             raise error_type(f"target_identity_unbound:{error.args[0]}") from error
         return construct_identity(**fields)
 
@@ -260,7 +278,7 @@ def _canonical_identity_api() -> tuple[Callable[..., dict[str, Any]], ...]:
         statement = readback_sql
         request = make_request(identity, statement=statement)
         parameter = request["parameters"][0]
-        assert isinstance(parameter, int)
+        assert is_instance(parameter, integer_type)
         rows = query(statement, (parameter,))
         return verify_rows(
             identity=request["target_identity"],

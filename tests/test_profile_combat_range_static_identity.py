@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import dis
+import types
+
 import pytest
 
 import tools.raid_program.profile_combat_range_static_identity as static_identity
@@ -222,6 +225,225 @@ def test_query_callback_cannot_change_executed_or_receipted_statement(
 
     assert calls == [(STATIC_READBACK_SQL, (250051,))]
     assert receipt["query"]["statement"] == calls[0][0]
+
+
+@pytest.mark.parametrize(
+    ("name", "replacement"),
+    [
+        ("int", str),
+        ("bool", int),
+        ("dict", list),
+        ("isinstance", lambda *_: False),
+        ("list", lambda _: []),
+        ("len", lambda _: 0),
+        ("set", lambda _: {"forged"}),
+        ("KeyError", RuntimeError),
+        ("TypeError", RuntimeError),
+        ("ValueError", RuntimeError),
+    ],
+)
+def test_semantic_builtin_rebinding_before_calls_has_no_authority(
+    monkeypatch: pytest.MonkeyPatch, name: str, replacement: object,
+) -> None:
+    monkeypatch.setattr(static_identity, name, replacement, raising=False)
+
+    identity = _identity(target_map_id=0)
+    assert validate_target_identity(identity) == identity
+    assert identity_from_projection({**identity, "ignored": "field"}) == identity
+    receipt = verify_static_readback(
+        identity=identity,
+        query_target_spawn_id=250051,
+        rows=[_row(target_map_id=0)],
+    )
+    performed = perform_static_readback(
+        identity=identity,
+        query=lambda _statement, _parameters: [_row(target_map_id=0)],
+    )
+
+    assert receipt["accepted"] is True
+    assert performed == receipt
+
+
+def test_key_error_rebinding_before_projection_keeps_typed_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(static_identity, "KeyError", RuntimeError, raising=False)
+
+    with pytest.raises(
+        StaticTargetIdentityError, match="target_identity_unbound:target_entry"
+    ):
+        identity_from_projection(
+            {
+                "runtime_target_guid": 39,
+                "target_spawn_id": 250051,
+                "target_map_id": 669,
+            }
+        )
+
+
+def test_type_error_rebinding_before_row_verification_keeps_typed_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(static_identity, "TypeError", RuntimeError, raising=False)
+
+    with pytest.raises(StaticTargetIdentityError, match="static_target_rows_invalid"):
+        verify_static_readback(
+            identity=_identity(),
+            query_target_spawn_id=250051,
+            rows=None,  # type: ignore[arg-type]
+        )
+
+
+def test_value_error_rebinding_before_row_verification_keeps_typed_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class InvalidRows:
+        def __iter__(self):
+            raise ValueError("invalid rows")
+
+    monkeypatch.setattr(static_identity, "ValueError", RuntimeError, raising=False)
+
+    with pytest.raises(StaticTargetIdentityError, match="static_target_rows_invalid"):
+        verify_static_readback(
+            identity=_identity(),
+            query_target_spawn_id=250051,
+            rows=InvalidRows(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("rows", "reason"),
+    [
+        ([], "static_target_row_count_mismatch"),
+        ([_row(), _row()], "static_target_row_count_mismatch"),
+        ([_row(target_entry=41571)], "static_target_entry_mismatch"),
+    ],
+)
+def test_callback_time_semantic_rebinding_cannot_accept_invalid_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    rows: list[dict[str, object]],
+    reason: str,
+) -> None:
+    calls: list[tuple[str, tuple[int]]] = []
+
+    def query(statement: str, parameters: tuple[int]):
+        calls.append((statement, parameters))
+        replacements = {
+            "int": str,
+            "bool": int,
+            "dict": list,
+            "isinstance": lambda *_: False,
+            "list": lambda _: [_row()],
+            "len": lambda _: 1,
+            "set": lambda _: {
+                "target_spawn_id",
+                "target_entry",
+                "target_map_id",
+            },
+            "KeyError": RuntimeError,
+            "TypeError": RuntimeError,
+            "ValueError": RuntimeError,
+        }
+        for name, replacement in replacements.items():
+            monkeypatch.setattr(static_identity, name, replacement, raising=False)
+        return rows
+
+    with pytest.raises(StaticTargetIdentityError, match=reason):
+        perform_static_readback(identity=_identity(), query=query)
+
+    assert calls == [(STATIC_READBACK_SQL, (250051,))]
+
+
+def test_callback_time_semantic_rebinding_preserves_success_and_statement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, tuple[int]]] = []
+
+    def query(statement: str, parameters: tuple[int]):
+        calls.append((statement, parameters))
+        replacements = {
+            "int": str,
+            "bool": int,
+            "dict": list,
+            "isinstance": lambda *_: False,
+            "list": lambda _: [],
+            "len": lambda _: 0,
+            "set": lambda _: {"forged"},
+            "KeyError": RuntimeError,
+            "TypeError": RuntimeError,
+            "ValueError": RuntimeError,
+        }
+        for name, replacement in replacements.items():
+            monkeypatch.setattr(static_identity, name, replacement, raising=False)
+        return [_row()]
+
+    receipt = perform_static_readback(identity=_identity(), query=query)
+
+    assert calls == [(STATIC_READBACK_SQL, (250051,))]
+    assert receipt["accepted"] is True
+    assert receipt["query"]["statement"] == calls[0][0]
+
+
+@pytest.mark.parametrize("rows", [None, 7])
+def test_callback_time_exception_rebinding_keeps_typed_failure(
+    monkeypatch: pytest.MonkeyPatch, rows: object,
+) -> None:
+    calls: list[tuple[str, tuple[int]]] = []
+
+    def query(statement: str, parameters: tuple[int]):
+        calls.append((statement, parameters))
+        monkeypatch.setattr(static_identity, "TypeError", RuntimeError, raising=False)
+        monkeypatch.setattr(static_identity, "ValueError", RuntimeError, raising=False)
+        return rows
+
+    with pytest.raises(StaticTargetIdentityError, match="static_target_rows_invalid"):
+        perform_static_readback(identity=_identity(), query=query)
+
+    assert calls == [(STATIC_READBACK_SQL, (250051,))]
+
+
+def test_canonical_reachable_closures_have_no_semantic_global_fallbacks() -> None:
+    semantic_names = {
+        "int",
+        "bool",
+        "dict",
+        "isinstance",
+        "list",
+        "len",
+        "set",
+        "KeyError",
+        "TypeError",
+        "ValueError",
+    }
+    pending = [
+        target_identity,
+        validate_target_identity,
+        identity_from_projection,
+        static_readback_request,
+        verify_static_readback,
+        perform_static_readback,
+    ]
+    reachable: dict[int, types.FunctionType] = {}
+    while pending:
+        function = pending.pop()
+        if id(function) in reachable:
+            continue
+        reachable[id(function)] = function
+        for cell in function.__closure__ or ():
+            value = cell.cell_contents
+            if isinstance(value, types.FunctionType):
+                pending.append(value)
+
+    fallbacks = {
+        (function.__qualname__, instruction.argval)
+        for function in reachable.values()
+        for instruction in dis.get_instructions(function)
+        if instruction.opname == "LOAD_GLOBAL"
+        and instruction.argval in semantic_names
+    }
+
+    assert len(reachable) >= 12
+    assert fallbacks == set()
 
 
 def test_runtime_guid_cannot_be_substituted_as_static_spawn_key() -> None:
