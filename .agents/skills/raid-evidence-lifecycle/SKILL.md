@@ -53,12 +53,16 @@ Before live execution, require:
 
 Do not reuse a binary or receipt for changed native source. Do not accept stored `passed` booleans when the underlying rows cannot be reconstructed.
 
-Derive security- and evidence-canonical expectations from private fixed
-construction or literals unreachable through caller-rebindable exported state.
-An immutable object is insufficient when construction or validation reads it
-through an exported module/global name that a caller can rebind. If an exported
-convenience view exists, adversarial review must test both item mutation and
-module/global rebinding.
+In Python evidence code, a leading underscore does not make a module name
+private or non-rebindable; public constructors and helpers are equally
+replaceable. Build and validate canonical evidence from function-local fixed
+literals or semantics, or another lexical value the caller cannot rebind.
+Validation must not derive its expectation by calling a replaceable exported
+constructor or helper. Capture values that span a callback once before invoking
+it--especially SQL statement identity--and use that captured value for both
+execution and the receipt. Add adversarial fixtures that rebind schema, field,
+and SQL globals plus public and underscore-prefixed helpers, then prove callback
+execution and the receipt retain the same original canonical value.
 
 ## Capture an immutable lifecycle
 
