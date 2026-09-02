@@ -307,6 +307,20 @@ def test_terminal_consumer_accepts_exact_join() -> None:
     ) == []
 
 
+def test_terminal_consumer_rejects_boolean_bound_instance() -> None:
+    row = _row()
+    row["target_instance_id"] = 1
+
+    assert profile_combat_range_checkpoint_terminal_rejections(
+        row, actor_guid=ACTOR, runtime_target_guid=TARGET,
+        target_spawn_id=TARGET_SPAWN, target_entry=TARGET_ENTRY,
+        target_map_id=TARGET_MAP, case_id=CASE, seal_sha256=SEAL,
+        source_commit=SOURCE, checkpoint_generation=1,
+        attempt_id=7, wipe_generation=0, route_generation=1,
+        target_instance_id=True,
+    ) == ["profile_combat_range_checkpoint_status_scope_invalid"]
+
+
 def _scheduler_identity() -> ControllerRouteHoldLaunchIdentity:
     return ControllerRouteHoldLaunchIdentity(
         scenario_id="blackwing_descent_10n_magmaw_diagnostic",
@@ -354,7 +368,7 @@ def _hold(*, phase: str = "held", terminal: bool = False) -> dict:
     }
 
 
-def _status(*, phase: str = "held") -> dict:
+def _status(*, phase: str = "held", instance_id: int = 123) -> dict:
     return {
         "ok": True,
         "action": "botauto_status",
@@ -366,7 +380,7 @@ def _status(*, phase: str = "held") -> dict:
             "server_epoch": 91,
             "attempt_id": 7,
             "wipe_generation": 0,
-            "instance_id": 123,
+            "instance_id": instance_id,
             "route_progress": {"generation": 1},
             "controller_route_hold": _hold(phase=phase),
         },
@@ -389,10 +403,28 @@ def _profile_row(*, stage: str = "armed", terminal: bool = False) -> dict:
 def _profile_arm_ack() -> dict:
     # ArmProfileCombatRangeCheckpointForCohort serializes before the first
     # live target observation, so no target instance or match outcome is bound.
-    row = _profile_row(stage="armed", terminal=False)
-    row.update({
+    return {
+        "ok": True,
+        "action": PROFILE_COMBAT_RANGE_CHECKPOINT_ACTION,
+        "authority": PROFILE_COMBAT_RANGE_CHECKPOINT_AUTHORITY,
+        "fixture_id": PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID,
+        "case_id": CASE,
+        "seal_sha256": SEAL,
+        "source_commit": SOURCE,
+        "stage": "armed",
+        "terminal": False,
         "outcome": "profile_combat_range_checkpoint_armed",
+        "failure_reason": "",
+        "checkpoint_generation": 1,
+        "actor_guid": ACTOR,
+        "runtime_target_guid": TARGET,
+        "target_spawn_id": TARGET_SPAWN,
+        "target_entry": TARGET_ENTRY,
+        "attempt_id": 7,
+        "wipe_generation": 0,
+        "route_generation": 1,
         "scope_bound": False,
+        "target_map_id": TARGET_MAP,
         "target_instance_id": 0,
         "runtime_target_guid_matched": False,
         "target_spawn_id_matched": False,
@@ -436,20 +468,21 @@ def _profile_arm_ack() -> dict:
         "cast_retry_observed": False,
         "cast_recorded_at_ms": 0,
         "cast_before_progress_observed": False,
-    })
-    return row
+    }
 
 
 def _advance_scheduler_to_arm_ack(
-    scheduler: ControllerRouteHoldScheduler,
+    scheduler: ControllerRouteHoldScheduler, *, instance_id: int = 123,
 ) -> None:
     assert scheduler.start() == [
         "botautochaincheckpoint start-held "
         f"{ACTOR} {PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID} {SEAL} {SOURCE}"
     ]
     assert scheduler.observe(_hold()) == ["botauto status"]
-    assert scheduler.observe(_status()) == ["botauto status"]
-    assert scheduler.observe(_status()) == [
+    assert scheduler.observe(_status(instance_id=instance_id)) == [
+        "botauto status"
+    ]
+    assert scheduler.observe(_status(instance_id=instance_id)) == [
         profile_combat_range_checkpoint_arm_command(_admission(), ACTOR, TARGET)
     ]
     assert scheduler.phase == "awaiting_arm_ack"
@@ -497,6 +530,31 @@ def test_profile_scheduler_executes_exact_arm_poll_terminal_protocol() -> None:
     assert receipt["checkpoint_terminal_observation"]["terminal"] is True
 
 
+def test_profile_arm_ack_uses_independent_native_armed_defaults() -> None:
+    row = _profile_arm_ack()
+
+    assert set(row) == set(_row())
+    assert row["stage"] == "armed"
+    assert row["terminal"] is False
+    assert row["scope_bound"] is False
+    assert type(row["target_instance_id"]) is int
+    assert row["target_instance_id"] == 0
+    assert all(
+        row[field] is False
+        for field in (
+            "runtime_target_guid_matched",
+            "target_spawn_id_matched",
+            "target_entry_matched",
+            "target_map_id_matched",
+            "positive_instance_matched",
+            "same_instance_matched",
+            "attempt_scope_matched",
+            "wipe_scope_matched",
+            "route_scope_matched",
+        )
+    )
+
+
 def test_profile_scheduler_rejects_duplicate_active_arm_without_poll() -> None:
     scheduler = _scheduler()
     _advance_scheduler_to_arm_ack(scheduler)
@@ -515,7 +573,9 @@ def test_profile_scheduler_rejects_duplicate_active_arm_without_poll() -> None:
     "field,value",
     [
         ("target_instance_id", 123),
+        ("target_instance_id", True),
         ("target_instance_id", False),
+        ("target_instance_id", None),
         ("scope_bound", True),
         ("runtime_target_guid_matched", True),
         ("target_spawn_id_matched", True),
@@ -536,6 +596,18 @@ def test_profile_scheduler_rejects_inconsistent_unbound_arm_ack(
     _advance_scheduler_to_arm_ack(scheduler)
     row = _profile_arm_ack()
     row[field] = value
+
+    assert scheduler.observe(row) == []
+    assert scheduler.failure_reason == (
+        "profile_combat_range_checkpoint_status_arm_ack_invalid"
+    )
+
+
+def test_profile_scheduler_rejects_omitted_unbound_arm_instance() -> None:
+    scheduler = _scheduler()
+    _advance_scheduler_to_arm_ack(scheduler)
+    row = _profile_arm_ack()
+    del row["target_instance_id"]
 
     assert scheduler.observe(row) == []
     assert scheduler.failure_reason == (
@@ -579,6 +651,43 @@ def test_profile_scheduler_requires_exact_bound_scope_after_arm(
     assert scheduler.failure_reason == (
         "profile_combat_range_checkpoint_status_scope_invalid"
     )
+
+
+@pytest.mark.parametrize("terminal", [False, True])
+@pytest.mark.parametrize(
+    "instance_value",
+    [
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(None, id="none"),
+        pytest.param(0, id="default-zero"),
+        pytest.param("omitted", id="omitted"),
+    ],
+)
+def test_profile_scheduler_rejects_non_integer_bound_instance_at_one(
+    instance_value: object, terminal: bool,
+) -> None:
+    scheduler = _scheduler()
+    _advance_scheduler_to_arm_ack(scheduler, instance_id=1)
+    assert scheduler.observe(_profile_arm_ack()) == [
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+    ]
+    row = _profile_row(
+        stage="completed" if terminal else "progress_observed",
+        terminal=terminal,
+    )
+    if instance_value == "omitted":
+        del row["target_instance_id"]
+    else:
+        row["target_instance_id"] = instance_value
+    transcript = list(scheduler.command_transcript)
+
+    assert scheduler.observe(row) == []
+    assert scheduler.failure_reason == (
+        "profile_combat_range_checkpoint_status_scope_invalid"
+    )
+    assert scheduler._profile_checkpoint_state["active_stage"] == "armed"
+    assert scheduler.command_transcript == transcript
 
 
 @pytest.mark.parametrize(

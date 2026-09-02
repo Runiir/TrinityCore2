@@ -325,11 +325,16 @@ def profile_combat_range_checkpoint_terminal_rejections(
         ("attempt_id", attempt_id),
         ("wipe_generation", wipe_generation),
         ("route_generation", route_generation),
-        ("target_instance_id", target_instance_id),
     )
     for field, expected in expected_scoped:
         if expected is not None and row.get(field) != expected:
             return ["profile_combat_range_checkpoint_status_scope_invalid"]
+    if target_instance_id is not None and (
+        not _positive_int(target_instance_id)
+        or not _positive_int(row.get("target_instance_id"))
+        or row.get("target_instance_id") != target_instance_id
+    ):
+        return ["profile_combat_range_checkpoint_status_scope_invalid"]
     if (
         not _positive_int(row.get("checkpoint_generation"))
         or not _positive_int(row.get("attempt_id"))
@@ -563,6 +568,7 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
         runtime_scope is None
         or not _positive_int(runtime_scope.instance_id)
         or row.get("scope_bound") is not True
+        or not _positive_int(row.get("target_instance_id"))
         or row.get("target_instance_id") != runtime_scope.instance_id
         or any(
             row.get(field) is not True
