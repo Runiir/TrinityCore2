@@ -47,6 +47,17 @@ def test_combat_movement_preserves_profile_range_and_path_guards() -> None:
     assert "preciseMaximumRangeApproach" in module
 
 
+def test_profile_range_diagnostic_uses_object_guid_counters() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    start = module.index("auto annotateProfileRangeReceipt")
+    end = module.index("auto moveProfilePoint", start)
+    diagnostic = module[start:end]
+
+    assert "bot->GetGUID().GetCounter()" in diagnostic
+    assert "reference->GetGUID().GetCounter()" in diagnostic
+    assert "GetRawValue" not in diagnostic
+
+
 def test_melee_range_uses_live_target_chase_without_target_z_floor_gate() -> None:
     module = MODULE.read_text(encoding="utf-8")
     start = module.index(

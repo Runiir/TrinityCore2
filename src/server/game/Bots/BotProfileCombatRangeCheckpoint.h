@@ -18,13 +18,57 @@ struct Scope
 {
     uint64 CheckpointGeneration = 0;
     uint32 ActorGuid = 0;
-    uint64 TargetGuid = 0;
+    uint32 RuntimeTargetGuid = 0;
     uint64 AttemptId = 0;
     uint32 WipeGeneration = 0;
     uint64 RouteGeneration = 0;
     uint32 MapId = 0;
     uint32 InstanceId = 0;
 };
+
+struct TargetDescriptor
+{
+    uint32 RuntimeTargetGuid = 0;
+    uint32 TargetSpawnId = 0;
+    uint32 TargetEntry = 0;
+    uint32 TargetMapId = 0;
+};
+
+struct LiveTargetObservation
+{
+    uint32 RuntimeTargetGuid = 0;
+    uint32 TargetSpawnId = 0;
+    uint32 TargetEntry = 0;
+    uint32 TargetMapId = 0;
+    uint32 TargetInstanceId = 0;
+    uint32 ActorMapId = 0;
+    uint32 ActorInstanceId = 0;
+    bool TargetAvailable = false;
+};
+
+inline char const* TargetIdentityFailure(TargetDescriptor const& expected,
+    LiveTargetObservation const& observed)
+{
+    if (!observed.TargetAvailable)
+        return "profile_combat_range_checkpoint_target_unavailable";
+    if (!expected.RuntimeTargetGuid
+        || observed.RuntimeTargetGuid != expected.RuntimeTargetGuid)
+        return "profile_combat_range_checkpoint_runtime_target_guid_drift";
+    if (!expected.TargetSpawnId
+        || observed.TargetSpawnId != expected.TargetSpawnId)
+        return "profile_combat_range_checkpoint_target_spawn_id_drift";
+    if (!expected.TargetEntry || observed.TargetEntry != expected.TargetEntry)
+        return "profile_combat_range_checkpoint_target_entry_drift";
+    if (!expected.TargetMapId
+        || observed.TargetMapId != expected.TargetMapId)
+        return "profile_combat_range_checkpoint_target_map_id_drift";
+    if (!observed.TargetInstanceId)
+        return "profile_combat_range_checkpoint_target_instance_invalid";
+    if (observed.ActorMapId != observed.TargetMapId
+        || observed.ActorInstanceId != observed.TargetInstanceId)
+        return "profile_combat_range_checkpoint_actor_target_scope_mismatch";
+    return nullptr;
+}
 
 struct Candidate
 {
@@ -85,7 +129,7 @@ inline bool IsValidScope(Scope const& scope)
 {
     return scope.CheckpointGeneration > 0
         && scope.ActorGuid > 0
-        && scope.TargetGuid > 0
+        && scope.RuntimeTargetGuid > 0
         && scope.AttemptId > 0
         && scope.RouteGeneration > 0
         && scope.MapId > 0
@@ -96,7 +140,7 @@ inline bool SameScope(Scope const& left, Scope const& right)
 {
     return left.CheckpointGeneration == right.CheckpointGeneration
         && left.ActorGuid == right.ActorGuid
-        && left.TargetGuid == right.TargetGuid
+        && left.RuntimeTargetGuid == right.RuntimeTargetGuid
         && left.AttemptId == right.AttemptId
         && left.WipeGeneration == right.WipeGeneration
         && left.RouteGeneration == right.RouteGeneration
@@ -152,7 +196,8 @@ inline bool IsCompletedTransition(TransitionEvidence const& evidence)
             evidence.RangeCandidate, evidence.RangeReceipt, scope)
         || evidence.RangeReceipt.DynamicTargetAbsent
             != true
-        || evidence.RangeReceipt.DiagnosticTargetGuid != scope.TargetGuid
+        || evidence.RangeReceipt.DiagnosticTargetGuid
+            != scope.RuntimeTargetGuid
         || evidence.RangeDecisionTimestampMs
             <= evidence.HazardProgressObservedAtMs
         || !evidence.RangeProgressObserved
@@ -166,7 +211,7 @@ inline bool IsCompletedTransition(TransitionEvidence const& evidence)
             != scope.CheckpointGeneration
         || !SameScope(evidence.CastScope, scope)
         || evidence.CastSpellId == 0
-        || evidence.CastTargetGuid != scope.TargetGuid
+        || evidence.CastTargetGuid != scope.RuntimeTargetGuid
         || !evidence.CastRetryObserved
         || evidence.CastBeforeProgressObserved
         || evidence.CastRecordedAtMs
@@ -207,13 +252,24 @@ struct State
     std::string SealSha256;
     std::string SourceCommit;
     uint32 ActorGuid = 0;
-    uint64 TargetGuid = 0;
+    uint32 RuntimeTargetGuid = 0;
+    uint32 TargetSpawnId = 0;
+    uint32 TargetEntry = 0;
+    uint32 TargetMapId = 0;
     uint64 AttemptId = 0;
     uint32 WipeGeneration = 0;
     uint64 RouteGeneration = 0;
     bool ScopeBound = false;
-    uint32 TargetMapId = 0;
     uint32 TargetInstanceId = 0;
+    bool RuntimeTargetGuidMatched = false;
+    bool TargetSpawnIdMatched = false;
+    bool TargetEntryMatched = false;
+    bool TargetMapIdMatched = false;
+    bool PositiveInstanceMatched = false;
+    bool SameInstanceMatched = false;
+    bool AttemptScopeMatched = false;
+    bool WipeScopeMatched = false;
+    bool RouteScopeMatched = false;
     uint64 DecisionTimestampMs = 0;
     uint64 CandidateTraceIndex = 0;
     std::string CandidateKey;

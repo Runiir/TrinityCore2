@@ -173,11 +173,15 @@ PROFILE_COMBAT_RANGE_ACTIVE_STAGE_ORDER = {
 def profile_combat_range_checkpoint_arm_command(
     recurrence_admission: dict[str, Any] | None,
     actor_guid: int | None,
-    target_guid: int | None,
+    runtime_target_guid: int | None,
 ) -> str | None:
     """Build the authenticated arm command for the generic range fixture."""
 
-    if recurrence_admission is None and actor_guid is None and target_guid is None:
+    if (
+        recurrence_admission is None
+        and actor_guid is None
+        and runtime_target_guid is None
+    ):
         return None
     if not isinstance(recurrence_admission, dict):
         raise ValueError(
@@ -196,7 +200,10 @@ def profile_combat_range_checkpoint_arm_command(
     case_id = recurrence_admission.get("checkpoint_case_id")
     source = recurrence_admission.get("source_commit")
     admitted_actor = recurrence_admission.get("checkpoint_actor_guid")
-    admitted_target = recurrence_admission.get("checkpoint_target_guid")
+    admitted_target = recurrence_admission.get(
+        "checkpoint_runtime_target_guid"
+    )
+    typed_identity = recurrence_admission.get("checkpoint_target_identity")
     if (
         recurrence_admission.get("valid") is not True
         or recurrence_admission.get("purpose") != FIXTURE_EXPANSION_PURPOSE
@@ -206,9 +213,25 @@ def profile_combat_range_checkpoint_arm_command(
         or not isinstance(actor_guid, int) or isinstance(actor_guid, bool)
         or actor_guid <= 0
         or admitted_actor != actor_guid
-        or not isinstance(target_guid, int) or isinstance(target_guid, bool)
-        or target_guid <= 0
-        or admitted_target != target_guid
+        or not isinstance(runtime_target_guid, int)
+        or isinstance(runtime_target_guid, bool)
+        or runtime_target_guid <= 0
+        or admitted_target != runtime_target_guid
+        or not isinstance(typed_identity, dict)
+        or typed_identity.get("runtime_target_guid") != runtime_target_guid
+        or recurrence_admission.get("checkpoint_target_spawn_id")
+            != typed_identity.get("target_spawn_id")
+        or recurrence_admission.get("checkpoint_target_entry")
+            != typed_identity.get("target_entry")
+        or recurrence_admission.get("checkpoint_target_map_id")
+            != typed_identity.get("target_map_id")
+        or not all(
+            _positive_int(typed_identity.get(field))
+            for field in (
+                "runtime_target_guid", "target_spawn_id",
+                "target_entry", "target_map_id",
+            )
+        )
         or not isinstance(seal, str) or not re.fullmatch(r"[0-9a-f]{64}", seal)
         or not isinstance(source, str) or not re.fullmatch(r"[0-9a-f]{40}", source)
     ):
@@ -217,7 +240,7 @@ def profile_combat_range_checkpoint_arm_command(
         )
     return (
         "botautoprofilecombatrangecheckpoint arm "
-        f"{actor_guid} {target_guid} {case_id} {seal} {source}"
+        f"{actor_guid} {runtime_target_guid} {case_id} {seal} {source}"
     )
 
 
@@ -234,12 +257,12 @@ def _profile_checkpoint_nonnegative_int(value: object) -> bool:
 
 
 def profile_combat_range_checkpoint_terminal_rejections(
-    row: object, *, actor_guid: int, target_guid: int, case_id: str,
-    seal_sha256: str, source_commit: str,
+    row: object, *, actor_guid: int, runtime_target_guid: int,
+    target_spawn_id: int, target_entry: int, target_map_id: int,
+    case_id: str, seal_sha256: str, source_commit: str,
     checkpoint_generation: int | None = None,
     attempt_id: int | None = None, wipe_generation: int | None = None,
-    route_generation: int | None = None, target_map_id: int | None = None,
-    target_instance_id: int | None = None,
+    route_generation: int | None = None, target_instance_id: int | None = None,
 ) -> list[str]:
     """Validate one authenticated terminal status projection fail-closed."""
 
@@ -254,10 +277,28 @@ def profile_combat_range_checkpoint_terminal_rejections(
         and row.get("seal_sha256") == seal_sha256
         and row.get("source_commit") == source_commit
         and row.get("actor_guid") == actor_guid
-        and row.get("target_guid") == target_guid
+        and row.get("runtime_target_guid") == runtime_target_guid
     )
     if not identity:
         return ["profile_combat_range_checkpoint_status_identity_invalid"]
+    target_identity = (
+        row.get("target_spawn_id") == target_spawn_id
+        and row.get("target_entry") == target_entry
+        and row.get("target_map_id") == target_map_id
+        and all(
+            _positive_int(value)
+            for value in (
+                runtime_target_guid, target_spawn_id,
+                target_entry, target_map_id,
+            )
+        )
+        and row.get("runtime_target_guid_matched") is True
+        and row.get("target_spawn_id_matched") is True
+        and row.get("target_entry_matched") is True
+        and row.get("target_map_id_matched") is True
+    )
+    if not target_identity:
+        return ["profile_combat_range_checkpoint_target_identity_invalid"]
     if (
         not isinstance(case_id, str) or not case_id
         or not isinstance(seal_sha256, str)
@@ -271,7 +312,6 @@ def profile_combat_range_checkpoint_terminal_rejections(
         ("attempt_id", attempt_id),
         ("wipe_generation", wipe_generation),
         ("route_generation", route_generation),
-        ("target_map_id", target_map_id),
         ("target_instance_id", target_instance_id),
     )
     for field, expected in expected_scoped:
@@ -286,11 +326,14 @@ def profile_combat_range_checkpoint_terminal_rejections(
         or not _profile_checkpoint_nonnegative_int(
             row.get("route_generation")
         )
-        or not _profile_checkpoint_nonnegative_int(row.get("target_map_id"))
-        or not _profile_checkpoint_nonnegative_int(
-            row.get("target_instance_id")
-        )
+        or not _positive_int(row.get("target_map_id"))
+        or not _positive_int(row.get("target_instance_id"))
         or row.get("scope_bound") is not True
+        or row.get("positive_instance_matched") is not True
+        or row.get("same_instance_matched") is not True
+        or row.get("attempt_scope_matched") is not True
+        or row.get("wipe_scope_matched") is not True
+        or row.get("route_scope_matched") is not True
     ):
         return ["profile_combat_range_checkpoint_status_scope_invalid"]
     if (
@@ -314,7 +357,7 @@ def profile_combat_range_checkpoint_terminal_rejections(
         or row.get("movement_committed") is not True
         or row.get("movement_native_submitted") is not True
         or row.get("range_receipt_correlated") is not True
-        or row.get("range_diagnostic_target_guid") != target_guid
+        or row.get("range_diagnostic_target_guid") != runtime_target_guid
         or not _positive_int(row.get("decision_timestamp_ms"))
         or not _profile_checkpoint_nonzero_hex(
             row.get("range_intent_fingerprint")
@@ -363,7 +406,7 @@ def profile_combat_range_checkpoint_terminal_rejections(
         return ["profile_combat_range_checkpoint_hazard_correlation_invalid"]
     if (
         not _positive_int(row.get("cast_spell_id"))
-        or row.get("cast_target_guid") != target_guid
+        or row.get("cast_target_guid") != runtime_target_guid
         or row.get("cast_retry_observed") is not True
         or not _positive_int(row.get("cast_recorded_at_ms"))
         or row["cast_recorded_at_ms"]
@@ -383,7 +426,8 @@ def observe_profile_combat_range_checkpoint_row(
 
 
 def _observe_profile_combat_range_checkpoint_scheduler_row(
-    scheduler: Any, row: dict[str, Any], *, target_guid: int, case_id: str,
+    scheduler: Any, row: dict[str, Any], *, target_identity: dict[str, int],
+    case_id: str,
 ) -> list[str]:
     """Consume profile arm/status rows through the generic hold scheduler."""
 
@@ -401,7 +445,10 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
         "seal_sha256": scheduler.identity.seal_sha256,
         "source_commit": scheduler.identity.source_commit,
         "actor_guid": scheduler.identity.actor_guid,
-        "target_guid": target_guid,
+        "runtime_target_guid": target_identity["runtime_target_guid"],
+        "target_spawn_id": target_identity["target_spawn_id"],
+        "target_entry": target_identity["target_entry"],
+        "target_map_id": target_identity["target_map_id"],
     }
     if not isinstance(row, dict) or any(
         row.get(field) != value for field, value in expected.items()
@@ -414,7 +461,6 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
     if not isinstance(state, dict):
         state = {
             "checkpoint_generation": None,
-            "target_map_id": None,
             "active_stage": None,
         }
         scheduler._profile_checkpoint_state = state
@@ -450,16 +496,8 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
         return scheduler._fail(
             "profile_combat_range_checkpoint_status_scope_invalid"
         )
-    target_map_id = row.get("target_map_id")
     if row.get("scope_bound") is True:
-        if not _profile_checkpoint_nonnegative_int(target_map_id) or not target_map_id:
-            return scheduler._fail(
-                "profile_combat_range_checkpoint_status_scope_invalid"
-            )
-        prior_map = state.get("target_map_id")
-        if prior_map is None:
-            state["target_map_id"] = target_map_id
-        elif prior_map != target_map_id:
+        if row.get("target_map_id") != target_identity["target_map_id"]:
             return scheduler._fail(
                 "profile_combat_range_checkpoint_status_scope_invalid"
             )
@@ -509,7 +547,10 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
     rejections = observe_profile_combat_range_checkpoint_row(
         row,
         actor_guid=scheduler.identity.actor_guid,
-        target_guid=target_guid,
+        runtime_target_guid=target_identity["runtime_target_guid"],
+        target_spawn_id=target_identity["target_spawn_id"],
+        target_entry=target_identity["target_entry"],
+        target_map_id=target_identity["target_map_id"],
         case_id=case_id,
         seal_sha256=scheduler.identity.seal_sha256,
         source_commit=scheduler.identity.source_commit,
@@ -519,7 +560,6 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
             runtime_scope.wipe_generation if runtime_scope is not None else None
         ),
         route_generation=scheduler.identity.route_generation,
-        target_map_id=state.get("target_map_id"),
         target_instance_id=(
             runtime_scope.instance_id if runtime_scope is not None else None
         ),
@@ -1114,9 +1154,27 @@ def checkpoint_controller_dialect(
             },
         }
     if fixture_id == PROFILE_COMBAT_RANGE_CHECKPOINT_FIXTURE_ID:
-        target_guid = recurrence_admission.get("checkpoint_target_guid")
+        target_identity = {
+            "runtime_target_guid": recurrence_admission.get(
+                "checkpoint_runtime_target_guid"
+            ),
+            "target_spawn_id": recurrence_admission.get(
+                "checkpoint_target_spawn_id"
+            ),
+            "target_entry": recurrence_admission.get(
+                "checkpoint_target_entry"
+            ),
+            "target_map_id": recurrence_admission.get(
+                "checkpoint_target_map_id"
+            ),
+        }
+        if not all(_positive_int(value) for value in target_identity.values()):
+            raise ValueError(
+                "profile_combat_range_checkpoint_verified_admission_invalid"
+            )
         arm_command = profile_combat_range_checkpoint_arm_command(
-            recurrence_admission, actor_guid, target_guid,
+            recurrence_admission, actor_guid,
+            target_identity["runtime_target_guid"],
         )
         case_id = recurrence_admission.get("checkpoint_case_id")
         return {
@@ -1130,7 +1188,7 @@ def checkpoint_controller_dialect(
                 "checkpoint_observer": (
                     lambda scheduler, row: (
                         _observe_profile_combat_range_checkpoint_scheduler_row(
-                            scheduler, row, target_guid=target_guid,
+                            scheduler, row, target_identity=target_identity,
                             case_id=case_id,
                         )
                     )

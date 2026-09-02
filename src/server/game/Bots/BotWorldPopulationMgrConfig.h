@@ -116,7 +116,10 @@ struct BotWorldExperimentConfig
     std::string ProfileCombatRangeCheckpointSealSha256;
     std::string ProfileCombatRangeCheckpointSourceCommit;
     uint32 ProfileCombatRangeCheckpointActorGuid = 0;
-    uint64 ProfileCombatRangeCheckpointTargetGuid = 0;
+    uint32 ProfileCombatRangeCheckpointRuntimeTargetGuid = 0;
+    uint32 ProfileCombatRangeCheckpointTargetSpawnId = 0;
+    uint32 ProfileCombatRangeCheckpointTargetEntry = 0;
+    uint32 ProfileCombatRangeCheckpointTargetMapId = 0;
     std::string ValidationRouteManifestPath;
     std::string ValidationRouteAdvanceMode = "disabled";
     std::string ValidationRouteScenarioId;

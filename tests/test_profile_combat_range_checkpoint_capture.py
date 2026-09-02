@@ -25,6 +25,9 @@ from tools.raid_program.recurrence_checkpoint_seals import (
 
 ACTOR = 30007
 TARGET = 99001
+TARGET_SPAWN = 250051
+TARGET_ENTRY = 41570
+TARGET_MAP = 669
 CASE = "generic_min_range_correlation_v1"
 SEAL = "a" * 64
 SOURCE = "b" * 40
@@ -45,6 +48,16 @@ def _admission() -> dict[str, object]:
         "source_commit": SOURCE,
         "checkpoint_actor_guid": ACTOR,
         "checkpoint_target_guid": TARGET,
+        "checkpoint_runtime_target_guid": TARGET,
+        "checkpoint_target_spawn_id": TARGET_SPAWN,
+        "checkpoint_target_entry": TARGET_ENTRY,
+        "checkpoint_target_map_id": TARGET_MAP,
+        "checkpoint_target_identity": {
+            "runtime_target_guid": TARGET,
+            "target_spawn_id": TARGET_SPAWN,
+            "target_entry": TARGET_ENTRY,
+            "target_map_id": TARGET_MAP,
+        },
     }
 
 
@@ -63,13 +76,24 @@ def _row() -> dict[str, object]:
         "failure_reason": "",
         "checkpoint_generation": 1,
         "actor_guid": ACTOR,
-        "target_guid": TARGET,
+        "runtime_target_guid": TARGET,
+        "target_spawn_id": TARGET_SPAWN,
+        "target_entry": TARGET_ENTRY,
         "attempt_id": 7,
         "wipe_generation": 0,
         "route_generation": 1,
         "scope_bound": True,
-        "target_map_id": 669,
+        "target_map_id": TARGET_MAP,
         "target_instance_id": 123,
+        "runtime_target_guid_matched": True,
+        "target_spawn_id_matched": True,
+        "target_entry_matched": True,
+        "target_map_id_matched": True,
+        "positive_instance_matched": True,
+        "same_instance_matched": True,
+        "attempt_scope_matched": True,
+        "wipe_scope_matched": True,
+        "route_scope_matched": True,
         "decision_timestamp_ms": 1000,
         "candidate_trace_index": 0,
         "candidate_key": "world.profile_combat_range",
@@ -136,9 +160,21 @@ def test_checkpoint_dialect_wires_authenticated_scheduler_observer() -> None:
     assert callable(kwargs["checkpoint_observer"])
 
     missing_target = _admission()
-    del missing_target["checkpoint_target_guid"]
+    del missing_target["checkpoint_runtime_target_guid"]
     with pytest.raises(ValueError, match="verified_admission_invalid"):
         checkpoint_controller_dialect(missing_target, ACTOR)
+
+    legacy_target_only = _admission()
+    for field in (
+        "checkpoint_runtime_target_guid", "checkpoint_target_spawn_id",
+        "checkpoint_target_entry", "checkpoint_target_map_id",
+        "checkpoint_target_identity",
+    ):
+        del legacy_target_only[field]
+    with pytest.raises(ValueError, match="verified_admission_invalid"):
+        profile_combat_range_checkpoint_arm_command(
+            legacy_target_only, ACTOR, TARGET,
+        )
 
     wrong_fixture = _admission()
     wrong_fixture["checkpoint_fixture_id"] = "unsupported_fixture"
@@ -185,7 +221,20 @@ def test_arm_rejects_identity_drift(
     [
         ("seal_sha256", "c" * 64, "identity"),
         ("fixture_id", "wrong_fixture", "identity"),
-        ("target_guid", TARGET + 1, "identity"),
+        ("runtime_target_guid", TARGET + 1, "identity"),
+        ("target_spawn_id", TARGET_SPAWN + 1, "target_identity"),
+        ("target_entry", TARGET_ENTRY + 1, "target_identity"),
+        ("target_map_id", TARGET_MAP + 1, "target_identity"),
+        ("runtime_target_guid_matched", False, "target_identity"),
+        ("target_spawn_id_matched", False, "target_identity"),
+        ("target_entry_matched", False, "target_identity"),
+        ("target_map_id_matched", False, "target_identity"),
+        ("target_instance_id", 0, "scope"),
+        ("positive_instance_matched", False, "scope"),
+        ("same_instance_matched", False, "scope"),
+        ("attempt_scope_matched", False, "scope"),
+        ("wipe_scope_matched", False, "scope"),
+        ("route_scope_matched", False, "scope"),
         ("checkpoint_generation", 2, "scope"),
         ("candidate_key", "stale.range", "range"),
         ("movement_receipt_id", 0, "range"),
@@ -211,11 +260,16 @@ def test_terminal_consumer_rejects_first_broken_edge(
     row = _row()
     row[field] = value
     reasons = profile_combat_range_checkpoint_terminal_rejections(
-        row, actor_guid=ACTOR, target_guid=TARGET, case_id=CASE,
-        seal_sha256=SEAL, source_commit=SOURCE, checkpoint_generation=1,
+        row, actor_guid=ACTOR, runtime_target_guid=TARGET,
+        target_spawn_id=TARGET_SPAWN, target_entry=TARGET_ENTRY,
+        target_map_id=TARGET_MAP, case_id=CASE, seal_sha256=SEAL,
+        source_commit=SOURCE, checkpoint_generation=1,
     )
     expected_reasons = {
         "identity": "profile_combat_range_checkpoint_status_identity_invalid",
+        "target_identity": (
+            "profile_combat_range_checkpoint_target_identity_invalid"
+        ),
         "scope": "profile_combat_range_checkpoint_status_scope_invalid",
         "range": "profile_combat_range_checkpoint_range_correlation_invalid",
         "hazard": "profile_combat_range_checkpoint_hazard_correlation_invalid",
@@ -227,23 +281,29 @@ def test_terminal_consumer_rejects_first_broken_edge(
 
 def test_terminal_consumer_rejects_unavailable_or_malformed_status() -> None:
     assert observe_profile_combat_range_checkpoint_row(
-        None, actor_guid=ACTOR, target_guid=TARGET, case_id=CASE,
-        seal_sha256=SEAL, source_commit=SOURCE,
+        None, actor_guid=ACTOR, runtime_target_guid=TARGET,
+        target_spawn_id=TARGET_SPAWN, target_entry=TARGET_ENTRY,
+        target_map_id=TARGET_MAP, case_id=CASE, seal_sha256=SEAL,
+        source_commit=SOURCE,
     ) == ["profile_combat_range_checkpoint_status_unavailable"]
     malformed = copy.deepcopy(_row())
     malformed["action"] = "botauto_status"
     assert observe_profile_combat_range_checkpoint_row(
-        malformed, actor_guid=ACTOR, target_guid=TARGET, case_id=CASE,
-        seal_sha256=SEAL, source_commit=SOURCE,
+        malformed, actor_guid=ACTOR, runtime_target_guid=TARGET,
+        target_spawn_id=TARGET_SPAWN, target_entry=TARGET_ENTRY,
+        target_map_id=TARGET_MAP, case_id=CASE, seal_sha256=SEAL,
+        source_commit=SOURCE,
     ) == ["profile_combat_range_checkpoint_status_action_invalid"]
 
 
 def test_terminal_consumer_accepts_exact_join() -> None:
     assert profile_combat_range_checkpoint_terminal_rejections(
-        _row(), actor_guid=ACTOR, target_guid=TARGET, case_id=CASE,
-        seal_sha256=SEAL, source_commit=SOURCE, checkpoint_generation=1,
+        _row(), actor_guid=ACTOR, runtime_target_guid=TARGET,
+        target_spawn_id=TARGET_SPAWN, target_entry=TARGET_ENTRY,
+        target_map_id=TARGET_MAP, case_id=CASE, seal_sha256=SEAL,
+        source_commit=SOURCE, checkpoint_generation=1,
         attempt_id=7, wipe_generation=0, route_generation=1,
-        target_map_id=669, target_instance_id=123,
+        target_instance_id=123,
     ) == []
 
 
@@ -438,6 +498,10 @@ def test_profile_scheduler_rejects_duplicate_or_regressive_active_stage(
         "stale_generation",
         "wrong_actor",
         "wrong_target",
+        "wrong_spawn",
+        "wrong_entry",
+        "wrong_map",
+        "zero_instance",
         "wrong_case",
         "wrong_seal",
         "wrong_source",
@@ -452,7 +516,7 @@ def test_profile_scheduler_protocol_negatives_fail_closed(
     _advance_scheduler_to_arm_ack(scheduler)
     if mutation == "malformed_arm":
         row = _profile_arm_ack()
-        row.pop("target_guid")
+        row.pop("runtime_target_guid")
         scheduler.observe(row)
         assert scheduler.failure_reason == (
             "profile_combat_range_checkpoint_status_identity_invalid"
@@ -485,7 +549,15 @@ def test_profile_scheduler_protocol_negatives_fail_closed(
     if mutation == "wrong_actor":
         row["actor_guid"] = ACTOR + 1
     elif mutation == "wrong_target":
-        row["target_guid"] = TARGET + 1
+        row["runtime_target_guid"] = TARGET + 1
+    elif mutation == "wrong_spawn":
+        row["target_spawn_id"] = TARGET_SPAWN + 1
+    elif mutation == "wrong_entry":
+        row["target_entry"] = TARGET_ENTRY + 1
+    elif mutation == "wrong_map":
+        row["target_map_id"] = TARGET_MAP + 1
+    elif mutation == "zero_instance":
+        row["target_instance_id"] = 0
     elif mutation == "wrong_case":
         row["case_id"] = CASE + ".stale"
     elif mutation == "wrong_seal":

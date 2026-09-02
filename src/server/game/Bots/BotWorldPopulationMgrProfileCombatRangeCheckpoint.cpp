@@ -3,6 +3,7 @@
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
+#include "Creature.h"
 #include "GitRevision.h"
 #include "Player.h"
 
@@ -55,7 +56,10 @@ bool ValidAdmission(BotWorldExperimentConfig const& config,
         && nativeRevisionHash.rfind(
             config.ProfileCombatRangeCheckpointSourceCommit, 0) == 0
         && config.ProfileCombatRangeCheckpointActorGuid
-        && config.ProfileCombatRangeCheckpointTargetGuid;
+        && config.ProfileCombatRangeCheckpointRuntimeTargetGuid
+        && config.ProfileCombatRangeCheckpointTargetSpawnId
+        && config.ProfileCombatRangeCheckpointTargetEntry
+        && config.ProfileCombatRangeCheckpointTargetMapId;
 }
 
 bool IsCommitted(BotActionArbitration::CandidateTrace const& trace)
@@ -162,7 +166,7 @@ std::string BotWorldPopulationMgr::ArmProfileCombatRangeCheckpointForCohort(
             == sourceCommit
         && Cohort().Config.ProfileCombatRangeCheckpointActorGuid
             == actorGuid
-        && Cohort().Config.ProfileCombatRangeCheckpointTargetGuid
+        && Cohort().Config.ProfileCombatRangeCheckpointRuntimeTargetGuid
             == targetGuid;
     if (!exactIdentity || !actorGuid || !targetGuid || !actorInCohort)
     {
@@ -186,7 +190,13 @@ std::string BotWorldPopulationMgr::ArmProfileCombatRangeCheckpointForCohort(
     checkpoint.SealSha256 = sealSha256;
     checkpoint.SourceCommit = sourceCommit;
     checkpoint.ActorGuid = actorGuid;
-    checkpoint.TargetGuid = targetGuid;
+    checkpoint.RuntimeTargetGuid = uint32(targetGuid);
+    checkpoint.TargetSpawnId =
+        Cohort().Config.ProfileCombatRangeCheckpointTargetSpawnId;
+    checkpoint.TargetEntry =
+        Cohort().Config.ProfileCombatRangeCheckpointTargetEntry;
+    checkpoint.TargetMapId =
+        Cohort().Config.ProfileCombatRangeCheckpointTargetMapId;
     checkpoint.AttemptId = Cohort().AttemptId;
     checkpoint.WipeGeneration = Cohort().Raid.WipeGeneration;
     checkpoint.RouteGeneration = Party().ValidationRouteGeneration;
@@ -219,7 +229,23 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
         return;
 
     std::string const nativeRevisionHash = GitRevision::GetHash();
-    if (!ValidAdmission(Cohort().Config, nativeRevisionHash))
+    BotWorldExperimentConfig const& config = Cohort().Config;
+    if (!ValidAdmission(config, nativeRevisionHash)
+        || config.ProfileCombatRangeCheckpointCaseId != checkpoint.CaseId
+        || config.ProfileCombatRangeCheckpointSealSha256
+            != checkpoint.SealSha256
+        || config.ProfileCombatRangeCheckpointSourceCommit
+            != checkpoint.SourceCommit
+        || config.ProfileCombatRangeCheckpointActorGuid
+            != checkpoint.ActorGuid
+        || config.ProfileCombatRangeCheckpointRuntimeTargetGuid
+            != checkpoint.RuntimeTargetGuid
+        || config.ProfileCombatRangeCheckpointTargetSpawnId
+            != checkpoint.TargetSpawnId
+        || config.ProfileCombatRangeCheckpointTargetEntry
+            != checkpoint.TargetEntry
+        || config.ProfileCombatRangeCheckpointTargetMapId
+            != checkpoint.TargetMapId)
     {
         checkpoint.Fail("profile_combat_range_checkpoint_admission_invalid");
         return;
@@ -272,26 +298,57 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
         checkpoint.Fail("profile_combat_range_checkpoint_target_missing");
         return;
     }
-    uint64 const targetGuid = context.Target->GetGUID().GetRawValue();
-    if (targetGuid != checkpoint.TargetGuid)
+    Creature const* targetCreature = context.Target->ToCreature();
+    BotProfileCombatRangeCheckpoint::TargetDescriptor const expectedTarget{
+        checkpoint.RuntimeTargetGuid,
+        checkpoint.TargetSpawnId,
+        checkpoint.TargetEntry,
+        checkpoint.TargetMapId,
+    };
+    BotProfileCombatRangeCheckpoint::LiveTargetObservation const observedTarget{
+        context.Target->GetGUID().GetCounter(),
+        targetCreature ? targetCreature->GetSpawnId() : 0,
+        context.Target->GetEntry(),
+        context.Target->GetMapId(),
+        context.Target->GetInstanceId(),
+        context.Bot->GetMapId(),
+        context.Bot->GetInstanceId(),
+        context.Target->IsInWorld() && context.Target->IsAlive(),
+    };
+    if (char const* identityFailure =
+        BotProfileCombatRangeCheckpoint::TargetIdentityFailure(
+            expectedTarget, observedTarget))
     {
-        checkpoint.Fail("profile_combat_range_checkpoint_target_identity_drift");
+        checkpoint.Fail(identityFailure);
         return;
     }
-    checkpoint.TargetMapId = context.Target->GetMapId();
-    checkpoint.TargetInstanceId = context.Target->GetInstanceId();
+    if (checkpoint.ScopeBound
+        && observedTarget.TargetInstanceId != checkpoint.TargetInstanceId)
+    {
+        checkpoint.Fail("profile_combat_range_checkpoint_scope_mismatch");
+        return;
+    }
+    if (!checkpoint.ScopeBound)
+        checkpoint.TargetInstanceId = observedTarget.TargetInstanceId;
+    checkpoint.RuntimeTargetGuidMatched = true;
+    checkpoint.TargetSpawnIdMatched = true;
+    checkpoint.TargetEntryMatched = true;
+    checkpoint.TargetMapIdMatched = true;
+    checkpoint.PositiveInstanceMatched = true;
+    checkpoint.SameInstanceMatched = true;
     uint32 const wipeGeneration = Cohort().Raid.WipeGeneration;
     uint64 const routeGeneration = Party().ValidationRouteGeneration;
     if (!checkpoint.ScopeBound)
     {
-        if (context.Bot->GetMapId() != checkpoint.TargetMapId
-            || context.Bot->GetInstanceId() != checkpoint.TargetInstanceId
-            || checkpoint.WipeGeneration != wipeGeneration
+        if (checkpoint.WipeGeneration != wipeGeneration
             || checkpoint.RouteGeneration != routeGeneration)
         {
             checkpoint.Fail("profile_combat_range_checkpoint_scope_mismatch");
             return;
         }
+        checkpoint.AttemptScopeMatched = true;
+        checkpoint.WipeScopeMatched = true;
+        checkpoint.RouteScopeMatched = true;
         checkpoint.WipeGeneration = wipeGeneration;
         checkpoint.RouteGeneration = routeGeneration;
         checkpoint.ScopeBound = true;
@@ -421,7 +478,7 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
                 && exactPlannerScope(planner)
                 && planner.LaunchReceipt.DynamicTargetGuid == 0
                 && planner.LaunchReceipt.DiagnosticTargetGuid
-                    == checkpoint.TargetGuid
+                == checkpoint.RuntimeTargetGuid
                 && planner.LaunchReceipt.IntentFingerprint
                 && HasNativeLaunch(planner)
                 && context.State.LastMovementExecution.NativeSubmitted;
@@ -480,8 +537,8 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
             resolution.Trace[castTraceIndex];
         if (IsCommitted(castTrace)
             && castTrace.Source == "db_class_spec_profile"
-            && context.State.LastCombatAttempt.TargetGuid.GetRawValue()
-                == checkpoint.TargetGuid)
+            && context.State.LastCombatAttempt.TargetGuid.GetCounter()
+                == checkpoint.RuntimeTargetGuid)
         {
             uint64 const castAt = context.State.LastCombatAttempt.RecordedAtMs;
             if (!checkpoint.MovementProgressObserved
@@ -493,7 +550,7 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
                 checkpoint.CastRecordedAtMs = castAt;
                 checkpoint.CastSpellId = context.State.LastCombatAttempt.SpellId;
                 checkpoint.CastTargetGuid = context.State.LastCombatAttempt.TargetGuid
-                    .GetRawValue();
+                    .GetCounter();
                 checkpoint.CastTraceIndex = castTraceIndex;
                 checkpoint.CastCheckpointGeneration =
                     checkpoint.CheckpointGeneration;
@@ -508,7 +565,7 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
     transition.CheckpointScope = {
         checkpoint.CheckpointGeneration,
         checkpoint.ActorGuid,
-        checkpoint.TargetGuid,
+        checkpoint.RuntimeTargetGuid,
         checkpoint.AttemptId,
         checkpoint.WipeGeneration,
         checkpoint.RouteGeneration,
@@ -561,7 +618,7 @@ void BotWorldPopulationMgr::ObserveProfileCombatRangeCheckpoint(
         checkpoint.CandidateKey,
         checkpoint.RangeIntentFingerprint,
         transition.CheckpointScope,
-        checkpoint.TargetGuid,
+        checkpoint.RuntimeTargetGuid,
         true,
         checkpoint.MovementNativeSubmitted,
         checkpoint.RangeNativeLaunchObserved,
@@ -637,7 +694,10 @@ std::string BotWorldPopulationMgr::BuildProfileCombatRangeCheckpointJson() const
          << ",\"checkpoint_generation\":"
          << checkpoint.CheckpointGeneration
          << ",\"actor_guid\":" << checkpoint.ActorGuid
-         << ",\"target_guid\":" << checkpoint.TargetGuid
+         << ",\"runtime_target_guid\":"
+         << checkpoint.RuntimeTargetGuid
+         << ",\"target_spawn_id\":" << checkpoint.TargetSpawnId
+         << ",\"target_entry\":" << checkpoint.TargetEntry
          << ",\"attempt_id\":" << checkpoint.AttemptId
          << ",\"wipe_generation\":" << checkpoint.WipeGeneration
          << ",\"route_generation\":" << checkpoint.RouteGeneration
@@ -645,6 +705,24 @@ std::string BotWorldPopulationMgr::BuildProfileCombatRangeCheckpointJson() const
          << (checkpoint.ScopeBound ? "true" : "false")
          << ",\"target_map_id\":" << checkpoint.TargetMapId
          << ",\"target_instance_id\":" << checkpoint.TargetInstanceId
+         << ",\"runtime_target_guid_matched\":"
+         << (checkpoint.RuntimeTargetGuidMatched ? "true" : "false")
+         << ",\"target_spawn_id_matched\":"
+         << (checkpoint.TargetSpawnIdMatched ? "true" : "false")
+         << ",\"target_entry_matched\":"
+         << (checkpoint.TargetEntryMatched ? "true" : "false")
+         << ",\"target_map_id_matched\":"
+         << (checkpoint.TargetMapIdMatched ? "true" : "false")
+         << ",\"positive_instance_matched\":"
+         << (checkpoint.PositiveInstanceMatched ? "true" : "false")
+         << ",\"same_instance_matched\":"
+         << (checkpoint.SameInstanceMatched ? "true" : "false")
+         << ",\"attempt_scope_matched\":"
+         << (checkpoint.AttemptScopeMatched ? "true" : "false")
+         << ",\"wipe_scope_matched\":"
+         << (checkpoint.WipeScopeMatched ? "true" : "false")
+         << ",\"route_scope_matched\":"
+         << (checkpoint.RouteScopeMatched ? "true" : "false")
          << ",\"decision_timestamp_ms\":"
          << checkpoint.DecisionTimestampMs
          << ",\"candidate_trace_index\":"

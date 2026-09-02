@@ -200,8 +200,9 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
                 == BotProfileCombatRangeCandidate::Key
             && state.LastMovementExecution.ReceiptId)
             BotWorldMovement::MovementPlannerDiagnostics().RecordDiagnosticTarget(
-                state.LastMovementExecution.ReceiptId, bot->GetGUID().GetRawValue(),
-                bot->GetMapId(), reference->GetGUID().GetRawValue());
+                state.LastMovementExecution.ReceiptId,
+                bot->GetGUID().GetCounter(), bot->GetMapId(),
+                reference->GetGUID().GetCounter());
         return moved;
     };
     auto moveProfilePoint = [&](float x, float y, float z)

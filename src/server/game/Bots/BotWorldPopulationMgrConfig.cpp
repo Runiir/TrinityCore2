@@ -212,10 +212,14 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
         "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.SourceCommit", "");
     Cohort().Config.ProfileCombatRangeCheckpointActorGuid = sConfigMgr->GetIntDefault(
         "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.ActorGuid", 0);
-    std::string const profileRangeTargetGuid = sConfigMgr->GetStringDefault(
-        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.TargetGuid", "0");
-    Cohort().Config.ProfileCombatRangeCheckpointTargetGuid = std::strtoull(
-        profileRangeTargetGuid.c_str(), nullptr, 10);
+    Cohort().Config.ProfileCombatRangeCheckpointRuntimeTargetGuid = sConfigMgr->GetIntDefault(
+        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.RuntimeTargetGuid", 0);
+    Cohort().Config.ProfileCombatRangeCheckpointTargetSpawnId = sConfigMgr->GetIntDefault(
+        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.TargetSpawnId", 0);
+    Cohort().Config.ProfileCombatRangeCheckpointTargetEntry = sConfigMgr->GetIntDefault(
+        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.TargetEntry", 0);
+    Cohort().Config.ProfileCombatRangeCheckpointTargetMapId = sConfigMgr->GetIntDefault(
+        "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.TargetMapId", 0);
     Cohort().Config.ValidationRouteManifestPath = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ManifestPath", Cohort().Config.ValidationRouteManifestPath);
     Cohort().Config.ValidationRouteAdvanceMode = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.AdvanceMode", Cohort().Config.ValidationRouteAdvanceMode);
     Cohort().Config.ValidationRouteScenarioId = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ScenarioId", Cohort().Config.ValidationRouteScenarioId);

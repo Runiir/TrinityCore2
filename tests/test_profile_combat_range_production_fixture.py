@@ -10,6 +10,8 @@ CHECKPOINT = ROOT / "src/server/game/Bots/BotProfileCombatRangeCheckpoint.h"
 FALLBACK = ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp"
 DECISION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotDecision.cpp"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
+OBSERVER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp"
+CONFIG = ROOT / "src/server/game/Bots/BotWorldPopulationMgrConfig.cpp"
 
 
 def test_production_adapter_value_matrix_and_arbiter_boundary(tmp_path: Path) -> None:
@@ -241,6 +243,22 @@ def test_production_wiring_and_observer_are_default_off() -> None:
     assert "ProfileCombatRangeCheckpointEnable = false" in (
         ROOT / "src/server/game/Bots/BotWorldPopulationMgrConfig.h"
     ).read_text(encoding="utf-8")
+    config_header = (
+        ROOT / "src/server/game/Bots/BotWorldPopulationMgrConfig.h"
+    ).read_text(encoding="utf-8")
+    config_source = CONFIG.read_text(encoding="utf-8")
+    for field in (
+        "RuntimeTargetGuid", "TargetSpawnId", "TargetEntry", "TargetMapId",
+    ):
+        assert f"ProfileCombatRangeCheckpoint{field}" in config_header
+        assert (
+            f"ProfileCombatRangeCheckpoint.{field}\"" in config_source
+        )
+    assert "ProfileCombatRangeCheckpointTargetGuid" not in config_header
+    assert "ProfileCombatRangeCheckpoint.TargetGuid\"" not in config_source
+    observer = OBSERVER.read_text(encoding="utf-8")
+    assert "context.Target->GetGUID().GetCounter()" in observer
+    assert "LastCombatAttempt.TargetGuid.GetCounter()" in observer
     assert "ObserveProfileCombatRangeCheckpoint(context);" in decision
     assert "BotWorldPopulationMgrProfileCombatRangeCheckpoint.cpp" in cmake
     assert "MotionMaster" not in checkpoint
@@ -254,6 +272,7 @@ def test_production_checkpoint_transition_value_matrix(tmp_path: Path) -> None:
     source.write_text(
         r'''
 #include "Bots/BotProfileCombatRangeCheckpoint.h"
+#include "ObjectGuid.h"
 
 #include <cassert>
 
@@ -263,7 +282,7 @@ TransitionEvidence ValidTransition()
 {
     TransitionEvidence evidence;
     evidence.CheckpointScope = {
-        4, 30010, 99001, 7, 0, 1, 669, 123,
+        4, 30010, 39, 7, 0, 1, 669, 123,
     };
     evidence.HazardCandidate = {
         0, 4, 811, "shared_hazard_movement:generic_hazard_exit:12:3",
@@ -286,7 +305,7 @@ TransitionEvidence ValidTransition()
     };
     evidence.RangeReceipt = {
         812, 0, "world.profile_combat_range", 0x1a,
-        evidence.CheckpointScope, 99001, true, true, true,
+        evidence.CheckpointScope, 39, true, true, true,
     };
     evidence.RangeDecisionTimestampMs = 1000;
     evidence.RangeProgressObservedAtMs = 1200;
@@ -297,7 +316,7 @@ TransitionEvidence ValidTransition()
     };
     evidence.CastScope = evidence.CheckpointScope;
     evidence.CastSpellId = 12345;
-    evidence.CastTargetGuid = 99001;
+    evidence.CastTargetGuid = 39;
     evidence.CastRetryObserved = true;
     evidence.CastRecordedAtMs = 1300;
     evidence.CastBeforeProgressObserved = false;
@@ -311,6 +330,54 @@ void AssertRejected(TransitionEvidence evidence)
 
 int main()
 {
+    ObjectGuid const typedTarget(
+        HighGuid::Unit, uint32(41570), uint32(39));
+    assert(!typedTarget.IsEmpty());
+    assert(typedTarget.GetRawValue() != uint64(39));
+    assert(typedTarget.GetCounter() == uint32(39));
+
+    TargetDescriptor const expectedTarget{39, 250051, 41570, 669};
+    LiveTargetObservation observedTarget{
+        typedTarget.GetCounter(), 250051, typedTarget.GetEntry(),
+        669, 123, 669, 123, true,
+    };
+    assert(TargetIdentityFailure(expectedTarget, observedTarget) == nullptr);
+    auto AssertTargetRejected = [&](LiveTargetObservation observed,
+                                    char const* reason)
+    {
+        assert(std::string(TargetIdentityFailure(expectedTarget, observed))
+            == reason);
+    };
+    LiveTargetObservation wrongCounter = observedTarget;
+    wrongCounter.RuntimeTargetGuid = 40;
+    AssertTargetRejected(wrongCounter,
+        "profile_combat_range_checkpoint_runtime_target_guid_drift");
+    LiveTargetObservation wrongSpawn = observedTarget;
+    wrongSpawn.TargetSpawnId = 250052;
+    AssertTargetRejected(wrongSpawn,
+        "profile_combat_range_checkpoint_target_spawn_id_drift");
+    LiveTargetObservation wrongEntry = observedTarget;
+    wrongEntry.TargetEntry = 41571;
+    AssertTargetRejected(wrongEntry,
+        "profile_combat_range_checkpoint_target_entry_drift");
+    LiveTargetObservation wrongMap = observedTarget;
+    wrongMap.TargetMapId = 670;
+    AssertTargetRejected(wrongMap,
+        "profile_combat_range_checkpoint_target_map_id_drift");
+    LiveTargetObservation zeroInstance = observedTarget;
+    zeroInstance.TargetInstanceId = 0;
+    zeroInstance.ActorInstanceId = 0;
+    AssertTargetRejected(zeroInstance,
+        "profile_combat_range_checkpoint_target_instance_invalid");
+    LiveTargetObservation wrongActor = observedTarget;
+    wrongActor.ActorInstanceId = 124;
+    AssertTargetRejected(wrongActor,
+        "profile_combat_range_checkpoint_actor_target_scope_mismatch");
+    LiveTargetObservation unavailable = observedTarget;
+    unavailable.TargetAvailable = false;
+    AssertTargetRejected(unavailable,
+        "profile_combat_range_checkpoint_target_unavailable");
+
     TransitionEvidence positive = ValidTransition();
     assert(IsCompletedTransition(positive));
 
@@ -327,7 +394,7 @@ int main()
     AssertRejected(reordered);
 
     TransitionEvidence staleTarget = positive;
-    staleTarget.RangeReceipt.DiagnosticTargetGuid = 99002;
+    staleTarget.RangeReceipt.DiagnosticTargetGuid = typedTarget.GetRawValue();
     AssertRejected(staleTarget);
 
     TransitionEvidence staleReceipt = positive;
@@ -337,6 +404,30 @@ int main()
     TransitionEvidence staleScope = positive;
     staleScope.RangeReceipt.ReceiptScope.AttemptId = 8;
     AssertRejected(staleScope);
+
+    TransitionEvidence staleActor = positive;
+    staleActor.RangeReceipt.ReceiptScope.ActorGuid = 30011;
+    AssertRejected(staleActor);
+
+    TransitionEvidence staleWipe = positive;
+    staleWipe.RangeReceipt.ReceiptScope.WipeGeneration = 1;
+    AssertRejected(staleWipe);
+
+    TransitionEvidence staleRoute = positive;
+    staleRoute.RangeReceipt.ReceiptScope.RouteGeneration = 2;
+    AssertRejected(staleRoute);
+
+    TransitionEvidence staleMap = positive;
+    staleMap.RangeReceipt.ReceiptScope.MapId = 670;
+    AssertRejected(staleMap);
+
+    TransitionEvidence staleInstance = positive;
+    staleInstance.RangeReceipt.ReceiptScope.InstanceId = 124;
+    AssertRejected(staleInstance);
+
+    TransitionEvidence staleReceiptGeneration = positive;
+    staleReceiptGeneration.RangeReceipt.ReceiptScope.CheckpointGeneration = 5;
+    AssertRejected(staleReceiptGeneration);
 
     TransitionEvidence staleGeneration = positive;
     staleGeneration.RangeCandidate.CheckpointGeneration = 5;
@@ -351,7 +442,7 @@ int main()
     AssertRejected(earlyCast);
 
     TransitionEvidence wrongCastTarget = positive;
-    wrongCastTarget.CastTargetGuid = 99002;
+    wrongCastTarget.CastTargetGuid = typedTarget.GetRawValue();
     AssertRejected(wrongCastTarget);
 
     TransitionEvidence castBeforeProgress = positive;
@@ -365,6 +456,7 @@ int main()
         [
             "c++", "-std=c++17", "-I", str(ROOT / "src/server/game"),
             "-I", str(ROOT / "src/common"),
+            "-I", str(ROOT / "src/server/game/Entities/Object"),
             str(source), "-o", str(binary),
         ],
         check=True,
