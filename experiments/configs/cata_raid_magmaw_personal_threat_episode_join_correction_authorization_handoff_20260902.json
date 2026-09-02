@@ -1,0 +1,118 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:authorize_close_personal_threat_episode_join_capture_path",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "evidence_correction_repair_authorized",
+  "source": {
+    "commit": "381c7308ea941703576f94b6d4ce6220fcad67e5",
+    "tree": "91001502c1d7d1e8be7539dae677f3e28dd58eb0",
+    "clean": true,
+    "reviewed_parent": "82d1127b73bb0f41794ca6dc9dff6c6a9e958c6e",
+    "reviewed_parent_is_ancestor": true,
+    "prior_authorization_handoff": "experiments/configs/cata_raid_magmaw_personal_threat_episode_join_authorization_handoff_20260902.json",
+    "prior_authorization_handoff_sha256": "7703b920a9a40b3f11c57df15ffb445f6087d2b2cdbc73ccf04a654edbc9a5e3",
+    "prior_authorization_source_commit": "d2f541836c88357a927e303cfcfbcc7e75a34b45",
+    "prior_authorization_source_tree": "2125db31ec2c7462aeb119fd7fb05e3c61686c67"
+  },
+  "independent_review": {
+    "external_path": "/tmp/magmaw-personal-threat-episode-review.5wWZtSyh/review_handoff.json",
+    "sha256": "4b16f106c2a53fedae6618180ee08c544846ca3cddc96e28ee5977664368de23",
+    "schema": "cata_raid_independent_review_handoff_v1",
+    "work_unit_id": "review:capture_actor_local_personal_threat_episode_join",
+    "verdict": "NO-GO",
+    "reviewed_commit": "381c7308ea941703576f94b6d4ce6220fcad67e5",
+    "reviewed_tree": "91001502c1d7d1e8be7539dae677f3e28dd58eb0",
+    "reviewed_parent": "82d1127b73bb0f41794ca6dc9dff6c6a9e958c6e",
+    "authorized_diff_file_count": 7,
+    "changed_files": [
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.inl",
+      "tests/test_magmaw_personal_parasite_escape_task.py",
+      "tests/test_magmaw_personal_threat_episode_capture.py",
+      "tools/raid_program/capture_evidence_demux.py",
+      "tools/raid_program/capture_magmaw_personal_threat_episode.py"
+    ],
+    "out_of_scope_diff_files": []
+  },
+  "no_go_findings": [
+    {
+      "id": "public_capture_join_opt_in_missing",
+      "severity": "High",
+      "summary": "Production capture setup and finalization cannot accept or forward the opt-in target, and the compact report omits the personal-threat episode join. Real captures therefore use target=None and cannot fail closed for a requested join."
+    },
+    {
+      "id": "same_tick_terminal_absence_loses_falling_edge",
+      "severity": "High",
+      "summary": "Authoritative no-threat on the same tick as safe clearance closes PersonalThreatEpisodeOpen before recording falling, so a later rising edge can remain unpaired."
+    }
+  ],
+  "correction_contract": {
+    "next_work_unit": "evidence:close_personal_threat_episode_join_capture_path",
+    "owner_skill": "raid-evidence-lifecycle",
+    "behavior_change": false,
+    "owned_files": [
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.inl",
+      "tests/test_magmaw_personal_parasite_escape_task.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/capture_finalization.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "required_repair": [
+      "Emit falling before closing the episode when authoritative no-threat is observed on the same tick the child becomes terminal.",
+      "Add an explicit validated capture CLI target containing actor, scope, route, and parent identity.",
+      "Forward the target through the public finalization wrapper into the existing low-level demux.",
+      "Retain the complete personal_threat_episode_join object in the compact final report.",
+      "Preserve target=None compatibility for ordinary captures."
+    ],
+    "deterministic_fixtures": [
+      "The same-tick safe-clearance and authoritative no-threat fixture emits falling before episode close; later authoritative threat emits rising and joins exactly one new generation.",
+      "A public finalize_capture fixture passes only with a complete requested join.",
+      "Missing, malformed, contradictory, or identity-drifted requested joins fail the evidence-demux gate.",
+      "An ordinary public finalize_capture path without a target remains compatible.",
+      "Existing continuous-presence and threat-GUID-churn negatives remain green."
+    ]
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_magmaw_personal_parasite_escape_task.py tests/test_phase1_raid_foundation_capture.py",
+    "pixi run python -m py_compile tools/raid_program/capture_setup.py tools/raid_program/capture_finalization.py",
+    "pixi run python -m tools.raid_program.raid_workloop status",
+    "git diff --check"
+  ],
+  "acceptance": [
+    "Same-tick authoritative no-threat and safe clearance emits falling before close, and later rising joins exactly one generation.",
+    "The public capture-finalization path validates and forwards the exact target and retains the full join in the compact report.",
+    "A requested incomplete, malformed, contradictory, or identity-drifted join fails closed while target=None remains compatible.",
+    "Continuous-presence and GUID-churn negatives pass.",
+    "Focused tests, py_compile, diff check, and the module-form workloop status command pass before independent review."
+  ],
+  "forbidden": [
+    "mutation outside the exact five owned files",
+    "gameplay, priority, task-generation policy, or native executor changes",
+    "endpoint, coordinate, Z, floor, MMAP, pathing, geometry, or tolerance changes",
+    "route, encounter, class, role, configuration, skill, ledger, DVC, database, or ML changes",
+    "trace-capacity increase or parallel telemetry stream",
+    "build, provisioning, server start, live recapture, retry, fixture promotion, or Magmaw acceptance",
+    "unsupported death-loop inference"
+  ],
+  "authority": {
+    "source_mutation_allowed": true,
+    "test_mutation_allowed": true,
+    "configuration_mutation_allowed": false,
+    "route_mutation_allowed": false,
+    "skill_mutation_allowed": false,
+    "ledger_mutation_allowed": false,
+    "builds": 0,
+    "provisioning_operations": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0,
+    "dvc_publication_allowed": false,
+    "fixture_revision_promotion_allowed": false,
+    "acceptance_allowed": false,
+    "ml_admission_allowed": false
+  },
+  "next_action": "Repair exactly the two reviewed evidence defects in the five owned files, pass the deterministic fixtures, and return a clean commit for independent review. Do not build or run live."
+}

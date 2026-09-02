@@ -1,88 +1,94 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:capture_actor_local_personal_threat_episode_join",
+  "work_unit": "evidence:close_personal_threat_episode_join_capture_path",
   "owner_skill": "raid-evidence-lifecycle",
-  "next_work_unit": "review:capture_actor_local_personal_threat_episode_join",
+  "next_work_unit": "review:close_personal_threat_episode_join_capture_path",
   "next_owner_skill": "raid-evidence-lifecycle",
   "classification": "failed",
-  "epoch_id": "magmaw_attempt3_personal_threat_episode_join_20260902",
+  "epoch_id": "magmaw_personal_threat_episode_join_capture_path_correction_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "architecture_scope": "Retain and validate one direct actor-local personal-threat falling/rising episode join inside the existing personal-escape diagnostics and diagnosis transport. Evidence-only: no task, priority, movement, native execution, route, or encounter behavior changes.",
-  "gate_state": "Attempt3 is closed, remotely published, and locally evicted. The causal review proves missing evidence at world_observation to persistent_task_episode_transition is the first certification blocker. Endpoint rejections are later observed failures and are not a supported death-loop cause. One bounded evidence implementation is authorized; build and live authority remain disabled.",
-  "observed_at_commit": "d2f541836c88357a927e303cfcfbcc7e75a34b45",
-  "immutable_input_commit": "d2f541836c88357a927e303cfcfbcc7e75a34b45",
+  "architecture_scope": "Close exactly two evidence defects found by independent review: order the existing personal-threat falling edge before same-tick terminal episode close, and carry one explicit actor/scope/route/parent join target through production capture setup and finalization into the existing low-level demux and compact report. This is evidence-only and does not authorize gameplay policy or live execution.",
+  "gate_state": "Independent review returned NO-GO at clean source 381c7308ea941703576f94b6d4ce6220fcad67e5. It proved that ordinary production finalization cannot request or retain the join, and that same-tick authoritative no-threat plus safe clearance can close the episode before falling is recorded. One five-file correction is authorized. Build, live, provisioning, database, DVC, fixture-promotion, acceptance, and ML authority remain disabled.",
+  "observed_at_commit": "381c7308ea941703576f94b6d4ce6220fcad67e5",
+  "immutable_input_commit": "381c7308ea941703576f94b6d4ce6220fcad67e5",
   "behavior_change": false,
   "evidence_contract_change": true,
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_personal_threat_episode_join_authorization_handoff_20260902.json",
-    "sha256": "7703b920a9a40b3f11c57df15ffb445f6087d2b2cdbc73ccf04a654edbc9a5e3",
-    "source_commit": "d2f541836c88357a927e303cfcfbcc7e75a34b45",
-    "source_tree": "2125db31ec2c7462aeb119fd7fb05e3c61686c67"
+    "path": "experiments/configs/cata_raid_magmaw_personal_threat_episode_join_correction_authorization_handoff_20260902.json",
+    "sha256": "b040aeca257e3e33fb66fae65388ab16c198e7e28ba5f334b39e006646ed890a",
+    "source_commit": "381c7308ea941703576f94b6d4ce6220fcad67e5",
+    "source_tree": "91001502c1d7d1e8be7539dae677f3e28dd58eb0"
   },
   "review_handoff": {
-    "external_path": "/tmp/magmaw-attempt3-causal-review-handoff.Th5ISE/review_handoff.json",
-    "sha256": "1ee0d391754a57d652bd4f3c25e03e06b395d73eece519c1d7ea97320f974ce5",
-    "classification": "evidence_emission_first_broken_edge",
-    "verdict": "route_to_evidence_lifecycle"
+    "external_path": "/tmp/magmaw-personal-threat-episode-review.5wWZtSyh/review_handoff.json",
+    "sha256": "4b16f106c2a53fedae6618180ee08c544846ca3cddc96e28ee5977664368de23",
+    "schema": "cata_raid_independent_review_handoff_v1",
+    "work_unit_id": "review:capture_actor_local_personal_threat_episode_join",
+    "verdict": "NO-GO",
+    "reviewed_parent": "82d1127b73bb0f41794ca6dc9dff6c6a9e958c6e",
+    "reviewed_parent_is_ancestor": true,
+    "out_of_scope_diff_files": []
   },
-  "evidence": {
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_personal_escape_attempt3_death_loop_20260902.dvc",
-    "dvc_pointer_sha256": "2c44151b63d4c7d5a881e296abd386228707c55e1706fb0d220a2788fa5888d5",
-    "dvc_directory_md5": "44bb53ab89c6edf12d069781be27aa6d.dir",
-    "payload_manifest_sha256": "77fe3369e538066f41e8792603a0999b11411cd72a163906ecde7c3b81641da1",
-    "canonical_file_manifest_sha256": "bc794f2bf27c5eafd3fa2c1b686b7c9958db352033ec8b3c1c19742a8f360383",
-    "remote_status": "in_sync",
-    "workspace_payload_state": "intentionally_evicted"
-  },
-  "first_broken_edge": {
-    "layer": "world_observation_to_persistent_task_episode_transition",
-    "actor_guid": 30008,
-    "route_node_id": "bwd.magmaw.encounter",
-    "route_generation": 3,
-    "parent_wave_generation": 9223372036854775809,
-    "parent_generation_authoritative": false,
-    "directly_observed": "Task 5/candidate 6 is at safe_clearance in capture 261. Task 6/candidate 8 is already failed in capture 265 under the same provisional parent. Candidate 7 and 8 endpoint rejections occur later.",
-    "missing_join": "Authoritative actor-local no-threat then threat observations, explicit falling/rising edges, and prior/new episode, task, and candidate generations are not retained.",
-    "inference_boundary": "Source supports absence then presence as an inference, but gameplay and death-loop causality remain uncertified."
-  },
+  "first_broken_edges": [
+    {
+      "id": "public_capture_join_opt_in_missing",
+      "layer": "capture_setup_to_public_finalization_to_existing_demux",
+      "directly_observed": "Production capture setup exposes no explicit personal-threat episode target, the public evidence_demux_report/finalize_capture path does not forward one, and the compact report omits personal_threat_episode_join.",
+      "consequence": "Real runs use target=None and therefore cannot fail closed when the requested causal join is missing or invalid."
+    },
+    {
+      "id": "same_tick_terminal_absence_loses_falling_edge",
+      "layer": "world_observation_to_persistent_task_episode_transition",
+      "directly_observed": "The safe-clearance terminal branch clears PersonalThreatEpisodeOpen and returns before RecordEpisodeTransition can emit falling when authoritative no-threat is observed on the same tick.",
+      "consequence": "A later authoritative rising edge may be retained without its required falling predecessor."
+    }
+  ],
   "implementation_contract": {
     "owned_files": [
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h",
       "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.inl",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp",
-      "tools/raid_program/capture_magmaw_personal_threat_episode.py",
-      "tools/raid_program/capture_evidence_demux.py",
       "tests/test_magmaw_personal_parasite_escape_task.py",
-      "tests/test_magmaw_personal_threat_episode_capture.py"
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/capture_finalization.py",
+      "tests/test_phase1_raid_foundation_capture.py"
     ],
-    "required_fixture": "A terminal safe-clearance child under one unchanged provisional parent receives authoritative no-threat then authoritative threat observations. Emit explicit falling then rising records, join exactly one child generation increment, and preserve actor, scope, route, and parent identity.",
-    "required_hard_negatives": [
-      "continuous threat presence",
-      "threat-GUID churn",
-      "cross-actor or cross-scope join",
-      "parent-generation drift",
-      "non-authoritative observation"
+    "required_repair": [
+      "Emit falling before closing the episode when authoritative no-threat is observed on the same tick the child becomes terminal.",
+      "Add an explicit validated capture CLI target containing actor, scope, route, and parent identity.",
+      "Forward the exact target through the public finalization wrapper into the existing low-level demux.",
+      "Retain the full personal_threat_episode_join report in the compact final report.",
+      "Preserve target=None compatibility for ordinary captures."
     ],
-    "required_transport_pressure": "Drain more than 128 intervening trace entries in multiple delta batches with contiguous sequences, chained cursors, gap=false, no demux discontinuity, and the diagnosis-carried episode join intact.",
-    "required_output": "Board revision, timestamp, fact authority, threat flag and GUID, prior/new episode state, prior/new task and candidate generations, actor, scope, route generation, parent generation, and parent authority.",
+    "required_fixtures": [
+      "The same-tick terminal/no-threat case emits falling before close; later authoritative threat emits rising and joins exactly one new task generation.",
+      "A public finalize_capture fixture passes only with a complete requested join.",
+      "Missing, malformed, contradictory, or identity-drifted requested joins fail the demux gate.",
+      "An ordinary capture without a target remains compatible.",
+      "Existing continuous-presence and threat-GUID-churn negatives remain green."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_magmaw_personal_parasite_escape_task.py tests/test_phase1_raid_foundation_capture.py",
+      "pixi run python -m py_compile tools/raid_program/capture_setup.py tools/raid_program/capture_finalization.py",
+      "pixi run python -m tools.raid_program.raid_workloop status",
+      "git diff --check"
+    ],
     "forbidden": [
-      "mutation outside the exact owned files",
-      "parallel telemetry or priority stream",
-      "trace-ring capacity or global capture-cadence change",
-      "gameplay, endpoint, geometry, Z, floor, MMAP, tolerance, route, encounter, class, or role changes",
-      "unsupported death-loop conclusion"
+      "mutation outside the exact five owned files",
+      "gameplay, priority, task-generation policy, or native executor changes",
+      "endpoint, coordinate, Z, floor, MMAP, pathing, geometry, or tolerance changes",
+      "route, encounter, class, role, configuration, skill, ledger, DVC, database, or ML changes",
+      "trace-capacity increase or parallel telemetry stream",
+      "build, provisioning, server start, live recapture, retry, fixture promotion, or Magmaw acceptance",
+      "unsupported death-loop inference"
     ]
   },
   "acceptance": [
-    "typed diagnosis output directly retains falling and rising records and every required join field",
-    "rising produces exactly one new child under the unchanged provisional parent",
-    "continuous presence and GUID churn produce neither edge nor child churn",
-    "more than 128 intervening trace entries drain losslessly with no evidence-demux gap",
-    "focused producer, capture, trace cursor, capture demux, and workloop tests pass",
-    "all touched C and C++ files remain below 1000 lines",
-    "the clean implementation commit receives independent review before build or live recapture"
+    "Same-tick authoritative no-threat and safe clearance emits falling before close, then later rising joins exactly one generation.",
+    "The public capture-finalization path validates and forwards the exact actor/scope/route/parent target and retains the complete join.",
+    "Requested missing, malformed, contradictory, and identity-drifted joins fail closed; target=None remains backward compatible.",
+    "Continuous-presence and GUID-churn negatives pass.",
+    "Focused tests, py_compile, diff check, and the corrected module-form workloop status command pass before independent review."
   ],
   "program_scope": {
     "acceptance_admitted": false,
@@ -113,7 +119,7 @@
     "live_attempts": 0,
     "retries": 0
   },
-  "next_action": "Implement only the evidence join in the exact owned files, run deterministic tests, and submit the clean commit for independent review. Do not build, provision, start a server, recapture live evidence, publish DVC, promote a fixture, or accept Magmaw.",
+  "next_action": "Repair exactly the two reviewed evidence defects in the five owned files, pass the deterministic fixtures, and submit the clean commit for independent review. Do not build, provision, start a server, recapture live evidence, publish DVC, promote a fixture, or accept Magmaw.",
   "validation_clock": {
     "fixed_success_timer_seconds": null,
     "policy": "completion_watchdog",
