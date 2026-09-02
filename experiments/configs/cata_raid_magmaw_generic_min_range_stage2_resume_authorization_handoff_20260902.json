@@ -1,0 +1,230 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_generic_min_range_stage2_resume",
+  "owner_skill": "raid-performance-loop",
+  "classification": "stage2_provision_and_seal_resume_authorized",
+  "created_at_utc": "2026-09-02T18:02:12Z",
+  "control_identity": {
+    "preauthorization_commit": "db3ef474c6dea18ceca793466032560f7e1626cb",
+    "preauthorization_tree": "2367adaf1a4af1649f0fc4ed5f43aa8042b8361c",
+    "clean": true
+  },
+  "immutable_inputs": {
+    "independent_go_review": {
+      "path": "/tmp/magmaw-generic-profile-range-prestart-atomic-review-db3ef47/review_handoff.json",
+      "sha256": "58cd65710f2eb082bf3b3b42061dd51832f1acad95e812d80c369fa696bc39fc",
+      "hash_verified": true,
+      "verdict": "GO",
+      "classification": "deterministic_production_composition_fixture_complete",
+      "reviewed_implementation_commit": "db3ef474c6dea18ceca793466032560f7e1626cb"
+    },
+    "stage1_handoff": {
+      "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage1_handoff.json",
+      "sha256": "2130fe66e9f75b5a8a064c6b4621383a46dc0c2edf3ebd1bb95da225a2b5390f",
+      "hash_verified": true,
+      "classification": "build_ready"
+    },
+    "prior_stage2_preflight_failure": {
+      "path": "/home/runiir/Games/trinity-generic-min-range-stage2-preflight.WOwxHyE8/stage2_preflight_failure_handoff.json",
+      "sha256": "6102e4e8246e819251ea836f46e498b34c7e7365ad125efd06a16940d8ffba4d",
+      "hash_verified": true,
+      "classification": "typed_preflight_failure",
+      "terminal_reason": "generic_profile_combat_range_prestart_composition_unsupported",
+      "contained_before_mutation": true,
+      "consumed_budgets": {
+        "configure": 0,
+        "worldserver_build": 0,
+        "deterministic_provisioning": 0,
+        "database_readbacks": 0,
+        "recurrence_seals": 0,
+        "worldserver_starts": 0,
+        "authserver_starts": 0,
+        "observation_only_fixture_attempts": 0,
+        "gameplay_canary_attempts": 0,
+        "retries": 0
+      }
+    }
+  },
+  "reviewed_binary": {
+    "source_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "source_tree": "75a33e6d6f23ddd8cfe9152d5d78dfab969f6a5c",
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/worktree/build/src/server/worldserver/worldserver",
+    "sha256": "4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081",
+    "size_bytes": 64688528,
+    "build_receipt_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/identity/worldserver_build_receipt.json",
+    "build_receipt_file_sha256": "43dd3b89c2fc5497ab740e4789ee85efb925f6b45c8a3b6d96389a2880beb866",
+    "build_receipt_canonical_sha256": "af3dd7a442746cb8c025ece529370d14a6830d2b948a09e0d022bda3403a5f93",
+    "rebuild_authorized": false
+  },
+  "two_identity_authority": {
+    "binary_commit": "b575249160ff518dac20f2a7f223110671b2dcb0",
+    "reviewed_control_commit": "db3ef474c6dea18ceca793466032560f7e1626cb",
+    "required_relation": "The binary commit must remain an ancestor of the Stage-2 authorization commit. Verify b5752491..db3ef47 against the exact ten-path reviewed allowlist, then verify db3ef47..authorization against the exact two-file metadata-only authorization delta. The binary and build-receipt hashes must remain unchanged.",
+    "reviewed_intervening_path_allowlist": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_blocker_recurrence_v1.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_one_build_sealed_observation_fixture_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_atomic_fixture_correction_authorization_handoff_20260902.json",
+      "experiments/configs/cata_raid_magmaw_generic_profile_range_prestart_composition_repair_authorization_handoff_20260902.json",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/prestart_bundle_dialects.py"
+    ],
+    "authorization_metadata_delta_allowlist": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_generic_min_range_stage2_resume_authorization_handoff_20260902.json"
+    ],
+    "fail_closed": "Any native, dependency, CMake, gameplay, route-row, roster, runtime-default, database-schema, skill, unknown, dirty, non-ancestor, extra-path, binary-hash, or build-receipt mismatch revokes this authorization before provisioning. No allowlist is permission to mutate files during Stage 2."
+  },
+  "causal_receipt": {
+    "candidate_first_broken_edge": "generic_profile_combat_range_prestart_dialect_and_manifest_missing",
+    "owner": "raid-evidence-lifecycle",
+    "ordered_claims": [
+      {
+        "order": 1,
+        "status": "verified",
+        "claim": "Stage 1 authenticated the exact four-node route and produced one gate-bearing build at clean b5752491/tree 75a33e6d.",
+        "observation": "Stage-1 handoff SHA-256 2130fe66e9f75b5a8a064c6b4621383a46dc0c2edf3ebd1bb95da225a2b5390f; binary SHA-256 4d967d5c9aab3d9e551e0fef61dd27d3d741b1058eebc9b7e34051d1c9a01081; build-receipt file SHA-256 43dd3b89c2fc5497ab740e4789ee85efb925f6b45c8a3b6d96389a2880beb866."
+      },
+      {
+        "order": 2,
+        "status": "verified",
+        "claim": "The first Stage-2 attempt failed closed because exact generic profile-range prestart composition was unsupported.",
+        "observation": "Typed preflight handoff SHA-256 6102e4e8246e819251ea836f46e498b34c7e7365ad125efd06a16940d8ffba4d records zero provisioning, readback, seal, server, build, and retry consumption."
+      },
+      {
+        "order": 3,
+        "status": "verified",
+        "claim": "The missing generic prestart producer and its deterministic fixture boundary are now independently reviewed GO without production or binary changes.",
+        "observation": "Review SHA-256 58cd65710f2eb082bf3b3b42061dd51832f1acad95e812d80c369fa696bc39fc verifies real atomic create/verify, manifest-derived identity, admission-bound capture preflight, and fail-closed negatives at db3ef47."
+      },
+      {
+        "order": 4,
+        "status": "verified",
+        "claim": "The ten paths between binary source b5752491 and reviewed control db3ef47 exactly match the review-prescribed control/evidence/test allowlist.",
+        "observation": "git diff --name-only b5752491..db3ef47 contains exactly the ten reviewed paths and no native, CMake, dependency, route-row, roster, runtime-default, or database-schema path."
+      },
+      {
+        "order": 5,
+        "status": "unproven",
+        "claim": "Fresh deterministic provisioning and database readback will prove actor 30010 and target GUID 39/entry 41570 in the exact runtime identity, allowing one exact recurrence/admission/checkpoint seal.",
+        "observation": "The prior Stage-2 failure stopped before all three remaining Stage-2 operations."
+      }
+    ],
+    "first_downstream_state_mutation": "The first newly authorized mutation is the single deterministic frozen-roster provisioning operation; database readback and seal creation follow only if predecessor verification passes.",
+    "failure_postcondition": "Any source/build/route/profile/fixture/case/actor/target/config/admission/readback mismatch closes Stage 2 as one typed preflight failure without seal reuse, retargeting, server start, or retry.",
+    "implementation_hypothesis": "The reviewed generic atomic composition now makes the unchanged Stage-1 binary supportable for exact Stage-2 provisioning, readback, and seal creation; no rebuild or gameplay mutation is needed.",
+    "correlation_keys": [
+      "fixture_id",
+      "fixture_revision",
+      "case_id",
+      "source_commit",
+      "source_tree",
+      "binary_sha256",
+      "build_receipt_file_sha256",
+      "route_manifest_sha256",
+      "runtime_profile_manifest_sha256",
+      "runtime_config_sha256",
+      "suite_manifest_sha256",
+      "recurrence_admission_sha256",
+      "checkpoint_seal_sha256",
+      "actor_guid",
+      "target_guid",
+      "target_entry",
+      "map_id",
+      "instance_id"
+    ]
+  },
+  "resumed_work_unit": {
+    "stage": 2,
+    "work_unit_id": "shard:generic_min_range_fixture_provision_and_seal",
+    "owner_skill": "raid-shard-architecture",
+    "owner_isolation": "One new bounded owner using exactly raid-shard-architecture; it may not launch nested agents or own capture, publication, review, or gameplay validation.",
+    "external_control_parent": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt",
+    "child_run_root": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/run",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_resume_handoff.json",
+    "fixture_identity": {
+      "purpose": "fixture_expansion_replay",
+      "fixture_id": "generic_profile_min_range_production_boundary_v1",
+      "positive_revision": 1,
+      "case_id": "elemental_magmaw_too_close_v1",
+      "actor_guid": 30010,
+      "actor_class_spec": "elemental_shaman",
+      "target_guid": 39,
+      "target_entry": 41570,
+      "target_name": "Magmaw",
+      "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+      "shard_id": "bwd_magmaw_diagnostic_10n",
+      "map_id": 669,
+      "difficulty": "10N",
+      "route_node_count": 4,
+      "route_node_ids": [
+        "bwd.entry.regroup",
+        "bwd.magmaw.chainwielder",
+        "bwd.magmaw.drudges",
+        "bwd.magmaw.encounter"
+      ],
+      "target_route_node_id": "bwd.magmaw.encounter",
+      "runtime_route_source_entry": 41570,
+      "required_bot_count": 10
+    },
+    "required_actions": [
+      "Verify this committed authorization by path and SHA-256, then verify the GO review, Stage-1 handoff, prior typed failure, worldserver binary, and build receipt by their exact paths and hashes.",
+      "Verify b5752491 is an ancestor of db3ef47; verify b5752491..db3ef47 equals the exact ten-path reviewed allowlist; verify db3ef47..the authorization commit equals only the exact two metadata paths; require a clean control tree.",
+      "Re-verify the Stage-1 catalog staging receipt, canonical selector receipt, exact four-node route object and SHA-256, and unchanged route validator before any mutation.",
+      "Materialize the already-verified route object into the existing initially empty child run root; create the exact default-off runtime profile/config and manifest-derived fixture-expansion decision, suite receipt, and recurrence-admission inputs through the reviewed atomic generic dialect.",
+      "Execute exactly one deterministic provisioning operation for the frozen 10-player diagnostic roster, then exactly one database readback. Prove actor 30010 and target GUID 39/entry 41570, map 669, exact instance identity, profile, route, roster, gear, talents, glyphs, professions, pets, consumables, and role assignments; fail closed on mismatch without retargeting.",
+      "Create exactly one recurrence/admission/checkpoint seal bound to the exact source/build/route/profile/config/decision/suite/readback/case/actor/target identities, immediately re-verify it, and write the immutable Stage-2 handoff with its SHA-256 outside the child run root.",
+      "Stop after the sealed-ready or typed-preflight-failure handoff. Do not configure, build, start a server, capture, publish, evict, retry, or consume any later-stage budget."
+    ]
+  },
+  "remaining_budgets": {
+    "configure": 0,
+    "worldserver_build": 0,
+    "deterministic_provisioning": 1,
+    "database_readbacks": 1,
+    "recurrence_seals": 1,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "observation_only_fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null
+  },
+  "acceptance_conditions": [
+    "All immutable input hashes, both identity layers, the exact ten-path reviewed allowlist, the two-file authorization delta, and clean control state verify before provisioning.",
+    "Exactly one deterministic provisioning operation and one database readback prove the frozen roster plus actor 30010 and target GUID 39/entry 41570 in map 669 and the exact instance; no substitution or repair occurs.",
+    "Exactly one verified seal binds the unchanged binary/build receipt and exact fixture/case/source/route/profile/config/decision/suite/admission/readback/actor/target identities.",
+    "No configure, build, worldserver/authserver start, observation capture, gameplay canary, DVC action, or retry occurs.",
+    "The owner returns one immutable Stage-2 sealed-ready or typed-preflight-failure handoff at the exact output path and reports its SHA-256."
+  ],
+  "forbidden": [
+    "No repository mutation, source/test/config/route/roster/ledger/skill/runtime-default/database-schema change, or dirty-tree continuation.",
+    "No configure, rebuild, build receipt replacement, worldserver start, authserver start, live observation, gameplay canary, DVC publication/eviction, fixture promotion, acceptance, ML admission, or retry.",
+    "No synthetic authority or evidence, hand-authored passing decision/suite, foreign checkpoint dialect, target substitution, actor substitution, seal reuse, or mismatch waiver.",
+    "No gameplay/class/role/encounter/boss/arbiter/movement/pathing/executor change, Magmaw-specific production conditional, bot-side Z steering, teleportation, encounter MMAP workaround, or global tolerance change.",
+    "No one owner may combine Stage 2 with Stage 3 capture or any later stage."
+  ],
+  "authority": {
+    "source_mutation_allowed": false,
+    "test_mutation_allowed": false,
+    "build_authorized": false,
+    "deterministic_provisioning_authorized": true,
+    "database_readback_authorized": true,
+    "recurrence_seal_authorized": true,
+    "worldserver_start_authorized": false,
+    "authserver_start_authorized": false,
+    "observation_capture_authorized": false,
+    "gameplay_canary_authorized": false,
+    "dvc_publication_authorized": false,
+    "fixture_promotion_authorized": false,
+    "magmaw_acceptance_authorized": false,
+    "ml_admission_authorized": false
+  },
+  "next_action": "Dispatch exactly one fresh raid-shard-architecture owner with resumed_work_unit verbatim. Stage 3 remains closed until the exact Stage-2 handoff path and SHA-256 are independently available and performance-loop routing authorizes it."
+}
