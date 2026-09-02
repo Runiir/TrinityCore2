@@ -1,0 +1,86 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_typed_runtime_target_and_static_spawn_identity",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_identity_contract_repair_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "base_source": {
+    "commit": "fdb16335c7194d1b5e42bc4394b7478803f88988",
+    "tree": "4138c8a5b868218c071824c7bd5dc199ff7f570e",
+    "clean": true
+  },
+  "diagnosis": {
+    "path": "/tmp/magmaw-static-runtime-target-identity-diagnosis-20260903.json",
+    "sha256": "520f2fcbdf9e3efd498ad6d1ed5da2d35fdf08e3a6140f48d7fb461e2738951d",
+    "first_broken_edge": "checkpoint_target_runtime_guid_conflated_with_world_creature_spawn_guid",
+    "verified_static_identity": {
+      "spawn_id": 250051,
+      "entry": 41570,
+      "map_id": 669
+    },
+    "distinct_runtime_identity": {
+      "runtime_target_guid": 39,
+      "representation": "ObjectGuid low counter",
+      "static_database_key": false
+    }
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "objective": "Introduce a reusable fail-closed static target identity contract that seals runtime_target_guid separately from spawn_id, entry, and map_id and performs attributable static readback by spawn_id without claiming a live relation.",
+    "owned_files": [
+      "tools/raid_program/profile_combat_range_static_identity.py",
+      "tools/raid_program/prestart_bundle_dialects.py",
+      "tools/raid_program/recurrence_checkpoint_seals.py",
+      "tools/raid_program/recurrence_admission.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tests/test_profile_combat_range_static_identity.py",
+      "tests/test_recurrence_admission.py",
+      "tests/test_chainwielder_prestart_bundle.py"
+    ],
+    "required_change": [
+      "Define generic typed fields runtime_target_guid, target_spawn_id, target_entry, and target_map_id with strict non-bool integer validation and domain-specific names.",
+      "Carry those fields byte-for-byte through checkpoint seal, recurrence admission, atomic bundle, verification, and a reusable parameterized static readback keyed only by target_spawn_id.",
+      "Keep the values 39, 250051, 41570, and 669 only in the bounded profile-combat-range fixture descriptor/dialect, never in generic branching.",
+      "Make missing, duplicate, mismatched, unbound, drifted, or domain-substituted rows fail closed before any success receipt.",
+      "Mark alive, current target, positive instance, same instance, route scope, and runtime-spawn relation as pending live proof."
+    ],
+    "deterministic_fixtures": [
+      "Positive: runtime_target_guid=39 plus spawn_id=250051, entry=41570, map_id=669 accepts exactly one row keyed by spawn_id 250051.",
+      "Negative: querying or substituting runtime_target_guid 39 as a persistent spawn key fails with an explicit identity-domain reason.",
+      "Negative: wrong spawn, entry, map, duplicate or missing row, bool/non-integer identity, unbound metadata, and post-seal drift all fail closed.",
+      "Projection: seal, admission, bundle, verification, and static readback preserve both identity domains and never assert a live relation."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_profile_combat_range_static_identity.py tests/test_recurrence_admission.py tests/test_chainwielder_prestart_bundle.py",
+      "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py tests/test_phase1_raid_foundation_capture.py -k 'profile_combat_range or static_identity'",
+      "pixi run python -m py_compile tools/raid_program/profile_combat_range_static_identity.py tools/raid_program/prestart_bundle_dialects.py tools/raid_program/recurrence_checkpoint_seals.py tools/raid_program/recurrence_admission.py tools/raid_program/chainwielder_prestart_bundle.py",
+      "git diff --check fdb16335c7194d1b5e42bc4394b7478803f88988 HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Only the exact eight owned files change and all required checks pass.",
+      "The original guid=39 database-key counterexample fails before and the typed spawn=250051 case passes after.",
+      "The production artifact names and binds both identity domains explicitly through every layer.",
+      "No live relation is inferred from static metadata and no generic Magmaw conditional exists.",
+      "One clean implementation commit is handed to an independent Sol-high raid-evidence-lifecycle reviewer before any native repair, build, or Stage-2 retry."
+    ]
+  },
+  "forbidden": [
+    "No native C/C++, gameplay, class, rotation, arbiter, movement, executor, route, roster, database-schema, SQL, runtime-default, skill, build-system, or DVC changes.",
+    "No checkpoint retargeting, spawn/counter substitution, live inference, waiver, synthetic pass, broad authority, provisioning, database mutation, server, build, live capture, Stage-2 retry, canary, publication, promotion, or ML admission.",
+    "Do not repair the already diagnosed GetRawValue/GetCounter native mismatch in this work unit."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "provisioning": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one raid-evidence-lifecycle implementer, then one independent Sol-high raid-evidence-lifecycle reviewer."
+}
