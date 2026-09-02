@@ -1,0 +1,62 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:review_and_authorize_magmaw_fixture_attempt3",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_authority_reviewed",
+  "source": {
+    "commit": "05eb592cec69507aaaa7a659003e3029cbffe684",
+    "tree": "9ec55e383972e384ad67840ae20c447bd6665784"
+  },
+  "review": {
+    "verdict": "go",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "high",
+    "reviewed_parent_commit": "f14bb778c7900d414f07b76a1e9c19ce3d389944",
+    "reviewed_commit": "05eb592cec69507aaaa7a659003e3029cbffe684",
+    "reviewed_tree": "9ec55e383972e384ad67840ae20c447bd6665784",
+    "reviewed_file": ".agents/skills/raid-shard-architecture/SKILL.md",
+    "findings": [],
+    "checks": [
+      "quick_validate passed",
+      "exact parent-to-skill diff passed",
+      "production callable and receipt fields matched"
+    ]
+  },
+  "prior_lifecycle": {
+    "commit": "f14bb778c7900d414f07b76a1e9c19ce3d389944",
+    "handoff": "experiments/configs/cata_raid_magmaw_attempt2_route_manifest_skill_update_handoff_20260902.json",
+    "handoff_sha256": "13a1d16453daa9f8fa5def5d754ddca6ddb54e0b99fae518112a3a5e5271be3d",
+    "classification": "closed_prestart_route_manifest_shape_failure_published"
+  },
+  "first_broken_edge": {
+    "scope": "control_plane_route_authority",
+    "stage": "before_composite_launcher_request_composition",
+    "cause": "The authenticated DVC JSONL route catalog must be converted by the production selector into one verified scenario route object before request composition and before any build budget is consumed.",
+    "gameplay_result_exists": false
+  },
+  "next_work_unit": {
+    "id": "shard:magmaw_personal_escape_episode_rearm_fixture_expansion_attempt3",
+    "owner_skill": "raid-shard-architecture",
+    "required_action": "At this descriptor's exact clean commit, create a fresh external control parent and empty child run root with every material input and both immutable plans outside the child. Pass the full 26-test recurrence bank and admit exactly the five declared fixture targets. Authenticate and stage the DVC JSONL route catalog and verify its staging receipt. Before launcher request composition, configure/build, provisioning, or live execution, call canonical_route_catalog.materialize_scenario_route_manifest for blackwing_descent_10n_magmaw_diagnostic, verify the selector receipt with verify_scenario_route_manifest_receipt, prove the selected 4-node object passes the unchanged bundle route validator, and bind only verified output_object_path and output_object_sha256. Then consume at most one queued fast8_v4 configure/build, one deterministic validation provisioning/readback, one recurrence seal, and one completion-watchdog worldserver start. Start no authserver and do not retry.",
+    "required_postcondition": "One typed fixture terminal proves or refutes actor 30008's authoritative no-threat falling edge, later threat rising edge, exactly one child rearm under the unchanged provisional parent, stable task and candidate identity, correlated native progress and terminal outcome, infection and death outcome, route progress, DPS and HPS, and verified cleanup. The terminal evidence is published through DVC before local payload eviction; it does not grant Magmaw acceptance."
+  },
+  "budgets": {
+    "configure": 1,
+    "worldserver_build": 1,
+    "deterministic_provisioning": 1,
+    "database_mutation_scope": "validation_provisioning_only",
+    "recurrence_seal": 1,
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "live_attempts": 1,
+    "retries": 0,
+    "duration_policy": "completion_watchdog"
+  },
+  "forbidden": [
+    "acceptance promotion",
+    "gameplay, source, route-row, skill, launcher, bundle, class, encounter, movement, pathing, Z, floor, MMAP, endpoint, tolerance, or runtime-config mutation",
+    "request composition before verified scenario materialization",
+    "binding staged_path or raw JSONL catalog bytes as route_manifest",
+    "a second configure, build, provisioning, seal, worldserver start, live attempt, or any retry"
+  ]
+}
