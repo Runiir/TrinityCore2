@@ -13,6 +13,9 @@ import tools.raid_program.canonical_route_staging as canonical_staging
 import tools.raid_program.chainwielder_prestart_bundle as prestart_bundle
 import tools.raid_program.blocker_recurrence_ledger as recurrence_ledger
 import tools.raid_program.tracked_runtime_config_derivation as runtime_config
+from tools.raid_program.build_control_compatibility import (
+    LAYERED_AUTHORITY_SCHEMA,
+)
 from tools.raid_program.canonical_route_staging import stage_tracked_snapshot
 from tools.raid_program.chainwielder_prestart_bundle import (
     ACTOR_GUID,
@@ -748,6 +751,84 @@ def test_bundle_is_deterministic_and_does_not_mutate_inputs(tmp_path: Path) -> N
     second = {path.name: path.read_bytes() for path in output.iterdir()}
     assert first == second
     assert before == {key: sha256_file(path) for key, path in paths.items()}
+
+
+def _add_layered_build_control_authority(
+    fixture: dict[str, object], tmp_path: Path,
+) -> Path:
+    root = fixture["root"]
+    paths = fixture["paths"]
+    kwargs = fixture["kwargs"]
+    receipt_value = json.loads(
+        paths["build_receipt"].read_text(encoding="utf-8")
+    )
+    build = receipt_value["commit"]
+    reviewed_path = root / "tools/raid_program/reviewed.py"
+    reviewed_path.parent.mkdir(parents=True, exist_ok=True)
+    reviewed_path.write_text("reviewed\n", encoding="utf-8")
+    _git(root, "add", str(reviewed_path.relative_to(root)))
+    _git(root, "commit", "-m", "reviewed control")
+    reviewed = _git(root, "rev-parse", "HEAD")
+    current_path = root / "tests/test_current.py"
+    current_path.parent.mkdir(parents=True, exist_ok=True)
+    current_path.write_text("current\n", encoding="utf-8")
+    _git(root, "add", str(current_path.relative_to(root)))
+    _git(root, "commit", "-m", "current control")
+    current = _git(root, "rev-parse", "HEAD")
+    suite_value = json.loads(
+        paths["suite_receipt"].read_text(encoding="utf-8")
+    )
+    suite_value["source_identity"] = current
+    for row in suite_value.get("verifications", []):
+        if "source_identity" in row:
+            row["source_identity"] = current
+    _write_json(paths["suite_receipt"], suite_value)
+    authority = tmp_path / "inputs/build_control_authority.json"
+    _write_json(authority, {
+        "schema": LAYERED_AUTHORITY_SCHEMA,
+        "build_source_commit": build,
+        "reviewed_control_commit": reviewed,
+        "current_control_commit": current,
+        "build_to_review_paths": ["tools/raid_program/reviewed.py"],
+        "review_to_current_paths": ["tests/test_current.py"],
+    })
+    kwargs.update({
+        "source_commit": current,
+        "source_tree": _git(root, "rev-parse", "HEAD^{tree}"),
+        "suite_receipt_sha256": sha256_file(paths["suite_receipt"]),
+        "build_control_authority": authority,
+        "build_control_authority_sha256": sha256_file(authority),
+    })
+    _restage_base_runtime_config(fixture)
+    return authority
+
+
+def test_atomic_bundle_copies_binds_and_reconstructs_layered_authority(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path)
+    authority = _add_layered_build_control_authority(fixture, tmp_path)
+
+    result = _create(fixture)
+
+    output = fixture["output"]
+    copied = output / BUNDLE_NAMES["build_control_authority"]
+    assert result["valid"] is True
+    assert copied.read_bytes() == authority.read_bytes()
+    admission = json.loads(
+        (output / BUNDLE_NAMES["admission"]).read_text(encoding="utf-8")
+    )
+    assert admission["bindings"]["build_control_authority"] == {
+        "path": str(copied.resolve()), "sha256": sha256_file(copied),
+    }
+    assert admission["build_control_compatibility"]["layered_authority"][
+        "review_to_current_path_count"
+    ] == 1
+    assert verify_bundle(output)["valid"] is True
+
+    copied.write_text("{}\n", encoding="utf-8")
+    with pytest.raises(BundleError, match="bundle_file_hash_mismatch"):
+        verify_bundle(output)
 
 
 def test_expected_launch_argv_binds_the_complete_personal_threat_target(

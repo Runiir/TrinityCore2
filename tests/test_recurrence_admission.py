@@ -8,6 +8,7 @@ import subprocess
 import pytest
 
 from tools.raid_program.build_control_compatibility import (
+    LAYERED_AUTHORITY_SCHEMA,
     compatibility_projection,
     verify_build_control_compatibility,
 )
@@ -524,6 +525,105 @@ def test_creator_seals_a_verifiable_admission(tmp_path: Path) -> None:
     )
 
     assert _verify(paths)["valid"] is True
+
+
+def _layered_authority_for_fixture(
+    paths: dict[str, Path | str], tmp_path: Path,
+) -> tuple[Path, str]:
+    root = Path(paths["root"])
+    build = json.loads(
+        Path(paths["build_receipt"]).read_text(encoding="utf-8")
+    )["commit"]
+    reviewed_path = root / "tools/raid_program/reviewed.py"
+    reviewed_path.parent.mkdir(parents=True, exist_ok=True)
+    reviewed_path.write_text("reviewed\n", encoding="utf-8")
+    _git(root, "add", str(reviewed_path.relative_to(root)))
+    _git(root, "commit", "-m", "reviewed control")
+    reviewed = _git(root, "rev-parse", "HEAD")
+    current_path = root / "tests/test_current.py"
+    current_path.parent.mkdir(parents=True, exist_ok=True)
+    current_path.write_text("current\n", encoding="utf-8")
+    _git(root, "add", str(current_path.relative_to(root)))
+    _git(root, "commit", "-m", "current control")
+    current = _git(root, "rev-parse", "HEAD")
+    suite = Path(paths["suite"])
+    suite_value = json.loads(suite.read_text(encoding="utf-8"))
+    suite_value["source_identity"] = current
+    _write_json(suite, suite_value)
+    authority = tmp_path / "build_control_authority.json"
+    _write_json(authority, {
+        "schema": LAYERED_AUTHORITY_SCHEMA,
+        "build_source_commit": build,
+        "reviewed_control_commit": reviewed,
+        "current_control_commit": current,
+        "build_to_review_paths": ["tools/raid_program/reviewed.py"],
+        "review_to_current_paths": ["tests/test_current.py"],
+    })
+    return authority, sha256_file(authority)
+
+
+def test_admission_binds_and_reconstructs_layered_build_control_authority(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    authority, digest = _layered_authority_for_fixture(paths, tmp_path)
+    admission = Path(paths["admission"])
+    admission.unlink()
+    create_recurrence_admission(
+        output=admission,
+        worktree=Path(paths["root"]),
+        binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        runtime_config=Path(paths["config"]),
+        route_manifest=Path(paths["route"]),
+        ledger=Path(paths["ledger"]),
+        decision=Path(paths["decision"]),
+        suite_receipt=Path(paths["suite"]),
+        build_control_authority=authority,
+        build_control_authority_sha256=digest,
+    )
+
+    verified = _verify(paths)
+
+    assert verified["valid"] is True
+    assert verified["bindings"]["build_control_authority"] == {
+        "path": str(authority.resolve()), "sha256": digest,
+    }
+    layered = verified["build_control_compatibility"]["layered_authority"]
+    assert layered["build_to_review_path_count"] == 1
+    assert layered["review_to_current_path_count"] == 1
+
+
+def test_admission_rejects_layered_authority_and_projection_mutation(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    authority, digest = _layered_authority_for_fixture(paths, tmp_path)
+    admission = Path(paths["admission"])
+    admission.unlink()
+    create_recurrence_admission(
+        output=admission,
+        worktree=Path(paths["root"]), binary=Path(paths["binary"]),
+        build_receipt=Path(paths["build_receipt"]),
+        runtime_config=Path(paths["config"]), route_manifest=Path(paths["route"]),
+        ledger=Path(paths["ledger"]), decision=Path(paths["decision"]),
+        suite_receipt=Path(paths["suite"]),
+        build_control_authority=authority,
+        build_control_authority_sha256=digest,
+    )
+    original = authority.read_text(encoding="utf-8")
+    authority.write_text(original + " ", encoding="utf-8")
+    with pytest.raises(RecurrenceAdmissionError, match="build_control_authority_hash_mismatch"):
+        _verify(paths)
+    authority.write_text(original, encoding="utf-8")
+
+    value = json.loads(admission.read_text(encoding="utf-8"))
+    value["build_control_compatibility"]["layered_authority"][
+        "review_to_current_path_count"
+    ] = 99
+    _write_json(admission, value)
+    with pytest.raises(RecurrenceAdmissionError, match="build_control_compatibility_mismatch"):
+        _verify(paths)
 
 
 def test_chainwielder_checkpoint_uses_precomputed_non_circular_seal(

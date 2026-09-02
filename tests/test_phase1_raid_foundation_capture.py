@@ -13,6 +13,7 @@ import pytest
 
 import tools.raid_program.chainwielder_prestart_bundle as prestart_bundle
 from tests.test_chainwielder_prestart_bundle import (
+    _add_layered_build_control_authority,
     _create as _create_prestart_bundle,
     _generic_profile_range_fixture,
 )
@@ -5707,6 +5708,89 @@ def test_generic_profile_range_capture_preflight_uses_verified_bundle_admission(
     assert setup.recurrence_admission["checkpoint_target_guid"] == 39
     assert setup.checkpoint_target_guid == 39
     assert setup.controller_route_hold_scheduler is not None
+
+
+def test_build_control_capture_uses_only_admission_bound_layered_authority(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    fixture = _generic_profile_range_fixture(tmp_path)
+    authority = _add_layered_build_control_authority(fixture, tmp_path)
+    monkeypatch.setattr(
+        prestart_bundle, "_verify_gate_bearing_build_receipt",
+        lambda *args, **kwargs: {"valid": True, "gate_bearing": True},
+    )
+    _create_prestart_bundle(fixture)
+    bundle = fixture["output"]
+    paths = fixture["paths"]
+    root = fixture["root"]
+    admission_value = json.loads(
+        (bundle / "recurrence_admission.json").read_text(encoding="utf-8")
+    )
+    expected_compatibility = admission_value["build_control_compatibility"]
+    observed: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.preflight_runtime_exclusions",
+        lambda worktree: {"passed": True, "reasons": []},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_runtime_profile_assets",
+        lambda *args, **kwargs: {
+            "passed": True, "reasons": [],
+            "route_manifest": str(bundle / "route_manifest.json"),
+            "pool_tag_filter": "blackwing_descent_10n_magmaw_diagnostic",
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup._drudge_navmesh_probe",
+        lambda worktree: {"all_passed": True},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup._frozen_drudge_member_anchors",
+        lambda route_manifest: {
+            member: (0.0, 0.0, 0.0) for member in range(1, 11)
+        },
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.build_policy_path_for_receipt",
+        lambda build_receipt, worktree: bundle / "build_policy.json",
+    )
+
+    def capture_build_validation(*args, **kwargs):
+        observed.update(kwargs)
+        return {"valid": True, "rejections": [], **expected_compatibility}
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_build_receipt",
+        capture_build_validation,
+    )
+    setup = prepare_capture_setup([
+        "--binary", str(paths["binary"]),
+        "--config", str(bundle / "worldserver.validation.conf"),
+        "--output", str(tmp_path / "capture.json"),
+        "--build-receipt", str(bundle / "build_receipt.json"),
+        "--worktree", str(root),
+        "--recurrence-admission", str(bundle / "recurrence_admission.json"),
+        "--recurrence-admission-sha256", sha256_file(
+            bundle / "recurrence_admission.json"
+        ),
+        "--profile-combat-range-checkpoint-actor-guid", "30010",
+        "--profile-combat-range-checkpoint-target-guid", "39",
+        "--fixture-expansion-replay",
+        "--scenario-id", "blackwing_descent_10n_magmaw_diagnostic",
+        "--runtime-profile", "blackwing_descent_10n_magmaw_diagnostic",
+        "--pool-tag", "blackwing_descent_10n_magmaw_diagnostic",
+    ], root=root)
+
+    copied = bundle / prestart_bundle.BUNDLE_NAMES["build_control_authority"]
+    assert setup.build_provenance["valid"] is True
+    assert observed["build_control_authority"] == copied.resolve()
+    assert observed["build_control_authority_sha256"] == sha256_file(copied)
+    assert copied.read_bytes() == authority.read_bytes()
+    source = Path(
+        prestart_bundle.__file__
+    ).with_name("capture_setup.py").read_text(encoding="utf-8")
+    assert 'parser.add_argument("--build-control-authority"' not in source
 
 
 @pytest.mark.parametrize(

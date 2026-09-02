@@ -21,6 +21,9 @@ from tools.raid_program.canonical_route_staging import (
     is_within,
     stage_canonical_route as _stage_canonical_route,
 )
+from tools.raid_program.build_control_compatibility import (
+    verify_build_control_compatibility,
+)
 from tools.raid_program.chainwielder_runtime_config_authority import (
     LEGACY_TRACKED_SNAPSHOT_AUTHORITY,
     RuntimeConfigAuthorityError,
@@ -105,8 +108,10 @@ BUNDLE_NAMES = {
     "ledger": "recurrence_ledger.json", "decision": "recurrence_decision.json",
     "suite_receipt": "regression_suite_receipt.json",
     "checkpoint_seal": "checkpoint_seal.json", "admission": "recurrence_admission.json",
+    "build_control_authority": "build_control_authority.json",
     "launch_contract": "launch_contract.json", "bundle_manifest": "bundle_manifest.json",
 }
+OPTIONAL_BUNDLE_KEYS = {"build_control_authority"}
 
 ROUTE_INVARIANT_FIELDS = (
     "bot_start_map_id", "bot_start_x", "bot_start_y", "bot_start_z",
@@ -516,7 +521,7 @@ def _logical_bindings(root: Path) -> dict[str, Path]:
         for key in (
             "runtime_config", "route_manifest", "profile_manifest",
             "build_receipt", "ledger",
-            "decision", "suite_receipt",
+            "decision", "suite_receipt", "build_control_authority",
         )
     }
 
@@ -548,15 +553,24 @@ def verify_bundle(
     root = (materialized_root or output_dir).resolve()
     if not root.is_dir():
         raise BundleError("bundle_missing")
-    expected_names = set(BUNDLE_NAMES.values())
+    required_names = {
+        name for key, name in BUNDLE_NAMES.items()
+        if key not in OPTIONAL_BUNDLE_KEYS
+    }
+    optional_names = {BUNDLE_NAMES[key] for key in OPTIONAL_BUNDLE_KEYS}
     actual_entries = list(root.iterdir())
     actual_names = {path.name for path in actual_entries}
     if (
-        len(actual_entries) != len(expected_names)
-        or actual_names != expected_names
+        not required_names.issubset(actual_names)
+        or not actual_names.issubset(required_names | optional_names)
+        or len(actual_entries) != len(actual_names)
         or any(path.is_symlink() or not path.is_file() for path in actual_entries)
     ):
         raise BundleError("bundle_partial_or_extra_files")
+    authority_present = BUNDLE_NAMES["build_control_authority"] in actual_names
+    expected_names = required_names | (
+        {BUNDLE_NAMES["build_control_authority"]} if authority_present else set()
+    )
     manifest = _json(root / BUNDLE_NAMES["bundle_manifest"], "bundle_manifest")
     if (root / BUNDLE_NAMES["bundle_manifest"]).read_bytes() != _canonical_pretty_json(manifest):
         raise BundleError("bundle_manifest_not_canonical")
@@ -601,6 +615,8 @@ def verify_bundle(
             "base_runtime_config", "build_policy",
         )
     ]
+    if authority_present:
+        payload_names.append(BUNDLE_NAMES["build_control_authority"])
     if launch.get("canonical_payload_manifest") != file_sha_rows(root, payload_names):
         raise BundleError("launch_payload_manifest_mismatch")
     source = launch.get("source") or {}
@@ -624,6 +640,12 @@ def verify_bundle(
             "base_runtime_config", "build_policy",
         )
     }
+    if authority_present:
+        logical["build_control_authority"] = (
+            logical_root / BUNDLE_NAMES["build_control_authority"]
+        )
+    if set(paths) != {"binary", *logical}:
+        raise BundleError("launch_paths_incomplete_or_extra")
     for key, path in logical.items():
         binding = paths.get(key)
         if not isinstance(binding, dict) or binding.get("path") != str(path):
@@ -721,6 +743,18 @@ def verify_bundle(
         raise BundleError("checkpoint_seal_verification_mismatch")
     if verified.get("checkpoint_fixture_id") != seal.get("fixture_id"):
         raise BundleError("checkpoint_fixture_verification_mismatch")
+    verified_authority = (verified.get("bindings") or {}).get(
+        "build_control_authority"
+    )
+    expected_authority = (
+        {
+            "path": str(logical["build_control_authority"]),
+            "sha256": sha256_file(root / BUNDLE_NAMES["build_control_authority"]),
+        }
+        if authority_present else None
+    )
+    if verified_authority != expected_authority:
+        raise BundleError("recurrence_admission_build_control_authority_mismatch")
     admission_profile = (verified.get("bindings") or {}).get(
         "profile_manifest"
     )
@@ -815,6 +849,8 @@ def create_bundle(
     personal_threat_episode_parent_wave_generation: int | None = None,
     personal_threat_episode_parent_generation_authoritative: bool | None = None,
     checkpoint_target_guid: int | None = None,
+    build_control_authority: Path | None = None,
+    build_control_authority_sha256: str | None = None,
 ) -> dict[str, Any]:
     output_dir = output_dir.resolve()
     staging: Path | None = None
@@ -849,10 +885,16 @@ def create_bundle(
             worktree.resolve() / ledger_relative_path(dialect)
         ):
             raise BundleError("magmaw_transfer_ledger_source_path_mismatch")
+        if (build_control_authority is None) != (
+            build_control_authority_sha256 is None
+        ):
+            raise BundleError("build_control_authority_binding_incomplete")
         copied_inputs = {
             "build_receipt": build_receipt, "decision": decision,
             "suite_receipt": suite_receipt, "route_manifest": route_manifest,
             "ledger": ledger, "build_policy": build_policy,
+            **({"build_control_authority": build_control_authority}
+               if build_control_authority is not None else {}),
         }
         capture_paths = _capture_paths(output_dir)
         location_args = {
@@ -883,9 +925,25 @@ def create_bundle(
             "suite_receipt": (suite_receipt, suite_receipt_sha256),
             "route_manifest": (route_manifest, route_manifest_sha256),
             "ledger": (ledger, ledger_sha256),
+            **({
+                "build_control_authority": (
+                    build_control_authority, build_control_authority_sha256
+                )
+            } if build_control_authority is not None else {}),
         }
         for label, (path, digest) in hashes.items():
             _require_hash(path.resolve(), digest, label)
+        source_compatibility = verify_build_control_compatibility(
+            worktree=worktree,
+            receipt=_json(build_receipt, "build_receipt"),
+            authority_path=build_control_authority,
+            authority_sha256=build_control_authority_sha256,
+        )
+        if not source_compatibility["valid"]:
+            raise BundleError(
+                "build_source_incompatible:"
+                + source_compatibility["rejections"][0]
+            )
         validate_ledger_manifest(
             dialect, ledger=ledger, decision=decision,
             suite_receipt=suite_receipt,
@@ -908,6 +966,11 @@ def create_bundle(
             "ledger",
         ):
             copy_exact_file(copied_inputs[key], staging / BUNDLE_NAMES[key])
+        if build_control_authority is not None:
+            copy_exact_file(
+                build_control_authority,
+                staging / BUNDLE_NAMES["build_control_authority"],
+            )
         (staging / BUNDLE_NAMES["base_runtime_config"]).write_bytes(
             runtime_config_authority.payload
         )
@@ -972,6 +1035,14 @@ def create_bundle(
             checkpoint_fixture_id=checkpoint_fixture_id,
             purpose=FIXTURE_EXPANSION_PURPOSE,
             atomic_bundle_roots=(output_dir, staging),
+            build_control_authority=(
+                materialized["build_control_authority"]
+                if build_control_authority is not None else None
+            ),
+            build_control_authority_sha256=(
+                build_control_authority_sha256
+                if build_control_authority is not None else None
+            ),
         )
         admission_sha = sha256_file(staging / BUNDLE_NAMES["admission"])
         payload_names = [
@@ -983,6 +1054,8 @@ def create_bundle(
                 "base_runtime_config", "build_policy",
             )
         ]
+        if build_control_authority is not None:
+            payload_names.append(BUNDLE_NAMES["build_control_authority"])
         launch = {
             "schema": LAUNCH_SCHEMA,
             "bundle_schema": SCHEMA,
@@ -1012,6 +1085,10 @@ def create_bundle(
                         "decision", "suite_receipt",
                         "checkpoint_seal",
                         "base_runtime_config", "build_policy",
+                        *(
+                            ("build_control_authority",)
+                            if build_control_authority is not None else ()
+                        ),
                     )
                 },
             },
@@ -1126,6 +1203,8 @@ def parser() -> argparse.ArgumentParser:
         default=LEGACY_TRACKED_SNAPSHOT_AUTHORITY,
     )
     create.add_argument("--base-runtime-config-contract-relative-path")
+    create.add_argument("--build-control-authority", type=Path)
+    create.add_argument("--build-control-authority-sha256")
     return result
 
 

@@ -86,6 +86,8 @@ def validate_build_receipt(
     binary: Path,
     config: Path | None = None,
     attestation_path: Path | None = None,
+    build_control_authority: Path | None = None,
+    build_control_authority_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Reconstruct the production build gate without trusting receipt pass fields."""
 
@@ -114,6 +116,8 @@ def validate_build_receipt(
             )
         source_compatibility = verify_build_control_compatibility(
             worktree=worktree, receipt=receipt,
+            authority_path=build_control_authority,
+            authority_sha256=build_control_authority_sha256,
         )
         rejections: list[str] = []
         if verification.get("classification") != "success" or receipt.get("classification") != "success":

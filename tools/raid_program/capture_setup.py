@@ -627,9 +627,43 @@ def prepare_capture_setup(
         build_policy_path,
         worktree, binary, config,
         args.build_attestation.resolve() if args.build_attestation is not None else None,
+        build_control_authority=(
+            Path(
+                recurrence_admission["bindings"]["build_control_authority"][
+                    "path"
+                ]
+            ).resolve()
+            if recurrence_admission is not None
+            and "build_control_authority" in recurrence_admission.get(
+                "bindings", {}
+            ) else None
+        ),
+        build_control_authority_sha256=(
+            recurrence_admission["bindings"]["build_control_authority"][
+                "sha256"
+            ]
+            if recurrence_admission is not None
+            and "build_control_authority" in recurrence_admission.get(
+                "bindings", {}
+            ) else None
+        ),
     )
     if not build_provenance.get("valid"):
         raise SystemExit("build receipt rejected: " + ",".join(build_provenance.get("rejections", [])))
+    if recurrence_admission is not None and "build_control_authority" in (
+        recurrence_admission.get("bindings") or {}
+    ) and (
+        recurrence_admission.get("build_control_compatibility")
+        != {
+            key: build_provenance.get(key)
+            for key in recurrence_admission.get(
+                "build_control_compatibility", {}
+            )
+        }
+    ):
+        raise SystemExit(
+            "build receipt rejected: admission_build_control_compatibility_mismatch"
+        )
 
     return CaptureSetup(
         args=args,

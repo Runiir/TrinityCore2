@@ -545,6 +545,8 @@ def create_recurrence_admission(
     checkpoint_fixture_id: str | None = None,
     purpose: str = GAMEPLAY_CANARY_PURPOSE,
     atomic_bundle_roots: tuple[Path, Path] | None = None,
+    build_control_authority: Path | None = None,
+    build_control_authority_sha256: str | None = None,
 ) -> dict[str, Any]:
     if output.exists():
         raise RecurrenceAdmissionError("admission_output_exists")
@@ -558,6 +560,8 @@ def create_recurrence_admission(
     build = _load(build_receipt.resolve(), "build_receipt")
     source_compatibility = verify_build_control_compatibility(
         worktree=worktree, receipt=build,
+        authority_path=build_control_authority,
+        authority_sha256=build_control_authority_sha256,
     )
     if not source_compatibility["valid"]:
         raise RecurrenceAdmissionError(
@@ -795,6 +799,8 @@ def create_recurrence_admission(
                 "ledger": ledger,
                 "decision": decision,
                 "suite_receipt": suite_receipt,
+                **({"build_control_authority": build_control_authority}
+                   if build_control_authority is not None else {}),
                 **({"profile_manifest": profile_manifest}
                    if profile_manifest is not None else {}),
             }.items()
@@ -841,6 +847,16 @@ def verify_recurrence_admission(
         or (admission.get("bindings") or {}).get("profile_manifest") is not None
         or admission.get("expected_runtime_profile_id") is not None
     )
+    authority_projection = (
+        (admission.get("build_control_compatibility") or {}).get(
+            "layered_authority"
+        )
+    )
+    authority_binding_recorded = (
+        (admission.get("bindings") or {}).get("build_control_authority")
+    )
+    if (authority_projection is None) != (authority_binding_recorded is None):
+        raise RecurrenceAdmissionError("build_control_authority_binding_mismatch")
     if fixture_expansion:
         if admission.get("fixture_expansion_admitted") is not True:
             raise RecurrenceAdmissionError("fixture_expansion_not_admitted")
@@ -992,6 +1008,14 @@ def verify_recurrence_admission(
     suite_path = _verify_binding(
         admission, "suite_receipt", atomic_bundle_roots=atomic_bundle_roots,
     )
+    authority_path: Path | None = None
+    authority_sha256: str | None = None
+    if authority_projection is not None:
+        authority_path = _verify_binding(
+            admission, "build_control_authority",
+            atomic_bundle_roots=atomic_bundle_roots,
+        )
+        authority_sha256 = str(authority_binding_recorded.get("sha256") or "")
 
     config_text = runtime_config.read_text(encoding="utf-8")
     recorded_route_path = str(
@@ -1113,6 +1137,8 @@ def verify_recurrence_admission(
     build = _load(build_receipt_path, "build_receipt")
     source_compatibility = verify_build_control_compatibility(
         worktree=worktree, receipt=build,
+        authority_path=authority_path,
+        authority_sha256=authority_sha256,
     )
     if not source_compatibility["valid"]:
         raise RecurrenceAdmissionError(
@@ -1147,6 +1173,9 @@ def verify_recurrence_admission(
         "build_source_commit": source_compatibility["build_source_commit"],
         "build_source_tree": source_compatibility["build_source_tree"],
         "build_control_relationship": source_compatibility["relationship"],
+        "build_control_compatibility": compatibility_projection(
+            source_compatibility
+        ),
         "fixture_revisions": actual_revisions,
         "purpose": required_purpose,
         "fixture_expansion_target_ids": admission.get(
@@ -1183,6 +1212,8 @@ def verify_recurrence_admission(
         ),
         "bindings": {
             "route_manifest": (admission.get("bindings") or {})["route_manifest"],
+            **({"build_control_authority": authority_binding_recorded}
+               if authority_binding_recorded is not None else {}),
             **({"profile_manifest": (admission.get("bindings") or {})[
                 "profile_manifest"
             ]} if profile_path is not None else {}),
@@ -1202,6 +1233,8 @@ def main() -> int:
         command.add_argument("--binary", type=Path, required=True)
         command.add_argument("--build-receipt", type=Path, required=True)
         command.add_argument("--runtime-config", type=Path, required=True)
+    create.add_argument("--build-control-authority", type=Path)
+    create.add_argument("--build-control-authority-sha256")
     create.add_argument("--route-manifest", type=Path, required=True)
     create.add_argument("--ledger", type=Path, required=True)
     create.add_argument("--decision", type=Path, required=True)
@@ -1236,6 +1269,10 @@ def main() -> int:
                 decision=args.decision,
                 suite_receipt=args.suite_receipt,
                 purpose=args.purpose,
+                build_control_authority=args.build_control_authority,
+                build_control_authority_sha256=(
+                    args.build_control_authority_sha256
+                ),
             )
             result = {
                 "created": True,
