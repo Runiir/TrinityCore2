@@ -23,6 +23,14 @@ Before live execution, require:
 
 - an exact clean Git commit and tree;
 - a successful gate-bearing build receipt whose request, admission, and completion identities are equal and clean;
+- treat clean Git identity and porcelain as source proof only: they cannot
+  detect concurrent mutation of ignored receipt-bound artifacts such as the
+  CMake cache or built binary. Snapshot and compare those artifacts themselves
+  before and after validation, and bind returned provenance to the final
+  verified snapshot. Add deterministic callback/interleaving fixtures that
+  mutate each ignored artifact during the gate. When preflight and launch are
+  separate boundaries, repeat the artifact validation immediately before
+  launch;
 - the exact binary hash and generated config hash;
 - an exact materialized DVC workspace for every runtime asset. A detached Git
   checkout does not update DVC outputs: run targeted `dvc pull`/`dvc checkout`
