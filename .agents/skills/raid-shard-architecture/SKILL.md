@@ -213,6 +213,17 @@ canonical glyph identity and compares it after actions start.
 - For Nefarian, require all five predecessors and prepare on the upper ledge before the native descent/start action.
 - Bind the native instance-save rows and live runtime identity; never trust caller-authored boss-state booleans.
 
+## Degrade builds without regressing resource guards
+
+When a newer reviewed build policy has corrected flapping resource thresholds
+but still fails because compiler concurrency exceeds a load guard, derive the
+degraded retry from that newer policy: reduce concurrency while preserving its
+latest justified load, PSI, memory, swap, sampling, and stop guards. Do not
+select a stale lower-concurrency policy whose older thresholds contradict the
+newer evidence. Do not repeatedly raise resource ceilings while retaining the
+concurrency that produced the overload. If the reduced-concurrency policy also
+fails, stop and return the exact build phase and guard samples for review.
+
 ## Start and hand off a live shard
 
 Before sealing an exact build/run identity, perform the scenario's read-only
