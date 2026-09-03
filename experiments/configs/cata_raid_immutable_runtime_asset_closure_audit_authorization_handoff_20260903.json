@@ -1,0 +1,108 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:immutable_runtime_asset_closure_audit",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "architecture_audit_authorized",
+  "created_at_utc": "2026-09-03T07:00:00Z",
+  "immutable_evidence": {
+    "causal_summary_path": "experiments/configs/cata_raid_magmaw_pre_gameplay_infrastructure_causal_summary_20260903.json",
+    "causal_summary_sha256": "e166e3e71f4303a55a3eadb910b4560a2f31af14d4b0011ef9cfb1921b75cf19",
+    "static_failure_path": "/home/runiir/Games/trinity-magmaw-controller-identity-postbuild-static-sealed-handoff.json",
+    "static_failure_sha256": "66fc48914260e505fd897126e98c31ba0c8e894826cccb7c9ed3292a5b10c9d3",
+    "source_commit": "2c33200ce8f786e24c2747652c847cdccaeb6cb6",
+    "retained_checkout": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "complete_asset_source": "/home/runiir/Games/trinity-cata"
+  },
+  "scope_lock": {
+    "ordered_causal_receipt": [
+      {
+        "claim": "The reviewed controller identity repair compiled into a gate-bearing worldserver binary.",
+        "status": "verified",
+        "observation": "BUILD_READY handoff c9662d79 binds binary 79d7042a and valid configure/build receipts."
+      },
+      {
+        "claim": "The current atomic prestart bundle is structurally valid.",
+        "status": "verified",
+        "observation": "Bundle aa4e841a passed pre-rename and post-rename production verification after recurrence 27/27."
+      },
+      {
+        "claim": "The static database readback failed because the retained checkout lacks Talent.dbc.",
+        "status": "verified",
+        "observation": "The contract loader raised FileNotFoundError before DB URL resolution, connection, or query."
+      },
+      {
+        "claim": "Talent.dbc is the only missing runtime asset.",
+        "status": "refuted",
+        "observation": "No complete transitive asset scan exists; prior attempts independently discovered missing route/profile and navmesh inputs."
+      },
+      {
+        "claim": "The full runtime asset closure is known.",
+        "status": "unproven",
+        "observation": "Current checks stop at the first missing consumer input and do not aggregate all DBC, map, vmap, mmap, route, profile, provisioning, and launch dependencies."
+      }
+    ],
+    "candidate_first_broken_edge": "retained_immutable_runtime_asset_closure_incomplete",
+    "first_observed_downstream_state": "materialized readback contract construction aborts at missing data/dbc/enUS/Talent.dbc before any database operation",
+    "failure_postcondition": "static_sealed_ready is false, integrated Stage3 is not authorized, and no worldserver starts",
+    "implementation_hypothesis": "A generic manifest plus aggregate verifier can declare the complete consumer-derived runtime asset closure, report every missing or mismatched member in one pass, and block sealing before downstream work begins.",
+    "correlation_keys": {
+      "static_work_unit": "shard:seal_controller_hold_identity_materialization_stage3",
+      "bundle_manifest_sha256": "aa4e841ab2d883c21f29352c6785d0c7286b87acd0aba2b893b5a7c48fd886fb",
+      "retained_source_commit": "cb9bc7e3977f57d4e308d9763051b34feff222c4",
+      "failed_consumer": "load_materialized_readback_contract",
+      "missing_relative_path": "data/dbc/enUS/Talent.dbc"
+    },
+    "owned_output": "/home/runiir/Games/trinity-immutable-runtime-asset-closure-audit-handoff.json",
+    "expected_observable_change": "The audit names the entire current required set and all missing/mismatched members, then identifies exact implementation files for a generic manifest and one-pass verifier.",
+    "production_boundary": "Trace real file consumers used by recurrence, route/profile materialization, bundle creation/verification, roster and provisioning readback, navmesh/path probes, capture setup, and worldserver DataDir launch. The later fixture must fail before implementation with the full missing set and pass after hydration in a fresh immutable checkout.",
+    "allowed_inspection": [
+      "tools/raid_program",
+      "tools/bot_ml",
+      "experiments/configs",
+      "dataset",
+      "data",
+      "tests",
+      "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+      "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build.5YGC4lez/run/prestart_bundle_stage3_integrated_v1"
+    ],
+    "allowed_mutation": "Create only the external audit handoff at owned_output.",
+    "excluded": [
+      "repository edits or commits",
+      "asset copying or hydration",
+      "DVC operations",
+      "build, configure, server, database connection/query/mutation, provisioning, capture, or live canary",
+      "Magmaw-specific manifest design or Talent.dbc-only repair"
+    ],
+    "focused_validation": "Recompute the audit's source and retained tree inventories independently and require the reported complete missing/mismatch sets, counts, aggregate digests, symlink state, and consumer-to-asset mapping to agree.",
+    "terminal_conditions": {
+      "success": "One hash-verified external audit handoff identifies a complete generic manifest design, exact implementation ownership, and all current missing/mismatched assets.",
+      "failed_verification": "Stop with typed audit_incomplete and list the consumer or provenance boundary that prevents completeness.",
+      "out_of_scope": "Return adjacent gameplay, DVC publication, or server concerns without acting on them."
+    }
+  },
+  "required_audit": [
+    "Resolve direct and transitive file reads for the exact Stage3 preparation path, including data selected through config or contracts rather than string literals.",
+    "Separate files needed by offline evidence tools from files needed by the native worldserver, and distinguish global data roots from scenario-selected map assets.",
+    "Inventory the complete source asset tree and retained checkout without following symlinks; report all missing, extra, type, hash, size, and mode mismatches in one result.",
+    "Record canonical hydration source and provenance for every asset class, including DVC-backed route/profile data.",
+    "Propose the smallest generic manifest schema and exact verifier/fixture files, with aggregate-all-errors behavior and safe eviction rules."
+  ],
+  "acceptance_conditions": [
+    "The handoff reports every current missing or mismatched asset, not only Talent.dbc, and binds counts plus aggregate hashes so another reviewer can reproduce it.",
+    "Every manifest class is tied to an observed production consumer and labeled exact-file, bounded-pattern, or complete-directory closure.",
+    "The proposed implementation is reusable for every supported raid and dungeon and has no Magmaw-specific exception.",
+    "No repository or external asset tree is mutated."
+  ],
+  "budgets": {
+    "architecture_audits": 1,
+    "external_handoffs": 1,
+    "repository_edits": 0,
+    "asset_copies": 0,
+    "dvc_operations": 0,
+    "database_operations": 0,
+    "builds": 0,
+    "worldserver_starts": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one Sol high raid-shard-architecture auditor, then use its exact ownership proposal for a separate implementation unit."
+}

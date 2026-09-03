@@ -1,48 +1,48 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:immutable_runtime_asset_closure_contract",
+  "work_unit": "shard:immutable_runtime_asset_closure_audit",
   "owner_skill": "raid-shard-architecture",
-  "classification": "failed",
+  "classification": "architecture_audit_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "observed_at_commit": "cb9bc7e3977f57d4e308d9763051b34feff222c4",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "A reusable complete immutable runtime asset-closure contract before any encounter-specific Stage3 admission.",
+  "architecture_scope": "One read-only audit of the complete consumer-derived immutable runtime asset closure.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Cutoff reached after another pre-gameplay implicit-asset failure. The valid bundle and binary are retained, but Magmaw live validation is blocked on generic asset closure.",
+  "gate_state": "The causal summary is valid; a Sol architecture audit must enumerate the complete closure before implementation or hydration.",
   "first_broken_edge": {
     "id": "retained_immutable_runtime_asset_closure_incomplete",
     "stage": "post_build_static_readback_preflight",
     "owner_classification": "raid_shard_architecture",
     "cause": "The retained immutable checkout validates route and navmesh assets individually but lacks a complete transitive manifest; Talent.dbc was first discovered only during readback contract load.",
-    "review_state": "subsystem_repair_required_no_one_file_hydration"
+    "review_state": "read_only_complete_closure_audit_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_pre_gameplay_infrastructure_causal_summary_20260903.json",
-    "sha256": "e166e3e71f4303a55a3eadb910b4560a2f31af14d4b0011ef9cfb1921b75cf19",
+    "path": "experiments/configs/cata_raid_immutable_runtime_asset_closure_audit_authorization_handoff_20260903.json",
+    "sha256": "b569140f5faa444ea56b16973a0c4ee6f3ffb081dcbe23d1807f42aa66bfbde3",
     "failure_handoff_path": "/home/runiir/Games/trinity-magmaw-controller-identity-postbuild-static-sealed-handoff.json",
     "failure_handoff_sha256": "66fc48914260e505fd897126e98c31ba0c8e894826cccb7c9ed3292a5b10c9d3"
   },
   "scope_lock": {
-    "objective": "Define and verify the complete reusable immutable runtime asset closure before another canary attempt.",
-    "owned_output": "one generic asset-closure manifest, verifier, deterministic fixture, and independent review",
-    "stop_condition": "Do not resume Magmaw until a fresh immutable checkout reports the full required asset set present in one pass."
+    "objective": "Trace every Stage3 consumer and report the complete required asset set plus exact implementation ownership.",
+    "owned_output": "/home/runiir/Games/trinity-immutable-runtime-asset-closure-audit-handoff.json",
+    "stop_condition": "Stop after one reproducible read-only audit handoff; do not copy assets or edit the repository."
   },
   "acceptance_conditions": [
-    "A generic manifest declares all DBC, map, vmap, mmap, route, and profile dependencies with exact provenance.",
-    "One preflight reports the entire missing set and passes in a fresh immutable checkout before Stage3."
+    "Every required asset class is tied to an observed consumer and classified as exact-file, bounded-pattern, or complete-directory closure.",
+    "All current missing/mismatched members are reported together with reproducible counts and aggregate hashes."
   ],
   "forbidden": [
-    "No Talent.dbc-only copy, Magmaw-specific exception, server, DB mutation, live canary, rebuild, or implicit first-missing-file retry."
+    "No repository edit, asset copy, DVC operation, server, DB operation, live canary, rebuild, Magmaw-specific exception, or first-missing-file repair."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
     "implementation_commits": 0,
-    "independent_reviews": 0,
+    "independent_reviews": 1,
     "dvc_add_budget": 0,
     "dvc_push_budget": 0,
     "credential_aware_remote_reconstruction_budget": 0,
@@ -60,5 +60,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Route to a Sol architecture work unit for the generic immutable runtime asset-closure contract; do not patch Talent.dbc alone."
+  "next_action": "Run the read-only complete-closure audit, then authorize implementation from its exact file ownership proposal."
 }
