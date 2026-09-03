@@ -475,24 +475,8 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
             "profile_combat_range_checkpoint_status_identity_invalid"
         )
 
-    state = getattr(scheduler, "_profile_checkpoint_state", None)
-    if not isinstance(state, dict):
-        state = {
-            "checkpoint_generation": None,
-            "active_stage": None,
-        }
-        scheduler._profile_checkpoint_state = state
-    else:
-        state.setdefault("active_stage", None)
     generation = row.get("checkpoint_generation")
     if not _positive_int(generation):
-        return scheduler._fail(
-            "profile_combat_range_checkpoint_status_scope_invalid"
-        )
-    expected_generation = state.get("checkpoint_generation")
-    if expected_generation is None:
-        state["checkpoint_generation"] = generation
-    elif generation != expected_generation:
         return scheduler._fail(
             "profile_combat_range_checkpoint_status_scope_invalid"
         )
@@ -550,8 +534,12 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
             return scheduler._fail(
                 "profile_combat_range_checkpoint_status_arm_ack_invalid"
             )
+        state = {
+            "checkpoint_generation": generation,
+            "active_stage": row["stage"],
+        }
+        scheduler._profile_checkpoint_state = state
         scheduler._arm_ack_count = 1
-        state["active_stage"] = row["stage"]
         scheduler._record("arm_ack", row, {})
         scheduler.phase = "awaiting_terminal"
         return next_status_command()
@@ -559,6 +547,19 @@ def _observe_profile_combat_range_checkpoint_scheduler_row(
     if scheduler.phase != "awaiting_terminal":
         return scheduler._fail(
             "profile_combat_range_checkpoint_duplicate_or_stale_receipt"
+        )
+    state = getattr(scheduler, "_profile_checkpoint_state", None)
+    if not isinstance(state, dict):
+        return scheduler._fail(
+            "profile_combat_range_checkpoint_status_scope_invalid"
+        )
+    expected_generation = state.get("checkpoint_generation")
+    if (
+        not _positive_int(expected_generation)
+        or generation != expected_generation
+    ):
+        return scheduler._fail(
+            "profile_combat_range_checkpoint_status_scope_invalid"
         )
     if row.get("stage") == "armed" and row.get("terminal") is False:
         return scheduler._fail(

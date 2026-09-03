@@ -33,6 +33,123 @@ SEAL = "a" * 64
 SOURCE = "b" * 40
 
 
+def _invalid_arm_row_cases() -> tuple[tuple[object, ...], ...]:
+    identity_values = {
+        "action": "wrong_action",
+        "authority": "wrong_authority",
+        "fixture_id": "wrong_fixture",
+        "case_id": CASE + ".stale",
+        "seal_sha256": "c" * 64,
+        "source_commit": "d" * 40,
+        "actor_guid": ACTOR + 1,
+        "runtime_target_guid": TARGET + 1,
+        "target_spawn_id": TARGET_SPAWN + 1,
+        "target_entry": TARGET_ENTRY + 1,
+        "target_map_id": TARGET_MAP + 1,
+    }
+    cases: list[tuple[object, ...]] = [
+        (
+            f"identity_{field}", field, value, False,
+            (
+                None if field == "action" else
+                "profile_combat_range_checkpoint_status_identity_invalid"
+            ),
+        )
+        for field, value in identity_values.items()
+    ]
+    for field, wrong_value in (
+        ("attempt_id", 8),
+        ("wipe_generation", 1),
+        ("route_generation", 2),
+    ):
+        for label, value, omitted in (
+            ("wrong", wrong_value, False),
+            ("true", True, False),
+            ("false", False, False),
+            ("none", None, False),
+            ("omitted", None, True),
+        ):
+            cases.append((
+                f"scope_{field}_{label}", field, value, omitted,
+                "profile_combat_range_checkpoint_status_scope_invalid",
+            ))
+    for label, value, omitted in (
+        ("zero", 0, False),
+        ("true", True, False),
+        ("false", False, False),
+        ("none", None, False),
+        ("omitted", None, True),
+    ):
+        cases.append((
+            f"scope_checkpoint_generation_{label}",
+            "checkpoint_generation", value, omitted,
+            "profile_combat_range_checkpoint_status_scope_invalid",
+        ))
+    for field, wrong_value in (
+        ("ok", False),
+        ("stage", "completed"),
+        ("terminal", True),
+        ("outcome", "profile_combat_range_checkpoint_progress_observed"),
+        ("failure_reason", "native_failure"),
+    ):
+        for label, value, omitted in (
+            ("wrong", wrong_value, False),
+            ("none", None, False),
+            ("omitted", None, True),
+        ):
+            if field == "failure_reason" and label in {"none", "omitted"}:
+                continue
+            cases.append((
+                f"lifecycle_{field}_{label}", field, value, omitted,
+                "profile_combat_range_checkpoint_status_arm_ack_invalid",
+            ))
+    for label, value, omitted in (
+        ("premature_bound", True, False),
+        ("none", None, False),
+        ("omitted", None, True),
+    ):
+        cases.append((
+            f"arm_scope_bound_{label}", "scope_bound", value, omitted,
+            "profile_combat_range_checkpoint_status_arm_ack_invalid",
+        ))
+    for label, value, omitted in (
+        ("nonzero", 123, False),
+        ("true", True, False),
+        ("false", False, False),
+        ("none", None, False),
+        ("omitted", None, True),
+    ):
+        cases.append((
+            f"arm_target_instance_{label}",
+            "target_instance_id", value, omitted,
+            "profile_combat_range_checkpoint_status_arm_ack_invalid",
+        ))
+    for field in (
+        "runtime_target_guid_matched",
+        "target_spawn_id_matched",
+        "target_entry_matched",
+        "target_map_id_matched",
+        "positive_instance_matched",
+        "same_instance_matched",
+        "attempt_scope_matched",
+        "wipe_scope_matched",
+        "route_scope_matched",
+    ):
+        for label, value, omitted in (
+            ("true", True, False),
+            ("none", None, False),
+            ("omitted", None, True),
+        ):
+            cases.append((
+                f"arm_match_{field}_{label}", field, value, omitted,
+                "profile_combat_range_checkpoint_status_arm_ack_invalid",
+            ))
+    return tuple(cases)
+
+
+INVALID_ARM_ROW_CASES = _invalid_arm_row_cases()
+
+
 def _admission() -> dict[str, object]:
     return {
         "valid": True,
@@ -488,6 +605,27 @@ def _advance_scheduler_to_arm_ack(
     assert scheduler.phase == "awaiting_arm_ack"
 
 
+def _profile_checkpoint_lifecycle_snapshot(
+    scheduler: ControllerRouteHoldScheduler,
+) -> dict[str, object]:
+    state_present = hasattr(scheduler, "_profile_checkpoint_state")
+    return {
+        "checkpoint_state_present": state_present,
+        "checkpoint_state": copy.deepcopy(getattr(
+            scheduler, "_profile_checkpoint_state", None,
+        )),
+        "command_counts": copy.deepcopy(scheduler.command_counts),
+        "command_transcript": copy.deepcopy(scheduler.command_transcript),
+        "receipt_transcript": copy.deepcopy(scheduler.receipt_transcript),
+        "arm_ack_count": scheduler._arm_ack_count,
+        "terminal_count": scheduler._terminal_count,
+        "terminal_stage": scheduler._terminal_stage,
+        "terminal_observation": copy.deepcopy(
+            scheduler._terminal_observation
+        ),
+    }
+
+
 def test_profile_scheduler_executes_exact_arm_poll_terminal_protocol() -> None:
     scheduler = _scheduler()
     _advance_scheduler_to_arm_ack(scheduler)
@@ -552,6 +690,65 @@ def test_profile_arm_ack_uses_independent_native_armed_defaults() -> None:
             "wipe_scope_matched",
             "route_scope_matched",
         )
+    )
+
+
+@pytest.mark.parametrize(
+    "case_id,field,value,omitted,expected_reason",
+    INVALID_ARM_ROW_CASES,
+    ids=[str(case[0]) for case in INVALID_ARM_ROW_CASES],
+)
+def test_profile_scheduler_invalid_first_arm_is_state_nonmutating(
+    case_id: str, field: str, value: object, omitted: bool,
+    expected_reason: str | None,
+) -> None:
+    scheduler = _scheduler()
+    _advance_scheduler_to_arm_ack(scheduler)
+    row = _profile_arm_ack()
+    if omitted:
+        del row[field]
+    else:
+        row[field] = value
+    before = _profile_checkpoint_lifecycle_snapshot(scheduler)
+    assert before["checkpoint_state_present"] is False
+
+    assert scheduler.observe(row) == []
+
+    assert scheduler.failure_reason == expected_reason, case_id
+    assert _profile_checkpoint_lifecycle_snapshot(scheduler) == before
+
+
+def test_profile_scheduler_authentic_arm_commits_checkpoint_state_once() -> None:
+    scheduler = _scheduler()
+    _advance_scheduler_to_arm_ack(scheduler)
+    assert not hasattr(scheduler, "_profile_checkpoint_state")
+
+    assert scheduler.observe(_profile_arm_ack()) == [
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+    ]
+
+    committed_state = scheduler._profile_checkpoint_state
+    assert committed_state == {
+        "checkpoint_generation": 1,
+        "active_stage": "armed",
+    }
+    assert scheduler.phase == "awaiting_terminal"
+    assert scheduler._arm_ack_count == 1
+    assert scheduler.command_transcript[-1] == (
+        PROFILE_COMBAT_RANGE_CHECKPOINT_STATUS_COMMAND
+    )
+    assert [row["kind"] for row in scheduler.receipt_transcript].count(
+        "arm_ack"
+    ) == 1
+
+    before_duplicate = _profile_checkpoint_lifecycle_snapshot(scheduler)
+    assert scheduler.observe(_profile_arm_ack()) == []
+    assert scheduler.failure_reason == (
+        "profile_combat_range_checkpoint_duplicate_or_stale_receipt"
+    )
+    assert scheduler._profile_checkpoint_state is committed_state
+    assert _profile_checkpoint_lifecycle_snapshot(scheduler) == (
+        before_duplicate
     )
 
 
