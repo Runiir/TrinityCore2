@@ -87,6 +87,10 @@ int main()
         "chain-config", "chain-seal", "chain-source");
     AssertTriple(Select({}, authorities),
         "chain-config", "chain-seal", "chain-source");
+    AssertIdentity(Select("unknown-fixture", authorities),
+        "chain-config", "chain-seal", "chain-source");
+    AssertIdentity(Select({}, authorities),
+        "chain-config", "chain-seal", "chain-source");
 
     // Adjacent IDs never alias a supported dialect.
     for (std::string_view adjacent : {
