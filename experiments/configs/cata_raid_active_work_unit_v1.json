@@ -1,64 +1,64 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_stage3_no_cache_metric_transfer_v2",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "no_cache_metric_descendant_safe_transfer_authorized",
+  "work_unit": "architecture:magmaw_stage3_selected_route_profile_preflight",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "selected_route_profile_preflight_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "a8368e5a9f46b3e986b40a03897911bcd11d4599",
+  "observed_at_commit": "8240f5803595c7aabf00b84f0ddc2a96e0303a75",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "Restore one DVC cache:false metric from an exact clean descendant-safe source binding, then prove validation_scenarios clean; no server.",
+  "architecture_scope": "Read-only production selection of the four-node Magmaw route plus exact runtime-profile and sealed-bundle verification; no server.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "The prior unit performed no mutation because exact primary HEAD binding self-invalidated after its own control commit; lineage-bearing files and metric bytes remain unchanged.",
+  "gate_state": "Immutable DVC lineage is clean; selected route and runtime-profile parity remain to be independently proven before live capture.",
   "first_broken_edge": {
-    "id": "control_commits_self_invalidate_exact_source_head",
-    "stage": "stage3_no_cache_metric_transfer_v2",
-    "owner_classification": "raid_evidence_lifecycle",
-    "cause": "An advancing clean coordinator branch cannot be both the source of a newly committed authorization and remain equal to the authorization's parent HEAD.",
-    "review_state": "descendant_safe_lineage_binding_authorized"
+    "id": "selected_route_and_runtime_profile_parity_unverified_after_hydration",
+    "stage": "stage3_selected_route_profile_preflight",
+    "owner_classification": "raid_shard_architecture",
+    "cause": "Hydration proves DVC lineage only; it does not prove the production selector output or capture profile contract.",
+    "review_state": "exact_distinct_catalog_selected_runtime_hashes_bound"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_stage3_no_cache_metric_transfer_reauthorization_handoff_20260903.json",
-    "sha256": "83a3b4c298aad906ef4ca91f33793eac7bfe1a26df1521d9b7b171b73c7011be",
-    "predecessor_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff.json",
-    "predecessor_sha256": "97c55652fb9fa73dc518e707e5345052ba745c58fc7b10f63e1179dd4c12c6c9"
+    "path": "experiments/configs/cata_raid_magmaw_stage3_selected_route_profile_preflight_authorization_handoff_20260903.json",
+    "sha256": "fa184e3f2d0f06eaa89089f4e04ff3b6a8ffb79c8b85796d1c0a11414a570035",
+    "predecessor_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff-v2.json",
+    "predecessor_sha256": "a3e0bc92bc140821f1a748d9bdc07150a1c2616861bc901a7b95e8a813e25f92"
   },
   "scope_lock": {
-    "objective": "Copy one exact no-cache metric using a clean descendant plus unchanged DVC lineage binding, then require clean validation_scenarios status.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff-v2.json",
-    "stop_condition": "Stop at the first ancestry, cleanliness, lineage path, lock declaration, source status, hash, copy, destination status, or immutable identity mismatch without retry or live action."
+    "objective": "Prove authenticated catalog to selected route to runtime suffix/profile parity through production functions, with temporary outputs removed.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-selected-route-profile-preflight-handoff.json",
+    "stop_condition": "Stop at the first identity, DVC, staging, selection, receipt, partition, profile, bundle, cleanup, or postcheck mismatch without retry or live action."
   },
   "acceptance_conditions": [
-    "Exactly one no-cache metric file is copied and its MD5/size match the immutable lock.",
-    "Source is a clean descendant with unchanged dvc.yaml/dvc.lock, both validation_scenarios statuses equal {}, and route/profile/server/live/gameplay claims remain closed."
+    "Catalog 406527cc..., selected source route f549cbb9..., runtime suffix ffc0ecb5..., and profile 580410af... are verified as distinct bound artifacts.",
+    "The exact four-node diagnostic partition passes the capture validator, temporary artifacts are removed, immutable Git/DVC remain clean, and no live claim is made."
   ],
   "forbidden": [
-    "No other file/cache/source mutation, DVC checkout/pull/repro/push/gc, build, provision, database mutation, server/live/retry, route/profile inference, gameplay canary, or live inference."
+    "No source/config/catalog/bundle mutation, DVC mutation, build, provision, database mutation, server/live/retry, gameplay canary, or gameplay inference."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "identity_lineage_lock_hash_preflight_budget": 1,
-    "source_dvc_status_budget": 1,
-    "destination_parent_create_budget": 1,
-    "exact_file_copy_budget": 1,
-    "destination_hash_check_budget": 1,
-    "target_dvc_status_budget": 1,
+    "preflight_hash_and_dvc_status_budget": 1,
+    "external_temp_root_budget": 1,
+    "canonical_route_stage_budget": 1,
+    "production_route_selection_budget": 1,
+    "selection_receipt_verification_budget": 1,
+    "runtime_profile_asset_validation_budget": 1,
+    "sealed_bundle_verification_budget": 1,
+    "temp_cleanup_budget": 1,
     "worldserver_start_budget": 0,
     "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
-    "route_selector_verification_budget": 0,
-    "runtime_profile_asset_preflight_budget": 0,
     "build_budget": 0,
     "database_mutation_budget": 0,
-    "dvc_checkout_pull_push_repro_gc_budget": 0,
+    "dvc_mutation_budget": 0,
     "retries": 0
   },
   "issues": [],
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Execute the descendant-safe exact no-cache metric transfer and prove both validation_scenarios statuses clean; live capture remains closed."
+  "next_action": "Run the bounded selected-route/runtime-profile preflight; live capture remains closed."
 }

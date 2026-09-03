@@ -1,0 +1,86 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_stage3_selected_route_profile_preflight",
+  "owner_skill": "raid-performance-loop",
+  "classification": "stage3_selected_route_profile_preflight_authorized",
+  "created_at_utc": "2026-09-03T03:00:00Z",
+  "accepted_predecessor": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff-v2.json",
+    "sha256": "a3e0bc92bc140821f1a748d9bdc07150a1c2616861bc901a7b95e8a813e25f92",
+    "classification": "immutable_no_cache_metric_transfer_complete",
+    "source_dvc_status": {},
+    "immutable_dvc_status": {},
+    "worldserver_starts": 0
+  },
+  "immutable_checkout": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+    "tree": "ea6f9452028be190deff565de0b432220d11ff15",
+    "required_clean": true,
+    "catalog": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+      "dvc_stage": "validation_scenarios",
+      "output_relative_member": "validation_routes.jsonl"
+    }
+  },
+  "sealed_bundle": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable_v4",
+    "manifest_sha256": "cc1de55ba90ec76e0c665b64b1167148e1343f4da331cc429bea6416c045654a",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "source_selected_route_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "runtime_suffix_route_sha256": "ffc0ecb5588761306121b32338726e305680d826a8bbbd0e225e526a1ea368d9",
+    "runtime_profile_manifest_sha256": "580410af024159d2052f87ce76973cc6a06bb24d5d740e771f092c7941db6ed8",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic"
+  },
+  "selected_route_contract": {
+    "row_count": 4,
+    "node_ids": [
+      "bwd.entry.regroup",
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges",
+      "bwd.magmaw.encounter"
+    ],
+    "terminal_kind": "boss",
+    "diagnostic_only": true,
+    "boss_node_count": 1
+  },
+  "authorized_work_unit": {
+    "owner_skill": "raid-shard-architecture",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-selected-route-profile-preflight-handoff.json",
+    "actions": [
+      "Verify accepted predecessor, immutable Git identity/cleanliness, catalog hash, both hydrated dependency hashes, and validation_scenarios DVC status {}.",
+      "Create one external temporary directory; use tools.raid_program.canonical_route_staging.stage_canonical_route on the exact catalog and tools.raid_program.canonical_route_catalog.materialize_scenario_route_manifest for the exact scenario; verify its typed receipt and selected output.",
+      "Require the selected output hash, four-row order, node IDs, diagnostic flag, and terminal shape to equal the sealed source route contract.",
+      "Run tools.raid_program.capture_environment_validation.validate_runtime_profile_assets against the immutable checkout for exact profile/scenario/pool tag with DVC lineage enabled; require passed, no reasons, route catalog hash 406527cc..., four matching rows, and the exact partition contract.",
+      "Run the production chainwielder_prestart_bundle verify command once against the sealed bundle and require valid; this independently reconstructs and verifies the runtime suffix route and runtime profile hashes.",
+      "Record receipt and object hashes, delete the exact temporary directory, and verify immutable Git and DVC status remain clean."
+    ]
+  },
+  "budgets": {
+    "preflight_hash_and_dvc_status": 1,
+    "external_temp_root": 1,
+    "canonical_route_stage": 1,
+    "production_route_selection": 1,
+    "selection_receipt_verification": 1,
+    "runtime_profile_asset_validation": 1,
+    "sealed_bundle_verification": 1,
+    "temp_cleanup": 1,
+    "worldserver_starts": 0,
+    "builds": 0,
+    "database_mutations": 0,
+    "dvc_mutations": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No source/config/catalog/bundle/roster/ledger/skill/gameplay mutation, DVC pull/checkout/push/repro/gc, build, provision, database mutation, server/live action, retry, or gameplay inference.",
+    "Do not compare the raw catalog hash to the selected route hash; authenticate and record them as distinct artifacts.",
+    "Do not retain the temporary staged catalog, selected route object, or receipts after their hashes and verified fields are written to the compact handoff."
+  ],
+  "acceptance_conditions": [
+    "The production selector derives the exact four-node source route hash f549cbb9... from the authenticated catalog hash 406527cc..., and the typed selector receipt verifies.",
+    "The runtime-profile asset validator passes with exact partition identity and clean DVC lineage, and the sealed bundle verifier independently validates runtime route ffc0ecb5... and profile 580410af....",
+    "Temporary payloads are removed, immutable Git/DVC remain clean, and no server/live/gameplay claim is made."
+  ],
+  "next_action": "On success, issue a fresh Stage 3 capture authorization using the already-built sealed binary; no rebuild or reseal."
+}
