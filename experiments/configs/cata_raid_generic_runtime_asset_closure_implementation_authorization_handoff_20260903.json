@@ -1,0 +1,97 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:generic_runtime_asset_closure_manifest_verifier",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "architecture_implementation_authorized",
+  "created_at_utc": "2026-09-03T07:20:09Z",
+  "immutable_evidence": {
+    "audit_handoff_path": "/home/runiir/Games/trinity-immutable-runtime-asset-closure-audit-handoff.json",
+    "audit_handoff_sha256": "b2c274abf64166a849d6b92c2afa1796e60e0407a4a6bcc1a598af8beb31c494",
+    "audit_authorization_path": "experiments/configs/cata_raid_immutable_runtime_asset_closure_audit_authorization_handoff_20260903.json",
+    "audit_authorization_sha256": "b569140f5faa444ea56b16973a0c4ee6f3ffb081dcbe23d1807f42aa66bfbde3",
+    "source_commit": "57bffcbe452f6da499a384a60ca11322f93bdecc",
+    "source_tree": "76428e6e7bfb8f5317ceeb5f847519469cdcc663",
+    "retained_checkout": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "configured_data_source": "/home/runiir/Games/trinity-cata/data",
+    "sealed_bundle": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build.5YGC4lez/run/prestart_bundle_stage3_integrated_v1"
+  },
+  "scope_lock": {
+    "first_broken_edge": "retained_immutable_runtime_asset_closure_incomplete",
+    "objective": "Implement one consumer-derived runtime-asset manifest and one aggregate fail-closed verifier, then integrate it before static readback, capture preparation, and live-validation side effects.",
+    "owned_files": [
+      "tools/raid_program/runtime_asset_closure.py",
+      "experiments/configs/runtime_asset_closure_manifest_v1.json",
+      "tests/fixtures/runtime_asset_closure/retained_stage3_missing_v1.json",
+      "tests/test_runtime_asset_closure.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/capture_phase1_provisioning_readback.py",
+      "tools/bot_ml/run_live_bot_validation.py"
+    ],
+    "required_behavior": [
+      "Use explicit source-checkout, configured-DataDir, DVC-workspace, and sealed-bundle roots; never infer an asset root from cwd.",
+      "Represent each asset class with its observed consumer, audience, root, exact-file/bounded-pattern/complete-directory rule, expected metadata, provenance, hydration source, and eviction policy.",
+      "Inspect with lstat and no-follow file opens, reject symlinks and path traversal, and strictly reject duplicate JSON keys.",
+      "Aggregate every missing, extra, type, hash, size, mode, root, DVC provenance, and between-snapshot mismatch in one typed receipt.",
+      "Derive and bind the native DataDir from the sealed worldserver configuration and reject any supplied-root mismatch.",
+      "Keep scenario map selection parameterized by map ID; do not encode Magmaw as universal policy.",
+      "Require the complete VMAP directory because native tiles resolve shared models and parent fallbacks.",
+      "Run the same verifier before capture setup reaches nav probing or launch, before provisioning readback reaches contract materialization or database access, and before the live validator reaches provisioning or worldserver launch.",
+      "Return typed runtime_asset_closure_incomplete before consuming any downstream database, build, DVC, or worldserver budget.",
+      "The verifier is read-only and performs no copy, hydration, DVC mutation, eviction, database operation, build, or server operation."
+    ],
+    "fixture_contract": {
+      "negative_fixture": "A fresh retained-checkout fixture with the current route tree and eight selected MMAP files reports the exact 13 absent offline DBC/DB2 and validation-gear identities together.",
+      "positive_fixture": "Adding those exact identities makes the retained-input portion pass without weakening native or provenance checks.",
+      "required_negatives": [
+        "same-size byte mutation",
+        "mode drift",
+        "regular file replaced by symlink",
+        "extra bounded-pattern member",
+        "missing complete-directory VMAP member",
+        "DataDir mismatch",
+        "between-snapshot drift",
+        "duplicate manifest key",
+        "path traversal"
+      ]
+    },
+    "forbidden_changes": [
+      "No gameplay, C/C++, movement, roster, rotation, encounter, or class-mechanics changes.",
+      "No Magmaw-specific exception and no Talent.dbc-only rule.",
+      "No asset copying or hydration, DVC mutation, evidence publication, build/configure, database access, provisioning, capture, or worldserver start.",
+      "No edits outside the exact owned files.",
+      "No ordered one-file fail-fast checks that hide later closure failures."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_runtime_asset_closure.py",
+      "pixi run pytest -q tests/test_phase1_provisioning_readback.py",
+      "pixi run pytest -q tests/test_validation_scenario_stage_preflight.py",
+      "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py -k 'prepare_capture_setup'",
+      "pixi run python -m py_compile tools/raid_program/runtime_asset_closure.py tools/raid_program/capture_setup.py tools/raid_program/capture_phase1_provisioning_readback.py tools/bot_ml/run_live_bot_validation.py",
+      "git diff --check"
+    ],
+    "acceptance_conditions": [
+      "The manifest binds the complete audit-derived closure and its audit SHA without a canary-specific shortcut.",
+      "One verification reports all 13 currently missing retained inputs and the missing native extraction-provenance receipt together, while confirming present route, runtime-profile, bundle, map, MMAP, DBC, and VMAP members.",
+      "All three production entrypoints fail before their first downstream side effect when the closure is incomplete.",
+      "Every required fixture and focused existing test passes.",
+      "The implementation is committed once and the worktree is clean."
+    ],
+    "terminal_conditions": {
+      "success": "Return one committed implementation with exact validation results and no downstream side effect.",
+      "failed_verification": "Stop with a typed implementation failure and the earliest violated contract; do not broaden scope.",
+      "out_of_scope": "Report any needed hydration, provenance generation, DVC publication, gameplay, or live-run work without performing it."
+    }
+  },
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 0,
+    "asset_copies": 0,
+    "dvc_operations": 0,
+    "database_operations": 0,
+    "builds": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one Sol high raid-shard-architecture implementer. After completion, require an independent Sol review before the checklist can gate a live canary."
+}

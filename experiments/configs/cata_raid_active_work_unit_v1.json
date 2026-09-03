@@ -1,48 +1,57 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:immutable_runtime_asset_closure_audit",
+  "work_unit": "shard:generic_runtime_asset_closure_manifest_verifier",
   "owner_skill": "raid-shard-architecture",
-  "classification": "architecture_audit_authorized",
+  "classification": "architecture_implementation_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "observed_at_commit": "cb9bc7e3977f57d4e308d9763051b34feff222c4",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "One read-only audit of the complete consumer-derived immutable runtime asset closure.",
+  "architecture_scope": "One generic manifest and aggregate verifier integrated at the three pre-side-effect runtime boundaries.",
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "gate_state": "The causal summary is valid; a Sol architecture audit must enumerate the complete closure before implementation or hydration.",
+  "evidence_contract_change": true,
+  "gate_state": "The complete closure audit is valid; one Sol implementation must make it an executable fail-closed gate before any hydration or live retry.",
   "first_broken_edge": {
     "id": "retained_immutable_runtime_asset_closure_incomplete",
     "stage": "post_build_static_readback_preflight",
     "owner_classification": "raid_shard_architecture",
-    "cause": "The retained immutable checkout validates route and navmesh assets individually but lacks a complete transitive manifest; Talent.dbc was first discovered only during readback contract load.",
-    "review_state": "read_only_complete_closure_audit_authorized"
+    "cause": "The retained checkout lacks 10 offline DBC/DB2 files and 3 validation-gear files, while the native DataDir has required assets but no sealed extraction-provenance receipt; existing checks expose these one at a time.",
+    "review_state": "generic_aggregate_verifier_implementation_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_immutable_runtime_asset_closure_audit_authorization_handoff_20260903.json",
-    "sha256": "b569140f5faa444ea56b16973a0c4ee6f3ffb081dcbe23d1807f42aa66bfbde3",
-    "failure_handoff_path": "/home/runiir/Games/trinity-magmaw-controller-identity-postbuild-static-sealed-handoff.json",
-    "failure_handoff_sha256": "66fc48914260e505fd897126e98c31ba0c8e894826cccb7c9ed3292a5b10c9d3"
+    "path": "experiments/configs/cata_raid_generic_runtime_asset_closure_implementation_authorization_handoff_20260903.json",
+    "sha256": "bda0a72cbe5b134edbf0861ff9f5c4105a50b39b8de01c9a9f168019a891180f",
+    "failure_handoff_path": "/home/runiir/Games/trinity-immutable-runtime-asset-closure-audit-handoff.json",
+    "failure_handoff_sha256": "b2c274abf64166a849d6b92c2afa1796e60e0407a4a6bcc1a598af8beb31c494"
   },
   "scope_lock": {
-    "objective": "Trace every Stage3 consumer and report the complete required asset set plus exact implementation ownership.",
-    "owned_output": "/home/runiir/Games/trinity-immutable-runtime-asset-closure-audit-handoff.json",
-    "stop_condition": "Stop after one reproducible read-only audit handoff; do not copy assets or edit the repository."
+    "objective": "Implement the audit-derived manifest and verifier, prove aggregate diagnostics in fixtures, and fail closed at capture, readback, and live-launch boundaries.",
+    "owned_files": [
+      "tools/raid_program/runtime_asset_closure.py",
+      "experiments/configs/runtime_asset_closure_manifest_v1.json",
+      "tests/fixtures/runtime_asset_closure/retained_stage3_missing_v1.json",
+      "tests/test_runtime_asset_closure.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/capture_phase1_provisioning_readback.py",
+      "tools/bot_ml/run_live_bot_validation.py"
+    ],
+    "stop_condition": "Stop after one committed implementation and focused deterministic validation; do not hydrate assets or consume any downstream runtime budget."
   },
   "acceptance_conditions": [
-    "Every required asset class is tied to an observed consumer and classified as exact-file, bounded-pattern, or complete-directory closure.",
-    "All current missing/mismatched members are reported together with reproducible counts and aggregate hashes."
+    "The verifier reports the whole missing and mismatched closure in one typed result, including the current 13 retained inputs and native provenance receipt.",
+    "All three production entrypoints invoke the same gate before their first downstream side effect.",
+    "The manifest and verifier are reusable across raids and dungeons and contain no Magmaw-specific exception."
   ],
   "forbidden": [
-    "No repository edit, asset copy, DVC operation, server, DB operation, live canary, rebuild, Magmaw-specific exception, or first-missing-file repair."
+    "No files outside the seven owned paths; no asset copy, DVC operation, server, DB operation, live canary, rebuild, gameplay change, Magmaw-specific exception, or first-missing-file repair."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "implementation_commits": 0,
-    "independent_reviews": 1,
+    "implementation_commits": 1,
+    "independent_reviews": 0,
     "dvc_add_budget": 0,
     "dvc_push_budget": 0,
     "credential_aware_remote_reconstruction_budget": 0,
@@ -60,5 +69,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Run the read-only complete-closure audit, then authorize implementation from its exact file ownership proposal."
+  "next_action": "Run the bounded Sol implementation, then authorize a separate Sol review before using the checklist as a live gate."
 }
