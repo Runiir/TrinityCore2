@@ -1,0 +1,72 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_controller_hold_identity_materialization_fast4_v2_build",
+  "owner_skill": "raid-performance-loop",
+  "classification": "one_reviewed_runtime_repair_build_authorized",
+  "created_at_utc": "2026-09-03T06:08:34Z",
+  "reviewed_repair": {
+    "commit": "b4736190e3d4b793b64752f9d5153aafcce825da",
+    "tree": "6d67a5a5adf5efbf79afa2ea4d4455a9a4963d6b",
+    "production_commit": "88f869d56d77c2c999c8361d589bf0d6ae3fd59f",
+    "review_path": "/tmp/controller_hold_identity_authority_materialization_review_handoff_v2_20260903.json",
+    "review_sha256": "cf551d8b9624a3741f7c83a68024b70e8dac9a4bfe5772221042304ebba027bb",
+    "verdict": "GO",
+    "first_broken_edge_repaired": "controller_route_hold_identity_authority_string_view_not_materialized"
+  },
+  "source_failure": {
+    "path": "/home/runiir/Games/trinity-controller-hold-profile-selector-fast4-v2-build-handoff.json",
+    "sha256": "fd6a0c82b9dc0f71cb6a00004c3fd8b3d64129736f1c0972fa050f96e4d182e6",
+    "primary_type": "compile_failure"
+  },
+  "reviewed_policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "file_sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521",
+    "review_path": "/tmp/controller_hold_fast4_v2_policy_review_handoff_20260903.json",
+    "review_sha256": "85b6c0ca6df81325bdeb3c839b803eb808f785cfdce51fb955086f2fcda7ce04",
+    "verdict": "GO",
+    "compiler_jobs": 4,
+    "linker_jobs": 1
+  },
+  "build_control": {
+    "build_source_commit": "the exact clean commit containing this authorization and experiments/configs/cata_raid_active_work_unit_v1.json",
+    "reviewed_repair_commit": "b4736190e3d4b793b64752f9d5153aafcce825da",
+    "expected_review_to_build_paths": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_controller_hold_identity_materialization_fast4_v2_build_authorization_handoff_20260903.json"
+    ],
+    "required_relation": "Reviewed repair is an ancestor and the exact sorted no-renames delta is only the two build-control metadata paths above."
+  },
+  "authorized_build": {
+    "owner_skill": "raid-shard-architecture",
+    "output_handoff": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build-handoff.json",
+    "external_root_template": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build.XXXXXXXX",
+    "required_actions": [
+      "Verify exact authorization, runtime and policy GO reviews, failed build hash, exact two-path metadata delta, clean source, idle queue, absent live/DVC processes, toolchain, and fast4_v2 admission.",
+      "Create one fresh external root and detached worktree at the authorization commit with no reuse of any prior cache, objects, receipts, or partial build.",
+      "Run exactly one policy-owned configure and, only after success, one queued worldserver build with four compiler jobs and one linker.",
+      "Verify gate-bearing receipts, source/configuration/toolchain/MySQL freshness chain, exact binary identity, and clean stable source; write the exact output handoff and stop."
+    ]
+  },
+  "acceptance_conditions": [
+    "The repaired production translation unit compiles and the one fresh build produces a production-valid worldserver receipt and exact binary, or closes at a newly proven typed edge.",
+    "No resource-policy change or failed artifact reuse occurs.",
+    "No live authority exists until post-build sealing and integrated Stage3 authorization."
+  ],
+  "budgets": {
+    "external_roots": 1,
+    "detached_worktrees": 1,
+    "configure": 1,
+    "worldserver_build": 1,
+    "retries": 0,
+    "worldserver_starts": 0,
+    "database_operations": 0,
+    "dvc_operations": 0,
+    "fixture_attempts": 0,
+    "gameplay_canary_attempts": 0
+  },
+  "forbidden": [
+    "No source/test/config/policy/skill/route/roster/gameplay mutation, no failed cache reuse, no threshold waiver, and no second configure/build.",
+    "No server, provisioning, DB, DVC, capture, fixture, live canary, promotion, or ML admission."
+  ],
+  "next_action": "Run one fresh reviewed fast4_v2 build and close at build_ready or the first new typed edge."
+}

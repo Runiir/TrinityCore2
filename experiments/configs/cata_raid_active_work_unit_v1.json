@@ -1,62 +1,62 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:complete_controller_hold_identity_fallback_materialization_fixture",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "one_review_required_test_gap_correction_authorized",
+  "work_unit": "shard:controller_hold_identity_materialization_fast4_v2_build",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "one_reviewed_runtime_repair_build_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "88f869d56d77c2c999c8361d589bf0d6ae3fd59f",
+  "observed_at_commit": "b4736190e3d4b793b64752f9d5153aafcce825da",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "Two retained fallback assertions through the already-correct Identity materialization boundary.",
+  "architecture_scope": "One fresh fast4_v2 build of the independently reviewed controller identity materialization repair.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Production materialization is correct, but independent review requires unknown and empty fallback selections to cross the retained compiled boundary.",
+  "gate_state": "Production and retained fallback materialization have independent GO; one fresh build is authorized.",
   "first_broken_edge": {
     "id": "controller_route_hold_identity_authority_string_view_not_materialized",
     "stage": "controller_route_hold_identity_construction_compile",
     "owner_classification": "raid_bot_runtime_implementation",
     "cause": "AuthorityTriple stores string_view fields, but aggregate copy-list initialization cannot implicitly construct Identity's string members.",
-    "review_state": "production_verified_test_gap_no_go_correction_authorized"
+    "review_state": "independent_go_build_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_controller_hold_identity_fallback_materialization_test_reauthorization_handoff_20260903.json",
-    "review_path": "/tmp/controller_hold_identity_authority_materialization_review_handoff_20260903.json",
-    "review_sha256": "8b1fd89a554eb597c3fdf26f1221846850d8432378d1c3512b615d7e094ceacc"
+    "path": "experiments/configs/cata_raid_controller_hold_identity_materialization_fast4_v2_build_authorization_handoff_20260903.json",
+    "review_path": "/tmp/controller_hold_identity_authority_materialization_review_handoff_v2_20260903.json",
+    "review_sha256": "cf551d8b9624a3741f7c83a68024b70e8dac9a4bfe5772221042304ebba027bb"
   },
   "scope_lock": {
-    "objective": "Carry unknown and empty fallback selections through the retained compiled Identity fixture.",
-    "owned_output": "one test-only correction commit",
-    "stop_condition": "Stop after exactly two AssertIdentity calls and passing tests; no build or live process."
+    "objective": "Produce one gate-bearing worldserver binary containing the reviewed repair.",
+    "owned_output": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build-handoff.json",
+    "stop_condition": "Stop at build_ready or the first new typed edge; no retry or live process."
   },
   "acceptance_conditions": [
-    "Unknown and empty fallback selections compile through Identity and retain Chainwielder authority values.",
-    "A fresh independent Sol reviewer returns GO before another build."
+    "The repaired translation unit compiles and the worldserver receipt is production-valid, or a new typed edge is proven.",
+    "Post-build static sealing remains required before integrated Stage3."
   ],
   "forbidden": [
-    "No production/header/config/policy/encounter change, build, server, DB, DVC, provisioning, capture, live canary, or unrelated test edit."
+    "No mutation, failed artifact reuse, second build, server, DB, DVC, provisioning, capture, live canary, or threshold waiver."
   ],
   "validation_clock": {
-    "policy": "retained_unknown_and_empty_fallback_materialization_assertions",
-    "implementation_commits": 1,
-    "independent_reviews": 1,
+    "policy": "queued_build_fast4_v2",
+    "implementation_commits": 0,
+    "independent_reviews": 0,
     "dvc_add_budget": 0,
     "dvc_push_budget": 0,
     "credential_aware_remote_reconstruction_budget": 0,
     "worldserver_start_budget": 0,
     "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
-    "configure_budget": 0,
-    "build_budget": 0,
+    "configure_budget": 1,
+    "build_budget": 1,
     "database_mutation_budget": 0,
     "dvc_mutation_budget": 0,
     "retries": 0,
     "eviction_after_remote_verify_only": false
   },
   "issues": [],
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement and independently review the explicit authority materialization before another build."
+  "next_action": "Run one fresh reviewed fast4_v2 build and close on build_ready or the first new typed edge."
 }
