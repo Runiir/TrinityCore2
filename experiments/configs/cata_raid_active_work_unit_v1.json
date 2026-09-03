@@ -1,64 +1,59 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "architecture:magmaw_stage3_selected_route_profile_preflight",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "selected_route_profile_preflight_authorized",
+  "work_unit": "evidence:magmaw_stage3_profile_range_observation_v2",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "fixture_replay_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "8240f5803595c7aabf00b84f0ddc2a96e0303a75",
+  "observed_at_commit": "43b7878a46f8d3dff0ade096087a02f6c3eedec7",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "Read-only production selection of the four-node Magmaw route plus exact runtime-profile and sealed-bundle verification; no server.",
+  "architecture_scope": "One worldserver-backed Stage 3 observation of the generic minimum-range native boundary on the sealed Magmaw diagnostic route; not a gameplay canary.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Immutable DVC lineage is clean; selected route and runtime-profile parity remain to be independently proven before live capture.",
+  "gate_state": "Static seal and read-only catalog/selected-route/runtime-profile/DVC preflight passed; the live target relation and native outcome remain unobserved.",
   "first_broken_edge": {
-    "id": "selected_route_and_runtime_profile_parity_unverified_after_hydration",
-    "stage": "stage3_selected_route_profile_preflight",
-    "owner_classification": "raid_shard_architecture",
-    "cause": "Hydration proves DVC lineage only; it does not prove the production selector output or capture profile contract.",
-    "review_state": "exact_distinct_catalog_selected_runtime_hashes_bound"
+    "id": "runtime_target_spawn_relation_and_native_profile_range_outcome_not_observed",
+    "stage": "stage3_observation_fixture",
+    "owner_classification": "raid_evidence_lifecycle",
+    "cause": "The repaired binary has not yet executed the exact profile-range boundary on a live worldserver.",
+    "review_state": "one_fixture_replay_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_stage3_selected_route_profile_preflight_authorization_handoff_20260903.json",
-    "sha256": "fa184e3f2d0f06eaa89089f4e04ff3b6a8ffb79c8b85796d1c0a11414a570035",
-    "predecessor_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff-v2.json",
-    "predecessor_sha256": "a3e0bc92bc140821f1a748d9bdc07150a1c2616861bc901a7b95e8a813e25f92"
+    "path": "experiments/configs/cata_raid_magmaw_stage3_profile_range_observation_reauthorization_handoff_20260903.json",
+    "sha256": "f87dda6579ce4480c75310c339cf9e25c06f168d3eb10e0509fb82e2b7f1cdbc",
+    "preflight_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-selected-route-profile-preflight-handoff.json",
+    "preflight_sha256": "a61b7fc337651402265391f9e4b5abaac8838b5268939465fefa7a2f691f0745"
   },
   "scope_lock": {
-    "objective": "Prove authenticated catalog to selected route to runtime suffix/profile parity through production functions, with temporary outputs removed.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-selected-route-profile-preflight-handoff.json",
-    "stop_condition": "Stop at the first identity, DVC, staging, selection, receipt, partition, profile, bundle, cleanup, or postcheck mismatch without retry or live action."
+    "objective": "Observe runtime target identity, arbiter/native profile-range execution, progress, later cast, typed terminal, and cleanup in one bounded fixture replay.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v2.json",
+    "stop_condition": "Stop on the first typed success or failure terminal, then close and clean without retry."
   },
   "acceptance_conditions": [
-    "Catalog 406527cc..., selected source route f549cbb9..., runtime suffix ffc0ecb5..., and profile 580410af... are verified as distinct bound artifacts.",
-    "The exact four-node diagnostic partition passes the capture validator, temporary artifacts are removed, immutable Git/DVC remain clean, and no live claim is made."
+    "One sealed worldserver lifecycle closes under a typed completion-watchdog terminal and reports DPS/HPS, decisions, movement, deaths, route progress, native outcomes, and cleanup.",
+    "Fixture success requires exact live target relation plus hazard release, range candidate, native multi-tick progress, and later same-target cast; gameplay acceptance remains closed."
   ],
   "forbidden": [
-    "No source/config/catalog/bundle mutation, DVC mutation, build, provision, database mutation, server/live/retry, gameplay canary, or gameplay inference."
+    "No repository/source/config/route mutation, DVC mutation, build, provision, database mutation, authserver, retry, second server start, gameplay canary, boss-clear claim, or ML admission."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "preflight_hash_and_dvc_status_budget": 1,
-    "external_temp_root_budget": 1,
-    "canonical_route_stage_budget": 1,
-    "production_route_selection_budget": 1,
-    "selection_receipt_verification_budget": 1,
-    "runtime_profile_asset_validation_budget": 1,
-    "sealed_bundle_verification_budget": 1,
-    "temp_cleanup_budget": 1,
-    "worldserver_start_budget": 0,
-    "fixture_attempt_budget": 0,
+    "bundle_reverification_budget": 1,
+    "immutable_dvc_status_precheck_budget": 1,
+    "worldserver_start_budget": 1,
+    "fixture_attempt_budget": 1,
     "gameplay_canary_attempt_budget": 0,
     "build_budget": 0,
     "database_mutation_budget": 0,
     "dvc_mutation_budget": 0,
-    "retries": 0
+    "retries": 0,
+    "observe_sec": 0
   },
   "issues": [],
   "ready_for_build": false,
-  "ready_for_fixture_expansion": false,
+  "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
-  "next_action": "Run the bounded selected-route/runtime-profile preflight; live capture remains closed."
+  "next_action": "Run the one bounded Stage 3 profile-range fixture replay and close its evidence; gameplay canary remains closed."
 }
