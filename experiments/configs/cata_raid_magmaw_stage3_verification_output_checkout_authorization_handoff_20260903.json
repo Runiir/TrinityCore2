@@ -1,0 +1,67 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_stage3_verification_output_checkout",
+  "owner_skill": "raid-performance-loop",
+  "classification": "immutable_verification_output_checkout_authorized",
+  "created_at_utc": "2026-09-03T03:00:00Z",
+  "failed_predecessor": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-local-cache-seed-handoff.json",
+    "sha256": "8db7a3de97594f106b14093add55e961d14926527e6fee565a3301230b203a25",
+    "classification": "immutable_route_local_cache_seed_interrupted_after_copy",
+    "typed_terminal": "verification_report_not_materialized",
+    "worldserver_starts": 0
+  },
+  "first_broken_edge": {
+    "id": "verification_stage_output_not_selected_by_path_checkout",
+    "cause": "The consumed two-path DVC checkout restored dataset/validation_provisioning but did not select the standalone validation_provisioning_verify stage output.",
+    "first_downstream_state": "dataset/validation_provisioning_verification/report.json remains absent, so validation_scenarios lineage cannot yet be clean.",
+    "hypothesis": "Checking out the exact stage name validation_provisioning_verify will materialize its already-verified fa37fe35 cache object without regenerating data."
+  },
+  "immutable_checkout": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+    "tree": "ea6f9452028be190deff565de0b432220d11ff15",
+    "required_existing_dependency": {
+      "path": "dataset/validation_provisioning/report.json",
+      "md5": "aa952a7041f215c141a9a61bc1656015",
+      "size": 20094
+    },
+    "required_cache_object": {
+      "path": ".dvc/cache/files/md5/fa/37fe35db80541c82a1f0555efd7834",
+      "md5": "fa37fe35db80541c82a1f0555efd7834",
+      "size": 1651,
+      "mode": "0444"
+    }
+  },
+  "authorized_work_unit": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-verification-output-checkout-handoff.json",
+    "actions": [
+      "Verify immutable Git identity/cleanliness, the existing provisioning report, and the verification cache object exactly as bound above.",
+      "Run exactly once from the immutable checkout: pixi run dvc checkout validation_provisioning_verify.",
+      "Require dataset/validation_provisioning_verification/report.json MD5 fa37fe35db80541c82a1f0555efd7834 and size 1651.",
+      "Run exactly once: pixi run dvc status validation_scenarios --json, and require {}.",
+      "Verify immutable Git remains clean at the same commit/tree."
+    ]
+  },
+  "budgets": {
+    "preflight_identity_and_hash_check": 1,
+    "exact_stage_checkout": 1,
+    "target_dvc_status": 1,
+    "worldserver_starts": 0,
+    "builds": 0,
+    "database_mutations": 0,
+    "cache_copies": 0,
+    "dvc_pull_push_repro_gc": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No source/config/route/roster/ledger/skill/gameplay mutation, direct working-file copy, cache copy, DVC pull/push/repro/gc, other checkout target, remote mutation, build, provision, database mutation, server/live action, retry, or gameplay inference.",
+    "Do not evaluate validation_provisioning_verify stage dependency cleanliness as an acceptance gate; this unit restores its already-addressed output only."
+  ],
+  "acceptance_conditions": [
+    "The exact stage checkout runs once and materializes the verification report with the bound MD5 and size.",
+    "validation_scenarios DVC status is {}, immutable Git identity remains exact and clean, and all route/profile/server/live/gameplay claims remain closed."
+  ],
+  "next_action": "On success, authorize a separate read-only selected-route and runtime-profile preflight."
+}

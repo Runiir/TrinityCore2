@@ -1,64 +1,55 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_stage3_local_cache_seed",
+  "work_unit": "evidence:magmaw_stage3_verification_output_checkout",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "local_cache_seed_authorized",
+  "classification": "exact_stage_checkout_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "9fb6071921a3cc0e4aed107091f7a2b794544e4b",
+  "observed_at_commit": "5501377769340393cc71cab0a48f71054e9be31d",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "Copy exactly seven verified content-addressed DVC cache objects from the clean primary cache, then materialize two dependencies and prove validation_scenarios lineage clean; no server.",
+  "architecture_scope": "Materialize one already-addressed standalone DVC stage output by exact stage name, then prove validation_scenarios lineage clean; no server.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Remote hydration failed because one DVC directory cache object is absent remotely; the clean primary cache contains the exact object and all referenced children.",
+  "gate_state": "Seven exact cache objects and the provisioning report are present; the standalone verification report remains absent because the prior path checkout did not select its stage.",
   "first_broken_edge": {
-    "id": "validation_scenarios_dvc_dependencies_remote_cache_gap",
-    "stage": "stage3_local_cache_seed",
+    "id": "verification_stage_output_not_selected_by_path_checkout",
+    "stage": "stage3_verification_output_checkout",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "The object remote lacks 210560429770d2139460ab65a8f4bf4d.dir, preventing dependency checkout in the immutable source tree.",
-    "review_state": "exact_local_content_addressed_recovery_identified"
+    "cause": "The first checkout restored only dataset/validation_provisioning; validation_provisioning_verify must be selected by exact stage name.",
+    "review_state": "exact_stage_target_identified"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_stage3_local_cache_seed_authorization_handoff_20260903.json",
-    "sha256": "2fe6d1f2270a0ac96a8118cd73527b17bce16117877ce63ce0c0d3bc4db557d3",
-    "build_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
-    "build_handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e"
+    "path": "experiments/configs/cata_raid_magmaw_stage3_verification_output_checkout_authorization_handoff_20260903.json",
+    "sha256": "9baada95a4e24a205bc6758f0ad1c454c61ee4cd32c1360b1cd216f1d9929afc",
+    "predecessor_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-local-cache-seed-handoff.json",
+    "predecessor_sha256": "8db7a3de97594f106b14093add55e961d14926527e6fee565a3301230b203a25"
   },
   "scope_lock": {
-    "objective": "Seed exactly seven verified DVC cache objects, materialize the two missing dependencies through DVC, and prove validation_scenarios status clean.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-local-cache-seed-handoff.json",
-    "stop_condition": "Stop at the first identity, object hash, checkout, dependency hash, or DVC-status mismatch without retry or live action."
+    "objective": "Run one exact validation_provisioning_verify DVC checkout and require clean validation_scenarios lineage.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-verification-output-checkout-handoff.json",
+    "stop_condition": "Stop at the first identity, preflight hash, checkout, materialized hash, or DVC-status mismatch without retry or live action."
   },
   "acceptance_conditions": [
-    "Exactly seven named content-addressed cache objects are copied and verified.",
-    "The immutable checkout dependency hashes match dvc.lock and validation_scenarios DVC status is {}; all route/profile/server/live/gameplay claims remain closed."
+    "The verification report materializes with MD5 fa37fe35db80541c82a1f0555efd7834 and size 1651.",
+    "The immutable checkout is exact and clean and validation_scenarios DVC status is {}; route/profile/server/live/gameplay claims remain closed."
   ],
   "forbidden": [
-    "No repository/source mutation, direct working-file copy, DVC pull/repro/push/gc/broad cleanup, build, provision, database mutation, server/live/retry, route/profile inference, gameplay canary, or live inference."
+    "No repository/source/cache/direct-file mutation outside the one exact DVC stage checkout, no DVC pull/repro/push/gc, build, provision, database mutation, server/live/retry, route/profile inference, gameplay canary, or live inference."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "source_dvc_status_budget": 1,
-    "cache_object_copy_budget": 7,
-    "dvc_checkout_budget": 1,
+    "preflight_identity_and_hash_check_budget": 1,
+    "exact_stage_checkout_budget": 1,
     "target_dvc_status_budget": 1,
-    "route_selector_verification_budget": 0,
-    "runtime_profile_asset_preflight_budget": 0,
-    "bundle_reverification_budget": 0,
     "worldserver_start_budget": 0,
     "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
-    "accepted_summary_write_budget": 1,
-    "current_control_recurrence_gate_budget": 0,
-    "runtime_config_derivation_budget": 0,
-    "atomic_bundle_create_budget": 0,
-    "read_only_database_readback_budget": 0,
-    "static_seal_budget": 0,
-    "provisioning_mutation_budget": 0,
-    "worldserver_build_budget": 0,
-    "live_attempt_budget": 0,
+    "route_selector_verification_budget": 0,
+    "runtime_profile_asset_preflight_budget": 0,
+    "build_budget": 0,
+    "database_mutation_budget": 0,
     "dvc_pull_push_repro_gc_budget": 0,
     "retries": 0
   },
@@ -66,5 +57,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact local content-addressed cache seed and DVC dependency checkout; live capture remains closed."
+  "next_action": "Execute the exact validation_provisioning_verify checkout and one validation_scenarios status check; live capture remains closed."
 }
