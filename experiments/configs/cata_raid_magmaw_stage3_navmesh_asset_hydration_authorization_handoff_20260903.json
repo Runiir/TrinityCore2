@@ -1,0 +1,86 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_stage3_navmesh_asset_hydration",
+  "owner_skill": "raid-performance-loop",
+  "classification": "stage3_navmesh_asset_hydration_authorized",
+  "created_at_utc": "2026-09-03T04:00:00Z",
+  "failed_predecessor": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v2.json",
+    "sha256": "72b6876f2a49bc44a365d435be32e41104b6e62f8f04709e20f151966ebdd1bd",
+    "classification": "infrastructure_abort_preflight_drudge_navmesh_asset_set_mismatch",
+    "typed_terminal": "infrastructure_loss",
+    "worldserver_starts": 0,
+    "output_root_created": false
+  },
+  "first_broken_edge": {
+    "id": "immutable_checkout_missing_map669_navmesh_probe_assets",
+    "cause": "The retained immutable source checkout excludes ignored data/mmaps runtime assets, while the capture's production Drudge navmesh probe resolves them relative to that checkout.",
+    "first_downstream_state": "The capture command aborts before worldserver start because the expected seven 669 mmtile names are absent.",
+    "hypothesis": "Copying the exact eight production-probe assets from the primary runtime data tree into the ignored immutable data/mmaps path will make the full native navmesh probe pass without changing tracked source or the sealed runtime DataDir."
+  },
+  "source_workspace": {
+    "path": "/home/runiir/Games/trinity-cata",
+    "required_floor_commit": "157ab412d5281143ed7487e0d2f8bbcebfc05d7a",
+    "required_head_policy": "clean_descendant_of_floor",
+    "required_unchanged_paths_since_floor": [
+      "tools/raid_program/probe_drudge_navmesh_recovery.py",
+      "tools/raid_program/drudge_navmesh_recovery_probe.cpp",
+      "experiments/configs/validation_scenarios_cata_001.json",
+      "dataset/validation_scenarios/validation_routes.jsonl",
+      "dep/recastnavigation/Detour"
+    ],
+    "asset_root": "data/mmaps"
+  },
+  "immutable_checkout": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+    "tree": "ea6f9452028be190deff565de0b432220d11ff15",
+    "required_clean": true,
+    "destination_root": "data/mmaps"
+  },
+  "assets": [
+    {"name": "669.mmap", "sha256": "3b794515424ff374f2fc2fb9bc75c9d0bcdfa355c712894d5b73c582671ea421", "size": 28},
+    {"name": "6693131.mmtile", "sha256": "ec53ab238b671d2b41f707648adcc1cd9b69699a6a424d7c673bed8aeb31b1ef", "size": 105620},
+    {"name": "6693132.mmtile", "sha256": "0879cbb27dce969579f789796c6c63a8ffd3c81ff66c303ea3dde1321f852ec5", "size": 254380},
+    {"name": "6693133.mmtile", "sha256": "116e3649739b423536fd3ba746dde75655aae3f140f64096aa4cbc9a8bbb6196", "size": 103740},
+    {"name": "6693231.mmtile", "sha256": "9bf7e5e6b956886a96d19b8672595ce53246ee975466b4e231dd85fd71cd4019", "size": 165228},
+    {"name": "6693232.mmtile", "sha256": "d444daf82f09d2e4d7c8708f7f3c4f4420c0f96ce1db604c722689fa4e57cb32", "size": 448868},
+    {"name": "6693233.mmtile", "sha256": "c9a0a2787aaefe0cff05d7d2877d82995a5317eda0ed496ee3323f1ad0bf3467", "size": 105500},
+    {"name": "6693332.mmtile", "sha256": "f91db1f81a7f95a824f9bd3c4eca6e665e3a80954cb4b472cab80214c19efbeb", "size": 102176}
+  ],
+  "authorized_work_unit": {
+    "owner_skill": "raid-shard-architecture",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-navmesh-asset-hydration-handoff.json",
+    "actions": [
+      "Require source HEAD clean and descended from 157ab412, require all named tracked probe/config/Detour paths unchanged since that floor, and verify all eight source asset hashes/sizes against this authorization and the immutable production probe constants.",
+      "Require the immutable destination has none of the eight asset paths and has no other 669*.mmtile files.",
+      "Create only immutable data/mmaps and copy exactly eight assets once with mode 0444; verify destination hashes, sizes, modes, and exact seven-tile name set.",
+      "Run exactly once from the immutable checkout: pixi run python tools/raid_program/probe_drudge_navmesh_recovery.py. Require all_passed true and exact asset hashes, route anchors, native Detour output contract, and temporary probe-binary cleanup.",
+      "Verify immutable Git remains exact and clean and validation_scenarios DVC status remains {}. Retain only the eight ignored assets through Stage 3 capture/publication/review."
+    ]
+  },
+  "budgets": {
+    "identity_lineage_asset_preflight": 1,
+    "destination_root_create": 1,
+    "exact_asset_copies": 8,
+    "destination_verification": 1,
+    "native_navmesh_probe": 1,
+    "probe_compilations": 1,
+    "postcheck": 1,
+    "worldserver_starts": 0,
+    "builds": 0,
+    "database_mutations": 0,
+    "dvc_mutations": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No other file/data/source/config/route/bundle/roster/ledger/skill/gameplay mutation, DVC operation, remote mutation, worldserver build, provision, database mutation, server/live action, retry, or gameplay inference.",
+    "No symlink, global DataDir change, navmesh regeneration, MMAP workaround, or additional map/tile copy.",
+    "Do not evict the eight assets before Stage 3 publication and independent review; do not retain them afterward unless another explicitly authorized run binds the same hashes."
+  ],
+  "acceptance_conditions": [
+    "Exactly eight authorized assets are copied and their hashes/sizes/modes plus exact seven-tile set verify.",
+    "The production Drudge navmesh probe passes once in the immutable checkout, temp compiler output is removed, Git/DVC remain clean, and no server/live/gameplay claim is made."
+  ],
+  "next_action": "On success, issue one fresh Stage 3 capture authorization using the same sealed binary/bundle; do not rebuild or reseal."
+}

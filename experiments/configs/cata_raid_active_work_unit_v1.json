@@ -1,59 +1,63 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_stage3_profile_range_observation_v2",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "fixture_replay_authorized",
+  "work_unit": "architecture:magmaw_stage3_navmesh_asset_hydration",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "navmesh_asset_hydration_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "43b7878a46f8d3dff0ade096087a02f6c3eedec7",
+  "observed_at_commit": "157ab412d5281143ed7487e0d2f8bbcebfc05d7a",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "One worldserver-backed Stage 3 observation of the generic minimum-range native boundary on the sealed Magmaw diagnostic route; not a gameplay canary.",
+  "architecture_scope": "Hydrate exactly eight hash-bound Map 669 assets into the ignored immutable data/mmaps path and run the production navmesh probe; no server.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Static seal and read-only catalog/selected-route/runtime-profile/DVC preflight passed; the live target relation and native outcome remain unobserved.",
+  "gate_state": "Route/profile/DVC preflight passes, but capture preflight lacks the exact Map 669 navmesh asset set relative to the immutable source checkout.",
   "first_broken_edge": {
-    "id": "runtime_target_spawn_relation_and_native_profile_range_outcome_not_observed",
-    "stage": "stage3_observation_fixture",
-    "owner_classification": "raid_evidence_lifecycle",
-    "cause": "The repaired binary has not yet executed the exact profile-range boundary on a live worldserver.",
-    "review_state": "one_fixture_replay_authorized"
+    "id": "immutable_checkout_missing_map669_navmesh_probe_assets",
+    "stage": "stage3_navmesh_asset_hydration",
+    "owner_classification": "raid_shard_architecture",
+    "cause": "Ignored data/mmaps assets are present in the primary runtime data tree but absent from the retained immutable source checkout used by the probe.",
+    "review_state": "exact_eight_asset_hash_set_bound"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_stage3_profile_range_observation_reauthorization_handoff_20260903.json",
-    "sha256": "f87dda6579ce4480c75310c339cf9e25c06f168d3eb10e0509fb82e2b7f1cdbc",
-    "preflight_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-selected-route-profile-preflight-handoff.json",
-    "preflight_sha256": "a61b7fc337651402265391f9e4b5abaac8838b5268939465fefa7a2f691f0745"
+    "path": "experiments/configs/cata_raid_magmaw_stage3_navmesh_asset_hydration_authorization_handoff_20260903.json",
+    "sha256": "129f5cfe5152aae35724c3c617db1125e5a1be37dd250ee57afaba9a93300067",
+    "predecessor_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v2.json",
+    "predecessor_sha256": "72b6876f2a49bc44a365d435be32e41104b6e62f8f04709e20f151966ebdd1bd"
   },
   "scope_lock": {
-    "objective": "Observe runtime target identity, arbiter/native profile-range execution, progress, later cast, typed terminal, and cleanup in one bounded fixture replay.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v2.json",
-    "stop_condition": "Stop on the first typed success or failure terminal, then close and clean without retry."
+    "objective": "Copy exactly eight authenticated Map 669 assets, pass one production navmesh probe, and retain them only through Stage 3 review.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-navmesh-asset-hydration-handoff.json",
+    "stop_condition": "Stop at the first ancestry, cleanliness, source-path, asset, destination-set, probe, cleanup, Git, or DVC mismatch without retry or live action."
   },
   "acceptance_conditions": [
-    "One sealed worldserver lifecycle closes under a typed completion-watchdog terminal and reports DPS/HPS, decisions, movement, deaths, route progress, native outcomes, and cleanup.",
-    "Fixture success requires exact live target relation plus hazard release, range candidate, native multi-tick progress, and later same-target cast; gameplay acceptance remains closed."
+    "Exactly eight assets match the bound hashes/sizes and exact tile set in immutable data/mmaps.",
+    "One production native navmesh probe passes, temp compiler output is removed, immutable Git/DVC remain clean, and server/live/gameplay claims remain closed."
   ],
   "forbidden": [
-    "No repository/source/config/route mutation, DVC mutation, build, provision, database mutation, authserver, retry, second server start, gameplay canary, boss-clear claim, or ML admission."
+    "No other file/data/source/config/route/bundle mutation, DVC operation, worldserver build, provision, database mutation, server/live/retry, symlink, DataDir change, MMAP workaround, gameplay canary, or inference."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "bundle_reverification_budget": 1,
-    "immutable_dvc_status_precheck_budget": 1,
-    "worldserver_start_budget": 1,
-    "fixture_attempt_budget": 1,
+    "identity_lineage_asset_preflight_budget": 1,
+    "destination_root_create_budget": 1,
+    "exact_asset_copy_budget": 8,
+    "destination_verification_budget": 1,
+    "native_navmesh_probe_budget": 1,
+    "probe_compilation_budget": 1,
+    "postcheck_budget": 1,
+    "worldserver_start_budget": 0,
+    "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
-    "build_budget": 0,
+    "worldserver_build_budget": 0,
     "database_mutation_budget": 0,
     "dvc_mutation_budget": 0,
-    "retries": 0,
-    "observe_sec": 0
+    "retries": 0
   },
   "issues": [],
   "ready_for_build": false,
-  "ready_for_fixture_expansion": true,
+  "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Run the one bounded Stage 3 profile-range fixture replay and close its evidence; gameplay canary remains closed."
+  "next_action": "Hydrate the exact Map 669 probe assets and pass the production navmesh probe; live capture remains closed."
 }
