@@ -1,10 +1,15 @@
 {
   "schema": "cata_runtime_asset_closure_manifest_v1",
   "manifest_id": "cata_runtime_asset_closure_v1",
-  "audit": {
-    "path": "/home/runiir/Games/trinity-immutable-runtime-asset-closure-audit-handoff.json",
-    "sha256": "b2c274abf64166a849d6b92c2afa1796e60e0407a4a6bcc1a598af8beb31c494",
-    "source_inventory_sha256": "5cf47e7d7f1a3ea7ad1545678dd58685caa3de231d536b531729439fffb43673"
+  "audit_authority": {
+    "path": "experiments/configs/runtime_asset_closure_audit_authority_v1.json",
+    "sha256": "7509c393d72b96337cde291ecefcad0eaab25647af69696c4b8b6f8ad706e884"
+  },
+  "native_data_inventory_authority": {
+    "path": "experiments/configs/runtime_asset_native_data_inventory_v1.json",
+    "sha256": "e3547f691b75ae78c7b01279d175941f51348e50695917c914a56a6651642373",
+    "audit_authority_sha256": "7509c393d72b96337cde291ecefcad0eaab25647af69696c4b8b6f8ad706e884",
+    "canonical_audit_inventory_sha256": "5cf47e7d7f1a3ea7ad1545678dd58685caa3de231d536b531729439fffb43673"
   },
   "root_contract": {
     "source-checkout": "Explicit immutable source checkout used by offline tools and native probes.",
@@ -14,10 +19,10 @@
   },
   "native_extraction_provenance": {
     "path": ".trinity-runtime-assets-extraction-receipt-v1.json",
-    "required_fields": {
-      "schema": "cata_client_asset_extraction_receipt_v1",
-      "data_inventory_sha256": "5cf47e7d7f1a3ea7ad1545678dd58685caa3de231d536b531729439fffb43673"
-    },
+    "receipt_sha256": null,
+    "client_identity": null,
+    "extractor_identity": null,
+    "creation_command_inputs": null,
     "consumer": "worldserver DataDir launch identity",
     "hydration_source": "Makefile extractor flow from an explicitly identified Cataclysm client",
     "eviction_policy": "retain with the canonical native DataDir"
@@ -288,6 +293,7 @@
       "root": "configured-DataDir",
       "rule": "complete-directory",
       "path": "vmaps",
+      "inventory_subset": "vmaps",
       "expected_mode": "0664",
       "provenance": "audit-derived complete native VMAP directory",
       "hydration_source": "canonical native client-data extraction",

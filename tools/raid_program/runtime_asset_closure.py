@@ -3,11 +3,17 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 from pathlib import Path, PurePosixPath
 import re
-import stat
 from typing import Any, Mapping, Sequence
+
+from tools.raid_program.runtime_asset_safe_io import (
+    SafePathError,
+    absolute_path,
+    read_regular_no_follow,
+    require_directory_no_follow,
+    walk_inventory_no_follow,
+)
 
 
 ROOT_KEYS = (
@@ -18,6 +24,8 @@ ROOT_KEYS = (
 )
 ISSUE_KINDS = (
     "manifest_invalid",
+    "audit_invalid",
+    "inventory_authority_invalid",
     "root_mismatch",
     "missing",
     "extra",
@@ -30,6 +38,7 @@ ISSUE_KINDS = (
     "provenance_missing",
     "provenance_invalid",
     "snapshot_mismatch",
+    "path_drift",
 )
 
 
@@ -39,6 +48,13 @@ class DuplicateKeyError(ValueError):
 
 class ManifestError(ValueError):
     pass
+
+
+class AuthorityError(ValueError):
+    def __init__(self, kind: str, detail: str) -> None:
+        self.kind = kind
+        self.detail = detail
+        super().__init__(detail)
 
 
 def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -51,7 +67,7 @@ def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 
 def _normal_path(path: Path) -> Path:
-    return Path(os.path.abspath(os.fspath(path)))
+    return absolute_path(path)
 
 
 def _safe_relative(value: object) -> str:
@@ -65,65 +81,16 @@ def _safe_relative(value: object) -> str:
     return value
 
 
-def _check_ancestors(root: Path, relative: str) -> str | None:
-    current = root
-    try:
-        root_stat = current.lstat()
-    except OSError:
-        return None
-    if stat.S_ISLNK(root_stat.st_mode):
-        return "."
-    for part in PurePosixPath(relative).parts[:-1]:
-        current = current / part
-        try:
-            value = current.lstat()
-        except OSError:
-            return None
-        if stat.S_ISLNK(value.st_mode):
-            return current.relative_to(root).as_posix()
-    return None
-
-
-def _read_regular_no_follow(path: Path) -> tuple[bytes, os.stat_result]:
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
-    descriptor = os.open(path, flags)
-    try:
-        before = os.fstat(descriptor)
-        if not stat.S_ISREG(before.st_mode):
-            raise OSError("not_regular_file")
-        chunks: list[bytes] = []
-        while True:
-            chunk = os.read(descriptor, 1024 * 1024)
-            if not chunk:
-                break
-            chunks.append(chunk)
-        after = os.fstat(descriptor)
-        if (
-            before.st_dev,
-            before.st_ino,
-            before.st_size,
-            before.st_mtime_ns,
-        ) != (
-            after.st_dev,
-            after.st_ino,
-            after.st_size,
-            after.st_mtime_ns,
-        ):
-            raise OSError("file_changed_while_reading")
-        return b"".join(chunks), after
-    finally:
-        os.close(descriptor)
+def _read_regular_no_follow(path: Path) -> tuple[bytes, Any]:
+    return read_regular_no_follow(path)
 
 
 def load_json_strict(path: Path) -> dict[str, Any]:
     path = _normal_path(path)
-    ancestor = _check_ancestors(path.parent, path.name)
-    if ancestor is not None:
-        raise ManifestError(f"symlink:{path}")
     try:
         payload, _ = _read_regular_no_follow(path)
         value = json.loads(payload.decode("utf-8"), object_pairs_hook=_strict_object)
-    except (OSError, UnicodeError, json.JSONDecodeError, DuplicateKeyError) as error:
+    except (SafePathError, OSError, UnicodeError, json.JSONDecodeError, DuplicateKeyError) as error:
         raise ManifestError(str(error)) from error
     if not isinstance(value, dict):
         raise ManifestError("json_root_not_object")
@@ -138,92 +105,177 @@ def canonical_sha256(value: object) -> str:
 
 
 def _record(path: Path, root: Path, relative: str) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
-    ancestor = _check_ancestors(root, relative)
-    if ancestor is not None:
-        return None, {"kind": "symlink", "path": ancestor}
     target = root / relative
     try:
-        value = target.lstat()
-    except FileNotFoundError:
-        return None, {"kind": "missing", "path": relative}
-    except OSError as error:
-        return None, {"kind": "type_mismatch", "path": relative, "detail": str(error)}
-    mode = f"{stat.S_IMODE(value.st_mode):04o}"
-    if stat.S_ISLNK(value.st_mode):
-        return None, {"kind": "symlink", "path": relative}
-    if not stat.S_ISREG(value.st_mode):
-        return None, {
-            "kind": "type_mismatch", "path": relative,
-            "expected": "file", "observed": "directory" if stat.S_ISDIR(value.st_mode) else "other",
-        }
-    try:
         payload, read_stat = _read_regular_no_follow(target)
-    except OSError as error:
-        return None, {"kind": "type_mismatch", "path": relative, "detail": str(error)}
+    except SafePathError as error:
+        return None, {"kind": error.kind, "path": relative, "detail": error.detail}
     return {
         "path": relative,
         "type": "file",
-        "mode": mode,
+        "mode": f"{read_stat.st_mode & 0o7777:04o}",
         "size_bytes": read_stat.st_size,
         "sha256": hashlib.sha256(payload).hexdigest(),
     }, None
 
 
 def _walk_files(root: Path, relative: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    records: list[dict[str, Any]] = []
-    issues: list[dict[str, Any]] = []
-    ancestor = _check_ancestors(root, relative)
-    if ancestor is not None:
-        return records, [{"kind": "symlink", "path": ancestor}]
-    start = root / relative
     try:
-        start_stat = start.lstat()
-    except FileNotFoundError:
-        return records, [{"kind": "missing", "path": relative}]
-    if stat.S_ISLNK(start_stat.st_mode):
-        return records, [{"kind": "symlink", "path": relative}]
-    if not stat.S_ISDIR(start_stat.st_mode):
-        return records, [{
-            "kind": "type_mismatch", "path": relative,
-            "expected": "directory", "observed": "file" if stat.S_ISREG(start_stat.st_mode) else "other",
-        }]
-    pending = [start]
-    while pending:
-        directory = pending.pop()
+        return walk_inventory_no_follow(root, relative, include_directories=True), []
+    except SafePathError as error:
         try:
-            entries = sorted(os.scandir(directory), key=lambda item: item.name)
-        except OSError as error:
-            issues.append({
-                "kind": "type_mismatch",
-                "path": directory.relative_to(root).as_posix(),
-                "detail": str(error),
-            })
-            continue
-        for entry in entries:
-            child = Path(entry.path)
-            child_relative = child.relative_to(root).as_posix()
-            if entry.is_symlink():
-                issues.append({"kind": "symlink", "path": child_relative})
-            elif entry.is_dir(follow_symlinks=False):
-                pending.append(child)
-            elif entry.is_file(follow_symlinks=False):
-                record, issue = _record(child, root, child_relative)
-                if record is not None:
-                    records.append(record)
-                if issue is not None:
-                    issues.append(issue)
-            else:
-                issues.append({"kind": "type_mismatch", "path": child_relative})
-    return sorted(records, key=lambda row: row["path"]), issues
+            issue_path = error.path.relative_to(_normal_path(root)).as_posix()
+        except ValueError:
+            issue_path = relative
+        return [], [{"kind": error.kind, "path": issue_path, "detail": error.detail}]
 
 
 def _inventory(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     normalized = [dict(row) for row in sorted(records, key=lambda row: str(row["path"]))]
+    files = [row for row in normalized if row.get("type", "file") == "file"]
+    directories = [row for row in normalized if row.get("type") == "directory"]
     return {
-        "file_count": len(normalized),
-        "size_bytes": sum(int(row["size_bytes"]) for row in normalized),
+        "entry_count": len(normalized),
+        "file_count": len(files),
+        "directory_count": len(directories),
+        "size_bytes": sum(int(row["size_bytes"]) for row in files),
         "path_set_sha256": canonical_sha256([row["path"] for row in normalized]),
         "inventory_sha256": canonical_sha256(normalized),
+    }
+
+
+def _strict_json_bytes(payload: bytes, *, schema: str) -> dict[str, Any]:
+    try:
+        value = json.loads(payload.decode("utf-8"), object_pairs_hook=_strict_object)
+    except (UnicodeError, json.JSONDecodeError, DuplicateKeyError) as error:
+        raise ManifestError(str(error)) from error
+    if not isinstance(value, dict) or value.get("schema") != schema:
+        raise ManifestError(f"schema_invalid:{schema}")
+    return value
+
+
+def _load_bound_json(path: Path, expected_sha256: object, *, schema: str) -> tuple[dict[str, Any], str]:
+    if not isinstance(expected_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_sha256):
+        raise ManifestError("authority_sha256_invalid")
+    payload, _ = _read_regular_no_follow(path)
+    observed_sha256 = hashlib.sha256(payload).hexdigest()
+    if observed_sha256 != expected_sha256:
+        raise ManifestError(
+            f"authority_sha256_mismatch:{expected_sha256}:{observed_sha256}"
+        )
+    return _strict_json_bytes(payload, schema=schema), observed_sha256
+
+
+def _validate_inventory_records(value: object) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        raise ManifestError("inventory_records_invalid")
+    records: list[dict[str, Any]] = []
+    previous = ""
+    for item in value:
+        if not isinstance(item, dict):
+            raise ManifestError("inventory_record_invalid")
+        relative = _safe_relative(item.get("path"))
+        if relative <= previous:
+            raise ManifestError(f"inventory_record_order_invalid:{relative}")
+        previous = relative
+        member_type = item.get("type")
+        if member_type not in {"file", "directory"}:
+            raise ManifestError(f"inventory_record_type_invalid:{relative}")
+        if not re.fullmatch(r"[0-7]{4}", str(item.get("mode") or "")):
+            raise ManifestError(f"inventory_record_mode_invalid:{relative}")
+        if not isinstance(item.get("size_bytes"), int) or int(item["size_bytes"]) < 0:
+            raise ManifestError(f"inventory_record_size_invalid:{relative}")
+        expected_keys = {"path", "type", "mode", "size_bytes"}
+        if member_type == "file":
+            expected_keys.add("sha256")
+            if not re.fullmatch(r"[0-9a-f]{64}", str(item.get("sha256") or "")):
+                raise ManifestError(f"inventory_record_sha256_invalid:{relative}")
+        if set(item) != expected_keys:
+            raise ManifestError(f"inventory_record_fields_invalid:{relative}")
+        records.append(dict(item))
+    return records
+
+
+def build_native_inventory_authority(
+    *, data_dir: Path, source_audit_sha256: str,
+    audit_source_inventory_sha256: str, audit_vmaps_inventory_sha256: str,
+    receipt_relative_path: str,
+) -> dict[str, Any]:
+    records = walk_inventory_no_follow(
+        data_dir, ".", include_directories=True,
+        excluded_paths=[_safe_relative(receipt_relative_path)],
+    )
+    vmaps = [row for row in records if str(row["path"]).startswith("vmaps/")]
+    return {
+        "schema": "cata_runtime_asset_native_data_inventory_v1",
+        "source_audit_sha256": source_audit_sha256,
+        "canonical_audit_inventory_sha256": audit_source_inventory_sha256,
+        "record_inventory": _inventory(records),
+        "subsets": {
+            "vmaps": {
+                "path": "vmaps",
+                "audit_inventory_sha256": audit_vmaps_inventory_sha256,
+                "record_inventory": _inventory(vmaps),
+            }
+        },
+        "records": records,
+    }
+
+
+def build_audit_authority(
+    *, manifest: Mapping[str, Any], source_audit_path: Path,
+    source_audit_sha256: str, scenario_map_id: int,
+) -> dict[str, Any]:
+    audit_bytes, _ = _read_regular_no_follow(source_audit_path)
+    if hashlib.sha256(audit_bytes).hexdigest() != source_audit_sha256:
+        raise ManifestError("source_audit_sha256_mismatch")
+    audit = _strict_json_bytes(
+        audit_bytes, schema="cata_raid_immutable_runtime_asset_closure_audit_v1",
+    )
+    audit_classes = audit.get("closure_classes")
+    if not isinstance(audit_classes, list):
+        raise ManifestError("source_audit_classes_invalid")
+    by_digest: dict[str, list[dict[str, Any]]] = {}
+    for row in audit_classes:
+        if isinstance(row, dict):
+            digest = row.get("inventory_sha256") or row.get("source_inventory_sha256")
+            by_digest.setdefault(str(digest or ""), []).append(row)
+    classes: list[dict[str, Any]] = []
+    manifest_classes = manifest.get("asset_classes")
+    if not isinstance(manifest_classes, list):
+        raise ManifestError("asset_classes_invalid")
+    for raw_class in manifest_classes:
+        if not isinstance(raw_class, dict):
+            raise ManifestError("asset_class_not_object")
+        values = _expected_map_values(raw_class, scenario_map_id)
+        digest = str(values.get("audit_inventory_sha256") or "")
+        matches = by_digest.get(digest, [])
+        if len(matches) != 1:
+            raise ManifestError(f"source_audit_class_digest_invalid:{values.get('id')}")
+        source = matches[0]
+        expected_inventory = values.get("expected_inventory")
+        count = expected_inventory.get("file_count") if isinstance(expected_inventory, dict) else None
+        classes.append({
+            "id": values.get("id"),
+            "source_audit_class_id": source.get("id"),
+            "consumer": values.get("consumer"),
+            "audience": values.get("audience"),
+            "root": values.get("root"),
+            "rule": values.get("rule"),
+            "count": count,
+            "audit_inventory_sha256": digest,
+        })
+    source_inventory = audit.get("full_data_tree_inventory", {}).get("source", {})
+    return {
+        "schema": "cata_runtime_asset_closure_audit_authority_v1",
+        "source_audit": {
+            "path": str(_normal_path(source_audit_path)),
+            "sha256": source_audit_sha256,
+            "schema": audit.get("schema"),
+            "source_inventory_sha256": source_inventory.get("inventory_sha256"),
+            "source_entry_count": source_inventory.get("entries"),
+        },
+        "classes": classes,
     }
 
 
@@ -244,6 +296,12 @@ def _compare_expected_record(
     expected: Mapping[str, Any], observed: Mapping[str, Any], class_id: str,
 ) -> list[dict[str, Any]]:
     issues: list[dict[str, Any]] = []
+    if expected.get("type", "file") != observed.get("type"):
+        issues.append({
+            "kind": "type_mismatch", "class_id": class_id,
+            "path": observed["path"], "expected": expected.get("type", "file"),
+            "observed": observed.get("type"),
+        })
     for field, kind in (
         ("sha256", "hash_mismatch"),
         ("size_bytes", "size_mismatch"),
@@ -262,6 +320,7 @@ def _compare_expected_record(
 
 def _verify_class(
     asset_class: Mapping[str, Any], roots: Mapping[str, Path], map_id: int,
+    inventory_authority: Mapping[str, Any],
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, dict[str, Any]]]:
     values = _expected_map_values(asset_class, map_id)
     class_id = str(values.get("id") or "")
@@ -273,9 +332,29 @@ def _verify_class(
             raise ManifestError(f"asset_class_{field}_missing:{class_id}")
     root = roots[str(root_key)]
     rule = values.get("rule")
-    expected_files = values.get("expected_files", [])
-    if not isinstance(expected_files, list):
+    raw_expected_files = values.get("expected_files", [])
+    if not isinstance(raw_expected_files, list):
         raise ManifestError(f"expected_files_invalid:{class_id}")
+    expected_files = list(raw_expected_files)
+    inventory_subset = values.get("inventory_subset")
+    if inventory_subset is not None:
+        if rule != "complete-directory" or not isinstance(inventory_subset, str):
+            raise ManifestError(f"inventory_subset_invalid:{class_id}")
+        subset = inventory_authority.get("subsets", {}).get(inventory_subset)
+        if not isinstance(subset, dict):
+            raise ManifestError(f"inventory_subset_missing:{class_id}:{inventory_subset}")
+        records = inventory_authority.get("records")
+        if not isinstance(records, list):
+            raise ManifestError("inventory_authority_records_invalid")
+        base_prefix = f"{_safe_relative(values.get('path'))}/"
+        expected_files = [
+            dict(row) for row in records
+            if isinstance(row, dict) and str(row.get("path", "")).startswith(base_prefix)
+        ]
+        if _inventory(expected_files) != subset.get("record_inventory"):
+            raise ManifestError(f"inventory_subset_digest_invalid:{class_id}")
+        if subset.get("audit_inventory_sha256") != values.get("audit_inventory_sha256"):
+            raise ManifestError(f"inventory_subset_audit_digest_invalid:{class_id}")
     expected_names = values.get("expected_names", [])
     if not isinstance(expected_names, list):
         raise ManifestError(f"expected_names_invalid:{class_id}")
@@ -479,31 +558,295 @@ def _verify_dvc_provenance(
     return issues
 
 
+def _manifest_authority_rows(
+    manifest: Mapping[str, Any], scenario_map_id: int,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    classes = manifest.get("asset_classes")
+    if not isinstance(classes, list):
+        raise ManifestError("asset_classes_invalid")
+    for raw_class in classes:
+        if not isinstance(raw_class, dict):
+            raise ManifestError("asset_class_not_object")
+        values = _expected_map_values(raw_class, scenario_map_id)
+        expected_inventory = values.get("expected_inventory")
+        count = expected_inventory.get("file_count") if isinstance(expected_inventory, dict) else None
+        rows.append({
+            "id": values.get("id"),
+            "consumer": values.get("consumer"),
+            "audience": values.get("audience"),
+            "root": values.get("root"),
+            "rule": values.get("rule"),
+            "count": count,
+            "audit_inventory_sha256": values.get("audit_inventory_sha256"),
+        })
+    return rows
+
+
+def _verify_audit_authority(
+    manifest: Mapping[str, Any], dvc_workspace: Path, scenario_map_id: int,
+) -> tuple[dict[str, Any], dict[str, Any], str]:
+    binding = manifest.get("audit_authority")
+    if not isinstance(binding, dict):
+        raise AuthorityError("audit_invalid", "audit_authority_missing")
+    try:
+        relative = _safe_relative(binding.get("path"))
+        authority, authority_sha256 = _load_bound_json(
+            dvc_workspace / relative, binding.get("sha256"),
+            schema="cata_runtime_asset_closure_audit_authority_v1",
+        )
+        if set(authority) != {"schema", "source_audit", "classes"}:
+            raise ManifestError("audit_authority_fields_invalid")
+        source_binding = authority.get("source_audit")
+        if not isinstance(source_binding, dict):
+            raise ManifestError("source_audit_binding_missing")
+        if set(source_binding) != {
+            "path", "sha256", "schema", "source_inventory_sha256",
+            "source_entry_count",
+        }:
+            raise ManifestError("source_audit_binding_fields_invalid")
+        source_path = Path(str(source_binding.get("path") or ""))
+        if not source_path.is_absolute():
+            raise ManifestError("source_audit_path_not_absolute")
+        source_audit, _ = _load_bound_json(
+            source_path, source_binding.get("sha256"),
+            schema="cata_raid_immutable_runtime_asset_closure_audit_v1",
+        )
+        if source_binding.get("schema") != source_audit.get("schema"):
+            raise ManifestError("source_audit_schema_disagreement")
+        source_inventory = source_audit.get("full_data_tree_inventory", {}).get("source")
+        if not isinstance(source_inventory, dict):
+            raise ManifestError("source_audit_inventory_missing")
+        for field, observed in (
+            ("source_inventory_sha256", source_inventory.get("inventory_sha256")),
+            ("source_entry_count", source_inventory.get("entries")),
+        ):
+            if source_binding.get(field) != observed:
+                raise ManifestError(f"source_audit_{field}_disagreement")
+        authority_rows = authority.get("classes")
+        if not isinstance(authority_rows, list):
+            raise ManifestError("audit_authority_classes_invalid")
+        by_id = {
+            str(row.get("id")): row for row in authority_rows if isinstance(row, dict)
+        }
+        if any(
+            not isinstance(row, dict) or set(row) != {
+                "id", "source_audit_class_id", "consumer", "audience", "root",
+                "rule", "count", "audit_inventory_sha256",
+            }
+            for row in authority_rows
+        ):
+            raise ManifestError("audit_authority_class_fields_invalid")
+        expected_rows = _manifest_authority_rows(manifest, scenario_map_id)
+        if len(by_id) != len(authority_rows) or set(by_id) != {
+            str(row["id"]) for row in expected_rows
+        }:
+            raise ManifestError("audit_authority_class_ids_disagree")
+        source_classes = source_audit.get("closure_classes")
+        if not isinstance(source_classes, list):
+            raise ManifestError("source_audit_classes_invalid")
+        source_by_id = {
+            str(row.get("id")): row for row in source_classes if isinstance(row, dict)
+        }
+        for expected in expected_rows:
+            authority_row = by_id[str(expected["id"])]
+            for field, value in expected.items():
+                if authority_row.get(field) != value:
+                    raise ManifestError(
+                        f"audit_authority_class_disagreement:{expected['id']}:{field}"
+                    )
+            source = source_by_id.get(str(authority_row.get("source_audit_class_id")))
+            if not isinstance(source, dict):
+                raise ManifestError(f"source_audit_class_missing:{expected['id']}")
+            source_digest = source.get("inventory_sha256") or source.get(
+                "source_inventory_sha256"
+            )
+            if source_digest != expected["audit_inventory_sha256"]:
+                raise ManifestError(f"source_audit_class_digest_disagree:{expected['id']}")
+            if source.get("count") != expected["count"]:
+                raise ManifestError(f"source_audit_class_count_disagree:{expected['id']}")
+        return authority, source_audit, authority_sha256
+    except (ManifestError, SafePathError, OSError) as error:
+        raise AuthorityError("audit_invalid", str(error)) from error
+
+
+def _verify_inventory_authority(
+    manifest: Mapping[str, Any], dvc_workspace: Path,
+    audit_authority: Mapping[str, Any], audit_authority_sha256: str,
+) -> tuple[dict[str, Any], str]:
+    binding = manifest.get("native_data_inventory_authority")
+    if not isinstance(binding, dict):
+        raise AuthorityError("inventory_authority_invalid", "inventory_authority_missing")
+    try:
+        relative = _safe_relative(binding.get("path"))
+        authority, authority_sha256 = _load_bound_json(
+            dvc_workspace / relative, binding.get("sha256"),
+            schema="cata_runtime_asset_native_data_inventory_v1",
+        )
+        if set(authority) != {
+            "schema", "source_audit_sha256", "canonical_audit_inventory_sha256",
+            "record_inventory", "subsets", "records",
+        }:
+            raise ManifestError("inventory_authority_fields_invalid")
+        records = _validate_inventory_records(authority.get("records"))
+        if authority.get("record_inventory") != _inventory(records):
+            raise ManifestError("inventory_authority_record_digest_disagree")
+        source_audit = audit_authority.get("source_audit", {})
+        if authority.get("source_audit_sha256") != source_audit.get("sha256"):
+            raise ManifestError("inventory_authority_source_audit_disagree")
+        if authority.get("canonical_audit_inventory_sha256") != source_audit.get(
+            "source_inventory_sha256"
+        ):
+            raise ManifestError("inventory_authority_canonical_audit_digest_disagree")
+        if binding.get("canonical_audit_inventory_sha256") != authority.get(
+            "canonical_audit_inventory_sha256"
+        ):
+            raise ManifestError("manifest_inventory_audit_digest_disagree")
+        if binding.get("audit_authority_sha256") != audit_authority_sha256:
+            raise ManifestError("manifest_inventory_audit_authority_disagree")
+        subsets = authority.get("subsets")
+        if not isinstance(subsets, dict):
+            raise ManifestError("inventory_authority_subsets_invalid")
+        for subset_id, subset in subsets.items():
+            if not isinstance(subset_id, str) or not isinstance(subset, dict):
+                raise ManifestError("inventory_authority_subset_invalid")
+            if set(subset) != {
+                "path", "audit_inventory_sha256", "record_inventory",
+            }:
+                raise ManifestError(f"inventory_authority_subset_fields_invalid:{subset_id}")
+            prefix = f"{_safe_relative(subset.get('path'))}/"
+            subset_records = [row for row in records if str(row["path"]).startswith(prefix)]
+            if subset.get("record_inventory") != _inventory(subset_records):
+                raise ManifestError(f"inventory_authority_subset_digest_disagree:{subset_id}")
+        return authority, authority_sha256
+    except (ManifestError, SafePathError, OSError) as error:
+        raise AuthorityError("inventory_authority_invalid", str(error)) from error
+
+
+def produce_extraction_receipt(
+    *, data_dir: Path, inventory_authority_path: Path,
+    receipt_relative_path: str, client_identity: Mapping[str, Any],
+    extractor_identity: Mapping[str, Any], creation_command_inputs: Sequence[str],
+) -> dict[str, Any]:
+    relative = _safe_relative(receipt_relative_path)
+    authority_bytes, _ = _read_regular_no_follow(inventory_authority_path)
+    authority_sha256 = hashlib.sha256(authority_bytes).hexdigest()
+    authority = _strict_json_bytes(
+        authority_bytes, schema="cata_runtime_asset_native_data_inventory_v1",
+    )
+    expected = _validate_inventory_records(authority.get("records"))
+    observed = walk_inventory_no_follow(
+        data_dir, ".", include_directories=True, excluded_paths=[relative],
+    )
+    if observed != expected:
+        raise ManifestError("extraction_receipt_inventory_mismatch")
+    if not client_identity or not extractor_identity or not creation_command_inputs:
+        raise ManifestError("extraction_receipt_identity_missing")
+    return {
+        "schema": "cata_client_asset_extraction_receipt_v1",
+        "inventory_authority_sha256": authority_sha256,
+        "canonical_audit_inventory_sha256": authority.get(
+            "canonical_audit_inventory_sha256"
+        ),
+        "data_inventory": _inventory(observed),
+        "client_identity": dict(client_identity),
+        "extractor_identity": dict(extractor_identity),
+        "creation_command_inputs": list(creation_command_inputs),
+    }
+
+
+def _validate_extraction_receipt(payload: Mapping[str, Any]) -> None:
+    expected_keys = {
+        "schema", "inventory_authority_sha256",
+        "canonical_audit_inventory_sha256", "data_inventory",
+        "client_identity", "extractor_identity", "creation_command_inputs",
+    }
+    if set(payload) != expected_keys:
+        raise ManifestError("extraction_receipt_fields_invalid")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(payload.get("inventory_authority_sha256") or "")):
+        raise ManifestError("extraction_receipt_inventory_authority_invalid")
+    if not re.fullmatch(
+        r"[0-9a-f]{64}", str(payload.get("canonical_audit_inventory_sha256") or ""),
+    ):
+        raise ManifestError("extraction_receipt_audit_inventory_invalid")
+    inventory = payload.get("data_inventory")
+    if not isinstance(inventory, dict) or set(inventory) != {
+        "entry_count", "file_count", "directory_count", "size_bytes",
+        "path_set_sha256", "inventory_sha256",
+    }:
+        raise ManifestError("extraction_receipt_data_inventory_invalid")
+    if not isinstance(payload.get("client_identity"), dict) or not payload["client_identity"]:
+        raise ManifestError("extraction_receipt_client_identity_invalid")
+    if not isinstance(payload.get("extractor_identity"), dict) or not payload["extractor_identity"]:
+        raise ManifestError("extraction_receipt_extractor_identity_invalid")
+    command = payload.get("creation_command_inputs")
+    if not isinstance(command, list) or not command or not all(
+        isinstance(item, str) and item for item in command
+    ):
+        raise ManifestError("extraction_receipt_command_inputs_invalid")
+
+
 def _verify_extraction_provenance(
     manifest: Mapping[str, Any], roots: Mapping[str, Path],
+    inventory_authority: Mapping[str, Any], inventory_authority_sha256: str,
 ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
     requirement = manifest.get("native_extraction_provenance")
     if not isinstance(requirement, dict):
         raise ManifestError("native_extraction_provenance_invalid")
     relative = _safe_relative(requirement.get("path"))
     target = roots["configured-DataDir"] / relative
+    pinned_sha256 = requirement.get("receipt_sha256")
+    if pinned_sha256 is None:
+        return [{
+            "kind": "provenance_missing", "class_id": "native_extraction_provenance",
+            "path": relative, "root": "configured-DataDir",
+            "detail": "receipt_sha256_not_pinned",
+        }], None
     try:
-        payload = load_json_strict(target)
-    except ManifestError as error:
-        kind = "provenance_missing" if not target.exists() else "provenance_invalid"
+        payload, observed_sha256 = _load_bound_json(
+            target, pinned_sha256, schema="cata_client_asset_extraction_receipt_v1",
+        )
+        _validate_extraction_receipt(payload)
+    except (ManifestError, SafePathError, OSError) as error:
+        kind = "provenance_missing" if isinstance(error, SafePathError) and error.kind == "missing" else "provenance_invalid"
         return [{
             "kind": kind, "class_id": "native_extraction_provenance",
             "path": relative, "root": "configured-DataDir", "detail": str(error),
         }], None
     issues: list[dict[str, Any]] = []
-    for field, expected in (requirement.get("required_fields") or {}).items():
+    for field, expected in (
+        ("inventory_authority_sha256", inventory_authority_sha256),
+        ("canonical_audit_inventory_sha256", inventory_authority.get("canonical_audit_inventory_sha256")),
+        ("client_identity", requirement.get("client_identity")),
+        ("extractor_identity", requirement.get("extractor_identity")),
+        ("creation_command_inputs", requirement.get("creation_command_inputs")),
+    ):
         if payload.get(field) != expected:
             issues.append({
                 "kind": "provenance_invalid", "class_id": "native_extraction_provenance",
                 "path": relative, "root": "configured-DataDir", "field": field,
                 "expected": expected, "observed": payload.get(field),
             })
-    return issues, payload
+    expected_records = _validate_inventory_records(inventory_authority.get("records"))
+    try:
+        observed_records = walk_inventory_no_follow(
+            roots["configured-DataDir"], ".", include_directories=True,
+            excluded_paths=[relative],
+        )
+    except SafePathError as error:
+        issues.append({
+            "kind": "provenance_invalid", "class_id": "native_extraction_provenance",
+            "path": relative, "root": "configured-DataDir", "field": "data_inventory",
+            "detail": str(error),
+        })
+        return issues, {**payload, "receipt_sha256": observed_sha256}
+    if observed_records != expected_records or payload.get("data_inventory") != _inventory(observed_records):
+        issues.append({
+            "kind": "provenance_invalid", "class_id": "native_extraction_provenance",
+            "path": relative, "root": "configured-DataDir", "field": "data_inventory",
+            "expected": _inventory(expected_records), "observed": _inventory(observed_records),
+        })
+    return issues, {**payload, "receipt_sha256": observed_sha256}
 
 
 def verify_runtime_asset_closure(
@@ -512,23 +855,15 @@ def verify_runtime_asset_closure(
     scenario_map_id: int, previous_snapshot: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     manifest_path = _normal_path(manifest_path)
-    manifest_bytes, _ = _read_regular_no_follow(manifest_path)
-    manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+    manifest_sha256: str | None = None
     try:
-        manifest = json.loads(
-            manifest_bytes.decode("utf-8"), object_pairs_hook=_strict_object,
+        manifest_bytes, _ = _read_regular_no_follow(manifest_path)
+        manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+        manifest = _strict_json_bytes(
+            manifest_bytes, schema="cata_runtime_asset_closure_manifest_v1",
         )
-        if not isinstance(manifest, dict):
-            raise ManifestError("manifest_root_not_object")
-        if manifest.get("schema") != "cata_runtime_asset_closure_manifest_v1":
-            raise ManifestError("manifest_schema_invalid")
-        audit = manifest.get("audit")
-        if not isinstance(audit, dict) or not re.fullmatch(
-            r"[0-9a-f]{64}", str(audit.get("sha256") or ""),
-        ):
-            raise ManifestError("audit_binding_invalid")
         derived_data_dir = data_dir_from_worldserver_config(worldserver_config)
-    except (UnicodeError, json.JSONDecodeError, DuplicateKeyError, ManifestError, OSError) as error:
+    except (ManifestError, SafePathError, OSError) as error:
         return {
             "schema": "cata_runtime_asset_closure_receipt_v1",
             "complete": False,
@@ -554,13 +889,47 @@ def verify_runtime_asset_closure(
         })
     for key in ROOT_KEYS:
         try:
-            value = roots[key].lstat()
-            if stat.S_ISLNK(value.st_mode):
-                issues.append({"kind": "symlink", "root": key, "path": "."})
-            elif not stat.S_ISDIR(value.st_mode):
-                issues.append({"kind": "type_mismatch", "root": key, "path": "."})
-        except OSError:
-            issues.append({"kind": "missing", "root": key, "path": "."})
+            require_directory_no_follow(roots[key])
+        except SafePathError as error:
+            issues.append({
+                "kind": error.kind, "root": key, "path": ".", "detail": error.detail,
+            })
+    if issues:
+        issue_counts = {
+            kind: sum(issue.get("kind") == kind for issue in issues)
+            for kind in ISSUE_KINDS if any(issue.get("kind") == kind for issue in issues)
+        }
+        return {
+            "schema": "cata_runtime_asset_closure_receipt_v1",
+            "complete": False,
+            "status": "runtime_asset_closure_incomplete",
+            "manifest_path": str(manifest_path),
+            "manifest_sha256": manifest_sha256,
+            "roots": {key: str(value) for key, value in roots.items()},
+            "issues": issues,
+            "issue_counts": issue_counts,
+            "snapshot": {},
+        }
+    try:
+        audit_authority, source_audit, audit_authority_sha256 = _verify_audit_authority(
+            manifest, roots["dvc-workspace"], scenario_map_id,
+        )
+        inventory_authority, inventory_authority_sha256 = _verify_inventory_authority(
+            manifest, roots["dvc-workspace"], audit_authority,
+            audit_authority_sha256,
+        )
+    except AuthorityError as error:
+        return {
+            "schema": "cata_runtime_asset_closure_receipt_v1",
+            "complete": False,
+            "status": "runtime_asset_closure_incomplete",
+            "manifest_path": str(manifest_path),
+            "manifest_sha256": manifest_sha256,
+            "roots": {key: str(value) for key, value in roots.items()},
+            "issues": [{"kind": error.kind, "detail": error.detail}],
+            "issue_counts": {error.kind: 1},
+            "snapshot": {},
+        }
     class_results: list[dict[str, Any]] = []
     snapshot: dict[str, dict[str, Any]] = {}
     classes = manifest.get("asset_classes")
@@ -571,13 +940,15 @@ def verify_runtime_asset_closure(
             if not isinstance(asset_class, dict):
                 raise ManifestError("asset_class_not_object")
             result, class_issues, class_snapshot = _verify_class(
-                asset_class, roots, scenario_map_id,
+                asset_class, roots, scenario_map_id, inventory_authority,
             )
             class_results.append(result)
             issues.extend(class_issues)
             snapshot.update(class_snapshot)
         issues.extend(_verify_dvc_provenance(manifest, roots))
-        provenance_issues, provenance = _verify_extraction_provenance(manifest, roots)
+        provenance_issues, provenance = _verify_extraction_provenance(
+            manifest, roots, inventory_authority, inventory_authority_sha256,
+        )
         issues.extend(provenance_issues)
     except ManifestError as error:
         issues.append({"kind": "manifest_invalid", "detail": str(error)})
@@ -607,7 +978,17 @@ def verify_runtime_asset_closure(
         "status": "runtime_asset_closure_complete" if complete else "runtime_asset_closure_incomplete",
         "manifest_path": str(manifest_path),
         "manifest_sha256": manifest_sha256,
-        "audit": manifest["audit"],
+        "audit_authority": {
+            "path": manifest["audit_authority"]["path"],
+            "sha256": audit_authority_sha256,
+            "source_audit_sha256": audit_authority["source_audit"]["sha256"],
+            "source_audit_schema": source_audit["schema"],
+        },
+        "native_data_inventory_authority": {
+            "path": manifest["native_data_inventory_authority"]["path"],
+            "sha256": inventory_authority_sha256,
+            "record_inventory": inventory_authority["record_inventory"],
+        },
         "roots": {key: str(value) for key, value in roots.items()},
         "configured_data_dir_binding": {
             "config": str(_normal_path(worldserver_config)),
