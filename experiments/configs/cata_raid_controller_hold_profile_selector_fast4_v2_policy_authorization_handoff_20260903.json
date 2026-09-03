@@ -1,0 +1,71 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_controller_hold_profile_selector_fast4_v2_policy",
+  "owner_skill": "raid-performance-loop",
+  "classification": "one_hybrid_build_resource_policy_authorized",
+  "created_at_utc": "2026-09-03T05:35:35Z",
+  "closed_build_evidence": {
+    "fast8_handoff": {
+      "path": "/home/runiir/Games/trinity-controller-hold-profile-selector-build-handoff.json",
+      "sha256": "23c5f91eb6933ccf3742b23070187755ccca7ec2e31bcb3febd9ebbaa30525ff",
+      "first_broken_edge": "fast8_v4_sustained_load_average_guard",
+      "compiler_jobs": 8,
+      "observed_load_average_1m": 13.2158203125,
+      "allowed_load_average_1m": 13.0,
+      "observed_progress_percent": 56
+    },
+    "fast4_handoff": {
+      "path": "/home/runiir/Games/trinity-controller-hold-profile-selector-fast4-build-handoff.json",
+      "sha256": "108153966d9224dd5009ab920dd0fd58a103e006847b51bebe05c15606db72f5",
+      "first_broken_edge": "fast4_v1_sustained_memory_psi_guard_during_configure",
+      "compiler_jobs": 4,
+      "observed_memory_psi_some_avg10": 0.28,
+      "observed_memory_psi_full_avg10": 0.28,
+      "allowed_memory_psi_some_avg10": 0.2,
+      "allowed_memory_psi_full_avg10": 0.2
+    }
+  },
+  "reusable_guidance": {
+    "commit": "fa8a9a8da90239104cfbd228fbf975c0e0c27faf",
+    "path": ".agents/skills/raid-shard-architecture/SKILL.md",
+    "sha256": "cf1df1ec739888eb742b1fe9c94a9a13a227d61b2835faa2f538c5efb4205143"
+  },
+  "authorized_policy_work_unit": {
+    "owner_skill": "raid-shard-architecture",
+    "owned_file": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "base_policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+    "required_changes": [
+      "Set policy_id to cata_raid_build_resource_policy_fast4_v2 and supersedes_for_retry to experiments/configs/cata_raid_build_resource_policy_fast4_v1.json.",
+      "Record a reduction_reason that binds both exact failed handoffs: reduce eight compiler jobs to four because the eight-job run crossed the reviewed load guard, while preserving the newer non-flapping thresholds because the stale four-job policy terminated configure at PSI 0.28 against 0.2.",
+      "Set parallelism.maximum_compiler_jobs, parallelism.integration_owner_maximum_compiler_jobs, mechanical_controls.cmake_build_parallel_level, mechanical_controls.makeflags_jobs, mechanical_controls.ninja_jobs, and mechanical_controls.cmake_compile_job_pool to 4.",
+      "Preserve every other fast8_v4 coordination, admission threshold, resource class, exclusion, mechanical, toolchain, trust, and classification value exactly."
+    ]
+  },
+  "acceptance_conditions": [
+    "The new policy is valid JSON and differs structurally from fast8_v4 only in identity/provenance prose and the six explicit four-job concurrency fields.",
+    "All admission thresholds equal fast8_v4 exactly, including the hard 8 GiB reserve, 0.25 memory fraction, 512 MiB swap growth per job, PSI 10.0/5.0, load 13.0, and three-sample hysteresis.",
+    "The policy-owned configure/build environment and command resolve to four compiler jobs and one linker without modifying queued_build.py.",
+    "An independent Sol reviewer must return GO before any configure or build is authorized."
+  ],
+  "required_commands": [
+    "pixi run python -m json.tool experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "pixi run pytest -q tests/test_raid_build_coordinator.py -k 'policy or command or environment'",
+    "git diff --check"
+  ],
+  "budgets": {
+    "policy_files": 1,
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "database_operations": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No edit outside the one owned policy file and no queued_build, source, test, skill, route, roster, evidence, or gameplay change.",
+    "No threshold increase beyond fast8_v4, no stale fast4_v1 threshold reuse, no eight-job retry, no configure, build, server, database, DVC, capture, fixture, or gameplay canary."
+  ],
+  "next_action": "Create and validate exactly one fast4_v2 policy, commit it, then obtain independent review."
+}

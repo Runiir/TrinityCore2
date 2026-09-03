@@ -1,62 +1,62 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:controller_hold_profile_selector_fast4_build",
+  "work_unit": "shard:controller_hold_profile_selector_fast4_v2_policy",
   "owner_skill": "raid-shard-architecture",
-  "classification": "one_degraded_concurrency_build_authorized",
+  "classification": "one_hybrid_build_resource_policy_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "5dc61bce0485fe8fa78b7d04fe474ce250682eaf",
+  "observed_at_commit": "fa8a9a8da90239104cfbd228fbf975c0e0c27faf",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "One fresh four-compiler worldserver build after the fast8 load guard stopped before linking.",
+  "architecture_scope": "One reviewed four-compiler policy that preserves the latest non-flapping fast8_v4 resource guards.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Fast8 build closed at resource guard with no binary; one fresh fast4 build is authorized without threshold weakening or cache reuse.",
+  "gate_state": "Fast8 crossed the reviewed load guard; stale fast4 terminated configure on obsolete PSI thresholds. Policy synthesis and independent review are required before another build.",
   "first_broken_edge": {
     "id": "controller_route_hold_profile_fixture_config_identity_not_selected",
     "stage": "controller_route_hold_identity_selection",
     "owner_classification": "raid_bot_runtime_implementation",
     "cause": "CurrentControllerRouteHoldIdentity omits the ProfileCombatRangeCheckpoint fixture branch and falls through to Chainwielder configuration fields.",
-    "review_state": "independent_go_fast8_resource_abort_fast4_build_authorized"
+    "review_state": "runtime_independent_go_two_build_resource_aborts_policy_review_required"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_controller_hold_profile_selector_fast4_build_reauthorization_handoff_20260903.json",
+    "path": "experiments/configs/cata_raid_controller_hold_profile_selector_fast4_v2_policy_authorization_handoff_20260903.json",
     "review_path": "/tmp/controller_route_hold_identity_selector_review_handoff_20260903.json",
     "review_sha256": "b5b144d635bb49aa2352f63e8e0f6a76ea4ab1b6fcefbf3ae38b12007d95fbec"
   },
   "scope_lock": {
-    "objective": "Produce one gate-bearing worldserver binary under the tracked fast4 fallback from a fresh clean detached worktree.",
-    "owned_output": "/home/runiir/Games/trinity-controller-hold-profile-selector-fast4-build-handoff.json",
-    "stop_condition": "Stop after one build_ready or typed build failure; no retry and no live process."
+    "objective": "Create one four-job build policy by changing concurrency only from fast8_v4 while retaining its latest reviewed guards.",
+    "owned_output": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "stop_condition": "Stop after one policy commit; no configure, build, or live process."
   },
   "acceptance_conditions": [
-    "One fresh fast4 configure and coordinated build produce a production-valid receipt and exact binary hash.",
-    "Post-build static sealing remains separate and required before Stage 3."
+    "The policy differs from fast8_v4 only in identity/provenance and six four-job concurrency fields.",
+    "An independent Sol reviewer returns GO before any build authorization."
   ],
   "forbidden": [
-    "No source/config mutation, second build, server, DB, DVC, provisioning, capture, fixture, gameplay canary, or retry."
+    "No edit outside the policy, configure, build, server, DB, DVC, provisioning, capture, fixture, gameplay canary, or retry."
   ],
   "validation_clock": {
-    "policy": "queued_build_fast4_v1",
-    "implementation_commits": 0,
-    "independent_reviews": 0,
+    "policy": "synthesize_fast4_v2_from_fast8_v4",
+    "implementation_commits": 1,
+    "independent_reviews": 1,
     "dvc_add_budget": 0,
     "dvc_push_budget": 0,
     "credential_aware_remote_reconstruction_budget": 0,
     "worldserver_start_budget": 0,
     "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
-    "configure_budget": 1,
-    "build_budget": 1,
+    "configure_budget": 0,
+    "build_budget": 0,
     "database_mutation_budget": 0,
     "dvc_mutation_budget": 0,
     "retries": 0,
     "eviction_after_remote_verify_only": false
   },
   "issues": [],
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Run the one fresh four-compiler policy-controlled build and close its receipt."
+  "next_action": "Create and independently review the fast4_v2 policy before authorizing one fresh build."
 }
