@@ -1,4 +1,5 @@
 #include "Bots/BotChainwielderOwnerCheckpoint.h"
+#include "Bots/BotControllerRouteHoldIdentitySelector.h"
 
 #include <string_view>
 
@@ -309,10 +310,23 @@ BotWorldPopulationMgr::CurrentControllerRouteHoldIdentity(
 {
     BotControllerRouteHold::State const& hold =
         Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
-    bool const nativePathCheckpoint = hold.Scope.FixtureId
-        == BotNativePathCheckpoint::FixtureId;
-    bool const magmawTransferCheckpoint = hold.Scope.FixtureId
-        == BotEncounter::MagmawTransferLaneCheckpoint::FixtureId;
+    BotControllerRouteHoldIdentitySelector::AuthorityTriple const authority =
+        BotControllerRouteHoldIdentitySelector::Select(
+            hold.Scope.FixtureId,
+            {
+                { Cohort().Config.ProfileCombatRangeCheckpointFixtureId,
+                  Cohort().Config.ProfileCombatRangeCheckpointSealSha256,
+                  Cohort().Config.ProfileCombatRangeCheckpointSourceCommit },
+                { Cohort().Config.NativePathCheckpointFixtureId,
+                  Cohort().Config.NativePathCheckpointSealSha256,
+                  Cohort().Config.NativePathCheckpointSourceCommit },
+                { Cohort().Config.MagmawTransferLaneCheckpointFixtureId,
+                  Cohort().Config.MagmawTransferLaneCheckpointSealSha256,
+                  Cohort().Config.MagmawTransferLaneCheckpointSourceCommit },
+                { Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
+                  Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
+                  Cohort().Config.ChainwielderOwnerCheckpointSourceCommit }
+            });
     return {
         Cohort().Id,
         _serverEpoch,
@@ -324,21 +338,9 @@ BotWorldPopulationMgr::CurrentControllerRouteHoldIdentity(
         Party().ValidationRouteGeneration,
         Cohort().Config.ValidationRouteNodeId,
         actorGuid,
-        magmawTransferCheckpoint
-            ? Cohort().Config.MagmawTransferLaneCheckpointFixtureId
-            : nativePathCheckpoint
-            ? Cohort().Config.NativePathCheckpointFixtureId
-            : Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
-        magmawTransferCheckpoint
-            ? Cohort().Config.MagmawTransferLaneCheckpointSealSha256
-            : nativePathCheckpoint
-            ? Cohort().Config.NativePathCheckpointSealSha256
-            : Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
-        magmawTransferCheckpoint
-            ? Cohort().Config.MagmawTransferLaneCheckpointSourceCommit
-            : nativePathCheckpoint
-            ? Cohort().Config.NativePathCheckpointSourceCommit
-            : Cohort().Config.ChainwielderOwnerCheckpointSourceCommit,
+        authority.FixtureId,
+        authority.SealSha256,
+        authority.SourceCommit,
     };
 }
 
@@ -462,29 +464,34 @@ std::string BotWorldPopulationMgr::BuildControllerRouteHoldJson() const
     State const& hold =
         Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
     Identity const& scope = AdmittedIdentity(hold);
+    BotControllerRouteHoldIdentitySelector::AuthorityTriple const authority =
+        BotControllerRouteHoldIdentitySelector::Select(
+            scope.FixtureId,
+            {
+                { Cohort().Config.ProfileCombatRangeCheckpointFixtureId,
+                  Cohort().Config.ProfileCombatRangeCheckpointSealSha256,
+                  Cohort().Config.ProfileCombatRangeCheckpointSourceCommit },
+                { Cohort().Config.NativePathCheckpointFixtureId,
+                  Cohort().Config.NativePathCheckpointSealSha256,
+                  Cohort().Config.NativePathCheckpointSourceCommit },
+                { Cohort().Config.MagmawTransferLaneCheckpointFixtureId,
+                  Cohort().Config.MagmawTransferLaneCheckpointSealSha256,
+                  Cohort().Config.MagmawTransferLaneCheckpointSourceCommit },
+                { Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
+                  Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
+                  Cohort().Config.ChainwielderOwnerCheckpointSourceCommit }
+            });
     bool const nativePathCheckpoint = scope.FixtureId
         == BotNativePathCheckpoint::FixtureId;
     bool const magmawTransferCheckpoint = scope.FixtureId
         == BotEncounter::MagmawTransferLaneCheckpoint::FixtureId;
     BotControllerRouteHoldConfigIdentity::Comparison const configComparison =
         BotControllerRouteHoldConfigIdentity::Compare(
-            magmawTransferCheckpoint
-                ? Cohort().Config.MagmawTransferLaneCheckpointFixtureId
-                : nativePathCheckpoint
-                ? Cohort().Config.NativePathCheckpointFixtureId
-                : Cohort().Config.ChainwielderOwnerCheckpointFixtureId,
+            authority.FixtureId,
             scope.FixtureId,
-            magmawTransferCheckpoint
-                ? Cohort().Config.MagmawTransferLaneCheckpointSealSha256
-                : nativePathCheckpoint
-                ? Cohort().Config.NativePathCheckpointSealSha256
-                : Cohort().Config.ChainwielderOwnerCheckpointSealSha256,
+            authority.SealSha256,
             scope.SealSha256,
-            magmawTransferCheckpoint
-                ? Cohort().Config.MagmawTransferLaneCheckpointSourceCommit
-                : nativePathCheckpoint
-                ? Cohort().Config.NativePathCheckpointSourceCommit
-                : Cohort().Config.ChainwielderOwnerCheckpointSourceCommit,
+            authority.SourceCommit,
             scope.SourceCommit, GitRevision::GetHash());
     std::ostringstream json;
     bool const ok = hold.CurrentPhase != Phase::Failed
