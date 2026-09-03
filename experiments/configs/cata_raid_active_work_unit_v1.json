@@ -1,8 +1,8 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:publish_verify_evict_magmaw_stage3_v4",
+  "work_unit": "evidence:credential_aware_publish_verify_evict_magmaw_stage3_v4",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "evidence_publication_authorized",
+  "classification": "evidence_publication_reauthorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
@@ -12,23 +12,23 @@
   "architecture_scope": "Publish, remotely verify, and exactly evict one closed attributable non-gameplay Stage 3 evidence payload.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Stage 3 v4 closed before provisioning/combat; publication and cleanup are required before runtime repair.",
+  "gate_state": "Initial push succeeded but isolated verification lacked local credentials; exact credential-aware reconstruction is reauthorized with no second push.",
   "first_broken_edge": {
     "id": "controller_route_hold_bootstrap_route_drift",
     "stage": "stage3_runtime_bootstrap",
     "owner_classification": "raid_bot_runtime_implementation",
     "cause": "CurrentControllerRouteHoldIdentity does not select ProfileCombatRangeCheckpoint identity and falls through to empty Chainwielder configuration fields.",
-    "review_state": "closed_attributable_evidence_pending_publication"
+    "review_state": "remote_objects_pushed_publication_pending_credential_aware_verification"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_stage3_v4_publish_verify_evict_authorization_handoff_20260903.json",
+    "path": "experiments/configs/cata_raid_magmaw_stage3_v4_credential_aware_publication_reauthorization_handoff_20260903.json",
     "closed_capture_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v4.json",
     "closed_capture_sha256": "a59c0f77d467e2d4e64897b166e3b86b798d6154f72202b3b286054b8aa75a92"
   },
   "scope_lock": {
-    "objective": "Publish the exact closed v4 evidence through DVC, verify remote reconstruction, and evict only exact duplicate raw payloads.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-v4-publication-handoff.json",
-    "stop_condition": "Stop after one verified DVC publication and exact eviction, or the first publication/verification mismatch."
+    "objective": "Verify the already pushed exact DVC object through one credential-aware isolated reconstruction, commit compact publication metadata, and evict exact duplicates.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-v4-publication-handoff-v2.json",
+    "stop_condition": "Stop after the one credential-aware reconstruction and exact closeout, with no retry."
   },
   "acceptance_conditions": [
     "Remote reconstruction matches all closed v4 evidence hashes and compact Git metadata binds the truthful terminal.",
@@ -41,8 +41,8 @@
     "policy": "publish_verify_then_evict",
     "publication_commits": 1,
     "dvc_add_budget": 1,
-    "dvc_push_budget": 1,
-    "remote_reconstruction_budget": 1,
+    "dvc_push_budget": 0,
+    "credential_aware_remote_reconstruction_budget": 1,
     "worldserver_start_budget": 0,
     "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
@@ -56,5 +56,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Publish, remotely verify, and exactly evict the closed v4 evidence."
+  "next_action": "Run one credential-aware isolated reconstruction, finalize publication, and exactly evict verified duplicates."
 }
