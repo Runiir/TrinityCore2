@@ -48,6 +48,10 @@ from tools.raid_program.recurrence_admission import (
     RecurrenceAdmissionError,
     verify_recurrence_admission,
 )
+from tools.raid_program.runtime_asset_closure import (
+    add_runtime_asset_closure_arguments,
+    enforce_runtime_asset_closure_from_args,
+)
 from tools.raid_program import trace_transport_smoke
 
 
@@ -133,6 +137,7 @@ class CaptureSetup:
     drudge_navmesh_preflight: dict[str, Any]
     drudge_frozen_anchors: dict[int, tuple[float, float, float]]
     build_provenance: dict[str, Any]
+    runtime_asset_closure: dict[str, Any]
     personal_threat_episode_target: dict[str, Any] | None = None
     checkpoint_target_guid: int | None = None
     build_worktree: Path | None = None
@@ -280,6 +285,7 @@ def build_capture_parser(*, root: Path = ROOT) -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--build-attestation", type=Path, default=None)
+    add_runtime_asset_closure_arguments(parser)
     parser.add_argument("--worktree", type=Path, default=root)
     parser.add_argument(
         "--build-worktree", type=Path, default=None,
@@ -395,6 +401,9 @@ def prepare_capture_setup(
         raise SystemExit("server log output already exists; phase1 artifacts are immutable")
     if not binary.is_file() or not config.is_file():
         raise SystemExit("binary and config must exist")
+    runtime_asset_closure = enforce_runtime_asset_closure_from_args(
+        args, worldserver_config=config,
+    )
     trace_transport_admission_rejections = trace_transport_smoke.admission_rejections(
         profile=profile_name,
         scenario=scenario_id,
@@ -701,6 +710,7 @@ def prepare_capture_setup(
         drudge_navmesh_preflight=drudge_navmesh_preflight,
         drudge_frozen_anchors=drudge_frozen_anchors,
         build_provenance=build_provenance,
+        runtime_asset_closure=runtime_asset_closure,
         personal_threat_episode_target=personal_threat_episode_target,
         build_worktree=build_worktree,
         build_identity_before=build_provenance.get("build_worktree_identity"),

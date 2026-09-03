@@ -20,6 +20,10 @@ from tools.bot_ml.extract_world_knowledge import (
     sanitize_database_url,
 )
 from tools.raid_program.bwd_shard_fixtures import CANONICAL_SCENARIO_ID, validate_shard_fixture
+from tools.raid_program.runtime_asset_closure import (
+    add_runtime_asset_closure_arguments,
+    enforce_runtime_asset_closure_from_args,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -256,8 +260,12 @@ def main() -> int:
     parser.add_argument("--scenario-id", default=CANONICAL_SCENARIO_ID)
     parser.add_argument("--worldserver-conf", type=Path, default=ROOT / "trinity-worldserver-test.conf")
     parser.add_argument("--output", type=Path, required=True)
+    add_runtime_asset_closure_arguments(parser)
     args = parser.parse_args()
 
+    enforce_runtime_asset_closure_from_args(
+        args, worldserver_config=args.worldserver_conf,
+    )
     contract = load_materialized_readback_contract(
         args.provisioning_config,
         args.scenario_config,

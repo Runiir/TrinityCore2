@@ -1,0 +1,36 @@
+{
+  "schema": "cata_runtime_asset_closure_negative_fixture_v1",
+  "source_audit_sha256": "b2c274abf64166a849d6b92c2afa1796e60e0407a4a6bcc1a598af8beb31c494",
+  "scenario_map_id": 669,
+  "retained_inventory": {
+    "file_count": 8,
+    "inventory_sha256": "1289f7c0ccf9fccae231f2688783c61676a94b4ee716872fd86d5ed5c5e355d4"
+  },
+  "missing_retained_files": [
+    "data/dbc/enUS/GemProperties.dbc",
+    "data/dbc/enUS/GlyphProperties.dbc",
+    "data/dbc/enUS/Item-sparse.db2",
+    "data/dbc/enUS/Item.db2",
+    "data/dbc/enUS/ItemLimitCategory.dbc",
+    "data/dbc/enUS/SpellEffect.dbc",
+    "data/dbc/enUS/SpellItemEnchantment.dbc",
+    "data/dbc/enUS/Talent.dbc",
+    "data/dbc/enUS/TalentTab.dbc",
+    "data/dbc/enUS/TalentTreePrimarySpells.dbc",
+    "dataset/validation_gear_profiles/manifest.json",
+    "dataset/validation_gear_profiles/profiles.json",
+    "dataset/validation_gear_profiles/report.json"
+  ],
+  "missing_native_provenance": ".trinity-runtime-assets-extraction-receipt-v1.json",
+  "present_classes": [
+    "validation_routes",
+    "runtime_profile_source",
+    "atomic_bundle",
+    "native_worldserver_dbc_db2",
+    "native_startup_maps",
+    "selected_map_terrain",
+    "selected_map_navmesh_offline",
+    "selected_map_navmesh_native",
+    "native_vmaps_transitive"
+  ]
+}

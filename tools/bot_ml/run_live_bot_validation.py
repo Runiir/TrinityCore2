@@ -55,6 +55,11 @@ except ImportError:
     from phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
     from phase8_reference_conditions import load_reference_request_binding
 
+from tools.raid_program.runtime_asset_closure import (
+    add_runtime_asset_closure_arguments,
+    enforce_runtime_asset_closure_from_args,
+)
+
 
 DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
 DEFAULT_BOSS_ROUTE_TIMEOUT_SEC = 900
@@ -7463,8 +7468,12 @@ def main() -> int:
     parser.add_argument("--validation-route-sequence", action="store_true", help="For a scenario-level run, execute executable route nodes in manifest order and write an aggregate sequence report.")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--input-log", type=Path)
+    add_runtime_asset_closure_arguments(parser)
     args = parser.parse_args()
 
+    runtime_asset_closure = enforce_runtime_asset_closure_from_args(
+        args, worldserver_config=args.config,
+    )
     if args.calibration_only:
         args.combat_calibration = True
         if args.validation_route_manifest or args.validation_route_sequence:
@@ -7742,6 +7751,7 @@ def main() -> int:
             "validation_route_manifest": validation_route_manifest,
             "pool_tags": bot_pool_tags,
             "validation_scenario_stage_preflight": validation_scenario_stage_preflight,
+            "runtime_asset_closure": runtime_asset_closure,
             "preparation": preparation,
         }
         write_json(args.output_dir / "report.json", report)
@@ -7786,6 +7796,7 @@ def main() -> int:
             "calibration_self_provided_baseline": args.calibration_self_provided_baseline,
             "calibration_reference_preflight": calibration_reference_preflight,
             "validation_scenario_stage_preflight": validation_scenario_stage_preflight,
+            "runtime_asset_closure": runtime_asset_closure,
             "preparation": preparation,
             "scenario_reports": scenario_reports,
             "validation_context": validation_context,
@@ -7960,6 +7971,7 @@ def main() -> int:
     report["calibration_self_provided_baseline"] = args.calibration_self_provided_baseline
     report["calibration_reference_preflight"] = calibration_reference_preflight
     report["validation_scenario_stage_preflight"] = validation_scenario_stage_preflight
+    report["runtime_asset_closure"] = runtime_asset_closure
     report["preserve_worldserver_required"] = args.preserve_worldserver
     report["execution_policy"] = (
         "run_to_completion" if args.run_to_completion else "bounded_wall_clock"

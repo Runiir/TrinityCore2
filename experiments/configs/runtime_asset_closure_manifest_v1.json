@@ -1,0 +1,299 @@
+{
+  "schema": "cata_runtime_asset_closure_manifest_v1",
+  "manifest_id": "cata_runtime_asset_closure_v1",
+  "audit": {
+    "path": "/home/runiir/Games/trinity-immutable-runtime-asset-closure-audit-handoff.json",
+    "sha256": "b2c274abf64166a849d6b92c2afa1796e60e0407a4a6bcc1a598af8beb31c494",
+    "source_inventory_sha256": "5cf47e7d7f1a3ea7ad1545678dd58685caa3de231d536b531729439fffb43673"
+  },
+  "root_contract": {
+    "source-checkout": "Explicit immutable source checkout used by offline tools and native probes.",
+    "configured-DataDir": "Derived from the sealed worldserver config; a supplied root must match it.",
+    "dvc-workspace": "Explicit workspace whose dvc.lock binds generated route and gear outputs.",
+    "sealed-bundle": "Explicit immutable atomic prestart bundle."
+  },
+  "native_extraction_provenance": {
+    "path": ".trinity-runtime-assets-extraction-receipt-v1.json",
+    "required_fields": {
+      "schema": "cata_client_asset_extraction_receipt_v1",
+      "data_inventory_sha256": "5cf47e7d7f1a3ea7ad1545678dd58685caa3de231d536b531729439fffb43673"
+    },
+    "consumer": "worldserver DataDir launch identity",
+    "hydration_source": "Makefile extractor flow from an explicitly identified Cataclysm client",
+    "eviction_policy": "retain with the canonical native DataDir"
+  },
+  "dvc_provenance": [
+    {
+      "class_id": "validation_routes",
+      "stage": "validation_scenarios",
+      "output_path": "dataset/validation_scenarios",
+      "md5": "3c2286d3c01ccc479606a66b2babec34.dir",
+      "size": 548266,
+      "nfiles": 5
+    },
+    {
+      "class_id": "validation_gear_profiles",
+      "stage": "validation_gear",
+      "output_path": "dataset/validation_gear_profiles",
+      "md5": "c85ab7ac1682ee0fea0a0ec75dd0f131.dir",
+      "size": 840048,
+      "nfiles": 3
+    }
+  ],
+  "asset_classes": [
+    {
+      "id": "offline_provisioning_dbc",
+      "consumer": "materialized roster readback and validation provisioning builders",
+      "audience": "offline-tools",
+      "root": "source-checkout",
+      "rule": "exact-file",
+      "provenance": "audit-derived exact consumer inputs from the canonical ignored client-data tree",
+      "hydration_source": "hash-verified canonical configured DataDir identities",
+      "eviction_policy": "only after the bound run is closed and published",
+      "audit_inventory_sha256": "116acaebd21e5487038ac482b73f31fb5df6990063186effd3feaf640ecb8eaf",
+      "expected_inventory": {
+        "file_count": 10,
+        "size_bytes": 43876670,
+        "path_set_sha256": "2bb4538ced10baa071485b8b423d12d5f3e498f53bc19ee56fa1c70a20384fb2",
+        "inventory_sha256": "062b6d4928729279a163918e38b624141f83b773171dea65f3f9f3bdcb4dcb19"
+      },
+      "expected_files": [
+        {"path": "data/dbc/enUS/GemProperties.dbc", "type": "file", "mode": "0664", "size_bytes": 21693, "sha256": "ec0c2b07be9c075732595d846428c5207ec03a1c009941438bae765448a22cc4"},
+        {"path": "data/dbc/enUS/GlyphProperties.dbc", "type": "file", "mode": "0664", "size_bytes": 5573, "sha256": "6b87e0a493da5eb92b43e637b0afdbda716eddeb8b8b16cf1f38687d9b06083d"},
+        {"path": "data/dbc/enUS/Item-sparse.db2", "type": "file", "mode": "0664", "size_bytes": 30858357, "sha256": "bd21d2a012c4a983dc3179de84d63abd1cfcd1f7063d0785426d75636dd24c06"},
+        {"path": "data/dbc/enUS/Item.db2", "type": "file", "mode": "0664", "size_bytes": 2072849, "sha256": "3335bad4bc3b1cc76b761acecf6fa8aad37999c319b42527806a16f4c9d4b063"},
+        {"path": "data/dbc/enUS/ItemLimitCategory.dbc", "type": "file", "mode": "0664", "size_bytes": 6379, "sha256": "2c09e20174255efba7081fa8f688cbc2b5bd0b3f31447d0f75c41ebd5af8f63e"},
+        {"path": "data/dbc/enUS/SpellEffect.dbc", "type": "file", "mode": "0664", "size_bytes": 10517925, "sha256": "e3d9a470bbcb5cea4e3f2947911a908b816cc60e6ffeb9f70b4cfb123bad6252"},
+        {"path": "data/dbc/enUS/SpellItemEnchantment.dbc", "type": "file", "mode": "0664", "size_bytes": 337263, "sha256": "659fd45704e5bc45949c3724ef41ce2bc8402e8b03fc828d391da605aa2402f4"},
+        {"path": "data/dbc/enUS/Talent.dbc", "type": "file", "mode": "0664", "size_bytes": 50257, "sha256": "2be38998466f8d7e43a41929d72312347e34363c7f4036f61be3b9fea3105354"},
+        {"path": "data/dbc/enUS/TalentTab.dbc", "type": "file", "mode": "0664", "size_bytes": 4929, "sha256": "ac65d16ed750e722f60cf0ab330a0eb08de17f9e4db4a792ed6ff1043896f4e1"},
+        {"path": "data/dbc/enUS/TalentTreePrimarySpells.dbc", "type": "file", "mode": "0664", "size_bytes": 1445, "sha256": "599b001613a636f087b938deb9dabbef56e96b24ca780a614fd3d0a2d5ae56bc"}
+      ]
+    },
+    {
+      "id": "native_worldserver_dbc_db2",
+      "consumer": "worldserver DBCManager and DB2Manager active load calls",
+      "audience": "native-worldserver",
+      "root": "configured-DataDir",
+      "rule": "exact-file",
+      "path": "dbc/enUS",
+      "expected_mode": "0664",
+      "provenance": "audit-derived active native load inventory",
+      "hydration_source": "canonical native client-data extraction",
+      "eviction_policy": "retain with the canonical native DataDir",
+      "audit_inventory_sha256": "57d8fa9f33716854a97e45f2905bbbb9357d76754e01515e85935403e17c99d2",
+      "expected_inventory": {
+        "file_count": 172,
+        "size_bytes": 90175242,
+        "path_set_sha256": "d3463256b71a436a5d47a277f2f6edd9531a7e546e3f1763317fb85aa7a4efcd",
+        "inventory_sha256": "d9dbf96d7999140914e4af8c351d1d7ae6e17107ddceea0756c21cbdd60b0ce1"
+      },
+      "expected_names": ["Achievement.dbc","Achievement_Criteria.dbc","AnimKit.dbc","AreaGroup.dbc","AreaPOI.dbc","AreaTable.dbc","AreaTrigger.dbc","ArmorLocation.dbc","AuctionHouse.dbc","BankBagSlotPrices.dbc","BannedAddOns.dbc","BarberShopStyle.dbc","BattlemasterList.dbc","CharSections.dbc","CharStartOutfit.dbc","CharTitles.dbc","ChatChannels.dbc","ChrClasses.dbc","ChrClassesXPowerTypes.dbc","ChrRaces.dbc","CinematicCamera.dbc","CinematicSequences.dbc","CreatureDisplayInfo.dbc","CreatureDisplayInfoExtra.dbc","CreatureFamily.dbc","CreatureModelData.dbc","CreatureSpellData.dbc","CreatureType.dbc","CurrencyTypes.dbc","DestructibleModelData.dbc","DungeonEncounter.dbc","DurabilityCosts.dbc","DurabilityQuality.dbc","Emotes.dbc","EmotesText.dbc","EmotesTextSound.dbc","Faction.dbc","FactionTemplate.dbc","GameObjectArtKit.dbc","GameObjectDisplayInfo.dbc","GemProperties.dbc","GlyphProperties.dbc","GlyphSlot.dbc","GuildPerkSpells.dbc","Holidays.dbc","ImportPriceArmor.dbc","ImportPriceQuality.dbc","ImportPriceShield.dbc","ImportPriceWeapon.dbc","Item-sparse.db2","Item.db2","ItemArmorQuality.dbc","ItemArmorShield.dbc","ItemArmorTotal.dbc","ItemBagFamily.dbc","ItemClass.dbc","ItemCurrencyCost.db2","ItemDamageAmmo.dbc","ItemDamageOneHand.dbc","ItemDamageOneHandCaster.dbc","ItemDamageRanged.dbc","ItemDamageThrown.dbc","ItemDamageTwoHand.dbc","ItemDamageTwoHandCaster.dbc","ItemDamageWand.dbc","ItemDisenchantLoot.dbc","ItemExtendedCost.db2","ItemLimitCategory.dbc","ItemPriceBase.dbc","ItemRandomProperties.dbc","ItemRandomSuffix.dbc","ItemReforge.dbc","ItemSet.dbc","KeyChain.db2","LFGDungeons.dbc","LFGDungeonsGroupingmap.dbc","Light.dbc","LiquidType.dbc","Lock.dbc","MailTemplate.dbc","Map.dbc","MapDifficulty.dbc","MountCapability.dbc","MountType.dbc","Movie.dbc","NameGen.dbc","NamesProfanity.dbc","NamesReserved.dbc","NumTalentsAtLevel.dbc","OverrideSpellData.dbc","Phase.dbc","PhaseXPhaseGroup.dbc","PlayerCondition.dbc","PowerDisplay.dbc","PvpDifficulty.dbc","QuestFactionReward.dbc","QuestPOIBlob.dbc","QuestPOIPoint.dbc","QuestSort.dbc","QuestXP.dbc","RandPropPoints.dbc","ResearchBranch.dbc","ResearchField.dbc","ResearchProject.dbc","ResearchSite.dbc","ScalingStatDistribution.dbc","ScalingStatValues.dbc","SkillLine.dbc","SkillLineAbility.dbc","SkillRaceClassInfo.dbc","SkillTiers.dbc","SoundEntries.dbc","Spell.dbc","SpellAuraOptions.dbc","SpellAuraRestrictions.dbc","SpellCastTimes.dbc","SpellCastingRequirements.dbc","SpellCategories.dbc","SpellCategory.dbc","SpellClassOptions.dbc","SpellCooldowns.dbc","SpellDifficulty.dbc","SpellDuration.dbc","SpellEffect.dbc","SpellEquippedItems.dbc","SpellFocusObject.dbc","SpellInterrupts.dbc","SpellItemEnchantment.dbc","SpellItemEnchantmentCondition.dbc","SpellLevels.dbc","SpellPower.dbc","SpellRadius.dbc","SpellRange.dbc","SpellReagents.dbc","SpellRuneCost.dbc","SpellScaling.dbc","SpellShapeshift.dbc","SpellShapeshiftForm.dbc","SpellTargetRestrictions.dbc","SpellTotems.dbc","SpellVisual.dbc","SpellVisualKit.dbc","SummonProperties.dbc","Talent.dbc","TalentTab.dbc","TalentTreePrimarySpells.dbc","TaxiNodes.dbc","TaxiPath.dbc","TaxiPathNode.dbc","TotemCategory.dbc","TransportAnimation.dbc","TransportRotation.dbc","UnitPowerBar.dbc","Vehicle.dbc","VehicleSeat.dbc","WMOAreaTable.dbc","WorldMapArea.dbc","WorldMapOverlay.dbc","WorldSafeLocs.dbc","gtBarberShopCostBase.dbc","gtChanceToMeleeCrit.dbc","gtChanceToMeleeCritBase.dbc","gtChanceToSpellCrit.dbc","gtChanceToSpellCritBase.dbc","gtCombatRatings.dbc","gtNPCManaCostScaler.dbc","gtOCTBaseHPByClass.dbc","gtOCTBaseMPByClass.dbc","gtOCTClassCombatRatingScalar.dbc","gtOCTHpPerStamina.dbc","gtRegenMPPerSpt.dbc","gtSpellScaling.dbc"]
+    },
+    {
+      "id": "validation_routes",
+      "consumer": "canonical route staging and catalog materialization",
+      "audience": "offline-and-native",
+      "root": "source-checkout",
+      "rule": "complete-directory",
+      "path": "dataset/validation_scenarios",
+      "provenance": "DVC validation_scenarios stage 3c2286d3c01ccc479606a66b2babec34.dir",
+      "hydration_source": "DVC remote for validation_scenarios",
+      "eviction_policy": "after verified remote publication and no active receipt",
+      "audit_inventory_sha256": "bd23bc7cc3e018f542e54acb63d787bdab7bae98a2bf00249411fdb1754565be",
+      "expected_inventory": {"file_count": 5, "size_bytes": 548266, "path_set_sha256": "a1b9f088efb02f9b70174ab228d7146d4fd31128ce4009f3ec9c9c64a7e057f1", "inventory_sha256": "8e48fe02cd16278a2891acf89bc7fa9a509a02bcc842b19c42fc6415110b8f61"},
+      "expected_files": [
+        {"path": "dataset/validation_scenarios/manifest.json", "mode": "0664", "size_bytes": 764, "sha256": "b1c0068d17c8b18d676417838db3b2ac32dd63239a24e74a9a783d0ea6333b2b"},
+        {"path": "dataset/validation_scenarios/report.json", "mode": "0664", "size_bytes": 902, "sha256": "057d1df4bf8529fd1383429dff7b8f07fdd24a9bc716b9e3c062394e0ce6f775"},
+        {"path": "dataset/validation_scenarios/validation_mechanics.jsonl", "mode": "0664", "size_bytes": 29420, "sha256": "e00c19e0b7cfd28f0d9025ecf2ada200e9446b3362d96799bf8ce6dad43b91aa"},
+        {"path": "dataset/validation_scenarios/validation_routes.jsonl", "mode": "0664", "size_bytes": 483655, "sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5"},
+        {"path": "dataset/validation_scenarios/validation_scenarios.jsonl", "mode": "0664", "size_bytes": 33525, "sha256": "84b5b52c137ca4b90f98c7dd13a50dba4f75ff049f14b5b4ce0a18866aad3d5d"}
+      ]
+    },
+    {
+      "id": "validation_gear_profiles",
+      "consumer": "validation provisioning builder",
+      "audience": "offline-provisioner",
+      "root": "source-checkout",
+      "rule": "complete-directory",
+      "path": "dataset/validation_gear_profiles",
+      "provenance": "DVC validation_gear stage c85ab7ac1682ee0fea0a0ec75dd0f131.dir",
+      "hydration_source": "DVC remote for validation_gear",
+      "eviction_policy": "after verified remote publication and no active receipt",
+      "audit_inventory_sha256": "3a88b6a7dabd03a0e7ef7a1e292765b0d510bf31b04e72c3ab5d78c52fa94ec9",
+      "expected_inventory": {"file_count": 3, "size_bytes": 840048, "path_set_sha256": "81fe798451c158e40821a07936b2c9913381648d4ff986af61484c1075a1a32d", "inventory_sha256": "553bbc7c1f57efb21d90fcb1828acd1628b0b5373e3095594706db6d26318649"},
+      "expected_files": [
+        {"path": "dataset/validation_gear_profiles/manifest.json", "mode": "0664", "size_bytes": 630, "sha256": "31ea4b161cde0a296ea3d1728add748da1d47c27f5f80032f3edc3c78a188bbb"},
+        {"path": "dataset/validation_gear_profiles/profiles.json", "mode": "0664", "size_bytes": 835680, "sha256": "0d8919d568eebf364557a78cfaca353c95b3ec08de6421670f277348d78c3d5a"},
+        {"path": "dataset/validation_gear_profiles/report.json", "mode": "0664", "size_bytes": 3738, "sha256": "d1ea9efc148ef331d49cef62fecd001b56d5081e49c183b0228cf2b92793993b"}
+      ]
+    },
+    {
+      "id": "runtime_profile_source",
+      "consumer": "bundle profile materializer",
+      "audience": "bundle-materializer",
+      "root": "source-checkout",
+      "rule": "exact-file",
+      "provenance": "Git-tracked runtime profile at the retained source commit",
+      "hydration_source": "immutable Git checkout",
+      "eviction_policy": "never evict tracked source",
+      "audit_inventory_sha256": "efe7215569481c1afd8cd573dc7997d5be2798ec3ede6efae38a2de78b08690d",
+      "expected_inventory": {"file_count": 1, "size_bytes": 11090, "path_set_sha256": "b36c54c58a22320237e984075dbe85e33706bd46c0aad01563ffe51e016669b6", "inventory_sha256": "0955bbf552838d6c13153a6f21c5bb3aa679a9a80da95fe5c4561820a903d7db"},
+      "expected_files": [{"path": "dataset/bot_runtime_profiles/profiles.json", "mode": "0664", "size_bytes": 11090, "sha256": "d774828316837aa5c67095d3615db90341799cb1de668f1f607d105493027647"}]
+    },
+    {
+      "id": "atomic_bundle",
+      "consumer": "bundle verification, capture setup, and native launch",
+      "audience": "capture-and-native",
+      "root": "sealed-bundle",
+      "rule": "complete-directory",
+      "path": ".",
+      "provenance": "atomic create and post-rename verification bound by bundle_manifest.json",
+      "hydration_source": "verified atomic bundle creation",
+      "eviction_policy": "after evidence publication and remote verification",
+      "audit_inventory_sha256": "e53b298bc301958c52b867b59f58b4d6aa76240f1c28e0d610a5202f24c1cd1c",
+      "expected_inventory": {"file_count": 15, "size_bytes": 641987, "path_set_sha256": "de3ba954bb6e9355ee9f69e9720d83b2bfc0ad36ac178e7e5a1dd32b420b7c0e", "inventory_sha256": "46b276c928d5727ef4b842b1fd86c71570f493ad3f0010f4f87bc63e4e0d4c88"},
+      "expected_files": [
+        {"path": "build_control_authority.json", "mode": "0600", "size_bytes": 528, "sha256": "44e6aa3119cdc9a92e31d46d54ac55c49be76f0c1f5d81b80ccec0814bdaaf91"},
+        {"path": "build_policy.json", "mode": "0600", "size_bytes": 5625, "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"},
+        {"path": "build_receipt.json", "mode": "0600", "size_bytes": 23522, "sha256": "53d2e533ecac3bc9cae56f34e721d824b878e8d73ee8008944654aab98f11ce7"},
+        {"path": "bundle_manifest.json", "mode": "0664", "size_bytes": 1995, "sha256": "aa4e841ab2d883c21f29352c6785d0c7286b87acd0aba2b893b5a7c48fd886fb"},
+        {"path": "checkpoint_seal.json", "mode": "0664", "size_bytes": 1699, "sha256": "894f29019a623fb9ed8434ee1c35b24fe41e6d308a54cbe7cf054cb1efa09882"},
+        {"path": "launch_contract.json", "mode": "0664", "size_bytes": 12637, "sha256": "c295ea2cdb068fcec87b77741091d3a743a4877b8caabecb9a31bcb658d2a854"},
+        {"path": "prepared_base_runtime.conf", "mode": "0664", "size_bytes": 156886, "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"},
+        {"path": "recurrence_admission.json", "mode": "0664", "size_bytes": 15056, "sha256": "be1fdd1a68b8116ec11cf006da7c669eec57fa9f1a7f156d8fc65e5c75989068"},
+        {"path": "recurrence_decision.json", "mode": "0600", "size_bytes": 50513, "sha256": "3179902ae629f98f7e4f153beb64196a898afc4b22d334049513008d61b5c0c9"},
+        {"path": "recurrence_ledger.json", "mode": "0600", "size_bytes": 136416, "sha256": "3c186a3ad57f664057c707f3aff9db294932e5f63a7aaa8f0d3633ee633d6f6a"},
+        {"path": "regression_suite_receipt.json", "mode": "0600", "size_bytes": 22588, "sha256": "1f478b97b5940b131f694bb27ba9761b96f3d6e7c8bbd0cf54dcbcce89a5f7e1"},
+        {"path": "route_manifest.json", "mode": "0664", "size_bytes": 10995, "sha256": "ffc0ecb5588761306121b32338726e305680d826a8bbbd0e225e526a1ea368d9"},
+        {"path": "runtime_profiles.json", "mode": "0664", "size_bytes": 1260, "sha256": "d7bbe67f315407c923e68b4b9c547184bf7d98446e93a4418738f7093f16f591"},
+        {"path": "source_route_manifest.json", "mode": "0600", "size_bytes": 44005, "sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"},
+        {"path": "worldserver.validation.conf", "mode": "0664", "size_bytes": 158262, "sha256": "5e566f48e661f134fcf96e078ab4355accf44d0f1f3f0b7edf5fce676c2abb57"}
+      ]
+    },
+    {
+      "id": "native_startup_maps",
+      "consumer": "worldserver TerrainMgr startup race-map checks",
+      "audience": "native-worldserver",
+      "root": "configured-DataDir",
+      "rule": "exact-file",
+      "provenance": "audit-derived hard-coded startup map checks",
+      "hydration_source": "canonical native client-data extraction",
+      "eviction_policy": "retain with the canonical native DataDir",
+      "audit_inventory_sha256": "cf795af233c3f385a78a4c450aba6c183409bd8ce699636b7f91e8f3aa71f3a8",
+      "expected_inventory": {"file_count": 8, "size_bytes": 781652, "path_set_sha256": "fff0272df6a78b11bc1260493a927094ff0179ee05395e04011e7cb455c00757", "inventory_sha256": "b7eb749d8f07c604a9c549dc58135a294116ad692258c92578c8a3c2396f162c"},
+      "expected_files": [
+        {"path": "maps/0002828.map", "mode": "0664", "size_bytes": 67178, "sha256": "880b193af7d6edb3aa49f4ce2f2f9ee011c555a4e45abd882c8a931ad93ab1eb"},
+        {"path": "maps/0004331.map", "mode": "0664", "size_bytes": 67178, "sha256": "4b1cdc78f5a9a04702f49b12f78c54434508a17335f5b3557f9dede9be2bde37"},
+        {"path": "maps/0004832.map", "mode": "0664", "size_bytes": 108726, "sha256": "ca730448ad45fddbb7ceb499a1a8e2a328896670013d8e0c41e109371b5b62ab"},
+        {"path": "maps/0011230.map", "mode": "0664", "size_bytes": 69350, "sha256": "22344472d33d243eadf13c401ce5fd53e83fffb74da730cffda8d2f4b27fced9"},
+        {"path": "maps/0013339.map", "mode": "0664", "size_bytes": 134526, "sha256": "e39cdab9a3c864a749863e8b296bf2136cbc3dfb111ee6ad77fde460ed04f9fc"},
+        {"path": "maps/0013732.map", "mode": "0664", "size_bytes": 66666, "sha256": "303b80c7fc81dedb9bea5c8595bfbdcac851e922c6896b06cc5247b74caecb8e"},
+        {"path": "maps/5301243.map", "mode": "0664", "size_bytes": 134014, "sha256": "e96d3de8a1161dc5227ab14f9fad70a7d4ab2d3622496042569b36399063d233"},
+        {"path": "maps/5303958.map", "mode": "0664", "size_bytes": 134014, "sha256": "f716688499b133eb7e7eb6faa7ad48e412c7ed656ac59a139d6721686acfeb1a"}
+      ]
+    },
+    {
+      "id": "selected_map_terrain",
+      "consumer": "scenario terrain, height, and collision loads",
+      "audience": "native-worldserver",
+      "root": "configured-DataDir",
+      "rule": "bounded-pattern",
+      "path": "maps",
+      "provenance": "audit-derived selected-map terrain inventory",
+      "hydration_source": "canonical native client-data extraction",
+      "eviction_policy": "retain with the canonical native DataDir",
+      "map_contracts": {
+        "669": {
+          "pattern": "^669(?:\\.tilelist|[0-9]{4}\\.map)$",
+          "audit_inventory_sha256": "ab098abc43227dcbe9e95cc10a1fef286e0ffbb9ff639f8948a4fc8de412918f",
+          "expected_inventory": {"file_count": 10, "size_bytes": 467070, "path_set_sha256": "4e3dde9fcc59fb4276548d5349d086a9777e5e2a83beb29b153528d94bfa3464", "inventory_sha256": "4ff130757989a3804ff29a09262ecc326d9e7fed042a59d3c22cab64a0ad179e"},
+          "expected_files": [
+            {"path": "maps/669.tilelist", "mode": "0664", "size_bytes": 4108, "sha256": "b0e280a66e5e0104d9586811509079d915347f4d6bf443e32dbbba2ce426c1be"},
+            {"path": "maps/6693131.map", "mode": "0664", "size_bytes": 66118, "sha256": "5c772fa3cbd4974f06275115beea8e9703516176237b514ae6d589c054179fda"},
+            {"path": "maps/6693132.map", "mode": "0664", "size_bytes": 66118, "sha256": "6eb494ba17a83d12aa51da3e33cc2983038dabc6e7a957f7837119e7f1bfaae8"},
+            {"path": "maps/6693133.map", "mode": "0664", "size_bytes": 66118, "sha256": "35b36590abaa6dbfa3e28328bda4e8a100c41eb1df7cac86b815cb5382dfd2a0"},
+            {"path": "maps/6693231.map", "mode": "0664", "size_bytes": 66118, "sha256": "ce2e59f745d243c0191c608b842ea326740c7605733429870defa47a5ca3b5ce"},
+            {"path": "maps/6693232.map", "mode": "0664", "size_bytes": 66118, "sha256": "36c72d30875ba6cb641657a1b072d89240534e0f7b56730a184a5c700286d5d1"},
+            {"path": "maps/6693233.map", "mode": "0664", "size_bytes": 66118, "sha256": "03c2b417276ac757f156e36bb3e193f6db1654aa8976a9ec34eebf3859574df5"},
+            {"path": "maps/6693331.map", "mode": "0664", "size_bytes": 68, "sha256": "d542142d80af0062b6fb42203071f41fd8a88191086b3c4808f3950666f4784b"},
+            {"path": "maps/6693332.map", "mode": "0664", "size_bytes": 66118, "sha256": "dcec60bc4160580a00e9350b40db4be758b4af6cc63bb04451f4edcfad4aad7b"},
+            {"path": "maps/6693333.map", "mode": "0664", "size_bytes": 68, "sha256": "e7a41f6d127bf51941a138320d629da20959d2a1efb26bd2d90f0da8bfef0121"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "selected_map_navmesh_offline",
+      "consumer": "offline native-navmesh probe",
+      "audience": "offline-probe",
+      "root": "source-checkout",
+      "rule": "bounded-pattern",
+      "path": "data/mmaps",
+      "provenance": "audit-derived retained probe copy",
+      "hydration_source": "hash-verified canonical configured DataDir identities",
+      "eviction_policy": "only after the bound run is closed and published",
+      "map_contracts": {
+        "669": {
+          "pattern": "^669(?:\\.mmap|[0-9]{4}\\.mmtile)$",
+          "audit_inventory_sha256": "52990dd4085e03a7e567e1d40b8a85468be2e8a228e6a46450897257e3f69c56",
+          "expected_inventory": {"file_count": 8, "size_bytes": 1285540, "path_set_sha256": "973d3dd1c20f7314464486d9895ba76f1328a0a7a7ce92e03de6d8f72d77f8da", "inventory_sha256": "9b1944c6e03b56b4149722618826e8546552829b9956b36b50af3f55bf1bfc48"},
+          "expected_mode": "0444",
+          "expected_files": [
+            {"path": "data/mmaps/669.mmap", "mode": "0444", "size_bytes": 28, "sha256": "3b794515424ff374f2fc2fb9bc75c9d0bcdfa355c712894d5b73c582671ea421"},
+            {"path": "data/mmaps/6693131.mmtile", "mode": "0444", "size_bytes": 105620, "sha256": "ec53ab238b671d2b41f707648adcc1cd9b69699a6a424d7c673bed8aeb31b1ef"},
+            {"path": "data/mmaps/6693132.mmtile", "mode": "0444", "size_bytes": 254380, "sha256": "0879cbb27dce969579f789796c6c63a8ffd3c81ff66c303ea3dde1321f852ec5"},
+            {"path": "data/mmaps/6693133.mmtile", "mode": "0444", "size_bytes": 103740, "sha256": "116e3649739b423536fd3ba746dde75655aae3f140f64096aa4cbc9a8bbb6196"},
+            {"path": "data/mmaps/6693231.mmtile", "mode": "0444", "size_bytes": 165228, "sha256": "9bf7e5e6b956886a96d19b8672595ce53246ee975466b4e231dd85fd71cd4019"},
+            {"path": "data/mmaps/6693232.mmtile", "mode": "0444", "size_bytes": 448868, "sha256": "d444daf82f09d2e4d7c8708f7f3c4f4420c0f96ce1db604c722689fa4e57cb32"},
+            {"path": "data/mmaps/6693233.mmtile", "mode": "0444", "size_bytes": 105500, "sha256": "c9a0a2787aaefe0cff05d7d2877d82995a5317eda0ed496ee3323f1ad0bf3467"},
+            {"path": "data/mmaps/6693332.mmtile", "mode": "0444", "size_bytes": 102176, "sha256": "f91db1f81a7f95a824f9bd3c4eca6e665e3a80954cb4b472cab80214c19efbeb"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "selected_map_navmesh_native",
+      "consumer": "worldserver native path generation",
+      "audience": "native-worldserver",
+      "root": "configured-DataDir",
+      "rule": "bounded-pattern",
+      "path": "mmaps",
+      "provenance": "audit-derived selected-map navmesh inventory",
+      "hydration_source": "canonical native client-data extraction",
+      "eviction_policy": "retain with the canonical native DataDir",
+      "map_contracts": {
+        "669": {
+          "pattern": "^669(?:\\.mmap|[0-9]{4}\\.mmtile)$",
+          "audit_inventory_sha256": "52990dd4085e03a7e567e1d40b8a85468be2e8a228e6a46450897257e3f69c56",
+          "expected_inventory": {"file_count": 8, "size_bytes": 1285540, "path_set_sha256": "adc051328404dccea844bf309f753ca3ffe71edb36b4e9ec27f7c96588558f04", "inventory_sha256": "f4e85b586b85e0a5ad4de15bc3c1c96cdde9fc1272dd7ef32349ffb9fb45725b"},
+          "expected_mode": "0664",
+          "expected_files": [
+            {"path": "mmaps/669.mmap", "mode": "0664", "size_bytes": 28, "sha256": "3b794515424ff374f2fc2fb9bc75c9d0bcdfa355c712894d5b73c582671ea421"},
+            {"path": "mmaps/6693131.mmtile", "mode": "0664", "size_bytes": 105620, "sha256": "ec53ab238b671d2b41f707648adcc1cd9b69699a6a424d7c673bed8aeb31b1ef"},
+            {"path": "mmaps/6693132.mmtile", "mode": "0664", "size_bytes": 254380, "sha256": "0879cbb27dce969579f789796c6c63a8ffd3c81ff66c303ea3dde1321f852ec5"},
+            {"path": "mmaps/6693133.mmtile", "mode": "0664", "size_bytes": 103740, "sha256": "116e3649739b423536fd3ba746dde75655aae3f140f64096aa4cbc9a8bbb6196"},
+            {"path": "mmaps/6693231.mmtile", "mode": "0664", "size_bytes": 165228, "sha256": "9bf7e5e6b956886a96d19b8672595ce53246ee975466b4e231dd85fd71cd4019"},
+            {"path": "mmaps/6693232.mmtile", "mode": "0664", "size_bytes": 448868, "sha256": "d444daf82f09d2e4d7c8708f7f3c4f4420c0f96ce1db604c722689fa4e57cb32"},
+            {"path": "mmaps/6693233.mmtile", "mode": "0664", "size_bytes": 105500, "sha256": "c9a0a2787aaefe0cff05d7d2877d82995a5317eda0ed496ee3323f1ad0bf3467"},
+            {"path": "mmaps/6693332.mmtile", "mode": "0664", "size_bytes": 102176, "sha256": "f91db1f81a7f95a824f9bd3c4eca6e665e3a80954cb4b472cab80214c19efbeb"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "native_vmaps_transitive",
+      "consumer": "worldserver VMAP tiles, shared models, GameObjectModels.dtree, and parent fallbacks",
+      "audience": "native-worldserver",
+      "root": "configured-DataDir",
+      "rule": "complete-directory",
+      "path": "vmaps",
+      "expected_mode": "0664",
+      "provenance": "audit-derived complete native VMAP directory",
+      "hydration_source": "canonical native client-data extraction",
+      "eviction_policy": "retain with the canonical native DataDir",
+      "audit_inventory_sha256": "d6c49516ad95253cf5bab0fdda7c0b835f9d69c98f74f42c14fb90ad41012d5f",
+      "expected_inventory": {"file_count": 17640, "size_bytes": 881241574, "path_set_sha256": "7603bda98d98fd883584f58c7d593e0ad5eb53b5ca5ed2988ead60446bd5a780", "inventory_sha256": "0e81a4ab30226aa9a8ede3462b1a0dc13349a6a0c35d63aa7940c056e91a6dff"}
+    }
+  ]
+}
