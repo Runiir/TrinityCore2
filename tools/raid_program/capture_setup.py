@@ -135,6 +135,8 @@ class CaptureSetup:
     build_provenance: dict[str, Any]
     personal_threat_episode_target: dict[str, Any] | None = None
     checkpoint_target_guid: int | None = None
+    build_worktree: Path | None = None
+    build_identity_before: dict[str, Any] | None = None
 
 
 def controller_route_hold_runtime_manifest_identity(
@@ -280,6 +282,13 @@ def build_capture_parser(*, root: Path = ROOT) -> argparse.ArgumentParser:
     parser.add_argument("--build-attestation", type=Path, default=None)
     parser.add_argument("--worktree", type=Path, default=root)
     parser.add_argument(
+        "--build-worktree", type=Path, default=None,
+        help=(
+            "retained checkout that owns the receipt, CMake cache, and binary; "
+            "defaults to --worktree"
+        ),
+    )
+    parser.add_argument(
         "--scenario-id", default=None,
         help="exact validation scenario partition to execute; defaults to --runtime-profile",
     )
@@ -366,6 +375,10 @@ def prepare_capture_setup(
     config = args.config.resolve()
     output = args.output.resolve()
     worktree = args.worktree.resolve()
+    build_worktree = (
+        args.build_worktree.resolve()
+        if args.build_worktree is not None else worktree
+    )
     profile_name = args.runtime_profile or args.scenario_id or "blackwing_descent_10n"
     scenario_id = args.scenario_id or profile_name
     if args.runtime_profile and args.scenario_id and args.runtime_profile != args.scenario_id:
@@ -618,7 +631,7 @@ def prepare_capture_setup(
         raise SystemExit("runtime profile assets rejected: drudge_frozen_member_anchors_missing")
     try:
         build_policy_path = build_policy_path_for_receipt(
-            args.build_receipt.resolve(), worktree,
+            args.build_receipt.resolve(), build_worktree,
         )
     except RuntimeError as error:
         raise SystemExit(f"build receipt rejected: {error}") from error
@@ -647,6 +660,7 @@ def prepare_capture_setup(
                 "bindings", {}
             ) else None
         ),
+        build_worktree=build_worktree,
     )
     if not build_provenance.get("valid"):
         raise SystemExit("build receipt rejected: " + ",".join(build_provenance.get("rejections", [])))
@@ -688,4 +702,6 @@ def prepare_capture_setup(
         drudge_frozen_anchors=drudge_frozen_anchors,
         build_provenance=build_provenance,
         personal_threat_episode_target=personal_threat_episode_target,
+        build_worktree=build_worktree,
+        build_identity_before=build_provenance.get("build_worktree_identity"),
     )

@@ -481,6 +481,7 @@ def test_capture_parser_preserves_cli_defaults(tmp_path: Path):
     ])
 
     assert args.worktree == root
+    assert args.build_worktree is None
     assert args.runtime_profile is None
     assert args.scenario_id is None
     assert args.pool_tag is None
@@ -559,6 +560,8 @@ def test_prepare_capture_setup_returns_typed_admitted_state(tmp_path: Path, monk
     assert setup.binary == binary.resolve()
     assert setup.config == config.resolve()
     assert setup.output == output.resolve()
+    assert setup.worktree == tmp_path.resolve()
+    assert setup.build_worktree == tmp_path.resolve()
     assert setup.raw_output == tmp_path / "capture.raw.jsonl"
     assert setup.server_log_output == tmp_path / "capture.worldserver.log"
     assert setup.profile_name == "stonecore_5n"
@@ -607,6 +610,119 @@ def test_prepare_capture_setup_returns_typed_admitted_state(tmp_path: Path, monk
             "--build-receipt", str(receipt),
             "--personal-threat-episode-actor-guid", "30008",
         ], root=tmp_path)
+
+
+def test_prepare_capture_setup_separates_source_and_build_worktrees(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_worktree = tmp_path / "immutable-source"
+    build_worktree = tmp_path / "retained-build"
+    source_worktree.mkdir()
+    build_worktree.mkdir()
+    binary = build_worktree / "build/src/server/worldserver/worldserver"
+    binary.parent.mkdir(parents=True)
+    config = tmp_path / "worldserver.conf"
+    receipt = tmp_path / "build.json"
+    output = tmp_path / "capture.json"
+    for path in (binary, config, receipt):
+        path.write_bytes(b"fixture")
+    observed: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.chainwielder_checkpoint_arm_command",
+        lambda admission, actor_guid: None,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.trinity_config_bool",
+        lambda *args, **kwargs: False,
+    )
+
+    def source_preflight(worktree: Path) -> dict[str, object]:
+        observed["preflight_worktree"] = worktree
+        return {"passed": True, "reasons": []}
+
+    def source_identity(worktree: Path) -> dict[str, object]:
+        observed["identity_worktree"] = worktree
+        return {"clean": True, "head": "a" * 40, "tree": "b" * 40}
+
+    def source_assets(worktree: Path, **kwargs) -> dict[str, object]:
+        observed["asset_worktree"] = worktree
+        return {
+            "passed": True,
+            "reasons": [],
+            "route_manifest": None,
+            "route_partition": "stonecore_5n",
+        }
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.preflight_runtime_exclusions",
+        source_preflight,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.git_identity", source_identity,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_runtime_profile_assets",
+        source_assets,
+    )
+
+    def build_policy(build_receipt: Path, worktree: Path) -> Path:
+        observed["policy_worktree"] = worktree
+        return build_worktree / "experiments/configs/policy.json"
+
+    build_identity = {
+        "commit": "c" * 40,
+        "tree": "d" * 40,
+        "clean": True,
+        "dirty": False,
+        "porcelain_sha256": hashlib.sha256(b"").hexdigest(),
+    }
+
+    def build_validation(
+        receipt_path: Path, policy_path: Path, worktree: Path,
+        observed_binary: Path, *args, **kwargs,
+    ) -> dict[str, object]:
+        observed["validation_source_worktree"] = worktree
+        observed["validation_build_worktree"] = kwargs["build_worktree"]
+        observed["validation_binary"] = observed_binary
+        return {
+            "valid": True,
+            "rejections": [],
+            "build_worktree_identity": build_identity,
+        }
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.build_policy_path_for_receipt",
+        build_policy,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.validate_build_receipt",
+        build_validation,
+    )
+
+    setup = prepare_capture_setup([
+        "--binary", str(binary),
+        "--config", str(config),
+        "--output", str(output),
+        "--build-receipt", str(receipt),
+        "--worktree", str(source_worktree),
+        "--build-worktree", str(build_worktree),
+        "--runtime-profile", "stonecore_5n",
+    ], root=tmp_path)
+
+    assert setup.worktree == source_worktree.resolve()
+    assert setup.build_worktree == build_worktree.resolve()
+    assert setup.identity_before["head"] == "a" * 40
+    assert setup.build_identity_before == build_identity
+    assert observed == {
+        "preflight_worktree": source_worktree.resolve(),
+        "identity_worktree": source_worktree.resolve(),
+        "asset_worktree": source_worktree.resolve(),
+        "policy_worktree": build_worktree.resolve(),
+        "validation_source_worktree": source_worktree.resolve(),
+        "validation_build_worktree": build_worktree.resolve(),
+        "validation_binary": binary.resolve(),
+    }
 
 
 def test_targeted_chainwielder_scheduler_binds_stable_runtime_scope_before_demux(
@@ -5926,6 +6042,210 @@ def test_build_policy_path_rejects_untracked_or_unsafe_receipt_identity(tmp_path
         assert "not tracked" in str(error)
     else:
         raise AssertionError("untracked policy identity was accepted")
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_rejection"),
+    [
+        ("valid", None),
+        ("moved", "build_receipt_worktree_mismatch"),
+        ("dirty", "build_worktree_dirty"),
+        ("drifted", "build_worktree_source_identity_mismatch"),
+    ],
+)
+def test_build_receipt_binds_current_build_worktree_identity_separately(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    mutation: str, expected_rejection: str | None,
+) -> None:
+    source_worktree = tmp_path / "immutable-source"
+    build_worktree = tmp_path / "retained-build"
+    binary = build_worktree / "build/src/server/worldserver/worldserver"
+    binary.parent.mkdir(parents=True)
+    source_worktree.mkdir()
+    binary.write_bytes(b"\x7fELFfixture")
+    cache_path = build_worktree / "build/CMakeCache.txt"
+    expected_cmake = {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_GENERATOR": "Unix Makefiles",
+        "CMAKE_MAKE_PROGRAM": "/usr/bin/make",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "OFF",
+        "CMAKE_CXX_FLAGS": "",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O2",
+        "CMAKE_CXX_COMPILER": "/usr/bin/c++",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "OFF",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE": "OFF",
+        "UNITY_BUILDS": "OFF",
+        "USE_COREPCH": "OFF",
+        "USE_SCRIPTPCH": "OFF",
+        "WITH_COREDEBUG": "OFF",
+    }
+    cache_path.write_text(
+        "".join(f"{key}:STRING={value}\n" for key, value in expected_cmake.items()),
+        encoding="utf-8",
+    )
+    receipt_path = tmp_path / "receipt.json"
+    policy_path = tmp_path / "policy.json"
+    receipt_path.write_text("{}", encoding="utf-8")
+    policy_path.write_text("{}", encoding="utf-8")
+
+    empty_porcelain = hashlib.sha256(b"").hexdigest()
+    expected_identity = {
+        "commit": "1" * 40,
+        "tree": "2" * 40,
+        "clean": True,
+        "dirty": False,
+        "porcelain_sha256": empty_porcelain,
+    }
+    observed_identity = dict(expected_identity)
+    if mutation == "dirty":
+        observed_identity.update(
+            clean=False, dirty=True,
+            porcelain_sha256=hashlib.sha256(b" M tracked\0").hexdigest(),
+        )
+    elif mutation == "drifted":
+        observed_identity["commit"] = "3" * 40
+
+    build_stage = {
+        "settings": expected_cmake,
+        "matches_policy": True,
+        "settings_sha256": "8" * 64,
+        "cache_sha256": sha256_file(cache_path),
+        "compiler_sha256": "9" * 64,
+        "build_graph": {"generated": True, "manifest_sha256": "a" * 64},
+    }
+    receipt = {
+        "classification": "success",
+        "test_mode": False,
+        "exit_code": 0,
+        "worktree": str(
+            tmp_path / "moved-build" if mutation == "moved" else build_worktree
+        ),
+        "worktree_dirty_at_request": False,
+        "source_identity": {
+            stage: dict(expected_identity)
+            for stage in ("request", "admission", "completion")
+        },
+        "build_configuration": {
+            stage: json.loads(json.dumps(build_stage))
+            for stage in ("request", "admission", "completion")
+        },
+        "build_configuration_stable": True,
+        "configure_lineage": {
+            "completion_cache_sha256": build_stage["cache_sha256"],
+            "completion_settings_sha256": build_stage["settings_sha256"],
+            "compiler_sha256": build_stage["compiler_sha256"],
+            "completion_build_graph_sha256": build_stage["build_graph"][
+                "manifest_sha256"
+            ],
+            "receipt_sha256": "b" * 64,
+            "ticket_id": "fixture-ticket",
+        },
+        "commit": expected_identity["commit"],
+        "admitted_at_utc": "1970-01-01T00:00:00Z",
+        "ended_at_utc": "2999-01-01T00:00:00Z",
+        "output_artifacts": [{
+            "kind": "worldserver_elf",
+            "path": str(binary),
+            "sha256": sha256_file(binary),
+            "size_bytes": binary.stat().st_size,
+            "mtime_ns": binary.stat().st_mtime_ns,
+            "produced_by_ticket": True,
+        }],
+    }
+    policy = {
+        "mechanical_controls": {
+            "cmake_release_cxx_flags": "-O2",
+            "cmake_build_type": "Release",
+            "cmake_generator": "Unix Makefiles",
+            "cmake_make_program": "/usr/bin/make",
+            "cmake_export_compile_commands": False,
+            "cmake_cxx_flags": "",
+            "cmake_cxx_compiler": "/usr/bin/c++",
+            "cmake_cxx_compiler_launcher": "",
+            "interprocedural_optimization": False,
+            "release_interprocedural_optimization": False,
+            "unity_builds": False,
+            "core_precompiled_headers": False,
+            "script_precompiled_headers": False,
+            "with_coredebug": False,
+        }
+    }
+    compatibility = {
+        "valid": True,
+        "rejections": [],
+        "build_source_commit": expected_identity["commit"],
+        "build_source_tree": expected_identity["tree"],
+        "control_commit": "4" * 40,
+        "control_tree": "5" * 40,
+        "relationship": "control_only_descendant",
+        "changed_control_path_count": 7,
+        "changed_control_paths_sha256": "6" * 64,
+        "layered_authority": {"sha256": "7" * 64},
+    }
+    observed: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        "tools.raid_program.queued_build.load_json",
+        lambda path: policy if path == policy_path else receipt,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.queued_build.verify_receipt",
+        lambda *args, **kwargs: {
+            "classification": "success",
+            "receipt_trust_model": "fixture",
+            "operator_identity": "fixture",
+        },
+    )
+
+    def source_compatibility(**kwargs) -> dict[str, object]:
+        observed["compatibility_worktree"] = kwargs["worktree"]
+        return compatibility
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_environment_validation.verify_build_control_compatibility",
+        source_compatibility,
+    )
+    identity_worktrees: list[Path] = []
+
+    def build_identity(worktree: Path) -> dict[str, object]:
+        identity_worktrees.append(worktree)
+        return {
+            "head": observed_identity["commit"],
+            "tree": observed_identity["tree"],
+            "clean": observed_identity["clean"],
+            "dirty": observed_identity["dirty"],
+            "porcelain_sha256": observed_identity["porcelain_sha256"],
+        }
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_environment_validation.git_identity",
+        build_identity,
+    )
+
+    result = validate_build_receipt(
+        receipt_path,
+        policy_path,
+        source_worktree,
+        binary,
+        build_worktree=build_worktree,
+    )
+
+    assert observed["compatibility_worktree"] == source_worktree.resolve()
+    assert identity_worktrees == [build_worktree.resolve(), build_worktree.resolve()]
+    assert result["source_worktree"] == str(source_worktree.resolve())
+    assert result["build_worktree"] == str(build_worktree.resolve())
+    assert result["build_worktree_identity"] == observed_identity
+    assert result["build_source_commit"] == compatibility["build_source_commit"]
+    assert result["control_commit"] == compatibility["control_commit"]
+    assert result["relationship"] == compatibility["relationship"]
+    assert result["layered_authority"] == compatibility["layered_authority"]
+    if expected_rejection is None:
+        assert result["valid"] is True
+        assert result["rejections"] == []
+    else:
+        assert result["valid"] is False
+        assert expected_rejection in result["rejections"]
 
 
 def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap():

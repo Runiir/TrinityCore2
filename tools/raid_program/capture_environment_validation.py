@@ -88,10 +88,21 @@ def validate_build_receipt(
     attestation_path: Path | None = None,
     build_control_authority: Path | None = None,
     build_control_authority_sha256: str | None = None,
+    build_worktree: Path | None = None,
 ) -> dict[str, Any]:
-    """Reconstruct the production build gate without trusting receipt pass fields."""
+    """Reconstruct the production build gate without trusting receipt pass fields.
+
+    ``worktree`` is the immutable source/control checkout admitted for launch.
+    Build artifacts remain bound to ``build_worktree`` (or ``worktree`` for
+    legacy single-worktree callers).
+    """
 
     try:
+        source_worktree = worktree.resolve()
+        resolved_build_worktree = (
+            build_worktree.resolve()
+            if build_worktree is not None else source_worktree
+        )
         from tools.raid_program.queued_build import load_json, verify_receipt
 
         policy = load_json(policy_path)
@@ -115,7 +126,7 @@ def validate_build_receipt(
                 allow_test_mode=False,
             )
         source_compatibility = verify_build_control_compatibility(
-            worktree=worktree, receipt=receipt,
+            worktree=source_worktree, receipt=receipt,
             authority_path=build_control_authority,
             authority_sha256=build_control_authority_sha256,
         )
@@ -127,10 +138,33 @@ def validate_build_receipt(
         if receipt.get("exit_code") != 0:
             rejections.append("build_receipt_nonzero_exit")
         rejections.extend(source_compatibility["rejections"])
-        if Path(str(receipt.get("worktree", ""))).resolve() != worktree.resolve():
+        if (
+            Path(str(receipt.get("worktree", ""))).resolve()
+            != resolved_build_worktree
+        ):
             rejections.append("build_receipt_worktree_mismatch")
         if receipt.get("worktree_dirty_at_request") is not False:
             rejections.append("build_receipt_worktree_dirty")
+        current_build_identity: dict[str, Any] | None = None
+        try:
+            observed_build_identity = git_identity(resolved_build_worktree)
+            current_build_identity = {
+                "commit": observed_build_identity.get("head"),
+                "tree": observed_build_identity.get("tree"),
+                "clean": observed_build_identity.get("clean"),
+                "dirty": observed_build_identity.get("dirty"),
+                "porcelain_sha256": observed_build_identity.get(
+                    "porcelain_sha256"
+                ),
+            }
+            if current_build_identity.get("clean") is not True or (
+                current_build_identity.get("dirty") is not False
+            ):
+                rejections.append("build_worktree_dirty")
+        except (OSError, subprocess.SubprocessError) as error:
+            rejections.append(
+                f"build_worktree_git_identity_unavailable:{type(error).__name__}"
+            )
         source_identity = receipt.get("source_identity")
         if not isinstance(source_identity, dict):
             rejections.append("build_receipt_source_identity_missing")
@@ -144,6 +178,15 @@ def validate_build_receipt(
                 completion = snapshots[2]
                 if completion.get("clean") is not True or completion.get("dirty") is not False:
                     rejections.append("build_receipt_completion_source_dirty")
+                if current_build_identity is not None:
+                    if current_build_identity != {
+                        key: completion.get(key)
+                        for key in (
+                            "commit", "tree", "clean", "dirty",
+                            "porcelain_sha256",
+                        )
+                    }:
+                        rejections.append("build_worktree_source_identity_mismatch")
         controls = policy.get("mechanical_controls", {})
         release_flags = controls.get("cmake_release_cxx_flags")
         if isinstance(release_flags, str) and release_flags:
@@ -173,7 +216,9 @@ def validate_build_receipt(
                 "USE_SCRIPTPCH": "ON" if controls.get("script_precompiled_headers") else "OFF",
                 "WITH_COREDEBUG": "ON" if controls.get("with_coredebug") else "OFF",
             }
-            cache_path = (worktree / "build/CMakeCache.txt").resolve()
+            cache_path = (
+                resolved_build_worktree / "build/CMakeCache.txt"
+            ).resolve()
             cache_values: dict[str, str] = {}
             if cache_path.is_file():
                 for line in cache_path.read_text(encoding="utf-8").splitlines():
@@ -243,7 +288,7 @@ def validate_build_receipt(
                 rejections.append("build_receipt_cmake_stability_missing")
         expected_config_sha256 = sha256_file(config) if config is not None and config.is_file() else None
         try:
-            binary.relative_to(worktree)
+            binary.relative_to(resolved_build_worktree)
         except ValueError:
             rejections.append("binary_outside_worktree")
         binary_bytes = binary.read_bytes() if binary.is_file() else b""
@@ -282,6 +327,28 @@ def validate_build_receipt(
                     rejections.append("build_receipt_binary_mtime_mismatch")
             except (KeyError, OSError, TypeError, ValueError):
                 rejections.append("binary_provenance_timestamp_unavailable")
+        if current_build_identity is not None:
+            try:
+                final_observed_build_identity = git_identity(
+                    resolved_build_worktree
+                )
+                final_build_identity = {
+                    "commit": final_observed_build_identity.get("head"),
+                    "tree": final_observed_build_identity.get("tree"),
+                    "clean": final_observed_build_identity.get("clean"),
+                    "dirty": final_observed_build_identity.get("dirty"),
+                    "porcelain_sha256": final_observed_build_identity.get(
+                        "porcelain_sha256"
+                    ),
+                }
+            except (OSError, subprocess.SubprocessError) as error:
+                rejections.append(
+                    "build_worktree_git_identity_unavailable_after_verification:"
+                    f"{type(error).__name__}"
+                )
+            else:
+                if final_build_identity != current_build_identity:
+                    rejections.append("build_worktree_changed_during_verification")
         return {
             "valid": not rejections,
             "rejections": rejections,
@@ -291,6 +358,15 @@ def validate_build_receipt(
             "ticket_id": receipt.get("ticket_id"),
             "commit": receipt.get("commit"),
             "worktree": receipt.get("worktree"),
+            "source_worktree": str(source_worktree),
+            "source_worktree_identity": {
+                "commit": source_compatibility.get("control_commit"),
+                "tree": source_compatibility.get("control_tree"),
+                "clean": "control_source_dirty"
+                not in source_compatibility.get("rejections", []),
+            },
+            "build_worktree": str(resolved_build_worktree),
+            "build_worktree_identity": current_build_identity,
             "classification": receipt.get("classification"),
             "test_mode": receipt.get("test_mode"),
             "config_sha256": expected_config_sha256,
@@ -315,6 +391,11 @@ def validate_build_receipt(
             "receipt_path": str(receipt_path),
             "policy_path": str(policy_path),
             "binary_path": str(binary),
+            "source_worktree": str(worktree.resolve()),
+            "build_worktree": str(
+                build_worktree.resolve()
+                if build_worktree is not None else worktree.resolve()
+            ),
         }
 
 
