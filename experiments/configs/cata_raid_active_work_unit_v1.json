@@ -1,49 +1,56 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "review:generic_runtime_asset_closure_manifest_verifier",
+  "work_unit": "shard:runtime_asset_authority_and_inventory_hardening",
   "owner_skill": "raid-shard-architecture",
-  "classification": "independent_architecture_review_authorized",
+  "classification": "architecture_correction_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
   "observed_at_commit": "cb9bc7e3977f57d4e308d9763051b34feff222c4",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "One generic manifest and aggregate verifier integrated at the three pre-side-effect runtime boundaries.",
+  "architecture_scope": "Harden shared checklist authority and exhaustive native inventory for review findings RAC-002 through RAC-005.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "Implementation ab5ca87556 passes focused tests but is not accepted; independent review must prove that normal generated paths cannot bypass the checklist and that all closure drift is attributable.",
+  "gate_state": "Review b58fcdcc is NO-GO. This first correction hardens authority and exact inventory; mandatory command propagation RAC-001 remains blocked as the immediately following unit.",
   "first_broken_edge": {
     "id": "retained_immutable_runtime_asset_closure_incomplete",
     "stage": "post_build_static_readback_preflight",
     "owner_classification": "raid_shard_architecture",
     "cause": "The retained checkout lacks 10 offline DBC/DB2 files and 3 validation-gear files, while the native DataDir has required assets but no sealed extraction-provenance receipt; existing checks expose these one at a time.",
-    "review_state": "independent_sol_review_authorized"
+    "review_state": "authority_hardening_correction_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_generic_runtime_asset_closure_review_authorization_handoff_20260903.json",
-    "sha256": "8490c65fdfbbceedffa36c9a854c6b147c4578a610ebf3149899f805f86d7fcb",
-    "failure_handoff_path": "/home/runiir/Games/trinity-immutable-runtime-asset-closure-audit-handoff.json",
-    "failure_handoff_sha256": "b2c274abf64166a849d6b92c2afa1796e60e0407a4a6bcc1a598af8beb31c494"
+    "path": "experiments/configs/cata_raid_runtime_asset_authority_hardening_authorization_handoff_20260903.json",
+    "sha256": "29f3b722af18301d0bffdc5c1155110b4d59796fa8f74c83b80d6a6e567c8ae7",
+    "failure_handoff_path": "/home/runiir/Games/trinity-generic-runtime-asset-closure-review-handoff.json",
+    "failure_handoff_sha256": "b58fcdcc2c52f4d82df2fe2eae0da9790c07e006a94a5ed05510240baae958e6"
   },
   "scope_lock": {
-    "objective": "Review the exact implementation diff and issue GO only if the checklist is mandatory on normal supported paths, fully attributable, and aggregate across every closure rule.",
-    "owned_output": "/home/runiir/Games/trinity-generic-runtime-asset-closure-review-handoff.json",
-    "stop_condition": "Stop after one external GO or NO-GO review handoff; do not edit the repository or consume any downstream runtime budget."
+    "objective": "Correct ancestor-safe reads, exact complete-directory member attribution, audit verification, and extraction-receipt authority without hydrating assets.",
+    "owned_files": [
+      "tools/raid_program/runtime_asset_closure.py",
+      "tools/raid_program/runtime_asset_safe_io.py",
+      "experiments/configs/runtime_asset_closure_manifest_v1.json",
+      "experiments/configs/runtime_asset_closure_audit_authority_v1.json",
+      "experiments/configs/runtime_asset_native_data_inventory_v1.json",
+      "tests/test_runtime_asset_closure.py"
+    ],
+    "stop_condition": "Stop after one committed correction; leave RAC-001 unresolved and do not hydrate or run any runtime side effect."
   },
   "acceptance_conditions": [
-    "GO has no unresolved critical, high, or medium finding.",
-    "GO proves normal generated commands cannot reach a downstream side effect without checklist verification.",
-    "GO proves every missing or extra closure member is attributable and the exact audit/provenance authority is verified."
+    "RAC-002 through RAC-005 deterministic fixtures and real incomplete scan pass.",
+    "Every root and authority read rejects symlink ancestors and exact directory member deltas are named.",
+    "RAC-001 remains explicitly unresolved with no runtime acceptance claim."
   ],
   "forbidden": [
-    "No repository edit, asset copy, DVC operation, server, DB operation, live canary, rebuild, gameplay change, or adjacent implementation."
+    "No files outside the six owned paths; no RAC-001 propagation, asset copy, DVC operation, server, DB operation, live canary, rebuild, or gameplay change."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null,
-    "implementation_commits": 0,
-    "independent_reviews": 1,
+    "implementation_commits": 1,
+    "independent_reviews": 0,
     "dvc_add_budget": 0,
     "dvc_push_budget": 0,
     "credential_aware_remote_reconstruction_budget": 0,
@@ -61,5 +68,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Run the independent Sol review; correct any NO-GO before hydration or live validation."
+  "next_action": "Implement authority hardening, then authorize mandatory propagation RAC-001 before a fresh independent review."
 }

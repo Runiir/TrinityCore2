@@ -1,0 +1,89 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:runtime_asset_authority_and_inventory_hardening",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "architecture_correction_authorized",
+  "created_at_utc": "2026-09-03T07:55:06Z",
+  "immutable_evidence": {
+    "review_handoff_path": "/home/runiir/Games/trinity-generic-runtime-asset-closure-review-handoff.json",
+    "review_handoff_sha256": "b58fcdcc2c52f4d82df2fe2eae0da9790c07e006a94a5ed05510240baae958e6",
+    "reviewed_implementation_commit": "ab5ca8755682806f36daadb911acc9951da193b7",
+    "authorization_commit": "6dca619de48d88a894fcc67248fa7ce9f9d32c31",
+    "audit_handoff_path": "/home/runiir/Games/trinity-immutable-runtime-asset-closure-audit-handoff.json",
+    "audit_handoff_sha256": "b2c274abf64166a849d6b92c2afa1796e60e0407a4a6bcc1a598af8beb31c494"
+  },
+  "scope_lock": {
+    "objective": "Correct RAC-002 through RAC-005 so runtime asset authority is ancestor-safe, exhaustively attributable, audit-bound, and backed by a verifiable extraction-receipt schema without hydrating any asset.",
+    "owned_files": [
+      "tools/raid_program/runtime_asset_closure.py",
+      "tools/raid_program/runtime_asset_safe_io.py",
+      "experiments/configs/runtime_asset_closure_manifest_v1.json",
+      "experiments/configs/runtime_asset_closure_audit_authority_v1.json",
+      "experiments/configs/runtime_asset_native_data_inventory_v1.json",
+      "tests/test_runtime_asset_closure.py"
+    ],
+    "findings_in_scope": [
+      "RAC-002",
+      "RAC-003",
+      "RAC-004",
+      "RAC-005"
+    ],
+    "required_behavior": [
+      "Use one shared component-wise no-follow reader for roots, manifest, config, dvc.lock, audit authority, inventory authority, extraction receipt, and every asset member; reject a symlink in any component from filesystem anchor to target and detect between-open drift.",
+      "Create one tracked canonical audit-authority config derived deterministically from audit b2c274ab and bind its raw bytes, strict schema, source-audit SHA, source inventory SHA, class IDs, consumers, audiences, roots, rules, counts, and audit inventory digests from the manifest.",
+      "Create one tracked exhaustive native DataDir inventory authority with every relative file and directory member, type, mode, size, and file SHA-256. Its canonical digest must reproduce audit source inventory 5cf47e7d and its VMAP subset must reproduce the audited 17,640-file closure.",
+      "For complete-directory classes, compare exact expected file and directory members and report every missing, extra, type, mode, size, and content delta together before aggregate summaries.",
+      "Define a deterministic extraction-receipt producer in the runtime_asset_closure module. A receipt must bind the tracked inventory authority SHA, full recomputed DataDir inventory excluding only the receipt itself, client identity, extractor identity, creation command inputs, and schema.",
+      "The verifier must require the extraction receipt raw SHA pinned by the committed manifest, rehash its bytes, strictly validate it, and recompute its full DataDir inventory. A null or absent pinned receipt SHA remains a typed provenance_missing blocker for the current source and cannot be treated as approval.",
+      "Keep the current real read-only scan reporting all exact 13 retained missing inputs and the missing or unpinned native extraction receipt in one result while confirming every present class.",
+      "Preserve parameterized map contracts and all existing exact-file, bounded-pattern, DVC, DataDir, bundle, snapshot, duplicate-key, traversal, and no-copy properties."
+    ],
+    "deterministic_fixtures": [
+      "Remove two named complete-directory members, substitute one same-count file, and add an empty directory; one receipt names every exact member delta and aggregate mismatch.",
+      "Place every root and authority file in turn beneath a symlinked parent; each fails with a typed symlink/root identity issue before authorization.",
+      "Missing, same-size modified, wrong-schema, and class/rule/digest-disagreeing audit authorities all fail closed.",
+      "A fabricated extraction receipt with correct literals but changed non-scenario DataDir content, client identity, extractor identity, inventory authority, or receipt bytes fails closed.",
+      "A producer-generated pinned fixture receipt passes only while all bound bytes and physical paths remain exact."
+    ],
+    "explicitly_deferred": {
+      "finding": "RAC-001",
+      "reason": "Mandatory propagation spans the separately enumerated 12 executable surfaces and will be the next non-overlapping work unit after this shared authority foundation is committed.",
+      "safety": "No runtime or hydration is authorized between the two corrections."
+    },
+    "forbidden_changes": [
+      "No edits outside the exact six owned paths.",
+      "No command-generator, entrypoint-mandatory-mode, gameplay, encounter, class, role, roster, or movement change.",
+      "No asset hydration or copy, DVC operation, database access, provisioning, build, capture, worldserver start, or live canary.",
+      "Do not fabricate or install a real native extraction receipt; only define and fixture-test its producer and verifier."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_runtime_asset_closure.py",
+      "pixi run python -m py_compile tools/raid_program/runtime_asset_safe_io.py tools/raid_program/runtime_asset_closure.py",
+      "pixi run python -m tools.raid_program.runtime_asset_closure verify --manifest experiments/configs/runtime_asset_closure_manifest_v1.json --source-checkout /home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable --config /home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build.5YGC4lez/run/prestart_bundle_stage3_integrated_v1/worldserver.validation.conf --data-dir /home/runiir/Games/trinity-cata/data --dvc-workspace /home/runiir/Games/trinity-cata --bundle /home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build.5YGC4lez/run/prestart_bundle_stage3_integrated_v1 --scenario-map-id 669 --output /tmp/runtime-asset-authority-hardening-real-scan.json",
+      "git diff --check"
+    ],
+    "acceptance_conditions": [
+      "RAC-002, RAC-003, RAC-004, and RAC-005 deterministic fixtures pass with no weakening of current positive behavior.",
+      "The real scan exits typed incomplete, names all 13 retained inputs and native provenance blocker together, and introduces no asset or runtime mutation.",
+      "Exactly the six owned paths change in one commit and the worktree is clean.",
+      "RAC-001 remains explicitly unresolved and no live, hydration, or checklist acceptance claim is made."
+    ],
+    "terminal_conditions": {
+      "success": "Return one committed authority-hardening correction with exact validation results and RAC-001 still blocked.",
+      "failed_verification": "Stop with a typed correction failure and the earliest violated property without broadening scope.",
+      "out_of_scope": "Report command propagation, real receipt creation, hydration, DVC publication, or live needs without acting on them."
+    }
+  },
+  "budgets": {
+    "implementation_commits": 1,
+    "generated_inventory_authorities": 2,
+    "asset_copies": 0,
+    "dvc_operations": 0,
+    "database_operations": 0,
+    "builds": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one Sol high raid-shard-architecture implementer, then authorize the separate mandatory command-propagation correction for RAC-001."
+}
