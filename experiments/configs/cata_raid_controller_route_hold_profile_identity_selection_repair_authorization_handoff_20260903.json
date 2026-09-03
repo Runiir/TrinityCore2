@@ -1,0 +1,75 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "runtime:controller_route_hold_profile_identity_selection_repair",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "bounded_shared_runtime_repair_authorized",
+  "created_at_utc": "2026-09-03T05:02:30Z",
+  "base_commit": "31bdffe04c092f07d8fc282cfa317804fca1c0ca",
+  "base_tree": "d9c8e8af6cba75c92f8b1f6314f57da19f28256b",
+  "published_evidence": {
+    "publication_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-v4-publication-handoff-v2.json",
+    "publication_handoff_sha256": "8f5c951722d39083ebb2f5ef310fe70173646a5407f263d7a5e7006c0ef07ce1",
+    "dvc_pointer_path": "artifacts/cata_raid_program/magmaw_stage3_profile_range_observation_v4_20260903.dvc",
+    "dvc_pointer_sha256": "2c21f295e399c7ad74567926cf8798419f4ec4a99403ab56bcc2825514216245",
+    "remote_verified": true,
+    "capture_classification": "infrastructure_abort",
+    "gameplay_exercised": false
+  },
+  "first_broken_edge": {
+    "id": "controller_route_hold_profile_fixture_config_identity_not_selected",
+    "producer": "BotWorldPopulationMgr::CurrentControllerRouteHoldIdentity",
+    "observed_input": "hold.Scope.FixtureId=generic_profile_min_range_production_boundary_v1 with exact configured ProfileCombatRangeCheckpoint fixture/seal/source fields",
+    "observed_output": "empty Chainwielder fixture/seal/source fields were selected, causing controller_route_hold_bootstrap_route_drift before start acknowledgement",
+    "causal_hypothesis": "The selector has explicit native-path and Magmaw-transfer branches but no ProfileCombatRangeCheckpoint branch, so the profile fixture falls through to the Chainwielder default."
+  },
+  "authorized_implementation": {
+    "owned_files": [
+      "src/server/game/Bots/BotControllerRouteHoldIdentitySelector.h",
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "tests/test_controller_route_hold_identity_selector.py"
+    ],
+    "required_change": [
+      "Extract one small value-level production selector for controller-route-hold fixture identity authority and call that same selector from CurrentControllerRouteHoldIdentity.",
+      "Select ProfileCombatRangeCheckpoint fixture/seal/source fields when the held fixture ID equals BotProfileCombatRangeCheckpoint::FixtureId.",
+      "Preserve exact selection for NativePathCheckpoint, MagmawTransferLaneCheckpoint, ChainwielderOwnerCheckpoint, and the existing unknown/default fallback.",
+      "Do not change route, attempt, actor, profile, manifest, generation, node, config loading, hold state machine, bootstrap comparison, or any gameplay policy."
+    ],
+    "deterministic_fixture": [
+      "Compile and call the exact new production selector with the recorded profile fixture ID and four distinct nonempty authority triples; assert the profile triple is returned.",
+      "Cover native-path, Magmaw-transfer, Chainwielder, unknown/default, empty values, and adjacent mismatched fixture IDs so no dialect aliases another.",
+      "Source-wiring assertion may confirm CurrentControllerRouteHoldIdentity calls the selector, but the compiled adapter result is the behavioral acceptance proof."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_controller_route_hold_identity_selector.py tests/test_chainwielder_owner_checkpoint.py tests/test_profile_combat_range_production_fixture.py",
+      "pixi run python -m py_compile tests/test_controller_route_hold_identity_selector.py",
+      "wc -l src/server/game/Bots/BotControllerRouteHoldIdentitySelector.h src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "git diff --check 31bdffe04c092f07d8fc282cfa317804fca1c0ca HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Exactly the three owned files change and every C/C++ file remains below 1000 lines.",
+      "The production selector maps all supported dialects deterministically and the live-recorded profile fixture selects its exact configured authority.",
+      "No hold/bootstrap/config/gameplay behavior changes beyond correct fixture authority selection.",
+      "Focused tests, compile check, line limits, and diff checks pass.",
+      "An independent Sol-high reviewer returns GO before any build or live fixture."
+    ]
+  },
+  "forbidden": [
+    "No changes to class rotations, encounter logic, action priorities, movement/pathing/MMAP/Z/tolerances, route/profile/config values, fixture constants, build/capture/evidence code, databases, roster, skills, or DVC.",
+    "No teleport, target forcing, checkpoint success shortcut, compatibility alias, ordered encounter priority, or fallback weakening.",
+    "No build, configure, provision, server start, live fixture, gameplay canary, evidence publication, promotion, or ML action."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "database_operations": 0,
+    "dvc_operations": 0,
+    "fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one narrow Luna-xhigh runtime implementer, then one independent Sol-high reviewer."
+}

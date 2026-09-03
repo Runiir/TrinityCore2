@@ -1,48 +1,53 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:credential_aware_publish_verify_evict_magmaw_stage3_v4",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "evidence_publication_reauthorized",
+  "work_unit": "runtime:controller_route_hold_profile_identity_selection_repair",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "implementation_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "7803fb1dfb5e29513c33ac89b5c78caf5157648a",
+  "observed_at_commit": "31bdffe04c092f07d8fc282cfa317804fca1c0ca",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "Publish, remotely verify, and exactly evict one closed attributable non-gameplay Stage 3 evidence payload.",
-  "behavior_change": false,
+  "architecture_scope": "Repair one shared controller-route-hold fixture identity-selection edge through a compiled production adapter.",
+  "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Initial push succeeded but isolated verification lacked local credentials; exact credential-aware reconstruction is reauthorized with no second push.",
+  "gate_state": "V4 evidence is remotely verified and locally cleaned; runtime repair is authorized, while build and live gates remain closed.",
   "first_broken_edge": {
-    "id": "controller_route_hold_bootstrap_route_drift",
-    "stage": "stage3_runtime_bootstrap",
+    "id": "controller_route_hold_profile_fixture_config_identity_not_selected",
+    "stage": "controller_route_hold_identity_selection",
     "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "CurrentControllerRouteHoldIdentity does not select ProfileCombatRangeCheckpoint identity and falls through to empty Chainwielder configuration fields.",
-    "review_state": "remote_objects_pushed_publication_pending_credential_aware_verification"
+    "cause": "CurrentControllerRouteHoldIdentity omits the ProfileCombatRangeCheckpoint fixture branch and falls through to Chainwielder configuration fields.",
+    "review_state": "bounded_implementation_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_stage3_v4_credential_aware_publication_reauthorization_handoff_20260903.json",
-    "closed_capture_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v4.json",
-    "closed_capture_sha256": "a59c0f77d467e2d4e64897b166e3b86b798d6154f72202b3b286054b8aa75a92"
+    "path": "experiments/configs/cata_raid_controller_route_hold_profile_identity_selection_repair_authorization_handoff_20260903.json",
+    "publication_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-v4-publication-handoff-v2.json",
+    "publication_handoff_sha256": "8f5c951722d39083ebb2f5ef310fe70173646a5407f263d7a5e7006c0ef07ce1"
   },
   "scope_lock": {
-    "objective": "Verify the already pushed exact DVC object through one credential-aware isolated reconstruction, commit compact publication metadata, and evict exact duplicates.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-v4-publication-handoff-v2.json",
-    "stop_condition": "Stop after the one credential-aware reconstruction and exact closeout, with no retry."
+    "objective": "Select the correct configured identity authority for every controller-route-hold fixture dialect using one compiled production adapter.",
+    "owned_files": [
+      "src/server/game/Bots/BotControllerRouteHoldIdentitySelector.h",
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "tests/test_controller_route_hold_identity_selector.py"
+    ],
+    "stop_condition": "Stop after one implementation commit and deterministic fixture bank; no build or live process."
   },
   "acceptance_conditions": [
-    "Remote reconstruction matches all closed v4 evidence hashes and compact Git metadata binds the truthful terminal.",
-    "Exact local raw/log duplicates are evicted after verification while retained source/build/bundle authorities remain intact."
+    "The compiled production selector maps profile-range and all adjacent fixture dialects to their exact authority triples.",
+    "Independent Sol-high review returns GO before one new build is authorized."
   ],
   "forbidden": [
-    "No runtime/source/config/bundle/route/skill mutation, live process, build, DB action, retry, evidence reinterpretation, gameplay acceptance, or ML admission."
+    "No files outside scope, no gameplay/route/config/checkpoint-state changes, and no build/server/DB/DVC/live action."
   ],
   "validation_clock": {
-    "policy": "publish_verify_then_evict",
-    "publication_commits": 1,
-    "dvc_add_budget": 1,
+    "policy": "deterministic_fixture_only",
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "dvc_add_budget": 0,
     "dvc_push_budget": 0,
-    "credential_aware_remote_reconstruction_budget": 1,
+    "credential_aware_remote_reconstruction_budget": 0,
     "worldserver_start_budget": 0,
     "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
@@ -50,11 +55,11 @@
     "database_mutation_budget": 0,
     "dvc_mutation_budget": 0,
     "retries": 0,
-    "eviction_after_remote_verify_only": true
+    "eviction_after_remote_verify_only": false
   },
   "issues": [],
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Run one credential-aware isolated reconstruction, finalize publication, and exactly evict verified duplicates."
+  "next_action": "Implement and independently review the bounded fixture identity selector repair."
 }
