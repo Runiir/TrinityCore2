@@ -1,0 +1,84 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_stage3_no_cache_metric_transfer",
+  "owner_skill": "raid-performance-loop",
+  "classification": "immutable_no_cache_metric_transfer_authorized",
+  "created_at_utc": "2026-09-03T03:00:00Z",
+  "failed_predecessor": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-verification-output-checkout-handoff.json",
+    "sha256": "882c4e126e4ddecf1fe8294ff7851f3d2e6b2612bbb07a9df5797fc300d8752d",
+    "classification": "infrastructure_failure_verification_output_not_materialized",
+    "worldserver_starts": 0
+  },
+  "first_broken_edge": {
+    "id": "validation_verification_metric_is_no_cache",
+    "cause": "dvc.yaml declares dataset/validation_provisioning_verification/report.json as a metric with cache: false, so DVC checkout correctly leaves it absent even though dvc.lock records its digest.",
+    "first_downstream_state": "The immutable validation_scenarios stage reports a deleted dependency until the exact no-cache metric bytes are restored.",
+    "hypothesis": "A single exact byte copy from the clean primary workspace, bound to the immutable dvc.lock MD5 and size on both sides, will restore lineage without regeneration or remote mutation."
+  },
+  "source_workspace": {
+    "path": "/home/runiir/Games/trinity-cata",
+    "commit": "daf51b9d896707583a03359c6f77e5b54379898f",
+    "tree": "f557bf04965deeefdc87542d2f32cb2d44279746",
+    "required_clean": true,
+    "required_dvc_status_command": "pixi run dvc status validation_scenarios --json",
+    "required_dvc_status_result": {},
+    "file": {
+      "path": "dataset/validation_provisioning_verification/report.json",
+      "md5": "fa37fe35db80541c82a1f0555efd7834",
+      "size": 1651
+    }
+  },
+  "immutable_checkout": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+    "tree": "ea6f9452028be190deff565de0b432220d11ff15",
+    "required_clean": true,
+    "lock_binding": {
+      "stage": "validation_provisioning_verify",
+      "path": "dataset/validation_provisioning_verification/report.json",
+      "md5": "fa37fe35db80541c82a1f0555efd7834",
+      "size": 1651,
+      "dvc_yaml_cache": false
+    },
+    "existing_dependency": {
+      "path": "dataset/validation_provisioning/report.json",
+      "md5": "aa952a7041f215c141a9a61bc1656015",
+      "size": 20094
+    }
+  },
+  "authorized_work_unit": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff.json",
+    "actions": [
+      "Verify source and immutable Git identities and cleanliness, inspect dvc.yaml cache:false and immutable dvc.lock binding, and verify both source bytes and existing immutable dependency by MD5 and size.",
+      "Run the required source validation_scenarios DVC status exactly once and require {}.",
+      "Create only the missing destination parent and copy the exact source metric bytes once to dataset/validation_provisioning_verification/report.json with mode 0444.",
+      "Verify destination MD5 fa37fe35db80541c82a1f0555efd7834 and size 1651.",
+      "Run exactly once in the immutable checkout: pixi run dvc status validation_scenarios --json, and require {}.",
+      "Verify both Git worktrees remain exact and clean."
+    ]
+  },
+  "budgets": {
+    "identity_lock_hash_preflight": 1,
+    "source_dvc_status": 1,
+    "destination_parent_create": 1,
+    "exact_file_copy": 1,
+    "destination_hash_check": 1,
+    "target_dvc_status": 1,
+    "worldserver_starts": 0,
+    "builds": 0,
+    "database_mutations": 0,
+    "dvc_checkout_pull_push_repro_gc": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No other file/cache/source/config/route/roster/ledger/skill/gameplay mutation, DVC checkout/pull/push/repro/gc, remote mutation, build, provision, database mutation, server/live action, retry, or gameplay inference.",
+    "Do not regenerate the metric or copy any surrounding directory."
+  ],
+  "acceptance_conditions": [
+    "The source and destination bytes match the immutable lock MD5 and size, with exactly one file copied and no other workspace mutation.",
+    "Source and immutable validation_scenarios DVC status both equal {}, both Git identities remain exact and clean, and all route/profile/server/live/gameplay claims remain closed."
+  ],
+  "next_action": "On success, authorize a separate read-only selected-route and runtime-profile preflight."
+}

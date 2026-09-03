@@ -1,47 +1,50 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_stage3_verification_output_checkout",
+  "work_unit": "evidence:magmaw_stage3_no_cache_metric_transfer",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "exact_stage_checkout_authorized",
+  "classification": "no_cache_metric_transfer_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "5501377769340393cc71cab0a48f71054e9be31d",
+  "observed_at_commit": "daf51b9d896707583a03359c6f77e5b54379898f",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "Materialize one already-addressed standalone DVC stage output by exact stage name, then prove validation_scenarios lineage clean; no server.",
+  "architecture_scope": "Restore one DVC cache:false metric by exact lock-bound byte copy from a clean lineage-matching workspace, then prove validation_scenarios clean; no server.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Seven exact cache objects and the provisioning report are present; the standalone verification report remains absent because the prior path checkout did not select its stage.",
+  "gate_state": "All cacheable dependencies are hydrated; the only missing dependency is a DVC metric intentionally declared cache:false.",
   "first_broken_edge": {
-    "id": "verification_stage_output_not_selected_by_path_checkout",
-    "stage": "stage3_verification_output_checkout",
+    "id": "validation_verification_metric_is_no_cache",
+    "stage": "stage3_no_cache_metric_transfer",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "The first checkout restored only dataset/validation_provisioning; validation_provisioning_verify must be selected by exact stage name.",
-    "review_state": "exact_stage_target_identified"
+    "cause": "DVC checkout cannot restore the verification metric because dvc.yaml declares it cache:false.",
+    "review_state": "exact_lock_bound_source_bytes_verified"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_stage3_verification_output_checkout_authorization_handoff_20260903.json",
-    "sha256": "9baada95a4e24a205bc6758f0ad1c454c61ee4cd32c1360b1cd216f1d9929afc",
-    "predecessor_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-local-cache-seed-handoff.json",
-    "predecessor_sha256": "8db7a3de97594f106b14093add55e961d14926527e6fee565a3301230b203a25"
+    "path": "experiments/configs/cata_raid_magmaw_stage3_no_cache_metric_transfer_authorization_handoff_20260903.json",
+    "sha256": "de449302398597f819a573519273e4ebfe6b8fc27f6b5325c24f75a62a51aacb",
+    "predecessor_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-verification-output-checkout-handoff.json",
+    "predecessor_sha256": "882c4e126e4ddecf1fe8294ff7851f3d2e6b2612bbb07a9df5797fc300d8752d"
   },
   "scope_lock": {
-    "objective": "Run one exact validation_provisioning_verify DVC checkout and require clean validation_scenarios lineage.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-verification-output-checkout-handoff.json",
-    "stop_condition": "Stop at the first identity, preflight hash, checkout, materialized hash, or DVC-status mismatch without retry or live action."
+    "objective": "Copy one exact no-cache metric bound to the immutable dvc.lock and require clean validation_scenarios lineage.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff.json",
+    "stop_condition": "Stop at the first identity, lock declaration, source status, hash, copy, destination status, or cleanliness mismatch without retry or live action."
   },
   "acceptance_conditions": [
-    "The verification report materializes with MD5 fa37fe35db80541c82a1f0555efd7834 and size 1651.",
-    "The immutable checkout is exact and clean and validation_scenarios DVC status is {}; route/profile/server/live/gameplay claims remain closed."
+    "Exactly one no-cache metric file is copied and its MD5/size match the immutable lock.",
+    "Both source and immutable validation_scenarios DVC status equal {}; route/profile/server/live/gameplay claims remain closed."
   ],
   "forbidden": [
-    "No repository/source/cache/direct-file mutation outside the one exact DVC stage checkout, no DVC pull/repro/push/gc, build, provision, database mutation, server/live/retry, route/profile inference, gameplay canary, or live inference."
+    "No other file/cache/source mutation, DVC checkout/pull/repro/push/gc, build, provision, database mutation, server/live/retry, route/profile inference, gameplay canary, or live inference."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "preflight_identity_and_hash_check_budget": 1,
-    "exact_stage_checkout_budget": 1,
+    "identity_lock_hash_preflight_budget": 1,
+    "source_dvc_status_budget": 1,
+    "destination_parent_create_budget": 1,
+    "exact_file_copy_budget": 1,
+    "destination_hash_check_budget": 1,
     "target_dvc_status_budget": 1,
     "worldserver_start_budget": 0,
     "fixture_attempt_budget": 0,
@@ -50,12 +53,12 @@
     "runtime_profile_asset_preflight_budget": 0,
     "build_budget": 0,
     "database_mutation_budget": 0,
-    "dvc_pull_push_repro_gc_budget": 0,
+    "dvc_checkout_pull_push_repro_gc_budget": 0,
     "retries": 0
   },
   "issues": [],
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact validation_provisioning_verify checkout and one validation_scenarios status check; live capture remains closed."
+  "next_action": "Execute the exact no-cache metric transfer and prove both validation_scenarios statuses clean; live capture remains closed."
 }
