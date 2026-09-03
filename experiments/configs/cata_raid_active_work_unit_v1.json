@@ -1,53 +1,53 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:post_build_static_seal_closure",
-  "owner_skill": "raid-evidence-lifecycle",
-  "classification": "evidence_closure_authorized",
+  "work_unit": "shard:immutable_source_post_build_static_seal",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "immutable_source_reseal_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "7a6189b8d28b88eafe356ac4326f425f11821951",
-  "immutable_input_commit": "7a6189b8d28b88eafe356ac4326f425f11821951",
-  "architecture_scope": "Evidence-only closure over an already valid atomic bundle and checkpoint seal; no production boundary rerun or artifact rewrite.",
+  "observed_at_commit": "6bdd074237c7c79b4be606a62dea88e372764603",
+  "immutable_input_commit": "6bdd074237c7c79b4be606a62dea88e372764603",
+  "architecture_scope": "One immutable external source checkout plus one fresh static-only recurrence/config/bundle/readback/seal sequence; no build or live action.",
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "gate_state": "All static production boundaries passed and the atomic checkpoint seal is valid; only accepted-summary serialization failed on a nonexistent prior field.",
+  "evidence_contract_change": true,
+  "gate_state": "The prior bundle bound a mutable coordinator worktree and became unverifiable after the next authorized commit; a fresh bundle must bind an immutable source checkout.",
   "first_broken_edge": {
-    "id": "post_build_static_handoff_serialization_prior_launch_authority_key_missing",
-    "stage": "post_build_static_seal_evidence_closure",
-    "owner_classification": "raid_evidence_lifecycle",
-    "cause": "After the existing bundle verifier passed, the summary serializer indexed absent prior[launch_authority] instead of reading prior stage3_authorized=false.",
-    "review_state": "production_bundle_and_static_seal_verified_summary_missing"
+    "id": "atomic_bundle_binds_mutable_coordinator_worktree_path",
+    "stage": "immutable_source_post_build_static_seal",
+    "owner_classification": "raid_shard_architecture",
+    "cause": "launch_contract.source.worktree points at mutable master, so production verification fails after a later authorized control commit changes HEAD/tree.",
+    "review_state": "source_identity_mismatch_reproduced"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_post_build_static_seal_evidence_closure_authorization_handoff_20260903.json",
-    "sha256": "4642043029ff6d6e01ef289b16945936a63a49ef335a598093ed86261b846850",
+    "path": "experiments/configs/cata_raid_magmaw_immutable_source_post_build_static_seal_authorization_handoff_20260903.json",
+    "sha256": "b93c630ebbbce64a071d6f5a1b24e07c461a7443635dbfc492ff01378c7d2f8e",
     "build_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
     "build_handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e"
   },
   "scope_lock": {
-    "objective": "Reverify immutable static artifacts and emit one accepted post_build_static_sealed_ready summary without rerunning production work.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff.json",
-    "stop_condition": "Any hash/schema/verifier mismatch stops without retry, artifact rewrite, production rerun, build, database access, or server start."
+    "objective": "Bind one fresh static bundle to an immutable source checkout and emit an accepted closed post-build static seal.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v3.json",
+    "stop_condition": "Any identity/hash/schema/verifier mismatch stops without retry, main-checkout movement, build, database mutation, or server start."
   },
   "acceptance_conditions": [
-    "Existing atomic bundle/checkpoint seal and every bound hash independently reverify.",
-    "Accepted summary reports all static facts exactly and keeps Stage 3, gameplay canary, launchability, and live relations closed."
+    "Fresh atomic bundle/checkpoint seal binds an immutable source checkout and independently reverifies after main-control advancement.",
+    "Static roster/target facts pass and the accepted summary keeps Stage 3, gameplay canary, launchability, and live relations closed."
   ],
   "forbidden": [
-    "No source/build/provision/database action/server/live/DVC/retry or live inference; no production artifact rewrite or rerun."
+    "No repository mutation or main-checkout movement, build, provision, database mutation, server/live/DVC/retry, or live inference."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "immutable_hash_verification_budget": 1,
-    "existing_bundle_verification_budget": 1,
+    "immutable_source_clone_budget": 1,
+    "post_create_bundle_verification_budget": 1,
     "accepted_summary_write_budget": 1,
-    "current_control_recurrence_gate_budget": 0,
-    "runtime_config_derivation_budget": 0,
-    "atomic_bundle_create_budget": 0,
-    "read_only_database_readback_budget": 0,
-    "static_seal_budget": 0,
+    "current_control_recurrence_gate_budget": 1,
+    "runtime_config_derivation_budget": 1,
+    "atomic_bundle_create_budget": 1,
+    "read_only_database_readback_budget": 1,
+    "static_seal_budget": 1,
     "provisioning_mutation_budget": 0,
     "worldserver_build_budget": 0,
     "worldserver_start_budget": 0,
@@ -59,5 +59,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
-  "next_action": "Execute the evidence-only static-seal closure work unit; Stage 3 remains separately gated."
+  "next_action": "Execute the immutable-source post-build static-seal work unit; Stage 3 remains separately gated."
 }

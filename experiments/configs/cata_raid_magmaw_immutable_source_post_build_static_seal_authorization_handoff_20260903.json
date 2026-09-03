@@ -1,0 +1,93 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_immutable_source_post_build_static_seal",
+  "owner_skill": "raid-performance-loop",
+  "classification": "immutable_source_post_build_static_seal_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "causal_predecessors": [
+    {
+      "path": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-seal-handoff-v2.json",
+      "sha256": "4e586b6e5111afa49dd675d13d7b2c7194c491ba7b92932ab4364b2f4b206223",
+      "finding": "Atomic bundle and checkpoint seal passed at control 7a6189b8, but accepted-summary serialization failed."
+    },
+    {
+      "path": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff.json",
+      "sha256": "cf066d57aaa4085ca0321196dddb28bfe4c665b82e2abf89ac69f08e46a39eb3",
+      "finding": "Later production verification failed because the launch contract points at mutable /home/runiir/Games/trinity-cata, whose HEAD advanced from 7a6189b8 to 6bdd0742."
+    }
+  ],
+  "first_broken_edge": {
+    "id": "atomic_bundle_binds_mutable_coordinator_worktree_path",
+    "first_state_infecting_mutation": "Bundle launch_contract.source.worktree was recorded as /home/runiir/Games/trinity-cata.",
+    "consumed_failure": "verify_bundle later called _source_identity on that path and returned source_identity_mismatch after an authorized metadata commit advanced master.",
+    "correlation_keys": {
+      "sealed_commit": "7a6189b8d28b88eafe356ac4326f425f11821951",
+      "sealed_tree": "35da593cd3e23a7efa209bf73ba851359387c489",
+      "later_commit": "6bdd074237c7c79b4be606a62dea88e372764603",
+      "later_tree": "73aa71676728611ec4de1bd6536f3ad516d3cf06",
+      "launch_source_path": "/home/runiir/Games/trinity-cata",
+      "verifier_reason": "source_identity_mismatch"
+    }
+  },
+  "immutable_source_contract": {
+    "method": "Create one external local clone with shared Git objects and a full tracked checkout at the exact clean authorization commit. Do not use the mutable coordinator checkout as bundle source.",
+    "root": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "retention": "Retain unchanged through Stage 3 verification and evidence publication, then remove only through an authorized exact cleanup.",
+    "acceptance": [
+      "The clone HEAD/tree equal the exact authorization commit/tree, git status is clean, and its origin/path are recorded.",
+      "The new launch contract source.worktree equals the immutable clone root, not /home/runiir/Games/trinity-cata.",
+      "After the main coordinator checkout remains on a later commit, production verify_bundle still passes because it verifies the immutable source root stored in the launch contract."
+    ]
+  },
+  "build": {
+    "handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
+    "handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e",
+    "binary_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/worktree/build/src/server/worldserver/worldserver",
+    "binary_sha256": "d8313cf1208772a16a400dce4244e57de13c6f1f67ebc83401df58398863cee5",
+    "build_receipt_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/identity/worldserver_build_receipt.json",
+    "build_receipt_file_sha256": "cb50cf21e9f4e4d292e16b2b7a9db28f54b611256a9c6cbb40332fbb8bcb2aed"
+  },
+  "typed_target_identity": {
+    "runtime_target_guid": 39,
+    "target_spawn_id": 250051,
+    "target_entry": 41570,
+    "target_map_id": 669,
+    "live_relation_status": "pending_stage3"
+  },
+  "authorized_work_unit": {
+    "owner_skill": "raid-shard-architecture",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v3.json",
+    "bundle_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable",
+    "objective": "Create one immutable clean source checkout, rerun the current recurrence/config/bundle/readback/static-seal path once against it, verify the bundle once while the main repo remains on its later control commit, and emit a closed static-seal handoff.",
+    "acceptance_conditions": [
+      "New bundle and checkpoint seal bind the immutable source path plus exact control commit/tree, binary, receipt, route, profile, recurrence, config, authority, and typed target identity.",
+      "Production verify_bundle passes after creation without moving or detaching the main coordinator checkout.",
+      "Roster readback remains exact 10 and 2/3/5 with zero residue; spawn 250051 remains entry41570/map669.",
+      "stage3_authorized, gameplay_canary_authorized, and launchable remain false; runtime target39-to-spawn250051 stays pending live proof."
+    ]
+  },
+  "budgets": {
+    "immutable_source_clone": 1,
+    "current_control_recurrence_gate": 1,
+    "runtime_config_derivation": 1,
+    "layered_authority_write": 1,
+    "atomic_bundle_create": 1,
+    "read_only_composed_database_readback": 1,
+    "static_seal": 1,
+    "post_create_bundle_verify": 1,
+    "summary_write": 1,
+    "provisioning_mutations": 0,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No repository/source/test/config/route/roster/ledger/skill/gameplay mutation; no main-checkout checkout/reset/detach; no build/provisioning/DB mutation/server/live/DVC/retry.",
+    "No bundle source path under the mutable main checkout, prior bundle rewrite, seal reuse, old binary substitution, live inference, gameplay canary, promotion, or ML admission."
+  ],
+  "next_action": "Dispatch one fresh raid-shard-architecture owner. Stage 3 remains closed until the immutable-source bundle and accepted handoff verify."
+}
