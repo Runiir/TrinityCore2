@@ -1,0 +1,84 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_controller_hold_profile_selector_fast4_v2_build",
+  "owner_skill": "raid-performance-loop",
+  "classification": "one_independently_reviewed_four_job_worldserver_build_authorized",
+  "created_at_utc": "2026-09-03T05:40:49Z",
+  "reviewed_runtime": {
+    "commit": "3c2031c40aca47315691978d935e80b3357c1814",
+    "tree": "db91ae523ad66b8bc42089a0de7ca3c578b0b98a",
+    "review_path": "/tmp/controller_route_hold_identity_selector_review_handoff_20260903.json",
+    "review_sha256": "b5b144d635bb49aa2352f63e8e0f6a76ea4ab1b6fcefbf3ae38b12007d95fbec",
+    "verdict": "GO"
+  },
+  "reviewed_policy": {
+    "commit": "729c3bb9218c20dc4254f17ae602ca2ce02ffcae",
+    "tree": "0f571e6b7ed44577b7fe1fc12e4dd51a610922dc",
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "file_sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521",
+    "canonical_sha256": "c7967b08deb3cd8cd8ca0b6b7b690b123185818c075860d1982bbd5239956acf",
+    "review_path": "/tmp/controller_hold_fast4_v2_policy_review_handoff_20260903.json",
+    "review_sha256": "85b6c0ca6df81325bdeb3c839b803eb808f785cfdce51fb955086f2fcda7ce04",
+    "verdict": "GO",
+    "compiler_jobs": 4,
+    "linker_jobs": 1,
+    "maximum_memory_psi_some_avg10": 10.0,
+    "maximum_memory_psi_full_avg10": 5.0,
+    "maximum_load_average_1m": 13.0
+  },
+  "closed_failures": [
+    {
+      "path": "/home/runiir/Games/trinity-controller-hold-profile-selector-build-handoff.json",
+      "sha256": "23c5f91eb6933ccf3742b23070187755ccca7ec2e31bcb3febd9ebbaa30525ff",
+      "first_broken_edge": "fast8_v4_sustained_load_average_guard"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-controller-hold-profile-selector-fast4-build-handoff.json",
+      "sha256": "108153966d9224dd5009ab920dd0fd58a103e006847b51bebe05c15606db72f5",
+      "first_broken_edge": "fast4_v1_sustained_memory_psi_guard_during_configure"
+    }
+  ],
+  "build_control": {
+    "build_source_commit": "the exact clean commit containing this authorization and experiments/configs/cata_raid_active_work_unit_v1.json",
+    "reviewed_policy_commit": "729c3bb9218c20dc4254f17ae602ca2ce02ffcae",
+    "expected_policy_review_to_build_paths": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_controller_hold_profile_selector_fast4_v2_build_authorization_handoff_20260903.json"
+    ],
+    "required_relation": "Reviewed policy is an ancestor and the exact sorted no-renames delta is only the two build-control metadata paths above."
+  },
+  "authorized_build_work_unit": {
+    "owner_skill": "raid-shard-architecture",
+    "output_handoff": "/home/runiir/Games/trinity-controller-hold-profile-selector-fast4-v2-build-handoff.json",
+    "external_root_template": "/home/runiir/Games/trinity-controller-hold-profile-selector-fast4-v2-build.XXXXXXXX",
+    "required_actions": [
+      "Verify the authorization, both GO reviews, exact policy-review-to-build metadata delta, both closed failure hashes, clean source, idle queue, absent live/DVC processes, toolchain identity, and current policy admission.",
+      "Create one fresh external mktemp root and detached clean worktree at the exact authorization commit. Never reuse either failed build root, cache, objects, receipts, or partial artifacts.",
+      "Run exactly one policy-owned CMake configure and, only if it succeeds, exactly one queued worldserver build with four compiler jobs and one linker.",
+      "Verify the production gate-bearing receipts, source/configuration/toolchain/MySQL freshness chain, exact binary path/hash/size/mtime, and clean stable source.",
+      "Write one canonical build_ready or typed failure handoff at the exact output path and stop."
+    ]
+  },
+  "acceptance_conditions": [
+    "One fresh configure/build produces a production-valid receipt and exact worldserver binary, or stops at the first typed guard with no retry.",
+    "The policy is fast4_v2 exactly and no threshold or source code changes during the build.",
+    "Post-build static sealing and the single integrated Stage3 remain separately gated."
+  ],
+  "budgets": {
+    "external_roots": 1,
+    "detached_worktrees": 1,
+    "configure": 1,
+    "worldserver_build": 1,
+    "retries": 0,
+    "worldserver_starts": 0,
+    "database_operations": 0,
+    "dvc_operations": 0,
+    "fixture_attempts": 0,
+    "gameplay_canary_attempts": 0
+  },
+  "forbidden": [
+    "No source, policy, test, config, route, skill, roster, or gameplay mutation and no reuse of failed build artifacts.",
+    "No second configure/build, threshold waiver, eight-job retry, uncoordinated build, server, provisioning, DB, DVC, capture, fixture, gameplay canary, promotion, or ML admission."
+  ],
+  "next_action": "Run exactly one fresh fast4_v2 build and close on build_ready or the first typed failure."
+}
