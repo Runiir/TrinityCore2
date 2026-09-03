@@ -1,0 +1,93 @@
+{
+  "schema": "cata_raid_causal_summary_v1",
+  "work_unit_id": "coordination:magmaw_pre_gameplay_infrastructure_cutoff",
+  "owner_skill": "raid-performance-loop",
+  "classification": "magmaw_one_off_infrastructure_patch_loop_stopped",
+  "created_at_utc": "2026-09-03T06:51:59Z",
+  "cutoff_reason": "Repeated pre-gameplay fixture, provenance, and asset-lifecycle failures prevented the reviewed Magmaw repair from reaching bot actions. The coordinator will not authorize another one-file asset hydration in this canary loop.",
+  "stage3_attempts": [
+    {
+      "attempt": 1,
+      "handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff.json",
+      "sha256": "0cc3e50cf8d1af44395409781778ebb0d8563cd81828fa010f6d6f30362b8390",
+      "terminal": "infrastructure_abort_preflight_runtime_profile_assets_rejected",
+      "worldserver_starts": 0,
+      "bot_decisions": 0
+    },
+    {
+      "attempt": 2,
+      "handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v2.json",
+      "sha256": "72b6876f2a49bc44a365d435be32e41104b6e62f8f04709e20f151966ebdd1bd",
+      "terminal": "infrastructure_abort_preflight_drudge_navmesh_asset_set_mismatch",
+      "worldserver_starts": 0,
+      "bot_decisions": 0
+    },
+    {
+      "attempt": 3,
+      "handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v3.json",
+      "sha256": "9960dbe6981ae054430d7ea41a79cb793e9ca3802e78f708baf2647b5a91f19f",
+      "terminal": "infrastructure_abort_preflight_build_receipt_rejection",
+      "worldserver_starts": 0,
+      "bot_decisions": 0
+    },
+    {
+      "attempt": 4,
+      "handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v4.json",
+      "sha256": "a59c0f77d467e2d4e64897b166e3b86b798d6154f72202b3b286054b8aa75a92",
+      "terminal": "infrastructure_abort_controller_route_hold_bootstrap_route_drift",
+      "worldserver_starts": 1,
+      "bot_decisions": 0,
+      "bots_admitted": 0
+    }
+  ],
+  "repairs_proven_since_attempt4": [
+    "Capture validation now separates immutable source checkout from the retained build worktree.",
+    "Ignored binary and CMake artifacts are snapshotted and rechecked at the launch boundary.",
+    "ProfileCombatRange controller-hold identity selection is implemented and independently reviewed.",
+    "The selected authority fields are explicitly materialized into the controller Identity and compile through mapped and fallback cases.",
+    "A four-job build policy preserves the latest non-flapping guards and produced one gate-bearing BUILD_READY binary."
+  ],
+  "current_verified_state": {
+    "build_handoff": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build-handoff.json",
+    "build_handoff_sha256": "c9662d791183a3416173be583fb81a6aa267c16ebf49e56b395ef29de579efd1",
+    "binary_sha256": "79d7042a8df5dd49de27b2b3888069c02c7129b7e1b31a0971e35789252addf7",
+    "runtime_review_verdict": "GO",
+    "recurrence": "27/27 passed",
+    "atomic_bundle_valid": true,
+    "bundle_manifest_sha256": "aa4e841ab2d883c21f29352c6785d0c7286b87acd0aba2b893b5a7c48fd886fb",
+    "worldserver_starts_after_attempt4": 0,
+    "new_bot_decisions_after_attempt4": 0
+  },
+  "current_first_broken_edge": {
+    "handoff": "/home/runiir/Games/trinity-magmaw-controller-identity-postbuild-static-sealed-handoff.json",
+    "handoff_sha256": "66fc48914260e505fd897126e98c31ba0c8e894826cccb7c9ed3292a5b10c9d3",
+    "id": "retained_immutable_dbc_asset_missing",
+    "missing_path": "data/dbc/enUS/Talent.dbc",
+    "stage": "materialized static readback contract load",
+    "database_connections": 0,
+    "database_queries": 0,
+    "worldserver_starts": 0,
+    "dps_hps": "not_measured"
+  },
+  "causal_conclusion": {
+    "gameplay_repair_status": "compiled_and_reviewed_but_not_live_validated",
+    "magmaw_status": "not_fixed",
+    "dps_diagnosis_status": "last live evidence still indicates severe cadence starvation, but no current binary gameplay evidence exists",
+    "primary_program_blocker": "The immutable runtime evidence checkout has no complete, predeclared asset-closure contract. Route, profile, navmesh, and now DBC dependencies were discovered serially after downstream work began.",
+    "why_this_is_a_loop": "Each retry proved only the next missing member of an implicit runtime asset set. The workflow validated individual assets instead of validating the complete transitive runtime asset closure before build/seal/live admission."
+  },
+  "required_subsystem_repair": {
+    "owner_skill": "raid-shard-architecture",
+    "work_unit": "shard:immutable_runtime_asset_closure_contract",
+    "objective": "Define and verify one reusable manifest for the complete immutable runtime asset closure required by bundle creation, static readback, navmesh probing, and worldserver launch before any encounter-specific Stage3 is admitted.",
+    "must_cover": [
+      "DBC locale files required by roster, talent, glyph, gear, and consumable materialization",
+      "map/vmap/mmap assets required by route and native path probes",
+      "DVC-backed route and runtime-profile inputs",
+      "exact hashes, sizes, modes, provenance, hydration source, and eviction policy",
+      "one preflight that reports the full missing set rather than the first missing file"
+    ],
+    "forbidden_shortcut": "Do not authorize a Talent.dbc-only copy or another Magmaw-specific asset exception."
+  },
+  "resume_condition": "Resume the Magmaw canary only after the generic immutable runtime asset-closure manifest passes in one fresh checkout and the already-valid bundle/readback can be sealed without discovering another implicit dependency."
+}
