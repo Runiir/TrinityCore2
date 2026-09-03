@@ -1,0 +1,75 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_stage3_local_cache_seed",
+  "owner_skill": "raid-performance-loop",
+  "classification": "immutable_route_local_cache_seed_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "failed_predecessor": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-route-hydration-handoff-v2.json",
+    "sha256": "163e1afb9b31a601f91e4db10230df689ec207fcb03c3bf7c62844cef0dc22b5",
+    "classification": "immutable_route_hydration_blocked_dvc_pull_missing_cache",
+    "worldserver_starts": 0,
+    "missing_cache_object": "210560429770d2139460ab65a8f4bf4d.dir"
+  },
+  "first_broken_edge": {
+    "id": "validation_scenarios_dvc_dependencies_remote_cache_gap",
+    "cause": "The object remote lacks the validation_provisioning directory cache object, while the clean primary checkout has that exact content-addressed object and every child referenced by it.",
+    "first_downstream_state": "The immutable checkout cannot materialize the two validation_scenarios dependency reports, so its DVC lineage remains dirty.",
+    "hypothesis": "Seeding only the seven verified content-addressed cache files from the clean primary cache, then running one exact DVC checkout, will restore the dependencies without changing source or regenerating data."
+  },
+  "source_cache": {
+    "worktree": "/home/runiir/Games/trinity-cata",
+    "git_tree": "4a3891fff2df66fd8cfea479e89c45295e23fcb2",
+    "dvc_status_validation_scenarios": {},
+    "cache_root": "/home/runiir/Games/trinity-cata/.dvc/cache/files/md5",
+    "objects": [
+      {"name": "210560429770d2139460ab65a8f4bf4d.dir", "size": 390},
+      {"name": "a94ff74266f9acdc3b759641b2013950", "size": 7266},
+      {"name": "291a4195eafcc7edc4806ba27f73ac35", "size": 1110},
+      {"name": "c9e919f39af77295de5836078e769c0e", "size": 41325},
+      {"name": "56c12e14d2f7cf3f47bef54116d597da", "size": 3500878},
+      {"name": "aa952a7041f215c141a9a61bc1656015", "size": 20094},
+      {"name": "fa37fe35db80541c82a1f0555efd7834", "size": 1651}
+    ]
+  },
+  "immutable_checkout": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+    "tree": "ea6f9452028be190deff565de0b432220d11ff15",
+    "cache_root": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable/.dvc/cache/files/md5"
+  },
+  "authorized_work_unit": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-local-cache-seed-handoff.json",
+    "actions": [
+      "Verify source and destination identities and require the primary validation_scenarios DVC status to equal {}.",
+      "Verify each named source object by MD5 filename and exact size, including the canonical bytes of the .dir object; copy exactly those seven objects into their content-addressed immutable-checkout cache paths with mode 0444.",
+      "Verify every destination object again by MD5 and size.",
+      "Run exactly once: pixi run dvc checkout dataset/validation_provisioning dataset/validation_provisioning_verification/report.json.",
+      "Require the two materialized dependency report MD5 values to equal aa952a7041f215c141a9a61bc1656015 and fa37fe35db80541c82a1f0555efd7834.",
+      "Run exactly once: pixi run dvc status validation_scenarios --json, and require {}."
+    ]
+  },
+  "budgets": {
+    "source_dvc_status": 1,
+    "cache_object_copies": 7,
+    "dvc_checkout": 1,
+    "target_dvc_status": 1,
+    "worldserver_starts": 0,
+    "builds": 0,
+    "database_mutations": 0,
+    "dvc_pull_push_repro_gc": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No source/config/route/roster/ledger/skill/gameplay mutation, DVC pull/push/repro/gc, remote mutation, broad checkout, build, provision, database mutation, server/live action, retry, or gameplay inference.",
+    "Do not copy working-tree dependency files directly; materialize them only through DVC after exact cache-object verification.",
+    "Do not expose .dvc/config.local contents or credentials."
+  ],
+  "acceptance_conditions": [
+    "Exactly seven content-addressed cache objects are copied and verified; no other cache or workspace data is transferred.",
+    "The immutable checkout remains clean at 860fcba4/ea6f9452, both dependency report hashes match dvc.lock, and validation_scenarios DVC status is {}.",
+    "No route selector, runtime-profile preflight, worldserver, fixture, gameplay, DPS, or HPS claim is made."
+  ],
+  "next_action": "On success, authorize a separate read-only sealed-route/profile preflight before any Stage 3 capture."
+}
