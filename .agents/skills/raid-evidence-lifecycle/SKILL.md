@@ -11,6 +11,16 @@ Keep evidence independently reconstructible while retaining as little local data
 
 Before live execution, require:
 
+- a retained clean source checkout at the exact sealed commit/tree, and require
+  the launch contract to name that immutable path. Never use an advancing
+  coordinator branch worktree as durable source identity. Verify from the path
+  stored in the bundle after later control commits; `source_identity_mismatch`
+  is a real lifecycle failure, not a summary-only mismatch;
+- canonical generated JSON written by a serializer or `apply_patch`. Parse and
+  canonically verify it before the next budgeted action, require a final `0a`
+  byte, and reject literal terminal bytes `5c 6e`. Do not use shell output that
+  writes `\\n` as data;
+
 - an exact clean Git commit and tree;
 - a successful gate-bearing build receipt whose request, admission, and completion identities are equal and clean;
 - the exact binary hash and generated config hash;

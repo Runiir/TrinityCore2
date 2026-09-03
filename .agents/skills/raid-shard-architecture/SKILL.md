@@ -20,6 +20,19 @@ Require one exact tuple across config, generated route, runtime status, capture,
 
 `scenario_id + runtime_profile_id + pool_tag + route_manifest + frozen roster + assignment generation`
 
+Bind every sealed launch contract to a retained clean source checkout whose
+HEAD and tree cannot advance during later authorization or evidence commits.
+Do not record the coordinator's mutable branch worktree as
+`launch_contract.source.worktree`; a later metadata commit makes an otherwise
+valid bundle fail `source_identity_mismatch`. Keep the immutable checkout until
+the live stage is published, then remove it through exact authorized cleanup.
+
+Write generated JSON through the repository serializer or `apply_patch`, never
+through shell text that encodes `\\n`. Before spending the next one-shot budget,
+parse the file, run its canonical verifier, require the last byte to be `0a`,
+and reject final bytes `5c 6e`. A serialization failure consumes its write but
+must not consume downstream recurrence, bundle, database, seal, or live budgets.
+
 Complete all receipt-bound setup before admission: exact gear,
 talents/glyphs, ordinary-pet row and spellbook/autocast, group/difficulty,
 roster leases, and initial map/instance. Once bot actions are enabled, verify
