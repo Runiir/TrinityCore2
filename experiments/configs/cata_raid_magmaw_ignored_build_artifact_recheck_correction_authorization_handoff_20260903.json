@@ -1,0 +1,72 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_ignored_build_artifact_recheck_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_evidence_toctou_correction_authorized",
+  "created_at_utc": "2026-09-03T04:24:00Z",
+  "base_commit": "2e1d0c45c0cb0aa0024628ec09575d1102b4466c",
+  "base_tree": "0abe1c13a0b007e7f1de8ce7bb6b5c7a233b4254",
+  "review": {
+    "path": "/tmp/magmaw-split-source-build-worktree-review-b11d7a52/review_handoff.json",
+    "sha256": "ba3a14204b2cc28967393643bb40761024fc125f4936a8f347378cebdc1c5a90",
+    "verdict": "NO-GO"
+  },
+  "first_broken_edge": {
+    "id": "ignored_build_artifact_concurrent_mutation_not_fail_closed",
+    "counterexample": "A same-size ignored worldserver binary was mutated during the final Git identity callback. Both Git snapshots remained clean and identical, yet validate_build_receipt returned valid=true while its returned binary hash differed from the receipt-bound hash."
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "implementation_commit_budget": 1,
+    "owned_files": [
+      "tools/raid_program/capture_environment_validation.py",
+      "tools/raid_program/capture_live_run.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "required_change": [
+      "Snapshot receipt-bound binary and CMake cache path/hash/size/mtime before validation completes, then resnapshot after the final build-worktree Git identity check and reject any mismatch or receipt divergence explicitly.",
+      "Bind returned binary/CMake provenance to the verified final artifact snapshots, never a value read before the final mutation opportunity.",
+      "Immediately before subprocess launch, compare the current binary and CMake cache against the accepted final preflight snapshots and fail closed without Popen on any drift.",
+      "Preserve the source/build worktree separation and every existing receipt, source, CMake, binary, timestamp, path, attestation, and compatibility gate."
+    ],
+    "required_fixture": [
+      "Deterministically mutate an ignored same-size binary during validation and require invalid with an explicit concurrent artifact drift rejection.",
+      "Deterministically mutate the ignored CMake cache during validation and require invalid with an explicit concurrent artifact drift rejection.",
+      "Mutate either accepted artifact between setup and execute_capture_run; assert subprocess.Popen is never called and the typed startup error identifies launch-boundary provenance drift.",
+      "Stable split-worktree and legacy single-worktree cases remain green."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py",
+      "pixi run python -m py_compile tools/raid_program/capture_environment_validation.py tools/raid_program/capture_live_run.py",
+      "git diff --check 2e1d0c45c0cb0aa0024628ec09575d1102b4466c HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Only the exact three correction-owned files change.",
+      "Both adversarial ignored-artifact mutations fail closed during receipt validation.",
+      "Launch-boundary mutation stops before Popen and produces typed infrastructure evidence.",
+      "Returned provenance describes the same final snapshots accepted by the gate.",
+      "Focused tests, compile, and diff checks pass.",
+      "A fresh independent Sol-high reviewer returns GO before Stage 3 starts."
+    ]
+  },
+  "forbidden": [
+    "No edits to capture_setup.py or any config/skill/schema/recurrence/bundle/route/profile/navmesh/gameplay/C++/database/DVC file.",
+    "No gate weakening, sleep/timing-dependent tests, synthetic success claim, or binary/CMake copying/relocation.",
+    "No build, configure, provision, server, database, DVC, fixture, canary, publication, promotion, or ML action."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "database_operations": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one narrow Luna-xhigh raid-evidence-lifecycle correction implementer, then a fresh independent Sol-high reviewer."
+}
