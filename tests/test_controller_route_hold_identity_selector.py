@@ -19,6 +19,7 @@ def test_compiled_selector_maps_each_fixture_and_preserves_default(tmp_path: Pat
 #include "Bots/BotControllerRouteHoldIdentitySelector.h"
 
 #include <cassert>
+#include <string>
 #include <string_view>
 
 using BotControllerRouteHoldIdentitySelector::AuthorityCatalog;
@@ -43,6 +44,20 @@ void AssertTriple(AuthorityTriple const& actual,
     assert(actual.SourceCommit == source);
 }
 
+void AssertIdentity(AuthorityTriple const& authority,
+    std::string_view fixture, std::string_view seal, std::string_view source)
+{
+    BotControllerRouteHold::Identity const identity{
+        "cohort", 1, 2, "scenario", "profile", "manifest", 3, "node", 4,
+        std::string(authority.FixtureId),
+        std::string(authority.SealSha256),
+        std::string(authority.SourceCommit),
+    };
+    assert(identity.FixtureId == fixture);
+    assert(identity.SealSha256 == seal);
+    assert(identity.SourceCommit == source);
+}
+
 int main()
 {
     AuthorityCatalog const authorities = Catalog();
@@ -55,6 +70,16 @@ int main()
             authorities),
         "transfer-config", "transfer-seal", "transfer-source");
     AssertTriple(Select(BotChainwielderOwnerCheckpoint::FixtureId, authorities),
+        "chain-config", "chain-seal", "chain-source");
+    AssertIdentity(Select(BotProfileCombatRangeCheckpoint::FixtureId, authorities),
+        "profile-config", "profile-seal", "profile-source");
+    AssertIdentity(Select(BotNativePathCheckpoint::FixtureId, authorities),
+        "native-config", "native-seal", "native-source");
+    AssertIdentity(
+        Select(BotEncounter::MagmawTransferLaneCheckpoint::FixtureId,
+            authorities),
+        "transfer-config", "transfer-seal", "transfer-source");
+    AssertIdentity(Select(BotChainwielderOwnerCheckpoint::FixtureId, authorities),
         "chain-config", "chain-seal", "chain-source");
 
     // Unknown and empty IDs preserve the existing Chainwielder fallback.

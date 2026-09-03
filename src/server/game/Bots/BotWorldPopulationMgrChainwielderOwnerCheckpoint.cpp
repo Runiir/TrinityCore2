@@ -338,9 +338,9 @@ BotWorldPopulationMgr::CurrentControllerRouteHoldIdentity(
         Party().ValidationRouteGeneration,
         Cohort().Config.ValidationRouteNodeId,
         actorGuid,
-        authority.FixtureId,
-        authority.SealSha256,
-        authority.SourceCommit,
+        std::string(authority.FixtureId),
+        std::string(authority.SealSha256),
+        std::string(authority.SourceCommit),
     };
 }
 
