@@ -1,0 +1,57 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_controller_hold_identity_authority_materialization_repair",
+  "owner_skill": "raid-performance-loop",
+  "classification": "one_trace_backed_runtime_compile_repair_authorized",
+  "created_at_utc": "2026-09-03T05:56:01Z",
+  "source_evidence": {
+    "build_handoff_path": "/home/runiir/Games/trinity-controller-hold-profile-selector-fast4-v2-build-handoff.json",
+    "build_handoff_sha256": "fd6a0c82b9dc0f71cb6a00004c3fd8b3d64129736f1c0972fa050f96e4d182e6",
+    "build_commit": "9b9bcfce1c852d31f8950d37001b849a730326ad",
+    "build_ticket": "raid-build-18927349417b4d81b0f401086b5ef9c7",
+    "primary_type": "compile_failure",
+    "first_broken_edge": "controller_route_hold_identity_authority_string_view_not_materialized",
+    "source_path": "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "source_line": 344,
+    "compiler_diagnostic": "could not convert brace-enclosed initializer list to BotControllerRouteHold::Identity",
+    "resource_policy_refuted_as_current_blocker": true
+  },
+  "authorized_work_unit": {
+    "owner_skill": "raid-bot-runtime-implementation",
+    "owned_files": [
+      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+      "tests/test_controller_route_hold_identity_selector.py"
+    ],
+    "implementation_hypothesis": "Explicitly materialize authority.FixtureId, authority.SealSha256, and authority.SourceCommit as std::string at the BotControllerRouteHold::Identity construction boundary, preserving the selector and every identity value.",
+    "deterministic_fixture": "Extend the compiled selector fixture to construct a real BotControllerRouteHold::Identity from a selected AuthorityTriple using the exact explicit conversion shape and assert all three resulting strings."
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_controller_route_hold_identity_selector.py",
+    "pixi run python -m py_compile tests/test_controller_route_hold_identity_selector.py",
+    "wc -l src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
+    "git diff --check"
+  ],
+  "acceptance_conditions": [
+    "The production return expression explicitly materializes exactly the three selected authority string_view fields into Identity string values.",
+    "The compiled fixture exercises the same typed construction boundary and verifies the profile authority values survive unchanged.",
+    "All selector mapping, fallback behavior, identity ordering, and non-authority fields remain unchanged.",
+    "The C++ source remains below 1,000 lines and all required commands pass.",
+    "An independent Sol runtime reviewer returns GO before another build or live canary."
+  ],
+  "budgets": {
+    "owned_files": 2,
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "database_operations": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No change to AuthorityTriple, AuthorityCatalog, selector matching/fallback, BotControllerRouteHold::Identity layout, non-authority identity fields, controller behavior, encounter behavior, or build policy.",
+    "No edit outside the two owned files, no configure/build/server/DB/DVC/capture/fixture/live canary, and no broad refactor or unrelated cleanup."
+  ],
+  "next_action": "Implement the three explicit conversions and compile-boundary regression fixture, commit, then obtain independent review."
+}
