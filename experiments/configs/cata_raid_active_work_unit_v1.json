@@ -22,6 +22,7 @@
   },
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_post_build_static_seal_authorization_handoff_20260903.json",
+    "sha256": "13850e25038e5b3af3b5f48fe27a61ef53b471203c3fc5c0cc10af35b26a9ff8",
     "build_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
     "build_handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e"
   },
