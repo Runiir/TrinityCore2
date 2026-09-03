@@ -1,0 +1,105 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "shard:runtime_asset_bundle_capture_readback_propagation",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "architecture_correction_authorized",
+  "created_at_utc": "2026-09-03T08:19:13Z",
+  "immutable_evidence": {
+    "review_handoff_path": "/home/runiir/Games/trinity-generic-runtime-asset-closure-review-handoff.json",
+    "review_handoff_sha256": "b58fcdcc2c52f4d82df2fe2eae0da9790c07e006a94a5ed05510240baae958e6",
+    "authority_hardening_commit": "1a3cca2f65ee0a3ad6d125e9150b678f4f47f645",
+    "authority_hardening_tree": "88eb0ad149e748ba7bf70ab60a2af7858c70384a",
+    "reviewed_implementation_commit": "ab5ca8755682806f36daadb911acc9951da193b7"
+  },
+  "scope_lock": {
+    "finding": "RAC-001",
+    "slice": "authenticated bundle, capture setup, provisioning apply, and database-backed readback propagation",
+    "objective": "Make runtime-asset closure authority mandatory and immutable across the current bundle-authenticated capture/readback lifecycle, including all composite commands, before any nav, output, provisioning, database, or worldserver side effect.",
+    "owned_files": [
+      "tools/raid_program/runtime_asset_closure.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/capture_phase1_provisioning_readback.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/composite_fixture_replay_launcher.py",
+      "tests/test_runtime_asset_closure.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      "tests/test_phase1_provisioning_readback.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_magmaw_transfer_prestart_bundle.py",
+      "tests/test_composite_fixture_replay_launcher.py",
+      ".agents/skills/raid-shard-architecture/SKILL.md"
+    ],
+    "required_behavior": [
+      "Expose one canonical helper that renders and validates the complete closure argument tuple from explicit verified roots, bundle/config identity, scenario map ID, manifest, audit authority, inventory authority, and extraction receipt binding. Never derive a root from cwd.",
+      "Make capture setup and database-backed provisioning readback reject total omission and partial closure authority before their first downstream side effect. Omission must never mean approval.",
+      "Have bundle creation derive the exact tuple from already verified source, DVC workspace, sealed bundle, config, and scenario identities, then include it in launch_argv before the bundle manifest is hashed and atomically sealed.",
+      "Have bundle verification require the exact closure tuple in launch_argv and reject omission, reordering that changes command identity, root substitution, map substitution, stale manifest/audit/inventory authority, and bundle/config path mismatch.",
+      "Have composite plan realization carry one identical closure authority into provisioning_apply, shard_readback, and the bundle-authenticated capture command; bind it in plan_sha256 and verify it immediately before each command executes.",
+      "The provisioning_apply invocation of run_live_bot_validation must contain the complete tuple even though the generic live entrypoint's total-omission rejection is deferred to the next work unit.",
+      "Preserve profile dialect behavior and keep map/scenario selection in the owning bundle/route module, not in the generic verifier.",
+      "Update the shard-architecture skill because optional-gate compatibility was a repeated wrong assumption: runtime asset omission is never approval on a side-effecting path, and generated commands must bind the full authority. Do not add canary-specific universal guidance."
+    ],
+    "deterministic_fixtures": [
+      "Capture setup and readback with no tuple or a partial tuple reject before nav probing, contract materialization, DB URL resolution, output creation, or launch.",
+      "expected_launch_argv and both bundle dialects contain the exact canonical tuple, and bundle verification rejects any missing or mutated member.",
+      "Composite realization gives provisioning_apply, shard_readback, and capture the same closure identity; omission or mutation invalidates the plan before subprocess execution.",
+      "Existing capture/readback fixtures use an explicit valid fixture authority or mock only the completed verifier result, never an omission exemption."
+    ],
+    "explicitly_deferred": {
+      "slice": "generic live/session/calibration/Stonecore propagation",
+      "paths": [
+        "tools/bot_ml/build_validation_run_plan.py",
+        "tools/bot_ml/build_validation_run_status.py",
+        "tools/bot_ml/run_live_bot_validation.py",
+        "tools/bot_ml/build_phase6_serial_soak_contract.py",
+        "tools/bot_ml/run_phase8_all_spec_calibration.py",
+        "tools/bot_ml/run_cata_raid_dps_acceptance.py",
+        "tools/bot_ml/build_phase9_serial_run_plan.py",
+        "tools/bot_ml/run_phase9_serial_canaries.py",
+        "Makefile",
+        "pixi.toml",
+        "tools/bot_ml/README.md"
+      ],
+      "safety": "No hydration, database operation, build, server, or live run is authorized until this and the next propagation slice both pass fresh review."
+    },
+    "forbidden_changes": [
+      "No edits outside the exact twelve owned paths.",
+      "No generic live/session caller edits in this slice.",
+      "No weakening of RAC-002 through RAC-005 authority checks.",
+      "No asset copy/hydration, extraction receipt creation, DVC operation, database access, provisioning execution, build, capture, worldserver start, live run, gameplay, encounter, class, role, roster, or movement change."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_runtime_asset_closure.py",
+      "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py -k 'prepare_capture_setup'",
+      "pixi run pytest -q tests/test_phase1_provisioning_readback.py",
+      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_magmaw_transfer_prestart_bundle.py",
+      "pixi run pytest -q tests/test_composite_fixture_replay_launcher.py",
+      "pixi run python -m py_compile tools/raid_program/runtime_asset_closure.py tools/raid_program/capture_setup.py tools/raid_program/capture_phase1_provisioning_readback.py tools/raid_program/chainwielder_prestart_bundle.py tools/raid_program/composite_fixture_replay_launcher.py",
+      "pixi run python /home/runiir/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/raid-shard-architecture",
+      "git diff --check"
+    ],
+    "acceptance_conditions": [
+      "Every normal authenticated bundle capture, provisioning-apply, and shard-readback command carries one exact closure tuple and total omission fails closed at capture/readback entrypoints.",
+      "Generated command, bundle, and composite plan hashes bind the closure authority and deterministic mutation tests pass.",
+      "RAC-002 through RAC-005 remain passing.",
+      "Exactly the twelve owned paths change in one commit, the skill validates, and the worktree is clean.",
+      "The generic live/session slice remains explicitly unresolved and no checklist acceptance or live authorization claim is made."
+    ],
+    "terminal_conditions": {
+      "success": "Return one committed bundle-path propagation correction and route immediately to the generic live/session propagation slice.",
+      "failed_verification": "Stop with the earliest typed failure and do not broaden ownership.",
+      "out_of_scope": "Report generic live/session, hydration, provenance creation, DVC, build, or live needs without acting on them."
+    }
+  },
+  "budgets": {
+    "implementation_commits": 1,
+    "asset_copies": 0,
+    "dvc_operations": 0,
+    "database_operations": 0,
+    "builds": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one Sol high raid-shard-architecture implementer, then authorize the generic live/session propagation slice before fresh review."
+}

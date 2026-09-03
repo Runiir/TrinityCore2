@@ -1,6 +1,6 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:runtime_asset_authority_and_inventory_hardening",
+  "work_unit": "shard:runtime_asset_bundle_capture_readback_propagation",
   "owner_skill": "raid-shard-architecture",
   "classification": "architecture_correction_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
@@ -9,42 +9,48 @@
   "mode": "10N",
   "observed_at_commit": "cb9bc7e3977f57d4e308d9763051b34feff222c4",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "Harden shared checklist authority and exhaustive native inventory for review findings RAC-002 through RAC-005.",
+  "architecture_scope": "Make the authenticated bundle, capture, provisioning-apply, and shard-readback path carry mandatory closure authority.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "Review b58fcdcc is NO-GO. This first correction hardens authority and exact inventory; mandatory command propagation RAC-001 remains blocked as the immediately following unit.",
+  "gate_state": "Authority hardening 1a3cca2f is complete. RAC-001 remains NO-GO; this slice closes the current bundle/capture/readback path before the generic live/session slice.",
   "first_broken_edge": {
     "id": "retained_immutable_runtime_asset_closure_incomplete",
     "stage": "post_build_static_readback_preflight",
     "owner_classification": "raid_shard_architecture",
     "cause": "The retained checkout lacks 10 offline DBC/DB2 files and 3 validation-gear files, while the native DataDir has required assets but no sealed extraction-provenance receipt; existing checks expose these one at a time.",
-    "review_state": "authority_hardening_correction_authorized"
+    "review_state": "bundle_path_mandatory_propagation_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_runtime_asset_authority_hardening_authorization_handoff_20260903.json",
-    "sha256": "29f3b722af18301d0bffdc5c1155110b4d59796fa8f74c83b80d6a6e567c8ae7",
+    "path": "experiments/configs/cata_raid_runtime_asset_bundle_path_propagation_authorization_handoff_20260903.json",
+    "sha256": "d453bc32fbfff2003b222bbb825ed7b38d811f441c2f6ddc1e4902a9413831e7",
     "failure_handoff_path": "/home/runiir/Games/trinity-generic-runtime-asset-closure-review-handoff.json",
     "failure_handoff_sha256": "b58fcdcc2c52f4d82df2fe2eae0da9790c07e006a94a5ed05510240baae958e6"
   },
   "scope_lock": {
-    "objective": "Correct ancestor-safe reads, exact complete-directory member attribution, audit verification, and extraction-receipt authority without hydrating assets.",
+    "objective": "Make closure authority mandatory and immutable across bundle launch_argv, capture setup, provisioning apply, shard readback, and composite plan execution.",
     "owned_files": [
       "tools/raid_program/runtime_asset_closure.py",
-      "tools/raid_program/runtime_asset_safe_io.py",
-      "experiments/configs/runtime_asset_closure_manifest_v1.json",
-      "experiments/configs/runtime_asset_closure_audit_authority_v1.json",
-      "experiments/configs/runtime_asset_native_data_inventory_v1.json",
-      "tests/test_runtime_asset_closure.py"
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/capture_phase1_provisioning_readback.py",
+      "tools/raid_program/chainwielder_prestart_bundle.py",
+      "tools/raid_program/composite_fixture_replay_launcher.py",
+      "tests/test_runtime_asset_closure.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      "tests/test_phase1_provisioning_readback.py",
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tests/test_magmaw_transfer_prestart_bundle.py",
+      "tests/test_composite_fixture_replay_launcher.py",
+      ".agents/skills/raid-shard-architecture/SKILL.md"
     ],
-    "stop_condition": "Stop after one committed correction; leave RAC-001 unresolved and do not hydrate or run any runtime side effect."
+    "stop_condition": "Stop after one committed bundle-path correction; leave the generic live/session propagation slice unresolved and do not run a runtime side effect."
   },
   "acceptance_conditions": [
-    "RAC-002 through RAC-005 deterministic fixtures and real incomplete scan pass.",
-    "Every root and authority read rejects symlink ancestors and exact directory member deltas are named.",
-    "RAC-001 remains explicitly unresolved with no runtime acceptance claim."
+    "Every bundle capture, provisioning-apply, and shard-readback command binds one exact closure tuple.",
+    "Capture setup and readback reject omission before their first side effect.",
+    "RAC-002 through RAC-005 remain passing; the generic live/session slice stays explicitly unresolved."
   ],
   "forbidden": [
-    "No files outside the six owned paths; no RAC-001 propagation, asset copy, DVC operation, server, DB operation, live canary, rebuild, or gameplay change."
+    "No files outside the twelve owned paths; no generic live/session caller edit, asset copy, DVC operation, server, DB operation, live canary, rebuild, or gameplay change."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -68,5 +74,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement authority hardening, then authorize mandatory propagation RAC-001 before a fresh independent review."
+  "next_action": "Implement bundle-path propagation, then authorize generic live/session propagation before fresh independent review."
 }
