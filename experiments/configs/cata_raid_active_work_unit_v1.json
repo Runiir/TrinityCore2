@@ -1,65 +1,62 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:controller_route_hold_profile_identity_selection_repair",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "implementation_authorized",
+  "work_unit": "shard:controller_hold_profile_selector_one_build",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "one_build_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "31bdffe04c092f07d8fc282cfa317804fca1c0ca",
+  "observed_at_commit": "3c2031c40aca47315691978d935e80b3357c1814",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "Repair one shared controller-route-hold fixture identity-selection edge through a compiled production adapter.",
-  "behavior_change": true,
+  "architecture_scope": "One fresh policy-controlled worldserver build of the independently reviewed identity selector repair.",
+  "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "V4 evidence is remotely verified and locally cleaned; runtime repair is authorized, while build and live gates remain closed.",
+  "gate_state": "Runtime repair passed independent GO; exactly one fresh build is authorized, while post-build seal and live gates remain closed.",
   "first_broken_edge": {
     "id": "controller_route_hold_profile_fixture_config_identity_not_selected",
     "stage": "controller_route_hold_identity_selection",
     "owner_classification": "raid_bot_runtime_implementation",
     "cause": "CurrentControllerRouteHoldIdentity omits the ProfileCombatRangeCheckpoint fixture branch and falls through to Chainwielder configuration fields.",
-    "review_state": "bounded_implementation_authorized"
+    "review_state": "independent_go_one_build_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_controller_route_hold_profile_identity_selection_repair_authorization_handoff_20260903.json",
-    "publication_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-v4-publication-handoff-v2.json",
-    "publication_handoff_sha256": "8f5c951722d39083ebb2f5ef310fe70173646a5407f263d7a5e7006c0ef07ce1"
+    "path": "experiments/configs/cata_raid_controller_hold_profile_selector_one_build_authorization_handoff_20260903.json",
+    "review_path": "/tmp/controller_route_hold_identity_selector_review_handoff_20260903.json",
+    "review_sha256": "b5b144d635bb49aa2352f63e8e0f6a76ea4ab1b6fcefbf3ae38b12007d95fbec"
   },
   "scope_lock": {
-    "objective": "Select the correct configured identity authority for every controller-route-hold fixture dialect using one compiled production adapter.",
-    "owned_files": [
-      "src/server/game/Bots/BotControllerRouteHoldIdentitySelector.h",
-      "src/server/game/Bots/BotWorldPopulationMgrChainwielderOwnerCheckpoint.cpp",
-      "tests/test_controller_route_hold_identity_selector.py"
-    ],
-    "stop_condition": "Stop after one implementation commit and deterministic fixture bank; no build or live process."
+    "objective": "Produce one gate-bearing worldserver binary from a fresh clean detached worktree at the exact authorized commit.",
+    "owned_output": "/home/runiir/Games/trinity-controller-hold-profile-selector-build-handoff.json",
+    "stop_condition": "Stop after one build_ready or typed build failure; no retry and no live process."
   },
   "acceptance_conditions": [
-    "The compiled production selector maps profile-range and all adjacent fixture dialects to their exact authority triples.",
-    "Independent Sol-high review returns GO before one new build is authorized."
+    "One configure and one coordinated build produce a production-valid receipt and exact binary hash.",
+    "Post-build static sealing remains separate and required before Stage 3."
   ],
   "forbidden": [
-    "No files outside scope, no gameplay/route/config/checkpoint-state changes, and no build/server/DB/DVC/live action."
+    "No source/config mutation, second build, server, DB, DVC, provisioning, capture, fixture, gameplay canary, or retry."
   ],
   "validation_clock": {
-    "policy": "deterministic_fixture_only",
-    "implementation_commits": 1,
-    "independent_reviews": 1,
+    "policy": "queued_build_fast8_v4",
+    "implementation_commits": 0,
+    "independent_reviews": 0,
     "dvc_add_budget": 0,
     "dvc_push_budget": 0,
     "credential_aware_remote_reconstruction_budget": 0,
     "worldserver_start_budget": 0,
     "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
-    "build_budget": 0,
+    "configure_budget": 1,
+    "build_budget": 1,
     "database_mutation_budget": 0,
     "dvc_mutation_budget": 0,
     "retries": 0,
     "eviction_after_remote_verify_only": false
   },
   "issues": [],
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement and independently review the bounded fixture identity selector repair."
+  "next_action": "Run the one fresh policy-controlled build and close its receipt."
 }
