@@ -2,7 +2,7 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "shard:immutable_runtime_asset_closure_contract",
   "owner_skill": "raid-shard-architecture",
-  "classification": "magmaw_one_off_infrastructure_patch_loop_stopped",
+  "classification": "failed",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
@@ -22,6 +22,7 @@
   },
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_pre_gameplay_infrastructure_causal_summary_20260903.json",
+    "sha256": "e166e3e71f4303a55a3eadb910b4560a2f31af14d4b0011ef9cfb1921b75cf19",
     "failure_handoff_path": "/home/runiir/Games/trinity-magmaw-controller-identity-postbuild-static-sealed-handoff.json",
     "failure_handoff_sha256": "66fc48914260e505fd897126e98c31ba0c8e894826cccb7c9ed3292a5b10c9d3"
   },
@@ -38,7 +39,8 @@
     "No Talent.dbc-only copy, Magmaw-specific exception, server, DB mutation, live canary, rebuild, or implicit first-missing-file retry."
   ],
   "validation_clock": {
-    "policy": "complete_immutable_runtime_asset_closure_before_stage3",
+    "policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
     "implementation_commits": 0,
     "independent_reviews": 0,
     "dvc_add_budget": 0,
