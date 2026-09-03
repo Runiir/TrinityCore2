@@ -39,6 +39,9 @@ from tools.raid_program.capture_runtime_io import (
     bounded_native_shutdown,
     wait_for_prompt,
 )
+from tools.raid_program.capture_environment_validation import (
+    validate_launch_artifact_snapshot,
+)
 from tools.raid_program.capture_setup import CaptureSetup
 from tools.raid_program.capture_telemetry_transport import (
     JsonLogCursor,
@@ -164,6 +167,58 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
     trace_transport_gate: dict[str, Any] | None = None
     telemetry_abort: dict[str, Any] = {"detected": False}
     flush_forced_evidence_callback: Any = None
+
+    launch_artifact_gate = validate_launch_artifact_snapshot(
+        setup.build_provenance,
+        binary,
+        setup.build_worktree or worktree,
+    )
+    if launch_artifact_gate.get("valid") is not True:
+        launch_rejections = [
+            str(reason) for reason in launch_artifact_gate.get("rejections", [])
+        ]
+        last_rejections = launch_rejections
+        startup_error = (
+            "infrastructure_abort:launch_artifact_provenance_drift:"
+            + ",".join(launch_rejections)
+        )
+        telemetry_abort = {
+            "detected": True,
+            "classification": "infrastructure_abort",
+            "reason": "launch_artifact_provenance_drift",
+            "rejections": launch_rejections,
+            "accepted": launch_artifact_gate.get("accepted"),
+            "current": launch_artifact_gate.get("current"),
+        }
+        return CaptureRunResult(
+            started_utc=started_utc,
+            recovery_required=recovery_required,
+            stable=stable,
+            last_rejections=last_rejections,
+            startup_error=startup_error,
+            process_return_code=None,
+            telemetry_scheduler=telemetry_scheduler,
+            telemetry_transport_ledger=telemetry_transport_ledger,
+            telemetry_command_counts=telemetry_command_counts,
+            trace_transport_pressure_gate=trace_transport_pressure_gate,
+            operator_interrupt=operator_interrupt,
+            shutdown_error=shutdown_error,
+            stop_commands_sent=stop_commands_sent,
+            checkpoint_arm_command_sent=checkpoint_arm_command_sent,
+            checkpoint_arm_gate=checkpoint_arm_gate,
+            resource_samples=resource_samples,
+            resource_sampling_errors=resource_sampling_errors,
+            resource_sampling_error_count=resource_sampling_error_count,
+            resource_tick_rate=resource_tick_rate,
+            forced_evidence_report=forced_evidence_report,
+            fixture_terminal=fixture_terminal,
+            terminal_failure=terminal_failure,
+            semantic_stall=semantic_stall,
+            controller_watchdog=controller_watchdog,
+            trace_transport_gate=trace_transport_gate,
+            telemetry_abort=telemetry_abort,
+            log_bytes=b"",
+        )
 
     def request_final_evidence(reason: str) -> dict[str, Any]:
         nonlocal operator_interrupt

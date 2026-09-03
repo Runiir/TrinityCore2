@@ -96,6 +96,9 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     finalize_capture,
 )
 from tools.raid_program.capture_setup import recurrence_profile_authority
+from tools.raid_program.capture_environment_validation import (
+    snapshot_receipt_bound_artifacts,
+)
 from tools.raid_program.chainwielder_prestart_bundle import (
     PERSONAL_THREAT_EPISODE_SCOPE_KEY_TEMPLATE,
 )
@@ -977,6 +980,9 @@ def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, mon
     config = tmp_path / "worldserver.conf"
     server_log = tmp_path / "worldserver.log"
     binary.write_bytes(b"fixture")
+    cache_path = tmp_path / "build/CMakeCache.txt"
+    cache_path.parent.mkdir(parents=True)
+    cache_path.write_bytes(b"fixture")
     config.write_bytes(b"fixture")
     args = SimpleNamespace(
         trace_transport_smoke=False,
@@ -1014,7 +1020,14 @@ def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, mon
         drudge_required=False,
         drudge_navmesh_preflight={"required": False, "all_passed": None},
         drudge_frozen_anchors={},
-        build_provenance={"valid": True},
+        build_provenance={
+            "valid": True,
+            "artifact_snapshots": {
+                "accepted_final": snapshot_receipt_bound_artifacts(
+                    binary, tmp_path,
+                ),
+            },
+        },
     )
 
     class FakeProcess:
@@ -1130,6 +1143,74 @@ def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, mon
     assert result.log_bytes == b""
     assert process.stdin.getvalue().startswith(b"botauto start stonecore_5n\n")
     assert b"botauto status\n" in process.stdin.getvalue()
+
+
+@pytest.mark.parametrize("artifact", ["binary", "cmake_cache"])
+def test_execute_capture_run_rejects_launch_artifact_drift_before_popen(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, artifact: str,
+):
+    binary = tmp_path / "worldserver"
+    config = tmp_path / "worldserver.conf"
+    server_log = tmp_path / "worldserver.log"
+    binary.write_bytes(b"fixture")
+    cache_path = tmp_path / "build/CMakeCache.txt"
+    cache_path.parent.mkdir(parents=True)
+    cache_path.write_bytes(b"cache-fixture")
+    config.write_bytes(b"fixture")
+    accepted = snapshot_receipt_bound_artifacts(binary, tmp_path)
+    if artifact == "binary":
+        binary.write_bytes(b"mutated")
+    else:
+        cache_path.write_bytes(b"cache-mutated")
+    setup = CaptureSetup(
+        args=SimpleNamespace(
+            trace_transport_smoke=False,
+            max_repeated_decision_count=20,
+            max_death_loop_count=3,
+        ),
+        binary=binary,
+        config=config,
+        output=tmp_path / "capture.json",
+        worktree=tmp_path,
+        profile_name="stonecore_5n",
+        scenario_id="stonecore_5n",
+        raw_output=tmp_path / "capture.raw.jsonl",
+        server_log_output=server_log,
+        recurrence_admission=None,
+        checkpoint_arm_command=None,
+        preflight={"passed": True, "reasons": []},
+        identity_before={"clean": True},
+        runtime_assets={"route_partition": "stonecore_5n"},
+        controller_route_hold_scheduler=None,
+        drudge_observed=False,
+        drudge_required=False,
+        drudge_navmesh_preflight={"required": False, "all_passed": None},
+        drudge_frozen_anchors={},
+        build_provenance={
+            "valid": True,
+            "artifact_snapshots": {"accepted_final": accepted},
+        },
+    )
+    popen_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+    def forbidden_popen(*args, **kwargs):
+        popen_calls.append((args, kwargs))
+        raise AssertionError("Popen must not run after launch artifact drift")
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.subprocess.Popen", forbidden_popen,
+    )
+    result = execute_capture_run(setup)
+
+    assert popen_calls == []
+    assert result.process_return_code is None
+    assert result.startup_error is not None
+    assert result.startup_error.startswith(
+        "infrastructure_abort:launch_artifact_provenance_drift:"
+    )
+    assert f"launch_artifact_provenance_drift_{artifact}" in result.last_rejections
+    assert result.telemetry_abort["classification"] == "infrastructure_abort"
+    assert result.telemetry_abort["reason"] == "launch_artifact_provenance_drift"
 
 
 def test_capture_finalization_uses_focused_production_module():
@@ -6051,6 +6132,8 @@ def test_build_policy_path_rejects_untracked_or_unsafe_receipt_identity(tmp_path
         ("moved", "build_receipt_worktree_mismatch"),
         ("dirty", "build_worktree_dirty"),
         ("drifted", "build_worktree_source_identity_mismatch"),
+        ("artifact_binary", "build_artifact_concurrent_drift_binary"),
+        ("artifact_cmake", "build_artifact_concurrent_drift_cmake_cache"),
     ],
 )
 def test_build_receipt_binds_current_build_worktree_identity_separately(
@@ -6207,8 +6290,21 @@ def test_build_receipt_binds_current_build_worktree_identity_separately(
         source_compatibility,
     )
     identity_worktrees: list[Path] = []
+    identity_calls = 0
 
     def build_identity(worktree: Path) -> dict[str, object]:
+        nonlocal identity_calls
+        identity_calls += 1
+        if identity_calls == 2 and mutation == "artifact_binary":
+            binary.write_bytes(b"\x7fELFchanged")
+        elif identity_calls == 2 and mutation == "artifact_cmake":
+            cache_path.write_text(
+                "".join(
+                    f"{key}:STRING={('Debug' if key == 'CMAKE_BUILD_TYPE' else value)}\n"
+                    for key, value in expected_cmake.items()
+                ),
+                encoding="utf-8",
+            )
         identity_worktrees.append(worktree)
         return {
             "head": observed_identity["commit"],
@@ -6246,6 +6342,13 @@ def test_build_receipt_binds_current_build_worktree_identity_separately(
     else:
         assert result["valid"] is False
         assert expected_rejection in result["rejections"]
+    if mutation.startswith("artifact_"):
+        assert result["artifact_snapshots"]["accepted_final"] == result[
+            "artifact_snapshots"
+        ]["post_final_identity"]
+        assert result["binary_sha256"] == result["artifact_snapshots"][
+            "accepted_final"
+        ]["binary"]["sha256"]
 
 
 def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap():

@@ -63,6 +63,112 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _artifact_snapshot(path: Path) -> dict[str, Any]:
+    """Read one ignored artifact with a stat/hash/stat consistency check."""
+
+    resolved = path.resolve()
+    try:
+        before = resolved.stat()
+        digest = sha256_file(resolved)
+        after = resolved.stat()
+    except OSError as error:
+        return {
+            "path": str(resolved),
+            "exists": False,
+            "sha256": None,
+            "size_bytes": None,
+            "mtime_ns": None,
+            "read_consistent": False,
+            "error": f"{type(error).__name__}:{error}",
+        }
+    before_identity = (before.st_size, before.st_mtime_ns)
+    after_identity = (after.st_size, after.st_mtime_ns)
+    return {
+        "path": str(resolved),
+        "exists": True,
+        "sha256": digest,
+        "size_bytes": after.st_size,
+        "mtime_ns": after.st_mtime_ns,
+        "read_consistent": before_identity == after_identity,
+        "error": None,
+    }
+
+
+def snapshot_receipt_bound_artifacts(
+    binary: Path, build_worktree: Path,
+) -> dict[str, dict[str, Any]]:
+    """Snapshot the receipt-bound worldserver and CMake cache artifacts."""
+
+    resolved_build_worktree = build_worktree.resolve()
+    return {
+        "binary": _artifact_snapshot(binary),
+        "cmake_cache": _artifact_snapshot(
+            resolved_build_worktree / "build/CMakeCache.txt"
+        ),
+    }
+
+
+def _artifact_snapshot_rejections(
+    snapshots: dict[str, dict[str, Any]], *, prefix: str,
+) -> list[str]:
+    rejections: list[str] = []
+    for name in ("binary", "cmake_cache"):
+        snapshot = snapshots.get(name)
+        if not isinstance(snapshot, dict):
+            rejections.append(f"{prefix}_snapshot_missing_{name}")
+            continue
+        if snapshot.get("read_consistent") is not True:
+            rejections.append(f"{prefix}_snapshot_unstable_{name}")
+        if snapshot.get("exists") is not True:
+            rejections.append(f"{prefix}_missing_{name}")
+    return rejections
+
+
+def _artifact_snapshot_drift_rejections(
+    before: dict[str, dict[str, Any]],
+    after: dict[str, dict[str, Any]],
+) -> list[str]:
+    rejections: list[str] = []
+    for name in ("binary", "cmake_cache"):
+        if before.get(name) != after.get(name):
+            rejections.append(f"build_artifact_concurrent_drift_{name}")
+    return rejections
+
+
+def validate_launch_artifact_snapshot(
+    build_provenance: dict[str, Any],
+    binary: Path,
+    build_worktree: Path,
+) -> dict[str, Any]:
+    """Verify receipt artifacts again at the boundary immediately before launch."""
+
+    accepted_container = build_provenance.get("artifact_snapshots")
+    accepted = (
+        accepted_container.get("accepted_final")
+        if isinstance(accepted_container, dict) else None
+    )
+    if not isinstance(accepted, dict):
+        return {
+            "valid": False,
+            "rejections": ["launch_artifact_snapshot_missing"],
+            "accepted": accepted,
+            "current": None,
+        }
+    current = snapshot_receipt_bound_artifacts(binary, build_worktree)
+    rejections = _artifact_snapshot_rejections(
+        current, prefix="launch_artifact",
+    )
+    for name in ("binary", "cmake_cache"):
+        if accepted.get(name) != current.get(name):
+            rejections.append(f"launch_artifact_provenance_drift_{name}")
+    return {
+        "valid": not rejections,
+        "rejections": rejections,
+        "accepted": accepted,
+        "current": current,
+    }
+
+
 def git_identity(cwd: Path) -> dict[str, Any]:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd, text=True).strip()
     tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=cwd, text=True).strip()
@@ -188,6 +294,10 @@ def validate_build_receipt(
                     }:
                         rejections.append("build_worktree_source_identity_mismatch")
         controls = policy.get("mechanical_controls", {})
+        cache_path = (
+            resolved_build_worktree / "build/CMakeCache.txt"
+        ).resolve()
+        stages: list[Any] = []
         release_flags = controls.get("cmake_release_cxx_flags")
         if isinstance(release_flags, str) and release_flags:
             expected_cmake = {
@@ -216,9 +326,6 @@ def validate_build_receipt(
                 "USE_SCRIPTPCH": "ON" if controls.get("script_precompiled_headers") else "OFF",
                 "WITH_COREDEBUG": "ON" if controls.get("with_coredebug") else "OFF",
             }
-            cache_path = (
-                resolved_build_worktree / "build/CMakeCache.txt"
-            ).resolve()
             cache_values: dict[str, str] = {}
             if cache_path.is_file():
                 for line in cache_path.read_text(encoding="utf-8").splitlines():
@@ -327,6 +434,12 @@ def validate_build_receipt(
                     rejections.append("build_receipt_binary_mtime_mismatch")
             except (KeyError, OSError, TypeError, ValueError):
                 rejections.append("binary_provenance_timestamp_unavailable")
+        artifact_snapshots_before = snapshot_receipt_bound_artifacts(
+            binary, resolved_build_worktree,
+        )
+        rejections.extend(_artifact_snapshot_rejections(
+            artifact_snapshots_before, prefix="build_artifact",
+        ))
         if current_build_identity is not None:
             try:
                 final_observed_build_identity = git_identity(
@@ -349,6 +462,43 @@ def validate_build_receipt(
             else:
                 if final_build_identity != current_build_identity:
                     rejections.append("build_worktree_changed_during_verification")
+        artifact_snapshots_after = snapshot_receipt_bound_artifacts(
+            binary, resolved_build_worktree,
+        )
+        rejections.extend(_artifact_snapshot_rejections(
+            artifact_snapshots_after, prefix="build_artifact",
+        ))
+        rejections.extend(_artifact_snapshot_drift_rejections(
+            artifact_snapshots_before, artifact_snapshots_after,
+        ))
+        artifact_output = expected_binary
+        if isinstance(artifact_output, dict):
+            binary_snapshot = artifact_snapshots_after.get("binary", {})
+            for field, receipt_field in (
+                ("path", "path"),
+                ("sha256", "sha256"),
+                ("size_bytes", "size_bytes"),
+                ("mtime_ns", "mtime_ns"),
+            ):
+                if artifact_output.get(receipt_field) != binary_snapshot.get(field):
+                    rejections.append(
+                        f"build_receipt_binary_snapshot_mismatch_{field}"
+                    )
+        completion_cache = (
+            stages[2] if len(stages) == 3
+            and isinstance(stages[2], dict) else {}
+        )
+        receipt_cache_path = completion_cache.get("cache_path")
+        if receipt_cache_path is not None and (
+            Path(str(receipt_cache_path)).resolve() != cache_path
+        ):
+            rejections.append("build_receipt_cmake_cache_path_mismatch")
+        if (
+            completion_cache.get("cache_sha256") is not None
+            and completion_cache.get("cache_sha256")
+            != artifact_snapshots_after.get("cmake_cache", {}).get("sha256")
+        ):
+            rejections.append("build_receipt_cmake_snapshot_mismatch_sha256")
         return {
             "valid": not rejections,
             "rejections": rejections,
@@ -371,9 +521,16 @@ def validate_build_receipt(
             "test_mode": receipt.get("test_mode"),
             "config_sha256": expected_config_sha256,
             "binary_path": str(binary),
-            "binary_sha256": sha256_file(binary) if binary.is_file() else None,
-            "binary_size_bytes": binary.stat().st_size if binary.is_file() else 0,
+            "binary_sha256": artifact_snapshots_after.get("binary", {}).get("sha256"),
+            "binary_size_bytes": artifact_snapshots_after.get("binary", {}).get(
+                "size_bytes", 0
+            ) or 0,
             "binary_is_elf": is_elf,
+            "artifact_snapshots": {
+                "pre_final_identity": artifact_snapshots_before,
+                "post_final_identity": artifact_snapshots_after,
+                "accepted_final": artifact_snapshots_after,
+            },
             "binary_binding": (
                 "privileged_ed25519_attestation_plus_coordinator_receipt_path_size_sha256_commit_and_timestamp_verified"
                 if privileged_verification is not None
