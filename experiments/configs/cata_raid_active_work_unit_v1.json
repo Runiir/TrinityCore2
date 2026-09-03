@@ -1,48 +1,53 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_stage3_profile_range_observation",
+  "work_unit": "evidence:magmaw_stage3_immutable_route_hydration",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "fixture_replay_authorized",
+  "classification": "authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "One sealed observation-only live fixture proving typed target identity and the native profile-range outcome chain; no gameplay canary.",
+  "observed_at_commit": "604b2072e2f8f556d7c6d0d81bb26a70c84dacff",
+  "immutable_input_commit": "604b2072e2f8f556d7c6d0d81bb26a70c84dacff",
+  "architecture_scope": "Targeted DVC hydration and read-only asset preflight in the sealed immutable checkout; no server or fixture attempt.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Post-build immutable static seal passed. One Stage-3 observation-only fixture is authorized; gameplay canary remains closed.",
+  "gate_state": "Stage-3 capture preflight found the sealed immutable checkout lacks its DVC route workspace; hydrate and verify it before any new live authorization.",
   "first_broken_edge": {
-    "id": "runtime_target_spawn_relation_and_native_profile_range_outcome_not_observed",
-    "stage": "stage3_observation_fixture",
+    "id": "immutable_source_checkout_missing_dvc_route_workspace",
+    "stage": "stage3_route_hydration",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "Static identity is exact, but no native run has joined runtime target39 to spawn250051 or observed movement progress and a later cast.",
-    "review_state": "static_sealed_ready"
+    "cause": "Live preflight could not read the DVC-owned route catalog/reference in the immutable checkout and reported dirty lineage; server did not start.",
+    "review_state": "preflight_abort_zero_server_starts"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_stage3_profile_range_observation_authorization_handoff_20260903.json",
-    "sha256": "fa356ff049baf41188f5930bed13ac723830663c096cd05e808da300b81b1751",
+    "path": "experiments/configs/cata_raid_magmaw_stage3_immutable_route_hydration_authorization_handoff_20260903.json",
+    "sha256": "31b15c5677547eb8af45d3b0815d161cdd3fd3840810917480fbac5adc1a92f9",
     "build_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
     "build_handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e"
   },
   "scope_lock": {
-    "objective": "Run one sealed Stage-3 observation fixture and retain the first typed terminal with full DPS/HPS and decision/native evidence.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff.json",
-    "stop_condition": "Stop at first typed fixture terminal or preflight/infrastructure failure; clean up the single worldserver and do not retry."
+    "objective": "Hydrate only validation_scenarios in the immutable checkout and prove exact sealed route/profile/DVC parity without starting a server.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-route-hydration-handoff.json",
+    "stop_condition": "Stop at first credential, DVC, hash, selector, or asset-preflight mismatch without retry or live action."
   },
   "acceptance_conditions": [
-    "One closed attributable fixture report binds the sealed source/build/config/route/roster/attempt and reports DPS/HPS, decisions, movement, deaths, route progress, terminal, and cleanup.",
-    "Fixture success requires exact target relation plus hazard-range-native-progress-later-cast correlation; gameplay canary remains unauthorized."
+    "Targeted immutable-checkout DVC hydration is clean and exact catalog/selected-route hashes equal the sealed bundle.",
+    "Read-only runtime-profile asset preflight passes; all server/live/gameplay claims remain closed."
   ],
   "forbidden": [
-    "No repository mutation, build, provision, database mutation, authserver, DVC, retry, gameplay canary, or live inference beyond retained native evidence."
+    "No repository/source mutation, DVC repro/push/broad cleanup, build, provision, database mutation, server/live/retry, gameplay canary, or live inference."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "bundle_reverification_budget": 1,
-    "worldserver_start_budget": 1,
-    "fixture_attempt_budget": 1,
+    "credential_local_copy_budget": 1,
+    "targeted_dvc_pull_or_checkout_budget": 1,
+    "dvc_status_budget": 1,
+    "route_selector_verification_budget": 1,
+    "runtime_profile_asset_preflight_budget": 1,
+    "bundle_reverification_budget": 0,
+    "worldserver_start_budget": 0,
+    "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
     "accepted_summary_write_budget": 1,
     "current_control_recurrence_gate_budget": 0,
@@ -53,13 +58,13 @@
     "provisioning_mutation_budget": 0,
     "worldserver_build_budget": 0,
     "worldserver_start_budget": 1,
-    "live_attempt_budget": 1,
+    "live_attempt_budget": 0,
     "dvc_operation_budget": 0,
     "retries": 0
   },
   "issues": [],
   "ready_for_build": false,
-  "ready_for_fixture_expansion": true,
-  "ready_for_live_verification": true,
-  "next_action": "Execute exactly one Stage-3 observation-only fixture; publication, review, and gameplay canary remain closed."
+  "ready_for_fixture_expansion": false,
+  "ready_for_live_verification": false,
+  "next_action": "Execute targeted immutable route hydration and read-only asset preflight; live capture remains closed."
 }

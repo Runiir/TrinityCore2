@@ -1,0 +1,72 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_stage3_immutable_route_hydration",
+  "owner_skill": "raid-performance-loop",
+  "classification": "immutable_route_dvc_hydration_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "failed_predecessor": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff.json",
+    "sha256": "0cc3e50cf8d1af44395409781778ebb0d8563cd81828fa010f6d6f30362b8390",
+    "classification": "infrastructure_abort_preflight_runtime_profile_assets_rejected",
+    "worldserver_starts": 0,
+    "fixture_native_executions": 0,
+    "reasons": [
+      "worktree_route_manifest_unreadable",
+      "reference_route_manifest_unreadable",
+      "runtime_route_dvc_lineage_dirty"
+    ]
+  },
+  "first_broken_edge": {
+    "id": "immutable_source_checkout_missing_dvc_route_workspace",
+    "cause": "The sealed immutable Git checkout has the exact dvc.lock but lacks the DVC-owned dataset/validation_scenarios output and local remote credentials, so live preflight cannot read or verify route lineage.",
+    "first_downstream_state": "capture runtime-profile asset validation failed before output-root creation or worldserver start.",
+    "hypothesis": "Targeted DVC hydration at the sealed 860fcba4 checkout will reconstruct the exact route bytes already sealed in the bundle and make dvc status clean without changing Git or the bundle."
+  },
+  "immutable_checkout": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+    "tree": "ea6f9452028be190deff565de0b432220d11ff15",
+    "required_output": "dataset/validation_scenarios",
+    "dvc_stage": "validation_scenarios"
+  },
+  "sealed_route_identity": {
+    "bundle_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable_v4",
+    "source_route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "runtime_route_manifest_sha256": "ffc0ecb5588761306121b32338726e305680d826a8bbbd0e225e526a1ea368d9",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic"
+  },
+  "authorized_work_unit": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-route-hydration-handoff.json",
+    "actions": [
+      "Compare main and immutable-checkout DVC configuration with secrets redacted; copy only .dvc/config.local when missing and never commit or print it.",
+      "Run one targeted DVC pull/checkout for validation_scenarios at the sealed checkout.",
+      "Require pixi run dvc status validation_scenarios --json to return clean.",
+      "Hash the hydrated validation_routes.jsonl and require it equals the bundle source-route hash; materialize and verify the exact scenario through the production selector and require its runtime object hash equals the sealed runtime-route hash.",
+      "Re-run capture runtime-profile asset validation read-only and require no route/profile/DVC rejection."
+    ]
+  },
+  "budgets": {
+    "credential_local_copy": 1,
+    "targeted_dvc_pull_or_checkout": 1,
+    "dvc_status": 1,
+    "route_selector_verification": 1,
+    "runtime_profile_asset_preflight": 1,
+    "worldserver_starts": 0,
+    "fixture_attempts": 0,
+    "builds_configure_provision_database_mutation": 0,
+    "dvc_push": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No source/config/route/roster/ledger/skill/gameplay mutation, DVC repro/push, broad pull/checkout/gc, main workspace hydration, build, provision/DB mutation, server/live, retry, or bundle rewrite/reseal.",
+    "No secret content in logs or handoffs; record only redacted config equivalence and optional secret-file hash/mode."
+  ],
+  "acceptance_conditions": [
+    "Immutable checkout remains clean at 860fcba4/ea6f9452 and targeted DVC status is clean.",
+    "Hydrated catalog and selected Magmaw route hashes exactly equal the sealed bundle identities.",
+    "The same capture asset preflight passes without starting a worldserver.",
+    "No gameplay, target relation, DPS/HPS, or fixture outcome is inferred."
+  ],
+  "next_action": "Dispatch one fresh raid-evidence-lifecycle hydration owner. A separately authorized Stage-3 capture may follow only after this handoff passes."
+}
