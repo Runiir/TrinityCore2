@@ -1,0 +1,82 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:reauthorize_controller_hold_profile_selector_fast4_build",
+  "owner_skill": "raid-performance-loop",
+  "classification": "one_degraded_concurrency_worldserver_build_authorized",
+  "created_at_utc": "2026-09-03T05:26:47Z",
+  "closed_fast8_build": {
+    "handoff_path": "/home/runiir/Games/trinity-controller-hold-profile-selector-build-handoff.json",
+    "handoff_sha256": "23c5f91eb6933ccf3742b23070187755ccca7ec2e31bcb3febd9ebbaa30525ff",
+    "classification": "typed_build_failure",
+    "first_broken_edge": "fast8_v4_sustained_load_average_guard",
+    "observed_progress_percent": 56,
+    "observed_load_average_1m": 13.2158203125,
+    "allowed_load_average_1m": 13.0,
+    "final_linker_began": false,
+    "binary_exists": false,
+    "retry_performed": false
+  },
+  "reviewed_runtime": {
+    "commit": "3c2031c40aca47315691978d935e80b3357c1814",
+    "tree": "db91ae523ad66b8bc42089a0de7ca3c578b0b98a",
+    "review_path": "/tmp/controller_route_hold_identity_selector_review_handoff_20260903.json",
+    "review_sha256": "b5b144d635bb49aa2352f63e8e0f6a76ea4ab1b6fcefbf3ae38b12007d95fbec",
+    "verdict": "GO"
+  },
+  "build_control": {
+    "build_source_commit": "the exact clean commit containing this reauthorization and experiments/configs/cata_raid_active_work_unit_v1.json",
+    "reviewed_runtime_commit": "3c2031c40aca47315691978d935e80b3357c1814",
+    "expected_review_to_build_paths": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_controller_hold_profile_selector_fast4_build_reauthorization_handoff_20260903.json",
+      "experiments/configs/cata_raid_controller_hold_profile_selector_one_build_authorization_handoff_20260903.json"
+    ],
+    "required_relation": "Reviewed runtime is an ancestor and the exact sorted no-renames delta is only the three build-control metadata paths above."
+  },
+  "degraded_policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v1.json",
+    "file_sha256": "24c3dcbcb4689ba5f8fde7e93781a435162d65ddb8c55ab62a936a29acaead92",
+    "policy_id": "cata_raid_build_resource_policy_fast4_v1",
+    "compiler_jobs": 4,
+    "linker_jobs": 1,
+    "maximum_load_average_1m": 9.0,
+    "maximum_memory_psi_some_avg10": 0.2,
+    "maximum_memory_psi_full_avg10": 0.2,
+    "reason": "Use the already tracked post-fast8 resource fallback. Halve compiler concurrency instead of weakening the load ceiling after the repeated fast8 load-guard edge."
+  },
+  "authorized_build": {
+    "owner_skill": "raid-shard-architecture",
+    "output_handoff": "/home/runiir/Games/trinity-controller-hold-profile-selector-fast4-build-handoff.json",
+    "external_root_template": "/home/runiir/Games/trinity-controller-hold-profile-selector-fast4-build.XXXXXXXX",
+    "required_actions": [
+      "Verify the closed fast8 handoff, unchanged reviewed runtime and GO review, exact metadata delta, exact tracked fast4 policy/hash, clean source, idle build queue, absent live/DVC processes, and current load/PSI/resource admission before creating output.",
+      "Create one fresh external mktemp root and detached clean worktree at the exact reauthorization commit; never reuse the failed fast8 worktree, CMake cache, objects, receipts, or partial build.",
+      "Run exactly one policy-matching CMake configure and one queued worldserver build with four compiler jobs and one linker.",
+      "Verify production gate-bearing receipts, source/configuration/toolchain/MySQL freshness chain, binary path/hash/size/mtime, and clean stable worktree.",
+      "Write one canonical build_ready or typed failure handoff at the exact output path."
+    ]
+  },
+  "budgets": {
+    "external_roots": 1,
+    "detached_worktrees": 1,
+    "configure": 1,
+    "worldserver_build": 1,
+    "retries": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "database_operations": 0,
+    "dvc_operations": 0,
+    "fixture_attempts": 0,
+    "gameplay_canary_attempts": 0
+  },
+  "acceptance_conditions": [
+    "One fresh fast4 configure/build produces an exact gate-bearing receipt and worldserver binary or stops on the first typed guard with no retry.",
+    "The failed fast8 cache and objects are not reused and no resource threshold is weakened.",
+    "No source/config/gameplay mutation or live/server/DB/DVC action occurs."
+  ],
+  "forbidden": [
+    "No policy edit, ceiling increase, fast8 retry, partial-build resume, cache/object/receipt reuse, second configure/build, or uncoordinated compile.",
+    "No source/test/config/route/skill/gameplay mutation, server, provision, DB, DVC, capture, fixture, canary, promotion, ML admission, or deletion of prior evidence/build roots."
+  ],
+  "next_action": "Run one fresh four-compiler policy-controlled build, then require post-build sealing before any Stage 3 run."
+}
