@@ -1,59 +1,57 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:profile_checkpoint_arm_prevalidation_correction",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "work_unit": "shard:reviewed_runtime_one_worldserver_build",
+  "owner_skill": "raid-shard-architecture",
   "classification": "authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "69c75d789425792314afb3875b635025da2b2fd9",
-  "immutable_input_commit": "69c75d789425792314afb3875b635025da2b2fd9",
-  "architecture_scope": "Controller-only arm prevalidation and state-commit ordering.",
+  "observed_at_commit": "f9c8eee3c5f7ad2797f4a9b43ce926a4d5c99b71",
+  "immutable_input_commit": "f9c8eee3c5f7ad2797f4a9b43ce926a4d5c99b71",
+  "architecture_scope": "One clean detached Release worldserver configure/build and gate-bearing receipt only.",
   "behavior_change": false,
-  "evidence_contract_change": true,
-  "gate_state": "Typed arm/progress/terminal predicates pass, but invalid first arm rows allocate state and freeze generation before rejection.",
+  "evidence_contract_change": false,
+  "gate_state": "Complete runtime lineage has independent GO; one build is authorized before post-build resealing and Stage 3.",
   "first_broken_edge": {
-    "id": "invalid_arm_row_mutates_checkpoint_state_before_rejection",
-    "stage": "stage3_arm_prevalidation",
-    "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Checkpoint state allocation precedes the awaiting-arm predicate block.",
-    "review_state": "independent_review_no_go_with_state_snapshot_counterexample"
+    "id": "reviewed_runtime_not_yet_present_in_gate_bearing_worldserver_binary",
+    "stage": "build",
+    "owner_classification": "raid_shard_architecture",
+    "cause": "The only existing worldserver binary predates the native GUID and controller repairs.",
+    "review_state": "independent_runtime_review_go"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_profile_checkpoint_arm_prevalidation_correction_authorization_handoff_20260903.json",
-    "review_path": "/tmp/magmaw-typed-instance-fixture-review-69c75d78/review_handoff.json",
-    "review_sha256": "3d8671081a4eb432b63b3ee977062ec7dc5db6115bfb6269b0def2446c3a1c69"
+    "path": "experiments/configs/cata_raid_magmaw_reviewed_runtime_one_build_authorization_handoff_20260903.json",
+    "review_path": "/tmp/magmaw-arm-prevalidation-review-f9c8eee3/review_handoff.json",
+    "review_sha256": "e3fa71aef53d2a2a8fd0773420242c98e09618d6d53171c227498fa8b66d90d6",
+    "stage2_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "stage2_sha256": "f822f6d40e765a9d4f2cf01ff2b9731252ee8996510ac585f32038f63bc28857"
   },
   "scope_lock": {
-    "objective": "Validate first arm entirely before allocating or freezing controller lifecycle state.",
-    "owned_files": [
-      "tools/raid_program/capture_checkpoint_controller.py",
-      "tests/test_profile_combat_range_checkpoint_capture.py"
-    ],
-    "expected_observable_change": "Every rejected first arm is state-nonmutating; authentic arm commits state exactly once after validation.",
-    "stop_condition": "Any third file, protocol weakening, or eager mutation remains a stop."
+    "objective": "Produce one hash-verified build_ready handoff for the exact clean authorization commit or one typed build failure.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
+    "expected_observable_change": "A new gate-bearing worldserver binary contains the reviewed runtime lineage.",
+    "stop_condition": "Any preflight mismatch stops before configure; any configure/build failure consumes the only budget and stops without retry."
   },
   "acceptance_conditions": [
-    "State snapshot and command transcript stay identical for every invalid arm.",
-    "Fresh independent review returns GO before build or Stage 3."
+    "Exact clean source, policy, configure, coordinated build, receipt, binary hash, and source completion snapshots verify.",
+    "No server, provision, database, live, or DVC action occurs."
   ],
   "forbidden": [
-    "No C++/gameplay/config/build/server/live/DVC/Stage-3 action or live inference."
+    "No source mutation, second build, old-build overwrite, server/live/DVC action, or retry."
   ],
   "validation_clock": {
-    "policy": "bounded_deterministic_fixtures",
-    "implementation_commit_budget": 1,
-    "independent_review_budget": 1,
-    "worldserver_build_budget": 0,
+    "policy": "single_coordinated_build",
+    "configure_budget": 1,
+    "worldserver_build_budget": 1,
     "worldserver_start_budget": 0,
     "live_attempt_budget": 0,
     "dvc_operation_budget": 0,
     "retries": 0
   },
   "issues": [],
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact two-file arm prevalidation correction."
+  "next_action": "Execute the exact one-build work unit in the source handoff."
 }

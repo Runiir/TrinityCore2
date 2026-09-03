@@ -1,0 +1,69 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_reviewed_runtime_one_build",
+  "owner_skill": "raid-performance-loop",
+  "classification": "one_reviewed_worldserver_build_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "reviewed_runtime": {
+    "commit": "f9c8eee3c5f7ad2797f4a9b43ce926a4d5c99b71",
+    "tree": "5d3060817ed40b3f6a07bdd7883fbab7b760345b",
+    "review_path": "/tmp/magmaw-arm-prevalidation-review-f9c8eee3/review_handoff.json",
+    "review_sha256": "e3fa71aef53d2a2a8fd0773420242c98e09618d6d53171c227498fa8b66d90d6",
+    "review_verdict": "GO",
+    "review_scope": "Complete native GUID normalization and controller lifecycle lineage; no gameplay/pathing change."
+  },
+  "static_predecessor": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "sha256": "f822f6d40e765a9d4f2cf01ff2b9731252ee8996510ac585f32038f63bc28857",
+    "classification": "static_sealed_ready",
+    "note": "This seal binds the prior binary and is evidence input only; it cannot authorize launching the new binary. A fresh post-build seal is required."
+  },
+  "build_control": {
+    "build_source_commit": "the exact clean commit containing this authorization and experiments/configs/cata_raid_active_work_unit_v1.json",
+    "reviewed_runtime_commit": "f9c8eee3c5f7ad2797f4a9b43ce926a4d5c99b71",
+    "expected_review_to_build_paths": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_reviewed_runtime_one_build_authorization_handoff_20260903.json"
+    ],
+    "required_relation": "Reviewed runtime commit is an ancestor and the exact sorted no-renames delta is the two metadata files above; source and detached worktree remain clean before/during/after configure and build."
+  },
+  "authorized_build_work_unit": {
+    "owner_skill": "raid-shard-architecture",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
+    "external_root_template": "/home/runiir/Games/trinity-generic-min-range-native-build.XXXXXXXX",
+    "build_policy": "experiments/configs/cata_raid_build_resource_policy_fast8_v4.json",
+    "required_actions": [
+      "Verify this committed authorization/hash, clean exact build source, exact two-path review delta, GO review, Stage-2 predecessor hash, build policy/toolchain, no active worldserver/live/DVC process, and at least the policy disk/memory reserve before creating output.",
+      "Create one fresh external root with mktemp and one detached clean Git worktree at the exact authorization commit; do not reuse or mutate the old b575 build.",
+      "Run exactly one CMake configure with the policy's Unix Makefiles, Release, -O1 -DNDEBUG, compile commands ON, no PCH/unity/IPO/coredebug, exact compiler and launcher settings.",
+      "Run exactly one worldserver build through tools.raid_program.queued_build with resource policy fast8_v4, eight compilers and one linker.",
+      "Verify the gate-bearing receipt, request/admission/completion source snapshots, configure lineage, build graph, MySQL build/runtime identity, binary path/size/mtime/SHA-256, and clean unchanged detached source.",
+      "Write and hash-verify build_ready or one typed_build_failure at the exact output handoff path."
+    ],
+    "acceptance_conditions": [
+      "Exactly one configure and one coordinated worldserver build execute at the exact clean authorization commit.",
+      "The gate-bearing receipt is production-valid and binds exact policy, source, toolchain, command hashes, resource ceilings, and worldserver hash.",
+      "No server, provisioning, database mutation, DVC, Stage 3, or live action occurs."
+    ]
+  },
+  "budgets": {
+    "external_roots": 1,
+    "detached_worktrees": 1,
+    "configure": 1,
+    "worldserver_build": 1,
+    "provisioning": 0,
+    "database_mutations": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "stage3_attempts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No source/test/config/route/roster/ledger/skill/gameplay mutation; no reuse or overwrite of the old build root/binary/receipt.",
+    "No second configure/build, uncoordinated build, policy waiver, server/auth start, provisioning, database mutation, Stage-3 capture, gameplay canary, DVC, promotion, ML admission, or retry.",
+    "Do not delete any old build/evidence payload in this stage; publication cleanup owns eviction after a closed run."
+  ],
+  "next_action": "Dispatch exactly one fresh raid-shard-architecture build owner. Post-build static sealing and Stage 3 remain closed."
+}
