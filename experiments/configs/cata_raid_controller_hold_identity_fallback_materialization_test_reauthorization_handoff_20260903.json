@@ -1,0 +1,48 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:reauthorize_controller_hold_identity_fallback_materialization_test",
+  "owner_skill": "raid-performance-loop",
+  "classification": "one_review_required_test_gap_correction_authorized",
+  "created_at_utc": "2026-09-03T06:04:11Z",
+  "reviewed_implementation": {
+    "commit": "88f869d56d77c2c999c8361d589bf0d6ae3fd59f",
+    "tree": "af66c06f410c5f44a7b0ecef16b7e03ed406f738",
+    "production_repair_correct": true
+  },
+  "no_go_review": {
+    "path": "/tmp/controller_hold_identity_authority_materialization_review_handoff_20260903.json",
+    "sha256": "8b1fd89a554eb597c3fdf26f1221846850d8432378d1c3512b615d7e094ceacc",
+    "finding_id": "retained_fallback_does_not_cross_identity_materialization_boundary",
+    "severity": "medium",
+    "required_correction": "Route at least the unknown and empty held-fixture fallback selections through AssertIdentity and verify the three resulting Identity strings."
+  },
+  "authorized_correction": {
+    "owner_skill": "raid-bot-runtime-implementation",
+    "owned_file": "tests/test_controller_route_hold_identity_selector.py",
+    "exact_change": "Add AssertIdentity calls for Select(unknown-fixture, authorities) and Select(empty string_view, authorities), expecting the existing Chainwielder fallback authority values. Preserve all current AssertTriple adversarial coverage."
+  },
+  "required_commands": [
+    "pixi run pytest -q tests/test_controller_route_hold_identity_selector.py",
+    "pixi run python -m py_compile tests/test_controller_route_hold_identity_selector.py",
+    "git diff --check"
+  ],
+  "acceptance_conditions": [
+    "Both unknown and empty held-fixture fallback selections construct a real BotControllerRouteHold::Identity and retain the Chainwielder fixture, seal, and source values.",
+    "The existing selector assertions and all production files remain unchanged.",
+    "A fresh independent Sol review returns GO before any build."
+  ],
+  "budgets": {
+    "owned_files": 1,
+    "correction_commits": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No production/header/config/policy/skill/encounter change, no other test refactor, and no edit outside the one owned test file.",
+    "No configure, worldserver build, server, DB, DVC, capture, fixture, or live canary."
+  ],
+  "next_action": "Add exactly the two retained fallback materialization assertions, commit, and obtain a fresh independent review."
+}

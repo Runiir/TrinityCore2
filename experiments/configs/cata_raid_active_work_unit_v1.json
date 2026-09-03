@@ -1,44 +1,44 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:repair_controller_route_hold_identity_authority_materialization",
+  "work_unit": "runtime:complete_controller_hold_identity_fallback_materialization_fixture",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "one_trace_backed_runtime_compile_repair_authorized",
+  "classification": "one_review_required_test_gap_correction_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "9b9bcfce1c852d31f8950d37001b849a730326ad",
+  "observed_at_commit": "88f869d56d77c2c999c8361d589bf0d6ae3fd59f",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "One explicit three-field authority materialization at the controller-hold Identity construction boundary.",
-  "behavior_change": true,
+  "architecture_scope": "Two retained fallback assertions through the already-correct Identity materialization boundary.",
+  "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "The corrected build policy passed configure and refuted resource pressure; production compilation exposed the exact string_view-to-string boundary.",
+  "gate_state": "Production materialization is correct, but independent review requires unknown and empty fallback selections to cross the retained compiled boundary.",
   "first_broken_edge": {
     "id": "controller_route_hold_identity_authority_string_view_not_materialized",
     "stage": "controller_route_hold_identity_construction_compile",
     "owner_classification": "raid_bot_runtime_implementation",
     "cause": "AuthorityTriple stores string_view fields, but aggregate copy-list initialization cannot implicitly construct Identity's string members.",
-    "review_state": "compile_trace_bound_repair_and_independent_review_required"
+    "review_state": "production_verified_test_gap_no_go_correction_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_controller_hold_identity_authority_materialization_repair_authorization_handoff_20260903.json",
-    "build_handoff_path": "/home/runiir/Games/trinity-controller-hold-profile-selector-fast4-v2-build-handoff.json",
-    "build_handoff_sha256": "fd6a0c82b9dc0f71cb6a00004c3fd8b3d64129736f1c0972fa050f96e4d182e6"
+    "path": "experiments/configs/cata_raid_controller_hold_identity_fallback_materialization_test_reauthorization_handoff_20260903.json",
+    "review_path": "/tmp/controller_hold_identity_authority_materialization_review_handoff_20260903.json",
+    "review_sha256": "8b1fd89a554eb597c3fdf26f1221846850d8432378d1c3512b615d7e094ceacc"
   },
   "scope_lock": {
-    "objective": "Materialize the three selected authority fields explicitly and prove the real Identity construction shape compiles.",
-    "owned_output": "one runtime commit changing exactly the production cpp and its focused compiled fixture",
-    "stop_condition": "Stop after one tested commit; no build or live process."
+    "objective": "Carry unknown and empty fallback selections through the retained compiled Identity fixture.",
+    "owned_output": "one test-only correction commit",
+    "stop_condition": "Stop after exactly two AssertIdentity calls and passing tests; no build or live process."
   },
   "acceptance_conditions": [
-    "The exact three-field conversion boundary compiles and preserves values.",
-    "An independent Sol reviewer returns GO before another build."
+    "Unknown and empty fallback selections compile through Identity and retain Chainwielder authority values.",
+    "A fresh independent Sol reviewer returns GO before another build."
   ],
   "forbidden": [
-    "No selector/layout/policy/encounter change, build, server, DB, DVC, provisioning, capture, live canary, or unrelated edit."
+    "No production/header/config/policy/encounter change, build, server, DB, DVC, provisioning, capture, live canary, or unrelated test edit."
   ],
   "validation_clock": {
-    "policy": "explicit_authority_string_materialization",
+    "policy": "retained_unknown_and_empty_fallback_materialization_assertions",
     "implementation_commits": 1,
     "independent_reviews": 1,
     "dvc_add_budget": 0,
