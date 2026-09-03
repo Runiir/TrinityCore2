@@ -2,7 +2,7 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "evidence:magmaw_stage3_profile_range_observation",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "stage3_observation_only_authorized",
+  "classification": "fixture_replay_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
