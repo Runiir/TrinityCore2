@@ -1,0 +1,88 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:reauthorize_magmaw_stage3_profile_range_observation_v4",
+  "owner_skill": "raid-performance-loop",
+  "classification": "stage3_observation_only_fixture_reauthorized_after_split_provenance_review",
+  "created_at_utc": "2026-09-03T04:38:19Z",
+  "controller_commit": "b1216c702c9d48e68c4ffd4a23063547a2ce5dbf",
+  "controller_tree": "793b07979b07b3794e44e0b2f444280ef5b98a61",
+  "independent_review": {
+    "path": "/tmp/magmaw-ignored-build-artifact-recheck-review-b1216c70/review_handoff.json",
+    "sha256": "060dffb91d52d512fec7bb453d48e4bba14d5fa586b64e40a2d17d3180d19029",
+    "verdict": "GO",
+    "focused_tests_passed": 192,
+    "real_retained_artifact_validation": true
+  },
+  "closed_prior_capture": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v3.json",
+    "sha256": "9960dbe6981ae054430d7ea41a79cb793e9ca3802e78f708baf2647b5a91f19f",
+    "classification": "infrastructure_loss_preflight",
+    "worldserver_starts": 0,
+    "output_root_created": false
+  },
+  "sealed_inputs": {
+    "source_worktree": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "source_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+    "source_tree": "ea6f9452028be190deff565de0b432220d11ff15",
+    "build_worktree": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/worktree",
+    "build_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
+    "build_tree": "de624f66c49ba55f8ff56490a5489ed580b11e5f",
+    "bundle": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable_v4",
+    "bundle_manifest_sha256": "cc1de55ba90ec76e0c665b64b1167148e1343f4da331cc429bea6416c045654a",
+    "binary_sha256": "d8313cf1208772a16a400dce4244e57de13c6f1f67ebc83401df58398863cee5",
+    "runtime_config_sha256": "03519d375430e553484f7242aad2959735dd58b6c1c450dbfe5ccffc11faac6f",
+    "recurrence_admission_sha256": "22270f33bd34783afc44ce44f12e3bd6ef0ad727361b4ed18bd1c68db78b8c5b",
+    "required_validation_scenarios_dvc_status": {},
+    "required_navmesh_assets": 8
+  },
+  "fixture": {
+    "purpose": "fixture_expansion_replay",
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "case_id": "elemental_magmaw_too_close_v1",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30010,
+    "runtime_target_guid": 39,
+    "target_spawn_id": 250051,
+    "target_entry": 41570,
+    "target_map_id": 669,
+    "success_terminal": "profile_combat_range_checkpoint_boundary_observed"
+  },
+  "capture": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "output_root": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/stage3-observation-v4",
+    "closed_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v4.json",
+    "command": "pixi run python -m tools.raid_program.capture_phase1_raid_foundation --binary /home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/worktree/build/src/server/worldserver/worldserver --config /home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable_v4/worldserver.validation.conf --output /home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/stage3-observation-v4/report.json --raw-output /home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/stage3-observation-v4/raw.log --server-log-output /home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/stage3-observation-v4/worldserver.log --build-receipt /home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable_v4/build_receipt.json --recurrence-admission /home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable_v4/recurrence_admission.json --recurrence-admission-sha256 22270f33bd34783afc44ce44f12e3bd6ef0ad727361b4ed18bd1c68db78b8c5b --fixture-expansion-replay --profile-combat-range-checkpoint-actor-guid 30010 --profile-combat-range-checkpoint-target-guid 39 --worktree /home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable --build-worktree /home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/worktree --scenario-id blackwing_descent_10n_magmaw_diagnostic --runtime-profile blackwing_descent_10n_magmaw_diagnostic --pool-tag blackwing_descent_10n_magmaw_diagnostic --observe-sec 0"
+  },
+  "budgets": {
+    "bundle_reverification": 1,
+    "targeted_dvc_status_precheck": 1,
+    "navmesh_probe_precheck": 1,
+    "capture_invocations": 1,
+    "worldserver_starts": 1,
+    "fixture_attempts": 1,
+    "gameplay_canary_attempts": 0,
+    "builds": 0,
+    "database_or_provisioning_mutations": 0,
+    "dvc_mutations": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "observe_sec": 0
+  },
+  "required_evidence": [
+    "live runtime-target/spawn/same-instance/current-route identity",
+    "checkpoint arm transcript and typed terminal",
+    "all candidates, selected/rejected reasons, native launch/generator/progress/later cast",
+    "DPS, HPS, movement, deaths, route progress, resources, process exit, and cleanup",
+    "source-worktree and build-worktree provenance plus immediate launch artifact gate"
+  ],
+  "forbidden": [
+    "No source/config/route/bundle/skill/gameplay mutation, DVC mutation, build, provision, database mutation, authserver, retry, second server start, gameplay canary, boss-clear/acceptance/promotion/ML claim.",
+    "No success from candidate or submission alone; require exact native multi-tick progress and later same-target cast correlation."
+  ],
+  "acceptance_conditions": [
+    "One exact capture lifecycle closes on a typed completion-watchdog terminal with cleanup and complete diagnostic fields including DPS/HPS.",
+    "Fixture success requires the exact live identity and hazard-release to range-candidate to native-progress to later-cast chain; publication and independent review remain separate.",
+    "Any artifact, source, route, DVC, navmesh, process, or telemetry drift fails closed without retry."
+  ],
+  "next_action": "Run one fresh raid-evidence-lifecycle Stage 3 fixture capture."
+}

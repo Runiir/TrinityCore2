@@ -1,60 +1,60 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:ignored_build_artifact_recheck_correction",
+  "work_unit": "evidence:magmaw_stage3_profile_range_observation_v4",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "implementation_authorized",
+  "classification": "fixture_replay_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "b11d7a524492ba1d5ad8a1cd6e7e696af3b7f997",
-  "architecture_scope": "Close ignored binary/CMake concurrency drift during validation and immediately before process launch.",
+  "observed_at_commit": "b1216c702c9d48e68c4ffd4a23063547a2ce5dbf",
+  "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+  "architecture_scope": "One worldserver-backed Stage 3 observation with distinct source and build worktree provenance; not a gameplay canary.",
   "behavior_change": false,
-  "evidence_contract_change": true,
-  "gate_state": "Stage 3 remains closed after independent NO-GO: ignored build artifacts can mutate while Git identity remains clean.",
+  "evidence_contract_change": false,
+  "gate_state": "Split provenance and ignored-artifact concurrency correction passed independent GO; live target relation and native profile-range outcome remain unobserved.",
   "first_broken_edge": {
-    "id": "ignored_build_artifact_concurrent_mutation_not_fail_closed",
-    "stage": "stage3_preflight",
+    "id": "runtime_target_spawn_relation_and_native_profile_range_outcome_not_observed",
+    "stage": "stage3_observation_fixture_v4",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "The final concurrency gate rechecks Git identity but not ignored binary and CMake artifacts themselves.",
-    "review_state": "independent_no_go_bounded_correction_authorized"
+    "cause": "No worldserver has yet executed the repaired profile-range boundary.",
+    "review_state": "one_fixture_replay_authorized_after_independent_controller_go"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_ignored_build_artifact_recheck_correction_authorization_handoff_20260903.json",
-    "review_path": "/tmp/magmaw-split-source-build-worktree-review-b11d7a52/review_handoff.json",
-    "review_sha256": "ba3a14204b2cc28967393643bb40761024fc125f4936a8f347378cebdc1c5a90"
+    "path": "experiments/configs/cata_raid_magmaw_stage3_profile_range_observation_reauthorization_v4_handoff_20260903.json",
+    "review_path": "/tmp/magmaw-ignored-build-artifact-recheck-review-b1216c70/review_handoff.json",
+    "review_sha256": "060dffb91d52d512fec7bb453d48e4bba14d5fa586b64e40a2d17d3180d19029"
   },
   "scope_lock": {
-    "objective": "Recheck ignored receipt-bound artifacts after validation and at launch boundary, with deterministic adversarial fixtures.",
-    "owned_files": [
-      "tools/raid_program/capture_environment_validation.py",
-      "tools/raid_program/capture_live_run.py",
-      "tests/test_phase1_raid_foundation_capture.py"
-    ],
-    "stop_condition": "Stop after one implementation commit and focused deterministic verification; no live process."
+    "objective": "Observe exact live identity, arbiter/native profile-range progress, later cast, typed terminal, and cleanup in one fixture replay.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v4.json",
+    "stop_condition": "Stop on the first typed success or failure terminal, then close and clean without retry."
   },
   "acceptance_conditions": [
-    "Binary and CMake mutations during validation or before launch fail closed before Popen.",
-    "Independent Sol-high review returns GO before Stage 3 is reauthorized."
+    "One sealed worldserver lifecycle closes under a typed watchdog terminal and reports DPS/HPS plus decisions, movement, deaths, route progress, native outcomes, and cleanup.",
+    "Fixture success requires exact live identity and hazard-release/range-candidate/native-progress/later-cast chain; gameplay acceptance remains closed."
   ],
   "forbidden": [
-    "No files outside scope, no gate weakening, no build, server, database, DVC, bundle, gameplay, route, or skill mutation."
+    "No source/config/route/bundle mutation, DVC mutation, build, provision, database mutation, authserver, retry, second server start, gameplay canary, boss-clear, promotion, or ML admission."
   ],
   "validation_clock": {
-    "policy": "deterministic_fixture_only",
-    "implementation_commits": 1,
-    "independent_reviews": 1,
-    "worldserver_start_budget": 0,
-    "fixture_attempt_budget": 0,
+    "policy": "completion_watchdog",
+    "bundle_reverification_budget": 1,
+    "targeted_dvc_status_precheck_budget": 1,
+    "navmesh_probe_precheck_budget": 1,
+    "capture_invocation_budget": 1,
+    "worldserver_start_budget": 1,
+    "fixture_attempt_budget": 1,
     "gameplay_canary_attempt_budget": 0,
     "build_budget": 0,
-    "database_operation_budget": 0,
-    "dvc_operation_budget": 0,
-    "retries": 0
+    "database_mutation_budget": 0,
+    "dvc_mutation_budget": 0,
+    "retries": 0,
+    "observe_sec": 0
   },
   "issues": [],
   "ready_for_build": false,
-  "ready_for_fixture_expansion": false,
+  "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
-  "next_action": "Implement the ignored-artifact recheck correction and obtain fresh independent review."
+  "next_action": "Run the one bounded Stage 3 profile-range fixture replay and close its evidence."
 }
