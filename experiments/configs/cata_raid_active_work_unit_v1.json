@@ -1,34 +1,34 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:immutable_source_post_build_static_seal_resume",
+  "work_unit": "shard:immutable_source_post_build_static_seal_known_boundary_resume",
   "owner_skill": "raid-shard-architecture",
-  "classification": "immutable_source_reseal_resume_authorized",
+  "classification": "known_boundary_reseal_resume_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "309164cb8bed2735dd5695897fb8523621e4fc28",
-  "immutable_input_commit": "309164cb8bed2735dd5695897fb8523621e4fc28",
+  "observed_at_commit": "df484d21b41fac38506e51e586c9d225ec065cd1",
+  "immutable_input_commit": "df484d21b41fac38506e51e586c9d225ec065cd1",
   "architecture_scope": "Repin the retained immutable checkout, verify coordinator-prebound canonical authority, and execute one static-only seal sequence; no build or live action.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "Immutable checkout exists and recurrence passed, but the worker again wrote literal backslash+n authority bytes. Coordinator-prebound canonical authority removes that worker failure mode.",
+  "gate_state": "Immutable checkout and prebound authority passed; recurrence stopped before fixture execution because the caller supplied an unknown boundary run ID. The exact ledger-known ID is now fixed.",
   "first_broken_edge": {
-    "id": "repeated_layered_authority_literal_backslash_n",
-    "stage": "immutable_source_post_build_static_seal_resume",
+    "id": "recurrence_boundary_run_id_unknown",
+    "stage": "immutable_source_post_build_static_seal_known_boundary_resume",
     "owner_classification": "raid_shard_architecture",
-    "cause": "Two shard workers encoded terminal backslash+n bytes in generated authority JSON; reusable skills now require canonical serialization, and the coordinator will prebind this authority.",
-    "review_state": "repeated_assumption_encoded_in_skills"
+    "cause": "The worker invented a boundary run ID not present in the recurrence ledger; no fixture executed.",
+    "review_state": "exact_ledger_known_boundary_identified"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_immutable_source_static_seal_resume_authorization_handoff_20260903.json",
-    "sha256": "85d006a28e0428ab4a49191b1ba63e706f9ac550e051a5901a8e99f0fcf11358",
+    "path": "experiments/configs/cata_raid_magmaw_immutable_source_static_seal_known_boundary_resume_authorization_handoff_20260903.json",
+    "sha256": "d7863e10fe6622686c53f1c8ffff8cd5d93940ea0bec5b114868b365651586f8",
     "build_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
     "build_handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e"
   },
   "scope_lock": {
-    "objective": "Use the coordinator-prebound authority and retained immutable checkout to emit an accepted closed post-build static seal.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v4.json",
+    "objective": "Use the exact ledger-known recurrence boundary, prebound authority, and immutable checkout to emit an accepted closed post-build static seal.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v5.json",
     "stop_condition": "Any identity/hash/schema/verifier mismatch stops without retry, main-checkout movement, build, database mutation, or server start."
   },
   "acceptance_conditions": [
@@ -61,5 +61,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
-  "next_action": "Verify the prebound authority and execute the immutable-source static-seal resume; Stage 3 remains separately gated."
+  "next_action": "Execute the exact known-boundary immutable-source static-seal resume; Stage 3 remains separately gated."
 }
