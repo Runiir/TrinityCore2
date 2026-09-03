@@ -1,0 +1,77 @@
+{
+  "schema": "cata_raid_evidence_publication_summary_v1",
+  "work_unit_id": "evidence:credential_aware_publish_verify_evict_magmaw_stage3_v4",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "published_closed_attributable_infrastructure_evidence",
+  "created_at_utc": "2026-09-03T05:00:00Z",
+  "authorization": {
+    "path": "experiments/configs/cata_raid_magmaw_stage3_v4_credential_aware_publication_reauthorization_handoff_20260903.json",
+    "sha256": "3988668f40a077ec0fd4dd3988ee28de38d8b5ec9cfae05bfaa1554ed619bd60",
+    "execution_commit": "15c460f19e8d9359467cfe1c42527340eef16386",
+    "execution_tree": "792d03d820965ab3ec0390f300c9fdae9910c422"
+  },
+  "capture": {
+    "closed_handoff_sha256": "a59c0f77d467e2d4e64897b166e3b86b798d6154f72202b3b286054b8aa75a92",
+    "classification": "infrastructure_abort",
+    "first_broken_edge": "controller_route_hold_profile_fixture_config_identity_not_selected",
+    "first_broken_edge_detail": "profile_checkpoint_identity_selection_absent",
+    "terminal_edge": "controller_route_hold_bootstrap_route_drift",
+    "gameplay_exercised": false,
+    "terminal_evidence_incomplete": false,
+    "worldserver_starts": 1,
+    "worldserver_exit_code": 0,
+    "cleanup_passed": true
+  },
+  "diagnostics": {
+    "combat_metric_reason": "combat_not_started",
+    "dps": null,
+    "hps": null,
+    "decisions": 0,
+    "movement_submissions": 0,
+    "deaths": 0
+  },
+  "identity": {
+    "immutable_source_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+    "immutable_source_tree": "ea6f9452028be190deff565de0b432220d11ff15",
+    "build_source_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
+    "build_source_tree": "de624f66c49ba55f8ff56490a5489ed580b11e5f",
+    "binary_sha256": "d8313cf1208772a16a400dce4244e57de13c6f1f67ebc83401df58398863cee5",
+    "build_receipt_sha256": "cb50cf21e9f4e4d292e16b2b7a9db28f54b611256a9c6cbb40332fbb8bcb2aed",
+    "runtime_config_sha256": "03519d375430e553484f7242aad2959735dd58b6c1c450dbfe5ccffc11faac6f",
+    "bundle_manifest_sha256": "cc1de55ba90ec76e0c665b64b1167148e1343f4da331cc429bea6416c045654a",
+    "recurrence_admission_sha256": "22270f33bd34783afc44ce44f12e3bd6ef0ad727361b4ed18bd1c68db78b8c5b",
+    "runtime_route_manifest_sha256": "ffc0ecb5588761306121b32338726e305680d826a8bbbd0e225e526a1ea368d9",
+    "source_route_manifest_sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8",
+    "runtime_profile_manifest_sha256": "580410af024159d2052f87ce76973cc6a06bb24d5d740e771f092c7941db6ed8",
+    "roster_count": 10,
+    "roster_roles": {
+      "dps": 5,
+      "healer": 3,
+      "tank": 2
+    }
+  },
+  "dvc": {
+    "remote": "object",
+    "pointer_path": "artifacts/cata_raid_program/magmaw_stage3_profile_range_observation_v4_20260903.dvc",
+    "pointer_sha256": "2c21f295e399c7ad74567926cf8798419f4ec4a99403ab56bcc2825514216245",
+    "directory_md5": "43c4da473ad255729e8048b7fb70160c.dir",
+    "directory_cache_sha256": "361fe99232d0a9554b0e488c2dfb15ebb001f7a4cab5138ff2b6f7070b38fb4c",
+    "manifest_sha256": "391c1a1f49906b4cfba92572552fd7026f9cfb55384a4e0e48d69eb41a6809bc",
+    "file_count": 5,
+    "total_payload_bytes": 140384,
+    "objects_previously_pushed": 6,
+    "credential_aware_remote_pull_count": 1,
+    "cache_empty_before_pull": true,
+    "remote_reconstruction_verified": true,
+    "credential_material_published": false
+  },
+  "retention": {
+    "repository_payload": "evict_after_commit_and_status_verification",
+    "original_capture_root": "evict_after_commit_and_status_verification",
+    "exact_local_cache_objects": "evict_after_commit_and_status_verification_if_not_shared",
+    "compact_handoffs_retained": true,
+    "source_build_binary_and_bundle_authorities_retained": true
+  },
+  "ml_eligible": false,
+  "next_action": "Repair the newly proven controller-route-hold profile identity-selection edge; this evidence does not accept gameplay or Magmaw completion."
+}

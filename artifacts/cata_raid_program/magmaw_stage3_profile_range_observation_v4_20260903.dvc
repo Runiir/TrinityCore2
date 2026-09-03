@@ -1,0 +1,6 @@
+outs:
+- md5: 43c4da473ad255729e8048b7fb70160c.dir
+  size: 140384
+  nfiles: 5
+  hash: md5
+  path: magmaw_stage3_profile_range_observation_v4_20260903
