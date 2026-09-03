@@ -1,0 +1,108 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_magmaw_stage3_profile_range_observation",
+  "owner_skill": "raid-performance-loop",
+  "classification": "stage3_observation_only_fixture_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "static_seal": {
+    "handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v6.json",
+    "handoff_sha256": "85aa1656bf59d4bac624a211d7219e1501d2ef278c261f8b8e934fda2dc27436",
+    "classification": "post_build_static_sealed_ready",
+    "bundle_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable_v4",
+    "bundle_manifest_sha256": "cc1de55ba90ec76e0c665b64b1167148e1343f4da331cc429bea6416c045654a",
+    "checkpoint_seal_sha256": "7c88da7ce05388b8cf5ec08171a8048d613c33776d88adf4d0fee65d8c7fce93",
+    "recurrence_admission_sha256": "22270f33bd34783afc44ce44f12e3bd6ef0ad727361b4ed18bd1c68db78b8c5b",
+    "binary_sha256": "d8313cf1208772a16a400dce4244e57de13c6f1f67ebc83401df58398863cee5",
+    "runtime_config_sha256": "03519d375430e553484f7242aad2959735dd58b6c1c450dbfe5ccffc11faac6f"
+  },
+  "immutable_source": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+    "tree": "ea6f9452028be190deff565de0b432220d11ff15",
+    "retention": "Read-only through Stage 3 closure, publication, and independent review."
+  },
+  "causal_receipt": {
+    "candidate_first_broken_edge": "runtime_target_spawn_relation_and_native_profile_range_outcome_not_observed",
+    "verified": [
+      "The reviewed d8313cf1 binary contains the generic non-Drudge minimum-range repair and typed checkpoint lifecycle fixes.",
+      "The immutable static bundle, recurrence 27/27, exact 10-player 2/3/5 roster, zero residue, and persistent spawn 250051/entry41570/map669 passed.",
+      "No worldserver has executed the repaired native path."
+    ],
+    "unproven": [
+      "Runtime ObjectGuid counter 39 is the live object for persistent spawn 250051 in the same positive instance and current Magmaw route scope as actor 30010.",
+      "After a real hazard releases Movement, world.profile_combat_range reaches native launch, records multi-tick decreasing progress, and permits a later same-target cast."
+    ],
+    "first_expected_mutation": "The authenticated checkpoint arms after two stable live identity observations, then the generic range Movement candidate reaches the existing arbiter and native mover.",
+    "failure_postcondition": "Any identity/pre-arm mismatch, incomplete native correlation, semantic stall, repeated decision, death loop, infrastructure loss, contamination, or interruption closes the observation without gameplay acceptance."
+  },
+  "fixture": {
+    "purpose": "fixture_expansion_replay",
+    "fixture_id": "generic_profile_min_range_production_boundary_v1",
+    "case_id": "elemental_magmaw_too_close_v1",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "actor_guid": 30010,
+    "runtime_target_guid": 39,
+    "target_spawn_id": 250051,
+    "target_entry": 41570,
+    "target_map_id": 669,
+    "success_terminal": "profile_combat_range_checkpoint_boundary_observed"
+  },
+  "capture": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "output_root": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/stage3-observation-v1",
+    "report_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/stage3-observation-v1/report.json",
+    "closed_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff.json",
+    "required_command_shape": [
+      "Run from the immutable source checkout with pixi.",
+      "Invoke tools.raid_program.capture_phase1_raid_foundation with the sealed binary, config, build receipt, recurrence admission and exact SHA, fixture-expansion-replay, actor 30010, target 39, exact scenario/runtime-profile/pool, and observe-sec 0.",
+      "Use the completion watchdog defaults and stop on the first typed terminal.",
+      "Reverify the immutable bundle immediately before the server start."
+    ],
+    "required_terminal_evidence": [
+      "runtime target-to-spawn relation and positive same-instance/current-node facts",
+      "checkpoint arm transcript and one typed terminal",
+      "decisions and rejected candidates/reasons",
+      "native launch, generator, multi-tick progress, and later cast outcome",
+      "DPS and HPS, movement, deaths, route progress",
+      "raw output, normalized rows, worldserver log, process exit, and cleanup"
+    ]
+  },
+  "budgets": {
+    "bundle_reverification": 1,
+    "worldserver_starts": 1,
+    "authserver_starts": 0,
+    "fixture_attempts": 1,
+    "gameplay_canary_attempts": 0,
+    "builds": 0,
+    "configure": 0,
+    "provisioning_or_database_mutations": 0,
+    "dvc_operations": 0,
+    "retries": 0,
+    "duration_policy": "completion_watchdog",
+    "fixed_success_timer_seconds": null,
+    "observe_sec": 0
+  },
+  "typed_terminals": [
+    "profile_combat_range_checkpoint_boundary_observed",
+    "semantic_stall",
+    "repeated_decision",
+    "death_loop",
+    "infrastructure_loss",
+    "contamination",
+    "interruption"
+  ],
+  "forbidden": [
+    "No repository/source/test/config/route/roster/ledger/skill/gameplay mutation; no build, configure, provision, database mutation, authserver, DVC, retry, or second server start.",
+    "No Magmaw gameplay canary, boss-clear claim, acceptance, fixture promotion, ML admission, retargeting, synthetic outcome, direct MotionMaster action, bot-side Z steering, teleport, MMAP workaround, or global tolerance change.",
+    "No success from candidate selection or native submission alone; require the exact terminal native progress and later-cast correlation."
+  ],
+  "acceptance_conditions": [
+    "Exactly one worldserver lifecycle starts from the sealed bundle and closes under a typed completion-watchdog terminal with cleanup.",
+    "Every report includes DPS and HPS alongside decisions, movement, deaths, and route progress.",
+    "Success requires the exact live target relation plus hazard-to-range-candidate-to-native-progress-to-later-cast chain in one lifecycle scope.",
+    "The capture is closed and attributable but not yet published, promoted, or accepted as gameplay."
+  ],
+  "next_action": "Dispatch one fresh raid-evidence-lifecycle capture owner. Publication and independent review remain separate later work units."
+}

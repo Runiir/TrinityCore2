@@ -1,55 +1,55 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:immutable_source_post_build_static_seal_known_boundary_resume",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "derived_runtime_authority_reseal_resume_authorized",
+  "work_unit": "evidence:magmaw_stage3_profile_range_observation",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "stage3_observation_only_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "736a2c0f2c2bf29b59eb7026144019ecb5c7e342",
-  "immutable_input_commit": "736a2c0f2c2bf29b59eb7026144019ecb5c7e342",
-  "architecture_scope": "Repin the retained immutable checkout, verify coordinator-prebound canonical authority, and execute one static-only seal sequence; no build or live action.",
+  "observed_at_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+  "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+  "architecture_scope": "One sealed observation-only live fixture proving typed target identity and the native profile-range outcome chain; no gameplay canary.",
   "behavior_change": false,
-  "evidence_contract_change": true,
-  "gate_state": "Immutable checkout, authority, 27/27 recurrence, and runtime derivation passed; bundle creation stopped before staging because the explicit tracked-derived runtime authority selector and contract path were omitted.",
+  "evidence_contract_change": false,
+  "gate_state": "Post-build immutable static seal passed. One Stage-3 observation-only fixture is authorized; gameplay canary remains closed.",
   "first_broken_edge": {
-    "id": "derived_runtime_config_authority_selector_omitted",
-    "stage": "immutable_source_post_build_static_seal_derived_authority_resume",
-    "owner_classification": "raid_shard_architecture",
-    "cause": "Bundle creation received a tracked-derived receipt but omitted --base-runtime-config-authority tracked_derived_runtime_config_v1 and its exact contract-relative path.",
-    "review_state": "exact_required_arguments_identified"
+    "id": "runtime_target_spawn_relation_and_native_profile_range_outcome_not_observed",
+    "stage": "stage3_observation_fixture",
+    "owner_classification": "raid_evidence_lifecycle",
+    "cause": "Static identity is exact, but no native run has joined runtime target39 to spawn250051 or observed movement progress and a later cast.",
+    "review_state": "static_sealed_ready"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_immutable_source_static_seal_known_boundary_resume_authorization_handoff_20260903.json",
-    "sha256": "071968af0337afcb918d06601681c8ad1d6a0417bf25dfb32cd745395b2fbb52",
+    "path": "experiments/configs/cata_raid_magmaw_stage3_profile_range_observation_authorization_handoff_20260903.json",
+    "sha256": "fa356ff049baf41188f5930bed13ac723830663c096cd05e808da300b81b1751",
     "build_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
     "build_handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e"
   },
   "scope_lock": {
-    "objective": "Use the exact derived-config authority arguments, known recurrence boundary, prebound authority, and immutable checkout to emit an accepted closed post-build static seal.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v6.json",
-    "stop_condition": "Any identity/hash/schema/verifier mismatch stops without retry, main-checkout movement, build, database mutation, or server start."
+    "objective": "Run one sealed Stage-3 observation fixture and retain the first typed terminal with full DPS/HPS and decision/native evidence.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff.json",
+    "stop_condition": "Stop at first typed fixture terminal or preflight/infrastructure failure; clean up the single worldserver and do not retry."
   },
   "acceptance_conditions": [
-    "Fresh atomic bundle/checkpoint seal binds an immutable source checkout and independently reverifies after main-control advancement.",
-    "Static roster/target facts pass and the accepted summary keeps Stage 3, gameplay canary, launchability, and live relations closed."
+    "One closed attributable fixture report binds the sealed source/build/config/route/roster/attempt and reports DPS/HPS, decisions, movement, deaths, route progress, terminal, and cleanup.",
+    "Fixture success requires exact target relation plus hazard-range-native-progress-later-cast correlation; gameplay canary remains unauthorized."
   ],
   "forbidden": [
-    "No repository mutation or main-checkout movement, build, provision, database mutation, server/live/DVC/retry, or live inference."
+    "No repository mutation, build, provision, database mutation, authserver, DVC, retry, gameplay canary, or live inference beyond retained native evidence."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "immutable_source_clone_budget": 0,
-    "immutable_source_repin_budget": 1,
-    "authority_write_by_worker_budget": 0,
-    "post_create_bundle_verification_budget": 1,
+    "bundle_reverification_budget": 1,
+    "worldserver_start_budget": 1,
+    "fixture_attempt_budget": 1,
+    "gameplay_canary_attempt_budget": 0,
     "accepted_summary_write_budget": 1,
-    "current_control_recurrence_gate_budget": 1,
-    "runtime_config_derivation_budget": 1,
-    "atomic_bundle_create_budget": 1,
-    "read_only_database_readback_budget": 1,
-    "static_seal_budget": 1,
+    "current_control_recurrence_gate_budget": 0,
+    "runtime_config_derivation_budget": 0,
+    "atomic_bundle_create_budget": 0,
+    "read_only_database_readback_budget": 0,
+    "static_seal_budget": 0,
     "provisioning_mutation_budget": 0,
     "worldserver_build_budget": 0,
     "worldserver_start_budget": 0,
@@ -60,6 +60,6 @@
   "issues": [],
   "ready_for_build": false,
   "ready_for_fixture_expansion": true,
-  "ready_for_live_verification": false,
-  "next_action": "Execute the exact derived-runtime-authority immutable-source static-seal resume; Stage 3 remains separately gated."
+  "ready_for_live_verification": true,
+  "next_action": "Execute exactly one Stage-3 observation-only fixture; publication, review, and gameplay canary remain closed."
 }
