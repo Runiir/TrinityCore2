@@ -1,0 +1,85 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "review:generic_runtime_asset_closure_manifest_verifier",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "independent_architecture_review_authorized",
+  "created_at_utc": "2026-09-03T07:41:00Z",
+  "immutable_evidence": {
+    "implementation_commit": "ab5ca8755682806f36daadb911acc9951da193b7",
+    "implementation_parent": "ce779841541be848395bd27b015d6c3becacb12a",
+    "implementation_tree": "326cd6a08d2f65bff255d14a5cd6398d231c2277",
+    "audit_handoff_path": "/home/runiir/Games/trinity-immutable-runtime-asset-closure-audit-handoff.json",
+    "audit_handoff_sha256": "b2c274abf64166a849d6b92c2afa1796e60e0407a4a6bcc1a598af8beb31c494",
+    "implementation_authorization_path": "experiments/configs/cata_raid_generic_runtime_asset_closure_implementation_authorization_handoff_20260903.json",
+    "implementation_authorization_sha256": "bda0a72cbe5b134edbf0861ff9f5c4105a50b39b8de01c9a9f168019a891180f"
+  },
+  "scope_lock": {
+    "objective": "Independently decide whether commit ab5ca87556 implements the complete audit-derived checklist and closes the repeated first-missing-file loop before any runtime side effect.",
+    "review_diff": "ce779841541be848395bd27b015d6c3becacb12a..ab5ca8755682806f36daadb911acc9951da193b7",
+    "expected_files": [
+      "tools/raid_program/runtime_asset_closure.py",
+      "experiments/configs/runtime_asset_closure_manifest_v1.json",
+      "tests/fixtures/runtime_asset_closure/retained_stage3_missing_v1.json",
+      "tests/test_runtime_asset_closure.py",
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/capture_phase1_provisioning_readback.py",
+      "tools/bot_ml/run_live_bot_validation.py"
+    ],
+    "required_review": [
+      "Verify the exact seven-file diff and every immutable evidence hash.",
+      "Recompute the real retained-checkout result and require all 13 audited missing identities plus missing native extraction provenance in one receipt.",
+      "Trace each manifest class to the audit and production consumer, including exact-file, bounded-pattern, complete-directory, DVC, DataDir, bundle, snapshot, symlink, and no-follow behavior.",
+      "Determine whether complete-directory drift can identify every missing or extra member, rather than only an aggregate count or hash mismatch.",
+      "Determine whether a committed audit hash is actually verified or merely syntax-checked.",
+      "Trace capture setup, static readback, and live validation from their normal generated command paths. Decide whether runtime_asset_closure_not_requested leaves any supported raid or dungeon path able to reach a downstream side effect without the checklist.",
+      "Require failure before nav probing, contract materialization/database access, provisioning, output creation, or worldserver launch.",
+      "Check that map selection is generic, no Magmaw exception exists, legacy compatibility does not weaken the new mandatory safety property, and no copied asset is required by implicit cwd.",
+      "Run the authorized focused tests and add read-only probes where needed."
+    ],
+    "severity_policy": {
+      "critical": "The verifier can authorize a materially incomplete or substituted native/offline asset closure.",
+      "high": "A normal supported launch/readback path can bypass the gate, or the verifier cannot enumerate the complete mismatch set required to prevent repeat retries.",
+      "medium": "A required identity or provenance binding is incomplete but does not directly authorize launch in the reviewed path.",
+      "low": "A bounded clarity or coverage gap with no current gate impact."
+    },
+    "acceptance_conditions": [
+      "Return GO only with no unresolved critical, high, or medium findings.",
+      "A GO proves every supported production path fails closed on incomplete closure without relying on an operator remembering optional arguments.",
+      "A GO proves aggregate reports identify every missing and extra member for all rule types and bind the exact audit/provenance authority.",
+      "A NO-GO names the earliest violated property, exact code and test locations, smallest correction ownership, and deterministic acceptance test."
+    ],
+    "owned_output": "/home/runiir/Games/trinity-generic-runtime-asset-closure-review-handoff.json",
+    "allowed_mutation": "Create only the external review handoff at owned_output.",
+    "forbidden_changes": [
+      "No repository edit or commit.",
+      "No asset copy or hydration, DVC operation, database access, provisioning, build, capture, worldserver start, or live canary.",
+      "No gameplay, encounter, class, role, roster, or movement recommendation outside the reviewed checklist boundary."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_runtime_asset_closure.py",
+      "pixi run pytest -q tests/test_phase1_provisioning_readback.py",
+      "pixi run pytest -q tests/test_validation_scenario_stage_preflight.py",
+      "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py -k 'prepare_capture_setup'",
+      "pixi run python -m py_compile tools/raid_program/runtime_asset_closure.py tools/raid_program/capture_setup.py tools/raid_program/capture_phase1_provisioning_readback.py tools/bot_ml/run_live_bot_validation.py",
+      "git diff --check ce779841541be848395bd27b015d6c3becacb12a..ab5ca8755682806f36daadb911acc9951da193b7"
+    ],
+    "terminal_conditions": {
+      "success": "Write a hash-verified external GO handoff with no unresolved critical, high, or medium finding.",
+      "failure": "Write a hash-verified external NO-GO handoff with bounded correction ownership and stop.",
+      "out_of_scope": "Report adjacent hydration or live concerns without acting on them."
+    }
+  },
+  "budgets": {
+    "independent_reviews": 1,
+    "external_handoffs": 1,
+    "repository_edits": 0,
+    "asset_copies": 0,
+    "dvc_operations": 0,
+    "database_operations": 0,
+    "builds": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one independent Sol high raid-shard-architecture reviewer. Correct any NO-GO before hydration or live validation."
+}
