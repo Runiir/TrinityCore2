@@ -52,8 +52,8 @@
     "static_seal_budget": 0,
     "provisioning_mutation_budget": 0,
     "worldserver_build_budget": 0,
-    "worldserver_start_budget": 0,
-    "live_attempt_budget": 0,
+    "worldserver_start_budget": 1,
+    "live_attempt_budget": 1,
     "dvc_operation_budget": 0,
     "retries": 0
   },
