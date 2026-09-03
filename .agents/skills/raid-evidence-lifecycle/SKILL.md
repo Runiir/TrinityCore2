@@ -29,6 +29,15 @@ Before live execution, require:
   against that commit's lock, require local and cloud status clean, then verify
   the runtime manifest's decisive node IDs and mechanic fields before
   provisioning;
+- inspect the owning `dvc.yaml` stage before planning hydration. A lock-file
+  hash does not mean an output is restorable: metrics or outputs declared with
+  `cache: false` are intentionally not materialized by `dvc pull` or
+  `dvc checkout`, even when an object with the same digest exists locally. For
+  such an output, either reproduce the exact stage from its pinned dependencies
+  or copy the exact bytes from a clean, lineage-matching workspace only after
+  verifying the immutable checkout's `dvc.lock` digest and size, the source
+  workspace's relevant DVC status, and the copied destination digest. Record
+  which method was used and never retry checkout under a different spelling;
 - deterministic provisioning application and verification against the source
   manifests/DBC inputs before strict readback. Do not assume a prior run left
   learned spells, consumable counts, or other mutable roster state pristine;
