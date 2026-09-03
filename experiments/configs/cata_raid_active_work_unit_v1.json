@@ -1,46 +1,46 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_stage3_no_cache_metric_transfer",
+  "work_unit": "evidence:magmaw_stage3_no_cache_metric_transfer_v2",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "no_cache_metric_transfer_authorized",
+  "classification": "no_cache_metric_descendant_safe_transfer_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "daf51b9d896707583a03359c6f77e5b54379898f",
+  "observed_at_commit": "a8368e5a9f46b3e986b40a03897911bcd11d4599",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "Restore one DVC cache:false metric by exact lock-bound byte copy from a clean lineage-matching workspace, then prove validation_scenarios clean; no server.",
+  "architecture_scope": "Restore one DVC cache:false metric from an exact clean descendant-safe source binding, then prove validation_scenarios clean; no server.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "All cacheable dependencies are hydrated; the only missing dependency is a DVC metric intentionally declared cache:false.",
+  "gate_state": "The prior unit performed no mutation because exact primary HEAD binding self-invalidated after its own control commit; lineage-bearing files and metric bytes remain unchanged.",
   "first_broken_edge": {
-    "id": "validation_verification_metric_is_no_cache",
-    "stage": "stage3_no_cache_metric_transfer",
+    "id": "control_commits_self_invalidate_exact_source_head",
+    "stage": "stage3_no_cache_metric_transfer_v2",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "DVC checkout cannot restore the verification metric because dvc.yaml declares it cache:false.",
-    "review_state": "exact_lock_bound_source_bytes_verified"
+    "cause": "An advancing clean coordinator branch cannot be both the source of a newly committed authorization and remain equal to the authorization's parent HEAD.",
+    "review_state": "descendant_safe_lineage_binding_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_stage3_no_cache_metric_transfer_authorization_handoff_20260903.json",
-    "sha256": "de449302398597f819a573519273e4ebfe6b8fc27f6b5325c24f75a62a51aacb",
-    "predecessor_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-verification-output-checkout-handoff.json",
-    "predecessor_sha256": "882c4e126e4ddecf1fe8294ff7851f3d2e6b2612bbb07a9df5797fc300d8752d"
+    "path": "experiments/configs/cata_raid_magmaw_stage3_no_cache_metric_transfer_reauthorization_handoff_20260903.json",
+    "sha256": "83a3b4c298aad906ef4ca91f33793eac7bfe1a26df1521d9b7b171b73c7011be",
+    "predecessor_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff.json",
+    "predecessor_sha256": "97c55652fb9fa73dc518e707e5345052ba745c58fc7b10f63e1179dd4c12c6c9"
   },
   "scope_lock": {
-    "objective": "Copy one exact no-cache metric bound to the immutable dvc.lock and require clean validation_scenarios lineage.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff.json",
-    "stop_condition": "Stop at the first identity, lock declaration, source status, hash, copy, destination status, or cleanliness mismatch without retry or live action."
+    "objective": "Copy one exact no-cache metric using a clean descendant plus unchanged DVC lineage binding, then require clean validation_scenarios status.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff-v2.json",
+    "stop_condition": "Stop at the first ancestry, cleanliness, lineage path, lock declaration, source status, hash, copy, destination status, or immutable identity mismatch without retry or live action."
   },
   "acceptance_conditions": [
     "Exactly one no-cache metric file is copied and its MD5/size match the immutable lock.",
-    "Both source and immutable validation_scenarios DVC status equal {}; route/profile/server/live/gameplay claims remain closed."
+    "Source is a clean descendant with unchanged dvc.yaml/dvc.lock, both validation_scenarios statuses equal {}, and route/profile/server/live/gameplay claims remain closed."
   ],
   "forbidden": [
     "No other file/cache/source mutation, DVC checkout/pull/repro/push/gc, build, provision, database mutation, server/live/retry, route/profile inference, gameplay canary, or live inference."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "identity_lock_hash_preflight_budget": 1,
+    "identity_lineage_lock_hash_preflight_budget": 1,
     "source_dvc_status_budget": 1,
     "destination_parent_create_budget": 1,
     "exact_file_copy_budget": 1,
@@ -60,5 +60,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact no-cache metric transfer and prove both validation_scenarios statuses clean; live capture remains closed."
+  "next_action": "Execute the descendant-safe exact no-cache metric transfer and prove both validation_scenarios statuses clean; live capture remains closed."
 }

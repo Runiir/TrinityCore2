@@ -1,0 +1,90 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:reauthorize_stage3_no_cache_metric_transfer",
+  "owner_skill": "raid-performance-loop",
+  "classification": "immutable_no_cache_metric_transfer_descendant_safe_authorized",
+  "created_at_utc": "2026-09-03T04:00:00Z",
+  "failed_predecessor": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff.json",
+    "sha256": "97c55652fb9fa73dc518e707e5345052ba745c58fc7b10f63e1179dd4c12c6c9",
+    "classification": "infrastructure_failure_source_identity_mismatch",
+    "worldserver_starts": 0,
+    "copy_count": 0
+  },
+  "first_broken_edge": {
+    "id": "control_commits_self_invalidate_exact_source_head",
+    "cause": "The primary source bytes remained unchanged, but committing the authorization advanced clean HEAD beyond the exact source commit embedded in that same authorization.",
+    "first_downstream_state": "The prior worker stopped before its DVC status or copy even though the lineage-bearing files and metric bytes were unchanged.",
+    "hypothesis": "Binding a clean descendant to an immutable floor plus unchanged dvc.yaml, dvc.lock, exact metric bytes, and clean validation_scenarios status preserves attribution without self-invalidating after control commits."
+  },
+  "source_workspace": {
+    "path": "/home/runiir/Games/trinity-cata",
+    "required_floor_commit": "daf51b9d896707583a03359c6f77e5b54379898f",
+    "required_floor_tree": "f557bf04965deeefdc87542d2f32cb2d44279746",
+    "required_head_policy": "clean_descendant_of_floor",
+    "required_unchanged_paths_since_floor": [
+      "dvc.yaml",
+      "dvc.lock"
+    ],
+    "required_dvc_status_command": "pixi run dvc status validation_scenarios --json",
+    "required_dvc_status_result": {},
+    "file": {
+      "path": "dataset/validation_provisioning_verification/report.json",
+      "md5": "fa37fe35db80541c82a1f0555efd7834",
+      "size": 1651
+    }
+  },
+  "immutable_checkout": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
+    "tree": "ea6f9452028be190deff565de0b432220d11ff15",
+    "required_clean": true,
+    "lock_binding": {
+      "stage": "validation_provisioning_verify",
+      "path": "dataset/validation_provisioning_verification/report.json",
+      "md5": "fa37fe35db80541c82a1f0555efd7834",
+      "size": 1651,
+      "dvc_yaml_cache": false
+    },
+    "existing_dependency": {
+      "path": "dataset/validation_provisioning/report.json",
+      "md5": "aa952a7041f215c141a9a61bc1656015",
+      "size": 20094
+    }
+  },
+  "authorized_work_unit": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-no-cache-metric-transfer-handoff-v2.json",
+    "actions": [
+      "Require source HEAD clean and descended from daf51b9d, and require dvc.yaml and dvc.lock byte-identical to that floor; record current HEAD/tree and changed-path list without requiring HEAD equality.",
+      "Verify immutable identity/cleanliness, dvc.yaml cache:false, immutable dvc.lock binding, source metric bytes, and existing immutable provisioning report exactly.",
+      "Run source pixi run dvc status validation_scenarios --json exactly once and require {}.",
+      "Create only the missing destination parent and copy the exact source metric bytes once to dataset/validation_provisioning_verification/report.json with mode 0444.",
+      "Verify destination MD5 fa37fe35db80541c82a1f0555efd7834 and size 1651.",
+      "Run immutable pixi run dvc status validation_scenarios --json exactly once and require {}.",
+      "Verify source remains a clean descendant with unchanged lineage paths and immutable Git remains exact and clean."
+    ]
+  },
+  "budgets": {
+    "identity_lineage_lock_hash_preflight": 1,
+    "source_dvc_status": 1,
+    "destination_parent_create": 1,
+    "exact_file_copy": 1,
+    "destination_hash_check": 1,
+    "target_dvc_status": 1,
+    "worldserver_starts": 0,
+    "builds": 0,
+    "database_mutations": 0,
+    "dvc_checkout_pull_push_repro_gc": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No other file/cache/source/config/route/roster/ledger/skill/gameplay mutation, DVC checkout/pull/push/repro/gc, remote mutation, build, provision, database mutation, server/live action, retry, or gameplay inference.",
+    "Do not require the advancing coordinator HEAD to equal the floor; fail instead if it is dirty, not descended from the floor, or changes dvc.yaml/dvc.lock, or if source bytes/status mismatch."
+  ],
+  "acceptance_conditions": [
+    "Exactly one no-cache metric file is copied; source and destination bytes match the immutable lock MD5 and size.",
+    "Source is a clean descendant with unchanged dvc.yaml/dvc.lock, both validation_scenarios DVC statuses equal {}, immutable Git remains exact and clean, and route/profile/server/live/gameplay claims remain closed."
+  ],
+  "next_action": "On success, authorize a separate read-only selected-route and runtime-profile preflight."
+}
