@@ -1,60 +1,60 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_stage3_profile_range_observation_v4",
+  "work_unit": "evidence:publish_verify_evict_magmaw_stage3_v4",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "fixture_replay_authorized",
+  "classification": "evidence_publication_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "b1216c702c9d48e68c4ffd4a23063547a2ce5dbf",
+  "observed_at_commit": "7803fb1dfb5e29513c33ac89b5c78caf5157648a",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "One worldserver-backed Stage 3 observation with distinct source and build worktree provenance; not a gameplay canary.",
+  "architecture_scope": "Publish, remotely verify, and exactly evict one closed attributable non-gameplay Stage 3 evidence payload.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Split provenance and ignored-artifact concurrency correction passed independent GO; live target relation and native profile-range outcome remain unobserved.",
+  "gate_state": "Stage 3 v4 closed before provisioning/combat; publication and cleanup are required before runtime repair.",
   "first_broken_edge": {
-    "id": "runtime_target_spawn_relation_and_native_profile_range_outcome_not_observed",
-    "stage": "stage3_observation_fixture_v4",
-    "owner_classification": "raid_evidence_lifecycle",
-    "cause": "No worldserver has yet executed the repaired profile-range boundary.",
-    "review_state": "one_fixture_replay_authorized_after_independent_controller_go"
+    "id": "controller_route_hold_bootstrap_route_drift",
+    "stage": "stage3_runtime_bootstrap",
+    "owner_classification": "raid_bot_runtime_implementation",
+    "cause": "CurrentControllerRouteHoldIdentity does not select ProfileCombatRangeCheckpoint identity and falls through to empty Chainwielder configuration fields.",
+    "review_state": "closed_attributable_evidence_pending_publication"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_stage3_profile_range_observation_reauthorization_v4_handoff_20260903.json",
-    "review_path": "/tmp/magmaw-ignored-build-artifact-recheck-review-b1216c70/review_handoff.json",
-    "review_sha256": "060dffb91d52d512fec7bb453d48e4bba14d5fa586b64e40a2d17d3180d19029"
+    "path": "experiments/configs/cata_raid_magmaw_stage3_v4_publish_verify_evict_authorization_handoff_20260903.json",
+    "closed_capture_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v4.json",
+    "closed_capture_sha256": "a59c0f77d467e2d4e64897b166e3b86b798d6154f72202b3b286054b8aa75a92"
   },
   "scope_lock": {
-    "objective": "Observe exact live identity, arbiter/native profile-range progress, later cast, typed terminal, and cleanup in one fixture replay.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v4.json",
-    "stop_condition": "Stop on the first typed success or failure terminal, then close and clean without retry."
+    "objective": "Publish the exact closed v4 evidence through DVC, verify remote reconstruction, and evict only exact duplicate raw payloads.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-v4-publication-handoff.json",
+    "stop_condition": "Stop after one verified DVC publication and exact eviction, or the first publication/verification mismatch."
   },
   "acceptance_conditions": [
-    "One sealed worldserver lifecycle closes under a typed watchdog terminal and reports DPS/HPS plus decisions, movement, deaths, route progress, native outcomes, and cleanup.",
-    "Fixture success requires exact live identity and hazard-release/range-candidate/native-progress/later-cast chain; gameplay acceptance remains closed."
+    "Remote reconstruction matches all closed v4 evidence hashes and compact Git metadata binds the truthful terminal.",
+    "Exact local raw/log duplicates are evicted after verification while retained source/build/bundle authorities remain intact."
   ],
   "forbidden": [
-    "No source/config/route/bundle mutation, DVC mutation, build, provision, database mutation, authserver, retry, second server start, gameplay canary, boss-clear, promotion, or ML admission."
+    "No runtime/source/config/bundle/route/skill mutation, live process, build, DB action, retry, evidence reinterpretation, gameplay acceptance, or ML admission."
   ],
   "validation_clock": {
-    "policy": "completion_watchdog",
-    "bundle_reverification_budget": 1,
-    "targeted_dvc_status_precheck_budget": 1,
-    "navmesh_probe_precheck_budget": 1,
-    "capture_invocation_budget": 1,
-    "worldserver_start_budget": 1,
-    "fixture_attempt_budget": 1,
+    "policy": "publish_verify_then_evict",
+    "publication_commits": 1,
+    "dvc_add_budget": 1,
+    "dvc_push_budget": 1,
+    "remote_reconstruction_budget": 1,
+    "worldserver_start_budget": 0,
+    "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
     "build_budget": 0,
     "database_mutation_budget": 0,
     "dvc_mutation_budget": 0,
     "retries": 0,
-    "observe_sec": 0
+    "eviction_after_remote_verify_only": true
   },
   "issues": [],
   "ready_for_build": false,
-  "ready_for_fixture_expansion": true,
+  "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Run the one bounded Stage 3 profile-range fixture replay and close its evidence."
+  "next_action": "Publish, remotely verify, and exactly evict the closed v4 evidence."
 }

@@ -1,0 +1,66 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "evidence:publish_verify_evict_magmaw_stage3_v4",
+  "owner_skill": "raid-evidence-lifecycle",
+  "classification": "closed_attributable_infrastructure_evidence_publication_authorized",
+  "created_at_utc": "2026-09-03T04:46:09Z",
+  "source_commit": "7803fb1dfb5e29513c33ac89b5c78caf5157648a",
+  "source_tree": "7fcc5f39af0e4bdc89f1c01cc6f4b7264203986a",
+  "closed_capture": {
+    "handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v4.json",
+    "handoff_sha256": "a59c0f77d467e2d4e64897b166e3b86b798d6154f72202b3b286054b8aa75a92",
+    "capture_root": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/stage3-observation-v4",
+    "report_sha256": "387b8af03096856b7c7d09d32d27b181283343162b180911843f3ab25e5a15c2",
+    "raw_sha256": "953a2401d9bb11c1408278a4e751b1e1e36689661255bc14020b7ccfa109df4d",
+    "worldserver_log_sha256": "40f5dc8a007d3f96914903152a1629fef6e4d657e216773658bae7050021e94d",
+    "classification": "infrastructure_abort_controller_route_hold_bootstrap_route_drift",
+    "worldserver_starts": 1,
+    "worldserver_exit": 0,
+    "cleanup_passed": true,
+    "gameplay_exercised": false,
+    "ml_eligible": false
+  },
+  "publication": {
+    "payload_path": "artifacts/cata_raid_program/magmaw_stage3_profile_range_observation_v4_20260903",
+    "dvc_pointer_path": "artifacts/cata_raid_program/magmaw_stage3_profile_range_observation_v4_20260903.dvc",
+    "summary_path": "experiments/configs/cata_raid_magmaw_stage3_profile_range_observation_v4_summary_20260903.json",
+    "closed_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-v4-publication-handoff.json"
+  },
+  "required_actions": [
+    "Recompute every source hash and reject any mismatch before staging.",
+    "Create one immutable minimal evidence payload containing the exact report, raw log, worldserver log, closed handoff, and canonical file manifest with source/build/binary/config/route/roster/attempt/terminal/cleanup identities.",
+    "Run dvc add for the exact payload, commit only the DVC pointer plus compact summary metadata, run dvc status, push the pointer object to the configured remote, and verify remote reconstruction in an isolated temporary directory against every manifest hash.",
+    "After remote verification, evict the exact repository payload directory, exact original capture root, isolated reconstruction, and exact newly materialized local DVC cache object if safe. Retain the compact external closed-capture and publication handoffs.",
+    "Prove no worldserver/authserver process, bots, leases, or duplicate v4 raw/log payload remains."
+  ],
+  "required_summary": [
+    "terminal and first-broken edge remain controller_route_hold_bootstrap_route_drift / profile checkpoint identity selection absent",
+    "DPS and HPS are null with combat_not_started, and decisions/movement/deaths are zero",
+    "one worldserver start, exit/cleanup, source/build/binary/config/bundle/admission hashes",
+    "DVC pointer hash, directory digest, remote verification receipt, exact eviction receipt, and ml_eligible=false"
+  ],
+  "forbidden": [
+    "No evidence reinterpretation, fixture/gameplay success, acceptance, retry, new capture, build, configure, provision, DB mutation/readback, source/runtime/config/bundle/route/skill mutation, server start, or ML admission.",
+    "Do not evict the retained source-control-immutable checkout, retained build worktree/binary, sealed prestart bundle, compact handoffs, or any unrelated DVC cache object in this unit.",
+    "Do not retain a duplicate raw/log payload after verified publication."
+  ],
+  "budgets": {
+    "publication_commits": 1,
+    "dvc_add": 1,
+    "dvc_push": 1,
+    "remote_reconstructions": 1,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "builds": 0,
+    "database_operations": 0,
+    "live_attempts": 0,
+    "retries": 0
+  },
+  "acceptance_conditions": [
+    "The committed pointer and compact summary bind the exact closed v4 evidence and truthful non-gameplay terminal.",
+    "An isolated remote reconstruction matches every published file hash.",
+    "The exact local raw/log payloads are evicted only after remote verification; unrelated retained authorities remain intact.",
+    "Git and DVC status are clean, the remote is in sync, and the publication handoff is canonical LF JSON."
+  ],
+  "next_action": "Publish, remotely verify, and exactly evict the closed v4 evidence without reinterpreting it."
+}
