@@ -1,0 +1,75 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_split_source_build_worktree_capture_validation",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_capture_provenance_architecture_repair_authorized",
+  "created_at_utc": "2026-09-03T04:07:35Z",
+  "base_commit": "d730a221371cf891a35942cd0e7d0687e4b50587",
+  "base_tree": "81ef29e64c2a127d77fc41bf62384c9d3e4dd48f",
+  "closed_failure": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v3.json",
+    "sha256": "9960dbe6981ae054430d7ea41a79cb793e9ca3802e78f708baf2647b5a91f19f",
+    "classification": "infrastructure_loss_preflight",
+    "worldserver_starts": 0
+  },
+  "first_broken_edge": {
+    "id": "capture_validation_conflates_immutable_source_and_retained_build_worktrees",
+    "counterexample": "The admitted immutable source checkout is 860fcba44d/ea6f9452, while the verified binary, CMake cache, and receipt belong to the retained clean build worktree at 6270e1f9/de624f66. The controller applies both authority classes to --worktree and therefore rejects the valid layered lineage before starting worldserver."
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "implementation_commit_budget": 1,
+    "owned_files": [
+      "tools/raid_program/capture_environment_validation.py",
+      "tools/raid_program/capture_setup.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "required_change": [
+      "Add one optional --build-worktree capture argument whose default is the source --worktree, preserving all existing callers.",
+      "Keep recurrence admission, Git source identity, runtime exclusions, DVC/route/profile validation, and navmesh probing on the source worktree.",
+      "Resolve the receipt-named tracked build policy, receipt worktree identity, CMake cache, binary containment, artifact path/hash/size/timestamps, and build-worktree current clean Git identity on the build worktree.",
+      "Keep build-control compatibility verification against the source worktree and its admission-bound layered authority.",
+      "Reject a dirty, moved, or source-drifted build worktree explicitly; do not weaken any existing receipt, binary, CMake, or authority gate.",
+      "Expose both resolved identities in the typed CaptureSetup/build provenance result."
+    ],
+    "required_fixture": [
+      "A deterministic split-worktree fixture proves that source checks receive the source checkout and receipt/CMake/binary checks receive the build checkout.",
+      "Default-without---build-worktree retains the single-worktree behavior.",
+      "A mismatched, dirty, or drifted build worktree fails closed with an explicit rejection.",
+      "The admission-bound build-control compatibility projection is unchanged."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_phase1_raid_foundation_capture.py",
+      "pixi run python -m py_compile tools/raid_program/capture_environment_validation.py tools/raid_program/capture_setup.py",
+      "git diff --check d730a221371cf891a35942cd0e7d0687e4b50587 HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Only the exact three implementation-owned files change in the worker commit.",
+      "All source/admission/runtime-asset gates remain on the immutable source worktree.",
+      "All build-artifact gates remain on the exact receipt worktree and reject any identity or cleanliness drift.",
+      "Existing single-worktree captures remain source-compatible.",
+      "The focused test file, compile check, and diff check pass.",
+      "An independent Sol-high reviewer returns GO before any Stage 3 worldserver start."
+    ]
+  },
+  "forbidden": [
+    "No change to recurrence admission schemas, build-control compatibility semantics, bundle contents, route/profile/navmesh data, gameplay behavior, native runtime, C/C++, database, roster, or skills.",
+    "No build, configure, provision, database mutation/readback, DVC operation, worldserver/authserver start, fixture attempt, gameplay canary, publication, promotion, or ML admission.",
+    "No copying or relocating the binary/CMake cache to impersonate the immutable source checkout, and no weakening path identity, source identity, cleanliness, hash, timestamp, or attestation checks."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "fixture_attempts": 0,
+    "gameplay_canary_attempts": 0,
+    "database_operations": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one Sol-high raid-evidence-lifecycle implementer, then one independent Sol-high reviewer."
+}

@@ -1,61 +1,58 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "evidence:magmaw_stage3_profile_range_observation_v3",
+  "work_unit": "evidence:split_source_build_worktree_capture_validation",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "fixture_replay_authorized",
+  "classification": "implementation_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "582e0651c2fb6e89914cffc86391ec0670950bbf",
-  "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "One worldserver-backed Stage 3 observation after exact route/profile/DVC/navmesh preflights; not a gameplay canary.",
+  "observed_at_commit": "d730a221371cf891a35942cd0e7d0687e4b50587",
+  "architecture_scope": "Separate immutable launch-source authority from retained build-artifact authority in the capture controller.",
   "behavior_change": false,
-  "evidence_contract_change": false,
-  "gate_state": "All known static and runtime-asset preflights pass; live target relation and native profile-range outcome remain unobserved.",
+  "evidence_contract_change": true,
+  "gate_state": "Stage 3 remains closed; the prior invocation ended before worldserver start because capture provenance validation conflated two valid worktrees.",
   "first_broken_edge": {
-    "id": "runtime_target_spawn_relation_and_native_profile_range_outcome_not_observed",
-    "stage": "stage3_observation_fixture_v3",
+    "id": "capture_validation_conflates_immutable_source_and_retained_build_worktrees",
+    "stage": "stage3_preflight",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "No worldserver has yet executed the repaired profile-range boundary.",
-    "review_state": "one_fixture_replay_authorized_after_all_known_preflights"
+    "cause": "One --worktree is incorrectly used for both current admitted source validation and historic build artifact validation.",
+    "review_state": "bounded_implementation_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_stage3_profile_range_observation_reauthorization_v3_handoff_20260903.json",
-    "sha256": "f903f3cd5631c883d55ea5eee08dacc8cd2a29dddb40694a54304ac5df2a3f85",
-    "navmesh_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-navmesh-asset-hydration-handoff.json",
-    "navmesh_handoff_sha256": "f86bd45b642a11e2d90bc599ae0ede5738decdbc62535e79d6169717713fac57"
+    "path": "experiments/configs/cata_raid_magmaw_split_source_build_worktree_capture_authorization_handoff_20260903.json"
   },
   "scope_lock": {
-    "objective": "Observe exact live identity, arbiter/native profile-range progress, later cast, typed terminal, and cleanup in one fixture replay.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff-v3.json",
-    "stop_condition": "Stop on the first typed success or failure terminal, then close and clean without retry."
+    "objective": "Implement and deterministically test the two-worktree provenance split without weakening either authority.",
+    "owned_files": [
+      "tools/raid_program/capture_environment_validation.py",
+      "tools/raid_program/capture_setup.py",
+      "tests/test_phase1_raid_foundation_capture.py"
+    ],
+    "stop_condition": "Stop after one implementation commit and focused deterministic verification; no live process."
   },
   "acceptance_conditions": [
-    "One sealed worldserver lifecycle closes under a typed watchdog terminal and reports DPS/HPS plus decisions, movement, deaths, route progress, native outcomes, and cleanup.",
-    "Fixture success requires exact live identity and hazard-release/range-candidate/native-progress/later-cast chain; gameplay acceptance remains closed."
+    "Split-worktree and compatibility-default fixtures pass while mismatched/dirty/drifted build worktrees fail closed.",
+    "Independent Sol-high review returns GO before Stage 3 is reauthorized."
   ],
   "forbidden": [
-    "No source/config/route/bundle mutation, DVC mutation, build, provision, database mutation, authserver, retry, second server start, gameplay canary, boss-clear, promotion, or ML admission."
+    "No files outside scope, no gate weakening, no build, server, database, DVC, bundle, gameplay, route, or skill mutation."
   ],
   "validation_clock": {
-    "policy": "completion_watchdog",
-    "bundle_reverification_budget": 1,
-    "targeted_dvc_status_precheck_budget": 1,
-    "navmesh_probe_precheck_budget": 1,
-    "capture_invocation_budget": 1,
-    "worldserver_start_budget": 1,
-    "fixture_attempt_budget": 1,
+    "policy": "deterministic_fixture_only",
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "worldserver_start_budget": 0,
+    "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
     "build_budget": 0,
-    "database_mutation_budget": 0,
-    "dvc_mutation_budget": 0,
-    "retries": 0,
-    "observe_sec": 0
+    "database_operation_budget": 0,
+    "dvc_operation_budget": 0,
+    "retries": 0
   },
   "issues": [],
   "ready_for_build": false,
-  "ready_for_fixture_expansion": true,
+  "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Run the one bounded Stage 3 profile-range fixture replay and close its evidence."
+  "next_action": "Implement the bounded controller repair and obtain independent review."
 }
