@@ -2,14 +2,15 @@
   "schema": "cata_raid_specialist_handoff_v1",
   "work_unit_id": "control:resume_immutable_source_static_seal_with_known_boundary",
   "owner_skill": "raid-performance-loop",
-  "classification": "known_boundary_static_seal_resume_authorized",
+  "classification": "derived_runtime_authority_static_seal_resume_authorized",
   "created_at_utc": "2026-09-03T00:00:00Z",
   "predecessor": {
-    "path": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v4.json",
-    "sha256": "7930e1bd41111306e4fb58440cadab9995266342a0dc86c5846a47f1d7560fd8",
-    "terminal_reason": "recurrence_boundary_run_id_unknown",
-    "fixture_executions": 0,
-    "downstream_actions": 0
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable_v3.failure.json",
+    "sha256": "529264a0966cb2d7c3209976fb7f0aca5654933f56e4d61540bef6f6569ea117",
+    "terminal_reason": "tracked_snapshot_receipt_invalid",
+    "recurrence_consumed": true,
+    "runtime_config_derivation_consumed": true,
+    "bundle_staging_started": false
   },
   "exact_recurrence_boundary": {
     "run_id": "magmaw-authority-5cad51fa40-20260902",
@@ -22,16 +23,27 @@
     "required_action": "Repin once to the exact clean commit containing this authorization and retain through Stage 3."
   },
   "coordinator_prebound_authority": {
-    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/build_control_authority_postbuild_immutable_v3.json",
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/build_control_authority_postbuild_immutable_v4.json",
     "worker_permission": "read_and_verify_only"
+  },
+  "exact_runtime_config_authority": {
+    "selector": "tracked_derived_runtime_config_v1",
+    "contract_relative_path": "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json",
+    "required_create_arguments": [
+      "--base-runtime-config-authority",
+      "tracked_derived_runtime_config_v1",
+      "--base-runtime-config-contract-relative-path",
+      "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json"
+    ]
   },
   "authorized_work_unit": {
     "owner_skill": "raid-shard-architecture",
-    "bundle_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable_v3",
-    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v5.json",
-    "objective": "Use the exact ledger-known recurrence boundary, immutable checkout, and coordinator-prebound authority to complete one static seal and emit an accepted closed handoff.",
+    "bundle_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable_v4",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v6.json",
+    "objective": "Use the exact ledger-known recurrence boundary, explicit tracked-derived runtime authority, immutable checkout, and coordinator-prebound authority to complete one static seal and emit an accepted closed handoff.",
     "acceptance_conditions": [
       "Recurrence executes once with run ID magmaw-authority-5cad51fa40-20260902 and passes 27/27.",
+      "Bundle creation supplies both exact tracked-derived runtime-config authority arguments and passes before staging.",
       "Atomic bundle binds the immutable checkout and production verification passes from the separate main checkout.",
       "Roster/spawn readback passes, while Stage 3, gameplay canary, launchability, and live relation remain closed."
     ]
@@ -59,5 +71,5 @@
     "No invented boundary ID, authority write by worker, main-checkout movement, repository/gameplay/source/test/config/route/roster/ledger mutation, build, provision/DB mutation, server/live, DVC, or retry.",
     "No mutable source binding, old bundle reuse, live inference, canary, promotion, or ML admission."
   ],
-  "next_action": "Coordinator commits, prebinds canonical authority, then dispatches one fresh shard owner using the exact known boundary."
+  "next_action": "Coordinator commits, prebinds canonical authority, then dispatches one fresh shard owner using the exact known boundary and explicit tracked-derived runtime authority."
 }

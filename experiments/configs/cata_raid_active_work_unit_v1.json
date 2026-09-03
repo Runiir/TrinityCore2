@@ -2,33 +2,33 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "shard:immutable_source_post_build_static_seal_known_boundary_resume",
   "owner_skill": "raid-shard-architecture",
-  "classification": "known_boundary_reseal_resume_authorized",
+  "classification": "derived_runtime_authority_reseal_resume_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "df484d21b41fac38506e51e586c9d225ec065cd1",
-  "immutable_input_commit": "df484d21b41fac38506e51e586c9d225ec065cd1",
+  "observed_at_commit": "736a2c0f2c2bf29b59eb7026144019ecb5c7e342",
+  "immutable_input_commit": "736a2c0f2c2bf29b59eb7026144019ecb5c7e342",
   "architecture_scope": "Repin the retained immutable checkout, verify coordinator-prebound canonical authority, and execute one static-only seal sequence; no build or live action.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "Immutable checkout and prebound authority passed; recurrence stopped before fixture execution because the caller supplied an unknown boundary run ID. The exact ledger-known ID is now fixed.",
+  "gate_state": "Immutable checkout, authority, 27/27 recurrence, and runtime derivation passed; bundle creation stopped before staging because the explicit tracked-derived runtime authority selector and contract path were omitted.",
   "first_broken_edge": {
-    "id": "recurrence_boundary_run_id_unknown",
-    "stage": "immutable_source_post_build_static_seal_known_boundary_resume",
+    "id": "derived_runtime_config_authority_selector_omitted",
+    "stage": "immutable_source_post_build_static_seal_derived_authority_resume",
     "owner_classification": "raid_shard_architecture",
-    "cause": "The worker invented a boundary run ID not present in the recurrence ledger; no fixture executed.",
-    "review_state": "exact_ledger_known_boundary_identified"
+    "cause": "Bundle creation received a tracked-derived receipt but omitted --base-runtime-config-authority tracked_derived_runtime_config_v1 and its exact contract-relative path.",
+    "review_state": "exact_required_arguments_identified"
   },
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_immutable_source_static_seal_known_boundary_resume_authorization_handoff_20260903.json",
-    "sha256": "d7863e10fe6622686c53f1c8ffff8cd5d93940ea0bec5b114868b365651586f8",
+    "sha256": "071968af0337afcb918d06601681c8ad1d6a0417bf25dfb32cd745395b2fbb52",
     "build_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
     "build_handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e"
   },
   "scope_lock": {
-    "objective": "Use the exact ledger-known recurrence boundary, prebound authority, and immutable checkout to emit an accepted closed post-build static seal.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v5.json",
+    "objective": "Use the exact derived-config authority arguments, known recurrence boundary, prebound authority, and immutable checkout to emit an accepted closed post-build static seal.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v6.json",
     "stop_condition": "Any identity/hash/schema/verifier mismatch stops without retry, main-checkout movement, build, database mutation, or server start."
   },
   "acceptance_conditions": [
@@ -61,5 +61,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact known-boundary immutable-source static-seal resume; Stage 3 remains separately gated."
+  "next_action": "Execute the exact derived-runtime-authority immutable-source static-seal resume; Stage 3 remains separately gated."
 }
