@@ -2,25 +2,27 @@
   "schema": "cata_raid_specialist_handoff_v1",
   "work_unit_id": "control:authorize_stage3_immutable_route_hydration",
   "owner_skill": "raid-performance-loop",
-  "classification": "immutable_route_dvc_hydration_authorized",
+  "classification": "immutable_route_dvc_dependency_hydration_authorized",
   "created_at_utc": "2026-09-03T00:00:00Z",
   "failed_predecessor": {
-    "path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-observation-handoff.json",
-    "sha256": "0cc3e50cf8d1af44395409781778ebb0d8563cd81828fa010f6d6f30362b8390",
-    "classification": "infrastructure_abort_preflight_runtime_profile_assets_rejected",
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-stage3-route-hydration-handoff.json",
+    "sha256": "4cf04bd262fb69becd4a4f4ecf759e18f471e4cd8862e591feecb7b90737c65c",
+    "classification": "typed_dvc_lineage_failure",
     "worldserver_starts": 0,
-    "fixture_native_executions": 0,
-    "reasons": [
-      "worktree_route_manifest_unreadable",
-      "reference_route_manifest_unreadable",
-      "runtime_route_dvc_lineage_dirty"
+    "completed_actions": [
+      "credential parity",
+      "targeted validation_scenarios pull"
+    ],
+    "missing_dependencies": [
+      "dataset/validation_provisioning/report.json",
+      "dataset/validation_provisioning_verification/report.json"
     ]
   },
   "first_broken_edge": {
-    "id": "immutable_source_checkout_missing_dvc_route_workspace",
-    "cause": "The sealed immutable Git checkout has the exact dvc.lock but lacks the DVC-owned dataset/validation_scenarios output and local remote credentials, so live preflight cannot read or verify route lineage.",
-    "first_downstream_state": "capture runtime-profile asset validation failed before output-root creation or worldserver start.",
-    "hypothesis": "Targeted DVC hydration at the sealed 860fcba4 checkout will reconstruct the exact route bytes already sealed in the bundle and make dvc status clean without changing Git or the bundle."
+    "id": "validation_scenarios_dvc_dependencies_missing",
+    "cause": "The targeted route output is present, but DVC status reports two deleted dependency reports required by validation_scenarios.",
+    "first_downstream_state": "The one-shot DVC status remained dirty and deferred route/selector/profile verification.",
+    "hypothesis": "One exact pull of the two named DVC dependencies will close lineage and allow the remaining read-only checks."
   },
   "immutable_checkout": {
     "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
@@ -37,18 +39,18 @@
   },
   "authorized_work_unit": {
     "owner_skill": "raid-evidence-lifecycle",
-    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-route-hydration-handoff.json",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-stage3-route-hydration-handoff-v2.json",
     "actions": [
-      "Compare main and immutable-checkout DVC configuration with secrets redacted; copy only .dvc/config.local when missing and never commit or print it.",
-      "Run one targeted DVC pull/checkout for validation_scenarios at the sealed checkout.",
+      "Verify the already-copied .dvc/config.local still has redacted parity; do not rewrite it.",
+      "Run one targeted DVC pull naming exactly dataset/validation_provisioning/report.json and dataset/validation_provisioning_verification/report.json.",
       "Require pixi run dvc status validation_scenarios --json to return clean.",
       "Hash the hydrated validation_routes.jsonl and require it equals the bundle source-route hash; materialize and verify the exact scenario through the production selector and require its runtime object hash equals the sealed runtime-route hash.",
       "Re-run capture runtime-profile asset validation read-only and require no route/profile/DVC rejection."
     ]
   },
   "budgets": {
-    "credential_local_copy": 1,
-    "targeted_dvc_pull_or_checkout": 1,
+    "credential_local_copy": 0,
+    "targeted_dvc_dependency_pull": 1,
     "dvc_status": 1,
     "route_selector_verification": 1,
     "runtime_profile_asset_preflight": 1,
@@ -59,7 +61,7 @@
     "retries": 0
   },
   "forbidden": [
-    "No source/config/route/roster/ledger/skill/gameplay mutation, DVC repro/push, broad pull/checkout/gc, main workspace hydration, build, provision/DB mutation, server/live, retry, or bundle rewrite/reseal.",
+    "No source/config/route/roster/ledger/skill/gameplay mutation, credential rewrite, DVC repro/push/broad pull/checkout/gc, main workspace hydration, build, provision/DB mutation, server/live, retry, or bundle rewrite/reseal.",
     "No secret content in logs or handoffs; record only redacted config equivalence and optional secret-file hash/mode."
   ],
   "acceptance_conditions": [

@@ -2,33 +2,33 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "evidence:magmaw_stage3_immutable_route_hydration",
   "owner_skill": "raid-evidence-lifecycle",
-  "classification": "authorized",
+  "classification": "dependency_hydration_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "604b2072e2f8f556d7c6d0d81bb26a70c84dacff",
-  "immutable_input_commit": "604b2072e2f8f556d7c6d0d81bb26a70c84dacff",
-  "architecture_scope": "Targeted DVC hydration and read-only asset preflight in the sealed immutable checkout; no server or fixture attempt.",
+  "observed_at_commit": "657e2e43f903fe6338a344ed60e90cd29ca981d4",
+  "immutable_input_commit": "657e2e43f903fe6338a344ed60e90cd29ca981d4",
+  "architecture_scope": "Targeted pull of two named DVC dependencies followed by route/selector/asset checks in the sealed immutable checkout; no server.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Stage-3 capture preflight found the sealed immutable checkout lacks its DVC route workspace; hydrate and verify it before any new live authorization.",
+  "gate_state": "Route output hydration succeeded, but validation_scenarios lineage remains dirty because two named DVC dependency reports are missing.",
   "first_broken_edge": {
-    "id": "immutable_source_checkout_missing_dvc_route_workspace",
-    "stage": "stage3_route_hydration",
+    "id": "validation_scenarios_dvc_dependencies_missing",
+    "stage": "stage3_route_dependency_hydration",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "Live preflight could not read the DVC-owned route catalog/reference in the immutable checkout and reported dirty lineage; server did not start.",
-    "review_state": "preflight_abort_zero_server_starts"
+    "cause": "DVC status reports deleted validation_provisioning and validation_provisioning_verification report dependencies after targeted route output pull.",
+    "review_state": "exact_missing_dependencies_identified"
   },
   "source_handoff": {
     "path": "experiments/configs/cata_raid_magmaw_stage3_immutable_route_hydration_authorization_handoff_20260903.json",
-    "sha256": "31b15c5677547eb8af45d3b0815d161cdd3fd3840810917480fbac5adc1a92f9",
+    "sha256": "e99917f273d741df22256b391c3ad3224b6522ad5254d3961c49b909a6e383a8",
     "build_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
     "build_handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e"
   },
   "scope_lock": {
-    "objective": "Hydrate only validation_scenarios in the immutable checkout and prove exact sealed route/profile/DVC parity without starting a server.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-route-hydration-handoff.json",
+    "objective": "Hydrate exactly the two missing DVC dependencies and prove sealed route/profile/DVC parity without starting a server.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-stage3-route-hydration-handoff-v2.json",
     "stop_condition": "Stop at first credential, DVC, hash, selector, or asset-preflight mismatch without retry or live action."
   },
   "acceptance_conditions": [
@@ -40,8 +40,8 @@
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "credential_local_copy_budget": 1,
-    "targeted_dvc_pull_or_checkout_budget": 1,
+    "credential_local_copy_budget": 0,
+    "targeted_dvc_dependency_pull_budget": 1,
     "dvc_status_budget": 1,
     "route_selector_verification_budget": 1,
     "runtime_profile_asset_preflight_budget": 1,
