@@ -1,0 +1,84 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_post_build_static_seal",
+  "owner_skill": "raid-performance-loop",
+  "classification": "post_build_static_reseal_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "build": {
+    "handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
+    "handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e",
+    "classification": "build_ready",
+    "source_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
+    "source_tree": "de624f66c49ba55f8ff56490a5489ed580b11e5f",
+    "binary_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/worktree/build/src/server/worldserver/worldserver",
+    "binary_sha256": "d8313cf1208772a16a400dce4244e57de13c6f1f67ebc83401df58398863cee5",
+    "build_receipt_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/identity/worldserver_build_receipt.json",
+    "build_receipt_file_sha256": "cb50cf21e9f4e4d292e16b2b7a9db28f54b611256a9c6cbb40332fbb8bcb2aed",
+    "build_receipt_internal_sha256": "7ce4426e4696f79812f5a8261446fd7264988b1671c1e80b134dcd381b5a0773"
+  },
+  "predecessors": {
+    "runtime_review_path": "/tmp/magmaw-arm-prevalidation-review-f9c8eee3/review_handoff.json",
+    "runtime_review_sha256": "e3fa71aef53d2a2a8fd0773420242c98e09618d6d53171c227498fa8b66d90d6",
+    "runtime_review_verdict": "GO",
+    "prior_static_seal_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
+    "prior_static_seal_sha256": "f822f6d40e765a9d4f2cf01ff2b9731252ee8996510ac585f32038f63bc28857",
+    "prior_static_seal_launch_authority": false
+  },
+  "layered_build_control_authority": {
+    "schema": "cata_raid_layered_build_control_authority_v1",
+    "build_source_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
+    "reviewed_control_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
+    "current_control_commit": "the exact clean commit containing this authorization and experiments/configs/cata_raid_active_work_unit_v1.json",
+    "build_to_review_paths": [],
+    "expected_review_to_current_paths": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_post_build_static_seal_authorization_handoff_20260903.json"
+    ],
+    "output_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/build_control_authority_postbuild.json"
+  },
+  "typed_target_identity": {
+    "runtime_target_guid": 39,
+    "target_spawn_id": 250051,
+    "target_entry": 41570,
+    "target_map_id": 669,
+    "live_relation_status": "pending_stage3"
+  },
+  "authorized_static_seal_work_unit": {
+    "owner_skill": "raid-shard-architecture",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-seal-handoff.json",
+    "bundle_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild",
+    "required_actions": [
+      "Verify this committed authorization/hash, clean current source, exact new build handoff/binary/receipt, runtime GO review, prior static seal, route, roster/profile contract, and exact two-path build-to-control relation.",
+      "Write/hash the exact six-field layered authority with empty build-to-review paths and exact two review-to-current metadata paths.",
+      "Run the unchanged recurrence manifest once at current control; require all pass, fixture expansion admitted, canary withheld, and typed checkpoint eligible.",
+      "Derive one current-control runtime config and create/verify one atomic typed bundle with the new binary/build receipt and all four target fields.",
+      "Perform one read-only composed verification of the already provisioned frozen roster/profiles/gear/talents/glyphs/consumables/zero residue plus the production parameterized spawn readback.",
+      "Write and hash-verify post_build_static_sealed_ready or one typed_preflight_failure."
+    ],
+    "acceptance_conditions": [
+      "New binary, gate-bearing receipt, authority, route, runtime config, recurrence suite/decision/admission, and checkpoint seal all bind exactly.",
+      "Read-only roster remains exact 10 and 2/3/5 with zero residue; spawn 250051 returns entry 41570/map669 using the receipted query.",
+      "Runtime target 39 remains a distinct pending live relation; no server/native success is claimed."
+    ]
+  },
+  "budgets": {
+    "current_control_recurrence_gate": 1,
+    "runtime_config_derivation": 1,
+    "atomic_bundle_create": 1,
+    "read_only_composed_database_readback": 1,
+    "static_seals": 1,
+    "provisioning_mutations": 0,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No repository/source/test/config/route/roster/ledger/skill/gameplay mutation; no configure/build/provisioning/database mutation/server/live/DVC/retry.",
+    "No seal reuse, old binary substitution, decision projection, retargeting, live inference, canary, promotion, or ML admission."
+  ],
+  "next_action": "Dispatch exactly one fresh raid-shard-architecture owner. Stage 3 remains closed pending the exact post-build seal handoff."
+}

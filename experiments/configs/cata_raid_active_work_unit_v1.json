@@ -1,57 +1,59 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:reviewed_runtime_one_worldserver_build",
+  "work_unit": "shard:post_build_typed_static_seal",
   "owner_skill": "raid-shard-architecture",
   "classification": "authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "f9c8eee3c5f7ad2797f4a9b43ce926a4d5c99b71",
-  "immutable_input_commit": "f9c8eee3c5f7ad2797f4a9b43ce926a4d5c99b71",
-  "architecture_scope": "One clean detached Release worldserver configure/build and gate-bearing receipt only.",
+  "observed_at_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
+  "immutable_input_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
+  "architecture_scope": "Post-build static binding only: new binary/receipt, recurrence, config, atomic bundle, read-only roster/spawn verification, and seal.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Complete runtime lineage has independent GO; one build is authorized before post-build resealing and Stage 3.",
+  "gate_state": "Reviewed runtime binary is build_ready but not launch-authorized; fresh static sealing is required.",
   "first_broken_edge": {
-    "id": "reviewed_runtime_not_yet_present_in_gate_bearing_worldserver_binary",
-    "stage": "build",
+    "id": "new_reviewed_binary_not_yet_bound_to_typed_static_fixture",
+    "stage": "post_build_static_seal",
     "owner_classification": "raid_shard_architecture",
-    "cause": "The only existing worldserver binary predates the native GUID and controller repairs.",
-    "review_state": "independent_runtime_review_go"
+    "cause": "The current static seal binds the prior binary, not the new d8313cf1 worldserver.",
+    "review_state": "build_ready_receipts_verified"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_reviewed_runtime_one_build_authorization_handoff_20260903.json",
-    "review_path": "/tmp/magmaw-arm-prevalidation-review-f9c8eee3/review_handoff.json",
-    "review_sha256": "e3fa71aef53d2a2a8fd0773420242c98e09618d6d53171c227498fa8b66d90d6",
-    "stage2_path": "/home/runiir/Games/trinity-generic-min-range-stage1.m1GGFRdt/stage2_static_sealed_handoff.json",
-    "stage2_sha256": "f822f6d40e765a9d4f2cf01ff2b9731252ee8996510ac585f32038f63bc28857"
+    "path": "experiments/configs/cata_raid_magmaw_post_build_static_seal_authorization_handoff_20260903.json",
+    "build_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
+    "build_handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e"
   },
   "scope_lock": {
-    "objective": "Produce one hash-verified build_ready handoff for the exact clean authorization commit or one typed build failure.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
-    "expected_observable_change": "A new gate-bearing worldserver binary contains the reviewed runtime lineage.",
-    "stop_condition": "Any preflight mismatch stops before configure; any configure/build failure consumes the only budget and stops without retry."
+    "objective": "Produce one post_build_static_sealed_ready handoff for the exact new binary or one typed failure.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-seal-handoff.json",
+    "stop_condition": "Any mismatch stops without retry, source/provisioning mutation, build, or server start."
   },
   "acceptance_conditions": [
-    "Exact clean source, policy, configure, coordinated build, receipt, binary hash, and source completion snapshots verify.",
-    "No server, provision, database, live, or DVC action occurs."
+    "New binary/receipt and all typed static identities are bound and verified.",
+    "Roster/spawn readback is read-only and all live relations remain pending."
   ],
   "forbidden": [
-    "No source mutation, second build, old-build overwrite, server/live/DVC action, or retry."
+    "No source/build/provision/database mutation/server/live/DVC/retry or live inference."
   ],
   "validation_clock": {
-    "policy": "single_coordinated_build",
-    "configure_budget": 1,
-    "worldserver_build_budget": 1,
+    "policy": "completion_watchdog",
+    "current_control_recurrence_gate_budget": 1,
+    "runtime_config_derivation_budget": 1,
+    "atomic_bundle_create_budget": 1,
+    "read_only_database_readback_budget": 1,
+    "static_seal_budget": 1,
+    "provisioning_mutation_budget": 0,
+    "worldserver_build_budget": 0,
     "worldserver_start_budget": 0,
     "live_attempt_budget": 0,
     "dvc_operation_budget": 0,
     "retries": 0
   },
   "issues": [],
-  "ready_for_build": true,
-  "ready_for_fixture_expansion": false,
+  "ready_for_build": false,
+  "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact one-build work unit in the source handoff."
+  "next_action": "Execute the exact post-build static-seal work unit."
 }
