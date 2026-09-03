@@ -1,0 +1,92 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_magmaw_controller_identity_post_build_static_seal",
+  "owner_skill": "raid-performance-loop",
+  "classification": "one_post_build_integrated_stage3_static_seal_authorized",
+  "created_at_utc": "2026-09-03T06:30:55Z",
+  "build": {
+    "handoff_path": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build-handoff.json",
+    "handoff_sha256": "c9662d791183a3416173be583fb81a6aa267c16ebf49e56b395ef29de579efd1",
+    "classification": "build_ready",
+    "source_commit": "0ffda98e8f93115316509eaf46f7c38fbc7a7992",
+    "source_tree": "2665c472b4a878710054886927d0848fd6df5dea",
+    "build_worktree": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build.5YGC4lez/worktree",
+    "binary_path": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build.5YGC4lez/worktree/build/src/server/worldserver/worldserver",
+    "binary_sha256": "79d7042a8df5dd49de27b2b3888069c02c7129b7e1b31a0971e35789252addf7",
+    "binary_size_bytes": 64700960,
+    "build_receipt_path": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build.5YGC4lez/worldserver-build-receipt.json",
+    "build_receipt_file_sha256": "53d2e533ecac3bc9cae56f34e721d824b878e8d73ee8008944654aab98f11ce7",
+    "build_receipt_internal_sha256": "7694706f97b396161a61b7fbd1d08860a27c69e00fc30f9ed2f3160dd25db2cb"
+  },
+  "runtime_review": {
+    "path": "/tmp/controller_hold_identity_authority_materialization_review_handoff_v2_20260903.json",
+    "sha256": "cf551d8b9624a3741f7c83a68024b70e8dac9a4bfe5772221042304ebba027bb",
+    "verdict": "GO"
+  },
+  "retained_inputs": {
+    "immutable_checkout": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "required_repin": "the exact clean commit containing this authorization and experiments/configs/cata_raid_active_work_unit_v1.json",
+    "validation_route_catalog": "dataset/validation_scenarios/validation_routes.jsonl",
+    "validation_route_catalog_sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "retained_navmesh_assets": "the exact eight 669 assets and hashes in experiments/configs/cata_raid_magmaw_stage3_navmesh_asset_hydration_authorization_handoff_20260903.json",
+    "known_recurrence_run_id": "magmaw-authority-5cad51fa40-20260902",
+    "known_recurrence_boundary": "after",
+    "known_recurrence_gate": "fixture_expansion"
+  },
+  "layered_build_control_authority": {
+    "path": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build.5YGC4lez/run/build_control_authority_stage3_integrated_v1.json",
+    "worker_permission": "read_and_verify_only",
+    "build_source_commit": "0ffda98e8f93115316509eaf46f7c38fbc7a7992",
+    "reviewed_control_commit": "0ffda98e8f93115316509eaf46f7c38fbc7a7992",
+    "current_control_commit": "the exact commit containing this authorization",
+    "build_to_review_paths": [],
+    "expected_review_to_current_paths": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_controller_identity_post_build_static_seal_authorization_handoff_20260903.json"
+    ]
+  },
+  "typed_target_identity": {
+    "runtime_target_guid": 39,
+    "target_spawn_id": 250051,
+    "target_entry": 41570,
+    "target_map_id": 669,
+    "live_relation_status": "pending_integrated_stage3"
+  },
+  "authorized_static_seal": {
+    "owner_skill": "raid-shard-architecture",
+    "bundle_path": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build.5YGC4lez/run/prestart_bundle_stage3_integrated_v1",
+    "output_handoff": "/home/runiir/Games/trinity-magmaw-controller-identity-postbuild-static-sealed-handoff.json",
+    "required_actions": [
+      "Verify this committed authorization, prebound authority, build handoff/receipt/binary, runtime GO review, clean main/build/immutable checkouts, and the exact retained route/navmesh identities before mutation.",
+      "Repin the retained immutable checkout once to the exact authorization commit without altering its ignored route/navmesh payload; reverify Git, route catalog, and exact eight assets.",
+      "Run the known recurrence boundary once and require all 27 fixtures pass, fixture expansion admitted, canary withheld, and checkpoint eligible.",
+      "Derive one runtime config using tracked_derived_runtime_config_v1 and experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json.",
+      "Create and production-verify one new atomic typed bundle binding the immutable source, exact new binary/receipt, route/profile/roster, layered authority, and all four target identity fields.",
+      "Perform one composed read-only database readback requiring exact roster 10 with roles 2/3/5, exact gear/profile contract, zero residue, and spawn 250051 mapped to entry 41570/map669.",
+      "Write one post_build_static_sealed_ready or typed_preflight_failure handoff and stop."
+    ]
+  },
+  "acceptance_conditions": [
+    "The new bundle and checkpoint seal bind the exact current source, gate-bearing receipt, binary SHA, layered authority, selected Magmaw route/profile, and target identity.",
+    "Recurrence is 27/27, production bundle verification passes, roster/readback is exact, and retained navmesh assets remain hash-exact.",
+    "No server or live claim is made; the only next action on success is one separately authorized integrated Stage3."
+  ],
+  "budgets": {
+    "immutable_checkout_repins": 1,
+    "recurrence_runs": 1,
+    "runtime_config_derivations": 1,
+    "atomic_bundle_creates": 1,
+    "bundle_verifications": 1,
+    "database_readbacks": 1,
+    "worldserver_starts": 0,
+    "builds": 0,
+    "database_mutations": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No repository/source/test/config/route/roster/ledger/skill/gameplay mutation, build/configure, provision/DB mutation, server/live, DVC, retry, or old bundle rewrite/reuse.",
+    "No navmesh regeneration, symlink, DataDir change, target retargeting, live inference, canary acceptance, promotion, or ML admission."
+  ],
+  "next_action": "Create and verify the exact post-build static bundle, then return for the single integrated Stage3 authorization."
+}

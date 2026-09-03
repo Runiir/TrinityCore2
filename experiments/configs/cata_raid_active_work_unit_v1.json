@@ -1,44 +1,44 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:controller_hold_identity_materialization_fast4_v2_build",
+  "work_unit": "shard:magmaw_controller_identity_post_build_static_seal",
   "owner_skill": "raid-shard-architecture",
-  "classification": "one_reviewed_runtime_repair_build_authorized",
+  "classification": "one_post_build_integrated_stage3_static_seal_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "b4736190e3d4b793b64752f9d5153aafcce825da",
+  "observed_at_commit": "0ffda98e8f93115316509eaf46f7c38fbc7a7992",
   "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "One fresh fast4_v2 build of the independently reviewed controller identity materialization repair.",
+  "architecture_scope": "One immutable-source static bundle binding the reviewed binary for the cutoff integrated Stage3.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Production and retained fallback materialization have independent GO; one fresh build is authorized.",
+  "gate_state": "Build is ready and provenance-valid; post-build static sealing is required before the single integrated Stage3.",
   "first_broken_edge": {
     "id": "controller_route_hold_identity_authority_string_view_not_materialized",
     "stage": "controller_route_hold_identity_construction_compile",
     "owner_classification": "raid_bot_runtime_implementation",
     "cause": "AuthorityTriple stores string_view fields, but aggregate copy-list initialization cannot implicitly construct Identity's string members.",
-    "review_state": "independent_go_build_authorized"
+    "review_state": "independent_go_build_ready_static_seal_authorized"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_controller_hold_identity_materialization_fast4_v2_build_authorization_handoff_20260903.json",
+    "path": "experiments/configs/cata_raid_magmaw_controller_identity_post_build_static_seal_authorization_handoff_20260903.json",
     "review_path": "/tmp/controller_hold_identity_authority_materialization_review_handoff_v2_20260903.json",
     "review_sha256": "cf551d8b9624a3741f7c83a68024b70e8dac9a4bfe5772221042304ebba027bb"
   },
   "scope_lock": {
-    "objective": "Produce one gate-bearing worldserver binary containing the reviewed repair.",
-    "owned_output": "/home/runiir/Games/trinity-controller-hold-identity-materialization-fast4-v2-build-handoff.json",
-    "stop_condition": "Stop at build_ready or the first new typed edge; no retry or live process."
+    "objective": "Create and verify one post-build static bundle for the cutoff integrated Stage3.",
+    "owned_output": "/home/runiir/Games/trinity-magmaw-controller-identity-postbuild-static-sealed-handoff.json",
+    "stop_condition": "Stop at static_sealed_ready or the first typed preflight failure; no retry or live process."
   },
   "acceptance_conditions": [
-    "The repaired translation unit compiles and the worldserver receipt is production-valid, or a new typed edge is proven.",
-    "Post-build static sealing remains required before integrated Stage3."
+    "The bundle binds the exact source, binary, receipt, route/profile, roster, authority, and target identity.",
+    "Recurrence, production bundle verification, readback, and retained navmesh identity pass before Stage3."
   ],
   "forbidden": [
-    "No mutation, failed artifact reuse, second build, server, DB, DVC, provisioning, capture, live canary, or threshold waiver."
+    "No repository mutation, build, server, DB mutation, DVC, provisioning, capture, live canary, retry, or old bundle reuse."
   ],
   "validation_clock": {
-    "policy": "queued_build_fast4_v2",
+    "policy": "post_build_static_seal_integrated_stage3_v1",
     "implementation_commits": 0,
     "independent_reviews": 0,
     "dvc_add_budget": 0,
@@ -47,16 +47,16 @@
     "worldserver_start_budget": 0,
     "fixture_attempt_budget": 0,
     "gameplay_canary_attempt_budget": 0,
-    "configure_budget": 1,
-    "build_budget": 1,
+    "configure_budget": 0,
+    "build_budget": 0,
     "database_mutation_budget": 0,
     "dvc_mutation_budget": 0,
     "retries": 0,
     "eviction_after_remote_verify_only": false
   },
   "issues": [],
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Run one fresh reviewed fast4_v2 build and close on build_ready or the first new typed edge."
+  "next_action": "Create and verify the post-build static bundle, then authorize the single integrated Stage3."
 }
