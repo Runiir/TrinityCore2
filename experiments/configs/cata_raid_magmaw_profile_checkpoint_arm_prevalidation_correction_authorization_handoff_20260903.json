@@ -1,0 +1,65 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_profile_checkpoint_arm_prevalidation_correction",
+  "owner_skill": "raid-performance-loop",
+  "classification": "bounded_runtime_controller_state_ordering_correction_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "base_source": {
+    "commit": "69c75d789425792314afb3875b635025da2b2fd9",
+    "tree": "a960e458b9a4ef44cf15cea32ef3e08c939961e1",
+    "clean": true
+  },
+  "review": {
+    "path": "/tmp/magmaw-typed-instance-fixture-review-69c75d78/review_handoff.json",
+    "sha256": "3d8671081a4eb432b63b3ee977062ec7dc5db6115bfb6269b0def2446c3a1c69",
+    "decision": "NO-GO",
+    "accepted": "Typed instance boundaries, authentic independent arm fixture, no active-stage/command mutation, and 116+125+112 tests pass.",
+    "blocking_edge": "invalid_arm_row_allocates_checkpoint_state_before_validation"
+  },
+  "authorized_implementation": {
+    "owner_skill": "raid-bot-runtime-implementation",
+    "objective": "Prevalidate the complete arm acknowledgement before allocating, freezing, or mutating any checkpoint lifecycle state.",
+    "owned_files": [
+      "tools/raid_program/capture_checkpoint_controller.py",
+      "tests/test_profile_combat_range_checkpoint_capture.py"
+    ],
+    "required_change": [
+      "When awaiting arm acknowledgement and no checkpoint state exists, validate every authenticated identity, typed field, lifecycle stage/outcome, unbound zero-instance, false match flag, and attempt/wipe/route/generation predicate using locals only.",
+      "On any arm rejection leave scheduler._profile_checkpoint_state exactly absent or byte/value-identical to its pre-call snapshot; emit no command and do not freeze generation.",
+      "Only after the entire authentic arm row is accepted may the controller allocate checkpoint state, freeze generation, advance phase, and emit the next poll.",
+      "Preserve strict post-arm bound checks and every prior positive/negative."
+    ],
+    "deterministic_fixtures": [
+      "For True, False, None, omitted, nonzero, premature-bound, wrong flag, and every wrong identity/scope arm row, snapshot state before/after and require exact nonmutation plus no command.",
+      "Authentic arm allocates state exactly once, freezes the expected generation, advances phase, and emits exactly one next status poll.",
+      "Repeated/stale arm and all bound progress/terminal negatives remain nonmutating."
+    ],
+    "required_commands": [
+      "pixi run pytest -q tests/test_profile_combat_range_checkpoint_capture.py",
+      "pixi run pytest -q tests/test_profile_combat_range_production_fixture.py tests/test_profile_combat_range_checkpoint_capture.py tests/test_bot_world_population_mgr_combat_movement_module.py",
+      "pixi run pytest -q tests/test_chainwielder_prestart_bundle.py tests/test_recurrence_admission.py",
+      "pixi run python -m py_compile tools/raid_program/capture_checkpoint_controller.py",
+      "git diff --check 69c75d789425792314afb3875b635025da2b2fd9 HEAD",
+      "git status --short"
+    ],
+    "acceptance_conditions": [
+      "Exactly two files change in one clean commit.",
+      "Every invalid first arm leaves lifecycle state exactly unchanged and authentic arm commits state only after full validation.",
+      "All regressions pass and fresh independent Sol-high review returns GO before build/Stage 3."
+    ]
+  },
+  "forbidden": [
+    "No C/C++, third file, protocol/validation weakening, eager state allocation, config/gameplay/build/server/live/DVC/Stage-3 changes or actions.",
+    "No synthetic state, fixture retargeting, live inference, waiver, or retry."
+  ],
+  "budgets": {
+    "implementation_commits": 1,
+    "independent_reviews": 1,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "next_action": "Dispatch one fresh raid-bot-runtime-implementation implementer, then one fresh Sol-high reviewer."
+}
