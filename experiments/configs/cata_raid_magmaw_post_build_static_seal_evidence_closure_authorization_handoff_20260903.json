@@ -1,0 +1,71 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:authorize_post_build_static_seal_evidence_closure",
+  "owner_skill": "raid-performance-loop",
+  "classification": "post_build_static_seal_evidence_closure_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "failed_predecessor": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-seal-handoff-v2.json",
+    "sha256": "4e586b6e5111afa49dd675d13d7b2c7194c491ba7b92932ab4364b2f4b206223",
+    "classification": "typed_preflight_failure",
+    "terminal_reason": "post_build_static_handoff_serialization_prior_launch_authority_key_missing"
+  },
+  "verified_immutable_outputs": {
+    "bundle_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild",
+    "bundle_manifest_sha256": "52a3a35296a4113e8ddea901e41671c26a6874409187f37b27b6cd3410b940c4",
+    "checkpoint_seal_file_sha256": "5aed806cfd44dba1b7858c7b434333fb4d341cca311674ada011c43d2382ac0a",
+    "checkpoint_seal_sha256": "b9752f41312257dee1c5700bebb35c62c32f59b88b8fc2f4beb6308974b524c0",
+    "launch_contract_sha256": "547179be23f416b3f385cc153ef9f9d487849a088a5569c4b4f4fb3d4acb282d",
+    "authority_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/build_control_authority_postbuild.json",
+    "authority_sha256": "5d6b30d727e705a07b3bb3d358ae7341322913bc26120fdf8531615a449569ef",
+    "readback_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/stage2_static_database_readback_postbuild.json",
+    "readback_sha256": "dd900a76083fa1353533185ae33915ddf5c384de1222e6a223c24f067bb1773f",
+    "recurrence_suite_receipt_sha256": "539d9b45044f562e10c9c6cbe58d01a0fa3f9f5fba0430521bb9fac72cf85906",
+    "recurrence_decision_sha256": "e086864d2c26f384a16ae808af50e417720180c15fa853a176252a78af832303",
+    "runtime_config_sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f",
+    "binary_sha256": "d8313cf1208772a16a400dce4244e57de13c6f1f67ebc83401df58398863cee5",
+    "build_receipt_file_sha256": "cb50cf21e9f4e4d292e16b2b7a9db28f54b611256a9c6cbb40332fbb8bcb2aed"
+  },
+  "field_correction": {
+    "incorrect_expression": "prior[\"launch_authority\"]",
+    "authoritative_prior_field": "stage3_authorized",
+    "authoritative_prior_value": false,
+    "required_summary_value": false,
+    "meaning": "The prior seal did not authorize Stage 3. This evidence closure also must not authorize Stage 3."
+  },
+  "authorized_work_unit": {
+    "owner_skill": "raid-evidence-lifecycle",
+    "objective": "Independently reverify the already-created atomic bundle, checkpoint seal, authority, readback, recurrence, runtime config, binary, and receipt, then emit one compact accepted static-seal handoff without rerunning or rewriting any production boundary.",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff.json",
+    "success_classification": "post_build_static_sealed_ready",
+    "acceptance_conditions": [
+      "Existing production bundle verifier passes against the immutable bundle and every listed hash matches.",
+      "The handoff reports exact 10-player 2/3/5 roster, zero residue, spawn 250051, entry 41570, map 669, runtime target 39 distinct and pending live proof.",
+      "The handoff reports stage3_authorized=false, gameplay_canary_authorized=false, launchable=false, and performs no live inference.",
+      "The handoff records that no production boundary was rerun and no static artifact was modified."
+    ]
+  },
+  "budgets": {
+    "immutable_hash_verification": 1,
+    "existing_bundle_verification": 1,
+    "accepted_summary_write": 1,
+    "recurrence_reruns": 0,
+    "runtime_config_derivations": 0,
+    "atomic_bundle_creates": 0,
+    "database_readbacks": 0,
+    "static_seal_creates": 0,
+    "artifact_rewrites": 0,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No repository/source/test/config/route/roster/ledger/skill/gameplay mutation; no build/provision/database operation/server/live/DVC/retry.",
+    "No production artifact rewrite, rerun, missing-field default, launch-authority inference, field waiver, or summary value derived from the failed serializer. Read actual immutable artifacts."
+  ],
+  "next_action": "Dispatch one fresh raid-evidence-lifecycle owner for evidence-only closure. Stage 3 remains closed until its accepted handoff is hash-verified and the performance loop issues a separate live-fixture authorization."
+}
