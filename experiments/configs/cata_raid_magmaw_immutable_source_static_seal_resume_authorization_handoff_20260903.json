@@ -1,0 +1,68 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:resume_immutable_source_static_seal_after_canonical_json_failure",
+  "owner_skill": "raid-performance-loop",
+  "classification": "immutable_source_static_seal_resume_authorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "predecessor": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v3.json",
+    "sha256": "37510b66ea5c0aaa73c572bf10fec5fce1373d31681397abfc3fe4411002504d",
+    "terminal_reason": "layered_authority_literal_backslash_n",
+    "recurrence_consumed": true,
+    "config_bundle_readback_seal_verify_consumed": false
+  },
+  "reusable_immutable_checkout": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/source-control-immutable",
+    "current_commit": "1d98f1e2ee22744929e312e4a2c3d1a60c013bb1",
+    "current_tree": "27655f71c282ce1fb1088589d99f40d7bde33403",
+    "required_action": "Fetch and detach once to the exact clean commit containing this authorization, then retain that identity through Stage 3."
+  },
+  "coordinator_prebound_authority": {
+    "path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/build_control_authority_postbuild_immutable_v2.json",
+    "writer": "raid-performance-loop coordinator after committing this authorization",
+    "worker_permission": "read_and_verify_only",
+    "required_schema": "cata_raid_layered_build_control_authority_v1",
+    "serialization": "canonical JSON with actual final newline; last byte 0a and not terminal 5c6e"
+  },
+  "authorized_work_unit": {
+    "owner_skill": "raid-shard-architecture",
+    "bundle_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild_immutable_v2",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v4.json",
+    "objective": "Repin the retained external checkout to this authorization commit, verify the coordinator-prebound authority, then run one recurrence/config/bundle/readback/seal/verify sequence and emit the accepted closed static handoff.",
+    "acceptance_conditions": [
+      "The worker never writes authority JSON; its first authority action is parse/canonical/hash/value verification.",
+      "The new launch contract names the retained immutable checkout and production verify_bundle passes while main stays on its later branch checkout.",
+      "Roster and typed spawn readback pass; Stage 3, gameplay canary, launchability, and live relations remain closed."
+    ]
+  },
+  "typed_target_identity": {
+    "runtime_target_guid": 39,
+    "target_spawn_id": 250051,
+    "target_entry": 41570,
+    "target_map_id": 669,
+    "live_relation_status": "pending_stage3"
+  },
+  "budgets": {
+    "immutable_checkout_repin": 1,
+    "authority_writes_by_worker": 0,
+    "authority_verification": 1,
+    "recurrence": 1,
+    "runtime_config_derivation": 1,
+    "atomic_bundle_create": 1,
+    "composed_read_only_database_readback": 1,
+    "static_seal": 1,
+    "bundle_verify": 1,
+    "summary_write": 1,
+    "configure": 0,
+    "build": 0,
+    "provisioning_or_database_mutation": 0,
+    "server_or_live": 0,
+    "dvc": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No repository/main-checkout mutation or movement, gameplay/source/test/config/route/roster/ledger mutation, build, provisioning/DB mutation, server/live, DVC, retry, or worker authority write.",
+    "No mutable main source binding, old bundle rewrite/reuse, old binary substitution, live inference, gameplay canary, promotion, or ML admission."
+  ],
+  "next_action": "Coordinator commits this authorization, writes and verifies the exact external authority, then dispatches one fresh shard owner."
+}

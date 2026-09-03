@@ -1,34 +1,34 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:immutable_source_post_build_static_seal",
+  "work_unit": "shard:immutable_source_post_build_static_seal_resume",
   "owner_skill": "raid-shard-architecture",
-  "classification": "immutable_source_reseal_authorized",
+  "classification": "immutable_source_reseal_resume_authorized",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "6bdd074237c7c79b4be606a62dea88e372764603",
-  "immutable_input_commit": "6bdd074237c7c79b4be606a62dea88e372764603",
-  "architecture_scope": "One immutable external source checkout plus one fresh static-only recurrence/config/bundle/readback/seal sequence; no build or live action.",
+  "observed_at_commit": "309164cb8bed2735dd5695897fb8523621e4fc28",
+  "immutable_input_commit": "309164cb8bed2735dd5695897fb8523621e4fc28",
+  "architecture_scope": "Repin the retained immutable checkout, verify coordinator-prebound canonical authority, and execute one static-only seal sequence; no build or live action.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "The prior bundle bound a mutable coordinator worktree and became unverifiable after the next authorized commit; a fresh bundle must bind an immutable source checkout.",
+  "gate_state": "Immutable checkout exists and recurrence passed, but the worker again wrote literal backslash+n authority bytes. Coordinator-prebound canonical authority removes that worker failure mode.",
   "first_broken_edge": {
-    "id": "atomic_bundle_binds_mutable_coordinator_worktree_path",
-    "stage": "immutable_source_post_build_static_seal",
+    "id": "repeated_layered_authority_literal_backslash_n",
+    "stage": "immutable_source_post_build_static_seal_resume",
     "owner_classification": "raid_shard_architecture",
-    "cause": "launch_contract.source.worktree points at mutable master, so production verification fails after a later authorized control commit changes HEAD/tree.",
-    "review_state": "source_identity_mismatch_reproduced"
+    "cause": "Two shard workers encoded terminal backslash+n bytes in generated authority JSON; reusable skills now require canonical serialization, and the coordinator will prebind this authority.",
+    "review_state": "repeated_assumption_encoded_in_skills"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_immutable_source_post_build_static_seal_authorization_handoff_20260903.json",
-    "sha256": "b93c630ebbbce64a071d6f5a1b24e07c461a7443635dbfc492ff01378c7d2f8e",
+    "path": "experiments/configs/cata_raid_magmaw_immutable_source_static_seal_resume_authorization_handoff_20260903.json",
+    "sha256": "85d006a28e0428ab4a49191b1ba63e706f9ac550e051a5901a8e99f0fcf11358",
     "build_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
     "build_handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e"
   },
   "scope_lock": {
-    "objective": "Bind one fresh static bundle to an immutable source checkout and emit an accepted closed post-build static seal.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v3.json",
+    "objective": "Use the coordinator-prebound authority and retained immutable checkout to emit an accepted closed post-build static seal.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-static-sealed-ready-handoff-v4.json",
     "stop_condition": "Any identity/hash/schema/verifier mismatch stops without retry, main-checkout movement, build, database mutation, or server start."
   },
   "acceptance_conditions": [
@@ -40,7 +40,9 @@
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "immutable_source_clone_budget": 1,
+    "immutable_source_clone_budget": 0,
+    "immutable_source_repin_budget": 1,
+    "authority_write_by_worker_budget": 0,
     "post_create_bundle_verification_budget": 1,
     "accepted_summary_write_budget": 1,
     "current_control_recurrence_gate_budget": 1,
@@ -59,5 +61,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
-  "next_action": "Execute the immutable-source post-build static-seal work unit; Stage 3 remains separately gated."
+  "next_action": "Verify the prebound authority and execute the immutable-source static-seal resume; Stage 3 remains separately gated."
 }
