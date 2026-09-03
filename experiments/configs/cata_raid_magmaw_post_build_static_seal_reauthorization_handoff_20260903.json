@@ -1,0 +1,79 @@
+{
+  "schema": "cata_raid_specialist_handoff_v1",
+  "work_unit_id": "control:reauthorize_post_build_static_seal_after_authority_serialization_failure",
+  "owner_skill": "raid-performance-loop",
+  "classification": "post_build_static_reseal_reauthorized",
+  "created_at_utc": "2026-09-03T00:00:00Z",
+  "failed_predecessor": {
+    "handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-seal-handoff.json",
+    "handoff_sha256": "a08347e4ba8fd8ba37556a6f703da389a8020eaf1524e87691adf23960db3849",
+    "classification": "typed_preflight_failure",
+    "terminal_reason": "build_control_authority_postbuild_not_canonical",
+    "rejected_authority_sha256": "24f00fe3c429cecf9af3a9ecddb01b196697e93e2be8ddb24df009d611bddd25",
+    "budgeted_production_actions_consumed": 0
+  },
+  "build": {
+    "handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
+    "handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e",
+    "classification": "build_ready",
+    "source_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
+    "binary_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/worktree/build/src/server/worldserver/worldserver",
+    "binary_sha256": "d8313cf1208772a16a400dce4244e57de13c6f1f67ebc83401df58398863cee5",
+    "build_receipt_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/identity/worldserver_build_receipt.json",
+    "build_receipt_file_sha256": "cb50cf21e9f4e4d292e16b2b7a9db28f54b611256a9c6cbb40332fbb8bcb2aed",
+    "build_receipt_internal_sha256": "7ce4426e4696f79812f5a8261446fd7264988b1671c1e80b134dcd381b5a0773"
+  },
+  "layered_build_control_authority": {
+    "schema": "cata_raid_layered_build_control_authority_v1",
+    "build_source_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
+    "reviewed_control_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
+    "current_control_commit": "the exact clean commit containing this reauthorization and experiments/configs/cata_raid_active_work_unit_v1.json",
+    "build_to_review_paths": [],
+    "expected_review_to_current_paths": [
+      "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "experiments/configs/cata_raid_magmaw_post_build_static_seal_authorization_handoff_20260903.json",
+      "experiments/configs/cata_raid_magmaw_post_build_static_seal_reauthorization_handoff_20260903.json"
+    ],
+    "output_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/build_control_authority_postbuild.json",
+    "serialization_requirement": "Use apply_patch or a JSON serializer that writes an actual newline. Verify json.load succeeds, canonical bytes match the repository verifier, and the final two bytes are not literal backslash+n before spending any other budget."
+  },
+  "typed_target_identity": {
+    "runtime_target_guid": 39,
+    "target_spawn_id": 250051,
+    "target_entry": 41570,
+    "target_map_id": 669,
+    "live_relation_status": "pending_stage3"
+  },
+  "authorized_work_unit": {
+    "owner_skill": "raid-shard-architecture",
+    "output_handoff": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-seal-handoff-v2.json",
+    "bundle_path": "/home/runiir/Games/trinity-generic-min-range-native-build.FzZB61vj/run/prestart_bundle_postbuild",
+    "objective": "Replace only the rejected non-canonical authority, verify it, then execute the previously unspent post-build static-seal boundary exactly once.",
+    "acceptance_conditions": [
+      "The exact six-field authority is canonical JSON with a real newline terminator and the expected three-path review-to-current relation.",
+      "New binary, receipt, authority, route, runtime config, recurrence decision, read-only roster/spawn readback, and all four typed target identities bind exactly.",
+      "Runtime target 39 remains a distinct pending live relation; no server/native success is claimed."
+    ]
+  },
+  "budgets": {
+    "canonical_authority_replacement": 1,
+    "current_control_recurrence_gate": 1,
+    "runtime_config_derivation": 1,
+    "atomic_bundle_create": 1,
+    "read_only_composed_database_readback": 1,
+    "static_seals": 1,
+    "provisioning_mutations": 0,
+    "configure": 0,
+    "worldserver_build": 0,
+    "worldserver_starts": 0,
+    "authserver_starts": 0,
+    "live_attempts": 0,
+    "dvc_operations": 0,
+    "retries": 0
+  },
+  "forbidden": [
+    "No repository/source/test/config/route/roster/ledger/skill/gameplay mutation; no configure/build/provisioning/database mutation/server/live/DVC/retry.",
+    "No additional authority writes after the one canonical replacement; no seal reuse, old binary substitution, decision projection, retargeting, live inference, canary, promotion, or ML admission."
+  ],
+  "next_action": "Dispatch one fresh raid-shard-architecture owner for the canonical authority replacement and still-unspent post-build static seal."
+}

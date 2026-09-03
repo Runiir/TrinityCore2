@@ -1,45 +1,46 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:post_build_typed_static_seal",
+  "work_unit": "shard:post_build_typed_static_seal_reauthorized",
   "owner_skill": "raid-shard-architecture",
-  "classification": "authorized",
+  "classification": "reauthorized_after_typed_preflight_failure",
   "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
   "raid": "blackwing_descent",
   "boss": "magmaw",
   "mode": "10N",
-  "observed_at_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
-  "immutable_input_commit": "6270e1f95b4962d8bb78da44211b295fd02704bf",
+  "observed_at_commit": "65ac8b133ef5b25f423dadb0cad506ba572c5969",
+  "immutable_input_commit": "65ac8b133ef5b25f423dadb0cad506ba572c5969",
   "architecture_scope": "Post-build static binding only: new binary/receipt, recurrence, config, atomic bundle, read-only roster/spawn verification, and seal.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Reviewed runtime binary is build_ready but not launch-authorized; fresh static sealing is required.",
+  "gate_state": "The first post-build seal stopped before all production boundaries on a non-canonical authority terminator; one fresh canonical replacement plus the still-unspent static seal is authorized.",
   "first_broken_edge": {
-    "id": "new_reviewed_binary_not_yet_bound_to_typed_static_fixture",
-    "stage": "post_build_static_seal",
+    "id": "postbuild_layered_authority_literal_backslash_n",
+    "stage": "post_build_static_seal_reauthorization",
     "owner_classification": "raid_shard_architecture",
-    "cause": "The current static seal binds the prior binary, not the new d8313cf1 worldserver.",
-    "review_state": "build_ready_receipts_verified"
+    "cause": "The generated six-field authority ended with literal backslash+n bytes and failed canonical JSON verification before recurrence, config, bundle, readback, or seal.",
+    "review_state": "typed_preflight_failure_verified_all_production_budgets_unspent"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_magmaw_post_build_static_seal_authorization_handoff_20260903.json",
-    "sha256": "13850e25038e5b3af3b5f48fe27a61ef53b471203c3fc5c0cc10af35b26a9ff8",
+    "path": "experiments/configs/cata_raid_magmaw_post_build_static_seal_reauthorization_handoff_20260903.json",
+    "sha256": "3ba984e29e30623c29c88fd04aed51484fd8af1bbe8ff7d8174f7b240e942f3f",
     "build_handoff_path": "/home/runiir/Games/trinity-generic-min-range-native-build-handoff.json",
     "build_handoff_sha256": "6565de2764c1695b41538418bcf3338a284f4f2d426353b4edfef2ce33e1b67e"
   },
   "scope_lock": {
-    "objective": "Produce one post_build_static_sealed_ready handoff for the exact new binary or one typed failure.",
-    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-seal-handoff.json",
+    "objective": "Replace the rejected authority canonically, then produce one post_build_static_sealed_ready handoff for the exact new binary or one typed failure.",
+    "owned_output": "/home/runiir/Games/trinity-generic-min-range-native-postbuild-seal-handoff-v2.json",
     "stop_condition": "Any mismatch stops without retry, source/provisioning mutation, build, or server start."
   },
   "acceptance_conditions": [
-    "New binary/receipt and all typed static identities are bound and verified.",
+    "Canonical six-field authority, new binary/receipt, and all typed static identities are bound and verified.",
     "Roster/spawn readback is read-only and all live relations remain pending."
   ],
   "forbidden": [
-    "No source/build/provision/database mutation/server/live/DVC/retry or live inference."
+    "No source/build/provision/database mutation/server/live/DVC/retry or live inference; only one canonical replacement of the rejected external authority is allowed."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
+    "canonical_authority_replacement_budget": 1,
     "current_control_recurrence_gate_budget": 1,
     "runtime_config_derivation_budget": 1,
     "atomic_bundle_create_budget": 1,
@@ -56,5 +57,5 @@
   "ready_for_build": false,
   "ready_for_fixture_expansion": true,
   "ready_for_live_verification": false,
-  "next_action": "Execute the exact post-build static-seal work unit."
+  "next_action": "Execute the exact reauthorized canonical-authority replacement and post-build static-seal work unit."
 }
