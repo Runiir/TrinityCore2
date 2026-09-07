@@ -981,6 +981,10 @@ int main()
     assert(movedParasiteMove);
     assert(movedParasiteMove->X == retainedParasiteMove->X);
     assert(movedParasiteMove->Y == retainedParasiteMove->Y);
+    BotEncounter::Vector3 const retainedParasiteDestination{
+        retainedParasiteMove->X, retainedParasiteMove->Y,
+        retainedParasiteMove->Z };
+    uint64 const retainedParasiteTransitionId = parasiteTransition.TransitionId;
     BotEncounter::Blackboard unsafeParasiteBoard = movedParasiteBoard;
     unsafeParasiteBoard.Players[2].Position = {
         parasiteTransition.Destination.X - 3.0f,
@@ -994,9 +998,22 @@ int main()
     auto const* unsafeParasiteMove = unsafeParasitePlan.Movement
         ? std::get_if<Move>(&unsafeParasitePlan.Movement->Action) : nullptr;
     assert(unsafeParasiteMove);
-    assert(unsafeParasiteMove->X != parasiteTransition.Destination.X
-        || unsafeParasiteMove->Y != parasiteTransition.Destination.Y);
-    assert(parasiteTransition.Preempted);
+    BotEncounter::Vector3 const oppositeParasiteDestination{
+        retainedParasiteDestination.X, -retainedParasiteDestination.Y,
+        retainedParasiteDestination.Z };
+    assert(unsafeParasiteMove->X == oppositeParasiteDestination.X);
+    assert(unsafeParasiteMove->Y == oppositeParasiteDestination.Y);
+    assert(unsafeParasiteMove->Z == oppositeParasiteDestination.Z);
+    assert(parasiteTransition.Destination.X == oppositeParasiteDestination.X);
+    assert(parasiteTransition.Destination.Y == oppositeParasiteDestination.Y);
+    assert(parasiteTransition.Destination.Z == oppositeParasiteDestination.Z);
+    assert(parasiteTransition.TransitionId != retainedParasiteTransitionId);
+    assert(!parasiteTransition.Preempted);
+    assert(std::hypot(oppositeParasiteDestination.X
+            - unsafeParasiteBoard.Hostiles[1].Position.X,
+        oppositeParasiteDestination.Y
+            - unsafeParasiteBoard.Hostiles[1].Position.Y)
+        >= BotEncounter::MagmawParasitePolicy::SafeClearance);
 
     // A live parasite pack starts the fixed baiter's lane transition before
     // contact. An in-flight hazard path owns movement until arrival;
@@ -2639,14 +2656,15 @@ int main()
     assert(advancedMove->Y == firstMove->Y);
     assert(advancedPlan.Movement->Id.Actor == mageGuid);
 
-    // If the pack reaches the old point, the admitted transition remains
-    // immutable. A new lower GUID cannot pull the fixed team back into that
-    // pack or select another endpoint before native arrival.
+    // If the pack reaches the old point, first contact immediately begins the
+    // opposite fixed lane. A new lower GUID cannot pull the fixed team back
+    // into that pack or select another endpoint before native arrival.
     Blackboard packAdvanced = advanced;
     packAdvanced.Hostiles[1].Position = {
         firstMove->X, firstMove->Y, firstMove->Z };
     packAdvanced.Players[1].Position = {
         firstMove->X + 4.0f, firstMove->Y, firstMove->Z };
+    uint64 const retainedTransitionId = transition.TransitionId;
     auto packAdvancedPlan = strategy.Propose(
         packAdvanced, mageGuid, "dps", &firstLease, false, false,
         &transition, &mageHazard);
@@ -2655,19 +2673,26 @@ int main()
     assert(packAdvancedMove);
     Vector3 const packAdvancedDestination{ packAdvancedMove->X,
         packAdvancedMove->Y, packAdvancedMove->Z };
+    uint64 const redirectedTransitionId = transition.TransitionId;
+    assert(redirectedTransitionId != retainedTransitionId);
     assert(packAdvancedMove->X != firstMove->X
         || packAdvancedMove->Y != firstMove->Y);
-    assert(transition.Destination.X == firstMove->X
-        && transition.Destination.Y == firstMove->Y);
+    assert(packAdvancedMove->X == -firstMove->X
+        && packAdvancedMove->Y == firstMove->Y);
+    assert(transition.Destination.X == packAdvancedMove->X
+        && transition.Destination.Y == packAdvancedMove->Y);
     assert(Distance(packAdvancedDestination, packAdvanced.Hostiles[1].Position)
         >= MagmawParasitePolicy::SafeClearance);
-    assert(mageHazard.HasRetainedIntent());
+    assert(!mageHazard.HasRetainedIntent());
+    assert(mageHazard.IntentId == 0);
+    assert(!transition.Preempted);
     assert(packAdvancedPlan.Movement->Id.Actor == mageGuid);
-    uint64 const escapeIntentId = mageHazard.IntentId;
+    assert(packAdvancedPlan.Movement->Id.EventGeneration
+        == redirectedTransitionId);
 
-    // Canary116: a baiter's endpoint-unsafe local escape is one native
-    // intent. Parasite GUID/position churn before native arrival must not
-    // recompute the destination and reset movement progress.
+    // Canary116: after fixed-lane redirection, parasite GUID/position churn
+    // before native arrival must not recompute the destination or reset the
+    // transition identity.
     Blackboard lowerGuid = packAdvanced;
     lowerGuid.Hostiles[1].Guid = ObjectGuid(HighGuid::Unit,
         AdaptiveMagmawStrategy::ParasiteEntry, uint32(1));
@@ -2685,15 +2710,16 @@ int main()
     assert(lowerGuidMove->X == stableReference.X);
     assert(lowerGuidMove->Y == stableReference.Y);
     assert(lowerGuidPlan.Movement->Id.Actor == mageGuid);
-    assert(lowerGuidPlan.Movement->Id.EventGeneration == escapeIntentId);
-    assert(mageHazard.IntentId == escapeIntentId);
-    assert(transition.Preempted);
+    assert(lowerGuidPlan.Movement->Id.EventGeneration
+        == redirectedTransitionId);
+    assert(transition.TransitionId == redirectedTransitionId);
+    assert(!mageHazard.HasRetainedIntent());
+    assert(mageHazard.IntentId == 0);
+    assert(!transition.Preempted);
 
-    // Canary117: temporary whole-pack clearance retires the one local
-    // preemption, but it does not retire the parasite wave.  If that same
-    // wave reaches the baiter again, the fixed team must cross to the other
-    // admitted lane endpoint.  A second radial escape recreated the live
-    // destination churn and allowed Parasitic Infection on five players.
+    // Canary117: temporary whole-pack clearance does not retire the fixed
+    // transition. The same wave keeps its opposite endpoint and identity when
+    // the pack is observed again.
     Blackboard temporarilyClear = lowerGuid;
     temporarilyClear.Revision += 1;
     temporarilyClear.Hostiles[1].Position = { 0.0f, -80.0f, 210.0f };
@@ -2701,7 +2727,15 @@ int main()
         temporarilyClear, mageGuid, "dps", &advancedLease, false, false,
         &transition, &mageHazard);
     assert(!mageHazard.HasRetainedIntent());
-    assert(!clearPlan.Movement.has_value());
+    assert(mageHazard.IntentId == 0);
+    assert(clearPlan.Movement.has_value());
+    auto const* clearMove = std::get_if<Move>(&clearPlan.Movement->Action);
+    assert(clearMove);
+    assert(clearMove->X == packAdvancedMove->X);
+    assert(clearMove->Y == packAdvancedMove->Y);
+    assert(clearPlan.Movement->Id.EventGeneration == redirectedTransitionId);
+    assert(transition.Destination.X == packAdvancedMove->X
+        && transition.Destination.Y == packAdvancedMove->Y);
 
     Blackboard repeatedContact = temporarilyClear;
     repeatedContact.Revision += 1;
@@ -2713,13 +2747,14 @@ int main()
     auto const* repeatedContactMove = repeatedContactPlan.Movement
         ? std::get_if<Move>(&repeatedContactPlan.Movement->Action) : nullptr;
     assert(repeatedContactMove);
-    assert(repeatedContactMove->X == -firstMove->X);
-    assert(repeatedContactMove->Y == firstMove->Y);
-    assert(transition.Destination.X == repeatedContactMove->X);
-    assert(transition.Destination.Y == repeatedContactMove->Y);
+    assert(transition.Destination.X == packAdvancedMove->X);
+    assert(transition.Destination.Y == packAdvancedMove->Y);
+    assert(Distance({ repeatedContactMove->X, repeatedContactMove->Y,
+        repeatedContactMove->Z }, repeatedContact.Hostiles[1].Position)
+        >= MagmawParasitePolicy::SafeClearance);
     assert(repeatedContactPlan.Movement->Id.Actor == mageGuid);
     assert(repeatedContactPlan.Movement->Id.EventGeneration
-        == transition.TransitionId);
+        == redirectedTransitionId);
 
     auto repeatedHunterPlan = strategy.Propose(
         repeatedContact, hunterGuid, "dps", &firstLease, false, false,
