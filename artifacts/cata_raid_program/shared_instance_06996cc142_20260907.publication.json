@@ -20,5 +20,19 @@
     ".dvc/cache/files/md5/79/dda20895d28ed8cd8821a4f17e9e4e",
     "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142.remote-verification"
   ],
-  "raw_live_evidence_retained_for_active_diagnosis": true
+  "raw_live_evidence_retained_for_active_diagnosis": false,
+  "evicted_remote_verified_run_payloads": [
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142/subject.readback.log",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142/shared-worldserver.conf",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142/validation_provisioning_apply",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142/subject.database_readback.json",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142/shared-worldserver.conf.receipt.json",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142/isolation.raw.jsonl",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142/provisioning.json",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142/launch_preflight.json",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142/witness.database_readback.json",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142/worldserver.console.log",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142/witness.readback.log",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142.launch.log"
+  ]
 }
