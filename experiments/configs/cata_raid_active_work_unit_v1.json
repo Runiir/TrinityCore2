@@ -8,17 +8,17 @@
   "architecture_scope": "Shared two-instance isolation accepted; prepare one existing Magmaw diagnostic completion-watchdog run, then repair its first gameplay blocker.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "266 capture and bundle tests passed; independent final review pending. Refresh source-bound admission, then one Magmaw fixture-expansion capture.",
+  "gate_state": "Capture and suite optimization independently approved; DVC lineage refreshed without output changes. Hydrate exact source dependencies and refresh run admission.",
   "first_broken_edge": {
     "id": "capture_terminal_node_arrival_false_success",
     "stage": "capture_acceptance",
     "owner_classification": "raid_evidence_lifecycle",
     "cause": "Boss partition accepted terminal-node arrival without native completion or confirmed death. Found in independent prelive review; prepared bundle never launched.",
-    "review_state": "repair_independent_review_pending"
+    "review_state": "approved_by_independent_sol"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "c4960f8d80f0e044683d14041f4d22fae813bc8dd5fe2aaf02492cb94b16cf7c"
+    "sha256": "03c3994afd5bb28f6809735dce02bcdf4d3ea868f67eaa5485af30308dd6dbf1"
   },
   "scope_lock": {
     "objective": "Prepare current recurrence admission and run one attributable Magmaw completion watchdog; diagnose earliest gameplay mismatch and route bounded repair.",

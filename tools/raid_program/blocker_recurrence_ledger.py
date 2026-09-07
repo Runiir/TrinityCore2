@@ -1180,7 +1180,7 @@ def _run_suite(
     boundary_run_id: str,
     boundary: str,
     receipt_path: Path,
-) -> None:
+) -> dict[str, Any]:
     bank = ledger.get("regression_bank", ledger.get("permanent_regression_bank"))
     _require(isinstance(bank, Mapping), "regression bank must be an object")
     fixtures = bank.get("fixtures")
@@ -1232,6 +1232,23 @@ def _run_suite(
         "verifications": rows,
     }
     receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+    # These rows were executed in this invocation. Do not read the output file
+    # back as authority or rerun the same commands to verify our own results.
+    bank_key = "regression_bank" if "regression_bank" in ledger else "permanent_regression_bank"
+    existing = bank.get("verifications", [])
+    _require(isinstance(existing, list), "ledger verifications must be a list")
+    effective = dict(ledger)
+    # Fresh execution is after the latest known run, just like the external
+    # receipt verifier's replay. Keep the requested boundary in the receipt.
+    latest_run_id = str(ledger["runs"][-1]["run_id"])
+    current_rows = [
+        {**{key: value for key, value in row.items()
+            if key not in {"passed_before_run_id", "passed_after_run_id"}},
+         "passed_after_run_id": latest_run_id}
+        for row in rows
+    ]
+    effective[bank_key] = {**bank, "verifications": [*current_rows, *existing]}
+    return effective
 
 
 def main() -> int:
@@ -1285,8 +1302,11 @@ def main() -> int:
             parser.error("--run-suite requires an enabled regression bank")
         if identity is None or not args.boundary_run_id:
             parser.error("--run-suite requires --source-identity and --boundary-run-id")
-        _run_suite(ledger, identity, args.boundary_run_id, args.boundary, args.run_suite)
-        args.suite_receipt = args.run_suite
+        ledger = _run_suite(ledger, identity, args.boundary_run_id, args.boundary, args.run_suite)
+        _verify_clean_source_identity(repo_root, args.source_identity)
+        _require(_same(_canonical_config_identity(), canonical_config_identity),
+                 "config identity changed during suite execution")
+        receipt_verified = True
     if bank_enabled and identity is not None and args.suite_receipt is not None:
         ledger = _ledger_with_suite_receipt(ledger, args.suite_receipt, identity or {})
         receipt_verified = True

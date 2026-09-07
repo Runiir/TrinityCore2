@@ -767,7 +767,8 @@ def test_suite_receipt_is_bound_to_manifest_and_current_identity(tmp_path) -> No
     fixture = ledger["regression_bank"]["fixtures"][0]
     fixture["command"] = [sys.executable, "-c", "print('fixture-pass')"]
     receipt_path = tmp_path / "suite-receipt.json"
-    _run_suite(ledger, identity, "101", "after", receipt_path)
+    local = _run_suite(ledger, identity, "101", "after", receipt_path)
+    assert local["regression_bank"]["verifications"][0]["passed_after_run_id"] == "102"
     receipt = json.loads(receipt_path.read_text())
 
     effective = _ledger_with_suite_receipt(ledger, receipt_path, identity)
@@ -865,6 +866,37 @@ def test_run_suite_executes_fixed_argv_and_emits_verifiable_receipt(tmp_path) ->
     assert evaluate_ledger(
         effective, current_identity=identity, suite_receipt_verified=True
     )["canary_admitted"] is True
+
+
+@pytest.mark.parametrize("exit_code", [0, 7])
+def test_cli_run_suite_uses_each_actual_result_once(tmp_path, monkeypatch, exit_code):
+    counter = tmp_path / "executions"
+    fixture = _fixture("original")
+    fixture["command"] = [sys.executable, "-c",
+        f"from pathlib import Path; p=Path({str(counter)!r}); "
+        f"p.write_text(p.read_text()+'x' if p.exists() else 'x'); raise SystemExit({exit_code})"]
+    ledger = _bank_ledger(
+        [{"run_id": "101", "route_completed": True, "blockers": {"edge": "absent"}}],
+        fixtures=[fixture], verifications=[],
+    )
+    path = tmp_path / "ledger.json"
+    path.write_text(json.dumps(ledger))
+    receipt = tmp_path / "suite.json"
+    output = tmp_path / "decision.json"
+    source_checks = []
+    monkeypatch.setattr(recurrence_ledger, "_verify_clean_source_identity",
+        lambda root, identity: source_checks.append(identity) or identity)
+    argv = ["ledger", "--ledger", str(path), "--source-identity", "source-current",
+            "--boundary-run-id", "101", "--boundary", "after",
+            "--output", str(output)]
+    monkeypatch.setattr(sys, "argv", [*argv, "--run-suite", str(receipt)])
+    assert recurrence_ledger.main() == (0 if exit_code == 0 else 1)
+    assert counter.read_text() == "x"
+    assert len(source_checks) == 2
+    # An externally supplied receipt still gets an actual fresh execution.
+    monkeypatch.setattr(sys, "argv", [*argv, "--suite-receipt", str(receipt)])
+    assert recurrence_ledger.main() == (0 if exit_code == 0 else 1)
+    assert counter.read_text() == "xx"
 
 
 def test_post_occurrence_suite_pass_admits_next_canary_before_two_clears() -> None:
