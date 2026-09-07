@@ -80,11 +80,21 @@ uint64 BotWorldPopulationMgr::BeginPendingHealCast(Player* bot, Unit* target, ui
 
 uint64 BotWorldPopulationMgr::NotifyBotSpellStarted(Player* caster, Unit* target, uint32 spellId, std::string const& candidateMaskJson, std::string const& chosenActionJson)
 {
+    if (!caster || !target || !spellId)
+        return 0;
+    CohortScope scope = ScopeCallbackCohort(caster, target);
+    if (!scope)
+        return 0;
     return BeginPendingHealCast(caster, target, spellId, candidateMaskJson, chosenActionJson);
 }
 
 void BotWorldPopulationMgr::CancelBotSpellStart(uint64 castId, Player* caster, char const* reason)
 {
+    if (!castId || !caster)
+        return;
+    CohortScope scope = ScopeCallbackCohort(caster);
+    if (!scope)
+        return;
     auto itr = Party().PendingHealCasts.find(castId);
     if (itr == Party().PendingHealCasts.end())
         return;
@@ -95,7 +105,12 @@ void BotWorldPopulationMgr::CancelBotSpellStart(uint64 castId, Player* caster, c
 
 void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
 {
-    if (!Cohort().Active || !killed || !Cohort().Config.ValidationRouteEnable || Cohort().Config.ValidationRouteKind != "boss"
+    if (!killed)
+        return;
+    CohortScope scope = ScopeCallbackCohort(killed);
+    if (!scope)
+        return;
+    if (!Cohort().Active || !Cohort().Config.ValidationRouteEnable || Cohort().Config.ValidationRouteKind != "boss"
         || killed->IsAlive() || killed->GetHealth()
         || (!killed->IsDungeonBoss() && !killed->isWorldBoss())
         || killed->GetEntry() != Cohort().Config.ValidationRouteTargetEntry
@@ -170,6 +185,9 @@ void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
 void BotWorldPopulationMgr::NotifyBotHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal)
 {
     if (!healer || !target || !spellId)
+        return;
+    CohortScope scope = ScopeCallbackCohort(healer, target);
+    if (!scope)
         return;
     Unit* owner = healer;
     if (healer->GetTypeId() == TYPEID_UNIT && (healer->IsTotem() || healer->IsPet()))
@@ -327,7 +345,12 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
 
 uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId)
 {
-    if (!Cohort().Active || !caster || !target
+    if (!caster || !target || !spellId)
+        return 0;
+    CohortScope scope = ScopeCallbackCohort(caster, target);
+    if (!scope)
+        return 0;
+    if (!Cohort().Active
         || Cohort().Config.ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes"
         || spellId != Cohort().Config.ValidationRouteChargeSpellId
         || caster->GetEntry() != Cohort().Config.ValidationRouteMinimumDistanceSourceEntry)
@@ -545,7 +568,12 @@ uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted(Creature* caster,
 void BotWorldPopulationMgr::NotifyNativeCreatureSpellLanded(
     Creature* caster, Unit* target, uint32 spellId, uint64 observationSequence)
 {
-    if (!Cohort().Active || !caster || !target || !observationSequence
+    if (!caster || !target || !spellId || !observationSequence)
+        return;
+    CohortScope scope = ScopeCallbackCohort(caster, target);
+    if (!scope)
+        return;
+    if (!Cohort().Active
         || Cohort().Config.ValidationRouteMechanicProfile != "trash_two_tank_charge_lanes"
         || spellId != Cohort().Config.ValidationRouteChargeSpellId)
         return;

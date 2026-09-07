@@ -45,6 +45,18 @@ def _float(value: Any) -> float:
         return 0.0
 
 
+def serial_execution_verified(session: Mapping[str, Any]) -> bool:
+    capacity = session.get("max_active_cohorts")
+    if type(capacity) is not int or capacity < 1:
+        return False
+    # Historical capacity-one servers enforced exclusivity natively.
+    if capacity == 1 and "serial_execution_verified" not in session:
+        return True
+    checks = session.get("serial_registry_checks")
+    return (session.get("serial_execution_verified") is True
+            and type(checks) is int and checks > 0)
+
+
 def _display_path(path: Path) -> str:
     try:
         return str(path.relative_to(REPO_ROOT))
@@ -189,7 +201,7 @@ def build_contract(campaign_root: Path) -> dict[str, Any]:
             and session.get("cohort_id") == expected_row.get("cohort_id")
             and _int(session.get("attempt_index")) == _int(expected_row.get("attempt_index"))
             and session.get("server_process_identity_verified") is True
-            and _int(session.get("max_active_cohorts")) == 1
+            and serial_execution_verified(session)
         )
         evaluation_failures = list(evaluation.get("failure_reasons") or [])
         state_result_valid = bool(
@@ -254,6 +266,7 @@ def build_contract(campaign_root: Path) -> dict[str, Any]:
                 "report_in_campaign": report_in_campaign,
                 "attempt_path_valid": attempt_path_valid,
                 "expected_identity_valid": expected_identity_valid,
+                "serial_execution_verified": serial_execution_verified(session),
                 "state_result_valid": state_result_valid,
                 "evidence_identity_complete": evidence_identity_complete,
                 "record_sha256": evaluation.get("record_sha256"),
@@ -361,7 +374,8 @@ def build_contract(campaign_root: Path) -> dict[str, Any]:
         "one_server_process": len(server_process_ids) == 1,
         "one_profile_generation": len(profile_generations) == 1,
         "one_profile_content_hash": len(profile_hashes) == 1,
-        "one_active_cohort_maximum": max_active_cohorts == 1,
+        "serial_execution_verified": bool(attempt_rows)
+        and all(row["serial_execution_verified"] for row in attempt_rows),
         "optimization_backlog_complete": normalized_backlog == normalized_state_backlog,
     }
     contract = {

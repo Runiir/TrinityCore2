@@ -15,6 +15,7 @@ DIAGNOSIS = BOT_DIR / "BotWorldPopulationMgrDiagnosis.cpp"
 STATUS = BOT_DIR / "BotWorldPopulationMgrStatus.cpp"
 EXECUTOR = BOT_DIR / "BotWorldPopulationMgrMovementExecutor.cpp"
 RUNTIME = BOT_DIR / "BotWorldPopulationMgrValidationRouteRuntime.cpp"
+LIFECYCLE = BOT_DIR / "BotWorldPopulationMgrLifecycle.cpp"
 UPDATE = BOT_DIR / "BotWorldPopulationMgrUpdate.cpp"
 NATIVE_ACTION = BOT_DIR / "BotWorldPopulationMgrNativeAction.cpp"
 MOVEMENT = BOT_DIR / "BotWorldPopulationMgrMovement.cpp"
@@ -30,6 +31,7 @@ CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 
 HARNESS = r"""
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 #include "Bots/BotNativeActionIntent.h"
 
 #include <cassert>
@@ -400,13 +402,43 @@ int main()
     assert(unavailable.find("\"result\":\"unavailable\"") != std::string::npos);
     assert(unavailable.find("\"gate\":\"unavailable\"") != std::string::npos);
 
+    // A scoped lifecycle cleanup removes one cohort member's complete
+    // diagnostic state while retaining another member's pending, receipt,
+    // trace, and progress evidence. The production boundary is checked below
+    // by source assertions; this fixture does not model live cohort selection.
+    Intent cleanupRequest = keyedRequest;
+    cleanupRequest.IntentReason = "scoped_cleanup";
+    std::uint64_t ownedReceipt = sidecar.BeginReceipt(30001, 669,
+        cleanupRequest, receiptScope, 0, 0.0f, 0.0f, 0.0f, true);
+    assert(sidecar.ForReceipt(ownedReceipt).Available);
+    MovementProgressDiagnostics().Arm(ownedReceipt, 30001, 669,
+        receiptScope.InstanceId, receiptScope, 1.0f, 2.0f, 3.0f,
+        0.0f, 0.0f, 0.0f, true, 77, 1.0f, 2.0f, 3.0f, 100);
+    assert(MovementProgressDiagnostics().ForReceipt(ownedReceipt).Available);
+    assert(MovementProgressDiagnostics().RecentForBot(30001).Available);
+
+    Intent witnessRequest = keyedRequest;
+    witnessRequest.IntentReason = "witness_pending";
+    std::uint64_t witnessReceipt = sidecar.BeginReceipt(30002, 669,
+        witnessRequest, receiptScope, 0, 0.0f, 0.0f, 0.0f, true);
+    MovementProgressDiagnostics().Arm(witnessReceipt, 30002, 669,
+        receiptScope.InstanceId, receiptScope, 4.0f, 5.0f, 6.0f,
+        0.0f, 0.0f, 0.0f, true, 88, 4.0f, 5.0f, 6.0f, 100);
+    assert(sidecar.ForReceipt(witnessReceipt).Available);
+    assert(MovementProgressDiagnostics().ForReceipt(witnessReceipt).Available);
+
     sidecar.ClearBot(30001);
     assert(!sidecar.Latest(30001).Available);
     assert(!sidecar.ForTrace(30001, 1).Available);
+    assert(!sidecar.ForReceipt(ownedReceipt).Available);
+    assert(!MovementProgressDiagnostics().ForReceipt(ownedReceipt).Available);
+    assert(!MovementProgressDiagnostics().RecentForBot(30001).Available);
     assert(sidecar.Latest(30002).Available);
-    sidecar.ClearAll();
-    assert(!sidecar.Latest(30002).Available);
-    assert(!sidecar.ForTrace(30002, 1).Available);
+    assert(sidecar.ForReceipt(witnessReceipt).Available);
+    assert(MovementProgressDiagnostics().ForReceipt(witnessReceipt).Available);
+    sidecar.AssociateTrace(30002, 4);
+    assert(sidecar.ForTrace(30002, 4).Available);
+    assert(sidecar.ForTrace(30002, 4).LaunchReceipt.Id == witnessReceipt);
 }
 """
 
@@ -456,6 +488,7 @@ def test_planner_trace_diagnosis_and_lifecycle_wiring():
         encoding="utf-8"
     )
     runtime = RUNTIME.read_text(encoding="utf-8")
+    lifecycle = LIFECYCLE.read_text(encoding="utf-8")
     update = UPDATE.read_text(encoding="utf-8")
 
     assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in planner
@@ -510,7 +543,52 @@ def test_planner_trace_diagnosis_and_lifecycle_wiring():
     ):
         assert f'"{reason}"' in executor
     assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in runtime
-    assert "MovementPlannerDiagnostics().ClearAll" in runtime
+    reset_start = runtime.index("void BotWorldPopulationMgr::ResetTraceStreams()")
+    reset_end = runtime.index(
+        "void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(",
+        reset_start,
+    )
+    reset_body = runtime[reset_start:reset_end]
+    assert "MovementPlannerDiagnostics().ClearAll" not in reset_body
+    assert "MovementPlannerDiagnostics().ClearBot" in reset_body
+    assert "Cohort().RosterLeases" in reset_body
+    assert "state.Guid.GetCounter()" in reset_body
+    assert "EligibleForDiagnosticCleanup" in reset_body
+
+    assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in lifecycle
+    stop_start = lifecycle.index("void BotWorldPopulationMgr::Stop()")
+    stop_end = lifecycle.index(
+        "bool BotWorldPopulationMgr::StartAutonomy(", stop_start
+    )
+    stop_body = lifecycle[stop_start:stop_end]
+    assert "MovementPlannerDiagnostics().ClearAll" not in stop_body
+    assert "MovementPlannerDiagnostics().ClearBot" in stop_body
+    assert "Cohort().RosterLeases" in stop_body
+    assert "state.Guid.GetCounter()" in stop_body
+    assert "EligibleForDiagnosticCleanup" in stop_body
+
+    stop_autonomy_start = lifecycle.index(
+        "void BotWorldPopulationMgr::StopAutonomy()"
+    )
+    stop_autonomy_end = lifecycle.index(
+        "void BotWorldPopulationMgr::Shutdown()", stop_autonomy_start
+    )
+    stop_autonomy_body = lifecycle[stop_autonomy_start:stop_autonomy_end]
+    assert "MovementPlannerDiagnostics().ClearAll" not in stop_autonomy_body
+    assert "MovementPlannerDiagnostics().ClearBot" in stop_autonomy_body
+    assert "Cohort().RosterLeases" in stop_autonomy_body
+    assert "state.Guid.GetCounter()" in stop_autonomy_body
+    assert "EligibleForDiagnosticCleanup" in stop_autonomy_body
+    shutdown_start = lifecycle.index(
+        "void BotWorldPopulationMgr::ShutdownCohort()"
+    )
+    shutdown_end = lifecycle.index(
+        "bool BotWorldPopulationMgr::SpawnAutonomyBots", shutdown_start
+    )
+    shutdown_body = lifecycle[shutdown_start:shutdown_end]
+    assert "MovementPlannerDiagnostics().ClearAll" not in shutdown_body
+    assert "EligibleForDiagnosticCleanup" in shutdown_body
+    assert "MovementPlannerDiagnostics().ClearAll" not in lifecycle
     assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in update
     assert update.count("MovementPlannerDiagnostics().ClearBot") >= 2
 

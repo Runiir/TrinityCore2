@@ -155,8 +155,25 @@ bool OrdinaryPersistentPetMatches(OrdinaryPetSetupSnapshot const& snapshot,
 
 void BotWorldPopulationMgr::Update(uint32 diff)
 {
-    if (!_runningCohortId.empty())
-        SelectCohort(_runningCohortId);
+    std::vector<CohortRuntime*> registeredCohorts;
+    registeredCohorts.reserve(_cohorts.size());
+    for (auto const& [_, runtime] : _cohorts)
+        if (runtime)
+            registeredCohorts.push_back(runtime.get());
+    std::vector<CohortRuntime*> const activeCohorts =
+        BotWorldCohortScope::FreezeActive(registeredCohorts,
+            [](CohortRuntime const& runtime) { return runtime.Active; });
+
+    for (CohortRuntime* runtime : activeCohorts)
+    {
+        CohortScope scope = ScopeCohort(runtime);
+        if (scope)
+            UpdateCohort(diff);
+    }
+}
+
+void BotWorldPopulationMgr::UpdateCohort(uint32 diff)
+{
 
     if (!Cohort().Active)
         return;

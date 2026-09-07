@@ -17,6 +17,7 @@
 #include <array>
 #include <chrono>
 #include <limits>
+#include <string>
 #include <utility>
 
 namespace
@@ -40,6 +41,8 @@ struct PendingPeriodicOutcome
     uint32 SpellId = 0;
     bool Critical = false;
     float CritChancePct = 0.0f;
+    std::string CohortId;
+    uint64 AttemptId = 0;
     bool Armed = false;
 };
 
@@ -128,7 +131,12 @@ std::vector<uint32> ObserveOwnerCastWarlockPeriodicDamageAuraSpellIds(
 void BotWorldPopulationMgr::NotifyCombatAttackAttempt(Unit* attacker,
     Unit* victim)
 {
-    if (!Cohort().Active || !attacker || !victim
+    if (!attacker || !victim)
+        return;
+    CohortScope scope = ScopeCallbackCohort(attacker, victim);
+    if (!scope)
+        return;
+    if (!Cohort().Active
         || !Cohort().CalibrationScoredStartedMs
         || Cohort().CalibrationWindowComplete
         || attacker->GetGUID()
@@ -146,7 +154,12 @@ void BotWorldPopulationMgr::NotifyCombatAttackAttempt(Unit* attacker,
 void BotWorldPopulationMgr::NotifyCombatHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal,
     uint32 effectiveHeal, uint32 absorbedHeal)
 {
-    if (!Cohort().Active || !healer || !target || (!attemptedHeal && !effectiveHeal && !absorbedHeal))
+    if (!healer || !target)
+        return;
+    CohortScope scope = ScopeCallbackCohort(healer, target);
+    if (!scope)
+        return;
+    if (!Cohort().Active || (!attemptedHeal && !effectiveHeal && !absorbedHeal))
         return;
 
     if (Player* calibrationHealer = CombatOwnerPlayer(healer))
@@ -203,14 +216,29 @@ void BotWorldPopulationMgr::NotifyCombatHeal(Unit* healer, Unit* target, uint32 
 void BotWorldPopulationMgr::PrepareCombatPeriodicOutcome(Unit* attacker,
     Unit* victim, uint32 spellId, bool critical, float critChancePct)
 {
-    PendingOutcome = { attacker, victim, spellId, critical, critChancePct, true };
+    if (!attacker || !victim || !spellId)
+        return;
+    CohortScope scope = ScopeCallbackCohort(attacker, victim);
+    if (!scope)
+        return;
+    PendingOutcome = { attacker, victim, spellId, critical, critChancePct,
+        Cohort().Id, Cohort().AttemptId, true };
 }
 
 void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage,
     uint32 unmitigatedDamage, uint32 damageType, uint32 schoolMask)
 {
-    PendingPeriodicOutcome const pending = std::exchange(
-        PendingOutcome, PendingPeriodicOutcome{});
+    if (!attacker || !victim)
+        return;
+    CohortScope scope = ScopeCallbackCohort(attacker, victim);
+    if (!scope)
+        return;
+    PendingPeriodicOutcome pending;
+    if (PendingOutcome.Armed
+        && BotWorldCohortScope::MatchesPendingOwnership(
+            PendingOutcome.CohortId, PendingOutcome.AttemptId,
+            Cohort().Id, Cohort().AttemptId))
+        pending = std::exchange(PendingOutcome, PendingPeriodicOutcome{});
     bool const critical = pending.Armed
         && pending.Attacker == attacker
         && pending.Victim == victim
@@ -229,7 +257,7 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
         && damageType == uint32(DOT)
             ? pending.CritChancePct : 0.0f;
 
-    if (!Cohort().Active || !attacker || !victim || (!damage && !unmitigatedDamage))
+    if (!Cohort().Active || (!damage && !unmitigatedDamage))
         return;
 
     bool const sharedDamage = IsSharedDamageCallback(spellId, damageType);

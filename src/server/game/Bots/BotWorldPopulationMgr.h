@@ -17,6 +17,7 @@
 #include "Bots/BotLongTermProgressionBrain.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotWorldPopulationMgrMovement.h"
+#include "Bots/BotWorldPopulationMgrCohortScope.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTelemetryBuffer.h"
@@ -76,7 +77,7 @@ struct AreaTriggerStruct;
 class BotWorldPopulationMgr
 {
 public:
-    static constexpr uint32 MaxActiveCohorts = 1;
+    static constexpr uint32 MaxActiveCohorts = 2;
 
     static BotWorldPopulationMgr* instance();
 
@@ -870,6 +871,17 @@ private:
         std::function<void(std::map<uint32, CalibrationMetrics> const&, bool)> const& writeBots) const;
 
 #include "Bots/BotWorldPopulationMgrRuntimeContracts.h"
+    class CohortScope final
+    {
+    public:
+        explicit CohortScope(CohortRuntime* runtime);
+        CohortRuntime const* Get() const;
+        explicit operator bool() const;
+
+    private:
+        BotWorldCohortScope::ScopedOverride<CohortRuntime> _scope;
+    };
+
     BotWorldPopulationMgr();
     CohortRuntime& Cohort();
     CohortRuntime const& Cohort() const;
@@ -879,17 +891,26 @@ private:
     CohortRuntime const* FindCohort(std::string const& cohortId) const;
     bool SelectCohort(std::string const& cohortId);
     uint32 ActiveCohortCount() const;
+    CohortScope ScopeCohort(CohortRuntime* runtime);
+    CohortScope ScopeCallbackCohort(Unit* first, Unit* second = nullptr);
+    CohortRuntime* ResolveCallbackCohort(Unit* first, Unit* second = nullptr);
+    BotWorldCohortScope::RuntimeIdentity RuntimeIdentityFor(
+        CohortRuntime const& runtime) const;
+    uint32 MapWorkerThreadCount() const;
+    void UpdateCohort(uint32 diff);
+    void ShutdownCohort();
     bool ClaimBotGuid(uint32 guid, std::string const& roleSlot);
     bool ReleaseBotGuid(uint32 guid);
     void ReleaseCohortLeases();
     bool LeaseOwnedByCurrentCohort(uint32 guid) const;
     bool LeaseOwnedByCurrentCohort(uint32 guid, std::string const& roleSlot) const;
+    bool EligibleForDiagnosticCleanup(uint32 guid) const;
     std::string UnknownCohortJson(char const* action, std::string const& cohortId) const;
 
     uint64 _serverEpoch = 0;
     std::map<std::string, std::unique_ptr<CohortRuntime>> _cohorts;
     mutable std::string _selectedCohortId = "default";
-    std::string _runningCohortId;
+    static thread_local CohortRuntime* _scopedCohort;
     mutable std::mutex _leaseMutex;
     std::map<uint32, BotGuidLease> _guidLeases;
 

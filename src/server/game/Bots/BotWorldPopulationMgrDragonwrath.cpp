@@ -15,9 +15,13 @@ void BotWorldPopulationMgr::NotifyDragonwrathCopyProcAttempt(
 {
     // This hook is observation-only. The aura handler has already submitted
     // the native copy cast and this method never retries or changes it.
+    if (!caster || !originalSpellId)
+        return;
+    CohortScope scope = ScopeCallbackCohort(caster);
+    if (!scope)
+        return;
     if (!Cohort().Active || !Cohort().CalibrationActive
         || Cohort().CalibrationMode != "single_target_300"
-        || !caster || !originalSpellId
         || !Cohort().CalibrationScoredStartedMs
         || Cohort().CalibrationWindowComplete)
         return;

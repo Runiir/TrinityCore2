@@ -122,7 +122,7 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
             and pool_reset.index("std::lock_guard<std::mutex> guard(_leaseMutex);")
             < pool_reset.index("CharacterDatabase.DirectExecute")
         ),
-        "serial_limit_retained": "MaxActiveCohorts = 1" in header,
+        "bounded_cohort_capacity": "MaxActiveCohorts = 2" in header,
         "profile_snapshot_pinned_per_cohort": all(
             marker in lifecycle_source
             for marker in (
@@ -240,18 +240,19 @@ def live_contract(binary: Path, worldserver_conf: Path) -> dict[str, Any]:
         "combat_log_isolated",
         "telemetry_isolated",
         "evidence_isolated",
-        "serial_execution_limit",
+        "two_active_cohorts_supported",
+        "serial_map_worker_concurrency_guard",
     }
     checks = {
         "ownership_probe_passed": ownership.get("ok") is True,
-        "all_isolation_domains_proved": required_isolation_checks
+        "all_storage_probe_checks_passed": required_isolation_checks
         <= {key for key, value in isolation_checks.items() if value is True},
         "two_constructed_cohorts_present": {
             "phase5_probe_a",
             "phase5_probe_b",
         }
         <= {row.get("cohort_id") for row in cohorts.get("cohorts", [])},
-        "max_active_cohorts_one": cohorts.get("max_active_cohorts") == 1,
+        "max_active_cohorts_two": cohorts.get("max_active_cohorts") == 2,
         "probe_cleanup_left_empty_parties": all(
             row.get("party_bot_count") == 0
             for row in cohorts.get("cohorts", [])
@@ -300,6 +301,8 @@ def live_contract(binary: Path, worldserver_conf: Path) -> dict[str, Any]:
         "server_epoch": ownership.get("server_epoch"),
         "cohort_count": cohorts.get("cohort_count"),
         "isolation_checks": isolation_checks,
+        "evidence_scope": "constructed_storage_probe",
+        "live_instance_isolation_verified": False,
     }
 
 

@@ -49,11 +49,15 @@ BotWorldPopulationMgr::BotWorldPopulationMgr() : _serverEpoch(BuildServerEpoch()
 
 BotWorldPopulationMgr::CohortRuntime& BotWorldPopulationMgr::Cohort()
 {
+    if (_scopedCohort)
+        return *_scopedCohort;
     return *_cohorts.at(_selectedCohortId);
 }
 
 BotWorldPopulationMgr::CohortRuntime const& BotWorldPopulationMgr::Cohort() const
 {
+    if (_scopedCohort)
+        return *_scopedCohort;
     return *_cohorts.at(_selectedCohortId);
 }
 
@@ -236,7 +240,12 @@ std::string BotWorldPopulationMgr::GetCohortIsolationContractJson()
         { "combat_log_isolated", first.Party.CombatLogEventCount == 3 && second.Party.CombatLogEventCount == 5 },
         { "telemetry_isolated", !first.TelemetryBuffer.IsEnabled() && second.TelemetryBuffer.IsEnabled() },
         { "evidence_isolated", first.Party.ValidationRouteTerminalEvidence.size() == 1 && second.Party.ValidationRouteTerminalEvidence.empty() },
-        { "serial_execution_limit", MaxActiveCohorts == 1 },
+        { "two_active_cohorts_supported", MaxActiveCohorts == 2 },
+        { "serial_map_worker_concurrency_guard",
+            BotWorldCohortScope::AllowsConcurrentAdmission(1,
+                MaxActiveCohorts, 1)
+            && !BotWorldCohortScope::AllowsConcurrentAdmission(1,
+                MaxActiveCohorts, 2) },
     };
     bool passed = std::all_of(checks.begin(), checks.end(), [](auto const& check) { return check.second; });
     first.ElapsedMs = 0;
@@ -345,6 +354,27 @@ bool BotWorldPopulationMgr::LeaseOwnedByCurrentCohort(uint32 guid, std::string c
         && itr->second.RoleSlot == roleSlot;
 }
 
+bool BotWorldPopulationMgr::EligibleForDiagnosticCleanup(uint32 guid) const
+{
+    if (!guid)
+        return false;
+
+    std::string const cohortId = Cohort().Id;
+    uint64 const attemptId = Cohort().AttemptId;
+    BotWorldCohortScope::LeaseIdentity observedLease;
+    std::lock_guard<std::mutex> guard(_leaseMutex);
+    auto itr = _guidLeases.find(guid);
+    if (itr != _guidLeases.end())
+    {
+        observedLease.Observed = true;
+        observedLease.ServerEpoch = itr->second.ServerEpoch;
+        observedLease.CohortId = itr->second.CohortId;
+        observedLease.AttemptId = itr->second.AttemptId;
+    }
+    return BotWorldCohortScope::AllowsDiagnosticCleanup(_serverEpoch,
+        cohortId, attemptId, observedLease);
+}
+
 BotWorldPopulationMgr* BotWorldPopulationMgr::instance()
 {
     static BotWorldPopulationMgr instance;
@@ -356,11 +386,11 @@ bool BotWorldPopulationMgr::StartAutonomyForCohort(std::string const& cohortId, 
     CohortRuntime* runtime = FindCohort(cohortId);
     if (!runtime)
         return false;
-    if (!runtime->Active && ActiveCohortCount() >= MaxActiveCohorts)
-    {
-        runtime->RuntimeProfileSelectionPending = false;
+    uint32 const activeCohorts = ActiveCohortCount();
+    if (!runtime->Active
+        && !BotWorldCohortScope::AllowsConcurrentAdmission(activeCohorts,
+            MaxActiveCohorts, MapWorkerThreadCount()))
         return false;
-    }
 
     std::string previous = _selectedCohortId;
     _selectedCohortId = cohortId;
@@ -380,13 +410,9 @@ bool BotWorldPopulationMgr::StartAutonomyForCohort(std::string const& cohortId, 
     }
 
     bool started = StartAutonomy(overrideConfig);
-    if (started)
-        _runningCohortId = cohortId;
-    else
-    {
+    if (!started)
         ReleaseCohortLeases();
-        _selectedCohortId = previous;
-    }
+    _selectedCohortId = previous;
     return started;
 }
 
@@ -410,8 +436,6 @@ std::string BotWorldPopulationMgr::StopAutonomyForCohort(std::string const& coho
     Cohort().Raid.AliveSize = 0;
     Cohort().Raid.RosterComplete = false;
     Cohort().Raid.UniqueLeases = false;
-    if (_runningCohortId == cohortId)
-        _runningCohortId.clear();
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_stop\",\"cohort_id\":\"" << JsonEscape(cohortId)
          << "\",\"server_epoch\":" << serverEpoch << ",\"attempt_id\":" << attemptId

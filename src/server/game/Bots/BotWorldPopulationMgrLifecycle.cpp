@@ -9,6 +9,7 @@
 #include "Player.h"
 
 #include <string>
+#include <vector>
 
 bool BotWorldPopulationMgr::IsActive() const
 {
@@ -17,6 +18,12 @@ bool BotWorldPopulationMgr::IsActive() const
 
 bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExperimentConfig const* overrideConfig)
 {
+    if (!Cohort().Active
+        && !BotWorldCohortScope::AllowsConcurrentAdmission(
+            ActiveCohortCount(), MaxActiveCohorts,
+            MapWorkerThreadCount()))
+        return false;
+
     if (Cohort().Active && Cohort().RuntimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
     {
         if (Cohort().RunId)
@@ -95,7 +102,14 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
 
 void BotWorldPopulationMgr::Stop()
 {
-    BotWorldMovement::MovementPlannerDiagnostics().ClearAll();
+    for (uint32 guid : Cohort().RosterLeases)
+        if (EligibleForDiagnosticCleanup(guid))
+            BotWorldMovement::MovementPlannerDiagnostics().ClearBot(guid);
+    for (WorldBotState const& state : Party().Bots)
+        if (!state.Guid.IsEmpty()
+            && EligibleForDiagnosticCleanup(state.Guid.GetCounter()))
+            BotWorldMovement::MovementPlannerDiagnostics().ClearBot(
+                state.Guid.GetCounter());
     ClearPendingHealCasts("run_stop");
     if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
         StopCombatCalibration();
@@ -146,6 +160,12 @@ void BotWorldPopulationMgr::Stop()
 
 bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overrideConfig)
 {
+    if (!Cohort().Active
+        && !BotWorldCohortScope::AllowsConcurrentAdmission(
+            ActiveCohortCount(), MaxActiveCohorts,
+            MapWorkerThreadCount()))
+        return false;
+
     if (Cohort().Active)
     {
         if (Cohort().RuntimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy && !overrideConfig && !Cohort().RuntimeProfileDirty)
@@ -208,7 +228,14 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
 
 void BotWorldPopulationMgr::StopAutonomy()
 {
-    BotWorldMovement::MovementPlannerDiagnostics().ClearAll();
+    for (uint32 guid : Cohort().RosterLeases)
+        if (EligibleForDiagnosticCleanup(guid))
+            BotWorldMovement::MovementPlannerDiagnostics().ClearBot(guid);
+    for (WorldBotState const& state : Party().Bots)
+        if (!state.Guid.IsEmpty()
+            && EligibleForDiagnosticCleanup(state.Guid.GetCounter()))
+            BotWorldMovement::MovementPlannerDiagnostics().ClearBot(
+                state.Guid.GetCounter());
     ClearPendingHealCasts("autonomy_stop");
     if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
         StopCombatCalibration();
@@ -239,26 +266,52 @@ void BotWorldPopulationMgr::StopAutonomy()
 
 void BotWorldPopulationMgr::Shutdown()
 {
-    BotWorldMovement::MovementPlannerDiagnostics().ClearAll();
+    std::vector<CohortRuntime*> cohorts;
+    cohorts.reserve(_cohorts.size());
+    for (auto const& [_, runtime] : _cohorts)
+        if (runtime)
+            cohorts.push_back(runtime.get());
+
+    for (CohortRuntime* runtime : cohorts)
+    {
+        CohortScope scope = ScopeCohort(runtime);
+        if (scope)
+            ShutdownCohort();
+    }
+}
+
+void BotWorldPopulationMgr::ShutdownCohort()
+{
+    for (uint32 guid : Cohort().RosterLeases)
+        if (EligibleForDiagnosticCleanup(guid))
+            BotWorldMovement::MovementPlannerDiagnostics().ClearBot(guid);
+    for (WorldBotState const& state : Party().Bots)
+        if (!state.Guid.IsEmpty()
+            && EligibleForDiagnosticCleanup(state.Guid.GetCounter()))
+            BotWorldMovement::MovementPlannerDiagnostics().ClearBot(
+                state.Guid.GetCounter());
     ClearPendingHealCasts("shutdown");
     if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
         StopCombatCalibration();
-    if (!Cohort().Active)
-        return;
 
-    FlushPendingDecisionFingerprintMemory();
+    bool const wasActive = Cohort().Active;
+    if (wasActive)
+        FlushPendingDecisionFingerprintMemory();
     for (WorldBotState const& state : Party().Bots)
     {
-        BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());
         if (!state.Guid.IsEmpty() && LeaseOwnedByCurrentCohort(state.Guid.GetCounter()))
         {
+            BotRaidAreaAuthority::Clear(state.Guid.GetRawValue());
             CharacterDatabase.DirectPExecute("UPDATE characters SET online = 0 WHERE guid = %u", state.Guid.GetCounter());
             CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", state.Guid.GetCounter());
         }
     }
 
-    Cohort().TelemetryBuffer.FlushOpenClips(Cohort().ExperimentId, Cohort().RunId, Cohort().Config.BrainVersion);
-    RecordRunStop();
+    if (wasActive)
+    {
+        Cohort().TelemetryBuffer.FlushOpenClips(Cohort().ExperimentId, Cohort().RunId, Cohort().Config.BrainVersion);
+        RecordRunStop();
+    }
     Cohort().ExperimentCoordinator.Clear();
     ReleaseCohortLeases();
     Party() = PartyRuntime();

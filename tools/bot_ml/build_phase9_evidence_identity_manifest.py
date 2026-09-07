@@ -12,6 +12,10 @@ from .build_phase8_evidence_identity_manifest import (
     _database_identity,
     _soap_payload,
 )
+from .cohort_capacity import (
+    require_positive_cohort_capacity,
+    validate_idle_cohort_registry,
+)
 from .common import write_json
 from .live_validation_session import (
     build_session,
@@ -130,11 +134,12 @@ def build_manifest(
         responder_pid = int(cohort_payload.get("server_process_id") or 0)
         if main_pid <= 0 or responder_pid != main_pid:
             raise RuntimeError("live SOAP responder does not match the owned Phase 9 worldserver process")
-        if (
-            int(cohort_payload.get("max_active_cohorts") or 0) != 1
-            or int(cohort_payload.get("active_cohort_count") or 0) != 0
-        ):
-            raise RuntimeError("Phase 9 identity requires an idle serial worldserver owner")
+        try:
+            validate_idle_cohort_registry(cohort_payload)
+        except ValueError as exc:
+            raise RuntimeError(
+                f"Phase 9 identity requires an idle native cohort registry: {exc}"
+            ) from exc
         target_catalog = json.loads(TARGET_CATALOG.read_text(encoding="utf-8"))
         target = (target_catalog.get("targets") or [])[0]
         dump_payload = _soap_payload(
@@ -155,7 +160,9 @@ def build_manifest(
         server_epoch=int(cohort_payload.get("server_epoch") or 0),
         server_process_id=responder_pid,
         session_fingerprint=str(metadata.get("session_fingerprint") or ""),
-        max_active_cohorts=int(cohort_payload.get("max_active_cohorts") or 0),
+        max_active_cohorts=require_positive_cohort_capacity(
+            cohort_payload.get("max_active_cohorts")
+        ),
     )
     profile_identity = profile_generation_identity(
         profile_generation=int(dump_payload.get("snapshot_generation") or 0),

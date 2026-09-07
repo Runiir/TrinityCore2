@@ -55,9 +55,9 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
     if (!context.Bot || !context.AdaptiveMagmawOwnsNode)
         return;
 
-    // Console diagnostics temporarily change the selected cohort. Bind this
-    // deferred candidate to the active runtime instead of that mutable view.
-    std::string const cohortId = _runningCohortId;
+    // Bind this deferred candidate to the exact runtime selected by the
+    // cohort scheduler. Console diagnostics run outside this scoped update.
+    std::string const cohortId = Cohort().Id;
     CohortRuntime* const cohort = FindCohort(cohortId);
     if (!cohort || !cohort->EncounterSnapshot
         || cohort->Config.ValidationRouteNodeId != EncounterNode

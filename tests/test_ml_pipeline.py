@@ -3671,6 +3671,7 @@ def test_reusable_calibration_cleanup_preserves_session_after_fixture_stop_failu
     )
     registry = {
         "action": "botauto_cohorts",
+        "ok": True,
         "server_epoch": 7,
         "cohorts": [
             {
@@ -13124,7 +13125,7 @@ def test_phase5_cohort_ownership_static_contract_and_manifest_are_deterministic(
         "checks": {"two_constructed_cohorts_present": True},
         "server_epoch": 1,
         "cohort_count": 3,
-        "isolation_checks": {"serial_execution_limit": True},
+        "isolation_checks": {"two_active_cohorts_supported": True},
     }
     payload = {
         "schema": "all_spec_phase5_cohort_ownership_contract_v1",
@@ -13437,7 +13438,8 @@ def test_phase8_source_identity_refuses_dirty_tree(tmp_path: Path):
         _clean_source_identity(tmp_path, worldserver)
 
 
-def test_phase8_contract_reconstructs_all_attempts_and_rejects_duplicate_state(tmp_path: Path):
+@pytest.mark.parametrize("native_capacity", [1, 2])
+def test_phase8_contract_reconstructs_all_attempts_and_rejects_duplicate_state(tmp_path: Path, native_capacity):
     representatives = phase8_runner.load_dps_representatives()
     targets = phase8_runner.campaign_targets(
         phase8_runner.load_targets(), representatives
@@ -13447,6 +13449,7 @@ def test_phase8_contract_reconstructs_all_attempts_and_rejects_duplicate_state(t
         server_epoch=12345,
         server_process_id=54321,
         session_fingerprint="session-fingerprint",
+        max_active_cohorts=native_capacity,
     )
     profile_binding = profile_generation_identity(
         profile_generation=7,
@@ -13511,7 +13514,9 @@ def test_phase8_contract_reconstructs_all_attempts_and_rejects_duplicate_state(t
                 "server_process_id": 54321,
                 "session_fingerprint": "session-fingerprint",
                 "server_process_identity_verified": True,
-                "max_active_cohorts": 1,
+                "max_active_cohorts": native_capacity,
+                "serial_execution_verified": True,
+                "serial_registry_checks": 3,
             },
         }
         batch_identity = canonical_sha256({"batch": attempt["attempt_id"]})

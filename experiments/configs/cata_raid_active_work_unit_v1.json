@@ -1,44 +1,45 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:runtime_asset_input_reconstruction",
-  "owner_skill": "raid-shard-architecture",
-  "classification": "failed",
-  "epoch_id": "shared_runtime_asset_input_reconstruction_20260907",
-  "observed_at_commit": "cbe661ec16e0291d34d170a4dde55eb970769b4b",
-  "architecture_scope": "Complete reusable runtime input attribution before resuming the current canary; the proven blocker is shared infrastructure.",
-  "behavior_change": false,
+  "work_unit": "runtime:shared_worldserver_cohort_isolation",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "in_progress",
+  "epoch_id": "shared_worldserver_cohort_isolation_20260907",
+  "observed_at_commit": "bc1023b03f0ede5bb3710819566aaacef1399531",
+  "architecture_scope": "Two independent native boss instances on one worldserver, before heroic-mode admission and boss/class repairs.",
+  "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Offline propagation and dependency-order repairs pass fixtures. Real input authority remains incomplete; build and live gates are closed.",
+  "gate_state": "Native kernel and capacity integration independently approved; focused fixtures and syntax checks pass. Runtime input preflight fails inventory hash/mode/provenance checks; full link and accepted live isolation remain outstanding.",
   "first_broken_edge": {
-    "id": "runtime_asset_input_identity_not_reconstructed",
-    "stage": "prebuild_runtime_input_preflight",
-    "owner_classification": "raid_shard_architecture",
-    "cause": "Historical checkout lacks declared inputs; current workspace has inventory drift and neither proves native extraction provenance.",
-    "review_state": "offline_input_authority_reviewed_live_assets_incomplete"
+    "id": "second_cohort_rejected_and_native_callbacks_use_global_scope",
+    "stage": "native_cohort_admission_and_callback_attribution",
+    "owner_classification": "raid_bot_runtime",
+    "cause": "MaxActiveCohorts=1, single running-cohort update selector, global callback selection and global movement diagnostics cleanup.",
+    "review_state": "native_implementation_independently_approved_live_unverified"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_program_repair_handoff_20260907.json",
-    "sha256": "551b63ce1b732f33a38c23e703ce6e18b7a28ab7dfce87f5d1ef1ea4680b78f1"
+    "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
+    "sha256": "b46c4c3b69e7ef3ae77d5b96872feb04169314f25db6da4f612914ee0ac97448"
   },
   "scope_lock": {
-    "objective": "A fresh attributable extraction/reconstruction, exact offline dependency materialization, and an accepted input manifest that passes before configure/build. Keep the historical negative manifest unchanged.",
+    "objective": "Implement and verify two-cohort scheduling, explicit callback ownership and scoped cleanup before one live isolation canary.",
     "owned_files": [
-      "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
-      "experiments/configs/runtime_asset_input_closure_audit_authority_v1.json",
-      "tools/raid_program/runtime_asset_closure.py",
-      "tools/raid_program/runtime_asset_closure_binding.py",
-      "tests/test_runtime_asset_closure.py",
-      "experiments/configs/cata_raid_active_work_unit_v1.json"
+      "src/server/game/Bots/BotWorldPopulationMgrCohort*",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdate.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrLifecycle.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombat*",
+      "tools/raid_program/shared_instance_observation.py",
+      "tools/bot_ml/run_live_bot_validation.py"
     ],
-    "stop_condition": "Close this bounded reconstruction unit with an attributable passing input manifest or a precise unavailable-input result; the coordinator then routes the next dependency under the existing user request."
+    "terminal_handoff": "A passing reviewed native kernel and real two-instance isolation proof, or a precise newly proven blocker. Do not classify storage fixtures as live isolation."
   },
   "acceptance_conditions": [
-    "A real extraction/reconstruction receipt binds client and extractor identity to the native inventory.",
-    "All declared offline, DVC, and native inputs pass verification before configure/build.",
-    "Historical negative evidence remains unchanged; generated evidence is remotely verified before exact eviction."
+    "Both admitted cohorts advance under the same server epoch in disjoint native instances.",
+    "Every native callback resolves through exact lease/attempt/map/instance identity; ambiguous and stale ownership fail closed.",
+    "Stopping one cohort preserves the witness leases, movement receipts and advancing native outcomes.",
+    "Independent Sol review, one attributable build and one bounded live isolation validation before enabling wider fanout."
   ],
   "forbidden": [
-    "No manufactured historical extraction identity, bypassed closure, broad DVC garbage collection, gameplay changes, or live run before its gates pass."
+    "No cap-only concurrency change, class/boss tuning, global worker restart, fabricated live evidence or multiple-map-worker admission before shared stores are synchronized."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -46,7 +47,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Read this handoff and docs/bot_raids/program_audit_20260905.md. Work directly with raid-shard-architecture on one shared runtime asset reconstruction unit. Inspect existing extractor receipts and DVC cache/remote identities first; do not assert that existing DataDir bytes were produced by the local client without a receipt. If provenance cannot be recovered, bind an actual fresh extraction to client and extractor hashes in an isolated root, publish generated payloads through DVC, verify the remote, then evict only verified exact payloads. Materialize the declared DBC/DB2 and gear dependencies. Retain historical negative evidence. Obtain Sol high independent review before a native live canary. Only after input, clean-source, build, recurrence, and database gates pass, execute one bounded validation, close/publish/clean evidence, and route the first causal mismatch. Do not request another authorization-only commit for these already requested steps.",
+  "next_action": "Complete and independently review the bounded native kernel and cohort-scoped command/observation plumbing. Resolve runtime asset attribution before an accepted build/live canary. Run Magmaw plus a disjoint witness instance with one map worker, close/publish/clean the evidence, then repair generic 10H/25H profile admission. Preserve historical negative evidence and route new first-broken edges without repeating unchanged attempts.",
   "queued_reference_issue": {
     "test": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
     "classification": "historical_fixture_source_freshness_mismatch",
@@ -55,5 +56,23 @@
     "current_target_catalog_sha256": "89263d953278030173a4220a3106afd7bbaec8821f9fefe26d825a0890804abf",
     "mismatch": "Embedded selected_rows for affliction_warlock and demonology_warlock have older action_profile_spell_ids. The target catalog and historical materialized fixture were not changed in this audit.",
     "disposition": "Preserve the counterexample. Reconcile the historical fixture under the appropriate reference work unit if a future run consumes it. It cannot override the current promoted WoWSims catalog."
+  },
+  "queued_runtime_asset_issue": {
+    "state": "unresolved_live_prerequisite",
+    "previous_work_unit": "shard:runtime_asset_input_reconstruction",
+    "details": "Historical extraction provenance unavailable; current inventory drift and missing generated dependencies were observed. User reprioritized native shared-instance implementation; do not waive accepted-live asset binding.",
+    "issue_counts": {
+      "hash_mismatch": 1,
+      "mode_mismatch": 16,
+      "provenance_missing": 1
+    },
+    "snapshot_sha256": "b6bc5ac7429957736b9a3a9e90ff58785c39bb53f9a3df004b2d209aa2aacdd7"
+  },
+  "implementation_review": {
+    "model": "gpt-5.6-sol",
+    "reasoning": "high",
+    "verdict": "approve",
+    "independent_capacity_tests_passed": 56,
+    "live_verified": false
   }
 }

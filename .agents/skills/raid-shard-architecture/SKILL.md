@@ -18,7 +18,16 @@ shard; return its compact evidence to that owner.
 
 Require one exact tuple across config, generated route, runtime status, capture, and evidence:
 
-`scenario_id + runtime_profile_id + pool_tag + route_manifest + frozen roster + assignment generation`
+`server_epoch + cohort_id + attempt_id + map_id + instance_id + difficulty + scenario_id + runtime_profile_id + pool_tag + route_manifest + frozen roster + assignment generation`
+
+For shared-worldserver boss tests, one coordinator owns server start, build,
+restart, and shutdown. Workers own addressed cohort commands and their exact
+instance only. A cohort setup failure or cleanup must preserve every other
+cohort and the server epoch. The registry's synthetic `botauto ownership`
+probe proves storage checks only; it cannot establish live instance isolation.
+Require real disjoint groups, GUID leases, and native instance IDs, advancing
+updates and correctly attributed callbacks in both cohorts, followed by a
+one-cohort stop with the witness still advancing.
 
 Bind every sealed launch contract to a retained clean source checkout whose
 HEAD and tree cannot advance during later authorization or evidence commits.
@@ -304,11 +313,13 @@ not route other shards through the Chainwielder module.
      --output <shard-readback.json>
    ```
 
-   Both reports must pass. The shard readback must contain exactly ten expected
+   Both reports must pass. The shard readback must contain the declared expected
    characters, offline, unleased, at the declared entrance, with full health
    and power seeds and no group/instance/corpse/ghost residue. A failed
    provisioning preflight is an infrastructure result and consumes no gameplay
-   attempt, but the capture process and its owned server must still terminate.
+   attempt. Close the failed capture and clean only its owned cohort. Only the
+   server lifecycle owner may terminate a server, and a shared server must
+   remain alive while another cohort owns an active attempt.
    For `blackwing_descent_10n_magmaw_diagnostic`, also create the exact
    `tools.raid_program.recurrence_admission` receipt after preparation and pass
    its path and SHA-256 to the capture. The seal binds the clean source/tree,
@@ -331,7 +342,8 @@ not route other shards through the Chainwielder module.
    proof. Require a negative that cannot terminalize without the exact claimed
    trigger, and keep a later accepted higher-priority action independent from
    an earlier rejected action whose state-preservation invariant is under test.
-4. Start one verified worldserver with the generated shard config.
+4. Have the server lifecycle owner start or reuse the verified worldserver.
+   A boss worker must not launch a separate server or restart a shared one.
 5. Confirm console/process readiness and active runtime identity.
 6. Only then attach the boss babysitter. The babysitter monitors; it does not silently repair or manufacture state.
 7. Keep route observation completion-driven. Terminate on success, explicit
@@ -390,7 +402,7 @@ not route other shards through the Chainwielder module.
   worker threads enabled so cross-shard attribution cannot race.
 - Give one coordinator exclusive ownership of worldserver stdin. It must poll
   cohort-qualified status/diagnose/trace commands and demultiplex immutable
-  per-cohort streams; six babysitters consume those streams read-only instead
+  per-cohort streams; babysitters consume those streams read-only instead
   of racing unqualified commands on the same console.
 - Freeze process-global adaptive state during diagnostic fanout: disable bot
   learning, global-memory fallback, and semantic outcome writes unless they
@@ -423,7 +435,7 @@ edges for every bot and target scope:
   and candidate anchor. Invalidate on route, charge/geometry, target, or
   instance identity changes; never let a stale cache authorize movement.
 - Require one single-shard rehearsal to reach stable profile execution and a
-  bounded CPU/log rate before six-way fan-out.
+  bounded CPU/log rate before increasing concurrency.
 
 ## Validate with production-parity replay
 

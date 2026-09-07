@@ -10,6 +10,10 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from .build_baseline_inventory import _normalized_rows, _schema_identity, git_identity
+from .cohort_capacity import (
+    require_positive_cohort_capacity,
+    validate_idle_cohort_registry,
+)
 from .common import write_json
 from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf
 from .live_validation_session import (
@@ -321,7 +325,7 @@ def _capture_live_runtime_identity(
     soap_password: str,
     target: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
-    """Capture process, idle-serial-server, and exact profile identity."""
+    """Capture process, idle native-registry, and exact profile identity."""
     action = ensure_healthy_matching_session(session)
     metadata = session.metadata()
     main_pid = int(action.status.properties.get("MainPID") or 0)
@@ -335,11 +339,12 @@ def _capture_live_runtime_identity(
     responder_pid = int(cohort_payload.get("server_process_id") or 0)
     if main_pid <= 0 or responder_pid != main_pid:
         raise RuntimeError("live SOAP responder does not match the owned worldserver process")
-    if (
-        int(cohort_payload.get("max_active_cohorts") or 0) != 1
-        or int(cohort_payload.get("active_cohort_count") or 0) != 0
-    ):
-        raise RuntimeError("Phase 8 identity requires an idle serial worldserver owner")
+    try:
+        validate_idle_cohort_registry(cohort_payload)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Phase 8 identity requires an idle native cohort registry: {exc}"
+        ) from exc
     dump_payload = _soap_payload(
         soap_url=soap_url,
         soap_user=soap_user,
@@ -445,7 +450,9 @@ def build_manifest(
         server_epoch=int(cohort_payload.get("server_epoch") or 0),
         server_process_id=responder_pid,
         session_fingerprint=str(metadata.get("session_fingerprint") or ""),
-        max_active_cohorts=int(cohort_payload.get("max_active_cohorts") or 0),
+        max_active_cohorts=require_positive_cohort_capacity(
+            cohort_payload.get("max_active_cohorts")
+        ),
     )
     profile_identity = profile_generation_identity(
         profile_generation=int(dump_payload.get("snapshot_generation") or 0),

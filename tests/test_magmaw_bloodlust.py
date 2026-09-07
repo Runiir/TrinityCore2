@@ -131,7 +131,7 @@ def test_bloodlust_is_one_native_cast_with_normal_readiness_and_telemetry() -> N
     attempt = body[body.index("bloodlust.Attempt =") :]
     assert "Cohort()" not in attempt
     assert "Party()" not in attempt
-    assert "std::string const cohortId = _runningCohortId" in body
+    assert "std::string const cohortId = Cohort().Id" in body
     assert "FindCohort(cohortId) != cohort" in body
     assert "magmaw_bloodlust_stale_context_attempt" in body
     assert "magmaw_bloodlust_stale_context_wipe" in body

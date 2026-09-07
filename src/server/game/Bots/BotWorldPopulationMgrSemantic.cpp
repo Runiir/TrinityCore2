@@ -120,6 +120,9 @@ void BotWorldPopulationMgr::NotifyBotSpellFinished(Player* caster, uint32 spellI
 {
     if (!caster || !spellId)
         return;
+    CohortScope scope = ScopeCallbackCohort(caster);
+    if (!scope)
+        return;
 
     if (success && Cohort().CalibrationActive
         && Cohort().CalibrationScoredStartedMs
@@ -204,6 +207,9 @@ void BotWorldPopulationMgr::NotifyBotItemSpellFinished(Player* caster,
     bool castItemIsPotion)
 {
     if (!caster || !spellId || !castItemGuid)
+        return;
+    CohortScope scope = ScopeCallbackCohort(caster);
+    if (!scope)
         return;
 
     ReconcileRaidPrepullItemSpellFinished(caster, spellId, success,

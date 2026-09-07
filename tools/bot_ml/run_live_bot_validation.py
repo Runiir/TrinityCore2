@@ -479,12 +479,28 @@ class SerialValidationScheduler:
         self.active = None
 
 
+def require_serial_cohort_registry(registry: dict[str, Any], cohort_id: str) -> None:
+    cohorts = registry.get("cohorts")
+    if not isinstance(cohorts, list) or any(
+        not isinstance(row, dict)
+        or not isinstance(row.get("cohort_id"), str)
+        or not row["cohort_id"]
+        or type(row.get("active")) is not bool
+        or (row["active"] and row["cohort_id"] != cohort_id)
+        for row in cohorts
+    ):
+        raise RuntimeError("serial validation cannot share an active worldserver")
+
+
 @dataclass
 class CohortCommandExecutor:
     execute_command: CommandTransport
     cohort_id: str
     default_timeout_sec: int = 180
     commands: list[str] = field(default_factory=list)
+    exclusive: bool = False
+    serial_registry_checks: int = 0
+    serial_registry_failed: bool = False
 
     def __post_init__(self) -> None:
         if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", self.cohort_id):
@@ -502,22 +518,53 @@ class CohortCommandExecutor:
             "start",
             "stop",
             "status",
+            "readycheck",
             "diagnose",
             "trace",
             "combatlog",
             "calibrate",
         }
+        # This transport belongs to one worker, not the server lifecycle owner.
+        # Reject unknown verbs and multiline console input before dispatch.
         if (
-            len(tokens) >= 2
-            and tokens[0] == ".botauto"
-            and tokens[1] in addressed_actions
-            and (len(tokens) < 3 or tokens[2] != self.cohort_id)
+            any(character in command for character in "\r\n\x00")
+            or len(tokens) < 3
+            or tokens[0] != ".botauto"
+            or tokens[1] not in addressed_actions
+            or tokens[2] != self.cohort_id
         ):
             raise RuntimeError("global or cross-cohort botauto command is forbidden")
+        timeout = max(1, int(timeout_sec or self.default_timeout_sec))
+        if tokens[1] != "create":
+            # Native legacy handlers can reinterpret an unknown cohort token
+            # as a profile/selector for the sole registered cohort. Verify
+            # existence before dispatch, not after a foreign mutation occurs.
+            registry_command = ".botauto cohorts"
+            self.commands.append(registry_command)
+            registry_output, registry_code, registry_timeout = self.execute_command(
+                registry_command, timeout,
+            )
+            registries = [row for row in parse_json_objects(registry_output)
+                          if row.get("action") == "botauto_cohorts"]
+            if (registry_code or registry_timeout or len(registries) != 1
+                    or registries[0].get("ok") is not True
+                    or not isinstance(registries[0].get("cohorts"), list)
+                    or not any(isinstance(row, dict) and row.get("cohort_id") == self.cohort_id
+                               for row in registries[0]["cohorts"])):
+                if self.exclusive:
+                    self.serial_registry_failed = True
+                raise RuntimeError("owned cohort is not registered; legacy fallback forbidden")
+            if self.exclusive:
+                try:
+                    require_serial_cohort_registry(registries[0], self.cohort_id)
+                except RuntimeError:
+                    self.serial_registry_failed = True
+                    raise
+                self.serial_registry_checks += 1
         self.commands.append(command)
         output, returncode, timed_out = self.execute_command(
             command,
-            max(1, int(timeout_sec or self.default_timeout_sec)),
+            timeout,
         )
         for payload in parse_json_objects(output):
             payload_cohort = payload.get("cohort_id")
@@ -6982,6 +7029,7 @@ def run_reusable_validation_session(
         execute,
         admitted.cohort_id,
         args.session_transition_timeout_sec,
+        exclusive=True,
     )
     watchdog = CohortAttemptWatchdog(executor, admitted)
     owner = ReusableValidationServerOwner(
@@ -7032,8 +7080,12 @@ def run_reusable_validation_session(
     with owner.owned():
         output_parts.append(owner.wait_until_ready())
         lifecycle["server_epoch"] = owner.lifecycle["server_epoch"]
-        if int(owner.lifecycle.get("max_active_cohorts") or 0) != 1:
-            raise RuntimeError("serial validation requires max_active_cohorts=1")
+        capacity = owner.lifecycle.get("max_active_cohorts")
+        if type(capacity) is not int or capacity < 1:
+            raise RuntimeError("invalid native cohort capacity")
+        if capacity > 1:
+            _, registry = cohort_registry()
+            require_serial_cohort_registry(registry, admitted.cohort_id)
         if args.reload_rotation_profiles:
             owner.reload_rotation_profiles()
         try:
@@ -7240,6 +7292,9 @@ def run_reusable_validation_session(
             output_parts.append(output)
             lifecycle["watchdog_completed"] = True
         finally:
+            # Even after a foreign cohort contaminates serial execution, clean
+            # our own cohort. Registration/ownership checks remain enforced.
+            executor.exclusive = False
             cleanup_errors: list[str] = []
             cleanup_record: dict[str, Any] = {
                 "cohort_id": admitted.cohort_id,
@@ -7394,6 +7449,11 @@ def run_reusable_validation_session(
                 raise
             finally:
                 lifecycle["commands"] = executor.commands
+                lifecycle["serial_registry_checks"] = executor.serial_registry_checks
+                lifecycle["serial_execution_verified"] = (
+                    executor.serial_registry_checks > 0
+                    and not executor.serial_registry_failed
+                )
                 lifecycle["global_lifecycle_command_count"] = sum(
                     command_text in {".botauto start", ".botauto stop", ".botauto status"}
                     for command_text in executor.commands

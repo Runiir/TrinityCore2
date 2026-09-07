@@ -390,7 +390,14 @@ void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState()
 
 void BotWorldPopulationMgr::ResetTraceStreams()
 {
-    BotWorldMovement::MovementPlannerDiagnostics().ClearAll();
+    for (uint32 guid : Cohort().RosterLeases)
+        if (EligibleForDiagnosticCleanup(guid))
+            BotWorldMovement::MovementPlannerDiagnostics().ClearBot(guid);
+    for (WorldBotState const& state : Party().Bots)
+        if (!state.Guid.IsEmpty()
+            && EligibleForDiagnosticCleanup(state.Guid.GetCounter()))
+            BotWorldMovement::MovementPlannerDiagnostics().ClearBot(
+                state.Guid.GetCounter());
     Party().TraceExportCursorByGuid.clear();
     for (WorldBotState& state : Party().Bots)
     {

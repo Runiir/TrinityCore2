@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
+from .cohort_capacity import require_positive_cohort_capacity
 from .live_validation_session import canonical_sha256
 
 
@@ -32,6 +33,7 @@ def server_epoch_identity(
     session_fingerprint: str,
     max_active_cohorts: int = 1,
 ) -> dict[str, Any]:
+    max_active_cohorts = require_positive_cohort_capacity(max_active_cohorts)
     return {
         "server_epoch": int(server_epoch),
         "server_process_id": int(server_process_id),
@@ -138,7 +140,7 @@ def validate_manifest(
         server_epoch=int(bound_runtime.get("server_epoch") or 0),
         server_process_id=int(bound_runtime.get("server_process_id") or 0),
         session_fingerprint=str(bound_runtime.get("session_fingerprint") or ""),
-        max_active_cohorts=int(bound_runtime.get("max_active_cohorts") or 0),
+        max_active_cohorts=bound_runtime.get("max_active_cohorts"),
     )
     expected_profile = profile_generation_identity(
         profile_generation=int(bound_runtime.get("profile_generation") or 0),
@@ -148,7 +150,6 @@ def validate_manifest(
         expected_server["server_epoch"] <= 0
         or expected_server["server_process_id"] <= 0
         or not expected_server["session_fingerprint"]
-        or expected_server["max_active_cohorts"] != 1
         or expected_profile["profile_generation"] <= 0
         or not _valid_sha256(expected_profile["profile_content_hash"])
         or projection["profile_content_hash"] != expected_profile["profile_content_hash"]
@@ -168,7 +169,7 @@ def validate_manifest(
             server_epoch=int(runtime_identity.get("server_epoch") or 0),
             server_process_id=int(runtime_identity.get("server_process_id") or runtime_identity.get("server_pid") or 0),
             session_fingerprint=str(runtime_identity.get("session_fingerprint") or ""),
-            max_active_cohorts=int(runtime_identity.get("max_active_cohorts") or 0),
+            max_active_cohorts=runtime_identity.get("max_active_cohorts"),
         )
         observed_profile = profile_generation_identity(
             profile_generation=int(runtime_identity.get("profile_generation") or 0),
