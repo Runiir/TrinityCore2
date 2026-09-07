@@ -388,10 +388,8 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
             state.NativeResurrectionPendingUntilMs = 0;
             state.NativeResurrectionCasterGuid.Clear();
             state.NativeResurrectionSpellId = 0;
-            std::string raw = BuildRawJson(bot, nullptr);
-            std::string semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
-            RecordEvent(state, bot, "death_recovery_started", nullptr, Cohort().Config.DeathRecoveryMode.c_str(), raw.c_str(), semantic.c_str(), 0.0f, state.RecentDeathCount);
-            ++state.RecoveryAttemptCount;
+            std::string raw;
+            std::string semantic;
             DeathRecoveryResult recovery = RecoverDeadBot(state, bot);
             state.DeadTimer = 0;
             state.LastRecoveryMode = recovery.Mode.empty() ? Cohort().Config.DeathRecoveryMode : recovery.Mode;

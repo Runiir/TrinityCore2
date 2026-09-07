@@ -125,7 +125,8 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
         || observedEvent == "target_rejected"
         || observedEvent == "stuck_detected"
         || observedEvent == "validation_route_drudge_lanes"
-        || observedEvent == "magmaw_bloodlust";
+        || observedEvent == "magmaw_bloodlust"
+        || observedEvent == "death_recovery_progress";
     uint32 suppressedRepeatableEvents = 0;
     bool suppressRepeatablePersistence = false;
     if (repeatableDiagnosticEvent)
@@ -136,6 +137,12 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
                   << valueInt << '|' << spellId << '|'
                   << state.ValidationRouteGeneration << '|'
                   << Cohort().Config.ValidationRouteNodeId;
+        if (observedEvent == "death_recovery_progress")
+            repeatKey << '|' << state.NativeRecoveryEpisodeAttemptId << '|'
+                      << state.NativeRecoveryEpisodeRouteGeneration << '|'
+                      << state.NativeRecoveryEpisodeWipeGeneration << '|'
+                      << state.NativeRecoveryEpisodeDeathOrdinal << '|'
+                      << state.NativeRecoveryEpisodeStartedMs;
         std::string const key = repeatKey.str();
         uint64 const nowMs = NowMs();
         if (state.LastRepeatableEventKey == key)

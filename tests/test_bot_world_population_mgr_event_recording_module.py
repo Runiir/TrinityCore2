@@ -31,6 +31,10 @@ def test_event_recording_preserves_deduplication_and_trace_contracts() -> None:
         "LastRepeatableEventKey",
         "SuppressedRepeatableEventCount",
         "PendingTraceSuppressedRepeatableEventCount",
+        'observedEvent == "death_recovery_progress"',
+        "NativeRecoveryEpisodeAttemptId",
+        "NativeRecoveryEpisodeWipeGeneration",
+        "NativeRecoveryEpisodeDeathOrdinal",
         "RecordDecisionTrace",
         "experiment_bot_events",
     ):

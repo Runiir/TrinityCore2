@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateDeath.cpp"
+RECOVERY = ROOT / "src/server/game/Bots/BotWorldPopulationMgrRecovery.cpp"
 POLICY = ROOT / "src/server/game/Bots/BotWorldPopulationMgrNativeRecovery.h"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
@@ -28,16 +29,19 @@ def test_update_death_handler_is_not_left_in_monolith():
 
 def test_update_death_keeps_native_recovery_contract():
     text = MODULE.read_text()
+    recovery = RECOVERY.read_text()
     for marker in (
         "NativeFullWipeOnly",
         "native_full_wipe_only",
         "CurrentCombatResOwnerUsable",
         "PublishNativeBattleResDecision",
         "RecoverDeadBot",
-        "death_recovery_started",
         "tactical_retreat_no_combat_res",
     ):
         assert marker in text
+    assert "death_recovery_started" not in text
+    assert 'RecordEvent(state, bot, "death_recovery_started"' in recovery
+    assert "++state.RecoveryAttemptCount;" in recovery
 
 
 def test_partial_trash_deaths_do_not_require_a_manufactured_full_wipe():

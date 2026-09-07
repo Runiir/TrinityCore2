@@ -59,6 +59,9 @@ For a regression test, verify that the original faulty behavior actually fails
 the test. A passing test after the patch is insufficient. Loop tests must cross
 the relevant iteration boundary; batching all successful observations together
 can skip the faulty branch entirely.
+Run the historical counterexample once and retain its result in the handoff.
+The normal regression suite should exercise current production behavior without
+requiring an old Git commit or recompiling known-broken code on every run.
 
 Independent review checks the cause, preserved invariants, affected callers,
 and actual test boundary together. The coordinator resumes the next action

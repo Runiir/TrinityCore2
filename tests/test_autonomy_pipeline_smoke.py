@@ -3442,6 +3442,7 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     native = function_body(mgr, "bool BotWorldPopulationMgr::TryNativeCorpseRun")
     native_executor = function_body(mgr, "BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent")
     update_bot = read(UPDATE_BOT_DEATH)
+    recovery_module = read(BOT_DIR / "BotWorldPopulationMgrRecovery.cpp")
     build_policy = function_body(mgr, "BotWorldPopulationMgr::BotDeathRecoveryPolicy BotWorldPopulationMgr::BuildDeathRecoveryPolicy")
 
     assert re.search(r"^BotWorld\.TeleportToCenterOnDeath\s*=\s*0$", conf, re.MULTILINE)
@@ -3458,7 +3459,8 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     assert "HandleReclaimCorpseOpcode(reclaim)" in native_executor
     assert "ResurrectPlayer" not in native
     assert "TeleportTo(" not in native
-    assert 'RecordEvent(state, bot, "death_recovery_started"' in update_bot
+    assert 'RecordEvent(state, bot, "death_recovery_started"' in recovery_module
+    assert 'RecordEvent(state, bot, "death_recovery_started"' not in update_bot
     assert 'RecordEvent(state, bot, "resurrected"' in update_bot
     assert 'RecordEvent(state, bot, "death_recovery_progress"' in update_bot
     assert 'RecordEvent(state, bot, "death_recovery_failed"' in update_bot

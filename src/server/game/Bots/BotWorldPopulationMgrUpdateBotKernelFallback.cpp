@@ -324,10 +324,16 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                     || context.Action == "validation_route_wrong_map";
                 if (routeYield)
                 {
-                    if (targetBeforeRoute && targetBeforeRoute->IsAlive()
+                    bool const routeProducedUsableTarget = context.Target
+                        && context.Target->IsAlive()
+                        && context.Bot->IsValidAttackTarget(context.Target);
+                    if (!routeProducedUsableTarget && targetBeforeRoute
+                        && targetBeforeRoute->IsAlive()
                         && context.Bot->IsValidAttackTarget(targetBeforeRoute)
                         && (context.Bot->IsInCombat()
-                            || targetBeforeRoute->IsInCombat()))
+                            || targetBeforeRoute->IsInCombat())
+                        && !IsImmediateNextValidationRouteEncounterMember(
+                            targetBeforeRoute->ToCreature()))
                     {
                         context.Target = targetBeforeRoute;
                         context.State.TargetGuid = stateTargetBeforeRoute;

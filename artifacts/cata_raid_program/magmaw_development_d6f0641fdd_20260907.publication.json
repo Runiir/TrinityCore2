@@ -1,0 +1,291 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "d6f0641fdd2620ec330140ab2fda40cd9433d029",
+  "archive_sha256": "b00ebc04853ff00e301a7998dd04ea14d1de7b2d7b04f4b13dfaaca7fe6a8185",
+  "archive_bytes": 8353754,
+  "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_d6f0641fdd_20260907.tar.gz.dvc",
+  "remote_download_sha256": "b00ebc04853ff00e301a7998dd04ea14d1de7b2d7b04f4b13dfaaca7fe6a8185",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "terminal_reason": "repeated_decision_watchdog",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-d6f0641fdd/configure.log",
+      "bytes": 15529,
+      "sha256": "e218b488409f938d921f5c1f0b1f4a9f873153204d2a486b5086ec137c40078c"
+    },
+    {
+      "path": "build-preflight-d6f0641fdd/configure_receipt.json",
+      "bytes": 13611,
+      "sha256": "ea7fa2dee746af92d9233cfdafe0d3b7587ac68eff8cb4d4107909d26c7583d1"
+    },
+    {
+      "path": "build-preflight-d6f0641fdd/configure_verification.json",
+      "bytes": 536,
+      "sha256": "2edfd5eb5204dc3f0a14e05955b3ed0d317f69f8334004308b5f6a0db0b74b6b"
+    },
+    {
+      "path": "build-preflight-d6f0641fdd/worldserver_build.log",
+      "bytes": 25019,
+      "sha256": "47f4fdf8e02bb2439df2a65c05772b650d47d49d0ef60ce68a85645bd6dbf288"
+    },
+    {
+      "path": "build-preflight-d6f0641fdd/worldserver_build_receipt.json",
+      "bytes": 24235,
+      "sha256": "92e198c132ff45ff99dcb36cb95d072e51a315aaf9d609e213ad7828a7ae8101"
+    },
+    {
+      "path": "build-preflight-d6f0641fdd/worldserver_build_verification.json",
+      "bytes": 536,
+      "sha256": "db11dbb78a8c18ecf47df9e781c60a90854582a8e7a9a3aff616efe4eff49298"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/base-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/base-worldserver.conf.receipt.json",
+      "bytes": 8776,
+      "sha256": "212f0863a39a76768b6463be11ffd854838588e52d797af2b18a2c7df7d0e10d"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/capture.console.log",
+      "bytes": 6543682,
+      "sha256": "516ae30bacadd64dd469f3d6e960cc546e2b72a6b8d282ae6c97728d9a47a301"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/causal_summary.json",
+      "bytes": 13248,
+      "sha256": "09ad945e31ff33eab49515e3da1944faea7579b12941e609cca62001388c9f36"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/closed_summary.json",
+      "bytes": 2618,
+      "sha256": "a019c9c732e0e35bff91423e881b9cb76858c18868ad11235193bcdf1aec9e1f"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/database_readback.json",
+      "bytes": 26552,
+      "sha256": "445fed786bf559ec0583c35625878c193fedb68bd83e67324f1e998dd120b3e1"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/launch.json",
+      "bytes": 2108,
+      "sha256": "e1583fcfa7a6387705fe6dec1a010c8aa5780a07b8d14871d96043678460be2d"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/postrun_build_verification.json",
+      "bytes": 537,
+      "sha256": "e734b94ef051a29906abc3e051a6924094b26f0b4dab5914bfbe44bce28484f7"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/provisioning.json",
+      "bytes": 1381,
+      "sha256": "566843751d4e7ecbbb08f7251a962076306ccce504f99e08cba2ee8c46e9f620"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/raw.jsonl",
+      "bytes": 62416898,
+      "sha256": "6a9bd61de61913c43b2d4caabb71404ca32b542f7837ac82fffa362669e300c2"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/readback.console.log",
+      "bytes": 19962,
+      "sha256": "b7bd7c958a0f06b565d63f0f6111c8eca85fdb4a1f582f349a1d61580e8ac8c5"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/report.json",
+      "bytes": 6543682,
+      "sha256": "516ae30bacadd64dd469f3d6e960cc546e2b72a6b8d282ae6c97728d9a47a301"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/validation_provisioning_apply/provision_accounts.sql",
+      "bytes": 4068,
+      "sha256": "689fc5fd368cc4dc8e19c689471e579c80d1af762747fcc7b6f510fd66d114e7"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/validation_provisioning_apply/provision_characters.sql",
+      "bytes": 319870,
+      "sha256": "6bc80a5d2f0be4182654b4b76faf9658ec63d8075716079234a01b01b6710c98"
+    },
+    {
+      "path": "magmaw-development-d6f0641fdd/worldserver.log",
+      "bytes": 61721209,
+      "sha256": "1a5bac55fb862a80be8296bf2b6d1a1228f169529d57933b52eadc73b3bef393"
+    },
+    {
+      "path": "run-development.py",
+      "bytes": 3958,
+      "sha256": "a5a81ed9aacaec880cefaaa87bf592536ab609aacea46bf3a89d60e63d82f1cd"
+    },
+    {
+      "path": "publish-development.py",
+      "bytes": 3420,
+      "sha256": "2f9c57ee98b6e257b4da90b6b72bd5bee1f06db5364fdb4ca4f7ec60ebdef297"
+    },
+    {
+      "path": "summarize-development.py",
+      "bytes": 3330,
+      "sha256": "860b6cb18abf8b1ad56b5e3806688f2c59c0bfa49a645892ba0f8c6cc543d3c9"
+    },
+    {
+      "path": "observe-magmaw.py",
+      "bytes": 1778,
+      "sha256": "eb55187477f379ae4534a5072034a77f407e7ccffceb5808efc75847463ca972"
+    },
+    {
+      "path": "evict-development.py",
+      "bytes": 1545,
+      "sha256": "8e50fd5d86466ba36581d28489571ad45d0fd98df67a4dbd55fd67693d57b61b"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "reviewed_findings": {
+    "target_restore": "Route-yield fallback restored stale protected Magmaw39 over current Chainwielder27. Actor30008 current-target1788805848172 to rejectedfuture1788805848472. Per-bot watchdog valid despite otherbotdamage.",
+    "trace_pressure": {
+      "schema": "trace_pressure_causal_review_v1",
+      "run_directory": "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/magmaw-development-d6f0641fdd",
+      "conclusion": "producer_flood_not_capture_drain",
+      "total_missing_trace_sequences": 431,
+      "transport": {
+        "trace_receipts": 69,
+        "commands_reported": 70,
+        "initial_interval_seconds": 10,
+        "hot_interval_seconds": 2,
+        "hot_receipts": 61,
+        "send_to_first_byte_seconds": {
+          "min": 0.0101,
+          "median": 0.0101,
+          "max": 0.0109
+        },
+        "response_delivery_seconds": {
+          "min": 0,
+          "median": 0,
+          "max": 0.0408
+        },
+        "parse_seconds": {
+          "min": 0.0008,
+          "median": 0.0021,
+          "max": 0.0201
+        },
+        "response_bytes": {
+          "min": 101354,
+          "median": 275244,
+          "max": 3030238
+        }
+      },
+      "discontinuities": [
+        {
+          "actor_guid": 30008,
+          "missing_sequence_start": 51,
+          "missing_sequence_end": 206,
+          "missing_count": 156,
+          "cursor_before": 50,
+          "first_retained_sequence": 207,
+          "newest_retained_sequence": 334,
+          "poll_interval_seconds": 10.168,
+          "produced_since_cursor": 284,
+          "production_rate_per_second": 27.9,
+          "retained_timestamp_utc_start": "2026-09-07T18:29:03.154Z",
+          "retained_timestamp_utc_end": "2026-09-07T18:29:07.374Z",
+          "retained_action_counts": {
+            "validation_target_priority": 42,
+            "trash_action": 42,
+            "wait_for_candidate_backoff": 22,
+            "validation_route_trash_action": 19,
+            "other": 3
+          },
+          "causal_class": "current_pack_future_target_selection_oscillation",
+          "expected_effect_of_target_authority_fix": "remove_observed_initial_burst"
+        },
+        {
+          "actor_guid": 30002,
+          "death_timestamp_utc": "2026-09-07T18:30:53.971Z",
+          "missing_intervals": [
+            {
+              "start": 346,
+              "end": 403,
+              "count": 58
+            },
+            {
+              "start": 532,
+              "end": 688,
+              "count": 157
+            },
+            {
+              "start": 817,
+              "end": 864,
+              "count": 48
+            },
+            {
+              "start": 993,
+              "end": 1004,
+              "count": 12
+            }
+          ],
+          "missing_count": 275,
+          "hot_poll_intervals_seconds": [
+            2.004,
+            3.075,
+            2.006,
+            3.08
+          ],
+          "produced_counts": [
+            186,
+            285,
+            176,
+            140
+          ],
+          "production_rates_per_second": [
+            92.8,
+            92.7,
+            87.7,
+            45.5
+          ],
+          "retained_ring_composition_each_full_gap": {
+            "death_recovery_started_native_corpse_run": 64,
+            "death_recovery_progress_native_instance_runback_in_progress": 64
+          },
+          "retained_ring_time_span_seconds": [
+            1.347,
+            1.317,
+            1.434,
+            1.409
+          ],
+          "causal_class": "two_trace_records_per_native_dead_bot_update"
+        }
+      ],
+      "recommended_repair": {
+        "ring_or_gate_change": false,
+        "steps": [
+          "emit death_recovery_started only when a new NativeRecoveryEpisode identity is established",
+          "coalesce unchanged death_recovery_progress with the existing five-second repeatable diagnostic heartbeat"
+        ]
+      }
+    },
+    "target_restore_validation": {
+      "current_fixture": "8 passed in 1.05s",
+      "counterfactual": "Original d6 production restore block compiled and failed the protected-target assertion; current block passes.",
+      "independent_review": "Sol approved actual production block and compiled failure/current/ordinary fallback cases."
+    },
+    "recovery_telemetry_validation": {
+      "current_fixture": "Compiled exact episode initialization and event-recording coalescing, repeated updates, identity rollover, failure and heartbeat checks passed.",
+      "counterfactual": "Reverted production patch compiled then failed RecoveryStarts.size()==1 runtime assertion; fixed production restored."
+    }
+  },
+  "evicted_raw_payloads": [
+    "magmaw-development-d6f0641fdd/raw.jsonl",
+    "magmaw-development-d6f0641fdd/worldserver.log",
+    "magmaw-development-d6f0641fdd/capture.console.log",
+    "magmaw-development-d6f0641fdd/readback.console.log"
+  ]
+}

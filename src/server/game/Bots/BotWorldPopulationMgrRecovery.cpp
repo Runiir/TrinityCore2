@@ -144,6 +144,14 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
         state.NativeRecoveryEntranceRequired = false;
         state.NativeRecoveryEntranceObserved = false;
         state.NativeRecoveryEntranceAvailable = false;
+
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr,
+            "corpse_recovery");
+        RecordEvent(state, bot, "death_recovery_started", nullptr,
+            Cohort().Config.DeathRecoveryMode.c_str(), raw.c_str(),
+            semantic.c_str(), 0.0f, state.RecentDeathCount);
+        ++state.RecoveryAttemptCount;
     }
 
     bool const nativeCorpseAuthority =
