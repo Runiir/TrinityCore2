@@ -74,7 +74,9 @@ void BotWorldPopulationMgr::RotateAutoRecordingWindowIfNeeded(uint32 diff)
     Cohort().Metrics.ActiveBots = uint32(Party().Bots.size());
     Cohort().ElapsedMs = 0;
     Cohort().RecordingWindowElapsedMs = 0;
-    ResetTraceStreams();
+    // This is a statistics window boundary, not a lifecycle reset. Keep the
+    // attempt-scoped trace sequence/history, export cursors, and planner
+    // receipts continuous; true start/profile resets still call the reset.
     RecordRunStart();
 }
 

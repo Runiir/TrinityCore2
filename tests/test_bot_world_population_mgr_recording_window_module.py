@@ -41,6 +41,11 @@ def test_recording_window_preserves_rotation_and_flush_contract():
         "RecordRunStop();",
         "RecordRunStart();",
         "RecordingWindowIndex",
-        "ResetTraceStreams();",
     ):
         assert marker in text
+
+    rollover = text[
+        text.index("void BotWorldPopulationMgr::RotateAutoRecordingWindowIfNeeded") :
+        text.index("std::string BotWorldPopulationMgr::BuildAutoRecordingWindowName")
+    ]
+    assert "ResetTraceStreams();" not in rollover

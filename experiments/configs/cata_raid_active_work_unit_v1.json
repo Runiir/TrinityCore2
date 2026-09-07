@@ -1,46 +1,39 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "encounter:magmaw_completion_canary",
-  "owner_skill": "raid-evidence-lifecycle",
+  "owner_skill": "raid-bot-runtime-implementation",
   "classification": "in_progress",
   "epoch_id": "shared_worldserver_cohort_isolation_20260907",
-  "observed_at_commit": "b0c7f38b0a",
+  "observed_at_commit": "b60350a657",
   "architecture_scope": "Shared two-instance isolation accepted; prepare one existing Magmaw diagnostic completion-watchdog run, then repair its first gameplay blocker.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Watchdog and fixed-baiter repairs independently approved; awaiting one build, fresh admission and live validation.",
+  "gate_state": "Trace continuity repair and metadata independently approved; latest native change awaits build and live validation. Magmaw remains uncleared.",
   "first_broken_edge": {
-    "id": "capture_distinct_casualties_counted_as_death_loops",
-    "stage": "completion_watchdog",
-    "owner_classification": "raid_evidence_lifecycle",
-    "cause": "Route-wide death counter reaches three from distinct bots first death events while boss fight still has survivors and damage progress.",
-    "review_state": "independently_approved_pending_live"
+    "id": "recording_window_resets_attempt_trace_identity",
+    "stage": "native_recording_window_rotation",
+    "owner_classification": "raid_bot_runtime_implementation",
+    "cause": "RotateAutoRecordingWindowIfNeeded calls ResetTraceStreams without changing epoch/attempt/route; watchdog cursors can discard post-rotation events.",
+    "review_state": "independently_approved_pending_build_and_live"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "6e5b2508ec5f027e8056fb2f1eaffdef28cb107fb3c62fd6aec05022b62c3841"
+    "sha256": "486d6d90f2c9572cb76cdcdfa98fd6449df6a9878f824bf77ed90fbecbf90000"
   },
   "scope_lock": {
-    "objective": "Prepare current recurrence admission and run one attributable Magmaw completion watchdog; diagnose earliest gameplay mismatch and route bounded repair.",
+    "objective": "Preserve attempt-scoped trace continuity across statistics windows, verify with compiled producer fixtures and independent review, then validate the repaired native lifecycle in one bounded run.",
     "owned_files": [
-      "tools/raid_program/capture_runtime_acceptance.py",
-      "tools/raid_program/capture_environment_validation.py",
-      "tests/test_phase1_raid_foundation_capture.py",
-      ".agents/skills/raid-evidence-lifecycle/SKILL.md",
-      "tools/raid_program/capture_setup.py",
-      "tools/raid_program/capture_live_run.py",
-      "tests/test_chainwielder_prestart_bundle.py",
-      "tools/raid_program/capture_watchdog.py",
-      "tests/test_capture_death_loop_watchdog.py",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h"
+      "src/server/game/Bots/BotWorldPopulationMgrRecordingWindow.cpp",
+      "tests/test_recording_window_trace_continuity.py",
+      "tests/test_bot_world_population_mgr_recording_window_module.py"
     ],
-    "terminal_handoff": "Reviewed capture repair followed by one closed, attributable Magmaw attempt; arrival is never a boss-clear claim."
+    "terminal_handoff": "Reviewed native trace continuity fix with closed published Magmaw counterexample; latest fix awaits build and live validation."
   },
   "acceptance_conditions": [
-    "Arrival at a boss node cannot pass capture acceptance.",
-    "Native completion and boss death match the frozen terminal node, generation and entry.",
-    "Deterministic capture tests and independent review pass before live.",
-    "Run one bounded Magmaw diagnostic, preserve first causal mismatch and cleanup, publish evidence."
+    "Statistics-window rollover preserves monotonic native trace sequence, pending rows, export cursors and planner receipts.",
+    "Explicit lifecycle/profile resets retain their scoped cleanup semantics.",
+    "Compiled actual-producer fixture survives two recording-window rotations; independent review passes.",
+    "Fresh admitted live validation observes the rollover without event loss; boss completion still requires native confirmed death."
   ],
   "forbidden": [
     "No cap-only concurrency change, class/boss tuning, global worker restart, fabricated live evidence or multiple-map-worker admission before shared stores are synchronized."
@@ -51,7 +44,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Use existing single-boss capture workflow and current recurrence admission for one Magmaw completion-watchdog attempt. Keep accepted isolation closed; publish/cleanup run, diagnose and repair first gameplay blocker until Magmaw clear or genuine external blocker.",
+  "next_action": "Finish compiled producer continuity repair and independent review, then a fresh admitted bounded validation. Magmaw is not cleared; retain healer death as unclassified gameplay edge until exact lethal evidence is joined.",
   "queued_reference_issue": {
     "test": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
     "classification": "historical_fixture_source_freshness_mismatch",
@@ -124,17 +117,17 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "b0c7f38b0a",
+    "source_commit": "b60350a657",
     "boss_clear": false,
     "trash_clears": [
       "bwd.magmaw.chainwielder",
       "bwd.magmaw.drudges"
     ],
-    "terminal_reason": "death_loop_watchdog",
-    "termination_semantics_defect": true,
+    "terminal_reason": "interruption",
+    "terminal_detail": "same_attempt_trace_reset_at_statistics_window_rollover",
     "cleanup_passed": true,
     "remote_reconstruction_verified": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_b0c7f38b0a_20260907.tar.gz.dvc",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_b60350a657_20260907.tar.gz.dvc",
     "training_eligible": false
   }
 }
