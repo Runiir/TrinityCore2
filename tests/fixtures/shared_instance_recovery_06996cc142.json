@@ -1,0 +1,583 @@
+{
+  "provenance": {
+    "source_commit": "06996cc142",
+    "raw_sequences": [
+      43,
+      44
+    ],
+    "archive_sha256": "cd7264c204d2305172879144231a32e6f8a094c66bc53a9360a9bd086053a35e",
+    "projection": "Exact selected fields from native status/diagnose; no values synthesized.",
+    "archive_dvc_pointer": "artifacts/cata_raid_program/shared_instance_06996cc142_20260907.tar.gz.dvc",
+    "raw_output_sha256": "ee5b5b72d1b797e2db1a216efd6ebc817bac057962c92900d485894535e6958f"
+  },
+  "observation": {
+    "status": {
+      "ok": true,
+      "cohort_id": "bwd_omnotron_diagnostic_10n",
+      "server_epoch": 764862128849862,
+      "attempt_id": 1,
+      "active": true,
+      "lease_count": 10,
+      "deaths": 2,
+      "decisions": 198,
+      "raid_runtime": {
+        "server_epoch": 764862128849862,
+        "attempt_id": 1,
+        "map_id": 669,
+        "map_difficulty": 0,
+        "instance_id": 2,
+        "group_guid": 2256303413312618497,
+        "bot_actions_enabled": true,
+        "roster_complete": true,
+        "difficulty_readback_complete": false,
+        "difficulty_matches": false,
+        "difficulty_member_count": 8,
+        "difficulty_matching_member_count": 8,
+        "expected_difficulty": 0,
+        "group_difficulty": 0
+      }
+    },
+    "diagnosis": {
+      "ok": true,
+      "cohort_id": "bwd_omnotron_diagnostic_10n",
+      "raid_runtime": {
+        "server_epoch": 764862128849862,
+        "attempt_id": 1,
+        "map_id": 669,
+        "map_difficulty": 0,
+        "instance_id": 2,
+        "group_guid": 2256303413312618497,
+        "bot_actions_enabled": true,
+        "roster_complete": true,
+        "difficulty_readback_complete": false,
+        "difficulty_matches": false,
+        "difficulty_member_count": 8,
+        "difficulty_matching_member_count": 8,
+        "expected_difficulty": 0,
+        "group_difficulty": 0
+      },
+      "bots": [
+        {
+          "identity": {
+            "bot_guid": 30101,
+            "bot_name": "Omntanka"
+          },
+          "snapshot": {
+            "validation_cohort": {
+              "locked": true,
+              "leader_guid": 30101,
+              "group_guid": 1,
+              "map_id": 669,
+              "instance_id": 2,
+              "phase_mask": 0,
+              "current_map_id": 669,
+              "current_instance_id": 2,
+              "current_position": {
+                "x": -338.622,
+                "y": -347.5,
+                "z": 214.159,
+                "o": 0
+              },
+              "alive": true,
+              "ghost": false,
+              "has_corpse": false,
+              "in_world": true,
+              "matches_cohort": true,
+              "violation": false,
+              "violation_reason": ""
+            },
+            "native_recovery_episode": {
+              "attempt_id": 0,
+              "route_generation": 0,
+              "wipe_generation": 0,
+              "death_ordinal": 0,
+              "phase": "none",
+              "started_ms": 0,
+              "last_progress_ms": 0,
+              "distance_target": "none",
+              "best_distance": null,
+              "movement_retry_count": 0,
+              "release_rejection_count": 0,
+              "entrance_unavailable_count": 0,
+              "entrance_rejection_count": 0,
+              "reclaim_rejection_count": 0,
+              "entrance_required": false,
+              "entrance_observed": false,
+              "entrance_available": false,
+              "ghost_flight_enabled": false,
+              "ghost_gravity_disabled": false
+            }
+          }
+        },
+        {
+          "identity": {
+            "bot_guid": 30102,
+            "bot_name": "Omntankb"
+          },
+          "snapshot": {
+            "validation_cohort": {
+              "locked": true,
+              "leader_guid": 30101,
+              "group_guid": 1,
+              "map_id": 669,
+              "instance_id": 2,
+              "phase_mask": 0,
+              "current_map_id": 669,
+              "current_instance_id": 2,
+              "current_position": {
+                "x": -338.622,
+                "y": -347.5,
+                "z": 214.159,
+                "o": 0
+              },
+              "alive": true,
+              "ghost": false,
+              "has_corpse": false,
+              "in_world": true,
+              "matches_cohort": true,
+              "violation": false,
+              "violation_reason": ""
+            },
+            "native_recovery_episode": {
+              "attempt_id": 0,
+              "route_generation": 0,
+              "wipe_generation": 0,
+              "death_ordinal": 0,
+              "phase": "none",
+              "started_ms": 0,
+              "last_progress_ms": 0,
+              "distance_target": "none",
+              "best_distance": null,
+              "movement_retry_count": 0,
+              "release_rejection_count": 0,
+              "entrance_unavailable_count": 0,
+              "entrance_rejection_count": 0,
+              "reclaim_rejection_count": 0,
+              "entrance_required": false,
+              "entrance_observed": false,
+              "entrance_available": false,
+              "ghost_flight_enabled": false,
+              "ghost_gravity_disabled": false
+            }
+          }
+        },
+        {
+          "identity": {
+            "bot_guid": 30103,
+            "bot_name": "Omnheala"
+          },
+          "snapshot": {
+            "validation_cohort": {
+              "locked": true,
+              "leader_guid": 30101,
+              "group_guid": 1,
+              "map_id": 669,
+              "instance_id": 2,
+              "phase_mask": 0,
+              "current_map_id": 669,
+              "current_instance_id": 2,
+              "current_position": {
+                "x": -338.622,
+                "y": -347.5,
+                "z": 214.159,
+                "o": 0
+              },
+              "alive": true,
+              "ghost": false,
+              "has_corpse": false,
+              "in_world": true,
+              "matches_cohort": true,
+              "violation": false,
+              "violation_reason": ""
+            },
+            "native_recovery_episode": {
+              "attempt_id": 0,
+              "route_generation": 0,
+              "wipe_generation": 0,
+              "death_ordinal": 0,
+              "phase": "none",
+              "started_ms": 0,
+              "last_progress_ms": 0,
+              "distance_target": "none",
+              "best_distance": null,
+              "movement_retry_count": 0,
+              "release_rejection_count": 0,
+              "entrance_unavailable_count": 0,
+              "entrance_rejection_count": 0,
+              "reclaim_rejection_count": 0,
+              "entrance_required": false,
+              "entrance_observed": false,
+              "entrance_available": false,
+              "ghost_flight_enabled": false,
+              "ghost_gravity_disabled": false
+            }
+          }
+        },
+        {
+          "identity": {
+            "bot_guid": 30104,
+            "bot_name": "Omnhealb"
+          },
+          "snapshot": {
+            "validation_cohort": {
+              "locked": true,
+              "leader_guid": 30101,
+              "group_guid": 1,
+              "map_id": 669,
+              "instance_id": 2,
+              "phase_mask": 0,
+              "current_map_id": 669,
+              "current_instance_id": 2,
+              "current_position": {
+                "x": -338.622,
+                "y": -347.5,
+                "z": 214.159,
+                "o": 0
+              },
+              "alive": true,
+              "ghost": false,
+              "has_corpse": false,
+              "in_world": true,
+              "matches_cohort": true,
+              "violation": false,
+              "violation_reason": ""
+            },
+            "native_recovery_episode": {
+              "attempt_id": 0,
+              "route_generation": 0,
+              "wipe_generation": 0,
+              "death_ordinal": 0,
+              "phase": "none",
+              "started_ms": 0,
+              "last_progress_ms": 0,
+              "distance_target": "none",
+              "best_distance": null,
+              "movement_retry_count": 0,
+              "release_rejection_count": 0,
+              "entrance_unavailable_count": 0,
+              "entrance_rejection_count": 0,
+              "reclaim_rejection_count": 0,
+              "entrance_required": false,
+              "entrance_observed": false,
+              "entrance_available": false,
+              "ghost_flight_enabled": false,
+              "ghost_gravity_disabled": false
+            }
+          }
+        },
+        {
+          "identity": {
+            "bot_guid": 30105,
+            "bot_name": "Omnhealc"
+          },
+          "snapshot": {
+            "validation_cohort": {
+              "locked": true,
+              "leader_guid": 30101,
+              "group_guid": 1,
+              "map_id": 669,
+              "instance_id": 2,
+              "phase_mask": 0,
+              "current_map_id": 669,
+              "current_instance_id": 2,
+              "current_position": {
+                "x": -338.622,
+                "y": -347.5,
+                "z": 214.159,
+                "o": 0
+              },
+              "alive": true,
+              "ghost": false,
+              "has_corpse": false,
+              "in_world": true,
+              "matches_cohort": true,
+              "violation": false,
+              "violation_reason": ""
+            },
+            "native_recovery_episode": {
+              "attempt_id": 0,
+              "route_generation": 0,
+              "wipe_generation": 0,
+              "death_ordinal": 0,
+              "phase": "none",
+              "started_ms": 0,
+              "last_progress_ms": 0,
+              "distance_target": "none",
+              "best_distance": null,
+              "movement_retry_count": 0,
+              "release_rejection_count": 0,
+              "entrance_unavailable_count": 0,
+              "entrance_rejection_count": 0,
+              "reclaim_rejection_count": 0,
+              "entrance_required": false,
+              "entrance_observed": false,
+              "entrance_available": false,
+              "ghost_flight_enabled": false,
+              "ghost_gravity_disabled": false
+            }
+          }
+        },
+        {
+          "identity": {
+            "bot_guid": 30106,
+            "bot_name": "Omndpsa"
+          },
+          "snapshot": {
+            "validation_cohort": {
+              "locked": true,
+              "leader_guid": 30101,
+              "group_guid": 1,
+              "map_id": 669,
+              "instance_id": 2,
+              "phase_mask": 0,
+              "current_map_id": 669,
+              "current_instance_id": 2,
+              "current_position": {
+                "x": -338.622,
+                "y": -347.5,
+                "z": 214.159,
+                "o": 0
+              },
+              "alive": true,
+              "ghost": false,
+              "has_corpse": false,
+              "in_world": true,
+              "matches_cohort": true,
+              "violation": false,
+              "violation_reason": ""
+            },
+            "native_recovery_episode": {
+              "attempt_id": 0,
+              "route_generation": 0,
+              "wipe_generation": 0,
+              "death_ordinal": 0,
+              "phase": "none",
+              "started_ms": 0,
+              "last_progress_ms": 0,
+              "distance_target": "none",
+              "best_distance": null,
+              "movement_retry_count": 0,
+              "release_rejection_count": 0,
+              "entrance_unavailable_count": 0,
+              "entrance_rejection_count": 0,
+              "reclaim_rejection_count": 0,
+              "entrance_required": false,
+              "entrance_observed": false,
+              "entrance_available": false,
+              "ghost_flight_enabled": false,
+              "ghost_gravity_disabled": false
+            }
+          }
+        },
+        {
+          "identity": {
+            "bot_guid": 30107,
+            "bot_name": "Omndpsb"
+          },
+          "snapshot": {
+            "validation_cohort": {
+              "locked": true,
+              "leader_guid": 30101,
+              "group_guid": 1,
+              "map_id": 669,
+              "instance_id": 2,
+              "phase_mask": 0,
+              "current_map_id": 0,
+              "current_instance_id": 0,
+              "current_position": {
+                "x": -7317.61,
+                "y": -1647.53,
+                "z": 282.651,
+                "o": 2.02402
+              },
+              "alive": false,
+              "ghost": true,
+              "has_corpse": true,
+              "in_world": true,
+              "matches_cohort": true,
+              "violation": false,
+              "violation_reason": ""
+            },
+            "native_recovery_episode": {
+              "attempt_id": 1,
+              "route_generation": 1,
+              "wipe_generation": 0,
+              "death_ordinal": 1,
+              "phase": "moving_to_entrance",
+              "started_ms": 1788773760955,
+              "last_progress_ms": 1788773761067,
+              "distance_target": "entrance",
+              "best_distance": 553.378,
+              "movement_retry_count": 0,
+              "release_rejection_count": 0,
+              "entrance_unavailable_count": 0,
+              "entrance_rejection_count": 0,
+              "reclaim_rejection_count": 0,
+              "entrance_required": true,
+              "entrance_observed": true,
+              "entrance_available": true,
+              "ghost_flight_enabled": false,
+              "ghost_gravity_disabled": false
+            }
+          }
+        },
+        {
+          "identity": {
+            "bot_guid": 30108,
+            "bot_name": "Omndpsc"
+          },
+          "snapshot": {
+            "validation_cohort": {
+              "locked": true,
+              "leader_guid": 30101,
+              "group_guid": 1,
+              "map_id": 669,
+              "instance_id": 2,
+              "phase_mask": 0,
+              "current_map_id": 0,
+              "current_instance_id": 0,
+              "current_position": {
+                "x": -7317.61,
+                "y": -1647.53,
+                "z": 282.651,
+                "o": 2.02402
+              },
+              "alive": false,
+              "ghost": true,
+              "has_corpse": true,
+              "in_world": true,
+              "matches_cohort": true,
+              "violation": false,
+              "violation_reason": ""
+            },
+            "native_recovery_episode": {
+              "attempt_id": 1,
+              "route_generation": 1,
+              "wipe_generation": 0,
+              "death_ordinal": 1,
+              "phase": "moving_to_entrance",
+              "started_ms": 1788773760955,
+              "last_progress_ms": 1788773761067,
+              "distance_target": "entrance",
+              "best_distance": 553.378,
+              "movement_retry_count": 0,
+              "release_rejection_count": 0,
+              "entrance_unavailable_count": 0,
+              "entrance_rejection_count": 0,
+              "reclaim_rejection_count": 0,
+              "entrance_required": true,
+              "entrance_observed": true,
+              "entrance_available": true,
+              "ghost_flight_enabled": false,
+              "ghost_gravity_disabled": false
+            }
+          }
+        },
+        {
+          "identity": {
+            "bot_guid": 30109,
+            "bot_name": "Omndpsd"
+          },
+          "snapshot": {
+            "validation_cohort": {
+              "locked": true,
+              "leader_guid": 30101,
+              "group_guid": 1,
+              "map_id": 669,
+              "instance_id": 2,
+              "phase_mask": 0,
+              "current_map_id": 0,
+              "current_instance_id": 0,
+              "current_position": {
+                "x": -7322.01,
+                "y": -1638.5,
+                "z": 286.541,
+                "o": 2.02402
+              },
+              "alive": false,
+              "ghost": true,
+              "has_corpse": true,
+              "in_world": true,
+              "matches_cohort": true,
+              "violation": false,
+              "violation_reason": ""
+            },
+            "native_recovery_episode": {
+              "attempt_id": 1,
+              "route_generation": 1,
+              "wipe_generation": 0,
+              "death_ordinal": 1,
+              "phase": "moving_to_entrance",
+              "started_ms": 1788773760194,
+              "last_progress_ms": 1788773761067,
+              "distance_target": "entrance",
+              "best_distance": 542.612,
+              "movement_retry_count": 0,
+              "release_rejection_count": 0,
+              "entrance_unavailable_count": 0,
+              "entrance_rejection_count": 0,
+              "reclaim_rejection_count": 0,
+              "entrance_required": true,
+              "entrance_observed": true,
+              "entrance_available": true,
+              "ghost_flight_enabled": false,
+              "ghost_gravity_disabled": false
+            }
+          }
+        },
+        {
+          "identity": {
+            "bot_guid": 30110,
+            "bot_name": "Omndpse"
+          },
+          "snapshot": {
+            "validation_cohort": {
+              "locked": true,
+              "leader_guid": 30101,
+              "group_guid": 1,
+              "map_id": 669,
+              "instance_id": 2,
+              "phase_mask": 0,
+              "current_map_id": 0,
+              "current_instance_id": 0,
+              "current_position": {
+                "x": -7322.01,
+                "y": -1638.5,
+                "z": 286.541,
+                "o": 2.02402
+              },
+              "alive": false,
+              "ghost": true,
+              "has_corpse": true,
+              "in_world": true,
+              "matches_cohort": true,
+              "violation": false,
+              "violation_reason": ""
+            },
+            "native_recovery_episode": {
+              "attempt_id": 1,
+              "route_generation": 1,
+              "wipe_generation": 0,
+              "death_ordinal": 1,
+              "phase": "moving_to_entrance",
+              "started_ms": 1788773760194,
+              "last_progress_ms": 1788773761067,
+              "distance_target": "entrance",
+              "best_distance": 542.612,
+              "movement_retry_count": 0,
+              "release_rejection_count": 0,
+              "entrance_unavailable_count": 0,
+              "entrance_rejection_count": 0,
+              "reclaim_rejection_count": 0,
+              "entrance_required": true,
+              "entrance_observed": true,
+              "entrance_available": true,
+              "ghost_flight_enabled": false,
+              "ghost_gravity_disabled": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

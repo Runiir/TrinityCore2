@@ -78,15 +78,15 @@ def validate_instance(observation: dict[str, Any], expected: InstanceExpectation
                 raise ValueError(f"{field}: native identity mismatch")
         if snapshot.get("bot_actions_enabled") is not True:
             raise ValueError("cohort not admitted")
-        if any(snapshot.get(field) is not True for field in (
-                "roster_complete", "difficulty_readback_complete", "difficulty_matches")):
-            raise ValueError("native roster or difficulty readback incomplete")
+        if snapshot.get("roster_complete") is not True:
+            raise ValueError("native roster readback incomplete")
     instance = _integer(raid.get("instance_id"), "instance_id", 1)
     group = _integer(raid.get("group_guid"), "group_guid", 1)
     for field, value in (("instance_id", instance), ("group_guid", group)):
         if _integer(diagnosis["raid_runtime"].get(field), field, 1) != value:
             raise ValueError(f"{field}: observation changed while polling")
     guids = []
+    recovering = 0
     for bot in diagnosis["bots"]:
         guids.append(_integer(bot["identity"].get("bot_guid"), "bot_guid", 1))
         scope = bot["snapshot"]["validation_cohort"]
@@ -94,10 +94,39 @@ def validate_instance(observation: dict[str, Any], expected: InstanceExpectation
         if (scope.get("locked") is not True
                 or scope.get("in_world") is not True
                 or scope.get("matches_cohort") is not True
-                or scope.get("violation") is not False
-                or _integer(scope.get("current_map_id"), "current_map_id") != expected.map_id
-                or _integer(scope.get("current_instance_id"), "current_instance_id", 1) != instance):
+                or scope.get("violation") is not False):
             raise ValueError("member outside its admitted native instance")
+        current_map = _integer(scope.get("current_map_id"), "current_map_id")
+        current_instance = _integer(scope.get("current_instance_id"), "current_instance_id")
+        if (current_map, current_instance) != (expected.map_id, instance):
+            recovery = bot["snapshot"].get("native_recovery_episode", {})
+            # Native matches_cohort verifies the corpse owner in the frozen
+            # instance. Living players never receive this runback exception.
+            if (scope.get("alive") is not False or scope.get("ghost") is not True
+                    or scope.get("has_corpse") is not True
+                    or _integer(scope.get("map_id"), "frozen_map_id") != expected.map_id
+                    or _integer(scope.get("instance_id"), "frozen_instance_id", 1) != instance
+                    or _integer(recovery.get("attempt_id"), "recovery_attempt", 1) != attempt
+                    or recovery.get("phase") not in {
+                        "released_ghost_observed", "entrance_unavailable", "moving_to_entrance",
+                        "entrance_submitted", "entrance_worldport_pending", "corpse_authority_wait",
+                        "moving_to_corpse", "reclaim_delay_pending", "reclaim_submitted",
+                    }):
+                raise ValueError("member outside its admitted native instance without valid recovery")
+            recovering += 1
+    for snapshot in (raid, diagnosis["raid_runtime"]):
+        if snapshot.get("difficulty_readback_complete") is True and snapshot.get("difficulty_matches") is True:
+            continue
+        # Difficulty readback intentionally counts only current raid members.
+        # Status and diagnosis are sequential; more deaths may occur between
+        # them, so require a bounded deficit, not identical cached counts.
+        count = _integer(snapshot.get("difficulty_member_count"), "difficulty_member_count")
+        matching = _integer(snapshot.get("difficulty_matching_member_count"), "difficulty_matching_member_count")
+        if (not recovering or not 0 < len(expected.roster_guids) - count <= recovering
+                or matching != count
+                or _integer(snapshot.get("group_difficulty"), "group_difficulty") != expected.difficulty
+                or _integer(snapshot.get("expected_difficulty"), "expected_difficulty") != expected.difficulty):
+            raise ValueError("native difficulty readback incomplete without attributable recovery")
     if len(guids) != len(set(guids)) or set(guids) != expected.roster_guids:
         raise ValueError("live roster differs from frozen roster")
     if _integer(status.get("lease_count"), "lease_count") != len(guids):

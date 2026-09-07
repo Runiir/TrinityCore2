@@ -43,6 +43,14 @@ start returns status, while combat-log success requires chunk completion.
 Transport fixtures must reproduce those native variants; a fake that simply
 echoes the verb can hide a guaranteed live timeout.
 
+Instance observations must honor native corpse-run ownership. An out-of-instance
+ghost is not automatically contamination: require exact native corpse authority,
+frozen instance, current recovery attempt, and retained leases. Difficulty
+readback counts members currently in the raid and can become incomplete during
+that recovery. Keep foreign live members and unexplained deficits rejected;
+preserve the precise failed predicate in the report instead of only a generic
+identity error.
+
 Do not run `run_reusable_validation_session` twice to create simultaneous
 cohorts: that runner deliberately enforces serial ownership. Use
 `shared_instance_validation` with `CohortCommandExecutor(exclusive=False)` under
