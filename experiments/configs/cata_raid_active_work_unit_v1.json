@@ -1,40 +1,43 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "encounter:magmaw_completion_canary",
-  "owner_skill": "raid-shard-architecture",
+  "owner_skill": "raid-evidence-lifecycle",
   "classification": "in_progress",
   "epoch_id": "shared_worldserver_cohort_isolation_20260907",
   "observed_at_commit": "00db4bec77",
   "architecture_scope": "Shared two-instance isolation accepted; prepare one existing Magmaw diagnostic completion-watchdog run, then repair its first gameplay blocker.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Shared isolation passed live, published and remotely verified. Inspect current Magmaw recurrence admission before one completion canary.",
+  "gate_state": "266 capture and bundle tests passed; independent final review pending. Refresh source-bound admission, then one Magmaw fixture-expansion capture.",
   "first_broken_edge": {
-    "id": "magmaw_completion_not_yet_verified",
-    "stage": "encounter_completion_validation",
-    "owner_classification": "raid_shard_architecture",
-    "cause": "Isolation fixture deliberately stops before boss completion. Current user requests an actual Magmaw completion attempt.",
-    "review_state": "capture_admission_inspection_in_progress"
+    "id": "capture_terminal_node_arrival_false_success",
+    "stage": "capture_acceptance",
+    "owner_classification": "raid_evidence_lifecycle",
+    "cause": "Boss partition accepted terminal-node arrival without native completion or confirmed death. Found in independent prelive review; prepared bundle never launched.",
+    "review_state": "repair_independent_review_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "91ff54371fe17fc0baaa28712c08fc94a7448491060b3f64b6e3d5c64ed6f917"
+    "sha256": "c4960f8d80f0e044683d14041f4d22fae813bc8dd5fe2aaf02492cb94b16cf7c"
   },
   "scope_lock": {
     "objective": "Prepare current recurrence admission and run one attributable Magmaw completion watchdog; diagnose earliest gameplay mismatch and route bounded repair.",
     "owned_files": [
+      "tools/raid_program/capture_runtime_acceptance.py",
+      "tools/raid_program/capture_environment_validation.py",
+      "tests/test_phase1_raid_foundation_capture.py",
+      ".agents/skills/raid-evidence-lifecycle/SKILL.md",
       "tools/raid_program/capture_setup.py",
       "tools/raid_program/capture_live_run.py",
-      "experiments/configs/*magmaw*",
-      "experiments/configs/*recurrence*"
+      "tests/test_chainwielder_prestart_bundle.py"
     ],
-    "terminal_handoff": "A passing reviewed native kernel and real two-instance isolation proof, or a precise newly proven blocker. Do not classify storage fixtures as live isolation."
+    "terminal_handoff": "Reviewed capture repair followed by one closed, attributable Magmaw attempt; arrival is never a boss-clear claim."
   },
   "acceptance_conditions": [
-    "Both admitted cohorts advance under the same server epoch in disjoint native instances.",
-    "Every native callback resolves through exact lease/attempt/map/instance identity; ambiguous and stale ownership fail closed.",
-    "Stopping one cohort preserves the witness leases, movement receipts and advancing native outcomes.",
-    "Independent Sol review, one attributable build and one bounded live isolation validation before enabling wider fanout."
+    "Arrival at a boss node cannot pass capture acceptance.",
+    "Native completion and boss death match the frozen terminal node, generation and entry.",
+    "Deterministic capture tests and independent review pass before live.",
+    "Run one bounded Magmaw diagnostic, preserve first causal mismatch and cleanup, publish evidence."
   ],
   "forbidden": [
     "No cap-only concurrency change, class/boss tuning, global worker restart, fabricated live evidence or multiple-map-worker admission before shared stores are synchronized."

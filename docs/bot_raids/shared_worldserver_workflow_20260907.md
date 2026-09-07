@@ -277,3 +277,18 @@ The user's next requested work is a real Magmaw completion attempt using the
 existing single-boss completion-watchdog capture workflow, with its current
 recurrence admission and exact roster/configuration. The isolation phase is
 complete. Magmaw has not been killed and no ML data admission is claimed.
+
+### Capture completion correction before Magmaw launch
+
+The prepared 00db4bec77 Magmaw bundle was not launched. Independent review
+found that Python accepted arrival at a partition's terminal node before the
+boss died. Native route completion already requires confirmed boss death.
+The capture acceptance repair requires native manifest completion, scoped
+terminal evidence and matching terminal-boss death evidence. The historical
+foundation arrival smoke keeps its original limited claim. All 266 capture and prestart-bundle tests pass, including arrival, wrong-boss
+and stale-generation counterexamples. Acceptance uses the authenticated runtime
+route suffix (three nodes) rather than the canonical four-node source route.
+A production-bundle regression accepts generation 3 completion and rejects arrival.
+Review and a refreshed source-bound build/admission precede the live attempt.
+Magmaw remains uncompleted. Existing recurrence blockers require a diagnostic
+fixture-expansion capture before ordinary gameplay admission.

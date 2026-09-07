@@ -1287,6 +1287,27 @@ def test_target_suffix_reproduces_v19_and_binds_runtime_identity(
         scenario_id=SCENARIO_ID,
         runtime_profile=SCENARIO_ID,
     )
+    assert projected["route_partition"] == {
+        "node_count": 3, "terminal_index": 2,
+        "node_ids": ["bwd.magmaw.chainwielder", "bwd.magmaw.drudges", "bwd.magmaw.encounter"],
+        "terminal_kind": "boss", "terminal_target_entry": 41570,
+    }
+    from tools.raid_program.capture_runtime_acceptance import _completed_partition_rejections
+    evidence = {
+        "route_node_id": "bwd.magmaw.encounter", "route_generation": 3,
+        "route_kind": "boss", "target_entry": 41570,
+    }
+    status = {"validation_route": {
+        "node_id": "bwd.magmaw.encounter", "kind": "boss", "generation": 3,
+        "manifest_index": 2, "manifest_count": 3, "manifest_complete": True,
+        "terminal_evidence": [{**evidence, "result": "boss_killed", "target_id": 0}],
+        "boss_death_evidence": [{**evidence, "result": "confirmed_unit_death", "target_id": 123}],
+    }}
+    assert _completed_partition_rejections(status, projected["route_partition"]) == []
+    status["validation_route"]["manifest_complete"] = False
+    assert "native_route_completion_missing" in _completed_partition_rejections(
+        status, projected["route_partition"]
+    )
     identity = controller_route_hold_launch_identity(
         recurrence_admission=admission,
         required_purpose=FIXTURE_EXPANSION_PURPOSE,

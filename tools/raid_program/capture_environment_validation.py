@@ -782,6 +782,7 @@ def validate_runtime_profile_assets(
             route_partition["node_ids"] = node_ids
             route_partition["terminal_index"] = route_rows - 1 if route_rows else None
             route_partition["terminal_kind"] = kinds[-1] if kinds else None
+            route_partition["terminal_target_entry"] = matching_rows[-1].get("source_entry") if matching_rows else None
             diagnostic_values = [row.get("diagnostic_only") for row in matching_rows]
             diagnostic_only = diagnostic_values[0] if diagnostic_values else None
             route_partition["diagnostic_only"] = diagnostic_only

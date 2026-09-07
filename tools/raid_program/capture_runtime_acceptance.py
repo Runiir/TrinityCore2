@@ -323,6 +323,48 @@ def _roster_rejections(
     return reasons
 
 
+def _completed_partition_rejections(status: dict[str, Any], partition: dict[str, Any]) -> list[str]:
+    """Require native completion of the selected partition, not node arrival."""
+    route = status.get("validation_route")
+    if not isinstance(route, dict):
+        return ["native_route_completion_missing"]
+    nodes = partition.get("node_ids")
+    node = nodes[-1] if isinstance(nodes, list) and nodes else None
+    generation = partition.get("node_count")
+    kind = partition.get("terminal_kind")
+    reasons = []
+    if not (
+        isinstance(node, str) and bool(node) and _positive_int(generation)
+        and isinstance(kind, str) and bool(kind)
+        and route.get("node_id") == node
+        and route.get("kind") == kind
+        and route.get("generation") == generation
+        and route.get("manifest_index") == partition.get("terminal_index")
+        and route.get("manifest_count") == generation
+        and route.get("manifest_complete") is True
+    ):
+        reasons.append("native_route_completion_missing")
+
+    def matches(row: Any) -> bool:
+        return isinstance(row, dict) and row.get("route_node_id") == node and (
+            row.get("route_generation") == generation and row.get("route_kind") == kind
+        )
+
+    terminal = route.get("terminal_evidence")
+    if not isinstance(terminal, list) or not any(matches(row) for row in terminal):
+        reasons.append("native_terminal_evidence_missing")
+    if kind == "boss":
+        target = partition.get("terminal_target_entry")
+        deaths = route.get("boss_death_evidence")
+        if not (_positive_int(target) and isinstance(deaths, list) and any(
+            matches(row) and row.get("target_entry") == target
+            and _positive_int(row.get("target_id"))
+            and row.get("result") == "confirmed_unit_death" for row in deaths
+        )):
+            reasons.append("native_terminal_boss_death_missing")
+    return reasons
+
+
 def accepted_foundation_status(
     status: dict[str, Any],
     *,
@@ -379,6 +421,8 @@ def accepted_foundation_status(
             and route_progress.get("node_index") == expected_route_index,
     }
     reasons.extend(name for name, passed in checks.items() if not passed)
+    if profile_name != "blackwing_descent_10n":
+        reasons.extend(_completed_partition_rejections(status, route_partition))
     reasons.extend(_roster_rejections(runtime, profile_name))
     roster = runtime.get("roster")
     roster_guids = {

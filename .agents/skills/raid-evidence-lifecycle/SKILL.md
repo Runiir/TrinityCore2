@@ -231,6 +231,10 @@ These shutdown and persistence duties belong to the capture controller or coordi
 - Label predecessor saves as diagnostic assistance and noncertifying.
 - Keep boss-shard, boss-script, native recovery, and canonical full-raid claims separate.
 - Never promote engagement/wipe evidence into a kill, tactic, or observable-fidelity claim.
+- Reaching a boss partition's final node is arrival, not completion. Require
+  native manifest completion and terminal evidence; a boss clear also requires
+  confirmed unit-death evidence matching the selected node, generation, and
+  boss entry. Keep the historical foundation arrival smoke explicitly scoped.
 
 ## Diagnose before eviction
 

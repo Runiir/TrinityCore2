@@ -234,6 +234,8 @@ def controller_route_hold_runtime_manifest_identity(
         raise ValueError("controller_route_hold_checkpoint_target_missing")
     if initial_node_id != checkpoint_target_node_id:
         raise ValueError("controller_route_hold_checkpoint_target_not_initial_node")
+    if any(not isinstance(row, dict) for row in rows):
+        raise ValueError("controller_route_hold_runtime_manifest_row_invalid")
     return {
         "route_manifest_path": str(configured_path),
         "route_manifest_sha256": bound_sha256,
@@ -241,6 +243,13 @@ def controller_route_hold_runtime_manifest_identity(
         "profile_manifest_sha256": profile_sha256,
         "initial_route_node_id": initial_node_id,
         "checkpoint_target_node_id": checkpoint_target_node_id,
+        "route_partition": {
+            "node_count": len(rows),
+            "terminal_index": len(rows) - 1,
+            "node_ids": [row.get("route_node_id") for row in rows],
+            "terminal_kind": rows[-1].get("kind"),
+            "terminal_target_entry": rows[-1].get("source_entry"),
+        },
     }
 
 
@@ -574,6 +583,7 @@ def prepare_capture_setup(
                 scenario_id=scenario_id,
                 runtime_profile=profile_name,
             )
+            runtime_assets["runtime_route_partition"] = runtime_route_identity["route_partition"]
             checkpoint_dialect = checkpoint_controller_dialect(
                 recurrence_admission,
                 checkpoint_actor_guid,

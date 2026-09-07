@@ -720,7 +720,9 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                         accepted, rejections = accepted_foundation_status(
                             status,
                             profile_name=profile_name,
-                            route_partition=runtime_assets.get("route_partition"),
+                            route_partition=runtime_assets.get(
+                                "runtime_route_partition", runtime_assets.get("route_partition")
+                            ),
                         )
                         last_rejections = rejections
                         if accepted:

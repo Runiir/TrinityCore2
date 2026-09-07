@@ -814,6 +814,7 @@ def test_targeted_chainwielder_scheduler_binds_stable_runtime_scope_before_demux
         lambda **kwargs: {
             "route_manifest_sha256": "c" * 64,
             "initial_route_node_id": "bwd.magmaw.chainwielder",
+            "route_partition": {"node_count": 3, "terminal_index": 2},
         },
     )
     monkeypatch.setattr(
@@ -3770,13 +3771,71 @@ def test_magmaw_diagnostic_accepts_only_its_materialized_roster_identity():
     _materialize_profile_identity(status, profile)
     runtime["strategy_id"] = profile
     runtime["route_progress"] = {"generation": 4, "node_index": 3}
+    _completed_boss_partition(status)
+    root = Path(__file__).parents[1]
+    assets = validate_runtime_profile_assets(
+        root, root, profile_name=profile, scenario_id=profile,
+        require_dvc_lineage=False,
+    )
+    assert assets["passed"], assets["reasons"]
+    partition = assets["route_partition"]
+    assert partition["terminal_target_entry"] == 41570
     accepted, reasons = accepted_foundation_status(
         status,
         profile_name=profile,
-        route_partition={"node_count": 4, "terminal_index": 3},
+        route_partition=partition,
     )
     assert accepted is True
     assert reasons == []
+
+
+def _completed_boss_partition(status):
+    node = "bwd.magmaw.encounter"
+    evidence = {"route_node_id": node, "route_generation": 4,
+                "route_kind": "boss", "target_entry": 41570}
+    status["validation_route"] = {
+        "node_id": node, "kind": "boss", "generation": 4,
+        "manifest_index": 3, "manifest_count": 4, "manifest_complete": True,
+        "terminal_evidence": [{**evidence, "target_id": 0, "result": "boss_killed"}],
+        "boss_death_evidence": [{**evidence, "target_id": 12345,
+                                 "result": "confirmed_unit_death"}],
+    }
+    return {"node_count": 4, "terminal_index": 3, "node_ids": [node],
+            "terminal_kind": "boss", "terminal_target_entry": 41570}
+
+
+@pytest.mark.parametrize("mutation,reason", [
+    ("arrival", "native_route_completion_missing"),
+    ("missing_terminal", "native_terminal_evidence_missing"),
+    ("missing_death", "native_terminal_boss_death_missing"),
+    ("wrong_boss", "native_terminal_boss_death_missing"),
+    ("stale_generation", "native_terminal_boss_death_missing"),
+    ("wrong_node", "native_terminal_boss_death_missing"),
+    ("unconfirmed_death", "native_terminal_boss_death_missing"),
+])
+def test_boss_partition_rejects_arrival_and_unrelated_death(mutation, reason):
+    status = accepted_status()
+    profile = "blackwing_descent_10n_magmaw_diagnostic"
+    _materialize_profile_identity(status, profile)
+    status["raid_runtime"]["strategy_id"] = profile
+    partition = _completed_boss_partition(status)
+    route = status["validation_route"]
+    if mutation == "arrival":
+        route.update(manifest_complete=False, terminal_evidence=[], boss_death_evidence=[])
+    elif mutation == "missing_terminal":
+        route["terminal_evidence"] = []
+    elif mutation == "missing_death":
+        route["boss_death_evidence"] = []
+    else:
+        field, value = {"wrong_boss": ("target_entry", 42180),
+                        "stale_generation": ("route_generation", 3),
+                        "wrong_node": ("route_node_id", "other.encounter"),
+                        "unconfirmed_death": ("result", "target_absent")}[mutation]
+        route["boss_death_evidence"][0][field] = value
+    accepted, reasons = accepted_foundation_status(status, profile_name=profile,
+                                                   route_partition=partition)
+    assert not accepted
+    assert reason in reasons
 
 
 def test_compacted_runtime_gem_arrays_match_padded_frozen_manifests():
