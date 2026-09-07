@@ -157,6 +157,11 @@ These shutdown and persistence duties belong to the capture controller or coordi
   terminal edge: normal clear, monotonic semantic/no-progress stall, repeated
   decisions, excessive death loops, infrastructure loss, contamination, or
   explicit interruption. An emergency wall-clock expiry is noncompletion.
+- Distinct bots dying for the first time in one pull are casualties, not a
+  death/recovery loop. Bind loop counts to repeated actor lifecycles or native
+  wipe generations; multiple reports of the same wipe must count once. Keep
+  casualty totals separately and never stop a progressing pull solely because
+  they were mislabeled as repeated loops.
 - In a fixture-expansion capture, a verified typed fixture terminal is the
   terminal result even when ordinary gameplay-stability gates are false. Stop
   promptly, request the final evidence bundle, and classify the result as a

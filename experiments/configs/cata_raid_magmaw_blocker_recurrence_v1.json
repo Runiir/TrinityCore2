@@ -202,10 +202,10 @@
       },
       {
         "fixture_id": "magmaw_parasite_lane_paths_v1",
-        "revision": 8,
+        "revision": 9,
         "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
         "causal_signature": "magmaw_parasite_containment_failure",
-        "revision_basis": "The production manager and compiled replay now share the same Magmaw movement-candidate adapter, so Survival masking and producer ordering are exercised at the real arbitration boundary.",
+        "revision_basis": "Closed b0c7f38b0a Hunter first-contact counterexample: select a LaneSafe opposite fixed anchor immediately, preserve shared transition through GUID churn, and emit no radial candidate when both anchors are unsafe. Compiled policy replay expands the previously passed fixture.",
         "command": [
           "pixi",
           "run",
@@ -217,15 +217,16 @@
           "tests/test_native_path_floor_diagnostic.py::test_canary120_incomplete_path_selects_fresh_complete_local_step",
           "tests/test_native_path_floor_diagnostic.py::test_canary121_near_arrival_endpoint_is_not_rejected",
           "tests/test_magmaw_event_movement_transition.py",
-          "tests/test_magmaw_movement_intent_collection.py::test_magmaw_movement_intents_cross_strategy_and_real_kernel"
+          "tests/test_magmaw_movement_intent_collection.py::test_magmaw_movement_intents_cross_strategy_and_real_kernel",
+          "tests/test_magmaw_parasite_policy.py::test_magmaw_lane_transition_replays_selection_to_reset"
         ]
       },
       {
         "fixture_id": "magmaw_parasite_lane_transition_full_replay_v1",
-        "revision": 7,
+        "revision": 8,
         "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
         "causal_signature": "magmaw_parasite_containment_failure",
-        "revision_basis": "The retained transition replay now crosses the shared production movement-candidate adapter and real action kernel instead of relying on a parallel test adapter.",
+        "revision_basis": "Closed b0c7f38b0a Hunter first-contact counterexample: select a LaneSafe opposite fixed anchor immediately, preserve shared transition through GUID churn, and emit no radial candidate when both anchors are unsafe. Compiled policy replay expands the previously passed fixture.",
         "command": [
           "pixi",
           "run",
@@ -243,10 +244,10 @@
       },
       {
         "fixture_id": "magmaw_parasite_control_full_runtime_v1",
-        "revision": 7,
+        "revision": 8,
         "verification_receipt_id": "v70_encounter_parasite_fixtures_acaeaf9f26",
         "causal_signature": "magmaw_parasite_control_allows_player_infection",
-        "revision_basis": "The full-runtime contract now includes the shared production movement-candidate adapter, real arbitration, retryable Survival hard masking, and rejected-binding no-fallthrough behavior.",
+        "revision_basis": "The compiled full-runtime contract now exercises first-contact fixed-baiter redirection through the production movement adapter, kernel and native proof, GUID-churn stability, and both-anchor-unsafe fail-closed behavior. Based on rejected Hunter destination in closed b0c7f38b0a; no live infection-free or kill claim.",
         "command": [
           "pixi",
           "run",
@@ -624,6 +625,34 @@
           "tests/test_profile_combat_range_production_fixture.py",
           "tests/test_profile_combat_range_checkpoint_capture.py"
         ]
+      },
+      {
+        "fixture_id": "capture_native_boss_completion_v1",
+        "revision": 1,
+        "causal_signature": "capture_boss_arrival_false_success",
+        "evidence_boundary": "deterministic",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_phase1_raid_foundation_capture.py::test_magmaw_diagnostic_accepts_only_its_materialized_roster_identity",
+          "tests/test_phase1_raid_foundation_capture.py::test_boss_partition_rejects_arrival_and_unrelated_death",
+          "tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity"
+        ]
+      },
+      {
+        "fixture_id": "capture_death_episode_identity_v1",
+        "revision": 1,
+        "causal_signature": "capture_distinct_casualties_counted_as_death_loops",
+        "evidence_boundary": "deterministic",
+        "command": [
+          "pixi",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_capture_death_loop_watchdog.py"
+        ]
       }
     ]
   },
@@ -848,6 +877,14 @@
       "invariant": "when scoped ghost-flight eligibility rises during one matching retained ground Recovery/native_long_path, the recovery brain invalidates only retained path evidence and resubmits the unchanged entrance destination once so the existing aerial executor can follow terrain; eligibility remaining true cannot churn movement",
       "architecture_reviewed_through_occurrence_count": 1,
       "architecture_review_evidence": "experiments/configs/cata_raid_native_recovery_ghost_flight_review_handoff_20260901.json"
+    },
+    "capture_boss_arrival_false_success": {
+      "owner": "raid_evidence_lifecycle",
+      "invariant": "Boss partition arrival never substitutes for authenticated native manifest completion and matching confirmed terminal boss death."
+    },
+    "capture_distinct_casualties_counted_as_death_loops": {
+      "owner": "raid_evidence_lifecycle",
+      "invariant": "Distinct actors first deaths are casualties; loop protection counts distinct actor death episodes or native wipe generations without duplicate sibling reports."
     }
   },
   "runs": [
@@ -2119,6 +2156,30 @@
       "dvc_pointer": "artifacts/cata_raid_program/magmaw_authority_5cad51fa40_death_loop_20260902.dvc",
       "evidence": "experiments/configs/cata_raid_magmaw_authority_5cad51fa40_death_loop_handoff_20260902.json",
       "note": "Chainwielder and Drudges cleared. Actor 30008 completed one actor-keyed child generation through native progress to safe_clearance while shared generation 9223372036854775809 remained provisional and non-authoritative. Later personal contact, Parasitic Infection, Lava Parasite melee, and death occurred without a later actor child. This is a recurrence of the authority-gap child-lifecycle signature and invalidates revision 1 of magmaw_personal_parasite_authority_gap_v1. Native terrain following worked; no Z, coordinate, floor, MMAP, tolerance, planner, executor, route, or throughput change is admitted."
+    },
+    {
+      "run_id": "magmaw-b0c7f38b0a-20260907",
+      "route_completed": false,
+      "classification": "diagnostic_stopped_by_casualty_counter_defect",
+      "admission": {
+        "source_identity": "b0c7f38b0a7566cd4eeda2746cc17df6078b3410"
+      },
+      "blockers": {
+        "capture_boss_arrival_false_success": "absent",
+        "capture_distinct_casualties_counted_as_death_loops": "occurred",
+        "magmaw_parasite_containment_failure": "occurred",
+        "chainwielder_receiptless_hazard_rejection_displaces_route_movement_state": "absent",
+        "phase1_capture_duplicate_autostart_lifecycle": "absent"
+      },
+      "terminal_reason": "death_loop_watchdog",
+      "terminal_elapsed_seconds": 624.311,
+      "throughput": {
+        "magmaw_party_dps": 72393.333,
+        "magmaw_party_hps": 21364.022
+      },
+      "dvc_pointer": "artifacts/cata_raid_program/magmaw_b0c7f38b0a_20260907.tar.gz.dvc",
+      "evidence": "artifacts/cata_raid_program/magmaw_b0c7f38b0a_20260907.publication.json",
+      "note": "Both trash cleared. Fixed baiter30009 retained a radial parasite escape outside the fixed-lane contract; strict native planner rejected endpoint mismatch, no launch. Death followed1.581seconds later without an exact lethal-event causaljoin. Count as existing containment-family recurrence, not a renamed family. Watchdog then stopped on three distinct actors first deaths (four by terminalstatus), without any repeated recovery/death cycle. No boss kill; diagnostic remains training-ineligible."
     }
   ]
 }

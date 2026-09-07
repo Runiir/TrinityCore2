@@ -334,3 +334,11 @@ The 26,026,682-byte archive reconstructed from remote into an empty cache with
 SHA256 `133bbf8697ea8183701ae9b782ed34b2c3003dbdb0b5a61052401afab8d5dbad`.
 Archive duplicates are evicted; raw evidence remains only during active causal
 review. The run is not training-eligible or boss-clear qualifying.
+
+## Reviewed repairs after the b0c7f38b0a attempt
+
+The completion watchdog now counts canonical native death episodes per admitted actor and deduplicates native wipe generations. It rejects foreign attempt, route, and roster observations before updating cursors. Distinct first casualties no longer terminate a progressing pull as repeated death loops. Independent Sol review approved the repair; 40 watchdog tests and 48 recurrence tests passed. Existing diagnosis fixtures now use members of their declared roster.
+
+Commit 4fbab0ce87 repairs fixed-baiter first contact by selecting the opposite checked lane endpoint immediately. Five policy tests and two directional integration tests passed, including GUID churn and unsafe-anchor cases; independent Sol review approved. Native pathing and floor rejection remain intact. Neither repair has live validation yet.
+
+Next: build the reviewed source once, execute the 29-entry recurrence suite once, seal current configuration/route/provisioning, and run one bounded Magmaw completion attempt. The previous canary killed trash but did not kill Magmaw.

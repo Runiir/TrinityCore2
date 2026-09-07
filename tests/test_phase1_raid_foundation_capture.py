@@ -7215,7 +7215,7 @@ def test_capture_watchdog_canary82_replay_keeps_stuck_drudge_scope_after_healthy
 def test_capture_watchdog_ignores_non_failed_diagnosis_repeated_loop():
     status = _generic_watchdog_status(size=10, profile="blackwing_descent_10n", map_id=669)
     diagnosis = _watchdog_diagnosis(
-        bot_guid=1001,
+        bot_guid=2001,
         action="validation_route_patrol_wait_for_safe_phase",
         result="ok",
         repeat_count=20,
@@ -7240,7 +7240,7 @@ def test_capture_watchdog_stops_successful_wait_hiding_stalled_magmaw_move():
         node_id="bwd.magmaw.encounter", generation=4, kind="boss",
     )
     diagnosis = _watchdog_diagnosis(
-        bot_guid=30007,
+        bot_guid=2007,
         action="raid_prepull_consumable",
         result="ok",
         repeat_count=20,
@@ -7281,7 +7281,7 @@ def test_capture_watchdog_allows_retryable_magmaw_move_while_progressing():
         size=10, profile="blackwing_descent_10n", map_id=669,
     )
     diagnosis = _watchdog_diagnosis(
-        bot_guid=30007,
+        bot_guid=2007,
         action="raid_prepull_consumable",
         result="ok",
         repeat_count=20,
@@ -7318,7 +7318,7 @@ def test_capture_watchdog_does_not_reuse_stale_stalled_diagnosis():
         node_id="bwd.magmaw.encounter", generation=4, kind="boss",
     )
     diagnosis = _watchdog_diagnosis(
-        bot_guid=30007,
+        bot_guid=2007,
         action="raid_prepull_consumable",
         result="ok",
         repeat_count=20,
@@ -7369,7 +7369,7 @@ def test_capture_watchdog_diagnosis_counts_failed_route_decisions_per_bot():
                 result="no_candidate_committed",
                 repeat_count=2,
             )["bots"][0]
-            for bot_guid in (1001, 1002)
+            for bot_guid in (2001, 2002)
         ],
     }
 
@@ -7386,7 +7386,7 @@ def test_capture_watchdog_diagnosis_counts_failed_route_decisions_per_bot():
         state,
         status,
         _watchdog_diagnosis(
-            bot_guid=1001,
+            bot_guid=2001,
             action="validation_route_recovery",
             result="no_candidate_committed",
             repeat_count=3,
@@ -7406,7 +7406,7 @@ def test_capture_watchdog_ignores_cumulative_fingerprint_when_native_run_is_one(
     )
     state = {}
     diagnosis = _watchdog_diagnosis(
-        bot_guid=1001,
+        bot_guid=2001,
         action="wait_for_candidate_backoff",
         result="failed",
         repeat_count=158,

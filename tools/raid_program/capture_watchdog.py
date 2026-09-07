@@ -14,12 +14,6 @@ DEFAULT_MAX_REPEATED_DECISIONS = 20
 DEFAULT_MAX_DEATH_LOOPS = 3
 DEFAULT_STALLED_CANDIDATE_NO_PROGRESS_MS = 20_000
 
-_WATCHDOG_DEATH_ACTIONS = {
-    "death",
-    "repeated_death",
-    "death_loop",
-    "raid_wipe",
-}
 _WATCHDOG_SUCCESSFUL_NATIVE_ACTIONS = frozenset({
     "spell_cast",
     "cast_combat_spell",
@@ -242,6 +236,42 @@ def _watchdog_trace_group_key(entry: dict[str, Any]) -> tuple[str, int]:
     return "timestamp_ms", max(0, timestamp)
 
 
+def _watchdog_entry_matches_attempt(
+    trace_row: dict[str, Any], entry: dict[str, Any], current_attempt_id: int,
+) -> bool:
+    """Reject a trace row carrying a malformed or positive foreign attempt."""
+
+    trace_runtime = trace_row.get("raid_runtime")
+    trace_runtime = trace_runtime if isinstance(trace_runtime, dict) else {}
+    for source in (trace_row, trace_runtime, entry):
+        value = source.get("attempt_id")
+        if value is None:
+            continue
+        try:
+            attempt_id = int(value or 0)
+        except (TypeError, ValueError):
+            return False
+        if isinstance(value, bool):
+            return False
+        if attempt_id > 0 and attempt_id != current_attempt_id:
+            return False
+    return True
+
+
+def _watchdog_wipe_generation(
+    trace_row: dict[str, Any], entry: dict[str, Any],
+) -> int | None:
+    """Return a wipe generation bound to the trace response envelope."""
+
+    trace_runtime = trace_row.get("raid_runtime")
+    trace_runtime = trace_runtime if isinstance(trace_runtime, dict) else {}
+    for source in (entry, trace_runtime):
+        generation = source.get("wipe_generation")
+        if _positive_int(generation):
+            return int(generation)
+    return None
+
+
 def _watchdog_is_successful_native_action(entry: dict[str, Any]) -> bool:
     """Return whether a trace row is a successful primary bot action.
 
@@ -344,7 +374,11 @@ def _watchdog_target_progress(
     runtime = status.get("raid_runtime")
     runtime = runtime if isinstance(runtime, dict) else {}
     key = json.dumps(
-        [int(runtime.get("instance_id") or 0), scope[0], scope[1], bot_key, target_id],
+        [
+            int(runtime.get("instance_id") or 0),
+            int(runtime.get("attempt_id") or 0),
+            scope[0], scope[1], bot_key, target_id,
+        ],
         separators=(",", ":"),
     )
     high_water = state.setdefault("watchdog_target_hp_high_water", {})
@@ -363,6 +397,7 @@ def _watchdog_progress_reset_reason(route_progress: dict[str, Any] | None) -> st
 
 def _watchdog_reset_repeated_scope(
     state: dict[str, Any], scope_key: str, *, bot_key: str = "",
+    display_scope_key: str | None = None,
 ) -> int:
     """Forget repeated decisions invalidated by one bot's progress."""
 
@@ -402,16 +437,16 @@ def _watchdog_reset_repeated_scope(
             continue
         if (
             isinstance(decoded, list)
-            and len(decoded) >= 3
-            and f"{decoded[0]}:{decoded[1]}" == scope_key
-            and (not bot_key or str(decoded[2]) == bot_key)
+            and len(decoded) >= 2
+            and decoded[0] == scope_key
+            and (not bot_key or str(decoded[1]) == bot_key)
         ):
             del diagnosis_high_water[key]
 
     state["watchdog_progress_reset_count"] = int(
         state.get("watchdog_progress_reset_count") or 0
     ) + 1
-    state["watchdog_progress_reset_scope"] = scope_key
+    state["watchdog_progress_reset_scope"] = display_scope_key or scope_key
     state["watchdog_progress_reset_bot_guid"] = bot_key or None
     return remaining_max
 
@@ -541,6 +576,8 @@ def observe_capture_watchdog(
         "max_repeated_decisions": max_repeated_decisions,
         "max_death_loops": max_death_loops,
         "repeated_decision_count": 0,
+        "distinct_death_casualty_count": 0,
+        "death_lifecycle_count": 0,
         "death_loop_count": 0,
         "repeated_decision_outcome": None,
         "progress_reset_count": int(state.get("watchdog_progress_reset_count") or 0),
@@ -561,13 +598,50 @@ def observe_capture_watchdog(
 
     repeated_counts = state.setdefault("repeated_decision_counts", {})
     death_counts = state.setdefault("death_loop_counts", {})
+    native_wipe_generations = state.setdefault("death_loop_native_wipes", {})
+    death_lifecycles_seen = state.setdefault("death_loop_lifecycles_seen", [])
     scope_repeated_max = state.setdefault("scope_repeated_max", {})
     trace_seen = state.setdefault("trace_seen", [])
     trace_cursors = state.setdefault("trace_cursors", {})
     terminal = state.get("terminal_failure")
-    scope_key = f"{current_scope[0]}:{current_scope[1]}"
+    runtime = status["raid_runtime"]
+    current_attempt_id = int(runtime["attempt_id"])
+    owned_bot_guids = {
+        str(int(row["guid"])) for row in runtime["roster"]
+        if isinstance(row, dict) and _positive_int(row.get("guid"))
+    }
+    display_scope_key = f"{current_scope[0]}:{current_scope[1]}"
+    scope_key = json.dumps(
+        [current_attempt_id, current_scope[0], current_scope[1]],
+        separators=(",", ":"),
+    )
+    death_scope_key = json.dumps(
+        [current_attempt_id, current_scope[0], current_scope[1]],
+        separators=(",", ":"),
+    )
+    actor_death_counts = death_counts.setdefault(death_scope_key, {})
+    if not isinstance(actor_death_counts, dict):
+        actor_death_counts = {}
+        death_counts[death_scope_key] = actor_death_counts
+    scope_native_wipes = native_wipe_generations.setdefault(death_scope_key, [])
+    if not isinstance(scope_native_wipes, list):
+        scope_native_wipes = []
+        native_wipe_generations[death_scope_key] = scope_native_wipes
     report["repeated_decision_count"] = int(scope_repeated_max.get(scope_key) or 0)
-    report["death_loop_count"] = int(death_counts.get(scope_key) or 0)
+    report["distinct_death_casualty_count"] = len(actor_death_counts)
+    report["death_lifecycle_count"] = sum(
+        int(count or 0) for count in actor_death_counts.values()
+    )
+    report["death_loop_count"] = max(
+        [len(scope_native_wipes)]
+        + [int(count or 0) for count in actor_death_counts.values()]
+    )
+    diagnosis_matches_attempt = (
+        isinstance(diagnosis, dict)
+        and _watchdog_entry_matches_attempt(
+            diagnosis, {}, current_attempt_id,
+        )
+    )
 
     def maybe_terminal(reason: str, *, outcome: str | None = None) -> bool:
         nonlocal terminal
@@ -596,13 +670,15 @@ def observe_capture_watchdog(
             state, status, scope, route_progress, bot_key=bot_key,
         ):
             return False
-        scope_key = f"{scope[0]}:{scope[1]}"
         remaining_max = _watchdog_reset_repeated_scope(
-            state, scope_key, bot_key=bot_key,
+            state,
+            scope_key,
+            bot_key=bot_key,
+            display_scope_key=display_scope_key,
         )
         progress_reset_keys.add((scope_key, bot_key))
         report["progress_reset_count"] = int(state["watchdog_progress_reset_count"])
-        report["progress_reset_scope"] = scope_key
+        report["progress_reset_scope"] = display_scope_key
         report["progress_reset_bot_guid"] = int(bot_key) if bot_key.isdigit() else bot_key or None
         reset_reason = _watchdog_progress_reset_reason(route_progress)
         state["watchdog_progress_reset_reason"] = reset_reason
@@ -615,7 +691,7 @@ def observe_capture_watchdog(
     # Diagnose snapshots are the slower semantic channel.  Apply their
     # objective progress before processing the faster trace delta so a lower
     # target high-water mark cannot arrive after a threshold decision.
-    if isinstance(diagnosis, dict):
+    if diagnosis_matches_attempt:
         for bot in diagnosis.get("bots") or []:
             if not isinstance(bot, dict):
                 continue
@@ -630,6 +706,8 @@ def observe_capture_watchdog(
                     bot_key = str(int(identity.get("bot_guid") or 0))
                 except (TypeError, ValueError):
                     bot_key = "0"
+                if bot_key not in owned_bot_guids:
+                    continue
                 reset_on_progress(current_scope, route_progress, bot_key=bot_key)
 
     # A single native decision can emit several trace rows.  Collect complete
@@ -638,6 +716,7 @@ def observe_capture_watchdog(
     # native/brain action in the same group.
     trace_groups: list[tuple[str, tuple[str, int], list[dict[str, Any]]]] = []
     trace_group_indexes: dict[tuple[Any, ...], int] = {}
+    trace_entry_envelopes: dict[int, dict[str, Any]] = {}
     for trace_row in trace_rows or []:
         if not isinstance(trace_row, dict) or trace_row.get("action") != "botauto_trace":
             continue
@@ -652,12 +731,27 @@ def observe_capture_watchdog(
             for entry in bot.get("entries") or []:
                 if not isinstance(entry, dict):
                     continue
+                if not _watchdog_entry_matches_attempt(
+                    trace_row, entry, current_attempt_id,
+                ):
+                    continue
+                scope = _watchdog_entry_scope(entry, current_scope)
+                if scope != current_scope:
+                    continue
+                trace_entry_envelopes[id(entry)] = trace_row
                 try:
                     sequence = int(entry.get("sequence") or 0)
                 except (TypeError, ValueError):
                     sequence = 0
+                trace_cursor_key = json.dumps(
+                    [current_attempt_id, scope[0], scope[1], cursor_key],
+                    separators=(",", ":"),
+                )
                 entry_key = json.dumps(
-                    [cursor_key, sequence, entry.get("timestamp_ms"), entry.get("action")],
+                    [
+                        current_attempt_id, scope[0], scope[1], cursor_key, sequence,
+                        entry.get("timestamp_ms"), entry.get("action"),
+                    ],
                     separators=(",", ":"), sort_keys=True,
                 )
                 if entry_key in trace_seen:
@@ -666,13 +760,10 @@ def observe_capture_watchdog(
                 if len(trace_seen) > 4096:
                     del trace_seen[: len(trace_seen) - 4096]
                 if sequence > 0:
-                    previous = int(trace_cursors.get(cursor_key) or 0)
+                    previous = int(trace_cursors.get(trace_cursor_key) or 0)
                     if sequence <= previous:
                         continue
-                    trace_cursors[cursor_key] = sequence
-                scope = _watchdog_entry_scope(entry, current_scope)
-                if scope != current_scope:
-                    continue
+                    trace_cursors[trace_cursor_key] = sequence
                 group_key = (
                     cursor_key,
                     scope[0],
@@ -687,7 +778,6 @@ def observe_capture_watchdog(
                     trace_groups[group_index][2].append(entry)
 
     for cursor_key, scope, group_entries in trace_groups:
-        scope_key = f"{scope[0]}:{scope[1]}"
         # Apply every progress row before classifying the group.  Death loops
         # remain independent terminals even when the same group has a success.
         group_progress_reset = False
@@ -697,14 +787,68 @@ def observe_capture_watchdog(
                 group_progress_reset = reset_on_progress(
                     scope, route_progress, bot_key=cursor_key,
                 ) or group_progress_reset
-        for entry in group_entries:
-            if entry.get("action") not in _WATCHDOG_DEATH_ACTIONS:
-                continue
-            death_counts[scope_key] = int(death_counts.get(scope_key) or 0) + 1
-            report["death_loop_count"] = death_counts[scope_key]
-            if death_counts[scope_key] >= max_death_loops:
+        canonical_deaths = [
+            entry for entry in group_entries
+            if cursor_key in owned_bot_guids
+            and entry.get("action") == "death"
+            and _positive_int(entry.get("sequence"))
+        ]
+        fallback_death_loops = [
+            entry for entry in group_entries
+            if cursor_key in owned_bot_guids
+            and entry.get("action") == "death_loop"
+            and _positive_int(entry.get("sequence"))
+        ]
+        wipe_entries = [
+            entry for entry in group_entries
+            if cursor_key in owned_bot_guids
+            and entry.get("action") == "raid_wipe"
+        ]
+        if canonical_deaths or fallback_death_loops or wipe_entries:
+            # Native emits one canonical death trace sequence for each
+            # DeathEpisodeRecorded false-to-true edge. repeated_death is a
+            # sibling annotation and cannot create another lifecycle. A
+            # legacy explicit death_loop is retained only when this group has
+            # no canonical death.
+            lifecycle_entries = canonical_deaths or fallback_death_loops
+            for lifecycle_entry in lifecycle_entries:
+                lifecycle_key = json.dumps(
+                    [
+                        death_scope_key,
+                        cursor_key,
+                        str(lifecycle_entry.get("action") or ""),
+                        int(lifecycle_entry["sequence"]),
+                    ],
+                    separators=(",", ":"),
+                )
+                if lifecycle_key not in death_lifecycles_seen:
+                    death_lifecycles_seen.append(lifecycle_key)
+                    if len(death_lifecycles_seen) > 4096:
+                        del death_lifecycles_seen[
+                            : len(death_lifecycles_seen) - 4096
+                        ]
+                    actor_death_counts[cursor_key] = (
+                        int(actor_death_counts.get(cursor_key) or 0) + 1
+                    )
+            report["distinct_death_casualty_count"] = len(actor_death_counts)
+            report["death_lifecycle_count"] = sum(
+                int(count or 0) for count in actor_death_counts.values()
+            )
+            for entry in wipe_entries:
+                wipe_generation = _watchdog_wipe_generation(
+                    trace_entry_envelopes[id(entry)], entry,
+                )
+                if (
+                    wipe_generation is not None
+                    and wipe_generation not in scope_native_wipes
+                ):
+                    scope_native_wipes.append(wipe_generation)
+            report["death_loop_count"] = max(
+                [len(scope_native_wipes)]
+                + [int(count or 0) for count in actor_death_counts.values()]
+            )
+            if report["death_loop_count"] >= max_death_loops:
                 maybe_terminal("death_loop_watchdog")
-                break
         if terminal:
             break
         if any(_watchdog_is_successful_native_action(entry) for entry in group_entries):
@@ -773,12 +917,18 @@ def observe_capture_watchdog(
         if terminal:
             break
 
-    if not terminal and isinstance(diagnosis, dict):
+    if not terminal and diagnosis_matches_attempt:
         diagnosis_high_water = state.setdefault("diagnosis_repeat_high_water", {})
         for bot in diagnosis.get("bots") or []:
             if not isinstance(bot, dict):
                 continue
             identity = bot.get("identity") if isinstance(bot.get("identity"), dict) else {}
+            try:
+                bot_key = str(int(identity.get("bot_guid") or 0))
+            except (TypeError, ValueError):
+                bot_key = "0"
+            if bot_key not in owned_bot_guids:
+                continue
             snapshot = bot.get("snapshot") if isinstance(bot.get("snapshot"), dict) else {}
             decision = snapshot.get("decision") if isinstance(snapshot.get("decision"), dict) else {}
             route_progress = snapshot.get("route_progress") if isinstance(snapshot.get("route_progress"), dict) else {}
@@ -795,10 +945,6 @@ def observe_capture_watchdog(
                 bot, max_repeated_decisions=max_repeated_decisions,
             )
             if stalled_candidate is not None:
-                try:
-                    bot_key = str(int(identity.get("bot_guid") or 0))
-                except (TypeError, ValueError):
-                    bot_key = "0"
                 repeat_count = int(stalled_candidate["repeat_count"])
                 outcome = str(stalled_candidate["outcome"])
                 action = str(stalled_candidate["action"])
@@ -825,11 +971,7 @@ def observe_capture_watchdog(
             outcome = _watchdog_failure_outcome(decision)
             if not _watchdog_is_repeated_decision({"action": action, "result": outcome}):
                 continue
-            try:
-                bot_key = str(int(identity.get("bot_guid") or 0))
-            except (TypeError, ValueError):
-                bot_key = "0"
-            if (f"{entry_scope[0]}:{entry_scope[1]}", bot_key) in progress_reset_keys:
+            if (scope_key, bot_key) in progress_reset_keys:
                 continue
             native_count = _watchdog_native_consecutive_count(decision)
             if native_count is not None:
@@ -842,7 +984,7 @@ def observe_capture_watchdog(
             if repeat_count <= 0:
                 continue
             key = json.dumps(
-                [current_scope[0], current_scope[1], identity.get("bot_guid"), action, outcome],
+                [scope_key, identity.get("bot_guid"), action, outcome],
                 separators=(",", ":"),
             )
             # Native consecutive counts describe this exact snapshot.  Do

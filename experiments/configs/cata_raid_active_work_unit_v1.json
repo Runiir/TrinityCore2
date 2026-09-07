@@ -8,17 +8,17 @@
   "architecture_scope": "Shared two-instance isolation accepted; prepare one existing Magmaw diagnostic completion-watchdog run, then repair its first gameplay blocker.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Boss-node arrival rejection verified live; new death-loop counting defect stopped Magmaw before clear. Evidence remotely verified; no restart pending repair/review.",
+  "gate_state": "Watchdog and fixed-baiter repairs independently approved; awaiting one build, fresh admission and live validation.",
   "first_broken_edge": {
     "id": "capture_distinct_casualties_counted_as_death_loops",
     "stage": "completion_watchdog",
     "owner_classification": "raid_evidence_lifecycle",
     "cause": "Route-wide death counter reaches three from distinct bots first death events while boss fight still has survivors and damage progress.",
-    "review_state": "bounded_repair_in_progress"
+    "review_state": "independently_approved_pending_live"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "fb90ebd9784dadaea6fb59c3d6c89ccf80e4cd32cb3ed9c552385900ee44781b"
+    "sha256": "e1f97a79f70d3401f37ce748097780d224c00033fba51faa1f49a212fdecc7d0"
   },
   "scope_lock": {
     "objective": "Prepare current recurrence admission and run one attributable Magmaw completion watchdog; diagnose earliest gameplay mismatch and route bounded repair.",
@@ -29,7 +29,10 @@
       ".agents/skills/raid-evidence-lifecycle/SKILL.md",
       "tools/raid_program/capture_setup.py",
       "tools/raid_program/capture_live_run.py",
-      "tests/test_chainwielder_prestart_bundle.py"
+      "tests/test_chainwielder_prestart_bundle.py",
+      "tools/raid_program/capture_watchdog.py",
+      "tests/test_capture_death_loop_watchdog.py",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h"
     ],
     "terminal_handoff": "Reviewed capture repair followed by one closed, attributable Magmaw attempt; arrival is never a boss-clear claim."
   },
@@ -46,7 +49,7 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
   "next_action": "Use existing single-boss capture workflow and current recurrence admission for one Magmaw completion-watchdog attempt. Keep accepted isolation closed; publish/cleanup run, diagnose and repair first gameplay blocker until Magmaw clear or genuine external blocker.",
   "queued_reference_issue": {

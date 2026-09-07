@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "source_run": "b0c7f38b0a",
+  "scope": {
+    "attempt_id": 1,
+    "route_generation": 3,
+    "route_node_id": "bwd.magmaw.encounter",
+    "wipe_generation": 0,
+    "wipe_state": "partial_deaths"
+  },
+  "trace_rows": [
+    {
+      "action": "death",
+      "attempt_id": 1,
+      "bot_guid": 30009,
+      "capture_sequence": 300,
+      "decision_sequence": 470,
+      "result": "dead",
+      "route_generation": 3,
+      "route_node_id": "bwd.magmaw.encounter",
+      "sequence": 815,
+      "timestamp_ms": 1788782248610
+    },
+    {
+      "action": "death",
+      "attempt_id": 1,
+      "bot_guid": 30006,
+      "capture_sequence": 355,
+      "decision_sequence": 550,
+      "result": "dead",
+      "route_generation": 3,
+      "route_node_id": "bwd.magmaw.encounter",
+      "sequence": 956,
+      "timestamp_ms": 1788782328581
+    },
+    {
+      "action": "death",
+      "attempt_id": 1,
+      "bot_guid": 30003,
+      "capture_sequence": 401,
+      "decision_sequence": 621,
+      "result": "dead",
+      "route_generation": 3,
+      "route_node_id": "bwd.magmaw.encounter",
+      "sequence": 1230,
+      "timestamp_ms": 1788782399293
+    },
+    {
+      "action": "death",
+      "attempt_id": 1,
+      "bot_guid": 30010,
+      "capture_sequence": 401,
+      "decision_sequence": 620,
+      "result": "dead",
+      "route_generation": 3,
+      "route_node_id": "bwd.magmaw.encounter",
+      "sequence": 1001,
+      "timestamp_ms": 1788782398792
+    }
+  ]
+}

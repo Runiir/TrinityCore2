@@ -414,5 +414,11 @@
     }
   ],
   "verified_archive_copies_evicted": true,
-  "raw_payloads_retained_for_active_causal_review": true
+  "raw_payloads_retained_for_active_causal_review": true,
+  "evicted_obsolete_prelaunch_directories": [
+    "magmaw-composite-20fed2e904",
+    "magmaw-admission-20fed2e904",
+    "magmaw-provisioning-20fed2e904",
+    "build-preflight-20fed2e904"
+  ]
 }
