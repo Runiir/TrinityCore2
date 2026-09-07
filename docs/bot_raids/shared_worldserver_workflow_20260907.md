@@ -234,3 +234,19 @@ An empty-cache remote download matched; local/cloud status passed before exact
 archive-copy eviction. Raw command/console data remains remote reconstructible.
 Both runs remain training-ineligible. Class balance and boss fidelity cannot
 be assessed from these short isolation failures.
+
+## Recovery sequence revision
+
+The validator now accepts temporary absence only during the three native
+release/entrance transfer phases, with the same exact corpse, attempt, group,
+roster and frozen-instance authority. In-instance ghosts remain attributable
+through reclaim; a complete later difficulty diagnosis can supersede an earlier
+incomplete status sample. Transfer GUIDs are retained in heartbeat evidence and
+neither boundary of such a sample may certify outgoing progress. Both original
+closed native failures are retained as exact field projections, with additional
+release/runback/re-entry/reclaim sequence and foreign/stale negatives.
+
+The focused suite passed 76 checks and independent Sol review approved this
+revision. The next action is one incremental build and bounded isolation canary,
+then the user's requested Magmaw completion attempt under the completion
+watchdog. No boss clear or full isolation claim exists yet.

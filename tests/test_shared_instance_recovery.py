@@ -1,6 +1,7 @@
 """Replay the actual first shared-canary rejection; mutate ownership negatives."""
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -47,9 +48,9 @@ def test_recovery_does_not_mask_wrong_difficulty_or_unexplained_deficit(captured
         validate_instance(captured, EXPECTED)
 
 
-def test_incomplete_difficulty_without_outside_recovery_remains_rejected(captured):
+def test_incomplete_difficulty_without_recovery_remains_rejected(captured):
     for bot in captured["diagnosis"]["bots"]:
-        bot["snapshot"]["validation_cohort"].update(current_map_id=669, current_instance_id=2)
+        bot["snapshot"]["validation_cohort"].update(current_map_id=669, current_instance_id=2, alive=True, ghost=False)
     with pytest.raises(ValueError, match="difficulty"):
         validate_instance(captured, EXPECTED)
 
@@ -58,3 +59,58 @@ def test_live_member_in_foreign_instance_is_rejected(captured):
     captured["diagnosis"]["bots"][0]["snapshot"]["validation_cohort"]["current_instance_id"] = 13
     with pytest.raises(ValueError):
         validate_instance(captured, EXPECTED)
+
+
+@pytest.fixture
+def transferring():
+    return json.loads((Path(__file__).parent / "fixtures/shared_instance_recovery_3490069d1c.json").read_text())["observation"]
+
+
+def test_actual_release_worldport_snapshot_preserves_identity(transferring):
+    assert validate_instance(transferring, EXPECTED)["instance_id"] == 2
+
+
+@pytest.mark.parametrize("field,value", [("alive", True), ("ghost", False), ("has_corpse", False),
+                                        ("matches_cohort", False), ("in_world", None), ("instance_id", 13)])
+def test_transfer_requires_exact_native_authority(transferring, field, value):
+    transferring["diagnosis"]["bots"][1]["snapshot"]["validation_cohort"][field] = value
+    with pytest.raises(ValueError):
+        validate_instance(transferring, EXPECTED)
+
+
+def test_release_runback_reentry_reclaim_and_stable_sequence(transferring):
+    # State transitions use native Recovery.cpp phase names. The two archived
+    # snapshots above are live evidence; this sequence is deterministic coverage.
+    states = [("released_ghost_observed", False, 669, 2),
+              ("moving_to_entrance", True, 0, 0),
+              ("entrance_submitted", False, 0, 0),
+              ("entrance_worldport_pending", False, 669, 2),
+              ("moving_to_corpse", True, 669, 2),
+              ("reclaim_delay_pending", True, 669, 2)]
+    for phase, in_world, map_id, instance_id in states:
+        for bot in transferring["diagnosis"]["bots"]:
+            bot["snapshot"]["validation_cohort"].update(in_world=in_world, current_map_id=map_id, current_instance_id=instance_id)
+            bot["snapshot"]["native_recovery_episode"]["phase"] = phase
+        assert validate_instance(transferring, EXPECTED)["instance_id"] == 2
+    # A newer complete diagnosis can close an earlier incomplete status sample.
+    for bot in transferring["diagnosis"]["bots"]:
+        bot["snapshot"]["validation_cohort"].update(alive=True, ghost=False, has_corpse=False)
+        bot["snapshot"]["native_recovery_episode"]["phase"] = "completed"
+    transferring["diagnosis"]["raid_runtime"].update(difficulty_readback_complete=True, difficulty_matches=True,
+                                                   difficulty_member_count=10, difficulty_matching_member_count=10)
+    assert validate_instance(transferring, EXPECTED)["instance_id"] == 2
+
+
+@pytest.mark.parametrize("before_transfer,after_transfer,advances", [(False, False, True), (True, False, False), (False, True, False)])
+def test_transfer_boundary_does_not_certify_native_progress(before_transfer, after_transfer, advances):
+    from tools.raid_program.shared_instance_validation import _advanced
+
+    before = {"identity": SimpleNamespace(roster_guids=(1,)), "event_count": 0, "decisions": 1,
+              "combat": {"event_count": 0, "recent_events_dropped": 0, "recent_events": [], "validated_outgoing_amount": 0},
+              "transferring_guids": [1] if before_transfer else []}
+    after = {"event_count": 1, "decisions": 2, "trace_entry_count": 1,
+             "combat": {"event_count": 1, "recent_events_dropped": 0, "validated_outgoing_amount": 5,
+                        "recent_events": [{"kind": "damage", "actor_guid": 1, "source_guid": 1,
+                                           "source_entry": 0, "source_is_pet": False, "originated_amount": 5}]},
+             "transferring_guids": [1] if after_transfer else []}
+    assert _advanced(before, after) is advances

@@ -8,7 +8,7 @@
   "architecture_scope": "Two independent native boss instances on one worldserver, before heroic-mode admission and boss/class repairs.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Two attributable canaries closed/published with successful cleanup. In-world ghost runback repaired; released-ghost worldport transient now proven. No further live retry before complete bounded recovery-sequence replay.",
+  "gate_state": "Recovery sequence repaired, 76 focused tests passed, independent Sol review approved; ready for incremental build and one bounded live isolation.",
   "first_broken_edge": {
     "id": "native_corpse_recovery_worldport_transient_rejected",
     "stage": "live_observation_validation",
@@ -22,13 +22,13 @@
       30102,
       30104
     ],
-    "review_state": "exact_native_rows_and_native_corpse_predicate_identified",
+    "review_state": "implementation_independently_approved_live_unverified",
     "recurrence_family": "authorized_recovery_observation_rejected",
     "recurrence_count": 2
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "caacf0dc0b9ba63d9969e3b09608ecb8b6ddb7759e0c84df5a9f23c76a2aca20"
+    "sha256": "2de74180c1e18be80ab237b1cfe29179aabd1776c572e39d6b716756dfa4c215"
   },
   "scope_lock": {
     "objective": "Model one native recovery observation sequence: release, worldport, runback, return, stable sample. Preserve native ownership and require genuine progress; replay both failures before one live canary.",
@@ -55,9 +55,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Implement and review complete recovery observation sequence using both archived native traces, including in_world=false transfer. No live retry until replay covers all native transitions and ownership negatives. Stable outcomes alone satisfy progress. Then one bounded live isolation validation or route newly proven blocker; resume generic 10H/25H admission afterward.",
+  "next_action": "Incremental build with exact clean source and receipt, one bounded isolation canary, then bounded Magmaw completion attempt. Diagnose and repair first gameplay blocker; preserve recurrence family across runs.",
   "queued_reference_issue": {
     "test": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
     "classification": "historical_fixture_source_freshness_mismatch",

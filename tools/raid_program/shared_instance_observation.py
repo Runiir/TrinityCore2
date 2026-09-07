@@ -92,13 +92,14 @@ def validate_instance(observation: dict[str, Any], expected: InstanceExpectation
         scope = bot["snapshot"]["validation_cohort"]
         # Admission receipts retain the initial map. Read current native state.
         if (scope.get("locked") is not True
-                or scope.get("in_world") is not True
+                or type(scope.get("in_world")) is not bool
                 or scope.get("matches_cohort") is not True
                 or scope.get("violation") is not False):
             raise ValueError("member outside its admitted native instance")
         current_map = _integer(scope.get("current_map_id"), "current_map_id")
         current_instance = _integer(scope.get("current_instance_id"), "current_instance_id")
-        if (current_map, current_instance) != (expected.map_id, instance):
+        if (not scope["in_world"] or (current_map, current_instance) != (expected.map_id, instance)
+                or (scope.get("ghost") is True and scope.get("alive") is False)):
             recovery = bot["snapshot"].get("native_recovery_episode", {})
             # Native matches_cohort verifies the corpse owner in the frozen
             # instance. Living players never receive this runback exception.
@@ -113,6 +114,10 @@ def validate_instance(observation: dict[str, Any], expected: InstanceExpectation
                         "moving_to_corpse", "reclaim_delay_pending", "reclaim_submitted",
                     }):
                 raise ValueError("member outside its admitted native instance without valid recovery")
+            if not scope["in_world"] and recovery["phase"] not in {
+                "released_ghost_observed", "entrance_submitted", "entrance_worldport_pending",
+            }:
+                raise ValueError("member absent outside native recovery transfer")
             recovering += 1
     for snapshot in (raid, diagnosis["raid_runtime"]):
         if snapshot.get("difficulty_readback_complete") is True and snapshot.get("difficulty_matches") is True:
@@ -122,7 +127,10 @@ def validate_instance(observation: dict[str, Any], expected: InstanceExpectation
         # them, so require a bounded deficit, not identical cached counts.
         count = _integer(snapshot.get("difficulty_member_count"), "difficulty_member_count")
         matching = _integer(snapshot.get("difficulty_matching_member_count"), "difficulty_matching_member_count")
-        if (not recovering or not 0 < len(expected.roster_guids) - count <= recovering
+        newer_readback_complete = (snapshot is raid
+                                  and diagnosis["raid_runtime"].get("difficulty_readback_complete") is True
+                                  and diagnosis["raid_runtime"].get("difficulty_matches") is True)
+        if (not 0 < len(expected.roster_guids) - count <= (len(expected.roster_guids) if newer_readback_complete else recovering)
                 or matching != count
                 or _integer(snapshot.get("group_difficulty"), "group_difficulty") != expected.difficulty
                 or _integer(snapshot.get("expected_difficulty"), "expected_difficulty") != expected.difficulty):

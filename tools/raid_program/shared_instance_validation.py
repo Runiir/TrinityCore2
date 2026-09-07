@@ -481,6 +481,9 @@ def _capture(
     return {
         "identity": identity,
         "observation": observation,
+        "transferring_guids": [bot["identity"]["bot_guid"]
+                               for bot in observation["diagnosis"]["bots"]
+                               if bot["snapshot"]["validation_cohort"]["in_world"] is False],
         "movement": movement,
         "trace_entry_count": sum(
             len(bot["entries"]) for bot in trace.get("bots", [])
@@ -516,6 +519,8 @@ def _advanced(before: Mapping[str, Any], after: Mapping[str, Any]) -> bool:
         raise SharedInstanceValidationError(str(error)) from error
     return (
         native_progress
+        and not before.get("transferring_guids")
+        and not after.get("transferring_guids")
         and after["decisions"] > before["decisions"]
         and after["trace_entry_count"] > 0
     )
@@ -567,6 +572,7 @@ def _heartbeat_summary(capture: Mapping[str, Any]) -> dict[str, Any]:
         "combat_metrics": capture["combat_metrics"],
         "route_progress": capture["route_progress"],
         "movement": movement,
+        "transferring_guids": list(capture.get("transferring_guids", ())),
         "watchdog_state": capture["watchdog_state"],
     }
 

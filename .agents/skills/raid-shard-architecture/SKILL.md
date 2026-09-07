@@ -50,6 +50,10 @@ readback counts members currently in the raid and can become incomplete during
 that recovery. Keep foreign live members and unexplained deficits rejected;
 preserve the precise failed predicate in the report instead of only a generic
 identity error.
+Cover the whole release/worldport/runback/re-entry/reclaim sequence in one
+fixture revision. Native-authorized transfer can temporarily set `in_world`
+false; record it as a transfer observation and exclude it from progress proof.
+Do not repeatedly canary separate snapshots of the same recovery sequence.
 
 Do not run `run_reusable_validation_session` twice to create simultaneous
 cohorts: that runner deliberately enforces serial ownership. Use
