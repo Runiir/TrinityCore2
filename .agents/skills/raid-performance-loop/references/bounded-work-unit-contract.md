@@ -55,6 +55,10 @@ live evidence. A source-shape assertion or fabricated successful outcome cannot
 prove that the boss died or a native movement completed.
 Build fixture identities from native serializers or tracked configuration, not
 from values invented to satisfy the validator being tested.
+For a regression test, verify that the original faulty behavior actually fails
+the test. A passing test after the patch is insufficient. Loop tests must cross
+the relevant iteration boundary; batching all successful observations together
+can skip the faulty branch entirely.
 
 Independent review checks the cause, preserved invariants, affected callers,
 and actual test boundary together. The coordinator resumes the next action

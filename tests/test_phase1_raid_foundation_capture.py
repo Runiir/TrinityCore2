@@ -1002,7 +1002,8 @@ def test_capture_live_run_uses_focused_production_module():
     ) < controller_source.index("trace_transport_demux = trace_transport_smoke.demux_report")
 
 
-def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, monkeypatch):
+@pytest.mark.parametrize("drudge_observed", [False, True])
+def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, monkeypatch, drudge_observed):
     binary = tmp_path / "worldserver"
     config = tmp_path / "worldserver.conf"
     server_log = tmp_path / "worldserver.log"
@@ -1044,7 +1045,7 @@ def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, mon
         identity_before={"clean": True},
         runtime_assets={"route_partition": "stonecore_5n"},
         controller_route_hold_scheduler=None,
-        drudge_observed=False,
+        drudge_observed=drudge_observed,
         drudge_required=False,
         drudge_navmesh_preflight={"required": False, "all_passed": None},
         drudge_frozen_anchors={},
@@ -1077,7 +1078,7 @@ def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, mon
         SimpleNamespace(row={"action": "botauto_status", "sequence": sequence})
         for sequence in (1, 2)
     ]
-    observation_batches = iter([statuses])
+    observation_batches = iter([[status] for status in statuses])
 
     monkeypatch.setattr(
         "tools.raid_program.capture_live_run.subprocess.Popen",
@@ -1160,6 +1161,13 @@ def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, mon
         fake_shutdown,
     )
 
+    def reject_optional_drudge_gate(*args, **kwargs):
+        raise AssertionError("Optional trash diagnostics must not gate live completion")
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.accepted_drudge_contract",
+        reject_optional_drudge_gate,
+    )
     result = execute_capture_run(setup)
 
     assert isinstance(result, CaptureRunResult)
@@ -1474,9 +1482,11 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
         "gate_passed": True,
     }
     demux_targets = []
+    demux_fixture_terminals = []
 
     def finalization_demux(*args, **kwargs):
         demux_targets.append(kwargs.get("personal_threat_episode_target"))
+        demux_fixture_terminals.append(kwargs.get("fixture_terminal"))
         return {
             "rejections": [],
             "retained_rows": 2,
@@ -1518,6 +1528,7 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     assert stdout_report == stored_report
     assert stored_report["classification"] == "success"
     assert demux_targets == [complete_join["target"]]
+    assert demux_fixture_terminals == [None]
     assert stored_report["evidence_demux"][
         "personal_threat_episode_join"
     ] == complete_join
@@ -1570,6 +1581,7 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     assert abort_stdout_report == abort_stored_report
     assert abort_stored_report["classification"] == "infrastructure_abort"
     assert abort_stored_report["fixture_terminal"]["detected"] is True
+    assert demux_fixture_terminals[-1] is abort_run.fixture_terminal
     assert abort_stored_report["telemetry_abort"]["reason"] == (
         "fixture_terminal_forced_evidence_incomplete"
     )
@@ -1611,6 +1623,7 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     assert gameplay_exit_code == 2
     assert gameplay_stdout_report == gameplay_stored_report
     assert gameplay_stored_report["classification"] == "gameplay_failure"
+    assert demux_fixture_terminals[-1] is None
     assert gameplay_stored_report["terminal_evidence_incomplete"] is True
     assert gameplay_stored_report["telemetry_abort"]["reason"] == (
         "terminal_failure_forced_evidence_incomplete"

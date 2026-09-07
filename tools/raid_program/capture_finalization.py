@@ -459,7 +459,10 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
         normalized_rows,
         profile_name=profile_name,
         controller_terminal=controller_terminal,
-        fixture_terminal=fixture_terminal,
+        fixture_terminal=(
+            fixture_terminal
+            if fixture_terminal.get("detected") is True else None
+        ),
         fixture_expected_identity=(
             {
                 "actor_guid": MAGMAW_TRANSFER_CHECKPOINT_ACTOR_GUID,

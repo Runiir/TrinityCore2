@@ -849,7 +849,7 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                             monitor_statuses,
                             profile_name=profile_name,
                         )
-                    if drudge_observed:
+                    if drudge_required:
                         drudge_accepted, _ = accepted_drudge_contract(
                             monitor_statuses, frozen_anchors=drudge_frozen_anchors,
                         )
