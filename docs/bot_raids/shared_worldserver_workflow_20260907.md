@@ -132,3 +132,19 @@ only the still-unbound provenance receipt remains. Input snapshot:
 
 Independent Sol high review approved the bounded archive-resume and pointer
 visibility repair; its read-only verification passed 91 checks.
+
+The resumed publication uploaded the exact archive and verified its downloaded
+SHA-256, MD5, and size through an empty cache. Extraction then failed with
+`EDQUOT` because `/tmp` is a 16 GiB tmpfs with a per-user quota. The exact failed
+temporary reconstruction was removed; production DataDir and archive remain.
+Future reconstruction uses the persistent filesystem under the validation root.
+Both targeted local and cloud DVC status report the archive in sync. Its pointer
+is `dataset/runtime_assets/native_inputs_03cb01db0b.tar.dvc`, MD5
+`b1020765779cbccba103b8873dfb8c2e`, size 5,256,591,360 bytes.
+
+A second verifier defect needs correction before another reconstruction:
+directory `stat.st_size` describes filesystem allocation rather than asset
+contents. Portable reconstruction must preserve exact paths, types, modes and
+all file bytes/sizes/hashes while excluding directory allocation size from the
+comparison. Historical inventory authorities remain unchanged. No production
+materialization receipt or accepted live-input closure exists yet.

@@ -53,6 +53,14 @@ Before live execution, require:
   If publication stops after capture, reuse the verified archive through the
   explicit resume path and repeat remote reconstruction; do not recapture
   unchanged inputs merely to get past a pointer-visibility failure.
+- Put multi-GB reconstruction workspaces on persistent storage with room for
+  the cache, downloaded archive, and extracted tree. Check that filesystem's
+  capacity and quota; free space on the repository filesystem does not describe
+  a separate `/tmp` tmpfs. Remove exact failed temporary copies before resuming.
+- Compare reconstructed directory paths, types, and permissions, but not their
+  filesystem allocation size (`stat.st_size`). File contents, sizes, hashes,
+  and modes remain exact. Keep physical source readback separately from the
+  portable reconstruction comparison, and preserve historical authorities.
 - inspect the owning `dvc.yaml` stage before planning hydration. A lock-file
   hash does not mean an output is restorable: metrics or outputs declared with
   `cache: false` are intentionally not materialized by `dvc pull` or

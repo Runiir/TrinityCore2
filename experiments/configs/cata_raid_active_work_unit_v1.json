@@ -18,7 +18,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "78b3d8c14de2b44163b2ae0f81d2ae27dbfb8db35c7c36cf90681525e6f4a886"
+    "sha256": "10827586f0e8d614c14fc8505b5bcf7d45e8986c012a9971b0eb114c5a2d2486"
   },
   "scope_lock": {
     "objective": "Implement and verify two-cohort scheduling, explicit callback ownership and scoped cleanup before one live isolation canary.",
@@ -78,7 +78,9 @@
       "production_publication_verified": false
     },
     "source_checkout": "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/source",
-    "publication_state": "archive_captured; pointer visibility and verified-resume repairs independently approved; production resume next"
+    "publication_state": "archive remote and downloaded hash verified; extraction failed /tmp quota; exact temporary copies cleaned; correcting directory allocation-size comparison then reconstructing on persistent filesystem",
+    "archive_dvc_pointer": "dataset/runtime_assets/native_inputs_03cb01db0b.tar.dvc",
+    "archive_dvc_md5": "b1020765779cbccba103b8873dfb8c2e"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
