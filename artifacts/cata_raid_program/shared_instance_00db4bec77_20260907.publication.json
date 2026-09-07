@@ -17,5 +17,20 @@
   "terminal_detail": "isolation_fixture_passed",
   "cleanup_passed": true,
   "postrun_build_receipt_verified": true,
-  "verified_archive_copies_evicted": true
+  "verified_archive_copies_evicted": true,
+  "evicted_remote_verified_payload_names": [
+    "subject.readback.log",
+    "validation_provisioning_apply",
+    "isolation.raw.jsonl",
+    "launch_preflight.json",
+    "worldserver.console.log",
+    "witness.readback.log"
+  ],
+  "retained_for_next_admission": [
+    "shared-worldserver.conf",
+    "shared-worldserver.conf.receipt.json",
+    "provisioning.json",
+    "subject.database_readback.json",
+    "witness.database_readback.json"
+  ]
 }
