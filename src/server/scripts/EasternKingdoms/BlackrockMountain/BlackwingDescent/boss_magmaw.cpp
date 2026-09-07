@@ -150,6 +150,7 @@ struct boss_magmaw : public BossAI
         _magmaProjectileCount = 0;
         _headEngaged = false;
         _heroicPhaseTwoActive = !IsHeroic();
+        me->SetUnkillable(true);
         me->SetReactState(REACT_PASSIVE);
         events.SetPhase(PHASE_OUT_OF_COMBAT);
     }
@@ -178,6 +179,9 @@ struct boss_magmaw : public BossAI
             return;
         }
 
+        // The template's unkillable flag must not clamp lethal combat damage
+        // to one health. Release the reset protection only for a complete body.
+        me->SetUnkillable(false);
         BossAI::JustEngagedWith(who);
         instance->SendEncounterUnit(ENCOUNTER_FRAME_ENGAGE, me, FRAME_PRIORITY_MAGMAW);
         instance->DoUpdateWorldState(WORLD_STATE_ID_PARASITE_EVENING, 0);
