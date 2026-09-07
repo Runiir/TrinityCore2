@@ -8,6 +8,15 @@ description: Repair one trace-backed shared Trinity-Cata bot-runtime edge such a
 Own one shared policy-to-native-outcome edge. Do not own live shard control or
 broaden the repair into a class, boss, or route redesign.
 
+An encounter-local bot task or movement-intent producer also belongs here when
+the proven mismatch is its retained state or logical destination and the native
+boss script, class policy, and executor are behaving correctly. File location
+alone does not assign a bot-policy defect to the native boss-script owner.
+Keep that work unit confined to its encounter module and existing validated
+destinations; it must not introduce universal encounter rules or relax native
+pathing safeguards. No simulator reference is needed for a movement-only repair
+that makes no damage, cadence, or stat-tuning claim.
+
 Before inspection or editing, apply
 [the bounded work-unit contract](../raid-performance-loop/references/bounded-work-unit-contract.md).
 Declare one runtime hypothesis, owned files, excluded class/encounter/shard

@@ -289,11 +289,11 @@ public:
 
     static std::optional<BotNativeAction::Candidate> Propose(
         Blackboard const& board, ActorSnapshot const& bot,
-        ActorSnapshot const& parasite, bool pillarBaiter,
+        ActorSnapshot const& /*parasite*/, bool pillarBaiter,
         std::optional<FormationAnchors> const& anchors,
         BotMovementArbitration::Lease const* /*movementLease*/,
         MagmawLaneTransitionState* transition = nullptr,
-        MagmawParasiteHazardState* hazardState = nullptr)
+        MagmawParasiteHazardState* /*hazardState*/ = nullptr)
     {
         if (!pillarBaiter)
             return std::nullopt;
@@ -318,38 +318,26 @@ public:
         if (destination
             && ParasiteClearance(board, *destination) < SafeClearance)
         {
-            // The first endpoint contact keeps one retained local escape so
-            // native path/GUID churn cannot replan it.  If that escape has
-            // completed and the same wave reaches the endpoint again, resume
-            // the encounter's fixed left/right contract instead of opening a
-            // second arbitrary radial path.  Begin() gives both baiters the
-            // same destination and transition identity.
-            if ((transition->IsArrived()
-                    && transition->OwnsGeneration(generation, 2))
-                || (transition->Preempted && hazardState
-                    && hazardState->HasCompletedIntent()))
+            // Every fixed-baiter contact uses the encounter's opposite lane
+            // endpoint immediately. LaneSafe is the final shared geometry
+            // gate; a blocked opposite anchor fails closed instead of opening
+            // an unconstrained radial path. Begin() gives both baiters the
+            // same destination and transition identity across GUID churn.
+            MagmawLaneTransitionState::Direction const direction =
+                OppositeDirection(transition->Lane);
+            Vector3 const redirected = DestinationFor(*anchors, direction);
+            if (LaneSafe(board, *anchors, redirected))
             {
-                MagmawLaneTransitionState::Direction const direction =
-                    OppositeDirection(transition->Lane);
-                Vector3 const redirected = DestinationFor(
-                    *anchors, direction);
-                if (LaneSafe(board, *anchors, redirected))
-                {
-                    transition->Begin(generation, 2, direction, redirected);
-                    BotNativeAction::Candidate candidate = BuildPointMovement(
-                        board, redirected, "parasite_contact_evade",
-                        ObserveRouteFacts(board, bot).EmergencyClearance);
-                    candidate.Id.Actor = bot.Guid;
-                    candidate.Id.EventGeneration = transition->TransitionId;
-                    return candidate;
-                }
+                transition->Begin(generation, 2, direction, redirected);
+                BotNativeAction::Candidate candidate = BuildPointMovement(
+                    board, redirected, "parasite_contact_evade",
+                    ObserveRouteFacts(board, bot).EmergencyClearance);
+                candidate.Id.Actor = bot.Guid;
+                candidate.Id.EventGeneration = transition->TransitionId;
+                return candidate;
             }
-            // On first contact, preserve the cohort transition through one
-            // typed local safety preemption and resume it when the endpoint
-            // clears. Only a later contact may redirect the shared lane.
             transition->MarkPreempted();
-            return BuildMoveAway(board, bot, parasite,
-                "parasite_contact_evade", SafeClearance, hazardState);
+            return std::nullopt;
         }
         if (!destination
             || Distance2d(bot.Position, *destination)
