@@ -391,6 +391,15 @@ def test_rejects_foreign_stale_ambiguous_or_transport_invalid_evidence(
     assert report["terminal_reason"] == "contamination"
     assert report["terminal_detail"] == reason
     assert report["cleanup"]["passed"] is True
+    diagnostic = report["failure_diagnostic"]
+    records = [json.loads(line) for line in (tmp_path / "report.raw.jsonl").read_text().splitlines()]
+    context = diagnostic["last_command"]
+    recorded = records[context["sequence"] - 1]
+    assert all(recorded[key] == value for key, value in context.items())
+    assert context["phase"] != "final_cleanup"
+    if failure == "shared_instance":
+        assert diagnostic["cause_type"] == "ValueError"
+        assert diagnostic["cause"] == "cohorts share instance, group, or roster ownership"
 
 
 def test_rejects_spectator_or_incoming_only_activity(tmp_path):

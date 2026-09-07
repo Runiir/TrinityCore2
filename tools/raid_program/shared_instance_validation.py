@@ -63,6 +63,7 @@ class _RawRecorder:
         self.path = path
         self.clock = clock
         self.sequence = 0
+        self.last_command_context: dict[str, Any] | None = None
         self._handle = path.open("x", encoding="utf-8")
 
     def record(
@@ -70,6 +71,10 @@ class _RawRecorder:
         *, role: str, phase: str,
     ) -> None:
         self.sequence += 1
+        self.last_command_context = {
+            "sequence": self.sequence, "role": role, "phase": phase,
+            "command": command,
+        }
         row = {
             "sequence": self.sequence,
             "observed_at_monotonic": self.clock(),
@@ -1015,6 +1020,11 @@ def run_shared_instance_validation(
     except SharedInstanceValidationError as error:
         report["terminal_detail"] = str(error)
         report["failure_reason"] = str(error)
+        report["failure_diagnostic"] = {
+            "last_command": recorder.last_command_context,
+            "cause_type": type(error.__cause__).__name__ if error.__cause__ else None,
+            "cause": str(error.__cause__) if error.__cause__ else None,
+        }
     except Exception as error:
         report["terminal_detail"] = f"infrastructure_error:{type(error).__name__}"
         report["failure_reason"] = report["terminal_detail"]
