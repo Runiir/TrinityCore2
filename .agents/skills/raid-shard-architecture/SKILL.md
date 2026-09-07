@@ -357,12 +357,15 @@ not route other shards through the Chainwielder module.
    attempt. Close the failed capture and clean only its owned cohort. Only the
    server lifecycle owner may terminate a server, and a shared server must
    remain alive while another cohort owns an active attempt.
-   For `blackwing_descent_10n_magmaw_diagnostic`, also create the exact
+   For explicitly requested legacy sealed replay (not ordinary development), create the exact
    `tools.raid_program.recurrence_admission` receipt after preparation and pass
    its path and SHA-256 to the capture. The seal binds the clean source/tree,
    binary and build receipt, generated config and route manifest, ledger,
    recurrence decision, full regression-suite receipt, and fixture revisions.
-   If the seal cannot be created or verified, do not start a worldserver.
+   If that replay seal cannot be verified, do not start the sealed replay.
+   Ordinary development uses `--development-run` with canonical scenario,
+   runtime profile, and pool. It preserves source/build/configuration, roster,
+   runtime asset, native completion, watchdog, and cleanup checks without this seal.
    A live recurrence invalidates the fixture revision admitted for that run.
    Require an incremented, value-level replacement fixture for the same causal
    signature and a new full-bank receipt; an unchanged passing fixture, a

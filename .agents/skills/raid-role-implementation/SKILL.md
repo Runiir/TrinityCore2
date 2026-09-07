@@ -168,8 +168,8 @@ fails against the pre-fix behavior; source-text assertions and configuration
 presence checks are insufficient. For persistent pet autocast, separately
 prove setup identity, native per-tick target eligibility, and suppression of a
 redundant beneficial recast while preserving ordinary offensive autocast. Keep
-the fixture permanently in the route bank and require the entire bank at the
-exact clean build identity before another canary.
+the regression permanently. Development runs require the affected behavioral
+tests at the reviewed source identity; the entire bank belongs to qualification.
 
 ## Validate by role
 
