@@ -15,6 +15,25 @@
     {
         return entry == ParasiteEntry || entry == ParasiteAltEntry;
     }
+
+    static bool IsRangedParasiteSupportSpec(std::string_view classSpec)
+    {
+        // Keep this admission list aligned with the native ranged calibration
+        // lane. It is intentionally a closed list so melee, healers, and
+        // future unclassified profiles cannot acquire parasite targets.
+        return classSpec == "balance_druid"
+            || classSpec == "beast_mastery_hunter"
+            || classSpec == "marksmanship_hunter"
+            || classSpec == "survival_hunter"
+            || classSpec == "shadow_priest"
+            || classSpec == "elemental_shaman"
+            || classSpec == "arcane_mage"
+            || classSpec == "fire_mage"
+            || classSpec == "frost_mage"
+            || classSpec == "affliction_warlock"
+            || classSpec == "demonology_warlock"
+            || classSpec == "destruction_warlock";
+    }
     static MagmawActorObservation ObserveMagmawActors(Blackboard const& board,
         ActorSnapshot const& bot)
     {
@@ -111,25 +130,50 @@
     {
         if (observed.Head)
             return observed.Head->Guid;
-        ActorSnapshot const* parasite = contract.IsAssignedBaiter(botGuid)
-            ? observed.NearestParasite : observed.PersonalParasiteThreat;
-        float const distance = contract.IsAssignedBaiter(botGuid)
-            ? observed.NearestParasiteDistance
-            : observed.PersonalParasiteThreatDistance;
-        if (role == "dps" && parasite
-            && contract.AllowsParasiteTarget(botGuid, parasite->Guid)
-            && distance <= RangedParasiteTargetDistance)
-            return parasite->Guid;
+        if (role == "dps")
+        {
+            if (contract.IsAssignedBaiter(botGuid)
+                && observed.NearestParasite
+                && observed.NearestParasiteDistance
+                    <= RangedParasiteTargetDistance
+                && contract.AllowsParasiteTarget(botGuid,
+                    observed.NearestParasite->Guid))
+                return observed.NearestParasite->Guid;
+
+            if (observed.PersonalParasiteThreat
+                && observed.PersonalParasiteThreatDistance
+                    <= RangedParasiteTargetDistance
+                && contract.AllowsParasiteTarget(botGuid,
+                    observed.PersonalParasiteThreat->Guid))
+                return observed.PersonalParasiteThreat->Guid;
+
+            if (observed.NearestParasite
+                && observed.NearestParasiteDistance
+                    <= RangedParasiteSupportTargetDistance
+                && contract.IsSupportTarget(botGuid,
+                    observed.NearestParasite->Guid))
+                return observed.NearestParasite->Guid;
+        }
         return observed.Boss->Guid;
     }
 
-    static void BindPersonalParasiteDamageTarget(std::string_view role,
+    static void BindParasiteDamageTargets(ActorSnapshot const& bot,
+        std::string_view role,
         MagmawActorObservation const& observed,
         MagmawParasiteCombatContract& contract)
     {
+        contract.PersonalThreatGuid.Clear();
+        contract.SupportTargetGuid.Clear();
         if (role == "dps" && observed.PersonalParasiteThreat)
             contract.PersonalThreatGuid =
                 observed.PersonalParasiteThreat->Guid;
+        if (role != "dps" || contract.IsAssignedBaiter(bot.Guid)
+            || !IsRangedParasiteSupportSpec(bot.ClassSpec)
+            || observed.Head || !observed.NearestParasite
+            || observed.NearestParasiteDistance
+                > RangedParasiteSupportTargetDistance)
+            return;
+        contract.SupportTargetGuid = observed.NearestParasite->Guid;
     }
 
     static void EmitPersonalParasiteEscape(Blackboard const& board,

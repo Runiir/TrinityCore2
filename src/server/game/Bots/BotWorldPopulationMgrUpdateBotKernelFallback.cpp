@@ -690,8 +690,17 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             };
             return decision;
         };
-        context.State.DecisionKernel.Submit(
-            BotProfileCombatRangeCandidate::Build(std::move(rangeRequest)));
+        // An exact Magmaw support target is a bounded assistance opportunity,
+        // not a range-closure assignment. The combat candidate performs the
+        // native range/LOS preview and defers when that target is invalid;
+        // submitting the generic range candidate here would chase it first.
+        bool const magmawSupportTarget = context.Target
+            && context.State.MagmawParasiteCombat.IsSupportTarget(
+                context.Bot->GetGUID(), context.Target->GetGUID());
+        if (!magmawSupportTarget)
+            context.State.DecisionKernel.Submit(
+                BotProfileCombatRangeCandidate::Build(
+                    std::move(rangeRequest)));
 
         SubmitAfflictionPetAttackCandidate(context);
 
@@ -731,8 +740,9 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 return BotActionArbitration::Outcome::Unsafe(
                     "magmaw_target_contract_forbidden");
 
-            if (magmawContractActive && hazardRetained
-                && targetCreature)
+            if (magmawContractActive && targetCreature
+                && (hazardRetained || magmawContract.IsSupportTarget(
+                    context.Bot->GetGUID(), context.Target->GetGUID())))
             {
                 ResolvedCombatAction const preview = ResolveProfileCombatAction(
                     context.Bot, context.Target, 0, false, 0, false, false,

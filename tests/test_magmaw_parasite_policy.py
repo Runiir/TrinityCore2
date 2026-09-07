@@ -1259,12 +1259,14 @@ static bool HasTrace(BotActionArbitration::Resolution const& resolution,
 }
 
 static void AssertContainedTick(Blackboard const& board,
-    AdaptiveMagmawPlan const& plan, ObjectGuid actor)
+    AdaptiveMagmawPlan const& plan, ObjectGuid actor,
+    ObjectGuid supportTarget = ObjectGuid{})
 {
     assert(plan.OwnsNode);
     assert(plan.ParasiteCombat.Active);
     assert(plan.ParasiteCombat.FireMageGuid == PlayerGuid(30006));
     assert(plan.ParasiteCombat.MarksmanshipHunterGuid == PlayerGuid(30009));
+    assert(plan.ParasiteCombat.SupportTargetGuid == supportTarget);
     assert(!plan.ParasiteCombat.AllowsParasiteTarget(actor,
         ObjectGuid{}));
     assert(plan.ParasiteCombat.TargetAllowed(actor, ObjectGuid{},
@@ -1286,11 +1288,39 @@ static void AssertContainedTick(Blackboard const& board,
     // It only wins when profile execution would need range/LOS movement.
     assert(!profile.DeferCombatRange);
     MagmawParasiteCombatContract::ProfileParameters const parasiteProfile =
-        plan.ParasiteCombat.ResolveProfileParameters(actor, ObjectGuid{},
+        plan.ParasiteCombat.ResolveProfileParameters(actor, supportTarget,
             MagmawParasiteCombatContract::ParasiteEntry,
             false, false, false);
-    assert(!parasiteProfile.TargetAllowed);
-    assert(!parasiteProfile.AllowsAction(true, true, true, true, true));
+    assert(parasiteProfile.TargetAllowed == !supportTarget.IsEmpty());
+    assert(parasiteProfile.ForbidAreaDamage);
+    assert(!parasiteProfile.AllowMultidot);
+    assert(parasiteProfile.AllowsAction(false, false, false, false, false)
+        == !supportTarget.IsEmpty());
+    assert(!parasiteProfile.AllowsAction(true, false, false, false, false));
+    assert(!parasiteProfile.AllowsAction(false, true, false, false, false));
+    assert(!parasiteProfile.AllowsAction(false, false, true, false, false));
+    assert(!parasiteProfile.AllowsAction(false, false, false, true, false));
+    assert(!parasiteProfile.AllowsAction(false, false, false, false, true));
+    if (!supportTarget.IsEmpty())
+    {
+        assert(plan.ParasiteCombat.AllowsParasiteTarget(actor,
+            supportTarget));
+        assert(plan.ParasiteCombat.TargetAllowed(actor, supportTarget,
+            MagmawParasiteCombatContract::ParasiteEntry));
+        assert(!plan.ParasiteCombat.TargetAllowed(PlayerGuid(30008),
+            supportTarget, MagmawParasiteCombatContract::ParasiteEntry));
+        assert(!plan.ParasiteCombat.TargetAllowed(actor,
+            ObjectGuid(HighGuid::Unit,
+                MagmawParasiteCombatContract::ParasiteEntry, uint32(9199)),
+            MagmawParasiteCombatContract::ParasiteEntry));
+        assert(!parasiteProfile.DeferCombatRange);
+        assert(plan.ParasiteCombat.ResolveProfileParameters(actor,
+            supportTarget, MagmawParasiteCombatContract::ParasiteEntry,
+            false, true, false).DeferCombatRange);
+        assert(plan.ParasiteCombat.ResolveProfileParameters(actor,
+            supportTarget, MagmawParasiteCombatContract::ParasiteEntry,
+            false, false, true).DeferCombatRange);
+    }
     assert(!MoveOf(plan)
         || plan.Movement->Id.Mechanic != "parasite_contact_evade");
     BotActionArbitration::Kernel kernel;
@@ -1320,12 +1350,75 @@ int main()
     contact.Hostiles[1] = Parasite(9001, { 12.0f, -26.0f, 210.0f });
     AdaptiveMagmawPlan tankPlan = strategy.Propose(contact, PlayerGuid(30001),
         "tank", nullptr, false, false, &transition);
-    AdaptiveMagmawPlan nonbaitMagePlan = strategy.Propose(contact,
+    Blackboard supportContact = contact;
+    supportContact.Players[6].Position = { 0.0f, -8.0f, 210.0f };
+    supportContact.Hostiles[1] = Parasite(9002, { 0.0f, -32.0f, 210.0f });
+    AdaptiveMagmawPlan nonbaitMagePlan = strategy.Propose(supportContact,
         PlayerGuid(30007), "dps", nullptr, false, false, &transition);
     assert(tankPlan.DamageTarget == contact.Hostiles.front().Guid);
-    assert(nonbaitMagePlan.DamageTarget == contact.Hostiles.front().Guid);
+    assert(nonbaitMagePlan.DamageTarget == supportContact.Hostiles[1].Guid);
+    assert(nonbaitMagePlan.ParasiteCombat.SupportTargetGuid
+        == supportContact.Hostiles[1].Guid);
+    assert(!nonbaitMagePlan.Movement.has_value());
     AssertContainedTick(contact, tankPlan, PlayerGuid(30001));
-    AssertContainedTick(contact, nonbaitMagePlan, PlayerGuid(30007));
+    AssertContainedTick(supportContact, nonbaitMagePlan, PlayerGuid(30007),
+        supportContact.Hostiles[1].Guid);
+
+    // Keep the support admission list closed and executable for every ranged
+    // DPS spec supported by the native calibration lane.
+    std::array<char const*, 12> rangedSupportSpecs = {
+        "balance_druid", "beast_mastery_hunter", "marksmanship_hunter",
+        "survival_hunter", "shadow_priest", "elemental_shaman",
+        "arcane_mage", "fire_mage", "frost_mage", "affliction_warlock",
+        "demonology_warlock", "destruction_warlock" };
+    for (char const* spec : rangedSupportSpecs)
+    {
+        Blackboard rangedSupportContact = supportContact;
+        // Use a fresh high GUID so marksmanship_hunter and fire_mage remain
+        // ordinary support cases beside the frozen fixed-bait pair.
+        rangedSupportContact.Players.push_back(Player(30100, "dps", spec,
+            { 0.0f, -8.0f, 210.0f }));
+        MagmawLaneTransitionState rangedSupportTransition;
+        AdaptiveMagmawPlan rangedSupportPlan = strategy.Propose(
+            rangedSupportContact, PlayerGuid(30100), "dps", nullptr, false,
+            false, &rangedSupportTransition);
+        assert(rangedSupportPlan.DamageTarget
+            == rangedSupportContact.Hostiles[1].Guid);
+        assert(rangedSupportPlan.ParasiteCombat.SupportTargetGuid
+            == rangedSupportContact.Hostiles[1].Guid);
+        assert(!rangedSupportPlan.Movement.has_value());
+    }
+
+    // Support admission is limited to ranged DPS. Tanks, healers, melee
+    // profiles, and a parasite just beyond 30 yards retain boss targeting and
+    // carry no stale support identity into the next plan.
+    AdaptiveMagmawPlan supportHealerPlan = strategy.Propose(
+        supportContact, PlayerGuid(30003), "healer", nullptr, false, false,
+        &transition);
+    assert(supportHealerPlan.DamageTarget
+        == supportContact.Hostiles.front().Guid);
+    assert(supportHealerPlan.ParasiteCombat.SupportTargetGuid.IsEmpty());
+    Blackboard supportMeleeBoard = supportContact;
+    ActorSnapshot supportMelee = supportMeleeBoard.Players[0];
+    supportMelee.Guid = PlayerGuid(30111);
+    supportMelee.Role = "dps";
+    supportMelee.ClassSpec = "fury_warrior";
+    supportMelee.Position = supportContact.Players[6].Position;
+    supportMeleeBoard.Players.push_back(supportMelee);
+    AdaptiveMagmawPlan supportMeleePlan = strategy.Propose(
+        supportMeleeBoard, supportMelee.Guid, "dps", nullptr, false, false,
+        &transition);
+    assert(supportMeleePlan.DamageTarget
+        == supportMeleeBoard.Hostiles.front().Guid);
+    assert(supportMeleePlan.ParasiteCombat.SupportTargetGuid.IsEmpty());
+    Blackboard supportRemoteBoard = supportContact;
+    supportRemoteBoard.Hostiles[1].Position = { 30.01f, -8.0f, 210.0f };
+    AdaptiveMagmawPlan supportRemotePlan = strategy.Propose(
+        supportRemoteBoard, PlayerGuid(30007), "dps", nullptr, false, false,
+        &transition);
+    assert(supportRemotePlan.DamageTarget
+        == supportRemoteBoard.Hostiles.front().Guid);
+    assert(supportRemotePlan.ParasiteCombat.SupportTargetGuid.IsEmpty());
 
     // Canary118: first contact at a retained fixed-bait endpoint must switch
     // to the opposite safe anchor immediately. The local radial fallback can
@@ -1921,9 +2014,10 @@ int main()
     assert(Contains(threatenedResolution.CommittedCandidates,
         "personally_threatened_profile"));
 
-    // Replacing the parasite GUID inside the same unsafe episode neither
-    // changes the actor-owned key nor replans the local destination, even
-    // when victim attribution is briefly absent beyond contact range.
+    // Replacing the parasite GUID inside the same unsafe episode updates only
+    // the fresh exact support target; the actor-owned hazard key and retained
+    // local destination remain stable when victim attribution is briefly
+    // absent beyond personal-contact range.
     Blackboard guidChurn = threatened;
     guidChurn.Revision += 1;
     guidChurn.ObservedAtMs += 100;
@@ -1932,8 +2026,10 @@ int main()
     AdaptiveMagmawPlan churnPlan = strategy.Propose(guidChurn,
         PlayerGuid(30008), "dps", nullptr, false, false, &nonownerLane,
         &nonownerHazard);
-    assert(churnPlan.DamageTarget == guidChurn.Hostiles.front().Guid);
+    assert(churnPlan.DamageTarget == guidChurn.Hostiles[1].Guid);
     assert(churnPlan.ParasiteCombat.PersonalThreatGuid.IsEmpty());
+    assert(churnPlan.ParasiteCombat.SupportTargetGuid
+        == guidChurn.Hostiles[1].Guid);
     assert(MoveOf(churnPlan));
     assert(churnPlan.Movement->Id.Key()
         == threatenedPlan.Movement->Id.Key());
@@ -2090,9 +2186,11 @@ int main()
         PlayerGuid(30008), "dps", nullptr, false, false, &nonownerLane,
         &exposedHazard);
     assert(exposedPlan.DamageTarget == exposed.Hostiles.back().Guid);
+    assert(exposedPlan.ParasiteCombat.SupportTargetGuid.IsEmpty());
 
-    // Fixed baiters retain their broader parasite contract; safe nonowners
-    // retain boss targeting and never acquire a bait-lane transition.
+    // Fixed baiters retain their broader parasite contract; a ranged support
+    // actor may assist one exact nearby parasite without acquiring a bait-lane
+    // transition.
     MagmawParasiteCombatContract const contract = tankPlan.ParasiteCombat;
     MagmawParasiteCombatContract::ProfileParameters const baitMageProfile =
         contract.ResolveProfileParameters(PlayerGuid(30006),
@@ -2107,12 +2205,19 @@ int main()
     assert(baitHunterProfile.TargetAllowed
         && !baitHunterProfile.ForbidAreaDamage
         && baitHunterProfile.AllowMultidot);
+    assert(contract.TargetAllowed(PlayerGuid(30006),
+        ObjectGuid(HighGuid::Unit,
+            MagmawParasiteCombatContract::ParasiteEntry, uint32(9199)),
+        MagmawParasiteCombatContract::ParasiteEntry));
+    assert(baitMageProfile.AllowsAction(true, true, true, true, true));
     MagmawLaneTransitionState safeNonownerLane;
     MagmawParasiteHazardState safeNonownerHazard;
     AdaptiveMagmawPlan safeNonowner = strategy.Propose(board,
         PlayerGuid(30008), "dps", nullptr, false, false,
         &safeNonownerLane, &safeNonownerHazard);
-    assert(safeNonowner.DamageTarget == board.Hostiles.front().Guid);
+    assert(safeNonowner.DamageTarget == board.Hostiles[1].Guid);
+    assert(safeNonowner.ParasiteCombat.SupportTargetGuid
+        == board.Hostiles[1].Guid);
     assert(!safeNonownerLane.Committed);
     assert(!MoveOf(safeNonowner)
         || safeNonowner.Movement->Id.Mechanic

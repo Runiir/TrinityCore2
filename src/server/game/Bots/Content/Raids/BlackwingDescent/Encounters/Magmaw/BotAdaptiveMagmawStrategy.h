@@ -67,6 +67,8 @@ public:
     static constexpr float RangedParasiteTargetDistance = RangedStackDistance
         + RangedStackLateralOffset +
         MagmawParasitePolicy::SafeClearance;
+    static constexpr float RangedParasiteSupportTargetDistance =
+        RangedStackDistance;
     AdaptiveMagmawPlan Propose(Blackboard const& board, ObjectGuid botGuid,
         std::string_view role,
         BotMovementArbitration::Lease const* movementLease = nullptr,
@@ -130,8 +132,7 @@ public:
             MagmawParasitePolicy::ResolveFixedBaiters(board);
         plan.ParasiteCombat.FireMageGuid = baiters.first;
         plan.ParasiteCombat.MarksmanshipHunterGuid = baiters.second;
-        BindPersonalParasiteDamageTarget(role, observed,
-            plan.ParasiteCombat);
+        BindParasiteDamageTargets(*bot, role, observed, plan.ParasiteCombat);
         PrepullDecision prepull = EvaluatePrepull(board, *observed.Boss);
         if (IsPrepull(board, *observed.Boss))
         {

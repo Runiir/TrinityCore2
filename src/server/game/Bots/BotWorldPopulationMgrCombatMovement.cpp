@@ -190,6 +190,14 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     if (!bot || !reference)
         return false;
 
+    // Ordinary ranged parasite assistance is a bounded single-target cast
+    // opportunity.  Keep every profile range-recovery caller from turning the
+    // exact support target into a chase, including spell-specific LOS and
+    // out-of-range feedback after the map-level preview.
+    if (state.MagmawParasiteCombat.IsSupportTarget(bot->GetGUID(),
+            reference->GetGUID()))
+        return false;
+
     auto patrolCombatPointSafe = [&](float x, float y, float z)
     {
         return IsValidationRoutePatrolCombatPointSafe(reference, x, y, z);

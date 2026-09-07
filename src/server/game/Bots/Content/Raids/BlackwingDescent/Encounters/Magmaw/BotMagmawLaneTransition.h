@@ -18,8 +18,8 @@ namespace BotEncounter
 // to bypass the generic boss-mechanics resolver, so keep the same immutable
 // constraints beside the encounter assignment that selects the bait pair.
 // The assigned fire mage and marksmanship hunter retain broad parasite
-// ownership. Every other DPS is confined to Magmaw/the head unless one exact
-// live parasite is attributable as that actor's personal threat.
+// ownership. Other ranged DPS may assist one exact nearby parasite without
+// chasing or area damage; an actor's exact personal threat remains eligible.
 struct MagmawParasiteCombatContract
 {
     struct ProfileParameters
@@ -54,6 +54,7 @@ struct MagmawParasiteCombatContract
     bool AllowPersistentAreaDamage = false;
     ObjectGuid ActorGuid;
     ObjectGuid PersonalThreatGuid;
+    ObjectGuid SupportTargetGuid;
     ObjectGuid FireMageGuid;
     ObjectGuid MarksmanshipHunterGuid;
 
@@ -62,11 +63,18 @@ struct MagmawParasiteCombatContract
         return guid == FireMageGuid || guid == MarksmanshipHunterGuid;
     }
 
+    bool IsSupportTarget(ObjectGuid guid, ObjectGuid targetGuid) const
+    {
+        return Active && guid == ActorGuid && !SupportTargetGuid.IsEmpty()
+            && targetGuid == SupportTargetGuid;
+    }
+
     bool AllowsParasiteTarget(ObjectGuid guid, ObjectGuid targetGuid) const
     {
         return !Active || IsAssignedBaiter(guid)
             || (guid == ActorGuid && !PersonalThreatGuid.IsEmpty()
-                && targetGuid == PersonalThreatGuid);
+                && targetGuid == PersonalThreatGuid)
+            || IsSupportTarget(guid, targetGuid);
     }
 
     bool TargetAllowed(ObjectGuid guid, ObjectGuid targetGuid,
@@ -102,13 +110,14 @@ struct MagmawParasiteCombatContract
     }
 
     bool ShouldDeferCombatRange(bool hazardIntentRetained,
-        bool outsideLegalMaxRange, bool noLineOfSight) const
+        bool outsideLegalMaxRange, bool noLineOfSight,
+        bool supportTargetSelected = false) const
     {
         // A retained contact-escape intent owns movement until native
-        // progress reaches safety.  Legal profile DPS may coexist with it;
-        // only the range/LOS reconciliation that would replace movement is
-        // deferred.
-        return Active && hazardIntentRetained
+        // progress reaches safety. An exact nearby support target also owns
+        // its range/LOS reconciliation; no generic parasite target may open
+        // that movement path.
+        return Active && (hazardIntentRetained || supportTargetSelected)
             && (outsideLegalMaxRange || noLineOfSight);
     }
 
@@ -125,7 +134,8 @@ struct MagmawParasiteCombatContract
                 || !AllowsPersistentAreaDamageFor(guid));
         parameters.AllowMultidot = !Active || AllowsMultidotFor(guid);
         parameters.DeferCombatRange = ShouldDeferCombatRange(
-            hazardIntentRetained, outsideLegalMaxRange, noLineOfSight);
+            hazardIntentRetained, outsideLegalMaxRange, noLineOfSight,
+            IsSupportTarget(guid, targetGuid));
         return parameters;
     }
 };
