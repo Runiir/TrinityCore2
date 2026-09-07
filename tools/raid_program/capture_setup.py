@@ -66,6 +66,178 @@ PERSONAL_THREAT_EPISODE_TARGET_FIELDS = (
     "parent_generation_authoritative",
 )
 
+DEVELOPMENT_CHECKPOINT_CONFIG_KEYS = (
+    "BotWorld.Magmaw.TransferLaneTaskAuthority",
+    "BotWorld.ValidationRoute.PrepullCheckpointEnable",
+    "BotWorld.ValidationFixture.MagmawTransferLaneCheckpoint.Enable",
+    "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint.Enable",
+    "BotWorld.ValidationFixture.NativePathCheckpoint.Enable",
+    "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.Enable",
+)
+DEVELOPMENT_CHECKPOINT_IDENTITY_PREFIXES = (
+    "BotWorld.ValidationFixture.MagmawTransferLaneCheckpoint",
+    "BotWorld.ValidationFixture.ChainwielderOwnerCheckpoint",
+    "BotWorld.ValidationFixture.NativePathCheckpoint",
+    "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint",
+)
+DEVELOPMENT_CHECKPOINT_NUMERIC_KEYS = (
+    "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.ActorGuid",
+    "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.RuntimeTargetGuid",
+    "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.TargetSpawnId",
+    "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.TargetEntry",
+    "BotWorld.ValidationFixture.ProfileCombatRangeCheckpoint.TargetMapId",
+)
+
+
+def _trinity_config_nonzero_int(path: Path, key: str) -> bool:
+    pattern = re.compile(
+        rf'^\s*{re.escape(key)}\s*=\s*"?([+-]?\d+)"?\s*(?:#.*)?$'
+    )
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return False
+    for line in lines:
+        match = pattern.match(line)
+        if match:
+            return int(match.group(1)) != 0
+    return False
+
+
+def development_run_argument_rejections(args: argparse.Namespace) -> list[str]:
+    """Reject auxiliary evidence authorities from a development gameplay run."""
+
+    if not args.development_run:
+        return []
+    rejections: list[str] = []
+    incompatible = {
+        "trace_transport_smoke": args.trace_transport_smoke,
+        "fixture_expansion_replay": args.fixture_expansion_replay,
+        "recurrence_admission": args.recurrence_admission is not None,
+        "recurrence_admission_sha256": bool(args.recurrence_admission_sha256),
+        "chainwielder_checkpoint_actor": (
+            args.chainwielder_checkpoint_actor_guid is not None
+        ),
+        "magmaw_transfer_checkpoint_actor": (
+            args.magmaw_transfer_checkpoint_actor_guid is not None
+        ),
+        "profile_combat_range_checkpoint_actor": (
+            args.profile_combat_range_checkpoint_actor_guid is not None
+        ),
+        "profile_combat_range_checkpoint_target": (
+            args.profile_combat_range_checkpoint_target_guid is not None
+        ),
+        "personal_threat_episode": any(
+            getattr(args, f"personal_threat_episode_{field}", None) is not None
+            for field in PERSONAL_THREAT_EPISODE_TARGET_FIELDS
+        ),
+    }
+    rejections.extend(
+        f"development_run_incompatible_{name}"
+        for name, supplied in incompatible.items() if supplied
+    )
+    if args.scenario_id is None:
+        rejections.append("development_run_scenario_id_required")
+    if args.runtime_profile is None:
+        rejections.append("development_run_runtime_profile_required")
+    if args.pool_tag is None:
+        rejections.append("development_run_pool_tag_required")
+    return rejections
+
+
+def development_run_canonical_rejections(
+    args: argparse.Namespace, *, config: Path, worktree: Path,
+    runtime_assets: dict[str, Any],
+) -> list[str]:
+    """Bind development execution to the tracked diagnostic profile and route."""
+
+    if not args.development_run:
+        return []
+    rejections: list[str] = []
+    partition = runtime_assets.get("route_partition")
+    if not isinstance(partition, dict):
+        return ["development_run_route_partition_missing"]
+    if partition.get("passed") is not True:
+        rejections.append("development_run_route_partition_not_verified")
+    if partition.get("diagnostic_only") is not True:
+        rejections.append("development_run_diagnostic_partition_required")
+    if partition.get("terminal_kind") != "boss":
+        rejections.append("development_run_terminal_boss_required")
+    node_count = partition.get("node_count")
+    terminal_index = partition.get("terminal_index")
+    node_ids = partition.get("node_ids")
+    if (
+        not isinstance(node_count, int) or isinstance(node_count, bool)
+        or node_count <= 0
+        or terminal_index != node_count - 1
+        or not isinstance(node_ids, list) or len(node_ids) != node_count
+        or any(not isinstance(node, str) or not node for node in node_ids)
+        or len(set(node_ids)) != node_count
+        or runtime_assets.get("matching_route_rows") != node_count
+    ):
+        rejections.append("development_run_route_partition_identity_invalid")
+    if not isinstance(partition.get("terminal_target_entry"), int) \
+            or isinstance(partition.get("terminal_target_entry"), bool) \
+            or partition.get("terminal_target_entry") <= 0:
+        rejections.append("development_run_terminal_boss_identity_missing")
+    if (
+        runtime_assets.get("scenario_id") != args.scenario_id
+        or runtime_assets.get("profile_name") != args.runtime_profile
+        or runtime_assets.get("pool_tag_filter") != args.pool_tag
+    ):
+        rejections.append("development_run_canonical_identity_mismatch")
+    route_sha256 = runtime_assets.get("route_sha256")
+    if (
+        not isinstance(route_sha256, str)
+        or not SHA256_RE.fullmatch(route_sha256)
+        or runtime_assets.get("reference_route_sha256") != route_sha256
+    ):
+        rejections.append("development_run_canonical_route_hash_mismatch")
+
+    configured_profile = trinity_config_string(config, "BotWorld.ProfileManifest")
+    expected_profile = runtime_assets.get("profile_manifest")
+    configured_profile_path = (
+        Path(configured_profile)
+        if Path(configured_profile).is_absolute()
+        else worktree / configured_profile
+    ) if configured_profile else None
+    if (
+        configured_profile_path is None
+        or not isinstance(expected_profile, str)
+        or configured_profile_path.resolve() != Path(expected_profile).resolve()
+    ):
+        rejections.append("development_run_canonical_profile_manifest_mismatch")
+    if trinity_config_string(config, "BotWorld.ValidationRoute.ManifestPath"):
+        rejections.append("development_run_route_overlay_forbidden")
+    if trinity_config_string(config, "BotWorld.ValidationRoute.ScenarioId") \
+            or trinity_config_string(config, "BotWorld.ValidationRoute.NodeId"):
+        rejections.append("development_run_route_checkpoint_identity_forbidden")
+    configured_runtime_profile = trinity_config_string(
+        config, "BotWorld.RuntimeProfile",
+    )
+    if configured_runtime_profile not in {"", args.runtime_profile}:
+        rejections.append("development_run_configured_profile_mismatch")
+    if trinity_config_bool(config, "BotWorld.ValidationRoute.Enable", False):
+        rejections.append("development_run_configured_route_override_forbidden")
+    for key in DEVELOPMENT_CHECKPOINT_CONFIG_KEYS:
+        if trinity_config_bool(config, key, False):
+            rejections.append(
+                "development_run_checkpoint_authority_forbidden:" + key
+            )
+    for prefix in DEVELOPMENT_CHECKPOINT_IDENTITY_PREFIXES:
+        for field in ("FixtureId", "CaseId", "SealSha256", "SourceCommit"):
+            key = f"{prefix}.{field}"
+            if trinity_config_string(config, key):
+                rejections.append(
+                    "development_run_checkpoint_identity_forbidden:" + key
+                )
+    for key in DEVELOPMENT_CHECKPOINT_NUMERIC_KEYS:
+        if _trinity_config_nonzero_int(config, key):
+            rejections.append(
+                "development_run_checkpoint_identity_forbidden:" + key
+            )
+    return rejections
+
 
 def _personal_threat_episode_target(
     args: argparse.Namespace,
@@ -286,6 +458,14 @@ def build_capture_parser(*, root: Path = ROOT) -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--development-run",
+        action="store_true",
+        help=(
+            "run one canonical diagnostic boss partition without recurrence or "
+            "checkpoint authorities; reports are not training or qualification evidence"
+        ),
+    )
+    parser.add_argument(
         "--trace-transport-smoke",
         action="store_true",
         help=(
@@ -360,6 +540,12 @@ def prepare_capture_setup(
     argv: Sequence[str] | None = None, *, root: Path = ROOT,
 ) -> CaptureSetup:
     args = build_capture_parser(root=root).parse_args(argv)
+    development_argument_rejections = development_run_argument_rejections(args)
+    if development_argument_rejections:
+        raise SystemExit(
+            "capture preflight rejected: "
+            + ",".join(development_argument_rejections)
+        )
     try:
         personal_threat_episode_target = _personal_threat_episode_target(args)
     except ValueError as error:
@@ -436,7 +622,7 @@ def prepare_capture_setup(
         raise SystemExit(
             "capture preflight rejected: fixture_expansion_route_mismatch"
         )
-    if recurrence_required and (
+    if recurrence_required and not args.development_run and (
         args.recurrence_admission is None or not args.recurrence_admission_sha256
     ):
         raise SystemExit(
@@ -571,6 +757,14 @@ def prepare_capture_setup(
     )
     if not runtime_assets["passed"]:
         raise SystemExit("runtime profile assets rejected: " + ",".join(runtime_assets["reasons"]))
+    development_canonical_rejections = development_run_canonical_rejections(
+        args, config=config, worktree=worktree, runtime_assets=runtime_assets,
+    )
+    if development_canonical_rejections:
+        raise SystemExit(
+            "capture preflight rejected: "
+            + ",".join(development_canonical_rejections)
+        )
     route_manifest = runtime_assets.get("route_manifest")
     controller_route_hold_scheduler: ControllerRouteHoldScheduler | None = None
     if args.fixture_expansion_replay:

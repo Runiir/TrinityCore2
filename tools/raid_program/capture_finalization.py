@@ -242,6 +242,82 @@ def write_normalized_batch(path: Path, rows: list[dict[str, Any]]) -> tuple[str,
             digest.update(encoded)
     return digest.hexdigest(), len(rows)
 
+
+def development_run_claim(
+    *, requested: bool, stable_statuses: list[dict[str, Any]],
+    route_partition: object,
+) -> dict[str, Any]:
+    """Describe only the claim supported by native development-run evidence."""
+
+    boss_death_accepted = False
+    accepted_identity: dict[str, Any] | None = None
+    partition = route_partition if isinstance(route_partition, dict) else {}
+    nodes = partition.get("node_ids")
+    node_id = nodes[-1] if isinstance(nodes, list) and nodes else None
+    generation = partition.get("node_count")
+    terminal_index = partition.get("terminal_index")
+    target_entry = partition.get("terminal_target_entry")
+
+    def matches(row: object) -> bool:
+        return isinstance(row, dict) and (
+            row.get("route_node_id") == node_id
+            and row.get("route_generation") == generation
+            and row.get("route_kind") == "boss"
+        )
+
+    if requested:
+        for status in stable_statuses:
+            route = status.get("validation_route")
+            if not isinstance(route, dict):
+                continue
+            terminal = route.get("terminal_evidence")
+            deaths = route.get("boss_death_evidence")
+            boss_death_accepted = bool(
+                partition.get("terminal_kind") == "boss"
+                and isinstance(node_id, str) and bool(node_id)
+                and isinstance(generation, int)
+                and not isinstance(generation, bool)
+                and generation > 0
+                and isinstance(target_entry, int)
+                and not isinstance(target_entry, bool)
+                and target_entry > 0
+                and route.get("node_id") == node_id
+                and route.get("kind") == "boss"
+                and route.get("generation") == generation
+                and route.get("manifest_index") == terminal_index
+                and route.get("manifest_count") == generation
+                and route.get("manifest_complete") is True
+                and isinstance(terminal, list)
+                and any(matches(row) for row in terminal)
+                and isinstance(deaths, list)
+                and any(
+                    matches(row)
+                    and row.get("target_entry") == target_entry
+                    and isinstance(row.get("target_id"), int)
+                    and not isinstance(row.get("target_id"), bool)
+                    and row.get("target_id") > 0
+                    and row.get("result") == "confirmed_unit_death"
+                    for row in deaths if isinstance(row, dict)
+                )
+            )
+            if boss_death_accepted:
+                accepted_identity = {
+                    "route_node_id": node_id,
+                    "route_generation": generation,
+                    "target_entry": target_entry,
+                }
+                break
+    return {
+        "requested": requested,
+        "claim_class": "development_diagnostic" if requested else None,
+        "training_eligible": False if requested else None,
+        "qualification_eligible": False if requested else None,
+        "native_boss_death_required": True if requested else None,
+        "native_boss_death_accepted": boss_death_accepted if requested else None,
+        "accepted_boss_identity": accepted_identity,
+    }
+
+
 def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
     args = setup.args
     config = setup.config
@@ -501,6 +577,16 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
             )
         )
     )
+    development_requested = bool(getattr(args, "development_run", False))
+    development_claim = development_run_claim(
+        requested=development_requested,
+        stable_statuses=stable,
+        route_partition=runtime_assets.get("route_partition"),
+    )
+    if development_requested:
+        success = success and (
+            development_claim["native_boss_death_accepted"] is True
+        )
     evidence_incomplete = bool(
         telemetry_abort.get("detected") is True
         or (
@@ -556,12 +642,15 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
         "schema_version": 1,
         "capture_id": f"cata_raid_phase1_{profile_name}_v1",
         "classification": capture_classification,
-        "claim_scope": {
-            **trace_transport_smoke.claim_scope(),
-            "transport_admitted": (
-                success if args.trace_transport_smoke else None
-            ),
-        } if args.trace_transport_smoke else None,
+        "claim_scope": (
+            {
+                **trace_transport_smoke.claim_scope(),
+                "transport_admitted": success,
+            }
+            if args.trace_transport_smoke
+            else development_claim if development_requested else None
+        ),
+        "development_run": development_claim,
         "trace_transport_smoke": {
             "requested": args.trace_transport_smoke,
             "pressure_warmup_seconds": (
@@ -598,6 +687,7 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
         "controller_route_hold": controller_route_hold_receipt,
         "build_provenance": build_provenance,
         "runtime_profile_assets": runtime_assets,
+        "runtime_asset_closure": setup.runtime_asset_closure,
         "drudge_navmesh_preflight": drudge_navmesh_preflight,
         "binary_sha256": build_provenance.get("binary_sha256"),
         "config_sha256": sha256_file(config),
