@@ -1,0 +1,5 @@
+outs:
+- md5: 683dd480ff7e713405617eec20520955
+  size: 4139
+  hash: md5
+  path: native_inputs_03cb01db0b.materialization.json

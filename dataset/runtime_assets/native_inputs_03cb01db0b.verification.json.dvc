@@ -1,0 +1,5 @@
+outs:
+- md5: 183385f8ceb847da6af5dc20ccb95b60
+  size: 5747124
+  hash: md5
+  path: native_inputs_03cb01db0b.verification.json

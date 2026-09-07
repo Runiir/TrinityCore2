@@ -4,7 +4,9 @@
   "asset_class_source": {
     "path": "experiments/configs/runtime_asset_closure_manifest_v1.json",
     "sha256": "b9071c01f1018c8793529612a61b3c7ee869831108c3febccc60423ba730f343",
-    "exclude_class_ids": ["atomic_bundle"]
+    "exclude_class_ids": [
+      "atomic_bundle"
+    ]
   },
   "audit_authority": {
     "path": "experiments/configs/runtime_asset_input_closure_audit_authority_v1.json",
@@ -20,5 +22,40 @@
     "source-checkout": "Explicit immutable source checkout used by offline tools and native probes.",
     "configured-DataDir": "Derived from the authenticated prebuild worldserver config.",
     "dvc-workspace": "Explicit workspace whose dvc.lock binds generated route and gear outputs."
+  },
+  "native_extraction_provenance": {
+    "archive_sha256": "75ee7707bfca455868fb62f74be3c4a6667b4f2142f9161cd1caa224a18e10f1",
+    "creation_command_inputs": [
+      {
+        "argv": [
+          "/home/runiir/Games/trinity-cata/.pixi/envs/default/bin/python",
+          "-m",
+          "tools.raid_program.runtime_asset_materialization",
+          "--data-dir",
+          "/home/runiir/Games/trinity-cata/data",
+          "--inventory-authority",
+          "/home/runiir/Games/trinity-cata/experiments/configs/runtime_asset_native_data_inventory_v1.json",
+          "--archive",
+          "/home/runiir/Games/trinity-cata/dataset/runtime_assets/native_inputs_03cb01db0b.tar",
+          "--dvc-workspace",
+          "/home/runiir/Games/trinity-cata",
+          "--dvc-pointer",
+          "/home/runiir/Games/trinity-cata/dataset/runtime_assets/native_inputs_03cb01db0b.tar.dvc",
+          "--reconstruction-root",
+          "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/asset-reconstruction",
+          "--receipt",
+          "/home/runiir/Games/trinity-cata/dataset/runtime_assets/native_inputs_03cb01db0b.materialization.json",
+          "--reuse-existing-archive"
+        ],
+        "cwd": "/home/runiir/Games/trinity-cata"
+      }
+    ],
+    "dvc_content_address": "b1020765779cbccba103b8873dfb8c2e",
+    "historical_extraction_origin": "unknown",
+    "inventory_authority_sha256": "e3547f691b75ae78c7b01279d175941f51348e50695917c914a56a6651642373",
+    "kind": "verified_materialization",
+    "path": "dataset/runtime_assets/native_inputs_03cb01db0b.materialization.json",
+    "receipt_sha256": "d1a1bfd6cc62bc0f54ab77104c0e6071cc7dddc8907f8033b675e47eef8fdaaf",
+    "root": "dvc-workspace"
   }
 }
