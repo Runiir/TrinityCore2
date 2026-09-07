@@ -18,7 +18,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "8bec03f6d851e72dc9d37ff93977798f587a45f7d376552d055fdf67206377fc"
+    "sha256": "78b3d8c14de2b44163b2ae0f81d2ae27dbfb8db35c7c36cf90681525e6f4a886"
   },
   "scope_lock": {
     "objective": "Implement and verify two-cohort scheduling, explicit callback ownership and scoped cleanup before one live isolation canary.",
@@ -62,11 +62,9 @@
     "previous_work_unit": "shard:runtime_asset_input_reconstruction",
     "details": "All eight selected MMAP byte hashes match. Source-checkout/data and configured DataDir alias the same files but require modes 0444 and 0664 respectively. Use independent source copies. Historical extraction receipt is absent; current provenance must use exact DVC-addressed, empty-cache verified materialization with historical extraction origin unknown.",
     "issue_counts": {
-      "hash_mismatch": 1,
-      "mode_mismatch": 16,
       "provenance_missing": 1
     },
-    "snapshot_sha256": "b6bc5ac7429957736b9a3a9e90ff58785c39bb53f9a3df004b2d209aa2aacdd7",
+    "snapshot_sha256": "c5f8b77f264d0d3235670ea5bf23a46b27a0b20f96361c4375d9b5508ef02ead",
     "full_native_inventory_readback": {
       "entry_count": 40976,
       "difference_count": 0,
@@ -78,7 +76,9 @@
       "model": "gpt-5.6-sol",
       "reasoning": "high",
       "production_publication_verified": false
-    }
+    },
+    "source_checkout": "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/source",
+    "publication_state": "archive_captured; pointer visibility and verified-resume repairs independently approved; production resume next"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",

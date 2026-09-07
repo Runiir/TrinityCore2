@@ -47,6 +47,12 @@ Before live execution, require:
   DVC content address, and reconstruction verified from the remote with an
   empty cache. Record historical extraction origin as unknown. This authority
   does not waive content, mode, or source-identity mismatches.
+- Before archiving a large new payload, check that Git can retain its intended
+  `.dvc` pointer. A broadly ignored data directory needs narrow exceptions for
+  its pointer and DVC-generated `.gitignore`, while payloads remain ignored.
+  If publication stops after capture, reuse the verified archive through the
+  explicit resume path and repeat remote reconstruction; do not recapture
+  unchanged inputs merely to get past a pointer-visibility failure.
 - inspect the owning `dvc.yaml` stage before planning hydration. A lock-file
   hash does not mean an output is restorable: metrics or outputs declared with
   `cache: false` are intentionally not materialized by `dvc pull` or

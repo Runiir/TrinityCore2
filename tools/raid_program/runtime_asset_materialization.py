@@ -227,15 +227,33 @@ def _archive_data_dir(
     )
     if after != before:
         raise MaterializationError("source_drift:inventory_changed_during_archive")
+    return before, _archive_identity(archive_path, before)
+
+
+def _archive_identity(
+    archive_path: Path, source_records: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
     archive_sha256, archive_md5, archive_stat = _stream_hashes(archive_path)
-    return before, {
+    return {
         "format": ARCHIVE_FORMAT,
         "sha256": archive_sha256,
         "md5": archive_md5,
         "size_bytes": archive_stat.st_size,
-        "member_count": len(before),
-        "source_inventory_sha256": _inventory(before)["inventory_sha256"],
+        "member_count": len(source_records),
+        "source_inventory_sha256": _inventory(source_records)["inventory_sha256"],
     }
+
+
+def _reuse_archive(
+    *, data_dir: Path, archive_path: Path, excluded_paths: Sequence[str],
+    expected_records: Sequence[Mapping[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    observed = walk_inventory_no_follow(
+        data_dir, ".", include_directories=True, excluded_paths=excluded_paths,
+    )
+    if observed != [dict(row) for row in expected_records]:
+        raise MaterializationError("source_inventory_authority_mismatch")
+    return observed, _archive_identity(archive_path, observed)
 
 
 def _safe_member_name(name: str) -> str:
@@ -677,6 +695,7 @@ def produce_verified_materialization_receipt(
     receipt_path: Path, creation_command_inputs: Sequence[Mapping[str, Any]],
     dvc_command: Sequence[str] = ("dvc",),
     dvc_transport: DvcTransport = publish_and_reconstruct_dvc,
+    reuse_existing_archive: bool = False,
 ) -> dict[str, Any]:
     data_dir = absolute_path(data_dir)
     archive_path = absolute_path(archive_path)
@@ -684,6 +703,8 @@ def produce_verified_materialization_receipt(
     reconstruction_root = absolute_path(reconstruction_root)
     dvc_workspace = absolute_path(dvc_workspace)
     pointer_path = absolute_path(pointer_path)
+    if not isinstance(reuse_existing_archive, bool):
+        raise MaterializationError("reuse_existing_archive_invalid")
     try:
         archive_path.relative_to(dvc_workspace)
         pointer_path.relative_to(dvc_workspace)
@@ -710,7 +731,8 @@ def produce_verified_materialization_receipt(
     authority, authority_payload = _read_authority(inventory_authority_path)
     expected_records = authority["records"]
     try:
-        source_records, archive_identity = _archive_data_dir(
+        archive_operation = _reuse_archive if reuse_existing_archive else _archive_data_dir
+        source_records, archive_identity = archive_operation(
             data_dir=data_dir, archive_path=archive_path,
             excluded_paths=excluded, expected_records=expected_records,
         )
@@ -813,6 +835,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--dvc-pointer", type=Path, required=True)
     parser.add_argument("--reconstruction-root", type=Path, required=True)
     parser.add_argument("--receipt", type=Path, required=True)
+    parser.add_argument("--reuse-existing-archive", action="store_true")
     args = parser.parse_args(argv)
     command_inputs = [{
         "argv": [
@@ -831,6 +854,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         reconstruction_root=args.reconstruction_root,
         receipt_path=args.receipt,
         creation_command_inputs=command_inputs,
+        reuse_existing_archive=args.reuse_existing_archive,
     )
     receipt_payload, _stat = read_regular_no_follow(args.receipt)
     print(json.dumps({

@@ -41,6 +41,10 @@ __pycache__/
 /dataset
 !/dataset/
 /dataset/*
+!/dataset/runtime_assets/
+/dataset/runtime_assets/*
+!/dataset/runtime_assets/*.dvc
+!/dataset/runtime_assets/.gitignore
 !/dataset/bot_runtime_profiles/
 /dataset/bot_runtime_profiles/*
 !/dataset/bot_runtime_profiles/profiles.json

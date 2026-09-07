@@ -101,7 +101,9 @@ def _fake_transport(
     return transport
 
 
-def _produce(paths: dict[str, Path], transport=None) -> dict:
+def _produce(
+    paths: dict[str, Path], transport=None, *, reuse_existing_archive: bool = False,
+) -> dict:
     return produce_verified_materialization_receipt(
         data_dir=paths["data"],
         inventory_authority_path=paths["authority"],
@@ -114,6 +116,7 @@ def _produce(paths: dict[str, Path], transport=None) -> dict:
             "cwd": str(paths["dvc"]),
         }],
         dvc_transport=transport or _fake_transport(),
+        reuse_existing_archive=reuse_existing_archive,
     )
 
 
@@ -168,6 +171,29 @@ def test_producer_rejects_bad_remote_archive(tmp_path: Path, failure: str) -> No
     )
     with pytest.raises(MaterializationError):
         _produce(paths, transport)
+    assert not paths["receipt"].exists()
+
+
+def test_producer_can_resume_with_exact_existing_archive(tmp_path: Path) -> None:
+    paths = _fixture(tmp_path)
+    original = _produce(paths)
+    original_archive_sha256 = original["archive"]["sha256"]
+    paths["receipt"].unlink()
+    paths["pointer"].unlink()
+    shutil.rmtree(paths["reconstruction"])
+
+    resumed = _produce(paths, reuse_existing_archive=True)
+
+    assert resumed["archive"]["sha256"] == original_archive_sha256
+    assert resumed["source_inventory"] == original["source_inventory"]
+
+
+def test_reused_corrupt_archive_cannot_produce_receipt(tmp_path: Path) -> None:
+    paths = _fixture(tmp_path)
+    paths["archive"].write_bytes(b"not a tar archive")
+
+    with pytest.raises(MaterializationError, match="archive_invalid"):
+        _produce(paths, reuse_existing_archive=True)
     assert not paths["receipt"].exists()
 
 

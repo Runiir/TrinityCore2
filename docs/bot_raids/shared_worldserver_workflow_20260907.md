@@ -117,3 +117,18 @@ Independent Sol high review approved the materialization implementation for
 production publication. Review ran 88 relevant checks and 24 final focused
 checks. Production publication and reconstruction remain unexecuted at this
 code checkpoint.
+
+The first production materialization captured its archive but stopped before
+upload: the repository's `/dataset/*` ignore rule hid the `.dvc` pointer.
+Narrow pointer exceptions and an explicit existing-archive resume path repair
+this publication edge. Resume retains the full remote reconstruction and source
+drift checks. Its focused suite passes 79 checks.
+
+A detached clean source checkout at `03cb01db0b` now holds 27 independent input
+copies (46,561,614 bytes), each verified against the manifest. Preflight using
+this checkout and the configured native DataDir has no hash or mode failures;
+only the still-unbound provenance receipt remains. Input snapshot:
+`c5f8b77f264d0d3235670ea5bf23a46b27a0b20f96361c4375d9b5508ef02ead`.
+
+Independent Sol high review approved the bounded archive-resume and pointer
+visibility repair; its read-only verification passed 91 checks.
