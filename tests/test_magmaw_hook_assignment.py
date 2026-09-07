@@ -112,15 +112,19 @@ static ActorSnapshot const& PlayerByGuid(Blackboard const& board, uint32 guid)
 static void AddPincerWindow(Blackboard& board, bool interactable)
 {
     board.Hostiles.front().Interactable = interactable;
-    ActorSnapshot pincer = board.Hostiles.front();
-    pincer.Guid = ObjectGuid(HighGuid::Unit,
+    ActorSnapshot leftPincer = board.Hostiles.front();
+    leftPincer.Guid = ObjectGuid(HighGuid::Unit,
         AdaptiveMagmawStrategy::PincerLeftEntry, uint32(700));
-    pincer.Entry = AdaptiveMagmawStrategy::PincerLeftEntry;
+    leftPincer.Entry = AdaptiveMagmawStrategy::PincerLeftEntry;
+    ActorSnapshot rightPincer = board.Hostiles.front();
+    rightPincer.Guid = ObjectGuid(HighGuid::Unit,
+        AdaptiveMagmawStrategy::PincerRightEntry, uint32(702));
+    rightPincer.Entry = AdaptiveMagmawStrategy::PincerRightEntry;
     ActorSnapshot spike = board.Hostiles.front();
     spike.Guid = ObjectGuid(HighGuid::Unit,
         AdaptiveMagmawStrategy::SpikeEntry, uint32(701));
     spike.Entry = AdaptiveMagmawStrategy::SpikeEntry;
-    board.Summons = { pincer, spike };
+    board.Summons = { leftPincer, rightPincer, spike };
 }
 
 static void AddPincerWarning(Blackboard& board)
@@ -167,18 +171,64 @@ int main()
         assert(!HasMechanic(plan, "pincer_preposition"));
     }
 
-    // The first two eligible DPS are ordinary30007/8 after the fixed baiters
-    // are removed. The first one can still submit the native vehicle hook.
-    approach.Players[3].VehicleGuid = approach.Summons.front().Guid;
-    AdaptiveMagmawPlan nativeHook = strategy.Propose(
-        approach, ordinaryMage, "dps");
-    assert(nativeHook.Interaction.has_value());
-    assert(nativeHook.Interaction->Id.Mechanic == "launch_native_hook");
-    auto const* vehicleHook = std::get_if<VehicleAction>(
-        &nativeHook.Interaction->Action);
-    assert(vehicleHook);
-    assert(vehicleHook->SpellId == 77917u);
-    assert(vehicleHook->Target == approach.Summons.back().Guid);
+    // One mounted actor cannot launch alone. The right pincer holds its
+    // native hook while ordinary30007 remains able to mount and approach.
+    Blackboard loneMounted = approach;
+    loneMounted.Players[4].VehicleGuid = loneMounted.Summons[1].Guid;
+    AdaptiveMagmawPlan loneRight = strategy.Propose(
+        loneMounted, ordinaryWarlock, "dps");
+    AdaptiveMagmawPlan loneLeft = strategy.Propose(
+        loneMounted, ordinaryMage, "dps");
+    assert(!HasMechanic(loneRight, "launch_native_hook"));
+    assert(loneLeft.Interaction.has_value());
+    assert(loneLeft.Interaction->Id.Mechanic == "mount_free_pincer");
+    assert(HasMechanic(loneLeft, "pincer_approach"));
+
+    // Once both assigned actors occupy distinct left/right pincers, each
+    // submits its existing native spell against the same spike.
+    Blackboard pairReady = loneMounted;
+    pairReady.Players[3].VehicleGuid = pairReady.Summons[0].Guid;
+    AdaptiveMagmawPlan leftHook = strategy.Propose(
+        pairReady, ordinaryMage, "dps");
+    AdaptiveMagmawPlan rightHook = strategy.Propose(
+        pairReady, ordinaryWarlock, "dps");
+    assert(leftHook.Interaction.has_value());
+    assert(rightHook.Interaction.has_value());
+    assert(leftHook.Interaction->Id.Mechanic == "launch_native_hook");
+    assert(rightHook.Interaction->Id.Mechanic == "launch_native_hook");
+    auto const* leftVehicleHook = std::get_if<VehicleAction>(
+        &leftHook.Interaction->Action);
+    auto const* rightVehicleHook = std::get_if<VehicleAction>(
+        &rightHook.Interaction->Action);
+    assert(leftVehicleHook && rightVehicleHook);
+    assert(leftVehicleHook->SpellId == 77917u);
+    assert(rightVehicleHook->SpellId == 77941u);
+    assert(leftVehicleHook->Target == pairReady.Summons.back().Guid);
+    assert(rightVehicleHook->Target == leftVehicleHook->Target);
+
+    // A shared pincer, an unresolved vehicle, or a dead peer cannot satisfy
+    // the native two-aura requirement and therefore emits no hook.
+    Blackboard samePincer = pairReady;
+    samePincer.Players[4].VehicleGuid = samePincer.Summons[0].Guid;
+    assert(!HasMechanic(strategy.Propose(
+        samePincer, ordinaryMage, "dps"), "launch_native_hook"));
+    assert(!HasMechanic(strategy.Propose(
+        samePincer, ordinaryWarlock, "dps"), "launch_native_hook"));
+
+    Blackboard unresolvedVehicle = pairReady;
+    unresolvedVehicle.Players[3].VehicleGuid = ObjectGuid(
+        HighGuid::Unit, AdaptiveMagmawStrategy::PincerLeftEntry, uint32(999));
+    assert(!HasMechanic(strategy.Propose(
+        unresolvedVehicle, ordinaryMage, "dps"), "launch_native_hook"));
+    assert(!HasMechanic(strategy.Propose(
+        unresolvedVehicle, ordinaryWarlock, "dps"), "launch_native_hook"));
+
+    Blackboard deadPeer = pairReady;
+    deadPeer.Players[3].Alive = false;
+    deadPeer.Players[6].Alive = false;
+    deadPeer.Players[1].Alive = false;
+    assert(!HasMechanic(strategy.Propose(
+        deadPeer, ordinaryWarlock, "dps"), "launch_native_hook"));
 
     Blackboard openApproach = base;
     AddPincerWindow(openApproach, true);

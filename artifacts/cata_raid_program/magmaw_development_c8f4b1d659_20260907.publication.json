@@ -133,5 +133,19 @@
     }
   ],
   "verified_archive_copies_evicted": true,
-  "raw_payloads_retained_for_active_causal_review": true
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    "magmaw-development-c8f4b1d659/raw.jsonl",
+    "magmaw-development-c8f4b1d659/worldserver.log",
+    "magmaw-development-c8f4b1d659/capture.console.log",
+    "magmaw-development-c8f4b1d659/readback.console.log"
+  ],
+  "reviewed_live_findings": [
+    "Zero casualties across both trash groups and the interrupted Magmaw pull; no boss-clear claim.",
+    "Bot30004 task2/candidate2 retained its native escape path past original 750ms expiry and reached safe clearance; no formation replacement inside that task interval.",
+    "Fixed baiters30006/30009 had no pincer duties; ordinary30007/30008 performed the native interactions.",
+    "Three exposed-head42347 attack windows ended at1788796716598. At1788796772818 bot30008 submitted its hook while30007 was still mounting; no later head window observed.",
+    "Boss remaining-health telemetry unavailable in this source; add-inclusive totals do not establish boss-health progress.",
+    "Statistics windows35 and36 remained within the same attributable attempt without trace-continuity termination."
+  ]
 }

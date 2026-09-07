@@ -1469,7 +1469,8 @@ int main()
     BotEncounter::ActorSnapshot secondHookBot = hookBot;
     secondHookBot.Guid = ObjectGuid(HighGuid::Player, uint32(200));
     secondHookBot.ClassSpec = "elemental_shaman";
-    secondHookBot.VehicleGuid = ObjectGuid{};
+    secondHookBot.VehicleGuid = ObjectGuid(HighGuid::Unit, uint32(41789),
+        uint32(103));
     BotEncounter::ActorSnapshot nonHookBot = hookBot;
     nonHookBot.Guid = ObjectGuid(HighGuid::Player, uint32(300));
     nonHookBot.Role = "healer";
@@ -1478,10 +1479,13 @@ int main()
     BotEncounter::ActorSnapshot leftPincer = magmawBoss;
     leftPincer.Guid = ObjectGuid(HighGuid::Unit, uint32(41620), uint32(101));
     leftPincer.Entry = BotEncounter::AdaptiveMagmawStrategy::PincerLeftEntry;
+    BotEncounter::ActorSnapshot rightPincer = magmawBoss;
+    rightPincer.Guid = ObjectGuid(HighGuid::Unit, uint32(41789), uint32(103));
+    rightPincer.Entry = BotEncounter::AdaptiveMagmawStrategy::PincerRightEntry;
     BotEncounter::ActorSnapshot spike = magmawBoss;
     spike.Guid = ObjectGuid(HighGuid::Unit, uint32(41767), uint32(102));
     spike.Entry = BotEncounter::AdaptiveMagmawStrategy::SpikeEntry;
-    magmawHook.Summons = { leftPincer, spike };
+    magmawHook.Summons = { leftPincer, rightPincer, spike };
     auto leftHookPlan = magmawStrategy.Propose(
         magmawHook, hookBot.Guid, "dps");
     assert(leftHookPlan.Interaction.has_value());
@@ -1502,10 +1506,8 @@ int main()
         && leftHook->Target == spike.Guid);
 
     BotEncounter::Blackboard magmawRightHook = magmawHook;
-    magmawRightHook.Summons.front().Entry =
-        BotEncounter::AdaptiveMagmawStrategy::PincerRightEntry;
     auto rightHookPlan = magmawStrategy.Propose(
-        magmawRightHook, hookBot.Guid, "dps");
+        magmawRightHook, secondHookBot.Guid, "dps");
     assert(rightHookPlan.Interaction.has_value());
     auto const* rightHook = std::get_if<VehicleAction>(
         &rightHookPlan.Interaction->Action);

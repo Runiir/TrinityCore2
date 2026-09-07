@@ -35,7 +35,9 @@ Workers implement the bounded hypothesis and correct implementation/test errors
 within that scope until the focused checks pass. A disproven hypothesis means
 return the contradictory evidence; it does not mean invent a broader repair.
 No nested agents, live server actions, provisioning, builds, DVC mutation, or
-artifact deletion unless explicitly assigned. Preserve pre-existing user edits.
+artifact deletion unless explicitly assigned. Preserve all edits outside owned files,
+including concurrent coordinator and worker edits. Never restore, revert, or clean
+those files to tidy Git status. Report unexpected changes to the coordinator.
 
 Preserve the typed arbiter, native movement safety, and ownership of effects.
 Deferred callbacks must own captured values or reference state that outlives

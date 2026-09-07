@@ -52,6 +52,30 @@
             || vehicle.Entry == PincerRightEntry;
     }
 
+    static bool HookPairReady(Blackboard const& board)
+    {
+        std::vector<ObjectGuid> const hookUsers = BuildHookUsers(board);
+        if (hookUsers.size() < 2 || hookUsers[0] == hookUsers[1])
+            return false;
+
+        ActorSnapshot const* first = board.FindActor(hookUsers[0]);
+        ActorSnapshot const* second = board.FindActor(hookUsers[1]);
+        if (!first || !second || !first->Alive || !second->Alive
+            || first->VehicleGuid.IsEmpty() || second->VehicleGuid.IsEmpty()
+            || first->VehicleGuid == second->VehicleGuid)
+            return false;
+
+        ActorSnapshot const* firstVehicle = board.FindActor(
+            first->VehicleGuid);
+        ActorSnapshot const* secondVehicle = board.FindActor(
+            second->VehicleGuid);
+        return firstVehicle && secondVehicle && firstVehicle->Alive
+            && secondVehicle->Alive && IsPincerVehicle(*firstVehicle)
+            && IsPincerVehicle(*secondVehicle)
+            && firstVehicle->Guid != secondVehicle->Guid
+            && firstVehicle->Entry != secondVehicle->Entry;
+    }
+
     static BotNativeAction::Candidate BuildHookCandidate(Blackboard const& board,
         ActorSnapshot const& vehicle, ActorSnapshot const& spike)
     {
@@ -95,7 +119,8 @@
         if (!assignment.Assigned)
             return std::nullopt;
         if (assignment.Vehicle && assignment.Spike
-            && IsPincerVehicle(*assignment.Vehicle))
+            && IsPincerVehicle(*assignment.Vehicle)
+            && HookPairReady(board))
             return BuildHookCandidate(board, *assignment.Vehicle,
                 *assignment.Spike);
         if (boss.Interactable && bot.VehicleGuid.IsEmpty())
