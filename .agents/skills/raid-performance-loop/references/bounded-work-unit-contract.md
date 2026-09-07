@@ -23,6 +23,8 @@ Before dispatch, the coordinator checks that the packet includes the relevant
 callers, lifecycle boundary and duplicate/legacy test expectations. Include the
 small concrete examples, not just filenames. Do not assign Luna a causal guess
 as an exact implementation task. Resolve ambiguity locally or with Sol first.
+Search for sibling candidates and fallback calls that can mutate the same target
+or movement state; reading only the named candidate is not a complete caller check.
 
 Workers implement the bounded hypothesis and correct implementation/test errors
 within that scope until the focused checks pass. A disproven hypothesis means
