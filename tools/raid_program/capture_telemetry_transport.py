@@ -16,10 +16,10 @@ except ModuleNotFoundError:
 
 
 # The native trace export is backed by a 128-entry per-bot ring.  A fixed
-# ten-second poll is normally cheap, but a busy bot can approach that ring's
-# capacity after a quiet interval.  Once a response reaches this conservative
-# watermark, switch to a bounded faster cadence so later exports retain
-# headroom.  This only changes collection frequency; a native ``gap`` is still
+# ten-second poll can lose the first burst after a quiet interval before the
+# adaptive pressure detector receives any warning. Default to the existing
+# two-second pressure cadence; explicit slower diagnostics still adapt at the
+# watermark. This only changes collection frequency; a native ``gap`` is still
 # retained and rejected by the evidence gates.
 TRACE_RING_CAPACITY = 128
 TRACE_PRESSURE_WATERMARK = trace_transport_smoke.PRESSURE_WATERMARK
@@ -455,10 +455,9 @@ class TelemetryScheduler:
     # request them immediately, so this is a volume reduction rather than an
     # evidence reduction.
     diagnose_interval_sec: float = 30.0
-    # The native decision trace is a 128-entry ring.  Keep the normal delta
-    # cadence at ten seconds to limit payload volume; observe_trace switches
-    # to a bounded faster cadence when a response approaches ring pressure.
-    trace_interval_sec: float = 10.0
+    # Drain the 128-entry native ring before a first combat burst can overwrite
+    # it. Delta exports retain the same events at this shorter cadence.
+    trace_interval_sec: float = 2.0
     _next_status_at: float = 0.0
     _next_diagnose_at: float = 0.0
     _next_trace_at: float = 0.0

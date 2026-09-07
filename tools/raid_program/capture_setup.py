@@ -535,7 +535,7 @@ def build_capture_parser(*, root: Path = ROOT) -> argparse.ArgumentParser:
         help="steady-state full semantic diagnosis cadence",
     )
     parser.add_argument(
-        "--trace-interval-sec", type=float, default=10.0,
+        "--trace-interval-sec", type=float, default=2.0,
         help="append-only trace-delta export cadence",
     )
     parser.add_argument(

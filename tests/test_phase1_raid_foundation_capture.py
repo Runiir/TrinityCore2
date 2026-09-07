@@ -509,7 +509,7 @@ def test_capture_parser_preserves_cli_defaults(tmp_path: Path):
     assert args.telemetry_timeout_sec == 60
     assert args.status_interval_sec == 5.0
     assert args.diagnose_interval_sec == 30.0
-    assert args.trace_interval_sec == 10.0
+    assert args.trace_interval_sec == 2.0
     assert args.resource_sample_interval_sec == 5.0
     assert args.fixture_expansion_replay is False
     assert args.trace_transport_smoke is False
@@ -1692,14 +1692,30 @@ def test_default_scheduler_reduces_heavy_payload_volume_without_dropping_channel
     scheduler = TelemetryScheduler()
     assert scheduler.status_interval_sec == 5.0
     assert scheduler.diagnose_interval_sec == 30.0
-    assert scheduler.trace_interval_sec == 10.0
+    assert scheduler.trace_interval_sec == 2.0
     commands = [command for now in range(0, 121) for command in scheduler.commands_due(float(now))]
     assert commands.count("botauto status") == 25
     assert commands.count("botauto diagnose all") == 5
-    assert commands.count("botauto trace all 128 delta") == 13
+    assert commands.count("botauto trace all 128 delta") == 61
     assert set(commands) == {
         "botauto status", "botauto diagnose all", "botauto trace all 128 delta",
     }
+
+
+def test_default_trace_poll_drains_first_burst_after_quiet_period():
+    scheduler = TelemetryScheduler()
+    pending = 0
+    largest_batch = 0
+    # Live actor 30008 produced about 28 events/sec before the first pressure
+    # response. A quiet period offers no advance warning to the adaptive path.
+    for now in range(41):
+        pending += 28 if 21 <= now <= 30 else 0
+        assert pending <= 128, "First burst overwrote the native trace ring"
+        if "botauto trace all 128 delta" in scheduler.commands_due(float(now)):
+            largest_batch = max(largest_batch, pending)
+            pending = 0
+    assert largest_batch > 0
+    assert pending == 0
 
 
 def test_trace_scheduler_shortens_after_ring_pressure_without_accepting_gaps():
@@ -5454,11 +5470,28 @@ def test_live_evidence_demux_accepts_controller_gameplay_terminals_without_ready
     assert "evidence_demux_required_action_missing:botauto_readycheck" in report["rejections"]
 
 
-def test_live_evidence_demux_still_requires_readycheck_for_clear_run():
+@pytest.mark.parametrize("readycheck_mode", ["claimed_action", "zero_wipe", "post_wipe_pending"])
+def test_live_evidence_demux_requires_only_applicable_native_readycheck(readycheck_mode):
     active = accepted_status()
     active["cohort_id"] = "default"
     active["active_profile"] = "blackwing_descent_10n"
-    bots = [{"bot_guid": 1001 + index} for index in range(10)]
+    runtime = active["raid_runtime"]
+    if readycheck_mode != "claimed_action":
+        runtime["native_recovery"]["ready_check_action_observed"] = False
+        runtime["native_recovery"]["ready_check_action_generation"] = 0
+    if readycheck_mode == "post_wipe_pending":
+        active["validation_route"] = {"generation": 4, "node_id": "boss"}
+        runtime.update(
+            wipe_generation=1, native_recovery_hold_active=True,
+            native_recovery_route_generation=4, native_recovery_node_id="boss",
+            native_hostile_activity_active=False, boss_reset_generation=1,
+        )
+        runtime["native_recovery"].update(
+            death_observed=True, corpse_observed=True, release_observed=True,
+            resurrection_observed=True, runback_observed=True,
+        )
+        assert ready_for_native_readycheck(active)
+    bots = [{"bot_guid": 1001 + index, "entries": []} for index in range(10)]
     rows = normalized_batch_payload(
         b"\n".join(json.dumps(row).encode() for row in (
             {"ok": True, "action": "botauto_profile", "cohort_id": "default",
@@ -5478,8 +5511,10 @@ def test_live_evidence_demux_still_requires_readycheck_for_clear_run():
         )) + b"\n"
     )
     report = evidence_demux_report(rows)
-    assert "evidence_demux_required_action_missing:botauto_readycheck" in report["rejections"]
-    assert report["gate_passed"] is False
+    expected_required = readycheck_mode != "zero_wipe"
+    assert ("evidence_demux_required_action_missing:botauto_readycheck"
+            in report["rejections"]) is expected_required
+    assert report["gate_passed"] is not expected_required, report["rejections"]
 
 
 def _magmaw_fixture_demux_input():
@@ -6489,7 +6524,6 @@ def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap()
     assert 'parser.add_argument("--semantic-stall-sec", type=int, default=300)' in setup_source
     assert 'parser.add_argument("--telemetry-timeout-sec", type=int, default=60)' in setup_source
     assert '"--diagnose-interval-sec", type=float, default=30.0,' in setup_source
-    assert '"--trace-interval-sec", type=float, default=10.0,' in setup_source
     assert "deadline = time.monotonic() + args.observe_sec if args.observe_sec else None" in live_source
     assert "deadline is None or time.monotonic() < deadline" in live_source
     assert '"wall_clock_mode": "uncapped" if args.observe_sec == 0' in finalization_source

@@ -4,6 +4,7 @@ from collections import Counter
 from typing import Any, Callable
 
 try:
+    from tools.raid_program.capture_progress import ready_for_native_readycheck
     from tools.raid_program.capture_magmaw_personal_threat_episode import (
         personal_threat_episode_join_report,
     )
@@ -26,6 +27,7 @@ try:
         fixture_terminal_binding,
     )
 except ModuleNotFoundError:
+    from capture_progress import ready_for_native_readycheck
     from capture_magmaw_personal_threat_episode import (
         personal_threat_episode_join_report,
     )
@@ -746,6 +748,7 @@ def evidence_demux_report(
     previous_route_advance = 0
     profile_selection_seen = False
     terminal_failure_seen = False
+    native_readycheck_required = False
     for expected_sequence, row in enumerate(rows, start=1):
         binding = row["identity_binding"]
         binding.update(
@@ -961,6 +964,16 @@ def evidence_demux_report(
                     reject("evidence_demux_bot_outside_roster")
         if not row_reasons:
             binding["state"] = "bound"
+            if action == "botauto_status":
+                native = runtime.get("native_recovery") or {}
+                try:
+                    native_readycheck_required |= (
+                        native.get("ready_check_action_observed") is True
+                        or ready_for_native_readycheck(payload)
+                    )
+                except (AttributeError, TypeError, ValueError):
+                    reject("evidence_demux_readycheck_scope_invalid")
+                    binding["state"] = "rejected"
     if not stop_seen:
         reasons.append("evidence_demux_cleanup_missing")
     if not inactive_cleanup_seen:
@@ -978,7 +991,9 @@ def evidence_demux_report(
         "botauto_chainwielder_checkpoint",
         MAGMAW_TRANSFER_CHECKPOINT_ACTION,
     }
-    if terminal_failure_seen or controller_terminal_bound or fixture_terminal_bound:
+    if (not native_readycheck_required or terminal_failure_seen
+            or controller_terminal_bound or fixture_terminal_bound):
+        # A zero-wipe clear does not request a native recovery ready-check.
         # A recognized failed attempt never reaches the post-wipe ready-check
         # success gate.  Its exact terminal status plus forced diagnose/trace
         # and ordinary cleanup remain mandatory evidence.
