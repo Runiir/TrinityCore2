@@ -84,6 +84,7 @@ def _canonical_assets(root: Path) -> dict[str, object]:
         "route_partition": {
             "scenario_id": PROFILE,
             "profile_name": PROFILE,
+            "expected_strategy_id": "tank_swap_adds_raid_aoe",
             "node_count": 4,
             "terminal_index": 3,
             "terminal_kind": "boss",

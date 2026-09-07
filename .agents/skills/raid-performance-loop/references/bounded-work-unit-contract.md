@@ -53,6 +53,8 @@ small dependency stub where it makes a lifecycle transition deterministic, and
 say what is stubbed. Real terrain/spell/encounter fidelity still needs matched
 live evidence. A source-shape assertion or fabricated successful outcome cannot
 prove that the boss died or a native movement completed.
+Build fixture identities from native serializers or tracked configuration, not
+from values invented to satisfy the validator being tested.
 
 Independent review checks the cause, preserved invariants, affected callers,
 and actual test boundary together. The coordinator resumes the next action

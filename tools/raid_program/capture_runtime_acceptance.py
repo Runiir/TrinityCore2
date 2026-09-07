@@ -385,7 +385,7 @@ def accepted_foundation_status(
     else:
         expected_route_generation = int(route_partition.get("node_count") or 0)
         expected_route_index = int(route_partition.get("terminal_index") or 0)
-    expected_strategy = profile_name
+    expected_strategy = route_partition.get("expected_strategy_id")
     checks = {
         "status_ok": status.get("ok") is True,
         "ten_bots": status.get("bots") == 10,
@@ -410,7 +410,9 @@ def accepted_foundation_status(
         "profile_content_hash_owned": isinstance(runtime.get("profile_content_hash"), str)
             and bool(runtime.get("profile_content_hash", "").strip()),
         "assignment_generation_owned": _positive_int(runtime.get("assignment_generation")),
-        "strategy_owned": runtime.get("strategy_id") == expected_strategy,
+        "strategy_owned": isinstance(expected_strategy, str)
+            and bool(expected_strategy)
+            and runtime.get("strategy_id") == expected_strategy,
         "boss_state_readback": len(runtime.get("boss_states") or []) == 6,
         "ready_check_satisfied": runtime.get("ready_check_satisfied") is True,
         "roster_composition_valid": runtime.get("roster_composition_valid") is True,

@@ -319,7 +319,7 @@ class CaptureSetup:
 def controller_route_hold_runtime_manifest_identity(
     *, config: Path, recurrence_admission: dict[str, Any], scenario_id: str,
     runtime_profile: str,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """Project the exact verified runtime route identity used by native start."""
 
     if recurrence_admission.get("valid") is not True:
@@ -408,6 +408,11 @@ def controller_route_hold_runtime_manifest_identity(
         raise ValueError("controller_route_hold_checkpoint_target_not_initial_node")
     if any(not isinstance(row, dict) for row in rows):
         raise ValueError("controller_route_hold_runtime_manifest_row_invalid")
+    terminal_mechanic_profile = rows[-1].get("mechanic_profile", "")
+    if not isinstance(terminal_mechanic_profile, str):
+        raise ValueError(
+            "controller_route_hold_terminal_mechanic_profile_invalid"
+        )
     return {
         "route_manifest_path": str(configured_path),
         "route_manifest_sha256": bound_sha256,
@@ -421,6 +426,10 @@ def controller_route_hold_runtime_manifest_identity(
             "node_ids": [row.get("route_node_id") for row in rows],
             "terminal_kind": rows[-1].get("kind"),
             "terminal_target_entry": rows[-1].get("source_entry"),
+            "expected_strategy_id": (
+                terminal_mechanic_profile
+                if terminal_mechanic_profile else scenario_id
+            ),
         },
     }
 

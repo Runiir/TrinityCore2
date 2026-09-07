@@ -753,6 +753,7 @@ def validate_runtime_profile_assets(
     route_partition: dict[str, Any] = {
         "scenario_id": selected_scenario_id,
         "profile_name": profile_name,
+        "expected_strategy_id": None,
         "node_count": 0,
         "terminal_index": None,
         "terminal_kind": None,
@@ -783,6 +784,21 @@ def validate_runtime_profile_assets(
             route_partition["terminal_index"] = route_rows - 1 if route_rows else None
             route_partition["terminal_kind"] = kinds[-1] if kinds else None
             route_partition["terminal_target_entry"] = matching_rows[-1].get("source_entry") if matching_rows else None
+            if matching_rows:
+                terminal_mechanic_profile = matching_rows[-1].get("mechanic_profile", "")
+                if not isinstance(terminal_mechanic_profile, str):
+                    route_partition["reasons"].append(
+                        "route_partition_terminal_mechanic_profile_invalid"
+                    )
+                else:
+                    # Native strategy ownership uses the selected route node's
+                    # mechanic profile, falling back to its scenario identity
+                    # only when that profile is empty.
+                    route_partition["expected_strategy_id"] = (
+                        terminal_mechanic_profile
+                        if terminal_mechanic_profile
+                        else selected_scenario_id
+                    )
             diagnostic_values = [row.get("diagnostic_only") for row in matching_rows]
             diagnostic_only = diagnostic_values[0] if diagnostic_values else None
             route_partition["diagnostic_only"] = diagnostic_only

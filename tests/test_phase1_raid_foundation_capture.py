@@ -2328,6 +2328,10 @@ def test_capture_preflight_requires_matching_hydrated_route_manifest(tmp_path: P
     assert accepted["passed"] is True
     assert accepted["matching_route_rows"] == 11
     assert accepted["route_sha256"] == accepted["reference_route_sha256"]
+    assert (
+        accepted["route_partition"]["expected_strategy_id"]
+        == "blackwing_descent_10n"
+    )
 
     reordered_rows = route.splitlines()
     reordered_rows[1], reordered_rows[2] = reordered_rows[2], reordered_rows[1]
@@ -3759,7 +3763,10 @@ def test_drudge_anchor_fallback_is_generation_scoped_and_native_path_validated()
 
 
 def test_acceptance_reconstructs_all_identity_facts():
-    accepted, reasons = accepted_foundation_status(accepted_status())
+    accepted, reasons = accepted_foundation_status(
+        accepted_status(),
+        route_partition={"expected_strategy_id": "blackwing_descent_10n"},
+    )
     assert accepted is True
     assert reasons == []
 
@@ -3769,7 +3776,7 @@ def test_magmaw_diagnostic_accepts_only_its_materialized_roster_identity():
     runtime = status["raid_runtime"]
     profile = "blackwing_descent_10n_magmaw_diagnostic"
     _materialize_profile_identity(status, profile)
-    runtime["strategy_id"] = profile
+    runtime["strategy_id"] = "tank_swap_adds_raid_aoe"
     runtime["route_progress"] = {"generation": 4, "node_index": 3}
     _completed_boss_partition(status)
     root = Path(__file__).parents[1]
@@ -3780,6 +3787,7 @@ def test_magmaw_diagnostic_accepts_only_its_materialized_roster_identity():
     assert assets["passed"], assets["reasons"]
     partition = assets["route_partition"]
     assert partition["terminal_target_entry"] == 41570
+    assert partition["expected_strategy_id"] == "tank_swap_adds_raid_aoe"
     accepted, reasons = accepted_foundation_status(
         status,
         profile_name=profile,
@@ -3787,6 +3795,15 @@ def test_magmaw_diagnostic_accepts_only_its_materialized_roster_identity():
     )
     assert accepted is True
     assert reasons == []
+
+    runtime["strategy_id"] = profile
+    accepted, reasons = accepted_foundation_status(
+        status,
+        profile_name=profile,
+        route_partition=partition,
+    )
+    assert accepted is False
+    assert "strategy_owned" in reasons
 
 
 def _completed_boss_partition(status):
@@ -3801,7 +3818,8 @@ def _completed_boss_partition(status):
                                  "result": "confirmed_unit_death"}],
     }
     return {"node_count": 4, "terminal_index": 3, "node_ids": [node],
-            "terminal_kind": "boss", "terminal_target_entry": 41570}
+            "terminal_kind": "boss", "terminal_target_entry": 41570,
+            "expected_strategy_id": "tank_swap_adds_raid_aoe"}
 
 
 @pytest.mark.parametrize("mutation,reason", [
@@ -3817,7 +3835,7 @@ def test_boss_partition_rejects_arrival_and_unrelated_death(mutation, reason):
     status = accepted_status()
     profile = "blackwing_descent_10n_magmaw_diagnostic"
     _materialize_profile_identity(status, profile)
-    status["raid_runtime"]["strategy_id"] = profile
+    status["raid_runtime"]["strategy_id"] = "tank_swap_adds_raid_aoe"
     partition = _completed_boss_partition(status)
     route = status["validation_route"]
     if mutation == "arrival":
@@ -3917,7 +3935,7 @@ def test_diagnostic_capture_rejects_cross_shard_account_and_guid_identity():
     status = accepted_status()
     runtime = status["raid_runtime"]
     profile = "blackwing_descent_10n_magmaw_diagnostic"
-    runtime["strategy_id"] = profile
+    runtime["strategy_id"] = "tank_swap_adds_raid_aoe"
     runtime["route_progress"] = {"generation": 4, "node_index": 3}
     magmaw = _expected_identity_by_slot(profile)["raid_tank_1"]
     omnotron = _expected_identity_by_slot("blackwing_descent_10n_omnotron_diagnostic")["raid_tank_1"]
@@ -3931,7 +3949,11 @@ def test_diagnostic_capture_rejects_cross_shard_account_and_guid_identity():
     accepted, reasons = accepted_foundation_status(
         status,
         profile_name=profile,
-        route_partition={"node_count": 4, "terminal_index": 3},
+        route_partition={
+            "node_count": 4,
+            "terminal_index": 3,
+            "expected_strategy_id": "tank_swap_adds_raid_aoe",
+        },
     )
     assert accepted is False
     assert "frozen_identity_account_mismatch" in reasons
@@ -3976,7 +3998,10 @@ def test_foundation_rejects_empty_profile_assignment_and_stale_lockout_identity(
 def test_roster_serialization_order_does_not_change_assignment_acceptance():
     status = accepted_status()
     status["raid_runtime"]["roster"].reverse()
-    accepted, reasons = accepted_foundation_status(status)
+    accepted, reasons = accepted_foundation_status(
+        status,
+        route_partition={"expected_strategy_id": "blackwing_descent_10n"},
+    )
     assert accepted is True
     assert reasons == []
 
