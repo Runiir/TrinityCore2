@@ -1,198 +1,60 @@
 ---
 name: raid-performance-loop
-description: Coordinate the Trinity-Cata raid performance program by inspecting deterministic readiness, selecting bounded specialist work units, assigning non-overlapping ownership, and joining handoffs. Use for raid-program orchestration, deciding what class/boss/reference/data task should run next, splitting work across agents, or preventing one agent from owning WoWSims, class rotations, boss research, boss implementation, live validation, and ML data at once. Do not use this skill to implement gameplay behavior itself.
+description: Coordinate bounded raid and class repairs, join specialist results, and continue through live validation until the user's objective is achieved.
 ---
 
-# Raid Performance Loop
+# Raid performance loop
 
-Act only as the coordinator. Keep specialist context and file ownership separate.
+Use one repair loop: inspect the failed run, identify the earliest actionable mismatch,
+repair it, test the affected behavior, review risky changes, build, run, and close evidence.
+A worker or attempt ending does not end the user's task. Continue automatically after
+passing checks. Stop unchanged retries at ten occurrences of the same first-broken edge,
+write the causal summary, and change the hypothesis or architecture before resuming.
 
-## Inspect the control plane
+## Development runs
 
-Run:
+Use the existing capture controller's development mode with a canonical scenario/profile.
+Require attributable clean source, verified binary/configuration, exact roster/readback,
+runtime assets, a completion watchdog, native outcomes, and cleanup. Run cheap metadata
+checks and affected behavioral tests before building. Execute overlapping tests once.
+Do not require historical fixture-expansion requests, a full qualification suite, or a
+new authorization/handoff document for each development attempt. Historical ledgers are
+investigation records, not the development launch authority.
 
-```bash
-pixi run python -m tools.raid_program.raid_workloop status
-```
+Keep one compact current issue/run summary: observed failure, source, repair, relevant
+tests/review, live result, evidence pointer, and next action. Generated capture receipts
+are the evidence; do not transcribe their fields into multiple handoff documents.
+A development clear requires real native boss death but does not qualify a full raid,
+validate every mechanic, or admit training data.
 
-Treat `required_next_work_unit` as the recorded next dependency under the current user request. If the active-work-unit
-descriptor is stale, stop before assigning gameplay work
-and repair that descriptor from the latest immutable handoff.
+## Qualification
 
-Then emit an exact work unit when needed:
+Use the full required regression/roster/reference and evidence checks when promoting a
+boss, full raid, class calibration, or training dataset. Legacy sealed fixture replay
+remains available when specifically testing that fixture. Consult the existing references
+only for the qualification or specialist boundary actually being exercised.
 
-```bash
-pixi run python -m tools.raid_program.raid_workloop spec fire_mage
-pixi run python -m tools.raid_program.raid_workloop boss blackwing_descent magmaw --mode 25H
-```
+## Route the repair
 
-Do not treat a stale WoWSims value, source-present boss, dossier, diagnostic
-shard, or old DVC batch as a passing gate.
+- Cadence, targeting, resources, healing choices: raid-role-implementation.
+- Matching gear/stats/cadence with wrong event damage: raid-class-mechanics-implementation.
+- Unknown encounter facts: raid-encounter-research; native scripts: raid-encounter-implementation.
+- Shared task, movement submission, recovery, or lifecycle failures: raid-bot-runtime-implementation.
+- Reference generation: raid-wowsims-reference; evidence/cleanup: raid-evidence-lifecycle.
 
-Keep validation clocks explicit in every work unit. Only isolated
-training-dummy DPS throughput calibration owns an exact 300-second scoring
-window. Raid and dungeon work units must use completion-watchdog execution and
-terminate on normal clear or typed semantic/no-progress, repeated-decision,
-death-loop, infrastructure, contamination, or interruption evidence. An
-emergency wall-clock expiry never passes a route.
+Class tuning requires exact current WoWSims reference and gear/effective-stat comparison.
+Use the promoted catalog, never an obsolete embedded DPS value. Movement-only work does
+not require a new simulator run. Missing evidence is a bounded capture task, not a reason
+to guess coefficients. Dummy calibration alone uses exactly 300 scoring seconds.
 
-For a DPS work unit, inspect the rotation-review gate before assigning a role
-implementation owner. The exact simulator and Trinity inputs must have the same
-gear identity, and the comparison record must report:
+Keep typed arbitration and persistent tasks. Native pathing owns terrain; no bot Z
+steering, teleportation, global tolerance relaxation, or encounter MMAP workaround.
 
-```text
-gear_parity.status = match
-effective_stat_parity.status = match
-dps_tuning_gate.tuning_admitted = true
-```
+## Workers
 
-Total-DPS claims additionally require
-`total_dps_comparison_gate.comparison_admitted = true`. Consumable mismatch
-fails that total-DPS gate without invalidating unaffected trace-only signals.
-
-For `self_provided_baseline`, the reviewer's `match` may contain explicit
-one-sided `favorable` throughput-stat checks. Do not reopen those as blockers;
-lower stats, gear drift, and rating drift remain blocking mismatches.
-
-`insufficient_data` routes to one bounded reference or capture work unit.
-`mismatch` routes to the owner of setup, stat application, or pet inheritance at
-the reported first-broken edge. Neither result may be retried as rotation tuning,
-and neither permits the coordinator to stop or restart the worldserver.
-
-Bind every DPS claim to one reference class. Use `self_provided_baseline` as a
-one-sided minimum floor with no upper rejection bound. It includes only effects
-the frozen player can provide through its own setup and normal actions. Require
-per-spec inventory provisioning and native use of the exact flask, food,
-pre-pot, combat potion, racial, and profession actions selected by the request.
-Use `controlled_live_parity` for exact cast, cadence, stat, and damage diagnosis.
-Keep `upstream_full_throughput` as a duration-bound capability/UI cross-check.
-Differences among these values are expected and do not block trace-only review.
-A missing class blocks only its own acceptance claim.
-The current work unit's catalog projection is authoritative for current versus
-stale classification. Embedded metadata in an older runtime report remains
-capture-time provenance and cannot override `accepted_dps_reference_class` or a
-`current_accepted` catalog classification.
-
-Use deterministic routing for an `insufficient_data` result:
-
-- missing WoWSims ComputeStats -> `raid-wowsims-reference`;
-- missing Trinity `scoring_start_stats` in a closed report ->
-  `raid-shard-architecture` for one capture-only canary that preserves the
-  existing worldserver lifecycle, followed by `raid-rotation-review`;
-- a malformed comparison artifact -> `raid-rotation-review`.
-
-When WoWSims reports `workspace_state=remote_requires_hydration`, run the
-commands from `required_hydration_work_unit` exactly. This is materialization
-of an already promoted reference, not reference regeneration and not a class
-fix. The normal sequence is:
-
-```bash
-pixi run python -m tools.raid_program.wowsims_reference_workspace hydrate
-pixi run python -m tools.raid_program.raid_workloop status
-```
-
-After the bounded reference/review work finishes, run the emitted exact
-`evict_after_use` command. Never replace it with broad DVC garbage collection.
-
-The completed comparison is `failed` when one of these data gates does not
-pass. Do not classify it as `blocked` unless authority or an external input is
-actually unavailable.
-
-## Route work to one specialist owner
-
-Use [causal routing](references/causal-routing.md) when diagnosing a failure or
-assigning a repair, and the [bounded work contract](references/bounded-work-unit-contract.md)
-for delegated workers. A descriptor identifies the next dependency; its causal
-interpretation still needs evidence. Preserve the typed arbiter. A runtime
-submission is not progress or task completion.
-
-Use [the recurrence procedure](references/recurrence-procedure.md) before a
-repair, build admission, fixture promotion, or live canary. Retain the original
-counterexample and occurrence history. At ten occurrences of the same causal
-family, stop retries and require the causal summary and architecture review.
-Source-shape tests cannot close gameplay failures. Preserve native terrain
-pathing and prohibit bot-side Z steering or encounter-specific MMAP workarounds.
-
-The coordinator owns continuation across bounded workers. A worker's stop
-condition ends its assignment, not the user's program. When a later user request
-expands scope, update the active descriptor once with the new dependency sequence
-and concrete evidence gates. Do not create authorization-only commits for routine
-reversible edits already covered by that request. Genuine review, clean-source,
-asset, build, and live-admission checks still apply. Continue after passing gates;
-return an unresolved dependency only when it needs unavailable inputs or authority.
-
-Use one specialist per work unit, with model selection from `trinity-orchestrator`.
-A single agent may explicitly switch specialist roles between sequential units;
-loading this coordinator skill does not forbid directly executing authorized work.
-Do not combine gameplay, simulator, capture, or training mutations in one unit.
-
-## Parallelize only disjoint lanes
-
-Parallel work is useful across these boundaries:
-
-- one WoWSims reference cohort and one boss research packet;
-- one class-family implementation and research for a different boss;
-- analysis of an immutable closed batch and source work that cannot alter it.
-
-Serialize these shared mutations:
-
-- native heavyweight builds through `queued_build.py`;
-- worldserver console, provisioning, roster leases, and canonical run state;
-- canonical DVC publication and eviction;
-- edits to a shared action profile, instance script, or encounter contract.
-
-Do not assign one agent per spec, source, review angle, or telemetry category.
-Use one owner per class family, boss, reference cohort, or closed batch.
-
-## Join gates, not prose
-
-Accept a specialist result only when its handoff follows
-[references/handoff-contract.md](references/handoff-contract.md). Review hashes,
-first-broken edge, validation result, and next dependency. Reject claims based
-only on tests, source presence, a copied profile, engagement, or raw DPS/HPS.
-For DPS tuning, also reject a handoff that omits exact gear identity or the
-effective-stat parity result. Equal cast ratios with different damage are a stat
-or native-outcome diagnostic until this gate passes; they are not permission to
-keep optimizing the priority queue.
-
-Before stopping, update the governing status/handoff artifact, commit coherent
-code/config, and apply the required DVC lifecycle. Explicitly record any switch from coordination to a specialist work unit.
-
-Route from the compact report and verified specialist handoff. Do not hand a
-worker a multi-megabyte raw trace for open-ended reading. When one exact event
-must be confirmed, use a streaming bounded extractor that filters the requested
-action/result and deduplicates by `(bot_guid, sequence)`; pass the resulting
-small receipt to the routing worker. A completed report plus an absent owned
-worldserver is terminal evidence for the observation worker, not a reason to
-keep polling.
-
-For one-spec canaries, classify the closed comparison with:
-
-```bash
-pixi run python -m tools.bot_ml.spec_canary_gate \
-  --review /path/to/rotation-review.json \
-  --spec affliction_warlock \
-  --reference-class self_provided_baseline \
-  --output /tmp/affliction-canary-decision.json
-```
-
-The decision emits at most one capture/review/fix work unit. On the matched
-verification, pass `--fixes-used 1`; a remaining mismatch then terminates that
-specialist work unit as `fix_budget_exhausted`. It does not complete or block
-the spec program. Close the attempt, preserve its before/after evidence, run a
-fresh comparison, and route the newly observed first-broken edge to its owning
-specialist. Do not redispatch the failed hypothesis or let one worker tune it
-again. Continue this diagnose, bounded-repair, matched-verification sequence
-until the spec passes its acceptance contract or a genuine external authority
-or infrastructure dependency is unavailable. A report that only establishes
-that the bot still fails is a routing receipt, not the requested outcome.
-
-Route cast mix, cadence, pet uptime, or pet event
-cadence to `raid-role-implementation`. Route matching cadence with wrong owner
-or primary-pet damage per event to `raid-class-mechanics-implementation`.
-When the selected denominator is `self_provided_baseline`, accept
-`runtime_dps >= reference_dps`; never fail a canary merely for exceeding the
-baseline. Before that comparison, require exact consumable parity. Provision
-the per-spec items and retain one successful native pre-pot use before combat
-plus one successful native combat-potion use during the scoring window when
-both are configured.
+Give one owner the evidence, one hypothesis, production files plus directly affected
+tests, forbidden changes, command, and expected outcome. Include all affected callers
+before dispatch. Use Luna max for exact narrow implementation, Sol high for ambiguous
+causal diagnosis and independent review of risky runtime/encounter changes. Work directly
+when delegation would add more coordination than useful work. Serialize builds, shared
+server ownership, provisioning, and DVC publication. Independent reads may overlap.
