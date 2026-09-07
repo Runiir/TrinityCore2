@@ -2,8 +2,8 @@
 
 The shared-cohort native kernel is implemented and independently approved.
 Runtime input reconstruction, full worldserver build, and remote publication
-have passed. The first live isolation canary terminated on a native-instance
-identity rejection after witness deaths. Isolation remains unproven.
+have passed. Two live isolation canaries closed on recovery-observation
+rejections. Isolation remains unproven; no further unchanged run is admitted.
 No boss clear, accepted gameplay repair, or ML-data admission is claimed.
 
 ## Native implementation
@@ -199,3 +199,38 @@ raid maps remain separate work. Route absent boss scripts to native encounter
 implementation. Route matched-cadence damage defects to native class mechanics
 and matched-damage cadence defects to role policy. Do not remain on Magmaw after
 its current edge is accepted or replaced by a different proven blocker.
+
+## Revised canary and next bounded repair
+
+Commit `3490069d1c` recognizes native-authorized in-world ghost runback with
+exact corpse, frozen-instance and recovery-attempt evidence. Its exact replay
+and ownership negatives passed with the other focused checks (65 total), and
+independent Sol review approved the change. Error reports now retain the
+chained cause and precise pre-cleanup raw command sequence (`565a7f5a65`).
+
+The revised run again admitted both instances, then stopped at raw sequence 44.
+GUIDs 30102 and 30104 were temporarily `in_world=false` during
+`released_ghost_observed`, while native `matches_cohort=true`, corpse presence,
+locked map669/instance2 and attempt1 remained intact. The native ownership
+predicate explicitly supports released ghosts through their corpses before its
+ordinary in-world check. The Python observation still required in-world on
+every poll, so it rejected this earlier transfer boundary. This is the second
+recovery-observation failure, not evidence of foreign ownership or a boss clear.
+Both cohorts released all leases and the worldserver exited normally.
+
+The next work unit must cover release, worldport, runback, return and stable
+in-instance observation together. It must distinguish a legitimate transient
+observation from accepted progress and from a foreign identity; no dead or
+absent member may fabricate the witness-continuation proof. Replay both closed
+runs and all foreign/stale-ownership negatives before any further live attempt.
+Do not repair these transitions by repeatedly launching Magmaw. The broad
+recovery-observation recurrence count is two; changing sub-error labels must
+not reset it.
+
+The revised evidence is published at
+`artifacts/cata_raid_program/shared_instance_3490069d1c_20260907.tar.gz.dvc`,
+archive SHA-256 `b40acec9cceec76256e9e733a50660c41b807a654681cff62871a6cc88851a26`.
+An empty-cache remote download matched; local/cloud status passed before exact
+archive-copy eviction. Raw command/console data remains remote reconstructible.
+Both runs remain training-ineligible. Class balance and boss fidelity cannot
+be assessed from these short isolation failures.

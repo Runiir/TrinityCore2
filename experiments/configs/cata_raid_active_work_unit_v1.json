@@ -1,42 +1,44 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:shared_worldserver_cohort_isolation",
+  "work_unit": "runtime:recovery_observation_state_transitions",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "in_progress",
   "epoch_id": "shared_worldserver_cohort_isolation_20260907",
-  "observed_at_commit": "06996cc142",
+  "observed_at_commit": "3490069d1c",
   "architecture_scope": "Two independent native boss instances on one worldserver, before heroic-mode admission and boss/class repairs.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Full build and first live canary closed/published. Dual instance admission passed; native-authorized corpse recovery falsely rejected by observation validator. Isolation remains unproven.",
+  "gate_state": "Two attributable canaries closed/published with successful cleanup. In-world ghost runback repaired; released-ghost worldport transient now proven. No further live retry before complete bounded recovery-sequence replay.",
   "first_broken_edge": {
-    "id": "authorized_corpse_recovery_rejected_as_instance_contamination",
+    "id": "native_corpse_recovery_worldport_transient_rejected",
     "stage": "live_observation_validation",
     "owner_classification": "raid_bot_runtime",
-    "cause": "Difficulty readback counts current in-instance members; ghosts in native attempt-bound corpse recovery remain owned but validator demands all members currently in raid.",
+    "cause": "Unconditional in_world=true check rejects native-authorized released ghosts during transfer before corpse runback.",
     "evidence_raw_sequences": [
       43,
       44
     ],
-    "review_state": "independent_Sol_diagnosis_complete_Luna_max_bounded_repair_in_progress"
+    "affected_guids": [
+      30102,
+      30104
+    ],
+    "review_state": "exact_native_rows_and_native_corpse_predicate_identified",
+    "recurrence_family": "authorized_recovery_observation_rejected",
+    "recurrence_count": 2
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "b27cde0506296400ba29509d183aaaf7bdab51390081689d7af7ef1d414c2b6c"
+    "sha256": "caacf0dc0b9ba63d9969e3b09608ecb8b6ddb7759e0c84df5a9f23c76a2aca20"
   },
   "scope_lock": {
-    "objective": "Implement and verify two-cohort scheduling, explicit callback ownership and scoped cleanup before one live isolation canary.",
+    "objective": "Model one native recovery observation sequence: release, worldport, runback, return, stable sample. Preserve native ownership and require genuine progress; replay both failures before one live canary.",
     "owned_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrCohort*",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdate.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrLifecycle.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombat*",
       "tools/raid_program/shared_instance_observation.py",
-      "tools/bot_ml/run_live_bot_validation.py",
-      "tools/raid_program/shared_instance_*.py",
-      "tools/raid_program/run_shared_instance_canary.py",
-      "tools/bot_ml/build_validation_provisioning.py",
-      "experiments/configs/cata_shared_instance_fixture_v1.json"
+      "tools/raid_program/shared_instance_validation.py",
+      "tests/test_shared_instance_observation.py",
+      "tests/test_shared_instance_recovery.py",
+      "tests/test_shared_instance_validation.py",
+      "tests/fixtures/shared_instance_recovery_*.json"
     ],
     "terminal_handoff": "A passing reviewed native kernel and real two-instance isolation proof, or a precise newly proven blocker. Do not classify storage fixtures as live isolation."
   },
@@ -55,7 +57,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Repair exact native-authorized corpse recovery observation and preserve error detail; replay captured failing rows plus foreign-instance negatives; independent review; incremental receipt refresh; one bounded revised isolation canary. No identical rerun. Then route proven blocker or resume generic 10H/25H admission.",
+  "next_action": "Implement and review complete recovery observation sequence using both archived native traces, including in_world=false transfer. No live retry until replay covers all native transitions and ownership negatives. Stable outcomes alone satisfy progress. Then one bounded live isolation validation or route newly proven blocker; resume generic 10H/25H admission afterward.",
   "queued_reference_issue": {
     "test": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
     "classification": "historical_fixture_source_freshness_mismatch",
@@ -101,15 +103,15 @@
     "live_verified": false
   },
   "closed_canary": {
-    "source_commit": "06996cc142",
+    "source_commit": "3490069d1c",
     "terminal_reason": "contamination",
     "terminal_detail": "native_instance_identity_invalid",
     "cleanup_passed": true,
     "server_exit_code": 0,
     "dual_instance_admission_observed": true,
     "isolation_passed": false,
-    "dvc_pointer": "artifacts/cata_raid_program/shared_instance_06996cc142_20260907.tar.gz.dvc",
-    "publication_receipt": "artifacts/cata_raid_program/shared_instance_06996cc142_20260907.publication.json",
+    "dvc_pointer": "artifacts/cata_raid_program/shared_instance_3490069d1c_20260907.tar.gz.dvc",
+    "publication_receipt": "artifacts/cata_raid_program/shared_instance_3490069d1c_20260907.publication.json",
     "remote_reconstruction_verified": true,
     "training_eligible": false
   }

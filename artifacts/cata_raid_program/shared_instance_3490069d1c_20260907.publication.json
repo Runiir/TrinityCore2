@@ -1,0 +1,20 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "3490069d1c",
+  "archive_sha256": "b40acec9cceec76256e9e733a50660c41b807a654681cff62871a6cc88851a26",
+  "archive_bytes": 1825050,
+  "dvc_pointer": "artifacts/cata_raid_program/shared_instance_3490069d1c_20260907.tar.gz.dvc",
+  "remote_download_sha256": "b40acec9cceec76256e9e733a50660c41b807a654681cff62871a6cc88851a26",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "terminal_reason": "contamination",
+  "terminal_detail": "native_instance_identity_invalid",
+  "underlying_cause": "member outside its admitted native instance: authorized released ghosts temporarily in_world=false",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "verified_archive_copies_evicted": true
+}
