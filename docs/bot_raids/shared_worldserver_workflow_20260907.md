@@ -2,8 +2,8 @@
 
 The shared-cohort native kernel is implemented and independently approved.
 Runtime input reconstruction, full worldserver build, and remote publication
-have passed. Two live isolation canaries closed on recovery-observation
-rejections. Isolation remains unproven; no further unchanged run is admitted.
+have passed. The third live canary at `00db4bec77` passed the shared-instance
+isolation fixture after the complete recovery-observation repair.
 No boss clear, accepted gameplay repair, or ML-data admission is claimed.
 
 ## Native implementation
@@ -250,3 +250,30 @@ The focused suite passed 76 checks and independent Sol review approved this
 revision. The next action is one incremental build and bounded isolation canary,
 then the user's requested Magmaw completion attempt under the completion
 watchdog. No boss clear or full isolation claim exists yet.
+
+## Accepted shared-instance canary
+
+The real run at `00db4bec77` passed the complete isolation fixture. Both cohorts
+advanced in disjoint native instances (subject13, witness2) on one server epoch.
+The subject recorded 610 decisions, two native events and 3,390 outgoing amount;
+the witness recorded 214 decisions, 197 events and 411,867 outgoing amount before
+the stop. After the subject stopped, the witness advanced from 253 to 316
+decisions, 207 to 230 events and 467,573 to 595,903 outgoing amount under the
+same identity. Actual movement evidence survived the scoped stop. No transfer
+snapshot was used for progress proof. The witness had ten deaths; this fixture
+does not certify its encounter behavior or DPS.
+
+Both cohorts released their leases and the owned server exited0. The terminal
+reason is `interruption` / `isolation_fixture_passed`, not a boss clear.
+Post-run source/build receipt verification passed. DVC publication and a fresh
+empty-cache remote download matched archive SHA-256
+`2fa56493e659e87dff0540e1ae55d8e3a91c865f3045ab6d58e4ae3fb9b5a86a` at
+`artifacts/cata_raid_program/shared_instance_00db4bec77_20260907.tar.gz.dvc`.
+Local/cloud status passed and exact verified archive copies were evicted.
+The two earlier recovery-observation failures remain retained, followed by this
+passing verification; their recurrence history is not reset.
+
+The user's next requested work is a real Magmaw completion attempt using the
+existing single-boss completion-watchdog capture workflow, with its current
+recurrence admission and exact roster/configuration. The isolation phase is
+complete. Magmaw has not been killed and no ML data admission is claimed.

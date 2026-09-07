@@ -1,0 +1,21 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "00db4bec77",
+  "archive_sha256": "2fa56493e659e87dff0540e1ae55d8e3a91c865f3045ab6d58e4ae3fb9b5a86a",
+  "archive_bytes": 5131464,
+  "dvc_pointer": "artifacts/cata_raid_program/shared_instance_00db4bec77_20260907.tar.gz.dvc",
+  "remote_download_sha256": "2fa56493e659e87dff0540e1ae55d8e3a91c865f3045ab6d58e4ae3fb9b5a86a",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "isolation_passed": true,
+  "terminal_reason": "interruption",
+  "terminal_detail": "isolation_fixture_passed",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "verified_archive_copies_evicted": true
+}

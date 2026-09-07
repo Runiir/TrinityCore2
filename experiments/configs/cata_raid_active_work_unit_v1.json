@@ -1,44 +1,32 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:recovery_observation_state_transitions",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "work_unit": "encounter:magmaw_completion_canary",
+  "owner_skill": "raid-shard-architecture",
   "classification": "in_progress",
   "epoch_id": "shared_worldserver_cohort_isolation_20260907",
-  "observed_at_commit": "3490069d1c",
-  "architecture_scope": "Two independent native boss instances on one worldserver, before heroic-mode admission and boss/class repairs.",
+  "observed_at_commit": "00db4bec77",
+  "architecture_scope": "Shared two-instance isolation accepted; prepare one existing Magmaw diagnostic completion-watchdog run, then repair its first gameplay blocker.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Recovery sequence repaired, 76 focused tests passed, independent Sol review approved; ready for incremental build and one bounded live isolation.",
+  "gate_state": "Shared isolation passed live, published and remotely verified. Inspect current Magmaw recurrence admission before one completion canary.",
   "first_broken_edge": {
-    "id": "native_corpse_recovery_worldport_transient_rejected",
-    "stage": "live_observation_validation",
-    "owner_classification": "raid_bot_runtime",
-    "cause": "Unconditional in_world=true check rejects native-authorized released ghosts during transfer before corpse runback.",
-    "evidence_raw_sequences": [
-      43,
-      44
-    ],
-    "affected_guids": [
-      30102,
-      30104
-    ],
-    "review_state": "implementation_independently_approved_live_unverified",
-    "recurrence_family": "authorized_recovery_observation_rejected",
-    "recurrence_count": 2
+    "id": "magmaw_completion_not_yet_verified",
+    "stage": "encounter_completion_validation",
+    "owner_classification": "raid_shard_architecture",
+    "cause": "Isolation fixture deliberately stops before boss completion. Current user requests an actual Magmaw completion attempt.",
+    "review_state": "capture_admission_inspection_in_progress"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "2de74180c1e18be80ab237b1cfe29179aabd1776c572e39d6b716756dfa4c215"
+    "sha256": "91ff54371fe17fc0baaa28712c08fc94a7448491060b3f64b6e3d5c64ed6f917"
   },
   "scope_lock": {
-    "objective": "Model one native recovery observation sequence: release, worldport, runback, return, stable sample. Preserve native ownership and require genuine progress; replay both failures before one live canary.",
+    "objective": "Prepare current recurrence admission and run one attributable Magmaw completion watchdog; diagnose earliest gameplay mismatch and route bounded repair.",
     "owned_files": [
-      "tools/raid_program/shared_instance_observation.py",
-      "tools/raid_program/shared_instance_validation.py",
-      "tests/test_shared_instance_observation.py",
-      "tests/test_shared_instance_recovery.py",
-      "tests/test_shared_instance_validation.py",
-      "tests/fixtures/shared_instance_recovery_*.json"
+      "tools/raid_program/capture_setup.py",
+      "tools/raid_program/capture_live_run.py",
+      "experiments/configs/*magmaw*",
+      "experiments/configs/*recurrence*"
     ],
     "terminal_handoff": "A passing reviewed native kernel and real two-instance isolation proof, or a precise newly proven blocker. Do not classify storage fixtures as live isolation."
   },
@@ -55,9 +43,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Incremental build with exact clean source and receipt, one bounded isolation canary, then bounded Magmaw completion attempt. Diagnose and repair first gameplay blocker; preserve recurrence family across runs.",
+  "next_action": "Use existing single-boss capture workflow and current recurrence admission for one Magmaw completion-watchdog attempt. Keep accepted isolation closed; publish/cleanup run, diagnose and repair first gameplay blocker until Magmaw clear or genuine external blocker.",
   "queued_reference_issue": {
     "test": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
     "classification": "historical_fixture_source_freshness_mismatch",
@@ -113,6 +101,20 @@
     "dvc_pointer": "artifacts/cata_raid_program/shared_instance_3490069d1c_20260907.tar.gz.dvc",
     "publication_receipt": "artifacts/cata_raid_program/shared_instance_3490069d1c_20260907.publication.json",
     "remote_reconstruction_verified": true,
+    "training_eligible": false
+  },
+  "accepted_isolation": {
+    "source_commit": "00db4bec77",
+    "isolation_passed": true,
+    "terminal_reason": "interruption",
+    "terminal_detail": "isolation_fixture_passed",
+    "cleanup_passed": true,
+    "server_exit_code": 0,
+    "postrun_build_verified": true,
+    "dvc_pointer": "artifacts/cata_raid_program/shared_instance_00db4bec77_20260907.tar.gz.dvc",
+    "remote_reconstruction_verified": true,
+    "prior_recovery_observation_failures": 2,
+    "boss_clear_claimed": false,
     "training_eligible": false
   }
 }
