@@ -1,5 +1,33 @@
 # Shared-worldserver workflow status
 
+## Current result: Magmaw development canary accepted
+
+Source `fc2061c40cd92c348e7f0f97ec9e06edd6257fae` completed the canonical
+10-player normal Magmaw route with native boss death, zero casualties, three
+accepted terminal statuses, automatic controller exit 0, and zero remaining
+bots or leases. Identity binding, trace continuity, combat-log transport, and
+cleanup all passed. This is a development clear, not heroic/full-raid
+qualification or training-data admission.
+
+The accepted report, exact run inputs, build verification, and independent
+outcome review are retained through
+[`magmaw_development_fc2061c40c_20260907.tar.gz.dvc`](../../artifacts/cata_raid_program/magmaw_development_fc2061c40c_20260907.tar.gz.dvc).
+The adjacent publication receipt records remote download verification and exact
+local payload eviction. Restore that payload through DVC when investigation
+requires raw events.
+
+Next: resume the wider raid program with one different boss/script or proven
+class edge using the existing shared-worldserver instance workflow. Check native
+script readiness before assigning boss work; use exact simulator references for
+class tuning. Do not rerun this Magmaw lifecycle issue or reopen its historical
+fixture-admission requests without new contradictory evidence.
+
+The entries below are historical investigation records. Their old "next" steps,
+uncompleted claims, and fixture-bank requirements are superseded by this result
+and the current development-mode skill.
+
+## Historical shared-instance and Magmaw work
+
 The shared-cohort native kernel is implemented and independently approved.
 Runtime input reconstruction, full worldserver build, and remote publication
 have passed. The third live canary at `00db4bec77` passed the shared-instance

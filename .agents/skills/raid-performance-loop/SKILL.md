@@ -5,6 +5,10 @@ description: Coordinate bounded raid and class repairs, join specialist results,
 
 # Raid performance loop
 
+Read the current result at the top of
+[`shared_worldserver_workflow_20260907.md`](../../../docs/bot_raids/shared_worldserver_workflow_20260907.md)
+before choosing work; its historical entries do not override the current result.
+
 Use one repair loop: inspect the failed run, identify the earliest actionable mismatch,
 repair it, test the affected behavior, review risky changes, build, run, and close evidence.
 A worker or attempt ending does not end the user's task. Continue automatically after
