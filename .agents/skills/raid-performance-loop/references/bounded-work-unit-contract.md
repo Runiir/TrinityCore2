@@ -6,6 +6,8 @@ understand it; do not substitute a dump of the program charter or old handoffs.
 1. **Outcome.** What should change for the bot, boss, or controller?
 2. **Evidence.** Exact source and compact observed counterexample. Label the
    cause as established or suspected; distinguish it from the terminal symptom.
+   Bind excerpts to their route node and original event time; a fresh snapshot
+   can contain a stale action from a different phase.
 3. **Production path.** Relevant caller -> state owner -> candidate/executor ->
    outcome, including the identity and lifecycle rules involved. Explain why the
    present behavior is wrong and which old expectations must change.
@@ -27,6 +29,8 @@ small concrete examples, not just filenames. Do not assign Luna a causal guess
 as an exact implementation task. Resolve ambiguity locally or with Sol first.
 Search for sibling candidates and fallback calls that can mutate the same target
 or movement state; reading only the named candidate is not a complete caller check.
+When bypassing a legacy action path, preserve its native-outcome attribution and
+lifecycle bookkeeping separately from the gameplay actions being replaced.
 For optional targets or assignments, include the case where selection succeeds
 but execution becomes ineligible. Specify the ordinary fallback and incompatible
 assignments that must remain excluded; test both through the production caller.

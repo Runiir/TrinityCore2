@@ -107,9 +107,25 @@ void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
 {
     if (!killed)
         return;
+    bool const nativeDungeonBoss = killed->IsDungeonBoss();
+    bool const nativeWorldBoss = killed->isWorldBoss();
+    bool const nativeBoss = nativeDungeonBoss || nativeWorldBoss;
+    uint32 const killedEntry = killed->GetEntry();
+    std::string const killedGuid = killed->GetGUID().ToString();
+    uint32 const killedMapId = killed->GetMapId();
+    uint32 const killedInstanceId = killed->GetInstanceId();
     CohortScope scope = ScopeCallbackCohort(killed);
     if (!scope)
+    {
+        if (nativeBoss)
+            TC_LOG_WARN("server",
+                "BotWorld boss death callback scope=failure entry=%u guid=%s map=%u instance=%u alive=%u health=%u dungeon_boss=%u world_boss=%u reason=scope_rejected",
+                killedEntry, killedGuid.c_str(), killedMapId, killedInstanceId,
+                killed->IsAlive() ? 1u : 0u, killed->GetHealth(),
+                nativeDungeonBoss ? 1u : 0u, nativeWorldBoss ? 1u : 0u);
         return;
+    }
+
     if (!Cohort().Active || !Cohort().Config.ValidationRouteEnable || Cohort().Config.ValidationRouteKind != "boss"
         || killed->IsAlive() || killed->GetHealth()
         || (!killed->IsDungeonBoss() && !killed->isWorldBoss())
@@ -118,7 +134,28 @@ void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
         || Party().ValidationRouteEngagedBossGeneration != Party().ValidationRouteGeneration
         || Party().ValidationRouteEngagedBossMapId != killed->GetMapId()
         || Party().ValidationRouteEngagedBossInstanceId != killed->GetInstanceId())
+    {
+        if (nativeBoss || killed->GetEntry() == Cohort().Config.ValidationRouteTargetEntry)
+            TC_LOG_WARN("server",
+                "BotWorld boss death callback scope=success gate=combined_rejected entry=%u guid=%s map=%u instance=%u alive=%u health=%u dungeon_boss=%u world_boss=%u cohort=%s attempt=%llu active=%u route_enabled=%u route_kind=%s expected_entry=%u engaged_guid_expected=%s engaged_guid_actual=%s engaged_generation_expected=%llu engaged_generation_actual=%llu engaged_map_expected=%u engaged_map_actual=%u engaged_instance_expected=%u engaged_instance_actual=%u",
+                killedEntry, killedGuid.c_str(), killedMapId, killedInstanceId,
+                killed->IsAlive() ? 1u : 0u, killed->GetHealth(),
+                nativeDungeonBoss ? 1u : 0u, nativeWorldBoss ? 1u : 0u,
+                Cohort().Id.c_str(),
+                static_cast<unsigned long long>(Cohort().AttemptId),
+                Cohort().Active ? 1u : 0u,
+                Cohort().Config.ValidationRouteEnable ? 1u : 0u,
+                Cohort().Config.ValidationRouteKind.c_str(),
+                Cohort().Config.ValidationRouteTargetEntry,
+                Party().ValidationRouteEngagedBossGuid.ToString().c_str(),
+                killedGuid.c_str(),
+                static_cast<unsigned long long>(Party().ValidationRouteEngagedBossGeneration),
+                static_cast<unsigned long long>(Party().ValidationRouteGeneration),
+                Party().ValidationRouteEngagedBossMapId, killedMapId,
+                Party().ValidationRouteEngagedBossInstanceId,
+                killedInstanceId);
         return;
+    }
 
     Party().ValidationRouteConfirmedBossDeathGuid = killed->GetGUID();
     Party().ValidationRouteConfirmedBossDeathGeneration = Party().ValidationRouteGeneration;
@@ -130,20 +167,47 @@ void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
 
     WorldBotState* reporterState = nullptr;
     Player* reporter = nullptr;
+    uint32 reporterUnavailable = 0;
+    uint32 reporterGenerationMismatch = 0;
+    uint32 reporterMapMismatch = 0;
+    uint32 reporterInstanceMismatch = 0;
     for (WorldBotState& state : Party().Bots)
     {
         Player* candidate = GetLoadedBot(state);
         if (!candidate || !candidate->IsInWorld()
             || state.ValidationRouteGeneration != Party().ValidationRouteGeneration
-            || state.ValidationCohortMapId != killed->GetMapId()
-            || state.ValidationCohortInstanceId != killed->GetInstanceId())
+            || state.ValidationCohortMapId != killedMapId
+            || state.ValidationCohortInstanceId != killedInstanceId)
+        {
+            if (!candidate || !candidate->IsInWorld())
+                ++reporterUnavailable;
+            else
+            {
+                if (state.ValidationRouteGeneration != Party().ValidationRouteGeneration)
+                    ++reporterGenerationMismatch;
+                if (state.ValidationCohortMapId != killedMapId)
+                    ++reporterMapMismatch;
+                if (state.ValidationCohortInstanceId != killedInstanceId)
+                    ++reporterInstanceMismatch;
+            }
             continue;
+        }
         reporterState = &state;
         reporter = candidate;
         break;
     }
     if (!reporterState || !reporter)
+    {
+        TC_LOG_WARN("server",
+            "BotWorld boss death callback scope=success gate=reporter_missing entry=%u guid=%s map=%u instance=%u cohort=%s attempt=%llu route_kind=%s expected_entry=%u reporter_found=0 reporter_unavailable=%u reporter_generation_mismatch=%u reporter_map_mismatch=%u reporter_instance_mismatch=%u",
+            killedEntry, killedGuid.c_str(), killedMapId, killedInstanceId,
+            Cohort().Id.c_str(), static_cast<unsigned long long>(Cohort().AttemptId),
+            Cohort().Config.ValidationRouteKind.c_str(),
+            Cohort().Config.ValidationRouteTargetEntry, reporterUnavailable,
+            reporterGenerationMismatch, reporterMapMismatch,
+            reporterInstanceMismatch);
         return;
+    }
 
     Party().ValidationRouteRecordedKillGuids.insert(killed->GetGUID());
     Party().ValidationRouteBossDeathEvidence.push_back({Cohort().Config.ValidationRouteNodeId, Party().ValidationRouteGeneration, Cohort().Config.ValidationRouteKind, killed->GetGUID(), killed->GetEntry(), "confirmed_unit_death"});
@@ -152,6 +216,15 @@ void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
     std::string raw = BuildRawJson(reporter, killed);
     std::string semantic = BuildSemanticJson(reporter, killed, "validation_route_boss_outcome", nullptr);
     RecordEvent(*reporterState, reporter, "boss_killed", killed, "confirmed_unit_death", raw.c_str(), semantic.c_str(), 0.0f, Cohort().Metrics.Kills);
+    TC_LOG_INFO("server",
+        "BotWorld boss death callback scope=success gate=accepted entry=%u guid=%s map=%u instance=%u cohort=%s attempt=%llu route_kind=%s expected_entry=%u reporter_found=1 reporter_generation=%llu reporter_map=%u reporter_instance=%u receipt=recorded",
+        killedEntry, killedGuid.c_str(), killedMapId, killedInstanceId,
+        Cohort().Id.c_str(), static_cast<unsigned long long>(Cohort().AttemptId),
+        Cohort().Config.ValidationRouteKind.c_str(),
+        Cohort().Config.ValidationRouteTargetEntry,
+        static_cast<unsigned long long>(reporterState->ValidationRouteGeneration),
+        reporterState->ValidationCohortMapId,
+        reporterState->ValidationCohortInstanceId);
 
     if (Cohort().Config.ValidationRouteKind == "boss")
     {

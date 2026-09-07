@@ -145,6 +145,10 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 return BotActionArbitration::Outcome::NotApplicable(
                     "magmaw_route_observation_target_not_declared");
 
+            // Keep native death attribution independent of adaptive targeting
+            // and event deduplication. This does not change target or focus.
+            RememberValidationRouteBossEngagement(creature);
+
             bool const targetChanged = context.State.LastDecisionTargetGuid
                 != target->GetGUID();
             bool const firstEngagement = !context.State.WasInCombat;

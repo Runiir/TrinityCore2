@@ -637,6 +637,7 @@ private:
         std::function<Unit*(Unit*)> const& routeUsableValidationFocus,
         std::function<bool()> const& routeFocusMemoryFresh);
     void RememberValidationRouteFocus(Unit* focus);
+    void RememberValidationRouteBossEngagement(Creature const* boss);
     Unit* MakeExistingValidationRouteCombatReady(
         Player* bot, Creature* creature,
         std::function<bool(Creature const*)> const& isValidationRouteCombatTarget);

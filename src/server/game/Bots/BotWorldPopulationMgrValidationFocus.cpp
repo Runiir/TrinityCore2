@@ -551,16 +551,21 @@ void BotWorldPopulationMgr::RememberValidationRouteFocus(Unit* focus)
     Party().ValidationRouteFocusY = focus->GetPositionY();
     Party().ValidationRouteFocusZ = focus->GetPositionZ();
     Party().ValidationRouteFocusSeenMs = NowMs();
-    Creature* boss = focus->ToCreature();
+    RememberValidationRouteBossEngagement(focus->ToCreature());
+}
+
+void BotWorldPopulationMgr::RememberValidationRouteBossEngagement(
+    Creature const* boss)
+{
     if (Cohort().Config.ValidationRouteKind == "boss"
         && boss
-        && focus->GetEntry() == Cohort().Config.ValidationRouteTargetEntry
+        && boss->GetEntry() == Cohort().Config.ValidationRouteTargetEntry
         && (boss->IsDungeonBoss() || boss->isWorldBoss()))
     {
-        Party().ValidationRouteEngagedBossGuid = focus->GetGUID();
+        Party().ValidationRouteEngagedBossGuid = boss->GetGUID();
         Party().ValidationRouteEngagedBossGeneration = Party().ValidationRouteGeneration;
-        Party().ValidationRouteEngagedBossMapId = focus->GetMapId();
-        Party().ValidationRouteEngagedBossInstanceId = focus->GetInstanceId();
+        Party().ValidationRouteEngagedBossMapId = boss->GetMapId();
+        Party().ValidationRouteEngagedBossInstanceId = boss->GetInstanceId();
     }
 }
 
