@@ -1,8 +1,9 @@
 # Shared-worldserver workflow status
 
 The shared-cohort native kernel is implemented and independently approved.
-Runtime input reconstruction and remote publication have now passed. A full
-worldserver build and real two-instance isolation validation remain outstanding.
+Runtime input reconstruction, full worldserver build, and remote publication
+have passed. The first live isolation canary terminated on a native-instance
+identity rejection after witness deaths. Isolation remains unproven.
 No boss clear, accepted gameplay repair, or ML-data admission is claimed.
 
 ## Native implementation
@@ -27,7 +28,9 @@ after the other cohort stops.
 
 Native validation included 20 focused fixtures, translation-unit syntax checks,
 73 integration checks and 29 Phase 9 checks. Independent capacity/exclusivity
-review ran 56 checks and approved the change. A full link has not run.
+review ran 56 checks and approved the change. The full link passed at
+`d82a1f88de`; the reviewed Python protocol repair at `06996cc142` passed an
+incremental build and receipt verification before and after the live run.
 
 ## Runtime inputs: verified and published
 
@@ -125,7 +128,8 @@ assertion now requires owned cleanup.
 Combat exports now carry the generic epoch/attempt/profile identity already
 present in status and trace. Diagnostic polling no longer overwrites last real
 decision history for detached bots. Independent Sol static review approved
-these native changes; compile/link and live outcome checks remain necessary.
+these native changes. Compilation and linking passed; the first live outcome
+is recorded below and does not accept isolation.
 
 The final independent Sol review approved the repaired driver and launch
 helpers. The combined shared-instance, provisioning/readback and transport
@@ -146,21 +150,48 @@ the shared binary, configuration, provisioning, console and server lifecycle.
 Workers receive addressed cohort access only. Individual interruption must stop
 that cohort and preserve the shared server and every other active instance.
 
-The preparation checkout is
-`/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/source`.
-It currently holds 27 independent verified input copies totaling 46,561,614 bytes
-and is Git-clean at `03cb01db0b`. It has not been built or sealed for a live run.
-Advance this unused checkout to the final reviewed preparation commit, recheck
-its inputs, then freeze its commit/tree before the attributable build and run.
-The input audit used the coordinator's `trinity-worldserver-test.conf`; that
-ignored config is not present in the detached checkout. Bind a concrete runtime
-configuration through the existing config-authority workflow before launch.
+The frozen checkout is
+`/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/source`,
+Git-clean at `06996cc142`. It retains the verified independent runtime inputs
+and the built binary. The live launcher used its derived shared config and
+successful build receipt, provisioned only the selected pair, and passed both
+fresh database readbacks.
 
-After the concrete fixture passes offline checks and review, build once and run
-one bounded Magmaw plus disjoint-witness isolation test with one map worker.
-Require typed termination, DPS/HPS, decisions, movement, deaths, route progress,
-callback attribution and witness preservation. Publish and clean the evidence.
-A storage fixture, command smoke test, or emergency timeout is not a clear.
+## First real canary
+
+The run at `06996cc142` admitted both cohorts on one server epoch. Its first
+complete observations showed Magmaw in native instance 13 and Omnotron in
+instance 2, with disjoint group IDs and ten leases each. The baseline measured
+Magmaw DPS/HPS 0/0 and witness DPS/HPS 0/11323. These are brief startup
+measurements, not class calibration or encounter performance results.
+
+Later witness status reported two deaths and diagnosis reported six alive
+members. The driver stopped at `native_instance_identity_invalid`, with typed
+termination `contamination`. Independent replay traced the rejection to status sequence 43: difficulty
+readback became incomplete while ghosts were outside the raid during native
+corpse recovery. Diagnosis sequence 44 retained exact frozen instance and
+attempt-bound recovery for those ghosts. Native ownership allowed this state;
+the Python validator did not. No cross-cohort ownership leak was observed.
+The next repair recognizes only that exact native recovery state and preserves
+the chained diagnostic reason. The failed run remains unchanged.
+Both addressed cohorts were stopped, all leases were released, and the owned
+worldserver exited with code 0. No witness-after-subject-stop proof was reached.
+
+Before launch, a real protocol mismatch was repaired: successful native start
+returns `botauto_status`, while the transport and its fake test expected
+`botauto_start`. Native combat-log rejections also need prompt recognition
+rather than waiting for chunk completion. Focused real-child transport tests
+now cover these variants, including incomplete chunks. Independent Sol review
+approved the repair; the shard skill now requires native handler-derived reply
+fixtures. No native gameplay change was needed for this correction.
+
+The closed run, raw console/command responses, exact config, provisioning SQL,
+readbacks, and both build receipts were archived to
+`artifacts/cata_raid_program/shared_instance_06996cc142_20260907.tar.gz.dvc`.
+A fresh empty-cache remote download matched archive SHA-256
+`cd7264c204d2305172879144231a32e6f8a094c66bc53a9360a9bd086053a35e`.
+Targeted local and remote DVC status passed. The retained publication receipt
+records the round trip. The run is closed and training-ineligible.
 
 Then repair generic profile admission: `IsValidationProfileName` currently
 accepts only ten-player normal Blackwing Descent. Heroic, 25-player and other

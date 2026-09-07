@@ -1,0 +1,24 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "06996cc142",
+  "archive_sha256": "cd7264c204d2305172879144231a32e6f8a094c66bc53a9360a9bd086053a35e",
+  "archive_bytes": 2686132,
+  "dvc_pointer": "artifacts/cata_raid_program/shared_instance_06996cc142_20260907.tar.gz.dvc",
+  "remote_download_sha256": "cd7264c204d2305172879144231a32e6f8a094c66bc53a9360a9bd086053a35e",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "terminal_reason": "contamination",
+  "terminal_detail": "native_instance_identity_invalid",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "evicted_exact_payloads": [
+    "artifacts/cata_raid_program/shared_instance_06996cc142_20260907.tar.gz",
+    ".dvc/cache/files/md5/79/dda20895d28ed8cd8821a4f17e9e4e",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/shared-canary-06996cc142.remote-verification"
+  ],
+  "raw_live_evidence_retained_for_active_diagnosis": true
+}

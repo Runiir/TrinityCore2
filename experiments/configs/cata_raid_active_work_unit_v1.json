@@ -4,21 +4,25 @@
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "in_progress",
   "epoch_id": "shared_worldserver_cohort_isolation_20260907",
-  "observed_at_commit": "bc1023b03f0ede5bb3710819566aaacef1399531",
+  "observed_at_commit": "06996cc142",
   "architecture_scope": "Two independent native boss instances on one worldserver, before heroic-mode admission and boss/class repairs.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Native kernel, telemetry, concrete shared fixture and launch/driver repairs independently approved. Offline gates passed. Freeze preparation source, configure/build once, then bounded live isolation.",
+  "gate_state": "Full build and first live canary closed/published. Dual instance admission passed; native-authorized corpse recovery falsely rejected by observation validator. Isolation remains unproven.",
   "first_broken_edge": {
-    "id": "second_cohort_rejected_and_native_callbacks_use_global_scope",
-    "stage": "native_cohort_admission_and_callback_attribution",
+    "id": "authorized_corpse_recovery_rejected_as_instance_contamination",
+    "stage": "live_observation_validation",
     "owner_classification": "raid_bot_runtime",
-    "cause": "MaxActiveCohorts=1, single running-cohort update selector, global callback selection and global movement diagnostics cleanup.",
-    "review_state": "native_implementation_independently_approved_live_unverified"
+    "cause": "Difficulty readback counts current in-instance members; ghosts in native attempt-bound corpse recovery remain owned but validator demands all members currently in raid.",
+    "evidence_raw_sequences": [
+      43,
+      44
+    ],
+    "review_state": "independent_Sol_diagnosis_complete_Luna_max_bounded_repair_in_progress"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "1ba28e8b0464c1644ff6812a78aa3acf26a1e43639d2c5646e6d298593ffb0b9"
+    "sha256": "b27cde0506296400ba29509d183aaaf7bdab51390081689d7af7ef1d414c2b6c"
   },
   "scope_lock": {
     "objective": "Implement and verify two-cohort scheduling, explicit callback ownership and scoped cleanup before one live isolation canary.",
@@ -49,9 +53,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Freeze the unused preparation checkout at this reviewed source, derive shared config and recheck runtime inputs, configure/build through fast4_v2 queue, then run tools.raid_program.run_shared_instance_canary from frozen source. Publish/verify/clean the closed run; accept isolation or route its exact first-broken edge, then resume generic 10H/25H profile admission.",
+  "next_action": "Repair exact native-authorized corpse recovery observation and preserve error detail; replay captured failing rows plus foreign-instance negatives; independent review; incremental receipt refresh; one bounded revised isolation canary. No identical rerun. Then route proven blocker or resume generic 10H/25H admission.",
   "queued_reference_issue": {
     "test": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
     "classification": "historical_fixture_source_freshness_mismatch",
@@ -95,5 +99,18 @@
     "combined_tests_passed": 108,
     "existing_provisioning_tests_passed": 36,
     "live_verified": false
+  },
+  "closed_canary": {
+    "source_commit": "06996cc142",
+    "terminal_reason": "contamination",
+    "terminal_detail": "native_instance_identity_invalid",
+    "cleanup_passed": true,
+    "server_exit_code": 0,
+    "dual_instance_admission_observed": true,
+    "isolation_passed": false,
+    "dvc_pointer": "artifacts/cata_raid_program/shared_instance_06996cc142_20260907.tar.gz.dvc",
+    "publication_receipt": "artifacts/cata_raid_program/shared_instance_06996cc142_20260907.publication.json",
+    "remote_reconstruction_verified": true,
+    "training_eligible": false
   }
 }
