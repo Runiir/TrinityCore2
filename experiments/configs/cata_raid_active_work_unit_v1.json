@@ -4,21 +4,21 @@
   "owner_skill": "raid-evidence-lifecycle",
   "classification": "in_progress",
   "epoch_id": "shared_worldserver_cohort_isolation_20260907",
-  "observed_at_commit": "00db4bec77",
+  "observed_at_commit": "b0c7f38b0a",
   "architecture_scope": "Shared two-instance isolation accepted; prepare one existing Magmaw diagnostic completion-watchdog run, then repair its first gameplay blocker.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Capture and suite optimization independently approved; DVC lineage refreshed without output changes. Hydrate exact source dependencies and refresh run admission.",
+  "gate_state": "Boss-node arrival rejection verified live; new death-loop counting defect stopped Magmaw before clear. Evidence remotely verified; no restart pending repair/review.",
   "first_broken_edge": {
-    "id": "capture_terminal_node_arrival_false_success",
-    "stage": "capture_acceptance",
+    "id": "capture_distinct_casualties_counted_as_death_loops",
+    "stage": "completion_watchdog",
     "owner_classification": "raid_evidence_lifecycle",
-    "cause": "Boss partition accepted terminal-node arrival without native completion or confirmed death. Found in independent prelive review; prepared bundle never launched.",
-    "review_state": "approved_by_independent_sol"
+    "cause": "Route-wide death counter reaches three from distinct bots first death events while boss fight still has survivors and damage progress.",
+    "review_state": "bounded_repair_in_progress"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "03c3994afd5bb28f6809735dce02bcdf4d3ea868f67eaa5485af30308dd6dbf1"
+    "sha256": "fb90ebd9784dadaea6fb59c3d6c89ccf80e4cd32cb3ed9c552385900ee44781b"
   },
   "scope_lock": {
     "objective": "Prepare current recurrence admission and run one attributable Magmaw completion watchdog; diagnose earliest gameplay mismatch and route bounded repair.",
@@ -118,6 +118,20 @@
     "remote_reconstruction_verified": true,
     "prior_recovery_observation_failures": 2,
     "boss_clear_claimed": false,
+    "training_eligible": false
+  },
+  "closed_magmaw_canary": {
+    "source_commit": "b0c7f38b0a",
+    "boss_clear": false,
+    "trash_clears": [
+      "bwd.magmaw.chainwielder",
+      "bwd.magmaw.drudges"
+    ],
+    "terminal_reason": "death_loop_watchdog",
+    "termination_semantics_defect": true,
+    "cleanup_passed": true,
+    "remote_reconstruction_verified": true,
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_b0c7f38b0a_20260907.tar.gz.dvc",
     "training_eligible": false
   }
 }

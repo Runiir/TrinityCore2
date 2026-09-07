@@ -305,3 +305,32 @@ uses its actual in-memory results, rechecking source/config before evaluation.
 External receipt verification still replays every command. All 48 ledger tests
 pass, including real subprocess execution counts for passing and failing
 fixtures, external replay, and preservation of latest-run decision attribution.
+
+### Closed Magmaw diagnostic b0c7f38b0a
+
+One worldserver ran one admitted Magmaw diagnostic (epoch 191320230607534,
+instance 2, attempt 1). Chainwielder and Drudges cleared. The bots engaged
+Magmaw, and the corrected acceptance predicate retained zero accepted statuses
+at boss-node arrival. No native Magmaw death was observed.
+
+The controller terminated at 624.311 seconds with `death_loop_watchdog`.
+Inspection found that the watchdog counts distinct actors' first deaths toward
+a route-wide loop limit. The terminal status has four deaths and six survivors;
+this does not establish repeated recovery/death cycles. This is the next
+validator repair, while the earlier gameplay mismatch is being diagnosed
+independently. Keep the raw report's classification unchanged and annotate the
+termination defect; do not relabel the attempt as a clear.
+
+Magmaw combat analysis: 26,495,960 originated damage, 72,393.333 DPS and
+21,364.022 HPS over 366 active damage seconds (384.101 elapsed encounter
+seconds). Elapsed-window values are 68,981.752 DPS and 20,357.229 HPS.
+Raw damage callbacks include transferred damage and must not be substituted
+for originated damage. Both trash clears are retained as native terminal
+evidence. All final telemetry channels, cleanup, server exit 0, and postrun
+build verification passed.
+
+Evidence: `artifacts/cata_raid_program/magmaw_b0c7f38b0a_20260907.tar.gz.dvc`.
+The 26,026,682-byte archive reconstructed from remote into an empty cache with
+SHA256 `133bbf8697ea8183701ae9b782ed34b2c3003dbdb0b5a61052401afab8d5dbad`.
+Archive duplicates are evicted; raw evidence remains only during active causal
+review. The run is not training-eligible or boss-clear qualifying.

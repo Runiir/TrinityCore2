@@ -1,0 +1,418 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "b0c7f38b0a7566cd4eeda2746cc17df6078b3410",
+  "archive_sha256": "133bbf8697ea8183701ae9b782ed34b2c3003dbdb0b5a61052401afab8d5dbad",
+  "archive_bytes": 26026682,
+  "dvc_pointer": "artifacts/cata_raid_program/magmaw_b0c7f38b0a_20260907.tar.gz.dvc",
+  "remote_download_sha256": "133bbf8697ea8183701ae9b782ed34b2c3003dbdb0b5a61052401afab8d5dbad",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "terminal_reason": "death_loop_watchdog",
+  "termination_semantics_defect": "Distinct first deaths counted as a route-wide death loop; no boss-clear conclusion.",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-20fed2e904/configure.log",
+      "bytes": 15532,
+      "sha256": "e185ca5159a641ede60f18f9ee6fbd2ce01fb296b8113b07e366449cf57000a9"
+    },
+    {
+      "path": "build-preflight-20fed2e904/configure.verification.json",
+      "bytes": 537,
+      "sha256": "72840e9579bc68b5077e3e1e88ec4738638db8609a7642e120dddd72ea2b7403"
+    },
+    {
+      "path": "build-preflight-20fed2e904/configure_receipt.json",
+      "bytes": 13614,
+      "sha256": "b0b59b71040c5b897b727aa606febb6224815e1523b880634bf4507cb1ef2261"
+    },
+    {
+      "path": "build-preflight-20fed2e904/worldserver_build.log",
+      "bytes": 25024,
+      "sha256": "b7ecc2f698d913f7f1a4957072c90f979e0fcfad7172fe0f23f63333ff358521"
+    },
+    {
+      "path": "build-preflight-20fed2e904/worldserver_build.verification.json",
+      "bytes": 537,
+      "sha256": "32a30ac812b65d72cfe7e789df73c2d6964d36a90e0b904dd0ae64d6a172f2e3"
+    },
+    {
+      "path": "build-preflight-20fed2e904/worldserver_build_receipt.json",
+      "bytes": 24240,
+      "sha256": "99d9f45052847a66e888a05118f348d4ed0789e21dbec86351d2ecdfd840dbd3"
+    },
+    {
+      "path": "build-preflight-b0c7f38b0a/configure.log",
+      "bytes": 15530,
+      "sha256": "7d79fe3430e473c43f74799ad743a9113187ffb32cd563bcb4be23596658d875"
+    },
+    {
+      "path": "build-preflight-b0c7f38b0a/configure.verification.json",
+      "bytes": 537,
+      "sha256": "73d9a3dd645ae6d257216535ec415978e90a8652e79656918ebab10ca14c837b"
+    },
+    {
+      "path": "build-preflight-b0c7f38b0a/configure_receipt.json",
+      "bytes": 13612,
+      "sha256": "d56cb525008400b489c86c24d811a1c22b2657711beee1f68fd0c5f676887dce"
+    },
+    {
+      "path": "build-preflight-b0c7f38b0a/postrun.verification.json",
+      "bytes": 537,
+      "sha256": "ae2c7c7efef6d13120b26b2fdc965b8ce03cfa5fba2f102435f22bffb83fd520"
+    },
+    {
+      "path": "build-preflight-b0c7f38b0a/worldserver_build.log",
+      "bytes": 25027,
+      "sha256": "39be84d63faf0ee8bec4258b942f6c303c8216809254ee27e598a0bf2f13dca3"
+    },
+    {
+      "path": "build-preflight-b0c7f38b0a/worldserver_build.verification.json",
+      "bytes": 537,
+      "sha256": "ae2c7c7efef6d13120b26b2fdc965b8ce03cfa5fba2f102435f22bffb83fd520"
+    },
+    {
+      "path": "build-preflight-b0c7f38b0a/worldserver_build_receipt.json",
+      "bytes": 24243,
+      "sha256": "a24213563b072e3c8f562ddc31c123c84a8909ffdf0b372a46d67c71e525ee3c"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/base-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/base-worldserver.conf.receipt.json",
+      "bytes": 8772,
+      "sha256": "9f038a99d4e70caa3abcadf8d419a159ecea5ec3f7a08552053ac48e9a1d8cfb"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/blackwing_descent_10n_magmaw_diagnostic-406527cc6e274fd0.route.json",
+      "bytes": 44005,
+      "sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/blackwing_descent_10n_magmaw_diagnostic-406527cc6e274fd0.route.receipt.json",
+      "bytes": 3289,
+      "sha256": "20c5e6ebbbff0c4546c4107c7864f8955d14c0f6d9e1c6f90dd697278c635b43"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/bundle_creation_result.json",
+      "bytes": 5723,
+      "sha256": "1dd0b2f9801b0b6fb793beb60f272e32237d4b83e649d3d900d2c92db2652b59"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/capture.console.log",
+      "bytes": 65,
+      "sha256": "97358a5d6f87b8133af7681419ba945759fda8621ed36b7b8d1d4e6d72f9fd14"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/recurrence_decision.json",
+      "bytes": 50513,
+      "sha256": "d53581d8ef98ad0e29c4eda527575f2a9887e276123f553f9ec01cf32c2ea333"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/route_materialization.json",
+      "bytes": 3567,
+      "sha256": "3ab5b2bda2f85f7d6e292581d4dcf43ae937477fb4dd5d835dbe772a8d35e299"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/suite.console.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/suite_receipt.json",
+      "bytes": 22588,
+      "sha256": "f29b386180275016203b6a4893ea3f8b811e5a8cc79bd787af9b0eb51e6f57d4"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/validation_routes-406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5.jsonl",
+      "bytes": 483655,
+      "sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5"
+    },
+    {
+      "path": "magmaw-admission-20fed2e904/validation_routes-406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5.jsonl.receipt.json",
+      "bytes": 646,
+      "sha256": "05dbf199a782636e2b3f739dd06230cdccec8b9d04e842dcb17c673fe4431985"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/base-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/base-worldserver.conf.receipt.json",
+      "bytes": 8772,
+      "sha256": "84676335f0095625cc1c4f9ffa76356bb76ccdc723ea84a3e8c40d1258a4c4fb"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/blackwing_descent_10n_magmaw_diagnostic-406527cc6e274fd0.route.json",
+      "bytes": 44005,
+      "sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/blackwing_descent_10n_magmaw_diagnostic-406527cc6e274fd0.route.receipt.json",
+      "bytes": 3289,
+      "sha256": "7c6b835037fcf9a85422f121eb194a100c4f832ec57dd752cfb5b6a71536d0b6"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/bundle_creation_result.json",
+      "bytes": 5723,
+      "sha256": "e63246fb22083978e828ece9e87c800f93ece8251c20b485e1e776b076b27b36"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/capture.console.log",
+      "bytes": 2038390,
+      "sha256": "cdd11cd69c84ff8f59df872bc89ce2f4b6989c05c8a51bc6f5aefca7a22a2541"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/closed_summary.json",
+      "bytes": 3735,
+      "sha256": "33096d5070dc967075840b3abdb7fcb794bb83965436cc2c7ed8203e41260a0b"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/recurrence_decision.json",
+      "bytes": 50513,
+      "sha256": "45e968834877cbd630087f797e6505eaca3ad6fb0af465d3e82e0b30128b4969"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/route_materialization.json",
+      "bytes": 3567,
+      "sha256": "b1945be0063f2fa03c393719cbafef37967eb34b53e6c22feeeaacc0b9c40763"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/suite.console.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/suite_receipt.json",
+      "bytes": 22588,
+      "sha256": "68ea6cb43bcb4b777d45bec8d11982cc8e4c6370ae4c44f64f541fd84b248a89"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/validation_routes-406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5.jsonl",
+      "bytes": 483655,
+      "sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5"
+    },
+    {
+      "path": "magmaw-admission-b0c7f38b0a/validation_routes-406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5.jsonl.receipt.json",
+      "bytes": 646,
+      "sha256": "721fe02c008e01cc6e7df7745bf972d024b7f7509af694531a7ed9df9821e363"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/build_policy.json",
+      "bytes": 5625,
+      "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/build_receipt.json",
+      "bytes": 24240,
+      "sha256": "99d9f45052847a66e888a05118f348d4ed0789e21dbec86351d2ecdfd840dbd3"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/bundle_manifest.json",
+      "bytes": 1853,
+      "sha256": "c71497a7421b2a48e47ffc0c404e818f0aeb349839058a599bacc165171e26e1"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/checkpoint_seal.json",
+      "bytes": 913,
+      "sha256": "f4d7633a948ab2ae460c3b51e977bb579ce65846c428ce052c77515d2534d3df"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/launch_contract.json",
+      "bytes": 13081,
+      "sha256": "0856b08dc847dd021dd03215e6b330a5f0d5715ccc7abdad487fd20166291c6a"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/prepared_base_runtime.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/recurrence_admission.json",
+      "bytes": 12344,
+      "sha256": "522e8794a5679c63ae13f8074dde11bf42921615ebd273bd9405256ed7a20dc9"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/recurrence_decision.json",
+      "bytes": 50513,
+      "sha256": "d53581d8ef98ad0e29c4eda527575f2a9887e276123f553f9ec01cf32c2ea333"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/recurrence_ledger.json",
+      "bytes": 136416,
+      "sha256": "3c186a3ad57f664057c707f3aff9db294932e5f63a7aaa8f0d3633ee633d6f6a"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/regression_suite_receipt.json",
+      "bytes": 22588,
+      "sha256": "f29b386180275016203b6a4893ea3f8b811e5a8cc79bd787af9b0eb51e6f57d4"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/route_manifest.json",
+      "bytes": 35101,
+      "sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/runtime_profiles.json",
+      "bytes": 1220,
+      "sha256": "0254d225be31f4d0709f3387c407812f29d9c7eda0bed94bace24cb17f24cfae"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/source_route_manifest.json",
+      "bytes": 44005,
+      "sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"
+    },
+    {
+      "path": "magmaw-composite-20fed2e904/worldserver.validation.conf",
+      "bytes": 157703,
+      "sha256": "59d35846b47ff9027a1bc3eea87b304c777f609c57c1131643827b7ef40ac5f7"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/build_policy.json",
+      "bytes": 5625,
+      "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/build_receipt.json",
+      "bytes": 24243,
+      "sha256": "a24213563b072e3c8f562ddc31c123c84a8909ffdf0b372a46d67c71e525ee3c"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/bundle_manifest.json",
+      "bytes": 1853,
+      "sha256": "66146fd7045f4cee831e713bf8095a1e38df3745ecee6ce1e1a3687686146ca6"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/checkpoint_seal.json",
+      "bytes": 913,
+      "sha256": "463aecebfa5d08c709b31adf37e3c35ebcbe672bf07c6b665dacdf23205c2509"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/launch_contract.json",
+      "bytes": 13081,
+      "sha256": "803ed29452757e4f3d30fb099f17e9763d3d25f77beaddcd3772c953827a74ff"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/prepared_base_runtime.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/recurrence_admission.json",
+      "bytes": 12344,
+      "sha256": "5e25809c146740fac5f73687a2c9e90a5e943bad46897158023490a824352b4b"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/recurrence_decision.json",
+      "bytes": 50513,
+      "sha256": "45e968834877cbd630087f797e6505eaca3ad6fb0af465d3e82e0b30128b4969"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/recurrence_ledger.json",
+      "bytes": 136416,
+      "sha256": "3c186a3ad57f664057c707f3aff9db294932e5f63a7aaa8f0d3633ee633d6f6a"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/regression_suite_receipt.json",
+      "bytes": 22588,
+      "sha256": "68ea6cb43bcb4b777d45bec8d11982cc8e4c6370ae4c44f64f541fd84b248a89"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/route_manifest.json",
+      "bytes": 35101,
+      "sha256": "f6ee01216d568c93ff204570d775a47a1232e9d5cf1579b89432c265af9518a2"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/runtime_profiles.json",
+      "bytes": 1220,
+      "sha256": "095318c55b4a766f3a9b914b622e89ab74524d8704e673ea700f3324de384dac"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/source_route_manifest.json",
+      "bytes": 44005,
+      "sha256": "f549cbb99bb1767f00c8a1697d249d2f4bec52b8df3b411b25adad94d94fc8f8"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a/worldserver.validation.conf",
+      "bytes": 157703,
+      "sha256": "9929b6cc82f298bf313e38e72b0e41359100ac3ff05283e73b1adc594e21ff23"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a.json",
+      "bytes": 2038390,
+      "sha256": "cdd11cd69c84ff8f59df872bc89ce2f4b6989c05c8a51bc6f5aefca7a22a2541"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a.raw.jsonl",
+      "bytes": 197054594,
+      "sha256": "23a4870f744d3af95702bb0cce1fd9c4e737b30dd5bd279a862a6e10d546fc5f"
+    },
+    {
+      "path": "magmaw-composite-b0c7f38b0a.worldserver.log",
+      "bytes": 194577764,
+      "sha256": "4b7e2c5c2f9aa9d32f669ca9da5692015f9407b3a226e90e07beb54b5aa5c08f"
+    },
+    {
+      "path": "magmaw-provisioning-20fed2e904/database_readback.json",
+      "bytes": 26552,
+      "sha256": "445fed786bf559ec0583c35625878c193fedb68bd83e67324f1e998dd120b3e1"
+    },
+    {
+      "path": "magmaw-provisioning-20fed2e904/provisioning.json",
+      "bytes": 1384,
+      "sha256": "83b8951c67363e10149f7ae9950ac6cd2863f9cd83fc46b0c7a93152433a6874"
+    },
+    {
+      "path": "magmaw-provisioning-20fed2e904/readback.console.log",
+      "bytes": 19962,
+      "sha256": "b7bd7c958a0f06b565d63f0f6111c8eca85fdb4a1f582f349a1d61580e8ac8c5"
+    },
+    {
+      "path": "magmaw-provisioning-20fed2e904/validation_provisioning_apply/provision_accounts.sql",
+      "bytes": 4068,
+      "sha256": "689fc5fd368cc4dc8e19c689471e579c80d1af762747fcc7b6f510fd66d114e7"
+    },
+    {
+      "path": "magmaw-provisioning-20fed2e904/validation_provisioning_apply/provision_characters.sql",
+      "bytes": 319870,
+      "sha256": "6bc80a5d2f0be4182654b4b76faf9658ec63d8075716079234a01b01b6710c98"
+    },
+    {
+      "path": "magmaw-provisioning-b0c7f38b0a/database_readback.json",
+      "bytes": 26552,
+      "sha256": "445fed786bf559ec0583c35625878c193fedb68bd83e67324f1e998dd120b3e1"
+    },
+    {
+      "path": "magmaw-provisioning-b0c7f38b0a/provisioning.json",
+      "bytes": 1384,
+      "sha256": "b81bd5ecbc9b33e3b814cecc39158fcdbd7b26b353ac4ee72cf98563930170eb"
+    },
+    {
+      "path": "magmaw-provisioning-b0c7f38b0a/readback.console.log",
+      "bytes": 19962,
+      "sha256": "b7bd7c958a0f06b565d63f0f6111c8eca85fdb4a1f582f349a1d61580e8ac8c5"
+    },
+    {
+      "path": "magmaw-provisioning-b0c7f38b0a/validation_provisioning_apply/provision_accounts.sql",
+      "bytes": 4068,
+      "sha256": "689fc5fd368cc4dc8e19c689471e579c80d1af762747fcc7b6f510fd66d114e7"
+    },
+    {
+      "path": "magmaw-provisioning-b0c7f38b0a/validation_provisioning_apply/provision_characters.sql",
+      "bytes": 319870,
+      "sha256": "6bc80a5d2f0be4182654b4b76faf9658ec63d8075716079234a01b01b6710c98"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": true
+}
