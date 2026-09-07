@@ -10,6 +10,7 @@
 #include "Map.h"
 #include "MotionMaster.h"
 #include "Movement/Spline/MoveSpline.h"
+#include "ObjectAccessor.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.h"
@@ -535,6 +536,12 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
 {
     uint64 nowMs = NowMs();
     MotionMaster const* nativeMotion = bot ? bot->GetMotionMaster() : nullptr;
+    Unit const* observedTarget = bot && bot->IsInWorld()
+        ? ObjectAccessor::GetUnit(*bot, state.LastDecisionTargetGuid) : nullptr;
+    if (observedTarget && (!observedTarget->IsInWorld()
+        || observedTarget->GetMapId() != bot->GetMapId()
+        || observedTarget->GetInstanceId() != bot->GetInstanceId()))
+        observedTarget = nullptr;
     std::ostringstream json;
     json << "{\"identity\":{\"bot_guid\":" << state.Guid.GetCounter()
          << ",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "") << "\"}"
@@ -603,6 +610,12 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"progress_before\":" << state.QuestWork.ProgressBefore
          << ",\"progress_after\":" << state.QuestWork.ProgressAfter << "}"
          << ",\"target\":{\"target_guid\":" << state.LastDecisionTargetGuid.GetCounter()
+         << ",\"observed_at_ms\":" << nowMs
+         << ",\"health_available\":" << (observedTarget ? "true" : "false")
+         << ",\"entry\":" << (observedTarget ? observedTarget->GetEntry() : 0)
+         << ",\"alive\":" << (observedTarget && observedTarget->IsAlive() ? "true" : "false")
+         << ",\"health\":" << (observedTarget ? observedTarget->GetHealth() : 0)
+         << ",\"max_health\":" << (observedTarget ? observedTarget->GetMaxHealth() : 0)
          << ",\"desired_melee_attack_target_guid\":" << state.DesiredMeleeAttackTargetGuid.GetCounter()
          << ",\"melee_auto_attack_state\":\"" << JsonEscape(state.MeleeAutoAttackState) << "\""
          << ",\"melee_auto_attack_suppression_reason\":\"" << JsonEscape(state.MeleeAutoAttackSuppressionReason) << "\""
