@@ -1,9 +1,18 @@
 // Included inside AdaptiveMagmawStrategy private scope.
+    static bool IsFixedBaiter(
+        std::pair<ObjectGuid, ObjectGuid> const& baiters, ObjectGuid guid)
+    {
+        return guid == baiters.first || guid == baiters.second;
+    }
+
     static std::vector<ObjectGuid> BuildHookUsers(Blackboard const& board)
     {
+        std::pair<ObjectGuid, ObjectGuid> const baiters =
+            MagmawParasitePolicy::ResolveFixedBaiters(board);
         std::vector<ObjectGuid> hookUsers;
         for (ActorSnapshot const& member : board.Players)
-            if (member.Alive && member.Role == "dps")
+            if (member.Alive && member.Role == "dps"
+                && !IsFixedBaiter(baiters, member.Guid))
                 hookUsers.push_back(member.Guid);
         std::sort(hookUsers.begin(), hookUsers.end(), [](ObjectGuid left,
             ObjectGuid right)
@@ -13,6 +22,7 @@
         if (hookUsers.size() < 2)
             for (ActorSnapshot const& member : board.Players)
                 if (member.Alive && member.Role != "tank"
+                    && !IsFixedBaiter(baiters, member.Guid)
                     && std::find(hookUsers.begin(), hookUsers.end(), member.Guid)
                         == hookUsers.end())
                     hookUsers.push_back(member.Guid);

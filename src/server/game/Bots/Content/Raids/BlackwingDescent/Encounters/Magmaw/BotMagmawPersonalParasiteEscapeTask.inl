@@ -502,6 +502,13 @@ MagmawPersonalParasiteEscapeTask::Tick(
         || AlternatePending)
         return std::nullopt;
 
+    // The candidate lease is frame-local; the running child and its progress
+    // clock are semantic state. Refresh only this same authoritative child
+    // after all terminal/progress checks have passed, so a live native path
+    // can be retained without inventing a new route or rearming the task.
+    if (CandidateGeneration)
+        CandidateExpiresAtMs = board.ObservedAtMs + 750;
+
     BotNativeAction::Candidate candidate;
     candidate.Id.ScopeKey = board.CurrentScope.Key();
     candidate.Id.Strategy = "adaptive_magmaw";

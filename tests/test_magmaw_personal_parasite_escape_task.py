@@ -183,6 +183,52 @@ static void RejectThroughProductionAdapter(
     kernel.Resolve();
 }
 
+static void AssertHazardPreemptsFormation(
+    BotNativeAction::Candidate const& hazard, uint64 now)
+{
+    // The actual movement executor is intentionally a submission spy here;
+    // this fixture proves production lease/arbitration inputs only.
+    MagmawMovementIntentCollection movements;
+    movements.Propose(MagmawMovementProposalOrigin::Hazard, hazard);
+    BotNativeAction::Candidate formation = hazard;
+    formation.Id.Mechanic = "ranged_formation_restore";
+    formation.Id.EventGeneration = hazard.Id.EventGeneration + 1;
+    formation.ActionPriority = BotActionArbitration::Priority::CombatMovement;
+    formation.Utility = 900.0f;
+    formation.ExpiresAtMs = now + 750;
+    movements.Propose(MagmawMovementProposalOrigin::FormationRestore,
+        formation);
+    assert(HasPendingMagmawSurvivalMovement(movements, now));
+
+    BotActionArbitration::Kernel kernel;
+    kernel.Begin(now);
+    MagmawMovementKernelAdapterContext context;
+    context.ObservedAtMs = now;
+    context.Execute = [](BotNativeAction::Intent const&,
+        MagmawMovementNativeLease,
+        BotWorldMovement::ExecutionObservation*)
+    {
+        return BotActionArbitration::Outcome::Committed(
+            "movement_submission_spy");
+    };
+    assert(SubmitMagmawMovementKernelCandidates(kernel, movements,
+        std::move(context)) == 2);
+    BotActionArbitration::Resolution const& resolution = kernel.Resolve();
+    bool hazardCommitted = false;
+    bool formationMasked = false;
+    for (BotActionArbitration::CandidateTrace const& trace : resolution.Trace)
+    {
+        hazardCommitted = hazardCommitted
+            || (trace.Key == hazard.Id.Key()
+                && trace.Status == "attempted");
+        formationMasked = formationMasked
+            || (trace.Key == formation.Id.Key()
+                && trace.Status == "hard_masked"
+                && trace.Reason == "magmaw_survival_movement_pending");
+    }
+    assert(hazardCommitted && formationMasked);
+}
+
 int main()
 {
     Blackboard board = Board();
@@ -252,15 +298,54 @@ int main()
     assert(actor30010Task.Diagnostics.Lifecycle ==
         MagmawPersonalParasiteEscapeLifecycle::CandidateBuilt);
     std::string const actor30010CandidateKey = actor30010Candidate->Id.Key();
+    uint64 const actor30010CandidateGeneration =
+        actor30010Task.CandidateGeneration;
     assert(actor30010Task.CandidateGeneration
         == actor30010Candidate->Id.EventGeneration);
     assert(BuildMagmawPersonalParasiteEscapeDiagnosticsJson(actor30010Task,
         &sharedWave).find(actor30010CandidateKey) != std::string::npos);
 
+    // A fresh authoritative tick renews only the short candidate lease. The
+    // child identity, destination, start time, and progress clock remain
+    // stable even after the original 750 ms deadline has elapsed.
+    uint64 const actor30010StartedAtMs = actor30010Task.StartedAtMs;
+    uint64 const actor30010LastProgressAtMs =
+        actor30010Task.LastProgressAtMs;
+    Vector3 const actor30010InitialDestination = actor30010Task.Destination;
+    Vector3 const actor30010InitialPrimaryDestination =
+        actor30010Task.PrimaryDestination;
+    ++board.Revision;
+    board.ObservedAtMs += 1000;
+    cache = MagmawFactsCache::ForSnapshot(cache, board);
+    AdaptiveMagmawPlan renewed = contactStrategy.Propose(board,
+        PlayerGuid(30010), "dps", nullptr, false, false, &contactLane,
+        &contactLegacy, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+        &cache->Facts(), &actor30010Task, &sharedWave);
+    actor30010Candidate = EscapeFor(renewed, PlayerGuid(30010));
+    assert(actor30010Candidate);
+    assert(actor30010Candidate->Id.Key() == actor30010CandidateKey);
+    assert(actor30010Candidate->Id.EventGeneration ==
+        actor30010CandidateGeneration);
+    assert(actor30010Candidate->ExpiresAtMs == board.ObservedAtMs + 750);
+    assert(actor30010Task.CandidateExpiresAtMs ==
+        actor30010Candidate->ExpiresAtMs);
+    assert(actor30010Task.StartedAtMs == actor30010StartedAtMs);
+    assert(actor30010Task.LastProgressAtMs == actor30010LastProgressAtMs);
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        actor30010Task.Destination, actor30010InitialDestination));
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        actor30010Task.PrimaryDestination,
+        actor30010InitialPrimaryDestination));
+
+    // The renewed survival proposal remains visible to the real movement
+    // adapter and hard-masks a lower-priority formation restore in the same
+    // tick, preserving the hazard path's ownership and candidate identity.
+    AssertHazardPreemptsFormation(*actor30010Candidate,
+        board.ObservedAtMs);
+
     // A later partial snapshot suspends the already-built child without
-    // changing its actor, wave, task, candidate, destination, or deadline.
-    uint64 const actor30010CandidateGeneration =
-        actor30010Task.CandidateGeneration;
+    // changing its actor, wave, task, candidate, destination, or lease.
     uint64 const actor30010CandidateExpiresAtMs =
         actor30010Candidate->ExpiresAtMs;
     assert(actor30010Task.CandidateExpiresAtMs
@@ -269,11 +354,6 @@ int main()
         &sharedWave).find("\"candidate_expires_at_ms\":"
             + std::to_string(actor30010CandidateExpiresAtMs))
         != std::string::npos);
-    uint64 const actor30010StartedAtMs = actor30010Task.StartedAtMs;
-    uint64 const actor30010LastProgressAtMs =
-        actor30010Task.LastProgressAtMs;
-    Vector3 const actor30010InitialDestination =
-        actor30010Task.Destination;
     ++board.Revision;
     board.ObservedAtMs += 100;
     AdaptiveMagmawPlan authorityLost = contactStrategy.Propose(board,
@@ -293,6 +373,9 @@ int main()
         == actor30010LastProgressAtMs);
     assert(MagmawPersonalParasiteEscapeTask::SamePoint(
         actor30010Task.Destination, actor30010InitialDestination));
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        actor30010Task.PrimaryDestination,
+        actor30010InitialPrimaryDestination));
 
     cache = MagmawFactsCache::ForSnapshot(cache, board);
     AdaptiveMagmawPlan authorityRestored = contactStrategy.Propose(board,
@@ -304,9 +387,18 @@ int main()
     assert(actor30010Candidate);
     assert(actor30010Candidate->Id.Key() == actor30010CandidateKey);
     assert(actor30010Candidate->ExpiresAtMs
-        == actor30010CandidateExpiresAtMs);
+        == board.ObservedAtMs + 750);
     assert(actor30010Task.CandidateExpiresAtMs
-        == actor30010CandidateExpiresAtMs);
+        == board.ObservedAtMs + 750);
+    assert(actor30010Candidate->ExpiresAtMs
+        != actor30010CandidateExpiresAtMs);
+    assert(actor30010Task.StartedAtMs == actor30010StartedAtMs);
+    assert(actor30010Task.LastProgressAtMs == actor30010LastProgressAtMs);
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        actor30010Task.Destination, actor30010InitialDestination));
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        actor30010Task.PrimaryDestination,
+        actor30010InitialPrimaryDestination));
 
     SubmitThroughProductionAdapter(*actor30010Candidate,
         board.ObservedAtMs, actor30010Task);
@@ -454,6 +546,8 @@ int main()
     uint64 const nextContactCandidateGeneration =
         actor30010Task.CandidateGeneration;
     uint64 const nextContactExpiresAtMs = nextContactCandidate->ExpiresAtMs;
+    uint64 const nextContactStartedAtMs = actor30010Task.StartedAtMs;
+    uint64 const nextContactLastProgressAtMs = actor30010Task.LastProgressAtMs;
     std::string const nextContactKey = nextContactCandidate->Id.Key();
     Vector3 const nextContactDestination = actor30010Task.Destination;
 
@@ -475,7 +569,11 @@ int main()
         == nextContactCandidateGeneration);
     assert(stableNextContactCandidate->Id.Key() == nextContactKey);
     assert(stableNextContactCandidate->ExpiresAtMs
-        == nextContactExpiresAtMs);
+        == board.ObservedAtMs + 750);
+    assert(stableNextContactCandidate->ExpiresAtMs != nextContactExpiresAtMs);
+    assert(actor30010Task.CandidateExpiresAtMs == board.ObservedAtMs + 750);
+    assert(actor30010Task.StartedAtMs == nextContactStartedAtMs);
+    assert(actor30010Task.LastProgressAtMs == nextContactLastProgressAtMs);
     assert(MagmawPersonalParasiteEscapeTask::SamePoint(
         actor30010Task.Destination, nextContactDestination));
     std::string const stableEpisodeJson =
@@ -635,11 +733,19 @@ int main()
         + std::to_string(task.CandidateGeneration)) != std::string::npos);
     assert(!MagmawPersonalParasiteEscapeTask::SamePoint(
         primaryDestination, task.Destination));
+    Vector3 const alternateDestination = task.Destination;
+    uint64 const alternateStartedAtMs = task.StartedAtMs;
+    uint64 const alternateLastProgressAtMs = task.LastProgressAtMs;
 
-    // Re-emitting the same alternate on a later authoritative tick retains
-    // both its candidate generation and its fixed expiry.
+    // Submit the distinct alternate, then let its original lease expire
+    // before the next authoritative tick. The task must retain the same
+    // running child rather than manufacture another route.
+    SubmitThroughProductionAdapter(*alternateCandidate, board.ObservedAtMs,
+        task);
+    assert(task.Diagnostics.Lifecycle ==
+        MagmawPersonalParasiteEscapeLifecycle::Submitted);
     ++board.Revision;
-    board.ObservedAtMs += 100;
+    board.ObservedAtMs += 1000;
     cache = MagmawFactsCache::ForSnapshot(cache, board);
     AdaptiveMagmawPlan retainedAlternate = strategy.Propose(board,
         PlayerGuid(30008), "dps", nullptr, false, false, &lane, &legacy,
@@ -651,8 +757,20 @@ int main()
     assert(retainedAlternateCandidate);
     assert(task.CandidateGeneration == alternateGeneration);
     assert(retainedAlternateCandidate->Id.Key() == alternateKey);
-    assert(retainedAlternateCandidate->ExpiresAtMs == alternateExpiresAtMs);
-    assert(task.CandidateExpiresAtMs == alternateExpiresAtMs);
+    assert(retainedAlternateCandidate->ExpiresAtMs == board.ObservedAtMs + 750);
+    assert(task.CandidateExpiresAtMs == board.ObservedAtMs + 750);
+    assert(retainedAlternateCandidate->ExpiresAtMs != alternateExpiresAtMs);
+    assert(task.StartedAtMs == alternateStartedAtMs);
+    assert(task.LastProgressAtMs == alternateLastProgressAtMs);
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        task.Destination, alternateDestination));
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        task.PrimaryDestination, primaryDestination));
+    assert(HasRetainedMagmawHazardOwnership(retainedAlternate.Movement, task,
+        PlayerGuid(30008)));
+
+    AssertHazardPreemptsFormation(*retainedAlternateCandidate,
+        board.ObservedAtMs);
 
     RejectThroughProductionAdapter(*retainedAlternateCandidate,
         board.ObservedAtMs, task, "route_destination_unreachable");

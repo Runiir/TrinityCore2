@@ -138,5 +138,11 @@
     }
   ],
   "verified_archive_copies_evicted": true,
-  "raw_payloads_retained_for_active_causal_review": true
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    "magmaw-development-bdf57a2fa3/raw.jsonl",
+    "magmaw-development-bdf57a2fa3/worldserver.log",
+    "magmaw-development-bdf57a2fa3/capture.console.log",
+    "magmaw-development-bdf57a2fa3/readback.console.log"
+  ]
 }

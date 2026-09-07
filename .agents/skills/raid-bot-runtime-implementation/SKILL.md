@@ -371,13 +371,16 @@ destination, traversal mode, and observed native path state. Test the exact
 lease-expiry boundary at `nowMs == ExpiresAtMs`, plus one tick before and one
 tick after; a source-shape assertion is not enough.
 
-Keep repair state names exact: `implemented`, `fixture-green`,
-`build-admitted`, and `canary-provisional` are not `closed`. Never report a
-blocker as fixed until two consecutive full current-standard clears explicitly
-mark its signature absent. If it reappears at any later state, immediately
-quarantine that signature, invalidate the newest retained fixture revision,
-and revoke outstanding build/canary authorization before reading or editing
-another runtime edge. A smaller affected cohort is improvement, not absence.
+Keep task identity and semantic deadlines separate from candidate freshness.
+An authoritative running task may renew the same candidate's short arbitration
+lease without changing its generation, destination, or progress clock. Replay
+a later tick past the original expiry with a competing lower-priority action;
+prove native path retention as well as eventual termination of a true stall.
+
+Report implementation, fixture, build, and live results separately. Development
+uses the affected tests and a bounded native canary; full qualification has its
+own criteria. A recurrence requires a corrected causal fixture before retrying
+the same edge, not a new authorization or an unrelated historical test bank.
 
 For event-owned encounter movement, retain a typed semantic transition in
 addition to the short generic lease. Bind it to encounter/attempt and mechanic
@@ -453,13 +456,10 @@ affected behavioral tests. An unchanged passing replay does not explain a
 recurrence. Development does not require fixture-expansion metadata or a
 historical full-bank receipt; those belong to sealed replay and qualification.
 
-The replay must cross every independent action owner implicated by the live
-counterexample. For encounter movement plus class combat, execute encounter
-assignment, immutable combat constraints, class-action filtering, priority and
-resource arbitration, native movement, persistent pet/area effects, hostile
-threat or victim selection, and the observed lethal postcondition in one
-compiled sequence. A strategy-only target assertion cannot prove that a later
-class resolver, pet, totem, autoattack, or area spell obeys the assignment.
+The replay must cross the independent action owners implicated by the observed
+failure. Include the competing candidate or native recovery caller that could
+undo the repair. Do not require unrelated pet, class, or boss simulation in
+every movement fixture; state which native outcomes still need live validation.
 
 Return the reproduced failure, repair, and focused test result. The coordinator
 owns live validation and continues after the bounded worker finishes. A native

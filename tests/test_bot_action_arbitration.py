@@ -1305,6 +1305,10 @@ int main()
     mangleSafety.Summons.clear();
     mangleSafety.Players[0].Position = { -24.0f, 0.0f, 213.225f };
     mangleSafety.Players[1].Position = { 55.0f, 0.0f, 211.581f };
+    // Keep two ordinary DPS available for the hook fallback; this replay is
+    // about Mangle support staging and must not conscript its added healers.
+    mangleSafety.Players[2].ClassSpec = "arcane_mage";
+    mangleSafety.Players[3].ClassSpec = "affliction_warlock";
     BotEncounter::Vector3 const ordinarySupport{
         magmawBoss.Position.X
             - BotEncounter::AdaptiveMagmawStrategy::SupportStackDistance,
@@ -1460,9 +1464,11 @@ int main()
     BotEncounter::ActorSnapshot hookBot = dps;
     hookBot.Guid = ObjectGuid(HighGuid::Player, uint32(100));
     hookBot.Role = "dps";
+    hookBot.ClassSpec = "affliction_warlock";
     hookBot.VehicleGuid = ObjectGuid(HighGuid::Unit, uint32(41620), uint32(101));
     BotEncounter::ActorSnapshot secondHookBot = hookBot;
     secondHookBot.Guid = ObjectGuid(HighGuid::Player, uint32(200));
+    secondHookBot.ClassSpec = "elemental_shaman";
     secondHookBot.VehicleGuid = ObjectGuid{};
     BotEncounter::ActorSnapshot nonHookBot = hookBot;
     nonHookBot.Guid = ObjectGuid(HighGuid::Player, uint32(300));
@@ -2849,7 +2855,7 @@ int main()
         AdaptiveMagmawStrategy::SpikeEntry, uint32(701));
     spike.Entry = AdaptiveMagmawStrategy::SpikeEntry;
     pincer.Summons = { pincerVehicle, spike };
-    auto pincerPlan = strategy.Propose(pincer, mageGuid, "dps", nullptr,
+    auto pincerPlan = strategy.Propose(pincer, ordinaryGuid, "dps", nullptr,
         false, false, &transition);
     assert(pincerPlan.Movement.has_value());
     assert(pincerPlan.Movement->Id.Mechanic == "pincer_approach");

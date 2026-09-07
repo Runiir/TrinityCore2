@@ -9,7 +9,9 @@ understand it; do not substitute a dump of the program charter or old handoffs.
 3. **Production path.** Relevant caller -> state owner -> candidate/executor ->
    outcome, including the identity and lifecycle rules involved. Explain why the
    present behavior is wrong and which old expectations must change.
-4. **Scope.** Owned production files AND directly affected callers/tests.
+4. **Scope.** Absolute checkout path, source commit, owned production files AND
+   directly affected callers/tests. Identify the editable checkout separately
+   from any frozen build or evidence checkout.
    Read-only inspection is allowed. List concrete forbidden changes. Tell the
    coordinator if a necessary edit falls outside ownership; do not silently
    expand production scope.
