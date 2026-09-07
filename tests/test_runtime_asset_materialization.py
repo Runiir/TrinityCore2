@@ -11,6 +11,7 @@ import pytest
 import yaml
 
 from tools.raid_program.runtime_asset_closure import (
+    _inventory as _closure_inventory,
     _verify_extraction_provenance,
     build_native_inventory_authority,
 )
@@ -148,7 +149,7 @@ def test_producer_proves_remote_reconstruction_and_closure_binding(tmp_path: Pat
     assert observed is not None
     assert observed["historical_extraction_origin"] == "unknown"
     assert observed["remote_reconstruction"]["reconstructed_inventory"] == receipt[
-        "source_inventory"
+        "portable_source_inventory"
     ]
 
     paths["pointer"].unlink()
@@ -186,6 +187,56 @@ def test_producer_can_resume_with_exact_existing_archive(tmp_path: Path) -> None
 
     assert resumed["archive"]["sha256"] == original_archive_sha256
     assert resumed["source_inventory"] == original["source_inventory"]
+
+
+def test_directory_allocation_size_is_projected_for_reconstruction(tmp_path: Path) -> None:
+    paths = _fixture(tmp_path)
+    authority = json.loads(paths["authority"].read_text())
+    for row in authority["records"]:
+        if row["type"] == "directory":
+            row["size_bytes"] += 4096
+    authority["record_inventory"] = _closure_inventory(authority["records"])
+    _write_json(paths["authority"], authority)
+
+    receipt = _produce(paths)
+
+    assert receipt["source_inventory"] != receipt["portable_source_inventory"]
+    assert receipt["remote_reconstruction"]["reconstructed_inventory"] == receipt[
+        "portable_source_inventory"
+    ]
+    issues, _observed = _verify_extraction_provenance(
+        {"native_extraction_provenance": _requirement(paths, receipt)},
+        {"configured-DataDir": paths["data"], "dvc-workspace": paths["dvc"]},
+        authority, receipt["inventory_authority_sha256"],
+    )
+    assert issues == []
+
+
+@pytest.mark.parametrize("difference", ["size", "hash", "mode", "type", "path"])
+def test_file_contract_differences_remain_exact(
+    tmp_path: Path, difference: str,
+) -> None:
+    paths = _fixture(tmp_path)
+    authority = json.loads(paths["authority"].read_text())
+    row = next(item for item in authority["records"] if item["type"] == "file")
+    if difference == "size":
+        row["size_bytes"] += 1
+    elif difference == "hash":
+        row["sha256"] = "f" * 64
+    elif difference == "mode":
+        row["mode"] = "0400" if row["mode"] != "0400" else "0600"
+    elif difference == "type":
+        row["type"] = "directory"
+        row.pop("sha256")
+    else:
+        row["path"] = "renamed-file"
+        authority["records"].sort(key=lambda item: item["path"])
+    authority["record_inventory"] = _closure_inventory(authority["records"])
+    _write_json(paths["authority"], authority)
+
+    with pytest.raises(MaterializationError, match="source_inventory_authority_mismatch"):
+        _produce(paths)
+    assert not paths["receipt"].exists()
 
 
 def test_reused_corrupt_archive_cannot_produce_receipt(tmp_path: Path) -> None:

@@ -84,6 +84,20 @@ def _inventory(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     }
 
 
+def portable_inventory_records(
+    records: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    projected = [dict(row) for row in records]
+    for row in projected:
+        if row.get("type") == "directory":
+            row["size_bytes"] = 0
+    return projected
+
+
+def portable_inventory(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    return _inventory(portable_inventory_records(records))
+
+
 def _relative_if_within(path: Path, root: Path) -> str | None:
     try:
         relative = absolute_path(path).relative_to(absolute_path(root)).as_posix()
@@ -186,7 +200,7 @@ def _archive_data_dir(
     before = walk_inventory_no_follow(
         data_dir, ".", include_directories=True, excluded_paths=excluded_paths,
     )
-    if before != [dict(row) for row in expected_records]:
+    if portable_inventory_records(before) != portable_inventory_records(expected_records):
         raise MaterializationError("source_inventory_authority_mismatch")
 
     archive_path = absolute_path(archive_path)
@@ -225,7 +239,7 @@ def _archive_data_dir(
     after = walk_inventory_no_follow(
         data_dir, ".", include_directories=True, excluded_paths=excluded_paths,
     )
-    if after != before:
+    if portable_inventory_records(after) != portable_inventory_records(before):
         raise MaterializationError("source_drift:inventory_changed_during_archive")
     return before, _archive_identity(archive_path, before)
 
@@ -240,7 +254,7 @@ def _archive_identity(
         "md5": archive_md5,
         "size_bytes": archive_stat.st_size,
         "member_count": len(source_records),
-        "source_inventory_sha256": _inventory(source_records)["inventory_sha256"],
+        "source_inventory_sha256": portable_inventory(source_records)["inventory_sha256"],
     }
 
 
@@ -251,7 +265,7 @@ def _reuse_archive(
     observed = walk_inventory_no_follow(
         data_dir, ".", include_directories=True, excluded_paths=excluded_paths,
     )
-    if observed != [dict(row) for row in expected_records]:
+    if portable_inventory_records(observed) != portable_inventory_records(expected_records):
         raise MaterializationError("source_inventory_authority_mismatch")
     return observed, _archive_identity(archive_path, observed)
 
@@ -300,6 +314,10 @@ def _extract_and_verify_archive(
                 target = output_dir / relative
                 target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
                 if member.isdir():
+                    if member.size != 0:
+                        raise MaterializationError(
+                            f"archive_member_directory_size_invalid:{relative}"
+                        )
                     target.mkdir(exist_ok=False, mode=0o700)
                     directory_modes.append((target, member.mode & 0o7777))
                     continue
@@ -336,9 +354,11 @@ def _extract_and_verify_archive(
         for directory, mode in reversed(directory_modes):
             directory.chmod(mode)
         observed = walk_inventory_no_follow(output_dir, ".", include_directories=True)
-        if observed != [dict(row) for row in expected_records]:
+        if portable_inventory_records(observed) != portable_inventory_records(
+            expected_records
+        ):
             raise MaterializationError("reconstructed_inventory_mismatch")
-        return _inventory(observed)
+        return portable_inventory(observed)
     except (tarfile.TarError, OSError, SafePathError) as error:
         raise MaterializationError(f"archive_invalid:{error}") from error
 
@@ -482,7 +502,8 @@ def validate_materialization_receipt(payload: Mapping[str, Any]) -> None:
     expected = {
         "schema", "kind", "historical_extraction_origin",
         "inventory_authority_sha256", "canonical_audit_inventory_sha256",
-        "source_inventory", "archive", "dvc", "creation_command_inputs",
+        "source_inventory", "portable_source_inventory", "archive", "dvc",
+        "creation_command_inputs",
         "remote_reconstruction",
     }
     if set(payload) != expected or payload.get("schema") != RECEIPT_SCHEMA:
@@ -519,6 +540,21 @@ def validate_materialization_receipt(payload: Mapping[str, Any]) -> None:
         )
     ):
         raise MaterializationError("materialization_source_inventory_invalid")
+    portable_source = payload.get("portable_source_inventory")
+    if not isinstance(portable_source, dict) or set(portable_source) != inventory_keys:
+        raise MaterializationError("materialization_portable_inventory_invalid")
+    if (
+        any(
+            portable_source.get(field) != source_inventory.get(field)
+            for field in (
+                "entry_count", "file_count", "directory_count", "size_bytes",
+                "path_set_sha256",
+            )
+        )
+        or not isinstance(portable_source.get("inventory_sha256"), str)
+        or not HEX64_RE.fullmatch(portable_source["inventory_sha256"])
+    ):
+        raise MaterializationError("materialization_portable_inventory_invalid")
     archive = payload.get("archive")
     if not isinstance(archive, dict) or set(archive) != {
         "format", "sha256", "md5", "size_bytes", "member_count",
@@ -537,9 +573,9 @@ def validate_materialization_receipt(payload: Mapping[str, Any]) -> None:
     ):
         raise MaterializationError("materialization_archive_identity_invalid")
     if (
-        archive.get("member_count") != source_inventory["entry_count"]
+        archive.get("member_count") != portable_source["entry_count"]
         or archive.get("source_inventory_sha256")
-        != source_inventory["inventory_sha256"]
+        != portable_source["inventory_sha256"]
     ):
         raise MaterializationError("materialization_archive_inventory_disagree")
     dvc = payload.get("dvc")
@@ -570,7 +606,7 @@ def validate_materialization_receipt(payload: Mapping[str, Any]) -> None:
         raise MaterializationError("materialization_remote_reconstruction_invalid")
     if not _commands_valid(remote.get("commands")):
         raise MaterializationError("materialization_remote_commands_invalid")
-    if remote.get("reconstructed_inventory") != payload.get("source_inventory"):
+    if remote.get("reconstructed_inventory") != portable_source:
         raise MaterializationError("materialization_reconstructed_inventory_invalid")
     if remote.get("downloaded_archive_sha256") != archive.get("sha256"):
         raise MaterializationError("materialization_downloaded_archive_invalid")
@@ -787,9 +823,12 @@ def produce_verified_materialization_receipt(
     source_after = walk_inventory_no_follow(
         data_dir, ".", include_directories=True, excluded_paths=excluded,
     )
-    if source_after != source_records:
+    if portable_inventory_records(source_after) != portable_inventory_records(
+        source_records
+    ):
         raise MaterializationError("source_drift:inventory_changed_before_receipt")
     source_inventory = _inventory(source_records)
+    portable_source_inventory = portable_inventory(source_records)
     receipt = {
         "schema": RECEIPT_SCHEMA,
         "kind": PROVENANCE_KIND,
@@ -799,6 +838,7 @@ def produce_verified_materialization_receipt(
             "canonical_audit_inventory_sha256"
         ),
         "source_inventory": source_inventory,
+        "portable_source_inventory": portable_source_inventory,
         "archive": archive_identity,
         "dvc": {
             "pointer_path": absolute_path(result.pointer_path).relative_to(

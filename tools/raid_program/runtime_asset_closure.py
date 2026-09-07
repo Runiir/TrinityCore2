@@ -895,6 +895,8 @@ def _verify_materialization_provenance(
 ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
     from tools.raid_program.runtime_asset_materialization import (
         MaterializationError,
+        portable_inventory,
+        portable_inventory_records,
         validate_materialization_requirement,
         verify_current_dvc_pointer,
     )
@@ -931,10 +933,11 @@ def _verify_materialization_provenance(
             "path": relative, "root": root_key, "detail": str(error),
         }], None
     issues: list[dict[str, Any]] = []
-    observed_inventory = _inventory(observed_records)
+    observed_inventory = portable_inventory(observed_records)
     if (
-        observed_records != expected_records
-        or payload.get("source_inventory") != observed_inventory
+        portable_inventory_records(observed_records)
+        != portable_inventory_records(expected_records)
+        or payload.get("portable_source_inventory") != observed_inventory
         or payload.get("remote_reconstruction", {}).get(
             "reconstructed_inventory"
         ) != observed_inventory
@@ -943,7 +946,7 @@ def _verify_materialization_provenance(
             "kind": "provenance_invalid",
             "class_id": "native_extraction_provenance",
             "path": relative, "root": root_key, "field": "data_inventory",
-            "expected": _inventory(expected_records),
+            "expected": portable_inventory(expected_records),
             "observed": observed_inventory,
         })
     return issues, {**payload, "receipt_sha256": observed_sha256}

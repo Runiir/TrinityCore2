@@ -148,3 +148,9 @@ contents. Portable reconstruction must preserve exact paths, types, modes and
 all file bytes/sizes/hashes while excluding directory allocation size from the
 comparison. Historical inventory authorities remain unchanged. No production
 materialization receipt or accepted live-input closure exists yet.
+
+The portable comparison repair is implemented and independently approved by
+Sol high. Root ran 85 focused checks; independent review ran 97 read-only
+checks. Only directory allocation size is normalized. File identity and
+directory path/type/mode checks remain exact. The next production action is
+existing-archive reconstruction on persistent ext4 storage.
