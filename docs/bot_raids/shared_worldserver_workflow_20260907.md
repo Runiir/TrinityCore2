@@ -77,5 +77,43 @@ DVC workspace, `trinity-worldserver-test.conf`, `data` as DataDir, and map 669.
 It reported one inventory hash mismatch, 16 mode mismatches, and one missing
 provenance issue. Snapshot hash:
 `b6bc5ac7429957736b9a3a9e90ff58785c39bb53f9a3df004b2d209aa2aacdd7`.
-This was an input audit, not an admitted run. Resolve exact inventory/mode
-differences and produce real extraction provenance before a live attempt.
+This was an input audit, not an admitted run.
+
+Further inspection identified the cause: source checkout `data/mmaps` and native
+DataDir `mmaps` resolve to the same eight files, while the offline contract
+requires mode `0444` and the native contract requires `0664`. Every file matches
+its pinned content hash. Changing permissions simply transfers the failures to
+the other consumer. The files have been restored to their original `0664` mode.
+Use independent copies in the immutable source checkout; do not hard-link them
+to native runtime inputs. `runtime_asset_root_aliases.py` detects contradictory
+requirements for the same absolute path before expensive inventory checks.
+
+The historical extraction receipt is absent. The existing receipt producer
+inventories files and records caller-supplied extraction metadata; it cannot
+attest how existing files were originally extracted. Do not manufacture that
+history. Current input provenance must instead bind an exact materialization,
+its DVC content address, and a verified reconstruction from the remote using an
+empty cache. Record historical extraction origin as unknown. Historical
+manifests and their missing-receipt negative fixture remain unchanged.
+
+`tools/raid_program/runtime_asset_materialization.py` implements that publication
+and reconstruction path. The current input manifest can explicitly select it;
+the verifier still checks all asset classes, the exhaustive native inventory,
+and the current DVC pointer. The producer rejects changed inputs and malformed
+archives and hashes the complete archive without loading it into memory.
+
+Offline validation passed 70 materialization/closure/root-conflict checks and
+56 parent-caller/launcher checks. The tests include actual DVC publication and
+empty-cache reconstruction against a temporary filesystem remote using two
+synthetic files. This does not certify the production input set. The integrated
+production preflight now identifies all eight root conflicts before reading any
+asset payloads, with an empty snapshot in approximately 0.3 seconds.
+A separate full DataDir comparison found zero differences across all 40,976
+entries against the pinned exhaustive inventory. Fresh extraction or inventory
+replacement is unnecessary. Six additional root-detector tests cover malformed
+manifest records and require a typed validation failure instead of a traceback.
+
+Independent Sol high review approved the materialization implementation for
+production publication. Review ran 88 relevant checks and 24 final focused
+checks. Production publication and reconstruction remain unexecuted at this
+code checkpoint.

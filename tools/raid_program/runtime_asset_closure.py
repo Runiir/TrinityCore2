@@ -828,6 +828,11 @@ def _verify_extraction_provenance(
     requirement = manifest.get("native_extraction_provenance")
     if not isinstance(requirement, dict):
         raise ManifestError("native_extraction_provenance_invalid")
+    if requirement.get("kind") == "verified_materialization":
+        return _verify_materialization_provenance(
+            requirement, roots, inventory_authority,
+            inventory_authority_sha256,
+        )
     relative = _safe_relative(requirement.get("path"))
     target = roots["configured-DataDir"] / relative
     pinned_sha256 = requirement.get("receipt_sha256")
@@ -880,6 +885,66 @@ def _verify_extraction_provenance(
             "kind": "provenance_invalid", "class_id": "native_extraction_provenance",
             "path": relative, "root": "configured-DataDir", "field": "data_inventory",
             "expected": _inventory(expected_records), "observed": _inventory(observed_records),
+        })
+    return issues, {**payload, "receipt_sha256": observed_sha256}
+
+
+def _verify_materialization_provenance(
+    requirement: Mapping[str, Any], roots: Mapping[str, Path],
+    inventory_authority: Mapping[str, Any], inventory_authority_sha256: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    from tools.raid_program.runtime_asset_materialization import (
+        MaterializationError,
+        validate_materialization_requirement,
+        verify_current_dvc_pointer,
+    )
+
+    relative = _safe_relative(requirement.get("path"))
+    root_key = requirement.get("root")
+    if root_key != "dvc-workspace":
+        raise ManifestError("verified_materialization_root_invalid")
+    target = roots[root_key] / relative
+    pinned_sha256 = requirement.get("receipt_sha256")
+    try:
+        payload, observed_sha256 = _load_bound_json(
+            target, pinned_sha256,
+            schema="cata_runtime_asset_verified_materialization_receipt_v1",
+        )
+        validate_materialization_requirement(
+            requirement, payload, inventory_authority_sha256,
+        )
+        verify_current_dvc_pointer(payload, roots["dvc-workspace"])
+        expected_records = _validate_inventory_records(
+            inventory_authority.get("records")
+        )
+        observed_records = walk_inventory_no_follow(
+            roots["configured-DataDir"], ".", include_directories=True,
+        )
+    except (ManifestError, MaterializationError, SafePathError, OSError) as error:
+        kind = (
+            "provenance_missing"
+            if isinstance(error, SafePathError) and error.kind == "missing"
+            else "provenance_invalid"
+        )
+        return [{
+            "kind": kind, "class_id": "native_extraction_provenance",
+            "path": relative, "root": root_key, "detail": str(error),
+        }], None
+    issues: list[dict[str, Any]] = []
+    observed_inventory = _inventory(observed_records)
+    if (
+        observed_records != expected_records
+        or payload.get("source_inventory") != observed_inventory
+        or payload.get("remote_reconstruction", {}).get(
+            "reconstructed_inventory"
+        ) != observed_inventory
+    ):
+        issues.append({
+            "kind": "provenance_invalid",
+            "class_id": "native_extraction_provenance",
+            "path": relative, "root": root_key, "field": "data_inventory",
+            "expected": _inventory(expected_records),
+            "observed": observed_inventory,
         })
     return issues, {**payload, "receipt_sha256": observed_sha256}
 
@@ -979,21 +1044,36 @@ def verify_runtime_asset_closure(
     try:
         if not isinstance(classes, list):
             raise ManifestError("asset_classes_invalid")
+        selected_classes: list[dict[str, Any]] = []
         for asset_class in classes:
             if not isinstance(asset_class, dict):
                 raise ManifestError("asset_class_not_object")
-            result, class_issues, class_snapshot = _verify_class(
-                asset_class, roots, scenario_map_id, inventory_authority,
-            )
-            class_results.append(result)
-            issues.extend(class_issues)
-            snapshot.update(class_snapshot)
-        issues.extend(_verify_dvc_provenance(manifest, roots))
-        provenance_issues, provenance = _verify_extraction_provenance(
-            manifest, roots, inventory_authority, inventory_authority_sha256,
+            selected = _expected_map_values(asset_class, scenario_map_id)
+            if selected.get("root") not in roots:
+                raise ManifestError(
+                    f"asset_class_invalid:{selected.get('id') or 'unnamed'}"
+                )
+            selected_classes.append(selected)
+        from tools.raid_program.runtime_asset_root_aliases import (
+            find_root_contract_conflicts,
         )
-        issues.extend(provenance_issues)
-    except ManifestError as error:
+        alias_issues = find_root_contract_conflicts(selected_classes, roots)
+        issues.extend(alias_issues)
+        provenance = None
+        if not alias_issues:
+            for asset_class in classes:
+                result, class_issues, class_snapshot = _verify_class(
+                    asset_class, roots, scenario_map_id, inventory_authority,
+                )
+                class_results.append(result)
+                issues.extend(class_issues)
+                snapshot.update(class_snapshot)
+            issues.extend(_verify_dvc_provenance(manifest, roots))
+            provenance_issues, provenance = _verify_extraction_provenance(
+                manifest, roots, inventory_authority, inventory_authority_sha256,
+            )
+            issues.extend(provenance_issues)
+    except (ManifestError, ValueError) as error:
         issues.append({"kind": "manifest_invalid", "detail": str(error)})
         provenance = None
     if previous_snapshot is not None:

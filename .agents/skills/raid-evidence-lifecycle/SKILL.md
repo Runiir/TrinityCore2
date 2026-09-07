@@ -37,6 +37,16 @@ Before live execution, require:
   against that commit's lock, require local and cloud status clean, then verify
   the runtime manifest's decisive node IDs and mechanic fields before
   provisioning;
+- Detect contradictory requirements when source and runtime roots alias the
+  same files before trying permission repairs. Use independent copies when
+  their contracts require different modes; changing one shared file repeatedly
+  cannot satisfy both contracts. Never hard-link copies with different modes.
+- For existing native assets with unknown extraction history, do not invent
+  extractor metadata or repeatedly search for an absent historical receipt.
+  Use the explicit verified-materialization authority: exact input inventory,
+  DVC content address, and reconstruction verified from the remote with an
+  empty cache. Record historical extraction origin as unknown. This authority
+  does not waive content, mode, or source-identity mismatches.
 - inspect the owning `dvc.yaml` stage before planning hydration. A lock-file
   hash does not mean an output is restorable: metrics or outputs declared with
   `cache: false` are intentionally not materialized by `dvc pull` or
@@ -103,9 +113,11 @@ These shutdown and persistence duties belong to the capture controller or coordi
 
 - Retain raw command/output bytes first; normalize afterward.
 - Treat an operator interrupt as a controlled infrastructure abort: issue the
-  native `botauto stop`, a final native `botauto status`, and `server exit`
-  through a bounded shutdown window before terminating the child process
-  group. Preserve the partial raw log, normalized rows, cleanup observations,
+  addressed native `botauto stop <cohort>` and final `botauto status <cohort>`.
+  Only the shared-server lifecycle coordinator may issue `server exit` or
+  terminate its child process group after all owned cohorts have been closed.
+  Stopping an individual boss test must preserve other active instances.
+  Preserve the partial raw log, normalized rows, cleanup observations,
   and final report; record `operator_interrupt` as the reason rather than
   emitting an uncaught traceback or calling the partial run successful.
 - Bind every retained JSON row to scenario, cohort, server epoch, attempt, runtime profile/hash, strategy, assignment generation, exact roster hash, action, and capture sequence.

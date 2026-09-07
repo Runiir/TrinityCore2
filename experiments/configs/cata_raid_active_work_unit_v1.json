@@ -8,7 +8,7 @@
   "architecture_scope": "Two independent native boss instances on one worldserver, before heroic-mode admission and boss/class repairs.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Native kernel and capacity integration independently approved; focused fixtures and syntax checks pass. Runtime input preflight fails inventory hash/mode/provenance checks; full link and accepted live isolation remain outstanding.",
+  "gate_state": "Native kernel and capacity integration independently approved; focused fixtures and syntax checks pass. Input audit traced inventory/mode failures to aliased roots with contradictory permissions; all eight MMAP content hashes match. Verified materialization provenance and full link/live isolation remain outstanding.",
   "first_broken_edge": {
     "id": "second_cohort_rejected_and_native_callbacks_use_global_scope",
     "stage": "native_cohort_admission_and_callback_attribution",
@@ -18,7 +18,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "b46c4c3b69e7ef3ae77d5b96872feb04169314f25db6da4f612914ee0ac97448"
+    "sha256": "8bec03f6d851e72dc9d37ff93977798f587a45f7d376552d055fdf67206377fc"
   },
   "scope_lock": {
     "objective": "Implement and verify two-cohort scheduling, explicit callback ownership and scoped cleanup before one live isolation canary.",
@@ -47,7 +47,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Complete and independently review the bounded native kernel and cohort-scoped command/observation plumbing. Resolve runtime asset attribution before an accepted build/live canary. Run Magmaw plus a disjoint witness instance with one map worker, close/publish/clean the evidence, then repair generic 10H/25H profile admission. Preserve historical negative evidence and route new first-broken edges without repeating unchanged attempts.",
+  "next_action": "Resolve aliased source/runtime roots with independent copies and verify runtime asset reconstruction from DVC. Then perform one attributable build and bounded Magmaw plus disjoint-witness isolation validation with one map worker. Close/publish/clean evidence and proceed to generic 10H/25H profile admission. Preserve historical negatives and route newly proven blockers without repeating unchanged attempts.",
   "queued_reference_issue": {
     "test": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
     "classification": "historical_fixture_source_freshness_mismatch",
@@ -60,13 +60,25 @@
   "queued_runtime_asset_issue": {
     "state": "unresolved_live_prerequisite",
     "previous_work_unit": "shard:runtime_asset_input_reconstruction",
-    "details": "Historical extraction provenance unavailable; current inventory drift and missing generated dependencies were observed. User reprioritized native shared-instance implementation; do not waive accepted-live asset binding.",
+    "details": "All eight selected MMAP byte hashes match. Source-checkout/data and configured DataDir alias the same files but require modes 0444 and 0664 respectively. Use independent source copies. Historical extraction receipt is absent; current provenance must use exact DVC-addressed, empty-cache verified materialization with historical extraction origin unknown.",
     "issue_counts": {
       "hash_mismatch": 1,
       "mode_mismatch": 16,
       "provenance_missing": 1
     },
-    "snapshot_sha256": "b6bc5ac7429957736b9a3a9e90ff58785c39bb53f9a3df004b2d209aa2aacdd7"
+    "snapshot_sha256": "b6bc5ac7429957736b9a3a9e90ff58785c39bb53f9a3df004b2d209aa2aacdd7",
+    "full_native_inventory_readback": {
+      "entry_count": 40976,
+      "difference_count": 0,
+      "matches_pinned_authority": true,
+      "live_run": false
+    },
+    "materialization_review": {
+      "verdict": "approve",
+      "model": "gpt-5.6-sol",
+      "reasoning": "high",
+      "production_publication_verified": false
+    }
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",

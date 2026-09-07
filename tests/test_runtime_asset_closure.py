@@ -225,6 +225,32 @@ def _verify(paths: dict[str, Path], **overrides):
     return verify_runtime_asset_closure(**arguments)
 
 
+def test_contradictory_alias_stops_before_asset_inventory(tmp_path, monkeypatch):
+    from tools.raid_program import runtime_asset_closure as closure
+
+    paths = _fixture(tmp_path)
+    manifest = json.loads(paths["manifest"].read_text())
+    duplicate = json.loads(json.dumps(manifest["asset_classes"][0]))
+    duplicate["id"] = "conflicting_consumer"
+    for row in duplicate["expected_files"]:
+        row["mode"] = "0444" if row["mode"] != "0444" else "0664"
+    duplicate["audit_inventory_sha256"] = hashlib.sha256(duplicate["id"].encode()).hexdigest()
+    duplicate["expected_inventory"] = _inventory(duplicate["expected_files"])
+    manifest["asset_classes"].append(duplicate)
+    _seal_authorities(paths, manifest)
+    _write_json(paths["manifest"], manifest)
+
+    def unexpected_inventory(*args, **kwargs):
+        pytest.fail("contradictory roots must fail before reading asset payloads")
+
+    monkeypatch.setattr(closure, "_verify_class", unexpected_inventory)
+    receipt = _verify(paths)
+    assert receipt["complete"] is False
+    assert receipt["snapshot"] == {}
+    assert receipt["issue_counts"] == {"root_mismatch": len(duplicate["expected_files"])}
+    assert all(row["detail"] == "aliased_root_contract" for row in receipt["issues"])
+
+
 def _input_fixture(tmp_path: Path) -> dict[str, Path]:
     paths = _fixture(tmp_path)
     manifest = json.loads(paths["manifest"].read_text(encoding="utf-8"))

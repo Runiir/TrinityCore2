@@ -145,12 +145,25 @@ def _materialize_input_manifest(
         dict(row) for row in classes
         if isinstance(row, dict) and row.get("id") != "atomic_bundle"
     ]
-    for field in ("dvc_provenance", "native_extraction_provenance"):
-        if field in result or field not in historical:
+    if "dvc_provenance" in result or "dvc_provenance" not in historical:
+        raise RuntimeAssetClosureBindingError(
+            "input_asset_class_source_field_invalid:dvc_provenance"
+        )
+    result["dvc_provenance"] = historical["dvc_provenance"]
+    if "native_extraction_provenance" not in result:
+        if "native_extraction_provenance" not in historical:
             raise RuntimeAssetClosureBindingError(
-                f"input_asset_class_source_field_invalid:{field}"
+                "input_asset_class_source_field_invalid:native_extraction_provenance"
             )
-        result[field] = historical[field]
+        result["native_extraction_provenance"] = historical[
+            "native_extraction_provenance"
+        ]
+    elif not isinstance(result["native_extraction_provenance"], dict) or result[
+        "native_extraction_provenance"
+    ].get("kind") != "verified_materialization":
+        raise RuntimeAssetClosureBindingError(
+            "input_asset_class_source_field_invalid:native_extraction_provenance"
+        )
     _require_input_only_manifest(result)
     return result
 
@@ -299,7 +312,13 @@ def build_binding(
     extraction = manifest.get("native_extraction_provenance")
     if not isinstance(extraction, dict):
         raise RuntimeAssetClosureBindingError("native_extraction_provenance_binding_invalid")
-    extraction_path = configured_data_dir / _safe_relative(
+    is_materialization = extraction.get("kind") == "verified_materialization"
+    extraction_root = dvc_workspace if is_materialization else configured_data_dir
+    if is_materialization and extraction.get("root") != "dvc-workspace":
+        raise RuntimeAssetClosureBindingError(
+            "native_extraction_provenance_root_invalid"
+        )
+    extraction_path = extraction_root / _safe_relative(
         extraction.get("path"), "native_extraction_provenance",
     )
     expected_extraction_sha256 = extraction.get("receipt_sha256")
@@ -307,14 +326,33 @@ def build_binding(
         expected_extraction_sha256
     ):
         raise RuntimeAssetClosureBindingError("native_extraction_provenance_sha256_invalid")
-    _receipt, extraction_sha256 = _read_json(
-        extraction_path, "cata_client_asset_extraction_receipt_v1",
+    receipt_schema = (
+        "cata_runtime_asset_verified_materialization_receipt_v1"
+        if is_materialization else "cata_client_asset_extraction_receipt_v1"
+    )
+    receipt, extraction_sha256 = _read_json(
+        extraction_path, receipt_schema,
         "native_extraction_provenance",
     )
     if extraction_sha256 != expected_extraction_sha256:
         raise RuntimeAssetClosureBindingError(
             "native_extraction_provenance_sha256_mismatch"
         )
+    if is_materialization:
+        from tools.raid_program.runtime_asset_materialization import (
+            MaterializationError,
+            validate_materialization_requirement,
+            verify_current_dvc_pointer,
+        )
+        try:
+            validate_materialization_requirement(
+                extraction, receipt, inventory["sha256"],
+            )
+            verify_current_dvc_pointer(receipt, dvc_workspace)
+        except MaterializationError as error:
+            raise RuntimeAssetClosureBindingError(
+                f"native_extraction_provenance_invalid:{error}"
+            ) from error
     if config_payload is None:
         try:
             config_payload, _stat = read_regular_no_follow(config_path)
@@ -339,6 +377,7 @@ def build_binding(
         "audit_authority": audit,
         "native_data_inventory_authority": inventory,
         "native_extraction_provenance": {
+            **({"kind": "verified_materialization"} if is_materialization else {}),
             "path": str(extraction_path), "sha256": extraction_sha256,
         },
         "argv": argument_argv(normalized),
