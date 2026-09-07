@@ -36,6 +36,14 @@ def test_checked_in_magmaw_ledger_uses_supported_observation_states() -> None:
     # deliberately tri-state so admission cannot fail after a green suite.
     decision = evaluate_ledger(ledger)
     assert decision["run_count"] == len(ledger["runs"])
+    # Metadata must parse before spending minutes on the compiled suite. These
+    # three failures are expected without external source/suite authority;
+    # fixture history, boundary labels, and revision requests must be valid.
+    assert set(decision["regression_bank"]["route_failures"]) == {
+        "current_identity_external_required",
+        "current_identity_missing_source_or_config",
+        "suite_receipt_verification_required",
+    }
     assert "magmaw_lethal_movement_safe_completion_missing" not in (
         decision["missing_causal_signature_ids"]
     )
