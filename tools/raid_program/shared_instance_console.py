@@ -53,9 +53,12 @@ class ConsoleTransport:
         if len(tokens) < 2 or tokens[0] != "botauto":
             raise ValueError("coordinator transport accepts botauto commands only")
         action = "botauto_" + tokens[1]
+        # Native start returns status on success and start on rejection.
+        # Both terminate the command; the caller validates success/identity.
+        actions = b"(?:botauto_status|botauto_start)" if tokens[1] == "start" else action.encode()
         if tokens[1] == "combatlog":
-            action += "_complete"
-        marker = re.compile(rb'"action"\s*:\s*"' + action.encode() + rb'"')
+            actions = b"(?:botauto_combatlog|botauto_combatlog_complete)"
+        marker = re.compile(rb'"action"\s*:\s*"' + actions + rb'"')
         deadline = time.monotonic() + timeout_sec
         output = bytearray()
         with self.log_path.open("rb") as stream:

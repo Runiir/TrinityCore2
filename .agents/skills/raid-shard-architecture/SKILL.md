@@ -37,6 +37,12 @@ after addressed cleanup of the pair. Boss workers receive cohort executors,
 never that server-owner entry point. This diagnostic fixture is not a boss
 clear or a training-data admission.
 
+Derive console reply markers from native command handlers, including rejection
+responses. A command verb does not necessarily name its success envelope:
+start returns status, while combat-log success requires chunk completion.
+Transport fixtures must reproduce those native variants; a fake that simply
+echoes the verb can hide a guaranteed live timeout.
+
 Do not run `run_reusable_validation_session` twice to create simultaneous
 cohorts: that runner deliberately enforces serial ownership. Use
 `shared_instance_validation` with `CohortCommandExecutor(exclusive=False)` under

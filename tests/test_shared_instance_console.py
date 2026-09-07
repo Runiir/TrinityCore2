@@ -18,11 +18,17 @@ for line in sys.stdin:
     verb=line.split()[1]
     if verb=='silent': continue
     action='botauto_'+verb
-    if verb=='combatlog':
+    if verb=='start' and line.split()[2]!='rejected':
+        action='botauto_status'
+    if verb=='combatlog' and line.split()[2]!='rejected':
         print('{"action":"botauto_combatlog_chunk"}', flush=True)
+        if line.split()[2]=='incomplete':
+            print('TC>',flush=True)
+            continue
         time.sleep(.02)
         action+='_complete'
-    print('{"ok":true,"action":"'+action+'"}',flush=True)
+    ok='false' if line.split()[2]=='rejected' else 'true'
+    print('{"ok":'+ok+',"action":"'+action+'"}',flush=True)
     print('TC>',flush=True)
 '''
     with path.open("wb") as log:
@@ -51,6 +57,26 @@ def test_timeout_poisoning_prevents_late_reply_reuse(console):
     _, code, timeout = console(".botauto silent test", 0.05)
     assert code and timeout
     assert console(".botauto status test", 2) == ("", 1, False)
+
+
+@pytest.mark.parametrize("cohort,action", [("test", "botauto_status"), ("rejected", "botauto_start")])
+def test_native_start_response_variants_complete_without_timeout(console, cohort, action):
+    raw, code, timed_out = console(f".botauto start {cohort}", 2)
+    assert not code and not timed_out
+    assert f'"action":"{action}"' in raw
+    assert console(".botauto status test", 2)[1:] == (0, False)
+
+
+def test_native_combatlog_rejection_is_a_reply_not_a_timeout(console):
+    raw, code, timed_out = console(".botauto combatlog rejected", 2)
+    assert not code and not timed_out
+    assert '"action":"botauto_combatlog"' in raw
+    assert console(".botauto status test", 2)[1:] == (0, False)
+
+
+def test_combatlog_chunk_without_completion_is_insufficient(console):
+    _, code, timed_out = console(".botauto combatlog incomplete", 0.1)
+    assert code and timed_out
 
 
 def test_command_injection_rejected(console):
