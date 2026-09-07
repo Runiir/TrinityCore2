@@ -1,78 +1,59 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "shard:runtime_asset_bundle_capture_readback_propagation",
+  "work_unit": "shard:runtime_asset_input_reconstruction",
   "owner_skill": "raid-shard-architecture",
-  "classification": "architecture_correction_authorized",
-  "epoch_id": "magmaw_generic_min_range_runtime_edge_20260902",
-  "raid": "blackwing_descent",
-  "boss": "magmaw",
-  "mode": "10N",
-  "observed_at_commit": "cb9bc7e3977f57d4e308d9763051b34feff222c4",
-  "immutable_input_commit": "860fcba44d64203b04f1e2a7e3d3fc90dff2ea3e",
-  "architecture_scope": "Make the authenticated bundle, capture, provisioning-apply, and shard-readback path carry mandatory closure authority.",
+  "classification": "failed",
+  "epoch_id": "shared_runtime_asset_input_reconstruction_20260907",
+  "observed_at_commit": "cbe661ec16e0291d34d170a4dde55eb970769b4b",
+  "architecture_scope": "Complete reusable runtime input attribution before resuming the current canary; the proven blocker is shared infrastructure.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "Authority hardening 1a3cca2f is complete. RAC-001 remains NO-GO; this slice closes the current bundle/capture/readback path before the generic live/session slice.",
+  "gate_state": "Offline propagation and dependency-order repairs pass fixtures. Real input authority remains incomplete; build and live gates are closed.",
   "first_broken_edge": {
-    "id": "retained_immutable_runtime_asset_closure_incomplete",
-    "stage": "post_build_static_readback_preflight",
+    "id": "runtime_asset_input_identity_not_reconstructed",
+    "stage": "prebuild_runtime_input_preflight",
     "owner_classification": "raid_shard_architecture",
-    "cause": "The retained checkout lacks 10 offline DBC/DB2 files and 3 validation-gear files, while the native DataDir has required assets but no sealed extraction-provenance receipt; existing checks expose these one at a time.",
-    "review_state": "bundle_path_mandatory_propagation_authorized"
+    "cause": "Historical checkout lacks declared inputs; current workspace has inventory drift and neither proves native extraction provenance.",
+    "review_state": "offline_input_authority_reviewed_live_assets_incomplete"
   },
   "source_handoff": {
-    "path": "experiments/configs/cata_raid_runtime_asset_bundle_path_propagation_authorization_handoff_20260903.json",
-    "sha256": "d453bc32fbfff2003b222bbb825ed7b38d811f441c2f6ddc1e4902a9413831e7",
-    "failure_handoff_path": "/home/runiir/Games/trinity-generic-runtime-asset-closure-review-handoff.json",
-    "failure_handoff_sha256": "b58fcdcc2c52f4d82df2fe2eae0da9790c07e006a94a5ed05510240baae958e6"
+    "path": "experiments/configs/cata_raid_program_repair_handoff_20260907.json",
+    "sha256": "551b63ce1b732f33a38c23e703ce6e18b7a28ab7dfce87f5d1ef1ea4680b78f1"
   },
   "scope_lock": {
-    "objective": "Make closure authority mandatory and immutable across bundle launch_argv, capture setup, provisioning apply, shard readback, and composite plan execution.",
+    "objective": "A fresh attributable extraction/reconstruction, exact offline dependency materialization, and an accepted input manifest that passes before configure/build. Keep the historical negative manifest unchanged.",
     "owned_files": [
+      "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
+      "experiments/configs/runtime_asset_input_closure_audit_authority_v1.json",
       "tools/raid_program/runtime_asset_closure.py",
-      "tools/raid_program/capture_setup.py",
-      "tools/raid_program/capture_phase1_provisioning_readback.py",
-      "tools/raid_program/chainwielder_prestart_bundle.py",
-      "tools/raid_program/composite_fixture_replay_launcher.py",
+      "tools/raid_program/runtime_asset_closure_binding.py",
       "tests/test_runtime_asset_closure.py",
-      "tests/test_phase1_raid_foundation_capture.py",
-      "tests/test_phase1_provisioning_readback.py",
-      "tests/test_chainwielder_prestart_bundle.py",
-      "tests/test_magmaw_transfer_prestart_bundle.py",
-      "tests/test_composite_fixture_replay_launcher.py",
-      ".agents/skills/raid-shard-architecture/SKILL.md"
+      "experiments/configs/cata_raid_active_work_unit_v1.json"
     ],
-    "stop_condition": "Stop after one committed bundle-path correction; leave the generic live/session propagation slice unresolved and do not run a runtime side effect."
+    "stop_condition": "Close this bounded reconstruction unit with an attributable passing input manifest or a precise unavailable-input result; the coordinator then routes the next dependency under the existing user request."
   },
   "acceptance_conditions": [
-    "Every bundle capture, provisioning-apply, and shard-readback command binds one exact closure tuple.",
-    "Capture setup and readback reject omission before their first side effect.",
-    "RAC-002 through RAC-005 remain passing; the generic live/session slice stays explicitly unresolved."
+    "A real extraction/reconstruction receipt binds client and extractor identity to the native inventory.",
+    "All declared offline, DVC, and native inputs pass verification before configure/build.",
+    "Historical negative evidence remains unchanged; generated evidence is remotely verified before exact eviction."
   ],
   "forbidden": [
-    "No files outside the twelve owned paths; no generic live/session caller edit, asset copy, DVC operation, server, DB operation, live canary, rebuild, or gameplay change."
+    "No manufactured historical extraction identity, bypassed closure, broad DVC garbage collection, gameplay changes, or live run before its gates pass."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
-    "fixed_success_timer_seconds": null,
-    "implementation_commits": 1,
-    "independent_reviews": 0,
-    "dvc_add_budget": 0,
-    "dvc_push_budget": 0,
-    "credential_aware_remote_reconstruction_budget": 0,
-    "worldserver_start_budget": 0,
-    "fixture_attempt_budget": 0,
-    "gameplay_canary_attempt_budget": 0,
-    "configure_budget": 0,
-    "build_budget": 0,
-    "database_mutation_budget": 0,
-    "dvc_mutation_budget": 0,
-    "retries": 0,
-    "eviction_after_remote_verify_only": false
+    "fixed_success_timer_seconds": null
   },
-  "issues": [],
   "ready_for_build": false,
-  "ready_for_fixture_expansion": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement bundle-path propagation, then authorize generic live/session propagation before fresh independent review."
+  "next_action": "Read this handoff and docs/bot_raids/program_audit_20260905.md. Work directly with raid-shard-architecture on one shared runtime asset reconstruction unit. Inspect existing extractor receipts and DVC cache/remote identities first; do not assert that existing DataDir bytes were produced by the local client without a receipt. If provenance cannot be recovered, bind an actual fresh extraction to client and extractor hashes in an isolated root, publish generated payloads through DVC, verify the remote, then evict only verified exact payloads. Materialize the declared DBC/DB2 and gear dependencies. Retain historical negative evidence. Obtain Sol high independent review before a native live canary. Only after input, clean-source, build, recurrence, and database gates pass, execute one bounded validation, close/publish/clean evidence, and route the first causal mismatch. Do not request another authorization-only commit for these already requested steps.",
+  "queued_reference_issue": {
+    "test": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
+    "classification": "historical_fixture_source_freshness_mismatch",
+    "path": "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json",
+    "embedded_target_catalog_sha256": "46a79c46b83559b7b55a6b484d7ea53c1680118de1147fad8e36f59be23545ae",
+    "current_target_catalog_sha256": "89263d953278030173a4220a3106afd7bbaec8821f9fefe26d825a0890804abf",
+    "mismatch": "Embedded selected_rows for affliction_warlock and demonology_warlock have older action_profile_spell_ids. The target catalog and historical materialized fixture were not changed in this audit.",
+    "disposition": "Preserve the counterexample. Reconcile the historical fixture under the appropriate reference work unit if a future run consumes it. It cannot override the current promoted WoWSims catalog."
+  }
 }

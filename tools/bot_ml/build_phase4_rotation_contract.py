@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import queue
+import re
 import subprocess
 import threading
 import time
@@ -137,8 +138,10 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
         repository / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
     ).read_text()
     forward = (repository / "sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql").read_text()
+    forward += (repository / "sql/custom/world/2026_09_07_00_bot_rotation_hostile_health_gate.sql").read_text()
     normalize = (repository / "sql/custom/world/2026_07_19_01_phase4_rotation_category_normalization.sql").read_text()
     rollback = (repository / "sql/custom/rollback/world/2026_07_19_00_phase4_rotation_snapshots_rollback.sql").read_text()
+    rollback += (repository / "sql/custom/rollback/world/2026_09_07_00_bot_rotation_hostile_health_gate_rollback.sql").read_text()
     previous = json.loads(
         (repository / "experiments/configs/all_spec_phase4_previous_profile_hashes_v1.json").read_text()
     )
@@ -159,7 +162,8 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
         "MechanicTags" not in candidate_scoring
         and "spell.MechanicTags = fields[14].GetString();" in db_source
         and "spell.MechanicTags << '|'" in db_source
-        and candidate_source.count("HasMechanicTag(spell.MechanicTags,") == 5
+        and set(re.findall(r'HasMechanicTag\(spell\.MechanicTags,\s*"([^"]+)"', candidate_source))
+        == {"lacerate_spender", "lacerate", "holy_power_3", "maintain_owned_aura", "soul_shard"}
         and all(
             f'HasMechanicTag(spell.MechanicTags, "{tag}")' in compiled_conditions
             for tag in (
@@ -235,7 +239,7 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
             == "7d4adf8b347cbc8d4754fe02f41988982a10cfe077edd7ac816827eb6477c4c7"
         ),
     }
-    return {"passed": all(checks.values()), "checks": checks}
+    return {"passed": all(checks.values()), "checks": checks, "evidence_class": "structural_only"}
 
 
 def live_database_contract(worldserver_conf: Path) -> dict[str, Any]:

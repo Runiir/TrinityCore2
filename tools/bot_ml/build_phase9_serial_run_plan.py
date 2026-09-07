@@ -6,10 +6,17 @@ import argparse
 import json
 import shlex
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from .common import write_json
 from .live_validation_session import canonical_sha256, git_head, sha256_file
+from tools.raid_program.runtime_asset_closure import (
+    add_runtime_asset_closure_arguments,
+)
+from tools.raid_program.runtime_asset_closure_binding import (
+    RuntimeAssetClosureBindingError,
+    argument_argv_from_namespace,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -42,6 +49,7 @@ def build_plan(
     session_environment: str,
     cohort_id: str,
     dps_acceptance_state: Path,
+    runtime_asset_closure_argv: Sequence[str] = (),
 ) -> dict[str, Any]:
     matrix = load_object(matrix_path)
     if matrix.get("schema") != "stonecore_phase9_pairwise_matrix_v1":
@@ -101,6 +109,7 @@ def build_plan(
             ]
             for target in ordered_party:
                 command.extend(("--party-spec-target", target))
+            command.extend(str(value) for value in runtime_asset_closure_argv)
             attempts.append(
                 {
                     "attempt_id": attempt_id,
@@ -199,7 +208,12 @@ def main() -> int:
     parser.add_argument("--dps-acceptance-state", type=Path, required=True)
     parser.add_argument("--session-environment", default="phase9-serial-stonecore")
     parser.add_argument("--cohort-id", default="phase9-serial-canary")
+    add_runtime_asset_closure_arguments(parser)
     args = parser.parse_args()
+    try:
+        runtime_asset_closure_argv = argument_argv_from_namespace(args)
+    except RuntimeAssetClosureBindingError as exc:
+        raise SystemExit(f"runtime_asset_closure_incomplete:{exc}") from exc
     matrix_path = args.matrix.resolve()
     output_root = args.output_root.resolve()
     evidence_identity_manifest = args.evidence_identity_manifest.resolve()
@@ -212,6 +226,7 @@ def main() -> int:
         args.session_environment,
         args.cohort_id,
         dps_acceptance_state,
+        runtime_asset_closure_argv,
     )
     write_json(output_root / "run_plan.json", plan)
     (output_root / "commands.txt").write_text(

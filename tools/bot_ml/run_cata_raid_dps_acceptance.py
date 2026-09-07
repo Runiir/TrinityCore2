@@ -42,6 +42,15 @@ from .run_phase8_all_spec_calibration import (
     load_targets,
     valid_publication,
 )
+from tools.raid_program.runtime_asset_closure import (
+    add_runtime_asset_closure_arguments,
+)
+from tools.raid_program.runtime_asset_closure_binding import (
+    RuntimeAssetClosureBindingError,
+    argument_argv,
+    argument_argv_from_namespace,
+    argument_values_from_namespace,
+)
 from .verify_cata_raid_dps_acceptance import verify as verify_acceptance
 
 
@@ -1714,7 +1723,7 @@ def child_command(
     policy_path: Path,
     manifest_path: Path,
 ) -> list[str]:
-    return [
+    command = [
         sys.executable,
         "-m",
         "tools.bot_ml.run_live_bot_validation",
@@ -1758,6 +1767,10 @@ def child_command(
         "--evidence-identity-manifest",
         str(manifest_path),
     ]
+    closure_values = argument_values_from_namespace(args, required=False)
+    if closure_values is not None:
+        command.extend(argument_argv(closure_values))
+    return command
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -1785,10 +1798,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--limit", type=int, default=0, help="Run at most this many pending attempts; zero runs all."
     )
     parser.add_argument("--dry-run", action="store_true")
+    add_runtime_asset_closure_arguments(parser)
     return parser.parse_args(argv)
 
 
 def run_campaign(args: argparse.Namespace) -> int:
+    try:
+        argument_argv_from_namespace(args)
+    except RuntimeAssetClosureBindingError as exc:
+        raise SystemExit(f"runtime_asset_closure_incomplete:{exc}") from exc
 
     config_path = args.acceptance_config.resolve()
     verification = verify_acceptance(config_path)
@@ -2166,6 +2184,10 @@ def run_campaign(args: argparse.Namespace) -> int:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
+    try:
+        argument_argv_from_namespace(args)
+    except RuntimeAssetClosureBindingError as exc:
+        raise SystemExit(f"runtime_asset_closure_incomplete:{exc}") from exc
     if args.dry_run:
         return run_campaign(args)
     try:

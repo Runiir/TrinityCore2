@@ -1,3 +1,4 @@
+"""Fixture identity tests and structural guards; no live calibration proof."""
 from __future__ import annotations
 
 import hashlib
@@ -18,9 +19,15 @@ from tools.bot_ml.phase8_fixture_contract import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+CALIBRATION_MODULES = ROOT / "src/server/game/Bots"
 HEADER = ROOT / "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h"
 UNIT = ROOT / "src/server/game/Entities/Unit/Unit.cpp"
+
+
+def calibration_source() -> str:
+    paths = sorted(CALIBRATION_MODULES.glob("BotWorldPopulationMgrCalibration*.cpp"))
+    assert paths, "native calibration modules are missing"
+    return "\n".join(path.read_text(encoding="utf-8") for path in paths)
 
 
 def test_canonical_fixture_target_is_exact_passive_and_content_addressed() -> None:
@@ -302,7 +309,7 @@ def test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_read
 
 
 def test_live_receipts_cover_target_resources_gear_and_external_windows() -> None:
-    source = WORLD.read_text(encoding="utf-8")
+    source = calibration_source()
     unit = UNIT.read_text(encoding="utf-8")
     for receipt in (
         '"fixture_contract"',
@@ -351,7 +358,7 @@ def test_live_reference_observation_covers_every_configured_setup_aura() -> None
             "required_aura_spell_ids"
         ]
     }
-    source = WORLD.read_text(encoding="utf-8")
+    source = calibration_source()
     match = re.search(
         r"PlayerAuraUniverse\s*=\s*\{(?P<body>.*?)\n\s*\};",
         source,
@@ -407,12 +414,16 @@ def test_disabled_racial_actions_are_counted_and_observed_if_they_leak() -> None
     }
     assert disabled_racial_spells <= forbidden_cast_spells
 
-    source = WORLD.read_text(encoding="utf-8")
+    source = calibration_source()
 
     def observed_array(name: str) -> set[int]:
+        owner_source = (
+            (CALIBRATION_MODULES / "BotWorldPopulationMgrSemantic.cpp").read_text(encoding="utf-8")
+            if name == "DisabledRacialSpells" else source
+        )
         match = re.search(
             rf"{name}\s*=\s*\{{(?P<body>.*?)\n\s*\}};",
-            source,
+            owner_source,
             flags=re.DOTALL,
         )
         assert match is not None
@@ -432,7 +443,7 @@ def test_disabled_racial_actions_are_counted_and_observed_if_they_leak() -> None
 
 
 def test_scored_bot_update_has_no_fixture_admin_state_manufacture() -> None:
-    source = WORLD.read_text(encoding="utf-8")
+    source = calibration_source()
     body = source.split(
         "void BotWorldPopulationMgr::UpdateCalibrationBot", 1
     )[1].split("\nvoid BotWorldPopulationMgr::", 1)[0]

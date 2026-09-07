@@ -163,6 +163,19 @@ def _personal_threat_route_hold_receipt(*, instance_id: int = 7) -> dict:
     }
 
 
+@pytest.fixture
+def verified_runtime_asset_capture_gate(monkeypatch):
+    """Upstream fixture for tests of downstream capture/recurrence contracts.
+
+    Missing-asset rejection is exercised without this fixture in
+    test_runtime_asset_closure.py. No real launch is authorized by this stub.
+    """
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.enforce_runtime_asset_closure_from_args",
+        lambda *args, **kwargs: {"complete": True, "status": "runtime_asset_closure_complete"},
+    )
+
+
 def test_personal_threat_target_resolves_only_from_stable_route_hold_scope(
     tmp_path: Path,
 ) -> None:
@@ -515,6 +528,12 @@ def test_prepare_capture_setup_returns_typed_admitted_state(tmp_path: Path, monk
     output = tmp_path / "capture.json"
     for path in (binary, config, receipt):
         path.write_bytes(b"fixture")
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.enforce_runtime_asset_closure_from_args",
+        lambda *_args, **_kwargs: {
+            "complete": True, "status": "runtime_asset_closure_complete",
+        },
+    )
 
     monkeypatch.setattr(
         "tools.raid_program.capture_setup.chainwielder_checkpoint_arm_command",
@@ -629,6 +648,12 @@ def test_prepare_capture_setup_separates_source_and_build_worktrees(
     output = tmp_path / "capture.json"
     for path in (binary, config, receipt):
         path.write_bytes(b"fixture")
+    monkeypatch.setattr(
+        "tools.raid_program.capture_setup.enforce_runtime_asset_closure_from_args",
+        lambda *_args, **_kwargs: {
+            "complete": True, "status": "runtime_asset_closure_complete",
+        },
+    )
     observed: dict[str, object] = {}
 
     monkeypatch.setattr(
@@ -728,6 +753,7 @@ def test_prepare_capture_setup_separates_source_and_build_worktrees(
     }
 
 
+@pytest.mark.usefixtures("verified_runtime_asset_capture_gate")
 def test_targeted_chainwielder_scheduler_binds_stable_runtime_scope_before_demux(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1001,6 +1027,7 @@ def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, mon
         chainwielder_checkpoint_actor_guid=None,
     )
     setup = CaptureSetup(
+        runtime_asset_closure={"complete": True, "status": "runtime_asset_closure_complete"},
         args=args,
         binary=binary,
         config=config,
@@ -1163,6 +1190,7 @@ def test_execute_capture_run_rejects_launch_artifact_drift_before_popen(
     else:
         cache_path.write_bytes(b"cache-mutated")
     setup = CaptureSetup(
+        runtime_asset_closure={"complete": True, "status": "runtime_asset_closure_complete"},
         args=SimpleNamespace(
             trace_transport_smoke=False,
             max_repeated_decision_count=20,
@@ -1294,6 +1322,7 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
             return controller_route_hold_receipt
 
     setup = CaptureSetup(
+        runtime_asset_closure={"complete": True, "status": "runtime_asset_closure_complete"},
         args=args,
         binary=tmp_path / "worldserver",
         config=config,
@@ -5833,6 +5862,7 @@ def test_generic_profile_range_capture_arguments_are_explicit_and_admission_boun
     assert "checkpoint_target_guid = recurrence_admission.get(" in source
 
 
+@pytest.mark.usefixtures("verified_runtime_asset_capture_gate")
 def test_generic_profile_range_capture_preflight_uses_verified_bundle_admission(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ):
@@ -5907,6 +5937,7 @@ def test_generic_profile_range_capture_preflight_uses_verified_bundle_admission(
     assert setup.controller_route_hold_scheduler is not None
 
 
+@pytest.mark.usefixtures("verified_runtime_asset_capture_gate")
 def test_build_control_capture_uses_only_admission_bound_layered_authority(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ):
@@ -6002,6 +6033,7 @@ def test_build_control_capture_uses_only_admission_bound_layered_authority(
         ("multiple_dialects", "multiple_checkpoint_actor_dialects"),
     ],
 )
+@pytest.mark.usefixtures("verified_runtime_asset_capture_gate")
 def test_generic_profile_range_capture_preflight_fails_closed_on_admission_mutation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str, reason: str,
 ):
@@ -7929,34 +7961,19 @@ def test_capture_watchdog_fails_closed_when_attempt_identity_is_not_exact():
     assert "watchdog_cohort_mismatch" in report["rejections"]
 
 
+@pytest.mark.usefixtures("verified_runtime_asset_capture_gate")
 def test_magmaw_capture_requires_recurrence_admission_before_start(tmp_path: Path):
     config = tmp_path / "worldserver.conf"
     receipt = tmp_path / "build.json"
     config.write_text("BotWorld.AutoStart = 0\n", encoding="utf-8")
     receipt.write_text("{}\n", encoding="utf-8")
 
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "tools.raid_program.capture_phase1_raid_foundation",
-            "--binary",
-            "/bin/true",
-            "--config",
-            str(config),
-            "--output",
-            str(tmp_path / "report.json"),
-            "--build-receipt",
-            str(receipt),
-            "--worktree",
-            str(Path(__file__).resolve().parents[1]),
-            "--scenario-id",
-            "blackwing_descent_10n_magmaw_diagnostic",
-        ],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-
-    assert result.returncode != 0
-    assert "magmaw_recurrence_admission_required" in result.stderr
+    with pytest.raises(SystemExit, match="magmaw_recurrence_admission_required"):
+        prepare_capture_setup([
+            "--binary", "/bin/true", "--config", str(config),
+            "--output", str(tmp_path / "report.json"),
+            "--build-receipt", str(receipt),
+            "--worktree", str(Path(__file__).resolve().parents[1]),
+            "--scenario-id", "blackwing_descent_10n_magmaw_diagnostic",
+        ])
+    assert not (tmp_path / "report.json").exists()

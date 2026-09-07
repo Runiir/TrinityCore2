@@ -125,7 +125,7 @@ def test_session_child_accepts_only_controller_prelaunch_files(tmp_path: Path) -
 
 
 def test_session_child_preflight_accepts_dps_controller_reservation(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     attempt_dir = tmp_path / "attempt"
     attempt_dir.mkdir()
@@ -134,26 +134,20 @@ def test_session_child_preflight_accepts_dps_controller_reservation(
         "{}\n", encoding="utf-8"
     )
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "tools.bot_ml.run_live_bot_validation",
+    import tools.bot_ml.run_live_bot_validation as validator
+    # This tests session reservation after upstream asset admission. The real
+    # omission/rejection boundary is exercised in test_runtime_asset_closure.
+    monkeypatch.setattr(validator, "enforce_runtime_asset_closure_from_args", lambda *args, **kwargs: {"complete": True})
+    monkeypatch.setattr("sys.argv", [
+            "run_live_bot_validation",
             "--transport",
             "session",
             "--output-dir",
             str(attempt_dir),
             "--validation-route-sequence",
-        ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode != 0
-    assert "--validation-route-sequence requires --validation-scenario-id" in completed.stderr
-    assert "requires a new or empty --output-dir" not in completed.stderr
+        ])
+    with pytest.raises(SystemExit, match="--validation-route-sequence requires --validation-scenario-id"):
+        validator.main()
 
 
 def _phase8_v2_manifest(
@@ -754,6 +748,12 @@ def test_campaign_controller_lock_rejects_concurrent_process_before_launch(
                 "tools.bot_ml.run_cata_raid_dps_acceptance",
                 "--output-root",
                 str(output_root),
+                "--runtime-asset-closure-manifest", str(tmp_path / "inputs.json"),
+                "--runtime-asset-source-checkout", str(tmp_path / "source"),
+                "--runtime-asset-dvc-workspace", str(tmp_path / "dvc"),
+                "--runtime-asset-bundle", str(tmp_path / "bundle"),
+                "--runtime-asset-data-dir", str(tmp_path / "data"),
+                "--runtime-asset-map-id", "725",
             ],
             cwd=ROOT,
             capture_output=True,
@@ -1301,6 +1301,12 @@ def test_static_reference_mismatch_does_not_reserve_a_physical_try(
             str(CONFIG),
             "--output-root",
             str(output_root),
+            "--runtime-asset-closure-manifest", str(tmp_path / "inputs.json"),
+            "--runtime-asset-source-checkout", str(tmp_path / "source"),
+            "--runtime-asset-dvc-workspace", str(tmp_path / "dvc"),
+            "--runtime-asset-bundle", str(tmp_path / "bundle"),
+            "--runtime-asset-data-dir", str(tmp_path / "data"),
+            "--runtime-asset-map-id", "725",
         ]
     )
     monkeypatch.setattr(

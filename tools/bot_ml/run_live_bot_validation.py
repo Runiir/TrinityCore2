@@ -59,6 +59,9 @@ from tools.raid_program.runtime_asset_closure import (
     add_runtime_asset_closure_arguments,
     enforce_runtime_asset_closure_from_args,
 )
+from tools.raid_program.runtime_asset_closure_binding import (
+    argument_argv_from_namespace,
+)
 
 
 DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
@@ -6452,6 +6455,7 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         str(context.get("route_step") or 0),
         "--validation-mechanic-profile",
         str(context.get("mechanic_profile") or ""),
+        *argument_argv_from_namespace(args),
     ]
     if args.no_start:
         command.append("--no-start")
@@ -7471,8 +7475,20 @@ def main() -> int:
     add_runtime_asset_closure_arguments(parser)
     args = parser.parse_args()
 
+    if args.input_log:
+        offline_conflicts = [flag for enabled, flag in (
+            (args.reset_bot_pool, "--reset-bot-pool"),
+            (args.apply_validation_provisioning, "--apply-validation-provisioning"),
+            (args.calibration_self_provided_baseline, "--calibration-self-provided-baseline"),
+            (args.prepare_only, "--prepare-only"),
+            (args.publish_batch, "--publish-batch"),
+        ) if enabled]
+        if offline_conflicts:
+            raise SystemExit("--input-log is read-only; incompatible with " + ", ".join(offline_conflicts))
     runtime_asset_closure = enforce_runtime_asset_closure_from_args(
-        args, worldserver_config=args.config,
+        args,
+        worldserver_config=args.config,
+        exemption="input_log_reparse" if args.input_log else None,
     )
     if args.calibration_only:
         args.combat_calibration = True

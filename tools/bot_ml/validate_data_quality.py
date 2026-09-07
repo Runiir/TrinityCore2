@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import DATASET_CONTRACT_VERSION, LABELS, read_jsonl, write_json
+    from .common import decision_group_key, DATASET_CONTRACT_VERSION, LABELS, read_jsonl, write_json
 except ImportError:
-    from common import DATASET_CONTRACT_VERSION, LABELS, read_jsonl, write_json
+    from common import decision_group_key, DATASET_CONTRACT_VERSION, LABELS, read_jsonl, write_json
 
 
 TRACEABILITY_FIELDS = [
@@ -93,10 +93,10 @@ def is_event_id_list(value: Any) -> bool:
     return False
 
 
-def group_by_decision(rows: list[dict[str, Any]]) -> dict[tuple[Any, Any, Any], list[dict[str, Any]]]:
-    grouped: dict[tuple[Any, Any, Any], list[dict[str, Any]]] = {}
+def group_by_decision(rows: list[dict[str, Any]]) -> dict[tuple[int, int, int, str], list[dict[str, Any]]]:
+    grouped: dict[tuple[int, int, int, str], list[dict[str, Any]]] = {}
     for row in rows:
-        key = (row.get("run_id"), row.get("bot_guid"), row.get("decision_id"))
+        key = decision_group_key(row)
         grouped.setdefault(key, []).append(row)
     return grouped
 

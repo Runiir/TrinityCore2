@@ -28,7 +28,9 @@ from tools.raid_program.chainwielder_prestart_bundle import (
 )
 from tools.raid_program.canonical_route_staging import git_output
 from tools.raid_program.chainwielder_runtime_config_authority import (
+    RuntimeConfigAuthorityError,
     TRACKED_DERIVED_AUTHORITY,
+    resolve_runtime_config_authority,
 )
 from tools.raid_program.queued_build import (
     CoordinatorError,
@@ -39,6 +41,16 @@ from tools.raid_program.queued_build import (
 )
 from tools.raid_program.recurrence_admission import (
     CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+)
+from tools.raid_program.runtime_asset_closure_binding import (
+    RuntimeAssetClosureBindingError,
+    argument_argv,
+    argument_values_from_namespace,
+    argv_values,
+)
+from tools.raid_program.runtime_asset_closure import (
+    add_runtime_asset_closure_arguments,
+    verify_runtime_asset_inputs,
 )
 
 
@@ -92,6 +104,7 @@ REQUEST_FIELDS = {
     "route_manifest",
     "base_runtime_config_receipt",
     "runtime_config_authorities",
+    "runtime_asset_closure",
 }
 OPTIONAL_REQUEST_FIELDS = {"personal_threat_episode_target"}
 
@@ -449,6 +462,7 @@ def _bundle_create(
     *, worktree: Path, source: dict[str, str], run_root: Path,
     policy_path: Path, policy_sha256: str,
     artifacts: dict[str, dict[str, str]],
+    runtime_asset_closure: dict[str, object],
     personal_threat_episode_target: dict[str, Any] | None = None,
 ) -> list[str]:
     binary = worktree / "build/src/server/worldserver/worldserver"
@@ -483,6 +497,14 @@ def _bundle_create(
         "--checkpoint-fixture-id", CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
         "--base-runtime-config-authority", TRACKED_DERIVED_AUTHORITY,
         "--base-runtime-config-contract-relative-path", RUNTIME_CONFIG_CONTRACT,
+        "--runtime-asset-closure-manifest",
+        str(runtime_asset_closure["runtime_asset_closure_manifest"]),
+        "--runtime-asset-dvc-workspace",
+        str(runtime_asset_closure["runtime_asset_dvc_workspace"]),
+        "--runtime-asset-data-dir",
+        str(runtime_asset_closure["runtime_asset_data_dir"]),
+        "--runtime-asset-map-id",
+        str(runtime_asset_closure["runtime_asset_map_id"]),
     ]
     if personal_threat_episode_target is not None:
         command.extend([
@@ -509,7 +531,7 @@ def _request_context(
     request: dict[str, Any], *, check_prebuild_outputs: bool,
 ) -> tuple[
     Path, Path, dict[str, dict[str, str]], Path, dict[str, Any], str,
-    dict[str, Any] | None,
+    dict[str, Any] | None, dict[str, object],
 ]:
     """Validate typed static inputs before any external command may run."""
 
@@ -548,6 +570,31 @@ def _request_context(
     authorities = request["runtime_config_authorities"]
     if authorities != [TRACKED_DERIVED_AUTHORITY]:
         raise ReplayPlanError("runtime_config_authority_selection_invalid")
+    requested_closure = request.get("runtime_asset_closure")
+    if not isinstance(requested_closure, dict) or set(requested_closure) != {
+        "manifest_path", "dvc_workspace", "configured_data_dir", "scenario_map_id",
+    }:
+        raise ReplayPlanError("runtime_asset_closure_request_invalid")
+    try:
+        closure_values: dict[str, object] = {
+            "runtime_asset_closure_manifest": _absolute_path(
+                requested_closure["manifest_path"], "runtime_asset_closure_manifest"
+            ),
+            "runtime_asset_source_checkout": worktree,
+            "runtime_asset_dvc_workspace": _absolute_path(
+                requested_closure["dvc_workspace"], "runtime_asset_dvc_workspace"
+            ),
+            "runtime_asset_bundle": run_root / "prestart_bundle",
+            "runtime_asset_data_dir": _absolute_path(
+                requested_closure["configured_data_dir"], "runtime_asset_data_dir"
+            ),
+            "runtime_asset_map_id": requested_closure["scenario_map_id"],
+        }
+        argument_argv(closure_values)
+    except (KeyError, RuntimeAssetClosureBindingError) as error:
+        raise ReplayPlanError(f"runtime_asset_closure_request_invalid:{error}") from error
+    if closure_values["runtime_asset_map_id"] != 669:
+        raise ReplayPlanError("runtime_asset_closure_scenario_map_mismatch")
     artifacts = {
         label: _artifact(request[label], label)
         for label in (
@@ -584,8 +631,67 @@ def _request_context(
             raise ReplayPlanError("run_root_not_empty")
     return (
         worktree, run_root, artifacts, policy_path, policy, policy_sha256,
-        personal_threat_episode_target,
+        personal_threat_episode_target, closure_values,
     )
+
+
+def _runtime_asset_input_preflight(
+    *, worktree: Path, source: dict[str, str],
+    artifacts: dict[str, dict[str, str]],
+    closure_values: dict[str, object],
+) -> dict[str, Any]:
+    """Authenticate all existing runtime inputs before configure/build."""
+
+    receipt_path = Path(artifacts["base_runtime_config_receipt"]["path"])
+    receipt_binding = _bound_file(receipt_path, "base_runtime_config_receipt")
+    try:
+        config = resolve_runtime_config_authority(
+            authority_type=TRACKED_DERIVED_AUTHORITY,
+            worktree=worktree,
+            receipt_path=receipt_path,
+            expected_receipt_sha256=receipt_binding["sha256"],
+            contract_relative_path=RUNTIME_CONFIG_CONTRACT,
+            expected_source_commit=source["commit"],
+            expected_source_tree=source["tree"],
+        )
+    except RuntimeConfigAuthorityError as error:
+        raise ReplayPlanError(
+            f"runtime_asset_input_config_invalid:{error}"
+        ) from error
+    receipt = verify_runtime_asset_inputs(
+        manifest_path=Path(str(
+            closure_values["runtime_asset_closure_manifest"]
+        )),
+        source_checkout=worktree,
+        dvc_workspace=Path(str(
+            closure_values["runtime_asset_dvc_workspace"]
+        )),
+        sealed_bundle=Path(str(closure_values["runtime_asset_bundle"])),
+        configured_data_dir=Path(str(
+            closure_values["runtime_asset_data_dir"]
+        )),
+        worldserver_config=Path(config.snapshot_path),
+        scenario_map_id=int(closure_values["runtime_asset_map_id"]),
+    )
+    if receipt.get("complete") is not True:
+        kinds = ",".join(sorted(receipt.get("issue_counts", {})))
+        raise ReplayPlanError(
+            f"runtime_asset_input_preflight_incomplete:{kinds}"
+        )
+    return {
+        "schema": "cata_runtime_asset_input_preflight_binding_v1",
+        "manifest_sha256": receipt["manifest_sha256"],
+        "snapshot_sha256": receipt["snapshot_sha256"],
+        "scenario_map_id": receipt["scenario_map_id"],
+        "roots": receipt["roots"],
+        "runtime_config_authority": {
+            "type": config.authority_type,
+            "receipt_path": config.receipt_path,
+            "receipt_sha256": config.receipt_sha256,
+            "snapshot_path": config.snapshot_path,
+            "snapshot_sha256": config.payload_sha256,
+        },
+    }
 
 
 def compose_plan(
@@ -594,10 +700,14 @@ def compose_plan(
     """Compose the immutable configure/build half of the replay."""
 
     (
-        worktree, run_root, _artifacts, policy_path, policy, policy_sha256,
-        personal_threat_episode_target,
+        worktree, run_root, artifacts, policy_path, policy, policy_sha256,
+        personal_threat_episode_target, closure_values,
     ) = _request_context(request, check_prebuild_outputs=_check_outputs)
     source = _source_authority(worktree, request["expected_work_unit"])
+    input_preflight = _runtime_asset_input_preflight(
+        worktree=worktree, source=source, artifacts=artifacts,
+        closure_values=closure_values,
+    )
     configure_receipt = run_root / "configure_receipt.json"
     build_receipt = run_root / "worldserver_build_receipt.json"
     plan = {
@@ -606,6 +716,8 @@ def compose_plan(
         "request_sha256": _sha256_bytes(_canonical_bytes(request)),
         "build_policy_sha256": policy_sha256,
         "scenario_id": SCENARIO_ID,
+        "runtime_asset_closure_argv": argument_argv(closure_values),
+        "runtime_asset_input_preflight": input_preflight,
         "commands": {
             "configure": _command(_queued_command(
                 worktree=worktree, policy_path=policy_path,
@@ -710,7 +822,7 @@ def realize_plan(
     validate_plan(prebuild, request)
     (
         worktree, run_root, requested, policy_path, policy, policy_sha256,
-        personal_threat_episode_target,
+        personal_threat_episode_target, closure_values,
     ) = _request_context(request, check_prebuild_outputs=False)
     source = prebuild["source"]
     current_source = _source_authority(
@@ -752,6 +864,7 @@ def realize_plan(
             worktree=worktree, source=current_source, run_root=run_root,
             policy_path=policy_path, policy_sha256=policy_sha256,
             artifacts=artifacts,
+            runtime_asset_closure=closure_values,
             personal_threat_episode_target=personal_threat_episode_target,
         ), worktree),
         "bundle_verify": _command([
@@ -766,6 +879,7 @@ def realize_plan(
             "--output-dir", str(run_root / "provisioning_apply"),
             "--validation-scenario-id", SCENARIO_ID,
             "--apply-validation-provisioning", "--prepare-only",
+            *argument_argv(closure_values),
         ], worktree),
         "strict_readback": _command([
             "pixi", "run", "python", "-m",
@@ -780,11 +894,13 @@ def realize_plan(
             "--scenario-id", SCENARIO_ID,
             "--worldserver-conf", str(bundle / BUNDLE_NAMES["runtime_config"]),
             "--output", str(run_root / "shard_roster_readback.json"),
+            *argument_argv(closure_values),
         ], worktree),
         "capture": _command([
             "pixi", "run", "python", "-m",
             "tools.raid_program.composite_fixture_replay_launcher",
             "run-capture", "--bundle", str(bundle),
+            *argument_argv(closure_values),
         ], worktree),
     }
     plan = {
@@ -796,6 +912,7 @@ def realize_plan(
             "sha256": prebuild["plan_sha256"],
         },
         "runtime_config_authority": TRACKED_DERIVED_AUTHORITY,
+        "runtime_asset_closure_argv": argument_argv(closure_values),
         "artifact_bindings": artifacts,
         "commands": commands,
         "execution": {
@@ -848,6 +965,7 @@ def _atomic_write(path: Path, payload: bytes) -> None:
 def run_verified_capture(
     bundle: Path,
     runner: Callable[..., subprocess.CompletedProcess[Any]] = subprocess.run,
+    *, expected_closure_values: dict[str, object] | None = None,
 ) -> int:
     """Execute only the exact capture argv returned by full bundle verification."""
 
@@ -869,6 +987,15 @@ def run_verified_capture(
         raise ReplayPlanError("verified_capture_argv_invalid")
     if argv.count("--worktree") != 1:
         raise ReplayPlanError("verified_capture_worktree_invalid")
+    try:
+        observed_closure_values = argv_values(argv)
+    except RuntimeAssetClosureBindingError as error:
+        raise ReplayPlanError(f"verified_capture_closure_invalid:{error}") from error
+    if (
+        expected_closure_values is not None
+        and observed_closure_values != expected_closure_values
+    ):
+        raise ReplayPlanError("verified_capture_closure_mismatch")
     worktree_index = argv.index("--worktree")
     if worktree_index + 1 >= len(argv):
         raise ReplayPlanError("verified_capture_worktree_invalid")
@@ -903,6 +1030,17 @@ def run_plan(
     order = execution.get("order")
     if not isinstance(order, list) or set(order) != set(commands):
         raise ReplayPlanError("plan_execution_order_invalid")
+    closure_argv = plan.get("runtime_asset_closure_argv")
+    expected_closure_values: dict[str, object] | None = None
+    if plan.get("schema") == REALIZED_SCHEMA:
+        if not isinstance(closure_argv, list) or any(
+            type(token) is not str for token in closure_argv
+        ):
+            raise ReplayPlanError("plan_runtime_asset_closure_invalid")
+        try:
+            expected_closure_values = argv_values(closure_argv)
+        except RuntimeAssetClosureBindingError as error:
+            raise ReplayPlanError(f"plan_runtime_asset_closure_invalid:{error}") from error
     for name in order:
         command = commands.get(name)
         if not isinstance(command, dict) or set(command) != {"argv", "cwd"}:
@@ -915,6 +1053,35 @@ def run_plan(
             or not cwd.is_absolute() or cwd != ROOT
         ):
             raise ReplayPlanError(f"command_contract_invalid:{name}")
+        if expected_closure_values is not None and name in {
+            "provisioning_apply", "shard_readback", "capture",
+        }:
+            try:
+                if argv_values(argv) != expected_closure_values:
+                    raise ReplayPlanError(
+                        f"command_runtime_asset_closure_mismatch:{name}"
+                    )
+            except RuntimeAssetClosureBindingError as error:
+                raise ReplayPlanError(
+                    f"command_runtime_asset_closure_invalid:{name}:{error}"
+                ) from error
+        if expected_closure_values is not None and name in {
+            "provisioning_apply", "shard_readback", "capture",
+        }:
+            bundle = Path(str(expected_closure_values["runtime_asset_bundle"]))
+            try:
+                verified = verify_bundle(bundle)
+                launch_argv = verified.get("launch_argv")
+                if not isinstance(launch_argv, list) or (
+                    argv_values(launch_argv) != expected_closure_values
+                ):
+                    raise ReplayPlanError(
+                        "verified_bundle_runtime_asset_closure_mismatch"
+                    )
+            except (BundleError, RuntimeAssetClosureBindingError) as error:
+                raise ReplayPlanError(
+                    f"verified_bundle_runtime_asset_closure_invalid:{error}"
+                ) from error
         result = runner(argv, check=False, cwd=cwd)
         if result.returncode:
             return int(result.returncode)
@@ -936,6 +1103,7 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--plan", type=Path, required=True)
     capture = commands.add_parser("run-capture")
     capture.add_argument("--bundle", type=Path, required=True)
+    add_runtime_asset_closure_arguments(capture)
     return result
 
 
@@ -943,7 +1111,16 @@ def main() -> int:
     args = parser().parse_args()
     try:
         if args.command == "run-capture":
-            return run_verified_capture(args.bundle)
+            try:
+                closure_values = argument_values_from_namespace(args, required=True)
+            except RuntimeAssetClosureBindingError as error:
+                raise ReplayPlanError(
+                    f"runtime_asset_closure_incomplete:{error}"
+                ) from error
+            assert closure_values is not None
+            return run_verified_capture(
+                args.bundle, expected_closure_values=closure_values,
+            )
         if args.command == "run-plan":
             request = _load_object(
                 _absolute_path(str(args.request), "request")

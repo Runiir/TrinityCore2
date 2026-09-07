@@ -20,6 +20,7 @@ bot_ml:
   teacher_map_id: 725
   decision_dataset: dataset/bot_ml/decision_dataset.jsonl
   decision_manifest: dataset/bot_ml/decision_dataset_manifest.json
+  decision_quarantine: dataset/bot_ml/decision_dataset.quarantine.jsonl
   data_quality_report: dataset/bot_ml/data_quality.json
   model: models/bot_policy/policy_model.json
   model_dir: models/bot_policy/artifacts

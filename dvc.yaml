@@ -263,6 +263,14 @@ stages:
       --worldserver-binary build/src/server/worldserver/worldserver
     deps:
     - tools/bot_ml/build_phase4_rotation_contract.py
+    - src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp
+    - src/server/game/Bots/BotClassSpecActionProfileDb.cpp
+    - src/server/game/Bots/BotControllerCombat.cpp
+    - src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp
+    - src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp
+    - src/server/game/Bots/BotWorldPopulationMgrValidationGroupHeal.cpp
+    - sql/custom/world/2026_09_07_00_bot_rotation_hostile_health_gate.sql
+    - sql/custom/rollback/world/2026_09_07_00_bot_rotation_hostile_health_gate_rollback.sql
     - src/server/game/Bots/BotClassSpecActionProfile.cpp
     - src/server/game/Bots/BotClassSpecActionProfile.h
     - src/server/game/Bots/BotActionExecutor.cpp
@@ -297,6 +305,9 @@ stages:
       dataset/all_spec_phase6_serial_soak_contract
     deps:
     - tools/bot_ml/build_phase6_serial_soak_contract.py
+    - tools/raid_program/runtime_asset_closure.py
+    - tools/raid_program/runtime_asset_closure_binding.py
+    - tools/raid_program/runtime_asset_safe_io.py
     - tools/bot_ml/run_live_bot_validation.py
     - tools/bot_ml/live_validation_session.py
     - tools/bot_ml/batch_evidence_lifecycle.py
@@ -323,6 +334,9 @@ stages:
     - tools/bot_ml/build_phase8_all_spec_calibration_contract.py
     - tools/bot_ml/build_phase8_evidence_identity_manifest.py
     - tools/bot_ml/run_phase8_all_spec_calibration.py
+    - tools/raid_program/runtime_asset_closure.py
+    - tools/raid_program/runtime_asset_closure_binding.py
+    - tools/raid_program/runtime_asset_safe_io.py
     - tools/bot_ml/phase8_calibration_adapter.py
     - tools/bot_ml/phase8_evidence_identity.py
     - tools/bot_ml/role_calibration_harness.py
@@ -433,6 +447,9 @@ stages:
     deps:
     - tools/bot_ml/verify_cata_raid_dps_acceptance.py
     - tools/bot_ml/run_cata_raid_dps_acceptance.py
+    - tools/raid_program/runtime_asset_closure.py
+    - tools/raid_program/runtime_asset_closure_binding.py
+    - tools/raid_program/runtime_asset_safe_io.py
     - tools/bot_ml/run_live_bot_validation.py
     - tools/bot_ml/phase8_calibration_adapter.py
     - tools/bot_ml/role_calibration_harness.py
@@ -541,6 +558,9 @@ stages:
       dataset/live_validation_scenario_reports_built
     deps:
     - tools/bot_ml/build_validation_run_plan.py
+    - tools/raid_program/runtime_asset_closure.py
+    - tools/raid_program/runtime_asset_closure_binding.py
+    - tools/raid_program/runtime_asset_safe_io.py
     - tools/bot_ml/common.py
     - dataset/validation_scenarios
     outs:
@@ -575,14 +595,17 @@ stages:
     # Materializes dataset/bot_ml/decision_dataset.jsonl from dataset/bot_ml/raw.
     cmd: python -m tools.bot_ml.build_decision_dataset --input-dir
       ${bot_ml.raw_dir} --output ${bot_ml.decision_dataset} --manifest
-      ${bot_ml.decision_manifest} --include-map-id ${bot_ml.teacher_map_id}
+      ${bot_ml.decision_manifest} --quarantine ${bot_ml.decision_quarantine}
+      --include-map-id ${bot_ml.teacher_map_id}
     deps:
     - tools/bot_ml/build_decision_dataset.py
+    - tools/bot_ml/policy_features.py
     - tools/bot_ml/common.py
     - ${bot_ml.raw_dir}
     outs:
     - ${bot_ml.decision_dataset}
     - ${bot_ml.decision_manifest}
+    - ${bot_ml.decision_quarantine}
   bot_ml_validate:
     # Writes dataset/bot_ml/data_quality.json quality metrics.
     cmd: python -m tools.bot_ml.validate_data_quality --dataset
@@ -601,6 +624,7 @@ stages:
     deps:
     - tools/bot_ml/train_policy_model.py
     - tools/bot_ml/model_artifacts.py
+    - tools/bot_ml/policy_features.py
     - tools/bot_ml/common.py
     - ${bot_ml.decision_dataset}
     outs:
@@ -618,6 +642,7 @@ stages:
     deps:
     - tools/bot_ml/evaluate_policy_model.py
     - tools/bot_ml/model_artifacts.py
+    - tools/bot_ml/policy_features.py
     - tools/bot_ml/common.py
     - ${bot_ml.decision_dataset}
     - ${bot_ml.model}

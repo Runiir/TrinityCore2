@@ -259,7 +259,20 @@ pixi run bot-ml-export --database-url mysql://trinity:trinity@127.0.0.1:3306/cha
 
 The export includes experiment events/decisions/replays/clips, semantic outcome stats, policy registry tables, and bot memory tables for POIs, danger zones, failed paths, safe positions, objective clusters, recipe/material sources, daily cooldowns, transport usage, and repeated decision fingerprints.
 
-Build the model-ready candidate-level teacher-policy dataset with run-id train/eval split. The builder emits one row per candidate action under the `teacher_policy_candidate_v1` contract: candidates, per-candidate masks, chosen actions, outcome-window labels, rewards, domains, trace IDs, and failure labels are explicit columns. Chosen rows receive observed outcome labels; unchosen rows keep labels at zero for ranking without leaking outcomes. Exported semantic outcome stats become area, mob, spell, and mechanic feature columns, and exported decision fingerprint memory filters repeated teacher loops out of imitation labels.
+Build the candidate-level dataset with a run-ID train/evaluation split. The
+builder emits candidate masks, choice identity, outcome labels, rewards, domains,
+trace IDs, and failure labels. A unique recorded choice is required; missing or
+ambiguous choices go to the separate quarantine output. For native mixed masks,
+only the activity group is admitted, matching the current native model consumer.
+Combat masks remain quarantined until they have their own decision/outcome join.
+Candidate groups are scoped by run, bot, decision, and domain.
+
+Only chosen rows receive observed labels. Final exported semantic outcome stats,
+fingerprint aggregates, selected-action metadata, and future outcomes remain
+diagnostic fields and are excluded from policy inputs. Training and evaluation
+require their own observed partition; neither falls back to the other's rows.
+The stopped-run filter is necessary but does not verify complete run provenance.
+Native feature parity and full batch admission remain required before promotion.
 
 ```bash
 pixi run bot-ml-build-decisions --input-dir dataset/bot_ml/raw --output dataset/bot_ml/decision_dataset.jsonl

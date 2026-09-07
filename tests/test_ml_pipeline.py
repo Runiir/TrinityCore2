@@ -109,6 +109,43 @@ from ml.dungeon.labels import future_labels
 from ml.dungeon.planners import DPSPlanner, HealerPlanner, TankPlanner
 
 
+@pytest.fixture
+def verified_runtime_assets_for_runner_contract(tmp_path, monkeypatch):
+    """Supply the upstream gate for tests of downstream transport/route behavior.
+
+    These fake-server tests do not certify asset closure. Real omission,
+    mismatch, and before-side-effect checks live in test_runtime_asset_closure.
+    Explicit opt-in keeps that boundary visible instead of globally mocking it.
+    """
+    from tools.bot_ml import run_live_bot_validation as runner
+    from tools.raid_program.runtime_asset_closure_binding import argument_values_from_namespace
+
+    original_main = live_validation_main
+    flags = {
+        "--runtime-asset-closure-manifest": tmp_path / "asset-manifest.json",
+        "--runtime-asset-source-checkout": tmp_path / "source",
+        "--runtime-asset-dvc-workspace": tmp_path / "dvc",
+        "--runtime-asset-bundle": tmp_path / "bundle",
+        "--runtime-asset-data-dir": tmp_path / "data",
+        "--runtime-asset-map-id": 725,
+    }
+
+    def passed_upstream_gate(args, **kwargs):
+        assert argument_values_from_namespace(args) is not None
+        return {"complete": True, "status": "runtime_asset_closure_complete"}
+
+    def main_with_upstream_inputs():
+        argv = list(sys.argv)
+        for flag, value in flags.items():
+            if flag not in argv:
+                argv.extend([flag, str(value)])
+        monkeypatch.setattr(sys, "argv", argv)
+        return original_main()
+
+    monkeypatch.setattr(runner, "enforce_runtime_asset_closure_from_args", passed_upstream_gate)
+    monkeypatch.setattr(sys.modules[__name__], "live_validation_main", main_with_upstream_inputs)
+
+
 def write_jsonl(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
@@ -496,8 +533,10 @@ def test_bot_ml_decision_builder_materializes_structured_mask_candidates():
     assert {row["candidate_domain"] for row in rows} == {"activity_selection", "combat_action"}
     assert [row["candidate_allowed"] for row in rows] == [1, 1, 1, 0]
     assert rows[2]["candidate_activity"] == "buff"
-    assert rows[2]["is_chosen"] == 1
-    assert rows[2]["label_observed"] == 1
+    assert rows[1]["is_chosen"] == rows[1]["label_observed"] == 1
+    assert rows[1]["candidate_count"] == 2
+    assert rows[2]["is_chosen"] == rows[2]["label_observed"] == 0
+    assert rows[2]["candidate_selection_status"] == "unsupported_decision_domain"
     assert rows[3]["candidate_mask"] == {"allowed": False, "reason": "out_of_range"}
 
 
@@ -553,6 +592,8 @@ def test_bot_ml_training_run_filter_excludes_all_fixture_assistance():
         },
     ]
 
+    for run in runs:
+        run.update(status="stopped", ended_at="2026-09-05T12:00:00Z")
     assert player_like_training_run_ids(runs) == {1, 5}
 
 
@@ -1239,9 +1280,6 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "validation_gear",
         "complete_equipment_slots",
         "full Stonecore and Blackwing Descent gates failing",
-        "run-id train/eval split",
-        "candidate-level",
-        "teacher_policy_candidate_v1",
         "repeated_decision_loop",
         "control_eligible=false",
         "pixi run dvc status",
@@ -5503,7 +5541,11 @@ def test_live_bot_validation_process_mode_calibration_only_observes_once(tmp_pat
     assert "CMD .botauto calibrate status" in output
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_boss_routes_default_to_long_observation_window(tmp_path, monkeypatch, capsys):
+    # This test owns default timing, not canonical DVC stage freshness.
+    monkeypatch.setattr("tools.bot_ml.run_live_bot_validation.preflight_validation_scenario_stage",
+                        lambda *args, **kwargs: {"valid": True, "required": True})
     output_dir = tmp_path / "live_validation"
     config = tmp_path / "worldserver.conf"
     config.write_text("", encoding="utf-8")
@@ -7453,6 +7495,7 @@ def test_bounded_console_deadline_caps_command_read_to_heartbeat_window():
     assert bounded < long_deadline
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_main_preserves_watchdog_report(tmp_path, monkeypatch, capsys):
     fake_worldserver = tmp_path / "fake_worldserver.py"
     fake_worldserver.write_text(
@@ -8331,6 +8374,7 @@ def test_watchdog_state_treats_boss_engagement_without_kill_as_no_progress():
     assert state["no_progress"] is True
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_route_sequence_dry_run_writes_ordered_child_commands(tmp_path, monkeypatch, capsys):
     scenario_dir = tmp_path / "validation_scenarios"
     scenario_dir.mkdir()
@@ -8543,6 +8587,7 @@ def test_live_bot_validation_config_enables_calibration_reference_conditions(tmp
     assert "BotWorld.CombatCalibration.ReferenceConditions = 1" in config_text
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_config(tmp_path, monkeypatch, capsys):
     scenario_dir = tmp_path / "validation_scenarios"
     scenario_dir.mkdir()
@@ -8675,6 +8720,7 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
     assert "BotWorld.TargetPopulation = 5" in generated_config
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_rejects_calibration_with_manifest_route(tmp_path, monkeypatch):
     monkeypatch.setattr(
         sys,
@@ -8729,6 +8775,7 @@ def test_write_validation_config_is_idempotent_when_reusing_session_directory(
     ) == 1
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_calibration_dps_reference_preflight_fails_before_live_preparation(
     tmp_path, monkeypatch
 ):
@@ -8779,6 +8826,7 @@ def test_calibration_dps_reference_preflight_fails_before_live_preparation(
     assert not output_dir.exists()
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_calibration_dps_reference_preflight_allows_valid_run_to_continue(
     tmp_path, monkeypatch
 ):
@@ -8839,6 +8887,7 @@ def test_calibration_reference_preflight_skips_tank_and_healer_modes(
         assert result["valid"] is True
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_rejects_empty_manifest_route_selection(tmp_path, monkeypatch):
     scenario_dir = tmp_path / "validation_scenarios"
     scenario_dir.mkdir()
@@ -8863,6 +8912,7 @@ def test_live_bot_validation_rejects_empty_manifest_route_selection(tmp_path, mo
         live_validation_main()
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_rejects_cross_shard_manifest_profile(tmp_path, monkeypatch):
     scenario_id = "blackwing_descent_10n_magmaw_diagnostic"
     scenario_dir = tmp_path / "validation_scenarios"
@@ -8905,6 +8955,7 @@ def test_live_bot_validation_rejects_cross_shard_manifest_profile(tmp_path, monk
         live_validation_main()
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_rejects_mismatched_profile_manifest_contract(tmp_path, monkeypatch):
     scenario_id = "blackwing_descent_10n_magmaw_diagnostic"
     scenario_dir = tmp_path / "validation_scenarios"
@@ -8966,6 +9017,7 @@ def test_live_bot_validation_rejects_mismatched_profile_manifest_contract(tmp_pa
         live_validation_main()
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_rejects_profile_manifest_path_divergence(tmp_path, monkeypatch):
     scenario_id = "blackwing_descent_10n_magmaw_diagnostic"
     scenario_dir = tmp_path / "substituted_validation_scenarios"
@@ -9030,6 +9082,7 @@ def test_live_bot_validation_rejects_profile_manifest_path_divergence(tmp_path, 
         live_validation_main()
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_rejects_cross_shard_session_profile(tmp_path, monkeypatch):
     monkeypatch.setattr(
         sys,
@@ -9053,6 +9106,7 @@ def test_live_bot_validation_rejects_cross_shard_session_profile(tmp_path, monke
         live_validation_main()
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_rejects_cross_shard_direct_route_session_profile(tmp_path, monkeypatch):
     monkeypatch.setattr(
         sys,
@@ -9084,6 +9138,7 @@ def test_live_bot_validation_rejects_cross_shard_direct_route_session_profile(tm
 
 
 @pytest.mark.parametrize("route_flag", ["--validation-route-manifest", "--validation-route-sequence"])
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_rejects_soap_route_config_bypass(tmp_path, monkeypatch, route_flag):
     monkeypatch.setattr(
         sys,
@@ -9105,6 +9160,7 @@ def test_live_bot_validation_rejects_soap_route_config_bypass(tmp_path, monkeypa
         live_validation_main()
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_rejects_direct_route_soap_config_bypass(tmp_path, monkeypatch):
     monkeypatch.setattr(
         sys,
@@ -9133,6 +9189,7 @@ def test_live_bot_validation_rejects_direct_route_soap_config_bypass(tmp_path, m
         live_validation_main()
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_rejects_soap_calibration_config_bypass(tmp_path, monkeypatch):
     monkeypatch.setattr(
         sys,
@@ -9152,6 +9209,7 @@ def test_live_bot_validation_rejects_soap_calibration_config_bypass(tmp_path, mo
         live_validation_main()
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_rejects_empty_route_sequence(tmp_path, monkeypatch):
     scenario_dir = tmp_path / "validation_scenarios"
     scenario_dir.mkdir()
@@ -9378,6 +9436,7 @@ TC> {"duration_minutes":1,"decisions":0,"total_kills":0,"quests_completed":0}
     assert gates["quest_hub_batching"]["passed"] is True
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     scenario_dir = tmp_path / "validation_scenarios"
     scenario_dir.mkdir()
@@ -9481,6 +9540,7 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     assert "BotProgression.AllowDungeons = 1" in generated_config
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_preserve_worldserver_rejects_process_transport(
     tmp_path, monkeypatch
 ):
@@ -9508,6 +9568,7 @@ def test_live_bot_validation_preserve_worldserver_rejects_process_transport(
         (["--observe-sec", "300"], "is not a raid/dungeon completion timer"),
     ],
 )
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_route_rejects_fixed_observation_timing(
     tmp_path, monkeypatch, timing_args, message
 ):
@@ -9528,6 +9589,7 @@ def test_live_bot_validation_route_rejects_fixed_observation_timing(
         live_validation_main()
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_preserve_worldserver_session_excludes_shutdown(
     tmp_path, monkeypatch
 ):
@@ -9861,6 +9923,7 @@ def test_combatlog_completion_marker_is_terminal():
     assert module_globals["command_output_marker_is_terminal"](".botauto combatlog") is True
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_force_start_overrides_config_autostart(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
@@ -9919,6 +9982,7 @@ def test_live_bot_validation_bot_pool_reset_sql_is_scoped_to_tags():
     assert len(statements) >= 10
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_dry_run_writes_reset_and_provisioning_artifacts(tmp_path, monkeypatch):
     monkeypatch.setattr("tools.bot_ml.run_live_bot_validation.database_url_from_worldserver_conf", lambda _path, key="WorldDatabaseInfo": f"mysql://trinity:secret@db.example:3306/{'auth_lane' if key == 'LoginDatabaseInfo' else 'characters_lane' if key == 'CharacterDatabaseInfo' else 'world_lane'}")
     monkeypatch.setattr(
@@ -9956,6 +10020,7 @@ def test_live_bot_validation_dry_run_writes_reset_and_provisioning_artifacts(tmp
     assert f'BotWorld.ValidationProvisionCharactersSql = "{(tmp_path / "validation_provisioning_apply" / "provision_characters.sql").resolve()}"' in worldserver_config
 
 
+@pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
 def test_live_bot_validation_soap_dry_run_writes_non_exit_command_file(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
@@ -10970,8 +11035,13 @@ def test_survival_candidate_generates_exact_wowsims_item_payloads():
         {"scenarios": [{"id": "all_spec_candidate_pool", "start_position": {"map_id": 1, "x": 0, "y": 0, "z": 0}, "bots": [survival]}]}
     )
     item_lines = [line for line in sql.splitlines() if "item_instance" in line and "'Svhunter'" in line]
-    assert len(item_lines) == len(survival["equipment"]) == 16
-    for item, line in zip(survival["equipment"], item_lines):
+    assert len(survival["equipment"]) == 16
+    equipment_ids = {item["item_id"] for item in survival["equipment"]}
+    equipment_lines = [line for line in item_lines
+                       if any(f", {item_id}, c.`guid`," in line for item_id in equipment_ids)]
+    assert len(equipment_lines) == len(survival["equipment"])
+    assert len(item_lines) == len(equipment_lines) + len(survival.get("consumables", []))
+    for item, line in zip(survival["equipment"], equipment_lines):
         payload = runtime_safe_enchantments(item)
         assert f", {item['item_id']}, c.`guid`," in line
         assert f", '{payload}', 0, 0," in line
@@ -11204,6 +11274,12 @@ def test_validation_provisioning_runtime_rejects_stale_poison_inventory(
 
 
 def test_validation_provisioning_verifier_accepts_generated_payloads(tmp_path, monkeypatch):
+    provisioning_dir = tmp_path / "provisioning"
+    monkeypatch.setattr(
+        "sys.argv",
+        ["bot-validation-provisioning", "--output-dir", str(provisioning_dir)],
+    )
+    assert provisioning_main() == 0
     output = tmp_path / "verification" / "report.json"
     monkeypatch.setattr(
         "sys.argv",
@@ -11214,7 +11290,7 @@ def test_validation_provisioning_verifier_accepts_generated_payloads(tmp_path, m
             "--gear-profiles",
             "dataset/validation_gear_profiles/profiles.json",
             "--provisioning-report",
-            "dataset/validation_provisioning/report.json",
+            str(provisioning_dir / "report.json"),
             "--output",
             str(output),
         ],

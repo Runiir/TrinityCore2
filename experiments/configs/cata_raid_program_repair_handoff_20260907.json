@@ -1,0 +1,132 @@
+{
+  "schema": "cata_raid_program_repair_handoff_v1",
+  "date": "2026-09-07",
+  "observed_at_commit": "cbe661ec16e0291d34d170a4dde55eb970769b4b",
+  "user_scope": "Audit and repair shared workflow, tests, skills, and data defects; continue the wider all-spec raid/dungeon program after the canary lifecycle edge is closed or replaced.",
+  "completed_offline_repairs": [
+    "mandatory runtime input closure across launch/capture/readback and route children",
+    "acyclic input-only authority and authenticated prebuild prerequisite verification",
+    "offline reparsing cannot perform live preparation or publication",
+    "unique candidate join and explicit quarantine; reject active run records",
+    "decision-time feature filtering excludes known selected-action/outcome/identity leakage",
+    "descriptor freshness tolerates documentation-only descendants",
+    "skill continuation and scenario-size assumptions repaired; prose-presence tests replaced",
+    "canonical elemental spell list aligned; missing hostile-health SQL column migration prepared",
+    "structural contract dependencies and isolated synthetic/provisioning test fixtures corrected",
+    "exclude final semantic/fingerprint aggregates from policy inputs; isolate native activity choice from unsupported combat mask",
+    "group candidate comparisons by run/bot/decision/domain; reject empty observed partitions and train/eval run overlap",
+    "select feature schema from training rows only; make duplicate Parquet export opt-in",
+    "forward runtime inputs from phase6/8/9/DPS/Make launchers; defer required machine paths in multi-map shell templates",
+    "remove Make validation target pre-admission configure/DB/build; preserve map zero as valid input",
+    "repin the changed Makefile source identity without changing test-configs derived runtime bytes",
+    "repair structural calibration tests to inspect current concern modules instead of former monolith"
+  ],
+  "evidence": [
+    {
+      "path": "experiments/configs/cata_raid_magmaw_pre_gameplay_infrastructure_causal_summary_20260903.json",
+      "sha256": "e166e3e71f4303a55a3eadb910b4560a2f31af14d4b0011ef9cfb1921b75cf19"
+    },
+    {
+      "path": "experiments/configs/runtime_asset_closure_manifest_v1.json",
+      "sha256": "b9071c01f1018c8793529612a61b3c7ee869831108c3febccc60423ba730f343"
+    },
+    {
+      "path": "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
+      "sha256": "0455ee5633cf624b19efa895e1ef812e4455c930d793aac32a0d91b5e3eeba45"
+    },
+    {
+      "path": "experiments/configs/runtime_asset_input_closure_audit_authority_v1.json",
+      "sha256": "0db7f8588c2a2c5df83025a5906c6bbf94abd7e25a59d783d8bb6c7b1c47134d"
+    }
+  ],
+  "verification": {
+    "integration_tests": {
+      "passed": 714,
+      "command": "pixi run pytest -q tests/test_ml_pipeline.py tests/test_decision_candidate_identity.py tests/test_raid_workloop.py tests/test_raid_agent_skill_runtime_bounds.py tests/test_phase1_raid_foundation_capture.py tests/test_phase1_provisioning_readback.py tests/test_magmaw_transfer_prestart_bundle.py --tb=short"
+    },
+    "asset_tests": {
+      "passed": 162,
+      "owner": "closure_review",
+      "independent_final_review": "Sol high accepted input dependency graph and gate propagation; subsequent caller and ML findings repaired with focused fixtures",
+      "command": "pixi run pytest -q tests/test_runtime_asset_closure.py tests/test_chainwielder_prestart_bundle.py tests/test_composite_fixture_replay_launcher.py"
+    },
+    "live_runs": 0,
+    "native_builds": 0,
+    "database_mutations": 0,
+    "model_training_runs": 0,
+    "generated_experiment_payloads": 0,
+    "dvc_status": {
+      "returncode": 0,
+      "changed_stage_or_artifact_entries": 576,
+      "baseline_entries": 574,
+      "interpretation": "Existing absent/changed tracked outputs and changed source dependencies; not 576 newly generated artifacts. No broad repro or hydration performed.",
+      "checked_after_final_repairs": true
+    },
+    "caller_tests": {
+      "passed": 20,
+      "additional_map_zero_regression": "passed"
+    },
+    "final_integration": {
+      "combined_run": {
+        "passed": 1105,
+        "failed": 14,
+        "total": 1119
+      },
+      "corrected_failures": {
+        "count": 13,
+        "cause": "Derived-config boundary fixtures omitted newly mandatory asset tuple and native build-source snapshot fields. Upstream asset gate explicitly isolated; actual build identity retained.",
+        "focused_rerun": {
+          "passed": 23,
+          "failed": 0,
+          "command": "pixi run pytest -q tests/test_chainwielder_derived_runtime_config_bundle.py --tb=short"
+        }
+      },
+      "remaining_failure_count": 1,
+      "effective_passing_test_count_after_targeted_rerun": 1118,
+      "remaining_failure": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
+      "status": "offline_repairs_verified_historical_reference_freshness_failure_retained",
+      "combined_command": "pixi run pytest -q tests/test_ml_pipeline.py tests/test_decision_candidate_identity.py tests/test_raid_workloop.py tests/test_raid_agent_skill_runtime_bounds.py tests/test_phase1_raid_foundation_capture.py tests/test_phase1_provisioning_readback.py tests/test_magmaw_transfer_prestart_bundle.py tests/test_runtime_asset_closure.py tests/test_chainwielder_prestart_bundle.py tests/test_composite_fixture_replay_launcher.py tests/test_runtime_asset_parent_callers.py tests/test_cata_raid_dps_acceptance.py tests/test_phase9_live_qualification.py tests/test_phase8_reference_conditions.py tests/test_phase8_fixture_contract.py tests/test_phase8_database_identity.py tests/test_chainwielder_derived_runtime_config_bundle.py tests/test_canonical_route_staging.py --tb=short"
+    }
+  },
+  "next_dependency": {
+    "work_unit": "shard:runtime_asset_input_reconstruction",
+    "first_broken_edge": "runtime_asset_input_identity_not_reconstructed",
+    "owner_skill": "raid-shard-architecture",
+    "historical_checkout_result": {
+      "missing_offline_dbc_db2_files": 10,
+      "missing_gear_files": 3,
+      "extraction_receipt_sha256": null
+    },
+    "current_workspace_result": {
+      "hash_mismatch": 1,
+      "mode_mismatch": 16,
+      "provenance_missing": 1
+    },
+    "required_result": "A fresh attributable extraction/reconstruction, exact offline dependency materialization, and an accepted input manifest that passes before configure/build. Keep the historical negative manifest unchanged.",
+    "not_a_gameplay_verdict": true
+  },
+  "continuation_prompt": "Read this handoff and docs/bot_raids/program_audit_20260905.md. Work directly with raid-shard-architecture on one shared runtime asset reconstruction unit. Inspect existing extractor receipts and DVC cache/remote identities first; do not assert that existing DataDir bytes were produced by the local client without a receipt. If provenance cannot be recovered, bind an actual fresh extraction to client and extractor hashes in an isolated root, publish generated payloads through DVC, verify the remote, then evict only verified exact payloads. Materialize the declared DBC/DB2 and gear dependencies. Retain historical negative evidence. Obtain Sol high independent review before a native live canary. Only after input, clean-source, build, recurrence, and database gates pass, execute one bounded validation, close/publish/clean evidence, and route the first causal mismatch. Do not request another authorization-only commit for these already requested steps.",
+  "not_completed": [
+    "live Magmaw lifecycle acceptance",
+    "shared task-state migration beyond existing encounter implementations",
+    "all-spec tank/healer/class acceptance",
+    "raid/dungeon difficulty coverage and native encounter validation",
+    "closed-run full-provenance ML admission and temporally safe memory features",
+    "actual-client observation/action contract and held-out client evaluation",
+    "native inference feature-name/availability parity and actual-client feature allowlist",
+    "historical Phase8 materialized fixture freshness mismatch"
+  ],
+  "retained_failure": {
+    "test": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
+    "classification": "historical_fixture_source_freshness_mismatch",
+    "path": "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json",
+    "embedded_target_catalog_sha256": "46a79c46b83559b7b55a6b484d7ea53c1680118de1147fad8e36f59be23545ae",
+    "current_target_catalog_sha256": "89263d953278030173a4220a3106afd7bbaec8821f9fefe26d825a0890804abf",
+    "mismatch": "Embedded selected_rows for affliction_warlock and demonology_warlock have older action_profile_spell_ids. The target catalog and historical materialized fixture were not changed in this audit.",
+    "disposition": "Preserve the counterexample. Reconcile the historical fixture under the appropriate reference work unit if a future run consumes it. It cannot override the current promoted WoWSims catalog."
+  },
+  "review_notes": [
+    "No native gameplay correctness or live model parity was certified.",
+    "Final caller edits received root review; risky runtime/encounter changes still require Sol high review before live."
+  ]
+}

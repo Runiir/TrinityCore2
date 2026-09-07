@@ -63,6 +63,27 @@ from tools.raid_program.recurrence_admission import (
     sha256_file,
     verify_recurrence_admission,
 )
+from tools.raid_program.runtime_asset_closure_binding import argument_argv
+from tools.raid_program.runtime_asset_closure import (
+    _inventory,
+    _record,
+    build_audit_authority,
+    build_native_inventory_authority,
+    produce_extraction_receipt,
+    verify_runtime_asset_closure,
+    verify_runtime_asset_inputs,
+)
+
+
+def _launch_closure(tmp_path: Path) -> dict[str, object]:
+    return {"argv": argument_argv({
+        "runtime_asset_closure_manifest": (tmp_path / "manifest.json").resolve(),
+        "runtime_asset_source_checkout": tmp_path.resolve(),
+        "runtime_asset_dvc_workspace": tmp_path.resolve(),
+        "runtime_asset_bundle": (tmp_path / "bundle").resolve(),
+        "runtime_asset_data_dir": (tmp_path / "data").resolve(),
+        "runtime_asset_map_id": 669,
+    })}
 
 def _git(root: Path, *args: str) -> str:
     return subprocess.run(
@@ -102,7 +123,7 @@ def _stub_external_build_gate(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def _fixture(
     tmp_path: Path,
-    *, base_text: str = 'BotWorld.RuntimeProfile = "old"\nBotWorld.AutoStart = 1\n',
+    *, base_text: str | None = None,
 ) -> dict[str, object]:
     root = tmp_path / "source"
     root.mkdir()
@@ -132,6 +153,98 @@ def _fixture(
             {"name": "foreign", "validation_route": {"enable": False}},
         ],
     })
+    native_data = tmp_path / "native-data"
+    native_data.mkdir()
+    source_row, source_issue = _record(
+        root / "tracked.txt", root, "tracked.txt",
+    )
+    assert source_issue is None and source_row is not None
+    class_digest = hashlib.sha256(b"runtime_profile_source").hexdigest()
+    input_class = {
+        "id": "runtime_profile_source",
+        "consumer": "bundle profile materializer",
+        "audience": "bundle-materializer",
+        "root": "source-checkout",
+        "rule": "exact-file",
+        "provenance": "deterministic fixture source",
+        "hydration_source": "fixture Git checkout",
+        "eviction_policy": "pytest temporary directory",
+        "audit_inventory_sha256": class_digest,
+        "expected_inventory": _inventory([source_row]),
+        "expected_files": [source_row],
+    }
+    closure_manifest: dict[str, object] = {
+        "schema": "cata_runtime_asset_input_closure_manifest_v1",
+        "asset_classes": [input_class],
+        "dvc_provenance": [],
+    }
+    source_audit = root / "experiments/configs/source-audit.json"
+    source_audit.parent.mkdir(parents=True)
+    _write_json(source_audit, {
+        "schema": "cata_raid_immutable_runtime_asset_closure_audit_v1",
+        "closure_classes": [{
+            "id": "runtime_profile_source", "count": 1,
+            "inventory_sha256": class_digest,
+        }],
+        "full_data_tree_inventory": {
+            "source": {"inventory_sha256": "b" * 64, "entries": 1},
+        },
+    })
+    audit_authority = root / "experiments/configs/audit-authority.json"
+    _write_json(audit_authority, build_audit_authority(
+        manifest=closure_manifest,
+        source_audit_path=source_audit,
+        source_audit_sha256=sha256_file(source_audit),
+        scenario_map_id=669,
+    ))
+    inventory_authority = root / "experiments/configs/native-inventory.json"
+    _write_json(inventory_authority, build_native_inventory_authority(
+        data_dir=native_data,
+        source_audit_sha256=sha256_file(source_audit),
+        audit_source_inventory_sha256="b" * 64,
+        audit_vmaps_inventory_sha256="d" * 64,
+        receipt_relative_path="extraction-receipt.json",
+    ))
+    extraction_receipt = native_data / "extraction-receipt.json"
+    client_identity = {"client_build": "4.3.4.15595", "source": "fixture"}
+    extractor_identity = {"name": "fixture", "binary_sha256": "c" * 64}
+    creation_command_inputs = ["fixture-extractor", "--all"]
+    _write_json(extraction_receipt, produce_extraction_receipt(
+        data_dir=native_data,
+        inventory_authority_path=inventory_authority,
+        receipt_relative_path="extraction-receipt.json",
+        client_identity=client_identity,
+        extractor_identity=extractor_identity,
+        creation_command_inputs=creation_command_inputs,
+    ))
+    closure_manifest.update({
+        "audit_authority": {
+            "path": "experiments/configs/audit-authority.json",
+            "sha256": sha256_file(audit_authority),
+        },
+        "native_data_inventory_authority": {
+            "path": "experiments/configs/native-inventory.json",
+            "sha256": sha256_file(inventory_authority),
+            "audit_authority_sha256": sha256_file(audit_authority),
+            "canonical_audit_inventory_sha256": "b" * 64,
+        },
+        "native_extraction_provenance": {
+            "path": "extraction-receipt.json",
+            "receipt_sha256": sha256_file(extraction_receipt),
+            "client_identity": client_identity,
+            "extractor_identity": extractor_identity,
+            "creation_command_inputs": creation_command_inputs,
+        },
+    })
+    closure_manifest_path = (
+        root / "experiments/configs/runtime_asset_closure_manifest_v1.json"
+    )
+    _write_json(closure_manifest_path, closure_manifest)
+    if base_text is None:
+        base_text = (
+            'BotWorld.RuntimeProfile = "old"\nBotWorld.AutoStart = 1\n'
+            f'DataDir = "{native_data.resolve()}"\n'
+        )
     base_source = root / "base.conf"
     base_source.write_text(base_text, encoding="utf-8")
     _git(root, "add", ".")
@@ -279,6 +392,10 @@ def _fixture(
             "pool_tag": SCENARIO_ID,
             "actor_guid": ACTOR_GUID,
             "checkpoint_fixture_id": CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+            "runtime_asset_closure_manifest": closure_manifest_path.resolve(),
+            "runtime_asset_dvc_workspace": root.resolve(),
+            "runtime_asset_data_dir": native_data.resolve(),
+            "runtime_asset_map_id": 669,
         },
     }
 
@@ -416,6 +533,7 @@ def test_generic_profile_range_dialect_binds_exact_actor_fixture_case_and_target
         binary=tmp_path / "worldserver",
         output_dir=tmp_path / "bundle",
         admission_sha256="a" * 64,
+        runtime_asset_closure_binding=_launch_closure(tmp_path),
         dialect=PROFILE_COMBAT_RANGE,
         checkpoint_runtime_target_guid=(
             PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID
@@ -433,6 +551,7 @@ def test_generic_profile_range_dialect_binds_exact_actor_fixture_case_and_target
             binary=tmp_path / "worldserver",
             output_dir=tmp_path / "bundle",
             admission_sha256="a" * 64,
+            runtime_asset_closure_binding=_launch_closure(tmp_path),
             dialect=PROFILE_COMBAT_RANGE,
             checkpoint_runtime_target_guid=(
                 PROFILE_COMBAT_RANGE_RUNTIME_TARGET_GUID + 1
@@ -539,6 +658,17 @@ def test_generic_profile_range_manifest_crosses_atomic_create_and_verify(
     assert runtime["routes"][0]["source_entry"] == 41570
 
     argv = launch["launch_argv"]
+    for flag in (
+        "--runtime-asset-closure-manifest",
+        "--runtime-asset-source-checkout",
+        "--runtime-asset-dvc-workspace",
+        "--runtime-asset-bundle",
+        "--runtime-asset-data-dir",
+        "--runtime-asset-map-id",
+    ):
+        assert argv.count(flag) == 1
+    assert argv[argv.index("--runtime-asset-bundle") + 1] == str(output.resolve())
+    assert argv[argv.index("--runtime-asset-map-id") + 1] == "669"
     assert argv.count("--profile-combat-range-checkpoint-actor-guid") == 1
     assert argv.count("--profile-combat-range-checkpoint-target-guid") == 1
     for option in (
@@ -706,7 +836,7 @@ def _use_tracked_ledger(fixture: dict[str, object]) -> Path:
     paths = fixture["paths"]
     kwargs = fixture["kwargs"]
     ledger = root / TRACKED_LEDGER_RELATIVE_PATH
-    ledger.parent.mkdir(parents=True)
+    ledger.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(paths["ledger"], ledger)
     _git(root, "add", TRACKED_LEDGER_RELATIVE_PATH.as_posix())
     _git(root, "commit", "-m", "track recurrence ledger")
@@ -813,6 +943,50 @@ def test_bundle_is_deterministic_and_does_not_mutate_inputs(tmp_path: Path) -> N
     assert before == {key: sha256_file(path) for key, path in paths.items()}
 
 
+def test_bundle_creation_rejects_missing_closure_before_output(tmp_path: Path) -> None:
+    fixture = _fixture(tmp_path)
+    fixture["kwargs"]["runtime_asset_closure_manifest"] = None
+    output = fixture["output"]
+    with pytest.raises(BundleError, match="runtime_asset_closure_arguments_missing"):
+        _create(fixture)
+    assert not output.exists()
+    assert not output.with_name(output.name + ".failure.json").exists()
+
+
+def test_input_preflight_bundle_seal_and_consuming_closure_succeed(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path)
+    paths = fixture["paths"]
+    kwargs = fixture["kwargs"]
+    output = fixture["output"]
+    preflight = verify_runtime_asset_inputs(
+        manifest_path=kwargs["runtime_asset_closure_manifest"],
+        source_checkout=fixture["root"],
+        configured_data_dir=kwargs["runtime_asset_data_dir"],
+        dvc_workspace=kwargs["runtime_asset_dvc_workspace"],
+        sealed_bundle=output,
+        worldserver_config=paths["base_runtime_config_source"],
+        scenario_map_id=669,
+    )
+    assert preflight["complete"] is True
+    assert not output.exists()
+
+    _create(fixture)
+    assert verify_bundle(output)["valid"] is True
+    consumed = verify_runtime_asset_closure(
+        manifest_path=kwargs["runtime_asset_closure_manifest"],
+        source_checkout=fixture["root"],
+        configured_data_dir=kwargs["runtime_asset_data_dir"],
+        dvc_workspace=kwargs["runtime_asset_dvc_workspace"],
+        sealed_bundle=output,
+        worldserver_config=output / BUNDLE_NAMES["runtime_config"],
+        scenario_map_id=669,
+    )
+    assert consumed["complete"] is True
+    assert consumed["verification_scope"] == "runtime_closure_consumption"
+
+
 def _add_layered_build_control_authority(
     fixture: dict[str, object], tmp_path: Path,
 ) -> Path:
@@ -905,6 +1079,7 @@ def test_expected_launch_argv_binds_the_complete_personal_threat_target(
     argv = prestart_bundle.expected_launch_argv(
         worktree=tmp_path, binary=tmp_path / "worldserver",
         output_dir=tmp_path / "bundle", admission_sha256="a" * 64,
+        runtime_asset_closure_binding=_launch_closure(tmp_path),
         personal_threat_episode_target=target,
     )
     assert argv[argv.index("--personal-threat-episode-actor-guid") + 1] == "30008"
@@ -923,6 +1098,7 @@ def test_expected_launch_argv_binds_the_complete_personal_threat_target(
         prestart_bundle.expected_launch_argv(
             worktree=tmp_path, binary=tmp_path / "worldserver",
             output_dir=tmp_path / "bundle", admission_sha256="a" * 64,
+            runtime_asset_closure_binding=_launch_closure(tmp_path),
             personal_threat_episode_target={**target, "scope_key": "attempt3"},
         )
 
@@ -1246,7 +1422,7 @@ def test_exact_clean_tracked_ledger_is_copied_byte_identically(
 def test_untracked_in_worktree_ledger_is_rejected(tmp_path: Path) -> None:
     fixture = _fixture(tmp_path)
     ledger = fixture["root"] / TRACKED_LEDGER_RELATIVE_PATH
-    ledger.parent.mkdir(parents=True)
+    ledger.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(fixture["paths"]["ledger"], ledger)
     fixture["kwargs"].update({
         "ledger": ledger,
@@ -1351,6 +1527,26 @@ def test_verify_reconstructs_the_complete_capture_argv(tmp_path: Path) -> None:
     with pytest.raises(BundleError, match="launch_argv_exact_binding_mismatch"):
         verify_bundle(output)
 
+
+def test_verify_rejects_rehashed_closure_root_substitution(tmp_path: Path) -> None:
+    fixture = _fixture(tmp_path)
+    _create(fixture)
+    output = fixture["output"]
+    launch_path = output / BUNDLE_NAMES["launch_contract"]
+    launch = json.loads(launch_path.read_text(encoding="utf-8"))
+    launch["runtime_asset_closure"]["roots"]["sealed-bundle"] = str(
+        (tmp_path / "substituted-bundle").resolve()
+    )
+    _write_json(launch_path, launch)
+    manifest_path = output / BUNDLE_NAMES["bundle_manifest"]
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for row in manifest["files"]:
+        if row["path"] == BUNDLE_NAMES["launch_contract"]:
+            row["sha256"] = sha256_file(launch_path)
+    _write_json(manifest_path, manifest)
+    with pytest.raises(BundleError, match="sealed_bundle_identity_mismatch"):
+        verify_bundle(output)
+
 def test_verify_rejects_extra_directory_and_duplicate_manifest_rows(
     tmp_path: Path,
 ) -> None:
@@ -1401,7 +1597,10 @@ def test_verify_requires_exact_manifest_rows(
 def test_conflicting_duplicate_required_config_fails_closed(tmp_path: Path) -> None:
     fixture = _fixture(
         tmp_path,
-        base_text="BotWorld.AutoStart = 0\nBotWorld.AutoStart = 1\n",
+        base_text=(
+            "BotWorld.AutoStart = 0\nBotWorld.AutoStart = 1\n"
+            f'DataDir = "{(tmp_path / "native-data").resolve()}"\n'
+        ),
     )
     with pytest.raises(BundleError, match="config_duplicate_key:BotWorld.AutoStart"):
         _create(fixture)

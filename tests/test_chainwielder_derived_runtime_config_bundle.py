@@ -12,6 +12,7 @@ import pytest
 import tools.raid_program.chainwielder_prestart_bundle as bundle
 import tools.raid_program.chainwielder_runtime_config_authority as authority
 from tools.raid_program.canonical_route_staging import stage_tracked_snapshot
+from tools.raid_program.runtime_asset_closure_binding import argument_argv
 from tools.raid_program.recurrence_admission import (
     CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
     sha256_file,
@@ -53,6 +54,24 @@ def _build_gate(monkeypatch: pytest.MonkeyPatch) -> None:
         "_verify_gate_bearing_build_receipt",
         lambda _receipt, _policy: {"valid": True, "gate_bearing": True},
     )
+    # This module owns derived-config authentication after asset admission.
+    # Production asset identity and omission checks have separate fixtures in
+    # test_runtime_asset_closure and test_chainwielder_prestart_bundle.
+    def admitted_assets(**values):
+        return {
+            "roots": {"source-checkout": str(values["source_checkout"])},
+            "scenario_map_id": values["scenario_map_id"],
+            "argv": argument_argv({
+                "runtime_asset_closure_manifest": values["manifest_path"],
+                "runtime_asset_source_checkout": values["source_checkout"],
+                "runtime_asset_dvc_workspace": values["dvc_workspace"],
+                "runtime_asset_bundle": values["sealed_bundle"],
+                "runtime_asset_data_dir": values["configured_data_dir"],
+                "runtime_asset_map_id": values["scenario_map_id"],
+            }),
+        }
+    monkeypatch.setattr(bundle, "build_runtime_asset_closure_binding", admitted_assets)
+    monkeypatch.setattr(bundle, "verify_runtime_asset_closure_binding", lambda value, **kwargs: value)
 
 
 def _source_tree(root: Path) -> tuple[str, str]:
@@ -122,6 +141,11 @@ def _fixture(tmp_path: Path) -> dict[str, object]:
         "classification": "success",
         "exit_code": 0,
         "commit": commit,
+        "source_identity": {
+            phase: {"commit": commit, "tree": tree, "clean": True,
+                    "dirty": False, "porcelain_sha256": hashlib.sha256(b"").hexdigest()}
+            for phase in ("request", "admission", "completion")
+        },
         "output_artifacts": [{
             "kind": "worldserver_elf",
             "path": str(binary.resolve()),
@@ -225,6 +249,10 @@ def _fixture(tmp_path: Path) -> dict[str, object]:
         "pool_tag": bundle.SCENARIO_ID,
         "actor_guid": bundle.ACTOR_GUID,
         "checkpoint_fixture_id": CHAINWIELDER_CHECKPOINT_FIXTURE_ID,
+        "runtime_asset_closure_manifest": tmp_path / "inputs.json",
+        "runtime_asset_dvc_workspace": tmp_path / "dvc",
+        "runtime_asset_data_dir": tmp_path / "data",
+        "runtime_asset_map_id": 669,
     }
     return {
         "root": root,

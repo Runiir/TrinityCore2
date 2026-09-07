@@ -46,6 +46,15 @@ FEATURE_SCHEMA_VERSION = "bot_policy_features_v1"
 DATASET_CONTRACT_VERSION = "teacher_policy_candidate_v1"
 
 
+def decision_group_key(row: dict[str, Any]) -> tuple[int, int, int, str]:
+    """Candidate competition is scoped to its run, actor, decision, and domain."""
+    return (
+        int(row.get("run_id") or 0), int(row.get("bot_guid") or 0),
+        int(row.get("decision_id") or 0),
+        str(row.get("candidate_domain") or row.get("decision_domain") or "unknown"),
+    )
+
+
 def load_json(value: Any, default: Any) -> Any:
     if value is None or value == "":
         return default
@@ -120,15 +129,13 @@ def flatten_json(prefix: str, value: Any, out: dict[str, float], limit: int = 80
 
 
 def numeric_features(row: dict[str, Any]) -> dict[str, float]:
-    features: dict[str, float] = {}
-    for key, value in row.items():
-        if key in LABELS or key in {"split", "trace", "label_observed", "is_chosen", "reward_observed", "imitate_teacher", "imitation_weight"}:
-            continue
-        if isinstance(value, bool):
-            features[key] = 1.0 if value else 0.0
-        elif isinstance(value, (int, float)) and math.isfinite(float(value)):
-            features[key] = float(value)
-    return features
+    # Keep the compatibility API while isolating ML-only changes from world
+    # data/provisioning stages that depend on this general I/O module.
+    try:
+        from .policy_features import numeric_features as select_features
+    except ImportError:
+        from policy_features import numeric_features as select_features
+    return select_features(row, LABELS)
 
 
 def split_by_run_ids(rows: list[dict[str, Any]], eval_fraction: float = 0.2) -> tuple[set[int], set[int]]:

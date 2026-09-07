@@ -31,7 +31,7 @@ Write generated JSON through the repository serializer or `apply_patch`, never
 through shell text that encodes `\\n`. Before spending the next one-shot budget,
 parse the file, run its canonical verifier, require the last byte to be `0a`,
 and reject final bytes `5c 6e`. A serialization failure consumes its write but
-must not consume downstream recurrence, bundle, database, seal, or live budgets.
+must not consume downstream recurrence, bundle, database, seal, or live budgets. Reversible serialization corrections do not require fresh user authorization.
 
 Complete all receipt-bound setup before admission: exact gear,
 talents/glyphs, ordinary-pet row and spellbook/autocast, group/difficulty,
@@ -52,7 +52,7 @@ shard claims to freeze. In particular, a live glyph list in roster telemetry is
 not glyph-parity enforcement unless the admission receipt contains the same
 canonical glyph identity and compares it after actions start.
 
-- Give each boss a distinct scenario, runtime profile, pool tag, ten-character roster, evidence namespace, and route.
+- Give each boss a distinct scenario, runtime profile, pool tag, roster of the scenario's declared size, evidence namespace, and route.
 - Require the selected profile to own the selected route manifest. Reject empty, foreign, or substituted manifests.
 - Never inherit Stonecore, canonical BWD, or another boss profile as a fallback.
 - Reject transports that cannot prove config ownership. In particular, do not use SOAP for scenario-scoped live execution unless the running server's exact config identity is independently bound.
@@ -398,8 +398,8 @@ not route other shards through the Chainwielder module.
   cohort is active; a pinned hash is audit evidence, not isolation.
 - Share a worldserver only after confirming instance, group, lease, roster, and telemetry isolation under concurrency.
 - Budget CPU, log rate, and disk before launching all shards. A single pathological shard blocks fan-out.
-- Run six boss shards in parallel only after the single Magmaw rehearsal is clean.
-- Finish with three to four sequential canonical full-raid runs; shard success cannot replace end-to-end validation.
+- Enable parallel shards only after a representative shard passes the shared isolation contract; derive concurrency from available resources and declared scope.
+- Finish with the canonical route's declared acceptance runs; shard success cannot replace end-to-end validation.
 
 ## Separate profile selection from execution
 

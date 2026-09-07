@@ -24,7 +24,7 @@
   "profile_precedence": "bundle_local_selected_profile_overlay",
   "recipe": {
     "relative_path": "Makefile",
-    "sha256": "76c854e1c4e7dcbc4fc9f5a2444ede512ca65a7d1ff6e2514be8941641ea918a",
+    "sha256": "eb052cb40e49f71ce10183fc55e7ac9d00dc17d8551600c51ef6c255d6ebec3a",
     "target": "test-configs"
   },
   "schema": "cata_raid_tracked_base_runtime_config_v1",

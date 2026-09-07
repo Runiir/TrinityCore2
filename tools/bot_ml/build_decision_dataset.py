@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, flatten_json, load_json, read_jsonl, split_by_run_ids, stable_hash, table_path, write_json, write_jsonl, write_parquet_if_available
+    from .common import DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, flatten_json, load_json, numeric_features, read_jsonl, split_by_run_ids, stable_hash, table_path, write_json, write_jsonl, write_parquet_if_available
 except ImportError:
-    from common import DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, flatten_json, load_json, read_jsonl, split_by_run_ids, stable_hash, table_path, write_json, write_jsonl, write_parquet_if_available
+    from common import DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, flatten_json, load_json, numeric_features, read_jsonl, split_by_run_ids, stable_hash, table_path, write_json, write_jsonl, write_parquet_if_available
 
 
 POSITIVE_EVENTS = {"quest_completed", "objective_progress", "mob_killed", "boss_killed", "loot_received", "gear_upgrade", "level_up"}
@@ -44,12 +44,16 @@ CERTIFYING_RUNTIME_MODES = {"always_on_autonomy", "manual_experiment"}
 
 
 def player_like_training_run_ids(runs: list[dict[str, Any]]) -> set[int]:
-    """Select only ordinary, non-fixture runs for the training flywheel."""
+    """Select closed ordinary runs; this is not a provenance certificate."""
     accepted: set[int] = set()
     for run in runs:
         run_id = int(run.get("id") or 0)
         config = load_json(run.get("config_json"), {})
         if not run_id or not isinstance(config, dict):
+            continue
+        # RecordRunStop writes this pair together. A mode flag alone also
+        # matches still-growing runs whose future outcomes are incomplete.
+        if run.get("status") != "stopped" or parse_ts(run.get("ended_at")) <= 0:
             continue
         if str(config.get("runtime_mode") or "") not in CERTIFYING_RUNTIME_MODES:
             continue
@@ -186,7 +190,7 @@ def candidate_rows(candidates: Any, chosen: dict[str, Any]) -> list[dict[str, An
                 rows.append(row)
         if rows:
             return rows
-    return [chosen]
+    return []
 
 
 def candidate_key(payload: dict[str, Any]) -> str:
@@ -198,15 +202,23 @@ def candidate_key(payload: dict[str, Any]) -> str:
 
 
 def chosen_candidate_index(candidates: list[dict[str, Any]], chosen: dict[str, Any], chosen_activity: str) -> int:
+    # Explicit candidate identity must not fall back to a different action
+    # merely because both candidates share an activity or spell.
+    identity = chosen.get("candidate_id") or chosen.get("id")
+    if identity:
+        matches = [index for index, candidate in enumerate(candidates)
+                   if str(candidate.get("candidate_id") or candidate.get("id") or "") == str(identity)]
+        return matches[0] if len(matches) == 1 else -1
     chosen_key = candidate_key(chosen)
     if chosen_key:
-        for index, candidate in enumerate(candidates):
-            if candidate_key(candidate) == chosen_key:
-                return index
-    for index, candidate in enumerate(candidates):
-        if activity_name(candidate) == chosen_activity or (not activity_name(candidate) and not chosen_activity and index == 0):
-            return index
-    return 0 if candidates else -1
+        matches = [index for index, candidate in enumerate(candidates)
+                   if candidate_key(candidate) == chosen_key]
+        return matches[0] if len(matches) == 1 else -1
+    if not chosen_activity:
+        return -1
+    matches = [index for index, candidate in enumerate(candidates)
+               if activity_name(candidate) == chosen_activity]
+    return matches[0] if len(matches) == 1 else -1
 
 
 def index_decision_fingerprints(rows: list[dict[str, Any]]) -> dict[tuple[int, int], dict[str, Any]]:
@@ -456,8 +468,29 @@ def build_rows(
     flatten_json("chosen", chosen, features)
     flatten_json("outcome", outcome, features)
     chosen_activity = activity_name(chosen) or str(decision.get("current_activity") or "")
-    normalized_candidates = candidate_rows(candidates, chosen)
+    recorded_candidates = candidate_rows(candidates, chosen)
+    # Keep a preview row for legacy diagnostics, but never admit a fabricated
+    # candidate set into the exported training dataset.
+    normalized_candidates = recorded_candidates or [chosen]
     chosen_index = chosen_candidate_index(normalized_candidates, chosen, chosen_activity)
+    native_activity_pool = isinstance(candidates, dict) and (
+        "activity_candidates" in candidates or "combat_action_mask" in candidates
+    )
+    activity_indices = []
+    if native_activity_pool:
+        # Native policy inference ranks activities. The adjacent combat mask
+        # and LastCombatAttempt describe another decision boundary, and may
+        # even be retained from an earlier tick. Preserve them for diagnosis
+        # without assigning the activity's outcome to a combat action.
+        activity_indices = [index for index, candidate in enumerate(normalized_candidates)
+                            if candidate.get("domain") == "activity_selection"]
+        activity_choice = {key: value for key, value in chosen.items()
+                           if key not in {"structured_action", "action_id"}}
+        activity_index = chosen_candidate_index(
+            [normalized_candidates[index] for index in activity_indices],
+            activity_choice, chosen_activity,
+        )
+        chosen_index = activity_indices[activity_index] if activity_index >= 0 else -1
     base: dict[str, Any] = {
         "run_id": int(decision.get("run_id") or 0),
         "decision_id": int(decision.get("id") or 0),
@@ -486,6 +519,10 @@ def build_rows(
         "zone_id": int(decision.get("zone_id") or 0),
         "area_id": int(decision.get("area_id") or nested_int(raw, ("area_id",)) or 0),
         "candidate_count": len(normalized_candidates),
+        "candidate_selection_status": (
+            "missing_candidate_set" if not recorded_candidates
+            else "matched" if chosen_index >= 0 else "unresolved"
+        ),
         "reward_observed": float(decision.get("reward") or 0.0),
         "decision_fingerprint_hash": fingerprint_hash,
         "decision_fingerprint_repeat_count": fingerprint_repeat_count,
@@ -518,18 +555,24 @@ def build_rows(
                 "candidate_mask_reason": str(candidate_mask(candidate, chosen).get("reason") or ""),
                 "is_chosen": 1 if is_chosen else 0,
                 "label_observed": 1 if is_chosen else 0,
-                "learned_score": float(candidate.get("learned_score", chosen.get("learned_score", 0.0)) or 0.0),
-                "learned_penalty": float(candidate.get("learned_penalty", chosen.get("learned_penalty", 0.0)) or 0.0),
-                "danger_score": float(candidate.get("danger_score", chosen.get("danger_score", 0.0)) or 0.0),
-                "progression_value": float(candidate.get("progression_value", chosen.get("progression_value", 0.0)) or 0.0),
-                "confidence": float(candidate.get("confidence", chosen.get("confidence", 0.0)) or 0.0),
-                "utility_score": float(candidate.get("score", candidate.get("activity_score", chosen.get("activity_score", outcome.get("expected_value", 0.0)))) or 0.0),
+                "learned_score": float(candidate.get("learned_score", 0.0) or 0.0),
+                "learned_penalty": float(candidate.get("learned_penalty", 0.0) or 0.0),
+                "danger_score": float(candidate.get("danger_score", 0.0) or 0.0),
+                "progression_value": float(candidate.get("progression_value", 0.0) or 0.0),
+                "confidence": float(candidate.get("confidence", 0.0) or 0.0),
+                "utility_score": float(candidate.get("score", candidate.get("activity_score", 0.0)) or 0.0),
             }
         )
+        if native_activity_pool:
+            row["decision_domain"] = row["candidate_domain"]
+            if row["candidate_domain"] == "activity_selection":
+                row["candidate_count"] = len(activity_indices)
+            else:
+                row["candidate_selection_status"] = "unsupported_decision_domain"
         row.update(teacher_filter_labels(labels, is_chosen))
         for label in LABELS:
             row[label] = float(labels[label]) if is_chosen else 0.0
-        row["features_hash"] = stable_hash({key: row[key] for key in sorted(row) if key.startswith(("json_", "stat_", "learned_", "danger_", "progression_", "confidence", "utility_", "candidate_"))})
+        row["features_hash"] = stable_hash(numeric_features(row))
         row["trace"] = {key: row.get(key) for key in ["run_id", "decision_id", "event_ids_used_for_label", "clip_id", "replay_id", "bot_guid", "brain_version", "model_version", "feature_schema_version", "dataset_contract_version", "candidate_index", "candidate_id", "candidate_activity", "candidate_domain", "is_chosen", "failure_label"]}
         rows.append(row)
     return rows
@@ -581,6 +624,8 @@ def main() -> int:
     parser.add_argument("--input-dir", type=Path, default=Path("dataset/bot_ml/raw"))
     parser.add_argument("--output", type=Path, default=Path("dataset/bot_ml/decision_dataset.jsonl"))
     parser.add_argument("--manifest", type=Path, default=Path("dataset/bot_ml/decision_dataset_manifest.json"))
+    parser.add_argument("--quarantine", type=Path, help="Separate non-training output for unresolved candidate identities.")
+    parser.add_argument("--parquet", type=Path, help="Optional additional export; JSONL is the canonical DVC payload.")
     parser.add_argument("--eval-fraction", type=float, default=0.2)
     parser.add_argument("--outcome-window-sec", type=int, default=180)
     parser.add_argument("--death-window-sec", type=int, default=180)
@@ -607,16 +652,22 @@ def main() -> int:
     semantic_stats = index_semantic_stats(read_jsonl(table_path(args.input_dir, "bot_semantic_outcome_stats")))
     decision_fingerprints = index_decision_fingerprints(read_jsonl(table_path(args.input_dir, "bot_memory_decision_fingerprints")))
     indexed_events = index_future_events(events)
-    rows = [
+    candidate_rows_before_admission = [
         row
         for decision in decisions
         for row in build_rows(decision, label_decision(decision, indexed_events, windows), semantic_stats, decision_fingerprints, args.loop_repeat_threshold)
     ]
+    quarantined_rows = [row for row in candidate_rows_before_admission
+                        if row["candidate_selection_status"] != "matched"]
+    rows = [row for row in candidate_rows_before_admission
+            if row["candidate_selection_status"] == "matched"]
+    quarantine_path = args.quarantine or args.output.with_name(args.output.stem + ".quarantine.jsonl")
+    write_jsonl(quarantine_path, quarantined_rows)
     train_ids, eval_ids = split_by_run_ids(rows, args.eval_fraction)
     for row in rows:
         row["split"] = "eval" if row["run_id"] in eval_ids else "train"
     count = write_jsonl(args.output, rows)
-    parquet = args.output.with_suffix(".parquet")
+    parquet = args.parquet
     diagnostics = label_diagnostics(rows, decisions, train_ids, eval_ids)
     manifest = {
         "rows": count,
@@ -630,9 +681,14 @@ def main() -> int:
             "excluded_non_certifying_run_count": len(all_runs) - len(eligible_run_ids),
         },
         "candidate_rows": count,
+        "candidate_identity_quarantine": {
+            "path": str(quarantine_path),
+            "rows": len(quarantined_rows),
+            "reasons": dict(Counter(row["candidate_selection_status"] for row in quarantined_rows)),
+        },
         "observed_label_rows": sum(1 for row in rows if row.get("label_observed")),
         "jsonl": str(args.output),
-        "parquet": str(parquet) if write_parquet_if_available(parquet, rows) else None,
+        "parquet": str(parquet) if parquet and write_parquet_if_available(parquet, rows) else None,
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
         "dataset_contract_version": DATASET_CONTRACT_VERSION,
         "label_window_sec": windows,

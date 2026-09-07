@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from pathlib import Path
 import subprocess
+from types import SimpleNamespace
 
 import pytest
 
@@ -11,6 +12,7 @@ from tools.raid_program.chainwielder_prestart_bundle import expected_launch_argv
 from tools.raid_program.chainwielder_runtime_config_authority import (
     TRACKED_DERIVED_AUTHORITY,
 )
+from tools.raid_program.runtime_asset_closure_binding import argument_argv, argv_values
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +25,26 @@ SOURCE = {
     "source_handoff_path": "experiments/configs/handoff.json",
     "source_handoff_sha256": "d" * 64,
 }
+REAL_INPUT_PREFLIGHT = launcher._runtime_asset_input_preflight
+PREFLIGHT = {
+    "schema": "cata_runtime_asset_input_preflight_binding_v1",
+    "manifest_sha256": "e" * 64,
+    "snapshot_sha256": "f" * 64,
+    "scenario_map_id": 669,
+    "roots": {
+        "source-checkout": str(ROOT),
+        "configured-DataDir": "/verified/native-data",
+        "dvc-workspace": str(ROOT),
+        "sealed-bundle": "/deferred/prestart-bundle",
+    },
+    "runtime_config_authority": {
+        "type": TRACKED_DERIVED_AUTHORITY,
+        "receipt_path": "/verified/runtime.receipt.json",
+        "receipt_sha256": "1" * 64,
+        "snapshot_path": "/verified/runtime.conf",
+        "snapshot_sha256": "2" * 64,
+    },
+}
 
 
 @pytest.fixture(autouse=True)
@@ -30,6 +52,10 @@ def _stable_source(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         launcher, "_source_authority",
         lambda _worktree, _work_unit: dict(SOURCE),
+    )
+    monkeypatch.setattr(
+        launcher, "_runtime_asset_input_preflight",
+        lambda **_kwargs: copy.deepcopy(PREFLIGHT),
     )
 
 
@@ -49,6 +75,12 @@ def _request(
             "path": str(external / "runtime.receipt.json"),
         },
         "runtime_config_authorities": [TRACKED_DERIVED_AUTHORITY],
+        "runtime_asset_closure": {
+            "manifest_path": str(external / "runtime-asset-manifest.json"),
+            "dvc_workspace": str(ROOT),
+            "configured_data_dir": str(external / "native-data"),
+            "scenario_map_id": 669,
+        },
     }
 
 
@@ -86,6 +118,7 @@ def test_prebuild_is_deterministic_and_exact(tmp_path: Path) -> None:
     assert first == second
     assert first["schema"] == launcher.PREBUILD_SCHEMA
     assert first["source"] == {"worktree": str(ROOT), **SOURCE}
+    assert first["runtime_asset_input_preflight"] == PREFLIGHT
     assert first["execution"] == {
         "composition_side_effect_free": True,
         "order": ["configure", "build"],
@@ -136,6 +169,18 @@ def test_personal_threat_target_is_hash_bound_and_emitted_to_bundle_command(
                 "path": str(tmp_path / "config"), "sha256": "0" * 64,
             },
             "ledger": {"path": str(tmp_path / "ledger"), "sha256": "1" * 64},
+        },
+        runtime_asset_closure={
+            "runtime_asset_closure_manifest": Path(
+                request["runtime_asset_closure"]["manifest_path"]
+            ),
+            "runtime_asset_source_checkout": ROOT,
+            "runtime_asset_dvc_workspace": ROOT,
+            "runtime_asset_bundle": (tmp_path / "run/prestart_bundle").resolve(),
+            "runtime_asset_data_dir": Path(
+                request["runtime_asset_closure"]["configured_data_dir"]
+            ),
+            "runtime_asset_map_id": 669,
         },
         personal_threat_episode_target=request[
             "personal_threat_episode_target"
@@ -276,13 +321,28 @@ def test_realization_binds_fresh_artifacts_after_build(
     )
     assert "--observe-sec" not in realized["commands"]["capture"]["argv"]
     provisioning = realized["commands"]["provisioning_apply"]["argv"]
-    assert provisioning[-2:] == [
-        "--apply-validation-provisioning", "--prepare-only",
-    ]
+    assert "--apply-validation-provisioning" in provisioning
+    assert "--prepare-only" in provisioning
     assert provisioning[provisioning.index("--config") + 1] == str(
         Path(request["run_root"]) / "prestart_bundle"
         / launcher.BUNDLE_NAMES["runtime_config"]
     )
+    expected_closure = argv_values(realized["runtime_asset_closure_argv"])
+    assert argv_values(provisioning) == expected_closure
+    assert argv_values(
+        realized["commands"]["shard_readback"]["argv"]
+    ) == expected_closure
+    assert argv_values(
+        realized["commands"]["capture"]["argv"]
+    ) == expected_closure
+    bundle_create = realized["commands"]["bundle_create"]["argv"]
+    for flag in (
+        "--runtime-asset-closure-manifest",
+        "--runtime-asset-dvc-workspace",
+        "--runtime-asset-data-dir",
+        "--runtime-asset-map-id",
+    ):
+        assert bundle_create.count(flag) == 1
 
 
 @pytest.mark.parametrize(
@@ -306,6 +366,76 @@ def test_prebuild_rejects_wrong_work_unit(tmp_path: Path) -> None:
     request["expected_work_unit"] = "wrong"
     with pytest.raises(launcher.ReplayPlanError, match="expected_work_unit_invalid"):
         launcher.compose_plan(request)
+
+
+def test_prebuild_input_preflight_fails_before_configure_or_build(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(
+        launcher, "_runtime_asset_input_preflight",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            launcher.ReplayPlanError(
+                "runtime_asset_input_preflight_incomplete:missing"
+            )
+        ),
+    )
+    with pytest.raises(
+        launcher.ReplayPlanError,
+        match="runtime_asset_input_preflight_incomplete:missing",
+    ):
+        launcher.compose_plan(_request(tmp_path))
+
+
+def test_input_preflight_uses_authenticated_config_snapshot(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    receipt_path = tmp_path / "runtime.receipt.json"
+    _write(receipt_path, b"authenticated receipt\n")
+    snapshot_path = tmp_path / "authenticated-runtime.conf"
+    _write(snapshot_path, b'DataDir = "/verified/native-data"\n')
+    observed: dict[str, object] = {}
+
+    def resolve(**kwargs):
+        observed["resolve"] = kwargs
+        return SimpleNamespace(
+            authority_type=TRACKED_DERIVED_AUTHORITY,
+            receipt_path=str(receipt_path),
+            receipt_sha256=launcher._sha256_bytes(receipt_path.read_bytes()),
+            snapshot_path=str(snapshot_path),
+            payload_sha256=launcher._sha256_bytes(snapshot_path.read_bytes()),
+        )
+
+    def verify(**kwargs):
+        observed["verify"] = kwargs
+        return {
+            "complete": True,
+            "manifest_sha256": "a" * 64,
+            "snapshot_sha256": "b" * 64,
+            "scenario_map_id": 669,
+            "roots": {"configured-DataDir": "/verified/native-data"},
+        }
+
+    monkeypatch.setattr(launcher, "resolve_runtime_config_authority", resolve)
+    monkeypatch.setattr(launcher, "verify_runtime_asset_inputs", verify)
+    closure = {
+        "runtime_asset_closure_manifest": tmp_path / "manifest.json",
+        "runtime_asset_source_checkout": ROOT,
+        "runtime_asset_dvc_workspace": ROOT,
+        "runtime_asset_bundle": tmp_path / "run/prestart_bundle",
+        "runtime_asset_data_dir": Path("/verified/native-data"),
+        "runtime_asset_map_id": 669,
+    }
+    binding = REAL_INPUT_PREFLIGHT(
+        worktree=ROOT,
+        source=SOURCE,
+        artifacts={"base_runtime_config_receipt": {"path": str(receipt_path)}},
+        closure_values=closure,
+    )
+    assert observed["resolve"]["receipt_path"] == receipt_path
+    assert observed["verify"]["worldserver_config"] == snapshot_path
+    assert binding["runtime_config_authority"]["snapshot_path"] == str(
+        snapshot_path
+    )
 
 
 def test_prebuild_rejects_noncanonical_build_policy(
@@ -399,6 +529,16 @@ def test_capture_runner_consumes_verified_production_argv(
     expected = expected_launch_argv(
         worktree=ROOT, binary=binary, output_dir=bundle,
         admission_sha256="a" * 64,
+        runtime_asset_closure_binding={"argv": argument_argv({
+            "runtime_asset_closure_manifest": (
+                tmp_path / "runtime-asset-manifest.json"
+            ).resolve(),
+            "runtime_asset_source_checkout": ROOT,
+            "runtime_asset_dvc_workspace": ROOT,
+            "runtime_asset_bundle": bundle.resolve(),
+            "runtime_asset_data_dir": (tmp_path / "native-data").resolve(),
+            "runtime_asset_map_id": 669,
+        })},
     )
     monkeypatch.setattr(
         launcher, "verify_bundle", lambda _bundle: {"launch_argv": expected}
@@ -412,6 +552,15 @@ def test_capture_runner_consumes_verified_production_argv(
         return subprocess.CompletedProcess(argv, 0)
 
     assert launcher.run_verified_capture(bundle, runner) == 0
+    assert calls == [(expected, False, ROOT)]
+    changed = argv_values(expected)
+    changed["runtime_asset_map_id"] = 1
+    with pytest.raises(
+        launcher.ReplayPlanError, match="verified_capture_closure_mismatch"
+    ):
+        launcher.run_verified_capture(
+            bundle, runner, expected_closure_values=changed,
+        )
     assert calls == [(expected, False, ROOT)]
 
 
@@ -648,6 +797,10 @@ def test_generic_authority_composes_nonhistorical_fixture_through_production_pat
     descriptor, handoff = _authority_fixture(source_commit, source_tree)
     _commit_authority_fixture(root, descriptor, handoff)
     monkeypatch.setattr(launcher, "ROOT", root)
+    monkeypatch.setattr(
+        launcher, "_runtime_asset_input_preflight",
+        lambda **_kwargs: copy.deepcopy(PREFLIGHT),
+    )
     plan = launcher.compose_plan(_production_request(tmp_path, root))
     assert plan["schema"] == launcher.PREBUILD_SCHEMA
     assert plan["source"]["active_descriptor_sha256"] == launcher._sha256_bytes(

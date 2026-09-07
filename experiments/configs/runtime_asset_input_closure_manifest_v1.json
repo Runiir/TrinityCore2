@@ -1,0 +1,24 @@
+{
+  "schema": "cata_runtime_asset_input_closure_manifest_v1",
+  "manifest_id": "cata_runtime_asset_input_closure_v1",
+  "asset_class_source": {
+    "path": "experiments/configs/runtime_asset_closure_manifest_v1.json",
+    "sha256": "b9071c01f1018c8793529612a61b3c7ee869831108c3febccc60423ba730f343",
+    "exclude_class_ids": ["atomic_bundle"]
+  },
+  "audit_authority": {
+    "path": "experiments/configs/runtime_asset_input_closure_audit_authority_v1.json",
+    "sha256": "0db7f8588c2a2c5df83025a5906c6bbf94abd7e25a59d783d8bb6c7b1c47134d"
+  },
+  "native_data_inventory_authority": {
+    "path": "experiments/configs/runtime_asset_native_data_inventory_v1.json",
+    "sha256": "e3547f691b75ae78c7b01279d175941f51348e50695917c914a56a6651642373",
+    "audit_authority_sha256": "0db7f8588c2a2c5df83025a5906c6bbf94abd7e25a59d783d8bb6c7b1c47134d",
+    "canonical_audit_inventory_sha256": "5cf47e7d7f1a3ea7ad1545678dd58685caa3de231d536b531729439fffb43673"
+  },
+  "root_contract": {
+    "source-checkout": "Explicit immutable source checkout used by offline tools and native probes.",
+    "configured-DataDir": "Derived from the authenticated prebuild worldserver config.",
+    "dvc-workspace": "Explicit workspace whose dvc.lock binds generated route and gear outputs."
+  }
+}

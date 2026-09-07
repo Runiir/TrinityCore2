@@ -515,6 +515,23 @@ def encounter_status(root: Path = ROOT) -> dict[str, Any]:
     }
 
 
+def _descriptor_documentation_descendant(root: Path, descriptor_commit: str | None, head: str | None) -> bool:
+    """Permit narrative updates without turning status into live authority."""
+    if not descriptor_commit or not head or not _git_is_ancestor(root, descriptor_commit, head):
+        return False
+    result = subprocess.run(
+        ["git", "-C", str(root), "diff", "--name-only", "-z", "--no-renames",
+         descriptor_commit, head, "--"],
+        capture_output=True, check=False,
+    )
+    if result.returncode:
+        return False
+    paths = [Path(path.decode("utf-8", errors="replace"))
+             for path in result.stdout.split(b"\0") if path]
+    return all(path.suffix == ".md" and path.parts[0] in {"docs", "doc"}
+               for path in paths)
+
+
 def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
     active = _load_json(root / ACTIVE_WORK_UNIT_PATH)
     source = active.get("source_handoff") or {}
@@ -531,7 +548,11 @@ def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
     descriptor_commit = _git_path_commit(root, ACTIVE_WORK_UNIT_PATH)
     if not _git_path_matches_head(root, ACTIVE_WORK_UNIT_PATH):
         issues.append("active_work_unit_descriptor_dirty")
-    if not head or descriptor_commit != head:
+    documentation_descendant = (
+        descriptor_commit != head
+        and _descriptor_documentation_descendant(root, descriptor_commit, head)
+    )
+    if not head or (descriptor_commit != head and not documentation_descendant):
         issues.append("active_work_unit_descriptor_stale")
 
     # This field records the source revision whose evidence selected the work
@@ -566,6 +587,11 @@ def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
         "issues": issues,
         "descriptor_path": ACTIVE_WORK_UNIT_PATH.as_posix(),
         "descriptor_commit": descriptor_commit,
+        "descriptor_freshness_basis": (
+            "documentation_only_descendant" if documentation_descendant
+            else "descriptor_commit_is_head" if head and descriptor_commit == head
+            else "stale_or_unverified"
+        ),
     }
 
 

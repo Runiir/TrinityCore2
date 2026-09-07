@@ -12,10 +12,10 @@ Use this skill when acting as the prompt-driven orchestrator for bot autonomy or
 1. Read the user goal, current daemon state, checklist, prior artifacts, and git status snapshot before deciding the next action.
 2. Work directly by default. Create or resume a worker only when one bounded worker materially improves the result; the daemon does not auto-launch workers.
 3. Before creating a worker, classify the worker task complexity as `simple`, `medium`, or `large`.
-4. Run `scripts/check-openai-models.sh` once per orchestration pass before selecting or launching OpenAI-backed workers. Do not guess a replacement name when a required model is missing. Run `scripts/check-openai-models.sh --smoke` after proxy/auth/model-routing changes or when a model returns errors.
+4. Use the active harness's exposed model catalog for native collaboration tools. For CLIProxyAPI subprocess workers only, use `scripts/check-openai-models.sh` if that script exists; a missing script is an unavailable CLI preflight, not a blocker for native collaboration or direct work. Do not guess replacement model names. Run the script's `--smoke` mode after proxy/auth/model-routing changes when using that transport.
 5. Choose the best worker model for the complete bounded task from `worker_model_catalog`; consider ambiguity, difficulty, repetition, required polish, latency, and usage cost. Treat `worker_model_tiers` as defaults, not restrictions.
    - Under Claude Code with CLIProxyAPI, pass the exact OpenAI model ID directly: `gpt-5.6-luna` for `simple`, `gpt-5.6-terra` for `medium`, and `gpt-5.6-sol` for `large`. Do not create or depend on Claude model aliases.
-   - Run workers sequentially by default. Parallel workers require an explicit user request and disjoint tasks; always collect and review every result before integration.
+   - Run workers sequentially by default. Independent root inspection may continue while one bounded worker runs. Multiple concurrent workers require an explicit user request and disjoint tasks; always collect and review every result before integration.
 6. Record worker complexity, model, reasoning effort, and evidence paths in progress summaries when the tier choice is relevant.
 7. Keep worker tasks scoped, review results before merging, and run repository validation when behavior changes.
    Every worker must follow
@@ -96,13 +96,13 @@ Default roles:
 | Role | Model | Reasoning |
 | --- | --- | --- |
 | Orchestrator | `gpt-5.6-sol` | `high` |
-| Reviewer | `gpt-5.6-sol` | `medium` |
+| Reviewer | `gpt-5.6-sol` | `high` |
 | Worker | `gpt-5.6-terra` | `medium` |
 
 Default worker routing:
 
 | Complexity | Model | Reasoning |
 | --- | --- | --- |
-| `simple` | `gpt-5.3-codex-spark` | `low` |
+| `simple` | `gpt-5.6-luna` | `xhigh` |
 | `medium` | `gpt-5.6-terra` | `medium` |
 | `large` | `gpt-5.6-sol` | `high` |

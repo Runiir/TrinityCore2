@@ -326,7 +326,14 @@ def test_dps_work_unit_binds_all_duplicate_roster_slots() -> None:
         )
 
 
-def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
+def test_boss_work_units_distinguish_existing_and_missing_scripts(monkeypatch) -> None:
+    # Routing must not depend on whichever program work unit is active today.
+    expected_active = {
+        "schema": "cata_raid_active_work_unit_v1", "raid": "blackwing_descent",
+        "boss": "magmaw", "mode": "10N", "descriptor_valid": True, "issues": [],
+        "validation_clock": {"policy": "completion_watchdog", "fixed_success_timer_seconds": None},
+    }
+    monkeypatch.setattr(workloop, "active_work_unit_status", lambda *_args: expected_active)
     magmaw = workloop.build_boss_work_unit(
         "blackwing_descent", "magmaw", "10N"
     )
@@ -342,11 +349,6 @@ def test_boss_work_units_distinguish_existing_and_missing_scripts() -> None:
     assert magmaw["validation_clock"]["policy"] == "completion_watchdog"
     assert magmaw["validation_clock"]["fixed_success_timer_seconds"] is None
     active = magmaw["active_program_work_unit"]
-    expected_active = json.loads(
-        (workloop.ROOT / workloop.ACTIVE_WORK_UNIT_PATH).read_text(
-            encoding="utf-8"
-        )
-    )
     assert all(active[key] == value for key, value in expected_active.items())
     assert active["descriptor_valid"] is True
     assert active["issues"] == []
@@ -657,3 +659,31 @@ def test_script_readiness_uses_source_tree_identity() -> None:
         status["script_readiness_recorded_source_tree_sha256"]
     )
     assert status["script_readiness_audit_current"] is True
+
+
+def test_documentation_commit_does_not_require_an_authorization_commit(tmp_path):
+    repo, _ = _active_work_unit_repo(tmp_path)
+    descriptor_commit = _git(repo, 'rev-parse', 'HEAD')
+    note = repo / 'docs' / 'progress.md'
+    note.parent.mkdir()
+    note.write_text('A bounded fixture passed; live admission is still separate.\n')
+    _git(repo, 'add', 'docs/progress.md')
+    _git(repo, 'commit', '-m', 'Record fixture observation')
+    status = workloop.active_work_unit_status(repo)
+    assert status['descriptor_valid'] is True
+    assert status['descriptor_commit'] == descriptor_commit
+    assert status['descriptor_freshness_basis'] == 'documentation_only_descendant'
+
+
+@pytest.mark.parametrize('path', ['src/bot.cpp', 'tools/runner.py', 'experiments/configs/route.json', 'docs/helper.py'])
+def test_non_documentation_change_still_invalidates_work_unit(tmp_path, path):
+    repo, _ = _active_work_unit_repo(tmp_path)
+    changed = repo / path
+    changed.parent.mkdir(parents=True, exist_ok=True)
+    changed.write_text('changed\n')
+    _git(repo, 'add', path)
+    _git(repo, 'commit', '-m', 'Change a runtime input')
+    status = workloop.active_work_unit_status(repo)
+    assert status['descriptor_valid'] is False
+    assert status['ready_for_fixture_expansion'] is False
+    assert 'active_work_unit_descriptor_stale' in status['issues']

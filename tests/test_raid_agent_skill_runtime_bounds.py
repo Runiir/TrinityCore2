@@ -1,64 +1,27 @@
-from pathlib import Path
+"""Skill packaging checks, not runtime or agent-behavior certification.
 
+Earlier tests matched exact prose. Those assertions could not demonstrate that
+an agent followed instructions and made editing the instructions needlessly
+fragile. Check the local resource graph instead; native behavior belongs in
+executable policy and runtime fixtures.
+"""
+from pathlib import Path
+import re
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-BABYSITTER = ROOT / ".agents/skills/raid-boss-babysitter/SKILL.md"
-PERFORMANCE_LOOP = ROOT / ".agents/skills/raid-performance-loop/SKILL.md"
-BOUNDED_CONTRACT = ROOT / ".agents/skills/raid-performance-loop/references/bounded-work-unit-contract.md"
-RUNTIME_IMPLEMENTATION = ROOT / ".agents/skills/raid-bot-runtime-implementation/SKILL.md"
-ORCHESTRATOR = ROOT / ".agents/skills/trinity-orchestrator/SKILL.md"
+SKILLS = ROOT / ".agents/skills"
+DOCUMENTS = sorted(SKILLS.rglob("*.md"))
 
 
-def test_babysitter_stops_after_owned_terminal_report() -> None:
-    skill = BABYSITTER.read_text(encoding="utf-8")
-
-    assert "worldserver is absent and its final `report.json` exists" in skill
-    assert "return the compact handoff immediately" in skill
-    assert "deduplicate trace events by `(bot_guid, sequence)`" in skill
-
-
-def test_router_uses_bounded_trace_receipts() -> None:
-    skill = PERFORMANCE_LOOP.read_text(encoding="utf-8")
-
-    assert "Do not hand a\nworker a multi-megabyte raw trace" in skill
-    assert "deduplicates by `(bot_guid, sequence)`" in skill
-    assert "not a reason to\nkeep polling" in skill
-
-
-def test_runtime_skills_keep_receipt_bound_state_pre_admission() -> None:
-    contract = BOUNDED_CONTRACT.read_text(encoding="utf-8")
-    runtime = RUNTIME_IMPLEMENTATION.read_text(encoding="utf-8")
-
-    assert "Treat an admission receipt as a mutation boundary" in contract
-    assert "After commit, decision and route code may observe them" in contract
-    assert "preserve the drift failure" in runtime
-    assert "ObserveActiveOrdinaryHunterPet" in runtime
-    assert "Separate stable identity from native lifecycle state" in contract
-    assert "Do not make an immutable identity observer also require transient liveness" in runtime
-
-
-def test_runtime_repair_requires_causal_mutation_and_native_outcome_coverage() -> None:
-    contract = BOUNDED_CONTRACT.read_text(encoding="utf-8")
-    runtime = RUNTIME_IMPLEMENTATION.read_text(encoding="utf-8")
-    orchestrator = ORCHESTRATOR.read_text(encoding="utf-8")
-
-    for causal_role in (
-        "contained rejection",
-        "first state-infecting edge",
-        "downstream symptom",
-        "terminal watchdog",
-    ):
-        assert causal_role in contract
-    for claim_state in ("`verified`", "`refuted`", "`unproven`"):
-        assert claim_state in contract
-    assert "must fail before the fix and pass after it" in contract
-    assert "owner-to-owner receipt joins the candidate" in contract
-    assert "Injected path proofs" in contract
-    assert "cross native submission" in runtime
-    assert "observe the actual\ngenerator or spline over multiple ticks" in runtime
-    assert "Actor identity and\ntimestamp proximity alone" in runtime
-    assert "do not dispatch a Luna implementation worker" in PERFORMANCE_LOOP.read_text(
-        encoding="utf-8"
-    )
-    assert "Use `gpt-5.6-luna` only when" in orchestrator
-    assert "injected observations instead of required live" in orchestrator
+@pytest.mark.parametrize("document", DOCUMENTS, ids=lambda path: str(path.relative_to(SKILLS)))
+def test_skill_local_markdown_references_resolve(document: Path) -> None:
+    for target in re.findall(r"\]\(([^)]+)\)", document.read_text(encoding="utf-8")):
+        target = target.split("#", 1)[0]
+        if not target or "://" in target or target.startswith(("mailto:", "<")):
+            continue
+        # Code placeholders describe user-supplied inputs, not packaged files.
+        if "<" in target or ">" in target:
+            continue
+        assert (document.parent / target).exists(), f"{document}: missing {target}"

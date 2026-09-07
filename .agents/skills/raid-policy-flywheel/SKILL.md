@@ -19,6 +19,18 @@ Read [references/dataset-admission.md](references/dataset-admission.md) before a
 
 Never read a still-growing telemetry file as training input.
 
+The decision builder's stopped-run filter and candidate-identity quarantine are
+necessary checks, not proof of the full closed-run identity above. Do not treat
+its output alone as an admitted raid training batch. Preserve the quarantine
+output in DVC. A missing or ambiguous chosen-candidate join must never default
+to candidate zero or synthesize a complete candidate set from the choice.
+
+Before training, exercise `numeric_features` on an actual builder row and verify
+that changing future outcomes, selected-action metadata, and record IDs cannot
+change policy inputs. Keep those fields for labels and attribution only. A
+passing offline score from a model trained with these fields requires a fresh
+leakage-free evaluation before promotion; it is not evidence of raid ability.
+
 ## Ownership boundary
 
 Own one immutable batch or one model evaluation at a time. This skill may change dataset builders, schemas, quality gates, training/evaluation code, DVC metadata, and DVCLive experiment records. It must not:
@@ -45,6 +57,17 @@ pixi run python tools/bot_ml/validate_data_quality.py --help
 ```
 
 Each row must preserve the observation, complete candidate set, deterministic masks/gates, relevance or priority features, selected candidate, native submission, rejection/completion, landed outcome, and role/mechanic outcome. Aggregate meters alone cannot train action arbitration.
+
+Match the model's actual decision boundary. Native activity candidates and the
+adjacent combat mask are different groups; a retained combat attempt cannot
+label an activity choice. Group by run, bot, decision, and candidate domain.
+Keep unsupported domains in quarantine until their observation/outcome join and
+native policy consumer exist. Never merge groups by decision ID alone.
+
+End-of-export semantic outcome aggregates and fingerprint memory are not
+decision-time features. Exclude them unless a timestamped prior snapshot proves
+availability. Empty training or evaluation partitions must fail; never fill one
+partition with the other's rows or derive feature selection from the holdout.
 
 WoWSims is a versioned reference or teacher signal for DPS cadence and expected output. It is not a source of live server outcomes and does not replace native spell legality or encounter context.
 

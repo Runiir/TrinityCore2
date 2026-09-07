@@ -10,10 +10,10 @@ from typing import Any
 from dvclive import Live
 
 try:
-    from .common import LABELS, read_jsonl, summarize_bad_groups, write_json
+    from .common import decision_group_key, LABELS, read_jsonl, summarize_bad_groups, write_json
     from .model_artifacts import BINARY_LABELS, attach_base_dir, load_model_artifact, predict_artifact
 except ImportError:
-    from common import LABELS, read_jsonl, summarize_bad_groups, write_json
+    from common import decision_group_key, LABELS, read_jsonl, summarize_bad_groups, write_json
     from model_artifacts import BINARY_LABELS, attach_base_dir, load_model_artifact, predict_artifact
 
 
@@ -61,9 +61,9 @@ def policy_score(pred: dict[str, float]) -> float:
 
 
 def ranking_metrics(rows: list[dict[str, Any]], preds: dict[int, dict[str, float]]) -> dict[str, Any]:
-    grouped: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    grouped: dict[tuple[int, int, int, str], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
-        grouped[int(row.get("decision_id") or 0)].append(row)
+        grouped[decision_group_key(row)].append(row)
     top1 = 0
     top3 = 0
     changed = 0
@@ -77,7 +77,7 @@ def ranking_metrics(rows: list[dict[str, Any]], preds: dict[int, dict[str, float
     predicted_teacher_choice = 0.0
     ranked_traces = []
     total = 0
-    for decision_id, items in grouped.items():
+    for group_key, items in grouped.items():
         if not items:
             continue
         allowed = [row for row in items if int(row.get("candidate_allowed", 1) or 0)]
@@ -101,7 +101,7 @@ def ranking_metrics(rows: list[dict[str, Any]], preds: dict[int, dict[str, float
         predicted_reward += float(top_pred.get("expected_reward", 0.0))
         predicted_teacher_choice += float(top_pred.get("teacher_choice", 0.0))
         bad += int(top_pred.get("death_risk", 0.0) >= 0.5 or top_pred.get("stuck_risk", 0.0) >= 0.5 or top_pred.get("action_success", 0.0) < 0.5)
-        ranked_traces.append({"decision_id": decision_id, "chosen_rank": chosen_index + 1, "trace": ranked[chosen_index].get("trace", {}), "top_prediction": top_pred})
+        ranked_traces.append({"run_id": group_key[0], "bot_guid": group_key[1], "decision_id": group_key[2], "candidate_domain": group_key[3], "chosen_rank": chosen_index + 1, "trace": ranked[chosen_index].get("trace", {}), "top_prediction": top_pred})
     return {
         "ranked_decisions": total,
         "masked_candidate_rows": masked,
@@ -178,10 +178,18 @@ def main() -> int:
     args = parser.parse_args()
 
     all_rows = read_jsonl(args.dataset)
-    rows = [row for row in all_rows if row.get("split") == "eval"] or all_rows
+    rows = [row for row in all_rows if row.get("split") == "eval"]
     observed_rows = [row for row in rows if int(row.get("label_observed", 1) or 0)]
-    metric_rows = observed_rows or rows
+    if not observed_rows:
+        raise SystemExit("decision dataset has no observed evaluation labels")
+    eval_ids = {int(row.get("run_id") or 0) for row in rows}
+    train_ids = {int(row.get("run_id") or 0) for row in all_rows if row.get("split") == "train"}
+    if eval_ids & train_ids:
+        raise SystemExit("training and evaluation run IDs overlap")
+    metric_rows = observed_rows
     model = attach_base_dir(load_model_artifact(args.model), args.model)
+    if eval_ids & {int(value) for value in model.get("train_run_ids", [])}:
+        raise SystemExit("evaluation run IDs overlap model training runs")
     preds = {id(row): predict_artifact(model, row) for row in rows}
     observed_preds = {id(row): preds[id(row)] for row in metric_rows}
 

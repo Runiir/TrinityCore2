@@ -76,6 +76,11 @@ from tools.raid_program.profile_combat_range_static_identity import (
     target_identity,
     validate_target_identity,
 )
+from tools.raid_program.runtime_asset_closure_binding import (
+    RuntimeAssetClosureBindingError,
+    build_binding as build_runtime_asset_closure_binding,
+    verify_binding as verify_runtime_asset_closure_binding,
+)
 
 
 SCHEMA = "cata_raid_chainwielder_prestart_bundle_v1"
@@ -221,6 +226,7 @@ def _capture_paths(output_dir: Path) -> list[Path]:
 
 def expected_launch_argv(
     *, worktree: Path, binary: Path, output_dir: Path, admission_sha256: str,
+    runtime_asset_closure_binding: dict[str, Any],
     dialect: str = CHAINWIELDER,
     checkpoint_runtime_target_guid: int | None = None,
     personal_threat_episode_target: dict[str, Any] | None = None,
@@ -248,6 +254,7 @@ def expected_launch_argv(
         "--scenario-id", SCENARIO_ID,
         "--runtime-profile", SCENARIO_ID,
         "--pool-tag", SCENARIO_ID,
+        *runtime_asset_closure_binding["argv"],
     ]
     if target is not None:
         argv.extend([
@@ -613,6 +620,16 @@ def verify_bundle(
         if "personal_threat_episode_target" in launch
         else None
     )
+    try:
+        closure_binding = verify_runtime_asset_closure_binding(
+            launch.get("runtime_asset_closure"),
+            expected_bundle=logical_root,
+            expected_config=logical_root / BUNDLE_NAMES["runtime_config"],
+            config_payload=(root / BUNDLE_NAMES["runtime_config"]).read_bytes(),
+            require_bundle=root == logical_root,
+        )
+    except RuntimeAssetClosureBindingError as error:
+        raise BundleError(f"runtime_asset_closure:{error}") from error
     payload_names = [
         BUNDLE_NAMES[key] for key in (
             "source_route_manifest", "route_manifest", "profile_manifest",
@@ -631,6 +648,11 @@ def verify_bundle(
     commit, tree = _source_identity(
         worktree, str(source.get("commit") or ""), str(source.get("tree") or "")
     )
+    closure_roots = closure_binding.get("roots") or {}
+    if closure_roots.get("source-checkout") != str(worktree.resolve()):
+        raise BundleError("runtime_asset_closure_source_checkout_mismatch")
+    if closure_binding.get("scenario_map_id") != MAP_ID:
+        raise BundleError("runtime_asset_closure_scenario_map_mismatch")
     try:
         dialect = dialect_from_identity(
             launch.get("identity"), scenario_id=SCENARIO_ID,
@@ -823,6 +845,7 @@ def verify_bundle(
     if argv != expected_launch_argv(
         worktree=worktree, binary=binary, output_dir=logical_root,
         admission_sha256=admission_sha, dialect=dialect,
+        runtime_asset_closure_binding=closure_binding,
         checkpoint_runtime_target_guid=checkpoint_runtime_target_guid,
         personal_threat_episode_target=launch_target,
     ):
@@ -844,6 +867,7 @@ def verify_bundle(
         ),
         "checkpoint_target_entry": verified.get("checkpoint_target_entry"),
         "checkpoint_target_map_id": verified.get("checkpoint_target_map_id"),
+        "runtime_asset_closure": closure_binding,
         "launch_argv": argv,
     }
 
@@ -889,8 +913,19 @@ def create_bundle(
     checkpoint_target_map_id: int | None = None,
     build_control_authority: Path | None = None,
     build_control_authority_sha256: str | None = None,
+    runtime_asset_closure_manifest: Path | None = None,
+    runtime_asset_dvc_workspace: Path | None = None,
+    runtime_asset_data_dir: Path | None = None,
+    runtime_asset_map_id: int | None = None,
 ) -> dict[str, Any]:
     output_dir = output_dir.resolve()
+    if any(value is None for value in (
+        runtime_asset_closure_manifest,
+        runtime_asset_dvc_workspace,
+        runtime_asset_data_dir,
+        runtime_asset_map_id,
+    )):
+        raise BundleError("runtime_asset_closure_arguments_missing")
     staging: Path | None = None
     try:
         personal_threat_episode_target = personal_threat_episode_target_from_fields(
@@ -974,6 +1009,20 @@ def create_bundle(
         )
         _validate_locations(material_inputs=copied_inputs, **location_args)
         commit, tree = _source_identity(worktree, source_commit, source_tree)
+        try:
+            closure_binding = build_runtime_asset_closure_binding(
+                manifest_path=runtime_asset_closure_manifest,
+                source_checkout=worktree.resolve(),
+                dvc_workspace=runtime_asset_dvc_workspace,
+                sealed_bundle=output_dir,
+                configured_data_dir=runtime_asset_data_dir,
+                worldserver_config=output_dir / BUNDLE_NAMES["runtime_config"],
+                scenario_map_id=runtime_asset_map_id,
+                config_payload=runtime_config_authority.payload,
+                require_bundle=False,
+            )
+        except RuntimeAssetClosureBindingError as error:
+            raise BundleError(f"runtime_asset_closure:{error}") from error
         hashes = {
             "binary": (binary, binary_sha256),
             "build_receipt": (build_receipt, build_receipt_sha256),
@@ -1172,9 +1221,11 @@ def create_bundle(
                 supplied_target_identity
                 if dialect == PROFILE_COMBAT_RANGE else None
             ),
+            "runtime_asset_closure": closure_binding,
             "launch_argv": expected_launch_argv(
                 worktree=worktree, binary=binary, output_dir=output_dir,
                 admission_sha256=admission_sha, dialect=dialect,
+                runtime_asset_closure_binding=closure_binding,
                 checkpoint_runtime_target_guid=(
                     checkpoint_runtime_target_guid
                     if dialect == PROFILE_COMBAT_RANGE else None
@@ -1269,6 +1320,10 @@ def parser() -> argparse.ArgumentParser:
     create.add_argument("--base-runtime-config-contract-relative-path")
     create.add_argument("--build-control-authority", type=Path)
     create.add_argument("--build-control-authority-sha256")
+    create.add_argument("--runtime-asset-closure-manifest", type=Path, required=True)
+    create.add_argument("--runtime-asset-dvc-workspace", type=Path, required=True)
+    create.add_argument("--runtime-asset-data-dir", type=Path, required=True)
+    create.add_argument("--runtime-asset-map-id", type=int, required=True)
     return result
 
 

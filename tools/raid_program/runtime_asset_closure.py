@@ -14,6 +14,14 @@ from tools.raid_program.runtime_asset_safe_io import (
     require_directory_no_follow,
     walk_inventory_no_follow,
 )
+from tools.raid_program.runtime_asset_closure_binding import (
+    INPUT_MANIFEST_SCHEMA,
+    RuntimeAssetClosureBindingError,
+    _materialize_input_manifest,
+    _require_input_only_manifest,
+    argument_values_from_namespace,
+    build_binding,
+)
 
 
 ROOT_KEYS = (
@@ -22,6 +30,8 @@ ROOT_KEYS = (
     "dvc-workspace",
     "sealed-bundle",
 )
+INPUT_ROOT_KEYS = ROOT_KEYS[:-1]
+HISTORICAL_MANIFEST_SCHEMA = "cata_runtime_asset_closure_manifest_v1"
 ISSUE_KINDS = (
     "manifest_invalid",
     "audit_invalid",
@@ -151,6 +161,31 @@ def _strict_json_bytes(payload: bytes, *, schema: str) -> dict[str, Any]:
         raise ManifestError(str(error)) from error
     if not isinstance(value, dict) or value.get("schema") != schema:
         raise ManifestError(f"schema_invalid:{schema}")
+    return value
+
+
+def _runtime_manifest_bytes(
+    payload: bytes, *, input_only_required: bool,
+) -> dict[str, Any]:
+    try:
+        value = json.loads(
+            payload.decode("utf-8"), object_pairs_hook=_strict_object,
+        )
+    except (UnicodeError, json.JSONDecodeError, DuplicateKeyError) as error:
+        raise ManifestError(str(error)) from error
+    if not isinstance(value, dict):
+        raise ManifestError("runtime_asset_manifest_not_object")
+    schema = value.get("schema")
+    allowed = {INPUT_MANIFEST_SCHEMA} if input_only_required else {
+        HISTORICAL_MANIFEST_SCHEMA, INPUT_MANIFEST_SCHEMA,
+    }
+    if schema not in allowed:
+        raise ManifestError("runtime_asset_manifest_schema_invalid")
+    if schema == INPUT_MANIFEST_SCHEMA and "asset_class_source" not in value:
+        try:
+            _require_input_only_manifest(value)
+        except RuntimeAssetClosureBindingError as error:
+            raise ManifestError(str(error)) from error
     return value
 
 
@@ -853,17 +888,24 @@ def verify_runtime_asset_closure(
     *, manifest_path: Path, source_checkout: Path, configured_data_dir: Path | None,
     dvc_workspace: Path, sealed_bundle: Path, worldserver_config: Path,
     scenario_map_id: int, previous_snapshot: Mapping[str, Any] | None = None,
+    defer_sealed_bundle: bool = False,
 ) -> dict[str, Any]:
     manifest_path = _normal_path(manifest_path)
     manifest_sha256: str | None = None
     try:
         manifest_bytes, _ = _read_regular_no_follow(manifest_path)
         manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
-        manifest = _strict_json_bytes(
-            manifest_bytes, schema="cata_runtime_asset_closure_manifest_v1",
+        manifest = _runtime_manifest_bytes(
+            manifest_bytes, input_only_required=defer_sealed_bundle,
         )
+        if manifest.get("schema") == INPUT_MANIFEST_SCHEMA:
+            manifest = _materialize_input_manifest(
+                manifest, dvc_workspace=_normal_path(dvc_workspace),
+            )
         derived_data_dir = data_dir_from_worldserver_config(worldserver_config)
-    except (ManifestError, SafePathError, OSError) as error:
+    except (
+        ManifestError, RuntimeAssetClosureBindingError, SafePathError, OSError,
+    ) as error:
         return {
             "schema": "cata_runtime_asset_closure_receipt_v1",
             "complete": False,
@@ -887,7 +929,8 @@ def verify_runtime_asset_closure(
             "kind": "root_mismatch", "root": "configured-DataDir",
             "expected": str(derived_data_dir), "observed": str(supplied_data_dir),
         })
-    for key in ROOT_KEYS:
+    required_roots = INPUT_ROOT_KEYS if defer_sealed_bundle else ROOT_KEYS
+    for key in required_roots:
         try:
             require_directory_no_follow(roots[key])
         except SafePathError as error:
@@ -997,6 +1040,10 @@ def verify_runtime_asset_closure(
             "matched": supplied_data_dir == derived_data_dir,
         },
         "scenario_map_id": scenario_map_id,
+        "verification_scope": (
+            "runtime_inputs_prebuild"
+            if defer_sealed_bundle else "runtime_closure_consumption"
+        ),
         "asset_classes": class_results,
         "native_extraction_provenance": provenance,
         "issues": issues,
@@ -1004,6 +1051,27 @@ def verify_runtime_asset_closure(
         "snapshot_sha256": canonical_sha256(snapshot),
         "snapshot": snapshot,
     }
+
+
+def verify_runtime_asset_inputs(
+    *, manifest_path: Path, source_checkout: Path,
+    configured_data_dir: Path | None, dvc_workspace: Path,
+    sealed_bundle: Path, worldserver_config: Path, scenario_map_id: int,
+    previous_snapshot: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Verify every pre-existing runtime input while deferring bundle output."""
+
+    return verify_runtime_asset_closure(
+        manifest_path=manifest_path,
+        source_checkout=source_checkout,
+        configured_data_dir=configured_data_dir,
+        dvc_workspace=dvc_workspace,
+        sealed_bundle=sealed_bundle,
+        worldserver_config=worldserver_config,
+        scenario_map_id=scenario_map_id,
+        previous_snapshot=previous_snapshot,
+        defer_sealed_bundle=True,
+    )
 
 
 def require_runtime_asset_closure(**kwargs: Any) -> dict[str, Any]:
@@ -1025,29 +1093,39 @@ def add_runtime_asset_closure_arguments(parser: argparse.ArgumentParser) -> None
 
 def enforce_runtime_asset_closure_from_args(
     args: argparse.Namespace, *, worldserver_config: Path,
+    exemption: str | None = None,
 ) -> dict[str, Any]:
-    manifest = getattr(args, "runtime_asset_closure_manifest", None)
-    values = {
-        "source_checkout": getattr(args, "runtime_asset_source_checkout", None),
-        "dvc_workspace": getattr(args, "runtime_asset_dvc_workspace", None),
-        "sealed_bundle": getattr(args, "runtime_asset_bundle", None),
-        "scenario_map_id": getattr(args, "runtime_asset_map_id", None),
-    }
-    supplied = manifest is not None or any(value is not None for value in values.values())
-    if not supplied:
-        return {"required": False, "status": "runtime_asset_closure_not_requested"}
-    missing = [name for name, value in {"manifest": manifest, **values}.items() if value is None]
-    if missing:
-        raise SystemExit("runtime_asset_closure_incomplete:root_arguments_missing:" + ",".join(missing))
-    return require_runtime_asset_closure(
-        manifest_path=manifest,
-        source_checkout=values["source_checkout"],
-        configured_data_dir=getattr(args, "runtime_asset_data_dir", None),
-        dvc_workspace=values["dvc_workspace"],
-        sealed_bundle=values["sealed_bundle"],
+    try:
+        values = argument_values_from_namespace(args, required=exemption is None)
+    except RuntimeAssetClosureBindingError as error:
+        raise SystemExit(f"runtime_asset_closure_incomplete:{error}") from error
+    if values is None:
+        if exemption != "input_log_reparse":
+            raise SystemExit("runtime_asset_closure_incomplete:exemption_invalid")
+        return {
+            "required": False,
+            "status": "runtime_asset_closure_exempt",
+            "exemption": exemption,
+        }
+    receipt = require_runtime_asset_closure(
+        manifest_path=values["runtime_asset_closure_manifest"],
+        source_checkout=values["runtime_asset_source_checkout"],
+        configured_data_dir=values["runtime_asset_data_dir"],
+        dvc_workspace=values["runtime_asset_dvc_workspace"],
+        sealed_bundle=values["runtime_asset_bundle"],
         worldserver_config=worldserver_config,
-        scenario_map_id=values["scenario_map_id"],
+        scenario_map_id=values["runtime_asset_map_id"],
     )
+    receipt["argument_binding"] = build_binding(
+        manifest_path=values["runtime_asset_closure_manifest"],
+        source_checkout=values["runtime_asset_source_checkout"],
+        configured_data_dir=values["runtime_asset_data_dir"],
+        dvc_workspace=values["runtime_asset_dvc_workspace"],
+        sealed_bundle=values["runtime_asset_bundle"],
+        worldserver_config=worldserver_config,
+        scenario_map_id=values["runtime_asset_map_id"],
+    )
+    return receipt
 
 
 def _write_json(path: Path, value: Mapping[str, Any]) -> None:

@@ -15,6 +15,15 @@ from .common import write_json
 from .live_validation_session import canonical_sha256
 from .phase8_calibration_adapter import DEFAULT_TARGETS
 from .phase8_evidence_identity import validate_manifest as validate_evidence_manifest
+from tools.raid_program.runtime_asset_closure import (
+    add_runtime_asset_closure_arguments,
+)
+from tools.raid_program.runtime_asset_closure_binding import (
+    RuntimeAssetClosureBindingError,
+    argument_argv,
+    argument_argv_from_namespace,
+    argument_values_from_namespace,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -344,6 +353,9 @@ def child_command(args: argparse.Namespace, attempt: Mapping[str, Any], attempt_
         )
     if args.retain_published_batch:
         command.append("--retain-published-batch")
+    closure_values = argument_values_from_namespace(args, required=False)
+    if closure_values is not None:
+        command.extend(argument_argv(closure_values))
     return command
 
 
@@ -366,7 +378,13 @@ def main() -> int:
     parser.add_argument("--retain-published-batch", action="store_true")
     parser.add_argument("--limit", type=int, default=0, help="Run at most this many pending attempts; zero runs all.")
     parser.add_argument("--dry-run", action="store_true")
+    add_runtime_asset_closure_arguments(parser)
     args = parser.parse_args()
+
+    try:
+        argument_argv_from_namespace(args)
+    except RuntimeAssetClosureBindingError as exc:
+        raise SystemExit(f"runtime_asset_closure_incomplete:{exc}") from exc
 
     if args.seeds != [1, 2, 3]:
         raise SystemExit("Phase 8 requires the canonical ordered seeds: 1 2 3")

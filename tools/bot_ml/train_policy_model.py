@@ -9,17 +9,22 @@ from typing import Any
 from dvclive import Live
 
 try:
-    from .common import DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, git_commit, numeric_features, read_jsonl, split_by_run_ids, stable_hash, write_json
+    from .common import decision_group_key, DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, git_commit, numeric_features, read_jsonl, split_by_run_ids, stable_hash, write_json
     from .model_artifacts import BINARY_LABELS, RANKING_LABELS, feature_vector
 except ImportError:
-    from common import DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, git_commit, numeric_features, read_jsonl, split_by_run_ids, stable_hash, write_json
+    from common import decision_group_key, DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, git_commit, numeric_features, read_jsonl, split_by_run_ids, stable_hash, write_json
     from model_artifacts import BINARY_LABELS, RANKING_LABELS, feature_vector
 
 
-def fit_baseline(rows: list[dict[str, Any]], features: list[str]) -> dict[str, Any]:
+def observed_training_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     train = [row for row in rows if row.get("split") != "eval" and int(row.get("label_observed", 1) or 0)]
     if not train:
-        train = [row for row in rows if int(row.get("label_observed", 1) or 0)] or rows
+        raise ValueError("decision dataset has no observed training labels; evaluation rows cannot be used for fitting")
+    return train
+
+
+def fit_baseline(rows: list[dict[str, Any]], features: list[str]) -> dict[str, Any]:
+    train = observed_training_rows(rows)
     means = {label: sum(float(row.get(label, 0.0)) for row in train) / max(1, len(train)) for label in LABELS}
     weights = {label: {feature: 0.0 for feature in features[:256]} for label in LABELS}
     row_features = [numeric_features(row) for row in train]
@@ -105,7 +110,7 @@ def booster_to_portable_trees(booster: Any, objective: str, features: list[str])
 
 def teacher_choice_training_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     imitable_decisions = {
-        int(row.get("decision_id") or 0)
+        decision_group_key(row)
         for row in rows
         if row.get("split") != "eval" and int(row.get("is_chosen") or 0) and int(row.get("imitate_teacher") or 0)
     }
@@ -113,7 +118,7 @@ def teacher_choice_training_rows(rows: list[dict[str, Any]]) -> list[dict[str, A
         row
         for row in rows
         if row.get("split") != "eval"
-        and int(row.get("decision_id") or 0) in imitable_decisions
+        and decision_group_key(row) in imitable_decisions
         and int(row.get("candidate_allowed", 1) or 0)
     ]
 
@@ -165,9 +170,7 @@ def compact_fallback_payload(model_version: str, backend: str, features: list[st
 def train_xgboost(rows: list[dict[str, Any]], features: list[str], args: argparse.Namespace, model_dir: Path) -> tuple[str, dict[str, str], dict[str, Any], dict[str, list[dict[str, Any]]]]:
     import xgboost as xgb
 
-    train = [row for row in rows if row.get("split") != "eval" and int(row.get("label_observed", 1) or 0)]
-    if not train:
-        train = [row for row in rows if int(row.get("label_observed", 1) or 0)] or rows
+    train = observed_training_rows(rows)
     x_train = [feature_vector(row, features) for row in train]
     paths: dict[str, str] = {}
     portable_trees: dict[str, Any] = {}
@@ -269,10 +272,19 @@ def main() -> int:
         raise SystemExit("decision dataset has no observed labels")
 
     train_ids, eval_ids = split_ids_from_rows(rows)
+    if train_ids & eval_ids:
+        raise SystemExit("training and evaluation run IDs overlap")
+    for row in rows:
+        if row.get("split") not in {"train", "eval"}:
+            row["split"] = "eval" if int(row.get("run_id") or 0) in eval_ids else "train"
+    try:
+        training_rows = observed_training_rows(rows)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     model_version = args.model_version or f"policy_{git_commit()[:12] or 'local'}"
     model_root = args.model_dir / model_version if args.model_dir.name != model_version else args.model_dir
     model_root.mkdir(parents=True, exist_ok=True)
-    features = sorted({key for row in observed_rows for key in numeric_features(row)})[:512]
+    features = sorted({key for row in training_rows for key in numeric_features(row)})[:512]
     fallback = fit_baseline(rows, features)
 
     backend = args.backend

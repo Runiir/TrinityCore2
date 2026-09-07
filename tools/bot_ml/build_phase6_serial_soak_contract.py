@@ -9,12 +9,19 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from .batch_evidence_lifecycle import publish_batch
 from .common import write_json
 from .live_validation_session import canonical_sha256, sha256_file
 from .run_live_bot_validation import compact_published_report
+from tools.raid_program.runtime_asset_closure import (
+    add_runtime_asset_closure_arguments,
+)
+from tools.raid_program.runtime_asset_closure_binding import (
+    RuntimeAssetClosureBindingError,
+    argument_argv_from_namespace,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -135,6 +142,7 @@ def _run_attempt(
     timeout_sec: int,
     no_progress_window_sec: int,
     heartbeat_sec: int,
+    runtime_asset_closure_argv: Sequence[str],
 ) -> None:
     command = [
         sys.executable,
@@ -168,6 +176,7 @@ def _run_attempt(
         "100000",
         "--publish-batch",
     ]
+    command.extend(str(value) for value in runtime_asset_closure_argv)
     completed = subprocess.run(
         command,
         cwd=REPO_ROOT,
@@ -301,6 +310,12 @@ def _live_contract(attempt_root: Path, minimum_soak_sec: int) -> dict[str, Any]:
 
 
 def build_contract(args: argparse.Namespace) -> dict[str, Any]:
+    runtime_asset_closure_argv: list[str] = []
+    if args.run_soak:
+        try:
+            runtime_asset_closure_argv = argument_argv_from_namespace(args)
+        except RuntimeAssetClosureBindingError as exc:
+            raise SystemExit(f"runtime_asset_closure_incomplete:{exc}") from exc
     attempt_root = args.attempt_root.resolve()
     attempt_root.mkdir(parents=True, exist_ok=True)
     if args.run_soak:
@@ -322,6 +337,7 @@ def build_contract(args: argparse.Namespace) -> dict[str, Any]:
                 timeout_sec=args.attempt_timeout_sec,
                 no_progress_window_sec=args.no_progress_window_sec,
                 heartbeat_sec=args.heartbeat_sec,
+                runtime_asset_closure_argv=runtime_asset_closure_argv,
             )
     static = _static_contract()
     live = _live_contract(attempt_root, args.minimum_soak_sec)
@@ -365,7 +381,13 @@ def main() -> int:
     parser.add_argument("--profile", default="stonecore_5n")
     parser.add_argument("--scenario-id", default="stonecore_5n")
     parser.add_argument("--session-environment", default="phase6-serial-soak")
+    add_runtime_asset_closure_arguments(parser)
     args = parser.parse_args()
+    if args.run_soak:
+        try:
+            argument_argv_from_namespace(args)
+        except RuntimeAssetClosureBindingError as exc:
+            raise SystemExit(f"runtime_asset_closure_incomplete:{exc}") from exc
     if args.attempt_count < 1:
         raise SystemExit("--attempt-count must be positive")
     if args.no_progress_window_sec >= args.attempt_timeout_sec:

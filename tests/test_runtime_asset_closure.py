@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -18,6 +19,8 @@ from tools.raid_program.runtime_asset_closure import (
     build_native_inventory_authority,
     produce_extraction_receipt,
     verify_runtime_asset_closure,
+    verify_runtime_asset_inputs,
+    enforce_runtime_asset_closure_from_args,
 )
 
 
@@ -220,6 +223,37 @@ def _verify(paths: dict[str, Path], **overrides):
     }
     arguments.update(overrides)
     return verify_runtime_asset_closure(**arguments)
+
+
+def _input_fixture(tmp_path: Path) -> dict[str, Path]:
+    paths = _fixture(tmp_path)
+    manifest = json.loads(paths["manifest"].read_text(encoding="utf-8"))
+    manifest["schema"] = "cata_runtime_asset_input_closure_manifest_v1"
+    manifest["asset_classes"] = [
+        row for row in manifest["asset_classes"]
+        if row["root"] != "sealed-bundle"
+    ]
+    _seal_authorities(paths, manifest)
+    _write(
+        paths["manifest"],
+        (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode(),
+    )
+    bundle_member = paths["bundle"] / "bundle.json"
+    bundle_member.unlink()
+    paths["bundle"].rmdir()
+    return paths
+
+
+def _verify_inputs(paths: dict[str, Path]) -> dict[str, object]:
+    return verify_runtime_asset_inputs(
+        manifest_path=paths["manifest"],
+        source_checkout=paths["source"],
+        configured_data_dir=paths["data"],
+        dvc_workspace=paths["dvc"],
+        sealed_bundle=paths["bundle"],
+        worldserver_config=paths["config"],
+        scenario_map_id=100,
+    )
 
 
 def _closure_args(paths: dict[str, Path]) -> list[str]:
@@ -562,6 +596,64 @@ def test_production_manifest_reports_current_full_closure_once():
     assert set(fixture["present_classes"]) <= passed
 
 
+def test_input_preflight_defers_only_bundle_and_full_consumption_succeeds(
+    tmp_path: Path,
+) -> None:
+    paths = _input_fixture(tmp_path / "input-closure")
+    preflight = _verify_inputs(paths)
+    assert preflight["complete"] is True
+    assert preflight["verification_scope"] == "runtime_inputs_prebuild"
+    assert not paths["bundle"].exists()
+
+    paths["bundle"].mkdir()
+    consumed = _verify(paths)
+    assert consumed["complete"] is True
+    assert consumed["verification_scope"] == "runtime_closure_consumption"
+
+
+def test_input_preflight_rejects_missing_circular_and_forged_inputs(
+    tmp_path: Path,
+) -> None:
+    missing = _input_fixture(tmp_path / "missing")
+    (missing["source"] / "offline/input.dbc").unlink()
+    missing_receipt = _verify_inputs(missing)
+    assert missing_receipt["complete"] is False
+    assert missing_receipt["issue_counts"]["missing"] == 1
+
+    circular = _input_fixture(tmp_path / "circular")
+    circular_manifest = json.loads(
+        circular["manifest"].read_text(encoding="utf-8")
+    )
+    circular_manifest["asset_classes"].append(
+        _class(
+            "generated_bundle", "sealed-bundle", "complete-directory",
+            path=".", expected_files=[], expected_inventory=_inventory([]),
+        )
+    )
+    _write(
+        circular["manifest"],
+        (json.dumps(circular_manifest, indent=2, sort_keys=True) + "\n").encode(),
+    )
+    circular_receipt = _verify_inputs(circular)
+    assert circular_receipt["complete"] is False
+    assert circular_receipt["issue_counts"] == {"manifest_invalid": 1}
+    assert "input_manifest_output_root_forbidden" in circular_receipt["issues"][0][
+        "detail"
+    ]
+
+    forged = _input_fixture(tmp_path / "forged")
+    authority = forged["dvc"] / "audit-authority.json"
+    forged_value = json.loads(authority.read_text(encoding="utf-8"))
+    forged_value["classes"][0]["count"] += 1
+    _write(
+        authority,
+        (json.dumps(forged_value, indent=2, sort_keys=True) + "\n").encode(),
+    )
+    forged_receipt = _verify_inputs(forged)
+    assert forged_receipt["complete"] is False
+    assert forged_receipt["issue_counts"] == {"audit_invalid": 1}
+
+
 def test_capture_setup_gate_precedes_nav_probe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     paths = _fixture(tmp_path / "closure")
     (paths["source"] / "offline/input.dbc").unlink()
@@ -613,5 +705,181 @@ def test_live_validator_gate_precedes_output_provisioning_and_launch(
         "--apply-validation-provisioning", *_closure_args(paths),
     ])
     with pytest.raises(SystemExit, match="runtime_asset_closure_incomplete"):
+        live_validation.main()
+    assert not output.exists()
+
+
+def test_total_omission_is_rejected_and_input_log_exemption_is_explicit(
+    tmp_path: Path,
+) -> None:
+    config = tmp_path / "worldserver.conf"
+    _write(config, b'DataDir = "/unread"\n')
+    empty = argparse.Namespace()
+    with pytest.raises(SystemExit, match="runtime_asset_closure_not_supplied"):
+        enforce_runtime_asset_closure_from_args(
+            empty, worldserver_config=config,
+        )
+    assert enforce_runtime_asset_closure_from_args(
+        empty,
+        worldserver_config=config,
+        exemption="input_log_reparse",
+    ) == {
+        "required": False,
+        "status": "runtime_asset_closure_exempt",
+        "exemption": "input_log_reparse",
+    }
+    partial = argparse.Namespace(runtime_asset_map_id=100)
+    with pytest.raises(SystemExit, match="runtime_asset_closure_arguments_missing"):
+        enforce_runtime_asset_closure_from_args(
+            partial,
+            worldserver_config=config,
+            exemption="input_log_reparse",
+        )
+
+
+def test_capture_setup_rejects_omission_before_nav_or_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    paths = _fixture(tmp_path / "closure")
+    binary = tmp_path / "worldserver"
+    build_receipt = tmp_path / "build.json"
+    _write(binary)
+    _write(build_receipt)
+    monkeypatch.setattr(
+        capture_setup,
+        "_drudge_navmesh_probe",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("nav probe reached")),
+    )
+    output = tmp_path / "capture.json"
+    with pytest.raises(SystemExit, match="runtime_asset_closure_not_supplied"):
+        capture_setup.prepare_capture_setup([
+            "--binary", str(binary),
+            "--config", str(paths["config"]),
+            "--output", str(output),
+            "--build-receipt", str(build_receipt),
+            "--worktree", str(paths["source"]),
+        ], root=tmp_path)
+    assert not output.exists()
+
+
+def test_readback_rejects_omission_before_contract_database_or_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    paths = _fixture(tmp_path / "closure")
+    monkeypatch.setattr(
+        readback,
+        "load_materialized_readback_contract",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("contract reached")),
+    )
+    output = tmp_path / "readback.json"
+    monkeypatch.setattr(sys, "argv", [
+        "capture-readback",
+        "--worldserver-conf", str(paths["config"]),
+        "--output", str(output),
+    ])
+    with pytest.raises(SystemExit, match="runtime_asset_closure_not_supplied"):
+        readback.main()
+    assert not output.exists()
+
+
+def test_live_validator_rejects_omission_before_provisioning_or_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    paths = _fixture(tmp_path / "closure")
+    monkeypatch.setattr(
+        live_validation,
+        "prepare_validation_provisioning",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("provisioning reached")
+        ),
+    )
+    output = tmp_path / "live"
+    monkeypatch.setattr(sys, "argv", [
+        "bot-live-validate",
+        "--config", str(paths["config"]),
+        "--output-dir", str(output),
+        "--prepare-only",
+        "--apply-validation-provisioning",
+    ])
+    with pytest.raises(SystemExit, match="runtime_asset_closure_not_supplied"):
+        live_validation.main()
+    assert not output.exists()
+
+
+def test_route_sequence_child_preserves_the_exact_parent_closure_tuple(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path / "closure")
+    args = argparse.Namespace(
+        validation_scenario_id="fixture",
+        worldserver=tmp_path / "worldserver",
+        config=paths["config"],
+        duration_policy="completion-watchdog",
+        timeout_sec=900,
+        heartbeat_sec=30,
+        no_progress_window_sec=180,
+        max_repeated_decision_count=20,
+        max_death_loop_count=3,
+        selector="all",
+        trace_limit=128,
+        transport="process",
+        cohort_id="fixture",
+        session_environment="fixture",
+        session_profile="fixture",
+        session_transition_timeout_sec=180,
+        validation_scenario_dir=tmp_path,
+        no_start=False,
+        force_start_command=False,
+        stop=False,
+        preserve_worldserver=False,
+        session_runtime_dir=None,
+        combat_calibration=False,
+        soap_user=None,
+        soap_password=None,
+        soap_url=None,
+        scenario_report_dir=None,
+        apply_validation_provisioning=False,
+        reset_bot_pool=False,
+        publish_batch=False,
+        retain_published_batch=False,
+        reload_rotation_profiles=False,
+        bot_pool_tag=[],
+        keep_bot_pool_position=False,
+        keep_bot_pool_quests=False,
+        keep_bot_pool_memory=False,
+        runtime_asset_closure_manifest=paths["manifest"],
+        runtime_asset_source_checkout=paths["source"],
+        runtime_asset_dvc_workspace=paths["dvc"],
+        runtime_asset_bundle=paths["bundle"],
+        runtime_asset_data_dir=paths["data"],
+        runtime_asset_map_id=100,
+    )
+    route = {
+        "step": 1,
+        "segment_id": "fixture-segment",
+        "route_node_id": "fixture.node",
+        "label": "Fixture",
+        "kind": "boss",
+        "mechanic_profile": "fixture",
+    }
+    command = live_validation.route_sequence_child_command(
+        args, route, tmp_path / "child", first_route=True,
+    )
+    assert command[-12:] == _closure_args(paths)
+
+
+@pytest.mark.parametrize('flag', [
+    '--reset-bot-pool', '--apply-validation-provisioning',
+    '--calibration-self-provided-baseline', '--prepare-only', '--publish-batch',
+])
+def test_input_log_cannot_bypass_closure_for_mutating_preparation(tmp_path, monkeypatch, flag):
+    def forbidden(*args, **kwargs):
+        pytest.fail('offline log parsing reached live preparation')
+    monkeypatch.setattr(live_validation, 'prepare_validation_provisioning', forbidden)
+    monkeypatch.setattr(live_validation, 'prepare_bot_pool_reset', forbidden)
+    output = tmp_path / 'output'
+    monkeypatch.setattr(sys, 'argv', ['bot-live-validate', '--input-log', str(tmp_path / 'log'),
+                                    '--output-dir', str(output), flag])
+    with pytest.raises(SystemExit, match='--input-log is read-only'):
         live_validation.main()
     assert not output.exists()
