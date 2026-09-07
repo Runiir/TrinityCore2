@@ -6,6 +6,7 @@ of callback/stop isolation. Those require subsequent attributed live outcomes.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Callable
 from typing import Any
 
 from tools.bot_ml.run_live_bot_validation import CohortCommandExecutor, parse_json_objects
@@ -26,13 +27,21 @@ class InstanceExpectation:
             raise ValueError("invalid expected native instance identity")
 
 
-def observe(executor: CohortCommandExecutor) -> dict[str, Any]:
+ObservationRecorder = Callable[[str, str, int, bool], None]
+
+
+def observe(
+    executor: CohortCommandExecutor,
+    recorder: ObservationRecorder | None = None,
+) -> dict[str, Any]:
     result = {}
     for name, command in (
         ("status", executor.status_command),
         ("diagnosis", f".botauto diagnose {executor.cohort_id} all"),
     ):
         output, code, timed_out = executor.run(command)
+        if recorder is not None:
+            recorder(command, output, code, timed_out)
         action = "botauto_status" if name == "status" else "botauto_diagnose"
         rows = [row for row in parse_json_objects(output) if row.get("action") == action]
         if code or timed_out or len(rows) != 1:
@@ -100,6 +109,7 @@ def validate_instance(observation: dict[str, Any], expected: InstanceExpectation
             "decisions": status.get("decisions"), "deaths": status.get("deaths"),
             "movement": [{"bot_guid": bot["identity"]["bot_guid"],
                           "native": bot["snapshot"].get("movement"),
+                          "planner": bot["snapshot"].get("movement_planner"),
                           "receipt": bot["snapshot"].get("movement_receipt_progress"),
                           "position": bot["snapshot"]["validation_cohort"].get("current_position")}
                          for bot in diagnosis["bots"]],

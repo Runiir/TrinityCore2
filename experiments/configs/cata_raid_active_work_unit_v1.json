@@ -8,7 +8,7 @@
   "architecture_scope": "Two independent native boss instances on one worldserver, before heroic-mode admission and boss/class repairs.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Native kernel independently approved; runtime input preflight and production DVC reconstruction passed. Prepare exact two-cohort live fixture, then full build and live isolation remain.",
+  "gate_state": "Native kernel, telemetry, concrete shared fixture and launch/driver repairs independently approved. Offline gates passed. Freeze preparation source, configure/build once, then bounded live isolation.",
   "first_broken_edge": {
     "id": "second_cohort_rejected_and_native_callbacks_use_global_scope",
     "stage": "native_cohort_admission_and_callback_attribution",
@@ -18,7 +18,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "abb1941ab9519307287cf7f3ec565262ff8bdc84bbab65b27c19913d34749e64"
+    "sha256": "1ba28e8b0464c1644ff6812a78aa3acf26a1e43639d2c5646e6d298593ffb0b9"
   },
   "scope_lock": {
     "objective": "Implement and verify two-cohort scheduling, explicit callback ownership and scoped cleanup before one live isolation canary.",
@@ -28,7 +28,11 @@
       "src/server/game/Bots/BotWorldPopulationMgrLifecycle.cpp",
       "src/server/game/Bots/BotWorldPopulationMgrCombat*",
       "tools/raid_program/shared_instance_observation.py",
-      "tools/bot_ml/run_live_bot_validation.py"
+      "tools/bot_ml/run_live_bot_validation.py",
+      "tools/raid_program/shared_instance_*.py",
+      "tools/raid_program/run_shared_instance_canary.py",
+      "tools/bot_ml/build_validation_provisioning.py",
+      "experiments/configs/cata_shared_instance_fixture_v1.json"
     ],
     "terminal_handoff": "A passing reviewed native kernel and real two-instance isolation proof, or a precise newly proven blocker. Do not classify storage fixtures as live isolation."
   },
@@ -47,7 +51,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Prepare and independently review concrete two-cohort live validation using the existing observation/command guards. Freeze the unused preparation checkout at the final reviewed commit and bind runtime configuration, exact rosters, distinct instances and watchdog. Build once, run Magmaw plus disjoint witness, verify both advance and stopping one preserves the witness, then publish/clean and proceed to generic 10H/25H profile admission.",
+  "next_action": "Freeze the unused preparation checkout at this reviewed source, derive shared config and recheck runtime inputs, configure/build through fast4_v2 queue, then run tools.raid_program.run_shared_instance_canary from frozen source. Publish/verify/clean the closed run; accept isolation or route its exact first-broken edge, then resume generic 10H/25H profile admission.",
   "queued_reference_issue": {
     "test": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
     "classification": "historical_fixture_source_freshness_mismatch",
@@ -81,6 +85,15 @@
     "reasoning": "high",
     "verdict": "approve",
     "independent_capacity_tests_passed": 56,
+    "live_verified": false
+  },
+  "shared_fixture_path": "experiments/configs/cata_shared_instance_fixture_v1.json",
+  "prelive_review": {
+    "model": "gpt-5.6-sol",
+    "reasoning": "high",
+    "verdict": "approve",
+    "combined_tests_passed": 108,
+    "existing_provisioning_tests_passed": 36,
     "live_verified": false
   }
 }

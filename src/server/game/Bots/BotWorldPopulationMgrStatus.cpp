@@ -228,7 +228,7 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
     json << "{\"ok\":true,\"action\":\"botauto_diagnose\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
          << "\",\"diagnosis_schema_version\":1,\"bots\":[";
     bool emitted = false;
-    for (WorldBotState& state : Party().Bots)
+    for (WorldBotState const& state : Party().Bots)
     {
         Player* bot = GetLoadedBot(state);
         if (!selector.empty() && selector != "all")
@@ -237,12 +237,6 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
                 continue;
             if (selector != std::to_string(state.Guid.GetCounter()) && selector != bot->GetName())
                 continue;
-        }
-
-        if (bot && !bot->IsInWorld() && Cohort().Config.ValidationRouteEnable)
-        {
-            state.LastDecisionResult = "loaded_bot_not_in_world";
-            state.LastDecisionReason = "validation_same_instance_reattach_failed";
         }
 
         if (emitted)
@@ -491,8 +485,9 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
 
     std::ostringstream json;
     json << std::fixed << std::setprecision(3)
-         << "{\"ok\":true,\"action\":\"botauto_combatlog\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
-         << "\",\"combat_log_schema_version\":2"
+         << "{\"ok\":true,\"action\":\"botauto_combatlog\"";
+    AppendGenericRuntimeIdentityJson(json);
+    json << ",\"combat_log_schema_version\":2"
          << ",\"damage_attribution_schema\":\"originated_amount_v1\""
          << ",\"experiment_id\":" << Cohort().ExperimentId
          << ",\"run_id\":" << Cohort().RunId

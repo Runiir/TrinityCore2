@@ -1,0 +1,50 @@
+{
+  "boss_completion_eligible": false,
+  "fixture_id": "bwd_magmaw_omnotron_shared_isolation_v1",
+  "inputs": {
+    "dataset/bot_runtime_profiles/profiles.json": "d774828316837aa5c67095d3615db90341799cb1de668f1f607d105493027647",
+    "dataset/validation_gear_profiles/profiles.json": "0d8919d568eebf364557a78cfaca353c95b3ec08de6421670f277348d78c3d5a",
+    "dataset/validation_scenarios/validation_routes.jsonl": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5",
+    "dataset/validation_scenarios/validation_scenarios.jsonl": "84b5b52c137ca4b90f98c7dd13a50dba4f75ff049f14b5b4ce0a18866aad3d5d",
+    "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json": "19cff150d9c1e4f27f832936619090f4f5b330bce76b15a81f6bb1f75ac80c6d",
+    "experiments/configs/cata_raid_tracked_base_runtime_config_contract_v1.json": "d11a60417f3424f2a5ab86f916f5f5a0f3b64d64ba46bec2bf091f795b8a8916",
+    "experiments/configs/runtime_asset_input_closure_manifest_v1.json": "ece9fd1784638946bfc324832dc857560a0633c4f27eb82fb4f66515394892a7",
+    "experiments/configs/validation_provisioning_cata_001.json": "8da89f5f13de5c15339d2c6e6c73aa33959ff4b44f5df2311bf0b536ca427f85"
+  },
+  "map_update_threads": 1,
+  "maximum_active_cohorts": 2,
+  "purpose": "native_cohort_isolation",
+  "required_proof": [
+    "same_server_epoch",
+    "different_native_instances_and_groups",
+    "disjoint_frozen_rosters_and_leases",
+    "both_cohorts_advance_native_outcomes_while_active",
+    "fresh_post_stop_witness_native_progress",
+    "witness_movement_records_preserved",
+    "owned_cleanup_verified"
+  ],
+  "schema": "cata_shared_instance_fixture_v1",
+  "start_order": [
+    "witness",
+    "subject"
+  ],
+  "stop_order": [
+    "subject",
+    "witness"
+  ],
+  "subject_shard_id": "bwd_magmaw_diagnostic_10n",
+  "training_eligible": false,
+  "watchdog": {
+    "duration_policy": "completion-watchdog",
+    "emergency_timeout_sec": 900,
+    "heartbeat_sec": 5,
+    "max_death_loops": 3,
+    "max_repeated_decisions": 20,
+    "no_progress_window_sec": 90,
+    "transition_timeout_sec": 120
+  },
+  "witness_limitations": [
+    "Omnotron is an isolation/liveness witness; predecessor state and boss completion are not certified."
+  ],
+  "witness_shard_id": "bwd_omnotron_diagnostic_10n"
+}

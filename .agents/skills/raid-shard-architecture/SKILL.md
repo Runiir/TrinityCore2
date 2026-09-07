@@ -29,6 +29,25 @@ Require real disjoint groups, GUID leases, and native instance IDs, advancing
 updates and correctly attributed callbacks in both cohorts, followed by a
 one-cohort stop with the witness still advancing.
 
+The shared isolation canary is driven by
+`tools.raid_program.run_shared_instance_canary` and its tracked pair fixture.
+Run that coordinator from the frozen source checkout with its verified build
+receipt. It owns the attached server for the entire fixture; it shuts down only
+after addressed cleanup of the pair. Boss workers receive cohort executors,
+never that server-owner entry point. This diagnostic fixture is not a boss
+clear or a training-data admission.
+
+Do not run `run_reusable_validation_session` twice to create simultaneous
+cohorts: that runner deliberately enforces serial ownership. Use
+`shared_instance_validation` with `CohortCommandExecutor(exclusive=False)` under
+one server owner. For a selected pair, pass exact `scenario_ids` to provisioning
+instead of resetting unrelated validation pools. Preserve a fresh post-stop
+witness baseline; activity observed before the stop cannot prove continued
+activity afterward. Config, process and native epoch identity must all agree.
+When narrowing provisioning, keep the complete frozen layout available to the
+item allocator and scope deletion through selected character ownership. Merely
+filtering scenario rows leaves global item cleanup and reused GUID ranges unsafe.
+
 Bind every sealed launch contract to a retained clean source checkout whose
 HEAD and tree cannot advance during later authorization or evidence commits.
 Do not record the coordinator's mutable branch worktree as

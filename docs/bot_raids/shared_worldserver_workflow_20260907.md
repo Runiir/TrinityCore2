@@ -92,7 +92,56 @@ is superseded by the passing current input proof, not rewritten as success.
 
 ## Next bounded work
 
-Prepare the exact two-cohort live fixture before building. One coordinator owns
+The concrete pair is frozen in
+`experiments/configs/cata_shared_instance_fixture_v1.json`: Magmaw cohort
+`bwd_magmaw_diagnostic_10n` (GUIDs 30001–30010) and Omnotron witness
+`bwd_omnotron_diagnostic_10n` (GUIDs 30101–30110), both map 669, difficulty 0.
+The fixture proves isolation only. It cannot certify either boss, predecessor
+state, heroic progression, or training-data admission.
+
+The shared driver must prove advancing native outgoing outcomes and decisions
+in both instances while both are active, stop Magmaw, collect a fresh witness
+baseline after that stop, and then prove further witness outcomes with the same
+identity and retained movement evidence. It stops both addressed cohorts and
+verifies cleanup. Its successful observation ends as typed `interruption`, not
+an encounter clear.
+
+The coordinator entry point is `tools.raid_program.run_shared_instance_canary`.
+Run it from the frozen checkout with `--source`, the Git common `--repository`,
+the verified `--build-receipt`, and a new external `--output` directory. It
+derives the authenticated shared base config, verifies source/build/assets,
+provisions and reads back the exact pair under the lifecycle lock, starts an
+attached server, binds the responding native PID, drives the fixture, and closes
+the owned server. No SOAP credential or single-boss Chainwielder overlay is used.
+
+Preparation found and repaired another cross-cohort defect: provisioning a
+subset still deleted the entire validation item GUID range. Item cleanup now
+joins through selected character ownership, and allocation retains offsets from
+the full frozen layout. The regression compares selected item IDs with the full
+layout and exercises preservation of excluded inventory and item-instance rows.
+An older test explicitly required the destructive global-range deletion; that
+assertion now requires owned cleanup.
+
+Combat exports now carry the generic epoch/attempt/profile identity already
+present in status and trace. Diagnostic polling no longer overwrites last real
+decision history for detached bots. Independent Sol static review approved
+these native changes; compile/link and live outcome checks remain necessary.
+
+The final independent Sol review approved the repaired driver and launch
+helpers. The combined shared-instance, provisioning/readback and transport
+suite passed 108 tests; the focused existing provisioning suite passed 36.
+These include real-process executable replacement and SQL cleanup regressions,
+but the two-cohort protocol fixtures are synthetic and do not certify live
+isolation. A read-only database preflight found all 385 planned item IDs owned
+by the selected cohort names, with no foreign or orphan collision.
+
+The driver rejects reused cohort identities and ambiguous create ownership,
+uses independent unfulfilled-cohort progress budgets, reconciles every visible
+new combat suffix with outgoing aggregates, and anchors actual witness movement
+receipts across the stop. The narrow combat reducer was implemented by a
+Luna max worker and included in independent Sol review.
+
+One coordinator owns
 the shared binary, configuration, provisioning, console and server lifecycle.
 Workers receive addressed cohort access only. Individual interruption must stop
 that cohort and preserve the shared server and every other active instance.

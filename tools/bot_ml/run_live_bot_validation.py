@@ -1340,6 +1340,7 @@ def prepare_validation_provisioning(
     worldserver_conf: Path,
     bwd_diagnostic_shard_fixture: Path = DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE,
     apply: bool = False,
+    scenario_ids: Sequence[str] = (),
 ) -> dict[str, Any]:
     # Keep live preparation on the exact merged config used by the checked-in
     # DVC provisioning pipeline.  Loading only the three canonical scenarios
@@ -1349,10 +1350,17 @@ def prepare_validation_provisioning(
         load_config_with_bwd_diagnostic_shards(config_path, bwd_diagnostic_shard_fixture),
         load_gear_profiles(gear_profiles_path),
     )
+    account_config = config
+    if scenario_ids:
+        requested = set(scenario_ids)
+        selected = [row for row in config["scenarios"] if row["id"] in requested]
+        if len(selected) != len(requested) or len(requested) != len(scenario_ids):
+            raise ValueError("provisioning scenario selection is missing or duplicated")
+        account_config = {**config, "scenarios": selected}
     auth_url = database_url_from_worldserver_conf(worldserver_conf, "LoginDatabaseInfo")
     character_url = database_url_from_worldserver_conf(worldserver_conf, "CharacterDatabaseInfo")
-    account_sql = qualify_sql_schema(build_account_insert_sql(config), "auth", database_name(auth_url))
-    character_sql = qualify_sql_schema(build_character_insert_sql(config), "characters", database_name(character_url))
+    account_sql = qualify_sql_schema(build_account_insert_sql(account_config), "auth", database_name(auth_url))
+    character_sql = qualify_sql_schema(build_character_insert_sql(config, scenario_ids=scenario_ids), "characters", database_name(character_url))
     provision_dir = output_dir / "validation_provisioning_apply"
     provision_dir.mkdir(parents=True, exist_ok=True)
     account_path = provision_dir / "provision_accounts.sql"
@@ -1363,6 +1371,7 @@ def prepare_validation_provisioning(
     report: dict[str, Any] = {
         "schema": "bot_live_validation_provisioning_apply_v1",
         "applied": apply,
+        "scenario_ids": [row["id"] for row in account_config["scenarios"]],
         "config": str(config_path),
         "bwd_diagnostic_shard_fixture": str(bwd_diagnostic_shard_fixture),
         "gear_profiles": str(gear_profiles_path),

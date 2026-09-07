@@ -10115,7 +10115,8 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert "SELECT c.`guid`, 64901, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
     assert "SELECT c.`guid`, 586, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
     assert "SELECT c.`guid`, 0, 251, 0, 0, 0, 0, 0, 264, 709, 0" in sql
-    assert "DELETE FROM `characters`.`item_instance` WHERE `guid` >= 9700000" in sql
+    assert "DELETE i FROM `characters`.`item_instance` i JOIN `characters`.`characters` c ON c.`guid` = i.`owner_guid`" in sql
+    assert "DELETE FROM `characters`.`item_instance` WHERE `guid` >= 9700000" not in sql
     assert manifest["schema"] == "bot_validation_provisioning_manifest_v1"
     # Canonical validation populations plus six isolated BWD boss shards.
     assert manifest["bot_count"] == 110

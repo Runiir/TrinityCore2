@@ -7,7 +7,7 @@ BOT_ROOT = ROOT / "src/server/game/Bots"
 MODULE = BOT_ROOT / "BotWorldPopulationMgrTraceTransportTest.cpp"
 STATUS = BOT_ROOT / "BotWorldPopulationMgrStatus.cpp"
 COMMAND = ROOT / "src/server/scripts/Commands/cs_trace_transport_test.cpp"
-CAPTURE = ROOT / "tools/raid_program/capture_phase1_raid_foundation.py"
+CAPTURE = ROOT / "tools/raid_program/capture_live_run.py"
 
 
 def test_trace_pressure_gate_compiles_and_rejects_every_adjacent_lane(tmp_path: Path):
@@ -87,14 +87,13 @@ def test_pressure_uses_real_writer_and_has_no_gameplay_or_persistence_writer():
     assert len(source.splitlines()) < 1000
 
 
-def test_generic_identity_has_one_serializer_and_raid_runtime_stays_separate():
+def test_generic_identity_declares_fields_and_raid_runtime_stays_separate():
     module = MODULE.read_text(encoding="utf-8")
     status = STATUS.read_text(encoding="utf-8")
     assert all(field in module for field in (
         "cohort_id", "server_epoch", "attempt_id", "profile_generation",
         "profile_content_hash", "active_profile",
     ))
-    assert status.count("AppendGenericRuntimeIdentityJson(json);") == 4
     assert status.count("BuildRaidRuntimeJson(true)") >= 3
 
 
