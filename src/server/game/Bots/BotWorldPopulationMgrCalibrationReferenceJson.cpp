@@ -105,8 +105,15 @@ void BotWorldPopulationMgr::AppendCalibrationReferenceConditionJson(
                      << ",\"active_samples\":"
                      << sampleCount(&CalibrationMetrics::ReferencePlayerAuraActiveSamples)
                      << ",\"inactive_samples\":"
-                     << sampleCount(&CalibrationMetrics::ReferencePlayerAuraInactiveSamples)
-                     << '}';
+                     << sampleCount(&CalibrationMetrics::ReferencePlayerAuraInactiveSamples);
+                if (spellId == 2895)
+                    json << ",\"own_totem_samples\":"
+                         << (metrics ? metrics->ReferenceWrathOfAirOwnTotemSamples : 0)
+                         << ",\"foreign_source_samples\":"
+                         << (metrics ? metrics->ReferenceWrathOfAirForeignSourceSamples : 0)
+                         << ",\"unknown_source_samples\":"
+                         << (metrics ? metrics->ReferenceWrathOfAirUnknownSourceSamples : 0);
+                json << '}';
             }
             json << "],\"target_auras\":[";
             std::set<uint32> observedTargetAuraSpellIds;

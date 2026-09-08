@@ -147,6 +147,7 @@ uint32 BotClassSpecActionProfileStore::ReactionTimeMsForSpec(char const* specTag
     std::string const canonicalSpecTag = BotClassSpecActionProfileDetail::CanonicalSpecTag(specTag ? specTag : "");
     return canonicalSpecTag == "affliction_warlock"
         || canonicalSpecTag == "shadow_priest"
+        || canonicalSpecTag == "elemental_shaman"
         || canonicalSpecTag == "balance_druid" ? 100 : 500;
 }
 

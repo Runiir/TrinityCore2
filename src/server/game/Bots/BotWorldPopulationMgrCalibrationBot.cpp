@@ -2,6 +2,7 @@
 #include "Bots/BotWorldPopulationMgrScopeGuard.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotCalibrationActionGroupCoverage.h"
+#include "Bots/BotCalibrationSummonObservation.h"
 #include "Bots/BotClassSpecActionProfile.h"
 
 #include "CellImpl.h"
@@ -392,8 +393,9 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     }
     if (scored)
         ++metrics.TickCount;
-    auto capturePetTimelineState = [bot](CalibrationMetrics::DecisionTimelineEntry& entry)
+    auto capturePetTimelineState = [bot](CalibrationMetrics::DecisionTimelineEntry& entry, Unit* offensiveTarget = nullptr)
     {
+        entry.SummonObservationJson = BotCalibrationSummonObservation::Capture(bot, offensiveTarget, entry.ElapsedMs);
         Pet* pet = bot ? bot->GetPet() : nullptr;
         if (!pet)
             return;
@@ -842,7 +844,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
                     entry.PetHealth = pet->GetHealth();
                     entry.PetMaxHealth = pet->GetMaxHealth();
                 }
-                capturePetTimelineState(entry);
+                capturePetTimelineState(entry, target);
                 entry.TargetDistance = distance;
                 entry.Alive = true;
                 metrics.DecisionTimeline.push_back(std::move(entry));
@@ -914,7 +916,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
                 entry.PetHealth = pet->GetHealth();
                 entry.PetMaxHealth = pet->GetMaxHealth();
             }
-            capturePetTimelineState(entry);
+            capturePetTimelineState(entry, target);
             entry.TargetDistance = bot->GetExactDist(target);
             entry.Alive = bot->IsAlive();
             metrics.DecisionTimeline.push_back(std::move(entry));

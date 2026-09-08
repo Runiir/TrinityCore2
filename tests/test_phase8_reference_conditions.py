@@ -2501,3 +2501,90 @@ def test_closed_elemental_unexpected_raid_auras_remain_independent_rejection():
         if row["spell_id"] in (8076, 8515):
             row.update(active_samples=0, inactive_samples=601)
     assert reference_condition_projections("elemental_shaman", target, **kwargs)[1] is True
+
+
+def _closed_elemental_816_inputs():
+    inputs = _closed_elemental_imbue_inputs()
+    frozen = json.loads((Path(__file__).parent / "fixtures" /
+                         "elemental_816_prepull_observation.json").read_text())
+    assert frozen["source_report_sha256"] == (
+        "58cb646b77f90390fe38832971b7919f3a8a0c6462ffe855cd28be675420ec71")
+    inputs["target_observation"].update(frozen["target"])
+    for key in ("scored_started_at_ms", "scored_ended_at_ms", "fixture_target"):
+        inputs["calibration"][key] = frozen[key]
+    for key in ("fixture_contract_sha256", "reference_gear_manifest_sha256"):
+        inputs["runtime_facts"][key] = frozen[key]
+    inputs["expected_manifest"]["requirements"] = [
+        frozen["prepull_requirement"] if row["id"] == "prepull_setup" else row
+        for row in inputs["expected_manifest"]["requirements"]]
+    return inputs
+
+
+def _own_wrath_air_inputs():
+    # Hypothetical output of the separately compiled native observer fixture,
+    # never a retrospective repair of the closed report's missing provenance.
+    inputs = _closed_elemental_816_inputs()
+    raw = inputs["target_observation"]["reference_condition_observation"]
+    row = next(row for row in raw["player_auras"] if row["spell_id"] == 2895)
+    row.update(own_totem_samples=589, foreign_source_samples=0, unknown_source_samples=0)
+    raw["unexpected_player_aura_active_samples"] = 0
+    return inputs
+
+
+def test_closed_816_missing_aura_source_provenance_stays_rejected():
+    result = derive_reference_condition_compatibility(**_closed_elemental_816_inputs())
+    assert result["checks"]["manifest_requirement:prepull_setup"] is True
+    assert result["checks"]["runtime_prepull_setup_receipts_valid"] is False
+    # Even a forged clean aggregate cannot replace per-aura owner evidence.
+    inputs = _closed_elemental_816_inputs()
+    inputs["target_observation"]["reference_condition_observation"]["unexpected_player_aura_active_samples"] = 0
+    assert derive_reference_condition_compatibility(**inputs)["checks"]["runtime_prepull_setup_receipts_valid"] is False
+
+
+def test_native_owned_wrath_air_flows_through_derive_with_frozen_reference_binding():
+    result = derive_reference_condition_compatibility(**_own_wrath_air_inputs())
+    assert result["checks"]["manifest_requirement:prepull_setup"] is True
+    assert result["checks"]["runtime_prepull_setup_receipts_valid"] is True
+
+
+def test_owned_wrath_air_rejects_incomplete_foreign_unknown_and_wrong_binding(monkeypatch):
+    import tools.bot_ml.phase8_reference_conditions as conditions
+
+    for key, values in (
+        ("own_totem_samples", [None, 588, 590, True, 589.0, "589", -1]),
+        ("foreign_source_samples", [None, 1, True, 0.0, "0", -1]),
+        ("unknown_source_samples", [None, 1, True, 0.0, "0", -1]),
+    ):
+        for value in values:
+            inputs = _own_wrath_air_inputs()
+            row = next(row for row in inputs["target_observation"]["reference_condition_observation"]["player_auras"] if row["spell_id"] == 2895)
+            if value is None:
+                row.pop(key)
+            else:
+                row[key] = value
+            assert derive_reference_condition_compatibility(**inputs)["checks"]["runtime_prepull_setup_receipts_valid"] is False, (key, value)
+    for class_id in (None, 8, True, 7.0, "7"):
+        inputs = _own_wrath_air_inputs()
+        inputs["target_observation"]["class_id"] = class_id
+        assert derive_reference_condition_compatibility(**inputs)["checks"]["runtime_prepull_setup_receipts_valid"] is False
+    inputs = _own_wrath_air_inputs()
+    inputs["target_spec"] = "enhancement_shaman"
+    assert derive_reference_condition_compatibility(**inputs)["checks"]["runtime_prepull_setup_receipts_valid"] is False
+    for spell_id in (8076, 8515):
+        inputs = _own_wrath_air_inputs()
+        row = next(row for row in inputs["target_observation"]["reference_condition_observation"]["player_auras"] if row["spell_id"] == spell_id)
+        row.update(active_samples=1, inactive_samples=600)
+        assert derive_reference_condition_compatibility(**inputs)["checks"]["runtime_prepull_setup_receipts_valid"] is False
+    binding = conditions.load_fixture_contract_binding("elemental_shaman")
+    for mutation in ("hash", "option", "native_option", "invalid"):
+        changed = copy.deepcopy(binding)
+        if mutation == "hash":
+            changed["content_sha256"] = "0" * 64
+        elif mutation == "option":
+            changed["projection"]["spec"]["simulator_options"]["class_options"]["totems"]["air"] = "windfury"
+        elif mutation == "native_option":
+            changed["projection"]["spec"]["native_request"]["player_spec"]["options"]["class_options"]["totems"]["air"] = 2
+        else:
+            changed["valid"] = False
+        monkeypatch.setattr(conditions, "load_fixture_contract_binding", lambda _spec: changed)
+        assert derive_reference_condition_compatibility(**_own_wrath_air_inputs())["checks"]["runtime_prepull_setup_receipts_valid"] is False

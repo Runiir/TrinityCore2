@@ -1,0 +1,307 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "8160201cb1a593de721e2261032f2d30627ad5a7",
+  "archive_sha256": "27e35cda23b74d8fae1ec682834e014261b5b67dac6434b4dc1b19350faafbb2",
+  "archive_bytes": 4056444,
+  "dvc_pointer": "artifacts/cata_raid_program/elemental_calibration_8160201cb1_20260908.tar.gz.dvc",
+  "remote_download_sha256": "27e35cda23b74d8fae1ec682834e014261b5b67dac6434b4dc1b19350faafbb2",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "terminal_reason": "calibration_window_complete",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-8160201cb1/configure.log",
+      "bytes": 15532,
+      "sha256": "9ed7e79cc866bd375311cd14a0a40268fbd33e858dd5a6bbc18057034d6270f5"
+    },
+    {
+      "path": "build-preflight-8160201cb1/configure_receipt.json",
+      "bytes": 13614,
+      "sha256": "b4fcd59d6fa58a5e4813fe58354736048417f2b2a7646db89433059ca15979e8"
+    },
+    {
+      "path": "build-preflight-8160201cb1/configure_verification.json",
+      "bytes": 536,
+      "sha256": "ac66612f2db0bc03c1cb2bd41c4c311bedcfc151c283bb781dd1e135a4bd31ac"
+    },
+    {
+      "path": "build-preflight-8160201cb1/map-0-asset-preflight.json",
+      "bytes": 6041883,
+      "sha256": "04b35930d6a3b2400cedc6ca94a8a39d1bc686bf750c8b12d07cc943e263a8c4"
+    },
+    {
+      "path": "build-preflight-8160201cb1/map-669-asset-preflight.json",
+      "bytes": 5454509,
+      "sha256": "0a68810de2d02519a664f343880486826684ca33d1de8ac1a53654ef4332684d"
+    },
+    {
+      "path": "build-preflight-8160201cb1/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-8160201cb1/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "be159bf79b249026b15ce207e9917daedb68e641937676d6585089313fb57dc4"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/apply-elemental-setup-spells.py",
+      "bytes": 6229,
+      "sha256": "d89f5d9708e4a2af79ac08f086ccaaf1831a171b23e93ca035dba4d09b97044a"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/elemental-air-totem-review.md",
+      "bytes": 1281,
+      "sha256": "529bf91f5b84c558abc06c736b894553057d55e7d59023ecd91cab00073b1896"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/elemental-imbue-projection-review.md",
+      "bytes": 2511,
+      "sha256": "67510b39dc6a54614a28706d7c598182a0e8cb4b0dc08b1f9ee578d6b72bdd3b"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/elemental-mail-specialization-world-readback.json",
+      "bytes": 246,
+      "sha256": "ea63865ff4041417e4dabbfb288b05c6733f21b08562baaa4405da1fb4cf1e95"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/elemental-persisted-defaults-review.md",
+      "bytes": 4831,
+      "sha256": "f6608c64ba8ce0d5ee896546ba1019c771d3248b178ae64dee4e75e1a92c265e"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/elemental-setup-provisioning-review.md",
+      "bytes": 3407,
+      "sha256": "881985e2d79b15ca0327d445e1caf412fae3caa7a19ada123e0f65394f1149cb"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/elemental-spellbook-postlogout-drift-8160201cb1.json",
+      "bytes": 3603,
+      "sha256": "ec54d1e0b722439584cf092fa85c564db20e768cc17e424de8b0b965a5752a52"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/head-attribution-18ff-addendum.md",
+      "bytes": 2432,
+      "sha256": "89dd5513065013bb24162046d68e1aa52462376ca5bafad918b8e42d8cfce174"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/parent-validation.json",
+      "bytes": 645,
+      "sha256": "eed06dee80171b8d5312db4196a434cd37b1065ea50560d288c75fd98e13c804"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/stat-review/armor_subclasses.json",
+      "bytes": 618,
+      "sha256": "02fe91ec47143836105396ea5498bcb3d47e195067f767cace89416accf52343"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/stat-review/known_spell_readback.json",
+      "bytes": 4754,
+      "sha256": "21b3b265bc019b2aa002e87206a6c908d37b4a1637151f6ca4da7a601db3cfb7"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/stat-review/native_extract.json",
+      "bytes": 24554,
+      "sha256": "c764cdc8c10efae4b0549a0b9bb7666c50285ff17f52052e36b5b77b6913344e"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/stat-review/native_learn_relation.json",
+      "bytes": 245,
+      "sha256": "76c52100e483faef46ecfde03960bd19755e2b2e73bc68ee70cc483c11d4cbf5"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/stat-review/review.md",
+      "bytes": 6069,
+      "sha256": "d2443805a5f62becefed101a23097f6062646b684f15bd6f1e828cf1ab8d6127"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/stat-review/sim_compute_stats.json",
+      "bytes": 52575,
+      "sha256": "307a5263927c60b841d95279c71a976660d3c265d2b125d00e78e04a0b5a5290"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/stat-review/sim_request.json",
+      "bytes": 31679,
+      "sha256": "eb25698cef23c8660f4c725a233e7a475bfb9d64e7099620e0d014fcad5895b4"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/stat-review/source_setup_extract.json",
+      "bytes": 1073,
+      "sha256": "e48e647ae618fb2c4d791897ffb35a115a2997819c2f7a45ad6e5188cb427893"
+    },
+    {
+      "path": "build-preflight-8160201cb1/review-context/weapon_imbue_projection_implementation.md",
+      "bytes": 2322,
+      "sha256": "a888a78c3647bc981b0338543928f34d29ba0e76dfc91579820ed9823aaf14f1"
+    },
+    {
+      "path": "build-preflight-8160201cb1/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "d484e7a5bce8b9def077e1cabf5de035d3d027950a63dfe49dd9c79b470e787f"
+    },
+    {
+      "path": "build-preflight-8160201cb1/worldserver_build.log",
+      "bytes": 25182,
+      "sha256": "aba65bada21153d6b60b0f927e87dc0d586c65cb9bd075b1c0e72e1a0a23a4e5"
+    },
+    {
+      "path": "build-preflight-8160201cb1/worldserver_build_receipt.json",
+      "bytes": 24243,
+      "sha256": "2da8a4115c74222bbe716709c94c85653a90fd38241114aa32528ba3e231c6b4"
+    },
+    {
+      "path": "build-preflight-8160201cb1/worldserver_build_verification.json",
+      "bytes": 536,
+      "sha256": "2e4df1dc0dd35935e4be5983fb3e8632314bf7a5e4f1dde4f332e386a6ceb539"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/bot_pool_reset/reset_bot_pool.sql",
+      "bytes": 7817,
+      "sha256": "7a69716b1ffebac975da291391005a779903730028d28855f352968aff012af0"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/calibration_consumable_restock/elemental_shaman.sql",
+      "bytes": 1732,
+      "sha256": "2d9fd5dcf72f0eb8ce4b2f6c7d5aae00aa0441bad48656ab7f13b0154c933ecf"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/cleanup_readback.json",
+      "bytes": 129,
+      "sha256": "1ecb47f80868be546844adbecc8099b4b5570977fe671c1a405e7db954da3f2d"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/closed_summary.json",
+      "bytes": 1096,
+      "sha256": "4b6601c1c7179a138161737f6d4afd777659dda178f9d530b43810cb2a3677ad"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/combat_analysis.json",
+      "bytes": 295,
+      "sha256": "886c54a50dc61c67ee6bc92dd09dbeb963332ec8b043efd78eca7d516c7c4fc1"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/combat_log.json",
+      "bytes": 673,
+      "sha256": "f52b0490b89118530e17acf382e8f4864cb6cc778441843f28de28aaa271b1f1"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/commands.txt",
+      "bytes": 200,
+      "sha256": "35d60f364507fdedd084eacc99d55e2461fb0d433bd2bc014d0ada64f3c773c7"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/dps-review/actors.json",
+      "bytes": 13077,
+      "sha256": "ba78cb8b705503814191cdb63c6898d590b3687068012e816221bc773876c963"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/dps-review/dps_review.md",
+      "bytes": 10822,
+      "sha256": "33af313bd0b2c7caf3d0a66c9ca386ae23c1e39ece872720c35109f36ad9f0e3"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/heartbeat_events.jsonl",
+      "bytes": 8734,
+      "sha256": "5565bbfb4ed44110f60de3d9e14b5a2917edfb633ed6fd6ee8da7b337b345860"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/heartbeat_manifest.json",
+      "bytes": 374,
+      "sha256": "c30befd8b14b7df82adf21e2b9c8efbee6e1fd037c9faac58b4453dc9ad0d411"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/latest.json",
+      "bytes": 1697928,
+      "sha256": "092f73a095d6fd5819fa548353262780cb55f89db9a8254392727fef3119d5a2"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/native-diagnosis/fire_elemental.md",
+      "bytes": 6979,
+      "sha256": "3d1b1b0d27b9b4d4f70e4030537f26055e4f379e1bc62464999f9fdbd7f3d03a"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/own_wrath_air_observation_implementation.md",
+      "bytes": 4155,
+      "sha256": "882bd92c57e4f07026ce4176400564fea7c59dfa9c0d6a802181cddb68bae772"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/report.json",
+      "bytes": 9922127,
+      "sha256": "58cb646b77f90390fe38832971b7919f3a8a0c6462ffe855cd28be675420ec71"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/worldserver.validation.conf",
+      "bytes": 156993,
+      "sha256": "90a34382278bfa71faa94a07ad98aa8b89c4d8debad0101d451b25756cfa30dd"
+    },
+    {
+      "path": "elemental-calibration-8160201cb1/worldserver_output.log",
+      "bytes": 2159835,
+      "sha256": "a076af1025b5e769c3c323617501800883e52ee53d0777fb35776a3cd4da0cf9"
+    },
+    {
+      "path": "run-elemental-calibration.py",
+      "bytes": 2660,
+      "sha256": "eb76134c0a3270f61d072043f0b0d601112b916f17879c5da80cc7a9b2e0e34d"
+    },
+    {
+      "path": "publish-elemental-calibration.py",
+      "bytes": 4254,
+      "sha256": "79f01b6b90a996c9769e51470e56a4ad3206db2aa4792f4cd25cdd1d5945c350"
+    },
+    {
+      "path": "evict-elemental-calibration.py",
+      "bytes": 1529,
+      "sha256": "68e6c022c3c7b8360559153aaa4416fb70afcca7d150e1520ead3b97d578b4ca"
+    },
+    {
+      "path": "elemental-calibration-launch-8160201cb1.json",
+      "bytes": 2293,
+      "sha256": "4ed8dc10928a935cfbce1c8909f1bf2a575f341c6f05987fd5174559d3c3a31a"
+    },
+    {
+      "path": "elemental-calibration-console-8160201cb1.log",
+      "bytes": 9922127,
+      "sha256": "58cb646b77f90390fe38832971b7919f3a8a0c6462ffe855cd28be675420ec71"
+    },
+    {
+      "path": "elemental-calibration-postbuild-8160201cb1.json",
+      "bytes": 537,
+      "sha256": "320221cb3f5deebbc0c9c0ce97f79f289c53c58879556ac6564e7b7b4e2f4772"
+    },
+    {
+      "path": "elemental-setup-spell-application-8160201cb1.json",
+      "bytes": 30359,
+      "sha256": "79a04abb52308bdd8c564f2093f6cf6f20a95b25d906ecaea3d8b81fbd9c1326"
+    },
+    {
+      "path": "apply-elemental-setup-spells.py",
+      "bytes": 6229,
+      "sha256": "d89f5d9708e4a2af79ac08f086ccaaf1831a171b23e93ca035dba4d09b97044a"
+    },
+    {
+      "path": "elemental-candidate-precalibration-readback.json",
+      "bytes": 29817,
+      "sha256": "51745589488158fddacf7f76aa528b387c8c133794529a5a935d30a934253d66"
+    },
+    {
+      "path": "elemental-mail-specialization-world-readback.json",
+      "bytes": 246,
+      "sha256": "ea63865ff4041417e4dabbfb288b05c6733f21b08562baaa4405da1fb4cf1e95"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    "elemental-calibration-8160201cb1/report.json",
+    "elemental-calibration-8160201cb1/latest.json",
+    "elemental-calibration-8160201cb1/worldserver_output.log"
+  ]
+}

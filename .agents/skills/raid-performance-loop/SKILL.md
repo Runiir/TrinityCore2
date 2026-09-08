@@ -92,6 +92,9 @@ Use Luna max for exact narrow implementation, Sol high for ambiguous
 causal diagnosis and independent review of risky runtime/encounter changes. Work directly
 when delegation would add more coordination than useful work. Serialize builds, shared
 server ownership, provisioning, and DVC publication. Independent reads may overlap.
-When requesting another edit or review from a completed agent, use
-`followup_task` to start its next turn. `send_message` only queues a message;
-it does not resume an idle worker. Check worker state before waiting on a result.
+Use `followup_task` for every new edit, investigation, or review assignment,
+including assignments to an agent that appears active. Reserve `send_message`
+for clarifications to its existing task. This avoids a completion race: queued
+messages do not resume an idle worker. The coordinator owns review dispatch;
+a worker saying "sent for review" does not prove that the reviewer started.
+Check reviewer state before waiting on its result.

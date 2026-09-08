@@ -11,6 +11,7 @@
 #include "SpellHistory.h"
 #include "SpellMgr.h"
 #include "Unit.h"
+#include "Totem.h"
 
 #include <algorithm>
 #include <array>
@@ -542,6 +543,42 @@ void BotWorldPopulationMgr::ObserveCalibrationReferenceConditions(
         else
             ++metrics.ReferencePlayerAuraInactiveSamples[spellId];
 
+    // Partition every active Wrath of Air sample by all applied sources.
+    // A mixed own/foreign application is foreign, never an own-only sample.
+    bool ownWrathOfAir = false;
+    if (bot->HasAura(2895))
+    {
+        bool unknownSource = false;
+        bool foreignSource = false;
+        bool observedSource = false;
+        auto const range = bot->GetAppliedAuras().equal_range(2895);
+        for (auto itr = range.first; itr != range.second; ++itr)
+        {
+            Aura const* aura = itr->second ? itr->second->GetBase() : nullptr;
+            Unit* caster = aura ? aura->GetCaster() : nullptr;
+            Unit* owner = caster && caster->IsTotem()
+                ? caster->ToTotem()->GetOwner() : nullptr;
+            observedSource = true;
+            if (!caster || (caster->IsTotem() && (!owner
+                    || !caster->GetUInt32Value(UNIT_CREATED_BY_SPELL))))
+                unknownSource = true;
+            else if (!caster->IsTotem() || owner->GetGUID() != bot->GetGUID()
+                || caster->GetUInt32Value(UNIT_CREATED_BY_SPELL) != 3738)
+                foreignSource = true;
+        }
+        if (!observedSource || unknownSource)
+            ++metrics.ReferenceWrathOfAirUnknownSourceSamples;
+        else if (foreignSource)
+            ++metrics.ReferenceWrathOfAirForeignSourceSamples;
+        else
+        {
+            ++metrics.ReferenceWrathOfAirOwnTotemSamples;
+            ownWrathOfAir = bot->getClass() == CLASS_SHAMAN
+                && bot->GetPrimaryTalentTree(bot->GetActiveSpec()) == 261
+                && Cohort().CalibrationTargetSpec == "elemental_shaman";
+        }
+    }
+
     auto hasAuraFromAnotherCaster = [target, bot](uint32 spellId)
     {
         auto const range = target->GetAppliedAuras().equal_range(spellId);
@@ -590,7 +627,8 @@ void BotWorldPopulationMgr::ObserveCalibrationReferenceConditions(
     {
         if (std::any_of(SelfProvidedForbiddenPlayerAuras.begin(),
                 SelfProvidedForbiddenPlayerAuras.end(),
-                [bot](uint32 spellId) { return bot->HasAura(spellId); }))
+                [bot, ownWrathOfAir](uint32 spellId)
+                { return bot->HasAura(spellId) && !(spellId == 2895 && ownWrathOfAir); }))
             ++metrics.UnexpectedSelfProvidedPlayerAuraActiveSamples;
         if (std::any_of(SelfProvidedForbiddenTargetAuras.begin(),
                 SelfProvidedForbiddenTargetAuras.end(),

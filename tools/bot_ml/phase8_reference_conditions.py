@@ -1416,8 +1416,31 @@ def reference_condition_projections(
         _reconcile_legacy_tinker_use_count(dynamic)
     )
 
+    own_wrath_of_air_valid = False
+    wrath_of_air = player_auras.get(2895) or {}
+    if (self_provided and target_spec == "elemental_shaman"
+            and type(target.get("class_id")) is int and target["class_id"] == 7
+            and _integer(wrath_of_air.get("active_samples")) > 0):
+        binding = load_fixture_contract_binding(target_spec)
+        bound_spec = (binding.get("projection") or {}).get("spec") or {}
+        options = (bound_spec.get("simulator_options") or {}).get("class_options") or {}
+        native_options = (((bound_spec.get("native_request") or {}).get("player_spec")
+                           or {}).get("options") or {}).get("class_options") or {}
+        native_air = (native_options.get("totems") or {}).get("air")
+        source_counts = [wrath_of_air.get(key) for key in (
+            "own_totem_samples", "foreign_source_samples", "unknown_source_samples")]
+        own_wrath_of_air_valid = bool(
+            binding.get("valid") is True
+            and type(wrath_of_air.get("spell_id")) is int
+            and binding.get("content_sha256") == fixture_contract_sha256
+            and (options.get("totems") or {}).get("air") == "wrath_of_air"
+            and type(native_air) is int and native_air == 3
+            and all(type(value) is int and value >= 0 for value in source_counts)
+            and source_counts == [wrath_of_air.get("active_samples"), 0, 0]
+        )
     raid_required_valid = all(
-        continuously_inactive(player_auras, spell_id)
+        (continuously_inactive(player_auras, spell_id)
+         or (spell_id == 2895 and own_wrath_of_air_valid))
         if self_provided else continuously_active(player_auras, spell_id)
         for spell_id in RAID_REQUIRED_PLAYER_AURA_IDS
     )

@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from pathlib import Path
+
+import pytest
 
 from tools.bot_ml.cata_dps_consumables import controlled_consumable_profile
 from tools.bot_ml.phase8_fixture_contract import (
@@ -303,7 +306,22 @@ def test_shadow_external_windows_are_exact_and_non_stochastic() -> None:
     }
 
 
-def test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads(
+def _historical_target_catalog_bytes(current, materialization):
+    """Recover pinned source bytes across runtime-only spellbook maintenance."""
+    historical = json.loads(json.dumps(current))
+    pinned = materialization["live_target_catalog"]
+    for row in historical["targets"]:
+        frozen = pinned["selected_rows"].get(row["spec_target_id"])
+        if frozen is not None:
+            row["action_profile_spell_ids"] = frozen["action_profile_spell_ids"]
+    payload = (json.dumps(historical, indent=2) + "\n").encode("utf-8")
+    # This is the original WHOLE source catalog identity, not a projection
+    # digest. Every non-spell field and unsupported-spec row remains guarded.
+    assert hashlib.sha256(payload).hexdigest() == pinned["sha256"]
+    return payload
+
+
+def test_materialized_fixture_is_canonical_and_reconstructs_from_historical_inputs(
     tmp_path: Path,
 ) -> None:
     payload = DEFAULT_MATERIALIZED_CONTRACT_PATH.read_bytes()
@@ -321,11 +339,29 @@ def test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_read
     detached.write_bytes(payload)
     assert load_fixture_contract(detached)[1] == digest
 
+    # A frozen reference retains its historical source identity. Runtime-only
+    # learned-spell additions do not require relabelling its fixture. Recover
+    # only those lists, then require the entire original source hash before
+    # reconstruction; other catalog drift must fail this test.
+    historical_targets = tmp_path / "historical-targets.json"
+    historical_targets.write_bytes(_historical_target_catalog_bytes(
+        json.loads(DEFAULT_TARGET_CATALOG_PATH.read_text()), authority,
+    ))
     rebuilt = build_materialized_fixture_contract(
         DEFAULT_AUTHORED_CONTRACT_PATH,
-        target_catalog_path=DEFAULT_TARGET_CATALOG_PATH,
+        target_catalog_path=historical_targets,
     )
     assert canonical_materialized_bytes(rebuilt) == payload
+
+
+def test_historical_reconstruction_rejects_non_spell_reference_input_drift():
+    contract, _ = load_fixture_contract(DEFAULT_MATERIALIZED_CONTRACT_PATH)
+    current = json.loads(DEFAULT_TARGET_CATALOG_PATH.read_text())
+    elemental = next(row for row in current["targets"]
+                     if row["spec_target_id"] == "elemental_shaman")
+    elemental["provisioning_bot"]["race"] = 2
+    with pytest.raises(AssertionError):
+        _historical_target_catalog_bytes(current, contract["materialization"])
 
 
 def test_live_receipts_cover_target_resources_gear_and_external_windows() -> None:

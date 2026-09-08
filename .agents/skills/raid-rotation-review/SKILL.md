@@ -9,6 +9,10 @@ Build an attributable comparison from simulator policy to native outcome. Keep
 simulation, Trinity selection, movement, submission, landing, and encounter
 mechanics as separate layers.
 
+A target damage row can be a forwarded/shared-health callback. Before claiming
+direct target selection, join the actor's selected target and ordinary native
+cast/hit; separate forwarding spell IDs and never sum mirrored target views.
+
 For a parallel review, use the coordinator's exact actor subset and shared run
 context. The overall reviewer joins all actors; do not repeat another worker's
 deep review. Read only the matching note under `references/classes/` when one
@@ -61,6 +65,11 @@ actions. `controlled_live_parity` is the reference for exact action and damage
 comparison. `upstream_full_throughput` is only a capability/UI cross-check
 unless every runtime input matches. A difference among these classes is not a
 rotation failure.
+
+An aura ID alone does not distinguish an external buff from the player's own
+class effect. Bind permitted self effects to the frozen spec setup and retain
+caster/owner provenance. Missing provenance is an observation gap, not proof of
+external contamination or permission to accept the aura globally.
 
 ## Build the normalized comparison
 

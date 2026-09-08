@@ -2,44 +2,44 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:roster_execution_review",
   "owner_skill": "raid-performance-loop",
-  "classification": "reviewed_elemental_setup_batch_ready",
+  "classification": "closed_elemental_setup_accepted_dps_unresolved",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "18fffe3beeaa899d380e765362d60505e92f0644",
+  "observed_at_commit": "8160201cb1",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Native Magmaw clear; DPS rejected in exact isolated calibration. Next class setup repair under independent review.",
+  "gate_state": "Observation and shared Elemental reaction timing batch independently approved; ready for one build and native calibration.",
   "first_broken_edge": {
-    "id": "elemental_native_setup_and_mail_specialization_missing",
-    "owner_classification": "raid_role_implementation",
-    "cause": "Exact totem setup differs and ordinary learned parent87507 is absent, preventing native5%mailIntellect despite8mailitems. Provision legitimate5675/8143/87507; native ownsderivedeffects.",
-    "review_state": "independently_approved_native_acceptance_pending"
+    "id": "self_provided_aura_source_unobserved_and_rejected",
+    "owner_classification": "raid_bot_runtime_implementation",
+    "cause": "Correct WrathAir2895 activity is treated as external by native and Python HasAura-only gates; caster/owner not retained, so old run cannot establish source.",
+    "review_state": "observation_approved_native_validation_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "d43e1d6fcc4b2b52fb0489fd13299923954efa505b6ae05128052b8ab1267890"
+    "sha256": "6366f349f81a0c9028f24cfdc65b55baf94071d882ec0fed4b9d5fc5061dd976"
   },
   "scope_lock": {
-    "objective": "Repair observed Elemental air selection and actual weapon-imbue projection; join closed native movement outcomes before further repairs.",
+    "objective": "Observe and classify exact self-owned class aura without admitting foreign buffs; obtain guardian outcome evidence before gameplay repair.",
     "owned_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp",
-      "tests/test_elemental_combat_totem_selection.py",
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationReference.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationReferenceJson.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h",
       "tools/bot_ml/phase8_reference_conditions.py",
-      "tests/test_phase8_reference_conditions.py",
-      "tools/bot_ml/build_all_spec_phase1_catalogs.py",
-      "tests/test_shaman_raid_haste_provisioning.py",
-      "experiments/configs/all_spec_targets_cata_p4_v1.json",
-      "experiments/configs/cata_434_action_profiles.json"
+      "src/server/game/Bots/BotCalibrationSummonObservation.h",
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp",
+      "src/server/game/Bots/BotClassSpecActionProfile.cpp"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Elemental selects8143/5675/3738 with correct existing-slot identity and native guards; ordinary learned87507 enables native conditionalmailaura86100.",
-    "Next native window contains2895 and matching spell haste; missing or wrong actual weapon imbue remains rejected.",
-    "Compare exact300-second DPS/stats/cadence to current reference, keep other losses visible.",
-    "Close movement and all-bot review, publish verified remote evidence and evict exact payloads."
+    "Own Wrath of Air provenance passes exact self-provided reference gate; foreign or unknown sources remain rejected.",
+    "Observe native haste and owned guardian presence, owner victim/helper/offensive target, and current guardian spell without inferring unsampled AI outcomes.",
+    "Elemental uses the shared 100ms policy; exact 300-second transport is complete with no duplicate casts or increased cast failures.",
+    "Compare DPS, HPS, stats, cadence, deaths and movement against prior816 and promoted reference; publish and verify closed evidence before exact eviction."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -50,7 +50,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Freeze/build approved setup batch once, apply3ordinarylearnedspells to exactidle1301, run300-second Elemental calibration; finish and publishclosedMagmawreview.",
+  "next_action": "Freeze and build approved batch once, then run exact 300-second calibration with guardian observations.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -78,22 +78,22 @@
     "hostile_only_party_dps": 118358.965,
     "party_hps": 20110.681,
     "combat_duration_sec": 254,
-    "remote_reconstruction_verified": false,
-    "raw_payloads_evicted": false,
-    "dvc_pointer": null
+    "remote_reconstruction_verified": true,
+    "raw_payloads_evicted": true,
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_18fffe3bee_20260908.tar.gz.dvc"
   },
   "latest_analysis": {
-    "review_directory": "magmaw-development-18fffe3bee/dps-review",
-    "publication_state": "closed_raw_retained_for_review",
-    "calibration_dps": 21943.476666666666,
+    "review_directory": "elemental-calibration-8160201cb1/dps-review",
+    "publication_state": "remote_verified_raw_evicted",
+    "calibration_dps": 22431.583333333332,
     "calibration_reference_dps": 36999.280400830605,
-    "calibration_publication_state": "remote_verified_exact_payloads_evicted"
+    "calibration_publication_state": "remote_verified_raw_evicted"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approved",
-    "scope": "Exact Elemental totem trio, ordinary setup-parent spell provisioning and actual weapon-imbue projection",
+    "scope": "Owner-aware class buff classification, guardian/haste observation, shared Elemental scheduling",
     "live_verified": false
   },
   "related_edges": [

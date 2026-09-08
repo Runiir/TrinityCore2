@@ -40,7 +40,7 @@ def test_calibration_reference_json_keeps_condition_contract():
 
 def test_calibration_reference_json_attributes_other_item_uses_without_changing_tinker_count():
     text = MODULE.read_text()
-    header = HEADER.read_text()
+    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h").read_text()
 
     assert (
         '\\"tinker_use_count\\":"\n'
@@ -58,3 +58,15 @@ def test_calibration_reference_json_attributes_other_item_uses_without_changing_
         assert marker in text
     assert "struct ScoredOtherItemUse" in header
     assert "std::array<ScoredOtherItemUse, 8> ScoredOtherItemUses;" in header
+
+
+def test_wrath_air_source_partition_is_exported_with_observed_player_aura():
+    text = MODULE.read_text()
+    for key, field in (
+        ("own_totem_samples", "ReferenceWrathOfAirOwnTotemSamples"),
+        ("foreign_source_samples", "ReferenceWrathOfAirForeignSourceSamples"),
+        ("unknown_source_samples", "ReferenceWrathOfAirUnknownSourceSamples"),
+    ):
+        assert '\\"' + key + '\\":' in text
+        assert f"metrics ? metrics->{field} : 0" in text
+    assert "if (spellId == 2895)" in text

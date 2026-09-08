@@ -195,6 +195,7 @@
         };
         struct DecisionTimelineEntry
         {
+            std::string SummonObservationJson;
             uint64 ElapsedMs = 0;
             uint32 SpellId = 0;
             std::string Result;
@@ -495,6 +496,9 @@
         uint32 ScoredTinkerSpellUseCount = 0;
         uint32 UnexpectedDynamicAuraActiveSamples = 0;
         uint32 UnexpectedExternalBleedActiveSamples = 0;
+        uint32 ReferenceWrathOfAirOwnTotemSamples = 0;
+        uint32 ReferenceWrathOfAirForeignSourceSamples = 0;
+        uint32 ReferenceWrathOfAirUnknownSourceSamples = 0;
         uint32 UnexpectedSelfProvidedPlayerAuraActiveSamples = 0;
         uint32 UnexpectedSelfProvidedTargetAuraActiveSamples = 0;
         NativeConsumableReceipt FlaskConsumable;

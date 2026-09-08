@@ -236,7 +236,9 @@ void BotWorldPopulationMgr::AppendCalibrationBotActionJson(
                     if (!firstTimeline)
                         json << ',';
                     firstTimeline = false;
-                    json << "{\"elapsed_ms\":" << entry.ElapsedMs
+                    json << "{\"summon_observation\":"
+                         << (entry.SummonObservationJson.empty() ? "null" : entry.SummonObservationJson)
+                         << ",\"elapsed_ms\":" << entry.ElapsedMs
                          << ",\"spell_id\":" << entry.SpellId
                          << ",\"result\":\"" << JsonEscape(entry.Result) << "\""
                          << ",\"health\":" << entry.Health
