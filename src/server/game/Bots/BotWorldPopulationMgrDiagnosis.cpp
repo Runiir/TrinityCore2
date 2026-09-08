@@ -18,6 +18,7 @@
 #include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
+#include "VehicleDefines.h"
 
 #include <algorithm>
 #include <chrono>
