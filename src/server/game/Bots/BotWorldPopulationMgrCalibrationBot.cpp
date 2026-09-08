@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrScopeGuard.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
+#include "Bots/BotCalibrationActionGroupCoverage.h"
 #include "Bots/BotClassSpecActionProfile.h"
 
 #include "CellImpl.h"
@@ -669,39 +670,6 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     }
     uint32 hostileCount = Cohort().CalibrationAoePhase ? uint32(dummies.size()) : 1;
 
-    if (scored)
-    {
-        BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::BuildForSpec(
-            bot, role.c_str(), Cohort().CalibrationTargetSpec.c_str());
-        std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
-        for (BotActionCandidate const& candidate : candidates)
-        {
-            Unit* candidateTarget = candidate.Profile.TargetSelector == "self"
-                ? static_cast<Unit*>(bot) : target;
-            float const candidateTargetHealth = UnitHealthPct(candidateTarget);
-            float const candidateSelfHealth = UnitHealthPct(bot);
-            if (!candidate.RejectReason.empty()
-                || candidate.Profile.MinEnemies > hostileCount
-                || (candidate.Profile.MaxEnemies && hostileCount > candidate.Profile.MaxEnemies)
-                || candidateTargetHealth < candidate.Profile.MinTargetHealthPct
-                || candidateTargetHealth > candidate.Profile.MaxTargetHealthPct
-                || !MeetsHostileTargetHealthGate(candidate.Profile, UnitHealthPct(target))
-                || candidateSelfHealth < candidate.Profile.MinSelfHealthPct
-                || candidateSelfHealth > candidate.Profile.MaxSelfHealthPct
-                || (candidate.Profile.RequiresInterruptibleTarget && !target->IsNonMeleeSpellCast(false))
-                || (candidate.Category == BotCombatActionCategory::Taunt
-                    && (!target->GetVictim() || target->GetVictim() == bot))
-                || candidate.Category == BotCombatActionCategory::HealFast
-                || candidate.Category == BotCombatActionCategory::HealEfficient
-                || candidate.Category == BotCombatActionCategory::HealAoe
-                || candidate.Category == BotCombatActionCategory::DispelCleanse
-                || candidate.Category == BotCombatActionCategory::ExternalDefensive
-                || candidate.Category == BotCombatActionCategory::Buff)
-                continue;
-            metrics.ExpectedActionGroups.insert(BotCombatActionCatalog::ToString(candidate.Category));
-        }
-    }
-
     if (EnsureCalibrationSelfProvidedConsumables(state, bot, target, scored))
         return;
     auto [referenceBuffsReady, referenceTargetDebuffsReady] = ApplyCalibrationReferenceConditions(bot, target);
@@ -843,13 +811,15 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         false, forbidArea, allowMultidot, false, false,
         Cohort().CalibrationTargetSpec.c_str());
     auto actionCategory = Party().LastActionCategoryByBot.find(bot->GetGUID().GetCounter());
-    std::string const actionGroup = actionCategory != Party().LastActionCategoryByBot.end()
+    std::string actionGroup = actionCategory != Party().LastActionCategoryByBot.end()
         ? actionCategory->second : action.DebugName;
     float distance = bot->GetExactDist(target);
     if ((action.MinRange > 0.0f && distance < action.MinRange)
         || (action.MaxRange > 0.0f && distance > std::max(5.0f, action.MaxRange - 0.25f))
         || !bot->IsWithinLOSInMap(target))
     {
+        BotCalibrationActionGroupCoverage::RecordExpectedActionGroup(
+            metrics.ExpectedActionGroups, scored, action.Valid, actionGroup, action.Type);
         if (scored)
         {
             ++metrics.MovementRangeLossTicks;
@@ -886,6 +856,10 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         &state, bot, target, &action, hostileCount,
         Cohort().CalibrationAoePhase, 0, false, false,
         forbidArea, allowMultidot);
+    auto observedActionCategory = Party().LastActionCategoryByBot.find(
+        bot->GetGUID().GetCounter());
+    actionGroup = observedActionCategory != Party().LastActionCategoryByBot.end()
+        ? observedActionCategory->second : action.DebugName;
     if (scored)
     {
         auto rejectsItr = Party().LastCombatRejectsByBot.find(
@@ -902,7 +876,11 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
             ++metrics.ResultCounts[std::string("cast_failed:") + state.LastCombatAttempt.Reason];
         if (action.Valid)
         {
-            metrics.ActionGroups.insert(actionGroup.empty() ? action.Type : actionGroup);
+            BotCalibrationActionGroupCoverage::RecordExpectedActionGroup(
+                metrics.ExpectedActionGroups, scored, action.Valid, actionGroup, action.Type);
+            BotCalibrationActionGroupCoverage::RecordObservedActionGroup(
+                metrics.ActionGroups, scored, action.Valid,
+                result == BotActionResult::Ok, actionGroup, action.Type);
             if (action.SpellId)
                 ++metrics.ActionAttempts[action.SpellId];
             if (result == BotActionResult::Ok

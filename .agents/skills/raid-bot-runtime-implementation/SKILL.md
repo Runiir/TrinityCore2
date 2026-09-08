@@ -25,7 +25,9 @@ broken edge belongs elsewhere.
 
 ## Admit one exact edge
 
-Start from `required_next_work_unit`:
+Use the coordinator's supplied bounded packet for this worker. A separate
+in-flight primary work unit does not replace an explicitly assigned diagnostic
+or validator repair. When no packet is supplied, obtain `required_next_work_unit`:
 
 ```bash
 pixi run python -m tools.raid_program.raid_workloop status
@@ -46,6 +48,14 @@ first wrong state. Do not infer a launch, collision, or fall mechanism from a
 later position alone. Require one correlated receipt chain from candidate and
 native execution identity to the later consumed mutation. Actor identity and
 timestamp proximity alone do not establish that chain.
+
+For execution telemetry, inspect whether the executor re-resolves or mutates
+the preview action and its output category. Attribute ordinary outcomes to the
+final action, not a stale preview; retain preview attribution only for an
+explicit preview-only return such as movement preparation. Test the actual
+caller transition where preview A becomes executed B. A helper-only test can
+pass while its caller still records the wrong action. Selected categories are
+not successful categories until the corresponding native result succeeds.
 
 Return the work when the trace instead identifies:
 
