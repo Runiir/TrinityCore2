@@ -36,6 +36,7 @@
         uint64 ValidationRoutePackSequence = 1;
         uint32 ValidationRouteCompletedPackCount = 0;
         bool ValidationRoutePackObservedEngagement = false;
+        BotValidationPatrolPull::State ValidationRoutePatrolPull;
         bool ValidationRouteDrudgePrepullStaged = false;
         uint64 ValidationRouteDrudgePrepullAttemptId = 0;
         uint32 ValidationRouteDrudgePrepullWipeGeneration = 0;

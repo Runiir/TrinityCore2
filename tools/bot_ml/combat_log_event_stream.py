@@ -249,6 +249,7 @@ class CombatLogEventStream:
         self._saw_delta = False
         self._transport_rejections: list[str] = []
         self._response_results: list[CombatLogDeltaResult] = []
+        self._accepted_events: list[dict[str, Any]] = []
 
     @property
     def cursor(self) -> int:
@@ -733,6 +734,8 @@ class CombatLogEventStream:
                 namespace.duplicate_count += 1
             else:
                 namespace.events[sequence] = deepcopy(event)
+                self._accepted_events.append({"identity": deepcopy(namespace.identity),
+                    "profile_context": deepcopy(namespace.context), "event": deepcopy(event)})
         namespace.cursor = max(namespace.cursor, cursor_after)
         namespace.event_count_at_export = max(namespace.event_count_at_export, event_count)
         namespace.response_count += 0
@@ -749,6 +752,14 @@ class CombatLogEventStream:
             cursor_before=cursor_before, cursor_after=cursor_after,
             event_count_at_export=event_count, reason="delta_accepted",
         )
+
+    def take_accepted_events(self) -> list[dict[str, Any]]:
+        """Drain new rows from completed, gap-free identity-bound deltas only."""
+        rows, self._accepted_events = self._accepted_events, []
+        receipt = self.receipt()
+        if receipt.get("transport_rejections") or receipt.get("gap_ranges") or receipt.get("conflict_sequences"):
+            return []
+        return [row for row in rows if row["identity"] == self.identity]
 
     def events(self, identity: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         namespace = (

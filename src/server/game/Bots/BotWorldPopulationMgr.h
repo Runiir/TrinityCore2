@@ -11,6 +11,7 @@
 #include "Bots/BotProfileCombatRangeCheckpoint.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneCheckpoint.h"
 #include "Bots/BotValidationPrepullCheckpoint.h"
+#include "Bots/BotValidationPatrolPullState.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotExperimentCoordinator.h"

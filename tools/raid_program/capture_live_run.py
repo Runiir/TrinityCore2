@@ -762,6 +762,8 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                             monitor_statuses[-1],
                             fresh_diagnosis,
                             new_trace_rows,
+                            combat_events=combat_log_delta_controller.stream.take_accepted_events(),
+                            combat_event_identity=combat_log_delta_controller.stream.identity,
                             profile_name=profile_name,
                             max_repeated_decisions=args.max_repeated_decision_count,
                             max_death_loops=args.max_death_loop_count,
@@ -892,7 +894,6 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                             process.stdin.flush()
                             readycheck_requested_for = request_identity
                 time.sleep(0.25)
-
             if (
                 controller_route_hold_scheduler is not None
                 and not controller_route_hold_scheduler.complete
@@ -902,7 +903,6 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                     "controller route hold protocol incomplete: "
                     + str(controller_route_hold_scheduler.failure_reason)
                 )
-
             # Capture one last live process sample before native shutdown so
             # the final CPU/RSS interval includes the terminal polling work.
             record_process_resource_sample(force=True)

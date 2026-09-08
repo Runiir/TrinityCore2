@@ -38,7 +38,10 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
     std::function<void(Creature const*, bool)> const& enrollValidationRoutePackMember)
 {
         if (Cohort().Config.ValidationRoutePatrolPullPolicy.empty())
+        {
+            Party().ValidationRoutePatrolPull = {};
             return false;
+        }
 
         auto hold = [&](char const* result, Creature* source = nullptr) -> bool
         {
@@ -59,6 +62,7 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
             || Cohort().Config.ValidationRoutePatrolFutureGuardMarginYards <= 0.0f
             || Cohort().Config.ValidationRouteClusterRadiusYards <= 0.0f)
         {
+            Party().ValidationRoutePatrolPull = {};
             state.LastNoProgressReason = "patrol_pull_contract_unresolved";
             return hold("validation_route_patrol_pull_contract_hold");
         }
@@ -66,9 +70,32 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
         ObjectGuid::LowType const spawnId = currentValidationRouteTargetSpawnId();
         Creature* source = spawnId && bot->GetMap()
             ? bot->GetMap()->GetCreatureBySpawnId(spawnId) : nullptr;
-        if (!source || !source->IsAlive() || !source->GetHealth()
+        if (!source || !source->IsInWorld() || !source->IsAlive() || !source->GetHealth()
             || source->GetMap() != bot->GetMap())
+        {
+            Party().ValidationRoutePatrolPull = {};
             return false;
+        }
+
+        BotValidationPatrolPull::Observation const handoffObservation{
+            { Cohort().AttemptId, Cohort().Raid.WipeGeneration,
+                Party().ValidationRouteGeneration, bot->GetMapId(),
+                bot->GetInstanceId(), spawnId,
+                source->GetGUID().GetRawValue() },
+            true, true, isValidationCohortCombatLinked(source),
+            source->IsInEvadeMode() };
+        // Staging is a shared, one-time handoff. Later hazard displacement or
+        // a transient threat change belongs to ordinary combat, not a new
+        // pull. Check before any actor can re-suppress the whole cohort.
+        if (BotValidationPatrolPull::Observe(
+                Party().ValidationRoutePatrolPull, handoffObservation))
+        {
+            BotRaidAreaAuthority::SetAllOffenseSuppressed(
+                bot->GetGUID().GetRawValue(), false);
+            return false;
+        }
+        if (handoffObservation.SourceEvading)
+            return hold("validation_route_patrol_source_evading", source);
 
         auto exactRosterAtAnchor = [this, bot]() -> bool
         {
@@ -411,8 +438,15 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
         if (!botIsTank && !tankOwned)
             return hold("validation_route_patrol_wait_for_tank_threat", source);
 
+        // A tank may act before acquiring the victim, but only observed tank
+        // ownership completes the shared pull handoff for the whole cohort.
+        BotValidationPatrolPull::Complete(Party().ValidationRoutePatrolPull,
+            handoffObservation, sourceAnchorDistance
+                <= Cohort().Config.ValidationRoutePatrolEngageRadiusYards,
+            tankOwned && sourceVictimRoster->second.Active
+                && sourceVictimRoster->second.LeaseOwned);
         // The patrol contract ends once the source is engaged, inside its
-        // declared chase radius, and tank-owned (or this bot is the tank).
+        // declared chase radius, and tank-owned.
         // Release only this bot's route offense gate and let the ordinary
         // priority queue own movement, healing, pet, and class actions.
         BotRaidAreaAuthority::SetAllOffenseSuppressed(

@@ -4,51 +4,50 @@
   "owner_skill": "raid-performance-loop",
   "classification": "reviewed_implementation",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "88d35c0421af4ddecf4ead56dde84fb45ae44ff6",
+  "observed_at_commit": "fa34580f2f4930fe9e31ec1fd80215df4aaf6a6e",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "All four repairs independently approved; closed88 evidence remotely verified and evicted. Commit, build once and run canonical watchdog validation.",
+  "gate_state": "Patrol and watchdog implementations independently approved, closedfa evidence remotely verified and evicted. Commit/build and run the combined batch.",
   "first_broken_edge": {
-    "id": "elemental_range_formation_owner_oscillation",
-    "owner_classification": "raid_role_implementation",
-    "cause": "Profile minimum12-yard range movement is immediately superseded by encounter ordinary support restoration toward8-yard anchor. Native movement succeeds in both directions.",
+    "id": "patrol_handoff_reenters_staging",
+    "owner_classification": "raid_bot_runtime_implementation",
+    "cause": "Completed tank-owned patrol pull is not retained; post-combat geometry re-enters all-cohort offense suppression without a return movement task.",
     "review_state": "implemented_independently_approved_live_pending",
     "counterexample": {
-      "actor_guid": 30010,
-      "range_receipt": 424,
-      "formation_receipt": 425,
-      "range_started_at_ms": 1788880139107,
-      "return_endpoint_reached_at_ms": 1788880141113
+      "actor_guid": 30008,
+      "capture_sequence": 187,
+      "timestamp_ms": 1788883675468,
+      "target_guid": 27,
+      "route_generation": 2
     }
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "2ea1d226d1c7d46446b1cb5c229845187e99ae00dbeeeabe988c609529532a8a"
+    "sha256": "a7cba8a64754ac2021dc53e316eb247050fc4713f8169cc9906dfeb83f9c647e"
   },
   "scope_lock": {
-    "objective": "Validate active-admission capture, delayed strategy binding, pending vehicle-exit receipt retention and Elemental formation/range convergence. No class coefficient changes.",
+    "objective": "Retain completed patrol handoff across ordinary combat movement and feed attributable native damage into actor-scoped repeated-decision watchdog progress.",
     "owned_files": [
-      "src/server/game/Bots/BotServerVehicleExitLanding.h",
-      "src/server/game/Bots/BotEncounterBlackboard.h",
-      "src/server/game/Bots/BotWorldPopulationMgrEncounterBlackboard.cpp",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHazard.h",
-      "tools/bot_ml/combat_log_event_stream.py",
-      "tools/raid_program/capture_evidence_demux.py",
+      "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+      "src/server/game/Bots/BotValidationPatrolPullState.h",
+      "src/server/game/Bots/BotWorldPopulationMgrValidationPatrolPull.cpp",
       "tools/raid_program/capture_live_run.py",
-      "tools/raid_program/capture_finalization.py"
+      "tools/raid_program/capture_watchdog.py",
+      "tools/bot_ml/combat_log_event_stream.py"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Deltas start from verified active admission during nonterminal route progress, retain exact identity and sequence coverage through the final full watermark.",
-    "A delayed exact strategy transition consumes its pending route advancement once; unexplained or repeated transitions remain rejected.",
-    "Every naturally observed vehicle exit keeps an exact pending receipt until terminal evaluation, preserving all landing and identity guards. Do not delay a faster kill to manufacture another exit.",
-    "Elemental combat-range movement is no longer repeatedly superseded by incompatible ordinary formation restoration. Preserve bait and emergency movement and unaffected role formation.",
-    "Native offensive outcomes resume; report all-bot DPS/HPS, deaths, targets, movement, route and typed terminal separately. A single repaired edge does not accept overall throughput."
+    "A proved active leased tank-owned initial patrol engagement completes one shared exact-episode handoff before cohort-wide staging suppression.",
+    "Post-handoff movement outside the staging radius or a transient non-tank victim does not recreate staging; exact lifecycle invalidation rearms normally.",
+    "Preserve prefight roster, native Misdirection/Growl readiness, future-pack safety, native movement and ordinary threat recovery.",
+    "Accepted identity-bound newly sequenced positive native damage resets only its actor and exact route target in timestamp order; foreign, zero, off-target or incomplete events cannot reset.",
+    "Actual Blood seq252..286 plus events642..738 remains nonterminal with7 failures; same failures without progress terminate at20. Death and semantic-stall policy are unchanged.",
+    "Build once after independent reviews, then canonical watchdog canary. Record all-bot DPS/HPS/deaths/movement/targets and no boss acceptance unless native death is reached."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -59,7 +58,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Commit reviewed four-repair batch, build once and run Magmaw with early delta polling verification.",
+  "next_action": "Commit reviewed patrol/watchdog/test maintenance, build once and run canonical Magmaw canary.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -75,37 +74,34 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "88d35c0421af4ddecf4ead56dde84fb45ae44ff6",
-    "native_boss_death_accepted": true,
+    "source_commit": "fa34580f2f4930fe9e31ec1fd80215df4aaf6a6e",
+    "native_boss_death_accepted": false,
     "capture_accepted": false,
     "boss_clear": false,
-    "terminal_reason": "infrastructure_abort",
+    "terminal_reason": "repeated_decision_watchdog",
     "cleanup_passed": true,
     "training_eligible": false,
-    "recorded_casualties": 5,
-    "boss_fight_casualties": 0,
-    "hostile_only_party_dps": 127953.806,
-    "party_hps": 18146.26,
-    "combat_duration_sec": 227,
+    "recorded_casualties": 0,
+    "boss_fight_reached": false,
+    "combat_event_stream_complete": true,
+    "merged_event_count": 833,
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_88d35c0421_20260908.tar.gz.dvc"
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_fa34580f2f_20260908.tar.gz.dvc"
   },
   "latest_analysis": {
-    "review_directory": "magmaw-development-88d35c0421/dps-review",
+    "review_directory": "magmaw-development-fa34580f2f/dps-review",
     "publication_state": "remote_verified_exact_payloads_evicted"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approve",
-    "scope": "Active-admission capture, strategy demux, pending vehicle receipt and formation/range reconciliation; Astra low implementation, Sol high independent review.",
+    "scope": "Patrol shared handoff and watchdog native progress; sourcefa formation and vehicle fixes remain pending boss exercise.",
     "live_verified": false,
     "reports": [
-      "capture_binding_review.md",
-      "strategy_transition_review.md",
-      "pending_vehicle_receipt_review.md",
-      "elemental_formation_review.md"
+      "patrol_handoff_review.md",
+      "watchdog_native_progress_review.md"
     ]
   }
 }

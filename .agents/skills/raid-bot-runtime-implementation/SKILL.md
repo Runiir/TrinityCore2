@@ -421,6 +421,12 @@ multi-tick replay with sub-yard actor and hazard movement after rejection;
 exact-endpoint non-repetition alone is insufficient because it can hide
 semantic task churn behind slightly different coordinates.
 
+A completed shared handoff must survive later ordinary geometry changes.
+Scope completion to its actual lifecycle and target, and replay a second actor
+update: a per-bot completion bit cannot protect against another actor resetting
+cohort-wide gates. Re-enter setup only on an observed lifecycle reset, not merely
+because combat movement has left the original staging radius.
+
 Treat reducer authority as task input, not task existence. Once an
 authoritative threat or assignment creates an actor-keyed task, a later
 temporarily stale, partial, or non-authoritative facts snapshot must transition

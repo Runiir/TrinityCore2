@@ -547,6 +547,8 @@ def observe_capture_watchdog(
     diagnosis: dict[str, Any] | None,
     trace_rows: list[dict[str, Any]] | None = None,
     *,
+    combat_events: list[dict[str, Any]] | None = None,
+    combat_event_identity: dict[str, Any] | None = None,
     profile_name: str = "blackwing_descent_10n",
     max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
@@ -661,6 +663,78 @@ def observe_capture_watchdog(
         return True
 
     progress_reset_keys: set[tuple[str, str]] = set()
+    failure_history = state.setdefault("native_progress_failure_history", {})
+    target_history = state.setdefault("native_progress_target_history", {})
+    progress_times = state.setdefault("native_progress_timestamps", {})
+
+    def actor_scope(bot_key: str) -> str:
+        return json.dumps([scope_key, bot_key], separators=(",", ":"))
+
+    def remember_target(bot_key: str, timestamp: Any, progress: Any) -> None:
+        if bot_key not in owned_bot_guids or not _positive_int(timestamp) or not isinstance(progress, dict):
+            return
+        if _watchdog_route_progress_scope(progress, current_scope) != current_scope:
+            return
+        target = progress.get("target")
+        if not isinstance(target, dict) or not all(_positive_int(target.get(k)) for k in ("guid", "entry")):
+            return
+        rows = target_history.setdefault(actor_scope(bot_key), [])
+        item = [timestamp, target["guid"], target["entry"]]
+        if item not in rows:
+            rows.append(item)
+            rows.sort()
+            del rows[:-256]
+
+    def reset_on_native_event(envelope: dict[str, Any]) -> None:
+        identity = envelope.get("identity")
+        context = envelope.get("profile_context")
+        event = envelope.get("event")
+        if (not isinstance(identity, dict) or not isinstance(context, dict)
+            or not isinstance(event, dict) or identity != combat_event_identity
+            or identity.get("cohort_id") != status.get("cohort_id")
+            or not _positive_int(identity.get("combat_log_epoch"))
+            or any(identity.get(k) != runtime.get(k) for k in ("server_epoch", "attempt_id"))
+            or any(context.get(k) != runtime.get(k) for k in ("profile_generation", "profile_content_hash"))):
+            return
+        bot_key = str(event.get("actor_guid") or "")
+        timestamp = event.get("timestamp_ms")
+        amount = event.get("originated_amount")
+        if (bot_key not in owned_bot_guids or not _positive_int(timestamp)
+            or not _positive_int(event.get("event_sequence"))
+            or _watchdog_entry_scope(event, ("", 0)) != current_scope
+            or event.get("kind") != "damage" or event.get("shared_damage") is not False
+            or isinstance(amount, bool) or not isinstance(amount, (int, float))
+            or not isfinite(amount) or amount <= 0
+            or (event.get("source_guid") != event.get("actor_guid") and event.get("source_is_pet") is not True)):
+            return
+        key = actor_scope(bot_key)
+        if timestamp <= progress_times.get(key, 0):
+            return
+        targets = [row for row in target_history.get(key, []) if row[0] <= timestamp]
+        if not targets or targets[-1][1:] != [event.get("target_guid"), event.get("target_entry")]:
+            return
+        _watchdog_reset_repeated_scope(state, scope_key, bot_key=bot_key,
+                                      display_scope_key=display_scope_key)
+        # A completed page can arrive one poll after its event. Reapply only
+        # already-counted failures at/after that event, never erase the suffix.
+        suffix = [row for row in failure_history.get(key, []) if row[0] >= timestamp]
+        failure_history[key] = suffix
+        for _, decision_key, native_count, local_count in suffix:
+            count = int(repeated_counts.get(decision_key) or 0) + 1
+            repeated_counts[decision_key] = count if local_count or native_count is None else min(count, native_count)
+        remaining = max((int(value or 0) for k, value in repeated_counts.items()
+                         if json.loads(k)[0] == scope_key), default=0)
+        scope_repeated_max[scope_key] = remaining
+        progress_times[key] = timestamp
+        progress_reset_keys.add((scope_key, bot_key))
+        state["watchdog_progress_reset_reason"] = "owned_native_target_damage"
+        report.update(repeated_decision_count=remaining,
+            progress_reset_count=state["watchdog_progress_reset_count"],
+            progress_reset_scope=display_scope_key, progress_reset_bot_guid=int(bot_key),
+            progress_reset_reason="owned_native_target_damage")
+        if not remaining:
+            report["repeated_decision_outcome"] = None
+
 
     def reset_on_progress(
         scope: tuple[str, int], route_progress: dict[str, Any] | None, *,
@@ -677,6 +751,7 @@ def observe_capture_watchdog(
             display_scope_key=display_scope_key,
         )
         progress_reset_keys.add((scope_key, bot_key))
+        failure_history[actor_scope(bot_key)] = []
         report["progress_reset_count"] = int(state["watchdog_progress_reset_count"])
         report["progress_reset_scope"] = display_scope_key
         report["progress_reset_bot_guid"] = int(bot_key) if bot_key.isdigit() else bot_key or None
@@ -777,7 +852,24 @@ def observe_capture_watchdog(
                 else:
                     trace_groups[group_index][2].append(entry)
 
-    for cursor_key, scope, group_entries in trace_groups:
+    for bot_key, scope, entries in trace_groups:
+        for entry in entries:
+            remember_target(bot_key, entry.get("timestamp_ms"), entry.get("route_progress"))
+    if diagnosis_matches_attempt:
+        for bot in diagnosis.get("bots") or []:
+            snapshot = bot.get("snapshot") or {}
+            remember_target(str((bot.get("identity") or {}).get("bot_guid") or ""),
+                (snapshot.get("runtime") or {}).get("last_decision_tick_ms"), snapshot.get("route_progress"))
+    timeline = [(min((entry.get("timestamp_ms") or 0) for entry in entries), 1, (bot, scope, entries))
+                for bot, scope, entries in trace_groups]
+    timeline.extend(((row.get("event") or {}).get("timestamp_ms") or 0, 0, row)
+                    for row in combat_events or [] if isinstance(row, dict))
+    timeline.sort(key=lambda row: (row[0], row[1]))
+    for _, event_kind, item in timeline:
+        if event_kind == 0:
+            reset_on_native_event(item)
+            continue
+        cursor_key, scope, group_entries = item
         # Apply every progress row before classifying the group.  Death loops
         # remain independent terminals even when the same group has a success.
         group_progress_reset = False
@@ -880,6 +972,10 @@ def observe_capture_watchdog(
             current_count = min(previous_count + 1, native_count)
         else:
             current_count = previous_count + 1
+        history = failure_history.setdefault(actor_scope(cursor_key), [])
+        history.append([int(entry.get("timestamp_ms") or 0), decision_key, native_count,
+                        _watchdog_is_local_no_progress_decision(entry)])
+        del history[:-256]
         if current_count > 0:
             repeated_counts[decision_key] = current_count
         else:

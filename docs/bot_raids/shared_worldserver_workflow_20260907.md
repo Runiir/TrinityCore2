@@ -2,7 +2,38 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
-## Current result: native Magmaw kill, capture falsely rejected
+## Current result: capture repaired, canary stopped during Chainwielder
+
+Source `fa34580f2f4930fe9e31ec1fd80215df4aaf6a6e` built and verified, then the
+canonical watchdog stopped the route at Chainwielder for repeated failed decisions.
+Magmaw was not reached. All ten bots survived and cleanup passed; post-run build
+identity verified. Native formation and vehicle-exit acceptance remain pending.
+
+The capture repair is accepted for this run: active nonterminal deltas started
+before combat, retained833/833 final native events, and report no gaps, conflicts
+or transport rejection. Evidence demultiplexing passed. The closed result remains
+`gameplay_failure` / `repeated_decision_watchdog`; no boss-clear or DPS claim.
+
+Chainwielder totals:3,609,026 hostile damage,46,870.468 DPS and7,650.610 HPS over
+77 active callback seconds. The136.812-second all-event span is a different clock.
+There were3,148 decisions and zero deaths. Trace review proves patrol pull
+authority re-entered after accepted combat and globally suppressed offense when
+the mob moved outside its initial anchor radius. A shared, episode-scoped patrol
+handoff repair is approved for implementation. It preserves prefight safety and
+does not re-stage on later movement or a transient victim-role change.
+The patrol implementation passed22 focused checks and independent Sol review.
+Five stale source-reader failures were repaired at their actual split owners;
+all6 authority checks now pass without weakening their predicates.
+A separate watchdog review found11 owned Blood damage events missing from its
+stale trace-based progress inputs. The controller repair passes the real
+accepted-chunk/capture/watchdog replay with7 remaining failures, plus43 affected
+checks and independent Sol approval. Limits remain unchanged.
+All reviews are complete. Closed evidence is published through
+`artifacts/cata_raid_program/magmaw_development_fa34580f2f_20260908.tar.gz.dvc`.
+The8,849,274-byte archive passed fresh remote reconstruction and hash verification;
+exact raw/log/archive duplicates were evicted. Proceed with the approved batch.
+
+## Earlier result: native Magmaw kill, capture falsely rejected
 
 Source `88d35c0421af4ddecf4ead56dde84fb45ae44ff6` completed native Magmaw 10N
 with all ten bots surviving the boss. Five casualties occurred during Drudges;
