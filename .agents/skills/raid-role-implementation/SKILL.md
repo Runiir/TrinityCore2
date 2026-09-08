@@ -16,7 +16,10 @@ fix is a new handoff, not part of this role patch.
 
 ## Admit the work unit
 
-Run:
+Use the coordinator's bounded packet when it already contains the exact trace,
+current reference identity, owned files, affected callers and verification
+commands. Do not repeat completed diagnosis or load a second specialist skill
+to reconstruct that packet. When current spec/reference status is missing, run:
 
 ```bash
 pixi run python -m tools.raid_program.raid_workloop spec <spec>
@@ -60,11 +63,13 @@ the Trinity worktree. For tanks and healers, require the role-harness contract.
 Record the Trinity commit, profile generation/hash, actor/target,
 gear/talents/glyphs, route/scenario, and evidence identity.
 
-Load `raid-rotation-review` and produce the normalized comparison before
-editing. For DPS, require its `gear_parity.status` and
+Use the supplied rotation review; request only the evidence missing for this
+repair. For stat-sensitive DPS tuning, require its `gear_parity.status` and
 `effective_stat_parity.status` to be `match`, and require
-`dps_tuning_gate.tuning_admitted` to be true before changing rotations or damage
-behavior.
+`dps_tuning_gate.tuning_admitted` to be true before changing stat-dependent
+priorities or damage behavior. A trace-backed legality or candidate-coverage
+repair may proceed without numerical stat parity when its correctness does not
+depend on those stats. Keep its acceptance limited to the repaired edge.
 Gear-manifest equality alone is not enough. A stat mismatch belongs to setup,
 core stat application, or pet inheritance; an `insufficient_data` result needs
 a scoring-start recapture or bound WoWSims stat artifact. Return that boundary
@@ -81,6 +86,14 @@ Stop at the first missing edge:
 observation -> candidate -> hard gates -> priority/resources -> movement/authority
             -> native submission -> completion -> landed effect -> role outcome
 ```
+
+Keep preference separate from legality. Do not disable a safe filler just to
+make category-coverage expectations match an AoE rotation. Check adjacent
+enemy counts and the case where the preferred action is forbidden, on cooldown
+or otherwise unavailable. Preserve a legal fallback through existing candidate
+priorities; never relax encounter safety to make the preferred action execute.
+When a historical migration caused the trace failure, inspect its stated reason
+and affected validation before calling the live database drifted.
 
 Treat aggregate resolver labels as summaries, not causes. Before changing a
 healer profile or priority, retain the target, actor-to-target distance, LOS,

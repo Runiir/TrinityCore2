@@ -2,19 +2,19 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "role:elemental_raid_candidate_coverage",
   "owner_skill": "raid-performance-loop",
-  "classification": "diagnosis_required",
+  "classification": "implementation_pending_live_verification",
   "epoch_id": "elemental_raid_candidate_coverage_20260908",
   "observed_at_commit": "48c42063461eafe111c8f6ee930fa81a5bdb75b3",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": false,
+  "behavior_change": true,
   "evidence_contract_change": false,
   "gate_state": "Corrected player gear and Fire range repair accepted by native Magmaw 10N clear and independent review. Overall roster throughput and boss-fight survival remain unresolved.",
   "first_broken_edge": {
     "id": "elemental_no_valid_profile_action_candidate_coverage",
     "stage": "candidate_eligibility",
     "owner_classification": "raid_rotation_review",
-    "cause": "Elemental 30010 landed only four Lightning Bolt and zero Lava Burst events across 396 active damage seconds. Repeated no_valid_profile_action diagnostics include missing_required_target_aura, min_range_required, forbidden Chain Lightning and enemy_count_too_high. Exact causality still requires a bounded target/count/aura/range join.",
-    "review_state": "trace_backed_diagnosis_required_not_implementation_ready",
+    "cause": "Historical 2026_07_24_03 migration intentionally capped single-target Lightning Bolt at one nearby enemy to satisfy AoE coverage. Loaded profile273 confirms that cap. Chain Lightning requires at least three and may be forbidden, leaving avoidable filler gaps at two enemies or AoE-forbidden multi-enemy states.",
+    "review_state": "independently_approved_pending_live",
     "counterexample": {
       "observed_at_ms": 1788857440215,
       "actor_guid": 30010,
@@ -28,14 +28,17 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "3e88969535bd765ef7f6cea3ffc7fa075e6be759bf2eb16cadfb8a1833958305"
+    "sha256": "82790f1911dd1f66a721628d27ccb4d27dfd8a75038289cca5b1e5def7ac4ce8"
   },
   "scope_lock": {
-    "objective": "Resolve one elemental candidate-coverage failure from existing attributable trace and produce an exact implementation packet.",
-    "owned_files": [],
+    "objective": "Remove only the Elemental Lightning Bolt enemy-count ceiling; retain existing Chain preference and native/AoE/range/resource guards.",
+    "owned_files": [
+      "sql/custom/world/2026_09_08_02_elemental_filler_eligibility.sql",
+      "tests/test_elemental_filler_eligibility.py",
+      "tests/test_elemental_apl_alignment.py"
+    ],
     "forbidden_changes": [
-      "No production mutation until the earliest causal gate is identified.",
-      "No gear, native coefficients, boss health, movement geometry or arbitrary priority changes."
+      "No C++, priorities, range, gear, coefficients, encounter guards or unrelated SQL changes."
     ],
     "terminal_handoff": "The corrected-gear Magmaw canary is closed. Route the next exact role/runtime edge without repeating accepted work.",
     "read_only_inputs": [
@@ -46,9 +49,9 @@
     ]
   },
   "acceptance_conditions": [
-    "Identify one exact actor/target/attempt/route observation and first incorrect eligibility predicate.",
-    "Compare current promoted WoWSims APL and retained WCL casts without treating unmatched raid DPS as calibration.",
-    "Give the implementation worker exact owned files, affected callers, forbidden changes, a deterministic fixture, required commands and observable acceptance."
+    "Actual migration changes only enabled Elemental DPS spell403 max_enemies and is idempotent.",
+    "Data contract covers the two-enemy and AoE-forbidden gaps while preserving legal Chain preference.",
+    "Native live trace proves formerly rejected multi-enemy Lightning Bolt reaches submission/landing; report all-bot DPS/HPS, deaths and next losses."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -57,9 +60,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
-  "ready_for_live_verification": false,
-  "next_action": "Read back loaded profile273/spell403 max_enemies and its migration-chain identity. Join the nonzero loaded MaxEnemies predicate to the retained parasite trace before assigning an exact row repair. No new Magmaw run is required merely to obtain existing evidence.",
+  "ready_for_build": true,
+  "ready_for_live_verification": true,
+  "next_action": "Finish exact SQL migration fixture and independent review, then one verified build and bounded live comparison of multi-enemy filler eligibility. Continue all-bot DPS diagnosis after this repair acceptance.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -99,7 +102,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approve",
-    "scope": "player gear authority, resolved provisioning identity, fallback API, Fire range SQL",
-    "live_verified": true
+    "scope": "Elemental Lightning Bolt max_enemies-only migration and executable SQL regression",
+    "live_verified": false
   }
 }

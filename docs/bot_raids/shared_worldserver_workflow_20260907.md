@@ -1,5 +1,13 @@
 # Shared-worldserver workflow status
 
+Current objective: resolve roster DPS, continuing past individual repair and
+canary acceptance. The active repair removes Elemental Lightning Bolt's
+historical one-enemy cap. Database readback confirms intentional old policy,
+not drift: Chain Lightning needs three enemies and may be forbidden, while
+the safe single-target filler was capped at one. Preserve Chain's existing
+priority and all area/range/resource guards. A focused SQL regression and
+independent review precede the next attributable live comparison.
+
 ## Current result: corrected-gear Magmaw development clear, 2026-09-08
 
 Source `48c42063461eafe111c8f6ee930fa81a5bdb75b3` completed the canonical

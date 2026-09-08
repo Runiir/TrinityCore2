@@ -68,7 +68,7 @@ def test_elemental_migration_preserves_native_totem_setup_and_existing_rotation(
     assert "native combat-totem setup already owns Searing Totem" in migration
 
     # The alignment migration is additive: Flame Shock, Earth Shock, and the
-    # single-target Lightning Bolt gate remain in the canonical profile.
+    # Lightning Bolt filler remain in the canonical profile.
     elemental_lines = [
         line
         for line in base.splitlines()
