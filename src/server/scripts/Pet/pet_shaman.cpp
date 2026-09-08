@@ -22,6 +22,9 @@
 
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
+#include "Player.h"
+#include "SpellInfo.h"
+#include "SpellScript.h"
 #include "TemporarySummon.h"
 #include "Totem.h"
 
@@ -64,6 +67,46 @@ enum ShamanEvents
     EVENT_SHAMAN_FIRENOVA       = 1,
     EVENT_SHAMAN_FIRESHIELD     = 2,
     EVENT_SHAMAN_FIREBLAST      = 3
+};
+
+// All three configured spells are native effect-0 SCHOOL_DAMAGE, including
+// Fire Shield (13376), which the AI recasts rather than applying a periodic aura.
+class spell_sha_fire_elemental_spell_scaling : public SpellScript
+{
+    void CalculateDamage(Unit* /*victim*/, int32& /*damage*/, int32& flatMod, float& /*pctMod*/)
+    {
+        Unit* caster = GetCaster();
+        SpellInfo const* spellInfo = GetSpellInfo();
+        if (!caster || !caster->IsGuardian() || caster->GetEntry() != 15438
+            || !spellInfo || (spellInfo->Id != SPELL_SHAMAN_FIREBLAST
+                && spellInfo->Id != SPELL_SHAMAN_FIRENOVA
+                && spellInfo->Id != SPELL_SHAMAN_FIRESHIELD)
+            || spellInfo->Effects[EFFECT_0].Effect != SPELL_EFFECT_SCHOOL_DAMAGE)
+            return;
+
+        Guardian* guardian = static_cast<Guardian*>(caster);
+        Unit* owner = guardian->GetStatOwner();
+        if (!owner || owner->GetTypeId() != TYPEID_PLAYER)
+            return;
+
+        float coefficient = spellInfo->Effects[EFFECT_0].BonusMultiplier
+            * spellInfo->GetSpellScalingMultiplier(caster->getLevel(), false);
+        // Preserve the core coefficient spellmod path, including its percent
+        // units and caster-derived mod owner; stat ownership is separate.
+        if (Player* modOwner = caster->GetSpellModOwner())
+        {
+            coefficient *= 100.0f;
+            modOwner->ApplySpellMod(spellInfo, SpellModOp::BonusCoefficient, coefficient);
+            coefficient /= 100.0f;
+        }
+        // Guardian-local spell power is already present in native flatMod.
+        flatMod += int32(guardian->GetOwnerSpellDamageBonus() * coefficient);
+    }
+
+    void Register() override
+    {
+        CalcDamage.Register(&spell_sha_fire_elemental_spell_scaling::CalculateDamage);
+    }
 };
 
 class npc_pet_shaman_earth_elemental : public CreatureScript
@@ -175,6 +218,7 @@ class npc_pet_shaman_fire_elemental : public CreatureScript
 void AddSC_shaman_pet_scripts()
 {
     using namespace Pets::Shaman;
+    RegisterSpellScript(spell_sha_fire_elemental_spell_scaling);
     new npc_pet_shaman_earth_elemental();
     new npc_pet_shaman_fire_elemental();
 }

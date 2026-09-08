@@ -24,6 +24,13 @@
 #include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
+#include "Totem.h"
+
+Unit* Guardian::GetStatOwner() const
+{
+    Unit* owner = Minion::GetOwner();
+    return owner && owner->IsTotem() ? owner->ToTotem()->GetOwner() : owner;
+}
 
 TempSummon::TempSummon(SummonPropertiesEntry const* properties, Unit* owner, bool isWorldObject) :
 Creature(isWorldObject), m_Properties(properties), m_type(TEMPSUMMON_MANUAL_DESPAWN),
@@ -379,6 +386,7 @@ bool Minion::IsWarlockMinion() const
 
 Guardian::Guardian(SummonPropertiesEntry const* properties, Unit* owner, bool isWorldObject) : Minion(properties, owner, isWorldObject)
 , m_bonusSpellDamage(0)
+, m_ownerSpellDamageBonus(0)
 {
     memset(m_statFromOwner, 0, sizeof(float)*MAX_STATS);
     m_unitTypeMask |= UNIT_MASK_GUARDIAN;

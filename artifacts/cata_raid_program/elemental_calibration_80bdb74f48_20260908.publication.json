@@ -1,0 +1,272 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "80bdb74f48c9c838e8ab575d6e33a86c493e8fce",
+  "archive_sha256": "000379794ae482b2e52eeae4d6c8cf292a00cbfc82ba97e25fd7e13ecb7d60a9",
+  "archive_bytes": 5263285,
+  "dvc_pointer": "artifacts/cata_raid_program/elemental_calibration_80bdb74f48_20260908.tar.gz.dvc",
+  "remote_download_sha256": "000379794ae482b2e52eeae4d6c8cf292a00cbfc82ba97e25fd7e13ecb7d60a9",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "terminal_reason": "calibration_window_complete",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-80bdb74f48/candidate-precalibration-readback.json",
+      "bytes": 15201,
+      "sha256": "4e07bea6982965f7e6f7373f4617b7c51f0c2b2b90f0380a6389d43f3222bc65"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/configure.log",
+      "bytes": 15533,
+      "sha256": "151b11eb53e50673177655e308529927e57c911d306df72e7d5635f8e0436832"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/configure_receipt.json",
+      "bytes": 13615,
+      "sha256": "4104ba9090dab80a35879d83a6b1540b881ef5c8ec06ec8ea6ce31af60dd346b"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/configure_verification.json",
+      "bytes": 536,
+      "sha256": "266cef06d94f6829748cd6c03f76635dc1b766bbeabcb38f681175fbe6a0d285"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/map-0-asset-preflight.json",
+      "bytes": 6041883,
+      "sha256": "cbcc7211a50b5ff177590921c86f100c4b1f6286439e1d33fcce0b4ee3eef768"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/map-669-asset-preflight.json",
+      "bytes": 5454509,
+      "sha256": "db645fa022cd209c1f8800a00c5257b07a46d3f46127eb7f66bdeca0f0ffb10f"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "5325639370a67f4de4eb86cc4b49d0e11fae304cbf5fddf482b328f7c5c4bc55"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/elemental-calibration-capture-review.md",
+      "bytes": 3062,
+      "sha256": "20593532585db2e96d62c554fb85ae000f8c70b6d0410638b9ee695e54ee6a2b"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/elemental-fulmination-application.json",
+      "bytes": 1836464,
+      "sha256": "6ca70294e5ca0777a9a366e8c3477257032d33e0e1282229e09bee64eced9b82"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/elemental-fulmination-gate-implementation.md",
+      "bytes": 3641,
+      "sha256": "74be7368d2d86b12e06956125edbc61e803919327967738936763828ae0d9cc5"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/elemental-fulmination-gate-review.md",
+      "bytes": 2699,
+      "sha256": "8cd28b1bf4932551b71752b534832cc0de18e997b70572632bd472e9eecf19fd"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/elemental-fulmination-prechange-readback.json",
+      "bytes": 840983,
+      "sha256": "42524be26965fe4ef883b405143fc0d911a2a67f2b9b7222c0c707995870be70"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/elemental-pet-target-review.md",
+      "bytes": 1748,
+      "sha256": "831b1404c59599531edee4a4d08bd4cac048889045ad32258b0284cfc6830c5e"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/elemental-shock-policy-precheck.md",
+      "bytes": 8636,
+      "sha256": "e02397dce5b51d6f80fc0646713ce7a42a33232fca72ebf1479e6b3990e65174"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/elemental-summon-owner-accessor-review.md",
+      "bytes": 1653,
+      "sha256": "d532d716d2c226ea8a144e699058711a7ec430b44d967ea37aeff4fce11724b4"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/parent-validation.txt",
+      "bytes": 354,
+      "sha256": "ab5674d8ac4f70490bcbfbab898a23f0c55b3288471f1fca237d11ea1629b0d1"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/phase4-profile-coverage-review.md",
+      "bytes": 1550,
+      "sha256": "4cd5dd3bc1361bbb8707c1d7a8eb8c87b2ee344310be7b479013bfac9fb1d196"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/static-and-database-contract/contract.json",
+      "bytes": 1340,
+      "sha256": "341053a7bef35c91904773efe4fe783f6b683fc09cc6a7e87e36ecd8b8a24bc3"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/review-context/static-and-database-contract/manifest.json",
+      "bytes": 282,
+      "sha256": "6c5a794dd2e1b2e359d6088171805768a670fffa84fddd26c2b4218e07c5f9c1"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "d484e7a5bce8b9def077e1cabf5de035d3d027950a63dfe49dd9c79b470e787f"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/worldserver_build.log",
+      "bytes": 60343,
+      "sha256": "43cfdc3b5249bca922e18269eeb6230dd485c99a03b6f7c139efe9f483711152"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/worldserver_build_receipt.json",
+      "bytes": 24244,
+      "sha256": "c0650757d7171971a95cdc3652e3503f38701dc6daf51ab377f498a4588e49df"
+    },
+    {
+      "path": "build-preflight-80bdb74f48/worldserver_build_verification.json",
+      "bytes": 536,
+      "sha256": "6aace012c6972f1c8ffb34ef2c35ff22b22c21f3a5ca3c15bdd3bf153f74d573"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/bot_pool_reset/reset_bot_pool.sql",
+      "bytes": 7817,
+      "sha256": "7a69716b1ffebac975da291391005a779903730028d28855f352968aff012af0"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/calibration_consumable_restock/elemental_shaman.sql",
+      "bytes": 1732,
+      "sha256": "ff562b15de16893fc2c5224c3d96088244ef3810c5219c6f4daae79cc1b9b274"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/cleanup_readback.json",
+      "bytes": 129,
+      "sha256": "1ecb47f80868be546844adbecc8099b4b5570977fe671c1a405e7db954da3f2d"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/closed_summary.json",
+      "bytes": 1263,
+      "sha256": "25230a5a34debc0d4a453f468e467ed2c9753caa6a0af7f1519199e099741c50"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/combat_analysis.json",
+      "bytes": 295,
+      "sha256": "886c54a50dc61c67ee6bc92dd09dbeb963332ec8b043efd78eca7d516c7c4fc1"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/combat_log.json",
+      "bytes": 673,
+      "sha256": "b3e0e17e0681b1f4bca619b89fea3a78f7619b10ac78b496516b9662cb4ff763"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/commands.txt",
+      "bytes": 200,
+      "sha256": "35d60f364507fdedd084eacc99d55e2461fb0d433bd2bc014d0ada64f3c773c7"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/compact_metrics.json",
+      "bytes": 4625,
+      "sha256": "8b634863a06c90ee2d86a30c325951676cb13eba8c62f5a799534588bdb498f0"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/dps-review/actors.json",
+      "bytes": 10865,
+      "sha256": "eab5429b5fd23b7bca67b4399a1d078cebbc30fab70ed1a7427b050989e2df11"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/dps-review/dps_review.md",
+      "bytes": 11723,
+      "sha256": "d6312bb7c1d07d2d3fa89e81395af17f7756821be6cfbf83a5f3eea01547fe15"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/dps-review/native-guardian-diagnosis.md",
+      "bytes": 9940,
+      "sha256": "895065ab24dc4183a242727747e6566d45999dcbfb11277c30621bed8c0ffd81"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/heartbeat_events.jsonl",
+      "bytes": 8732,
+      "sha256": "fba4a5d47f2fcdca2a410b851e1a6b88a74a8de0302305de4dbc199c00e55ace"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/heartbeat_manifest.json",
+      "bytes": 374,
+      "sha256": "a21bb61e7359f56ed8814b2bc72661fef7f88cc40f67b66e3d9d84903f76dce2"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/latest.json",
+      "bytes": 19811125,
+      "sha256": "95590f74d9d494f8c9e9bf5e72b0c599ea0990df63f8201b2da7361b7b265701"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/report.json",
+      "bytes": 47093961,
+      "sha256": "4cf675e42d453fae88d06213002fe9171e2aaa914a9ca01dc00b73e88ce4f5bd"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/worldserver.validation.conf",
+      "bytes": 156993,
+      "sha256": "90a34382278bfa71faa94a07ad98aa8b89c4d8debad0101d451b25756cfa30dd"
+    },
+    {
+      "path": "elemental-calibration-80bdb74f48/worldserver_output.log",
+      "bytes": 15480127,
+      "sha256": "ba3fc3dddb1d8b3e16b931924d5f825ca84cbf00b0398048579d0f268a446fd9"
+    },
+    {
+      "path": "run-elemental-calibration.py",
+      "bytes": 2660,
+      "sha256": "eb76134c0a3270f61d072043f0b0d601112b916f17879c5da80cc7a9b2e0e34d"
+    },
+    {
+      "path": "publish-elemental-calibration.py",
+      "bytes": 4254,
+      "sha256": "79f01b6b90a996c9769e51470e56a4ad3206db2aa4792f4cd25cdd1d5945c350"
+    },
+    {
+      "path": "evict-elemental-calibration.py",
+      "bytes": 1690,
+      "sha256": "a3ca13bbb134ab933bae6e7cbfd7e03ad310a73d6fcebf926cece3bf283d80d9"
+    },
+    {
+      "path": "elemental-calibration-launch-80bdb74f48.json",
+      "bytes": 2293,
+      "sha256": "e97cb50bcf044482a64bb70d0cdef82c7cdd71e2e9e1571e42815a90092b43a0"
+    },
+    {
+      "path": "elemental-calibration-console-80bdb74f48.log",
+      "bytes": 47093961,
+      "sha256": "4cf675e42d453fae88d06213002fe9171e2aaa914a9ca01dc00b73e88ce4f5bd"
+    },
+    {
+      "path": "elemental-calibration-postbuild-80bdb74f48.json",
+      "bytes": 537,
+      "sha256": "c227d0dc1bab46aed07ae74f30e8777d4763c20730e8074caae399e5d29886d1"
+    },
+    {
+      "path": "elemental-candidate-precalibration-readback.json",
+      "bytes": 29817,
+      "sha256": "51745589488158fddacf7f76aa528b387c8c133794529a5a935d30a934253d66"
+    },
+    {
+      "path": "elemental-mail-specialization-world-readback.json",
+      "bytes": 246,
+      "sha256": "ea63865ff4041417e4dabbfb288b05c6733f21b08562baaa4405da1fb4cf1e95"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    "elemental-calibration-80bdb74f48/report.json",
+    "elemental-calibration-80bdb74f48/latest.json",
+    "elemental-calibration-80bdb74f48/worldserver_output.log"
+  ]
+}

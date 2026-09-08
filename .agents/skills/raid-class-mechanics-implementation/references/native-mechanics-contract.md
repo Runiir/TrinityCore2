@@ -28,6 +28,12 @@ repair rating/stat application, owner-to-pet inheritance, or native pet-base
 normalization only. It may not alter damage coefficients, action policy, or a
 total-DPS multiplier. Cadence is reclassified after the repaired stats match.
 
+For a source-proven ownership/consumer contract defect, runtime owner identity
+plus an actual native-function counterexample can establish the repair before
+numeric stat parity. Preserve existing coefficients, bind intended behavior to
+pinned source/data, and capture missing stats in the same verification. Do not
+infer a stat value or recovered DPS from the aggregate gap.
+
 `damage_outcome` starts only after gear, owner/pet effective stats, cast mix,
 and landed-event cadence are within policy. It repairs one attributable native
 spell, periodic, proc, melee, or primary-pet damage-per-event edge.

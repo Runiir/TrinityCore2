@@ -43,6 +43,11 @@ inline std::string Capture(Player* owner, Unit* offensiveTarget, uint64 elapsedM
         json << std::setprecision(9) << 1.0 / double(spellTime);
     else
         json << "null";
+    json << ",\"owner_fire_spell_power\":";
+    if (owner)
+        json << owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FIRE);
+    else
+        json << "null";
     ObjectGuid slotGuid = owner ? owner->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] : ObjectGuid::Empty;
     Creature* fire = owner && owner->GetMap() && slotGuid
         ? owner->GetMap()->GetCreature(slotGuid) : nullptr;
@@ -113,6 +118,23 @@ inline std::string Capture(Player* owner, Unit* offensiveTarget, uint64 elapsedM
              << ",\"ai_enabled\":" << (unit->IsAIEnabled() ? "true" : "false")
              << ",\"victim_guid\":" << guid(guardianVictim)
              << ",\"victim_valid\":" << (guardianVictim && guardianVictim->IsAlive() && unit->IsValidAttackTarget(guardianVictim) ? "true" : "false");
+        json << ",\"level\":" << uint32(unit->getLevel())
+             << ",\"health\":" << unit->GetHealth()
+             << ",\"max_health\":" << unit->GetMaxHealth()
+             << ",\"melee_attack_power\":" << unit->GetTotalAttackPowerValue(BASE_ATTACK)
+             << ",\"base_attack_min_damage\":" << unit->GetFloatValue(UNIT_FIELD_MINDAMAGE)
+             << ",\"base_attack_max_damage\":" << unit->GetFloatValue(UNIT_FIELD_MAXDAMAGE)
+             << ",\"local_fire_spell_power\":" << unit->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FIRE)
+             << ",\"guardian_bonus_damage\":";
+        if (unit->IsGuardian())
+            json << static_cast<Guardian const*>(unit)->GetBonusDamage();
+        else
+            json << "null";
+        json << ",\"guardian_owner_spell_damage_bonus\":";
+        if (unit->IsGuardian())
+            json << static_cast<Guardian const*>(unit)->GetOwnerSpellDamageBonus();
+        else
+            json << "null";
         writeChain("owner_chain", ownerChain);
         writeChain("summoner_chain", summonerChain);
         for (auto const& [key, type] : {std::pair{"current_generic_spell", CURRENT_GENERIC_SPELL},

@@ -29,12 +29,15 @@ def test_native_guardian_timeline_without_primary_pet(tmp_path):
 using uint64=uint64_t;using uint32=uint32_t;using uint8=uint8_t;
 struct ObjectGuid {uint64 raw=0;uint64 GetRawValue()const{return raw;}uint32 GetCounter()const{return raw;}explicit operator bool()const{return raw!=0;}static ObjectGuid const Empty;};
 ObjectGuid const ObjectGuid::Empty{};
-constexpr int UNIT_MOD_CAST_HASTE=2,SUMMON_SLOT_TOTEM_FIRE=0,UNIT_CREATED_BY_SPELL=0,CURRENT_GENERIC_SPELL=0,CURRENT_CHANNELED_SPELL=1,CURRENT_AUTOREPEAT_SPELL=2;
+constexpr int BASE_ATTACK=0,SPELL_SCHOOL_MASK_FIRE=4,UNIT_FIELD_MINDAMAGE=3,UNIT_FIELD_MAXDAMAGE=4,UNIT_MOD_CAST_HASTE=2,SUMMON_SLOT_TOTEM_FIRE=0,UNIT_CREATED_BY_SPELL=0,CURRENT_GENERIC_SPELL=0,CURRENT_CHANNELED_SPELL=1,CURRENT_AUTOREPEAT_SPELL=2;
 struct SpellInfo{uint32 Id=12345;};struct Spell{SpellInfo info;SpellInfo const* GetSpellInfo(){return &info;}};
 struct Creature;struct TempSummon;struct Totem;
 struct Unit{
  ObjectGuid guid;Unit* owner=nullptr;Unit* victim=nullptr;Unit* helper=nullptr;std::set<Unit*> m_Controlled;
- float spellTime=0.8f;float GetFloatValue(int field){return spellTime;}
+ float spellTime=0.8f,minDamage=17.25f,maxDamage=29.5f,attackPower=432.5f;int firePower=111;uint32 level=85;uint64 health=1234,maxHealth=2345;
+ float GetFloatValue(int field){return field==UNIT_FIELD_MINDAMAGE?minDamage:(field==UNIT_FIELD_MAXDAMAGE?maxDamage:spellTime);}
+ uint32 getLevel(){return level;}uint64 GetHealth(){return health;}uint64 GetMaxHealth(){return maxHealth;}
+ float GetTotalAttackPowerValue(int type){return attackPower;}int SpellBaseDamageBonusDone(int school){return firePower;}
  bool alive=true,valid=true,engaged=true,guardian=false,pet=false,totem=false,ai=true;uint32 created=0;Spell* current=nullptr;
  virtual ~Unit()=default;
  ObjectGuid GetGUID()const{return guid;}Unit* GetVictim(){return victim;}bool IsAlive(){return alive;}
@@ -49,6 +52,7 @@ struct TempSummon:Creature{Unit* summoner=nullptr;TempSummon* ToTempSummon()over
 // Native Minion owner is separate from WorldObject owner-GUID lookup.
 // Totem InitStats skips SetMinion, so only nativeOwner is populated.
 struct Minion:TempSummon{Unit* nativeOwner=nullptr;Unit* GetOwner(){return nativeOwner;}};
+struct Guardian:Minion{int bonus=777,ownerBonus=2222;int GetBonusDamage()const{return bonus;}int GetOwnerSpellDamageBonus()const{return ownerBonus;}};
 struct Totem:Minion{Totem(){totem=true;}};
 Totem* Unit::ToTotem(){return IsTotem()?static_cast<Totem*>(this):nullptr;}
 struct Map{std::map<uint64,Creature*> creatures;Creature* GetCreature(ObjectGuid guid){return creatures.count(guid.raw)?creatures[guid.raw]:nullptr;}};
@@ -60,11 +64,11 @@ struct CalibrationMetrics{struct DecisionTimelineEntry{
 };};
 '''+header+r'''
 int main(){
- Player owner;owner.guid.raw=4294967297ULL;Player foreign;foreign.guid.raw=4294967300ULL;
+ Player owner;owner.firePower=9999;owner.guid.raw=4294967297ULL;Player foreign;foreign.guid.raw=4294967300ULL;
  Unit target;target.guid.raw=99;owner.helper=&target;
  Totem fire;fire.guid.raw=500;fire.entry=15439;fire.created=2894;fire.nativeOwner=&owner;fire.summoner=&owner;
  owner.m_SummonSlot[0]=fire.guid;owner.map.creatures[500]=&fire;
- TempSummon guardian;guardian.guid.raw=600;guardian.entry=15438;guardian.created=32982;guardian.guardian=true;guardian.owner=&fire;guardian.summoner=&fire;
+ Guardian guardian;guardian.guid.raw=600;guardian.entry=15438;guardian.created=32982;guardian.guardian=true;guardian.owner=&fire;guardian.summoner=&fire;
  fire.m_Controlled.insert(&guardian); // deliberately absent from player's controlled list
  TempSummon unrelated;unrelated.guid.raw=700;unrelated.entry=15438;unrelated.guardian=true;unrelated.owner=&foreign;unrelated.summoner=&foreign;owner.m_Controlled.insert(&unrelated);
  Player* bot=&owner;
@@ -81,6 +85,10 @@ int main(){
   owner.spellTime=divisor;capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
  }
  std::cout<<BotCalibrationSummonObservation::Capture(nullptr,nullptr,2500)<<'\n';
+ // A matching entry can be observed even if native runtime type is not Guardian.
+ Creature ordinary;ordinary.entry=15438;ordinary.guid.raw=800;ordinary.owner=&owner;
+ owner.m_Controlled.clear();owner.m_Controlled.insert(&ordinary);
+ std::cout<<BotCalibrationSummonObservation::Capture(&owner,&target,3000)<<'\n';
 }
 '''
     # Use actual production target-passing expressions in both alive paths.
@@ -109,6 +117,17 @@ int main(){
     assert guardian['summoner_chain']==[500,4294967297]
     assert guardian['victim_guid']==0 and not guardian['victim_valid']
     assert guardian['current_generic_spell']==0
+    assert idle['owner_fire_spell_power']==9999
+    assert guardian['level']==85 and guardian['health']==1234 and guardian['max_health']==2345
+    assert guardian['melee_attack_power']==432.5
+    assert guardian['base_attack_min_damage']==17.25 and guardian['base_attack_max_damage']==29.5
+    assert guardian['guardian_bonus_damage']==777 and guardian['local_fire_spell_power']==111
+    assert guardian['guardian_owner_spell_damage_bonus']==2222
+    assert samples[-2]['owner_fire_spell_power'] is None
+    assert samples[-1]['guardians'][0]['guardian_bonus_damage'] is None
+    assert samples[-1]['guardians'][0]['guardian_owner_spell_damage_bonus'] is None
+    assert samples[-1]['guardians'][0]['runtime_type']=='creature'
+    assert samples[-1]['guardians'][0]['local_fire_spell_power']==111
     assert len(active['guardians'])==1  # duplicate player/totem membership deduplicated
     assert active['owner_victim_guid']==active['guardians'][0]['victim_guid']==99
     assert active['owner_victim_valid'] and active['guardians'][0]['victim_valid']

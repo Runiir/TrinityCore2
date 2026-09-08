@@ -2,36 +2,44 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
-Source `613e50fc59` completed one exact 300-second native Elemental window:
-8,053,117 damage / 26,843.723 DPS, up 19.67% from 816. All current reference
-conditions pass; only the DPS floor fails (72.552% of 36,999.280). There were
-203 successful submissions from 203 attempts, zero HPS, deaths, cast failures
-or movement loss, and 2,980 decision samples mostly 99–101 ms apart. Native
-exit, cleanup and post-run binary verification passed.
+Source `80bdb74f48` completed one exact 300-second native Elemental window:
+8,682,109 damage / 28,940.363 DPS, up 7.8% from 613. The current reference is
+36,999.280 DPS. Role calibration and its 75% hard floor pass at 78.219%; the
+85% optimization target remains unmet. All 199 submissions succeeded, with
+zero HPS, recorded deaths, cast failures or movement loss. Native exit,
+cleanup and post-run binary verification passed.
 
-The original controller report failed chunk reassembly. All 749 chunks were
-recovered from saved output, with identical overlaps and exact 9,192,003-byte
-completion size; original report remains unchanged. `recovered_analysis.json`
-is separately attributable to native payload SHA256
-`528c49cb06ff0eb14315268617191933be6be510ecad73c151e2cc332ff7fda3`.
-The recovered run passed independent review; evidence is remotely verified
-and exact raw payloads are evicted. It remains excluded from training.
+All 882 chunks reassembled directly into the complete 10,830,110-byte payload.
+Terminal-framed capture, native totem ownership observation and guardian
+helper-target acquisition are accepted. Earth Shock attempts fell from 39 to
+17 and Lightning Bolt rose from 117 to 136; exact native charge gates passed
+behavioral fixtures, but per-decision charge counts were not captured.
 
-The next batch passed independent review: terminal-framed capture (including
-split completion frames), native fire-totem owner observation, elemental AI's
-null-victim combat-helper fallback, and typed Earth Shock charge/owned-DoT
-gates. The combined fixture suite passed 62 tests; amended capture boundaries
-passed 13 and database coverage passed 7. C/C++ changes remain below 1,000 lines.
+The Fire Elemental is observed alive and attacking for about 168 seconds,
+but contributes only 31,907 damage. Its immediate native owner is the fire
+totem. Current investigation concerns native owner-stat inheritance and the
+spell damage consumer; no coefficient tuning or numeric guardian-stat parity
+is admitted from this aggregate alone. Astra is adding native guardian stat
+observations for the next verification alongside the reviewed mechanics repair.
 
-The reviewed SQL changed only action2077/profile273 among 371 actions. All31
-profiles, 368 enabled actions, native charge bounds9, owned Flame Shock>=3000ms
-and one-target gating pass fresh readback. The stale historical260-action
-validator now checks per-profile enabled-action coverage. Static and database
-contracts pass; full historical publication qualification was not rerun.
+The closed DPS and mechanics reviews are frozen. The 5,263,285-byte evidence
+archive is remotely verified and exact raw payloads are evicted. The implementation
+packet subsequently clarified direct-damage hooks and preserved dead-owner stat
+identity; use its corrected version in the next build review context. Generic qualification
+remains rejected because four external identity manifest hashes are absent.
+This does not reverse the native role calibration pass; the run remains
+ineligible for qualification and training.
 
-Next: freeze/build once and run the next exact calibration. Guardian presence,
-DPS contribution and shock frequency must be measured; old empty guardian lists
-remain inconclusive. No worldserver is running.
+The Astra inheritance repair passed independent Sol review and five focused
+behavioral tests. It preserves local spell power, stores owner inheritance
+separately, and feeds only that component through the three native direct-damage
+spell callbacks. The guardian stat split preserves unrelated bodies; all changed
+C++ files are below 1,000 lines. New observations distinguish local and inherited
+terms. Existing coefficients and stat-update timing remain unchanged.
+
+Next: apply/read back the three reviewed spell-script bindings, commit and freeze,
+build once and run the next exact calibration. No worldserver is running. Source and current repairs are pushed to the task branch
+`codex/dps-canary-20260908`; remote master has not been updated.
 
 The latest Magmaw clear remains source18ff, 118,358.965 hostile DPS and
 20,110.681 HPS with zero deaths and actual 2 tank / 3 healer / 5 DPS. Remaining

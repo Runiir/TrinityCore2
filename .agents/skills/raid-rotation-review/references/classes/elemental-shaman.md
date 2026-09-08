@@ -13,7 +13,8 @@ Use these as class-specific checks after binding the current exact request, runt
 
 ## Priority and cadence checks
 
-- The current exact single-target APL orders Fire Elemental, Searing Totem, Lava Burst with Flame Shock remaining over 2s, Flame Shock refresh at 2s, Earth Shock at nine Lightning Shield stacks with Flame Shock remaining at least 3s, then Lightning Bolt.
+- Read charge and DoT-duration thresholds from the current promoted APL. Historical refresh thresholds in class notes are not reference authority.
+- WoWSims models Lightning Shield with aura stacks, but native Rolling Thunder and Fulmination use `Aura::GetCharges`/`SetCharges`. The native stack amount is a separate value. Verify the producer and consumer before mapping the reference to a gate; fixtures must distinguish stack amount1/charges9 from stack amount9/charges3.
 - Chain Lightning is target-count policy, not the single-target filler. Keep its enemy-count gate distinct from Lightning Bolt eligibility.
 - Lava Burst requires owned Flame Shock state. Trace missing aura, aura duration, target identity, candidate rejection, submission, and landing separately.
 - Fulmination damage is a triggered outcome of Earth Shock/Lightning Shield state; do not count it as another manual cast.
@@ -30,3 +31,10 @@ Use these as class-specific checks after binding the current exact request, runt
 - Exclude mirrored vulnerability rows from originated damage; retain owner and pet attribution separately.
 - Static same-bucket row order is unresolved without runtime score/tie-break evidence.
 - If movement or range authority blocks every action before submission, route the shared cause to the runtime coordinator rather than weakening class ranges.
+
+## Native totem and guardian ownership
+
+- A `Creature*` owner accessor does not necessarily read a Totem's native Minion owner. After verifying `IsTotem`, use the native `ToTotem()->GetOwner()` path. Preserve the separate nonvirtual accessors in test doubles.
+- Guardian observations must include totem-controlled units even when the player has no primary pet. An observer that rejects totem ownership cannot establish guardian absence.
+- A caster can be engaged with a valid native `getAttackerForHelper()` target while `GetVictim()` is null. Keep owner combat state, guardian acquisition, actual attacks and damage attribution separate; the owner's target alone does not prove guardian damage.
+- Guardian `GetBonusDamage()` and `GetOwnerSpellDamageBonus()` expose different native terms. Local fire spell power already enters the generic spell calculation; compare the inherited snapshot separately and never sum observation fields without tracing their consumer. Owner proc changes do not prove a guardian stat update occurred.

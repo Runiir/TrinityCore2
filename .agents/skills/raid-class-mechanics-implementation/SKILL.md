@@ -48,7 +48,15 @@ first_broken_edge = native_class_damage_model or native_pet_damage_model
 In `damage_outcome`, wrong owner or pet cadence, target uptime, action
 selection, resources, range, or rejections returns the work unit to
 `raid-role-implementation`.
-Missing runtime attribution belongs to a capture-only
+A native ownership or damage-consumer contract defect may be repaired before
+numeric stat parity is available when an attributable runtime identity/state
+and an executable counterexample through the actual native function prove the
+wrong branch or dropped value. Bind the intended behavior to pinned source or
+spell data. Preserve coefficients and unrelated classes, and include the missing
+stat observations in that repair's verification. This establishes code correctness,
+not recovered DPS or numeric parity; those remain live acceptance questions.
+
+Otherwise, missing runtime attribution belongs to a capture-only
 `raid-shard-architecture` work unit. Never compensate for missing evidence with
 a coefficient change.
 
@@ -68,6 +76,11 @@ spell identity, and duration. Separate:
 Locate the first native function or data edge that disagrees with the pinned
 reference. Use repository spell data, client data, or pinned WoWSims source as
 evidence; do not invent a coefficient from the final DPS gap.
+
+Before adding a missing consumer, trace which terms the surrounding native
+calculation already includes. Exercise nonzero local and inherited contributions
+together; a zero-local-stat fixture cannot detect double application. Preserve
+school masks, coefficient spell mods, and snapshot/update timing explicitly.
 
 ## Make one bounded repair
 
