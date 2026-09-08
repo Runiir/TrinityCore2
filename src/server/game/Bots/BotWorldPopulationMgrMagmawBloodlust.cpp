@@ -171,7 +171,7 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
 
     auto recordBloodlustEvent = [this, &context, originalBot,
         currentMagmawBloodlustContextReason](char const* result, Unit* target,
-        uint32 valueInt)
+        uint32 spellId)
     {
         if (currentMagmawBloodlustContextReason())
             return;
@@ -180,23 +180,32 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
             "magmaw_bloodlust", &context.Power, context.Stage,
             context.ChosenActivity.Activity);
         RecordEvent(context.State, originalBot, "magmaw_bloodlust", target,
-            result, raw.c_str(), semantic.c_str(), 0.0f, valueInt,
-            BloodlustSpell);
+            result, raw.c_str(), semantic.c_str(), 0.0f, spellId, spellId);
     };
+
+    std::optional<uint32> const knownBloodlustSpell =
+        SelectKnownBloodlustSpell(originalBot->HasSpell(BloodlustSpell),
+            originalBot->HasSpell(HeroismSpell));
 
     // A submitted cast is latched until its native aura is observed.  Do not
     // submit a second cast merely because the next blackboard sample has not
     // caught up yet, and keep observation useful even after the head despawns.
     if (raid->MagmawBloodlustSubmitted)
     {
-        bool observedAura = originalBot->HasAura(BloodlustSpell)
-            || ObservedBloodlustAura(board, *owner);
+        bool observedAura = knownBloodlustSpell
+            && (originalBot->HasAura(*knownBloodlustSpell,
+                    originalBot->GetGUID())
+                || ObservedBloodlustAura(board, *owner,
+                    knownBloodlustSpell));
         if (observedAura && !raid->MagmawBloodlustAuraObserved)
         {
             Unit* target = originalBot;
             if (window)
                 target = ObjectAccessor::GetUnit(*originalBot, window->HeadGuid);
-            recordBloodlustEvent("observed_aura_2825", target, BloodlustSpell);
+            std::string const result = "observed_aura_"
+                + std::to_string(*knownBloodlustSpell);
+            recordBloodlustEvent(result.c_str(), target,
+                *knownBloodlustSpell);
             raid->MagmawBloodlustAuraObserved = true;
         }
         return;
@@ -246,15 +255,21 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
         if (char const* staleReason = currentMagmawBloodlustContextReason())
             return BotActionArbitration::Outcome::NotApplicable(staleReason);
 
+        std::optional<uint32> const knownBloodlustSpell =
+            SelectKnownBloodlustSpell(originalBot->HasSpell(BloodlustSpell),
+                originalBot->HasSpell(HeroismSpell));
+
         auto block = [originalBot, headGuid,
-            currentMagmawBloodlustContextReason, recordBloodlustEvent](
+            currentMagmawBloodlustContextReason, recordBloodlustEvent,
+            knownBloodlustSpell](
             std::string const& reason)
         {
             if (char const* staleReason = currentMagmawBloodlustContextReason())
                 return BotActionArbitration::Outcome::NotApplicable(staleReason);
             Unit* target = ObjectAccessor::GetUnit(*originalBot, headGuid);
             std::string const result = "blocked_" + reason;
-            recordBloodlustEvent(result.c_str(), target, BloodlustSpell);
+            recordBloodlustEvent(result.c_str(), target,
+                knownBloodlustSpell.value_or(0));
             return BotActionArbitration::Outcome::NotApplicable(result);
         };
 
@@ -278,11 +293,12 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
         if (!nativeLockout.second.empty())
             return block(nativeLockout.second);
 
-        if (!originalBot->HasSpell(BloodlustSpell))
+        if (!knownBloodlustSpell)
             return block("spell_not_in_shaman_spellbook");
 
         std::string failureReason;
-        if (!TryCastFriendlySpell(originalBot, originalBot, BloodlustSpell,
+        if (!TryCastFriendlySpell(originalBot, originalBot,
+                *knownBloodlustSpell,
                 &failureReason))
             return block(failureReason.empty()
                 ? "native_spell_submission_rejected" : failureReason);
@@ -292,8 +308,9 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
         context.Situation = "adaptive_magmaw";
         context.Action = "magmaw_bloodlust_submitted";
         context.State.LastDecisionHandler = "adaptive_magmaw_bloodlust";
-        recordBloodlustEvent("submitted_native_spell_2825", head,
-            BloodlustSpell);
+        std::string const result = "submitted_native_spell_"
+            + std::to_string(*knownBloodlustSpell);
+        recordBloodlustEvent(result.c_str(), head, *knownBloodlustSpell);
         return BotActionArbitration::Outcome::Submitted(
             "magmaw_bloodlust_submitted_native");
     };

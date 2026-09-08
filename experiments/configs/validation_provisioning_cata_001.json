@@ -1187,6 +1187,7 @@
           "race": 11,
           "class": 7,
           "level": 85,
+          "spells": [32182],
           "consumables": [
             { "item_id": 58086, "slot": 26, "count": 20 },
             { "item_id": 62671, "slot": 27, "count": 20 },

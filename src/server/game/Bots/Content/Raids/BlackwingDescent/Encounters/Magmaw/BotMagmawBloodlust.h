@@ -33,6 +33,23 @@ constexpr std::string_view ElementalShamanSpec = "elemental_shaman";
 constexpr std::string_view TimingEvidence =
     "source_backed_exposed_head_burn_no_wcl_verification";
 
+inline std::optional<uint32> SelectKnownBloodlustSpell(
+    bool bloodlustKnown, bool heroismKnown)
+{
+    // Keep the historical Bloodlust choice stable when both spell variants
+    // are present, while accepting a Horde/Alliance-specific spellbook.
+    if (bloodlustKnown)
+        return BloodlustSpell;
+    if (heroismKnown)
+        return HeroismSpell;
+    return std::nullopt;
+}
+
+inline bool IsPrimaryBloodlustSpell(uint32 spellId)
+{
+    return spellId == BloodlustSpell || spellId == HeroismSpell;
+}
+
 struct HeadWindow
 {
     ObjectGuid BossGuid;
@@ -133,16 +150,26 @@ inline std::optional<uint32> FindRaidLockout(Blackboard const& board)
 }
 
 inline bool ObservedBloodlustAura(Blackboard const& board,
-    ObjectGuid ownerGuid)
+    ObjectGuid ownerGuid, std::optional<uint32> spellId)
 {
+    if (ownerGuid.IsEmpty() || !spellId
+        || !IsPrimaryBloodlustSpell(*spellId))
+        return false;
+
     for (ActorSnapshot const& member : board.Players)
         if (member.Guid == ownerGuid)
             for (AuraSnapshot const& aura : member.Auras)
-                if (aura.SpellId == BloodlustSpell
-                    && (aura.CasterGuid.IsEmpty()
-                        || aura.CasterGuid == ownerGuid))
+                if (aura.SpellId == *spellId
+                    && aura.CasterGuid == ownerGuid)
                     return true;
     return false;
+}
+
+inline bool ObservedBloodlustAura(Blackboard const& board,
+    ObjectGuid ownerGuid)
+{
+    return ObservedBloodlustAura(board, ownerGuid,
+        std::optional<uint32>(BloodlustSpell));
 }
 
 inline std::optional<ObjectGuid> FindSingleElementalShaman(

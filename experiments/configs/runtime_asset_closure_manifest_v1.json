@@ -32,15 +32,15 @@
       "class_id": "validation_routes",
       "stage": "validation_scenarios",
       "output_path": "dataset/validation_scenarios",
-      "md5": "3c2286d3c01ccc479606a66b2babec34.dir",
-      "size": 548266,
+      "md5": "6cb956b1b19a09ab17d7fadf025ffca0.dir",
+      "size": 548644,
       "nfiles": 5
     },
     {
       "class_id": "validation_gear_profiles",
       "stage": "validation_gear",
       "output_path": "dataset/validation_gear_profiles",
-      "md5": "6a8a52ca7dc7b56c07572876587f7990.dir",
+      "md5": "1c555ed3a811c7093502ef064594bfd4.dir",
       "size": 1284521,
       "nfiles": 3
     }
@@ -102,17 +102,52 @@
       "root": "source-checkout",
       "rule": "complete-directory",
       "path": "dataset/validation_scenarios",
-      "provenance": "DVC validation_scenarios stage 3c2286d3c01ccc479606a66b2babec34.dir",
+      "provenance": "DVC validation_scenarios stage; current payload below. audit_inventory_sha256 retains historical class-coverage provenance, not current payload bytes.",
       "hydration_source": "DVC remote for validation_scenarios",
       "eviction_policy": "after verified remote publication and no active receipt",
       "audit_inventory_sha256": "bd23bc7cc3e018f542e54acb63d787bdab7bae98a2bf00249411fdb1754565be",
-      "expected_inventory": {"file_count": 5, "size_bytes": 548266, "path_set_sha256": "a1b9f088efb02f9b70174ab228d7146d4fd31128ce4009f3ec9c9c64a7e057f1", "inventory_sha256": "8e48fe02cd16278a2891acf89bc7fa9a509a02bcc842b19c42fc6415110b8f61"},
+      "expected_inventory": {
+        "file_count": 5,
+        "size_bytes": 548644,
+        "path_set_sha256": "a1b9f088efb02f9b70174ab228d7146d4fd31128ce4009f3ec9c9c64a7e057f1",
+        "inventory_sha256": "ad678ce80e195493cd6413fa6c66abac9a524bfb88d1f0475eb68c515c75c077"
+      },
       "expected_files": [
-        {"path": "dataset/validation_scenarios/manifest.json", "mode": "0664", "size_bytes": 764, "sha256": "b1c0068d17c8b18d676417838db3b2ac32dd63239a24e74a9a783d0ea6333b2b"},
-        {"path": "dataset/validation_scenarios/report.json", "mode": "0664", "size_bytes": 902, "sha256": "057d1df4bf8529fd1383429dff7b8f07fdd24a9bc716b9e3c062394e0ce6f775"},
-        {"path": "dataset/validation_scenarios/validation_mechanics.jsonl", "mode": "0664", "size_bytes": 29420, "sha256": "e00c19e0b7cfd28f0d9025ecf2ada200e9446b3362d96799bf8ce6dad43b91aa"},
-        {"path": "dataset/validation_scenarios/validation_routes.jsonl", "mode": "0664", "size_bytes": 483655, "sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5"},
-        {"path": "dataset/validation_scenarios/validation_scenarios.jsonl", "mode": "0664", "size_bytes": 33525, "sha256": "84b5b52c137ca4b90f98c7dd13a50dba4f75ff049f14b5b4ce0a18866aad3d5d"}
+        {
+          "path": "dataset/validation_scenarios/manifest.json",
+          "type": "file",
+          "mode": "0644",
+          "size_bytes": 764,
+          "sha256": "2bd453d6cbfd147449dbc2de454be45f230265e33c42e1bbfe300e14ed282bd8"
+        },
+        {
+          "path": "dataset/validation_scenarios/report.json",
+          "type": "file",
+          "mode": "0644",
+          "size_bytes": 902,
+          "sha256": "371fccfc34ddf024d425d4aad98a15af4a11787d0b4fbe6093c0e987855f06e6"
+        },
+        {
+          "path": "dataset/validation_scenarios/validation_mechanics.jsonl",
+          "type": "file",
+          "mode": "0644",
+          "size_bytes": 29420,
+          "sha256": "e00c19e0b7cfd28f0d9025ecf2ada200e9446b3362d96799bf8ce6dad43b91aa"
+        },
+        {
+          "path": "dataset/validation_scenarios/validation_routes.jsonl",
+          "type": "file",
+          "mode": "0644",
+          "size_bytes": 483655,
+          "sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5"
+        },
+        {
+          "path": "dataset/validation_scenarios/validation_scenarios.jsonl",
+          "type": "file",
+          "mode": "0644",
+          "size_bytes": 33903,
+          "sha256": "dbe0e58a81129fda999ad1f16073e43050b59ecb1c111ca2ada8d752e8705386"
+        }
       ]
     },
     {
@@ -122,7 +157,7 @@
       "root": "source-checkout",
       "rule": "complete-directory",
       "path": "dataset/validation_gear_profiles",
-      "provenance": "DVC validation_gear stage; current payload below. audit_inventory_sha256 retains historical class-coverage provenance, not current gear bytes.",
+      "provenance": "DVC validation_gear stage; current payload below. audit_inventory_sha256 retains historical class-coverage provenance, not current payload bytes.",
       "hydration_source": "DVC remote for validation_gear",
       "eviction_policy": "after verified remote publication and no active receipt",
       "audit_inventory_sha256": "3a88b6a7dabd03a0e7ef7a1e292765b0d510bf31b04e72c3ab5d78c52fa94ec9",
@@ -130,7 +165,7 @@
         "file_count": 3,
         "size_bytes": 1284521,
         "path_set_sha256": "81fe798451c158e40821a07936b2c9913381648d4ff986af61484c1075a1a32d",
-        "inventory_sha256": "89fc8e366c8a413eea57837a1c133fee9c4988c9cdc93d2ef1386759f7295e41"
+        "inventory_sha256": "e02016569cd4853762bff612064b87c08dc9cdf6f57a1ba4ef74fa77decc994d"
       },
       "expected_files": [
         {
@@ -138,7 +173,7 @@
           "type": "file",
           "mode": "0644",
           "size_bytes": 629,
-          "sha256": "8618c84f5d1fe946339bce04c4761fb6b4b4be22be8ac544e207138a34b6850a"
+          "sha256": "9ba8da234219c3cf93fe0ca49bc0e0a3172cf3cb9da77071f19d1cb47de9ee06"
         },
         {
           "path": "dataset/validation_gear_profiles/profiles.json",

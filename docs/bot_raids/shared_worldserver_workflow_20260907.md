@@ -1,14 +1,53 @@
 # Shared-worldserver workflow status
 
-Current objective: resolve roster DPS, continuing past individual repair and
-canary acceptance. The active repair removes Elemental Lightning Bolt's
-historical one-enemy cap. Database readback confirms intentional old policy,
-not drift: Chain Lightning needs three enemies and may be forbidden, while
-the safe single-target filler was capped at one. Preserve Chain's existing
-priority and all area/range/resource guards. A focused SQL regression and
-independent review precede the next attributable live comparison.
+Current objective: resolve roster DPS, continuing past individual repair acceptance.
+Elemental filler eligibility is accepted from source 226fa8857d. The next proven
+edge is missing raid haste during the first selectable exposed-head window:
+actor 30010 repeatedly rejects hardcoded Bloodlust 2825 as absent from its spellbook.
+The reviewed repair provisions legitimate Heroism for the canonical Draenei
+shaman and all six diagnostic clones, resolves the known shaman variant, and
+uses that ID for native cast and matching owner-aura observation. First-head
+timing, raid lockouts and typed arbitration are preserved. Live verification
+is next; this repair is not yet accepted.
 
-## Current result: corrected-gear Magmaw development clear, 2026-09-08
+## Current result: Elemental repair accepted, raid haste blocked
+
+Source `226fa8857d23aa894a5d0be9929ddf70e7975a00` cleared Magmaw 10N with three
+terminal statuses, cleanup complete, four trash deaths and zero boss-fight deaths.
+All ten bots recovered. Originated party DPS rose 84,974.593 to 95,723.151;
+HPS 20,206.545 over 325 active damage seconds. These scoring seconds are not a
+strict WCL-equivalent engage-to-death duration. Raw callback DPS 229,813.151
+contains transferred damage and must not be claimed as throughput.
+
+Independent Sol review accepted native Lightning Bolt submission while Chain was
+forbidden, followed 2.342s later by landed damage on the same target entry.
+Direct Lightning Bolt events increased 4 to 11; Elemental DPS 5,579.518 to 9,270.637.
+Exact cast-to-target GUID is unavailable after aggregation. Remaining cadence,
+head targeting, moving filler and effective-stat parity remain unresolved.
+Roster remains 2 tanks / 3 healers / 5 DPS; requested 2/2/6 has not been tested.
+
+The first selectable-head observation 1788861562295 shows the assigned shaman
+on 42347 and `blocked_spell_not_in_shaman_spellbook`. No haste submission or aura
+followed. Persisted spell rows alone do not establish the runtime spellbook.
+The active browser WCL report xAhkN2y9YP3KRmnJ/fight 10 lasts 70.9s and applies
+Time Warp at 10.449–10.463s, removing it 50.456–50.457s. That reference does not
+prove head-window timing. Our requested strategy remains burst on first head.
+
+Closed evidence and the all-bot review are published at
+[`magmaw_development_226fa8857d_20260908.tar.gz.dvc`](../../artifacts/cata_raid_program/magmaw_development_226fa8857d_20260908.tar.gz.dvc).
+The 27,520,648-byte archive passed fresh-cache remote reconstruction and hash
+verification. Exact local raw payloads were evicted after independent review.
+Calibration category accounting is repaired and built at d3298f73f1, but its
+300s live calibration is deferred for this higher-impact raid-haste edge.
+
+Ten focused checks cover runtime spell variants, canonical/shard provisioning,
+and offline verifier readiness. Independent Sol review approved both gameplay
+changes and the preparation correction. Offline DVC verification now explicitly
+allows valid incomplete loadouts while retaining false qualification readiness;
+all payload, artifact and database validation failures still fail. Generated
+routes/gear bindings were refreshed; the equipment profile bytes are unchanged.
+
+## Earlier result: corrected-gear Magmaw development clear, 2026-09-08
 
 Source `48c42063461eafe111c8f6ee930fa81a5bdb75b3` completed the canonical
 10-player normal Magmaw route after replacing the invalid heuristic gear and

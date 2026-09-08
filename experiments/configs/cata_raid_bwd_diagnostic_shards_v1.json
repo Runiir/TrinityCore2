@@ -715,7 +715,10 @@
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_dps_5",
           "roster_source_slot_id": "raid_dps_5",
-          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+          "spells": [
+            32182
+          ]
         }
       ],
       "diagnostic_only": true,
@@ -1385,7 +1388,10 @@
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_omnotron_diagnostic:raid_dps_5",
           "roster_source_slot_id": "raid_dps_5",
-          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic"
+          "runtime_profile_id": "blackwing_descent_10n_omnotron_diagnostic",
+          "spells": [
+            32182
+          ]
         }
       ],
       "diagnostic_only": true,
@@ -2057,7 +2063,10 @@
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_maloriak_diagnostic:raid_dps_5",
           "roster_source_slot_id": "raid_dps_5",
-          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic"
+          "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic",
+          "spells": [
+            32182
+          ]
         }
       ],
       "diagnostic_only": true,
@@ -2730,7 +2739,10 @@
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_atramedes_diagnostic:raid_dps_5",
           "roster_source_slot_id": "raid_dps_5",
-          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic"
+          "runtime_profile_id": "blackwing_descent_10n_atramedes_diagnostic",
+          "spells": [
+            32182
+          ]
         }
       ],
       "diagnostic_only": true,
@@ -3404,7 +3416,10 @@
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_chimaeron_diagnostic:raid_dps_5",
           "roster_source_slot_id": "raid_dps_5",
-          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic"
+          "runtime_profile_id": "blackwing_descent_10n_chimaeron_diagnostic",
+          "spells": [
+            32182
+          ]
         }
       ],
       "diagnostic_only": true,
@@ -4079,7 +4094,10 @@
           "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_nefarian_diagnostic:raid_dps_5",
           "roster_source_slot_id": "raid_dps_5",
-          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic"
+          "runtime_profile_id": "blackwing_descent_10n_nefarian_diagnostic",
+          "spells": [
+            32182
+          ]
         }
       ],
       "diagnostic_only": true,

@@ -470,7 +470,7 @@ stages:
       dataset/validation_gear_profiles/profiles.json --provisioning-report
       dataset/validation_provisioning/report.json --bwd-diagnostic-shard-fixture
       experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json --output
-      dataset/validation_provisioning_verification/report.json
+      dataset/validation_provisioning_verification/report.json --allow-unready
     deps:
     - tools/bot_ml/validate_validation_provisioning.py
     - tools/bot_ml/build_validation_gear_profiles.py

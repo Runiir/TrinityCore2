@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 
@@ -96,22 +97,26 @@ def test_bloodlust_is_one_native_cast_with_normal_readiness_and_telemetry() -> N
     assert "MagmawBloodlustOwnerGuid" in runtime
     assert "MagmawBloodlustHeadGuid" in runtime
 
-    assert "TryCastFriendlySpell(originalBot, originalBot, BloodlustSpell" in body
-    assert '"submitted_native_spell_2825"' in body
-    assert '"observed_aura_2825"' in body
+    assert "SelectKnownBloodlustSpell" in body
+    assert "HasSpell(BloodlustSpell)" in body
+    assert "HasSpell(HeroismSpell)" in body
+    assert "TryCastFriendlySpell(originalBot, originalBot,\n                *knownBloodlustSpell" in body
+    assert '"submitted_native_spell_"' in body
+    assert '"observed_aura_"' in body
+    assert "0.0f, spellId, spellId" in body
+    assert "knownBloodlustSpell.value_or(0)" in body
     assert '"blocked_" + reason' in body
     assert "MagmawBloodlustSubmitted = true" in body
     assert "MagmawBloodlustHeadGuid != window->HeadGuid" in body
     assert body.index("TryCastFriendlySpell(") < body.index(
         "MagmawBloodlustSubmitted = true"
     )
-    assert body.index('"submitted_native_spell_2825"') > body.index(
+    assert body.index('"submitted_native_spell_"') > body.index(
         "MagmawBloodlustSubmitted = true"
     )
     assert "Resource::GlobalCooldown" in body
     assert "Resource::Cast" in body
     assert "Resource::Target" in body
-    assert "HasSpell(BloodlustSpell)" in body
     assert "TryCastFriendlySpell" in text(BOTS / "BotWorldPopulationMgrCombatSupport.cpp")
 
     forbidden = (
@@ -146,3 +151,101 @@ def test_bloodlust_is_one_native_cast_with_normal_readiness_and_telemetry() -> N
 
     for path in (HELPER, MODULE, MANAGER, RUNTIME, CANDIDATES, EVENTS):
         assert len(text(path).splitlines()) < 1000, path
+
+
+def test_magmaw_spell_selection_and_aura_identity_use_the_same_native_spell(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "magmaw_bloodlust_spell_identity.cpp"
+    binary = tmp_path / "magmaw_bloodlust_spell_identity"
+    source.write_text(
+        r'''
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBloodlust.h"
+
+#include <cassert>
+
+using namespace BotEncounter;
+using namespace BotEncounter::MagmawBloodlust;
+
+static ActorSnapshot Owner(ObjectGuid guid)
+{
+    ActorSnapshot owner;
+    owner.Guid = guid;
+    owner.Kind = ActorKind::Player;
+    owner.Role = "dps";
+    owner.ClassSpec = "elemental_shaman";
+    owner.Alive = true;
+    return owner;
+}
+
+static Blackboard AuraBoard(ObjectGuid ownerGuid, uint32 spellId,
+    ObjectGuid casterGuid)
+{
+    Blackboard board;
+    ActorSnapshot owner = Owner(ownerGuid);
+    owner.Auras = { AuraSnapshot{ spellId, casterGuid, 1, 0 } };
+    board.Players = { owner };
+    return board;
+}
+
+int main()
+{
+    std::optional<uint32> const knownHeroism =
+        SelectKnownBloodlustSpell(false, true);
+    std::optional<uint32> const knownBloodlust =
+        SelectKnownBloodlustSpell(true, false);
+    std::optional<uint32> const knownNeither =
+        SelectKnownBloodlustSpell(false, false);
+    assert(knownHeroism && *knownHeroism == HeroismSpell);
+    assert(knownBloodlust && *knownBloodlust == BloodlustSpell);
+    assert(!knownNeither);
+
+    ObjectGuid const ownerGuid(HighGuid::Player, uint32(30010));
+    ObjectGuid const wrongCaster(HighGuid::Player, uint32(30011));
+
+    Blackboard heroism = AuraBoard(ownerGuid, HeroismSpell, ownerGuid);
+    assert(ObservedBloodlustAura(heroism, ownerGuid, knownHeroism));
+    assert(!ObservedBloodlustAura(heroism, ownerGuid, knownBloodlust));
+    assert(!ObservedBloodlustAura(heroism, ownerGuid, knownNeither));
+
+    Blackboard bloodlust = AuraBoard(ownerGuid, BloodlustSpell, ownerGuid);
+    assert(ObservedBloodlustAura(bloodlust, ownerGuid, knownBloodlust));
+    assert(!ObservedBloodlustAura(bloodlust, ownerGuid, knownHeroism));
+
+    Blackboard wrongCasterBoard = AuraBoard(ownerGuid, HeroismSpell,
+        wrongCaster);
+    assert(!ObservedBloodlustAura(wrongCasterBoard, ownerGuid,
+        knownHeroism));
+
+    Blackboard wrongOwnerBoard = AuraBoard(wrongCaster, HeroismSpell,
+        ownerGuid);
+    assert(!ObservedBloodlustAura(wrongOwnerBoard, ownerGuid,
+        knownHeroism));
+    return 0;
+}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            "g++",
+            "-std=c++17",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-I",
+            str(ROOT / "src/server/game"),
+            "-I",
+            str(ROOT / "src/server/game/Entities/Object"),
+            "-I",
+            str(ROOT / "src/server/shared"),
+            "-I",
+            str(ROOT / "src/common"),
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)

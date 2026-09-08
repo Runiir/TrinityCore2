@@ -925,6 +925,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=Path("dataset/validation_provisioning/verifier_report.json"))
     parser.add_argument("--check-db", action="store_true", help="Check configured auth/characters schema and validation account presence.")
     parser.add_argument("--require-applied", action="store_true", help="Fail if validation characters are not already present in the characters DB.")
+    parser.add_argument("--allow-unready", action="store_true", help="Generate an offline report for valid but incomplete loadouts; preserves all_passed=false and never permits validation failures.")
     args = parser.parse_args()
 
     base_config = load_config_with_bwd_diagnostic_shards(args.config, args.bwd_diagnostic_shard_fixture)
@@ -942,7 +943,12 @@ def main() -> int:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     write_json(args.output, report)
     print(json.dumps(report, indent=2, sort_keys=True))
-    return 0 if report["all_passed"] else 1
+    valid_unready_report = (
+        args.allow_unready and report["failure_count"] == 0
+        and report["payload_valid"] and not generated_failures
+        and report["database_valid"] is not False
+    )
+    return 0 if report["all_passed"] or valid_unready_report else 1
 
 
 if __name__ == "__main__":
