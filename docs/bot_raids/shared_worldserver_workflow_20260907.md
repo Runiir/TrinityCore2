@@ -37,8 +37,19 @@ spell callbacks. The guardian stat split preserves unrelated bodies; all changed
 C++ files are below 1,000 lines. New observations distinguish local and inherited
 terms. Existing coefficients and stat-update timing remain unchanged.
 
-Next: apply/read back the three reviewed spell-script bindings, commit and freeze,
-build once and run the next exact calibration. No worldserver is running. Source and current repairs are pushed to the task branch
+Source `27200f36cc` built successfully but failed before scoring: manual binding
+application was replayed by the ordinary world updater and hit a duplicate key.
+The coordinator stopped the failed startup; no DPS was measured, no bots were
+leased, and cleanup/postbuild verification passed. The SQL amendment now handles
+initial, partial and complete replay without suppressing other errors; its focused
+module passes five tests. The native C++ repair is unchanged.
+
+The SQL replay amendment passed independent review and actual MariaDB EXPLAIN.
+Startup-only evidence is remotely verified, every archive member hash checked,
+and exact raw payloads evicted.
+
+Next: freeze and incrementally build the SQL-only amendment, then run the exact
+calibration. No worldserver is running. Source and current repairs are pushed to the task branch
 `codex/dps-canary-20260908`; remote master has not been updated.
 
 The latest Magmaw clear remains source18ff, 118,358.965 hostile DPS and

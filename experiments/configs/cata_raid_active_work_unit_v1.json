@@ -8,7 +8,7 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Guardian inheritance and spell-consumer repairs independently approved; exact SQL application and frozen build next.",
+  "gate_state": "Native repair and SQL replay amendment independently approved. Startup-only failed attempt published and cleaned.",
   "first_broken_edge": {
     "id": "elemental_guardian_owner_stat_inheritance",
     "owner_classification": "raid_class_mechanics_implementation",
@@ -17,7 +17,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "06ba77ca40cd2d5468a0acc3dfbb66fb3754492a59405249477556e7bd9e1321"
+    "sha256": "7f933f3b4955daf13a5c845efdf1844ad8c3a9e9f0567d85cc0e2e2fc98ebd2b"
   },
   "scope_lock": {
     "objective": "Repair the source-proven native guardian inheritance edge, retaining coefficients and ownership; capture affected native stats for verification.",
@@ -51,7 +51,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Apply and read back exact three spell-script bindings; commit/freeze, build once, run exact300-second native calibration.",
+  "next_action": "Freeze SQL-only amendment, incrementally build, then exact calibration.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -122,5 +122,17 @@
       "review": "independently_approved_empty_dbc_root_fixture_passed"
     }
   ],
-  "reference_fixture_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f"
+  "reference_fixture_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+  "latest_startup_attempt": {
+    "source_commit": "27200f36cc",
+    "terminal_reason": "infrastructure_loss",
+    "cause": "ordinary_updater_replayed_manually_applied_non_idempotent_bindings",
+    "scoring_started": false,
+    "dps": null,
+    "cleanup_passed": true,
+    "postrun_build_verified": true,
+    "remote_reconstruction_verified": true,
+    "raw_payloads_evicted": true,
+    "dvc_pointer": "artifacts/cata_raid_program/elemental_calibration_27200f36cc_20260908.tar.gz.dvc"
+  }
 }

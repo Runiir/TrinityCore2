@@ -20,6 +20,12 @@ assets and binaries when their relevant inputs have not changed. Do not repeated
 large inputs. cache:false DVC outputs need exact locked-byte reproduction/copy, not dvc pull.
 Use independent files where source and runtime permissions differ; never flip aliased modes.
 
+Before manually applying a tracked migration, inspect the server's ordinary
+update directories and enabled updater. If both deployment and startup execute
+the file, exercise that replay in the focused SQL fixture or use the native
+updater as the single application owner. Verify ignored custom SQL is actually
+staged. Do not hide unrelated SQL errors with blanket ignore behavior.
+
 Provision the exact cohort and read back native-loadable identities, roster, equipment,
 consumables, positions, and group/instance/corpse state. Serialize mutation of the shared
 worldserver and database. One cohort's cleanup must preserve other active instances.
@@ -63,6 +69,10 @@ native combat aggregates, decision/diagnosis traces, exact roster and reference
 identities. Include its compact review with the run's evidence. A later review
 of an already-published run is a separately attributable analysis artifact;
 do not rewrite the original accepted report or archive.
+
+A completed reviewer handoff freezes its report for publication. Put later findings
+in a separate addendum once publication starts; do not edit a file while it is
+being hashed or archived.
 
 Use one compact report plus the generated receipts. Commit code/configuration to Git.
 Publish immutable raw/report/log/receipt data through DVC, run targeted dvc status and

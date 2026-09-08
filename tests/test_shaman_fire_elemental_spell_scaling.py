@@ -2,6 +2,8 @@
 import re
 import sqlite3
 import subprocess
+
+import pytest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,15 +13,25 @@ FORWARD = ROOT / 'sql/custom/world/2026_09_09_00_shaman_fire_elemental_scaling.s
 ROLLBACK = ROOT / 'sql/custom/rollback/world/2026_09_09_00_shaman_fire_elemental_scaling_rollback.sql'
 
 
-def test_bindings_add_only_three_direct_damage_scripts_and_rollback_exactly():
+@pytest.mark.parametrize("already_applied", [(), (57984,), (12470, 13376), (57984, 12470, 13376)])
+def test_bindings_add_only_three_direct_damage_scripts_and_rollback_exactly(already_applied):
     db = sqlite3.connect(':memory:')
     db.execute('CREATE TABLE spell_script_names(spell_id INTEGER, ScriptName TEXT, PRIMARY KEY(spell_id,ScriptName))')
     prior = [(57984, 'preexisting_script'), (12470, 'another_script'), (99, SCRIPT)]
     db.executemany('INSERT INTO spell_script_names VALUES(?,?)', prior)
     before = set(db.execute('SELECT * FROM spell_script_names'))
+    # Deployment prestate has none of our exact bindings. Partial rows model
+    # an interrupted/manual apply owned by this same deployment, not unrelated
+    # pre-existing rows that rollback would have authority to remove.
+    db.executemany('INSERT INTO spell_script_names VALUES(?,?)',
+                   [(spell_id, SCRIPT) for spell_id in already_applied])
     db.executescript(FORWARD.read_text())
-    assert set(db.execute('SELECT * FROM spell_script_names')) - before == {
+    after = set(db.execute('SELECT * FROM spell_script_names'))
+    assert after - before == {
         (57984, SCRIPT), (12470, SCRIPT), (13376, SCRIPT)}
+    # Ordinary worldserver updater replays the file after a manual apply.
+    db.executescript(FORWARD.read_text())
+    assert set(db.execute('SELECT * FROM spell_script_names')) == after
     db.executescript(ROLLBACK.read_text())
     assert set(db.execute('SELECT * FROM spell_script_names')) == before
     assert f'RegisterSpellScript({SCRIPT});' in SOURCE.read_text()
