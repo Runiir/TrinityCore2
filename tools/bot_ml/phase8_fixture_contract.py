@@ -7,6 +7,7 @@ import argparse
 import copy
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Mapping
@@ -22,7 +23,12 @@ if __package__ in {None, ""}:
     # Keep the checked-in direct invocation reproducible as well as the normal
     # `python -m tools.bot_ml.phase8_fixture_contract` form.
     sys.path.insert(0, str(ROOT))
-from tools.bot_ml.wowsims_gear_binding import provisioning_professions
+from tools.bot_ml.wowsims_gear_binding import (
+    PRIMARY_PROFESSIONS,
+    permanent_equipment_enchant_id,
+    profession_enchant_rows,
+    provisioning_professions,
+)
 
 DEFAULT_AUTHORED_CONTRACT_PATH = (
     ROOT / "experiments/configs/phase8_calibration_fixture_contract_v1.json"
@@ -738,6 +744,61 @@ def _apl_transform_policy(
     return policy
 
 
+def _selected_profession_enchant_ids(target_rows: Mapping[str, Any]) -> set[int]:
+    ids = set()
+    for row in target_rows.values():
+        equipment = (row.get("provisioning_bot") or {}).get("profession_equipment", [])
+        _require(isinstance(equipment, list) and all(isinstance(item, dict) for item in equipment),
+                 "materialization:profession_equipment")
+        ids.update(permanent_equipment_enchant_id(item) for item in equipment)
+    ids.discard(0)
+    _require(all(value > 0 for value in ids), "materialization:profession_enchant_id")
+    return ids
+
+
+def _materialize_profession_enchant_authority(target_rows: Mapping[str, Any]) -> dict[str, Any]:
+    logical_path = "data/dbc/enUS/SpellItemEnchantment.dbc"
+    # Rebind rows to this materialization's source bytes, not an earlier DBC
+    # read cached by a provisioning check in the same process.
+    profession_enchant_rows.cache_clear()
+    rows = profession_enchant_rows((ROOT / logical_path).parent)
+    selected_ids = _selected_profession_enchant_ids(target_rows)
+    _require(selected_ids <= rows.keys(), "materialization:profession_unknown_enchant")
+    return {
+        "schema": "trinity_cata_profession_enchant_authority_v1",
+        "logical_path": logical_path,
+        "source_file_sha256": hashlib.sha256((ROOT / logical_path).read_bytes()).hexdigest(),
+        "enchant_requirements": {str(key): list(rows[key]) for key in sorted(selected_ids)},
+    }
+
+
+def _frozen_profession_enchant_rows(
+    materialization: Mapping[str, Any], target_rows: Mapping[str, Any],
+) -> dict[int, tuple[int, int]]:
+    authority = materialization.get("profession_enchant_authority")
+    _require(isinstance(authority, dict) and set(authority) == {
+        "schema", "logical_path", "source_file_sha256", "enchant_requirements",
+    }, "materialization:profession_authority_fields")
+    _require(authority["schema"] == "trinity_cata_profession_enchant_authority_v1",
+             "materialization:profession_schema")
+    _require(authority["logical_path"] == "data/dbc/enUS/SpellItemEnchantment.dbc",
+             "materialization:profession_source_path")
+    _require(isinstance(authority["source_file_sha256"], str)
+             and re.fullmatch(r"[0-9a-f]{64}", authority["source_file_sha256"]) is not None,
+             "materialization:profession_source_sha")
+    captured = authority["enchant_requirements"]
+    selected_ids = _selected_profession_enchant_ids(target_rows)
+    _require(isinstance(captured, dict) and set(captured) == {str(key) for key in selected_ids},
+             "materialization:profession_enchant_ids")
+    for value in captured.values():
+        _require(isinstance(value, list) and len(value) == 2
+                 and all(type(part) is int for part in value)
+                 and value[0] in {0, 776, *PRIMARY_PROFESSIONS}
+                 and 0 <= value[1] <= 525,
+                 "materialization:profession_enchant_requirement")
+    return {int(key): tuple(value) for key, value in captured.items()}
+
+
 def materialize_fixture_contract(
     raw_contract: Mapping[str, Any],
     *,
@@ -796,6 +857,7 @@ def materialize_fixture_contract(
             "selected_rows": selected_target_rows,
         },
         "glyph_translation_authority": copy.deepcopy(glyph_authority),
+        "profession_enchant_authority": _materialize_profession_enchant_authority(selected_target_rows),
     }
 
     for spec, row in contract["specs"].items():
@@ -1109,6 +1171,7 @@ def validate_fixture_contract(contract: Mapping[str, Any]) -> None:
     target_rows = target_source.get("selected_rows") or {}
     _require(set(target_rows) == EXPECTED_SPECS,
              "materialization:target_rows")
+    frozen_profession_rows = _frozen_profession_enchant_rows(materialization, target_rows)
     glyph_authority = materialization.get("glyph_translation_authority") or {}
     _require(
         glyph_authority.get("schema")
@@ -1364,7 +1427,7 @@ def validate_fixture_contract(contract: Mapping[str, Any]) -> None:
         )
         _require(
             native_request.get("professions")
-            == provisioning_professions(live_provisioning),
+            == provisioning_professions(live_provisioning, enchant_rows=frozen_profession_rows),
             f"{spec}:native_professions",
         )
         _require(

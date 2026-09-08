@@ -5,7 +5,7 @@
   "provider_repository": "https://github.com/wowsims/cata",
   "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
   "fixture_contract_path": "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json",
-  "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+  "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
   "request_count": 16,
   "requests": [
     {
@@ -15,7 +15,7 @@
         "target_spec": "affliction_warlock",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/warlock/affliction/affliction_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/affliction_warlock.test.go",
@@ -40,13 +40,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "bd72b4619133d63175ef9af0b9350bdd46293122943c0011656a776363621c97",
+      "source_contract_sha256": "92606cdfe3a7a58ac8552e7758c2f1ee8bba03768442c4446b47fce6f1034adf",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "affliction_warlock",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "bd72b4619133d63175ef9af0b9350bdd46293122943c0011656a776363621c97",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "92606cdfe3a7a58ac8552e7758c2f1ee8bba03768442c4446b47fce6f1034adf",
         "source_selector": {
           "test_path": "sim/warlock/affliction/affliction_test.go",
           "suite_name": "TestAffliction",
@@ -1784,13 +1784,13 @@
           }
         }
       },
-      "request_sha256": "646eb0690eceb0dec167518665f36ae33e880067560cffbe8bda574824a60cd6",
+      "request_sha256": "11318b2c4283553a9e3f9110f3e098d3950b60f0d9d6d0fa937ca6157c462c42",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "646eb0690eceb0dec167518665f36ae33e880067560cffbe8bda574824a60cd6",
+          "request_contract_sha256": "11318b2c4283553a9e3f9110f3e098d3950b60f0d9d6d0fa937ca6157c462c42",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -1825,9 +1825,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "bd72b4619133d63175ef9af0b9350bdd46293122943c0011656a776363621c97",
-        "request_sha256": "646eb0690eceb0dec167518665f36ae33e880067560cffbe8bda574824a60cd6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "92606cdfe3a7a58ac8552e7758c2f1ee8bba03768442c4446b47fce6f1034adf",
+        "request_sha256": "11318b2c4283553a9e3f9110f3e098d3950b60f0d9d6d0fa937ca6157c462c42",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -4071,7 +4071,7 @@
         "target_spec": "arms_warrior",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/warrior/arms/arms_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/arms_warrior.test.go",
@@ -4096,13 +4096,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "03402cad65ef06e64e59ab2849174e583ceb8b3cfe70cbd545f354b5e97f45bc",
+      "source_contract_sha256": "ec18b8efac38f902c5248472936cb22d05d729e427aba65c0ed2b44c461cd2bc",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "arms_warrior",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "03402cad65ef06e64e59ab2849174e583ceb8b3cfe70cbd545f354b5e97f45bc",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "ec18b8efac38f902c5248472936cb22d05d729e427aba65c0ed2b44c461cd2bc",
         "source_selector": {
           "test_path": "sim/warrior/arms/arms_test.go",
           "suite_name": "TestArms",
@@ -5512,13 +5512,13 @@
           }
         }
       },
-      "request_sha256": "f55ad17c87e8b35fc5677472e93590573a2bd1f971ca276491063c8847242c93",
+      "request_sha256": "b95d5a78956917a204ede4b72a17e0308b4d5b9745312604a47562c5e72d6963",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "f55ad17c87e8b35fc5677472e93590573a2bd1f971ca276491063c8847242c93",
+          "request_contract_sha256": "b95d5a78956917a204ede4b72a17e0308b4d5b9745312604a47562c5e72d6963",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -5553,9 +5553,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "03402cad65ef06e64e59ab2849174e583ceb8b3cfe70cbd545f354b5e97f45bc",
-        "request_sha256": "f55ad17c87e8b35fc5677472e93590573a2bd1f971ca276491063c8847242c93",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "ec18b8efac38f902c5248472936cb22d05d729e427aba65c0ed2b44c461cd2bc",
+        "request_sha256": "b95d5a78956917a204ede4b72a17e0308b4d5b9745312604a47562c5e72d6963",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -7321,7 +7321,7 @@
         "target_spec": "assassination_rogue",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/rogue/assassination/assassination_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/assassination_rogue.test.go",
@@ -7346,13 +7346,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "a533ed73f3a81e681eabcfe2d9ec6470f1370804ccfc167525a33b64881e8762",
+      "source_contract_sha256": "87c4c2fc4de0a4088740cb5e36047709cbb8987769420abd54fa5eb4292630f5",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "assassination_rogue",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "a533ed73f3a81e681eabcfe2d9ec6470f1370804ccfc167525a33b64881e8762",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "87c4c2fc4de0a4088740cb5e36047709cbb8987769420abd54fa5eb4292630f5",
         "source_selector": {
           "test_path": "sim/rogue/assassination/assassination_test.go",
           "suite_name": "TestAssassination",
@@ -8766,13 +8766,13 @@
           }
         }
       },
-      "request_sha256": "3807d9f6f38d3ea0f43854e8374d26c47d4f52b0b049a37b356960856ef244a9",
+      "request_sha256": "971fda76ad640e2a09a6a6626757d51b631e1dd78f7a5c3a94d5406776364876",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "3807d9f6f38d3ea0f43854e8374d26c47d4f52b0b049a37b356960856ef244a9",
+          "request_contract_sha256": "971fda76ad640e2a09a6a6626757d51b631e1dd78f7a5c3a94d5406776364876",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -8807,9 +8807,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "a533ed73f3a81e681eabcfe2d9ec6470f1370804ccfc167525a33b64881e8762",
-        "request_sha256": "3807d9f6f38d3ea0f43854e8374d26c47d4f52b0b049a37b356960856ef244a9",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "87c4c2fc4de0a4088740cb5e36047709cbb8987769420abd54fa5eb4292630f5",
+        "request_sha256": "971fda76ad640e2a09a6a6626757d51b631e1dd78f7a5c3a94d5406776364876",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -10559,7 +10559,7 @@
         "target_spec": "balance_druid",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/druid/balance/balance_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_balance_druid.test.go",
@@ -10584,13 +10584,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "8664f666d26b21f0b6d57c8acc902602b069a4e84d15ac459c8eb4ae8ffacf7d",
+      "source_contract_sha256": "a57d6e73e3056557b75fffdd59043e7e13c0eae912df463bef85e9a9f4737aec",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "balance_druid",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "8664f666d26b21f0b6d57c8acc902602b069a4e84d15ac459c8eb4ae8ffacf7d",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "a57d6e73e3056557b75fffdd59043e7e13c0eae912df463bef85e9a9f4737aec",
         "source_selector": {
           "test_path": "sim/druid/balance/balance_test.go",
           "suite_name": "TestBalance",
@@ -12019,13 +12019,13 @@
           }
         }
       },
-      "request_sha256": "b343c7b7f4068dff781b68c82de9740f09f8c70f34f655b0a21a865802bfc6e7",
+      "request_sha256": "67c472164e2082f4109e61a8bedbf7afb2358d81f6157f4aba2e0c885fce96af",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "b343c7b7f4068dff781b68c82de9740f09f8c70f34f655b0a21a865802bfc6e7",
+          "request_contract_sha256": "67c472164e2082f4109e61a8bedbf7afb2358d81f6157f4aba2e0c885fce96af",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -12060,9 +12060,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "8664f666d26b21f0b6d57c8acc902602b069a4e84d15ac459c8eb4ae8ffacf7d",
-        "request_sha256": "b343c7b7f4068dff781b68c82de9740f09f8c70f34f655b0a21a865802bfc6e7",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "a57d6e73e3056557b75fffdd59043e7e13c0eae912df463bef85e9a9f4737aec",
+        "request_sha256": "67c472164e2082f4109e61a8bedbf7afb2358d81f6157f4aba2e0c885fce96af",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 4,
@@ -13856,7 +13856,7 @@
         "target_spec": "combat_rogue",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/rogue/combat/combat_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/combat_rogue.test.go",
@@ -13881,13 +13881,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "eb820dd459f94b49a939e633bc76b72042299fabae0b9dde68c0644c8757211b",
+      "source_contract_sha256": "95927e76380011dcb6cec3faee693747ac24df05bbe2e3818b1e480eabcac233",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "combat_rogue",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "eb820dd459f94b49a939e633bc76b72042299fabae0b9dde68c0644c8757211b",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "95927e76380011dcb6cec3faee693747ac24df05bbe2e3818b1e480eabcac233",
         "source_selector": {
           "test_path": "sim/rogue/combat/combat_test.go",
           "suite_name": "TestCombat",
@@ -15294,13 +15294,13 @@
           }
         }
       },
-      "request_sha256": "4635f2e7ad585a3aaa5f591b562ca351666ef903b3da10db41d408665823006d",
+      "request_sha256": "c2e00353940c964dbef13ec1464234d01e522ad81c01b575a8c7939526d65559",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "4635f2e7ad585a3aaa5f591b562ca351666ef903b3da10db41d408665823006d",
+          "request_contract_sha256": "c2e00353940c964dbef13ec1464234d01e522ad81c01b575a8c7939526d65559",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -15335,9 +15335,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "eb820dd459f94b49a939e633bc76b72042299fabae0b9dde68c0644c8757211b",
-        "request_sha256": "4635f2e7ad585a3aaa5f591b562ca351666ef903b3da10db41d408665823006d",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "95927e76380011dcb6cec3faee693747ac24df05bbe2e3818b1e480eabcac233",
+        "request_sha256": "c2e00353940c964dbef13ec1464234d01e522ad81c01b575a8c7939526d65559",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -17076,7 +17076,7 @@
         "target_spec": "demonology_warlock",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/warlock/demonology/demonology_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/demonology_warlock.test.go",
@@ -17101,13 +17101,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "34af518883023f95063a5772265ba988a3dd65b1928f958e5025610ef4328d6e",
+      "source_contract_sha256": "894da2407f9d67be9184b271110301d87ecd486b93a24a74e0ebc35d3a9af54c",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "demonology_warlock",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "34af518883023f95063a5772265ba988a3dd65b1928f958e5025610ef4328d6e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "894da2407f9d67be9184b271110301d87ecd486b93a24a74e0ebc35d3a9af54c",
         "source_selector": {
           "test_path": "sim/warlock/demonology/demonology_test.go",
           "suite_name": "TestDemonology",
@@ -18833,13 +18833,13 @@
           }
         }
       },
-      "request_sha256": "3ea886df80c0b921674bf362659a903b1c19d79a7ba366df568dde50d4f8674f",
+      "request_sha256": "42cecebc0f7ff071af17b6d46f378171d7d369338985deefce4c304f92907e91",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "3ea886df80c0b921674bf362659a903b1c19d79a7ba366df568dde50d4f8674f",
+          "request_contract_sha256": "42cecebc0f7ff071af17b6d46f378171d7d369338985deefce4c304f92907e91",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -18874,9 +18874,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "34af518883023f95063a5772265ba988a3dd65b1928f958e5025610ef4328d6e",
-        "request_sha256": "3ea886df80c0b921674bf362659a903b1c19d79a7ba366df568dde50d4f8674f",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "894da2407f9d67be9184b271110301d87ecd486b93a24a74e0ebc35d3a9af54c",
+        "request_sha256": "42cecebc0f7ff071af17b6d46f378171d7d369338985deefce4c304f92907e91",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 2,
@@ -21106,7 +21106,7 @@
         "target_spec": "elemental_shaman",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/shaman/elemental/elemental_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/elemental_shaman.test.go",
@@ -21131,13 +21131,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "48f6462a3ff27359b891ba6aa046383be5aaf755a8694fba18bf391e0e1aa5b8",
+      "source_contract_sha256": "b0f16dcaf8e7373949ea08becb35921553b3e8bf2f5b200c0087a59990a8f04c",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "elemental_shaman",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "48f6462a3ff27359b891ba6aa046383be5aaf755a8694fba18bf391e0e1aa5b8",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "b0f16dcaf8e7373949ea08becb35921553b3e8bf2f5b200c0087a59990a8f04c",
         "source_selector": {
           "test_path": "sim/shaman/elemental/elemental_test.go",
           "suite_name": "TestElemental",
@@ -22640,13 +22640,13 @@
           }
         }
       },
-      "request_sha256": "120c72ee7c4b71aea99c9f7e66ddd564af3c3d92cb87e422ff3134f2d4b32524",
+      "request_sha256": "6d36258ce93e99c100ab7dee802d09665da4b5ad8d330fe25fce83e5039ade53",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "120c72ee7c4b71aea99c9f7e66ddd564af3c3d92cb87e422ff3134f2d4b32524",
+          "request_contract_sha256": "6d36258ce93e99c100ab7dee802d09665da4b5ad8d330fe25fce83e5039ade53",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -22681,9 +22681,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "48f6462a3ff27359b891ba6aa046383be5aaf755a8694fba18bf391e0e1aa5b8",
-        "request_sha256": "120c72ee7c4b71aea99c9f7e66ddd564af3c3d92cb87e422ff3134f2d4b32524",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "b0f16dcaf8e7373949ea08becb35921553b3e8bf2f5b200c0087a59990a8f04c",
+        "request_sha256": "6d36258ce93e99c100ab7dee802d09665da4b5ad8d330fe25fce83e5039ade53",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 11,
@@ -24569,7 +24569,7 @@
         "target_spec": "feral_druid_dps",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/druid/feral/feral_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/feral_druid_dps.test.go",
@@ -24594,13 +24594,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "0a499f46734950b15a6d8bc3d71a699be131e741d6f20bad33390ea9cba9fb84",
+      "source_contract_sha256": "6dc57585e1dd215a6d76cfd8a5c3eea9435ce964ee23896a60dec5d0c5402058",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "feral_druid_dps",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "0a499f46734950b15a6d8bc3d71a699be131e741d6f20bad33390ea9cba9fb84",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "6dc57585e1dd215a6d76cfd8a5c3eea9435ce964ee23896a60dec5d0c5402058",
         "source_selector": {
           "test_path": "sim/druid/feral/feral_test.go",
           "suite_name": "TestFeral",
@@ -26016,13 +26016,13 @@
           }
         }
       },
-      "request_sha256": "e70bd555d1bfeef20f6b170c6e8cc8b82ce88f832c566f867245c70c636ab2a5",
+      "request_sha256": "5c39b12786589649512faf066b2f466157e082adc2f5aa412644ee52f18b8923",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "e70bd555d1bfeef20f6b170c6e8cc8b82ce88f832c566f867245c70c636ab2a5",
+          "request_contract_sha256": "5c39b12786589649512faf066b2f466157e082adc2f5aa412644ee52f18b8923",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -26057,9 +26057,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "0a499f46734950b15a6d8bc3d71a699be131e741d6f20bad33390ea9cba9fb84",
-        "request_sha256": "e70bd555d1bfeef20f6b170c6e8cc8b82ce88f832c566f867245c70c636ab2a5",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "6dc57585e1dd215a6d76cfd8a5c3eea9435ce964ee23896a60dec5d0c5402058",
+        "request_sha256": "5c39b12786589649512faf066b2f466157e082adc2f5aa412644ee52f18b8923",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 4,
@@ -27829,7 +27829,7 @@
         "target_spec": "fire_mage",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/mage/fire/fire_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_fire_mage.test.go",
@@ -27854,13 +27854,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "865391389853aef49929da924d69e7061bcbef67fe3fb099f9163a07deeedd88",
+      "source_contract_sha256": "b5108cc8228b40f02cb2173df6cbfd34945b43911c8b4aa005a1143dd8329e64",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "fire_mage",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "865391389853aef49929da924d69e7061bcbef67fe3fb099f9163a07deeedd88",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "b5108cc8228b40f02cb2173df6cbfd34945b43911c8b4aa005a1143dd8329e64",
         "source_selector": {
           "test_path": "sim/mage/fire/fire_test.go",
           "suite_name": "TestFire",
@@ -29266,13 +29266,13 @@
           }
         }
       },
-      "request_sha256": "10ef1c26ff0a570378479e0334e2e5ef6a00ff4c2d3f8704b3576c11e3c9e877",
+      "request_sha256": "e34db7e28fc50e69640077dd1d0b03d9eae88869c78c76655594ec3e3ce9e666",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "10ef1c26ff0a570378479e0334e2e5ef6a00ff4c2d3f8704b3576c11e3c9e877",
+          "request_contract_sha256": "e34db7e28fc50e69640077dd1d0b03d9eae88869c78c76655594ec3e3ce9e666",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -29307,9 +29307,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "865391389853aef49929da924d69e7061bcbef67fe3fb099f9163a07deeedd88",
-        "request_sha256": "10ef1c26ff0a570378479e0334e2e5ef6a00ff4c2d3f8704b3576c11e3c9e877",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "b5108cc8228b40f02cb2173df6cbfd34945b43911c8b4aa005a1143dd8329e64",
+        "request_sha256": "e34db7e28fc50e69640077dd1d0b03d9eae88869c78c76655594ec3e3ce9e666",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -31056,7 +31056,7 @@
         "target_spec": "frost_death_knight",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/death_knight/frost/frost_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/frost_death_knight.test.go",
@@ -31081,13 +31081,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "4649c0a32ff26b8465143afabafb2ff709f4b017c9e351be10fc13f3b9a9c30c",
+      "source_contract_sha256": "a2b607907df90564827a43ed6d368b1188b79e715fc5968312f2fc40855f6dcd",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "frost_death_knight",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "4649c0a32ff26b8465143afabafb2ff709f4b017c9e351be10fc13f3b9a9c30c",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "a2b607907df90564827a43ed6d368b1188b79e715fc5968312f2fc40855f6dcd",
         "source_selector": {
           "test_path": "sim/death_knight/frost/frost_test.go",
           "suite_name": "TestFrost",
@@ -32500,13 +32500,13 @@
           }
         }
       },
-      "request_sha256": "bae8b1d1a658974417d3bad3aae609fa791a0894dd94ca18214dd0014f22354d",
+      "request_sha256": "8f3c27e187fedfc474286ae9a3523d3e778b5015a775b1c936d13be77da3fde0",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "bae8b1d1a658974417d3bad3aae609fa791a0894dd94ca18214dd0014f22354d",
+          "request_contract_sha256": "8f3c27e187fedfc474286ae9a3523d3e778b5015a775b1c936d13be77da3fde0",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -32541,9 +32541,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "4649c0a32ff26b8465143afabafb2ff709f4b017c9e351be10fc13f3b9a9c30c",
-        "request_sha256": "bae8b1d1a658974417d3bad3aae609fa791a0894dd94ca18214dd0014f22354d",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "a2b607907df90564827a43ed6d368b1188b79e715fc5968312f2fc40855f6dcd",
+        "request_sha256": "8f3c27e187fedfc474286ae9a3523d3e778b5015a775b1c936d13be77da3fde0",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -34298,7 +34298,7 @@
         "target_spec": "fury_warrior",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/warrior/fury/fury_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/fury_warrior.test.go",
@@ -34323,13 +34323,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "08714996e5c43d3f784b732c2ae30319f87cd25b6d8a5c8a3d3e03f58ee0b4ee",
+      "source_contract_sha256": "f18747f4dda01f375d9152ab219ff7d9dd36d1bf93c93b492db3b4dec60b242c",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "fury_warrior",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "08714996e5c43d3f784b732c2ae30319f87cd25b6d8a5c8a3d3e03f58ee0b4ee",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "f18747f4dda01f375d9152ab219ff7d9dd36d1bf93c93b492db3b4dec60b242c",
         "source_selector": {
           "test_path": "sim/warrior/fury/fury_test.go",
           "suite_name": "TestFury",
@@ -35743,13 +35743,13 @@
           }
         }
       },
-      "request_sha256": "8a06848b7183ae8970efdbfb877fb2a014f562d3b169878bf33290e75f2bb268",
+      "request_sha256": "f6c9e3ddaa58384d7ae7542e7d9061d34a565f873ea9c3289c0f7bfaa2f526c0",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "8a06848b7183ae8970efdbfb877fb2a014f562d3b169878bf33290e75f2bb268",
+          "request_contract_sha256": "f6c9e3ddaa58384d7ae7542e7d9061d34a565f873ea9c3289c0f7bfaa2f526c0",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -35784,9 +35784,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "08714996e5c43d3f784b732c2ae30319f87cd25b6d8a5c8a3d3e03f58ee0b4ee",
-        "request_sha256": "8a06848b7183ae8970efdbfb877fb2a014f562d3b169878bf33290e75f2bb268",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "f18747f4dda01f375d9152ab219ff7d9dd36d1bf93c93b492db3b4dec60b242c",
+        "request_sha256": "f6c9e3ddaa58384d7ae7542e7d9061d34a565f873ea9c3289c0f7bfaa2f526c0",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -37552,7 +37552,7 @@
         "target_spec": "marksmanship_hunter",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/hunter/marksmanship/marksmanship_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/marksmanship_hunter.test.go",
@@ -37577,13 +37577,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "4d891efebd9b7004439fb64b4e2ef2c5ac8efe6d7d702d2e7a32bf047106c0f7",
+      "source_contract_sha256": "a5d2f8740293e4dd2352a03efa78ade5d8535edba6b14f421ae805c5e407e6c2",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "marksmanship_hunter",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "4d891efebd9b7004439fb64b4e2ef2c5ac8efe6d7d702d2e7a32bf047106c0f7",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "a5d2f8740293e4dd2352a03efa78ade5d8535edba6b14f421ae805c5e407e6c2",
         "source_selector": {
           "test_path": "sim/hunter/marksmanship/marksmanship_test.go",
           "suite_name": "TestMM",
@@ -39147,13 +39147,13 @@
           }
         }
       },
-      "request_sha256": "662aa0e02100d30d315a5a8a69363090f79646dab257cc23748b87b84f5d1011",
+      "request_sha256": "9c30e17273ec05933fca974c04fd8a1ecc1d8387761b56431ba91ff2986470c6",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "662aa0e02100d30d315a5a8a69363090f79646dab257cc23748b87b84f5d1011",
+          "request_contract_sha256": "9c30e17273ec05933fca974c04fd8a1ecc1d8387761b56431ba91ff2986470c6",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -39188,9 +39188,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "4d891efebd9b7004439fb64b4e2ef2c5ac8efe6d7d702d2e7a32bf047106c0f7",
-        "request_sha256": "662aa0e02100d30d315a5a8a69363090f79646dab257cc23748b87b84f5d1011",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "a5d2f8740293e4dd2352a03efa78ade5d8535edba6b14f421ae805c5e407e6c2",
+        "request_sha256": "9c30e17273ec05933fca974c04fd8a1ecc1d8387761b56431ba91ff2986470c6",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 3,
@@ -41205,7 +41205,7 @@
         "target_spec": "retribution_paladin",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/paladin/retribution/retribution_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/retribution_paladin.test.go",
@@ -41230,13 +41230,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "76fd220d4ba85349089c3028da6b060bb67f153d4c1224f08eaf3a78f765f41a",
+      "source_contract_sha256": "4d0a77accca8938ca3fd677a81d68a5f68f3a9c761f8960769ccf9c08d3b4218",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "retribution_paladin",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "76fd220d4ba85349089c3028da6b060bb67f153d4c1224f08eaf3a78f765f41a",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "4d0a77accca8938ca3fd677a81d68a5f68f3a9c761f8960769ccf9c08d3b4218",
         "source_selector": {
           "test_path": "sim/paladin/retribution/retribution_test.go",
           "suite_name": "TestRetribution",
@@ -42671,13 +42671,13 @@
           }
         }
       },
-      "request_sha256": "8c4ee91a580472ded8bee4cf59c9d3778bee9f70ef1b86dd4604ca58e095a78b",
+      "request_sha256": "e59d3859a0f058d7ba02e7c783772c4dc9f2401e67a2818e5b9ab6e96236b928",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "8c4ee91a580472ded8bee4cf59c9d3778bee9f70ef1b86dd4604ca58e095a78b",
+          "request_contract_sha256": "e59d3859a0f058d7ba02e7c783772c4dc9f2401e67a2818e5b9ab6e96236b928",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -42712,9 +42712,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "76fd220d4ba85349089c3028da6b060bb67f153d4c1224f08eaf3a78f765f41a",
-        "request_sha256": "8c4ee91a580472ded8bee4cf59c9d3778bee9f70ef1b86dd4604ca58e095a78b",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "4d0a77accca8938ca3fd677a81d68a5f68f3a9c761f8960769ccf9c08d3b4218",
+        "request_sha256": "e59d3859a0f058d7ba02e7c783772c4dc9f2401e67a2818e5b9ab6e96236b928",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -44517,7 +44517,7 @@
         "target_spec": "shadow_priest",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/priest/shadow/shadow_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_shadow_priest.test.go",
@@ -44542,13 +44542,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "1ec17675f3cfe34fe123fcfa1c87493b1f2def172c995f5784bb3ce2af041f12",
+      "source_contract_sha256": "938d7e140f03431d86fdaa95b967b10a80bb3a4d81d2e207f67f3beb91446ef1",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "shadow_priest",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "1ec17675f3cfe34fe123fcfa1c87493b1f2def172c995f5784bb3ce2af041f12",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "938d7e140f03431d86fdaa95b967b10a80bb3a4d81d2e207f67f3beb91446ef1",
         "source_selector": {
           "test_path": "sim/priest/shadow/shadow_test.go",
           "suite_name": "TestShadow",
@@ -45959,13 +45959,13 @@
           }
         }
       },
-      "request_sha256": "fbd01a7250fe37132dad3c972057256804c0ec2f4c9689014b4d009558361a34",
+      "request_sha256": "659caf332c0fc0e15743b4c411c551b57814d909fe06eed27f0576b70ad9d248",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "fbd01a7250fe37132dad3c972057256804c0ec2f4c9689014b4d009558361a34",
+          "request_contract_sha256": "659caf332c0fc0e15743b4c411c551b57814d909fe06eed27f0576b70ad9d248",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -46000,9 +46000,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "1ec17675f3cfe34fe123fcfa1c87493b1f2def172c995f5784bb3ce2af041f12",
-        "request_sha256": "fbd01a7250fe37132dad3c972057256804c0ec2f4c9689014b4d009558361a34",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "938d7e140f03431d86fdaa95b967b10a80bb3a4d81d2e207f67f3beb91446ef1",
+        "request_sha256": "659caf332c0fc0e15743b4c411c551b57814d909fe06eed27f0576b70ad9d248",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 8,
@@ -47765,7 +47765,7 @@
         "target_spec": "survival_hunter",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/hunter/survival/survival_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_survival_hunter.test.go",
@@ -47790,13 +47790,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "5d9e5a0328e7ede8e72881d1dcf48471e6edc6b376a8cd5af0abea7212c0e059",
+      "source_contract_sha256": "0ecfa23b00d58f7dd30f17e288cec425786db993e85b1730858b72e8e15180bd",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "survival_hunter",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "5d9e5a0328e7ede8e72881d1dcf48471e6edc6b376a8cd5af0abea7212c0e059",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "0ecfa23b00d58f7dd30f17e288cec425786db993e85b1730858b72e8e15180bd",
         "source_selector": {
           "test_path": "sim/hunter/survival/survival_test.go",
           "suite_name": "TestSV",
@@ -49389,13 +49389,13 @@
           }
         }
       },
-      "request_sha256": "a4b68be87357f2c853a33ad1b2c2f4e30f8021f00eb2f19daf6d46bd917bcedd",
+      "request_sha256": "5708413bb4c6e6fd8a4a40c3c77b9a0f9d47cc0f53b5fe118cd3665b951d9e6e",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "a4b68be87357f2c853a33ad1b2c2f4e30f8021f00eb2f19daf6d46bd917bcedd",
+          "request_contract_sha256": "5708413bb4c6e6fd8a4a40c3c77b9a0f9d47cc0f53b5fe118cd3665b951d9e6e",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -49430,9 +49430,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "5d9e5a0328e7ede8e72881d1dcf48471e6edc6b376a8cd5af0abea7212c0e059",
-        "request_sha256": "a4b68be87357f2c853a33ad1b2c2f4e30f8021f00eb2f19daf6d46bd917bcedd",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "0ecfa23b00d58f7dd30f17e288cec425786db993e85b1730858b72e8e15180bd",
+        "request_sha256": "5708413bb4c6e6fd8a4a40c3c77b9a0f9d47cc0f53b5fe118cd3665b951d9e6e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 2,
@@ -51488,7 +51488,7 @@
         "target_spec": "unholy_death_knight",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "upstream_test": {
           "path": "sim/death_knight/unholy/unholy_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/unholy_death_knight.test.go",
@@ -51513,13 +51513,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "40dfb193ded2e33e93fdda02edeba024db34b46956ba0307f3eb797942787221",
+      "source_contract_sha256": "52ea94043154038ede574ef65500a1688b195c13f0f6784bc16f197bffb6edd6",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "unholy_death_knight",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
-        "source_contract_sha256": "40dfb193ded2e33e93fdda02edeba024db34b46956ba0307f3eb797942787221",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "source_contract_sha256": "52ea94043154038ede574ef65500a1688b195c13f0f6784bc16f197bffb6edd6",
         "source_selector": {
           "test_path": "sim/death_knight/unholy/unholy_test.go",
           "suite_name": "TestUnholy",
@@ -53270,13 +53270,13 @@
           }
         }
       },
-      "request_sha256": "ef165b47c479a28445a3fbf738579c63eea1e6c6f7c11e14da26c9afd160d27b",
+      "request_sha256": "a46c3ee20ef5820e6f7ce79827ea63a05a23efcb301bdcb30e3ae64c61c0e47b",
       "result": {
         "status": "requires_generation",
         "result_key": null,
         "dps": null,
         "artifacts": {
-          "request_contract_sha256": "ef165b47c479a28445a3fbf738579c63eea1e6c6f7c11e14da26c9afd160d27b",
+          "request_contract_sha256": "a46c3ee20ef5820e6f7ce79827ea63a05a23efcb301bdcb30e3ae64c61c0e47b",
           "native_request": {
             "path": null,
             "sha256": null,
@@ -53311,9 +53311,9 @@
         "result_status": "requires_generation",
         "reference_result_key": null,
         "reference_dps": null,
-        "source_contract_sha256": "40dfb193ded2e33e93fdda02edeba024db34b46956ba0307f3eb797942787221",
-        "request_sha256": "ef165b47c479a28445a3fbf738579c63eea1e6c6f7c11e14da26c9afd160d27b",
-        "fixture_contract_sha256": "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e",
+        "source_contract_sha256": "52ea94043154038ede574ef65500a1688b195c13f0f6784bc16f197bffb6edd6",
+        "request_sha256": "a46c3ee20ef5820e6f7ce79827ea63a05a23efcb301bdcb30e3ae64c61c0e47b",
+        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,

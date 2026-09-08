@@ -92,3 +92,6 @@ Use Luna max for exact narrow implementation, Sol high for ambiguous
 causal diagnosis and independent review of risky runtime/encounter changes. Work directly
 when delegation would add more coordination than useful work. Serialize builds, shared
 server ownership, provisioning, and DVC publication. Independent reads may overlap.
+When requesting another edit or review from a completed agent, use
+`followup_task` to start its next turn. `send_message` only queues a message;
+it does not resume an idle worker. Check worker state before waiting on a result.

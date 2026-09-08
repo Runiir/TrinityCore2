@@ -478,3 +478,96 @@ def test_scored_bot_update_has_no_fixture_admin_state_manufacture() -> None:
     ):
         assert forbidden not in body
     assert "Position{ target->GetPositionX()" not in body
+
+
+def test_frozen_fixture_loads_with_actual_empty_dbc_root(tmp_path, monkeypatch):
+    from tools.bot_ml import wowsims_gear_binding
+    from tools.bot_ml import phase8_fixture_contract
+
+    detached = tmp_path / "fixture.materialized.json"
+    payload = DEFAULT_MATERIALIZED_CONTRACT_PATH.read_bytes()
+    detached.write_bytes(payload)
+    empty_checkout = tmp_path / "fresh-checkout"
+    empty_checkout.mkdir()
+    wowsims_gear_binding.profession_enchant_rows.cache_clear()
+    monkeypatch.setattr(wowsims_gear_binding, "REPO_ROOT", empty_checkout)
+    def forbidden(*args, **kwargs):
+        raise AssertionError("copied frozen fixture read ambient DBC")
+    monkeypatch.setattr(wowsims_gear_binding, "profession_enchant_rows", forbidden)
+    monkeypatch.setattr(phase8_fixture_contract, "profession_enchant_rows", forbidden)
+    assert not (empty_checkout / "data").exists()
+    contract, digest = load_fixture_contract(detached)
+    assert canonical_materialized_bytes(contract) == payload
+    assert digest == hashlib.sha256(payload).hexdigest()
+
+
+def test_frozen_profession_authority_rejects_mutations_without_dbc_reads(monkeypatch):
+    import copy
+    import pytest
+    from tools.bot_ml import phase8_fixture_contract as fixture
+    from tools.bot_ml import wowsims_gear_binding as gear
+
+    original = build_materialized_fixture_contract()
+    def forbidden(*args, **kwargs):
+        raise AssertionError("frozen validation read ambient DBC")
+    monkeypatch.setattr(gear, "profession_enchant_rows", forbidden)
+    monkeypatch.setattr(fixture, "profession_enchant_rows", forbidden)
+    fixture.validate_fixture_contract(original)
+    authority = original["materialization"]["profession_enchant_authority"]
+    assert authority["enchant_requirements"]["4115"] == [197, 500]
+    changes = [
+        ("schema", "bad"), ("logical_path", "elsewhere.dbc"),
+        ("source_file_sha256", "x" * 64),
+        ("enchant_requirements", {**authority["enchant_requirements"], "999999": [0, 0]}),
+        ("enchant_requirements", {k: v for k, v in authority["enchant_requirements"].items() if k != "4115"}),
+        ("enchant_requirements", {**authority["enchant_requirements"], "4115": [197, True]}),
+        ("enchant_requirements", {**authority["enchant_requirements"], "4115": [197, 499]}),
+    ]
+    for field, value in changes:
+        contract = copy.deepcopy(original)
+        contract["materialization"]["profession_enchant_authority"][field] = value
+        with pytest.raises(ValueError):
+            fixture.validate_fixture_contract(contract)
+    for field, value in (
+        ("source_enchant_ids", []), ("required_rank", 499), ("native_skill_id", 202),
+        ("provisioned_value", 499), ("provisioned_max", 600),
+        ("wowsims_profession", "Engineering"),
+    ):
+        contract = copy.deepcopy(original)
+        setup = contract["materialization"]["live_target_catalog"]["selected_rows"]["elemental_shaman"]["provisioning_bot"]["profession_setup"]
+        setup["requirements"][0][field] = value
+        with pytest.raises(ValueError):
+            fixture.validate_fixture_contract(contract)
+    for mutation in ("equipment", "native", "list"):
+        contract = copy.deepcopy(original)
+        provisioning = contract["materialization"]["live_target_catalog"]["selected_rows"]["elemental_shaman"]["provisioning_bot"]
+        if mutation == "equipment":
+            provisioning["profession_equipment"][0]["enchant"] = 999999
+            provisioning["profession_equipment"][0]["enchant_id"] = 999999
+        elif mutation == "native":
+            contract["specs"]["elemental_shaman"]["native_request"]["professions"] = ["ProfessionUnknown"] * 2
+        else:
+            provisioning["profession_setup"]["wowsims_professions"] = ["ProfessionUnknown"] * 2
+        with pytest.raises(ValueError):
+            fixture.validate_fixture_contract(contract)
+
+
+def test_profession_materialization_still_requires_actual_dbc(tmp_path, monkeypatch):
+    import pytest
+    from tools.bot_ml import phase8_fixture_contract as fixture
+    from tools.bot_ml import wowsims_gear_binding as gear
+
+    gear.profession_enchant_rows.cache_clear()
+    monkeypatch.setattr(fixture, "ROOT", tmp_path)
+    with pytest.raises(FileNotFoundError, match="SpellItemEnchantment.dbc"):
+        build_materialized_fixture_contract()
+    dbc = tmp_path / "data/dbc/enUS/SpellItemEnchantment.dbc"
+    dbc.parent.mkdir(parents=True)
+    dbc.write_bytes(b"invalid DBC")
+    with pytest.raises(ValueError, match="not a WDBC"):
+        build_materialized_fixture_contract()
+    import struct
+    field_count = len(gear.SPELL_ITEM_ENCHANTMENT_FMT)
+    dbc.write_bytes(b"WDBC" + struct.pack("<4I", 0, field_count, field_count * 4, 0))
+    with pytest.raises(ValueError, match="profession_unknown_enchant"):
+        build_materialized_fixture_contract()

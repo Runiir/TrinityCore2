@@ -66,6 +66,9 @@ Read enum names from the pinned protobuf schema; do not infer a naming prefix
 from another enum member. For new request fields, run the real pinned validator
 on the materialized request before cohort generation. Unit tests that repeat
 the implementation's strings do not prove simulator acceptance.
+Frozen-fixture validation must run without the game's local DBC installation.
+When adding a helper, test that boundary with its actual data root unavailable;
+patching only the fixture module's file reader misses imported data access.
 
 ## Keep three reference classes separate
 

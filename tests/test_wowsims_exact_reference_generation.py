@@ -1535,3 +1535,35 @@ def test_dvc_receipt_rejects_publication_domain_relabel(tmp_path: Path) -> None:
             expected_dvc_pointer_path="experiments/exact-reference-bundle.dvc",
             expected_bundle_root="experiments/exact-reference-bundle",
         )
+
+
+@pytest.mark.parametrize("label", ["dvc_fresh_rebuild", "native_request_protojson"])
+def test_failed_child_preserves_exact_output_without_success_receipt(tmp_path, label):
+    diagnostic = b"prefix\n" + b"x" * 4096 + b"\nmissing SpellItemEnchantment.dbc\xff"
+    outcome = {
+        "transport_classification": "child_exited", "returncode_observed": True,
+        "returncode": 1, "outer_timed_out": False,
+        "controller_interrupted": False, "process_group_gone": True,
+    }
+    with pytest.raises(WowsimsGenerationError, match=f"{label}:returncode") as captured:
+        exact_runner._require_normal_child_with_output(
+            outcome, diagnostic, label=label, output_root=tmp_path)
+    logs = list((tmp_path / "process_logs").glob("*.log"))
+    assert len(logs) == 1 and logs[0].read_bytes() == diagnostic
+    assert str(logs[0]) in str(captured.value)
+    assert hashlib.sha256(diagnostic).hexdigest() in str(captured.value)
+    assert "missing SpellItemEnchantment.dbc" in str(captured.value)
+    assert len(str(captured.value)) < 3000
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["process_logs"]
+    caller = exact_runner.reconstruct_generation_with_dvc if label == "dvc_fresh_rebuild" else exact_runner.generate_one_reference
+    source = inspect.getsource(caller)
+    assert f'label="{label}", output_root=output_root' in source
+
+
+def test_successful_child_diagnostic_guard_creates_no_failure_artifacts(tmp_path):
+    exact_runner._require_normal_child_with_output({
+        "transport_classification": "child_exited", "returncode_observed": True,
+        "returncode": 0, "outer_timed_out": False,
+        "controller_interrupted": False, "process_group_gone": True,
+    }, b"ok", label="native_request_protojson", output_root=tmp_path)
+    assert list(tmp_path.iterdir()) == []

@@ -539,16 +539,21 @@ def profession_enchant_rows(dbc_dir: Path) -> dict[int, tuple[int, int]]:
             for row in load_wdbc(dbc_dir / 'SpellItemEnchantment.dbc', SPELL_ITEM_ENCHANTMENT_FMT)}
 
 
+def permanent_equipment_enchant_id(item):
+    raw = str(item.get('enchantments') or '').split()
+    enchant = int(item.get('enchant_id', item.get('enchant', raw[0] if raw else 0)) or 0)
+    if raw and int(raw[0]) != enchant:
+        raise ValueError('permanent enchant identity mismatch')
+    return enchant
+
+
 def resolve_profession_setup(equipment, *, enchant_rows=None, declared=None, configured_skills=()):
     """Union explicit primary skills with gear requirements in native skill-ID order."""
     if enchant_rows is None:
         enchant_rows = profession_enchant_rows(REPO_ROOT / 'data/dbc/enUS')
     requirements = {}
     for item in equipment:
-        raw = str(item.get('enchantments') or '').split()
-        enchant = int(item.get('enchant_id', item.get('enchant', raw[0] if raw else 0)) or 0)
-        if raw and int(raw[0]) != enchant:
-            raise ValueError('permanent enchant identity mismatch')
+        enchant = permanent_equipment_enchant_id(item)
         if not enchant:
             continue
         if enchant not in enchant_rows:
@@ -601,16 +606,17 @@ def merge_profession_skills(skills, setup):
     return result
 
 
-def provisioning_professions(provisioning):
+def provisioning_professions(provisioning, *, enchant_rows=None):
     """Validate serialized setup against its exact resolved gear input."""
     setup = provisioning.get('profession_setup')
     if setup is None:
         if provisioning.get('profession_equipment') is not None:
             raise ValueError('equipped profession identity missing setup metadata')
-        return resolve_profession_setup([], configured_skills=provisioning.get('skills', []))['wowsims_professions']
+        return resolve_profession_setup([], enchant_rows=enchant_rows,
+                                        configured_skills=provisioning.get('skills', []))['wowsims_professions']
     equipment = provisioning.get('profession_equipment')
     if equipment is None:
         raise ValueError('profession setup missing equipped enchant identity')
-    resolved = resolve_profession_setup(equipment, declared=setup,
+    resolved = resolve_profession_setup(equipment, enchant_rows=enchant_rows, declared=setup,
                                         configured_skills=provisioning.get("skills", []))
     return resolved['wowsims_professions']

@@ -8,7 +8,7 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Native repairs and profession setup independently approved; exact regenerated fixture/request inputs validated. New reference generation and live acceptance pending.",
+  "gate_state": "All native and reference source repairs approved; fixture/request identity validated, affected tests119passed2legacy-skipped. Regenerate and promote exact cohort before native calibration.",
   "first_broken_edge": {
     "id": "pre_exit_submission_post_exit_native_launch_excluded",
     "owner_classification": "raid_bot_runtime_implementation",
@@ -26,7 +26,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "659825e1338814068da4d1baf2b658adb87df0a39fa0c213bfb885e6cf4ee6ac"
+    "sha256": "e09c34ad949ab651609d78281b1a5ea26fc8896947ee1430f3e7cb64143dc3ba"
   },
   "scope_lock": {
     "objective": "Use actual post-exit native movement authority for exact occupancy-scoped POINT recovery and align native profession requirements with simulator requests.",
@@ -63,7 +63,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Build/generate/promote the new exact reference cohort, then freeze and build the reviewed native batch and validate native outcomes.",
+  "next_action": "Complete final isolated-byte review, generate/publish/reconstruct/promote captured-oracle reference cohort, then freeze/build native batch and validate.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -122,6 +122,10 @@
     {
       "id": "crash_destination_copies_actor_floor",
       "review": "implementation_independently_approved_native_acceptance_pending"
+    },
+    {
+      "id": "frozen_fixture_validation_reads_ambient_dbc",
+      "review": "independently_approved_empty_dbc_root_fixture_passed"
     }
   ]
 }

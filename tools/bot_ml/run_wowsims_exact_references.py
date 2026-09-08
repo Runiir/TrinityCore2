@@ -417,6 +417,21 @@ def _require_normal_child(outcome: Mapping[str, Any], *, label: str) -> None:
     _require(outcome.get("process_group_gone") is True, f"{label}:process_group")
 
 
+def _require_normal_child_with_output(
+    outcome: Mapping[str, Any], output: bytes, *, label: str, output_root: Path,
+) -> None:
+    """Retain failure bytes before a temporary child workspace is removed."""
+    try:
+        _require_normal_child(outcome, label=label)
+    except WowsimsGenerationError as error:
+        log = store_content_addressed_bytes(output_root, "process_logs", output, suffix=".log")
+        tail = output[-2048:].decode("utf-8", errors="replace")
+        raise WowsimsGenerationError(
+            f"{error}; failure_log={output_root / log['path']}; "
+            f"output_sha256={log['sha256']}; output_tail={tail!r}"
+        ) from error
+
+
 def verify_process_evidence(
     transport: Mapping[str, Any],
     process_log: Mapping[str, Any],
@@ -3852,7 +3867,10 @@ def generate_one_reference(
             env=dict(os.environ),
             timeout_seconds=60.0,
         )
-        _require_normal_child(proto_validation_outcome, label="native_request_protojson")
+        _require_normal_child_with_output(
+            proto_validation_outcome, proto_validation_output,
+            label="native_request_protojson", output_root=output_root,
+        )
         _require(compute_stats_path.is_file(), "compute_stats:missing")
         compute_stats_bytes = compute_stats_path.read_bytes()
     compute_stats_result = _json_object_from_bytes(
@@ -4951,7 +4969,9 @@ def reconstruct_generation_with_dvc(
             env=env,
             timeout_seconds=timeout_seconds,
         )
-        _require_normal_child(build_outcome, label="dvc_fresh_rebuild")
+        _require_normal_child_with_output(
+            build_outcome, build_output, label="dvc_fresh_rebuild", output_root=output_root,
+        )
         logs["fresh_rebuild"] = {
             **store_content_addressed_bytes(
                 output_root, "process_logs", build_output, suffix=".log"

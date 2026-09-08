@@ -27,8 +27,14 @@ Four DPS bots equip Lightweave 4115 without its required Tailoring 500. Pinned
 WoWSims activates it with professions unset; native application suppresses it.
 The generic profession/enchant setup correction passed independent review.
 Narrow metadata reconciliation preserved gear and explicit profession choices.
-The regenerated fixture and 16 pending requests pass their identity checks;
-exact simulator generation and promotion remain in progress.
+The corrected pinned protobuf profession names pass the actual native validator.
+All 16 simulator candidates generated with unchanged DPS. Fresh reconstruction
+then exposed an ambient DBC read in frozen-fixture validation. The bounded
+repair captures the exact selected enchant requirements and source hash, like
+the existing glyph authority; the regenerated fixture/request identity and isolated byte-load tests pass,
+and independent review approved the repair. Exact cohort regeneration follows.
+The former detached-file test did not isolate the imported data root. A new
+empty-data-root regression and retained child failure output cover these gaps.
 
 The all-bot review is closed. The 27,421,450-byte evidence archive passed fresh
 remote reconstruction; exact raw/log/archive duplicates were evicted after all
