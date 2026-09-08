@@ -206,11 +206,11 @@
             "required_rank": 500,
             "provisioned_value": 525,
             "provisioned_max": 525,
-            "wowsims_profession": "ProfessionTailoring"
+            "wowsims_profession": "Tailoring"
           }
         ],
         "wowsims_professions": [
-          "ProfessionTailoring",
+          "Tailoring",
           "ProfessionUnknown"
         ]
       }
@@ -691,11 +691,11 @@
             "required_rank": 500,
             "provisioned_value": 525,
             "provisioned_max": 525,
-            "wowsims_profession": "ProfessionTailoring"
+            "wowsims_profession": "Tailoring"
           }
         ],
         "wowsims_professions": [
-          "ProfessionTailoring",
+          "Tailoring",
           "ProfessionUnknown"
         ]
       }
@@ -1027,11 +1027,11 @@
             "required_rank": 500,
             "provisioned_value": 525,
             "provisioned_max": 525,
-            "wowsims_profession": "ProfessionTailoring"
+            "wowsims_profession": "Tailoring"
           }
         ],
         "wowsims_professions": [
-          "ProfessionTailoring",
+          "Tailoring",
           "ProfessionUnknown"
         ]
       }
@@ -1198,11 +1198,11 @@
             "required_rank": 500,
             "provisioned_value": 525,
             "provisioned_max": 525,
-            "wowsims_profession": "ProfessionTailoring"
+            "wowsims_profession": "Tailoring"
           }
         ],
         "wowsims_professions": [
-          "ProfessionTailoring",
+          "Tailoring",
           "ProfessionUnknown"
         ]
       }
@@ -1523,11 +1523,11 @@
             "required_rank": 500,
             "provisioned_value": 525,
             "provisioned_max": 525,
-            "wowsims_profession": "ProfessionTailoring"
+            "wowsims_profession": "Tailoring"
           }
         ],
         "wowsims_professions": [
-          "ProfessionTailoring",
+          "Tailoring",
           "ProfessionUnknown"
         ]
       }
@@ -2317,11 +2317,11 @@
             "required_rank": 500,
             "provisioned_value": 525,
             "provisioned_max": 525,
-            "wowsims_profession": "ProfessionTailoring"
+            "wowsims_profession": "Tailoring"
           }
         ],
         "wowsims_professions": [
-          "ProfessionTailoring",
+          "Tailoring",
           "ProfessionUnknown"
         ]
       }
@@ -2798,11 +2798,11 @@
             "required_rank": 500,
             "provisioned_value": 525,
             "provisioned_max": 525,
-            "wowsims_profession": "ProfessionLeatherworking"
+            "wowsims_profession": "Leatherworking"
           }
         ],
         "wowsims_professions": [
-          "ProfessionLeatherworking",
+          "Leatherworking",
           "ProfessionUnknown"
         ]
       }

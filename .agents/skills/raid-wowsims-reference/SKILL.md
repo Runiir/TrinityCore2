@@ -62,6 +62,11 @@ pinned WoWSims checkout. Keep the request-catalog canonical JSON SHA-256,
 request-catalog file SHA-256, target-catalog SHA-256, and receipt SHA-256 under
 their exact labels; never compare or rename them as a generic catalog hash.
 
+Read enum names from the pinned protobuf schema; do not infer a naming prefix
+from another enum member. For new request fields, run the real pinned validator
+on the materialized request before cohort generation. Unit tests that repeat
+the implementation's strings do not prove simulator acceptance.
+
 ## Keep three reference classes separate
 
 Name the reference class before reporting or comparing DPS:

@@ -525,11 +525,11 @@ def _local_oracles(
 
 
 PRIMARY_PROFESSIONS = {
-    164: "ProfessionBlacksmithing", 165: "ProfessionLeatherworking",
-    171: "ProfessionAlchemy", 182: "ProfessionHerbalism", 186: "ProfessionMining",
-    197: "ProfessionTailoring", 202: "ProfessionEngineering",
-    333: "ProfessionEnchanting", 393: "ProfessionSkinning",
-    755: "ProfessionJewelcrafting", 773: "ProfessionInscription",
+    164: "Blacksmithing", 165: "Leatherworking",
+    171: "Alchemy", 182: "Herbalism", 186: "Mining",
+    197: "Tailoring", 202: "Engineering",
+    333: "Enchanting", 393: "Skinning",
+    755: "Jewelcrafting", 773: "Inscription",
 }
 
 

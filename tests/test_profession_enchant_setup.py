@@ -8,8 +8,8 @@ from tools.bot_ml.phase8_fixture_contract import materialize_fixture_contract
 ROOT = Path(__file__).resolve().parents[1]
 SETUP = {'requirements': [{'source_enchant_ids': [4115], 'native_skill_id': 197,
     'required_rank': 500, 'provisioned_value': 525, 'provisioned_max': 525,
-    'wowsims_profession': 'ProfessionTailoring'}],
-    'wowsims_professions': ['ProfessionTailoring', 'ProfessionUnknown']}
+    'wowsims_profession': 'Tailoring'}],
+    'wowsims_professions': ['Tailoring', 'ProfessionUnknown']}
 SECONDARY = [{'id': 129, 'value': 525, 'max': 525}, {'id': 185, 'value': 525, 'max': 525}, {'id': 762, 'value': 300, 'max': 300}]
 
 
@@ -109,7 +109,7 @@ def test_materialization_to_native_raid_request_all_four_specs(tmp_path):
             native_contract=contract['specs'][spec]['native_request'], class_name='ClassShaman',race_name='RaceDraenei',
             equipment_items=[],talents_string='',glyphs={},rotation={})
         player = native['raid']['parties'][0]['players'][0]
-        assert player['profession1'] == ('ProfessionUnknown' if spec=='marksmanship_hunter' else 'ProfessionTailoring')
+        assert player['profession1'] == ('ProfessionUnknown' if spec=='marksmanship_hunter' else 'Tailoring')
         assert player['profession2'] == 'ProfessionUnknown'
 
 
@@ -131,10 +131,10 @@ def test_third_primary_profession_and_serialized_low_skill_rejected():
 
 
 @pytest.mark.parametrize('enchant,configured,expected', [
-    (0,[171,202],['ProfessionAlchemy','ProfessionEngineering']),
-    (4115,[171],['ProfessionAlchemy','ProfessionTailoring']),
-    (4115,[202],['ProfessionTailoring','ProfessionEngineering']),
-    (0,[171],['ProfessionAlchemy','ProfessionUnknown']),
+    (0,[171,202],['Alchemy','Engineering']),
+    (4115,[171],['Alchemy','Tailoring']),
+    (4115,[202],['Tailoring','Engineering']),
+    (0,[171],['Alchemy','ProfessionUnknown']),
 ])
 def test_pipeline_preserves_explicit_primary_professions(tmp_path,enchant,configured,expected):
     skills = SECONDARY + [{'id':skill,'value':525,'max':525} for skill in configured]
@@ -203,7 +203,7 @@ def test_profession_only_cli_preserves_catalog_identity_and_explicit_choices(tmp
     assert actual_reference==reference
     updated = json.loads(catalogs.TARGET_CATALOG_PATH.read_text())
     bot = next(row['provisioning_bot'] for row in updated['targets'] if row['spec_target_id']=='elemental_shaman')
-    assert bot['profession_setup']['wowsims_professions']==['ProfessionTailoring','ProfessionEngineering']
+    assert bot['profession_setup']['wowsims_professions']==['Tailoring','Engineering']
     before_bytes = [path.read_bytes() for path in [catalogs.TARGET_CATALOG_PATH,catalogs.REFERENCE_CATALOG_PATH]]
     assert catalogs.main()==0
     assert before_bytes==[path.read_bytes() for path in [catalogs.TARGET_CATALOG_PATH,catalogs.REFERENCE_CATALOG_PATH]]
@@ -240,3 +240,16 @@ def test_profession_reconciliation_rejects_drift_before_writing(tmp_path,monkeyp
     with pytest.raises(ValueError,match='manifest mismatch'):
         sync.reconcile_checked_in_professions()
     assert path.read_bytes()==before
+
+
+def test_profession_names_belong_to_pinned_proto_enum():
+    # Exact enum snapshot from wowsims/cata commit
+    # 70d87383a9b92f30fb9e370c4676d3ce33b6e6b6, proto/common.proto:132.
+    # This independent wire-contract fixture must not be derived from our map.
+    import re
+    from tools.bot_ml.wowsims_gear_binding import PRIMARY_PROFESSIONS
+    enum_source = 'enum Profession {\n\tProfessionUnknown = 0;\n\tAlchemy = 1;\n\tBlacksmithing = 2;\n\tEnchanting = 3;\n\tEngineering = 4;\n\tHerbalism = 5;\n\tInscription = 6;\n\tJewelcrafting = 7;\n\tLeatherworking = 8;\n\tMining = 9;\n\tSkinning = 10;\n\tTailoring = 11;\n\tArcheology = 12;\n}'
+    names = set(re.findall(r"^\s*(\w+)\s*=\s*\d+;", enum_source, re.MULTILINE))
+    assert set(PRIMARY_PROFESSIONS.values()) <= names
+    assert 'ProfessionUnknown' in names
+    assert PRIMARY_PROFESSIONS[197] == 'Tailoring'

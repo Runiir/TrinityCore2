@@ -67,20 +67,20 @@ def test_every_spec_has_exact_native_start_and_controlled_consumables() -> None:
     # Other frozen specs have no primary-profession enchant requirement;
     # DK Runeforging is a class skill, not a primary profession.
     expected_professions = {
-        "affliction_warlock": "ProfessionTailoring",
+        "affliction_warlock": "Tailoring",
         "arms_warrior": "ProfessionUnknown",
         "assassination_rogue": "ProfessionUnknown",
-        "balance_druid": "ProfessionTailoring",
+        "balance_druid": "Tailoring",
         "combat_rogue": "ProfessionUnknown",
-        "demonology_warlock": "ProfessionTailoring",
-        "elemental_shaman": "ProfessionTailoring",
+        "demonology_warlock": "Tailoring",
+        "elemental_shaman": "Tailoring",
         "feral_druid_dps": "ProfessionUnknown",
-        "fire_mage": "ProfessionTailoring",
+        "fire_mage": "Tailoring",
         "frost_death_knight": "ProfessionUnknown",
         "fury_warrior": "ProfessionUnknown",
         "marksmanship_hunter": "ProfessionUnknown",
         "retribution_paladin": "ProfessionUnknown",
-        "shadow_priest": "ProfessionTailoring",
+        "shadow_priest": "Tailoring",
         "survival_hunter": "ProfessionUnknown",
         "unholy_death_knight": "ProfessionUnknown",
     }

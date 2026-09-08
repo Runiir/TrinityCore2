@@ -10,7 +10,7 @@ namespace BotCalibrationFixtureContractGenerated
 {
 inline constexpr char Schema[] = "phase8_calibration_fixture_contract_v1";
 inline constexpr char ReferenceClass[] = "self_provided_baseline";
-inline constexpr char ContentSha256[] = "8d0dba4c7ff4b7c2b75318ae35fc0ca7f07f44702692a1c13a5674c2641e99cb";
+inline constexpr char ContentSha256[] = "3f6f7abeb838694c8d8e97b31d530cb1008bff4243b60a0dd6150e6ec3a0754e";
 inline constexpr char UpstreamRevision[] = "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6";
 inline constexpr uint32_t TargetEntry = 44548;
 inline constexpr uint8_t TargetLevel = 88;
