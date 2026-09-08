@@ -1,0 +1,228 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "fc8caa430de98a37b530bd22933c66d5d3b6dbed",
+  "archive_sha256": "dc400f7251ceef64e5f3aa7982a8e64e9ba597461aa64cd82d779df5ab56f733",
+  "archive_bytes": 28003017,
+  "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_fc8caa430d_20260908.tar.gz.dvc",
+  "remote_download_sha256": "dc400f7251ceef64e5f3aa7982a8e64e9ba597461aa64cd82d779df5ab56f733",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": true,
+  "terminal_reason": "clear",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-fc8caa430d/configure.log",
+      "bytes": 15528,
+      "sha256": "02a43932a18f3e16bef2c119e2031ab70cc4c103c6f0c577883220bb67dabc91"
+    },
+    {
+      "path": "build-preflight-fc8caa430d/configure_receipt.json",
+      "bytes": 13610,
+      "sha256": "b174c9b42cfb68941fe1956601591671f92d7e18835bb2121b0e20a305fbaaaf"
+    },
+    {
+      "path": "build-preflight-fc8caa430d/configure_verification.json",
+      "bytes": 536,
+      "sha256": "5a3c2350dbb973cb70dabcb5922c34a9c6df7d7fc487beaa1fc3a357125a0675"
+    },
+    {
+      "path": "build-preflight-fc8caa430d/elemental_calibration_readiness.md",
+      "bytes": 5839,
+      "sha256": "86455140208a1299a578cb232599850c47fc006e7d433afeb47e8eef2beb83c5"
+    },
+    {
+      "path": "build-preflight-fc8caa430d/elemental_process_calibration_readiness.md",
+      "bytes": 12504,
+      "sha256": "99b4998e682af2e1a82f07abb7d9cadbb0be34180411cc1334ff055c961a06ca"
+    },
+    {
+      "path": "build-preflight-fc8caa430d/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-fc8caa430d/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "49f3333ca87e176e76cab63e82209c2374ce47b32bd036833113782b176dff72"
+    },
+    {
+      "path": "build-preflight-fc8caa430d/profile_asset_preflight.json",
+      "bytes": 1335,
+      "sha256": "d484e7a5bce8b9def077e1cabf5de035d3d027950a63dfe49dd9c79b470e787f"
+    },
+    {
+      "path": "build-preflight-fc8caa430d/runtime_asset_preflight.json",
+      "bytes": 5453588,
+      "sha256": "0abf5348ebfda108554cfcb3ece5c3994a44f31c277e225b2debae8ad6edf9a5"
+    },
+    {
+      "path": "build-preflight-fc8caa430d/worldserver_build.log",
+      "bytes": 106726,
+      "sha256": "308b668cf1364121753a410c418c2190ec042b2c5308d3dfe6e54121d197ae0f"
+    },
+    {
+      "path": "build-preflight-fc8caa430d/worldserver_build_receipt.json",
+      "bytes": 24246,
+      "sha256": "80bcd139710e589231148ce1bfcd57072b351705a28c83fd40098fa5765bac82"
+    },
+    {
+      "path": "build-preflight-fc8caa430d/worldserver_build_verification.json",
+      "bytes": 536,
+      "sha256": "02d68516f3a10a4b31a65c516bed170cf0edcc1b9d92d65f3b05c458736a6d50"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/base-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/base-worldserver.conf.receipt.json",
+      "bytes": 8776,
+      "sha256": "3e288ad17124872309d6ad089ae1ab1ad96b85569e081a3adb57d2300fd45705"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/capture.console.log",
+      "bytes": 7593484,
+      "sha256": "ea16b0abed687a821f0e2297a5e1ba7c394492a6e8cbe9671646715ca2000550"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/closed_summary.json",
+      "bytes": 5233,
+      "sha256": "784a2b8ab80040428b9e61cd14feff7f80d28060e046e997c3149da435cf69f2"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/database_readback.json",
+      "bytes": 27722,
+      "sha256": "a5366ca745f6e91819a18ed37884860c310ffe3f158a045c18a3f1ee03e9a04d"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/dps-review/actors.json",
+      "bytes": 25233,
+      "sha256": "ebe357889d2be2bbd79168651459d7da63fc0ab5ac9c22543aa18e0e49b2c025"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/dps-review/deferred_vehicle_binding_implementation.md",
+      "bytes": 5058,
+      "sha256": "d42c2a52bf5f052c9eff646a787a966f988852c4139f4ffed8bc7cbf80c6bf5a"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/dps-review/deferred_vehicle_binding_review.md",
+      "bytes": 3974,
+      "sha256": "304ac6061d9c52eca7ded1e41cabe7195dd8d21fd4866a50373f878f2aff79ed"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/dps-review/dps_review.md",
+      "bytes": 14311,
+      "sha256": "4ef5c5e9403573c2c268643a03c41de467870da0cb2e137a1b6107569bc005b2"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/dps-review/elemental_execution_review.md",
+      "bytes": 8468,
+      "sha256": "c8f147c29fd9a3d2cb01e17d3b9769b6a42acfa0c71c3f902d9cd7e665e5f2e7"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/dps-review/fire_fixed_cadence_diagnosis.md",
+      "bytes": 6423,
+      "sha256": "39fd20122d30e131b152066aacbe5069f61effd85b84e3801460788dd646bcf6"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/dps-review/fire_hook_destination_diagnosis.md",
+      "bytes": 6970,
+      "sha256": "d53e7747a325eb2d125c528d2205181e63661d0e17991d39c451946063cee5c6"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/dps-review/runtime_capture_acceptance.md",
+      "bytes": 9171,
+      "sha256": "22a576ba6745e6cff8136bbce18515b25510c226ff2dc1dec62cf686d50dcecc"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/dps-review/vehicle_exit_execution_review.md",
+      "bytes": 9967,
+      "sha256": "f339b7c9474954b4959900f8ae12c7aec0b274cadbe9c8f6541eef09584d538f"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/launch.json",
+      "bytes": 2068,
+      "sha256": "5a32d3a474c6573317d10b224924521a493c59980be4a95f248ebdb5811521f0"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/postrun_build_verification.json",
+      "bytes": 537,
+      "sha256": "7d32f06b9d4135ab273f95769e005d2a59633398923295bafac528d0aa164cbc"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/provisioning.json",
+      "bytes": 1381,
+      "sha256": "593decfd499e625d0765c905b2bff2b3e8cd5c16811edda45d4502eefe9df5a0"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/raw.jsonl",
+      "bytes": 188382235,
+      "sha256": "2d04e06250dfc3d24f4058e5abac2106796f398577ab50a7c2366af381b60eda"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/readback.console.log",
+      "bytes": 20594,
+      "sha256": "a5c6c8fcd7f77a5a43ddaf73051e60b7db937870e0565389035afdb4cffb2c55"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/report.json",
+      "bytes": 7593484,
+      "sha256": "ea16b0abed687a821f0e2297a5e1ba7c394492a6e8cbe9671646715ca2000550"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/validation_provisioning_apply/provision_accounts.sql",
+      "bytes": 4068,
+      "sha256": "689fc5fd368cc4dc8e19c689471e579c80d1af762747fcc7b6f510fd66d114e7"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/validation_provisioning_apply/provision_characters.sql",
+      "bytes": 319805,
+      "sha256": "b180c53065c5150f47a55c44475272b3e8c95f1bcd10d4a4399604091b071ec3"
+    },
+    {
+      "path": "magmaw-development-fc8caa430d/worldserver.log",
+      "bytes": 185273819,
+      "sha256": "b58cf7753feaf5bf7a5bbaf284ecf9b53644065cbb9180f9d743486a1784373b"
+    },
+    {
+      "path": "run-development.py",
+      "bytes": 3958,
+      "sha256": "a5a81ed9aacaec880cefaaa87bf592536ab609aacea46bf3a89d60e63d82f1cd"
+    },
+    {
+      "path": "publish-development.py",
+      "bytes": 3420,
+      "sha256": "a805aa003260ea44013efeea8ab1851c97ce3e9a41bf2c7348212af3aad86427"
+    },
+    {
+      "path": "summarize-development.py",
+      "bytes": 3667,
+      "sha256": "af052e2feef7ebb5ee57a8f6497d310396cc35d1917881ad9fea317d13796980"
+    },
+    {
+      "path": "observe-magmaw.py",
+      "bytes": 1813,
+      "sha256": "2e6bc09d2e2d7a33fa2686d5c3a44e18614eb279a98a0d88b1dc7f30cca66569"
+    },
+    {
+      "path": "evict-development.py",
+      "bytes": 1545,
+      "sha256": "cc0cbc399b0a8877bc933c849ff13f22ae7ace87eebcaf7cc64a7e641709615c"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    "magmaw-development-fc8caa430d/raw.jsonl",
+    "magmaw-development-fc8caa430d/worldserver.log",
+    "magmaw-development-fc8caa430d/capture.console.log",
+    "magmaw-development-fc8caa430d/readback.console.log"
+  ]
+}

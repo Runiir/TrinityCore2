@@ -141,7 +141,7 @@
             return std::nullopt;
 
         std::optional<Vector3> const destination =
-            ResolveHookApproachDestination(board, bot, boss);
+            ResolveHookApproachDestination(board, boss);
         if (!destination)
             return std::nullopt;
         return BuildPointMovement(board, *destination,
@@ -161,7 +161,7 @@
             return std::nullopt;
 
         std::optional<Vector3> const destination =
-            ResolveHookApproachDestination(board, bot, boss);
+            ResolveHookApproachDestination(board, boss);
         if (!destination)
             return std::nullopt;
         return BuildPointMovement(board, *destination,

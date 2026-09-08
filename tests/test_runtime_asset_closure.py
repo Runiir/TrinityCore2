@@ -909,3 +909,200 @@ def test_input_log_cannot_bypass_closure_for_mutating_preparation(tmp_path, monk
     with pytest.raises(SystemExit, match='--input-log is read-only'):
         live_validation.main()
     assert not output.exists()
+
+
+def test_map_inventory_selection_zero_uses_native_padded_names():
+    from tools.raid_program.runtime_asset_closure import _expected_map_values
+
+    rows = [
+        {"path": name, "type": "file", "mode": "0664", "size_bytes": 1, "sha256": "a" * 64}
+        for name in ("mmaps/000.mmap", "mmaps/0002035.mmtile", "mmaps/0012035.mmtile",
+                     "mmaps/0000.mmap", "mmaps/nested/0002036.mmtile")
+    ]
+    selected = _expected_map_values({
+        "id": "selected_map_navmesh_offline", "root": "source-checkout",
+        "rule": "bounded-pattern", "path": "data/mmaps", "expected_mode": "0444",
+        "map_inventory_selection": {"kind": "navmesh_v1", "inventory_path": "mmaps"},
+    }, 0, {"records": rows})
+    assert [row["path"] for row in selected["expected_files"]] == [
+        "data/mmaps/000.mmap", "data/mmaps/0002035.mmtile"]
+    assert all(row["mode"] == "0444" for row in selected["expected_files"])
+
+
+def _selected_map_fixture(tmp_path: Path) -> dict[str, Path]:
+    paths = _input_fixture(tmp_path)
+    paths["bundle"].mkdir()
+    manifest = json.loads(paths["manifest"].read_text())
+    manifest["asset_classes"] = [row for row in manifest["asset_classes"] if row["id"] != "bounded"]
+    for map_id in (0, 1, 669, 1000):
+        token = f"{map_id:03d}"
+        for folder, base, tile in (("maps", "tilelist", "map"), ("mmaps", "mmap", "mmtile")):
+            for name in (f"{token}.{base}", f"{token}2035.{tile}"):
+                _write(paths["data"] / folder / name, name.encode(), 0o664)
+                if folder == "mmaps":
+                    _write(paths["source"] / "data/mmaps" / name, name.encode(), 0o444)
+    for class_id, root, path, kind, inventory_path, mode in (
+        ("selected_map_terrain", "configured-DataDir", "maps", "terrain_v1", "maps", None),
+        ("selected_map_navmesh_native", "configured-DataDir", "mmaps", "navmesh_v1", "mmaps", "0664"),
+        ("selected_map_navmesh_offline", "source-checkout", "data/mmaps", "navmesh_v1", "mmaps", "0444"),
+    ):
+        row = _class(class_id, root, "bounded-pattern", path=path, expected_inventory=_inventory([]))
+        row["map_inventory_selection"] = {"kind": kind, "inventory_path": inventory_path}
+        if mode:
+            row["expected_mode"] = mode
+        manifest["asset_classes"].append(row)
+    _seal_authorities(paths, manifest)
+    _write_json(paths["manifest"], manifest)
+    return paths
+
+
+@pytest.mark.parametrize("map_id", [0, 1, 669, 1000])
+def test_selected_map_launch_gate_accepts_inventory_projection(tmp_path, map_id):
+    paths = _selected_map_fixture(tmp_path)
+    args = argparse.Namespace(**{
+        "runtime_asset_closure_manifest": paths["manifest"],
+        "runtime_asset_source_checkout": paths["source"],
+        "runtime_asset_data_dir": paths["data"],
+        "runtime_asset_dvc_workspace": paths["dvc"],
+        "runtime_asset_bundle": paths["bundle"],
+        "runtime_asset_map_id": map_id,
+    })
+    result = enforce_runtime_asset_closure_from_args(args, worldserver_config=paths["config"])
+    assert result["complete"], result["issues"]
+    assert result["scenario_map_id"] == map_id
+    assert result["argument_binding"]
+
+
+@pytest.mark.parametrize("mutation,kind", [
+    ("missing", "missing"), ("extra", "extra"), ("hash", "hash_mismatch"),
+    ("size", "size_mismatch"), ("mode", "mode_mismatch"), ("symlink", "symlink"),
+])
+def test_selected_map_native_and_offline_payload_gates(tmp_path, mutation, kind):
+    paths = _selected_map_fixture(tmp_path)
+    target = paths["source"] / "data/mmaps/0002035.mmtile"
+    if mutation == "missing":
+        target.unlink()
+    elif mutation == "extra":
+        _write(target.with_name("0002036.mmtile"), b"extra", 0o444)
+    elif mutation == "hash":
+        target.chmod(0o644)
+        _write(target, b"x" * target.stat().st_size, 0o444)
+    elif mutation == "size":
+        target.chmod(0o644)
+        _write(target, b"x", 0o444)
+    elif mutation == "mode":
+        target.chmod(0o664)
+    elif mutation == "symlink":
+        target.unlink()
+        target.symlink_to(paths["data"] / "mmaps/0002035.mmtile")
+    receipt = _verify(paths, scenario_map_id=0)
+    assert not receipt["complete"]
+    assert kind in receipt["issue_counts"], receipt["issues"]
+
+
+@pytest.mark.parametrize("map_id", [True, False, -1, 2**32, "0", 1.0, 99])
+def test_selected_map_rejects_invalid_or_absent_inventory_map(tmp_path, map_id):
+    paths = _selected_map_fixture(tmp_path)
+    receipt = _verify(paths, scenario_map_id=map_id)
+    assert not receipt["complete"]
+    assert receipt["issue_counts"] == {"manifest_invalid" if map_id == 99 else "audit_invalid": 1}
+
+
+def test_selected_map_projection_keeps_explicit_contract_exact(tmp_path):
+    from tools.raid_program.runtime_asset_closure import _expected_map_values, ManifestError
+
+    paths = _selected_map_fixture(tmp_path)
+    manifest = json.loads(paths["manifest"].read_text())
+    row = manifest["asset_classes"][-1]
+    inventory = json.loads((paths["dvc"] / "native-inventory.json").read_text())
+    selected = _expected_map_values(row, 669, inventory)
+    row["map_contracts"] = {"669": {key: selected[key] for key in (
+        "pattern", "expected_files", "expected_inventory")}}
+    assert _expected_map_values(row, 669, inventory)["expected_files"] == selected["expected_files"]
+    row["map_contracts"]["669"]["expected_files"][0]["sha256"] = "b" * 64
+    with pytest.raises(ManifestError, match="explicit_map_inventory_disagrees"):
+        _expected_map_values(row, 669, inventory)
+
+
+def test_selected_map_cannot_skip_static_audit_or_forge_inventory(tmp_path):
+    paths = _selected_map_fixture(tmp_path)
+    manifest = json.loads(paths["manifest"].read_text())
+    manifest["asset_classes"][0]["map_inventory_selection"] = {
+        "kind": "terrain_v1", "inventory_path": "maps"}
+    _write_json(paths["manifest"], manifest)
+    assert _verify(paths, scenario_map_id=0)["issue_counts"] == {"audit_invalid": 1}
+    paths = _selected_map_fixture(tmp_path / "forged")
+    authority = paths["dvc"] / "native-inventory.json"
+    authority.write_text(authority.read_text().replace('"0664"', '"0444"', 1))
+    assert _verify(paths, scenario_map_id=0)["issue_counts"] == {"inventory_authority_invalid": 1}
+
+
+def test_selected_map_empty_or_baseless_authority_is_rejected(tmp_path):
+    from tools.raid_program.runtime_asset_closure import _expected_map_values, ManifestError
+
+    paths = _selected_map_fixture(tmp_path)
+    row = json.loads(paths["manifest"].read_text())["asset_classes"][-1]
+    inventory = json.loads((paths["dvc"] / "native-inventory.json").read_text())
+    for removed in ("mmaps/000.mmap", "mmaps/0002035.mmtile"):
+        records = [r for r in inventory["records"] if r["path"] != removed]
+        with pytest.raises(ManifestError, match="scenario_map_inventory_incomplete:0"):
+            _expected_map_values(row, 0, {"records": records})
+
+
+def test_production_map_inventory_projection_binds_zero_and_preserves_669():
+    from tools.raid_program.runtime_asset_closure import _expected_map_values
+
+    manifest = json.loads(PRODUCTION_MANIFEST.read_text())
+    authority_path = ROOT / "experiments/configs/runtime_asset_native_data_inventory_v1.json"
+    assert hashlib.sha256(authority_path.read_bytes()).hexdigest() == "e3547f691b75ae78c7b01279d175941f51348e50695917c914a56a6651642373"
+    authority = json.loads(authority_path.read_text())
+    assert len(authority["records"]) == 40976
+    expected = {
+        "selected_map_terrain": (840, 65008981, "4206ba9ed14dbc7c1707985664227b4eb5f9156c3db7da30870d8f5c3a04820d"),
+        "selected_map_navmesh_native": (606, 492888996, "9fcf50444f20f603286a98c305499cac6de3ad36a06d8a67ea16aed2600f95c5"),
+        "selected_map_navmesh_offline": (606, 492888996, "ce754935974e18db708a54f0ecdc39528ad2b77c40bd42f5453b36f0bf249c6e"),
+    }
+    for row in manifest["asset_classes"]:
+        if row["id"] not in expected:
+            continue
+        zero = _expected_map_values(row, 0, authority)
+        inventory = zero["expected_inventory"]
+        assert (inventory["file_count"], inventory["size_bytes"], inventory["inventory_sha256"]) == expected[row["id"]]
+        assert zero["selection_authority"] == "native_data_inventory"
+        assert zero["selected_projected_inventory_sha256"] == inventory["inventory_sha256"]
+        explicit = _expected_map_values(row, 669, authority)
+        generic = _expected_map_values({key: value for key, value in row.items() if key != "map_contracts"}, 669, authority)
+        assert [{"type": "file", **member} for member in explicit["expected_files"]] == generic["expected_files"]
+        assert explicit["pattern"] == generic["pattern"]
+        for key, value in explicit["expected_inventory"].items():
+            assert generic["expected_inventory"][key] == value
+        assert explicit["selected_source_inventory_sha256"] == generic["selected_source_inventory_sha256"]
+
+
+@pytest.mark.parametrize("field,value,reason", [
+    ("expected_files", "invalid", "map_contract_expected_files_invalid"),
+    ("expected_files", ["invalid"], "map_contract_expected_files_invalid"),
+    ("expected_files", None, "map_contract_expected_files_invalid"),
+    ("id", "different", "map_contract_fields_invalid"),
+    ("consumer", "different", "map_contract_fields_invalid"),
+    ("audience", "different", "map_contract_fields_invalid"),
+    ("provenance", "different", "map_contract_fields_invalid"),
+    ("hydration_source", "different", "map_contract_fields_invalid"),
+    ("eviction_policy", "different", "map_contract_fields_invalid"),
+])
+def test_selected_map_explicit_contract_malformed_fields_fail_closed(tmp_path, field, value, reason):
+    from tools.raid_program.runtime_asset_closure import _expected_map_values
+
+    paths = _selected_map_fixture(tmp_path)
+    manifest = json.loads(paths["manifest"].read_text())
+    row = manifest["asset_classes"][-1]
+    authority = json.loads((paths["dvc"] / "native-inventory.json").read_text())
+    projection = _expected_map_values(row, 0, authority)
+    contract = {key: projection[key] for key in ("pattern", "expected_files", "expected_inventory")}
+    contract[field] = value
+    row["map_contracts"] = {"0": contract}
+    _write_json(paths["manifest"], manifest)
+    receipt = _verify(paths, scenario_map_id=0)
+    assert receipt["complete"] is False
+    assert receipt["issue_counts"] == {"manifest_invalid": 1}
+    assert receipt["issues"][0]["detail"] == reason

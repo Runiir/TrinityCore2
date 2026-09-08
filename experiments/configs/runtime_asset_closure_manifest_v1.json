@@ -3,12 +3,12 @@
   "manifest_id": "cata_runtime_asset_closure_v1",
   "audit_authority": {
     "path": "experiments/configs/runtime_asset_closure_audit_authority_v1.json",
-    "sha256": "7509c393d72b96337cde291ecefcad0eaab25647af69696c4b8b6f8ad706e884"
+    "sha256": "aff454cf6bc56d6866e6a45659bc865a725e4c8cc454139241020feca9cff005"
   },
   "native_data_inventory_authority": {
     "path": "experiments/configs/runtime_asset_native_data_inventory_v1.json",
     "sha256": "e3547f691b75ae78c7b01279d175941f51348e50695917c914a56a6651642373",
-    "audit_authority_sha256": "7509c393d72b96337cde291ecefcad0eaab25647af69696c4b8b6f8ad706e884",
+    "audit_authority_sha256": "aff454cf6bc56d6866e6a45659bc865a725e4c8cc454139241020feca9cff005",
     "canonical_audit_inventory_sha256": "5cf47e7d7f1a3ea7ad1545678dd58685caa3de231d536b531729439fffb43673"
   },
   "root_contract": {
@@ -258,6 +258,7 @@
     },
     {
       "id": "selected_map_terrain",
+      "map_inventory_selection": {"kind": "terrain_v1", "inventory_path": "maps"},
       "consumer": "scenario terrain, height, and collision loads",
       "audience": "native-worldserver",
       "root": "configured-DataDir",
@@ -288,6 +289,8 @@
     },
     {
       "id": "selected_map_navmesh_offline",
+      "map_inventory_selection": {"kind": "navmesh_v1", "inventory_path": "mmaps"},
+      "expected_mode": "0444",
       "consumer": "offline native-navmesh probe",
       "audience": "offline-probe",
       "root": "source-checkout",
@@ -317,6 +320,8 @@
     },
     {
       "id": "selected_map_navmesh_native",
+      "map_inventory_selection": {"kind": "navmesh_v1", "inventory_path": "mmaps"},
+      "expected_mode": "0664",
       "consumer": "worldserver native path generation",
       "audience": "native-worldserver",
       "root": "configured-DataDir",

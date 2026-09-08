@@ -2,7 +2,46 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
-## Current result: capture repaired, canary stopped during Chainwielder
+## Current result: Magmaw clear, DPS still unresolved
+
+Source `fc8caa430de98a37b530bd22933c66d5d3b6dbed` completed the canonical Magmaw
+10N development run with capture exit0, native boss death, all ten bots recovered,
+cleanup passed and post-run build receipt verified. Two casualties occurred during
+Drudges and one during Magmaw. No worldserver is running.
+
+Boss hostile damage 29,200,494 yields 130,359.348 DPS and final 18,267.009 HPS over 224 active
+callback seconds, only a small gain over source88's127,953.806 DPS/227 seconds.
+This is a development clear, not full-raid qualification or overall DPS acceptance.
+
+Elemental's range/ordinary-formation oscillation is accepted as repaired: it reaches
+stable casting range and lands Lightning Bolt and Lava Burst. Heroism was submitted
+once at the first observed exposed-head switch; raid-wide aura coverage is unproved.
+All four observed vehicle exits eventually reconciled with fresh landed hardcasts,
+but substantial delays remain. The next exact shared edge is Affliction receipt570:
+its post-exit POINT is submitted before native launch, while binding is attempted
+only synchronously. The bounded late-binding repair passes its three affected behavioral tests and is under independent Sol review. Fire's
+pre-exit receipt563 remains excluded; its first elevated endpoint rejection is a
+separate native geometry finding.
+
+The all-bot review is complete and the patrol/capture repairs are accepted from closed evidence
+in `magmaw-development-fc8caa430d`. An isolated300-second Elemental calibration is
+being prepared to separate class mechanics from encounter losses. Existing map0
+assets are present, but the current map669-only asset closure lacks their selected
+contract; no closure check will be bypassed. No coefficient change is admitted.
+
+The current batch contains deferred post-exit receipt binding (three tests, Sol
+approved), the hook approach's route-derived floor identity (producer/native
+admission regression passed, Sol approved), and generic selected-map admission
+from the existing audited asset inventory (128 affected tests passed, Sol approved). The latter
+reuses the existing map 0 data; 606 independent offline navmesh copies passed
+content and mode readback. It does not change native terrain or pathing.
+
+Closed fc evidence is published through
+`artifacts/cata_raid_program/magmaw_development_fc8caa430d_20260908.tar.gz.dvc`.
+The 28,003,017-byte archive passed fresh remote reconstruction and hash verification;
+exact raw/log/archive duplicates were evicted after all readers completed.
+
+## Earlier result: capture repaired, canary stopped during Chainwielder
 
 Source `fa34580f2f4930fe9e31ec1fd80215df4aaf6a6e` built and verified, then the
 canonical watchdog stopped the route at Chainwielder for repeated failed decisions.
@@ -770,3 +809,5 @@ Evidence is remotely verified through a fresh empty-cache DVC download: `artifac
 Next bounded dependency: preserve native trace continuity across statistics windows, retaining genuine stop/profile resets, with a compiled producer fixture and independent review. The existing source-shape test required the defective reset; replace that requirement with executable continuity coverage. Do not retry the old source. After that repair's live verification, investigate the first healer death from an attributable lethal-event join rather than guessing a class coefficient or relaxing movement safety.
 
 The trace-continuity repair is now independently Sol-approved. Statistics-window rotation no longer invokes `ResetTraceStreams`; genuine stop/profile resets remain. A compiled test of the actual producer failed with the old reset restored and passed across two rotations with trace sequences, unexported rows, export cursors and planner receipts preserved. Seventeen focused tests and 48 ledger tests passed. This latest native repair has not yet been built into or exercised by a live canary. The next admission bank has 30 fixtures and retains the new occurrence without erasing prior failures. Published raw logs and obsolete prelaunch copies were evicted after exact member-hash verification; compact reports remain and the full archive can be hydrated for the healer investigation.
+
+One unchanged retained Stage3 test depends on an old checkout with stale route payloads; its failure was reproduced against unmodified HEAD authorities. Current map 0 and 669 production admission both pass. Proceed with the reviewed batch and one native Magmaw run.

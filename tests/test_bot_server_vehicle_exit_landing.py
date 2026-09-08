@@ -458,3 +458,212 @@ def test_vehicle_exit_landing_production_call_sites_are_receipt_bound() -> None:
         "transport_guid",
     ):
         assert marker in diagnosis
+
+
+def test_deferred_post_exit_point_binds_from_exact_production_submission(tmp_path):
+    executor = EXECUTOR.read_text()
+    preparation = PREPARATION.read_text()
+    begin = executor.index('void BindVehicleExitGroundReceipt(')
+    end = executor.index('\n}\n}', begin) + 2
+    immediate_helper = executor[begin:end]
+    begin = executor.index('            if (state.ServerProvisioned && generatePath && !aerialGhostRecovery)')
+    end = executor.index('\n        }\n    };', begin)
+    submission = executor[begin:end]
+    late_helper = ''
+    if 'void BindPendingVehicleExitReceipt(' in preparation:
+        begin = preparation.index('void BindPendingVehicleExitReceipt(')
+        late_helper = preparation[begin:preparation.index('\nBotServerVehicleExitLanding::LandingEvidence', begin)]
+    begin = preparation.index('    if (context.State.ServerProvisioned\n        && context.State.ServerVehicleExitLanding.ExitPending)')
+    begin = preparation.index('{', begin) + 1
+    late_call = preparation[begin:preparation.index('        uint64 const landingObservedAtMs', begin)]
+    # The extracted submission block belongs only to the actual POINT adapter.
+    # Real rejected plans and retained paths return before that adapter; the
+    # dynamic chase branch calls MoveChase without entering it.
+    point_adapter = executor.index('    auto submitPoint =')
+    assert executor.index('if (!planned)') < point_adapter
+    assert executor.index('ExecutionDisposition::Retained') < point_adapter
+    chase = executor[executor.index('    if (plan.DynamicTarget)'):executor.index('    else if (aerialGhostRecovery)')]
+    assert 'MoveChase' in chase and 'submitPoint(' not in chase
+    source = tmp_path / 'deferred.cpp'
+    source.write_text(r'''
+#include "Bots/BotServerVehicleExitLanding.h"
+#include <cassert>
+#include <map>
+#include <vector>
+using uint64 = std::uint64_t;
+using uint32 = std::uint32_t;
+using namespace BotServerVehicleExitLanding;
+struct Guid { uint64 GetCounter() const { return 30008; } };
+struct Player {
+    Guid GetGUID() const { return {}; }
+    uint32 GetMapId() const { return 669; }
+    uint32 GetInstanceId() const { return 2; }
+    unsigned Falls = 0;
+    unsigned Flags = 2048;
+    void SetFall(bool enable) { assert(!enable); ++Falls; Flags &= ~2048u; }
+};
+namespace BotWorldMovement {
+struct NativeMovementProgressObservation {
+    bool Available = false;
+    uint64 ReceiptId = 0, BotGuid = 30008, ArmedAtMs = 0;
+    uint32 MapId = 669, InstanceId = 2;
+    BotServerVehicleExitLanding::Scope Scope;
+    bool LaunchedSplineInitialized = false;
+    uint32 LaunchedSplineId = 0;
+    uint64 SupersededByReceiptId = 0;
+    bool Terminal = false;
+    std::string TerminalOutcome = "pending";
+};
+struct Sidecar {
+    std::map<uint64, NativeMovementProgressObservation> Rows;
+    std::vector<uint64> Lookups;
+    NativeMovementProgressObservation ForReceipt(uint64 id) {
+        Lookups.push_back(id); return Rows[id];
+    }
+};
+Sidecar& MovementProgressDiagnostics() { static Sidecar sidecar; return sidecar; }
+}
+uint64 MovementExecutorBotGuid(Player* bot) { return bot->GetGUID().GetCounter(); }
+uint32 MovementExecutorMapId(Player* bot) { return bot->GetMapId(); }
+''' + immediate_helper + '\n' + late_helper + r'''
+struct State { bool ServerProvisioned = true; Episode ServerVehicleExitLanding; };
+struct Context { ::State& State; Player* Bot; };
+void Submitted(State& state, Player* bot, uint64 receiptId, uint64 nowMs,
+    bool generatePath = true, bool aerialGhostRecovery = false) {
+    struct { uint64 LaunchReceiptId; } plan{receiptId};
+    struct { Scope MovementScope; } request{state.ServerVehicleExitLanding.ExitScope};
+''' + submission + r'''
+}
+void Prepare(Context& context) {
+    bool vehicleExitScopeAvailable = true;
+    Scope vehicleExitScope{1, 0, 4, 669, 2};
+''' + late_call + r'''
+}
+Episode Exit() {
+    Episode e;
+    VehicleTransitionObservation v{true, 999, 30008, 669, 2,
+        1788886529000ULL, true, {1, 0, 4, 669, 2}};
+    ObserveVehicleTransition(e, v);
+    v.HasVehicle = false; v.ObservedAtMs = 1788886529811ULL;
+    ObserveVehicleTransition(e, v);
+    return e;
+}
+BotWorldMovement::NativeMovementProgressObservation Launched(uint64 id = 570) {
+    BotWorldMovement::NativeMovementProgressObservation p;
+    p.Available = true; p.ReceiptId = id; p.ArmedAtMs = 1788886532401ULL;
+    p.Scope = {1, 0, 4, 669, 2};
+    p.LaunchedSplineInitialized = true; p.LaunchedSplineId = 10773;
+    return p;
+}
+int main() {
+    State state; Player bot; Context context{state, &bot};
+    state.ServerVehicleExitLanding = Exit();
+    auto& sidecar = BotWorldMovement::MovementProgressDiagnostics();
+    // Actual MovePoint returns before the controlled exit lets POINT launch.
+    Submitted(state, &bot, 570, 1788886531530ULL);
+    assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+    Prepare(context);
+    assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+    // An unrelated recent row must never be selected instead of receipt 570.
+    sidecar.Rows[999] = Launched(999);
+    Prepare(context);
+    assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+    sidecar.Rows[570] = Launched();
+    sidecar.Rows[570].ArmedAtMs = 0; // Launch callback precedes first sample.
+    Prepare(context);
+    assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+    sidecar.Rows[570].ArmedAtMs = 1788886532401ULL;
+    Prepare(context);
+    assert(state.ServerVehicleExitLanding.BoundGroundingReceiptId == 570);
+    for (auto id : sidecar.Lookups) assert(id == 570);
+    assert(bot.Falls == 0);
+    LandingEvidence evidence;
+    evidence.BotGuid = evidence.ReceiptBotGuid = 30008;
+    evidence.MapId = evidence.ReceiptMapId = 669;
+    evidence.InstanceId = evidence.ReceiptInstanceId = 2;
+    evidence.CurrentScopeAvailable = evidence.ReceiptScopeAvailable = true;
+    evidence.CurrentScope = evidence.ReceiptScope = {1, 0, 4, 669, 2};
+    evidence.ActorInWorld = evidence.ActorAlive = true;
+    evidence.FallingFlagsPresent = true;
+    evidence.CurrentSplineFinalized = evidence.MotionSlotsSettled = true;
+    evidence.ReceiptAvailable = true; evidence.ReceiptId = 570;
+    evidence.ReceiptArmedAtMs = 1788886532401ULL;
+    assert(Reconcile(state.ServerVehicleExitLanding, evidence, &bot).Decision
+        == Decision::KeepPending);
+    assert(bot.Falls == 0);
+    evidence.ReceiptTerminal = evidence.TerminalSampleAvailable = true;
+    evidence.ReceiptTerminalOutcome = "selected_endpoint_reached";
+    evidence.TerminalActorAlive = evidence.TerminalActorInWorld = true;
+    evidence.TerminalEndpointReached = evidence.TerminalFloorValid = true;
+    evidence.TerminalPlatformCompatible = true;
+    evidence.CurrentEndpointMatches = BotWorldMovement::NativePathEndpointComponentsMatch(
+        0.385371834f, 0.0132141113f);
+    assert(Reconcile(state.ServerVehicleExitLanding, evidence, &bot).Decision
+        == Decision::ClearStaleLandingFlag);
+    CloseEpisode(state.ServerVehicleExitLanding);
+    Prepare(context);
+    assert(Reconcile(state.ServerVehicleExitLanding, evidence, &bot).Decision
+        == Decision::NoEpisode);
+    assert(bot.Falls == 1 && bot.Flags == 0);
+
+    auto cannotBind = [&](uint64 submitAt, bool ground, bool aerial,
+        BotWorldMovement::NativeMovementProgressObservation progress, bool submit = true) {
+        state.ServerVehicleExitLanding = Exit(); sidecar.Rows.clear();
+        if (submit) Submitted(state, &bot, 570, submitAt, ground, aerial);
+        sidecar.Rows[570] = progress; Prepare(context);
+        assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+    };
+    // Rejected/chase/retained paths never invoke the actual POINT block.
+    cannotBind(1788886531530ULL, true, false, Launched(), false);
+    cannotBind(1788886529145ULL, true, false, Launched()); // pre-exit 563 shape
+    cannotBind(1788886531530ULL, false, false, Launched());
+    cannotBind(1788886531530ULL, true, true, Launched());
+    auto invalid = Launched(); invalid.Scope.AttemptId = 2;
+    cannotBind(1788886531530ULL, true, false, invalid);
+    invalid = Launched(); invalid.SupersededByReceiptId = 571;
+    cannotBind(1788886531530ULL, true, false, invalid);
+    invalid = Launched(); invalid.Terminal = true;
+    invalid.TerminalOutcome = "native_spline_replaced";
+    cannotBind(1788886531530ULL, true, false, invalid);
+    for (unsigned field = 0; field != 6; ++field) {
+        invalid = Launched();
+        switch (field) {
+            case 0: ++invalid.BotGuid; break;
+            case 1: ++invalid.MapId; break;
+            case 2: ++invalid.InstanceId; break;
+            case 3: ++invalid.Scope.WipeGeneration; break;
+            case 4: ++invalid.Scope.RouteGeneration; break;
+            case 5: invalid.ArmedAtMs = 1788886531000ULL; break;
+        }
+        cannotBind(1788886531530ULL, true, false, invalid);
+    }
+    state.ServerVehicleExitLanding = Exit(); sidecar.Rows.clear();
+    Submitted(state, &bot, 570, 1788886531530ULL);
+    Submitted(state, &bot, 571, 1788886531600ULL);
+    sidecar.Rows[570] = Launched();
+    Prepare(context);
+    assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+    sidecar.Rows[571] = Launched(571);
+    Prepare(context);
+    assert(state.ServerVehicleExitLanding.BoundGroundingReceiptId == 571);
+    Submitted(state, &bot, 570, 1788886531530ULL); // No backwards replacement.
+    Prepare(context);
+    assert(state.ServerVehicleExitLanding.BoundGroundingReceiptId == 571);
+    state.ServerVehicleExitLanding = Exit(); sidecar.Rows.clear();
+    Submitted(state, &bot, 570, 1788886531530ULL);
+    CloseEpisode(state.ServerVehicleExitLanding);
+    sidecar.Rows[570] = Launched(); Prepare(context);
+    assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+    state.ServerVehicleExitLanding = Exit(); sidecar.Rows.clear();
+    Submitted(state, &bot, 570, 1788886531530ULL);
+    ++state.ServerVehicleExitLanding.ExitScope.RouteGeneration;
+    sidecar.Rows[570] = Launched(); Prepare(context);
+    assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+}
+''')
+    binary = tmp_path / 'deferred'
+    subprocess.run(['g++', '-std=c++17', '-Wall', '-Wextra', '-Werror',
+                    '-Wno-unused-parameter', '-Wno-unused-variable',
+                    '-I', str(ROOT / 'src/server/game'), '-I', str(ROOT / 'src/common'),
+                    str(source), '-o', str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)

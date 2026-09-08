@@ -282,6 +282,8 @@ def build_audit_authority(
     for raw_class in manifest_classes:
         if not isinstance(raw_class, dict):
             raise ManifestError("asset_class_not_object")
+        if _map_inventory_selection(raw_class) is not None:
+            continue
         values = _expected_map_values(raw_class, scenario_map_id)
         digest = str(values.get("audit_inventory_sha256") or "")
         matches = by_digest.get(digest, [])
@@ -314,8 +316,102 @@ def build_audit_authority(
     }
 
 
-def _expected_map_values(asset_class: Mapping[str, Any], map_id: int) -> dict[str, Any]:
+def _map_inventory_selection(asset_class: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    selection = asset_class.get("map_inventory_selection")
+    if selection is None:
+        return None
+    contracts = {
+        "selected_map_terrain": ("terrain_v1", "maps", "configured-DataDir", "maps", None),
+        "selected_map_navmesh_native": ("navmesh_v1", "mmaps", "configured-DataDir", "mmaps", "0664"),
+        "selected_map_navmesh_offline": ("navmesh_v1", "mmaps", "source-checkout", "data/mmaps", "0444"),
+    }
+    expected = contracts.get(str(asset_class.get("id")))
+    if (not isinstance(selection, dict) or set(selection) != {"kind", "inventory_path"}
+            or expected is None or asset_class.get("rule") != "bounded-pattern"
+            or (selection.get("kind"), selection.get("inventory_path"),
+                asset_class.get("root"), asset_class.get("path"),
+                asset_class.get("expected_mode")) != expected):
+        raise ManifestError("map_inventory_selection_invalid")
+    return selection
+
+
+def _expected_map_values(
+    asset_class: Mapping[str, Any], map_id: int,
+    inventory_authority: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    if isinstance(map_id, bool) or not isinstance(map_id, int) or not 0 <= map_id <= 0xFFFFFFFF:
+        raise ManifestError("scenario_map_id_invalid")
+    selection = _map_inventory_selection(asset_class)
     maps = asset_class.get("map_contracts")
+    if selection is not None:
+        if inventory_authority is None:
+            raise ManifestError("map_inventory_authority_missing")
+        records = inventory_authority.get("records")
+        if not isinstance(records, list):
+            raise ManifestError("inventory_authority_records_invalid")
+        token = f"{map_id:03d}"
+        terrain = selection["kind"] == "terrain_v1"
+        base_suffix, tile_suffix = ("tilelist", "map") if terrain else ("mmap", "mmtile")
+        pattern = rf"^{token}(?:\.{base_suffix}|[0-9]{{4}}\.{tile_suffix})$"
+        prefix = selection["inventory_path"] + "/"
+        selected_files = []
+        source_files = []
+        for row in records:
+            relative = str(row.get("path", ""))
+            if not relative.startswith(prefix):
+                continue
+            name = relative[len(prefix):]
+            if not re.fullmatch(pattern, name):
+                continue
+            if row.get("type") != "file":
+                raise ManifestError("map_inventory_member_not_file")
+            source_files.append(row)
+            projected = {**row, "path": f"{asset_class['path']}/{name}"}
+            if asset_class.get("expected_mode") is not None:
+                projected["mode"] = asset_class["expected_mode"]
+            selected_files.append(projected)
+        selected_files.sort(key=lambda row: row["path"])
+        base_path = f"{asset_class['path']}/{token}.{base_suffix}"
+        if len(selected_files) < 2 or not any(row["path"] == base_path for row in selected_files):
+            raise ManifestError(f"scenario_map_inventory_incomplete:{map_id}")
+        derived = {"pattern": pattern, "expected_files": selected_files,
+                   "expected_inventory": _inventory(selected_files)}
+        selection_receipt = {
+            "selection_authority": "native_data_inventory",
+            "scenario_map_id": map_id,
+            "selected_source_inventory_sha256": _inventory(source_files)["inventory_sha256"],
+            "selected_projected_inventory_sha256": derived["expected_inventory"]["inventory_sha256"],
+        }
+        selected = maps.get(str(map_id)) if isinstance(maps, dict) else None
+        if selected is not None:
+            if not isinstance(selected, dict):
+                raise ManifestError("map_contract_invalid")
+            if set(selected) - {"pattern", "audit_inventory_sha256", "expected_inventory",
+                                "expected_files", "expected_mode"}:
+                raise ManifestError("map_contract_fields_invalid")
+            merged = {**asset_class, **selected}
+            # Explicit historical rows omit the default file type and optional
+            # inventory counts. Compare every declared value to the projection.
+            raw_files = merged.get("expected_files")
+            if not isinstance(raw_files, list) or any(not isinstance(row, dict) for row in raw_files):
+                raise ManifestError("map_contract_expected_files_invalid")
+            explicit_files = [{"type": "file", **row} for row in raw_files]
+            if (merged.get("pattern") != pattern or explicit_files != selected_files
+                    or not isinstance(merged.get("expected_inventory"), dict)
+                    or any(derived["expected_inventory"].get(key) != value
+                           for key, value in merged["expected_inventory"].items())):
+                raise ManifestError(f"explicit_map_inventory_disagrees:{map_id}")
+            for field in ("root", "path", "rule", "expected_mode", "map_inventory_selection"):
+                if merged.get(field) != asset_class.get(field):
+                    raise ManifestError(f"explicit_map_selection_disagrees:{map_id}:{field}")
+            merged.pop("map_contracts", None)
+            merged.update(selection_receipt)
+            return merged
+        if maps is not None and not isinstance(maps, dict):
+            raise ManifestError("map_contracts_invalid")
+        merged = {**asset_class, **derived, **selection_receipt}
+        merged.pop("map_contracts", None)
+        return merged
     if not isinstance(maps, dict):
         return dict(asset_class)
     selected = maps.get(str(map_id))
@@ -357,7 +453,7 @@ def _verify_class(
     asset_class: Mapping[str, Any], roots: Mapping[str, Path], map_id: int,
     inventory_authority: Mapping[str, Any],
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, dict[str, Any]]]:
-    values = _expected_map_values(asset_class, map_id)
+    values = _expected_map_values(asset_class, map_id, inventory_authority)
     class_id = str(values.get("id") or "")
     root_key = values.get("root")
     if not class_id or root_key not in roots:
@@ -524,6 +620,11 @@ def _verify_class(
         "audit_inventory_sha256": values.get("audit_inventory_sha256"),
         "issue_count": len(issues),
     }
+    if values.get("map_inventory_selection") is not None:
+        result.update({key: values[key] for key in (
+            "selection_authority", "scenario_map_id",
+            "selected_source_inventory_sha256", "selected_projected_inventory_sha256",
+        )})
     return result, issues, snapshot
 
 
@@ -603,6 +704,8 @@ def _manifest_authority_rows(
     for raw_class in classes:
         if not isinstance(raw_class, dict):
             raise ManifestError("asset_class_not_object")
+        if _map_inventory_selection(raw_class) is not None:
+            continue
         values = _expected_map_values(raw_class, scenario_map_id)
         expected_inventory = values.get("expected_inventory")
         count = expected_inventory.get("file_count") if isinstance(expected_inventory, dict) else None
@@ -1051,7 +1154,7 @@ def verify_runtime_asset_closure(
         for asset_class in classes:
             if not isinstance(asset_class, dict):
                 raise ManifestError("asset_class_not_object")
-            selected = _expected_map_values(asset_class, scenario_map_id)
+            selected = _expected_map_values(asset_class, scenario_map_id, inventory_authority)
             if selected.get("root") not in roots:
                 raise ManifestError(
                     f"asset_class_invalid:{selected.get('id') or 'unnamed'}"

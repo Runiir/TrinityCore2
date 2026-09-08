@@ -25,6 +25,28 @@ using BotWorldPopulationMgrSpellSemantics::NowMs;
 
 namespace
 {
+void BindPendingVehicleExitReceipt(
+    BotServerVehicleExitLanding::Episode& episode, Player const* bot,
+    bool scopeAvailable, BotServerVehicleExitLanding::Scope const& currentScope)
+{
+    if (!bot || !episode.ExitPending || !episode.AwaitingGroundReceipt)
+        return;
+    if (bot->GetGUID().GetCounter() != episode.ExitBotGuid
+        || bot->GetMapId() != episode.ExitMapId
+        || bot->GetInstanceId() != episode.ExitInstanceId
+        || scopeAvailable != episode.ExitScopeAvailable
+        || (scopeAvailable && !BotServerVehicleExitLanding::SameEpisodeScope(
+            currentScope, episode.ExitScope)))
+    {
+        BotServerVehicleExitLanding::ResetSubmittedReceipt(episode);
+        return;
+    }
+    BotWorldMovement::NativeMovementProgressObservation const progress =
+        BotWorldMovement::MovementProgressDiagnostics().ForReceipt(
+            episode.SubmittedGroundReceiptId);
+    BotServerVehicleExitLanding::BindSubmittedGroundReceipt(episode, progress);
+}
+
 BotServerVehicleExitLanding::LandingEvidence BuildVehicleExitLandingEvidence(
     BotWorldPopulationMgrBotState::WorldBotState const& state,
     Player const* bot, bool scopeAvailable,
@@ -344,6 +366,8 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
     if (context.State.ServerProvisioned
         && context.State.ServerVehicleExitLanding.ExitPending)
     {
+        BindPendingVehicleExitReceipt(context.State.ServerVehicleExitLanding,
+            context.Bot, vehicleExitScopeAvailable, vehicleExitScope);
         uint64 const landingObservedAtMs = NowMs();
         BotServerVehicleExitLanding::LandingEvidence const landingEvidence =
             BuildVehicleExitLandingEvidence(context.State, context.Bot,

@@ -72,36 +72,6 @@
     },
     {
       "audience": "native-worldserver",
-      "audit_inventory_sha256": "ab098abc43227dcbe9e95cc10a1fef286e0ffbb9ff639f8948a4fc8de412918f",
-      "consumer": "scenario terrain, height, and collision loads",
-      "count": 10,
-      "id": "selected_map_terrain",
-      "root": "configured-DataDir",
-      "rule": "bounded-pattern",
-      "source_audit_class_id": "selected_map_terrain"
-    },
-    {
-      "audience": "offline-probe",
-      "audit_inventory_sha256": "52990dd4085e03a7e567e1d40b8a85468be2e8a228e6a46450897257e3f69c56",
-      "consumer": "offline native-navmesh probe",
-      "count": 8,
-      "id": "selected_map_navmesh_offline",
-      "root": "source-checkout",
-      "rule": "bounded-pattern",
-      "source_audit_class_id": "selected_map_navmesh"
-    },
-    {
-      "audience": "native-worldserver",
-      "audit_inventory_sha256": "52990dd4085e03a7e567e1d40b8a85468be2e8a228e6a46450897257e3f69c56",
-      "consumer": "worldserver native path generation",
-      "count": 8,
-      "id": "selected_map_navmesh_native",
-      "root": "configured-DataDir",
-      "rule": "bounded-pattern",
-      "source_audit_class_id": "selected_map_navmesh"
-    },
-    {
-      "audience": "native-worldserver",
       "audit_inventory_sha256": "d6c49516ad95253cf5bab0fdda7c0b835f9d69c98f74f42c14fb90ad41012d5f",
       "consumer": "worldserver VMAP tiles, shared models, GameObjectModels.dtree, and parent fallbacks",
       "count": 17640,

@@ -2,52 +2,61 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:roster_execution_review",
   "owner_skill": "raid-performance-loop",
-  "classification": "reviewed_implementation",
+  "classification": "reviewed_ready_for_build",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "fa34580f2f4930fe9e31ec1fd80215df4aaf6a6e",
+  "observed_at_commit": "fc8caa430de98a37b530bd22933c66d5d3b6dbed",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Patrol and watchdog implementations independently approved, closedfa evidence remotely verified and evicted. Commit/build and run the combined batch.",
+  "gate_state": "All three bounded batch repairs independently approved. Commit/build once, then bounded native Magmaw validation; overall DPS unresolved.",
   "first_broken_edge": {
-    "id": "patrol_handoff_reenters_staging",
+    "id": "post_exit_deferred_point_receipt_never_bound",
     "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Completed tank-owned patrol pull is not retained; post-combat geometry re-enters all-cohort offense suppression without a return movement task.",
-    "review_state": "implemented_independently_approved_live_pending",
+    "cause": "Exact post-exit POINT570 has unavailable progress at submission; native launch/arm occurs later, but no late binding path revisits it.",
+    "review_state": "independent_review_approved_live_pending",
     "counterexample": {
       "actor_guid": 30008,
-      "capture_sequence": 187,
-      "timestamp_ms": 1788883675468,
-      "target_guid": 27,
-      "route_generation": 2
+      "receipt_id": 570,
+      "exit_at_ms": 1788886529811,
+      "submitted_at_ms": 1788886531530,
+      "native_armed_at_ms": 1788886532401,
+      "terminal_at_ms": 1788886533822
     }
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "a7cba8a64754ac2021dc53e316eb247050fc4713f8169cc9906dfeb83f9c647e"
+    "sha256": "de23f6c643b946b4a4a1f0d32ae369de510436ee8f29760310625c65b55da957"
   },
   "scope_lock": {
-    "objective": "Retain completed patrol handoff across ordinary combat movement and feed attributable native damage into actor-scoped repeated-decision watchdog progress.",
+    "objective": "Repair post-exit movement recovery and hook destination floor identity; admit other selected maps through the existing audited native inventory.",
     "owned_files": [
-      "src/server/game/Bots/BotWorldPopulationMgr.h",
-      "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
-      "src/server/game/Bots/BotValidationPatrolPullState.h",
-      "src/server/game/Bots/BotWorldPopulationMgrValidationPatrolPull.cpp",
-      "tools/raid_program/capture_live_run.py",
-      "tools/raid_program/capture_watchdog.py",
-      "tools/bot_ml/combat_log_event_stream.py"
+      "src/server/game/Bots/BotServerVehicleExitLanding.h",
+      "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotPreparation.cpp",
+      "tests/test_bot_server_vehicle_exit_landing.py",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHook.h",
+      "tests/test_magmaw_hook_assignment.py",
+      "tools/raid_program/runtime_asset_closure.py",
+      "experiments/configs/runtime_asset_closure_manifest_v1.json",
+      "experiments/configs/runtime_asset_closure_audit_authority_v1.json",
+      "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
+      "experiments/configs/runtime_asset_input_closure_audit_authority_v1.json",
+      "tests/test_runtime_asset_closure.py",
+      "tests/test_runtime_asset_root_aliases.py"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "A proved active leased tank-owned initial patrol engagement completes one shared exact-episode handoff before cohort-wide staging suppression.",
-    "Post-handoff movement outside the staging radius or a transient non-tank victim does not recreate staging; exact lifecycle invalidation rearms normally.",
-    "Preserve prefight roster, native Misdirection/Growl readiness, future-pack safety, native movement and ordinary threat recovery.",
-    "Accepted identity-bound newly sequenced positive native damage resets only its actor and exact route target in timestamp order; foreign, zero, off-target or incomplete events cannot reset.",
-    "Actual Blood seq252..286 plus events642..738 remains nonterminal with7 failures; same failures without progress terminate at20. Death and semantic-stall policy are unchanged.",
-    "Build once after independent reviews, then canonical watchdog canary. Record all-bot DPS/HPS/deaths/movement/targets and no boss acceptance unless native death is reached."
+    "Actual post-exit submitted POINT570 binds when its authoritative native launch becomes available after submission.",
+    "No arbitrary recent receipt, pre-exit receipt563, failed or superseded receipt, wrong actor/map/instance/attempt/wipe/route, or aerial path can supply grounding proof.",
+    "Preserve exact floor, endpoint, spline, native flight/transport/control and liveness guards, plus prior772 pending-sample retention.",
+    "Pass affected actual-caller regression and independent Sol review before one build and bounded native validation.",
+    "Use naturally occurring exits for live acceptance; record all-bot DPS/HPS, deaths, movement and target outcomes without treating a boss clear as overall DPS acceptance.",
+    "Hook approach retains existing X/Y and uses the resolved route floor identity across vehicle-exit actor heights; native pathing and tolerance checks stay unchanged.",
+    "Selected maps derive exact byte/mode/path expectations from authenticated full native inventory; explicit669 contracts remain consistent and malformed selectors/contracts fail closed."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -58,7 +67,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Commit reviewed patrol/watchdog/test maintenance, build once and run canonical Magmaw canary.",
+  "next_action": "Finish map parser review, commit the reviewed batch, build once and run the canonical bounded Magmaw validation. Continue profession applicability diagnosis separately before exact class calibration.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -74,34 +83,45 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "fa34580f2f4930fe9e31ec1fd80215df4aaf6a6e",
-    "native_boss_death_accepted": false,
-    "capture_accepted": false,
-    "boss_clear": false,
-    "terminal_reason": "repeated_decision_watchdog",
+    "source_commit": "fc8caa430de98a37b530bd22933c66d5d3b6dbed",
+    "native_boss_death_accepted": true,
+    "capture_accepted": true,
+    "boss_clear": true,
+    "terminal_reason": "clear",
     "cleanup_passed": true,
     "training_eligible": false,
-    "recorded_casualties": 0,
-    "boss_fight_reached": false,
-    "combat_event_stream_complete": true,
-    "merged_event_count": 833,
+    "recorded_casualties": 3,
+    "boss_fight_casualties": 1,
+    "hostile_only_party_dps": 130359.348,
+    "party_hps": 18267.009,
+    "combat_duration_sec": 224,
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_fa34580f2f_20260908.tar.gz.dvc"
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_fc8caa430d_20260908.tar.gz.dvc"
   },
   "latest_analysis": {
-    "review_directory": "magmaw-development-fa34580f2f/dps-review",
-    "publication_state": "remote_verified_exact_payloads_evicted"
+    "review_directory": "magmaw-development-fc8caa430d/dps-review",
+    "publication_state": "remote_verified_exact_raw_payloads_evicted"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "approve",
-    "scope": "Patrol shared handoff and watchdog native progress; sourcefa formation and vehicle fixes remain pending boss exercise.",
-    "live_verified": false,
-    "reports": [
-      "patrol_handoff_review.md",
-      "watchdog_native_progress_review.md"
-    ]
-  }
+    "verdict": "approved",
+    "scope": "Deferred vehicle binding, hook destination floor identity, generic selected-map admission; all independently Sol reviewed.",
+    "live_verified": false
+  },
+  "related_edges": [
+    {
+      "id": "hook_approach_copies_airborne_actor_floor",
+      "review": "independent_review_approved_live_pending"
+    },
+    {
+      "id": "selected_map_contract_missing_for_existing_inventory",
+      "review": "independent_review_approved"
+    },
+    {
+      "id": "profession_enchant_applicability",
+      "review": "diagnosis_in_progress_no_tuning_admitted"
+    }
+  ]
 }

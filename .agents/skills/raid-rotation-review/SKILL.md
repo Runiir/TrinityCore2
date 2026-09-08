@@ -43,6 +43,12 @@ Record hashes and identities before comparing:
 If a required identity is absent, continue a static review but label the result
 `informational_only_identity_incomplete`.
 
+Report parity per actor and field: proved match, measured mismatch, or missing
+observation. Do not inherit a roster-wide mismatch from an earlier run. Normalize
+serialized enchantment integers and distinguish permanent setup from temporary
+native imbues. A calibration actor may have a different GUID if its exact setup
+matches; missing effective stats do not erase verified gear identity.
+
 Record `reference_class` explicitly. `self_provided_baseline` is a one-sided
 minimum throughput floor with all external raid buffs and pre-applied target
 debuffs disabled. It includes the frozen player's own pet, class effects,
@@ -196,6 +202,12 @@ Stop at the first missing or contradictory edge. Do not call a rotation wrong
 when the real failure is range, LOS, route authority, setup, resource ownership,
 or a higher-priority mechanic. Do not call a profile correct merely because the
 spell exists in it.
+
+Deduplicate replayed trace rows by actor and native sequence. Keep submissions,
+primary impacts, periodic ticks, triggered effects and per-target AoE impacts
+separate; event counts are not cast counts. A no-impact interval can contain
+useful instant actions or required movement. Join native terminal outcomes before
+classifying a missing impact as a failed cast or idle time.
 
 Do not treat aggregate reasons such as `no_trained_heal` or
 `no_instant_heal_while_moving` as the first broken edge. Correlate the exact

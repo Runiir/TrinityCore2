@@ -29,6 +29,9 @@ struct Episode
     Scope ExitScope;
     std::uint64_t BoundGroundingReceiptId = 0;
     std::uint64_t BoundGroundingReceiptArmedAtMs = 0;
+    std::uint64_t SubmittedGroundReceiptId = 0;
+    std::uint64_t GroundSubmittedAtMs = 0;
+    bool AwaitingGroundReceipt = false;
 
     // The latest guard evaluation is retained for diagnosis even when it
     // rejects reconciliation.  These values are bounded latest-value state;
@@ -87,6 +90,34 @@ inline void ResetBoundReceipt(Episode& episode)
     episode.BoundGroundingReceiptArmedAtMs = 0;
 }
 
+inline void ResetSubmittedReceipt(Episode& episode)
+{
+    episode.SubmittedGroundReceiptId = 0;
+    episode.GroundSubmittedAtMs = 0;
+    episode.AwaitingGroundReceipt = false;
+}
+
+inline bool RememberGroundPointSubmission(Episode& episode,
+    std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId,
+    std::uint32_t instanceId, std::uint64_t submittedAtMs, Scope const& scope)
+{
+    if (!episode.ExitPending || !receiptId
+        || botGuid != episode.ExitBotGuid || mapId != episode.ExitMapId
+        || instanceId != episode.ExitInstanceId
+        || submittedAtMs < episode.ExitObservedAtMs
+        || (episode.ExitScopeAvailable && !SameEpisodeScope(scope, episode.ExitScope)))
+        return false;
+    if (episode.SubmittedGroundReceiptId
+        && (submittedAtMs < episode.GroundSubmittedAtMs
+            || (submittedAtMs == episode.GroundSubmittedAtMs
+                && receiptId <= episode.SubmittedGroundReceiptId)))
+        return false;
+    episode.SubmittedGroundReceiptId = receiptId;
+    episode.GroundSubmittedAtMs = submittedAtMs;
+    episode.AwaitingGroundReceipt = true;
+    return true;
+}
+
 inline void BeginVehicleOccupancy(Episode& episode,
     VehicleTransitionObservation const& observation)
 {
@@ -103,6 +134,7 @@ inline void BeginVehicleOccupancy(Episode& episode,
     episode.ExitScopeAvailable = false;
     episode.ExitScope = Scope();
     ResetBoundReceipt(episode);
+    ResetSubmittedReceipt(episode);
 }
 
 inline void ObserveVehicleTransition(Episode& episode,
@@ -129,6 +161,7 @@ inline void ObserveVehicleTransition(Episode& episode,
     episode.ExitScopeAvailable = observation.ScopeAvailable;
     episode.ExitScope = observation.CurrentScope;
     ResetBoundReceipt(episode);
+    ResetSubmittedReceipt(episode);
 }
 
 struct ReceiptBindingObservation
@@ -178,6 +211,43 @@ inline bool BindGroundingReceipt(Episode& episode,
 
     episode.BoundGroundingReceiptId = receipt.ReceiptId;
     episode.BoundGroundingReceiptArmedAtMs = receipt.ArmedAtMs;
+    return true;
+}
+
+// The caller supplies only the receipt saved at its actual ground POINT
+// submission. Never discover a substitute through the sidecar's recent list.
+template <typename Progress>
+inline bool BindSubmittedGroundReceipt(Episode& episode, Progress const& progress)
+{
+    if (!episode.AwaitingGroundReceipt || !progress.Available
+        || progress.ReceiptId != episode.SubmittedGroundReceiptId)
+        return false;
+    if (progress.SupersededByReceiptId
+        || (progress.Terminal
+            && progress.TerminalOutcome != "selected_endpoint_reached"))
+    {
+        episode.AwaitingGroundReceipt = false;
+        return false;
+    }
+    // A delayed native launch initially has timestamp zero until its first
+    // authoritative progress sample. Retain the submission until then.
+    if (!progress.ArmedAtMs || progress.ArmedAtMs < episode.GroundSubmittedAtMs)
+        return false;
+    ReceiptBindingObservation candidate;
+    candidate.ActualPointSubmission = true;
+    candidate.ProgressReceiptArmed = true;
+    candidate.ReceiptId = progress.ReceiptId;
+    candidate.BotGuid = progress.BotGuid;
+    candidate.MapId = progress.MapId;
+    candidate.InstanceId = progress.InstanceId;
+    candidate.ArmedAtMs = progress.ArmedAtMs;
+    candidate.ScopeAvailable = episode.ExitScopeAvailable;
+    candidate.ReceiptScope = progress.Scope;
+    candidate.SplineInitialized = progress.LaunchedSplineInitialized;
+    candidate.SplineId = progress.LaunchedSplineId;
+    if (!BindGroundingReceipt(episode, candidate))
+        return false;
+    episode.AwaitingGroundReceipt = false;
     return true;
 }
 
@@ -377,6 +447,7 @@ inline void CloseEpisode(Episode& episode)
     episode.ExitScopeAvailable = false;
     episode.ExitScope = Scope();
     ResetBoundReceipt(episode);
+    ResetSubmittedReceipt(episode);
 }
 
 } // namespace BotServerVehicleExitLanding

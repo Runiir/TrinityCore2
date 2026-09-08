@@ -349,8 +349,7 @@
     }
 
     static std::optional<Vector3> ResolveHookApproachDestination(
-        Blackboard const& board, ActorSnapshot const& bot,
-        ActorSnapshot const& boss)
+        Blackboard const& board, ActorSnapshot const& boss)
     {
         std::optional<MagmawRangedAnchors> const anchors =
             ResolveRangedAnchors(board, boss);
@@ -366,7 +365,7 @@
         return Vector3{
             boss.Position.X + dx / length * 4.0f,
             boss.Position.Y + dy / length * 4.0f,
-            bot.Position.Z };
+            anchors->Support.Z };
     }
 
     static BotNativeAction::Candidate BuildPointMovement(

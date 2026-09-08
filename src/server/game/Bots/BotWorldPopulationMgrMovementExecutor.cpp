@@ -39,20 +39,7 @@ void BindVehicleExitGroundReceipt(
 
     BotWorldMovement::NativeMovementProgressObservation const progress =
         BotWorldMovement::MovementProgressDiagnostics().ForReceipt(receiptId);
-    BotServerVehicleExitLanding::ReceiptBindingObservation candidate;
-    candidate.ActualPointSubmission = true;
-    candidate.ProgressReceiptArmed = progress.Available
-        && progress.ReceiptId == receiptId;
-    candidate.ReceiptId = progress.ReceiptId;
-    candidate.BotGuid = progress.BotGuid;
-    candidate.MapId = progress.MapId;
-    candidate.InstanceId = progress.InstanceId;
-    candidate.ArmedAtMs = progress.ArmedAtMs;
-    candidate.ScopeAvailable = episode.ExitScopeAvailable;
-    candidate.ReceiptScope = progress.Scope;
-    candidate.SplineInitialized = progress.LaunchedSplineInitialized;
-    candidate.SplineId = progress.LaunchedSplineId;
-    BotServerVehicleExitLanding::BindGroundingReceipt(episode, candidate);
+    BotServerVehicleExitLanding::BindSubmittedGroundReceipt(episode, progress);
 }
 }
 
@@ -250,9 +237,15 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
                 splineInitialized ? bot->movespline->GetId() : 0,
                 splineFinal.x, splineFinal.y, splineFinal.z, nowMs);
             if (state.ServerProvisioned && generatePath && !aerialGhostRecovery)
+            {
+                BotServerVehicleExitLanding::RememberGroundPointSubmission(
+                    state.ServerVehicleExitLanding, plan.LaunchReceiptId,
+                    MovementExecutorBotGuid(bot), MovementExecutorMapId(bot),
+                    bot->GetInstanceId(), nowMs, request.MovementScope);
                 BindVehicleExitGroundReceipt(
                     state.ServerVehicleExitLanding, bot,
                     plan.LaunchReceiptId);
+            }
         }
     };
     if (plan.DynamicTarget)

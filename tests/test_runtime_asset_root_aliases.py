@@ -48,7 +48,8 @@ def test_conflicting_explicit_content_requirements(tmp_path, field, value):
 
 def test_current_map_contract_exposes_all_eight_permission_conflicts(tmp_path):
     manifest = json.loads((ROOT / "experiments/configs/runtime_asset_closure_manifest_v1.json").read_text())
-    selected = [_expected_map_values(row, 669) for row in manifest["asset_classes"]]
+    inventory = json.loads((ROOT / "experiments/configs/runtime_asset_native_data_inventory_v1.json").read_text())
+    selected = [_expected_map_values(row, 669, inventory) for row in manifest["asset_classes"]]
     roots = {"source-checkout": tmp_path, "configured-DataDir": tmp_path / "data",
              "dvc-workspace": tmp_path, "sealed-bundle": tmp_path / "bundle"}
     issues = find_root_contract_conflicts(selected, roots)

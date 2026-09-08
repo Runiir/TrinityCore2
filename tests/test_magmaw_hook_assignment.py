@@ -13,7 +13,10 @@ def test_magmaw_hook_ownership_excludes_fixed_baiters(tmp_path: Path) -> None:
     source.write_text(
         r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <cassert>
 #include <string>
 
@@ -148,6 +151,80 @@ static char const* MovementMechanic(AdaptiveMagmawPlan const& plan)
 int main()
 {
     AdaptiveMagmawStrategy strategy;
+    // Reproduce receipt449's actor/endpoint evidence. The synthetic boss-room
+    // ray is aligned to its recorded request XY; no native geometry is changed.
+    Blackboard airborne = Board();
+    airborne.Hostiles.front().Position = { -305.688446f, -30.0812607f, 210.0f };
+    airborne.Route.NavigationHints = { { -305.688446f, -40.0812607f, 211.815002f } };
+    airborne.Players[3].Position = { -311.464996f, -48.5971985f, 214.838013f };
+    AddPincerWarning(airborne);
+    auto const fireGuid = airborne.Players[3].Guid;
+    auto admission = [&](BotNativeAction::Move const& move)
+    {
+        using namespace BotWorldMovement;
+        auto const& actor = airborne.Players[3].Position;
+        NativePathProofObservation proof;
+        proof.Available = proof.Calculated = proof.Complete = true;
+        proof.EndpointFloorValid = true;
+        proof.EndpointX = -305.848938f;
+        proof.EndpointY = -34.8836632f;
+        proof.EndpointZ = 210.517456f;
+        proof.EndpointHorizontalDistance = std::hypot(move.X - proof.EndpointX,
+            move.Y - proof.EndpointY);
+        proof.EndpointVerticalDistance = std::fabs(move.Z - proof.EndpointZ);
+        proof.EndpointDistance = std::hypot(proof.EndpointHorizontalDistance,
+            proof.EndpointVerticalDistance);
+        float const goal = std::hypot(std::hypot(actor.X - move.X,
+            actor.Y - move.Y), actor.Z - move.Z);
+        float const endpointGoal = proof.EndpointDistance;
+        float const travel = std::hypot(std::hypot(actor.X - proof.EndpointX,
+            actor.Y - proof.EndpointY), actor.Z - proof.EndpointZ);
+        bool const fallback = AdmitSameLevelDeclaredFloorFallback(
+            actor.Z, move.Z, -106.229317f);
+        auto const owner = BotMovementArbitration::Owner::Mechanic;
+        bool const bounded = AllowsSameLevelLocalMechanicProgress(
+            owner, fallback, goal, false, false);
+        return NativePathAllowsBoundedSameLevelMechanicProgress(owner,
+            fallback, bounded, true, false, proof, travel, goal, endpointGoal,
+            std::fabs(actor.Z - move.Z) <= NativeFloorTolerance);
+    };
+    for (bool warning : { true, false })
+    {
+        if (!warning)
+            AddPincerWindow(airborne, true);
+        auto const plan = strategy.Propose(airborne, fireGuid, "dps");
+        bool found = false;
+        for (auto const& candidate : plan.Movement.Proposals())
+            if (candidate.Id.Mechanic == (warning ? "pincer_preposition" : "pincer_approach"))
+            {
+                auto const& move = std::get<BotNativeAction::Move>(candidate.Action);
+                assert(std::fabs(move.X + 305.688446f) < 0.001f);
+                assert(std::fabs(move.Y + 34.0812607f) < 0.001f);
+                // Behavioral red before producer correction: elevated declared
+                // endpoint fails the unchanged native admission envelope.
+                assert(admission(move));
+                assert(move.Z == 211.815002f);
+                auto elevated = move;
+                elevated.Z = airborne.Players[3].Position.Z;
+                assert(!admission(elevated));
+                found = true;
+            }
+        assert(found);
+    }
+    for (bool nonfinite : { false, true })
+    {
+        if (nonfinite)
+            airborne.Route.NavigationHints = { { 0.0f, -1.0f,
+                std::numeric_limits<float>::quiet_NaN() } };
+        else
+            airborne.Route.NavigationHints.clear();
+        auto const plan = strategy.Propose(airborne, fireGuid, "dps");
+        assert(!HasMechanic(plan, "pincer_approach"));
+        AddPincerWarning(airborne);
+        assert(!HasMechanic(strategy.Propose(airborne, fireGuid, "dps"),
+            "pincer_preposition"));
+        AddPincerWindow(airborne, true);
+    }
     Blackboard base = Board();
     ObjectGuid const fixedMage = PlayerByGuid(base, 30006).Guid;
     ObjectGuid const ordinaryMage = PlayerByGuid(base, 30007).Guid;
