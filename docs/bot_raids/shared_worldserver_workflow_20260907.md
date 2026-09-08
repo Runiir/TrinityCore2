@@ -132,6 +132,13 @@ smoke test follows the extracted persistent-setup module. Its source check is
 not native behavioral proof. The separate generic loot scoring gate remains
 unmet for unenchanted fallback profiles and is not used to certify this canary.
 
+Initial preparation at `e6bdbd44aa` stopped before worldserver start because
+the generated-gear asset class still pinned the old payload. Refreshing only
+that class's expected files/inventory and DVC provenance passed the full runtime
+input verifier with no issues. Native client/map audit and extraction bindings
+remain unchanged. Future generated-gear changes must run this check before
+building or provisioning.
+
 The next run must use the corrected gear and report all-bot DPS/HPS, native
 gear manifests, boss death and cleanup. The prior clear used invalid fallback
 gear and does not prove completion under this corrected setup.

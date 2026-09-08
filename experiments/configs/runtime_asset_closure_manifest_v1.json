@@ -40,8 +40,8 @@
       "class_id": "validation_gear_profiles",
       "stage": "validation_gear",
       "output_path": "dataset/validation_gear_profiles",
-      "md5": "c85ab7ac1682ee0fea0a0ec75dd0f131.dir",
-      "size": 840048,
+      "md5": "6a8a52ca7dc7b56c07572876587f7990.dir",
+      "size": 1284521,
       "nfiles": 3
     }
   ],
@@ -122,15 +122,38 @@
       "root": "source-checkout",
       "rule": "complete-directory",
       "path": "dataset/validation_gear_profiles",
-      "provenance": "DVC validation_gear stage c85ab7ac1682ee0fea0a0ec75dd0f131.dir",
+      "provenance": "DVC validation_gear stage; current payload below. audit_inventory_sha256 retains historical class-coverage provenance, not current gear bytes.",
       "hydration_source": "DVC remote for validation_gear",
       "eviction_policy": "after verified remote publication and no active receipt",
       "audit_inventory_sha256": "3a88b6a7dabd03a0e7ef7a1e292765b0d510bf31b04e72c3ab5d78c52fa94ec9",
-      "expected_inventory": {"file_count": 3, "size_bytes": 840048, "path_set_sha256": "81fe798451c158e40821a07936b2c9913381648d4ff986af61484c1075a1a32d", "inventory_sha256": "553bbc7c1f57efb21d90fcb1828acd1628b0b5373e3095594706db6d26318649"},
+      "expected_inventory": {
+        "file_count": 3,
+        "size_bytes": 1284521,
+        "path_set_sha256": "81fe798451c158e40821a07936b2c9913381648d4ff986af61484c1075a1a32d",
+        "inventory_sha256": "89fc8e366c8a413eea57837a1c133fee9c4988c9cdc93d2ef1386759f7295e41"
+      },
       "expected_files": [
-        {"path": "dataset/validation_gear_profiles/manifest.json", "mode": "0664", "size_bytes": 630, "sha256": "31ea4b161cde0a296ea3d1728add748da1d47c27f5f80032f3edc3c78a188bbb"},
-        {"path": "dataset/validation_gear_profiles/profiles.json", "mode": "0664", "size_bytes": 835680, "sha256": "0d8919d568eebf364557a78cfaca353c95b3ec08de6421670f277348d78c3d5a"},
-        {"path": "dataset/validation_gear_profiles/report.json", "mode": "0664", "size_bytes": 3738, "sha256": "d1ea9efc148ef331d49cef62fecd001b56d5081e49c183b0228cf2b92793993b"}
+        {
+          "path": "dataset/validation_gear_profiles/manifest.json",
+          "type": "file",
+          "mode": "0644",
+          "size_bytes": 629,
+          "sha256": "8618c84f5d1fe946339bce04c4761fb6b4b4be22be8ac544e207138a34b6850a"
+        },
+        {
+          "path": "dataset/validation_gear_profiles/profiles.json",
+          "type": "file",
+          "mode": "0644",
+          "size_bytes": 1277705,
+          "sha256": "8a2efd464a0e4c20a453c46beacffc0803468941a37c270c6e1e892e2b7bdfa4"
+        },
+        {
+          "path": "dataset/validation_gear_profiles/report.json",
+          "type": "file",
+          "mode": "0644",
+          "size_bytes": 6187,
+          "sha256": "cf9de700a07fa2a3094f45df56e7543540af53f61963888b7794d2d6a5706ed6"
+        }
       ]
     },
     {

@@ -18,6 +18,12 @@ Resolve overrides and explicit equipment before comparing manifests. The native
 gear manifest and inventory readback must agree with the selected profile,
 including enchants, gems and reforges. A correct profile label is insufficient.
 
+After regenerating gear or routes, refresh that generated asset class's expected
+files/inventory and DVC provenance before building or provisioning. Keep the
+historical native-data audit and extraction authority unchanged when native
+bytes are unchanged. Run `verify_runtime_asset_inputs` against the prepared
+copies first; a new DVC output cannot satisfy an old generated-payload hash.
+
 Before inspection or mutation, apply
 [the bounded work-unit contract](../raid-performance-loop/references/bounded-work-unit-contract.md).
 Lock one shard/provisioning/route hypothesis, exact owned configs and generated

@@ -4,7 +4,7 @@
   "owner_skill": "raid-performance-loop",
   "classification": "implementation_pending_live_verification",
   "epoch_id": "magmaw_player_gear_and_dps_20260908",
-  "observed_at_commit": "00a549cb54",
+  "observed_at_commit": "e6bdbd44aa",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": false,
@@ -18,7 +18,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "bbc2b259bbb57cfcc73046d4568942e15de68223d673665457d7c524cdb2d1cd"
+    "sha256": "d5eca6012b74f7607eee29f08aae1b6b6395aa7a9929654984dfda45019c06fe"
   },
   "scope_lock": {
     "objective": "Use player-obtainable gear, bind actual equipment to exact references, repair proven action gates and continue bounded live validation.",
