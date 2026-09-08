@@ -56,6 +56,16 @@ steering, teleportation, global tolerance relaxation, or encounter MMAP workarou
 
 ## Workers
 
+Assign one dedicated `raid-rotation-review` owner to the DPS side of every raid,
+dungeon, or calibration attempt, including successful clears. Use Sol high for
+this causal review. The reviewer follows that skill's post-run review mode,
+reads the closed diagnostics before raw payload eviction, and returns a compact
+per-spec breakdown plus one next repair or precisely missing observation.
+Carry that finding into the next implementation packet and compare the repaired
+edge on the next run. Keep this review separate from boss-completion acceptance;
+a throughput finding does not erase a valid kill. Do not tune coefficients from
+an aggregate raid DPS number or rerun a boss merely to regenerate available data.
+
 Give one owner the evidence, one hypothesis, production files plus directly affected
 tests, forbidden changes, command, and expected outcome. Include all affected callers
 before dispatch. Use Luna max for exact narrow implementation, Sol high for ambiguous

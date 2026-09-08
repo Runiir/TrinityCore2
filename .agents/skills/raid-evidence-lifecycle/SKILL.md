@@ -49,6 +49,12 @@ such. Only the shared-server owner may stop the whole worldserver.
 
 ## Close, publish, continue
 
+Before publication/eviction, give the assigned DPS reviewer the closed report,
+native combat aggregates, decision/diagnosis traces, exact roster and reference
+identities. Include its compact review with the run's evidence. A later review
+of an already-published run is a separately attributable analysis artifact;
+do not rewrite the original accepted report or archive.
+
 Use one compact report plus the generated receipts. Commit code/configuration to Git.
 Publish immutable raw/report/log/receipt data through DVC, run targeted dvc status and
 dvc push, and verify the remote bytes with an empty-cache reconstruction. Preserve

@@ -11,6 +11,11 @@ mechanics as separate layers.
 
 ## Load the review model
 
+For the dedicated DPS review of a closed raid, dungeon, or calibration run,
+start with [references/post-run-dps-review.md](references/post-run-dps-review.md).
+It produces the next implementation packet without requiring a full simulator
+regeneration or treating every throughput gap as a native class defect.
+
 Read [references/translation-model.md](references/translation-model.md) before
 interpreting a comparison. If a local WoWSims server or downloaded binary is in
 scope, also read [references/local-wowsims.md](references/local-wowsims.md).

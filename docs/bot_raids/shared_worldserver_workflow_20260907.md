@@ -16,11 +16,17 @@ The adjacent publication receipt records remote download verification and exact
 local payload eviction. Restore that payload through DVC when investigation
 requires raw events.
 
-Next: resume the wider raid program with one different boss/script or proven
-class edge using the existing shared-worldserver instance workflow. Check native
-script readiness before assigning boss work; use exact simulator references for
-class tuning. Do not rerun this Magmaw lifecycle issue or reopen its historical
-fixture-admission requests without new contradictory evidence.
+Current follow-up: the user requested DPS optimization using this accepted run
+as the baseline. Assign one dedicated rotation/DPS reviewer to each closed run,
+retain its compact findings before evidence eviction, and carry one proven loss
+into the next repair. Separate priority/uptime/targeting defects from native class
+damage defects using the current exact simulator references. This performance
+work does not reopen the accepted Magmaw completion lifecycle.
+
+After the bounded performance repair, resume the wider raid program using the
+existing shared-worldserver instance workflow. Check native script readiness
+before assigning another boss. Do not reopen historical fixture-admission
+requests without new contradictory evidence.
 
 The entries below are historical investigation records. Their old "next" steps,
 uncompleted claims, and fixture-bank requirements are superseded by this result
