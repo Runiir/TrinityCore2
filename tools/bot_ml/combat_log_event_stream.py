@@ -845,9 +845,64 @@ class CombatLogDeltaController:
         self._clock = clock or time.monotonic
         self._sleep = sleeper or time.sleep
         self.cohort_id: str | None = None
+        self.accepted_status: dict[str, Any] | None = None
         self._in_flight = False
         self._due = False
         self._next_at = 0.0
+
+    def bind_active_status(
+        self, status: dict[str, Any], *, profile_name: str, scenario_id: str,
+        route_manifest_sha256: str | None,
+    ) -> None:
+        """Bind collection at native admission, independently of route success."""
+        if self.cohort_id is not None:
+            return
+        from tools.raid_program.capture_runtime_identity import (
+            _runtime_identity, _roster_binding_identity, _roster_binding_lifecycle_rejections,
+        )
+        runtime = status.get("raid_runtime")
+        if not isinstance(runtime, dict):
+            return
+        admission = runtime.get("admission_receipt")
+        roster = runtime.get("roster")
+        if not isinstance(admission, dict) or not isinstance(roster, list):
+            return
+        identity = combat_log_identity(status)
+        context = _profile_context(status)
+        stable_fields = ("server_epoch", "attempt_id", "profile_generation", "profile_content_hash")
+        expected_admission = {
+            field: runtime.get(field) for field in (*stable_fields, "group_guid", "instance_id", "leader_guid")
+        }
+        expected_admission.update(scenario_id=scenario_id, runtime_profile=profile_name,
+                                  route_manifest_sha256=route_manifest_sha256)
+        if not (
+            status.get("ok") is True and status.get("action") == "botauto_status"
+            and status.get("active_profile") == profile_name
+            and isinstance(identity["cohort_id"], str) and bool(identity["cohort_id"])
+            and _context_complete(context)
+            and all(_integer(runtime.get(field), minimum=1) is not None
+                    for field in ("server_epoch", "attempt_id", "group_guid", "instance_id", "leader_guid"))
+            and all(status.get(field) == runtime.get(field) for field in stable_fields)
+            and runtime.get("active") is True and runtime.get("admission_phase") == "active"
+            and runtime.get("server_provisioning_complete") is True
+            and runtime.get("bot_actions_enabled") is True
+            and _runtime_identity(runtime) is not None
+            and _roster_binding_identity(roster) is not None
+            and not _roster_binding_lifecycle_rejections(roster)
+            and runtime.get("roster_complete") is True and runtime.get("unique_leases") is True
+            and status.get("bots") == status.get("lease_count") == runtime.get("expected_size") == 10
+            and _integer(admission.get("committed_at_ms"), minimum=1) is not None
+            and admission.get("bot_actions_enabled_at_commit") is True
+            and isinstance(admission.get("members"), list)
+            and len(admission["members"]) == len(roster)
+            and {row.get("guid") for row in admission["members"] if isinstance(row, dict)}
+                == {row.get("guid") for row in roster}
+            and isinstance(route_manifest_sha256, str) and bool(route_manifest_sha256)
+            and all(admission.get(field) == value for field, value in expected_admission.items())
+        ):
+            return
+        self.bind_status(status)
+        self.accepted_status = deepcopy(status)
 
     def bind_status(self, status: dict[str, Any]) -> None:
         if self.cohort_id is not None:

@@ -746,6 +746,7 @@ def evidence_demux_report(
     observed_actions: set[str] = set()
     previous_strategy: str | None = None
     previous_route_advance = 0
+    strategy_bound_route_advance = 0
     profile_selection_seen = False
     terminal_failure_seen = False
     native_readycheck_required = False
@@ -928,12 +929,19 @@ def evidence_demux_report(
                 and transition.get("to_strategy") == strategy
                 and transition.get("advanced") is True
                 and route_marker is not None
-                and route_marker > previous_route_advance
+                and route_marker >= previous_route_advance
+                and route_marker > strategy_bound_route_advance
             ):
                 reject("evidence_demux_strategy_transition_without_route_advancement")
-        if route_marker is not None:
-            previous_route_advance = max(previous_route_advance, route_marker)
-        if isinstance(strategy, str) and strategy.strip():
+        # Native status may expose the new route generation before the cohort
+        # refresh binds its strategy. Keep that advancement pending until one
+        # matching strategy transition consumes it; never reuse it or let an
+        # identity-rejected row establish transition history.
+        if not row_reasons:
+            if previous_strategy is None or strategy != previous_strategy:
+                strategy_bound_route_advance = route_marker or previous_route_advance
+            if route_marker is not None:
+                previous_route_advance = max(previous_route_advance, route_marker)
             previous_strategy = strategy
 
         if action == "botauto_stop":

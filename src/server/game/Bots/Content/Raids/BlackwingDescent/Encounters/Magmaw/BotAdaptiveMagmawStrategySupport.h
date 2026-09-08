@@ -267,6 +267,73 @@
             ? PrepullAnchor(board, anchors) : anchors.Support;
     }
 
+    static std::optional<Vector3> OrdinarySupportDestination(
+        Blackboard const& board, ActorSnapshot const& bot,
+        ActorSnapshot const& boss, MagmawRangedAnchors const& anchors)
+    {
+        // Profiles without an attributable filler retain ordinary formation.
+        if (!bot.PreferredCombatRange)
+            return anchors.Support;
+        ConfiguredCombatRange const& range = *bot.PreferredCombatRange;
+        if (boss.Entry != BossEntry || range.TargetGuid != boss.Guid
+            || range.TargetEntry != boss.Entry
+            || !range.SourceSpellId || !range.ProfileGeneration
+            || range.ProfileGeneration != board.ProfileGeneration
+            || range.ProfileContentHash.empty()
+            || range.ProfileContentHash != board.ProfileContentHash
+            || !std::isfinite(range.MinRange) || !std::isfinite(range.MaxRange)
+            || !std::isfinite(range.PreferredRange) || range.MinRange < 0.0f
+            || range.MaxRange <= range.MinRange
+            || range.PreferredRange < range.MinRange
+            || range.PreferredRange > range.MaxRange)
+            return std::nullopt;
+        auto distance = [&](Vector3 const& point)
+        {
+            float const dx = point.X - boss.Position.X;
+            float const dy = point.Y - boss.Position.Y;
+            float const dz = point.Z - boss.Position.Z;
+            return std::sqrt(dx * dx + dy * dy + dz * dz);
+        };
+        float const nominalRange = distance(anchors.Support);
+        if (range.MinRange == 0.0f)
+            return anchors.Support;
+        if (nominalRange >= range.MinRange && nominalRange <= range.MaxRange
+            && MagmawParasitePolicy::FullLaneCorridorSafe(anchors))
+            return anchors.Support;
+
+        // Reuse the fixed room-side shoulder rays and native floor input.
+        // The entire bait chord must remain clear of the actual support point.
+        float const dz = anchors.Support.Z - boss.Position.Z;
+        float const planarSquared = range.PreferredRange * range.PreferredRange - dz * dz;
+        if (planarSquared <= 0.0f)
+            return std::nullopt;
+        float const planar = std::sqrt(planarSquared);
+        std::optional<Vector3> selected;
+        float bestDistance = std::numeric_limits<float>::max();
+        for (Vector3 const& shoulder : { anchors.Left, anchors.Right })
+        {
+            float const dx = shoulder.X - boss.Position.X;
+            float const dy = shoulder.Y - boss.Position.Y;
+            float const length = std::sqrt(dx * dx + dy * dy);
+            if (length <= 0.0f)
+                continue;
+            Vector3 const point{ boss.Position.X + dx * planar / length,
+                boss.Position.Y + dy * planar / length, anchors.Support.Z };
+            float const candidateRange = distance(point);
+            MagmawRangedAnchors const candidateAnchors{ point, anchors.Left, anchors.Right };
+            if (!Finite(point) || candidateRange < range.MinRange || candidateRange > range.MaxRange
+                || !MagmawParasitePolicy::FullLaneCorridorSafe(candidateAnchors))
+                continue;
+            float const displacement = Distance2d(bot.Position, point);
+            if (displacement < bestDistance)
+            {
+                selected = point;
+                bestDistance = displacement;
+            }
+        }
+        return selected;
+    }
+
     static bool RangedGroupStaged(Blackboard const& board,
         MagmawRangedAnchors const& anchors)
     {

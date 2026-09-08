@@ -1,5 +1,9 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
+#include "ObjectAccessor.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLifecycleIdentity.h"
 #include "Bots/BotWorldPopulationMgrEncounterHazards.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
@@ -17,6 +21,7 @@
 #include "UnitAI.h"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <set>
@@ -25,6 +30,58 @@
 
 namespace
 {
+std::optional<BotEncounter::ConfiguredCombatRange> ObserveConfiguredCombatRange(
+    Player const* bot, Unit const* target, BotClassSpecActionProfile const& profile)
+{
+    if (!target || !target->IsInWorld() || !target->IsAlive()
+        || target->GetMap() != bot->GetMap()
+        || target->GetInstanceId() != bot->GetInstanceId()
+        || !bot->IsValidAttackTarget(target) || profile.MissingProfile
+        || !profile.SnapshotGeneration || profile.SnapshotContentHash.empty()
+        || BotRaidAreaAuthority::IsAllOffenseSuppressed(bot->GetGUID().GetRawValue()))
+        return std::nullopt;
+    if (Creature const* creature = target->ToCreature())
+        if (BotRaidAreaAuthority::IsProtectedEncounterTarget(
+                bot->GetGUID().GetRawValue(), creature->GetEntry(),
+                creature->GetSpawnId(), creature->GetGUID().GetRawValue()))
+            return std::nullopt;
+
+    BotActionProfileSpell const* filler = nullptr;
+    for (BotActionProfileSpell const& action : profile.Spells)
+    {
+        if (!bot->HasSpell(action.SpellId) || action.TargetSelector != "enemy"
+            || action.RequiresMeleeRange || action.RequiresGroundTarget
+            || action.RequiresInterruptibleTarget || !(action.DamageWeight > 0.0f)
+            || !BotRaidCooldownReservation::HasTag(action.MechanicTags, "filler"))
+            continue;
+        if (filler)
+            return std::nullopt;
+        filler = &action;
+    }
+    if (!filler || !std::isfinite(filler->MinRange)
+        || !std::isfinite(filler->MaxRange) || filler->MinRange < 0.0f
+        || filler->MaxRange < 0.0f)
+        return std::nullopt;
+    float const minimum = filler->MinRange > 0.0f
+        ? filler->MinRange : profile.MinRange;
+    float const maximum = filler->MaxRange > 0.0f
+        ? filler->MaxRange : profile.MaxRange;
+    if (!std::isfinite(minimum) || !std::isfinite(maximum)
+        || minimum < 0.0f || maximum <= minimum)
+        return std::nullopt;
+    // Match the ordinary configured range mover's destination preference.
+    // This is not a native spell minimum or a cast-eligibility observation.
+    float preferred = minimum > 0.0f ? std::max(12.0f, minimum + 4.0f)
+        : std::max(12.0f, std::min(maximum - 2.0f, 25.0f));
+    preferred = std::max(5.0f,
+        std::min(preferred, std::max(5.0f, maximum - 2.0f)));
+    if (preferred < minimum || preferred > maximum)
+        return std::nullopt;
+    return BotEncounter::ConfiguredCombatRange{ target->GetGUID(),
+        target->GetEntry(), filler->SpellId, profile.SnapshotGeneration,
+        profile.SnapshotContentHash, minimum, maximum, preferred };
+}
+
 constexpr uint32 MagmawEntry = BotMagmawLifecycleIdentity::BossEntry;
 constexpr uint32 MagmawBossId = BotMagmawLifecycleIdentity::BossId;
 constexpr uint32 MagmawMassiveCrashSpell = 88253;
@@ -182,6 +239,8 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     auto snapshot = std::make_shared<BotEncounter::Blackboard>();
     snapshot->Revision = ++Cohort().EncounterSnapshotRevision;
     snapshot->ObservedAtMs = nowMs;
+    snapshot->ProfileGeneration = Cohort().PinnedProfileGeneration;
+    snapshot->ProfileContentHash = Cohort().PinnedProfileContentHash;
     snapshot->CurrentScope = currentScope;
     snapshot->NativeBossState = Cohort().Raid.EncounterInProgress ? "in_progress" : "not_in_progress";
     snapshot->NativeEncounterPhase = Cohort().Raid.EncounterPhase;
@@ -303,6 +362,12 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
             ? roster->second.Role : GetDungeonRole(bot);
         player.ClassSpec = roster != Cohort().Raid.RosterByGuid.end()
             ? roster->second.ClassSpec : GetBotClassSpec(bot);
+        Unit const* damageTarget = ObjectAccessor::GetUnit(*bot, state.TargetGuid);
+        BotClassSpecActionProfile const profile =
+            BotClassSpecActionProfileStore::Build(bot, player.Role.c_str());
+        if (profile.SnapshotGeneration == snapshot->ProfileGeneration
+            && profile.SnapshotContentHash == snapshot->ProfileContentHash)
+            player.PreferredCombatRange = ObserveConfiguredCombatRange(bot, damageTarget, profile);
         snapshot->Players.push_back(std::move(player));
         seenUnits.insert(bot->GetGUID());
 

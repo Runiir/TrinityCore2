@@ -26,10 +26,12 @@ Each reviewer returns a compact result:
   Keep encounter tactics, pinned artifact paths and run-specific numbers in
   the run evidence; obtain current values from the promoted catalog.
 
-Join all findings before assigning implementation. Give shared movement,
-targeting, execution or measurement failures one owner; class workers must not
-compensate for the same shared defect. Merge repeated hypotheses. Preserve
-unresolved actors rather than declaring overall success after one local fix.
+Deduplicate findings as they arrive. Give shared movement, targeting, execution
+or measurement failures one owner; class workers must not compensate for the
+same shared defect. Dispatch an independently supported bounded repair once its
+ownership is clear, without waiting for unrelated class writeups. Join the
+findings before building the selected batch. Preserve unresolved actors rather
+than declaring overall success after one local fix.
 
 Use Luna max for approved narrow implementations with disjoint ownership.
 Batch independent, trace-backed fixes that can each be checked in the same

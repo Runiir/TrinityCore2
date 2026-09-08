@@ -86,6 +86,7 @@ class CaptureRunResult:
     trace_transport_gate: dict[str, Any] | None
     telemetry_abort: dict[str, Any]
     log_bytes: bytes
+    combat_log_status: dict[str, Any] | None = None
 
 
 def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
@@ -113,6 +114,7 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
     startup_error: str | None = None
     process: subprocess.Popen[bytes] | None = None
     telemetry_scheduler: TelemetryScheduler | None = None
+    combat_log_delta_controller = None
     telemetry_transport_ledger = TelemetryTransportLedger()
     telemetry_command_counts = {
         "status": 0, "diagnose": 0, "trace": 0, "trace_pressure": 0,
@@ -396,7 +398,6 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
             telemetry_abort: dict[str, Any] = {"detected": False}
             trace_transport_gate = trace_transport_smoke.evaluate([])
             next_resource_sample_at = monitor_started_at
-
             def record_process_resource_sample(*, force: bool = False) -> None:
                 nonlocal next_resource_sample_at, resource_sample_sequence
                 nonlocal resource_sampling_error_count
@@ -423,13 +424,11 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                         resource_sampling_errors.append(f"{type(error).__name__}:{error}")
                 finally:
                     next_resource_sample_at = now + args.resource_sample_interval_sec
-
             # Start the resource series as soon as the worldserver is ready;
             # later rows gain cohort/attempt identity once status is observed.
             record_process_resource_sample(force=True)
             def flush_forced_evidence() -> dict[str, Any]:
                 """Retain and independently validate a final evidence bundle.
-
                 Console commands are asynchronous.  Wait for the exact
                 identity-bound responses to this request, bounded by the
                 telemetry freshness budget, rather than treating a fixed
@@ -570,9 +569,7 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                     )
                 report["response_wait_seconds"] = round(time.monotonic() - request_started, 3)
                 return report
-
             flush_forced_evidence_callback = flush_forced_evidence
-
             while (deadline is None or time.monotonic() < deadline) and not (
                 trace_transport_gate.get("terminal") is True
                 if args.trace_transport_smoke
@@ -689,6 +686,10 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                         )
                     monitor_statuses.extend(new_statuses)
                     for status in new_statuses:
+                        combat_log_delta_controller.bind_active_status(
+                            status, profile_name=profile_name, scenario_id=scenario_id,
+                            route_manifest_sha256=runtime_assets.get("route_sha256"),
+                        )
                         telemetry_scheduler.observe_status(status)
                     if not args.trace_transport_smoke:
                         batch_failure = classify_terminal_failure_batch(
@@ -753,7 +754,6 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                         last_rejections = rejections
                         if accepted:
                             stable.append(status)
-                            combat_log_delta_controller.bind_status(status)
                         else:
                             stable.clear()
                     if monitor_statuses and not args.trace_transport_smoke:
@@ -995,4 +995,5 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
         trace_transport_gate=trace_transport_gate,
         telemetry_abort=telemetry_abort,
         log_bytes=log_bytes,
+        combat_log_status=combat_log_delta_controller.accepted_status if combat_log_delta_controller else None,
     )

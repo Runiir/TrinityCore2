@@ -265,6 +265,75 @@ int main()
     assert(Reconcile(episode, valid, &actor).Decision == Decision::NoEpisode);
     assert(actor.SetFallCalls == 1);
 
+    // Run 88, receipt 772: the latest 100-ms sample can still be pending
+    // when the independently observed native spline has already settled.
+    Episode secondExit = ArmedEpisode();
+    secondExit.ExitObservedAtMs = 1788880339594ULL;
+    secondExit.ExitScope.AttemptId = 1;
+    secondExit.ExitScope.WipeGeneration = 0;
+    secondExit.ExitScope.RouteGeneration = 4;
+    ReceiptBindingObservation receipt772 = GroundReceipt();
+    receipt772.ReceiptId = 772;
+    receipt772.ArmedAtMs = 1788880343233ULL;
+    receipt772.SplineId = 10875;
+    receipt772.ReceiptScope = secondExit.ExitScope;
+    assert(BindGroundingReceipt(secondExit, receipt772));
+    LandingEvidence pending772 = ValidEvidence(secondExit);
+    pending772.CurrentScope = secondExit.ExitScope;
+    pending772.ReceiptScope = secondExit.ExitScope;
+    pending772.ReceiptId = 772;
+    pending772.ReceiptArmedAtMs = receipt772.ArmedAtMs;
+    pending772.ReceiptTerminal = false;
+    pending772.ReceiptTerminalOutcome = "pending";
+    pending772.TerminalSampleAvailable = false;
+    pending772.TerminalEndpointReached =
+        BotWorldMovement::NativePathEndpointComponentsMatch(
+            0.703745604f, 0.0318603516f);
+    assert(!pending772.TerminalEndpointReached);
+    // Current position/motion may be newer than that 1788880344933 sample.
+    pending772.CurrentEndpointMatches =
+        BotWorldMovement::NativePathEndpointComponentsMatch(0.0f, 0.0f);
+    FakeActor secondActor;
+    auto applyEvaluation = [&](LandingEvidence const& evidence,
+        std::uint64_t observedAtMs)
+    {
+        auto result = Reconcile(secondExit, evidence, &secondActor);
+        RecordEvaluation(secondExit, evidence, result, observedAtMs,
+            secondActor.Flags);
+        // Mirror the production preparation caller's binding lifecycle.
+        if (result.DropBoundReceipt)
+            ResetBoundReceipt(secondExit);
+        if (result.Decision == Decision::CloseEpisode
+            || result.Decision == Decision::ClearStaleLandingFlag)
+            CloseEpisode(secondExit);
+        return result;
+    };
+    // The between-sample time is a replayed interleaving, not a captured event.
+    auto pendingResult = applyEvaluation(pending772, 1788880345000ULL);
+    assert(pendingResult.Decision == Decision::KeepPending);
+    assert(!pendingResult.DropBoundReceipt);
+    assert(secondExit.BoundGroundingReceiptId == 772);
+    assert(secondActor.SetFallCalls == 0);
+    assert(ExistingHardcastMovementPredicate(secondActor.Flags));
+    assert(secondExit.LastReconciliationAtMs == 0);
+    LandingEvidence terminal772 = pending772;
+    terminal772.ReceiptTerminal = true;
+    terminal772.ReceiptTerminalOutcome = "selected_endpoint_reached";
+    terminal772.TerminalSampleAvailable = true;
+    terminal772.TerminalEndpointReached =
+        BotWorldMovement::NativePathEndpointComponentsMatch(0.0f, 0.0f);
+    assert(applyEvaluation(terminal772, 1788880345033ULL).Decision
+        == Decision::ClearStaleLandingFlag);
+    assert(secondActor.SetFallCalls == 1);
+    assert(secondActor.Flags == Walking);
+    assert(!ExistingHardcastMovementPredicate(secondActor.Flags));
+    assert(secondExit.LastReconciliationAtMs == 1788880345033ULL);
+    assert(!secondExit.ExitPending);
+    assert(secondExit.BoundGroundingReceiptId == 0);
+    assert(applyEvaluation(terminal772, 1788880345133ULL).Decision
+        == Decision::NoEpisode);
+    assert(secondActor.SetFallCalls == 1);
+
     Episode negativeEpisode = ArmedEpisode();
     ReceiptBindingObservation negativeReceipt = GroundReceipt();
     assert(BindGroundingReceipt(negativeEpisode, negativeReceipt));
@@ -304,9 +373,15 @@ int main()
     negative = ValidEvidence(negativeEpisode);
     negative.ReceiptTerminalOutcome = "native_spline_replaced";
     AssertPreserved(negativeEpisode, negative);
+    assert(Resolve(negativeEpisode, negative).DropBoundReceipt);
     negative = ValidEvidence(negativeEpisode);
     negative.ReceiptSuperseded = true;
     AssertPreserved(negativeEpisode, negative);
+    assert(Resolve(negativeEpisode, negative).DropBoundReceipt);
+    negative.ReceiptTerminal = false;
+    negative.ReceiptTerminalOutcome = "pending";
+    AssertPreserved(negativeEpisode, negative);
+    assert(Resolve(negativeEpisode, negative).DropBoundReceipt);
 
     negative = ValidEvidence(negativeEpisode);
     negative.FallingFlagsPresent = false;

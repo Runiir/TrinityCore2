@@ -369,11 +369,26 @@
             ResolveRangedAnchors(board, boss);
         if (!anchors)
             return std::nullopt;
-        Vector3 const& destination = FormationAnchor(board, *anchors,
-            bot.Guid);
-        if (Distance2d(bot.Position, destination) <= RangedStackTolerance)
+        bool const baiter = IsPillarBaiter(board, bot.Guid);
+        std::optional<Vector3> const destination = baiter
+            ? std::optional<Vector3>(FormationAnchor(board, *anchors, bot.Guid))
+            : OrdinarySupportDestination(board, bot, boss, *anchors);
+        if (!destination)
             return std::nullopt;
-        return BuildPointMovement(board, destination,
+        bool rangeSettled = true;
+        if (!baiter && bot.PreferredCombatRange
+            && bot.PreferredCombatRange->MinRange > 0.0f)
+        {
+            ConfiguredCombatRange const& range = *bot.PreferredCombatRange;
+            float const dx = bot.Position.X - boss.Position.X;
+            float const dy = bot.Position.Y - boss.Position.Y;
+            float const dz = bot.Position.Z - boss.Position.Z;
+            float const distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+            rangeSettled = distance >= range.MinRange && distance <= range.MaxRange;
+        }
+        if (rangeSettled && Distance2d(bot.Position, *destination) <= RangedStackTolerance)
+            return std::nullopt;
+        return BuildPointMovement(board, *destination,
             "ranged_formation_restore",
             BotActionArbitration::Priority::Mechanic, 275.0f);
     }

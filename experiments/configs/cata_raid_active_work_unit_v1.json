@@ -2,50 +2,40 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:roster_execution_review",
   "owner_skill": "raid-performance-loop",
-  "classification": "ready_for_build",
+  "classification": "reviewed_implementation",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "86d37c0a449d19b1123d65c6caf5d52691626527",
+  "observed_at_commit": "88d35c0421af4ddecf4ead56dde84fb45ae44ff6",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Vehicle exit, support range and native/Python event retention independently approved for one combined build and matched capture.",
+  "gate_state": "All four repairs independently approved; closed88 evidence remotely verified and evicted. Commit, build once and run canonical watchdog validation.",
   "first_broken_edge": {
-    "id": "server_bot_vehicle_exit_falling_flag",
-    "stage": "native_vehicle_exit_landing_completion",
-    "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Vehicle egress enables gravity and marks server-controlled Player falling; later native ground POINT completion leaves FALLING set, blocking hardcasts.",
-    "review_state": "implementation_approved_native_acceptance_pending",
+    "id": "elemental_range_formation_owner_oscillation",
+    "owner_classification": "raid_role_implementation",
+    "cause": "Profile minimum12-yard range movement is immediately superseded by encounter ordinary support restoration toward8-yard anchor. Native movement succeeds in both directions.",
+    "review_state": "implemented_independently_approved_live_pending",
     "counterexample": {
-      "actor_guid": 30008,
-      "ground_receipt_id": 637,
-      "ground_endpoint_reached_at_ms": 1788870621545,
-      "stale_diagnosis_at_ms": 1788870651551,
-      "native_current_motion_type": 0,
-      "native_active_motion_type": 19,
-      "native_spline_finalized": true,
-      "is_moving": true,
-      "no_progress_ms": 30002
+      "actor_guid": 30010,
+      "range_receipt": 424,
+      "formation_receipt": 425,
+      "range_started_at_ms": 1788880139107,
+      "return_endpoint_reached_at_ms": 1788880141113
     }
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "93a98b356df6914f03f8eeace7c305d25d4af4bc55a25bbd88e90eb2de7d35a7"
+    "sha256": "2ea1d226d1c7d46446b1cb5c229845187e99ae00dbeeeabe988c609529532a8a"
   },
   "scope_lock": {
-    "objective": "Build and validate reviewed vehicle-exit landing, support minimum-range retreat, and incremental event retention. No class coefficient changes.",
+    "objective": "Validate active-admission capture, delayed strategy binding, pending vehicle-exit receipt retention and Elemental formation/range convergence. No class coefficient changes.",
     "owned_files": [
       "src/server/game/Bots/BotServerVehicleExitLanding.h",
-      "src/server/game/Bots/BotWorldPopulationMgrBotState.h",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotPreparation.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrDiagnosis.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatLog.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp",
-      "src/server/scripts/Commands/cs_botauto.cpp",
+      "src/server/game/Bots/BotEncounterBlackboard.h",
+      "src/server/game/Bots/BotWorldPopulationMgrEncounterBlackboard.cpp",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHazard.h",
       "tools/bot_ml/combat_log_event_stream.py",
-      "tools/bot_ml/run_live_bot_validation.py",
+      "tools/raid_program/capture_evidence_demux.py",
       "tools/raid_program/capture_live_run.py",
       "tools/raid_program/capture_finalization.py"
     ],
@@ -54,12 +44,11 @@
     ]
   },
   "acceptance_conditions": [
-    "An observed vehicle exit followed by an exact native ground POINT receipt clears only stale FALLING/FALLING_FAR after current identity, endpoint, floor and idle-motion checks.",
-    "No mutation during active, airborne, falling-spline, vehicle, transport, flight or identity-mismatched movement.",
-    "Fireball and Unstable Affliction resume after landing; live spline preservation and all other accepted repairs remain intact.",
-    "All-bot DPS/HPS, deaths, movement, targets, route and typed terminal retained; no overall throughput acceptance from a single repaired edge.",
-    "Exact support target below action minimum range emits existing range candidate and completes native retreat without bypassing hazard arbitration.",
-    "Incremental native events retain exact identity and sequence coverage through final full watermark; final full aggregates remain the DPS/HPS authority."
+    "Deltas start from verified active admission during nonterminal route progress, retain exact identity and sequence coverage through the final full watermark.",
+    "A delayed exact strategy transition consumes its pending route advancement once; unexplained or repeated transitions remain rejected.",
+    "Every naturally observed vehicle exit keeps an exact pending receipt until terminal evaluation, preserving all landing and identity guards. Do not delay a faster kill to manufacture another exit.",
+    "Elemental combat-range movement is no longer repeatedly superseded by incompatible ordinary formation restoration. Preserve bait and emergency movement and unaffected role formation.",
+    "Native offensive outcomes resume; report all-bot DPS/HPS, deaths, targets, movement, route and typed terminal separately. A single repaired edge does not accept overall throughput."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -70,7 +59,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Complete bounded implementation and independent review, join separate proven changes, then build once and run one canonical canary. No unchanged replay.",
+  "next_action": "Commit reviewed four-repair batch, build once and run Magmaw with early delta polling verification.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -86,31 +75,37 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "86d37c0a449d19b1123d65c6caf5d52691626527",
+    "source_commit": "88d35c0421af4ddecf4ead56dde84fb45ae44ff6",
+    "native_boss_death_accepted": true,
+    "capture_accepted": false,
     "boss_clear": false,
-    "terminal_reason": "semantic_stall",
+    "terminal_reason": "infrastructure_abort",
     "cleanup_passed": true,
     "training_eligible": false,
-    "recorded_casualties": 12,
-    "boss_fight_casualties": 10,
-    "all_bots_recovered_before_cleanup": true,
-    "hostile_only_party_dps": 67616.279,
-    "party_hps": 12992.74,
-    "combat_duration_sec": 430,
-    "originated_damage_seconds": 428,
+    "recorded_casualties": 5,
+    "boss_fight_casualties": 0,
+    "hostile_only_party_dps": 127953.806,
+    "party_hps": 18146.26,
+    "combat_duration_sec": 227,
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_86d37c0a44_20260908.tar.gz.dvc"
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_88d35c0421_20260908.tar.gz.dvc"
   },
   "latest_analysis": {
-    "review_directory": "magmaw-development-86d37c0a44/dps-review",
+    "review_directory": "magmaw-development-88d35c0421/dps-review",
     "publication_state": "remote_verified_exact_payloads_evicted"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approve",
-    "scope": "Vehicle exit, support range and native/Python incremental event retention. Astra low independently audited gameplay and completed capture implementation.",
-    "live_verified": false
+    "scope": "Active-admission capture, strategy demux, pending vehicle receipt and formation/range reconciliation; Astra low implementation, Sol high independent review.",
+    "live_verified": false,
+    "reports": [
+      "capture_binding_review.md",
+      "strategy_transition_review.md",
+      "pending_vehicle_receipt_review.md",
+      "elemental_formation_review.md"
+    ]
   }
 }

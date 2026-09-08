@@ -30,6 +30,10 @@ Before changing capture behavior, trace the recorded launch argv to its actual l
 scheduler and finalizer. Similar watchdog names do not establish a shared call path.
 Require the focused fixture to exercise the controller that will launch the next run;
 state any other runner coverage separately. A helper-only fix cannot prove live capture.
+Start telemetry from admitted active runtime identity, not an encounter-completion
+predicate. Exercise the real admission and completion predicates with nonterminal
+native statuses; mocking completion as true can hide a controller that records
+nothing until the encounter ends.
 
 Retain native bytes and bind scenario, server epoch, cohort, attempt, roster and route.
 Use status heartbeats with delta trace and slower diagnosis; force final diagnostics at

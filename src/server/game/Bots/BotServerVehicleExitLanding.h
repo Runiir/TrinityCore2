@@ -300,8 +300,14 @@ inline ReconciliationResult Resolve(Episode const& episode,
             && !SameEpisodeScope(evidence.ReceiptScope, episode.ExitScope)))
         return { Decision::CloseEpisode, false,
             "vehicle_exit_landing_receipt_scope_changed" };
-    if (evidence.ReceiptSuperseded || !evidence.ReceiptTerminal
-        || evidence.ReceiptTerminalOutcome != "selected_endpoint_reached")
+    if (evidence.ReceiptSuperseded)
+        return Keep("vehicle_exit_landing_ground_receipt_not_usable", true);
+    // Native motion is observed every update; receipt sampling is throttled.
+    // Settled motion can precede the next terminal sample. Keep the exact
+    // binding until that sample arrives instead of treating pending as failure.
+    if (!evidence.ReceiptTerminal)
+        return Keep("vehicle_exit_landing_ground_receipt_awaiting_terminal");
+    if (evidence.ReceiptTerminalOutcome != "selected_endpoint_reached")
         return Keep("vehicle_exit_landing_ground_receipt_not_usable", true);
     if (!evidence.TerminalSampleAvailable
         || !evidence.TerminalActorAlive

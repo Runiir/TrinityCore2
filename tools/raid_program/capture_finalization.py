@@ -393,7 +393,7 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
     ]
     combat_log_transport = combat_log_transport_status(combat_log_payloads)
     combat_log = combined_combat_log(
-        combat_log_payloads, expected_status=stable[0] if stable else None,
+        combat_log_payloads, expected_status=run.combat_log_status or (stable[0] if stable else None),
     )
     combat_analysis = analyze_combat_log(combat_log) if combat_log else {}
     combat_log_transport["gate_passed"] = bool(

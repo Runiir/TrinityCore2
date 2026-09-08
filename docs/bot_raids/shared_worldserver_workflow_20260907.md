@@ -1,14 +1,55 @@
 # Shared-worldserver workflow status
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
-Elemental filler eligibility and the earlier first-head Heroism implementation
-have accepted evidence. The latest combined canary failed after a boss wipe;
-class/role review accepts several individual repairs but keeps roster throughput
-unresolved. Generic vehicle-exit and support-range repairs are independently approved;
-Astra low workers completed combat-event retention; independent Sol review
-approves the combined build and matched live capture.
 
-## Current result: reviewed batch failed the Magmaw canary
+## Current result: native Magmaw kill, capture falsely rejected
+
+Source `88d35c0421af4ddecf4ead56dde84fb45ae44ff6` completed native Magmaw 10N
+with all ten bots surviving the boss. Five casualties occurred during Drudges;
+all recovered before the boss. Cleanup passed, worldserver exited zero, and
+post-run build identity verified. No server is running.
+
+Boss aggregates: 29,045,514 hostile damage, 127,953.806 DPS and 18,146.260 HPS
+over 227 active callback seconds. The 273.504-second event span includes
+non-damage time and is not an exact WCL engage-to-kill comparison. Native boss
+death is accepted separately from the capture's `infrastructure_abort`.
+
+The abort is one evidence-demux rejection at capture row97. Row96 advanced the
+route to generation3/node2 while retaining the previous strategy; row97 supplied
+the matching native strategy transition. The validator prematurely consumed the
+route advancement. The bounded Astra low repair passed independent Sol review and replay of all
+987 retained rows. Unexplained strategy changes remain rejected.
+
+Incremental capture also bound only after terminal foundation acceptance and
+missed event sequences1..6707. The final full aggregate is authoritative, but
+only4098/10805 detailed events survived. Active-admission binding is repaired and
+independently approved with29 focused checks using actual nonterminal native
+statuses through the real completion predicate. Failure finalization preserves
+that admitted identity. This repair has not yet run live.
+
+The closed all-actor review accepts first-exit Affliction reconciliation followed
+by native UA/Haunt/Shadow Bolt submissions and landings. A later receipt772
+completed, but its binding was discarded while the prior sampled receipt was
+still pending. Astra repaired that race; independent Sol review approved the pending-receipt regression.
+Elemental repeatedly alternated successful outward range movement and inward
+formation movement: its minimum12-yard profile conflicts with the8-yard
+ordinary support anchor. The formation repair now observes the exact configured
+filler range and abstains from incompatible ordinary restoration. Missing range
+facts preserve existing healer formation. New regressions pass and final independent
+Sol review approved the amended formation behavior. One older movement-intent assertion also fails against
+the original restore implementation and is recorded separately.
+Boss DPS by spec: Affliction28,739.780; fixed Fire26,177.176; hook Fire20,762.643;
+Marksmanship20,320.727; Elemental10,244.555. No coefficient tuning is justified
+without matching effective stats and cadence. Overall DPS remains unresolved.
+
+The four-repair batch is independently approved for one combined build and
+bounded native validation. Closed88 evidence is published through
+`artifacts/cata_raid_program/magmaw_development_88d35c0421_20260908.tar.gz.dvc`.
+The25,689,125-byte archive passed fresh remote reconstruction and hash verification.
+Exact raw/log/archive duplicates were evicted; compact all-actor and implementation
+reviews remain. The earlier86 evidence is also remotely verified and evicted.
+
+## Earlier result: reviewed batch failed the Magmaw canary
 
 Source: `86d37c0a449d19b1123d65c6caf5d52691626527`.
 The combined build passed and the canonical Magmaw 10N development capture

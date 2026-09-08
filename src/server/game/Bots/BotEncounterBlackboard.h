@@ -147,6 +147,20 @@ struct MechanicTimerSnapshot
     FactSource Source = FactSource::NativeInstanceState;
 };
 
+// Configured bounded spacing only (positive maximum); native spell eligibility
+// remains authoritative. Unbounded or unattributable profiles omit this fact.
+struct ConfiguredCombatRange
+{
+    ObjectGuid TargetGuid;
+    uint32 TargetEntry = 0;
+    uint32 SourceSpellId = 0;
+    uint64 ProfileGeneration = 0;
+    std::string ProfileContentHash;
+    float MinRange = 0.0f;
+    float MaxRange = 0.0f;
+    float PreferredRange = 0.0f;
+};
+
 struct ActorSnapshot
 {
     ObjectGuid Guid;
@@ -154,6 +168,7 @@ struct ActorSnapshot
     ActorKind Kind = ActorKind::Hostile;
     std::string Role;
     std::string ClassSpec;
+    std::optional<ConfiguredCombatRange> PreferredCombatRange;
     Vector3 Position;
     float Facing = 0.0f;
     uint64 Health = 0;
@@ -269,6 +284,8 @@ struct Blackboard
     Scope CurrentScope;
     uint64 Revision = 0;
     uint64 ObservedAtMs = 0;
+    uint64 ProfileGeneration = 0;
+    std::string ProfileContentHash;
     std::string NativeBossState = "unknown";
     std::string NativeEncounterPhase = "unknown";
     std::string NativeWipeState = "unknown";
