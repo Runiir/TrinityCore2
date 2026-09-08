@@ -1046,7 +1046,7 @@ def pet_setup_projection(
 
 
 def prepull_setup_projection(
-    target_observation: Any, *, scored_started_at_ms: Any
+    target_observation: Any, *, scored_started_at_ms: Any, target_spec: str = ""
 ) -> tuple[dict[str, Any], bool]:
     target = target_observation if isinstance(target_observation, Mapping) else {}
     setup = target.get("persistent_setup")
@@ -1149,10 +1149,39 @@ def prepull_setup_projection(
     else:
         weapon_imbues = []
         poison_valid = bool(setup)
+    elemental_imbue_valid = True
+    if target_spec == "elemental_shaman":
+        weapon_imbues = []
+        gear = target.get("gear_profile_observation")
+        items = gear.get("items") if isinstance(gear, Mapping) else None
+        mainhands = [
+            item for item in (items if isinstance(items, list) else [])
+            if isinstance(item, Mapping)
+            and type(item.get("slot")) is int and item["slot"] == 15
+        ]
+        item_entry = setup.get("mainhand_item_entry")
+        enchant = setup.get("mainhand_temp_enchant")
+        elemental_imbue_valid = bool(
+            type(target.get("class_id")) is int and target["class_id"] == 7
+            and setup.get("ready") is True
+            and setup.get("poison_setup_required") is False
+            and type(item_entry) is int and item_entry > 0
+            and len(mainhands) == 1
+            and type(mainhands[0].get("item_id")) is int
+            and mainhands[0]["item_id"] == item_entry
+            and type(enchant) is int and enchant == 5
+        )
+        if elemental_imbue_valid:
+            # Native EnsurePersistentSetup binds Flametongue 8024 to temporary
+            # enchant 5 and accepts an already-matching weapon. This is the
+            # applied setup identity, never a submitted/finished cast receipt.
+            weapon_imbues = [{"slot": "mainhand", "cast_spell_id": 8024,
+                              "temp_enchant_id": enchant}]
     projection: dict[str, Any] = {"form_presence": presence}
     if weapon_imbues:
         projection["weapon_imbues"] = weapon_imbues
-    return projection, bool(setup.get("ready") is True and presence_valid and poison_valid)
+    return projection, bool(setup.get("ready") is True and presence_valid
+                            and poison_valid and elemental_imbue_valid)
 
 
 def _continuous_aura_rows(
@@ -2921,6 +2950,7 @@ def derive_reference_condition_compatibility(
     prepull_projection, prepull_observation_valid = prepull_setup_projection(
         target,
         scored_started_at_ms=calibration_row.get("scored_started_at_ms"),
+        target_spec=target_spec,
     )
     runtime["pet_setup_projection"] = pet_projection
     runtime["prepull_setup_projection"] = prepull_projection

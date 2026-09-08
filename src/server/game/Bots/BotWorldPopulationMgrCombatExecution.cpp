@@ -54,7 +54,12 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     if (bot->isMoving())
         return false;
 
-    uint32 const totemSpellIds[] = { 8075, 3599, 5394, 8512 };
+    // Native active primary talent tree 261 is Elemental (TalentTab.dbc).
+    bool const isElemental = bot->GetPrimaryTalentTree(bot->GetActiveSpec()) == 261;
+    uint32 const desiredEarthTotemSpell = isElemental ? 8143 : 8075;
+    uint32 const desiredWaterTotemSpell = isElemental ? 5675 : 5394;
+    uint32 const desiredAirTotemSpell = isElemental ? 3738 : 8512;
+    uint32 const totemSpellIds[] = { desiredEarthTotemSpell, 3599, desiredWaterTotemSpell, desiredAirTotemSpell };
     for (uint32 spellId : totemSpellIds)
     {
         if (bot->HasSpell(spellId))
@@ -73,9 +78,9 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     uint32 const desiredFireTotemSpell = hostileCount >= 3 && bot->HasSpell(8190) ? 8190 : 3599;
     std::array<std::pair<uint8, uint32>, 4> const desiredTotems = {{
         { SUMMON_SLOT_TOTEM_FIRE, desiredFireTotemSpell },
-        { SUMMON_SLOT_TOTEM_EARTH, 8075 },
-        { SUMMON_SLOT_TOTEM_WATER, 5394 },
-        { SUMMON_SLOT_TOTEM_AIR, 8512 },
+        { SUMMON_SLOT_TOTEM_EARTH, desiredEarthTotemSpell },
+        { SUMMON_SLOT_TOTEM_WATER, desiredWaterTotemSpell },
+        { SUMMON_SLOT_TOTEM_AIR, desiredAirTotemSpell },
     }};
     for (auto const& [slot, spellId] : desiredTotems)
     {
@@ -85,7 +90,9 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
         bool const ready = totem && totem->IsAlive()
             && (slot != SUMMON_SLOT_TOTEM_FIRE
                 || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId
-                || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 2894);
+                || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 2894)
+            && (!isElemental || slot == SUMMON_SLOT_TOTEM_FIRE
+                || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId);
         if (ready)
             continue;
 

@@ -440,7 +440,10 @@ PERSISTENT_SETUP_SPELL_IDS = {
     # native self-cast before the scored-window reset.
     "affliction_warlock": [691, 28176],
     "demonology_warlock": [28176, 30146],
-    "elemental_shaman": [324],
+    # Pinned ordinary totems and the learned Mail Specialization parent.
+    # Native spell_learn_spell expands 87507 -> 86529; the armor script owns
+    # the conditional Elemental aura 86100, which must not be persisted here.
+    "elemental_shaman": [324, 5675, 8143, 87507],
     "enhancement_shaman": [324],
     "restoration_shaman": [324],
 }
@@ -1387,6 +1390,26 @@ def validate_catalogs(payloads: dict[str, dict[str, Any]], *, check_linked: bool
         expected_archetypes = {row["spec_target_id"]: archetype_for(row["class_name"], row["role"]) for row in targets}
         if combat_loot.get("canonical_target_catalog") != expected_catalog or combat_loot.get("class_spec_archetypes") != expected_archetypes:
             raise ValueError("gear archetypes are not complete for all canonical targets")
+
+
+def reconcile_elemental_setup_spell_catalogs(
+    target_catalog: dict[str, Any], action_profiles: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Reconcile only Elemental learned setup spells, without source refresh."""
+    targets = json.loads(json.dumps(target_catalog))
+    actions = json.loads(json.dumps(action_profiles))
+    selected = [row for row in targets["targets"]
+                if row["spec_target_id"] == "elemental_shaman"]
+    if len(selected) != 1:
+        raise ValueError("expected exactly one Elemental setup target")
+    target = selected[0]
+    linked = actions["action_profile_spells_by_spec"]["elemental_shaman"]
+    if target["action_profile_spell_ids"] != linked:
+        raise ValueError("Elemental target/action spell lists are not linked")
+    spells = sorted(set(linked) | set(PERSISTENT_SETUP_SPELL_IDS["elemental_shaman"]))
+    target["action_profile_spell_ids"] = spells
+    actions["action_profile_spells_by_spec"]["elemental_shaman"] = list(spells)
+    return targets, actions
 
 
 def update_linked_configs(target_catalog: dict[str, Any]) -> None:

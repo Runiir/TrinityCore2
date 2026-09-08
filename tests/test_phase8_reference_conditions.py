@@ -2372,3 +2372,132 @@ def test_role_gate_keeps_compatibility_and_ordinary_failures() -> None:
     assert evaluation["passed"] is False
     assert "reference_conditions_compatible" in evaluation["failure_reasons"]
     assert "reference_hard_floor" in evaluation["failure_reasons"]
+
+
+def _closed_elemental_imbue_inputs():
+    # Frozen raw setup/observation slice; no expected state is copied into target.
+    frozen = json.loads((Path(__file__).parent / "fixtures" /
+                         "elemental_18ff_prepull_observation.json").read_text())
+    assert frozen["source_report_sha256"] == (
+        "7ec0e1edeaad01b8dd85865331da4f3e067fd0a1d085e8387b4e4b35fd158a70")
+    calibration, target, setup, runtime, manifest = _compatible_fixture()
+    target.update(frozen["target"])
+    for key in ("scored_started_at_ms", "scored_ended_at_ms", "fixture_target"):
+        calibration[key] = frozen[key]
+    for key in ("fixture_contract_sha256", "reference_gear_manifest_sha256"):
+        runtime[key] = frozen[key]
+    manifest["target_spec"] = "elemental_shaman"
+    manifest["requirements"] = [
+        frozen["prepull_requirement"] if row["id"] == "prepull_setup" else row
+        for row in manifest["requirements"]]
+    return {
+        "target_spec": "elemental_shaman", "reference_setup": setup,
+        "reference_conditions": EXPECTED_REFERENCE_CONDITIONS,
+        "calibration": calibration, "runtime_normalization": calibration["normalization"],
+        "target_observation": target, "runtime_facts": runtime,
+        "expected_manifest": manifest, "reference_class": "self_provided_baseline",
+    }
+
+
+def test_closed_elemental_imbue_flows_into_manifest_without_accepting_raid_auras():
+    inputs = _closed_elemental_imbue_inputs()
+    result = derive_reference_condition_compatibility(**inputs)
+    assert result['runtime_reference_facts']['prepull_setup_projection']['weapon_imbues'] == [
+        {'slot': 'mainhand', 'cast_spell_id': 8024, 'temp_enchant_id': 5}]
+    assert result['checks']['manifest_requirement:prepull_setup'] is True
+    # Strength/Windfury aura samples are a distinct rejected condition; an
+    # observed weapon enchant cannot authorize external-state or DPS acceptance.
+    assert result['checks']['runtime_prepull_setup_receipts_valid'] is False
+
+
+def test_elemental_imbue_requires_native_equipped_state():
+    inputs = _closed_elemental_imbue_inputs()
+    target = inputs["target_observation"]
+    kwargs = {"target_spec": "elemental_shaman", "scored_started_at_ms":
+              inputs["calibration"]["scored_started_at_ms"]}
+    projection, valid = prepull_setup_projection(target, **kwargs)
+    assert valid is True
+    assert projection["weapon_imbues"] == [
+        {"slot": "mainhand", "cast_spell_id": 8024, "temp_enchant_id": 5}]
+    # The projected spell identifies the applied enchant, not a cast receipt.
+    assert set(projection["weapon_imbues"][0]) == {
+        "slot", "cast_spell_id", "temp_enchant_id"}
+    cases = [
+        (("class_id",), [None, 1, True, 7.0, "7"]),
+        (("persistent_setup", "ready"), [None, False, 1, 1.0, "true"]),
+        (("persistent_setup", "poison_setup_required"), [None, True, 0, 0.0]),
+        (("persistent_setup", "mainhand_item_entry"), [None, 0, 1, True, 71086.0, "71086"]),
+        (("persistent_setup", "mainhand_temp_enchant"), [None, 0, 7, True, 5.0, "5"]),
+    ]
+    for path, values in cases:
+        for value in values:
+            observed = copy.deepcopy(target)
+            container = observed
+            for key in path[:-1]:
+                container = container[key]
+            if value is None:
+                container.pop(path[-1])
+            else:
+                container[path[-1]] = value
+            projected, accepted = prepull_setup_projection(observed, **kwargs)
+            assert accepted is False, (path, value)
+            assert "weapon_imbues" not in projected, (path, value)
+    mainhand = next(item for item in target["gear_profile_observation"]["items"]
+                    if item["slot"] == 15)
+    for field, values in (("slot", [None, 0, True, 15.0, "15"]),
+                          ("item_id", [None, 0, True, 71086.0, "71086"])):
+        for value in values:
+            item = dict(mainhand)
+            if value is None:
+                item.pop(field)
+            else:
+                item[field] = value
+            observed = copy.deepcopy(target)
+            observed["gear_profile_observation"]["items"] = [item]
+            projected, accepted = prepull_setup_projection(observed, **kwargs)
+            assert accepted is False, (field, value)
+            assert "weapon_imbues" not in projected
+    for items in (None, [], [mainhand, mainhand]):
+        observed = copy.deepcopy(target)
+        observed["gear_profile_observation"]["items"] = items
+        assert prepull_setup_projection(observed, **kwargs)[1] is False
+    assert "weapon_imbues" not in prepull_setup_projection(
+        target, **{**kwargs, "target_spec": "enhancement_shaman"})[0]
+
+
+def test_elemental_declared_cast_cannot_replace_native_enchant_readback():
+    inputs = _closed_elemental_imbue_inputs()
+    setup = inputs["target_observation"]["persistent_setup"]
+    setup.pop("mainhand_temp_enchant")
+    setup["weapon_imbues"] = [{"slot": "mainhand", "cast_spell_id": 8024,
+                              "temp_enchant_id": 5}]
+    result = derive_reference_condition_compatibility(**inputs)
+    assert "weapon_imbues" not in result["runtime_reference_facts"]["prepull_setup_projection"]
+    assert result["checks"]["manifest_requirement:prepull_setup"] is False
+    assert result["checks"]["runtime_prepull_setup_receipts_valid"] is False
+
+
+def test_closed_elemental_unexpected_raid_auras_remain_independent_rejection():
+    inputs = _closed_elemental_imbue_inputs()
+    target = inputs["target_observation"]
+    calibration = inputs["calibration"]
+    kwargs = {
+        "fixture_target_guid": calibration["fixture_target"]["runtime_guid"],
+        "fixture_contract_sha256": inputs["runtime_facts"]["fixture_contract_sha256"],
+        "scored_started_at_ms": calibration["scored_started_at_ms"],
+        "scored_ended_at_ms": calibration["scored_ended_at_ms"],
+    }
+    assert reference_condition_projections("elemental_shaman", target, **kwargs)[1] is False
+    raw = target["reference_condition_observation"]
+    assert raw["unexpected_player_aura_active_samples"] == 594
+    assert [row for row in raw["player_auras"] if row["spell_id"] in (8076, 8515)] == [
+        {"active_samples": 594, "inactive_samples": 7, "spell_id": 8076},
+        {"active_samples": 589, "inactive_samples": 12, "spell_id": 8515},
+    ]
+    # Counterfactual only: isolate the two aura inputs, leaving native weapon
+    # state and all other captured observations unchanged.
+    raw["unexpected_player_aura_active_samples"] = 0
+    for row in raw["player_auras"]:
+        if row["spell_id"] in (8076, 8515):
+            row.update(active_samples=0, inactive_samples=601)
+    assert reference_condition_projections("elemental_shaman", target, **kwargs)[1] is True

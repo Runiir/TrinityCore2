@@ -2,52 +2,52 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
-Current attempt is closed: source `4a12ee0c66a64c95a544e07a8040a8f3778421cb`
-killed Magmaw with zero deaths, all ten alive, capture exit 0, cleanup passed and
-post-run build verification passed. No worldserver is running. Final hostile
-boss-node damage 29,514,482 yields 115,743.067 DPS and 14,302 HPS over 255 active
-seconds. This is below fc's 130,359.348 DPS / 224 seconds; DPS remains unresolved.
+Source `18fffe3beeaa899d380e765362d60505e92f0644` is built and both diagnostic
+runs are closed. Magmaw cleared with zero deaths, all ten alive, capture exit 0,
+cleanup and post-run build verification passed. Boss-node hostile damage
+30,063,177 yields 118,358.965 DPS and 20,110.681 HPS over 254 active damage
+seconds (287.006 elapsed seconds, 104,747.556 elapsed DPS). DPS is unresolved.
+Crash destination-floor admission is accepted; fixed Fire improves to 17,457.213
+DPS. All four vehicle exits reconcile, though this run does not exercise the new
+pre-occupancy receipt-carry branch. Separate parasite escape path failures remain
+unresolved; no safe replacement destination is proven. All-bot review is pending. No worldserver is running.
 
-Fire's first recovery improved from 36.279 to 4.705 seconds. Fire's deferred
-post-exit receipts and hook floor correction have native grounding and fresh
-hardcast landings. Affliction's later receipt 563 was submitted before the
-observed exit, then launched and reached a valid native endpoint after exit.
-Actual occupancy at submission is not proven. The reviewed repair retains exact
-POINT provenance through matching observed occupancy and exit, requiring a
-post-exit native arm and all existing grounding guards. Both submission-before-
-mount and submission-during-mount fixtures pass.
+The exact 300-second Elemental calibration produced 6,583,043 damage,
+21,943.477 DPS, zero effective HPS, zero deaths and no movement loss. The current
+self-provided WoWSims reference is 36,999.280 DPS. Cleanup and binary verification
+passed; the controller correctly rejected the DPS floor. Native casting selected
+Windfury 8512 instead of Wrath of Air 3738. Aura 2895 was absent in all 601
+observations, matching the missing 5% spell-cast-speed multiplier. Astra low workers have repaired active-spec
+totem selection and ordinary setup provisioning. The exact reference requires
+Tremor 8143, Mana Spring 5675 and Wrath of Air 3738. The candidate also lacks
+ordinary learned Mail Specialization parent 87507; all eight mail slots are
+correct but native intellect lacks its 5% multiplier. The active world database
+confirms native 87507 -> 86529 dependency; native scripts own aura 86100. No
+aura is persisted directly. Final batch review approved; native acceptance is pending.
+No coefficient repair is admitted.
 
-Fixed-position Fire lost 11,225 DPS. Its first joined blocker is a required crash
-escape whose destination copied the actor's floor instead of the route anchor.
-The native endpoint was correctly rejected; pending lethal movement then blocked
-ordinary range recovery. The reviewed producer repair retains the destination
-anchor floor, without changing pathing or tolerances. Five affected tests pass.
+A separate reference-condition false negative omits weapon imbues from the
+Elemental setup projection despite native mainhand enchant 5. That adapter passed independent review and 98 affected tests; missing or wrong actual imbues
+still fail. This does
+not remove the low-DPS failure. Other stat and cadence differences remain under
+review and must not be inferred from aggregate DPS alone.
 
-Four DPS bots equip Lightweave 4115 without its required Tailoring 500. Pinned
-WoWSims activates it with professions unset; native application suppresses it.
-The generic profession/enchant setup correction passed independent review.
-Narrow metadata reconciliation preserved gear and explicit profession choices.
-The corrected pinned protobuf profession names pass the actual native validator.
-All 16 exact references have now passed fresh remote reconstruction, source
-rebuild and re-execution with the captured 31-enchant authority. Promotion is
-complete; the fixture hash is
+The missing Tailoring skill was applied through verified ordinary provisioning.
+All 16 exact references passed fresh remote reconstruction, source rebuild and
+re-execution with captured enchant authority. Current fixture SHA256 is
 `0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f`.
-The new empty-data-root test exercises the exact frozen bytes. Child failure
-output is retained. Source/reference repairs passed independent review and
-119 affected tests (two legacy evicted-bundle tests skipped).
+Runtime setup-spell reconciliation preserves all simulator request bytes and
+passes exact reference preflight. Reuse these references without regeneration. Prior 4a evidence is published, verified and raw payloads evicted.
+Calibration evidence and the stat review passed fresh remote reconstruction;
+exact local raw payloads were evicted. Its pointer is
+`artifacts/cata_raid_program/elemental_calibration_18fffe3bee_20260908.tar.gz.dvc`.
+Magmaw evidence remains local for its all-bot reviewer.
 
-Next: freeze and build once, apply only the missing Tailoring skill to verified
-Elemental candidate 1301, run one exact 300-second native calibration, then
-validate the vehicle/crash repairs in the bounded Magmaw canary. Fresh candidate
-readback matches gear, talents, glyphs, all 58 spells and consumables; only
-Tailoring is absent. The calibration is diagnostic, not training admission.
-
-The all-bot review is closed. The 27,421,450-byte evidence archive passed fresh
-remote reconstruction; exact raw/log/archive duplicates were evicted after all
-readers finished. Its pointer is
-`artifacts/cata_raid_program/magmaw_development_4a12ee0c66_20260908.tar.gz.dvc`.
-Parent owns generation, build and live validation. Do not repeat the unchanged
-canary or claim native acceptance of this next batch before measured outcomes.
+Next: freeze the independently approved setup batch, build once, apply the three
+missing ordinary learned spells to the exact idle candidate, and verify an exact
+300-second Elemental window. Finish Magmaw all-bot review and publish/verify/evict
+its closed evidence after readers finish. Keep actual 2-tank/3-healer/5-DPS composition fixed.
+A development clear is not full-raid qualification or training admission.
 
 ## Earlier result: fc Magmaw clear, DPS still unresolved
 

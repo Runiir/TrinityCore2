@@ -2,57 +2,44 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:roster_execution_review",
   "owner_skill": "raid-performance-loop",
-  "classification": "reviewed_batch_ready_for_prebuild",
+  "classification": "reviewed_elemental_setup_batch_ready",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "4a12ee0c66a64c95a544e07a8040a8f3778421cb",
+  "observed_at_commit": "18fffe3beeaa899d380e765362d60505e92f0644",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Native repairs and reference workflow repairs independently approved. All16 current exact references reconstructed and promoted. Frozen build and live acceptance pending.",
+  "gate_state": "Native Magmaw clear; DPS rejected in exact isolated calibration. Next class setup repair under independent review.",
   "first_broken_edge": {
-    "id": "pre_exit_submission_post_exit_native_launch_excluded",
-    "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Exact owned POINT563 submitted before observed exit launches and completes after exit, but submission-time exclusion loses its identity and prevents grounding reconciliation. Actual occupancy at submission is unproved.",
-    "review_state": "implementation_independently_approved_native_acceptance_pending",
-    "counterexample": {
-      "actor_guid": 30008,
-      "receipt_id": 563,
-      "submitted_at_ms": 1788889505601,
-      "exit_at_ms": 1788889510537,
-      "native_armed_at_ms": 1788889513112,
-      "terminal_at_ms": 1788889515830,
-      "spline_id": 5925
-    }
+    "id": "elemental_native_setup_and_mail_specialization_missing",
+    "owner_classification": "raid_role_implementation",
+    "cause": "Exact totem setup differs and ordinary learned parent87507 is absent, preventing native5%mailIntellect despite8mailitems. Provision legitimate5675/8143/87507; native ownsderivedeffects.",
+    "review_state": "independently_approved_native_acceptance_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "df4c387d67aeb898ae53beb44d706531fe1fd5f114ed7cd6350a1da6ac249c2d"
+    "sha256": "d43e1d6fcc4b2b52fb0489fd13299923954efa505b6ae05128052b8ab1267890"
   },
   "scope_lock": {
-    "objective": "Use actual post-exit native movement authority for exact occupancy-scoped POINT recovery and align native profession requirements with simulator requests.",
+    "objective": "Repair observed Elemental air selection and actual weapon-imbue projection; join closed native movement outcomes before further repairs.",
     "owned_files": [
-      "src/server/game/Bots/BotServerVehicleExitLanding.h",
-      "tests/test_bot_server_vehicle_exit_landing.py",
-      "tools/bot_ml/wowsims_gear_binding.py",
-      "tools/bot_ml/sync_wowsims_dps_gear_profiles.py",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp",
+      "tests/test_elemental_combat_totem_selection.py",
+      "tools/bot_ml/phase8_reference_conditions.py",
+      "tests/test_phase8_reference_conditions.py",
       "tools/bot_ml/build_all_spec_phase1_catalogs.py",
-      "tools/bot_ml/build_validation_provisioning.py",
-      "tools/bot_ml/phase8_fixture_contract.py",
-      "tests/test_profession_enchant_setup.py",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCrashSideMovement.h",
-      "tests/test_magmaw_crash_destination_floor.py",
-      "tests/test_magmaw_event_movement_transition.py"
+      "tests/test_shaman_raid_haste_provisioning.py",
+      "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "experiments/configs/cata_434_action_profiles.json"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Retain only the latest actual ground POINT through exact actor/map/instance/scope continuity and matching observed occupancy and exit; support submission before or during occupancy.",
-    "After that occupancy exits, bind only the same receipt with authoritative native arm at/after exit; reject pre-exit-native-arm, stale or foreign episodes, supersession and failed terminal outcomes.",
-    "Preserve native endpoint/floor/platform/current-position/spline/control/liveness guards and ordinary post-exit submission behavior.",
-    "Derive required primary professions from equipped permanent enchants, merge native skill rows without losing secondary skills, and round-trip exact simulator profession identity without inventing a second profession.",
-    "Independent review and affected behavioral fixtures before generation/build/live; close all-bot DPS/HPS, deaths, route and native outcomes, then publish/verify/evict exact evidence."
+    "Elemental selects8143/5675/3738 with correct existing-slot identity and native guards; ordinary learned87507 enables native conditionalmailaura86100.",
+    "Next native window contains2895 and matching spell haste; missing or wrong actual weapon imbue remains rejected.",
+    "Compare exact300-second DPS/stats/cadence to current reference, keep other losses visible.",
+    "Close movement and all-bot review, publish verified remote evidence and evict exact payloads."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -63,7 +50,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Freeze current source, run cheap map/profile preflight, build once, apply exact missing Elemental profession and run300-second native calibration; then bounded Magmaw acceptance.",
+  "next_action": "Freeze/build approved setup batch once, apply3ordinarylearnedspells to exactidle1301, run300-second Elemental calibration; finish and publishclosedMagmawreview.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -79,7 +66,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "4a12ee0c66a64c95a544e07a8040a8f3778421cb",
+    "source_commit": "18fffe3beeaa899d380e765362d60505e92f0644",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -88,22 +75,25 @@
     "training_eligible": false,
     "recorded_casualties": 0,
     "boss_fight_casualties": 0,
-    "hostile_only_party_dps": 115743.067,
-    "party_hps": 14302.0,
-    "combat_duration_sec": 255,
-    "remote_reconstruction_verified": true,
-    "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_4a12ee0c66_20260908.tar.gz.dvc"
+    "hostile_only_party_dps": 118358.965,
+    "party_hps": 20110.681,
+    "combat_duration_sec": 254,
+    "remote_reconstruction_verified": false,
+    "raw_payloads_evicted": false,
+    "dvc_pointer": null
   },
   "latest_analysis": {
-    "review_directory": "magmaw-development-4a12ee0c66/dps-review",
-    "publication_state": "remote_verified_exact_payloads_evicted"
+    "review_directory": "magmaw-development-18fffe3bee/dps-review",
+    "publication_state": "closed_raw_retained_for_review",
+    "calibration_dps": 21943.476666666666,
+    "calibration_reference_dps": 36999.280400830605,
+    "calibration_publication_state": "remote_verified_exact_payloads_evicted"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approved",
-    "scope": "Vehicle submission/occupancy/exit/native-arm continuity, crash destination floor identity, and profession/enchant setup.",
+    "scope": "Exact Elemental totem trio, ordinary setup-parent spell provisioning and actual weapon-imbue projection",
     "live_verified": false
   },
   "related_edges": [

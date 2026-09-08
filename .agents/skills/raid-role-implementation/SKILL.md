@@ -114,6 +114,12 @@ Verify legitimate spell provisioning separately; empty persisted spell rows
 do not prove a transient bot's runtime spellbook. A regression must exercise
 the supported variants, not require the old implementation's hardcoded ID.
 
+For setup selection repairs, follow both selection and already-ready checks.
+Exercise missing setup, an existing wrong setup, and an existing correct setup
+through the actual owner. Changing the preferred spell alone can leave the
+old state accepted forever. Keep native effect acceptance separate from a
+stubbed selector test.
+
 If the break is boss authority, route ownership, native script timing, or
 reference identity, return it to the owning specialist instead of compensating
 inside the class rotation.

@@ -1095,7 +1095,27 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
     assert "TEMP_ENCHANTMENT_SLOT" in setup
     assert "TryEnsurePersistentCombatSetup(state, bot, target," in calibration
     assert "Cohort().CalibrationTargetSpec.c_str()" in calibration
-    assert "BotClassSpecActionProfileStore::BuildForSpec(" in calibration
+    # Calibration delegates profile construction to setup and action resolution;
+    # its former local BuildForSpec call only enumerated telemetry candidates.
+    calibration_calls = " ".join(calibration.split())
+    assert (
+        "TryEnsurePersistentCombatSetup(state, bot, target, "
+        "Cohort().CalibrationTargetSpec.c_str())"
+    ) in calibration_calls
+    assert (
+        "ResolveProfileCombatAction( bot, target, hostileCount, "
+        "Cohort().CalibrationAoePhase, 0, false, false, forbidArea, "
+        "allowMultidot, false, false, Cohort().CalibrationTargetSpec.c_str())"
+    ) in calibration_calls
+    resolver = function_body(mgr, "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction")
+    for profile_owner in (setup, resolver):
+        assert (
+            "specTagOverride && *specTagOverride "
+            "? BotClassSpecActionProfileStore::BuildForSpec( "
+            "bot, role.c_str(), specTagOverride) "
+            ": BotClassSpecActionProfileStore::Build(bot, role.c_str())"
+        ) in " ".join(profile_owner.split())
+    assert_ordered(calibration, "TryEnsurePersistentCombatSetup(state, bot, target,", "ResolveProfileCombatAction(")
     assert_ordered(calibration, "TryEnsurePersistentCombatSetup(state, bot, target,", "metrics.WindowStartedMs = Cohort().CalibrationScoredStartedMs")
     assert "TryEnsurePersistentCombatSetup(*state, bot, target)" in execute_profile
 
