@@ -92,12 +92,16 @@ All ten bots have DPS/HPS and role-specific findings in the separately published
 It includes normalized WCL observations, exact source bindings, simulator action
 comparisons, the damage-window calculation and remaining evidence gaps.
 
-The promoted simulator gear differs from the live profiles: item-set overlap is
-5/16 for Fire and Affliction, 7/16 for Marksmanship and 6/16 for Elemental.
-Both cloth profiles select ilvl-318 item 55159, `Rough Approximation Healer Robe`,
-with recorded 2,793 intellect and 4,191 stamina. This is a suspected item-data or
-selection error requiring native confirmation. Live effective stats are absent;
-do not infer class coefficients from these unmatched references.
+Correction from resolved provisioning and native gear manifests: the original
+review inferred equipment from base profile names and missed the WoWSims
+overlays. Affliction, Marksmanship and Elemental match their exact equipment
+transforms. Both Fire mages instead wore the heuristic set despite an exact
+profile label. Current pre-mutation database readback confirms item 55159,
+`Rough Approximation Healer Robe`, on both Fire mages and the Discipline priest.
+The native DB2 really records its 2,793 intellect and 4,191 stamina. The previous
+artifact remains immutable; its base-profile overlap counts and Affliction
+robe attribution are superseded by this correction. Live effective-stat parity
+is still unproven, so no coefficient conclusion follows.
 
 Next gameplay repair remains the proven Fireball/Living Bomb range cap. The
 Elemental bot's one landed Lightning Bolt and zero Lava Bursts are the largest
@@ -105,6 +109,32 @@ unresolved cadence lead; trace its first rejection before modifying its policy.
 Verify the gear authority and regenerate matching simulations before numerical
 class tuning. Preserve the all-bot review on every subsequent run, including
 tank threat/defensives and healer duty rather than judging them by DPS alone.
+
+## Player gear repair awaiting live validation
+
+The provisioning sources now explicitly select the canonical WoWSims DPS gear
+profiles. The regenerated BWD shards preserve those bindings, and materialization
+rejects a canonical label paired with different resolved equipment. Fireball and
+Living Bomb eligibility are corrected to their native 40-yard ranges; Fire
+Blast retains its native 30-yard limit.
+
+Heuristic fallback equipment and gems now require positive retained acquisition
+records from the DVC-bound world item-source index. Client definitions and
+reference-loot placeholders cannot establish acquisition. Unsupported permanent
+enchants are zero; exact WoWSims per-slot enchants are preserved. The generated
+fallback profiles have complete equipment and sourced gems. They are legitimate
+fallback loadouts, not a claim of fully enchanted best-in-slot optimization.
+
+Focused tests cover acquisition rejection, unresolved socket gems, resolved DPS
+profile equality, canonical-label mismatches, the missing-profile fallback,
+direct-module imports and validator gem-catalog evidence. The old Fire source
+smoke test follows the extracted persistent-setup module. Its source check is
+not native behavioral proof. The separate generic loot scoring gate remains
+unmet for unenchanted fallback profiles and is not used to certify this canary.
+
+The next run must use the corrected gear and report all-bot DPS/HPS, native
+gear manifests, boss death and cleanup. The prior clear used invalid fallback
+gear and does not prove completion under this corrected setup.
 
 The entries below are historical investigation records. Their old "next" steps,
 uncompleted claims, and fixture-bank requirements are superseded by this result

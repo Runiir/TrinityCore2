@@ -22,6 +22,7 @@ try:
     )
     from .build_validation_provisioning import BONUS_ENCHANTMENT_FIELD_OFFSET, DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, EQUIPMENT_SLOT_END, PRISMATIC_ENCHANTMENT_FIELD_OFFSET, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config_with_bwd_diagnostic_shards, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from .common import stable_hash, write_json
+    from .player_gear_acquisition import DEFAULT_ITEM_SOURCE_INDEX, bind_player_acquisition
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
     from build_validation_gear_profiles import (
@@ -38,6 +39,7 @@ except ImportError:
     )
     from build_validation_provisioning import BONUS_ENCHANTMENT_FIELD_OFFSET, DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, EQUIPMENT_SLOT_END, PRISMATIC_ENCHANTMENT_FIELD_OFFSET, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config_with_bwd_diagnostic_shards, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from common import stable_hash, write_json
+    from player_gear_acquisition import DEFAULT_ITEM_SOURCE_INDEX, bind_player_acquisition
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
 
@@ -203,7 +205,7 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
     gem_catalog_count = 0
     if hotfix_url:
         try:
-            items = fetch_items(hotfix_url, dbc_dir, min_item_level=1, max_required_level=85)
+            items = bind_player_acquisition(fetch_items(hotfix_url, dbc_dir, min_item_level=1, max_required_level=85))
             gem_catalog_count = len(build_gem_catalog(
                 items,
                 gem_properties,
@@ -837,11 +839,11 @@ def validate_database(
     return failures, evidence
 
 
-def load_or_build_gear_profiles(path: Path, config: dict[str, Any], dbc_dir: Path, hotfix_url: str | None) -> dict[str, Any]:
+def load_or_build_gear_profiles(path: Path, config: dict[str, Any], dbc_dir: Path, hotfix_url: str | None, item_source_index: Path = DEFAULT_ITEM_SOURCE_INDEX) -> dict[str, Any]:
     profiles = load_gear_profiles(path)
     if profiles:
         return profiles
-    items = fetch_items(hotfix_url or "", dbc_dir, min_item_level=1, max_required_level=85)
+    items = bind_player_acquisition(fetch_items(hotfix_url or "", dbc_dir, min_item_level=1, max_required_level=85), item_source_index)
     enchantments = load_spell_item_enchantments(dbc_dir)
     gems = build_gem_catalog(
         items,

@@ -9,6 +9,12 @@ Read the current result at the top of
 [`shared_worldserver_workflow_20260907.md`](../../../docs/bot_raids/shared_worldserver_workflow_20260907.md)
 before choosing work; its historical entries do not override the current result.
 
+Keep the active-work-unit status consistent with that result. When a repair is
+accepted, replace its active edge with the newly observed edge; do not leave
+workers' status commands pointing to an already-fixed failure. Historical
+receipts stay immutable. A stale status is metadata to correct, not a reason
+to repeat an accepted experiment.
+
 Use one repair loop: inspect the failed run, identify the earliest actionable mismatch,
 repair it, test the affected behavior, review risky changes, build, run, and close evidence.
 A worker or attempt ending does not end the user's task. Continue automatically after

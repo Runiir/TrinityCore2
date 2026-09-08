@@ -715,12 +715,19 @@ def apply_gear_profiles(config: dict[str, Any], profiles: dict[str, Any]) -> dic
                 raise ValueError(
                     f"{bot.get('name') or '<unknown>'}: canonical gear profile identity mismatch"
                 )
-            if bot.get("equipment"):
-                continue
             profile_name = explicit_profile_id or legacy_profile_name or str(
                 bot.get("class_spec") or ""
             )
+            canonical_profile = str((bot.get("canonical_setup") or {}).get("gear_profile_id") or "")
+            if canonical_profile and canonical_profile != profile_name:
+                raise ValueError(f"{bot.get('name')}: resolved canonical gear profile identity mismatch")
             profile = profiles.get(profile_name)
+            if bot.get("equipment"):
+                if canonical_profile:
+                    from tools.bot_ml.phase8_calibration_adapter import canonical_gear_manifest
+                    if not profile or canonical_gear_manifest(bot["equipment"], label="equipped") != canonical_gear_manifest(profile.get("equipment", []), label="canonical"):
+                        raise ValueError(f"{bot.get('name')}: canonical gear equipment mismatch")
+                continue
             if profile:
                 bot["equipment"] = profile.get("equipment", [])
                 bot["gear_profile"] = profile_name

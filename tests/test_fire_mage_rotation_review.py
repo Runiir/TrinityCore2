@@ -3,7 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "sql/custom/world/2026_08_17_03_fire_mage_apl_alignment.sql"
-BOT_WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+BOT_WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp"
 
 
 def test_fire_mage_apl_alignment_is_scoped_and_preserves_evidence_identity():

@@ -10284,7 +10284,7 @@ def test_validation_provisioning_cleans_exact_roster_native_groups_before_charac
     assert "JOIN `characters`.`characters` c ON c.`guid` = g.`leaderGuid`" in sql
 
 
-def test_validation_gear_profiles_can_complete_slots_from_item_rows():
+def test_validation_gear_profiles_can_complete_slots_from_item_rows(tmp_path):
     config = {
         "scenarios": [
             {
@@ -10350,7 +10350,12 @@ def test_validation_gear_profiles_can_complete_slots_from_item_rows():
         }
     )
 
-    profiles = build_profiles(config, items)
+    from tools.bot_ml.player_gear_acquisition import bind_player_acquisition
+    index = tmp_path / "sources.jsonl"
+    index.write_text("\n".join(json.dumps({"item_id": item["ID"], "sources": [
+        {"item_id": item["ID"], "source_type": "vendor", "source_entry": 1}
+    ]}) for item in items))
+    profiles = build_profiles(config, bind_player_acquisition(items, index))
     report = build_report(profiles, {"database": "hotfixes"})
     profile = profiles["protection_paladin"]
 
@@ -10377,8 +10382,9 @@ def test_combat_loot_profile_manifest_externalizes_stat_weights_and_reporting(tm
 
 
 def test_validation_gear_profiles_complete_from_local_db2_files():
+    from tools.bot_ml.player_gear_acquisition import bind_player_acquisition
     config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
-    items = fetch_items("mysql://trinity:trinity@172.20.0.2:3306/hotfixes", Path("data/dbc/enUS"), min_item_level=1, max_required_level=85)
+    items = bind_player_acquisition(fetch_items("", Path("data/dbc/enUS"), min_item_level=1, max_required_level=85))
     enchantments = load_spell_item_enchantments(Path("data/dbc/enUS"))
     gems = build_gem_catalog(items, load_gem_properties(Path("data/dbc/enUS")), {int(enchantment["id"]): enchantment for enchantment in enchantments})
     profiles = build_profiles(config, items, enchantments, gems)
@@ -10392,12 +10398,15 @@ def test_validation_gear_profiles_complete_from_local_db2_files():
     assert report["profile_count"] == len(expected_profiles)
     assert report["all_equipment_slots_complete"] is True
     assert report["all_gemmed"] is True
-    assert report["all_enchanted"] is True
-    assert report["source_counts"]["enchanted_items"] >= len(expected_profiles) * 16
+    assert report["all_enchanted"] is False
+    assert report["source_counts"]["enchanted_items"] == 0
+    assert all(item["player_acquisition"]["sources"] for profile in profiles.values() for item in profile["equipment"])
     assert report["source_counts"]["gemmed_items"] == report["source_counts"]["socketed_items"]
     assert report["enchant_applicability_verified_by_server"] is False
     assert report["profile_manifest"]["schema"] == "bot_cata_434_combat_loot_profiles_v1"
-    assert report["smart_loot_validation_surface"]["ready_for_upgrade_scoring"] is True
+    # This separate scoring gate still requires enchants; legal unenchanted
+    # fallback equipment must not be relabeled as fully enchanted.
+    assert report["smart_loot_validation_surface"]["ready_for_upgrade_scoring"] is False
     assert report["smart_loot_validation_surface"]["selected_equipment_count"] >= len(expected_profiles) * 16
     assert "dps_intellect" in report["stat_weight_archetypes"]
     assert report["source_counts"]["client_db2_items"] >= len(expected_profiles) * 16

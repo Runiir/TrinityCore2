@@ -51,6 +51,8 @@ stages:
       dataset/validation_gear_profiles
     deps:
     - tools/bot_ml/build_validation_gear_profiles.py
+    - tools/bot_ml/player_gear_acquisition.py
+    - dataset/world_planner/item_source_index.jsonl
     - tools/bot_ml/build_validation_provisioning.py
     - tools/bot_ml/validation_profile_manifests.py
     - tools/bot_ml/extract_world_knowledge.py

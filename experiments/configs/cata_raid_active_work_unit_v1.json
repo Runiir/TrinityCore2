@@ -1,42 +1,45 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "encounter:magmaw_completion_canary",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "in_progress",
-  "epoch_id": "shared_worldserver_cohort_isolation_20260907",
-  "observed_at_commit": "b60350a657",
-  "architecture_scope": "Shared two-instance isolation accepted; prepare one existing Magmaw diagnostic completion-watchdog run, then repair its first gameplay blocker.",
+  "work_unit": "encounter:magmaw_player_gear_and_dps_canary",
+  "owner_skill": "raid-performance-loop",
+  "classification": "implementation_pending_live_verification",
+  "epoch_id": "magmaw_player_gear_and_dps_20260908",
+  "observed_at_commit": "00a549cb54",
+  "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
-  "evidence_contract_change": true,
-  "gate_state": "Trace continuity repair and metadata independently approved; latest native change awaits build and live validation. Magmaw remains uncleared.",
+  "evidence_contract_change": false,
+  "gate_state": "Magmaw development clear and hunter range repair accepted. Gear obtainability, exact resolved reference binding and overall DPS remain under repair.",
   "first_broken_edge": {
-    "id": "recording_window_resets_attempt_trace_identity",
-    "stage": "native_recording_window_rotation",
-    "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "RotateAutoRecordingWindowIfNeeded calls ResetTraceStreams without changing epoch/attempt/route; watchdog cursors can discard post-rotation events.",
-    "review_state": "independently_approved_pending_build_and_live"
+    "id": "generated_gear_without_positive_obtainability_and_mismatched_profile_binding",
+    "stage": "roster_provisioning",
+    "owner_classification": "raid_shard_architecture",
+    "cause": "Generated gear only uses name/item-level heuristics; Fire canary selects fallback profile rather than promoted WoWSims profile. Actual database gear includes item55159 for two Fire mages and Discipline priest.",
+    "review_state": "independently_approved_pending_live"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "486d6d90f2c9572cb76cdcdfa98fd6449df6a9878f824bf77ed90fbecbf90000"
+    "sha256": "bbc2b259bbb57cfcc73046d4568942e15de68223d673665457d7c524cdb2d1cd"
   },
   "scope_lock": {
-    "objective": "Preserve attempt-scoped trace continuity across statistics windows, verify with compiled producer fixtures and independent review, then validate the repaired native lifecycle in one bounded run.",
+    "objective": "Use player-obtainable gear, bind actual equipment to exact references, repair proven action gates and continue bounded live validation.",
     "owned_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrRecordingWindow.cpp",
-      "tests/test_recording_window_trace_continuity.py",
-      "tests/test_bot_world_population_mgr_recording_window_module.py"
+      "tools/bot_ml/build_validation_gear_profiles.py",
+      "tools/bot_ml/build_validation_provisioning.py",
+      "experiments/configs/validation_provisioning_cata_001.json",
+      "tools/bot_ml/player_gear_acquisition.py",
+      "tools/bot_ml/validate_validation_provisioning.py",
+      "sql/custom/world/2026_09_08_01_fire_native_range.sql"
     ],
-    "terminal_handoff": "Reviewed native trace continuity fix with closed published Magmaw counterexample; latest fix awaits build and live validation."
+    "terminal_handoff": "A worker or failed attempt routes the next repair; it does not end the active user objective."
   },
   "acceptance_conditions": [
-    "Statistics-window rollover preserves monotonic native trace sequence, pending rows, export cursors and planner receipts.",
-    "Explicit lifecycle/profile resets retain their scoped cleanup semantics.",
-    "Compiled actual-producer fixture survives two recording-window rotations; independent review passes.",
-    "Fresh admitted live validation observes the rollover without event loss; boss completion still requires native confirmed death."
+    "Positive equipment source and native inventory match; no test/GM items or illegal enchants.",
+    "Every DPS uses matching exact reference inputs or an explicit unresolved parity finding.",
+    "Focused behavioral checks and independent review pass before a bounded live run.",
+    "Native Magmaw death, survival, all-bot DPS/HPS and action improvement reviewed; evidence published and cleanup verified."
   ],
   "forbidden": [
-    "No cap-only concurrency change, class/boss tuning, global worker restart, fabricated live evidence or multiple-map-worker admission before shared stores are synchronized."
+    "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
   ],
   "validation_clock": {
     "policy": "completion_watchdog",
@@ -44,64 +47,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Finish compiled producer continuity repair and independent review, then a fresh admitted bounded validation. Magmaw is not cleared; retain healer death as unclassified gameplay edge until exact lethal evidence is joined.",
-  "queued_reference_issue": {
-    "test": "tests/test_phase8_fixture_contract.py::test_materialized_fixture_is_canonical_and_reconstructs_without_ambient_reads",
-    "classification": "historical_fixture_source_freshness_mismatch",
-    "path": "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json",
-    "embedded_target_catalog_sha256": "46a79c46b83559b7b55a6b484d7ea53c1680118de1147fad8e36f59be23545ae",
-    "current_target_catalog_sha256": "89263d953278030173a4220a3106afd7bbaec8821f9fefe26d825a0890804abf",
-    "mismatch": "Embedded selected_rows for affliction_warlock and demonology_warlock have older action_profile_spell_ids. The target catalog and historical materialized fixture were not changed in this audit.",
-    "disposition": "Preserve the counterexample. Reconcile the historical fixture under the appropriate reference work unit if a future run consumes it. It cannot override the current promoted WoWSims catalog."
-  },
-  "queued_runtime_asset_issue": {
-    "state": "resolved_verified_and_published",
-    "source_checkout": "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/source",
-    "source_checkout_commit": "03cb01db0b",
-    "issue_counts": {},
-    "manifest_sha256": "ece9fd1784638946bfc324832dc857560a0633c4f27eb82fb4f66515394892a7",
-    "snapshot_sha256": "c5f8b77f264d0d3235670ea5bf23a46b27a0b20f96361c4375d9b5508ef02ead",
-    "archive_dvc_pointer": "dataset/runtime_assets/native_inputs_03cb01db0b.tar.dvc",
-    "archive_dvc_md5": "b1020765779cbccba103b8873dfb8c2e",
-    "receipt_dvc_pointer": "dataset/runtime_assets/native_inputs_03cb01db0b.materialization.json.dvc",
-    "receipt_sha256": "d1a1bfd6cc62bc0f54ab77104c0e6071cc7dddc8907f8033b675e47eef8fdaaf",
-    "verification_dvc_pointer": "dataset/runtime_assets/native_inputs_03cb01db0b.verification.json.dvc",
-    "portable_inventory_sha256": "e6cd916f71b2a9bfb63694dbca78dcf3a5e510f9b00d9489552ef72b87440597",
-    "production_remote_reconstruction_verified": true,
-    "metadata_remote_reconstruction_verified": true,
-    "historical_extraction_origin": "unknown",
-    "large_duplicate_payloads_evicted": true,
-    "live_run": false
-  },
-  "implementation_review": {
-    "model": "gpt-5.6-sol",
-    "reasoning": "high",
-    "verdict": "approve",
-    "independent_capacity_tests_passed": 56,
-    "live_verified": false
-  },
-  "shared_fixture_path": "experiments/configs/cata_shared_instance_fixture_v1.json",
-  "prelive_review": {
-    "model": "gpt-5.6-sol",
-    "reasoning": "high",
-    "verdict": "approve",
-    "combined_tests_passed": 108,
-    "existing_provisioning_tests_passed": 36,
-    "live_verified": false
-  },
-  "closed_canary": {
-    "source_commit": "3490069d1c",
-    "terminal_reason": "contamination",
-    "terminal_detail": "native_instance_identity_invalid",
-    "cleanup_passed": true,
-    "server_exit_code": 0,
-    "dual_instance_admission_observed": true,
-    "isolation_passed": false,
-    "dvc_pointer": "artifacts/cata_raid_program/shared_instance_3490069d1c_20260907.tar.gz.dvc",
-    "publication_receipt": "artifacts/cata_raid_program/shared_instance_3490069d1c_20260907.publication.json",
-    "remote_reconstruction_verified": true,
-    "training_eligible": false
-  },
+  "next_action": "Finish gear-authority repair and Fire native-range SQL review, provision/read back corrected equipment, then run the completion-watchdog canary and route remaining causal losses.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -117,17 +63,22 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "b60350a657",
-    "boss_clear": false,
-    "trash_clears": [
-      "bwd.magmaw.chainwielder",
-      "bwd.magmaw.drudges"
-    ],
-    "terminal_reason": "interruption",
-    "terminal_detail": "same_attempt_trace_reset_at_statistics_window_rollover",
+    "source_commit": "d5bf3b804a488f7a880a1e1a693541fc5b012d00",
+    "boss_clear": true,
+    "terminal_reason": "clear",
     "cleanup_passed": true,
-    "remote_reconstruction_verified": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_b60350a657_20260907.tar.gz.dvc",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_d5bf3b804a_20260908.tar.gz.dvc",
     "training_eligible": false
+  },
+  "latest_analysis": {
+    "dvc_pointer": "artifacts/cata_raid_program/dps_cross_reference_d5bf3b804a_20260908.tar.gz.dvc",
+    "correction_pending": "Earlier gear comparison inferred base profile IDs without applying provisioning overlays. Use actual native gear manifest and database readback; current pre-mutation database shows test robe on Fire and Discipline, not Affliction."
+  },
+  "implementation_review": {
+    "model": "gpt-5.6-sol",
+    "reasoning": "high",
+    "verdict": "approve",
+    "scope": "player gear authority, resolved provisioning identity, fallback API, Fire range SQL",
+    "live_verified": false
   }
 }

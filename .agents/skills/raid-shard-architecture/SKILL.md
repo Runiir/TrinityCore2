@@ -7,6 +7,17 @@ description: Design and coordinate isolated TrinityCore raid-boss experiments an
 
 Build every boss shard as an isolated, executable slice of the canonical raid. Treat identity mismatches as failures, not recoverable defaults.
 
+For ordinary development, use the current `raid-performance-loop` launch path;
+the sealed replay/qualification procedures below apply only to those work units.
+
+Player gear needs an acquisition authority, not just a client item definition,
+an item-level cap, or a name filter. Provision DPS from the selected pinned
+WoWSims profile. Heuristic fallback items and gems require positive retained
+acquisition records; omit permanent enchants without slot-applicability proof.
+Resolve overrides and explicit equipment before comparing manifests. The native
+gear manifest and inventory readback must agree with the selected profile,
+including enchants, gems and reforges. A correct profile label is insufficient.
+
 Before inspection or mutation, apply
 [the bounded work-unit contract](../raid-performance-loop/references/bounded-work-unit-contract.md).
 Lock one shard/provisioning/route hypothesis, exact owned configs and generated

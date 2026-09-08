@@ -11,6 +11,13 @@ proof, not duplicate simulations.
 
 ## Admit exact inputs
 
+Resolve the live provisioning profile and compare its actual native equipment
+manifest before requesting new simulations. If correcting a wrong live profile
+makes it match an already promoted request, reuse that verified reference.
+Do not infer equipment from a class name or an unmerged base gear file. A native
+item definition alone does not establish player acquisition, and an enchant's
+stat value does not prove it can be applied to the equipped slot.
+
 Start with:
 
 ```bash

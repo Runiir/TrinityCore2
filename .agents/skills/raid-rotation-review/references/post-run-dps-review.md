@@ -10,6 +10,13 @@ instance, route node/generation, roster, and promoted reference catalog. State
 which comparisons are admitted and which lack setup/stat parity. A valid boss
 clear remains valid even when the DPS review identifies inefficiency.
 
+Resolve gear through the actual provisioning pipeline, including explicit bot
+equipment and WoWSims overlays. Use the run's native `gear_manifest` and bound
+inventory readback for comparison. A class name or base profile is not evidence
+of equipped items. Item-level limits and name filters do not prove player
+obtainability; retain the approved acquisition/preset source. Correct a prior
+misattribution with attributable supplemental analysis, preserving the original.
+
 Start with the complete roster, including every tank, healer, DPS, and owned
 pet. Record actual and requested tank/healer/DPS counts; never silently compare
 a 2/3/5 run with a 2/2/6 target or change the frozen roster to fit a benchmark.

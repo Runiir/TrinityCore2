@@ -15,7 +15,7 @@ from .build_validation_gear_profiles import (
     SPELL_ITEM_ENCHANTMENT_FMT,
     armor_allowed,
     class_allowed,
-    item_player_accessible,
+    item_definition_compatible,
     load_db2_item_rows,
     load_wdbc,
     weapon_slot_allowed,
@@ -458,7 +458,9 @@ def validate_profile_local_legality(
         inventory_type = int(item.get("InventoryType") or 0)
         if inventory_types.get(slot) != inventory_type:
             reasons.append(f"inventory_type_mismatch:{slot}:{item_id}")
-        if not item_player_accessible(item):
+        # Acquisition identity comes from the pinned preset source binding;
+        # this check covers local client compatibility, not a loot-table claim.
+        if not item_definition_compatible(item):
             reasons.append(f"item_not_player_accessible:{slot}:{item_id}")
         if not class_allowed(item, bot["class"]):
             reasons.append(f"item_class_restricted:{slot}:{item_id}")

@@ -11,11 +11,13 @@ try:
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from .build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, load_config, required_equipment_slots_for
     from .validation_profile_manifests import DEFAULT_COMBAT_LOOT_PROFILE_MANIFEST, load_combat_loot_profile_manifest
+    from .player_gear_acquisition import DEFAULT_ITEM_SOURCE_INDEX, bind_player_acquisition
 except ImportError:
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, load_config, required_equipment_slots_for
     from validation_profile_manifests import DEFAULT_COMBAT_LOOT_PROFILE_MANIFEST, load_combat_loot_profile_manifest
+    from player_gear_acquisition import DEFAULT_ITEM_SOURCE_INDEX, bind_player_acquisition
 
 
 STAT_NAMES = {
@@ -366,11 +368,15 @@ def normalize_item_name(value: str) -> str:
     return " ".join(value.lower().replace("'", "").split())
 
 
-def item_player_accessible(item: dict[str, Any]) -> bool:
+def item_definition_compatible(item: dict[str, Any]) -> bool:
     name = normalize_item_name(str(item.get("Display") or ""))
     if any(token in name for token in ("test", "debug", "deprecated", "gm ", "zzold")):
         return False
     return 1 <= int(item.get("ItemLevel") or 0) <= MAX_PLAYER_ACCESSIBLE_CATA_ITEM_LEVEL and int(item.get("RequiredLevel") or 0) <= 85
+
+
+def item_player_accessible(item: dict[str, Any]) -> bool:
+    return bool((item.get("player_acquisition") or {}).get("sources")) and item_definition_compatible(item)
 
 
 def curated_items_by_slot(bot: dict[str, Any], items: list[dict[str, Any]]) -> tuple[dict[int, dict[str, Any]], list[str], list[dict[str, Any]]]:
@@ -488,6 +494,8 @@ def build_gem_catalog(
 ) -> list[dict[str, Any]]:
     gems = []
     for item in items:
+        if not item_player_accessible(item):
+            continue
         gem_property_id = int(item.get("GemProperties") or 0)
         gem_property = gem_properties.get(gem_property_id)
         if not gem_property:
@@ -594,7 +602,9 @@ def choose_loadout(
     class_id = int(bot["class"])
     profile_manifest = profile_manifest or DEFAULT_COMBAT_LOOT_PROFILES
     weights = stat_weights_for_bot(bot, profile_manifest)
-    selected_enchantment = select_enchantment(enchantments or [], weights)
+    # An enchant's stat score is not proof that it can be applied to this slot.
+    # Exact WoWSims overlays retain their separately bound per-slot enchants.
+    selected_enchantment = None
     curated_slots, missing_curated, rejected_curated = curated_items_by_slot(bot, items)
     curated_item_ids = {int(item["ID"]) for item in curated_slots.values()}
     candidates_by_slot: dict[int, list[tuple[float, dict[str, Any]]]] = defaultdict(list)
@@ -647,17 +657,15 @@ def choose_loadout(
         selected_gems = []
         for socket in socket_colors:
             gem = select_gem(socket, gems or [], weights, gem_limit_counts, item_limit_categories)
-            if gems and gem is None:
-                raise ValueError(
-                    f"no runtime-legal gem for profile={bot.get('class_spec')} slot={slot} socket_color={socket}"
-                )
             selected_gems.append(gem)
             if gem:
                 category = int(gem.get("item_limit_category") or 0)
                 if category:
                     gem_limit_counts[category] += 1
-        gem_item_ids = [int(gem["item_id"]) for gem in selected_gems if gem]
-        gem_enchant_ids = [int(gem["enchant_id"]) for gem in selected_gems if gem]
+        # Keep empty socket positions; never shift a later gem into an earlier
+        # unmatched socket, or invent a crafted source to fill the gap.
+        gem_item_ids = [int(gem["item_id"]) if gem else 0 for gem in selected_gems]
+        gem_enchant_ids = [int(gem["enchant_id"]) if gem else 0 for gem in selected_gems]
         loadout.append(
             {
                 "slot": slot,
@@ -669,6 +677,7 @@ def choose_loadout(
                 "source": selected.get("source") or "unknown",
                 "source_label": "curated_tauri_veins_434_player_accessible" if int(selected["ID"]) in curated_item_ids else selected.get("source") or "unknown",
                 "player_accessible": item_player_accessible(selected),
+                "player_acquisition": selected["player_acquisition"],
                 "stats": stat_map(selected),
                 "socket_colors": socket_colors,
                 "gem_item_ids": gem_item_ids,
@@ -676,7 +685,7 @@ def choose_loadout(
                 "enchant_id": enchant_id,
                 "enchant_name": selected_enchantment.get("name", "") if selected_enchantment else "",
                 "enchant_stats": selected_enchantment.get("stats", {}) if selected_enchantment else {},
-                "enchantments": enchantments_string(enchant_id, gem_enchant_ids) if enchant_id or gem_enchant_ids else "",
+                "enchantments": enchantments_string(enchant_id, gem_enchant_ids),
                 "enchant_selection_source": selected_enchantment.get("selection_source", "") if selected_enchantment else "",
                 "selection_score": round(item_score(selected, weights), 3),
                 "stat_weight_archetype": role_archetype(bot, profile_manifest),
@@ -714,7 +723,7 @@ def build_profiles(
                         "hash": profile_manifest["hash"],
                     },
                     "equipment": choose_loadout(bot, items, enchantments, gems, profile_manifest, item_limit_categories),
-                    "enchant_selection_mode": "dbc_stat_score_unverified_slot_applicability" if enchantments else "none",
+                    "enchant_selection_mode": "none_without_slot_applicability_authority",
                     "gem_selection_mode": "gem_properties_dbc_socket_color_score" if gems else "none",
                 },
             )
@@ -722,7 +731,7 @@ def build_profiles(
         covered = {int(item["slot"]) for item in profile["equipment"]}
         profile["missing_slots"] = sorted(set(required_equipment_slots_for(profile["equipment"])) - covered)
         profile["complete_equipment_slots"] = not profile["missing_slots"]
-        profile["gemmed"] = all(not item.get("socket_colors") or item.get("gem_item_ids") for item in profile["equipment"])
+        profile["gemmed"] = all(not item.get("socket_colors") or all(item.get("gem_item_ids", [])) and len(item.get("gem_item_ids", [])) == len(item["socket_colors"]) for item in profile["equipment"])
         profile["enchanted"] = all(int(item.get("enchant_id") or 0) for item in profile["equipment"])
         profile["average_item_level"] = round(sum(int(item.get("item_level") or 0) for item in profile["equipment"]) / max(len(profile["equipment"]), 1), 2)
         source_counts: dict[str, int] = {}
@@ -791,7 +800,7 @@ def build_report(profiles: dict[str, Any], source_database: dict[str, Any], prof
             "hotfix_db_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("source") == "hotfix_db"),
             "enchanted_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if int(item.get("enchant_id") or 0)),
             "socketed_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("socket_colors")),
-            "gemmed_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("socket_colors") and item.get("gem_item_ids")),
+            "gemmed_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("socket_colors") and any(item.get("gem_item_ids", []))),
         },
         "source_database": source_database,
         "runtime_ml_control": "disabled_teacher_policy_validation_only",
@@ -808,12 +817,14 @@ def main() -> int:
     parser.add_argument("--min-item-level", type=int, default=1)
     parser.add_argument("--max-required-level", type=int, default=85)
     parser.add_argument("--profile-manifest", type=Path, default=DEFAULT_COMBAT_LOOT_PROFILE_MANIFEST)
+    parser.add_argument("--item-source-index", type=Path, default=DEFAULT_ITEM_SOURCE_INDEX)
     args = parser.parse_args()
 
     config = load_config(args.config)
     profile_manifest = load_combat_loot_profile_manifest(args.profile_manifest)
     hotfix_url = args.hotfix_database_url or database_url_from_worldserver_conf(args.worldserver_conf, "HotfixDatabaseInfo")
     items = fetch_items(hotfix_url, args.dbc_dir, args.min_item_level, args.max_required_level)
+    items = bind_player_acquisition(items, args.item_source_index)
     enchantments = load_spell_item_enchantments(args.dbc_dir, args.max_required_level) if args.dbc_dir else []
     enchantments_by_id = {int(enchantment["id"]): enchantment for enchantment in enchantments}
     enchantment_source_items = load_enchantment_source_items(args.dbc_dir) if args.dbc_dir else {}

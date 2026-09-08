@@ -412,7 +412,7 @@
             "action_profile_id": "fire_mage",
             "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
             "class_spec": "fire_mage",
-            "gear_profile_id": "fire_mage",
+            "gear_profile_id": "wowsims_cata_p4_fire_mage",
             "glyph_ids": [
               42739,
               42743,
@@ -444,6 +444,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_1",
           "expected_account_id": 20006,
           "expected_character_guid": 30006,
+          "gear_profile": "wowsims_cata_p4_fire_mage",
           "glyphs": [
             42739,
             42743,
@@ -470,7 +471,7 @@
             "action_profile_id": "fire_mage",
             "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
             "class_spec": "fire_mage",
-            "gear_profile_id": "fire_mage",
+            "gear_profile_id": "wowsims_cata_p4_fire_mage",
             "glyph_ids": [
               42739,
               42743,
@@ -502,6 +503,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_2",
           "expected_account_id": 20007,
           "expected_character_guid": 30007,
+          "gear_profile": "wowsims_cata_p4_fire_mage",
           "glyphs": [
             42739,
             42743,
@@ -560,6 +562,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_3",
           "expected_account_id": 20008,
           "expected_character_guid": 30008,
+          "gear_profile": "affliction_warlock",
           "glyphs": [
             42456,
             42454,
@@ -619,6 +622,7 @@
           "expected_account_id": 20009,
           "expected_character_guid": 30009,
           "expected_pet_id": 8700009,
+          "gear_profile": "marksmanship_hunter",
           "glyphs": [
             42909,
             42902,
@@ -695,6 +699,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_dps_5",
           "expected_account_id": 20010,
           "expected_character_guid": 30010,
+          "gear_profile": "elemental_shaman",
           "glyphs": [
             41524,
             41547,
@@ -1077,7 +1082,7 @@
             "action_profile_id": "fire_mage",
             "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
             "class_spec": "fire_mage",
-            "gear_profile_id": "fire_mage",
+            "gear_profile_id": "wowsims_cata_p4_fire_mage",
             "glyph_ids": [
               42739,
               42743,
@@ -1109,6 +1114,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_1",
           "expected_account_id": 20106,
           "expected_character_guid": 30106,
+          "gear_profile": "wowsims_cata_p4_fire_mage",
           "glyphs": [
             42739,
             42743,
@@ -1167,6 +1173,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_2",
           "expected_account_id": 20107,
           "expected_character_guid": 30107,
+          "gear_profile": "assassination_rogue",
           "glyphs": [
             42954,
             42957,
@@ -1225,6 +1232,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_3",
           "expected_account_id": 20108,
           "expected_character_guid": 30108,
+          "gear_profile": "affliction_warlock",
           "glyphs": [
             42456,
             42454,
@@ -1284,6 +1292,7 @@
           "expected_account_id": 20109,
           "expected_character_guid": 30109,
           "expected_pet_id": 8700109,
+          "gear_profile": "marksmanship_hunter",
           "glyphs": [
             42909,
             42902,
@@ -1360,6 +1369,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/omnotron/roster/raid_dps_5",
           "expected_account_id": 20110,
           "expected_character_guid": 30110,
+          "gear_profile": "elemental_shaman",
           "glyphs": [
             41524,
             41547,
@@ -1744,7 +1754,7 @@
             "action_profile_id": "fire_mage",
             "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
             "class_spec": "fire_mage",
-            "gear_profile_id": "fire_mage",
+            "gear_profile_id": "wowsims_cata_p4_fire_mage",
             "glyph_ids": [
               42739,
               42743,
@@ -1776,6 +1786,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_1",
           "expected_account_id": 20206,
           "expected_character_guid": 30206,
+          "gear_profile": "wowsims_cata_p4_fire_mage",
           "glyphs": [
             42739,
             42743,
@@ -1834,6 +1845,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_2",
           "expected_account_id": 20207,
           "expected_character_guid": 30207,
+          "gear_profile": "assassination_rogue",
           "glyphs": [
             42954,
             42957,
@@ -1892,6 +1904,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_3",
           "expected_account_id": 20208,
           "expected_character_guid": 30208,
+          "gear_profile": "affliction_warlock",
           "glyphs": [
             42456,
             42454,
@@ -1951,6 +1964,7 @@
           "expected_account_id": 20209,
           "expected_character_guid": 30209,
           "expected_pet_id": 8700209,
+          "gear_profile": "marksmanship_hunter",
           "glyphs": [
             42909,
             42902,
@@ -2027,6 +2041,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/maloriak/roster/raid_dps_5",
           "expected_account_id": 20210,
           "expected_character_guid": 30210,
+          "gear_profile": "elemental_shaman",
           "glyphs": [
             41524,
             41547,
@@ -2412,7 +2427,7 @@
             "action_profile_id": "fire_mage",
             "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
             "class_spec": "fire_mage",
-            "gear_profile_id": "fire_mage",
+            "gear_profile_id": "wowsims_cata_p4_fire_mage",
             "glyph_ids": [
               42739,
               42743,
@@ -2444,6 +2459,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_1",
           "expected_account_id": 20306,
           "expected_character_guid": 30306,
+          "gear_profile": "wowsims_cata_p4_fire_mage",
           "glyphs": [
             42739,
             42743,
@@ -2502,6 +2518,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_2",
           "expected_account_id": 20307,
           "expected_character_guid": 30307,
+          "gear_profile": "assassination_rogue",
           "glyphs": [
             42954,
             42957,
@@ -2560,6 +2577,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_3",
           "expected_account_id": 20308,
           "expected_character_guid": 30308,
+          "gear_profile": "affliction_warlock",
           "glyphs": [
             42456,
             42454,
@@ -2619,6 +2637,7 @@
           "expected_account_id": 20309,
           "expected_character_guid": 30309,
           "expected_pet_id": 8700309,
+          "gear_profile": "marksmanship_hunter",
           "glyphs": [
             42909,
             42902,
@@ -2695,6 +2714,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/atramedes/roster/raid_dps_5",
           "expected_account_id": 20310,
           "expected_character_guid": 30310,
+          "gear_profile": "elemental_shaman",
           "glyphs": [
             41524,
             41547,
@@ -3081,7 +3101,7 @@
             "action_profile_id": "fire_mage",
             "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
             "class_spec": "fire_mage",
-            "gear_profile_id": "fire_mage",
+            "gear_profile_id": "wowsims_cata_p4_fire_mage",
             "glyph_ids": [
               42739,
               42743,
@@ -3113,6 +3133,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_1",
           "expected_account_id": 20406,
           "expected_character_guid": 30406,
+          "gear_profile": "wowsims_cata_p4_fire_mage",
           "glyphs": [
             42739,
             42743,
@@ -3171,6 +3192,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_2",
           "expected_account_id": 20407,
           "expected_character_guid": 30407,
+          "gear_profile": "assassination_rogue",
           "glyphs": [
             42954,
             42957,
@@ -3229,6 +3251,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_3",
           "expected_account_id": 20408,
           "expected_character_guid": 30408,
+          "gear_profile": "affliction_warlock",
           "glyphs": [
             42456,
             42454,
@@ -3288,6 +3311,7 @@
           "expected_account_id": 20409,
           "expected_character_guid": 30409,
           "expected_pet_id": 8700409,
+          "gear_profile": "marksmanship_hunter",
           "glyphs": [
             42909,
             42902,
@@ -3364,6 +3388,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/chimaeron/roster/raid_dps_5",
           "expected_account_id": 20410,
           "expected_character_guid": 30410,
+          "gear_profile": "elemental_shaman",
           "glyphs": [
             41524,
             41547,
@@ -3751,7 +3776,7 @@
             "action_profile_id": "fire_mage",
             "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
             "class_spec": "fire_mage",
-            "gear_profile_id": "fire_mage",
+            "gear_profile_id": "wowsims_cata_p4_fire_mage",
             "glyph_ids": [
               42739,
               42743,
@@ -3783,6 +3808,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_1",
           "expected_account_id": 20506,
           "expected_character_guid": 30506,
+          "gear_profile": "wowsims_cata_p4_fire_mage",
           "glyphs": [
             42739,
             42743,
@@ -3841,6 +3867,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_2",
           "expected_account_id": 20507,
           "expected_character_guid": 30507,
+          "gear_profile": "assassination_rogue",
           "glyphs": [
             42954,
             42957,
@@ -3899,6 +3926,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_3",
           "expected_account_id": 20508,
           "expected_character_guid": 30508,
+          "gear_profile": "affliction_warlock",
           "glyphs": [
             42456,
             42454,
@@ -3958,6 +3986,7 @@
           "expected_account_id": 20509,
           "expected_character_guid": 30509,
           "expected_pet_id": 8700509,
+          "gear_profile": "marksmanship_hunter",
           "glyphs": [
             42909,
             42902,
@@ -4034,6 +4063,7 @@
           "evidence_namespace": "cata_raid/bwd/diagnostic/nefarian/roster/raid_dps_5",
           "expected_account_id": 20510,
           "expected_character_guid": 30510,
+          "gear_profile": "elemental_shaman",
           "glyphs": [
             41524,
             41547,
