@@ -46,7 +46,9 @@ inline std::string Capture(Player* owner, Unit* offensiveTarget, uint64 elapsedM
     ObjectGuid slotGuid = owner ? owner->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] : ObjectGuid::Empty;
     Creature* fire = owner && owner->GetMap() && slotGuid
         ? owner->GetMap()->GetCreature(slotGuid) : nullptr;
-    bool const ownedFire = fire && fire->IsTotem() && fire->GetOwner() == owner;
+    // Totems retain Minion::m_owner without the generic owner-GUID field.
+    bool const ownedFire = fire && fire->IsTotem()
+        && fire->ToTotem()->GetOwner() == owner;
     json << ",\"fire_slot\":{\"guid\":" << slotGuid.GetRawValue()
          << ",\"present\":" << (fire ? "true" : "false")
          << ",\"owned\":" << (ownedFire ? "true" : "false")

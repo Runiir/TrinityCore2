@@ -256,6 +256,10 @@ std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, Un
         return "insufficient_self_aura_stacks";
     if (spell.MaxSelfAuraStacks && selfAura && selfAura->GetStackAmount() > spell.MaxSelfAuraStacks)
         return "self_aura_stacks_too_high";
+    if (spell.RequiredSelfAuraCharges && (!selfAura || selfAura->GetCharges() < spell.RequiredSelfAuraCharges))
+        return "insufficient_self_aura_charges";
+    if (spell.MaxSelfAuraCharges && selfAura && selfAura->GetCharges() > spell.MaxSelfAuraCharges)
+        return "self_aura_charges_too_high";
     if (selfAura && (spell.MinSelfAuraRemainingMs || spell.MaxSelfAuraRemainingMs))
     {
         int32 remaining = selfAura->GetDuration();
@@ -277,8 +281,14 @@ std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, Un
         && !HasMechanicTag(spell.MechanicTags, "lacerate_spender")
         && lacerate && lacerate->GetStackAmount() >= 3 && lacerate->GetDuration() > 3000)
         return "lacerate_stacks_ready";
-    if (spell.RequiredOwnedTargetAura && (!target || !target->HasAura(spell.RequiredOwnedTargetAura, bot->GetGUID())))
+    Aura const* ownedRequiredAura = target && spell.RequiredOwnedTargetAura
+        ? target->GetAura(spell.RequiredOwnedTargetAura, bot->GetGUID()) : nullptr;
+    if (spell.RequiredOwnedTargetAura && !ownedRequiredAura)
         return "missing_required_owned_target_aura";
+    if (spell.MinOwnedTargetAuraRemainingMs && (!ownedRequiredAura
+        || (ownedRequiredAura->GetDuration() >= 0
+            && uint32(ownedRequiredAura->GetDuration()) < spell.MinOwnedTargetAuraRemainingMs)))
+        return "owned_target_aura_duration_too_low";
     if (spell.ForbiddenOwnedTargetAura && target && target->HasAura(spell.ForbiddenOwnedTargetAura, bot->GetGUID()))
         return "forbidden_owned_target_aura_active";
     if (HasMechanicTag(spell.MechanicTags, "holy_power_3") && bot->GetPower(POWER_HOLY_POWER) < 3)

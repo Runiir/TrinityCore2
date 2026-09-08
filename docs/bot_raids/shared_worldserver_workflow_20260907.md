@@ -2,6 +2,46 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
+Source `613e50fc59` completed one exact 300-second native Elemental window:
+8,053,117 damage / 26,843.723 DPS, up 19.67% from 816. All current reference
+conditions pass; only the DPS floor fails (72.552% of 36,999.280). There were
+203 successful submissions from 203 attempts, zero HPS, deaths, cast failures
+or movement loss, and 2,980 decision samples mostly 99–101 ms apart. Native
+exit, cleanup and post-run binary verification passed.
+
+The original controller report failed chunk reassembly. All 749 chunks were
+recovered from saved output, with identical overlaps and exact 9,192,003-byte
+completion size; original report remains unchanged. `recovered_analysis.json`
+is separately attributable to native payload SHA256
+`528c49cb06ff0eb14315268617191933be6be510ecad73c151e2cc332ff7fda3`.
+The recovered run passed independent review; evidence is remotely verified
+and exact raw payloads are evicted. It remains excluded from training.
+
+The next batch passed independent review: terminal-framed capture (including
+split completion frames), native fire-totem owner observation, elemental AI's
+null-victim combat-helper fallback, and typed Earth Shock charge/owned-DoT
+gates. The combined fixture suite passed 62 tests; amended capture boundaries
+passed 13 and database coverage passed 7. C/C++ changes remain below 1,000 lines.
+
+The reviewed SQL changed only action2077/profile273 among 371 actions. All31
+profiles, 368 enabled actions, native charge bounds9, owned Flame Shock>=3000ms
+and one-target gating pass fresh readback. The stale historical260-action
+validator now checks per-profile enabled-action coverage. Static and database
+contracts pass; full historical publication qualification was not rerun.
+
+Next: freeze/build once and run the next exact calibration. Guardian presence,
+DPS contribution and shock frequency must be measured; old empty guardian lists
+remain inconclusive. No worldserver is running.
+
+The latest Magmaw clear remains source18ff, 118,358.965 hostile DPS and
+20,110.681 HPS with zero deaths and actual 2 tank / 3 healer / 5 DPS. Remaining
+raid-wide throughput, direct head targeting and all-party Heroism coverage
+remain open. The 378,849 WCL kill is a different 1/1/8 composition and duration.
+
+## Earlier result: 816 setup accepted, DPS unresolved
+
+Current objective: resolve roster DPS, continuing past individual repair acceptance.
+
 Source `8160201cb1` passed independent review and one verified build. Its exact
 300-second Elemental calibration is closed: 6,729,475 damage, 22,431.583 DPS,
 zero HPS, zero deaths, zero movement loss, native exit0, cleanup and post-run

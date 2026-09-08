@@ -37,6 +37,8 @@ bool AcquireShamanOwnerVictim(Creature* elemental)
     if (owner && owner->IsTotem())
         owner = owner->ToTotem()->GetOwner();
     Unit* victim = owner ? owner->GetVictim() : nullptr;
+    if (!victim && owner)
+        victim = owner->getAttackerForHelper();
     if (!victim || !victim->IsAlive() || !owner->IsValidAttackTarget(victim))
         return false;
 

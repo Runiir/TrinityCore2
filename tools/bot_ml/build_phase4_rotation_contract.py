@@ -49,6 +49,9 @@ EXPECTED_KEYS = {
 }
 TYPED_COLUMNS = {
     "max_self_aura_stacks",
+    "required_self_aura_charges",
+    "max_self_aura_charges",
+    "min_owned_target_aura_remaining_ms",
     "min_self_aura_remaining_ms",
     "max_self_aura_remaining_ms",
     "required_owned_target_aura",
@@ -139,9 +142,11 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
     ).read_text()
     forward = (repository / "sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql").read_text()
     forward += (repository / "sql/custom/world/2026_09_07_00_bot_rotation_hostile_health_gate.sql").read_text()
+    forward += (repository / "sql/custom/world/2026_09_08_03_elemental_fulmination_gate.sql").read_text()
     normalize = (repository / "sql/custom/world/2026_07_19_01_phase4_rotation_category_normalization.sql").read_text()
     rollback = (repository / "sql/custom/rollback/world/2026_07_19_00_phase4_rotation_snapshots_rollback.sql").read_text()
     rollback += (repository / "sql/custom/rollback/world/2026_09_07_00_bot_rotation_hostile_health_gate_rollback.sql").read_text()
+    rollback += (repository / "sql/custom/rollback/world/2026_09_08_03_elemental_fulmination_gate_rollback.sql").read_text()
     previous = json.loads(
         (repository / "experiments/configs/all_spec_phase4_previous_profile_hashes_v1.json").read_text()
     )
@@ -265,6 +270,14 @@ def live_database_contract(worldserver_conf: Path) -> dict[str, Any]:
             )
             action_count = int(cursor.fetchone()["count"])
             cursor.execute(
+                "SELECT p.id AS profile_id FROM bot_rotation_profile p "
+                "LEFT JOIN bot_rotation_action a ON a.profile_id=p.id AND a.enabled=1 "
+                "WHERE p.enabled=1 GROUP BY p.id HAVING COUNT(a.id)=0 ORDER BY p.id"
+            )
+            missing_action_profile_ids = [
+                int(row["profile_id"]) for row in cursor.fetchall()
+            ]
+            cursor.execute(
                 "SELECT DISTINCT category FROM bot_rotation_action WHERE enabled=1"
             )
             categories = {row["category"] for row in cursor.fetchall()}
@@ -275,13 +288,14 @@ def live_database_contract(worldserver_conf: Path) -> dict[str, Any]:
         "exact_catalog_keys": keys == EXPECTED_KEYS,
         "typed_columns_present": TYPED_COLUMNS <= columns,
         "all_categories_known": categories <= KNOWN_CATEGORIES,
-        "enabled_actions_present": action_count == 260,
+        "enabled_actions_present": not missing_action_profile_ids,
     }
     return {
         "passed": all(checks.values()),
         "checks": checks,
         "profile_count": len(keys),
         "action_count": action_count,
+        "missing_action_profile_ids": missing_action_profile_ids,
         "unknown_categories": sorted(categories - KNOWN_CATEGORIES),
     }
 

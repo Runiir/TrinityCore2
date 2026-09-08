@@ -273,6 +273,8 @@ stages:
     - src/server/game/Bots/BotWorldPopulationMgrValidationGroupHeal.cpp
     - sql/custom/world/2026_09_07_00_bot_rotation_hostile_health_gate.sql
     - sql/custom/rollback/world/2026_09_07_00_bot_rotation_hostile_health_gate_rollback.sql
+    - sql/custom/world/2026_09_08_03_elemental_fulmination_gate.sql
+    - sql/custom/rollback/world/2026_09_08_03_elemental_fulmination_gate_rollback.sql
     - src/server/game/Bots/BotClassSpecActionProfile.cpp
     - src/server/game/Bots/BotClassSpecActionProfile.h
     - src/server/game/Bots/BotActionExecutor.cpp

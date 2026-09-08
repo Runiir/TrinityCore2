@@ -68,6 +68,12 @@ the Trinity worktree. For tanks and healers, require the role-harness contract.
 Record the Trinity commit, profile generation/hash, actor/target,
 gear/talents/glyphs, route/scenario, and evidence identity.
 
+Translate reference terms through the native producer and consumer before
+choosing a gate. Aura charges and stack amount are distinct native values;
+a simulator's "stacks" label does not identify the server accessor. Fixtures
+must preserve that distinction, and relevant inherited/nonvirtual accessors,
+instead of flattening them into a convenient successful stub.
+
 Use the supplied rotation review; request only the evidence missing for this
 repair. For stat-sensitive DPS tuning, require its `gear_parity.status` and
 `effective_stat_parity.status` to be `match`, and require

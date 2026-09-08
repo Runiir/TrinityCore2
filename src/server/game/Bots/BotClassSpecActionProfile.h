@@ -65,9 +65,12 @@ struct BotActionProfileSpell
     bool RequiresMoving = false;
     uint8 RequiredSelfAuraStacks = 0;
     uint8 MaxSelfAuraStacks = 0;
+    uint8 RequiredSelfAuraCharges = 0;
+    uint8 MaxSelfAuraCharges = 0;
     uint32 MinSelfAuraRemainingMs = 0;
     uint32 MaxSelfAuraRemainingMs = 0;
     uint32 RequiredOwnedTargetAura = 0;
+    uint32 MinOwnedTargetAuraRemainingMs = 0;
     uint32 ForbiddenOwnedTargetAura = 0;
     uint8 MinComboPoints = 0;
     uint8 MaxComboPoints = 0;

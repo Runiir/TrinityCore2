@@ -2230,3 +2230,17 @@ def test_cast_mix_direct_helper_requires_normalized_completed_calibration():
         },
     )
     assert result["status"] == "ok"
+
+
+def test_charge_and_owned_duration_gates_survive_database_and_dump_readers():
+    from tools.bot_ml.review_rotation_mechanics import normalize_trinity_profile
+
+    gates = {"required_self_aura_charges": 9, "max_self_aura_charges": 9,
+             "min_owned_target_aura_remaining_ms": 3000}
+    document = trinity_profile_document_from_database_rows(
+        {"class_id": 7, "spec_tag": "elemental_shaman", "role": "dps"},
+        [{"spell_id": 8042, "category": "spender", "priority_bucket": 1, **gates}],
+    )
+    assert all(document["actions"][0]["gates"][key] == value for key, value in gates.items())
+    normalized = normalize_trinity_profile(document)
+    assert all(normalized["actions"][0]["gates"][key] == value for key, value in gates.items())

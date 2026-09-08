@@ -320,3 +320,10 @@ finding include:
 Never recommend direct state manufacture, forced target/cast success, teleport,
 health/resource refill during scoring, or denominator-derived tuning. Prefer
 typed observations, candidates, native requests, and later outcome receipts.
+
+A pinned reference contract and a counterexample through the actual production
+evaluator can establish a policy defect before its frequency is visible in a
+live trace. Do not require an observation-only build solely to admit that repair.
+Keep native frequency, DPS cost and improvement claims unproven until measured.
+This does not justify coefficient tuning, missing-reference assumptions or
+fabricated runtime outcomes.

@@ -2,44 +2,47 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:roster_execution_review",
   "owner_skill": "raid-performance-loop",
-  "classification": "closed_elemental_setup_accepted_dps_unresolved",
+  "classification": "closed_elemental_reaction_accepted_dps_unresolved",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "8160201cb1",
+  "observed_at_commit": "613e50fc59",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Observation and shared Elemental reaction timing batch independently approved; ready for one build and native calibration.",
+  "gate_state": "Combined repairs independently approved; typed SQL applied with exact readback; ready for one build and native calibration.",
   "first_broken_edge": {
-    "id": "self_provided_aura_source_unobserved_and_rejected",
-    "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Correct WrathAir2895 activity is treated as external by native and Python HasAura-only gates; caster/owner not retained, so old run cannot establish source.",
-    "review_state": "observation_approved_native_validation_pending"
+    "id": "elemental_policy_native_representation_and_capture",
+    "owner_classification": "raid_role_implementation",
+    "cause": "Earth Shock charge gate removed; native charges differ from aura stacks. Completed window also exposed capture framing and observer owner-accessor defects.",
+    "review_state": "repairs_approved_native_verification_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "6366f349f81a0c9028f24cfdc65b55baf94071d882ec0fed4b9d5fc5061dd976"
+    "sha256": "d50656b3d1393fdb6dc0ac3a3fcdc6fac26e1fec8eec09ddac0b2cdf33a7d4d9"
   },
   "scope_lock": {
-    "objective": "Observe and classify exact self-owned class aura without admitting foreign buffs; obtain guardian outcome evidence before gameplay repair.",
+    "objective": "Repair terminal-framed capture, native fire-totem owner observation, native elemental helper targeting, and exact Earth Shock charge/owned-aura gates.",
     "owned_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrCalibrationReference.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCalibrationReferenceJson.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h",
-      "tools/bot_ml/phase8_reference_conditions.py",
+      "tools/bot_ml/run_live_bot_validation.py",
       "src/server/game/Bots/BotCalibrationSummonObservation.h",
-      "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp",
-      "src/server/game/Bots/BotClassSpecActionProfile.cpp"
+      "src/server/scripts/Pet/pet_shaman.cpp",
+      "src/server/game/Bots/BotClassSpecActionProfile.h",
+      "src/server/game/Bots/BotClassSpecActionProfileDb.cpp",
+      "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+      "sql/custom/world/2026_09_08_03_elemental_fulmination_gate.sql",
+      "sql/custom/rollback/world/2026_09_08_03_elemental_fulmination_gate_rollback.sql",
+      "tools/bot_ml/build_phase4_rotation_contract.py",
+      "tools/bot_ml/review_rotation_mechanics.py"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Own Wrath of Air provenance passes exact self-provided reference gate; foreign or unknown sources remain rejected.",
-    "Observe native haste and owned guardian presence, owner victim/helper/offensive target, and current guardian spell without inferring unsampled AI outcomes.",
-    "Elemental uses the shared 100ms policy; exact 300-second transport is complete with no duplicate casts or increased cast failures.",
-    "Compare DPS, HPS, stats, cadence, deaths and movement against prior816 and promoted reference; publish and verify closed evidence before exact eviction."
+    "Large terminal-framed calibration reply remains contiguous and completely reassembles before native cleanup.",
+    "Observe actual fire totem native ownership and guardian target/action state; preserve source-bound Wrath of Air acceptance.",
+    "Native elemental owner-helper fallback only applies to null victim and respects existing alive/attack validity.",
+    "Earth Shock uses native charges9 (independent of stack amount), owned Flame Shock >=3000ms and one target; preserve ordinary guards and legal filler.",
+    "Exact300-second window meets current reference/stat/setup conditions; report DPS/HPS, cadence, deaths, movement and pet contribution, publish verified closed evidence before eviction."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -50,7 +53,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Freeze and build approved batch once, then run exact 300-second calibration with guardian observations.",
+  "next_action": "Freeze/build approved batch once, then run exact300-second calibration and close/review/publish evidence.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -83,9 +86,9 @@
     "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_18fffe3bee_20260908.tar.gz.dvc"
   },
   "latest_analysis": {
-    "review_directory": "elemental-calibration-8160201cb1/dps-review",
+    "review_directory": "elemental-calibration-613e50fc59/dps-review",
     "publication_state": "remote_verified_raw_evicted",
-    "calibration_dps": 22431.583333333332,
+    "calibration_dps": 26843.72333333333,
     "calibration_reference_dps": 36999.280400830605,
     "calibration_publication_state": "remote_verified_raw_evicted"
   },
@@ -93,7 +96,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approved",
-    "scope": "Owner-aware class buff classification, guardian/haste observation, shared Elemental scheduling",
+    "scope": "Terminal capture, native totem ownership and pet target acquisition, exact charge/duration gates, profile coverage validation",
     "live_verified": false
   },
   "related_edges": [

@@ -5577,12 +5577,17 @@ def read_until_console_prompt(
     output: list[str] = []
     fd = process.stdout.fileno()
     pre_marker_prompt_at: float | None = None
+    response_started = False
+    terminal_frame_started = False
+    scan_tail = ""
+    chunk_marker = required_text.replace("_complete", "_chunk") if terminal_marker else ""
     while process.poll() is None and time.monotonic() < deadline:
         remaining = max(0.0, deadline - time.monotonic())
         ready, _, _ = select.select([fd], [], [], min(1.0, remaining))
         if not ready:
             if (
                 required_text
+                and not response_started
                 and pre_marker_prompt_at is not None
                 and time.monotonic() - pre_marker_prompt_at >= PRE_MARKER_PROMPT_GRACE_SEC
             ):
@@ -5593,19 +5598,35 @@ def read_until_console_prompt(
             break
         text = chunk.decode(errors="replace")
         output.append(text)
-        joined = "".join(output)
+        # Chunked exports can exceed the prompt grace and megabytes of data.
+        # Scan a bounded overlap for their markers instead of repeatedly joining
+        # the growing response (quadratic work delays the reader itself).
+        joined = scan_tail + text if terminal_marker else "".join(output)
+        if terminal_marker:
+            scan_tail = joined[-max(64, len(required_text), len(chunk_marker)):]
+            response_started = response_started or bool(chunk_marker and chunk_marker in joined)
         if required_text:
             marker_index = joined.find(required_text)
-            if marker_index >= 0 and (
-                terminal_marker or "TC>" in joined[marker_index + len(required_text):]
-            ):
+            if terminal_marker:
+                # The action marker may end one os.read block while the JSON
+                # envelope continues in the next. Native frames end at newline;
+                # a trailing console prompt is not required for these exports.
+                if terminal_frame_started:
+                    if "\n" in text:
+                        break
+                elif marker_index >= 0:
+                    terminal_frame_started = True
+                    response_started = True
+                    if "\n" in joined[marker_index + len(required_text):]:
+                        break
+            elif marker_index >= 0 and "TC>" in joined[marker_index + len(required_text):]:
                 break
             # A prompt before the required marker can be the console echo for
             # the command that is still streaming.  Ignore it and wait for a
             # prompt after the marker so the next command cannot interleave
             # with this response.  If the marker never arrives, the bounded
             # read returns incomplete output and the parser fails closed.
-            if marker_index < 0:
+            if marker_index < 0 and not response_started:
                 prompt_positions = [match.start() for match in re.finditer("TC>", joined)]
                 if prompt_positions:
                     if pre_marker_prompt_at is None:

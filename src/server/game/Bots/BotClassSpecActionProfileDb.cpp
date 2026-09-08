@@ -134,7 +134,9 @@ std::string SnapshotPayload(DbRotationSnapshot const& snapshot)
                     << spell.RequiresPet << '|' << spell.ForbidsPet << '|'
                     << spell.RequiredMainHandEnchant << '|' << spell.RequiredOffHandEnchant << '|'
                     << spell.CooldownGroup << '|' << spell.TargetCreatureTypeMask << '|'
-                    << spell.RequiresGroundTarget << '|' << spell.MinHostileTargetHealthPct << '\n';
+                    << spell.RequiresGroundTarget << '|' << spell.MinHostileTargetHealthPct << '|'
+                    << uint32(spell.RequiredSelfAuraCharges) << '|' << uint32(spell.MaxSelfAuraCharges) << '|'
+                    << spell.MinOwnedTargetAuraRemainingMs << '\n';
     }
     return payload.str();
 }
@@ -168,7 +170,8 @@ std::shared_ptr<DbRotationSnapshot> LoadDbSnapshot(std::string& failureReason)
         "a.min_combo_points, a.max_combo_points, a.min_ready_runes, a.required_shapeshift_form, "
         "a.requires_pet, a.forbids_pet, a.required_main_hand_enchant, a.required_off_hand_enchant, "
         "a.cooldown_group, a.target_creature_type_mask, a.requires_ground_target, "
-        "a.min_hostile_target_health_pct "
+        "a.min_hostile_target_health_pct, a.required_self_aura_charges, "
+        "a.max_self_aura_charges, a.min_owned_target_aura_remaining_ms "
         "FROM bot_rotation_profile p "
         "JOIN bot_rotation_action a ON a.profile_id = p.id "
         "WHERE p.enabled = 1 AND a.enabled = 1 "
@@ -301,6 +304,9 @@ std::shared_ptr<DbRotationSnapshot> LoadDbSnapshot(std::string& failureReason)
         spell.TargetCreatureTypeMask = fields[74].GetUInt32();
         spell.RequiresGroundTarget = fields[75].GetBool();
         spell.MinHostileTargetHealthPct = fields[76].GetFloat();
+        spell.RequiredSelfAuraCharges = fields[77].GetUInt8();
+        spell.MaxSelfAuraCharges = fields[78].GetUInt8();
+        spell.MinOwnedTargetAuraRemainingMs = fields[79].GetUInt32();
 
         static std::set<std::string> const targetSelectors = {
             "enemy", "self", "party", "lowest_ally", "tank", "ground_enemy"
@@ -319,9 +325,14 @@ std::shared_ptr<DbRotationSnapshot> LoadDbSnapshot(std::string& failureReason)
             invalidReasons.insert("invalid_power_range_" + key + "_" + std::to_string(spell.SortOrder));
         if (spell.MinSelfAuraRemainingMs > spell.MaxSelfAuraRemainingMs && spell.MaxSelfAuraRemainingMs)
             invalidReasons.insert("invalid_aura_duration_range_" + key + "_" + std::to_string(spell.SortOrder));
-        if ((spell.RequiredSelfAuraStacks || spell.MaxSelfAuraStacks || spell.MinSelfAuraRemainingMs || spell.MaxSelfAuraRemainingMs)
+        if ((spell.RequiredSelfAuraStacks || spell.MaxSelfAuraStacks
+            || spell.RequiredSelfAuraCharges || spell.MaxSelfAuraCharges || spell.MinSelfAuraRemainingMs || spell.MaxSelfAuraRemainingMs)
             && !spell.RequiredSelfAura)
             invalidReasons.insert("self_aura_gate_without_aura_" + key + "_" + std::to_string(spell.SortOrder));
+        if (spell.RequiredSelfAuraCharges > spell.MaxSelfAuraCharges && spell.MaxSelfAuraCharges)
+            invalidReasons.insert("invalid_aura_charge_range_" + key + "_" + std::to_string(spell.SortOrder));
+        if (spell.MinOwnedTargetAuraRemainingMs && !spell.RequiredOwnedTargetAura)
+            invalidReasons.insert("owned_aura_duration_without_aura_" + key + "_" + std::to_string(spell.SortOrder));
         if (spell.RequiresPet && spell.ForbidsPet)
             invalidReasons.insert("contradictory_pet_gate_" + key + "_" + std::to_string(spell.SortOrder));
         if (spell.RequiresStationary && spell.RequiresMoving)
@@ -677,6 +688,9 @@ std::string BotClassSpecActionProfileStore::DbProfileDumpJson(uint8 classId, std
              << ",\"forbidden_owned_target_aura\":" << spell.ForbiddenOwnedTargetAura
              << ",\"required_self_aura_stacks\":" << uint32(spell.RequiredSelfAuraStacks)
              << ",\"max_self_aura_stacks\":" << uint32(spell.MaxSelfAuraStacks)
+             << ",\"required_self_aura_charges\":" << uint32(spell.RequiredSelfAuraCharges)
+             << ",\"max_self_aura_charges\":" << uint32(spell.MaxSelfAuraCharges)
+             << ",\"min_owned_target_aura_remaining_ms\":" << spell.MinOwnedTargetAuraRemainingMs
              << ",\"min_self_aura_remaining_ms\":" << spell.MinSelfAuraRemainingMs
              << ",\"max_self_aura_remaining_ms\":" << spell.MaxSelfAuraRemainingMs
              << ",\"min_combo_points\":" << uint32(spell.MinComboPoints)

@@ -31,7 +31,7 @@ struct ObjectGuid {uint64 raw=0;uint64 GetRawValue()const{return raw;}uint32 Get
 ObjectGuid const ObjectGuid::Empty{};
 constexpr int UNIT_MOD_CAST_HASTE=2,SUMMON_SLOT_TOTEM_FIRE=0,UNIT_CREATED_BY_SPELL=0,CURRENT_GENERIC_SPELL=0,CURRENT_CHANNELED_SPELL=1,CURRENT_AUTOREPEAT_SPELL=2;
 struct SpellInfo{uint32 Id=12345;};struct Spell{SpellInfo info;SpellInfo const* GetSpellInfo(){return &info;}};
-struct Creature;struct TempSummon;
+struct Creature;struct TempSummon;struct Totem;
 struct Unit{
  ObjectGuid guid;Unit* owner=nullptr;Unit* victim=nullptr;Unit* helper=nullptr;std::set<Unit*> m_Controlled;
  float spellTime=0.8f;float GetFloatValue(int field){return spellTime;}
@@ -39,12 +39,18 @@ struct Unit{
  virtual ~Unit()=default;
  ObjectGuid GetGUID()const{return guid;}Unit* GetVictim(){return victim;}bool IsAlive(){return alive;}
  bool IsValidAttackTarget(Unit* target){return target->valid;}bool IsEngaged(){return engaged;}Unit* getAttackerForHelper(){return engaged?helper:nullptr;}
- Unit* GetOwner(){return owner;}Unit* GetCharmerOrOwner(){return owner;}bool IsTotem(){return totem;}bool IsGuardian(){return guardian;}bool IsPet(){return pet;}bool IsAIEnabled(){return ai;}
+ // Nonvirtual WorldObject accessor resolves UNIT_FIELD_SUMMONEDBY.
+ Unit* GetOwner(){return owner;}Totem* ToTotem();Unit* GetCharmerOrOwner(){return owner;}bool IsTotem(){return totem;}bool IsGuardian(){return guardian;}bool IsPet(){return pet;}bool IsAIEnabled(){return ai;}
  virtual Creature* ToCreature(){return nullptr;}virtual TempSummon* ToTempSummon(){return nullptr;}
  uint32 GetUInt32Value(int){return created;}Spell* GetCurrentSpell(int type){return type==0?current:nullptr;}
 };
 struct Creature:Unit{uint32 entry=0;Creature* ToCreature()override{return this;}uint32 GetEntry(){return entry;}};
 struct TempSummon:Creature{Unit* summoner=nullptr;TempSummon* ToTempSummon()override{return this;}Unit* GetSummoner(){return summoner;}};
+// Native Minion owner is separate from WorldObject owner-GUID lookup.
+// Totem InitStats skips SetMinion, so only nativeOwner is populated.
+struct Minion:TempSummon{Unit* nativeOwner=nullptr;Unit* GetOwner(){return nativeOwner;}};
+struct Totem:Minion{Totem(){totem=true;}};
+Totem* Unit::ToTotem(){return IsTotem()?static_cast<Totem*>(this):nullptr;}
 struct Map{std::map<uint64,Creature*> creatures;Creature* GetCreature(ObjectGuid guid){return creatures.count(guid.raw)?creatures[guid.raw]:nullptr;}};
 struct CharmInfo{uint8 GetCommandState(){return 0;}bool IsCommandAttack(){return false;}};
 struct Pet:Creature{CharmInfo* GetCharmInfo(){return nullptr;}};
@@ -56,7 +62,7 @@ struct CalibrationMetrics{struct DecisionTimelineEntry{
 int main(){
  Player owner;owner.guid.raw=4294967297ULL;Player foreign;foreign.guid.raw=4294967300ULL;
  Unit target;target.guid.raw=99;owner.helper=&target;
- TempSummon fire;fire.guid.raw=500;fire.entry=15439;fire.created=2894;fire.totem=true;fire.owner=&owner;fire.summoner=&owner;
+ Totem fire;fire.guid.raw=500;fire.entry=15439;fire.created=2894;fire.nativeOwner=&owner;fire.summoner=&owner;
  owner.m_SummonSlot[0]=fire.guid;owner.map.creatures[500]=&fire;
  TempSummon guardian;guardian.guid.raw=600;guardian.entry=15438;guardian.created=32982;guardian.guardian=true;guardian.owner=&fire;guardian.summoner=&fire;
  fire.m_Controlled.insert(&guardian); // deliberately absent from player's controlled list
@@ -69,7 +75,7 @@ int main(){
  capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
  fire.m_Controlled.clear();owner.m_Controlled.clear();owner.m_SummonSlot[0]={};owner.victim=nullptr;owner.engaged=false;entry.ElapsedMs=1500;
  capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
- owner.m_SummonSlot[0]=fire.guid;fire.owner=&foreign;fire.m_Controlled.insert(&guardian);entry.ElapsedMs=2000;
+ owner.m_SummonSlot[0]=fire.guid;fire.nativeOwner=&foreign;fire.m_Controlled.insert(&guardian);entry.ElapsedMs=2000;
  capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
  for(float divisor:{0.0f,-1.0f,std::numeric_limits<float>::infinity(),std::numeric_limits<float>::quiet_NaN()}){
   owner.spellTime=divisor;capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
@@ -99,7 +105,8 @@ int main(){
     assert idle['foreign_guardians_excluded']==1
     guardian=idle['guardians'][0]
     assert guardian['guid']==600 and guardian['runtime_type']=='guardian' and guardian['ai_enabled']
-    assert guardian['owner_chain']==guardian['summoner_chain']==[500,4294967297]
+    assert guardian['owner_chain']==[500]  # generic accessor stops at the totem
+    assert guardian['summoner_chain']==[500,4294967297]
     assert guardian['victim_guid']==0 and not guardian['victim_valid']
     assert guardian['current_generic_spell']==0
     assert len(active['guardians'])==1  # duplicate player/totem membership deduplicated
