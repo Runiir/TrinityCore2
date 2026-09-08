@@ -1,5 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
+#include "Bots/BotServerVehicleExitLanding.h"
 
 #include "GameTime.h"
 #include "MotionMaster.h"
@@ -26,6 +28,31 @@ uint64 MovementExecutorBotGuid(Player* bot)
 uint32 MovementExecutorMapId(Player* bot)
 {
     return bot ? bot->GetMapId() : 0;
+}
+
+void BindVehicleExitGroundReceipt(
+    BotServerVehicleExitLanding::Episode& episode, Player* bot,
+    std::uint64_t receiptId)
+{
+    if (!bot || !episode.ExitPending || !receiptId)
+        return;
+
+    BotWorldMovement::NativeMovementProgressObservation const progress =
+        BotWorldMovement::MovementProgressDiagnostics().ForReceipt(receiptId);
+    BotServerVehicleExitLanding::ReceiptBindingObservation candidate;
+    candidate.ActualPointSubmission = true;
+    candidate.ProgressReceiptArmed = progress.Available
+        && progress.ReceiptId == receiptId;
+    candidate.ReceiptId = progress.ReceiptId;
+    candidate.BotGuid = progress.BotGuid;
+    candidate.MapId = progress.MapId;
+    candidate.InstanceId = progress.InstanceId;
+    candidate.ArmedAtMs = progress.ArmedAtMs;
+    candidate.ScopeAvailable = episode.ExitScopeAvailable;
+    candidate.ReceiptScope = progress.Scope;
+    candidate.SplineInitialized = progress.LaunchedSplineInitialized;
+    candidate.SplineId = progress.LaunchedSplineId;
+    BotServerVehicleExitLanding::BindGroundingReceipt(episode, candidate);
 }
 }
 
@@ -222,6 +249,10 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
                 splineInitialized,
                 splineInitialized ? bot->movespline->GetId() : 0,
                 splineFinal.x, splineFinal.y, splineFinal.z, nowMs);
+            if (state.ServerProvisioned && generatePath && !aerialGhostRecovery)
+                BindVehicleExitGroundReceipt(
+                    state.ServerVehicleExitLanding, bot,
+                    plan.LaunchReceiptId);
         }
     };
     if (plan.DynamicTarget)

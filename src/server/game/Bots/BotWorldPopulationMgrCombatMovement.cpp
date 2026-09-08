@@ -191,11 +191,17 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         return false;
 
     // Ordinary ranged parasite assistance is a bounded single-target cast
-    // opportunity.  Keep every profile range-recovery caller from turning the
-    // exact support target into a chase, including spell-specific LOS and
-    // out-of-range feedback after the map-level preview.
-    if (state.MagmawParasiteCombat.IsSupportTarget(bot->GetGUID(),
-            reference->GetGUID()))
+    // opportunity. Permit only the existing minimum-range retreat for an
+    // exact support target; missing/zero-range actions, legal-band or
+    // max-range targets, LOS-only repair, and forced repositioning remain
+    // closed before any native path geometry is considered.
+    bool const supportTarget = state.MagmawParasiteCombat.IsSupportTarget(
+        bot->GetGUID(), reference->GetGUID());
+    if (supportTarget
+        && (!action || action->MinRange <= 0.0f
+            || bot->GetExactDist(reference) >= action->MinRange
+            || !bot->IsWithinLOSInMap(reference)
+            || forceRangedReposition))
         return false;
 
     auto patrolCombatPointSafe = [&](float x, float y, float z)

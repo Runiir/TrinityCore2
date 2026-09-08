@@ -2,64 +2,64 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:roster_execution_review",
   "owner_skill": "raid-performance-loop",
-  "classification": "implementation_pending_live_verification",
+  "classification": "ready_for_build",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "5a7e61f9ced99a77382f8a759b885dcd3f68a4b6",
+  "observed_at_commit": "86d37c0a449d19b1123d65c6caf5d52691626527",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
-  "evidence_contract_change": false,
-  "gate_state": "Six bounded repairs independently approved; fixtures pass; overall roster performance remains unresolved.",
+  "evidence_contract_change": true,
+  "gate_state": "Vehicle exit, support range and native/Python event retention independently approved for one combined build and matched capture.",
   "first_broken_edge": {
-    "id": "combat_facing_replaces_admitted_spline",
-    "stage": "native_execution",
+    "id": "server_bot_vehicle_exit_falling_flag",
+    "stage": "native_vehicle_exit_landing_completion",
     "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Forced SetFacingToObject replaces admitted hazard spline during compatible instant combat action; joined class/role review also proved five independent setup/eligibility/measurement defects.",
-    "review_state": "independently_approved_pending_live",
+    "cause": "Vehicle egress enables gravity and marks server-controlled Player falling; later native ground POINT completion leaves FALLING set, blocking hardcasts.",
+    "review_state": "implementation_approved_native_acceptance_pending",
     "counterexample": {
-      "observed_at_ms": 1788864560709,
-      "actor_guid": 30009,
-      "candidate": "pillar_evade plus Arcane Shot 3044",
-      "native_spline_before": 13977,
-      "native_spline_after": 13978,
-      "outcome": "native_spline_replaced at unchanged position after 105ms"
+      "actor_guid": 30008,
+      "ground_receipt_id": 637,
+      "ground_endpoint_reached_at_ms": 1788870621545,
+      "stale_diagnosis_at_ms": 1788870651551,
+      "native_current_motion_type": 0,
+      "native_active_motion_type": 19,
+      "native_spline_finalized": true,
+      "is_moving": true,
+      "no_progress_ms": 30002
     }
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "73e8a9a06742f14b56d1ec77cdf8e194b6659ebec3ea10bca5278919d5e1519e"
+    "sha256": "93a98b356df6914f03f8eeace7c305d25d4af4bc55a25bbd88e90eb2de7d35a7"
   },
   "scope_lock": {
-    "objective": "One reviewed batch: preserve combat movement, exact DPS glyphs, native moving-spell permission, friendly native range authority, generic tank ownership, hostile damage accounting.",
+    "objective": "Build and validate reviewed vehicle-exit landing, support minimum-range retreat, and incremental event retention. No class coefficient changes.",
     "owned_files": [
-      "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
-      "experiments/configs/validation_provisioning_cata_001.json",
-      "src/server/game/Bots/BotActionExecutor.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgr.h",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatMetrics.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatSupport.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrPlanningContracts.h",
+      "src/server/game/Bots/BotServerVehicleExitLanding.h",
+      "src/server/game/Bots/BotWorldPopulationMgrBotState.h",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotPreparation.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrDiagnosis.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatLog.cpp",
       "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp",
-      "tools/bot_ml/analyze_combat_log.py",
+      "src/server/scripts/Commands/cs_botauto.cpp",
+      "tools/bot_ml/combat_log_event_stream.py",
       "tools/bot_ml/run_live_bot_validation.py",
-      "tools/raid_program/capture_progress.py",
-      "tools/raid_program/shared_instance_validation.py",
-      "src/server/game/Bots/BotCastWhileMoving.h",
-      "src/server/game/Bots/BotCombatDamageAttribution.h"
+      "tools/raid_program/capture_live_run.py",
+      "tools/raid_program/capture_finalization.py"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Admitted hazard spline survives compatible instant spell/auto-attack and yields measured native progress; riders resume cast-time submissions after native mechanic release.",
-    "Exact glyph readback includes Elemental950; covered moving Lightning Bolt submits and lands without clearing the active path.",
-    "Friendly Holy Shock reaches native execution beyond the former hostile-range gate; true native failures remain observable.",
-    "Generic taunts do not target another live cohort tank; pickup and explicit swap behavior remain intact.",
-    "Hostile metrics exclude friendly/self damage while retaining raw callbacks and hard negatives; friendly-only damage never advances watchdog progress.",
-    "Report all ten actors DPS/HPS, movement, targets, decisions, deaths, route, terminal and cleanup; no rough raid DPS threshold or coefficient claim."
+    "An observed vehicle exit followed by an exact native ground POINT receipt clears only stale FALLING/FALLING_FAR after current identity, endpoint, floor and idle-motion checks.",
+    "No mutation during active, airborne, falling-spline, vehicle, transport, flight or identity-mismatched movement.",
+    "Fireball and Unstable Affliction resume after landing; live spline preservation and all other accepted repairs remain intact.",
+    "All-bot DPS/HPS, deaths, movement, targets, route and typed terminal retained; no overall throughput acceptance from a single repaired edge.",
+    "Exact support target below action minimum range emits existing range candidate and completes native retreat without bypassing hazard arbitration.",
+    "Incremental native events retain exact identity and sequence coverage through final full watermark; final full aggregates remain the DPS/HPS authority."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -69,8 +69,8 @@
     "fixed_success_timer_seconds": null
   },
   "ready_for_build": true,
-  "ready_for_live_verification": true,
-  "next_action": "Commit the reviewed batch, verify frozen assets, build worldserver once, then run one canonical completion-watchdog canary and review all actors.",
+  "ready_for_live_verification": false,
+  "next_action": "Complete bounded implementation and independent review, join separate proven changes, then build once and run one canonical canary. No unchanged replay.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -86,32 +86,31 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "5a7e61f9ced99a77382f8a759b885dcd3f68a4b6",
-    "boss_clear": true,
-    "terminal_reason": "clear",
+    "source_commit": "86d37c0a449d19b1123d65c6caf5d52691626527",
+    "boss_clear": false,
+    "terminal_reason": "semantic_stall",
     "cleanup_passed": true,
     "training_eligible": false,
-    "recorded_casualties": 2,
-    "boss_fight_casualties": 1,
+    "recorded_casualties": 12,
+    "boss_fight_casualties": 10,
     "all_bots_recovered_before_cleanup": true,
-    "reported_party_dps": 98206.508,
-    "hostile_only_party_dps": 96435.585,
-    "party_hps": 16876.141,
-    "originated_damage_seconds": 311,
+    "hostile_only_party_dps": 67616.279,
+    "party_hps": 12992.74,
+    "combat_duration_sec": 430,
+    "originated_damage_seconds": 428,
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_5a7e61f9ce_20260908.tar.gz.dvc"
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_86d37c0a44_20260908.tar.gz.dvc"
   },
   "latest_analysis": {
-    "review_directory": "magmaw-development-5a7e61f9ce/dps-review",
-    "publication_state": "remote_verified_exact_raw_evicted",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_5a7e61f9ce_20260908.tar.gz.dvc"
+    "review_directory": "magmaw-development-86d37c0a44/dps-review",
+    "publication_state": "remote_verified_exact_payloads_evicted"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approve",
-    "scope": "Joined six-repair batch, with separate independent implementation receipts in closed run dps-review directory.",
+    "scope": "Vehicle exit, support range and native/Python incremental event retention. Astra low independently audited gameplay and completed capture implementation.",
     "live_verified": false
   }
 }

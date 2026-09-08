@@ -386,12 +386,15 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
     combat_log_payloads = [
         row["payload"] for row in normalized_rows
         if row.get("action") in {
+            "botauto_combatlog", "botauto_combatlog_delta",
             "botauto_combatlog_chunk", "botauto_combatlog_complete",
         }
         and isinstance(row.get("payload"), dict)
     ]
     combat_log_transport = combat_log_transport_status(combat_log_payloads)
-    combat_log = combined_combat_log(combat_log_payloads)
+    combat_log = combined_combat_log(
+        combat_log_payloads, expected_status=stable[0] if stable else None,
+    )
     combat_analysis = analyze_combat_log(combat_log) if combat_log else {}
     combat_log_transport["gate_passed"] = bool(
         combat_log_transport.get("complete_marker")
@@ -744,6 +747,10 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
         "diagnose_observed": bool(diagnoses),
         "trace_observed": bool(traces),
         "combat_log_transport": combat_log_transport,
+        "combat_log_event_stream": (
+            combat_log.get("event_stream_receipt", {})
+            if isinstance(combat_log, dict) else {}
+        ),
         "combat_analysis": combat_analysis,
         "required_telemetry_envelopes": telemetry_envelopes,
         "profile_selection_observed": profile_selection_accepted,

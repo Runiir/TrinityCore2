@@ -220,6 +220,7 @@ std::string BotWorldPopulationMgr::GetCohortIsolationContractJson()
     bool foreignReleaseRejected = !ReleaseBotGuid(syntheticGuid);
     _selectedCohortId = ProbeA;
     bool ownerReleaseAccepted = ReleaseBotGuid(syntheticGuid);
+
     _selectedCohortId = previous;
 
     std::map<std::string, bool> checks = {
@@ -248,6 +249,7 @@ std::string BotWorldPopulationMgr::GetCohortIsolationContractJson()
                 MaxActiveCohorts, 2) },
     };
     bool passed = std::all_of(checks.begin(), checks.end(), [](auto const& check) { return check.second; });
+
     first.ElapsedMs = 0;
     second.ElapsedMs = 0;
     first.CalibrationStartedMs = 0;
@@ -671,6 +673,19 @@ std::string BotWorldPopulationMgr::GetCombatLogJsonForCohort(std::string const& 
     std::string previous = _selectedCohortId;
     _selectedCohortId = cohortId;
     std::string result = GetCombatLogJson();
+    _selectedCohortId = previous;
+    return result;
+}
+
+std::string BotWorldPopulationMgr::GetCombatLogDeltaJsonForCohort(
+    std::string const& cohortId, uint64 cursor, uint32 limit) const
+{
+    if (!FindCohort(cohortId))
+        return UnknownCohortJson("botauto_combatlog_delta", cohortId);
+
+    std::string previous = _selectedCohortId;
+    _selectedCohortId = cohortId;
+    std::string result = GetCombatLogDeltaJson(cursor, limit);
     _selectedCohortId = previous;
     return result;
 }

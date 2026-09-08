@@ -205,6 +205,7 @@ ConfigureScriptLoader("static" SCRIPT_MODULE_PRIVATE_SCRIPTLOADER OFF ${STATIC_S
 
 list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_chainwielder_owner_checkpoint.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_botauto.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_healerbot.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_trace_transport_test.cpp)
 

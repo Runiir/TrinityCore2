@@ -393,6 +393,12 @@
 
     struct CombatLogEvent
     {
+        // Sequence is assigned at emission time, before the bounded ring can
+        // retain or evict the event.  Labels describe that emission and are
+        // intentionally separate from the stream identity.
+        uint64 EventSequence = 0;
+        uint64 ExperimentId = 0;
+        uint64 RunId = 0;
         uint64 TimestampMs = 0;
         uint64 RouteGeneration = 0;
         std::string RouteNodeId;

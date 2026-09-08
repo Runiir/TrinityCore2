@@ -1,4 +1,5 @@
 import ast
+import base64
 from dataclasses import replace
 import hashlib
 import json
@@ -1181,6 +1182,285 @@ def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, mon
     assert b"botauto status\n" in process.stdin.getvalue()
 
 
+def test_execute_capture_run_retains_native_combat_event_delta_before_terminal_full(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    """Exercise the production capture loop with a split delta transfer."""
+
+    binary = tmp_path / "worldserver"
+    config = tmp_path / "worldserver.conf"
+    server_log = tmp_path / "worldserver.log"
+    binary.write_bytes(b"fixture")
+    cache_path = tmp_path / "build/CMakeCache.txt"
+    cache_path.parent.mkdir(parents=True)
+    cache_path.write_bytes(b"fixture")
+    config.write_bytes(b"fixture")
+    args = SimpleNamespace(
+        trace_transport_smoke=False,
+        telemetry_timeout_sec=2,
+        observe_sec=0.8,
+        status_interval_sec=0.05,
+        diagnose_interval_sec=0.15,
+        trace_interval_sec=0.05,
+        required_stable_statuses=2,
+        resource_sample_interval_sec=5.0,
+        max_repeated_decision_count=20,
+        max_death_loop_count=3,
+        semantic_stall_min_samples=12,
+        semantic_stall_sec=300,
+        startup_timeout_sec=180,
+        chainwielder_checkpoint_actor_guid=None,
+    )
+    setup = CaptureSetup(
+        runtime_asset_closure={"complete": True, "status": "runtime_asset_closure_complete"},
+        args=args,
+        binary=binary,
+        config=config,
+        output=tmp_path / "capture.json",
+        worktree=tmp_path,
+        profile_name="stonecore_5n",
+        scenario_id="stonecore_5n",
+        raw_output=tmp_path / "capture.raw.jsonl",
+        server_log_output=server_log,
+        recurrence_admission=None,
+        checkpoint_arm_command=None,
+        preflight={"passed": True, "reasons": []},
+        identity_before={"clean": True},
+        runtime_assets={"route_partition": "stonecore_5n"},
+        controller_route_hold_scheduler=None,
+        drudge_observed=False,
+        drudge_required=False,
+        drudge_navmesh_preflight={"required": False, "all_passed": None},
+        drudge_frozen_anchors={},
+        build_provenance={
+            "valid": True,
+            "artifact_snapshots": {
+                "accepted_final": snapshot_receipt_bound_artifacts(binary, tmp_path),
+            },
+        },
+    )
+
+    def status(sequence: int) -> dict[str, object]:
+        return {
+            "ok": True,
+            "action": "botauto_status",
+            "cohort_id": "raid",
+            "server_epoch": 88,
+            "attempt_id": 4,
+            "profile_generation": 2,
+            "profile_content_hash": "profile-hash",
+            "sequence": sequence,
+            "raid_runtime": {"active": True},
+        }
+
+    def delta_payload(cursor: int) -> dict[str, object]:
+        return {
+            "ok": True,
+            "action": "botauto_combatlog_delta",
+            "combat_log_schema_version": 3,
+            "cohort_id": "raid",
+            "server_epoch": 88,
+            "attempt_id": 4,
+            "combat_log_epoch": 1,
+            "profile_generation": 2,
+            "profile_content_hash": "profile-hash",
+            "experiment_id": 7,
+            "run_id": 49,
+            "event_count_at_export": 1,
+            "cursor_before": cursor,
+            "cursor_after": 1 if cursor == 0 else cursor,
+            "gap": False,
+            "recent_events": ([
+                {"event_sequence": 1, "kind": "damage", "amount": 1},
+            ] if cursor == 0 else []),
+        }
+
+    def frames(payload: dict[str, object], chunk_size: int = 31) -> list[dict[str, object]]:
+        raw = json.dumps(payload, separators=(",", ":")).encode()
+        parts = [raw[index : index + chunk_size] for index in range(0, len(raw), chunk_size)]
+        return [
+            {
+                "ok": True,
+                "action": "botauto_combatlog_chunk",
+                "cohort_id": "raid",
+                "combat_log_chunk_schema_version": 1,
+                "sequence": index,
+                "chunk_count": len(parts),
+                "encoding": "base64",
+                "data": base64.b64encode(part).decode(),
+            }
+            for index, part in enumerate(parts)
+        ] + [{
+            "ok": True,
+            "action": "botauto_combatlog_complete",
+            "cohort_id": "raid",
+            "combat_log_chunk_schema_version": 1,
+            "chunk_count": len(parts),
+            "total_bytes": len(raw),
+        }]
+
+    class FakeProcess:
+        pid = 4322
+
+        def __init__(self):
+            self.returncode = None
+            self.output = None
+            self.status_sequence = 0
+            self.first_delta_frames: list[dict[str, object]] | None = None
+            self.commands: list[str] = []
+            self.stdin = self.RecordingStdin(self)
+
+        class RecordingStdin(io.BytesIO):
+            def __init__(self, owner):
+                super().__init__()
+                self.owner = owner
+
+            def write(self, value):
+                result = super().write(value)
+                for command in value.decode().splitlines():
+                    if command:
+                        self.owner.on_command(command)
+                return result
+
+        def emit(self, row: dict[str, object]) -> None:
+            self.output.write((json.dumps(row) + "\n").encode())
+            self.output.flush()
+
+        def on_command(self, command: str) -> None:
+            self.commands.append(command)
+            if command == "botauto status":
+                self.status_sequence += 1
+                self.emit(status(self.status_sequence))
+                if self.first_delta_frames:
+                    for row in self.first_delta_frames:
+                        self.emit(row)
+                    self.first_delta_frames = None
+            elif command.startswith("botauto combatlog raid delta "):
+                cursor = int(command.split()[4])
+                rows = frames(delta_payload(cursor))
+                if cursor == 0 and self.first_delta_frames is None:
+                    self.emit(rows[0])
+                    self.first_delta_frames = rows[1:]
+                else:
+                    for row in rows:
+                        self.emit(row)
+            elif command.startswith("botauto diagnose"):
+                self.emit({"ok": True, "action": "botauto_diagnose", "cohort_id": "raid"})
+            elif command.startswith("botauto trace"):
+                self.emit({"ok": True, "action": "botauto_trace", "cohort_id": "raid", "bots": []})
+            elif command.startswith("botauto combatlog raid"):
+                # A late delta must never satisfy the terminal full gate.
+                for row in frames(delta_payload(1)):
+                    self.emit(dict(row, export_kind="delta", export_id=100))
+                self.emit({
+                    "ok": True, "action": "botauto_combatlog_complete",
+                    "cohort_id": "raid", "combat_log_chunk_schema_version": 1,
+                    "chunk_count": 1, "total_bytes": 0, "export_kind": "full",
+                    "export_id": 101,
+                })
+
+        def poll(self):
+            return self.returncode
+
+        def wait(self, timeout=None):
+            self.returncode = 0
+            return 0
+
+    process = FakeProcess()
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.subprocess.Popen",
+        lambda *args, **kwargs: (setattr(process, "output", kwargs["stdout"]) or process),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.wait_for_prompt",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.collect_log_observations",
+        lambda cursor, **kwargs: cursor.read_new_observations(),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.time.sleep",
+        lambda seconds: None,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.process_resource_sample",
+        lambda pid, **kwargs: {"pid": pid, **kwargs},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.terminal_preflight_failure_reason",
+        lambda status, **kwargs: (None, []),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.accepted_foundation_status",
+        lambda status, **kwargs: (status.get("action") == "botauto_status", []),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.terminal_runtime_failure_reason",
+        lambda status, **kwargs: (None, []),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.observe_capture_watchdog",
+        lambda *args, **kwargs: {"detected": False},
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.observe_telemetry_freshness",
+        lambda *args, **kwargs: [],
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.semantic_progress_signature",
+        lambda *args, **kwargs: ("progress",),
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.observe_monotonic_semantic_progress",
+        lambda *args, **kwargs: True,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.ready_for_native_readycheck",
+        lambda status: False,
+    )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.validate_forced_evidence_bundle",
+        lambda *args, **kwargs: {
+            "gate_passed": True, "missing_channels": [], "rejections": [],
+        },
+    )
+    def validate_full_only(rows, cohort_id):
+        assert all(row.get("export_kind") == "full" for row in rows)
+        return {"gate_passed": bool(rows), "rejections": []}
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.validate_forced_combat_log_bundle",
+        validate_full_only,
+    )
+    def fake_shutdown(child, timeout_seconds):
+        child.returncode = 0
+        return {
+            "commands_sent": ["botauto stop", "botauto status", "server exit"],
+            "error": None, "operator_interrupted": False,
+        }
+
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.bounded_native_shutdown",
+        fake_shutdown,
+    )
+
+    result = execute_capture_run(setup)
+
+    delta_commands = [
+        command for command in process.commands
+        if command.startswith("botauto combatlog raid delta ")
+    ]
+    assert delta_commands[0] == "botauto combatlog raid delta 0 4096"
+    assert len([command for command in delta_commands if " delta 0 " in command]) == 1
+    assert any("botauto combatlog raid delta 1 4096" == command for command in delta_commands)
+    full_index = process.commands.index("botauto combatlog raid")
+    assert process.commands.index(delta_commands[-1]) < full_index
+    assert result.forced_evidence_report["combat_log_delta"]["requested"] is True
+    assert result.process_return_code == 0
+
+
 @pytest.mark.parametrize("artifact", ["binary", "cmake_cache"])
 def test_execute_capture_run_rejects_launch_artifact_drift_before_popen(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, artifact: str,
@@ -1445,7 +1725,7 @@ def test_finalize_capture_writes_golden_report_and_keeps_abort_precedence(
     monkeypatch.setattr(
         capture_finalization,
         "combined_combat_log",
-        lambda payloads: "combat-log",
+        lambda payloads, **kwargs: "combat-log",
     )
     monkeypatch.setattr(
         capture_finalization,

@@ -13,6 +13,7 @@
 #include "ObjectAccessor.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
+#include "Bots/BotServerVehicleExitLanding.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.h"
 #include "Pet.h"
 #include "Player.h"
@@ -43,6 +44,144 @@ char const* RuntimeModeName(BotWorldRuntimeMode mode)
         case BotWorldRuntimeMode::ManualExperiment: return "manual_experiment";
     }
     return "unknown";
+}
+
+std::string VehicleExitJsonEscape(std::string const& value)
+{
+    std::string escaped;
+    escaped.reserve(value.size());
+    for (char const character : value)
+    {
+        switch (character)
+        {
+            case '"': escaped += "\\\""; break;
+            case '\\': escaped += "\\\\"; break;
+            case '\n': escaped += "\\n"; break;
+            case '\r': escaped += "\\r"; break;
+            case '\t': escaped += "\\t"; break;
+            default: escaped += character; break;
+        }
+    }
+    return escaped;
+}
+
+std::string BuildServerVehicleExitLandingJson(
+    BotWorldPopulationMgrBotState::WorldBotState const& state,
+    Player const* bot, std::uint64_t nowMs)
+{
+    BotServerVehicleExitLanding::Episode const& episode =
+        state.ServerVehicleExitLanding;
+    MotionMaster const* motion = bot ? bot->GetMotionMaster() : nullptr;
+    std::uint32_t const flags = bot ? bot->GetUnitMovementFlags() : 0;
+    std::uint64_t const vehicleGuid = bot && bot->GetVehicleBase()
+        ? bot->GetVehicleBase()->GetGUID().GetRawValue() : 0;
+    std::uint64_t const transportGuid = bot && bot->GetTransport()
+        ? bot->GetTransport()->GetTransportGUID().GetRawValue() : 0;
+    std::uint32_t const currentMotion = motion
+        ? std::uint32_t(motion->GetCurrentMovementGeneratorType())
+        : std::uint32_t(MAX_MOTION_TYPE);
+    std::uint32_t const activeMotion = motion
+        ? std::uint32_t(motion->GetMotionSlotType(MOTION_SLOT_ACTIVE))
+        : std::uint32_t(MAX_MOTION_TYPE);
+    std::uint32_t const controlledMotion = motion
+        ? std::uint32_t(motion->GetMotionSlotType(MOTION_SLOT_CONTROLLED))
+        : std::uint32_t(MAX_MOTION_TYPE);
+    std::uint64_t const receiptId = episode.BoundGroundingReceiptId
+        ? episode.BoundGroundingReceiptId : episode.LastReceiptId;
+    BotWorldMovement::NativeMovementProgressObservation const progress =
+        receiptId
+        ? BotWorldMovement::MovementProgressDiagnostics().ForReceipt(receiptId)
+        : BotWorldMovement::NativeMovementProgressObservation();
+
+    std::ostringstream json;
+    json << "{\"vehicle_observed\":"
+         << (episode.VehicleObserved ? "true" : "false")
+         << ",\"vehicle_occupied_last_tick\":"
+         << (episode.VehicleOccupiedLastTick ? "true" : "false")
+         << ",\"exit_pending\":"
+         << (episode.ExitPending ? "true" : "false")
+         << ",\"observed_vehicle_guid\":"
+         << episode.ObservedVehicleGuid
+         << ",\"exit_observed_at_ms\":" << episode.ExitObservedAtMs
+         << ",\"exit_bot_guid\":" << episode.ExitBotGuid
+         << ",\"exit_map_id\":" << episode.ExitMapId
+         << ",\"exit_instance_id\":" << episode.ExitInstanceId
+         << ",\"exit_scope\":{\"available\":"
+         << (episode.ExitScopeAvailable ? "true" : "false")
+         << ",\"attempt_id\":" << episode.ExitScope.AttemptId
+         << ",\"wipe_generation\":" << episode.ExitScope.WipeGeneration
+         << ",\"route_generation\":" << episode.ExitScope.RouteGeneration
+         << ",\"map_id\":" << episode.ExitScope.MapId
+         << ",\"instance_id\":" << episode.ExitScope.InstanceId << "}"
+         << ",\"bound_grounding_receipt_id\":"
+         << episode.BoundGroundingReceiptId
+         << ",\"bound_grounding_receipt_armed_at_ms\":"
+         << episode.BoundGroundingReceiptArmedAtMs
+         << ",\"last_evaluation\":{\"timestamp_ms\":"
+         << episode.LastReconciliationAtMs
+         << ",\"observed_at_ms\":" << episode.LastObservedAtMs
+         << ",\"count\":" << episode.EvaluationCount
+         << ",\"reason\":\""
+         << VehicleExitJsonEscape(episode.LastReason) << "\""
+         << ",\"flags_before\":" << episode.LastFlagsBefore
+         << ",\"flags_after\":" << episode.LastFlagsAfter
+         << ",\"receipt_id\":" << episode.LastReceiptId
+         << ",\"receipt_armed_at_ms\":" << episode.LastReceiptArmedAtMs
+         << ",\"receipt_map_id\":" << episode.LastReceiptMapId
+         << ",\"receipt_instance_id\":" << episode.LastReceiptInstanceId
+         << ",\"terminal\":"
+         << (episode.LastReceiptTerminal ? "true" : "false")
+         << ",\"receipt_terminal_outcome\":\""
+         << VehicleExitJsonEscape(episode.LastTerminalOutcome) << "\""
+         << ",\"terminal_sample\":{\"available\":"
+         << (episode.LastTerminalSampleAvailable ? "true" : "false")
+         << ",\"alive\":"
+         << (episode.LastTerminalActorAlive ? "true" : "false")
+         << ",\"in_world\":"
+         << (episode.LastTerminalActorInWorld ? "true" : "false")
+         << ",\"endpoint_reached\":"
+         << (episode.LastTerminalEndpointReached ? "true" : "false")
+         << ",\"floor_valid\":"
+         << (episode.LastTerminalFloorValid ? "true" : "false")
+         << ",\"platform_compatible\":"
+         << (episode.LastTerminalPlatformCompatible ? "true" : "false")
+         << "}"
+         << ",\"current_endpoint_matches\":"
+         << (episode.LastCurrentEndpointMatches ? "true" : "false")
+         << ",\"spline_finalized\":"
+         << (episode.LastSplineFinalized ? "true" : "false")
+         << ",\"spline_falling\":"
+         << (episode.LastSplineFalling ? "true" : "false")
+         << ",\"current_motion_type\":" << episode.LastCurrentMotionType
+         << ",\"active_motion_type\":" << episode.LastActiveMotionType
+         << ",\"controlled_motion_type\":"
+         << episode.LastControlledMotionType << "}"
+         << ",\"current\":{\"vehicle_guid\":" << vehicleGuid
+         << ",\"transport_guid\":" << transportGuid
+         << ",\"movement_flags\":" << flags
+         << ",\"gravity_disabled\":"
+         << (bot && bot->IsGravityDisabled() ? "true" : "false")
+         << ",\"native_flight\":"
+         << (bot && (bot->IsInFlight() || bot->IsFlying()) ? "true" : "false")
+         << ",\"active_path\":"
+         << (state.ActivePathValid ? "true" : "false")
+         << ",\"movement_lease_active\":"
+         << (state.MovementLease.MovementOwner
+                    != BotMovementArbitration::Owner::None
+                && state.MovementLease.ExpiresAtMs > nowMs ? "true" : "false")
+         << ",\"current_motion_type\":" << currentMotion
+         << ",\"active_motion_type\":" << activeMotion
+         << ",\"controlled_motion_type\":" << controlledMotion
+         << ",\"spline_finalized\":"
+         << (!bot || !bot->movespline || bot->movespline->Finalized()
+                ? "true" : "false")
+         << ",\"spline_falling\":"
+         << (bot && bot->movespline && bot->movespline->isFalling()
+                ? "true" : "false") << "}"
+         << ",\"movement_receipt\":"
+         << BotWorldMovement::MovementProgressObservationJson(progress)
+         << "}";
+    return json.str();
 }
 }
 
@@ -527,6 +666,8 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"paladin_blessing_ready\",\"value\":" << (paladinReady({ 20217, 1126 }) ? "true" : "false") << "},"
          << "{\"name\":\"paladin_divine_plea_ready\",\"value\":" << (paladinReady({ 54428 }) ? "true" : "false") << "}"
          << "]"
+         << ",\"server_vehicle_exit_landing\":"
+         << BuildServerVehicleExitLandingJson(state, bot, nowMs)
          << ",\"next_expected_action\":\"" << JsonEscape(diagnosis.NextExpectedAction) << "\""
          << ",\"suggested_investigation\":\"" << JsonEscape(diagnosis.SuggestedInvestigation) << "\"}";
     return json.str();
@@ -576,6 +717,8 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << BotWorldMovement::MovementProgressPublicationJson(
                 BotWorldMovement::MovementProgressDiagnostics().RecentForBot(
                     state.Guid.GetCounter()))
+         << ",\"server_vehicle_exit_landing\":"
+         << BuildServerVehicleExitLandingJson(state, bot, nowMs)
          << ",\"magmaw_personal_parasite_escape\":"
          << BotEncounter::BuildMagmawPersonalParasiteEscapeDiagnosticsJson(
                 state.MagmawPersonalParasiteEscape,

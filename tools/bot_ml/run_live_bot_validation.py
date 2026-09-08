@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import base64
 import contextlib
+from copy import deepcopy
 import functools
 import hashlib
 import html
@@ -24,6 +25,13 @@ import re
 
 try:
     from .analyze_combat_log import analyze_combat_log
+    from .combat_log_event_stream import (
+        CombatLogEventStream,
+        combat_log_identity,
+        combat_log_profile_context,
+        is_full_combat_log_payload,
+        merge_event_rows,
+    )
     from .audit_role_efficiency import build_audit
     from .batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
     from .build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
@@ -40,6 +48,13 @@ try:
     from .phase8_reference_conditions import load_reference_request_binding
 except ImportError:
     from analyze_combat_log import analyze_combat_log
+    from combat_log_event_stream import (
+        CombatLogEventStream,
+        combat_log_identity,
+        combat_log_profile_context,
+        is_full_combat_log_payload,
+        merge_event_rows,
+    )
     from audit_role_efficiency import build_audit
     from batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
     from build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
@@ -2042,11 +2057,35 @@ def combat_log_attempt_status(
 
 
 def combat_log_transport_status(payloads: list[dict[str, Any]]) -> dict[str, Any]:
-    attempts = combat_log_transport_attempts(payloads)
+    # New native exports carry an attempt identity even when an earlier delta
+    # was abandoned without a completion marker. Keep legacy framing readable.
+    tagged = [row for row in payloads if row.get("export_id") is not None]
+    if tagged:
+        grouped: dict[int, list[dict[str, Any]]] = {}
+        for row in tagged:
+            export_id = row.get("export_id")
+            if isinstance(export_id, int) and not isinstance(export_id, bool) and export_id > 0:
+                grouped.setdefault(export_id, []).append(row)
+        attempts = []
+        for rows in grouped.values():
+            if not any(row.get("export_kind") == "full" for row in rows):
+                continue
+            chunks = [row for row in rows if row.get("action") == "botauto_combatlog_chunk"]
+            completion = next((row for row in reversed(rows)
+                if row.get("action") == "botauto_combatlog_complete"), {})
+            attempts.append((chunks, completion))
+    else:
+        attempts = combat_log_transport_attempts(payloads)
     if not attempts:
         return combat_log_attempt_status([], {})
     statuses = [combat_log_attempt_status(chunks, completion)
         for chunks, completion in attempts]
+    if tagged:
+        for status, (chunks, completion) in zip(statuses, attempts):
+            decoder = CombatLogEventStream()
+            decoder.observe_rows([*chunks, completion])
+            if status["reassembled"] and not decoder.decoded_exports:
+                status.update(reassembled=False, reason="full_payload_invalid")
     selected = next(
         (status for status in reversed(statuses) if status["reassembled"]),
         statuses[-1],
@@ -2064,38 +2103,126 @@ def combat_log_transport_status(payloads: list[dict[str, Any]]) -> dict[str, Any
     return selected
 
 
-def combined_combat_log(payloads: list[dict[str, Any]]) -> dict[str, Any]:
-    direct = next(
-        (
-            row
-            for row in reversed(payloads)
-            if row.get("combat_log_schema_version") or row.get("action") == "botauto_combatlog"
-        ),
-        {},
-    )
-    if direct:
-        return direct
+def combined_combat_log(
+    payloads: list[dict[str, Any]], *, expected_status: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    # The same chunk transport carries both full snapshots and event-only
+    # deltas. Decode it once so a delta completion cannot be mistaken for an
+    # aggregate export by the legacy chunk-attempt helper above.
+    stream = CombatLogEventStream()
+    if expected_status is not None:
+        stream.bind_identity(expected_status)
+    stream.observe_rows(payloads)
+    full_exports = [
+        row for row in stream.decoded_exports
+        if isinstance(row, dict) and is_full_combat_log_payload(row)
+    ]
+    if expected_status is not None:
+        expected_identity = combat_log_identity(expected_status)
+        full_exports = [row for row in full_exports
+            if all(combat_log_identity(row)[field] == expected_identity[field]
+                for field in ("cohort_id", "server_epoch", "attempt_id"))
+            and combat_log_profile_context(row) == combat_log_profile_context(expected_status)]
+    if not full_exports:
+        return {}
+    if not stream.saw_delta:
+        return deepcopy(full_exports[-1])
 
-    for chunks, completion in reversed(combat_log_transport_attempts(payloads)):
-        status = combat_log_attempt_status(chunks, completion)
-        if not status["reassembled"]:
-            continue
-        expected = int(status["expected_chunks"])
-        by_sequence = {int(row["sequence"]): row for row in chunks}
-        try:
-            raw = b"".join(
-                base64.b64decode(by_sequence[index]["data"], validate=True)
-                for index in range(expected)
-            )
-            decoded = json.loads(raw)
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError):
-            continue
-        if (
-            len(raw) == int(completion.get("total_bytes") or 0)
-            and isinstance(decoded, dict)
-        ):
-            return decoded
-    return {}
+    # Keep a foreign terminal snapshot from displacing the latest full export
+    # that belongs to the accepted delta namespace.
+    matching_full_exports = [
+        row for row in full_exports
+        if all(value is not None for value in combat_log_identity(row).values())
+        and stream.identity is not None
+        and all(combat_log_identity(row)[field] == stream.identity[field]
+                for field in ("cohort_id", "server_epoch", "attempt_id"))
+    ]
+    full = deepcopy((matching_full_exports or full_exports)[-1])
+
+    # A full export without the new generic identity is a legacy artifact. It
+    # remains readable, but cannot safely claim that a sequenced delta belongs
+    # to it, so do not attach an invented completeness receipt.
+    full_identity = combat_log_identity(full)
+    if any(value is None for value in full_identity.values()):
+        return full
+    namespace_receipt = stream.namespace_receipt(full_identity)
+    if namespace_receipt is None:
+        receipt = stream.receipt(full_identity)
+        receipt["identity"] = deepcopy(full_identity)
+        receipt["profile_context"] = combat_log_profile_context(full)
+        receipt["merged_with_full"] = False
+        full["event_stream_receipt"] = receipt
+        return full
+
+    full_context = combat_log_profile_context(full)
+    if (
+        full_context != namespace_receipt.get("profile_context")
+        or not (
+            isinstance(full_context.get("profile_generation"), int)
+            and full_context["profile_generation"] > 0
+            and isinstance(full_context.get("profile_content_hash"), str)
+            and bool(full_context["profile_content_hash"])
+        )
+    ):
+        receipt = stream.receipt(full_identity)
+        receipt["identity"] = deepcopy(full_identity)
+        receipt["profile_context"] = full_context
+        receipt["transport_rejections"] = list(dict.fromkeys([
+            *receipt.get("transport_rejections", []),
+            "full_profile_context_conflict",
+        ]))
+        receipt["complete"] = False
+        receipt["merged_with_full"] = False
+        full["event_stream_receipt"] = receipt
+        return full
+
+    conflicts: list[int] = []
+    merged_events = merge_event_rows(
+        full.get("recent_events", []),
+        stream.events(full_identity),
+        conflicts=conflicts,
+    )
+    if merged_events != full.get("recent_events", []):
+        full["recent_events"] = merged_events
+    receipt = stream.receipt(full_identity)
+    if conflicts:
+        receipt["conflict_sequences"] = sorted(set(
+            [*receipt.get("namespace", {}).get("conflict_sequences", []), *conflicts]
+        ))
+        receipt["complete"] = False
+    final_count = full.get("event_count")
+    sequences = [row.get("event_sequence") for row in merged_events]
+    valid_sequences = sorted({
+        value for value in sequences
+        if isinstance(value, int) and not isinstance(value, bool) and value > 0
+    })
+    missing = []
+    next_sequence = 1
+    valid_count = isinstance(final_count, int) and not isinstance(final_count, bool) and final_count >= 0
+    if valid_count:
+        for sequence in valid_sequences:
+            if sequence > final_count:
+                break
+            if sequence > next_sequence:
+                missing.append({"start": next_sequence, "end": sequence - 1})
+            next_sequence = sequence + 1
+        if next_sequence <= final_count:
+            missing.append({"start": next_sequence, "end": final_count})
+    receipt["final_missing_sequence_ranges"] = missing
+    receipt["complete"] = bool(
+        valid_count and not missing
+        and len(valid_sequences) == len(sequences) == final_count
+        and (not valid_sequences or valid_sequences[-1] == final_count)
+        and not receipt.get("transport_rejections")
+        and not receipt.get("conflict_sequences")
+        and not receipt.get("gap_ranges")
+        and not receipt.get("pending")
+    )
+    receipt["merged_with_full"] = True
+    receipt["full_event_count"] = full.get("event_count")
+    receipt["merged_event_count"] = len(full.get("recent_events", []))
+    full["event_stream_receipt"] = receipt
+    return full
 
 
 def combined_trace_payload(payloads: list[dict[str, Any]]) -> dict[str, Any]:

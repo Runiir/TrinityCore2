@@ -1,12 +1,63 @@
 # Shared-worldserver workflow status
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
-Elemental filler eligibility and first-head Heroism submission are accepted.
-Parallel class/role reviewers are joining the remaining movement, execution,
-target ownership and throughput findings before one compatible repair batch,
-independent review, one build and one bounded live validation.
+Elemental filler eligibility and the earlier first-head Heroism implementation
+have accepted evidence. The latest combined canary failed after a boss wipe;
+class/role review accepts several individual repairs but keeps roster throughput
+unresolved. Generic vehicle-exit and support-range repairs are independently approved;
+Astra low workers completed combat-event retention; independent Sol review
+approves the combined build and matched live capture.
 
-## Current result: Heroism verified, roster performance unresolved
+## Current result: reviewed batch failed the Magmaw canary
+
+Source: `86d37c0a449d19b1123d65c6caf5d52691626527`.
+The combined build passed and the canonical Magmaw 10N development capture
+closed as `semantic_stall`. There was no boss kill. Twelve casualties were
+recorded: two in trash and ten during the boss pull. All ten bots recovered,
+but the post-wipe roster did not resume progress. Cleanup passed, worldserver
+exited zero, and the post-run build receipt verified. No server is running.
+
+The boss window reports 29,075,000 hostile damage, 67,616.279 DPS and
+12,992.740 HPS over 430 active callback seconds (428 hostile-damage seconds).
+Schema v3 retains 753,738 friendly/self damage separately. The 582.787-second
+all-event span includes recovery and is not an exact WCL engage-to-kill clock.
+This run does not accept overall performance or qualify the six-repair batch
+as a whole. Individual repair acceptance and the earliest causal regression
+are being reviewed from the closed evidence before another implementation.
+
+The joined class/role review covers every actor. Combat facing preserved actual
+native splines; exact DPS glyphs, friendly Holy Shock range, exercised generic
+taunt ownership and hostile/friendly accounting are accepted. Moving Lightning
+Bolt submission and path progress are proved, but landing remains unproved.
+No Heroism was submitted in this run; Elemental died before the retained head
+window. Earlier haste implementation acceptance does not establish this run's use.
+
+The next proved runtime cause is server-controlled Player vehicle exit leaving
+FALLING set after a completed native ground POINT receipt. Fire 30007 and
+Affliction 30008 then repeatedly yield hardcasts despite finalized IDLE/MAX
+motion and zero displacement. The generic receipt-bound
+vehicle-exit repair and Elemental support-target minimum-range retreat are
+implemented and independently approved. Native acceptance remains pending.
+The vehicle repair contains no encounter entry predicate or broad movement
+normalization. Hunter floor-path rejection
+and missing healer decision-state joins remain explicit subsequent findings.
+
+The detailed combat ring dropped 6,985 early events before the final capture.
+Aggregate metrics remain available; some lethal-event joins do not. Incremental
+event retention is implemented but independent review found incomplete-stream
+acceptance and transfer-boundary defects. Astra low workers corrected the
+existing changes, and independent Sol review approved the final implementation
+after 32 focused checks passed. The six unrelated recurrence-fixture failures
+share an admission boundary reproduced on clean source86 before capture. The final
+full snapshot remains the aggregate DPS/HPS authority.
+Closed evidence and reviews are published through
+`artifacts/cata_raid_program/magmaw_development_86d37c0a44_20260908.tar.gz.dvc`.
+The 39,094,953-byte archive passed fresh remote reconstruction and hash
+verification. Exact raw/log/archive duplicates were evicted; compact reviews remain.
+The native semantic-stall receipt is in `report.semantic_stall`; the separate
+`terminal_failure.detected == false` does not mean the watchdog missed it.
+
+## Earlier result: Heroism verified, roster performance unresolved
 
 Source: `5a7e61f9ced99a77382f8a759b885dcd3f68a4b6`.
 The Magmaw 10N development run cleared with cleanup and all ten bots recovered.

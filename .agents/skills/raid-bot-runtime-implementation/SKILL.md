@@ -71,6 +71,10 @@ Return the work when the trace instead identifies:
 
 ## Repair and verify
 
+Check fixture values against the claimed predicate: an out-of-range case must
+actually exceed its range, and an isolated LOS case must otherwise be in range.
+Test names and inert flags do not prove boundary coverage or native behavior.
+
 Treat decision complexity as a runtime risk, not as a diagnosis by itself. The
 2026-08-28 native bot audit found a heavy tail: 45 functions above CCN 100 and
 a maximum of 464. When the broken edge is inside a high-CCN function, measure

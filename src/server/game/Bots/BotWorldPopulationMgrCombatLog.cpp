@@ -292,6 +292,7 @@ void BotWorldPopulationMgr::NotifyBotHeal(Unit* healer, Unit* target, uint32 spe
 
 void BotWorldPopulationMgr::ResetCombatLog()
 {
+    ++Cohort().CombatLogEpoch;
     Party().CombatLogAbilities.clear();
     Party().CombatLogSecondBuckets.clear();
     Party().CombatLogRecentEvents.clear();
@@ -375,6 +376,9 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
         return;
 
     CombatLogEvent event;
+    event.EventSequence = Party().CombatLogEventCount;
+    event.ExperimentId = Cohort().ExperimentId;
+    event.RunId = Cohort().RunId;
     event.TimestampMs = timestampMs;
     event.RouteGeneration = Party().ValidationRouteGeneration;
     event.RouteNodeId = Cohort().Config.ValidationRouteNodeId;

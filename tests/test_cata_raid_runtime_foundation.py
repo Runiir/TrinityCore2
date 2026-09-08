@@ -2810,7 +2810,13 @@ def test_permanent_gear_identity_excludes_temporary_weapon_enchants():
 
 
 def test_native_ready_check_is_explicit_attempt_and_wipe_scoped():
-    command = (ROOT / "src/server/scripts/Commands/cs_healerbot.cpp").read_text(encoding="utf-8")
+    command = "\n".join(
+        (ROOT / path).read_text(encoding="utf-8")
+        for path in (
+            "src/server/scripts/Commands/cs_healerbot.cpp",
+            "src/server/scripts/Commands/cs_botauto.cpp",
+        )
+    )
     for token in (
         "RequestNativeRaidReadyCheckForCohort",
         "MSG_RAID_READY_CHECK",

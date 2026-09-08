@@ -131,6 +131,8 @@ public:
     std::string GetMagmawTransferLaneCheckpointJsonForCohort(
         std::string const& cohortId) const;
     std::string GetCombatLogJsonForCohort(std::string const& cohortId) const;
+    std::string GetCombatLogDeltaJsonForCohort(std::string const& cohortId,
+        uint64 cursor, uint32 limit) const;
     std::string StartCombatCalibrationForCohort(std::string const& cohortId, std::string const& mode = "single_target_300", std::string const& targetSpec = "", uint32 seed = 1);
     std::string StopCombatCalibrationForCohort(std::string const& cohortId);
     std::string GetCombatCalibrationJsonForCohort(std::string const& cohortId) const;
@@ -158,6 +160,7 @@ public:
     std::string GetBotDiagnosisJson(std::string const& selector);
     std::string GetBotTraceJson(std::string const& selector, uint32 limit, bool delta = false) const;
     std::string GetCombatLogJson() const;
+    std::string GetCombatLogDeltaJson(uint64 cursor, uint32 limit) const;
     bool IsActive() const;
     std::string Replay(std::string const& replayType, std::string const& selector, std::string const& brainVersion = "");
     std::string CompareBrains(uint64 replayId, std::string const& firstBrainVersion, std::string const& secondBrainVersion);
@@ -854,6 +857,7 @@ private:
     float PredictPolicyModelLabel(char const* label, std::map<std::string, float> const& features) const;
     static uint32 FeatureSchemaHash(std::string const& value);
     static std::string JsonEscape(std::string const& value);
+    static void AppendCombatLogEventJson(std::ostringstream& json, CombatLogEvent const& event);
     void ResetCombatLog();
     Player* FindCombatLogCohortPlayer(Unit* unit) const;
     void AddCombatLogAggregate(CombatLogPerspective perspective, Player* actor, Unit* source, Unit* target,

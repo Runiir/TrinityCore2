@@ -142,6 +142,7 @@ BOT_MGR_FAMILIES = {
 
 
 BOT_COMMANDS = ROOT / "src/server/scripts/Commands/cs_healerbot.cpp"
+BOT_AUTO_COMMANDS = ROOT / "src/server/scripts/Commands/cs_botauto.cpp"
 SERVER_COMMANDS = ROOT / "src/server/scripts/Commands/cs_server.cpp"
 BOT_MGR_CORE = BOT_DIR / "BotWorldPopulationMgr.cpp"
 BOT_ACTION_EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
@@ -251,6 +252,10 @@ AZIL_SCRIPT = ROOT / "src/server/scripts/Maelstrom/Stonecore/boss_high_priestess
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def read_bot_command_sources() -> str:
+    return "\n".join(read(path) for path in (BOT_COMMANDS, BOT_AUTO_COMMANDS))
 
 
 def lambda_body(source: str, marker: str) -> str:
@@ -633,7 +638,7 @@ def test_boss_prerequisites_use_trash_swarm_threat_security_without_intercepting
 
 def test_server_start_autonomy_enabled_by_default_contract():
     conf = read(WORLDSERVER_CONF)
-    commands = read(BOT_COMMANDS)
+    commands = read_bot_command_sources()
     server_commands = read(SERVER_COMMANDS)
     startup = function_body(commands, "void OnStartup() override")
     shutdown_initiate = function_body(commands, "void OnShutdownInitiate(ShutdownExitCode /*code*/, ShutdownMask /*mask*/) override")
@@ -1392,7 +1397,7 @@ def test_telemetry_policy_smoke_samples_normal_wander_and_keeps_critical_events(
 def test_bot_spawn_lifecycle_dummy_and_ability_objective_surface():
     mgr_header = read(BOT_MGR_HEADER)
     mgr = read(BOT_MGR)
-    commands = read(BOT_COMMANDS)
+    commands = read_bot_command_sources()
     conf = read(WORLDSERVER_CONF)
 
     for symbol in [
@@ -2432,7 +2437,7 @@ def test_applied_ground_danger_spell_shape_contract():
 def test_botauto_diagnosis_and_trace_surface():
     mgr_header = read(BOT_MGR_HEADER)
     mgr = read(BOT_MGR)
-    commands = read(BOT_COMMANDS)
+    commands = read_bot_command_sources()
     update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
     diagnose = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotDiagnosisJson")
     config_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildConfigJson")
@@ -2695,7 +2700,7 @@ def test_botauto_runtime_profiles_surface():
     conf = read(WORLDSERVER_CONF)
     mgr = read(BOT_MGR)
     mgr_header = read(BOT_MGR_HEADER)
-    commands = read(BOT_COMMANDS)
+    commands = read_bot_command_sources()
 
     assert 'BotWorld.ProfileManifest = "dataset/bot_runtime_profiles/profiles.json"' in conf
     assert re.search(r"^BotWorld\.AutoStart\s*=\s*0$", conf, re.MULTILINE)
@@ -3569,7 +3574,7 @@ def test_telemetry_frame_action_is_bounded_to_schema_width():
 
 
 def test_export_smoke_lists_old_and_new_bot_experiment_tables():
-    commands = read(BOT_COMMANDS)
+    commands = read_bot_command_sources()
     export_body = function_body(commands, "static bool HandleExportCommand")
     match = re.search(r'PSendSysMessage\("(?P<payload>\{.*?\})"\);', export_body, re.DOTALL)
     assert match

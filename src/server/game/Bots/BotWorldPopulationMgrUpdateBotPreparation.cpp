@@ -3,18 +3,163 @@
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotServerVehicleExitLanding.h"
+#include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 
 #include "Config.h"
+#include "MotionMaster.h"
+#include "Movement/Spline/MoveSpline.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
+#include "Unit.h"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
+#include <sstream>
 #include <string>
 
 using BotWorldPopulationMgrNativeHelpers::Distance2d;
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 using BotWorldPopulationMgrSpellSemantics::NowMs;
+
+namespace
+{
+BotServerVehicleExitLanding::LandingEvidence BuildVehicleExitLandingEvidence(
+    BotWorldPopulationMgrBotState::WorldBotState const& state,
+    Player const* bot, bool scopeAvailable,
+    BotServerVehicleExitLanding::Scope const& currentScope)
+{
+    BotServerVehicleExitLanding::LandingEvidence evidence;
+    evidence.BotGuid = bot ? bot->GetGUID().GetCounter() : 0;
+    evidence.MapId = bot ? bot->GetMapId() : 0;
+    evidence.InstanceId = bot ? bot->GetInstanceId() : 0;
+    evidence.CurrentScopeAvailable = scopeAvailable;
+    evidence.CurrentScope = currentScope;
+    evidence.ActorInWorld = bot && bot->IsInWorld() && bot->GetMap();
+    evidence.ActorAlive = bot && bot->IsAlive();
+    if (!bot)
+        return evidence;
+
+    evidence.HasVehicle = bot->GetVehicle() != nullptr;
+    evidence.HasTransport = bot->GetTransport() != nullptr;
+    evidence.GravityDisabled = bot->IsGravityDisabled();
+    evidence.NativeFlight = bot->IsInFlight() || bot->IsFlying();
+    evidence.ControlledState = bot->HasUnitState(UNIT_STATE_CONTROLLED);
+    evidence.FlagsBefore = bot->GetUnitMovementFlags();
+    evidence.FallingFlagsPresent = evidence.FlagsBefore
+        & (MOVEMENTFLAG_FALLING | MOVEMENTFLAG_FALLING_FAR);
+    evidence.CurrentSplineFinalized = !bot->movespline
+        || bot->movespline->Finalized();
+    evidence.NativeFalling = bot->movespline
+        && bot->movespline->isFalling();
+    evidence.NativeFalling = evidence.NativeFalling
+        || (evidence.FlagsBefore
+            & (MOVEMENTFLAG_ASCENDING | MOVEMENTFLAG_DESCENDING
+                | MOVEMENTFLAG_SPLINE_ELEVATION));
+
+    MotionMaster const* motion = bot->GetMotionMaster();
+    if (motion)
+    {
+        evidence.CurrentMotionType =
+            std::uint32_t(motion->GetCurrentMovementGeneratorType());
+        evidence.ActiveMotionType =
+            std::uint32_t(motion->GetMotionSlotType(MOTION_SLOT_ACTIVE));
+        evidence.ControlledMotionType =
+            std::uint32_t(motion->GetMotionSlotType(MOTION_SLOT_CONTROLLED));
+        evidence.MotionSlotsSettled =
+            evidence.CurrentMotionType == std::uint32_t(IDLE_MOTION_TYPE)
+            && evidence.ActiveMotionType == std::uint32_t(MAX_MOTION_TYPE)
+            && evidence.ControlledMotionType
+                == std::uint32_t(MAX_MOTION_TYPE);
+    }
+
+    std::uint64_t const receiptId = state.ServerVehicleExitLanding
+        .BoundGroundingReceiptId;
+    if (!receiptId)
+        return evidence;
+
+    BotWorldMovement::NativeMovementProgressObservation const progress =
+        BotWorldMovement::MovementProgressDiagnostics().ForReceipt(receiptId);
+    evidence.ReceiptAvailable = progress.Available
+        && progress.ReceiptId == receiptId;
+    if (!evidence.ReceiptAvailable)
+        return evidence;
+
+    evidence.ReceiptId = progress.ReceiptId;
+    evidence.ReceiptBotGuid = progress.BotGuid;
+    evidence.ReceiptMapId = progress.MapId;
+    evidence.ReceiptInstanceId = progress.InstanceId;
+    evidence.ReceiptArmedAtMs = progress.ArmedAtMs;
+    evidence.ReceiptScopeAvailable = scopeAvailable;
+    evidence.ReceiptScope = progress.Scope;
+    evidence.ReceiptTerminal = progress.Terminal;
+    evidence.ReceiptSuperseded = progress.SupersededByReceiptId != 0;
+    evidence.ReceiptTerminalOutcome = progress.TerminalOutcome;
+    if (!progress.Samples.empty())
+    {
+        BotWorldMovement::NativeMovementProgressSample const& sample =
+            progress.Samples.back();
+        evidence.TerminalSampleAvailable = progress.Terminal && sample.Terminal
+            && sample.ReceiptId == progress.ReceiptId;
+        evidence.TerminalActorAlive = sample.ActorAlive;
+        evidence.TerminalActorInWorld = sample.ActorInWorld;
+        evidence.TerminalEndpointReached = sample.EndpointReached;
+        evidence.TerminalFloorValid = sample.FloorValid;
+        evidence.TerminalPlatformCompatible =
+            sample.SelectedPlatformCompatible;
+    }
+    float const dx = bot->GetPositionX() - progress.SelectedX;
+    float const dy = bot->GetPositionY() - progress.SelectedY;
+    float const horizontal = std::sqrt(dx * dx + dy * dy);
+    float const vertical = std::fabs(bot->GetPositionZ() - progress.SelectedZ);
+    evidence.CurrentEndpointMatches =
+        BotWorldMovement::NativePathEndpointComponentsMatch(
+            horizontal, vertical);
+    return evidence;
+}
+
+std::string BuildVehicleExitLandingEventJson(
+    BotServerVehicleExitLanding::Episode const& episode,
+    BotServerVehicleExitLanding::LandingEvidence const& evidence,
+    char const* result, std::string const& escapedOutcome)
+{
+    std::ostringstream json;
+    json << "{\"event\":\"server_vehicle_exit_landing\""
+         << ",\"result\":\"" << (result ? result : "unknown") << "\""
+         << ",\"observed_vehicle_guid\":" << episode.ObservedVehicleGuid
+         << ",\"exit_observed_at_ms\":" << episode.ExitObservedAtMs
+         << ",\"receipt_id\":" << evidence.ReceiptId
+         << ",\"receipt_armed_at_ms\":" << evidence.ReceiptArmedAtMs
+         << ",\"receipt_terminal_outcome\":\"" << escapedOutcome << "\""
+         << ",\"terminal_sample\":{\"available\":"
+         << (evidence.TerminalSampleAvailable ? "true" : "false")
+         << ",\"alive\":"
+         << (evidence.TerminalActorAlive ? "true" : "false")
+         << ",\"in_world\":"
+         << (evidence.TerminalActorInWorld ? "true" : "false")
+         << ",\"endpoint_reached\":"
+         << (evidence.TerminalEndpointReached ? "true" : "false")
+         << ",\"floor_valid\":"
+         << (evidence.TerminalFloorValid ? "true" : "false")
+         << ",\"platform_compatible\":"
+         << (evidence.TerminalPlatformCompatible ? "true" : "false")
+         << "}"
+         << ",\"current_endpoint_matches\":"
+         << (evidence.CurrentEndpointMatches ? "true" : "false")
+         << ",\"flags_before\":" << evidence.FlagsBefore
+         << ",\"flags_after\":" << episode.LastFlagsAfter
+         << ",\"spline_finalized\":"
+         << (evidence.CurrentSplineFinalized ? "true" : "false")
+         << ",\"spline_falling\":"
+         << (evidence.NativeFalling ? "true" : "false")
+         << ",\"current_motion_type\":" << evidence.CurrentMotionType
+         << ",\"active_motion_type\":" << evidence.ActiveMotionType
+         << ",\"controlled_motion_type\":"
+         << evidence.ControlledMotionType << "}";
+    return json.str();
+}
+}
 
 void BotWorldPopulationMgr::BotUpdateContext::EnsureProgressionScored()
 {
@@ -80,6 +225,27 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
             MarkValidationCohortViolation(context.State, context.Bot, "validation_cohort_instance_mismatch");
             return false;
         }
+    }
+
+    bool const vehicleExitScopeAvailable =
+        Cohort().Config.ValidationRouteEnable;
+    BotMovementArbitration::Scope const vehicleExitScope{
+        vehicleExitScopeAvailable ? Cohort().AttemptId : 0,
+        vehicleExitScopeAvailable ? uint32(Cohort().Raid.WipeGeneration) : 0,
+        vehicleExitScopeAvailable ? Party().ValidationRouteGeneration : 0,
+        context.Bot->GetMapId(), context.Bot->GetInstanceId() };
+    if (context.State.ServerProvisioned)
+    {
+        BotServerVehicleExitLanding::VehicleTransitionObservation const
+            vehicleTransition{
+                context.Bot->GetVehicle() != nullptr,
+                context.Bot->GetVehicleBase()
+                    ? context.Bot->GetVehicleBase()->GetGUID().GetRawValue() : 0,
+                context.Bot->GetGUID().GetCounter(), context.Bot->GetMapId(),
+                context.Bot->GetInstanceId(), NowMs(),
+                vehicleExitScopeAvailable, vehicleExitScope };
+        BotServerVehicleExitLanding::ObserveVehicleTransition(
+            context.State.ServerVehicleExitLanding, vehicleTransition);
     }
 
     // A successful native resurrection closes the release episode.  Do not
@@ -174,6 +340,48 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
     context.Target = context.State.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*context.Bot, context.State.TargetGuid);
     if (!context.Target)
         context.Target = context.Bot->GetVictim();
+
+    if (context.State.ServerProvisioned
+        && context.State.ServerVehicleExitLanding.ExitPending)
+    {
+        uint64 const landingObservedAtMs = NowMs();
+        BotServerVehicleExitLanding::LandingEvidence const landingEvidence =
+            BuildVehicleExitLandingEvidence(context.State, context.Bot,
+                vehicleExitScopeAvailable, vehicleExitScope);
+        BotServerVehicleExitLanding::ReconciliationResult const landingResult =
+            BotServerVehicleExitLanding::Reconcile(
+                context.State.ServerVehicleExitLanding, landingEvidence,
+                context.Bot);
+        uint32 const landingFlagsAfter = context.Bot->GetUnitMovementFlags();
+        BotServerVehicleExitLanding::RecordEvaluation(
+            context.State.ServerVehicleExitLanding, landingEvidence,
+            landingResult, landingObservedAtMs, landingFlagsAfter);
+
+        if (landingResult.Decision
+            == BotServerVehicleExitLanding::Decision::ClearStaleLandingFlag)
+        {
+            std::string const escapedOutcome =
+                JsonEscape(landingEvidence.ReceiptTerminalOutcome);
+            std::string const eventJson = BuildVehicleExitLandingEventJson(
+                context.State.ServerVehicleExitLanding, landingEvidence,
+                "reconciled", escapedOutcome);
+            BotServerVehicleExitLanding::CloseEpisode(
+                context.State.ServerVehicleExitLanding);
+            RecordEvent(context.State, context.Bot,
+                "server_vehicle_exit_landing", context.Bot, "reconciled",
+                eventJson.c_str(), eventJson.c_str());
+        }
+        else
+        {
+            if (landingResult.DropBoundReceipt)
+                BotServerVehicleExitLanding::ResetBoundReceipt(
+                    context.State.ServerVehicleExitLanding);
+            if (landingResult.Decision
+                == BotServerVehicleExitLanding::Decision::CloseEpisode)
+                BotServerVehicleExitLanding::CloseEpisode(
+                    context.State.ServerVehicleExitLanding);
+        }
+    }
 
     float moved = Distance2d(context.Bot->GetPositionX(), context.Bot->GetPositionY(), context.State.LastX, context.State.LastY);
     bool moving = context.Bot->isMoving() || context.Bot->HasUnitState(UNIT_STATE_MOVING);

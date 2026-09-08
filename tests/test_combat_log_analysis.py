@@ -1,7 +1,11 @@
 import base64
+from copy import deepcopy
 import json
 
+import pytest
+
 from tools.bot_ml.analyze_combat_log import analyze_combat_log
+from tools.bot_ml.combat_log_event_stream import CombatLogEventStream
 from tools.bot_ml.run_live_bot_validation import (
     combined_combat_log,
     combat_log_transport_status,
@@ -105,6 +109,59 @@ def combat_log_fixture() -> dict:
         ],
         "recent_events": [{"kind": "damage"}],
     }
+
+
+def _combat_delta_frames(
+    sequences: list[int], *, cursor_before: int, cursor_after: int,
+    event_count: int, run_id: int = 1, combat_log_epoch: int = 1,
+    server_epoch: int = 88, attempt_id: int = 4,
+    profile_generation: int | None = 2,
+    profile_content_hash: str | None = "profile-hash",
+    chunk_size: int = 13,
+) -> list[dict]:
+    payload = {
+        "ok": True,
+        "action": "botauto_combatlog_delta",
+        "combat_log_schema_version": 3,
+        "cohort_id": "raid",
+        "server_epoch": server_epoch,
+        "attempt_id": attempt_id,
+        "combat_log_epoch": combat_log_epoch,
+        "profile_generation": profile_generation,
+        "profile_content_hash": profile_content_hash,
+        "experiment_id": 7,
+        "run_id": run_id,
+        "event_count_at_export": event_count,
+        "cursor_before": cursor_before,
+        "cursor_after": cursor_after,
+        "gap": False,
+        "recent_events": [
+            {"event_sequence": sequence, "kind": "damage", "amount": sequence}
+            for sequence in sequences
+        ],
+    }
+    raw = json.dumps(payload, separators=(",", ":")).encode()
+    parts = [raw[index : index + chunk_size] for index in range(0, len(raw), chunk_size)]
+    return [
+        {
+            "ok": True,
+            "action": "botauto_combatlog_chunk",
+            "cohort_id": "raid",
+            "combat_log_chunk_schema_version": 1,
+            "sequence": index,
+            "chunk_count": len(parts),
+            "encoding": "base64",
+            "data": base64.b64encode(part).decode(),
+        }
+        for index, part in enumerate(parts)
+    ] + [{
+        "ok": True,
+        "action": "botauto_combatlog_complete",
+        "cohort_id": "raid",
+        "combat_log_chunk_schema_version": 1,
+        "chunk_count": len(parts),
+        "total_bytes": len(raw),
+    }]
 
 
 def test_analyze_combat_log_reports_dps_rotation_and_positioning():
@@ -468,6 +525,183 @@ def test_combined_combat_log_reassembles_schema3_friendly_perspective():
     assert combined["abilities"][0]["perspective"] == "friendly_damage_done"
 
 
+def test_combat_event_stream_merges_overlap_replay_and_reports_gap():
+    stream = CombatLogEventStream(expected_cohort_id="raid")
+    status_identity = {
+        "cohort_id": "raid",
+        "server_epoch": 88,
+        "attempt_id": 4,
+        "profile_generation": 2,
+        "profile_content_hash": "profile-hash",
+    }
+    stream.bind_identity(status_identity)
+
+    first = _combat_delta_frames(
+        [1, 2, 3], cursor_before=0, cursor_after=3, event_count=5,
+        run_id=48,
+    )
+    second = _combat_delta_frames(
+        [3, 4, 5], cursor_before=3, cursor_after=5, event_count=5,
+        run_id=49,
+    )
+    missing = _combat_delta_frames(
+        [7, 8], cursor_before=5, cursor_after=8, event_count=8,
+        run_id=49,
+    )
+    assert stream.observe_rows(first)[0].accepted is True
+    assert stream.observe_rows(second)[0].accepted is True
+    assert stream.observe_rows(second)[0].accepted is True
+    assert stream.observe_rows(missing)[0].accepted is True
+
+    receipt = stream.receipt()
+    assert [row["event_sequence"] for row in stream.events()] == [1, 2, 3, 4, 5, 7, 8]
+    assert receipt["namespace"]["duplicate_count"] == 4
+    assert receipt["namespace"]["gap_ranges"] == [{"start": 6, "end": 6}]
+    assert {row["run_id"] for row in receipt["namespace"]["labels"]} == {48, 49}
+    assert receipt["complete"] is False
+
+    conflict = _combat_delta_frames(
+        [3, 4, 5], cursor_before=3, cursor_after=5, event_count=8,
+        run_id=49,
+    )
+    # Rebuild the decoded event with a changed sequence-3 row and assert the
+    # response is rejected without replacing the accepted copy.
+    changed = json.loads(
+        b"".join(
+            base64.b64decode(row["data"], validate=True)
+            for row in conflict[:-1]
+        )
+    )
+    changed["recent_events"][0]["amount"] = 999
+    changed_raw = json.dumps(changed, separators=(",", ":")).encode()
+    changed_parts = [
+        changed_raw[index : index + 13]
+        for index in range(0, len(changed_raw), 13)
+    ]
+    changed_rows = [
+        {
+            "ok": True,
+            "action": "botauto_combatlog_chunk",
+            "cohort_id": "raid",
+            "combat_log_chunk_schema_version": 1,
+            "sequence": index,
+            "chunk_count": len(changed_parts),
+            "encoding": "base64",
+            "data": base64.b64encode(part).decode(),
+        }
+        for index, part in enumerate(changed_parts)
+    ] + [{
+        "ok": True,
+        "action": "botauto_combatlog_complete",
+        "cohort_id": "raid",
+        "combat_log_chunk_schema_version": 1,
+        "chunk_count": len(changed_parts),
+        "total_bytes": len(changed_raw),
+    }]
+    assert stream.observe_rows(changed_rows)[0].accepted is False
+    assert 3 in stream.receipt()["namespace"]["conflict_sequences"]
+    assert stream.events()[2]["amount"] == 3
+
+
+def test_combat_event_stream_rejects_foreign_stable_identity_and_missing_profile():
+    bound = {
+        "cohort_id": "raid",
+        "server_epoch": 88,
+        "attempt_id": 4,
+        "profile_generation": 2,
+        "profile_content_hash": "profile-hash",
+    }
+    stream = CombatLogEventStream()
+    stream.bind_identity(bound)
+    foreign_server = _combat_delta_frames(
+        [1], cursor_before=0, cursor_after=1, event_count=1,
+        server_epoch=89,
+    )
+    foreign_attempt = _combat_delta_frames(
+        [1], cursor_before=0, cursor_after=1, event_count=1,
+        attempt_id=5,
+    )
+    missing_profile = _combat_delta_frames(
+        [1], cursor_before=0, cursor_after=1, event_count=1,
+        profile_generation=None, profile_content_hash=None,
+    )
+    assert stream.observe_rows(foreign_server)[0].accepted is False
+    assert stream.observe_rows(foreign_attempt)[0].accepted is False
+    assert stream.observe_rows(missing_profile)[0].accepted is False
+    assert stream.receipt()["namespace"] is None
+    assert "delta_stable_identity_conflict" in stream.receipt()["transport_rejections"]
+    assert "delta_profile_context_conflict" in stream.receipt()["transport_rejections"]
+
+
+def test_combined_combat_log_merges_delta_tail_without_touching_aggregates():
+    deltas = [
+        *_combat_delta_frames(
+            [1, 2, 3], cursor_before=0, cursor_after=3, event_count=5,
+            run_id=48,
+        ),
+        *_combat_delta_frames(
+            [3, 4, 5], cursor_before=3, cursor_after=5, event_count=5,
+            run_id=49,
+        ),
+    ]
+    full = {
+        "ok": True,
+        "action": "botauto_combatlog",
+        "combat_log_schema_version": 3,
+        "cohort_id": "raid",
+        "server_epoch": 88,
+        "attempt_id": 4,
+        "combat_log_epoch": 1,
+        "profile_generation": 2,
+        "profile_content_hash": "profile-hash",
+        "experiment_id": 7,
+        "run_id": 49,
+        "event_count": 5,
+        "aggregate_count": 1,
+        "second_bucket_count": 1,
+        "recent_events_dropped": 0,
+        "abilities": [{"spell_id": 20473, "amount": 321}],
+        "second_buckets": [{"second": 4, "amount": 321}],
+        "recent_events": [
+            {"event_sequence": 3, "kind": "damage", "amount": 3},
+            {"event_sequence": 4, "kind": "damage", "amount": 4},
+            {"event_sequence": 5, "kind": "damage", "amount": 5},
+        ],
+    }
+    aggregate_snapshot = {
+        key: deepcopy(full[key])
+        for key in ("event_count", "aggregate_count", "second_bucket_count", "abilities", "second_buckets")
+    }
+    combined = combined_combat_log([*deltas, full])
+
+    assert {
+        key: combined[key]
+        for key in aggregate_snapshot
+    } == aggregate_snapshot
+    assert [row["event_sequence"] for row in combined["recent_events"]] == [1, 2, 3, 4, 5]
+    assert combined["event_stream_receipt"]["merged_with_full"] is True
+    assert combined["event_stream_receipt"]["namespace"]["duplicate_count"] == 1
+
+
+def test_combat_event_epoch_reset_uses_distinct_namespace():
+    stream = CombatLogEventStream()
+    stream.bind_identity({
+        "cohort_id": "raid", "server_epoch": 88, "attempt_id": 4,
+        "profile_generation": 2, "profile_content_hash": "profile-hash",
+    })
+    assert stream.observe_rows(_combat_delta_frames(
+        [1, 2], cursor_before=0, cursor_after=2, event_count=2,
+        combat_log_epoch=1,
+    ))[0].accepted is True
+    assert stream.observe_rows(_combat_delta_frames(
+        [1], cursor_before=0, cursor_after=1, event_count=1,
+        combat_log_epoch=2,
+    ))[0].accepted is True
+    assert stream.receipt()["namespace_count"] == 2
+    assert [row["event_sequence"] for row in stream.events()] == [1]
+    assert stream.receipt()["identity"]["combat_log_epoch"] == 2
+
+
 def test_live_validation_reports_missing_combat_log_sequence_fail_closed():
     raw = json.dumps(combat_log_fixture(), separators=(",", ":")).encode()
     parts = [raw[index : index + 97] for index in range(0, len(raw), 97)]
@@ -642,3 +876,113 @@ def test_live_validation_ignores_nested_action_objects_but_keeps_combatlog_rows(
 
     assert chunk_report["combat_log"]["event_count"] == 42
     assert chunk_report["combat_log_transport"]["reassembled"] is True
+
+
+def _framed_combat_payload(payload, export_id=1, kind="delta"):
+    raw = json.dumps(payload, separators=(",", ":")).encode()
+    common = {"ok": True, "cohort_id": "raid", "export_id": export_id,
+              "export_kind": kind, "combat_log_chunk_schema_version": 1, "chunk_count": 1}
+    return [dict(common, action="botauto_combatlog_chunk", sequence=0,
+                 encoding="base64", data=base64.b64encode(raw).decode()),
+            dict(common, action="botauto_combatlog_complete", total_bytes=len(raw))]
+
+
+def _decoded_delta(sequences, **kwargs):
+    frames = _combat_delta_frames(sequences, **kwargs)
+    return json.loads(b"".join(base64.b64decode(row["data"]) for row in frames[:-1]))
+
+
+def test_combat_event_rejects_unframed_cursor_mismatch_and_internal_conflict():
+    payload = _decoded_delta([1, 2, 3], cursor_before=0, cursor_after=5, event_count=5)
+    stream = CombatLogEventStream()
+    assert stream.observe(payload).accepted is False
+    assert stream.cursor == 0
+    stream = CombatLogEventStream()
+    assert stream.observe_rows(_framed_combat_payload(payload))[0].accepted is False
+    assert stream.cursor == 0
+    assert stream.receipt()["complete"] is False
+    payload["cursor_after"] = 3
+    payload["recent_events"].append(dict(payload["recent_events"][0], amount=999))
+    stream = CombatLogEventStream()
+    assert stream.observe_rows(_framed_combat_payload(payload))[0].accepted is False
+    assert stream.receipt()["conflict_sequences"] == [1]
+
+
+def test_combat_event_final_full_count_and_abandoned_export_boundary():
+    delta = _decoded_delta([1, 2, 3], cursor_before=0, cursor_after=3, event_count=3)
+    full = dict(delta, action="botauto_combatlog", event_count=8,
+                abilities=[{"amount": 123}], second_buckets=[], recent_events=[])
+    combined = combined_combat_log([*_framed_combat_payload(delta), full])
+    assert combined["event_count"] == 8
+    assert combined["abilities"] == full["abilities"]
+    assert combined["event_stream_receipt"]["complete"] is False
+    assert combined["event_stream_receipt"]["final_missing_sequence_ranges"] == [{"start": 4, "end": 8}]
+    partial = _framed_combat_payload(delta, 2)
+    terminal = _framed_combat_payload(full, 3, "full")
+    rows = [*_framed_combat_payload(delta), partial[0], terminal[0], *partial, terminal[1]]
+    combined = combined_combat_log(rows)
+    assert combined["event_count"] == 8
+    assert combined["abilities"] == full["abilities"]
+    assert combined["event_stream_receipt"]["complete"] is False
+
+
+@pytest.mark.parametrize("new_count", [1, 2, 3])
+def test_combat_event_controller_epoch_reset_retries_zero_without_contamination(new_count):
+    from tools.bot_ml.combat_log_event_stream import CombatLogDeltaController
+    controller = CombatLogDeltaController(send_commands=lambda rows: None,
+        read_rows=lambda: [], command_counts={})
+    delta = _decoded_delta([1, 2], cursor_before=0, cursor_after=2, event_count=2)
+    controller.bind_status(delta)
+    commands = []
+    controller.append_command(commands, now=0)
+    controller.observe_rows(_framed_combat_payload(delta, 1))
+    controller.append_command(commands, now=2)
+    assert commands[-1] == "botauto combatlog raid delta 2 4096"
+    reset = _decoded_delta(list(range(3, new_count + 1)), cursor_before=2,
+        cursor_after=max(2, new_count), event_count=new_count, combat_log_epoch=2)
+    controller.observe_rows(_framed_combat_payload(reset, 2))
+    controller.append_command(commands, now=2)
+    assert commands[-1] == "botauto combatlog raid delta 0 4096"
+    reset = _decoded_delta(list(range(1, new_count + 1)), cursor_before=0,
+        cursor_after=new_count, event_count=new_count, combat_log_epoch=2)
+    controller.observe_rows(_framed_combat_payload(reset, 3))
+    assert controller.stream.receipt()["complete"] is True
+    assert controller.stream.receipt()["transport_rejections"] == []
+
+
+def test_combat_event_rejects_frame_kind_payload_conflict():
+    payload = _decoded_delta([1], cursor_before=0, cursor_after=1, event_count=1)
+    stream = CombatLogEventStream()
+    result = stream.observe_rows(_framed_combat_payload(payload, kind="full"))[0]
+    assert result.accepted is False
+    assert stream.cursor == 0
+    assert "chunk_payload_kind_conflict" in stream.receipt()["transport_rejections"]
+
+
+def test_combat_log_transport_status_isolates_abandoned_delta_from_final_full():
+    delta = _decoded_delta([1], cursor_before=0, cursor_after=1, event_count=1)
+    partial = _framed_combat_payload(delta, 1)[0]
+    partial["chunk_count"] = 2
+    full = dict(delta, action="botauto_combatlog", event_count=1, abilities=[])
+    rows = [partial, *_framed_combat_payload(full, 2, "full")]
+    status = combat_log_transport_status(rows)
+    assert status["complete_marker"] is True
+    assert status["reassembled"] is True
+    assert status["expected_chunks"] == status["received_chunks"] == 1
+    assert combined_combat_log(rows)["event_count"] == 1
+    # A later complete delta cannot stand in for the final aggregate export.
+    assert combat_log_transport_status(_framed_combat_payload(delta, 3))["reassembled"] is False
+
+
+def test_combat_event_finalization_binds_accepted_status_before_first_delta():
+    delta = _decoded_delta([1], cursor_before=0, cursor_after=1, event_count=1)
+    full = dict(delta, action="botauto_combatlog", event_count=1, abilities=[])
+    foreign = dict(delta, server_epoch=99)
+    foreign_full = dict(full, server_epoch=99, event_count=999)
+    rows = [*_framed_combat_payload(foreign, 1), *_framed_combat_payload(delta, 2),
+            full, foreign_full]
+    result = combined_combat_log(rows, expected_status=delta)
+    assert result["server_epoch"] == 88
+    assert result["event_count"] == 1
+    assert result["event_stream_receipt"]["identity"]["server_epoch"] == 88
+    assert combined_combat_log([foreign_full], expected_status=delta) == {}

@@ -455,6 +455,9 @@
     {
         std::string Id;
         uint64 AttemptId = 0;
+        // The event namespace survives PartyRuntime replacement during
+        // start/stop lifecycles.  ResetCombatLog is its only increment site.
+        uint64 CombatLogEpoch = 0;
         uint64 PinnedProfileGeneration = 0;
         std::string PinnedProfileContentHash;
         std::set<uint32> RosterLeases;

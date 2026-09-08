@@ -4,6 +4,7 @@
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotMovementArbiter.h"
+#include "Bots/BotServerVehicleExitLanding.h"
 #include "Bots/BotWorldPopulationMgrNativeFloor.h"
 #include "Bots/BotWorldPopulationMgrMovement.h"
 #include "Bots/BotRoleSaturationPolicy.h"
@@ -471,6 +472,10 @@ namespace BotWorldPopulationMgrBotState
         // Encounter tasks may correlate this value to their selected intent;
         // they never parse the diagnostic JSON sidecar.
         BotWorldMovement::ExecutionObservation LastMovementExecution;
+        // A server-controlled Player can retain native FALLING bits after a
+        // vehicle exit.  This episode is receipt-bound and is reconciled only
+        // after a bot-owned native ground path proves the landing.
+        BotServerVehicleExitLanding::Episode ServerVehicleExitLanding;
         // The fixed Magmaw mage/hunter bait pair shares one semantic lane
         // transition.  It is deliberately separate from the short generic
         // MovementLease and is retained by the stable pair owner across

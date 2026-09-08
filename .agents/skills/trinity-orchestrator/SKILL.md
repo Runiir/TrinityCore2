@@ -15,6 +15,16 @@ agent for independent review of risky runtime/encounter changes. Multiple implem
 workers require explicit user authorization and disjoint ownership. No nested workers.
 Worker prompts include: "Work directly. Do not launch another model or subprocess agent."
 
+When replacing or resuming a worker, name the latest implementation review and
+its unresolved findings explicitly. The worker must reconcile those findings
+with the current diff before choosing more work; a directory of older reports
+is not an adequate handoff. Preserve completed repairs and distinguish missing
+live acceptance from an implementation defect. Honor the user's requested model
+for the current experiment; the defaults below are not mandatory model choices.
+For a critical regression, run its explicit pytest node ID or verify that the
+focused selector actually collects it. A passing filtered suite is not evidence
+for a new test whose name the filter excludes.
+
 Use Luna max for exact narrow implementation with immutable evidence, owned production
 and affected test files, one hypothesis, excluded changes, a focused command, and concrete
 acceptance. Use Sol high for causal ambiguity, architecture, or independent risky-change

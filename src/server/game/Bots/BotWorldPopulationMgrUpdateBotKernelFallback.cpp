@@ -700,17 +700,12 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             };
             return decision;
         };
-        // An exact Magmaw support target is a bounded assistance opportunity,
-        // not a range-closure assignment. The combat candidate performs the
-        // native range/LOS preview and defers when that target is invalid;
-        // submitting the generic range candidate here would chase it first.
-        bool const magmawSupportTarget = context.Target
-            && context.State.MagmawParasiteCombat.IsSupportTarget(
-                context.Bot->GetGUID(), context.Target->GetGUID());
-        if (!magmawSupportTarget)
-            context.State.DecisionKernel.Submit(
-                BotProfileCombatRangeCandidate::Build(
-                    std::move(rangeRequest)));
+        // The range candidate is also admitted for an exact Magmaw support
+        // target. Its value-level minimum-range predicate permits only a
+        // bounded outward retreat; legal-band, max-range, LOS-only, and
+        // forced-reposition cases remain non-applicable before native motion.
+        context.State.DecisionKernel.Submit(
+            BotProfileCombatRangeCandidate::Build(std::move(rangeRequest)));
 
         SubmitAfflictionPetAttackCandidate(context);
 

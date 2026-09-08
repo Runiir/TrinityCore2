@@ -55,7 +55,7 @@ from tools.raid_program.capture_terminal_batch import (
 )
 from tools.raid_program.capture_watchdog import observe_capture_watchdog
 from tools.raid_program import trace_transport_smoke
-
+from tools.bot_ml.combat_log_event_stream import CombatLogDeltaController
 
 @dataclass(frozen=True)
 class CaptureRunResult:
@@ -116,7 +116,7 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
     telemetry_transport_ledger = TelemetryTransportLedger()
     telemetry_command_counts = {
         "status": 0, "diagnose": 0, "trace": 0, "trace_pressure": 0,
-        "combat_log": 0,
+        "combat_log": 0, "combat_log_delta": 0,
     }
     trace_transport_pressure_gate = trace_transport_smoke.pressure_receipt_report([])
     operator_interrupt = False
@@ -263,11 +263,19 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
             [str(binary), "--config", str(config)], cwd=worktree, stdin=subprocess.PIPE,
             stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
         )
-
         try:
             wait_for_prompt(process, log_path, args.startup_timeout_sec)
             assert process.stdin is not None
             log_cursor = JsonLogCursor(log_path)
+            combat_log_delta_controller = CombatLogDeltaController(
+                send_commands=lambda commands: (
+                    process.stdin.write(("\n".join(commands) + "\n").encode()),
+                    process.stdin.flush(),
+                ),
+                read_rows=log_cursor.read_new_rows,
+                command_counts=telemetry_command_counts,
+                trace_interval_seconds=getattr(args, "trace_interval_sec", 2.0),
+            )
             controller_hold_bootstrap_statuses: list[dict[str, Any]] = []
             # Bind the run to the explicitly selected frozen runtime profile.
             # The test worldserver configuration deliberately has AutoStart
@@ -387,7 +395,6 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
             telemetry_freshness: dict[str, dict[str, float | int]] = {}
             telemetry_abort: dict[str, Any] = {"detected": False}
             trace_transport_gate = trace_transport_smoke.evaluate([])
-
             next_resource_sample_at = monitor_started_at
 
             def record_process_resource_sample(*, force: bool = False) -> None:
@@ -420,7 +427,6 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
             # Start the resource series as soon as the worldserver is ready;
             # later rows gain cohort/attempt identity once status is observed.
             record_process_resource_sample(force=True)
-
             def flush_forced_evidence() -> dict[str, Any]:
                 """Retain and independently validate a final evidence bundle.
 
@@ -481,7 +487,9 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                     time.sleep(min(0.25, max(0.0, deadline - time.monotonic())))
                     record_process_resource_sample()
                     observed_at = time.monotonic()
-                    for row in log_cursor.read_new_rows():
+                    rows = log_cursor.read_new_rows()
+                    combat_log_delta_controller.observe_rows(rows)
+                    for row in rows:
                         action = row.get("action")
                         if action == "botauto_diagnose":
                             diagnosis_count += 1
@@ -500,8 +508,14 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                     report["commands"] = commands
                     if report["gate_passed"]:
                         break
+                delta_deadline = time.monotonic() + min(5.0, float(args.telemetry_timeout_sec))
+                delta_report = combat_log_delta_controller.drain_final(delta_deadline)
                 combat_log_started = time.monotonic()
-                process.stdin.write(b"botauto combatlog\n")
+                cohort_suffix = (
+                    f" {combat_log_delta_controller.cohort_id}"
+                    if combat_log_delta_controller.cohort_id else ""
+                )
+                process.stdin.write((f"botauto combatlog{cohort_suffix}\n").encode())
                 process.stdin.flush()
                 telemetry_command_counts["combat_log"] += 1
                 combat_log_rows: list[dict[str, Any]] = []
@@ -519,13 +533,16 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                         max(0.0, combat_log_deadline - time.monotonic()),
                     ))
                     observed_at = time.monotonic()
-                    for row in log_cursor.read_new_rows():
+                    rows = log_cursor.read_new_rows()
+                    combat_log_delta_controller.observe_rows(rows)
+                    for row in rows:
                         action = row.get("action")
                         if action in {
                             "botauto_combatlog_chunk",
                             "botauto_combatlog_complete",
                         }:
-                            combat_log_rows.append(row)
+                            if row.get("export_kind") != "delta":
+                                combat_log_rows.append(row)
                         elif action == "botauto_diagnose":
                             diagnosis_count += 1
                             latest_diagnosis = row
@@ -541,6 +558,7 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                     if combat_log_report["gate_passed"]:
                         break
                 report["combat_log"] = combat_log_report
+                report["combat_log_delta"] = delta_report
                 if combat_log_report["gate_passed"] is not True:
                     report["gate_passed"] = False
                     report.setdefault("missing_channels", []).append(
@@ -570,7 +588,8 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                 if process.poll() is not None:
                     break
                 record_process_resource_sample()
-                due_commands = telemetry_scheduler.commands_due(time.monotonic())
+                batch_now = time.monotonic()
+                due_commands = telemetry_scheduler.commands_due(batch_now)
                 if due_commands:
                     if controller_route_hold_scheduler is None:
                         due_commands = chainwielder_checkpoint_monitor_commands(
@@ -578,6 +597,10 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                             checkpoint_arm_command=checkpoint_arm_command,
                             checkpoint_arm_gate=checkpoint_arm_gate,
                         )
+                combat_log_delta_controller.append_command(
+                    due_commands, now=batch_now,
+                )
+                if due_commands:
                     # A diagnosis is a point-in-time snapshot, not durable
                     # state. Only the diagnosis observed in this poll may
                     # drive the watchdog. Retain latest_diagnosis separately
@@ -609,6 +632,9 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                     observations = collect_log_observations(
                         log_cursor, duration_seconds=1.0,
                     )
+                    combat_log_delta_controller.observe_rows([
+                        observation.row for observation in observations
+                    ])
                     new_statuses: list[dict[str, Any]] = []
                     new_trace_rows: list[dict[str, Any]] = []
                     trace_receipt_indexes: list[int] = []
@@ -727,6 +753,7 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                         last_rejections = rejections
                         if accepted:
                             stable.append(status)
+                            combat_log_delta_controller.bind_status(status)
                         else:
                             stable.clear()
                     if monitor_statuses and not args.trace_transport_smoke:

@@ -26,6 +26,11 @@ worldserver and database. One cohort's cleanup must preserve other active instan
 
 ## Capture and classify
 
+Before changing capture behavior, trace the recorded launch argv to its actual live
+scheduler and finalizer. Similar watchdog names do not establish a shared call path.
+Require the focused fixture to exercise the controller that will launch the next run;
+state any other runner coverage separately. A helper-only fix cannot prove live capture.
+
 Retain native bytes and bind scenario, server epoch, cohort, attempt, roster and route.
 Use status heartbeats with delta trace and slower diagnosis; force final diagnostics at
 material failure/termination. Statistics-window rotation must preserve attempt-scoped

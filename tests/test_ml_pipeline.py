@@ -11942,7 +11942,13 @@ def test_phase13_triggered_experiment_segments_surface():
     status = Path(
         "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp"
     ).read_text(encoding="utf-8")
-    commands = Path("src/server/scripts/Commands/cs_healerbot.cpp").read_text(encoding="utf-8")
+    commands = "\n".join(
+        Path(path).read_text(encoding="utf-8")
+        for path in (
+            "src/server/scripts/Commands/cs_healerbot.cpp",
+            "src/server/scripts/Commands/cs_botauto.cpp",
+        )
+    )
     cmake = Path("src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
     schema = Path("sql/updates/characters/4.3.4/2026_06_12_01_characters_bot_experiment_segments.sql").read_text(encoding="utf-8")
 
@@ -12007,7 +12013,13 @@ def test_phase14_telemetry_clip_storage_surface():
     schema = Path("sql/updates/characters/4.3.4/2026_06_12_00_characters_bot_telemetry_clips.sql").read_text(encoding="utf-8")
     buffer_header = Path("src/server/game/Bots/BotTelemetryBuffer.h").read_text(encoding="utf-8")
     buffer_impl = Path("src/server/game/Bots/BotTelemetryBuffer.cpp").read_text(encoding="utf-8")
-    commands = Path("src/server/scripts/Commands/cs_healerbot.cpp").read_text(encoding="utf-8")
+    commands = "\n".join(
+        Path(path).read_text(encoding="utf-8")
+        for path in (
+            "src/server/scripts/Commands/cs_healerbot.cpp",
+            "src/server/scripts/Commands/cs_botauto.cpp",
+        )
+    )
 
     assert "CREATE TABLE IF NOT EXISTS `experiment_bot_clips`" in schema
     for column in [
