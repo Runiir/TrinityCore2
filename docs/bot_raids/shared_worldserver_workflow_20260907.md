@@ -1,6 +1,58 @@
 # Shared-worldserver workflow status
 
-## Current result: Magmaw development canary accepted
+## Current result: corrected-gear Magmaw development clear, 2026-09-08
+
+Source `48c42063461eafe111c8f6ee930fa81a5bdb75b3` completed the canonical
+10-player normal Magmaw route after replacing the invalid heuristic gear and
+binding both Fire mages to the promoted exact preset. The controller accepted
+native Magmaw death and three terminal statuses, exited automatically with code
+0, and verified zero remaining bots/leases. Postrun build verification passed.
+The admitted identity is epoch `5977365002067371`, attempt 1, instance 2.
+
+The roster remains 2 tanks, 3 healers and 5 DPS. There were two trash deaths and
+four boss-fight deaths; all ten recovered before cleanup. The final report
+records 33,649,939 originated damage and 84,974.593 DPS over 396 active damage
+seconds, with 23,951.020 HPS. The broader 513.278-second report window includes
+other events. Raw callback DPS of 200,514.298 includes transferred damage and
+must not be claimed as actual player throughput. Overall performance remains
+unresolved; this clear does not establish heroic/full-raid readiness or permit
+training-data admission.
+
+The generated gear and route stages are current in DVC. Two preparation
+failures occurred before any server started: stale generated-gear asset
+bindings, then a stale route-stage fixture dependency. The route regenerated
+unchanged. Workflow instructions now require both asset and exact route-profile
+preflight before building. Neither failure is a boss attempt.
+
+Independent Sol review verified exact resolved/native gear-manifest equality
+for all ten bots and unchanged admission/current identities. Item 55159 is
+absent. Heuristic tank/healer equipment and gems have positive acquisition
+sources and no permanent enchants; only the exact DPS presets retain their
+per-slot enchants/reforges. These fallback loadouts are legitimate equipment,
+not a claim of fully enchanted best-in-slot tank/healer setups.
+
+Fixed-bait Fire mage 30006 landed 41 Fireball events at average 37.049 yards,
+versus zero in the preceding run. Its corrected gear/range edge is accepted.
+Party DPS fell from 94,830.092 to 84,974.593 across changed gear, duration,
+movement and survival; this is not a controlled single-variable tuning result.
+The next bounded work unit is Elemental candidate coverage. Actor 30010 landed
+four Lightning Bolts and zero Lava Bursts. Repeated `no_valid_profile_action`
+diagnostics show aura, range and enemy-count gates excluding the available
+spells. Join exact target/aura/count/range observations to eligibility before
+assigning a repair; this is not evidence for coefficient tuning. The four
+boss-fight deaths and other actors' movement/cadence losses remain visible in
+the all-bot review. Do not rerun Magmaw just to reproduce these retained traces.
+
+The closed run, exact inputs/build receipts, preparation-failure corrections
+and independent all-bot review are published at
+[`magmaw_development_48c4206346_20260908.tar.gz.dvc`](../../artifacts/cata_raid_program/magmaw_development_48c4206346_20260908.tar.gz.dvc).
+The 32,647,161-byte archive was reconstructed from remote into a fresh empty
+cache and hash-verified. Exact archive duplicates and local raw logs were then
+evicted; the adjacent publication receipt records the checks and member hashes.
+Historical results below retain their original scope; the earlier
+gear-attribution correction remains applicable.
+
+## Earlier Magmaw development clear
 
 Source `fc2061c40cd92c348e7f0f97ec9e06edd6257fae` completed the canonical
 10-player normal Magmaw route with native boss death, zero casualties, three

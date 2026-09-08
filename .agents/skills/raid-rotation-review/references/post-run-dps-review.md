@@ -78,6 +78,14 @@ the per-actor findings, reference/measurement limitations, and the highest-value
 bounded next work unit with its counterexample, production callers, owned files,
 forbidden changes, focused test, and next-run acceptance condition.
 
+Close the review once the all-bot table, repaired-edge verdict, available
+reference comparisons and one bounded next task are recorded. Reuse retained
+normalized references and existing report aggregates. Do not delay a proven
+canary's publication to build a bespoke analyzer, expand a dossier or solve
+the next repair. If causality is unresolved, return a diagnosis task with the
+exact trace and missing join; do not invent implementation files or a fix.
+The coordinator may package a compact reviewer response into the run's evidence.
+
 Route cadence/priority/resource/pet-policy defects to role implementation;
 shared arbitration/movement/target-ownership defects to runtime implementation;
 matching setup/stats/cadence with incorrect event damage to native class
