@@ -429,8 +429,8 @@ stages:
       size: 1651
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
-      md5: 41e9d3b40a603121e5f71517c0aeddc7
-      size: 131575
+      md5: 23661b3e120612ff29401bf9c4d53033
+      size: 133175
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
       md5: e9e1a124f87d941d0639faa902dcd3cf

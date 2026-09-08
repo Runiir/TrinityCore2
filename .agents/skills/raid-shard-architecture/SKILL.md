@@ -23,6 +23,10 @@ files/inventory and DVC provenance before building or provisioning. Keep the
 historical native-data audit and extraction authority unchanged when native
 bytes are unchanged. Run `verify_runtime_asset_inputs` against the prepared
 copies first; a new DVC output cannot satisfy an old generated-payload hash.
+Also run `validate_runtime_profile_assets` with the exact scenario/profile and
+pool before building. Its `validation_scenarios` DVC check can detect changed
+fixture dependencies even when regenerated route bytes are identical. Reproduce
+the affected stage and commit its lock update; do not bypass the lineage check.
 
 Before inspection or mutation, apply
 [the bounded work-unit contract](../raid-performance-loop/references/bounded-work-unit-contract.md).
