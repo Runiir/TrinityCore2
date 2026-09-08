@@ -2,13 +2,13 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:roster_execution_review",
   "owner_skill": "raid-performance-loop",
-  "classification": "reference_generation_pending",
+  "classification": "reviewed_batch_ready_for_prebuild",
   "epoch_id": "roster_execution_review_20260908",
   "observed_at_commit": "4a12ee0c66a64c95a544e07a8040a8f3778421cb",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "All native and reference source repairs approved; fixture/request identity validated, affected tests119passed2legacy-skipped. Regenerate and promote exact cohort before native calibration.",
+  "gate_state": "Native repairs and reference workflow repairs independently approved. All16 current exact references reconstructed and promoted. Frozen build and live acceptance pending.",
   "first_broken_edge": {
     "id": "pre_exit_submission_post_exit_native_launch_excluded",
     "owner_classification": "raid_bot_runtime_implementation",
@@ -26,7 +26,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "e09c34ad949ab651609d78281b1a5ea26fc8896947ee1430f3e7cb64143dc3ba"
+    "sha256": "df4c387d67aeb898ae53beb44d706531fe1fd5f114ed7cd6350a1da6ac249c2d"
   },
   "scope_lock": {
     "objective": "Use actual post-exit native movement authority for exact occupancy-scoped POINT recovery and align native profession requirements with simulator requests.",
@@ -61,9 +61,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Complete final isolated-byte review, generate/publish/reconstruct/promote captured-oracle reference cohort, then freeze/build native batch and validate.",
+  "next_action": "Freeze current source, run cheap map/profile preflight, build once, apply exact missing Elemental profession and run300-second native calibration; then bounded Magmaw acceptance.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -127,5 +127,6 @@
       "id": "frozen_fixture_validation_reads_ambient_dbc",
       "review": "independently_approved_empty_dbc_root_fixture_passed"
     }
-  ]
+  ],
+  "reference_fixture_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f"
 }

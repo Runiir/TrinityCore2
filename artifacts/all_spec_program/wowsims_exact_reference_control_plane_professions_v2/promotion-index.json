@@ -1,0 +1,222 @@
+{
+  "schema": "wowsims_generated_reference_promotion_index_v1",
+  "publication_domain": {
+    "repository_url": "git@github.com:Runiir/TrinityCore2.git",
+    "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
+    "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
+    "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
+    "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
+    "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
+  },
+  "entries": [
+    {
+      "target_spec": "affliction_warlock",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/6a0d06a89ec53df026b371e63b5082b8b5d8d143a075bbc9e48daf9d15e7dd60.json",
+        "sha256": "6a0d06a89ec53df026b371e63b5082b8b5d8d143a075bbc9e48daf9d15e7dd60",
+        "byte_count": 16597
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "arms_warrior",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/42dc0e578d74d38c0b42ab8119f9988503358bd6a683f20848d3469448e74140.json",
+        "sha256": "42dc0e578d74d38c0b42ab8119f9988503358bd6a683f20848d3469448e74140",
+        "byte_count": 11595
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "assassination_rogue",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/c82d49d8624ef85adecd5935144dd226bccbb82f65c6b85b8a11dbc361c328c4.json",
+        "sha256": "c82d49d8624ef85adecd5935144dd226bccbb82f65c6b85b8a11dbc361c328c4",
+        "byte_count": 11356
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "balance_druid",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/deca1e32620f7070c637e4c3371ac3eb53eddd6b798d89e5736c7eadaf5873bc.json",
+        "sha256": "deca1e32620f7070c637e4c3371ac3eb53eddd6b798d89e5736c7eadaf5873bc",
+        "byte_count": 11367
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "combat_rogue",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/68eaeebc061a27ff5f826a1831036d1a005b73d62859e58020b9fe96f9312e99.json",
+        "sha256": "68eaeebc061a27ff5f826a1831036d1a005b73d62859e58020b9fe96f9312e99",
+        "byte_count": 11368
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "demonology_warlock",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/257cc803668582304f3dcc9d46c9ed72c88f793c1750f214695f4d3b9cbefbb2.json",
+        "sha256": "257cc803668582304f3dcc9d46c9ed72c88f793c1750f214695f4d3b9cbefbb2",
+        "byte_count": 16656
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "elemental_shaman",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/12941b06e3763180f02cbe5d88f68389afa57a74d389e549c6608899ee10a043.json",
+        "sha256": "12941b06e3763180f02cbe5d88f68389afa57a74d389e549c6608899ee10a043",
+        "byte_count": 11182
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "feral_druid_dps",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/91b3b4a889eb31bfaff4e5070ae1e2c3ac954d6f7a2b597682aff5a9d18501c0.json",
+        "sha256": "91b3b4a889eb31bfaff4e5070ae1e2c3ac954d6f7a2b597682aff5a9d18501c0",
+        "byte_count": 11339
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "fire_mage",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/99ec1c97d0584dba59c4fba2304e2cb9552cd689ee05d75508568dcb02aaf98e.json",
+        "sha256": "99ec1c97d0584dba59c4fba2304e2cb9552cd689ee05d75508568dcb02aaf98e",
+        "byte_count": 11348
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "frost_death_knight",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/2a706585d11eb72826ee2a054d178e0bd5062d2f033753713d98182d143b5441.json",
+        "sha256": "2a706585d11eb72826ee2a054d178e0bd5062d2f033753713d98182d143b5441",
+        "byte_count": 11506
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "fury_warrior",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/ba55b3bda168276a6e46e38aee44e86dd78e62ca1754cc62cc684829c5b23fba.json",
+        "sha256": "ba55b3bda168276a6e46e38aee44e86dd78e62ca1754cc62cc684829c5b23fba",
+        "byte_count": 11587
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "marksmanship_hunter",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/35a174ce4de759de18cca42df6dea1a98ed5e5ae81a6942c8f1b496258122f06.json",
+        "sha256": "35a174ce4de759de18cca42df6dea1a98ed5e5ae81a6942c8f1b496258122f06",
+        "byte_count": 16164
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "retribution_paladin",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/56bff9dbc17ccf9b470cebf14a97ca01959bd18ac5df071ac1f5d81bc8cbcb54.json",
+        "sha256": "56bff9dbc17ccf9b470cebf14a97ca01959bd18ac5df071ac1f5d81bc8cbcb54",
+        "byte_count": 11562
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "shadow_priest",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/03e618f3b80394b89f25c662cfd9b66d9aa27cfd937d0519485fb97e49aeb0be.json",
+        "sha256": "03e618f3b80394b89f25c662cfd9b66d9aa27cfd937d0519485fb97e49aeb0be",
+        "byte_count": 11278
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "survival_hunter",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/941b7abc7ebea6f41be14f2158130623883e3c4973711f66a8e66b4964dcdad7.json",
+        "sha256": "941b7abc7ebea6f41be14f2158130623883e3c4973711f66a8e66b4964dcdad7",
+        "byte_count": 16220
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    },
+    {
+      "target_spec": "unholy_death_knight",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/e117764f363d8770173332ba30714709c39cca59bdb81063147bdd5672de25c6.json",
+        "sha256": "e117764f363d8770173332ba30714709c39cca59bdb81063147bdd5672de25c6",
+        "byte_count": 15888
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
+        "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
+        "byte_count": 114370
+      }
+    }
+  ],
+  "index_sha256": "2cf6194fc5115e87ae24cca9988ac5ac7a4f9716fc7da75b23a14282d10ee63a"
+}
