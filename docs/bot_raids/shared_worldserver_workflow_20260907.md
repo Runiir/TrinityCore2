@@ -16,14 +16,38 @@ The adjacent publication receipt records remote download verification and exact
 local payload eviction. Restore that payload through DVC when investigation
 requires raw events.
 
-Current follow-up: the user requested DPS optimization using this accepted run
-as the baseline. Assign one dedicated rotation/DPS reviewer to each closed run,
-retain its compact findings before evidence eviction, and carry one proven loss
-into the next repair. Separate priority/uptime/targeting defects from native class
-damage defects using the current exact simulator references. This performance
-work does not reopen the accepted Magmaw completion lifecycle.
+## Latest performance iteration: hunter range cap repaired
 
-After the bounded performance repair, resume the wider raid program using the
+Source `d5bf3b804a488f7a880a1e1a693541fc5b012d00` corrected the Marksmanship
+profile's false 35-yard maximum to the native 40-yard shot ranges (45 for Kill
+Shot). Priorities, coefficients, gear, formation geometry, and movement code
+were unchanged. The executable SQL regression and affected APL tests passed;
+independent review approved the repair before one verified build and live run.
+
+The same 10-player normal route cleared with native boss death, three accepted
+terminal statuses, controller exit 0, verified cleanup, and all ten bots alive.
+One warlock trash death was recovered before Magmaw; no bot died during the
+boss fight. Party DPS increased from 79,977.972 to 94,830.092 over 316 combat
+seconds versus 396 in the baseline. HPS was 16,259.737 versus 16,803.215.
+Hunter DPS increased from 3,096.018 to 18,722.421, with Auto Shot landed events
+98 versus 18, Steady Shot 29 versus 2, and Chimera Shot 21 versus 6.
+
+The DPS reviewer verified attacks beyond the old cap without hunter hook duty
+or generic range-movement oscillation. This accepts a range-eligibility repair,
+not full simulator parity or a native damage-coefficient change. The evidence,
+including the separately attributable baseline DPS analysis, is retained at
+[`magmaw_development_d5bf3b804a_20260908.tar.gz.dvc`](../../artifacts/cata_raid_program/magmaw_development_d5bf3b804a_20260908.tar.gz.dvc).
+The adjacent publication receipt records remote verification and exact eviction.
+
+Keep one dedicated rotation/DPS reviewer on every run and carry its first
+proven mismatch into the next work unit. The next proven DPS edge is fire mage
+30006: exposed-head diagnostics reject Living Bomb and Fireball at the fire
+profile's 35-yard cap although both native spells allow 40 yards. Scope the
+next repair to the affected fire profile/actions; retain Fire Blast's native
+30-yard limit, all priorities, coefficients, and fixed-bait geometry. Elemental
+shaman throughput remains a separate diagnostic tail, not a guessed tuning fix.
+
+The bounded hunter repair is complete. Continue the wider raid program using the
 existing shared-worldserver instance workflow. Check native script readiness
 before assigning another boss. Do not reopen historical fixture-admission
 requests without new contradictory evidence.
