@@ -2,61 +2,57 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:roster_execution_review",
   "owner_skill": "raid-performance-loop",
-  "classification": "reviewed_ready_for_build",
+  "classification": "reference_generation_pending",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "fc8caa430de98a37b530bd22933c66d5d3b6dbed",
+  "observed_at_commit": "4a12ee0c66a64c95a544e07a8040a8f3778421cb",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "All three bounded batch repairs independently approved. Commit/build once, then bounded native Magmaw validation; overall DPS unresolved.",
+  "gate_state": "Native repairs and profession setup independently approved; exact regenerated fixture/request inputs validated. New reference generation and live acceptance pending.",
   "first_broken_edge": {
-    "id": "post_exit_deferred_point_receipt_never_bound",
+    "id": "pre_exit_submission_post_exit_native_launch_excluded",
     "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Exact post-exit POINT570 has unavailable progress at submission; native launch/arm occurs later, but no late binding path revisits it.",
-    "review_state": "independent_review_approved_live_pending",
+    "cause": "Exact owned POINT563 submitted before observed exit launches and completes after exit, but submission-time exclusion loses its identity and prevents grounding reconciliation. Actual occupancy at submission is unproved.",
+    "review_state": "implementation_independently_approved_native_acceptance_pending",
     "counterexample": {
       "actor_guid": 30008,
-      "receipt_id": 570,
-      "exit_at_ms": 1788886529811,
-      "submitted_at_ms": 1788886531530,
-      "native_armed_at_ms": 1788886532401,
-      "terminal_at_ms": 1788886533822
+      "receipt_id": 563,
+      "submitted_at_ms": 1788889505601,
+      "exit_at_ms": 1788889510537,
+      "native_armed_at_ms": 1788889513112,
+      "terminal_at_ms": 1788889515830,
+      "spline_id": 5925
     }
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "de23f6c643b946b4a4a1f0d32ae369de510436ee8f29760310625c65b55da957"
+    "sha256": "659825e1338814068da4d1baf2b658adb87df0a39fa0c213bfb885e6cf4ee6ac"
   },
   "scope_lock": {
-    "objective": "Repair post-exit movement recovery and hook destination floor identity; admit other selected maps through the existing audited native inventory.",
+    "objective": "Use actual post-exit native movement authority for exact occupancy-scoped POINT recovery and align native profession requirements with simulator requests.",
     "owned_files": [
       "src/server/game/Bots/BotServerVehicleExitLanding.h",
-      "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotPreparation.cpp",
       "tests/test_bot_server_vehicle_exit_landing.py",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHook.h",
-      "tests/test_magmaw_hook_assignment.py",
-      "tools/raid_program/runtime_asset_closure.py",
-      "experiments/configs/runtime_asset_closure_manifest_v1.json",
-      "experiments/configs/runtime_asset_closure_audit_authority_v1.json",
-      "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
-      "experiments/configs/runtime_asset_input_closure_audit_authority_v1.json",
-      "tests/test_runtime_asset_closure.py",
-      "tests/test_runtime_asset_root_aliases.py"
+      "tools/bot_ml/wowsims_gear_binding.py",
+      "tools/bot_ml/sync_wowsims_dps_gear_profiles.py",
+      "tools/bot_ml/build_all_spec_phase1_catalogs.py",
+      "tools/bot_ml/build_validation_provisioning.py",
+      "tools/bot_ml/phase8_fixture_contract.py",
+      "tests/test_profession_enchant_setup.py",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCrashSideMovement.h",
+      "tests/test_magmaw_crash_destination_floor.py",
+      "tests/test_magmaw_event_movement_transition.py"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Actual post-exit submitted POINT570 binds when its authoritative native launch becomes available after submission.",
-    "No arbitrary recent receipt, pre-exit receipt563, failed or superseded receipt, wrong actor/map/instance/attempt/wipe/route, or aerial path can supply grounding proof.",
-    "Preserve exact floor, endpoint, spline, native flight/transport/control and liveness guards, plus prior772 pending-sample retention.",
-    "Pass affected actual-caller regression and independent Sol review before one build and bounded native validation.",
-    "Use naturally occurring exits for live acceptance; record all-bot DPS/HPS, deaths, movement and target outcomes without treating a boss clear as overall DPS acceptance.",
-    "Hook approach retains existing X/Y and uses the resolved route floor identity across vehicle-exit actor heights; native pathing and tolerance checks stay unchanged.",
-    "Selected maps derive exact byte/mode/path expectations from authenticated full native inventory; explicit669 contracts remain consistent and malformed selectors/contracts fail closed."
+    "Retain only the latest actual ground POINT through exact actor/map/instance/scope continuity and matching observed occupancy and exit; support submission before or during occupancy.",
+    "After that occupancy exits, bind only the same receipt with authoritative native arm at/after exit; reject pre-exit-native-arm, stale or foreign episodes, supersession and failed terminal outcomes.",
+    "Preserve native endpoint/floor/platform/current-position/spline/control/liveness guards and ordinary post-exit submission behavior.",
+    "Derive required primary professions from equipped permanent enchants, merge native skill rows without losing secondary skills, and round-trip exact simulator profession identity without inventing a second profession.",
+    "Independent review and affected behavioral fixtures before generation/build/live; close all-bot DPS/HPS, deaths, route and native outcomes, then publish/verify/evict exact evidence."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -65,9 +61,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Finish map parser review, commit the reviewed batch, build once and run the canonical bounded Magmaw validation. Continue profession applicability diagnosis separately before exact class calibration.",
+  "next_action": "Build/generate/promote the new exact reference cohort, then freeze and build the reviewed native batch and validate native outcomes.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -83,45 +79,49 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "fc8caa430de98a37b530bd22933c66d5d3b6dbed",
+    "source_commit": "4a12ee0c66a64c95a544e07a8040a8f3778421cb",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
     "terminal_reason": "clear",
     "cleanup_passed": true,
     "training_eligible": false,
-    "recorded_casualties": 3,
-    "boss_fight_casualties": 1,
-    "hostile_only_party_dps": 130359.348,
-    "party_hps": 18267.009,
-    "combat_duration_sec": 224,
+    "recorded_casualties": 0,
+    "boss_fight_casualties": 0,
+    "hostile_only_party_dps": 115743.067,
+    "party_hps": 14302.0,
+    "combat_duration_sec": 255,
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_fc8caa430d_20260908.tar.gz.dvc"
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_4a12ee0c66_20260908.tar.gz.dvc"
   },
   "latest_analysis": {
-    "review_directory": "magmaw-development-fc8caa430d/dps-review",
-    "publication_state": "remote_verified_exact_raw_payloads_evicted"
+    "review_directory": "magmaw-development-4a12ee0c66/dps-review",
+    "publication_state": "remote_verified_exact_payloads_evicted"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approved",
-    "scope": "Deferred vehicle binding, hook destination floor identity, generic selected-map admission; all independently Sol reviewed.",
+    "scope": "Vehicle submission/occupancy/exit/native-arm continuity, crash destination floor identity, and profession/enchant setup.",
     "live_verified": false
   },
   "related_edges": [
     {
-      "id": "hook_approach_copies_airborne_actor_floor",
-      "review": "independent_review_approved_live_pending"
+      "id": "post_exit_deferred_point_receipt_never_bound",
+      "review": "native_accepted_on_Fire575"
     },
     {
-      "id": "selected_map_contract_missing_for_existing_inventory",
-      "review": "independent_review_approved"
+      "id": "hook_approach_copies_airborne_actor_floor",
+      "review": "native_accepted"
     },
     {
       "id": "profession_enchant_applicability",
-      "review": "diagnosis_in_progress_no_tuning_admitted"
+      "review": "implementation_independently_approved"
+    },
+    {
+      "id": "crash_destination_copies_actor_floor",
+      "review": "implementation_independently_approved_native_acceptance_pending"
     }
   ]
 }

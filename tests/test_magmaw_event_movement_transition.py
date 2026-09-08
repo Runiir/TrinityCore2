@@ -213,10 +213,10 @@ int main()
         capturedBoss.Position.Y
             + roomDy * AdaptiveMagmawStrategy::SupportStackDistance
             - roomDx * AdaptiveMagmawStrategy::SupportStackDistance,
-        actorAtLaunch.Z };
+        captured.Route.NavigationHints.front().Z };
     assert(std::hypot(capturedRequest->X - expectedRightSupport.X,
         capturedRequest->Y - expectedRightSupport.Y) < 0.001f);
-    assert(capturedRequest->Z == actorAtLaunch.Z);
+    assert(capturedRequest->Z == expectedRightSupport.Z);
     assert(std::hypot(capturedRequest->X - capturedBoss.Position.X,
         capturedRequest->Y - capturedBoss.Position.Y) < 12.0f);
     uint64 const capturedIntent =
@@ -245,8 +245,19 @@ int main()
     captured.Players = { capturedBot };
     auto safeBounded = strategy.Propose(captured, capturedActor, "dps",
         nullptr, false, false, nullptr, nullptr, &capturedState);
+    // The recorded point is horizontally safe but below the destination
+    // anchor floor; it must not retire the retained movement task.
+    assert(capturedState.ActiveLethal());
+    assert(safeBounded.Movement);
+    assert(safeBounded.Movement->Id.EventGeneration == capturedIntent);
+    captured.Revision += 1;
+    captured.ObservedAtMs += 1;
+    capturedBot.Position.Z = expectedRightSupport.Z;
+    captured.Players = { capturedBot };
+    auto safeAnchorFloor = strategy.Propose(captured, capturedActor, "dps",
+        nullptr, false, false, nullptr, nullptr, &capturedState);
     assert(!capturedState.ActiveLethal());
-    assert(!safeBounded.Movement);
+    assert(!safeAnchorFloor.Movement);
 
     captured.Revision = 636;
     captured.ObservedAtMs += 10;
@@ -264,7 +275,7 @@ int main()
     assert(reentryRequest);
     assert(reentryRequest->X == capturedRequest->X
         && reentryRequest->Y == capturedRequest->Y
-        && reentryRequest->Z == capturedBot.Position.Z);
+        && reentryRequest->Z == expectedRightSupport.Z);
 
     captured.Revision += 1;
     capturedBot.Position = { -306.0f, -35.0f, requested.Z };

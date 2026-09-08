@@ -195,7 +195,25 @@
           "id": 78392,
           "reforging": 165
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [
+          {
+            "source_enchant_ids": [
+              4115
+            ],
+            "native_skill_id": 197,
+            "required_rank": 500,
+            "provisioned_value": 525,
+            "provisioned_max": 525,
+            "wowsims_profession": "ProfessionTailoring"
+          }
+        ],
+        "wowsims_professions": [
+          "ProfessionTailoring",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "arms_warrior": {
       "source": {
@@ -338,7 +356,14 @@
           "id": 77087,
           "reforging": 158
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [],
+        "wowsims_professions": [
+          "ProfessionUnknown",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "assassination_rogue": {
       "source": {
@@ -496,7 +521,14 @@
           "id": 78369,
           "reforging": 140
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [],
+        "wowsims_professions": [
+          "ProfessionUnknown",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "wowsims_cata_p4_balance_druid": {
       "source": {
@@ -648,7 +680,25 @@
           ],
           "reforging": 147
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [
+          {
+            "source_enchant_ids": [
+              4115
+            ],
+            "native_skill_id": 197,
+            "required_rank": 500,
+            "provisioned_value": 525,
+            "provisioned_max": 525,
+            "wowsims_profession": "ProfessionTailoring"
+          }
+        ],
+        "wowsims_professions": [
+          "ProfessionTailoring",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "combat_rogue": {
       "source": {
@@ -805,7 +855,14 @@
           "id": 78369,
           "reforging": 139
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [],
+        "wowsims_professions": [
+          "ProfessionUnknown",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "demonology_warlock": {
       "source": {
@@ -959,7 +1016,25 @@
           "id": 78392,
           "reforging": 165
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [
+          {
+            "source_enchant_ids": [
+              4115
+            ],
+            "native_skill_id": 197,
+            "required_rank": 500,
+            "provisioned_value": 525,
+            "provisioned_max": 525,
+            "wowsims_profession": "ProfessionTailoring"
+          }
+        ],
+        "wowsims_professions": [
+          "ProfessionTailoring",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "elemental_shaman": {
       "source": {
@@ -1112,7 +1187,25 @@
           ],
           "reforging": 117
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [
+          {
+            "source_enchant_ids": [
+              4115
+            ],
+            "native_skill_id": 197,
+            "required_rank": 500,
+            "provisioned_value": 525,
+            "provisioned_max": 525,
+            "wowsims_profession": "ProfessionTailoring"
+          }
+        ],
+        "wowsims_professions": [
+          "ProfessionTailoring",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "feral_druid_dps": {
       "source": {
@@ -1260,7 +1353,14 @@
             71879
           ]
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [],
+        "wowsims_professions": [
+          "ProfessionUnknown",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "wowsims_cata_p4_fire_mage": {
       "source": {
@@ -1412,7 +1512,25 @@
           "id": 78392,
           "reforging": 166
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [
+          {
+            "source_enchant_ids": [
+              4115
+            ],
+            "native_skill_id": 197,
+            "required_rank": 500,
+            "provisioned_value": 525,
+            "provisioned_max": 525,
+            "wowsims_profession": "ProfessionTailoring"
+          }
+        ],
+        "wowsims_professions": [
+          "ProfessionTailoring",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "frost_death_knight": {
       "source": {
@@ -1565,7 +1683,14 @@
             71883
           ]
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [],
+        "wowsims_professions": [
+          "ProfessionUnknown",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "fury_warrior": {
       "source": {
@@ -1713,7 +1838,14 @@
           "id": 77087,
           "reforging": 158
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [],
+        "wowsims_professions": [
+          "ProfessionUnknown",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "marksmanship_hunter": {
       "source": {
@@ -1861,7 +1993,14 @@
           "id": 78471,
           "enchant": 4267
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [],
+        "wowsims_professions": [
+          "ProfessionUnknown",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "retribution_paladin": {
       "source": {
@@ -2007,7 +2146,14 @@
           ],
           "reforging": 152
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [],
+        "wowsims_professions": [
+          "ProfessionUnknown",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "wowsims_cata_p4_shadow_priest": {
       "source": {
@@ -2160,7 +2306,25 @@
           "id": 78392,
           "reforging": 162
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [
+          {
+            "source_enchant_ids": [
+              4115
+            ],
+            "native_skill_id": 197,
+            "required_rank": 500,
+            "provisioned_value": 525,
+            "provisioned_max": 525,
+            "wowsims_profession": "ProfessionTailoring"
+          }
+        ],
+        "wowsims_professions": [
+          "ProfessionTailoring",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "wowsims_cata_p4_survival_hunter": {
       "source": {
@@ -2308,7 +2472,14 @@
           "id": 78471,
           "enchant": 4267
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [],
+        "wowsims_professions": [
+          "ProfessionUnknown",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "unholy_death_knight": {
       "source": {
@@ -2457,7 +2628,14 @@
           ],
           "reforging": 165
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [],
+        "wowsims_professions": [
+          "ProfessionUnknown",
+          "ProfessionUnknown"
+        ]
+      }
     },
     "wowsims_cata_p4_enhancement_shaman": {
       "source": {
@@ -2609,7 +2787,25 @@
           ],
           "reforging": 146
         }
-      ]
+      ],
+      "profession_setup": {
+        "requirements": [
+          {
+            "source_enchant_ids": [
+              4190
+            ],
+            "native_skill_id": 165,
+            "required_rank": 500,
+            "provisioned_value": 525,
+            "provisioned_max": 525,
+            "wowsims_profession": "ProfessionLeatherworking"
+          }
+        ],
+        "wowsims_professions": [
+          "ProfessionLeatherworking",
+          "ProfessionUnknown"
+        ]
+      }
     }
   }
 }

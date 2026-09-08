@@ -20,6 +20,12 @@ struct Episode
     bool VehicleOccupiedLastTick = false;
     std::uint64_t ObservedVehicleGuid = 0;
 
+    std::uint64_t OccupiedBotGuid = 0;
+    std::uint32_t OccupiedMapId = 0;
+    std::uint32_t OccupiedInstanceId = 0;
+    bool OccupiedScopeAvailable = false;
+    Scope OccupiedScope;
+
     bool ExitPending = false;
     std::uint64_t ExitObservedAtMs = 0;
     std::uint64_t ExitBotGuid = 0;
@@ -32,6 +38,10 @@ struct Episode
     std::uint64_t SubmittedGroundReceiptId = 0;
     std::uint64_t GroundSubmittedAtMs = 0;
     bool AwaitingGroundReceipt = false;
+    std::uint64_t SubmittedBotGuid = 0;
+    std::uint32_t SubmittedMapId = 0;
+    std::uint32_t SubmittedInstanceId = 0;
+    Scope SubmittedScope;
 
     // The latest guard evaluation is retained for diagnosis even when it
     // rejects reconciliation.  These values are bounded latest-value state;
@@ -95,37 +105,74 @@ inline void ResetSubmittedReceipt(Episode& episode)
     episode.SubmittedGroundReceiptId = 0;
     episode.GroundSubmittedAtMs = 0;
     episode.AwaitingGroundReceipt = false;
+    episode.SubmittedBotGuid = 0;
+    episode.SubmittedMapId = 0;
+    episode.SubmittedInstanceId = 0;
+    episode.SubmittedScope = Scope();
 }
 
 inline bool RememberGroundPointSubmission(Episode& episode,
     std::uint64_t receiptId, std::uint64_t botGuid, std::uint32_t mapId,
     std::uint32_t instanceId, std::uint64_t submittedAtMs, Scope const& scope)
 {
-    if (!episode.ExitPending || !receiptId
-        || botGuid != episode.ExitBotGuid || mapId != episode.ExitMapId
-        || instanceId != episode.ExitInstanceId
-        || submittedAtMs < episode.ExitObservedAtMs
-        || (episode.ExitScopeAvailable && !SameEpisodeScope(scope, episode.ExitScope)))
+    if (!receiptId || !botGuid || !submittedAtMs
+        || scope.MapId != mapId || scope.InstanceId != instanceId)
+        return false;
+    if (episode.ExitPending
+        && (botGuid != episode.ExitBotGuid || mapId != episode.ExitMapId
+            || instanceId != episode.ExitInstanceId
+            || submittedAtMs < episode.ExitObservedAtMs
+            || (episode.ExitScopeAvailable
+                && !SameEpisodeScope(scope, episode.ExitScope))))
+        return false;
+    if (episode.VehicleOccupiedLastTick
+        && (botGuid != episode.OccupiedBotGuid || mapId != episode.OccupiedMapId
+            || instanceId != episode.OccupiedInstanceId
+            || !episode.OccupiedScopeAvailable
+            || !SameEpisodeScope(scope, episode.OccupiedScope)))
         return false;
     if (episode.SubmittedGroundReceiptId
         && (submittedAtMs < episode.GroundSubmittedAtMs
             || (submittedAtMs == episode.GroundSubmittedAtMs
                 && receiptId <= episode.SubmittedGroundReceiptId)))
         return false;
+    episode.SubmittedBotGuid = botGuid;
+    episode.SubmittedMapId = mapId;
+    episode.SubmittedInstanceId = instanceId;
+    episode.SubmittedScope = scope;
     episode.SubmittedGroundReceiptId = receiptId;
     episode.GroundSubmittedAtMs = submittedAtMs;
     episode.AwaitingGroundReceipt = true;
     return true;
 }
 
+inline bool SameSubmissionIdentity(Episode const& episode,
+    VehicleTransitionObservation const& observation)
+{
+    return observation.ScopeAvailable
+        && episode.SubmittedBotGuid == observation.BotGuid
+        && episode.SubmittedMapId == observation.MapId
+        && episode.SubmittedInstanceId == observation.InstanceId
+        && SameEpisodeScope(episode.SubmittedScope, observation.CurrentScope)
+        && episode.GroundSubmittedAtMs <= observation.ObservedAtMs;
+}
+
 inline void BeginVehicleOccupancy(Episode& episode,
     VehicleTransitionObservation const& observation)
 {
+    bool const carrySubmission = !episode.VehicleOccupiedLastTick
+        && !episode.ExitPending && observation.VehicleGuid
+        && SameSubmissionIdentity(episode, observation);
     // A new mount closes any older, unproven exit episode.  Its last
     // evaluation remains available for postmortem diagnosis.
     episode.VehicleObserved = true;
     episode.VehicleOccupiedLastTick = true;
     episode.ObservedVehicleGuid = observation.VehicleGuid;
+    episode.OccupiedBotGuid = observation.BotGuid;
+    episode.OccupiedMapId = observation.MapId;
+    episode.OccupiedInstanceId = observation.InstanceId;
+    episode.OccupiedScopeAvailable = observation.ScopeAvailable;
+    episode.OccupiedScope = observation.CurrentScope;
     episode.ExitPending = false;
     episode.ExitObservedAtMs = 0;
     episode.ExitBotGuid = 0;
@@ -134,7 +181,19 @@ inline void BeginVehicleOccupancy(Episode& episode,
     episode.ExitScopeAvailable = false;
     episode.ExitScope = Scope();
     ResetBoundReceipt(episode);
-    ResetSubmittedReceipt(episode);
+    if (!carrySubmission)
+        ResetSubmittedReceipt(episode);
+}
+
+inline bool SameOccupancyIdentity(Episode const& episode,
+    VehicleTransitionObservation const& observation)
+{
+    return episode.OccupiedBotGuid == observation.BotGuid
+        && episode.OccupiedMapId == observation.MapId
+        && episode.OccupiedInstanceId == observation.InstanceId
+        && episode.OccupiedScopeAvailable == observation.ScopeAvailable
+        && (!observation.ScopeAvailable
+            || SameEpisodeScope(episode.OccupiedScope, observation.CurrentScope));
 }
 
 inline void ObserveVehicleTransition(Episode& episode,
@@ -143,14 +202,23 @@ inline void ObserveVehicleTransition(Episode& episode,
     if (observation.HasVehicle)
     {
         if (!episode.VehicleOccupiedLastTick
-            || episode.ObservedVehicleGuid != observation.VehicleGuid)
+            || episode.ObservedVehicleGuid != observation.VehicleGuid
+            || !SameOccupancyIdentity(episode, observation))
             BeginVehicleOccupancy(episode, observation);
         return;
     }
 
     if (!episode.VehicleOccupiedLastTick)
+    {
+        if (!episode.ExitPending && !SameSubmissionIdentity(episode, observation))
+            ResetSubmittedReceipt(episode);
         return;
+    }
 
+    // Only an exact actual POINT from this occupied identity crosses exit.
+    bool const carrySubmission = episode.ObservedVehicleGuid
+        && SameOccupancyIdentity(episode, observation)
+        && observation.ObservedAtMs >= episode.GroundSubmittedAtMs;
     episode.VehicleObserved = true;
     episode.VehicleOccupiedLastTick = false;
     episode.ExitPending = true;
@@ -161,7 +229,8 @@ inline void ObserveVehicleTransition(Episode& episode,
     episode.ExitScopeAvailable = observation.ScopeAvailable;
     episode.ExitScope = observation.CurrentScope;
     ResetBoundReceipt(episode);
-    ResetSubmittedReceipt(episode);
+    if (!carrySubmission)
+        ResetSubmittedReceipt(episode);
 }
 
 struct ReceiptBindingObservation
@@ -233,6 +302,11 @@ inline bool BindSubmittedGroundReceipt(Episode& episode, Progress const& progres
     // authoritative progress sample. Retain the submission until then.
     if (!progress.ArmedAtMs || progress.ArmedAtMs < episode.GroundSubmittedAtMs)
         return false;
+    if (progress.ArmedAtMs < episode.ExitObservedAtMs)
+    {
+        ResetSubmittedReceipt(episode);
+        return false;
+    }
     ReceiptBindingObservation candidate;
     candidate.ActualPointSubmission = true;
     candidate.ProgressReceiptArmed = true;

@@ -2,12 +2,47 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
-## Current result: Magmaw clear, DPS still unresolved
+Current attempt is closed: source `4a12ee0c66a64c95a544e07a8040a8f3778421cb`
+killed Magmaw with zero deaths, all ten alive, capture exit 0, cleanup passed and
+post-run build verification passed. No worldserver is running. Final hostile
+boss-node damage 29,514,482 yields 115,743.067 DPS and 14,302 HPS over 255 active
+seconds. This is below fc's 130,359.348 DPS / 224 seconds; DPS remains unresolved.
+
+Fire's first recovery improved from 36.279 to 4.705 seconds. Fire's deferred
+post-exit receipts and hook floor correction have native grounding and fresh
+hardcast landings. Affliction's later receipt 563 was submitted before the
+observed exit, then launched and reached a valid native endpoint after exit.
+Actual occupancy at submission is not proven. The reviewed repair retains exact
+POINT provenance through matching observed occupancy and exit, requiring a
+post-exit native arm and all existing grounding guards. Both submission-before-
+mount and submission-during-mount fixtures pass.
+
+Fixed-position Fire lost 11,225 DPS. Its first joined blocker is a required crash
+escape whose destination copied the actor's floor instead of the route anchor.
+The native endpoint was correctly rejected; pending lethal movement then blocked
+ordinary range recovery. The reviewed producer repair retains the destination
+anchor floor, without changing pathing or tolerances. Five affected tests pass.
+
+Four DPS bots equip Lightweave 4115 without its required Tailoring 500. Pinned
+WoWSims activates it with professions unset; native application suppresses it.
+The generic profession/enchant setup correction passed independent review.
+Narrow metadata reconciliation preserved gear and explicit profession choices.
+The regenerated fixture and 16 pending requests pass their identity checks;
+exact simulator generation and promotion remain in progress.
+
+The all-bot review is closed. The 27,421,450-byte evidence archive passed fresh
+remote reconstruction; exact raw/log/archive duplicates were evicted after all
+readers finished. Its pointer is
+`artifacts/cata_raid_program/magmaw_development_4a12ee0c66_20260908.tar.gz.dvc`.
+Parent owns generation, build and live validation. Do not repeat the unchanged
+canary or claim native acceptance of this next batch before measured outcomes.
+
+## Earlier result: fc Magmaw clear, DPS still unresolved
 
 Source `fc8caa430de98a37b530bd22933c66d5d3b6dbed` completed the canonical Magmaw
 10N development run with capture exit0, native boss death, all ten bots recovered,
 cleanup passed and post-run build receipt verified. Two casualties occurred during
-Drudges and one during Magmaw. No worldserver is running.
+Drudges and one during Magmaw. That run is closed.
 
 Boss hostile damage 29,200,494 yields 130,359.348 DPS and final 18,267.009 HPS over 224 active
 callback seconds, only a small gain over source88's127,953.806 DPS/227 seconds.

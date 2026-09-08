@@ -657,8 +657,8 @@ def load_gear_profiles(path: Path | None) -> dict[str, Any]:
         return {}
     payload = json.loads(path.read_text(encoding="utf-8"))
     profiles = dict(payload.get("profiles", {}))
-    if path.resolve() != DEFAULT_WOWSIMS_GEAR_PROFILES.resolve() and DEFAULT_WOWSIMS_GEAR_PROFILES.is_file():
-        overlay = json.loads(DEFAULT_WOWSIMS_GEAR_PROFILES.read_text(encoding="utf-8"))
+    if payload.get("slot_map") or DEFAULT_WOWSIMS_GEAR_PROFILES.is_file():
+        overlay = payload if payload.get("slot_map") else json.loads(DEFAULT_WOWSIMS_GEAR_PROFILES.read_text(encoding="utf-8"))
         slot_map = [int(slot) for slot in overlay.get("slot_map", [])]
         gem_enchantments = {int(item): int(enchant) for item, enchant in overlay.get("gem_enchantments", {}).items()}
         for name, source_profile in overlay.get("profiles", {}).items():
@@ -695,13 +695,23 @@ def load_gear_profiles(path: Path | None) -> dict[str, Any]:
                 }
                 item["enchantments"] = runtime_safe_enchantments(item)
                 equipment.append(item)
-            profiles[name] = {"equipment": equipment, "source": source_profile.get("source", {})}
+            profiles[name] = {"equipment": equipment, "source": source_profile.get("source", {}), **({"profession_setup": source_profile["profession_setup"]} if "profession_setup" in source_profile else {})}
     return profiles
 
 
 def apply_gear_profiles(config: dict[str, Any], profiles: dict[str, Any]) -> dict[str, Any]:
-    if not profiles:
-        return config
+    from tools.bot_ml.wowsims_gear_binding import resolve_profession_setup, merge_profession_skills
+
+    def apply_professions(bot, profile):
+        resolve_profession_setup(bot.get("equipment", []), declared=(profile or {}).get("profession_setup"))
+        skills = bot.get("skills", config.get("default_skills", []))
+        setup = resolve_profession_setup(bot.get("equipment", []), configured_skills=skills)
+        if bot.get("profession_setup") is not None and bot["profession_setup"] != setup:
+            raise ValueError("bot profession metadata does not match equipped enchants")
+        bot["profession_setup"] = setup
+        bot["profession_equipment"] = bot.get("equipment", [])
+        bot["skills"] = merge_profession_skills(skills, setup)
+
     copied = json.loads(json.dumps(config))
     for scenario in copied["scenarios"]:
         for bot in scenario["bots"]:
@@ -727,12 +737,14 @@ def apply_gear_profiles(config: dict[str, Any], profiles: dict[str, Any]) -> dic
                     from tools.bot_ml.phase8_calibration_adapter import canonical_gear_manifest
                     if not profile or canonical_gear_manifest(bot["equipment"], label="equipped") != canonical_gear_manifest(profile.get("equipment", []), label="canonical"):
                         raise ValueError(f"{bot.get('name')}: canonical gear equipment mismatch")
+                apply_professions(bot, profile)
                 continue
             if profile:
                 bot["equipment"] = profile.get("equipment", [])
                 bot["gear_profile"] = profile_name
                 bot["gear_profile_id"] = profile_name
                 bot["gear_profile_source"] = profile.get("source", {})
+                apply_professions(bot, profile)
             elif explicit_profile_id:
                 raise ValueError(
                     f"{bot.get('name') or '<unknown>'}: unknown canonical gear profile "

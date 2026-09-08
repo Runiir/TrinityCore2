@@ -62,12 +62,32 @@ def test_canonical_fixture_target_is_exact_passive_and_content_addressed() -> No
 
 def test_every_spec_has_exact_native_start_and_controlled_consumables() -> None:
     contract, _digest = load_fixture_contract()
+    # Frozen cloaks 77096 (Elemental) and 77098 (the other five casters)
+    # carry Lightweave 4115, whose pinned DBC requires Tailoring 197/500.
+    # Other frozen specs have no primary-profession enchant requirement;
+    # DK Runeforging is a class skill, not a primary profession.
+    expected_professions = {
+        "affliction_warlock": "ProfessionTailoring",
+        "arms_warrior": "ProfessionUnknown",
+        "assassination_rogue": "ProfessionUnknown",
+        "balance_druid": "ProfessionTailoring",
+        "combat_rogue": "ProfessionUnknown",
+        "demonology_warlock": "ProfessionTailoring",
+        "elemental_shaman": "ProfessionTailoring",
+        "feral_druid_dps": "ProfessionUnknown",
+        "fire_mage": "ProfessionTailoring",
+        "frost_death_knight": "ProfessionUnknown",
+        "fury_warrior": "ProfessionUnknown",
+        "marksmanship_hunter": "ProfessionUnknown",
+        "retribution_paladin": "ProfessionUnknown",
+        "shadow_priest": "ProfessionTailoring",
+        "survival_hunter": "ProfessionUnknown",
+        "unholy_death_knight": "ProfessionUnknown",
+    }
+    assert set(contract["specs"]) == set(expected_professions)
     for spec, row in contract["specs"].items():
         native = row["native_request"]
-        assert native["professions"] == [
-            "ProfessionUnknown",
-            "ProfessionUnknown",
-        ]
+        assert native["professions"] == [expected_professions[spec], "ProfessionUnknown"]
         assert native["player_fields"] == {"dark_intent_uptime": 0.0}
         transform = native["apl_transform_policy"]
         assert transform["policy"] == "recursive_remove_matching_action"

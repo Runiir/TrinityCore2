@@ -975,6 +975,13 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
             "consumable_item_ids": consumables,
             **build,
         }
+        if isinstance(exact_gear_profile, dict):
+            from tools.bot_ml.wowsims_gear_binding import resolve_profession_setup
+            profession_equipment = exact_gear_profile.get("items", [])
+            resolve_profession_setup(profession_equipment, declared=exact_gear_profile.get("profession_setup"))
+            provisioning_bot["profession_setup"] = resolve_profession_setup(
+                profession_equipment, configured_skills=provisioning_bot.get("skills", []))
+            provisioning_bot["profession_equipment"] = profession_equipment
         if consume_profile:
             provisioning_bot["controlled_consumable_profile"] = consume_profile
             provisioning_bot["consumables"] = [
@@ -1308,6 +1315,14 @@ def validate_catalogs(payloads: dict[str, dict[str, Any]], *, check_linked: bool
             )
         if expected_gear_profile_id in wowsims_gear_profiles:
             profile = wowsims_gear_profiles.get(expected_gear_profile_id) or {}
+            from tools.bot_ml.wowsims_gear_binding import resolve_profession_setup
+            provisioning = (targets_by_id[row["spec_target_id"]].get("provisioning_bot") or {})
+            resolve_profession_setup(profile.get("items", []), declared=profile.get("profession_setup"))
+            expected_setup = resolve_profession_setup(profile.get("items", []), configured_skills=provisioning.get("skills", []))
+            if "profession_setup" in provisioning or "profession_setup" in profile:
+                if provisioning.get("profession_setup") != expected_setup or provisioning.get("profession_equipment") != profile.get("items", []):
+                    raise ValueError(f"{row['spec_target_id']}: profession equipment drift")
+
             binding = validate_profile_source_binding(
                 profile=profile, reference=row, slot_map=wowsims_slot_map
             )
@@ -1461,6 +1476,56 @@ def reconcile_checked_in_controlled_consumable_catalog() -> dict[str, dict[str, 
     return payloads
 
 
+
+def reconcile_profession_catalogs(target_catalog, reference_catalog, gear_document):
+    """Update only profession projections from exact local gear; never refresh sources."""
+    from tools.bot_ml.wowsims_gear_binding import (
+        canonical_sha256, canonical_wowsims_manifest, resolve_profession_setup,
+    )
+    targets = json.loads(json.dumps(target_catalog))
+    references = json.loads(json.dumps(reference_catalog))
+    reference_rows = {row["spec_target_id"]: row for row in references["references"]}
+    if len(reference_rows) != len(references["references"]):
+        raise ValueError("duplicate profession reference target")
+    profiles = gear_document["profiles"]
+    for target in targets["targets"]:
+        profile_id = target["gear_profile_id"]
+        if profile_id not in profiles:
+            continue
+        profile = profiles[profile_id]
+        bot = target["provisioning_bot"]
+        reference = reference_rows[target["spec_target_id"]]
+        if bot.get("gear_profile_id") != profile_id or bot.get("gear_profile") != profile_id or reference["gear"].get("gear_profile_id") != profile_id:
+            raise ValueError("profession reconciliation gear profile identity mismatch")
+        if canonical_sha256(canonical_wowsims_manifest(profile, gear_document["slot_map"])) != profile["transformed_manifest_sha256"]:
+            raise ValueError("profession reconciliation gear manifest mismatch")
+        equipment = profile["items"]
+        gear_setup = resolve_profession_setup(equipment, declared=profile.get("profession_setup"))
+        bot["profession_setup"] = resolve_profession_setup(equipment, configured_skills=bot.get("skills", []))
+        bot["profession_equipment"] = equipment
+        reference["gear"]["profession_setup"] = gear_setup
+    return targets, references
+
+
+def reconcile_checked_in_profession_catalogs():
+    paths = [TARGET_CATALOG_PATH, REFERENCE_CATALOG_PATH]
+    originals = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
+    gear = json.loads(WOWSIMS_GEAR_PROFILES_PATH.read_text(encoding="utf-8"))
+    reconciled = reconcile_profession_catalogs(*originals, gear)
+    # Resolve and validate every input before writing either catalog.
+    for path, original, payload in zip(paths, originals, reconciled):
+        if original == payload:
+            continue
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", dir=path.parent,
+            prefix=f".{path.name}.", suffix=".tmp", delete=False,
+        ) as temporary:
+            temporary.write(json.dumps(payload, indent=2) + "\n")
+            temporary_path = Path(temporary.name)
+        temporary_path.replace(path)
+    return reconciled
+
+
 def write_bundle(output_dir: Path, payloads: dict[str, dict[str, Any]]) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     for stale in output_dir.glob("*.json"):
@@ -1487,7 +1552,15 @@ def main() -> int:
     parser.add_argument("--refresh-sources", action="store_true")
     parser.add_argument("--reconcile-rogue-poisons", action="store_true")
     parser.add_argument("--reconcile-controlled-consumables", action="store_true")
+    parser.add_argument("--reconcile-professions", action="store_true")
     args = parser.parse_args()
+    if args.reconcile_professions:
+        if args.refresh_sources or args.reconcile_rogue_poisons or args.reconcile_controlled_consumables:
+            parser.error("profession reconciliation is exclusive")
+        targets, _ = reconcile_checked_in_profession_catalogs()
+        print(json.dumps({"profession_setup_valid": True, "target_count": len(targets["targets"]),
+                          "reconciled": [str(TARGET_CATALOG_PATH), str(REFERENCE_CATALOG_PATH)]}, sort_keys=True))
+        return 0
     if args.reconcile_controlled_consumables:
         if args.refresh_sources or args.reconcile_rogue_poisons:
             parser.error("controlled consumable reconciliation is exclusive")

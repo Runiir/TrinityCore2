@@ -1054,7 +1054,14 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/arms_warrior.gear.json",
         "numeric_fixture_test_source_sha256": "ab03ac6c2277f834fa6e5e6f5e07499a247ef9d6a4a3d0f510d6bc0282d307de",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/arms_warrior.test.go",
-        "numeric_fixture_gear_label": "p4_arms_bis"
+        "numeric_fixture_gear_label": "p4_arms_bis",
+        "profession_setup": {
+          "requirements": [],
+          "wowsims_professions": [
+            "ProfessionUnknown",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/warrior/arms/apls/arms.apl.json",
@@ -1175,7 +1182,14 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/fury_warrior.gear.json",
         "numeric_fixture_test_source_sha256": "f77b34d99140388b71333886a1ed8c3e04869a77dd9052fcc1101d0b88f6fab7",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/fury_warrior.test.go",
-        "numeric_fixture_gear_label": "p4_fury_tg"
+        "numeric_fixture_gear_label": "p4_fury_tg",
+        "profession_setup": {
+          "requirements": [],
+          "wowsims_professions": [
+            "ProfessionUnknown",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/warrior/fury/apls/tg.apl.json",
@@ -1296,7 +1310,14 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/retribution_paladin.gear.json",
         "numeric_fixture_test_source_sha256": "b9461e1f452958d4c3c8bc7c512ed206b58df460905b16740489dd51d283c151",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/retribution_paladin.test.go",
-        "numeric_fixture_gear_label": "p4_bis"
+        "numeric_fixture_gear_label": "p4_bis",
+        "profession_setup": {
+          "requirements": [],
+          "wowsims_professions": [
+            "ProfessionUnknown",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/paladin/retribution/apls/default.apl.json",
@@ -1531,7 +1552,14 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/marksmanship_hunter.gear.json",
         "numeric_fixture_test_source_sha256": "e07dd1ec1662cadad96084a8720e935a2bc825259ac696a5d0c319b1767b432a",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/marksmanship_hunter.test.go",
-        "numeric_fixture_gear_label": "preraid_mm"
+        "numeric_fixture_gear_label": "preraid_mm",
+        "profession_setup": {
+          "requirements": [],
+          "wowsims_professions": [
+            "ProfessionUnknown",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/hunter/marksmanship/apls/mm.apl.json",
@@ -1653,7 +1681,14 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_survival_hunter.gear.json",
         "numeric_fixture_test_source_sha256": "9706d97593a09a44731ceb2fa5216cf328dc1bc1aa5f40e8d581fab0ac403661",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_survival_hunter.test.go",
-        "numeric_fixture_gear_label": "p4_sv"
+        "numeric_fixture_gear_label": "p4_sv",
+        "profession_setup": {
+          "requirements": [],
+          "wowsims_professions": [
+            "ProfessionUnknown",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/hunter/survival/apls/sv.apl.json",
@@ -1775,7 +1810,14 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/assassination_rogue.gear.json",
         "numeric_fixture_test_source_sha256": "03a96ae47e8f4548a31b86346ffdf1e0607d50fc1172a78b90112c8d8e12926d",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/assassination_rogue.test.go",
-        "numeric_fixture_gear_label": "p4_assassination"
+        "numeric_fixture_gear_label": "p4_assassination",
+        "profession_setup": {
+          "requirements": [],
+          "wowsims_professions": [
+            "ProfessionUnknown",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/rogue/assassination/apls/mutilate.apl.json",
@@ -1896,7 +1938,14 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/combat_rogue.gear.json",
         "numeric_fixture_test_source_sha256": "fbb6d7e9288778f7558d077e5bf0becd342add9c2381af984f9d4d667e367543",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/combat_rogue.test.go",
-        "numeric_fixture_gear_label": "p4_combat"
+        "numeric_fixture_gear_label": "p4_combat",
+        "profession_setup": {
+          "requirements": [],
+          "wowsims_professions": [
+            "ProfessionUnknown",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/rogue/combat/apls/combat.apl.json",
@@ -2130,7 +2179,14 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/frost_death_knight.gear.json",
         "numeric_fixture_test_source_sha256": "c43b8ea88f9654729c25425fcd3bf62dba5320e22983815b761214e3719d88dd",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/frost_death_knight.test.go",
-        "numeric_fixture_gear_label": "p4.masterfrost"
+        "numeric_fixture_gear_label": "p4.masterfrost",
+        "profession_setup": {
+          "requirements": [],
+          "wowsims_professions": [
+            "ProfessionUnknown",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/death_knight/frost/apls/masterfrost.apl.json",
@@ -2252,7 +2308,14 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/unholy_death_knight.gear.json",
         "numeric_fixture_test_source_sha256": "a23879b3c6e945289f8a635f85101f10834977dd8f138101a7726acf97db7f90",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/unholy_death_knight.test.go",
-        "numeric_fixture_gear_label": "p4.bis"
+        "numeric_fixture_gear_label": "p4.bis",
+        "profession_setup": {
+          "requirements": [],
+          "wowsims_professions": [
+            "ProfessionUnknown",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/death_knight/unholy/apls/default.apl.json",
@@ -2374,7 +2437,25 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/elemental_shaman.gear.json",
         "numeric_fixture_test_source_sha256": "3307064f29e960f794c608cddc6a08d407b9e1851fced19e8067789d7f3ec13a",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/elemental_shaman.test.go",
-        "numeric_fixture_gear_label": "p4.default"
+        "numeric_fixture_gear_label": "p4.default",
+        "profession_setup": {
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                4115
+              ],
+              "native_skill_id": 197,
+              "required_rank": 500,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "ProfessionTailoring"
+            }
+          ],
+          "wowsims_professions": [
+            "ProfessionTailoring",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/shaman/elemental/apls/default.apl.json",
@@ -2495,7 +2576,25 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_enhancement_shaman.gear.json",
         "numeric_fixture_test_source_sha256": "3f57ac327bf93e56e0f95221f7fa40758a806140db05e20af4ba070fabed95a0",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_enhancement_shaman.test.go",
-        "numeric_fixture_gear_label": "p4.orc"
+        "numeric_fixture_gear_label": "p4.orc",
+        "profession_setup": {
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                4190
+              ],
+              "native_skill_id": 165,
+              "required_rank": 500,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "ProfessionLeatherworking"
+            }
+          ],
+          "wowsims_professions": [
+            "ProfessionLeatherworking",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/shaman/enhancement/apls/default.apl.json",
@@ -2729,7 +2828,25 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_fire_mage.gear.json",
         "numeric_fixture_test_source_sha256": "71a9228f45b0c57e464971f71a05d8af4588b274efd3d5711645d7012007afc7",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_fire_mage.test.go",
-        "numeric_fixture_gear_label": "p4_fire"
+        "numeric_fixture_gear_label": "p4_fire",
+        "profession_setup": {
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                4115
+              ],
+              "native_skill_id": 197,
+              "required_rank": 500,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "ProfessionTailoring"
+            }
+          ],
+          "wowsims_professions": [
+            "ProfessionTailoring",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/mage/fire/apls/fire.apl.json",
@@ -2961,7 +3078,25 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/affliction_warlock.gear.json",
         "numeric_fixture_test_source_sha256": "8f38bcba47d99fbac658ea0dba1ccfd11cd1703e5d66b26fec9f4368384d3d64",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/affliction_warlock.test.go",
-        "numeric_fixture_gear_label": "p4"
+        "numeric_fixture_gear_label": "p4",
+        "profession_setup": {
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                4115
+              ],
+              "native_skill_id": 197,
+              "required_rank": 500,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "ProfessionTailoring"
+            }
+          ],
+          "wowsims_professions": [
+            "ProfessionTailoring",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/warlock/affliction/apls/default.apl.json",
@@ -3082,7 +3217,25 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/demonology_warlock.gear.json",
         "numeric_fixture_test_source_sha256": "394f11d9e26564e6a8c305a3544ddb6df883f826fa70e548c7a7ed391bd6ec4e",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/demonology_warlock.test.go",
-        "numeric_fixture_gear_label": "p4"
+        "numeric_fixture_gear_label": "p4",
+        "profession_setup": {
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                4115
+              ],
+              "native_skill_id": 197,
+              "required_rank": 500,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "ProfessionTailoring"
+            }
+          ],
+          "wowsims_professions": [
+            "ProfessionTailoring",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/warlock/demonology/apls/incinerate.apl.json",
@@ -3316,7 +3469,25 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_shadow_priest.gear.json",
         "numeric_fixture_test_source_sha256": "528ff74616a6c6a279f5bd3e616fdfbaffc6a7c25c1476664497e42cedb159fb",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_shadow_priest.test.go",
-        "numeric_fixture_gear_label": "p4"
+        "numeric_fixture_gear_label": "p4",
+        "profession_setup": {
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                4115
+              ],
+              "native_skill_id": 197,
+              "required_rank": 500,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "ProfessionTailoring"
+            }
+          ],
+          "wowsims_professions": [
+            "ProfessionTailoring",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/priest/shadow/apls/p4.apl.json",
@@ -3437,7 +3608,25 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_balance_druid.gear.json",
         "numeric_fixture_test_source_sha256": "b006fd31e0cea891eae20d3c9ce0b1fe8d9a4438f67d59f481c0ed1721c96384",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_balance_druid.test.go",
-        "numeric_fixture_gear_label": "t13"
+        "numeric_fixture_gear_label": "t13",
+        "profession_setup": {
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                4115
+              ],
+              "native_skill_id": 197,
+              "required_rank": 500,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "ProfessionTailoring"
+            }
+          ],
+          "wowsims_professions": [
+            "ProfessionTailoring",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/druid/balance/apls/t13.apl.json",
@@ -3558,7 +3747,14 @@
         "source_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/feral_druid_dps.gear.json",
         "numeric_fixture_test_source_sha256": "b93511634568697dc949a13f0b22f7efd96526daa58f0ec5992a5b8dcb1b387c",
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/feral_druid_dps.test.go",
-        "numeric_fixture_gear_label": "p4"
+        "numeric_fixture_gear_label": "p4",
+        "profession_setup": {
+          "requirements": [],
+          "wowsims_professions": [
+            "ProfessionUnknown",
+            "ProfessionUnknown"
+          ]
+        }
       },
       "apl": {
         "path": "ui/druid/feral/apls/default.apl.json",

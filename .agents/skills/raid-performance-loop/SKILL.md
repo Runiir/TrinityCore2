@@ -83,7 +83,12 @@ an aggregate raid DPS number or rerun a boss merely to regenerate available data
 
 Give one owner the evidence, one hypothesis, production files plus directly affected
 tests, forbidden changes, command, and expected outcome. Include all affected callers
-before dispatch. Use Luna max for exact narrow implementation, Sol high for ambiguous
+before dispatch. Label observed facts separately from inferred event ordering. A new
+admission predicate must be supported by the trace or by the production contract;
+do not require an unobserved intermediate state merely to make a fixture pass.
+Exercise the actual caller and each valid ordering when asynchronous submission,
+observation and native execution can occur on different ticks.
+Use Luna max for exact narrow implementation, Sol high for ambiguous
 causal diagnosis and independent review of risky runtime/encounter changes. Work directly
 when delegation would add more coordination than useful work. Serialize builds, shared
 server ownership, provisioning, and DVC publication. Independent reads may overlap.

@@ -60,11 +60,10 @@ inline MagmawCrashSideMovement ResolveMagmawCrashSideMovement(
         result.Destination = {
             support.X + dx / length * supportSideDistance,
             support.Y + dy / length * supportSideDistance,
-            actor.Z };
+            support.Z };
     }
-    // X/Y is the encounter decision. Z is only the actor-floor seed passed
-    // to native pathing, which remains responsible for following terrain.
-    result.Destination.Z = actor.Z;
+    // Preserve the destination anchor's logical floor. Native pathing remains
+    // responsible for following terrain and validating the endpoint.
     return result;
 }
 

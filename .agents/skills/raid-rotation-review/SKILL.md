@@ -48,6 +48,10 @@ observation. Do not inherit a roster-wide mismatch from an earlier run. Normaliz
 serialized enchantment integers and distinguish permanent setup from temporary
 native imbues. A calibration actor may have a different GUID if its exact setup
 matches; missing effective stats do not erase verified gear identity.
+Matching stored equipment is not proof that its effects apply. Check native
+profession/rank requirements for equipped enchants against the actor's skills
+and the simulator's actual applicability rules before diagnosing a proc or
+stat-application defect.
 
 Record `reference_class` explicitly. `self_provided_baseline` is a one-sided
 minimum throughput floor with all external raid buffs and pre-applied target

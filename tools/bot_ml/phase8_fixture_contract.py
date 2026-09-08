@@ -22,6 +22,8 @@ if __package__ in {None, ""}:
     # Keep the checked-in direct invocation reproducible as well as the normal
     # `python -m tools.bot_ml.phase8_fixture_contract` form.
     sys.path.insert(0, str(ROOT))
+from tools.bot_ml.wowsims_gear_binding import provisioning_professions
+
 DEFAULT_AUTHORED_CONTRACT_PATH = (
     ROOT / "experiments/configs/phase8_calibration_fixture_contract_v1.json"
 )
@@ -950,7 +952,7 @@ def materialize_fixture_contract(
             "player_spec_key": NATIVE_PLAYER_SPEC_KEYS[spec],
             "player_spec": _native_player_spec(spec, row),
             "race_id": int(prepull["racial"]["race_id"]),
-            "professions": ["ProfessionUnknown", "ProfessionUnknown"],
+            "professions": provisioning_professions(provisioning),
             "player_fields": {
                 "dark_intent_uptime": 0.0,
             },
@@ -1362,7 +1364,7 @@ def validate_fixture_contract(contract: Mapping[str, Any]) -> None:
         )
         _require(
             native_request.get("professions")
-            == ["ProfessionUnknown", "ProfessionUnknown"],
+            == provisioning_professions(live_provisioning),
             f"{spec}:native_professions",
         )
         _require(

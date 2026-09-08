@@ -531,7 +531,7 @@ struct Context { ::State& State; Player* Bot; };
 void Submitted(State& state, Player* bot, uint64 receiptId, uint64 nowMs,
     bool generatePath = true, bool aerialGhostRecovery = false) {
     struct { uint64 LaunchReceiptId; } plan{receiptId};
-    struct { Scope MovementScope; } request{state.ServerVehicleExitLanding.ExitScope};
+    struct { Scope MovementScope; } request{{1, 0, 4, 669, 2}};
 ''' + submission + r'''
 }
 void Prepare(Context& context) {
@@ -606,6 +606,91 @@ int main() {
         == Decision::NoEpisode);
     assert(bot.Falls == 1 && bot.Flags == 0);
 
+    // Actual occupied POINT563: submission precedes exit, native launch does not.
+    auto occupied = [&]() {
+        state.ServerVehicleExitLanding = Episode(); sidecar.Rows.clear();
+        VehicleTransitionObservation v{true, 999, 30008, 669, 2,
+            1788889505000ULL, true, {1, 0, 4, 669, 2}};
+        ObserveVehicleTransition(state.ServerVehicleExitLanding, v);
+        Submitted(state, &bot, 563, 1788889505601ULL);
+        return v;
+    };
+    auto v = occupied();
+    // Repeated same occupancy must not erase the actual submitted candidate.
+    ObserveVehicleTransition(state.ServerVehicleExitLanding, v);
+    v.HasVehicle = false; v.ObservedAtMs = 1788889510537ULL;
+    ObserveVehicleTransition(state.ServerVehicleExitLanding, v);
+    Prepare(context);
+    assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+    auto delayed = Launched(563); delayed.ArmedAtMs = 1788889513112ULL;
+    delayed.LaunchedSplineId = 5925;
+    sidecar.Rows[563] = delayed;
+    Prepare(context);
+    assert(state.ServerVehicleExitLanding.BoundGroundingReceiptId == 563);
+    evidence.ReceiptId = 563; evidence.ReceiptArmedAtMs = delayed.ArmedAtMs;
+    evidence.ReceiptTerminal = false;
+    assert(Reconcile(state.ServerVehicleExitLanding, evidence, &bot).Decision
+        == Decision::KeepPending);
+    assert(bot.Falls == 1);
+    // Recorded terminal563 at1788889515830; native endpoint/floor proof.
+    evidence.ReceiptTerminal = true;
+    evidence.CurrentEndpointMatches = BotWorldMovement::NativePathEndpointComponentsMatch(
+        0.113339417f, 0.00518798828f);
+    assert(Reconcile(state.ServerVehicleExitLanding, evidence, &bot).Decision
+        == Decision::ClearStaleLandingFlag);
+    CloseEpisode(state.ServerVehicleExitLanding);
+    assert(Reconcile(state.ServerVehicleExitLanding, evidence, &bot).Decision
+        == Decision::NoEpisode);
+    assert(bot.Falls == 2);
+    for (unsigned invalidation = 0; invalidation < 9; ++invalidation) {
+        v = occupied();
+        switch (invalidation) {
+            case 0: ++v.BotGuid; break;
+            case 1: ++v.MapId; break;
+            case 2: ++v.InstanceId; break;
+            case 3: ++v.CurrentScope.AttemptId; break;
+            case 4: ++v.CurrentScope.WipeGeneration; break;
+            case 5: ++v.CurrentScope.RouteGeneration; break;
+            case 6: v.ScopeAvailable = false; break;
+            case 7: ++v.VehicleGuid;
+                ObserveVehicleTransition(state.ServerVehicleExitLanding, v); break;
+            case 8: delayed.ArmedAtMs = 1788889506000ULL; break;
+        }
+        v.HasVehicle = false; v.ObservedAtMs = 1788889510537ULL;
+            ObserveVehicleTransition(state.ServerVehicleExitLanding, v);
+        sidecar.Rows[563] = delayed; Prepare(context);
+        assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+    }
+
+    // Submission can precede the first observed mount. Only exact identity
+    // carries it; launch must still be after the subsequent observed exit.
+    for (unsigned drift = 0; drift < 5; ++drift) {
+        state.ServerVehicleExitLanding = Episode(); sidecar.Rows.clear();
+        Submitted(state, &bot, 563, 1788889505601ULL);
+        v = {true, 999, 30008, 669, 2, 1788889505701ULL,
+            true, {1, 0, 4, 669, 2}};
+        if (drift == 1) ++v.BotGuid;
+        if (drift == 2) ++v.MapId;
+        if (drift == 3) ++v.CurrentScope.RouteGeneration;
+        if (drift == 4) v.VehicleGuid = 0;
+        ObserveVehicleTransition(state.ServerVehicleExitLanding, v);
+        v.HasVehicle = false; v.ObservedAtMs = 1788889510537ULL;
+        ObserveVehicleTransition(state.ServerVehicleExitLanding, v);
+        delayed = Launched(563); delayed.ArmedAtMs = 1788889513112ULL;
+        sidecar.Rows[563] = delayed; Prepare(context);
+        assert(state.ServerVehicleExitLanding.BoundGroundingReceiptId
+            == (drift == 0 ? 563 : 0));
+    }
+    v = occupied();
+    Submitted(state, &bot, 564, 1788889505701ULL);
+    v.HasVehicle = false; v.ObservedAtMs = 1788889510537ULL;
+    ObserveVehicleTransition(state.ServerVehicleExitLanding, v);
+    sidecar.Rows[563] = delayed; Prepare(context);
+    assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+    delayed.ReceiptId = 564; delayed.SupersededByReceiptId = 565;
+    sidecar.Rows[564] = delayed; Prepare(context);
+    assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId);
+
     auto cannotBind = [&](uint64 submitAt, bool ground, bool aerial,
         BotWorldMovement::NativeMovementProgressObservation progress, bool submit = true) {
         state.ServerVehicleExitLanding = Exit(); sidecar.Rows.clear();
@@ -615,7 +700,7 @@ int main() {
     };
     // Rejected/chase/retained paths never invoke the actual POINT block.
     cannotBind(1788886531530ULL, true, false, Launched(), false);
-    cannotBind(1788886529145ULL, true, false, Launched()); // pre-exit 563 shape
+    cannotBind(1788886529145ULL, true, false, Launched()); // Backdated submission without occupied-episode provenance
     cannotBind(1788886531530ULL, false, false, Launched());
     cannotBind(1788886531530ULL, true, true, Launched());
     auto invalid = Launched(); invalid.Scope.AttemptId = 2;

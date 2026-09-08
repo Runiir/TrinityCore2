@@ -522,3 +522,95 @@ def _local_oracles(
         for row in load_wdbc_values(dbc_dir / "ItemReforge.dbc", "nifif")
     }
     return items_by_id, enchant_ids, reforge_ids, gem_item_enchant_map(dbc_dir)
+
+
+PRIMARY_PROFESSIONS = {
+    164: "ProfessionBlacksmithing", 165: "ProfessionLeatherworking",
+    171: "ProfessionAlchemy", 182: "ProfessionHerbalism", 186: "ProfessionMining",
+    197: "ProfessionTailoring", 202: "ProfessionEngineering",
+    333: "ProfessionEnchanting", 393: "ProfessionSkinning",
+    755: "ProfessionJewelcrafting", 773: "ProfessionInscription",
+}
+
+
+@functools.lru_cache(maxsize=4)
+def profession_enchant_rows(dbc_dir: Path) -> dict[int, tuple[int, int]]:
+    return {int(row['values'][0]): (int(row['values'][19]), int(row['values'][20]))
+            for row in load_wdbc(dbc_dir / 'SpellItemEnchantment.dbc', SPELL_ITEM_ENCHANTMENT_FMT)}
+
+
+def resolve_profession_setup(equipment, *, enchant_rows=None, declared=None, configured_skills=()):
+    """Union explicit primary skills with gear requirements in native skill-ID order."""
+    if enchant_rows is None:
+        enchant_rows = profession_enchant_rows(REPO_ROOT / 'data/dbc/enUS')
+    requirements = {}
+    for item in equipment:
+        raw = str(item.get('enchantments') or '').split()
+        enchant = int(item.get('enchant_id', item.get('enchant', raw[0] if raw else 0)) or 0)
+        if raw and int(raw[0]) != enchant:
+            raise ValueError('permanent enchant identity mismatch')
+        if not enchant:
+            continue
+        if enchant not in enchant_rows:
+            raise ValueError(f'unknown permanent enchant: {enchant}')
+        skill, rank = enchant_rows[enchant]
+        # Runeforging is a class skill (SharedDefines.h SKILL_RUNEFORGING),
+        # not one of the two primary professions represented by WoWSims.
+        if not skill or skill == 776:
+            continue
+        if skill not in PRIMARY_PROFESSIONS:
+            raise ValueError(f'unknown required profession skill: {skill}')
+        if rank > 525:
+            raise ValueError('required profession rank exceeds provisioned maximum')
+        row = requirements.setdefault(skill, {'source_enchant_ids': [], 'native_skill_id': skill,
+            'required_rank': 0, 'provisioned_value': 525, 'provisioned_max': 525,
+            'wowsims_profession': PRIMARY_PROFESSIONS[skill]})
+        row['required_rank'] = max(row['required_rank'], rank)
+        row['source_enchant_ids'] = sorted(set(row['source_enchant_ids']) | {enchant})
+    if len(requirements) > 2:
+        raise ValueError('more than two required primary professions')
+    rows = [requirements[key] for key in sorted(requirements)]
+    skills = merge_profession_skills(configured_skills, {'requirements': rows})
+    primary_ids = sorted({int(row['id']) for row in skills} & set(PRIMARY_PROFESSIONS))
+    result = {'requirements': rows, 'wowsims_professions':
+              [PRIMARY_PROFESSIONS[skill] for skill in primary_ids] + ['ProfessionUnknown'] * (2 - len(primary_ids))}
+    if declared is not None and declared != result:
+        raise ValueError('profession metadata does not match equipped enchants')
+    return result
+
+
+def merge_profession_skills(skills, setup):
+    result = [dict(row) for row in skills]
+    by_id = {}
+    for row in result:
+        skill = int(row['id'])
+        if skill in by_id:
+            raise ValueError(f'duplicate profession/skill row: {skill}')
+        by_id[skill] = row
+    required_ids = {row["native_skill_id"] for row in setup["requirements"]}
+    if len((set(by_id) & set(PRIMARY_PROFESSIONS)) | required_ids) > 2:
+        raise ValueError("more than two configured and required primary professions")
+    for requirement in setup['requirements']:
+        skill = requirement['native_skill_id']
+        if skill in by_id:
+            row = by_id[skill]
+            if int(row.get('value', 525)) < requirement['required_rank'] or int(row.get('max', 525)) < int(row.get('value', 525)):
+                raise ValueError(f'configured profession skill below required rank: {skill}')
+        else:
+            result.append({'id': skill, 'value': requirement['provisioned_value'], 'max': requirement['provisioned_max']})
+    return result
+
+
+def provisioning_professions(provisioning):
+    """Validate serialized setup against its exact resolved gear input."""
+    setup = provisioning.get('profession_setup')
+    if setup is None:
+        if provisioning.get('profession_equipment') is not None:
+            raise ValueError('equipped profession identity missing setup metadata')
+        return resolve_profession_setup([], configured_skills=provisioning.get('skills', []))['wowsims_professions']
+    equipment = provisioning.get('profession_equipment')
+    if equipment is None:
+        raise ValueError('profession setup missing equipped enchant identity')
+    resolved = resolve_profession_setup(equipment, declared=setup,
+                                        configured_skills=provisioning.get("skills", []))
+    return resolved['wowsims_professions']

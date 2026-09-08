@@ -16,6 +16,7 @@ from .wowsims_gear_binding import (
     ENCHANT_APPLICABILITY_AUTHORITY,
     TRANSFORM_SCHEMA,
     canonical_sha256,
+    resolve_profession_setup,
     canonical_wowsims_manifest,
     selected_numeric_fixture_gear_label,
     validated_hotfix_item_rows,
@@ -288,6 +289,7 @@ def refresh() -> None:
         profile["transformed_manifest_sha256"] = canonical_sha256(
             canonical_wowsims_manifest(profile, SLOT_MAP)
         )
+        profile["profession_setup"] = resolve_profession_setup(items)
         new_profiles[profile_id] = profile
         gear["runtime_manifest"] = str(PROFILES_PATH.relative_to(REPO_ROOT))
         gear["source_sha256"] = source_sha256
@@ -384,14 +386,37 @@ def check() -> None:
     )
 
 
+
+def reconcile_checked_in_professions() -> None:
+    """Reconcile gear-only requirements without fetching or replacing gear identities."""
+    document = _load(PROFILES_PATH)
+    original = json.dumps(document, sort_keys=True)
+    slot_map = document["slot_map"]
+    for profile in document["profiles"].values():
+        if canonical_sha256(canonical_wowsims_manifest(profile, slot_map)) != profile["transformed_manifest_sha256"]:
+            raise ValueError("profession reconciliation gear manifest mismatch")
+        # Explicit actor profession choices belong to provisioning_bot.skills;
+        # this mode leaves the target catalog and every other profile field intact.
+        profile["profession_setup"] = resolve_profession_setup(profile["items"])
+    if json.dumps(document, sort_keys=True) != original:
+        _write(PROFILES_PATH, document)
+    print(json.dumps({"profession_setup_valid": True, "profile_count": len(document["profiles"]),
+                      "reconciled": str(PROFILES_PATH)}, sort_keys=True))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--refresh", action="store_true")
     parser.add_argument("--rebind-target")
     parser.add_argument("--source-path")
     parser.add_argument("--checkout", type=Path)
+    parser.add_argument("--reconcile-professions", action="store_true")
     args = parser.parse_args()
-    if args.rebind_target:
+    if args.reconcile_professions:
+        if args.refresh or args.rebind_target or args.source_path or args.checkout is not None:
+            parser.error("profession reconciliation is exclusive")
+        reconcile_checked_in_professions()
+    elif args.rebind_target:
         if args.refresh or not args.source_path or args.checkout is None:
             parser.error(
                 "--rebind-target requires --source-path and --checkout and is exclusive"
