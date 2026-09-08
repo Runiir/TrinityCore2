@@ -52,6 +52,60 @@ existing shared-worldserver instance workflow. Check native script readiness
 before assigning another boss. Do not reopen historical fixture-admission
 requests without new contradictory evidence.
 
+## All-bot and external reference review, 2026-09-08
+
+The clear and hunter repair remain accepted; overall roster DPS is unresolved.
+The actual roster is 2 tanks, 3 healers and 5 DPS. It has not tested the requested
+2 tanks, 2 healers and 6 DPS composition. Reassembled originated damage is
+29,966,309 over a first-to-last damage span of 316.048 seconds, or 94,815.689 DPS.
+The existing integer-second score remains 94,830.092. Neither the damage span
+nor the report's broader 353.207-second event window proves an exact native
+engage-to-death boundary equivalent to WCL. Boss/head-only originated damage is
+22,769,032; linked-target transfer and vulnerability accounting still need parity.
+
+Previous browser history retained direct `classic.warcraftlogs.com/reports/`
+links. Opening these reports and their summary, damage and casts views worked
+in the connected browser. Generic rankings/API access failure must not be
+treated as proof that direct reports are unavailable. Anonymous access was not
+retested after the user signed in.
+
+- [June 21 kill](https://classic.warcraftlogs.com/reports/wPJW8z1mAQnd6jZh?fight=1&type=summary):
+  10-player normal, 9 actual players, 2/2/5, average ilvl 382.89, rounded 2:36,
+  173,500.5 DPS summed from displayed actor rows, including adds and pets.
+- [May 22 kill](https://classic.warcraftlogs.com/reports/ZynLKgBwCQYDtHRM?fight=24&type=damage-done&targetclass=Boss):
+  9 players, 1/1/7, average ilvl 401.56, 67.7 seconds, 376,176.7 boss-only DPS.
+- [June 22 kill](https://classic.warcraftlogs.com/reports/64qa7t3RFnAX9GVf?fight=15&type=summary):
+  10 players, 1/1/8, average ilvl 403.90, 53.2 seconds, 497,890.5 DPS summed
+  from displayed actor rows. Its Elemental shaman cast 24 Lightning Bolts and
+  6 Lava Bursts; its Fire mage cast 22 Fireballs.
+- [Affliction actor](https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=10&type=casts&source=10):
+  ilvl 403, 70.9-second kill, 28 Shadow Bolts and 5 Haunts. Marksmanship's
+  inspected Phase 4.5 normal rankings were private; Survival is not a substitute.
+
+These examples make 200k a plausible direction, not an established acceptance
+threshold. None matches the requested composition and frozen gear; short kills
+amplify cooldown and head-window effects. Full buff/phase/pet normalization is
+incomplete. The review separates WCL casts from native landed events.
+
+All ten bots have DPS/HPS and role-specific findings in the separately published
+[reference review](../../artifacts/cata_raid_program/dps_cross_reference_d5bf3b804a_20260908.tar.gz.dvc).
+It includes normalized WCL observations, exact source bindings, simulator action
+comparisons, the damage-window calculation and remaining evidence gaps.
+
+The promoted simulator gear differs from the live profiles: item-set overlap is
+5/16 for Fire and Affliction, 7/16 for Marksmanship and 6/16 for Elemental.
+Both cloth profiles select ilvl-318 item 55159, `Rough Approximation Healer Robe`,
+with recorded 2,793 intellect and 4,191 stamina. This is a suspected item-data or
+selection error requiring native confirmation. Live effective stats are absent;
+do not infer class coefficients from these unmatched references.
+
+Next gameplay repair remains the proven Fireball/Living Bomb range cap. The
+Elemental bot's one landed Lightning Bolt and zero Lava Bursts are the largest
+unresolved cadence lead; trace its first rejection before modifying its policy.
+Verify the gear authority and regenerate matching simulations before numerical
+class tuning. Preserve the all-bot review on every subsequent run, including
+tank threat/defensives and healer duty rather than judging them by DPS alone.
+
 The entries below are historical investigation records. Their old "next" steps,
 uncompleted claims, and fixture-bank requirements are superseded by this result
 and the current development-mode skill.

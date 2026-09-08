@@ -10,7 +10,14 @@ instance, route node/generation, roster, and promoted reference catalog. State
 which comparisons are admitted and which lack setup/stat parity. A valid boss
 clear remains valid even when the DPS review identifies inefficiency.
 
-For each DPS actor and spec, report available evidence for:
+Start with the complete roster, including every tank, healer, DPS, and owned
+pet. Record actual and requested tank/healer/DPS counts; never silently compare
+a 2/3/5 run with a 2/2/6 target or change the frozen roster to fit a benchmark.
+Report DPS and HPS for every bot. Review tanks' offensive uptime alongside
+threat/defensives and healers' damage opportunities alongside healing, mana,
+and preventable deaths. A low healer DPS number alone is not a defect.
+
+For every DPS actor and spec, report available evidence for:
 
 - Originated damage and DPS using the same encounter denominator for every
   actor; distinguish boss, required adds, incidental targets, and pet damage.
@@ -20,20 +27,42 @@ For each DPS actor and spec, report available evidence for:
   movement, mechanic assignments, and opportunities to cast while moving.
 - Cooldowns, profession/racial actions, food/flask/potion outcomes, resource
   gates, and pet cadence/target uptime when captured.
-- Exact WoWSims action structure and effective-stat/setup comparison where
-  available. The promoted catalog supersedes old embedded DPS figures.
+- Exact promoted WoWSims APL, result action mix/cadence, pet contribution,
+  cooldowns, resources, and effective-stat/setup comparison. Do not stop at
+  quoting a simulator DPS total. Record missing inputs per actor rather than
+  omitting the actor. The promoted catalog supersedes embedded DPS figures.
+- Warcraft Logs comparison to identified Cataclysm kills. Retain report URL/code,
+  fight and actor IDs, date/patch, difficulty, raid size/composition, gear tier,
+  kill duration, buffs, target filters, head/vulnerability phases, and the DPS
+  denominator. Use several comparable strong kills when available, avoiding
+  a single padded/outlier parse. Normalize observed spell mix, casts per minute,
+  active casting, pets, cooldown/potion timings and target damage into the
+  compact review; retain observations separately from inferred recommendations.
+  Check retained report URLs and previous research/browser history before
+  declaring an access blocker. Direct report pages may work when rankings or
+  API access do not. If login/API/report access is unavailable, record the attempted source and
+  exact blocker. Do not call the Warcraft Logs comparison complete or invent
+  a benchmark from snippets. Continue comparisons supported by local evidence.
 
 Party damage may include tanks, pets, adds, encounter-attributed effects and
 redirected damage. Use the existing originated-damage accounting rather than
-summing raw mirrored events. State the denominator and distinguish total
-elapsed encounter time from seconds containing originated damage. A spell's
-moving-event fraction is not the actor's movement uptime; a DOT ticking while
+summing raw mirrored events. Use complete fight elapsed time for comparisons
+with Warcraft Logs when its
+DPS uses that denominator. Preserve the existing scored/active-second number
+as a separately named metric; never compare it directly to elapsed-time DPS.
+State whether transfers between linked targets are deduplicated and whether
+pets and adds are included. A spell's moving-event fraction is not the actor's
+movement uptime; a DOT ticking while
 moving does not prove a lost hard cast. Boss vulnerability phases also prevent
 direct damage-per-event comparison with an unmodified dummy reference.
 
 Trace the largest suspicious loss through observation, eligible candidates,
 selected candidate, resource claims, native submission, and landed outcome.
 Distinguish established defects, plausible leads, and unavailable evidence.
+Give each actor an explicit finding: proven defect, plausible loss requiring
+one observation, no defect found in inspected evidence, or not yet reviewed.
+Rank improvements across the roster before selecting one bounded implementation;
+"one repair per iteration" does not mean "review only one bot."
 Do not estimate recoverable DPS by subtracting an unmatched simulator total.
 
 Return one compact `dps_review.json` and a short readable summary alongside the
@@ -48,6 +77,12 @@ matching setup/stats/cadence with incorrect event damage to native class
 mechanics. Missing parity data means request that observation, not guess a
 coefficient. Exact dummy calibration lasts 300 seconds; raid runs remain
 completion-watchdog driven.
+
+Keep three conclusions separate: encounter clear, acceptance of this repair,
+and overall roster performance. A kill or one improved actor does not establish
+that all bots meet their performance targets. State which actors and external
+comparisons remain unresolved, and derive any aggregate target from the actual
+composition and matched evidence rather than installing an arbitrary DPS gate.
 
 On the next run, compare the repaired edge, per-actor output and clear/survival
 outcomes against the prior review. Admit only the improvement actually observed.

@@ -1,0 +1,47 @@
+{
+  "schema": "closed_run_analysis_remote_verification_v1",
+  "source_commit": "d5bf3b804a488f7a880a1e1a693541fc5b012d00",
+  "analysis_base_commit": "d5004dd54e",
+  "source_publication": "artifacts/cata_raid_program/magmaw_development_d5bf3b804a_20260908.publication.json",
+  "source_publication_sha256": "63b9d760f475c3dc6edfc106a834fd72e9e5e8d86fdc21d930bdfd3d3e0aaffd",
+  "archive_sha256": "c30621b6e4e040384015137b1b0aa102e074ad5ce0f650d68fbbb63a3a6a1a8e",
+  "remote_download_sha256": "c30621b6e4e040384015137b1b0aa102e074ad5ce0f650d68fbbb63a3a6a1a8e",
+  "archive_bytes": 14406,
+  "dvc_pointer": "artifacts/cata_raid_program/dps_cross_reference_d5bf3b804a_20260908.tar.gz.dvc",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "new_live_run": false,
+  "members": [
+    {
+      "path": "all_bot_reference_review.json",
+      "bytes": 38661,
+      "sha256": "22a67c16297492fb16214e4997a82588e13ce29f20a92db87f68fdc03d735e65"
+    },
+    {
+      "path": "all_bot_reference_review.md",
+      "bytes": 5771,
+      "sha256": "040ecffc4b592a70efcdf894f4cc30c8f1b84bf878c9a0ae846c264480cf4b14"
+    },
+    {
+      "path": "damage_window_review.json",
+      "bytes": 986,
+      "sha256": "7123b89d1b91f5342b06a7ca42c6fe4965fcd9dcac5a5a260b49a3b4860484a9"
+    },
+    {
+      "path": "warcraftlogs_references.json",
+      "bytes": 9848,
+      "sha256": "b7378f02dabd71b145640b106d9b25ab0cf4eb9d342ae5ee8966c5ddad220b49"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "restored_input_and_reassembled_payloads_evicted": [
+    "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_development_d5bf3b804a_20260908.tar.gz",
+    "/home/runiir/Games/trinity-cata/.dvc/cache/files/md5/d5/202fcdb9769550ccdb0824b9aa66e7",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/magmaw-development-d5bf3b804a/raw.jsonl",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/magmaw-development-d5bf3b804a/all_bot_combatlog_reassembled.json"
+  ]
+}

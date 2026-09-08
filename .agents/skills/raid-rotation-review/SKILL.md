@@ -13,8 +13,10 @@ mechanics as separate layers.
 
 For the dedicated DPS review of a closed raid, dungeon, or calibration run,
 start with [references/post-run-dps-review.md](references/post-run-dps-review.md).
-It produces the next implementation packet without requiring a full simulator
-regeneration or treating every throughput gap as a native class defect.
+It reviews every bot and compares each DPS actor with promoted WoWSims action
+structure and identified Warcraft Logs kills, then selects the next bounded
+repair. Missing external access stays explicit. One accepted repair does not
+certify the roster's overall performance or require simulator regeneration.
 
 Read [references/translation-model.md](references/translation-model.md) before
 interpreting a comparison. If a local WoWSims server or downloaded binary is in

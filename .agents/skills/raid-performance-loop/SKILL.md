@@ -60,7 +60,11 @@ Assign one dedicated `raid-rotation-review` owner to the DPS side of every raid,
 dungeon, or calibration attempt, including successful clears. Use Sol high for
 this causal review. The reviewer follows that skill's post-run review mode,
 reads the closed diagnostics before raw payload eviction, and returns a compact
-per-spec breakdown plus one next repair or precisely missing observation.
+all-bot DPS/HPS breakdown, per-DPS-actor WoWSims and Warcraft Logs comparisons,
+and a ranked list of losses before choosing one next repair or missing
+observation. A repair acceptance is not overall roster-performance acceptance;
+keep unresolved actors visible. Record actual versus requested composition and
+use matching DPS denominators for external comparisons.
 Carry that finding into the next implementation packet and compare the repaired
 edge on the next run. Keep this review separate from boss-completion acceptance;
 a throughput finding does not erase a valid kill. Do not tune coefficients from
