@@ -135,6 +135,7 @@ inline std::string Capture(Player* owner, Unit* offensiveTarget, uint64 elapsedM
             json << static_cast<Guardian const*>(unit)->GetOwnerSpellDamageBonus();
         else
             json << "null";
+        json << ",\"spell_mod_owner_guid\":" << guid(unit->GetSpellModOwner());
         writeChain("owner_chain", ownerChain);
         writeChain("summoner_chain", summonerChain);
         for (auto const& [key, type] : {std::pair{"current_generic_spell", CURRENT_GENERIC_SPELL},

@@ -156,6 +156,13 @@ void Guardian::UpdateAttackPowerAndDamage(bool ranged)
 
     val *= ap_per_strength;
 
+    // WoWSims Cata 70d87383, sim/shaman/fire_elemental_pet.go: estimated
+    // owner-SP-to-AP contribution. Local native stats remain separate.
+    if (GetEntry() == ENTRY_FIRE_ELEMENTAL)
+        if (Unit* owner = GetStatOwner())
+            if (owner->GetTypeId() == TYPEID_PLAYER)
+                val += 4.9f * owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FIRE, false);
+
     UnitMods unitMod = UNIT_MOD_ATTACK_POWER;
 
     SetStatFlatModifier(UNIT_MOD_ATTACK_POWER, BASE_VALUE, val);
@@ -197,8 +204,7 @@ void Guardian::UpdateDamagePhysical(WeaponAttackType attType)
         return;
 
     float bonusDamage = 0.0f;
-    Unit* statOwner = GetEntry() == ENTRY_FIRE_ELEMENTAL ? GetStatOwner() : m_owner;
-    if (statOwner && statOwner->GetTypeId() == TYPEID_PLAYER)
+    if (m_owner && m_owner->GetTypeId() == TYPEID_PLAYER)
     {
         //force of nature
         if (GetEntry() == ENTRY_TREANT)
@@ -206,13 +212,6 @@ void Guardian::UpdateDamagePhysical(WeaponAttackType attType)
             int32 spellDmg = int32(m_owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + AsUnderlyingType(SPELL_SCHOOL_NATURE))) + m_owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_NEG + AsUnderlyingType(SPELL_SCHOOL_NATURE));
             if (spellDmg > 0)
                 bonusDamage = spellDmg * 0.09f;
-        }
-        //greater fire elemental
-        else if (GetEntry() == ENTRY_FIRE_ELEMENTAL)
-        {
-            int32 spellDmg = int32(statOwner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + AsUnderlyingType(SPELL_SCHOOL_FIRE))) + statOwner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_NEG + AsUnderlyingType(SPELL_SCHOOL_FIRE));
-            if (spellDmg > 0)
-                bonusDamage = spellDmg * 0.4f;
         }
     }
 

@@ -60,7 +60,7 @@ struct Unit {
  bool IsTotem() const { return totem; }
  Totem* ToTotem();
  int GetTypeId() const { return type; }
- int32 SpellBaseDamageBonusDone(int school) const { assert(school==SPELL_SCHOOL_MASK_FIRE); return fireSP; }
+ int32 SpellBaseDamageBonusDone(int school, bool = false) const { assert(school==SPELL_SCHOOL_MASK_FIRE); return fireSP; }
  uint32 GetUInt32Value(int field) const {
   if(field==PLAYER_FIELD_MOD_DAMAGE_DONE_POS+SPELL_SCHOOL_FIRE) return firePositive;
   if(field==PLAYER_FIELD_MOD_DAMAGE_DONE_NEG+SPELL_SCHOOL_FIRE) return fireNegative;
@@ -75,40 +75,45 @@ Totem* Unit::ToTotem(){return static_cast<Totem*>(this);}
 struct Minion: Unit { Unit* m_owner=nullptr; Unit* GetOwner() const {return m_owner;} };
 struct Guardian: Minion {
  int entry=ENTRY_FIRE_ELEMENTAL; int32 m_bonusSpellDamage=0, m_ownerSpellDamageBonus=0;
- float attackPower=0, minimum=0, maximum=0;
+ float attackPower=0, apPositive=0, apNegative=0, apMultiplier=0, minimum=0, maximum=0; uint32 swingMs=2000;
  float flats[2][2]={{0,0},{3,4}}, percentages[2][2]={{1,1},{1.2f,1.1f}};
  Aura local{17,{}}, slow{10,{61682}}; AuraEffectList damage{&local}, speed{&slow};
 ''' + getters + r'''
  Unit* GetStatOwner() const;
  bool UpdateAllStats(); void UpdateAttackPowerAndDamage(bool ranged=false);
  void UpdateDamagePhysical(WeaponAttackType); void SetBonusDamage(int32);
- int GetEntry()const{return entry;} float GetStat(int)const{return 120;}
+ int GetEntry()const{return entry;} float GetStat(int)const{return 321;}
  void UpdateMaxHealth(){} void UpdateMaxPower(int){} void UpdateAllResistances(){}
  void UpdateStats(int stat){if(stat==STAT_STRENGTH)UpdateAttackPowerAndDamage();}
  void SetStatFlatModifier(int mod,int kind,float value){flats[mod][kind]=value;}
  float GetFlatModifierValue(int mod,int kind)const{return flats[mod][kind];}
  float GetPctModifierValue(int mod,int kind)const{return percentages[mod][kind];}
- void SetInt32Value(int field,int32 value){if(field==UNIT_FIELD_ATTACK_POWER)attackPower=value;}
- void SetFloatValue(int,float){} void SetStatFloatValue(int field,float value){
+ void SetInt32Value(int field,int32 value){if(field==UNIT_FIELD_ATTACK_POWER)attackPower=value;
+  else if(field==UNIT_FIELD_ATTACK_POWER_MOD_POS)apPositive=value;
+  else if(field==UNIT_FIELD_ATTACK_POWER_MOD_NEG)apNegative=value;}
+ void SetFloatValue(int field,float value){if(field==UNIT_FIELD_ATTACK_POWER_MULTIPLIER)apMultiplier=value;} void SetStatFloatValue(int field,float value){
   if(field==UNIT_FIELD_MINDAMAGE)minimum=value;else if(field==UNIT_FIELD_MAXDAMAGE)maximum=value;
  }
- float GetTotalAttackPowerValue(int)const{return attackPower;}
- uint32 GetBaseAttackTime(int)const{return 2000;}
- float GetWeaponDamageRange(int,int kind)const{return kind==MINDAMAGE?10:20;}
+ float GetTotalAttackPowerValue(int)const{return (attackPower+apPositive-apNegative)*(1+apMultiplier);}
+ uint32 GetBaseAttackTime(int)const{return swingMs;}
+ float GetWeaponDamageRange(int,int kind)const{return kind==MINDAMAGE?255:425;}
  AuraEffectList const& GetAuraEffectsByType(int type)const{return type==SPELL_AURA_MOD_DAMAGE_DONE?damage:speed;}
 };
 ''' + functions + r'''
-float Expected(float bonus, float weapon) {
- return (((3+200.0f/14*2+bonus+weapon)*1.2f+4)*1.1f)*0.9f;
+float Expected(float ap, float seconds, float bonus, float weapon) {
+ return (((3+ap/14*seconds+bonus+weapon)*1.2f+4)*1.1f)*0.9f;
 }
-void Check(Guardian& guardian, int spellBonus, float meleeBonus) {
+void Check(Guardian& guardian, int spellBonus, float inheritedAP, float meleeBonus=0) {
  Unit* immediate=guardian.GetOwner();
  for(int i=0;i<3;++i){
   assert(guardian.UpdateAllStats());
   assert(guardian.GetBonusDamage()==17);
   assert(guardian.GetOwnerSpellDamageBonus()==spellBonus);
-  assert(std::fabs(guardian.minimum-Expected(meleeBonus,10))<0.001f);
-  assert(std::fabs(guardian.maximum-Expected(meleeBonus,20))<0.001f);
+  float ap = int32((602.0f+inheritedAP)*guardian.percentages[0][0]);
+  assert(guardian.attackPower==ap);
+  ap=(ap+int32(guardian.flats[0][1]))*guardian.percentages[0][1];
+  assert(std::fabs(guardian.minimum-Expected(ap,guardian.swingMs/1000.0f,meleeBonus,255))<0.002f);
+  assert(std::fabs(guardian.maximum-Expected(ap,guardian.swingMs/1000.0f,meleeBonus,425))<0.002f);
   assert(guardian.GetOwner()==immediate);
  }
 }
@@ -116,12 +121,19 @@ int main(){
  Unit player; Totem totem; totem.nativeOwner=&player;
  assert(static_cast<Unit*>(&totem)->GetOwner()==nullptr);
  Guardian fire; fire.m_owner=&totem;
- assert(fire.GetStatOwner()==&player); Check(fire,500,400);
- player.alive=false; Check(fire,500,400); // persistent stat identity is not combat eligibility
- player.alive=true; player.fireSP=1200; player.firePositive=1200; Check(fire,600,480);
- Guardian direct; direct.m_owner=&player; Check(direct,600,480);
+ assert(fire.GetStatOwner()==&player); Check(fire,500,4900);
+ player.alive=false; Check(fire,500,4900); // persistent stat identity is not combat eligibility
+ player.alive=true; player.fireSP=1200; player.firePositive=1200; Check(fire,600,5880);
+ Guardian direct; direct.m_owner=&player; Check(direct,600,5880);
+ player.fireSP=12127; player.firePositive=12127;
+ for(uint32 speed : {1500u,2000u,3000u}) {
+  fire.swingMs=speed; Check(fire,6063,4.9f*12127);
+ }
+ fire.percentages[0][0]=1.17f; fire.percentages[0][1]=1.13f;
+ fire.flats[0][1]=37; Check(fire,6063,4.9f*12127);
+ fire.flats[0][1]=-19; Check(fire,6063,4.9f*12127);
  Guardian other; other.entry=999; other.m_owner=&totem; Check(other,0,0);
- Guardian treant; treant.entry=ENTRY_TREANT; treant.m_owner=&player; Check(treant,0,90);
+ Guardian treant; treant.entry=ENTRY_TREANT; treant.m_owner=&player; Check(treant,0,0,90);
  totem.nativeOwner=nullptr; Check(fire,0,0);
  Unit npc; npc.type=3; totem.nativeOwner=&npc; Check(fire,0,0);
  Totem second; second.nativeOwner=&player; totem.nativeOwner=&second;

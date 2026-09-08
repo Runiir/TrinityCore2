@@ -31,8 +31,9 @@ struct ObjectGuid {uint64 raw=0;uint64 GetRawValue()const{return raw;}uint32 Get
 ObjectGuid const ObjectGuid::Empty{};
 constexpr int BASE_ATTACK=0,SPELL_SCHOOL_MASK_FIRE=4,UNIT_FIELD_MINDAMAGE=3,UNIT_FIELD_MAXDAMAGE=4,UNIT_MOD_CAST_HASTE=2,SUMMON_SLOT_TOTEM_FIRE=0,UNIT_CREATED_BY_SPELL=0,CURRENT_GENERIC_SPELL=0,CURRENT_CHANNELED_SPELL=1,CURRENT_AUTOREPEAT_SPELL=2;
 struct SpellInfo{uint32 Id=12345;};struct Spell{SpellInfo info;SpellInfo const* GetSpellInfo(){return &info;}};
-struct Creature;struct TempSummon;struct Totem;
+struct Creature;struct TempSummon;struct Totem;struct Player;
 struct Unit{
+ Player* spellModOwner=nullptr;Player* GetSpellModOwner()const{return spellModOwner;}
  ObjectGuid guid;Unit* owner=nullptr;Unit* victim=nullptr;Unit* helper=nullptr;std::set<Unit*> m_Controlled;
  float spellTime=0.8f,minDamage=17.25f,maxDamage=29.5f,attackPower=432.5f;int firePower=111;uint32 level=85;uint64 health=1234,maxHealth=2345;
  float GetFloatValue(int field){return field==UNIT_FIELD_MINDAMAGE?minDamage:(field==UNIT_FIELD_MAXDAMAGE?maxDamage:spellTime);}
@@ -64,6 +65,7 @@ struct CalibrationMetrics{struct DecisionTimelineEntry{
 };};
 '''+header+r'''
 int main(){
+ Player spellOwner;spellOwner.guid.raw=8589934599ULL;
  Player owner;owner.firePower=9999;owner.guid.raw=4294967297ULL;Player foreign;foreign.guid.raw=4294967300ULL;
  Unit target;target.guid.raw=99;owner.helper=&target;
  Totem fire;fire.guid.raw=500;fire.entry=15439;fire.created=2894;fire.nativeOwner=&owner;fire.summoner=&owner;
@@ -75,7 +77,7 @@ int main(){
 '''+collector+r'''
  CalibrationMetrics::DecisionTimelineEntry entry;
  capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
- owner.spellTime=0.5f;owner.m_Controlled.insert(&guardian);owner.victim=&target;guardian.victim=&target;Spell cast;guardian.current=&cast;entry.ElapsedMs=1000;
+ guardian.spellModOwner=&spellOwner;owner.spellTime=0.5f;owner.m_Controlled.insert(&guardian);owner.victim=&target;guardian.victim=&target;Spell cast;guardian.current=&cast;entry.ElapsedMs=1000;
  capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
  fire.m_Controlled.clear();owner.m_Controlled.clear();owner.m_SummonSlot[0]={};owner.victim=nullptr;owner.engaged=false;entry.ElapsedMs=1500;
  capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
@@ -123,9 +125,13 @@ int main(){
     assert guardian['base_attack_min_damage']==17.25 and guardian['base_attack_max_damage']==29.5
     assert guardian['guardian_bonus_damage']==777 and guardian['local_fire_spell_power']==111
     assert guardian['guardian_owner_spell_damage_bonus']==2222
+    assert guardian['spell_mod_owner_guid']==0
+    assert active['guardians'][0]['spell_mod_owner_guid']==8589934599
+    assert active['guardians'][0]['spell_mod_owner_guid'] not in guardian['summoner_chain']
     assert samples[-2]['owner_fire_spell_power'] is None
     assert samples[-1]['guardians'][0]['guardian_bonus_damage'] is None
     assert samples[-1]['guardians'][0]['guardian_owner_spell_damage_bonus'] is None
+    assert samples[-1]['guardians'][0]['spell_mod_owner_guid']==0
     assert samples[-1]['guardians'][0]['runtime_type']=='creature'
     assert samples[-1]['guardians'][0]['local_fire_spell_power']==111
     assert len(active['guardians'])==1  # duplicate player/totem membership deduplicated

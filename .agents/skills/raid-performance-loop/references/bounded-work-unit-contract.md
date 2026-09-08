@@ -62,6 +62,8 @@ can skip the faulty branch entirely.
 Run the historical counterexample once and retain its result in the handoff.
 The normal regression suite should exercise current production behavior without
 requiring an old Git commit or recompiling known-broken code on every run.
+`git diff --check` omits untracked files; check new files explicitly before
+reporting the whole patch clean. Verify ignored SQL belongs to the staged closure.
 
 Independent review checks the cause, preserved invariants, affected callers,
 and actual test boundary together. The coordinator resumes the next action
