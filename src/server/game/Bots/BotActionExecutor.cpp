@@ -1,4 +1,5 @@
 #include "Bots/BotActionExecutor.h"
+#include "Bots/BotCastWhileMoving.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "CharmInfo.h"
 #include "CellImpl.h"
@@ -7,6 +8,7 @@
 #include "Entities/Item/Item.h"
 #include "Entities/Pet/Pet.h"
 #include "MotionMaster.h"
+#include "Movement/Spline/MoveSpline.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Server/WorldSession.h"
@@ -396,15 +398,19 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
 
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(action.SpellId);
     if (spellInfo && spellInfo->CalcCastTime(bot->getLevel()) > 0
-        && (bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING)))
+        && (bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING))
+        && BotCastWhileMoving::StopUncoveredMovingCast(bot, spellInfo,
+            [bot]()
+            {
+                bot->StopMoving();
+                bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                bot->GetMotionMaster()->MoveIdle();
+            }))
     {
         // Rerun138 proved that stopping and submitting a cast-time offensive
         // spell in the same decision can still be rejected as moving. Yield
         // this tick after stopping so the next profile decision submits only
         // after the movement state has settled.
-        bot->StopMoving();
-        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-        bot->GetMotionMaster()->MoveIdle();
         return BotActionResult::Casting;
     }
 
@@ -715,6 +721,18 @@ void BotActionExecutor::Face(Player* bot, Unit* target)
 {
     if (!bot || !target)
         return;
+
+    // A forced facing command is represented by a zero-distance spline.  It
+    // therefore replaces an active movement spline, even though it does not
+    // change the bot's position.  Update orientation in place while native
+    // movement or either movement state is active so the movement owner keeps
+    // its spline, destination, and generator.
+    if (!bot->movespline->Finalized() || bot->isMoving()
+        || bot->HasUnitState(UNIT_STATE_MOVING))
+    {
+        bot->SetOrientationTowards(target);
+        return;
+    }
 
     bot->SetFacingToObject(target);
 }

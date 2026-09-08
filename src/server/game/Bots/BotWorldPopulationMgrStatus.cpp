@@ -479,6 +479,7 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
             case CombatLogPerspective::DamageTaken: return "damage_taken";
             case CombatLogPerspective::HealingDone: return "healing_done";
             case CombatLogPerspective::HealingReceived: return "healing_received";
+            case CombatLogPerspective::FriendlyDamageDone: return "friendly_damage_done";
         }
         return "unknown";
     };
@@ -487,8 +488,8 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
     json << std::fixed << std::setprecision(3)
          << "{\"ok\":true,\"action\":\"botauto_combatlog\"";
     AppendGenericRuntimeIdentityJson(json);
-    json << ",\"combat_log_schema_version\":2"
-         << ",\"damage_attribution_schema\":\"originated_amount_v1\""
+    json << ",\"combat_log_schema_version\":3"
+         << ",\"damage_attribution_schema\":\"originated_amount_v2_friendly_split\""
          << ",\"experiment_id\":" << Cohort().ExperimentId
          << ",\"run_id\":" << Cohort().RunId
          << ",\"event_count\":" << Party().CombatLogEventCount

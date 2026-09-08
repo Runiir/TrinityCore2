@@ -15,6 +15,8 @@ struct ActorCombatMetrics
     std::string Role;
     uint64 Damage = 0;
     uint64 RawEventDamage = 0;
+    uint64 FriendlyDamage = 0;
+    uint64 RawEventFriendlyDamage = 0;
     uint64 Healing = 0;
     uint64 PetDamage = 0;
     uint64 RawEventPetDamage = 0;
@@ -22,9 +24,11 @@ struct ActorCombatMetrics
 
 template <typename AbilityMap, typename Perspective>
 void AccumulateCombatMetrics(AbilityMap const& abilities, uint64 generation,
-    Perspective damageDone, Perspective healingDone,
+    Perspective damageDone, Perspective friendlyDamageDone, Perspective healingDone,
     std::map<uint32, ActorCombatMetrics>& actors, uint64& partyDamage,
-    uint64& rawEventDamage, uint64& partyHealing, std::string& routeNodeId)
+    uint64& rawEventDamage, uint64& partyFriendlyDamage,
+    uint64& rawEventFriendlyDamage, uint64& partyHealing,
+    std::string& routeNodeId)
 {
     for (auto const& [key, aggregate] : abilities)
     {
@@ -51,6 +55,17 @@ void AccumulateCombatMetrics(AbilityMap const& abilities, uint64 generation,
                 actor.RawEventPetDamage += aggregate.Amount;
             }
         }
+        else if (key.Perspective == friendlyDamageDone)
+        {
+            actor.FriendlyDamage += aggregate.OriginatedAmount;
+            actor.RawEventDamage += aggregate.Amount;
+            actor.RawEventFriendlyDamage += aggregate.Amount;
+            rawEventDamage += aggregate.Amount;
+            partyFriendlyDamage += aggregate.OriginatedAmount;
+            rawEventFriendlyDamage += aggregate.Amount;
+            if (aggregate.SourceIsPet)
+                actor.RawEventPetDamage += aggregate.Amount;
+        }
         else if (key.Perspective == healingDone)
         {
             actor.Healing += aggregate.Amount;
@@ -76,13 +91,14 @@ std::set<uint64> CollectPartyDamageSeconds(BucketMap const& buckets,
 
 template <typename BucketMap, typename Perspective>
 std::set<uint64> CollectRawEventDamageSeconds(BucketMap const& buckets,
-    uint64 generation, Perspective damageDone)
+    uint64 generation, Perspective damageDone, Perspective friendlyDamageDone)
 {
     std::set<uint64> seconds;
     for (auto const& [key, bucket] : buckets)
     {
         if (!bucket.RawAmount || std::get<0>(key) != generation
-            || std::get<1>(key) != damageDone)
+            || (std::get<1>(key) != damageDone
+                && std::get<1>(key) != friendlyDamageDone))
             continue;
         seconds.insert(std::get<4>(key));
     }
@@ -96,15 +112,19 @@ std::string BotWorldPopulationMgr::BuildCombatMetricsJson() const
     std::map<uint32, ActorCombatMetrics> actors;
     uint64 partyDamage = 0;
     uint64 rawEventDamage = 0;
+    uint64 partyFriendlyDamage = 0;
+    uint64 rawEventFriendlyDamage = 0;
     uint64 partyHealing = 0;
     std::string routeNodeId = Cohort().Config.ValidationRouteNodeId;
     AccumulateCombatMetrics(Party().CombatLogAbilities, generation,
-        CombatLogPerspective::DamageDone, CombatLogPerspective::HealingDone,
-        actors, partyDamage, rawEventDamage, partyHealing, routeNodeId);
+        CombatLogPerspective::DamageDone, CombatLogPerspective::FriendlyDamageDone,
+        CombatLogPerspective::HealingDone, actors, partyDamage, rawEventDamage,
+        partyFriendlyDamage, rawEventFriendlyDamage, partyHealing, routeNodeId);
     std::set<uint64> const partyDamageSeconds = CollectPartyDamageSeconds(
         Party().CombatLogSecondBuckets, generation, CombatLogPerspective::DamageDone);
     std::set<uint64> const rawEventDamageSeconds = CollectRawEventDamageSeconds(
-        Party().CombatLogSecondBuckets, generation, CombatLogPerspective::DamageDone);
+        Party().CombatLogSecondBuckets, generation, CombatLogPerspective::DamageDone,
+        CombatLogPerspective::FriendlyDamageDone);
 
     uint64 const originatedDamageSeconds = partyDamageSeconds.size();
     uint64 const rawEventCombatSeconds = rawEventDamageSeconds.size();
@@ -116,8 +136,8 @@ std::string BotWorldPopulationMgr::BuildCombatMetricsJson() const
     double const rawEventDenominator = double(std::max<uint64>(1, rawEventCombatSeconds));
     std::ostringstream json;
     json << std::fixed << std::setprecision(3)
-         << "{\"schema\":\"bot_combat_metrics_v2\""
-         << ",\"measurement_basis\":\"originated_damage\""
+         << "{\"schema\":\"bot_combat_metrics_v3\""
+         << ",\"measurement_basis\":\"hostile_originated_damage\""
          << ",\"raw_event_basis\":\"all_landed_damage_callbacks\""
          << ",\"route_generation\":" << generation
          << ",\"route_node_id\":\"" << JsonEscape(routeNodeId) << "\""
@@ -130,6 +150,8 @@ std::string BotWorldPopulationMgr::BuildCombatMetricsJson() const
          << ",\"party_dps\":" << (partyDamage / denominator)
          << ",\"raw_event_damage\":" << rawEventDamage
          << ",\"raw_event_dps\":" << (rawEventDamage / rawEventDenominator)
+         << ",\"party_friendly_damage\":" << partyFriendlyDamage
+         << ",\"party_raw_event_friendly_damage\":" << rawEventFriendlyDamage
          << ",\"party_healing\":" << partyHealing
          << ",\"party_hps\":" << (partyHealing / denominator)
          << ",\"pet_damage_included_in_owner\":true"
@@ -148,6 +170,8 @@ std::string BotWorldPopulationMgr::BuildCombatMetricsJson() const
              << ",\"dps\":" << (actor.Damage / denominator)
              << ",\"raw_event_damage\":" << actor.RawEventDamage
              << ",\"raw_event_dps\":" << (actor.RawEventDamage / rawEventDenominator)
+             << ",\"friendly_damage\":" << actor.FriendlyDamage
+             << ",\"raw_event_friendly_damage\":" << actor.RawEventFriendlyDamage
              << ",\"healing\":" << actor.Healing
              << ",\"hps\":" << (actor.Healing / denominator)
              << ",\"pet_damage\":" << actor.PetDamage

@@ -24,12 +24,15 @@ def test_diagnose_embeds_bounded_combat_metrics() -> None:
 def test_metrics_match_post_run_active_combat_denominator() -> None:
     source = METRICS.read_text(encoding="utf-8")
     for contract in (
-        "bot_combat_metrics_v2",
-        "originated_damage",
+        "bot_combat_metrics_v3",
+        "hostile_originated_damage",
         "raw_event_basis",
         "originated_damage_seconds",
         "raw_event_damage",
         "raw_event_dps",
+        "party_friendly_damage",
+        "party_raw_event_friendly_damage",
+        "FriendlyDamageDone",
         "Party().ValidationRouteGeneration",
         "CombatLogPerspective::DamageDone",
         "CombatLogPerspective::HealingDone",
@@ -38,6 +41,8 @@ def test_metrics_match_post_run_active_combat_denominator() -> None:
         "party_dps",
         "party_hps",
         "pet_damage",
+        "friendly_damage",
+        "raw_event_friendly_damage",
         "pet_damage_included_in_owner",
     ):
         assert contract in source

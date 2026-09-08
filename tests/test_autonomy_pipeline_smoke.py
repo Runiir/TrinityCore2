@@ -333,6 +333,11 @@ def test_protection_paladin_prioritizes_multi_target_threat_actions() -> None:
 def test_profile_taunts_require_a_real_non_tank_victim() -> None:
     manager = read(BOT_MGR)
     assert manager.count("(!target->GetVictim() || target->GetVictim() == bot)") >= 2
+    resolver = read(BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp")
+    spell = read(BOT_DIR / "BotWorldPopulationMgrCombatSpell.cpp")
+    assert resolver.count("HasOtherLiveCohortTankVictim(bot, target)") == 1
+    assert spell.count("HasOtherLiveCohortTankVictim(bot, target)") == 1
+    assert "validationCohortVictim" not in spell
 
     fillers = read(ROOT / "sql/custom/world/2026_07_16_06_protection_single_target_fillers.sql")
     assert "`action`.`min_enemies`=1" in fillers

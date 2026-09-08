@@ -6,7 +6,12 @@ import pytest
 
 from tools.bot_ml.run_live_bot_validation import CohortCommandExecutor
 from tools.raid_program.shared_instance_observation import InstanceExpectation
-from tools.raid_program.shared_instance_validation import run_shared_instance_validation
+from tools.raid_program.shared_instance_validation import (
+    _Identity,
+    _RawRecorder,
+    _combat_log,
+    run_shared_instance_validation,
+)
 
 
 class Clock:
@@ -143,7 +148,24 @@ class NativeFixture:
             "ok": True, "action": "botauto_diagnose", "cohort_id": identity["id"],
             "diagnosis_schema_version": 1, "bots": bots,
             "combat_metrics": {
-                "schema": "bot_combat_metrics_v2", "party_damage": state["progress"] * 10,
+                "schema": (
+                    "bot_combat_metrics_v3"
+                    if self.failure == "friendly_only"
+                    else "bot_combat_metrics_v2"
+                ),
+                "measurement_basis": (
+                    "hostile_originated_damage"
+                    if self.failure == "friendly_only"
+                    else "originated_damage"
+                ),
+                "party_damage": (
+                    0 if self.failure == "friendly_only"
+                    else state["progress"] * 10
+                ),
+                "party_friendly_damage": (
+                    state["progress"] * 10
+                    if self.failure == "friendly_only" else 0
+                ),
                 "party_dps": float(state["progress"] * 10),
                 "party_healing": 0, "party_hps": 0.0,
             },
@@ -180,7 +202,11 @@ class NativeFixture:
         if can_advance:
             state["progress"] += 5000 if self.failure == "unseen_events" and state["progress"] else 1
         count = state["progress"]
-        perspective = "damage_taken" if self.failure == "incoming_only" else "damage_done"
+        perspective = (
+            "damage_taken" if self.failure == "incoming_only"
+            else "friendly_damage_done" if self.failure == "friendly_only"
+            else "damage_done"
+        )
         outgoing = 0 if perspective == "damage_taken" else count * 10
         actor = identity["guids"][0]
         event_actor = 999 if self.failure == "foreign_actor" else actor
@@ -214,7 +240,12 @@ class NativeFixture:
             "ok": True, "action": "botauto_combatlog", "cohort_id": identity["id"],
             "server_epoch": self.epoch, "attempt_id": state["attempt"],
             "profile_generation": 7, "profile_content_hash": "a" * 64,
-            "active_profile": state["profile"], "combat_log_schema_version": 2,
+            "active_profile": state["profile"],
+            "combat_log_schema_version": 3 if self.failure == "friendly_only" else 2,
+            "damage_attribution_schema": (
+                "originated_amount_v2_friendly_split"
+                if self.failure == "friendly_only" else "originated_amount_v1"
+            ),
             "event_count": observed_count + (1 if self.failure == "event_accounting" else 0),
             "recent_events_dropped": observed_count - len(visible),
             "recent_events": visible,
@@ -371,6 +402,36 @@ def test_proves_both_active_progress_then_fresh_post_stop_witness_progress(tmp_p
             > proof["witness_after_subject_stop_baseline"]["outgoing_amount"])
     assert (tmp_path / "report.raw.jsonl").is_file()
     assert report["raw_command_count"] > 0
+
+
+def test_shared_validator_retains_friendly_perspective_without_counting_outgoing(tmp_path):
+    native = NativeFixture("friendly_only")
+    native.state["subject"]["created"] = True
+    native.state["subject"]["active"] = True
+    native.state["subject"]["attempt"] = 1
+    native.state["subject"]["profile"] = "subject_profile"
+    native.state["subject"]["leases"] = 2
+    executor = CohortCommandExecutor(native.execute, "subject", exclusive=False)
+    expected = InstanceExpectation("subject", 669, 0, frozenset({1, 2}))
+    anchor = _Identity(
+        "subject", 91, 1, "subject_profile", 7, "a" * 64,
+        669, 101, 201, 2, (1, 2),
+    )
+    recorder = _RawRecorder(tmp_path / "combat.raw.jsonl", Clock())
+    try:
+        combat, _ = _combat_log(
+            executor, expected, "subject_profile", recorder, anchor,
+            role="subject", phase="friendly_fixture",
+        )
+    finally:
+        recorder.close()
+
+    assert combat["combat_log_schema_version"] == 3
+    assert any(
+        row.get("perspective") == "friendly_damage_done"
+        for row in combat["abilities"]
+    )
+    assert combat["validated_outgoing_amount"] == 0
 
 
 @pytest.mark.parametrize("failure,reason", [

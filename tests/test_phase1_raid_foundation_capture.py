@@ -6931,6 +6931,40 @@ def test_monotonic_semantic_progress_rejects_unscoped_or_raw_party_damage():
     ) is True
 
 
+def test_monotonic_semantic_progress_ignores_friendly_damage_for_high_water_mark():
+    status = accepted_status()
+    status["validation_route"] = {
+        "node_id": "bwd.magmaw.encounter",
+        "generation": 4,
+        "manifest_index": 3,
+    }
+
+    def diagnosis_for(party_damage: int, friendly_damage: int) -> dict:
+        return {
+            "combat_metrics": {
+                "schema": "bot_combat_metrics_v3",
+                "measurement_basis": "hostile_originated_damage",
+                "route_generation": 4,
+                "route_node_id": "bwd.magmaw.encounter",
+                "party_damage": party_damage,
+                "party_friendly_damage": friendly_damage,
+                "party_raw_event_friendly_damage": friendly_damage,
+            },
+        }
+
+    state: dict = {}
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(1000, 0),
+    ) is True
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(1000, 700),
+    ) is False
+    assert state["originated_party_damage_high_water"]["4:bwd.magmaw.encounter"] == 1000
+    assert observe_monotonic_semantic_progress(
+        state, status, diagnosis_for(1100, 700),
+    ) is True
+
+
 def _watchdog_status() -> dict:
     status = accepted_status()
     runtime = status["raid_runtime"]

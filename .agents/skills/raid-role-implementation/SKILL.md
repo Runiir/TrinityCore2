@@ -8,6 +8,11 @@ description: Implement and tune one Trinity-Cata DPS, tank, or healer behavior w
 Own one class family or one exact role failure. Do not own the simulator,
 encounter source, live server, or evidence publisher.
 
+For an assigned read-only tank or healer review, use the supplied run context
+and relevant `references/tank-review-notes.md` or `healer-review-notes.md` when
+present. Return a causal repair packet before implementation. Shared encounter
+or movement failures remain owned by the coordinator's single assigned worker.
+
 Before inspection or editing, apply
 [the bounded work-unit contract](../raid-performance-loop/references/bounded-work-unit-contract.md).
 Lock one policy hypothesis, owned class/profile files, excluded native

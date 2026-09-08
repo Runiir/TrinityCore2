@@ -9,6 +9,12 @@ Build an attributable comparison from simulator policy to native outcome. Keep
 simulation, Trinity selection, movement, submission, landing, and encounter
 mechanics as separate layers.
 
+For a parallel review, use the coordinator's exact actor subset and shared run
+context. The overall reviewer joins all actors; do not repeat another worker's
+deep review. Read only the matching note under `references/classes/` when one
+exists. These notes supplement the common method and never replace current
+references, runtime evidence or encounter ownership.
+
 ## Load the review model
 
 For the dedicated DPS review of a closed raid, dungeon, or calibration run,

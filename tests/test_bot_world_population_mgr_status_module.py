@@ -54,7 +54,9 @@ def test_status_module_preserves_delta_and_debug_evidence() -> None:
     module = MODULE.read_text(encoding="utf-8")
     for field in (
         "TraceExportCursorByGuid",
-        "gap",
+        # Gap serialization belongs to the shared cursor helper. Its actual
+        # JSON is exercised by the compiled native cursor fixture.
+        "BotWorldTrace::WriteExportCursorFields(json, transition)",
         "recent_events_dropped",
         "second_bucket_count",
         "target_progression_relevant",

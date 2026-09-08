@@ -3,6 +3,7 @@ import json
 
 from tools.bot_ml.analyze_combat_log import analyze_combat_log
 from tools.bot_ml.run_live_bot_validation import (
+    combined_combat_log,
     combat_log_transport_status,
     heartbeat_commands_from_script,
     live_validation_report,
@@ -109,7 +110,7 @@ def combat_log_fixture() -> dict:
 def test_analyze_combat_log_reports_dps_rotation_and_positioning():
     report = analyze_combat_log(combat_log_fixture())
 
-    assert report["schema"] == "bot_combat_analysis_v2"
+    assert report["schema"] == "bot_combat_analysis_v3"
     assert report["tracked_event_count"] == 42
     assert report["recent_events_dropped"] == 7
     encounter = report["encounters"][0]
@@ -236,6 +237,132 @@ def test_shared_damage_copies_are_raw_but_not_originated_dps():
     assert actor["abilities"][0]["originated_damage"] == 100
 
 
+def test_schema3_splits_hostile_and_friendly_damage_without_losing_raw_callbacks():
+    def row(
+        perspective,
+        amount,
+        originated,
+        *,
+        spell_id,
+        spell_name,
+        source_is_pet=False,
+        target_entry=41570,
+    ):
+        return {
+            "route_generation": 5,
+            "route_node_id": "magmaw",
+            "route_label": "Magmaw",
+            "perspective": perspective,
+            "actor_guid": 10,
+            "actor_name": "Felmake",
+            "actor_role": "dps",
+            "actor_class_id": 9,
+            "source_entry": 416,
+            "source_name": "Felhunter" if source_is_pet else "Felmake",
+            "source_is_pet": source_is_pet,
+            "spell_id": spell_id,
+            "spell_name": spell_name,
+            "target_entry": target_entry,
+            "target_name": "Magmaw" if target_entry else "Felmake",
+            "first_at_ms": 1000,
+            "last_at_ms": 1000,
+            "event_count": 1,
+            "amount": amount,
+            "originated_amount": originated,
+            "shared_amount": amount - originated,
+            "raw_amount": amount,
+            "moving_events": 0,
+            "distance_avg": 4,
+        }
+
+    abilities = [
+        row("damage_done", 1000, 1000, spell_id=1, spell_name="Hostile Bolt"),
+        row("damage_done", 200, 0, spell_id=2, spell_name="Shared Copy"),
+        row("friendly_damage_done", 300, 300, spell_id=3, spell_name="Friendly Fire"),
+        row(
+            "friendly_damage_done", 400, 400, spell_id=0, spell_name="Melee",
+            source_is_pet=True, target_entry=28017,
+        ),
+        row(
+            "damage_taken", 700, 700, spell_id=4, spell_name="Cohort Hit",
+            target_entry=0,
+        ),
+    ]
+    report = analyze_combat_log({
+        "combat_log_schema_version": 3,
+        "damage_attribution_schema": "originated_amount_v2_friendly_split",
+        "event_count": 5,
+        "abilities": abilities,
+        "second_buckets": [
+            {
+                "route_generation": 5, "perspective": "damage_done",
+                "actor_guid": 10, "source_is_pet": False, "second": 1,
+                "amount": 1200, "originated_amount": 1000,
+            },
+            {
+                "route_generation": 5, "perspective": "friendly_damage_done",
+                "actor_guid": 10, "source_is_pet": False, "second": 2,
+                "amount": 300, "originated_amount": 300,
+            },
+            {
+                "route_generation": 5, "perspective": "friendly_damage_done",
+                "actor_guid": 10, "source_is_pet": True, "second": 3,
+                "amount": 400, "originated_amount": 400,
+            },
+        ],
+    })
+
+    encounter = report["encounters"][0]
+    assert encounter["party_damage"] == 1000
+    assert encounter["party_friendly_damage"] == 700
+    assert encounter["party_raw_event_friendly_damage"] == 700
+    assert encounter["raw_event_damage"] == 1900
+    assert encounter["raw_event_dps"] == round(1900 / 3, 3)
+    actor = encounter["actors"][0]
+    assert actor["damage"] == 1000
+    assert actor["friendly_damage"] == 700
+    assert actor["raw_event_friendly_damage"] == 700
+    assert actor["raw_event_damage"] == 1900
+    assert actor["damage_taken"] == 700
+    assert actor["pet_damage"] == 0
+    assert actor["raw_event_pet_damage"] == 400
+    assert sum(row["damage_share"] for row in actor["abilities"]) == 1.0
+    assert {row["spell_name"] for row in actor["friendly_abilities"]} == {
+        "Friendly Fire", "Melee",
+    }
+    assert {
+        (row["spell_name"], row["target_entry"])
+        for row in actor["friendly_abilities"]
+    } == {("Friendly Fire", 41570), ("Melee", 28017)}
+
+
+def test_legacy_schema_does_not_invent_friendly_split():
+    report = analyze_combat_log({
+        "combat_log_schema_version": 2,
+        "abilities": [{
+            "route_generation": 1,
+            "perspective": "damage_done",
+            "actor_guid": 10,
+            "amount": 300,
+            "originated_amount": 300,
+            "event_count": 1,
+        }],
+        "second_buckets": [{
+            "route_generation": 1,
+            "perspective": "damage_done",
+            "actor_guid": 10,
+            "source_is_pet": False,
+            "second": 1,
+            "amount": 300,
+            "originated_amount": 300,
+        }],
+    })
+    encounter = report["encounters"][0]
+    assert encounter["party_damage"] == 300
+    assert encounter["party_friendly_damage"] == 0
+    assert encounter["raw_event_damage"] == 300
+
+
 def test_live_validation_attaches_combat_analysis_and_logs_only_at_cleanup():
     combat_log = combat_log_fixture()
     output = "\n".join(
@@ -293,6 +420,52 @@ def test_live_validation_reassembles_bounded_combat_log_chunks():
     stripped = strip_combat_log_chunks("prefix\n" + output + "\nsuffix\n")
     assert "botauto_combatlog_chunk" not in stripped
     assert stripped == "prefix\nsuffix\n"
+
+
+def test_combined_combat_log_reassembles_schema3_friendly_perspective():
+    payload = {
+        "action": "botauto_combatlog",
+        "combat_log_schema_version": 3,
+        "damage_attribution_schema": "originated_amount_v2_friendly_split",
+        "event_count": 0,
+        "recent_events_dropped": 0,
+        "abilities": [{
+            "perspective": "friendly_damage_done",
+            "actor_guid": 10,
+            "amount": 400,
+            "originated_amount": 400,
+        }],
+        "recent_events": [],
+    }
+    raw = json.dumps(payload, separators=(",", ":")).encode()
+    parts = [raw[index : index + 11] for index in range(0, len(raw), 11)]
+    chunk_rows = [
+        {
+            "action": "botauto_combatlog_chunk",
+            "ok": True,
+            "cohort_id": "subject",
+            "combat_log_chunk_schema_version": 1,
+            "sequence": sequence,
+            "chunk_count": len(parts),
+            "encoding": "base64",
+            "data": base64.b64encode(part).decode(),
+        }
+        for sequence, part in enumerate(parts)
+    ]
+    chunk_rows.append({
+        "action": "botauto_combatlog_complete",
+        "ok": True,
+        "cohort_id": "subject",
+        "combat_log_chunk_schema_version": 1,
+        "chunk_count": len(parts),
+        "total_bytes": len(raw),
+    })
+
+    combined = combined_combat_log(chunk_rows)
+
+    assert combined["combat_log_schema_version"] == 3
+    assert combined["damage_attribution_schema"] == "originated_amount_v2_friendly_split"
+    assert combined["abilities"][0]["perspective"] == "friendly_damage_done"
 
 
 def test_live_validation_reports_missing_combat_log_sequence_fail_closed():

@@ -36,10 +36,19 @@ def _raw_event_amount(row: dict[str, Any]) -> int:
 def _originated_amount(row: dict[str, Any]) -> int:
     # Schema v1 has no provenance field, so its amount is the best available
     # originated total. Schema v2+ explicitly records share-damage copies as
-    # zero originated amount while retaining their raw event amount.
+    # zero originated amount while retaining their raw event amount. Schema 3
+    # uses the same field for both hostile and friendly perspectives.
     if "originated_amount" in row:
         return int(row.get("originated_amount") or 0)
     return _raw_event_amount(row)
+
+
+def _combat_log_schema_version(combat_log: dict[str, Any]) -> int:
+    try:
+        value = int(combat_log.get("combat_log_schema_version") or 1)
+    except (TypeError, ValueError):
+        return 1
+    return max(1, value)
 
 
 def _weighted_average(rows: list[dict[str, Any]], field: str) -> float:
@@ -55,16 +64,21 @@ def _ability_rows(
     *,
     raw_total_damage: int | None = None,
     use_originated: bool = False,
+    include_target: bool = False,
 ) -> list[dict[str, Any]]:
-    grouped: dict[tuple[int, str, bool, int, str], dict[str, Any]] = {}
+    grouped: dict[tuple[Any, ...], dict[str, Any]] = {}
     for row in rows:
-        key = (
+        base_key = (
             int(row.get("spell_id") or 0),
             str(row.get("spell_name") or "Unknown"),
             bool(row.get("source_is_pet")),
             int(row.get("source_entry") or 0),
             str(row.get("source_name") or ""),
         )
+        key = base_key + (
+            int(row.get("target_entry") or 0),
+            str(row.get("target_name") or ""),
+        ) if include_target else base_key
         target = grouped.setdefault(
             key,
             {
@@ -81,6 +95,9 @@ def _ability_rows(
                 "distance_weighted": 0.0,
             },
         )
+        if include_target:
+            target["target_entry"] = key[5]
+            target["target_name"] = key[6]
         events = int(row.get("event_count") or 0)
         raw_damage = _raw_event_amount(row)
         originated_damage = _originated_amount(row)
@@ -112,6 +129,12 @@ def _ability_rows(
 
 def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
     """Return encounter, DPS/HPS, rotation, pet, and positioning diagnostics."""
+    schema_version = _combat_log_schema_version(combat_log)
+    friendly_split_available = (
+        schema_version == 3
+        and combat_log.get("damage_attribution_schema")
+        == "originated_amount_v2_friendly_split"
+    )
     abilities = [row for row in combat_log.get("abilities") or [] if isinstance(row, dict)]
     buckets = [row for row in combat_log.get("second_buckets") or [] if isinstance(row, dict)]
     by_generation: dict[int, list[dict[str, Any]]] = defaultdict(list)
@@ -121,12 +144,17 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
     raw_bucket_seconds: dict[tuple[int, int, str, bool], set[int]] = defaultdict(set)
     originated_bucket_seconds: dict[tuple[int, int, str, bool], set[int]] = defaultdict(set)
     for row in buckets:
+        perspective = str(row.get("perspective") or "")
+        if perspective == "friendly_damage_done" and not friendly_split_available:
+            # Legacy payloads cannot carry a trustworthy friendly split. Keep
+            # them readable without inventing one from an unknown row.
+            continue
         raw_amount = _raw_event_amount(row)
         originated_amount = _originated_amount(row)
         key = (
             int(row.get("route_generation") or 0),
             int(row.get("actor_guid") or 0),
-            str(row.get("perspective") or ""),
+            perspective,
             bool(row.get("source_is_pet")),
         )
         if raw_amount > 0:
@@ -149,7 +177,10 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
             if bucket_generation == generation and perspective == "damage_done":
                 party_damage_seconds.update(seconds)
         for (bucket_generation, _actor_guid, perspective, _source_is_pet), seconds in raw_bucket_seconds.items():
-            if bucket_generation == generation and perspective == "damage_done":
+            if bucket_generation == generation and (
+                perspective == "damage_done"
+                or (friendly_split_available and perspective == "friendly_damage_done")
+            ):
                 raw_event_damage_seconds.update(seconds)
         # Keep the legacy active-combat denominator for HPS and elapsed
         # comparability. Provenance changes only the damage numerator; the
@@ -163,10 +194,19 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
         for actor_guid in actor_guids:
             actor_rows = [row for row in rows if int(row.get("actor_guid") or 0) == actor_guid]
             done = [row for row in actor_rows if row.get("perspective") == "damage_done"]
+            friendly = [
+                row for row in actor_rows
+                if friendly_split_available
+                and row.get("perspective") == "friendly_damage_done"
+            ]
             taken = [row for row in actor_rows if row.get("perspective") == "damage_taken"]
             healing = [row for row in actor_rows if row.get("perspective") == "healing_done"]
             total_damage = sum(_originated_amount(row) for row in done)
-            raw_event_damage = sum(_raw_event_amount(row) for row in done)
+            friendly_damage = sum(_originated_amount(row) for row in friendly)
+            raw_event_damage = sum(
+                _raw_event_amount(row) for row in [*done, *friendly]
+            )
+            raw_event_friendly_damage = sum(_raw_event_amount(row) for row in friendly)
             total_taken = sum(_raw_event_amount(row) for row in taken)
             total_healing = sum(int(row.get("amount") or 0) for row in healing)
             active_seconds = len(originated_bucket_seconds[(generation, actor_guid, "damage_done", False)])
@@ -178,12 +218,21 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                 raw_total_damage=raw_event_damage,
                 use_originated=True,
             )
+            friendly_ability_summary = _ability_rows(
+                friendly,
+                friendly_damage,
+                raw_total_damage=raw_event_friendly_damage,
+                use_originated=True,
+                include_target=True,
+            )
             actor_name = next((str(row.get("actor_name") or "") for row in actor_rows if row.get("actor_name")), "")
             actor_role = next((str(row.get("actor_role") or "") for row in actor_rows if row.get("actor_role")), "")
             actor_class_id = next((int(row.get("actor_class_id") or 0) for row in actor_rows if row.get("actor_class_id")), 0)
             pet_damage = sum(int(row["damage"]) for row in ability_summary if row.get("source_is_pet"))
             raw_event_pet_damage = sum(
-                int(row["raw_event_damage"]) for row in ability_summary if row.get("source_is_pet")
+                _raw_event_amount(row)
+                for row in [*done, *friendly]
+                if row.get("source_is_pet")
             )
             player_damage = total_damage - pet_damage
             player_done = [row for row in done if not row.get("source_is_pet")]
@@ -197,6 +246,8 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                 "elapsed_dps": round(total_damage / duration_sec, 3),
                 "raw_event_damage": raw_event_damage,
                 "raw_event_dps": round(raw_event_damage / max(1, len(raw_event_damage_seconds)), 3),
+                "friendly_damage": friendly_damage,
+                "raw_event_friendly_damage": raw_event_friendly_damage,
                 "active_seconds": active_seconds,
                 "active_dps": round(player_damage / max(1, active_seconds), 3),
                 "damage_uptime": round(active_seconds / combat_seconds, 6),
@@ -217,6 +268,7 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                 "distance_avg": round(_weighted_average(player_done, "distance_avg"), 3),
                 "moving_fraction": round(_weighted_average(player_done, "moving_fraction"), 6),
                 "abilities": ability_summary,
+                "friendly_abilities": friendly_ability_summary,
                 "damage_taken_sources": _ability_rows(taken, total_taken)[:10],
             }
             actors.append(actor_report)
@@ -285,7 +337,16 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
 
         actors.sort(key=lambda row: (-int(row["damage"]), int(row["actor_guid"])))
         party_damage = sum(int(row["damage"]) for row in actors)
+        party_friendly_damage = sum(int(row["friendly_damage"]) for row in actors)
+        party_raw_event_friendly_damage = sum(
+            int(row["raw_event_friendly_damage"]) for row in actors
+        )
         party_healing = sum(int(row["healing"]) for row in actors)
+        outgoing_rows = [
+            row for row in rows
+            if row.get("perspective") == "damage_done"
+            or (friendly_split_available and row.get("perspective") == "friendly_damage_done")
+        ]
         encounters.append({
             "route_generation": generation,
             "route_node_id": node_id,
@@ -298,20 +359,14 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
             "party_damage": party_damage,
             "party_dps": round(party_damage / combat_seconds, 3),
             "elapsed_party_dps": round(party_damage / duration_sec, 3),
-            "raw_event_damage": sum(
-                _raw_event_amount(row)
-                for row in rows
-                if row.get("perspective") == "damage_done"
-            ),
+            "raw_event_damage": sum(_raw_event_amount(row) for row in outgoing_rows),
             "raw_event_dps": round(
-                sum(
-                    _raw_event_amount(row)
-                    for row in rows
-                    if row.get("perspective") == "damage_done"
-                )
+                sum(_raw_event_amount(row) for row in outgoing_rows)
                 / max(1, len(raw_event_damage_seconds)),
                 3,
             ),
+            "party_friendly_damage": party_friendly_damage,
+            "party_raw_event_friendly_damage": party_raw_event_friendly_damage,
             "party_healing": party_healing,
             "party_hps": round(party_healing / combat_seconds, 3),
             "elapsed_party_hps": round(party_healing / duration_sec, 3),
@@ -320,7 +375,7 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
         })
 
     return {
-        "schema": "bot_combat_analysis_v2",
+        "schema": "bot_combat_analysis_v3",
         "source_schema_version": combat_log.get("combat_log_schema_version"),
         "tracked_event_count": int(combat_log.get("event_count") or 0),
         "aggregate_count": int(combat_log.get("aggregate_count") or len(abilities)),

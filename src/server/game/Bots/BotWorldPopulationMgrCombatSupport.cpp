@@ -149,6 +149,28 @@ char const* BotWorldPopulationMgr::GetDungeonRole(Player* bot) const
     }
 }
 
+bool BotWorldPopulationMgr::HasOtherLiveCohortTankVictim(Player const* bot,
+    Unit const* target) const
+{
+    if (!bot || !target)
+        return false;
+
+    Unit const* victim = target->GetVictim();
+    Player const* victimPlayer = victim ? victim->ToPlayer() : nullptr;
+    if (!victimPlayer || victimPlayer == bot || !victimPlayer->IsAlive()
+        || victimPlayer->GetMap() != bot->GetMap())
+        return false;
+
+    for (WorldBotState const& cohortState : Party().Bots)
+    {
+        Player* member = GetBot(cohortState);
+        if (member && member == victimPlayer)
+            return std::string(GetDungeonRole(member)) == "tank";
+    }
+
+    return false;
+}
+
 uint32 BotWorldPopulationMgr::SelectInterruptSpell(Player* bot) const
 {
     if (!bot)
@@ -323,10 +345,6 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
         return fail("future_encounter_splash_forbidden");
     if (!bot->IsWithinLOSInMap(target))
         return fail("line_of_sight");
-
-    float maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
-    if (!bot->IsWithinDistInMap(target, maxRange))
-        return fail("out_of_range");
 
     if (bot->HasUnitState(UNIT_STATE_CASTING))
         return fail("already_casting");

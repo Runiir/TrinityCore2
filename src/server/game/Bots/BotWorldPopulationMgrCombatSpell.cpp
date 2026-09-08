@@ -192,29 +192,11 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
             candidate.RejectReason = "validation_trash_requires_damage_progress";
             continue;
         }
-        if (candidate.Category == BotCombatActionCategory::Taunt)
+        if (candidate.Category == BotCombatActionCategory::Taunt
+            && HasOtherLiveCohortTankVictim(bot, target))
         {
-            if (Player* victimPlayer = target->GetVictim() ? target->GetVictim()->ToPlayer() : nullptr)
-            {
-                if (victimPlayer->GetMap() == bot->GetMap() && std::string(GetDungeonRole(victimPlayer)) == "tank")
-                {
-                    bool validationCohortVictim = false;
-                    for (WorldBotState const& cohortState : Party().Bots)
-                    {
-                        Player* member = GetBot(cohortState);
-                        if (member && member == victimPlayer)
-                        {
-                            validationCohortVictim = true;
-                            break;
-                        }
-                    }
-                    if (validationCohortVictim)
-                    {
-                        candidate.RejectReason = "cohort_threat_established";
-                        continue;
-                    }
-                }
-            }
+            candidate.RejectReason = "cohort_threat_established";
+            continue;
         }
         bool selfTarget = candidate.Profile.TargetSelector == "self";
         Unit* actionTarget = selfTarget ? static_cast<Unit*>(bot) : target;

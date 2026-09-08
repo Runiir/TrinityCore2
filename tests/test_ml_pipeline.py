@@ -7812,6 +7812,8 @@ def active_combat_bot_diagnosis_error_report(
                         "route_generation": route_generation,
                         "attempt_epoch": attempt_epoch,
                         "party_damage": party_damage,
+                        "schema": "bot_combat_metrics_v3",
+                        "measurement_basis": "hostile_originated_damage",
                     }
                 ]
             }
@@ -7864,7 +7866,7 @@ def test_live_combat_progress_does_not_fabricate_target_or_route_generation_chan
 
 
 def test_live_combat_progress_uses_same_route_damage_and_ignores_dead_target():
-    metrics = {"schema": "bot_combat_metrics_v2", "available": True, "route_node_id": "corborus", "route_generation": 2, "party_damage": 0}
+    metrics = {"schema": "bot_combat_metrics_v2", "measurement_basis": "originated_damage", "available": True, "route_node_id": "corborus", "route_generation": 2, "party_damage": 0}
     baseline = live_combat_progress_snapshot([], [], metrics)
     damage = live_combat_progress_snapshot([], [], {**metrics, "party_damage": 100})
     other_route = live_combat_progress_snapshot([], [], {**metrics, "route_generation": 3, "party_damage": 200})
@@ -7876,6 +7878,55 @@ def test_live_combat_progress_uses_same_route_damage_and_ignores_dead_target():
     assert live_combat_progress_advanced(damage, dead) is False
 
 
+def test_live_combat_progress_ignores_friendly_damage_and_accepts_hostile_v3_damage():
+    metrics = {
+        "schema": "bot_combat_metrics_v3",
+        "measurement_basis": "hostile_originated_damage",
+        "available": True,
+        "route_node_id": "corborus",
+        "route_generation": 2,
+        "party_damage": 0,
+        "party_friendly_damage": 300,
+    }
+    baseline = live_combat_progress_snapshot([], [], metrics)
+    friendly_only = live_combat_progress_snapshot(
+        [], [], {**metrics, "party_friendly_damage": 700},
+    )
+    hostile = live_combat_progress_snapshot(
+        [], [], {**metrics, "party_damage": 100, "party_friendly_damage": 700},
+    )
+
+    assert baseline["damage"][0]["party_damage"] == 0
+    assert friendly_only["damage"][0]["party_damage"] == 0
+    assert live_combat_progress_advanced(baseline, friendly_only) is False
+    assert live_combat_progress_advanced(friendly_only, hostile) is True
+
+
+@pytest.mark.parametrize(
+    "metrics",
+    [
+        {
+            "schema": "bot_combat_metrics_v3",
+            "measurement_basis": "originated_damage",
+            "available": True,
+            "route_node_id": "corborus",
+            "route_generation": 2,
+            "party_damage": 100,
+        },
+        {
+            "schema": "bot_combat_metrics_v3",
+            "measurement_basis": "raw_event_damage",
+            "available": True,
+            "route_node_id": "corborus",
+            "route_generation": 2,
+            "party_damage": 100,
+        },
+    ],
+)
+def test_live_combat_progress_rejects_v3_non_hostile_measurement_basis(metrics):
+    assert live_combat_progress_snapshot([], [], metrics)["damage"] == []
+
+
 def test_live_combat_progress_ignores_stale_dead_health_and_damage_snapshots():
     stale = diagnosis_health_row(0.341646)
     stale["diagnosis"] = {
@@ -7885,6 +7936,7 @@ def test_live_combat_progress_ignores_stale_dead_health_and_damage_snapshots():
     }
     metrics = {
         "schema": "bot_combat_metrics_v2",
+        "measurement_basis": "originated_damage",
         "available": True,
         "route_node_id": "bwd.magmaw.chainwielder",
         "route_generation": 2,
@@ -7909,6 +7961,7 @@ def test_live_combat_progress_preserves_monotonic_progress_after_recovery():
     runtime = {"expected_size": 10, "alive_size": 10, "wipe_state": "ready"}
     metrics = {
         "schema": "bot_combat_metrics_v2",
+        "measurement_basis": "originated_damage",
         "available": True,
         "route_node_id": "bwd.magmaw.chainwielder",
         "route_generation": 2,
@@ -7975,6 +8028,7 @@ def test_live_validation_all_dead_wipe_drops_stale_combat_progress():
     }
     metrics = {
         "schema": "bot_combat_metrics_v2",
+        "measurement_basis": "originated_damage",
         "available": True,
         "route_node_id": "bwd.magmaw.chainwielder",
         "route_generation": 2,

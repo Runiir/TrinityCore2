@@ -1,50 +1,65 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "role:raid_haste_known_spell",
+  "work_unit": "runtime:roster_execution_review",
   "owner_skill": "raid-performance-loop",
   "classification": "implementation_pending_live_verification",
-  "epoch_id": "raid_haste_known_spell_20260908",
-  "observed_at_commit": "226fa8857d23aa894a5d0be9929ddf70e7975a00",
+  "epoch_id": "roster_execution_review_20260908",
+  "observed_at_commit": "5a7e61f9ced99a77382f8a759b885dcd3f68a4b6",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Elemental filler repair accepted; overall roster DPS remains unresolved.",
+  "gate_state": "Six bounded repairs independently approved; fixtures pass; overall roster performance remains unresolved.",
   "first_broken_edge": {
-    "id": "magmaw_raid_haste_unknown_spell",
-    "stage": "native_readiness",
-    "owner_classification": "raid_role_implementation",
-    "cause": "Executor checks/casts only2825 and rejects absent spell during selectable42347 window. Runtime32182 availability requires verification.",
+    "id": "combat_facing_replaces_admitted_spline",
+    "stage": "native_execution",
+    "owner_classification": "raid_bot_runtime_implementation",
+    "cause": "Forced SetFacingToObject replaces admitted hazard spline during compatible instant combat action; joined class/role review also proved five independent setup/eligibility/measurement defects.",
     "review_state": "independently_approved_pending_live",
     "counterexample": {
-      "observed_at_ms": 1788861562295,
-      "actor_guid": 30010,
-      "target_entry": 42347,
-      "candidate": "adaptive_magmaw:bloodlust:4",
-      "reason": "blocked_spell_not_in_shaman_spellbook"
+      "observed_at_ms": 1788864560709,
+      "actor_guid": 30009,
+      "candidate": "pillar_evade plus Arcane Shot 3044",
+      "native_spline_before": 13977,
+      "native_spline_after": 13978,
+      "outcome": "native_spline_replaced at unchanged position after 105ms"
     }
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "044777e4eeb3e01cd7203d1216c2d6eb83fb1fd2c81241bbb7b328dba15676ac"
+    "sha256": "73e8a9a06742f14b56d1ec77cdf8e194b6659ebec3ea10bca5278919d5e1519e"
   },
   "scope_lock": {
-    "objective": "Use actual known Heroism or Bloodlust consistently and verify legitimate spell setup.",
+    "objective": "One reviewed batch: preserve combat movement, exact DPS glyphs, native moving-spell permission, friendly native range authority, generic tank ownership, hostile damage accounting.",
     "owned_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrMagmawBloodlust.cpp",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBloodlust.h",
-      "tests/test_magmaw_bloodlust.py",
-      "experiments/configs/validation_provisioning_cata_001.json",
       "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
-      "tests/test_shaman_raid_haste_provisioning.py"
+      "experiments/configs/validation_provisioning_cata_001.json",
+      "src/server/game/Bots/BotActionExecutor.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatMetrics.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatSupport.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrPlanningContracts.h",
+      "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp",
+      "tools/bot_ml/analyze_combat_log.py",
+      "tools/bot_ml/run_live_bot_validation.py",
+      "tools/raid_program/capture_progress.py",
+      "tools/raid_program/shared_instance_validation.py",
+      "src/server/game/Bots/BotCastWhileMoving.h",
+      "src/server/game/Bots/BotCombatDamageAttribution.h"
     ],
     "forbidden_changes": [
-      "No coefficients, manual auras, timing/owner broadening, lockout relaxation or arbiter bypass."
+      "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Known-only Heroism and Bloodlust resolve accurately; neither-known remains rejected.",
-    "One native haste cast during first selectable-head window, matching aura observed, no duplicate.",
-    "Report all-bot DPS/HPS, movement, target selection, deaths, route and cleanup."
+    "Admitted hazard spline survives compatible instant spell/auto-attack and yields measured native progress; riders resume cast-time submissions after native mechanic release.",
+    "Exact glyph readback includes Elemental950; covered moving Lightning Bolt submits and lands without clearing the active path.",
+    "Friendly Holy Shock reaches native execution beyond the former hostile-range gate; true native failures remain observable.",
+    "Generic taunts do not target another live cohort tank; pickup and explicit swap behavior remain intact.",
+    "Hostile metrics exclude friendly/self damage while retaining raw callbacks and hard negatives; friendly-only damage never advances watchdog progress.",
+    "Report all ten actors DPS/HPS, movement, targets, decisions, deaths, route, terminal and cleanup; no rough raid DPS threshold or coefficient claim."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -55,7 +70,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": true,
-  "next_action": "Verify refreshed assets, build once, run bounded Magmaw canary and prove first-head Heroism submission/aura plus all-bot throughput.",
+  "next_action": "Commit the reviewed batch, verify frozen assets, build worldserver once, then run one canonical completion-watchdog canary and review all actors.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -71,31 +86,32 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "226fa8857d23aa894a5d0be9929ddf70e7975a00",
+    "source_commit": "5a7e61f9ced99a77382f8a759b885dcd3f68a4b6",
     "boss_clear": true,
     "terminal_reason": "clear",
     "cleanup_passed": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_226fa8857d_20260908.tar.gz.dvc",
     "training_eligible": false,
-    "recorded_casualties": 4,
-    "boss_fight_casualties": 0,
+    "recorded_casualties": 2,
+    "boss_fight_casualties": 1,
     "all_bots_recovered_before_cleanup": true,
-    "party_dps": 95723.151,
-    "party_hps": 20206.545,
-    "originated_damage_seconds": 325,
+    "reported_party_dps": 98206.508,
+    "hostile_only_party_dps": 96435.585,
+    "party_hps": 16876.141,
+    "originated_damage_seconds": 311,
     "remote_reconstruction_verified": true,
-    "raw_payloads_evicted": true
+    "raw_payloads_evicted": true,
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_5a7e61f9ce_20260908.tar.gz.dvc"
   },
   "latest_analysis": {
-    "review_directory": "magmaw-development-226fa8857d/dps-review",
+    "review_directory": "magmaw-development-5a7e61f9ce/dps-review",
     "publication_state": "remote_verified_exact_raw_evicted",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_226fa8857d_20260908.tar.gz.dvc"
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_5a7e61f9ce_20260908.tar.gz.dvc"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approve",
-    "scope": "Known haste variant, legitimate canonical Heroism provisioning, offline readiness report generation",
+    "scope": "Joined six-repair batch, with separate independent implementation receipts in closed run dps-review directory.",
     "live_verified": false
   }
 }

@@ -723,6 +723,7 @@ private:
     bool TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target,
         char const* specTagOverride = nullptr);
     char const* GetDungeonRole(Player* bot) const;
+    bool HasOtherLiveCohortTankVictim(Player const* bot, Unit const* target) const;
     uint32 SelectInterruptSpell(Player* bot) const;
     uint32 SelectHealSpell(Player* bot, Unit* target, bool instantOnly = false,
         BotHealSelection::Diagnostic* selectionDiagnostic = nullptr) const;

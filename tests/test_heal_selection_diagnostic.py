@@ -242,3 +242,15 @@ def test_adaptive_heal_resolve_records_typed_selection_detail() -> None:
     assert '<< ",\\"detail\\":"' in diagnostics
     assert '<< ",\\"retry_reason\\":\\""' in diagnostics
     assert "diagnostic.DetailJson = detailJson" in diagnostics
+
+    friendly_cast = _function_body(
+        support, "bool BotWorldPopulationMgr::TryCastFriendlySpell("
+    )
+    assert "GetMaxRange" not in friendly_cast
+    assert "GetSpellMaxRangeForTarget" not in friendly_cast
+    assert "IsWithinDistInMap" not in friendly_cast
+    assert "spellInfo->GetMaxRange(false)" not in friendly_cast
+    assert "CalcCastTime(bot->getLevel())" in friendly_cast
+    assert "StopMoving()" in friendly_cast
+    assert "BeginPendingHealCast" in friendly_cast
+    assert "CancelBotSpellStart" in friendly_cast

@@ -57,6 +57,11 @@ caller transition where preview A becomes executed B. A helper-only test can
 pass while its caller still records the wrong action. Selected categories are
 not successful categories until the corresponding native result succeeds.
 
+Inspect native helper side effects before blaming arbitration. A facing call
+can launch a new spline and replace already-admitted movement even when the
+combat action is instant. Join the selected actions to native spline identity;
+repair a proven producer before adding cleanup for its downstream stale state.
+
 Return the work when the trace instead identifies:
 
 - class priority, resource, pet, form, or stance policy: `raid-role-implementation`;

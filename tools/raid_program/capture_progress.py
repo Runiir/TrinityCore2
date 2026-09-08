@@ -140,14 +140,23 @@ def observe_monotonic_semantic_progress(
     metric_generation = combat_metrics.get("route_generation")
     metric_node_id = combat_metrics.get("route_node_id")
     party_damage = combat_metrics.get("party_damage")
+    schema_basis_valid = (
+        (
+            combat_metrics.get("schema") == "bot_combat_metrics_v3"
+            and combat_metrics.get("measurement_basis") == "hostile_originated_damage"
+        )
+        or (
+            combat_metrics.get("schema") == "bot_combat_metrics_v2"
+            and combat_metrics.get("measurement_basis") == "originated_damage"
+        )
+    )
     damage_scope_valid = (
         isinstance(route_generation, int)
         and not isinstance(route_generation, bool)
         and route_generation > 0
         and isinstance(route_node_id, str)
         and bool(route_node_id)
-        and combat_metrics.get("schema") == "bot_combat_metrics_v2"
-        and combat_metrics.get("measurement_basis") == "originated_damage"
+        and schema_basis_valid
         and isinstance(metric_generation, int)
         and not isinstance(metric_generation, bool)
         and metric_generation == route_generation

@@ -40,7 +40,7 @@
       "class_id": "validation_gear_profiles",
       "stage": "validation_gear",
       "output_path": "dataset/validation_gear_profiles",
-      "md5": "1c555ed3a811c7093502ef064594bfd4.dir",
+      "md5": "5f3f702eced9b77115fac43f1d04fa58.dir",
       "size": 1284521,
       "nfiles": 3
     }
@@ -165,7 +165,7 @@
         "file_count": 3,
         "size_bytes": 1284521,
         "path_set_sha256": "81fe798451c158e40821a07936b2c9913381648d4ff986af61484c1075a1a32d",
-        "inventory_sha256": "e02016569cd4853762bff612064b87c08dc9cdf6f57a1ba4ef74fa77decc994d"
+        "inventory_sha256": "0cd587146ba394c0688b8d50d4f58e921ba87c5b4f91b44d5d63408164bf1bc7"
       },
       "expected_files": [
         {
@@ -173,7 +173,7 @@
           "type": "file",
           "mode": "0644",
           "size_bytes": 629,
-          "sha256": "9ba8da234219c3cf93fe0ca49bc0e0a3172cf3cb9da77071f19d1cb47de9ee06"
+          "sha256": "4fafcab10da8336b16245f5142d39488476116feac73af4e4de28cf86e1f3495"
         },
         {
           "path": "dataset/validation_gear_profiles/profiles.json",

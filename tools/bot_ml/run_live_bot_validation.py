@@ -2899,6 +2899,21 @@ def live_combat_progress_snapshot(
 
     metrics_rows: list[dict[str, Any]] = []
     if isinstance(combat_metrics, dict):
+        schema_basis_valid = (
+            (
+                combat_metrics.get("schema") == "bot_combat_metrics_v3"
+                and combat_metrics.get("measurement_basis") == "hostile_originated_damage"
+            )
+            or (
+                combat_metrics.get("schema") == "bot_combat_metrics_v2"
+                and combat_metrics.get("measurement_basis") == "originated_damage"
+            )
+        )
+        raw_generation = combat_metrics.get("route_generation")
+        raw_party_damage = combat_metrics.get("party_damage")
+        invalid_numeric_identity = isinstance(raw_generation, bool) or isinstance(
+            raw_party_damage, bool
+        )
         try:
             generation = int(combat_metrics.get("route_generation") or 0)
             party_damage = int(combat_metrics.get("party_damage") or 0)
@@ -2907,7 +2922,8 @@ def live_combat_progress_snapshot(
             party_damage = 0
         node_id = str(combat_metrics.get("route_node_id") or "")
         if (
-            combat_metrics.get("schema") == "bot_combat_metrics_v2"
+            schema_basis_valid
+            and not invalid_numeric_identity
             and combat_metrics.get("available") is True
             and node_id
             and generation > 0

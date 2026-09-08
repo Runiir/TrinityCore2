@@ -43,6 +43,12 @@ class SharedInstanceValidationError(RuntimeError):
     """A typed fail-closed fixture boundary."""
 
 
+COMBAT_LOG_PERSPECTIVES = frozenset({
+    "damage_done", "damage_taken", "healing_done", "healing_received",
+    "friendly_damage_done",
+})
+
+
 @dataclass(frozen=True)
 class _Identity:
     cohort_id: str
@@ -386,6 +392,8 @@ def _combat_log(
         if actor not in roster:
             raise SharedInstanceValidationError("combat_actor_foreign")
         perspective = ability.get("perspective")
+        if perspective not in COMBAT_LOG_PERSPECTIVES:
+            raise SharedInstanceValidationError("combat_ability_perspective_invalid")
         if perspective in {"damage_done", "healing_done"}:
             outgoing += _integer(
                 ability.get("originated_amount"), "combat_outgoing_amount"

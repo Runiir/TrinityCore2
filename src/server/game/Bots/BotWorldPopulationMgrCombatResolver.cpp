@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotCastWhileMoving.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotRoleSaturationPolicy.h"
@@ -361,9 +362,13 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
 
         SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
-        if (movementCompatibleOnly && candidateSpellInfo
-            && (candidateSpellInfo->CalcCastTime(bot->getLevel()) > 0
-                || candidateSpellInfo->IsChanneled()))
+        bool const candidateHasCastTime = candidateSpellInfo
+            && candidateSpellInfo->CalcCastTime(bot->getLevel()) > 0;
+        bool const candidateIsChanneled = candidateSpellInfo
+            && candidateSpellInfo->IsChanneled();
+        if (BotCastWhileMoving::RejectMovingCandidate(bot, candidateSpellInfo,
+                movementCompatibleOnly, candidateHasCastTime,
+                candidateIsChanneled))
         {
             candidate.RejectReason = "movement_requires_instant_action";
             continue;
@@ -560,6 +565,12 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             && (!target->GetVictim() || target->GetVictim() == bot))
         {
             candidate.RejectReason = "threat_already_established";
+            continue;
+        }
+        if (candidate.Category == BotCombatActionCategory::Taunt
+            && HasOtherLiveCohortTankVictim(bot, target))
+        {
+            candidate.RejectReason = "cohort_threat_established";
             continue;
         }
         if (candidate.Profile.RequiresTargetNotVictim && target->GetVictim() == bot)

@@ -1,16 +1,57 @@
 # Shared-worldserver workflow status
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
-Elemental filler eligibility is accepted from source 226fa8857d. The next proven
-edge is missing raid haste during the first selectable exposed-head window:
-actor 30010 repeatedly rejects hardcoded Bloodlust 2825 as absent from its spellbook.
-The reviewed repair provisions legitimate Heroism for the canonical Draenei
-shaman and all six diagnostic clones, resolves the known shaman variant, and
-uses that ID for native cast and matching owner-aura observation. First-head
-timing, raid lockouts and typed arbitration are preserved. Live verification
-is next; this repair is not yet accepted.
+Elemental filler eligibility and first-head Heroism submission are accepted.
+Parallel class/role reviewers are joining the remaining movement, execution,
+target ownership and throughput findings before one compatible repair batch,
+independent review, one build and one bounded live validation.
 
-## Current result: Elemental repair accepted, raid haste blocked
+## Current result: Heroism verified, roster performance unresolved
+
+Source: `5a7e61f9ced99a77382f8a759b885dcd3f68a4b6`.
+The Magmaw 10N development run cleared with cleanup and all ten bots recovered.
+It recorded one trash death and one boss-fight death. Actor 30010 submitted
+Heroism 32182 at 1788864414150 during the first selectable-head window and
+observed its owner-cast aura at 1788864415151, without a duplicate submission.
+Raid-wide recipient coverage and Exhaustion remain unobserved.
+
+The report records 98,206.508 DPS and 16,876.141 HPS over 311 active damage
+seconds. Inspection found 550,757 friendly/self damage included in its damage
+total. Hostile-only damage is 29,991,467, or 96,435.585 DPS using the same
+denominator. The measurement correction does not resolve the throughput gap.
+Do not compare this active-second denominator as an exact WCL fight duration.
+
+The active WCL reference xAhkN2y9YP3KRmnJ/fight 10 records 378,849.0 all-enemy
+DPS and 369,013.6 boss-only DPS over 70.9s with 1 tank / 1 healer / 8 DPS.
+Our roster remains 2 tanks / 3 healers / 5 DPS. Use its actual per-player
+results, matching specs and observed casts; no rough 150k threshold applies.
+Parallel reviews cover both Fire mages, Affliction, Elemental, Marksmanship,
+both tanks and all healers. Shared defects receive one implementation owner.
+
+Closed evidence and reviews are published at
+[`magmaw_development_5a7e61f9ce_20260908.tar.gz.dvc`](../../artifacts/cata_raid_program/magmaw_development_5a7e61f9ce_20260908.tar.gz.dvc).
+The 28,905,726-byte archive passed fresh-cache remote reconstruction and hash
+verification; exact local raw payloads were evicted. Compact reviews remain in
+the external run directory. No worldserver is running. The 300-second calibration
+verification remains pending; this kill does not qualify heroic or training data.
+
+The joined repair batch is independently approved for one build and canary:
+combat facing preserves an active spline; native aura masks permit covered
+moving casts; canonical DPS glyphs match the catalog; friendly casts delegate
+range validation to the core; generic taunts preserve other-cohort-tank ownership;
+and schema v3 separates friendly/self damage from hostile DPS and progress.
+Forced facing was proved to replace the hunter's admitted hazard spline during
+a simultaneous instant cast. A proposed downstream movement-flag normalizer
+was held and removed from the implementation after that earlier cause was found.
+
+Fifty combined class/runtime checks passed. Damage accounting passed 46 focused
+checks, four progress checks and nine live-controller checks. Four status/cursor
+checks passed after correcting an obsolete source-location assertion. Fixtures
+prove their production seams and modeled transitions, not native vehicle behavior
+or full encounter performance. The next live run must establish native acceptance
+for each repaired edge and reassess every actor's DPS/HPS, deaths and movement.
+
+## Earlier result: Elemental repair accepted, raid haste blocked
 
 Source `226fa8857d23aa894a5d0be9929ddf70e7975a00` cleared Magmaw 10N with three
 terminal statuses, cleanup complete, four trash deaths and zero boss-fight deaths.

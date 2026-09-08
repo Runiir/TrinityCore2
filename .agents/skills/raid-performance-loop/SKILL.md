@@ -62,6 +62,11 @@ steering, teleportation, global tolerance relaxation, or encounter MMAP workarou
 
 ## Workers
 
+When several represented classes or roles underperform, use the
+[parallel role review](references/parallel-role-review.md) requested by the
+coordinator. One reviewer can cover duplicate bots of the same spec. Keep one
+overall reviewer responsible for attribution and joining shared failures.
+
 Assign one dedicated `raid-rotation-review` owner to the DPS side of every raid,
 dungeon, or calibration attempt, including successful clears. Use Sol high for
 this causal review. The reviewer follows that skill's post-run review mode,

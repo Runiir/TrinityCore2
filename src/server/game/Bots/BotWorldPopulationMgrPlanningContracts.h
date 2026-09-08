@@ -334,7 +334,8 @@
         DamageDone = 0,
         DamageTaken = 1,
         HealingDone = 2,
-        HealingReceived = 3
+        HealingReceived = 3,
+        FriendlyDamageDone = 4
     };
 
     struct CombatLogAbilityKey

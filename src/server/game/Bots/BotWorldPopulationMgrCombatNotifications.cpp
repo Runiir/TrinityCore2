@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotCombatDamageAttribution.h"
 
 #include "Creature.h"
 #include "GameTime.h"
@@ -482,10 +483,22 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
     if (!sourceActor && !targetActor)
         return;
 
+    BotCombatDamageAttribution::NativeRelationship const relationship{
+        attacker == victim,
+        targetActor != nullptr,
+        attacker->IsFriendlyTo(victim),
+        victim->IsFriendlyTo(attacker),
+    };
+    bool const cohortOrFriendlyTarget =
+        BotCombatDamageAttribution::IsFriendlyOrCohortTarget(relationship);
+    CombatLogPerspective const outgoingPerspective = cohortOrFriendlyTarget
+        ? CombatLogPerspective::FriendlyDamageDone
+        : CombatLogPerspective::DamageDone;
+
     uint64 nowMs = NowMs();
     ++Party().CombatLogEventCount;
     if (sourceActor)
-        AddCombatLogAggregate(CombatLogPerspective::DamageDone, sourceActor, attacker, victim, spellId,
+        AddCombatLogAggregate(outgoingPerspective, sourceActor, attacker, victim, spellId,
             damageType, damage, unmitigatedDamage, 0, nowMs, sharedDamage);
     if (targetActor)
         AddCombatLogAggregate(CombatLogPerspective::DamageTaken, targetActor, attacker, victim, spellId,

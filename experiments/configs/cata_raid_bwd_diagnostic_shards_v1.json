@@ -416,7 +416,13 @@
             "glyph_ids": [
               42739,
               42743,
-              42753
+              42751,
+              42738,
+              42754,
+              42748,
+              45739,
+              63416,
+              43360
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "fire_mage"
@@ -448,7 +454,13 @@
           "glyphs": [
             42739,
             42743,
-            42753
+            42751,
+            42738,
+            42754,
+            42748,
+            45739,
+            63416,
+            43360
           ],
           "legacy_names": [
             "Mgwdps1"
@@ -475,7 +487,13 @@
             "glyph_ids": [
               42739,
               42743,
-              42753
+              42751,
+              42738,
+              42754,
+              42748,
+              45739,
+              63416,
+              43360
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "fire_mage"
@@ -507,7 +525,13 @@
           "glyphs": [
             42739,
             42743,
-            42753
+            42751,
+            42738,
+            42754,
+            42748,
+            45739,
+            63416,
+            43360
           ],
           "legacy_names": [
             "Mgwdps2"
@@ -532,9 +556,15 @@
             "class_spec": "affliction_warlock",
             "gear_profile_id": "affliction_warlock",
             "glyph_ids": [
-              42456,
-              42454,
-              42464
+              45779,
+              42472,
+              42455,
+              42467,
+              45789,
+              42466,
+              43390,
+              43394,
+              43389
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "affliction_warlock"
@@ -564,9 +594,15 @@
           "expected_character_guid": 30008,
           "gear_profile": "affliction_warlock",
           "glyphs": [
-            42456,
-            42454,
-            42464
+            45779,
+            42472,
+            42455,
+            42467,
+            45789,
+            42466,
+            43390,
+            43394,
+            43389
           ],
           "legacy_names": [
             "Mgwdps3"
@@ -591,9 +627,12 @@
             "class_spec": "marksmanship_hunter",
             "gear_profile_id": "marksmanship_hunter",
             "glyph_ids": [
-              42909,
-              42902,
-              42915
+              42898,
+              42911,
+              42914,
+              42904,
+              45735,
+              42899
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "marksmanship_hunter"
@@ -624,9 +663,12 @@
           "expected_pet_id": 8700009,
           "gear_profile": "marksmanship_hunter",
           "glyphs": [
-            42909,
-            42902,
-            42915
+            42898,
+            42911,
+            42914,
+            42904,
+            45735,
+            42899
           ],
           "legacy_names": [
             "Mgwdps4"
@@ -669,9 +711,15 @@
             "class_spec": "elemental_shaman",
             "gear_profile_id": "elemental_shaman",
             "glyph_ids": [
+              41531,
               41524,
-              41547,
-              41552
+              71155,
+              41537,
+              41533,
+              45778,
+              44923,
+              43385,
+              43386
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "elemental_shaman"
@@ -701,9 +749,15 @@
           "expected_character_guid": 30010,
           "gear_profile": "elemental_shaman",
           "glyphs": [
+            41531,
             41524,
-            41547,
-            41552
+            71155,
+            41537,
+            41533,
+            45778,
+            44923,
+            43385,
+            43386
           ],
           "legacy_names": [
             "Mgwdps5"
@@ -1089,7 +1143,13 @@
             "glyph_ids": [
               42739,
               42743,
-              42753
+              42751,
+              42738,
+              42754,
+              42748,
+              45739,
+              63416,
+              43360
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "fire_mage"
@@ -1121,7 +1181,13 @@
           "glyphs": [
             42739,
             42743,
-            42753
+            42751,
+            42738,
+            42754,
+            42748,
+            45739,
+            63416,
+            43360
           ],
           "legacy_names": [
             "Omndps1"
@@ -1146,9 +1212,12 @@
             "class_spec": "assassination_rogue",
             "gear_profile_id": "assassination_rogue",
             "glyph_ids": [
-              42954,
-              42957,
-              42969
+              45768,
+              42956,
+              42969,
+              42963,
+              45767,
+              42974
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "assassination_rogue"
@@ -1178,9 +1247,12 @@
           "expected_character_guid": 30107,
           "gear_profile": "assassination_rogue",
           "glyphs": [
-            42954,
-            42957,
-            42969
+            45768,
+            42956,
+            42969,
+            42963,
+            45767,
+            42974
           ],
           "legacy_names": [
             "Omndps2"
@@ -1205,9 +1277,15 @@
             "class_spec": "affliction_warlock",
             "gear_profile_id": "affliction_warlock",
             "glyph_ids": [
-              42456,
-              42454,
-              42464
+              45779,
+              42472,
+              42455,
+              42467,
+              45789,
+              42466,
+              43390,
+              43394,
+              43389
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "affliction_warlock"
@@ -1237,9 +1315,15 @@
           "expected_character_guid": 30108,
           "gear_profile": "affliction_warlock",
           "glyphs": [
-            42456,
-            42454,
-            42464
+            45779,
+            42472,
+            42455,
+            42467,
+            45789,
+            42466,
+            43390,
+            43394,
+            43389
           ],
           "legacy_names": [
             "Omndps3"
@@ -1264,9 +1348,12 @@
             "class_spec": "marksmanship_hunter",
             "gear_profile_id": "marksmanship_hunter",
             "glyph_ids": [
-              42909,
-              42902,
-              42915
+              42898,
+              42911,
+              42914,
+              42904,
+              45735,
+              42899
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "marksmanship_hunter"
@@ -1297,9 +1384,12 @@
           "expected_pet_id": 8700109,
           "gear_profile": "marksmanship_hunter",
           "glyphs": [
-            42909,
-            42902,
-            42915
+            42898,
+            42911,
+            42914,
+            42904,
+            45735,
+            42899
           ],
           "legacy_names": [
             "Omndps4"
@@ -1342,9 +1432,15 @@
             "class_spec": "elemental_shaman",
             "gear_profile_id": "elemental_shaman",
             "glyph_ids": [
+              41531,
               41524,
-              41547,
-              41552
+              71155,
+              41537,
+              41533,
+              45778,
+              44923,
+              43385,
+              43386
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "elemental_shaman"
@@ -1374,9 +1470,15 @@
           "expected_character_guid": 30110,
           "gear_profile": "elemental_shaman",
           "glyphs": [
+            41531,
             41524,
-            41547,
-            41552
+            71155,
+            41537,
+            41533,
+            45778,
+            44923,
+            43385,
+            43386
           ],
           "legacy_names": [
             "Omndps5"
@@ -1764,7 +1866,13 @@
             "glyph_ids": [
               42739,
               42743,
-              42753
+              42751,
+              42738,
+              42754,
+              42748,
+              45739,
+              63416,
+              43360
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "fire_mage"
@@ -1796,7 +1904,13 @@
           "glyphs": [
             42739,
             42743,
-            42753
+            42751,
+            42738,
+            42754,
+            42748,
+            45739,
+            63416,
+            43360
           ],
           "legacy_names": [
             "Maldps1"
@@ -1821,9 +1935,12 @@
             "class_spec": "assassination_rogue",
             "gear_profile_id": "assassination_rogue",
             "glyph_ids": [
-              42954,
-              42957,
-              42969
+              45768,
+              42956,
+              42969,
+              42963,
+              45767,
+              42974
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "assassination_rogue"
@@ -1853,9 +1970,12 @@
           "expected_character_guid": 30207,
           "gear_profile": "assassination_rogue",
           "glyphs": [
-            42954,
-            42957,
-            42969
+            45768,
+            42956,
+            42969,
+            42963,
+            45767,
+            42974
           ],
           "legacy_names": [
             "Maldps2"
@@ -1880,9 +2000,15 @@
             "class_spec": "affliction_warlock",
             "gear_profile_id": "affliction_warlock",
             "glyph_ids": [
-              42456,
-              42454,
-              42464
+              45779,
+              42472,
+              42455,
+              42467,
+              45789,
+              42466,
+              43390,
+              43394,
+              43389
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "affliction_warlock"
@@ -1912,9 +2038,15 @@
           "expected_character_guid": 30208,
           "gear_profile": "affliction_warlock",
           "glyphs": [
-            42456,
-            42454,
-            42464
+            45779,
+            42472,
+            42455,
+            42467,
+            45789,
+            42466,
+            43390,
+            43394,
+            43389
           ],
           "legacy_names": [
             "Maldps3"
@@ -1939,9 +2071,12 @@
             "class_spec": "marksmanship_hunter",
             "gear_profile_id": "marksmanship_hunter",
             "glyph_ids": [
-              42909,
-              42902,
-              42915
+              42898,
+              42911,
+              42914,
+              42904,
+              45735,
+              42899
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "marksmanship_hunter"
@@ -1972,9 +2107,12 @@
           "expected_pet_id": 8700209,
           "gear_profile": "marksmanship_hunter",
           "glyphs": [
-            42909,
-            42902,
-            42915
+            42898,
+            42911,
+            42914,
+            42904,
+            45735,
+            42899
           ],
           "legacy_names": [
             "Maldps4"
@@ -2017,9 +2155,15 @@
             "class_spec": "elemental_shaman",
             "gear_profile_id": "elemental_shaman",
             "glyph_ids": [
+              41531,
               41524,
-              41547,
-              41552
+              71155,
+              41537,
+              41533,
+              45778,
+              44923,
+              43385,
+              43386
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "elemental_shaman"
@@ -2049,9 +2193,15 @@
           "expected_character_guid": 30210,
           "gear_profile": "elemental_shaman",
           "glyphs": [
+            41531,
             41524,
-            41547,
-            41552
+            71155,
+            41537,
+            41533,
+            45778,
+            44923,
+            43385,
+            43386
           ],
           "legacy_names": [
             "Maldps5"
@@ -2440,7 +2590,13 @@
             "glyph_ids": [
               42739,
               42743,
-              42753
+              42751,
+              42738,
+              42754,
+              42748,
+              45739,
+              63416,
+              43360
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "fire_mage"
@@ -2472,7 +2628,13 @@
           "glyphs": [
             42739,
             42743,
-            42753
+            42751,
+            42738,
+            42754,
+            42748,
+            45739,
+            63416,
+            43360
           ],
           "legacy_names": [
             "Atrdps1"
@@ -2497,9 +2659,12 @@
             "class_spec": "assassination_rogue",
             "gear_profile_id": "assassination_rogue",
             "glyph_ids": [
-              42954,
-              42957,
-              42969
+              45768,
+              42956,
+              42969,
+              42963,
+              45767,
+              42974
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "assassination_rogue"
@@ -2529,9 +2694,12 @@
           "expected_character_guid": 30307,
           "gear_profile": "assassination_rogue",
           "glyphs": [
-            42954,
-            42957,
-            42969
+            45768,
+            42956,
+            42969,
+            42963,
+            45767,
+            42974
           ],
           "legacy_names": [
             "Atrdps2"
@@ -2556,9 +2724,15 @@
             "class_spec": "affliction_warlock",
             "gear_profile_id": "affliction_warlock",
             "glyph_ids": [
-              42456,
-              42454,
-              42464
+              45779,
+              42472,
+              42455,
+              42467,
+              45789,
+              42466,
+              43390,
+              43394,
+              43389
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "affliction_warlock"
@@ -2588,9 +2762,15 @@
           "expected_character_guid": 30308,
           "gear_profile": "affliction_warlock",
           "glyphs": [
-            42456,
-            42454,
-            42464
+            45779,
+            42472,
+            42455,
+            42467,
+            45789,
+            42466,
+            43390,
+            43394,
+            43389
           ],
           "legacy_names": [
             "Atrdps3"
@@ -2615,9 +2795,12 @@
             "class_spec": "marksmanship_hunter",
             "gear_profile_id": "marksmanship_hunter",
             "glyph_ids": [
-              42909,
-              42902,
-              42915
+              42898,
+              42911,
+              42914,
+              42904,
+              45735,
+              42899
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "marksmanship_hunter"
@@ -2648,9 +2831,12 @@
           "expected_pet_id": 8700309,
           "gear_profile": "marksmanship_hunter",
           "glyphs": [
-            42909,
-            42902,
-            42915
+            42898,
+            42911,
+            42914,
+            42904,
+            45735,
+            42899
           ],
           "legacy_names": [
             "Atrdps4"
@@ -2693,9 +2879,15 @@
             "class_spec": "elemental_shaman",
             "gear_profile_id": "elemental_shaman",
             "glyph_ids": [
+              41531,
               41524,
-              41547,
-              41552
+              71155,
+              41537,
+              41533,
+              45778,
+              44923,
+              43385,
+              43386
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "elemental_shaman"
@@ -2725,9 +2917,15 @@
           "expected_character_guid": 30310,
           "gear_profile": "elemental_shaman",
           "glyphs": [
+            41531,
             41524,
-            41547,
-            41552
+            71155,
+            41537,
+            41533,
+            45778,
+            44923,
+            43385,
+            43386
           ],
           "legacy_names": [
             "Atrdps5"
@@ -3117,7 +3315,13 @@
             "glyph_ids": [
               42739,
               42743,
-              42753
+              42751,
+              42738,
+              42754,
+              42748,
+              45739,
+              63416,
+              43360
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "fire_mage"
@@ -3149,7 +3353,13 @@
           "glyphs": [
             42739,
             42743,
-            42753
+            42751,
+            42738,
+            42754,
+            42748,
+            45739,
+            63416,
+            43360
           ],
           "legacy_names": [
             "Chidps1"
@@ -3174,9 +3384,12 @@
             "class_spec": "assassination_rogue",
             "gear_profile_id": "assassination_rogue",
             "glyph_ids": [
-              42954,
-              42957,
-              42969
+              45768,
+              42956,
+              42969,
+              42963,
+              45767,
+              42974
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "assassination_rogue"
@@ -3206,9 +3419,12 @@
           "expected_character_guid": 30407,
           "gear_profile": "assassination_rogue",
           "glyphs": [
-            42954,
-            42957,
-            42969
+            45768,
+            42956,
+            42969,
+            42963,
+            45767,
+            42974
           ],
           "legacy_names": [
             "Chidps2"
@@ -3233,9 +3449,15 @@
             "class_spec": "affliction_warlock",
             "gear_profile_id": "affliction_warlock",
             "glyph_ids": [
-              42456,
-              42454,
-              42464
+              45779,
+              42472,
+              42455,
+              42467,
+              45789,
+              42466,
+              43390,
+              43394,
+              43389
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "affliction_warlock"
@@ -3265,9 +3487,15 @@
           "expected_character_guid": 30408,
           "gear_profile": "affliction_warlock",
           "glyphs": [
-            42456,
-            42454,
-            42464
+            45779,
+            42472,
+            42455,
+            42467,
+            45789,
+            42466,
+            43390,
+            43394,
+            43389
           ],
           "legacy_names": [
             "Chidps3"
@@ -3292,9 +3520,12 @@
             "class_spec": "marksmanship_hunter",
             "gear_profile_id": "marksmanship_hunter",
             "glyph_ids": [
-              42909,
-              42902,
-              42915
+              42898,
+              42911,
+              42914,
+              42904,
+              45735,
+              42899
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "marksmanship_hunter"
@@ -3325,9 +3556,12 @@
           "expected_pet_id": 8700409,
           "gear_profile": "marksmanship_hunter",
           "glyphs": [
-            42909,
-            42902,
-            42915
+            42898,
+            42911,
+            42914,
+            42904,
+            45735,
+            42899
           ],
           "legacy_names": [
             "Chidps4"
@@ -3370,9 +3604,15 @@
             "class_spec": "elemental_shaman",
             "gear_profile_id": "elemental_shaman",
             "glyph_ids": [
+              41531,
               41524,
-              41547,
-              41552
+              71155,
+              41537,
+              41533,
+              45778,
+              44923,
+              43385,
+              43386
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "elemental_shaman"
@@ -3402,9 +3642,15 @@
           "expected_character_guid": 30410,
           "gear_profile": "elemental_shaman",
           "glyphs": [
+            41531,
             41524,
-            41547,
-            41552
+            71155,
+            41537,
+            41533,
+            45778,
+            44923,
+            43385,
+            43386
           ],
           "legacy_names": [
             "Chidps5"
@@ -3795,7 +4041,13 @@
             "glyph_ids": [
               42739,
               42743,
-              42753
+              42751,
+              42738,
+              42754,
+              42748,
+              45739,
+              63416,
+              43360
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "fire_mage"
@@ -3827,7 +4079,13 @@
           "glyphs": [
             42739,
             42743,
-            42753
+            42751,
+            42738,
+            42754,
+            42748,
+            45739,
+            63416,
+            43360
           ],
           "legacy_names": [
             "Nefdps1"
@@ -3852,9 +4110,12 @@
             "class_spec": "assassination_rogue",
             "gear_profile_id": "assassination_rogue",
             "glyph_ids": [
-              42954,
-              42957,
-              42969
+              45768,
+              42956,
+              42969,
+              42963,
+              45767,
+              42974
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "assassination_rogue"
@@ -3884,9 +4145,12 @@
           "expected_character_guid": 30507,
           "gear_profile": "assassination_rogue",
           "glyphs": [
-            42954,
-            42957,
-            42969
+            45768,
+            42956,
+            42969,
+            42963,
+            45767,
+            42974
           ],
           "legacy_names": [
             "Nefdps2"
@@ -3911,9 +4175,15 @@
             "class_spec": "affliction_warlock",
             "gear_profile_id": "affliction_warlock",
             "glyph_ids": [
-              42456,
-              42454,
-              42464
+              45779,
+              42472,
+              42455,
+              42467,
+              45789,
+              42466,
+              43390,
+              43394,
+              43389
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "affliction_warlock"
@@ -3943,9 +4213,15 @@
           "expected_character_guid": 30508,
           "gear_profile": "affliction_warlock",
           "glyphs": [
-            42456,
-            42454,
-            42464
+            45779,
+            42472,
+            42455,
+            42467,
+            45789,
+            42466,
+            43390,
+            43394,
+            43389
           ],
           "legacy_names": [
             "Nefdps3"
@@ -3970,9 +4246,12 @@
             "class_spec": "marksmanship_hunter",
             "gear_profile_id": "marksmanship_hunter",
             "glyph_ids": [
-              42909,
-              42902,
-              42915
+              42898,
+              42911,
+              42914,
+              42904,
+              45735,
+              42899
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "marksmanship_hunter"
@@ -4003,9 +4282,12 @@
           "expected_pet_id": 8700509,
           "gear_profile": "marksmanship_hunter",
           "glyphs": [
-            42909,
-            42902,
-            42915
+            42898,
+            42911,
+            42914,
+            42904,
+            45735,
+            42899
           ],
           "legacy_names": [
             "Nefdps4"
@@ -4048,9 +4330,15 @@
             "class_spec": "elemental_shaman",
             "gear_profile_id": "elemental_shaman",
             "glyph_ids": [
+              41531,
               41524,
-              41547,
-              41552
+              71155,
+              41537,
+              41533,
+              45778,
+              44923,
+              43385,
+              43386
             ],
             "source_config": "experiments/configs/validation_provisioning_cata_001.json",
             "talent_build_id": "elemental_shaman"
@@ -4080,9 +4368,15 @@
           "expected_character_guid": 30510,
           "gear_profile": "elemental_shaman",
           "glyphs": [
+            41531,
             41524,
-            41547,
-            41552
+            71155,
+            41537,
+            41533,
+            45778,
+            44923,
+            43385,
+            43386
           ],
           "legacy_names": [
             "Nefdps5"
