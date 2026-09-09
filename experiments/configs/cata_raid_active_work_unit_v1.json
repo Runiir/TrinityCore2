@@ -1,33 +1,33 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "hunter:furious_howl_native_absence",
+  "work_unit": "hunter:remaining_cadence_and_item_damage",
   "owner_skill": "raid-performance-loop",
-  "classification": "native_pet_autocast",
+  "classification": "role_and_native_implementation",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "3e0b48374e9e66b85ef79f9f97535851be29b32d",
+  "observed_at_commit": "5c1d8e430a40d9ca162368e165b69d2d33057f09",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "DPS-018 owner-list repair independently approved with portable actual-body tests; ready for bounded build and Hunter validation.",
+  "gate_state": "Hunter5c owner buff and role target accepted. Two bounded implementation workers repair Aimed preview and Vial AP term; Readiness sequencing stays separate.",
   "first_broken_edge": {
-    "id": "furious_howl_absent_through_scored_window",
-    "owner_classification": "raid_class_mechanics",
-    "cause": "Grouped PetAI excludes owner from friendly targets; 24604 excludes the remaining player-controlled pet, leaving no valid autocast candidate.",
-    "review_state": "implementation_independently_approved_live_pending"
+    "id": "aimed_instant_proc_cast_time_preview_ignores_modifiers",
+    "owner_classification": "raid_role",
+    "cause": "Both preview helpers use unmodified cast time, rejecting the below-E90 Aimed row even with Master Marksman Fire82925.",
+    "review_state": "implementation_active"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "9fcaf4ec1e7f09d303f8f2ccc59181794d5c413c5fe54829bda5fc282b0c1ce6"
+    "sha256": "8f7ea30d9a331aed9e519a65b3db820059ceb45d53a8aa647391a08c5bc274da"
   },
   "scope_lock": {
-    "objective": "Locate and repair the proven native pet-autocast failure without changing coefficients or manually installing auras.",
+    "objective": "Diagnose the remaining trace-backed Aimed cadence and Lightning item-damage discrepancies after restoring native owner buffs.",
     "owned_files": [],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Identify the first native autocast selection, targeting or application mismatch from attributable evidence.",
+    "Bind the precise role sequencing or native item damage mismatch to source and closed-run evidence before implementation.",
     "Implement only a proven bounded repair, pass behavioral fixtures and independent review.",
     "Build once and validate the repaired edge with the existing fixed owner-aura receipt and exact 300-second Hunter score.",
     "Publish and clean closed attributable evidence after all readers finish."
@@ -39,9 +39,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Build reviewed owner-list repair once and run exact 300-second Hunter validation; retain native aura coverage and DPS review.",
+  "next_action": "Join independently reviewed Aimed preview and Vial AP repairs, then build once and validate the exact Hunter window.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -86,8 +86,8 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "APPROVE",
-    "scope": "DPS-018 native Furious Howl absence",
+    "verdict": "pending",
+    "scope": "DPS-019/020 bounded diagnosis",
     "live_verified": false
   },
   "related_edges": [
@@ -166,11 +166,11 @@
     "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_ec02d7196a_20260909.tar.gz.dvc"
   },
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-018",
+  "error_id": "DPS-019",
   "related_open_error_ids": [
-    "DPS-018",
-    "DPS-015",
-    "DPS-016",
+    "DPS-019",
+    "DPS-020",
+    "DPS-021",
     "OBS-001"
   ]
 }

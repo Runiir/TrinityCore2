@@ -3,25 +3,33 @@
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
-Current source `3e0b48374e` built and completed Hunter's exact 300-second
-window: 8,436,783 damage, 28,122.61 DPS, 0 HPS, 2,983 decisions. This is a
-19.6% increase over Hunter927's 23,506.897 DPS and 85.640% of the unchanged
-32,838.198 reference. All 1,738 chunks / 21,347,218 bytes reassembled, both
-role stages passed, native exit 0 and fresh cleanup passed. Overall evidence
-qualification still rejects `incomplete_evidence_identity`; training is forbidden.
+Latest source `5c1d8e430a` built on its first attempt and completed Hunter's
+exact300-second score: 8,556,790 damage, 28,522.63DPS, 0HPS and2,984decisions.
+Furious Howl reached the owner111ms after scoring began and was active in all
+subsequent261,300samples, with the primary pet as caster (95initial absent
+samples; maximumgap42ms). Mastery76659 was active in all261,395samples.
+All1,738chunks /21,354,088bytes reassembled; role checks, nativeexit0, binary
+verification and fresh cleanup pass. Overall qualification still rejects only
+`incomplete_evidence_identity`, so this is not training data.
 
-Wild Quiver, Readiness and exact pet-consumer repairs were independently approved
-before this run. Dedicated DPS review accepts their native outcomes: Wild Quiver 110 hits /
-931,396 damage, Readiness 2 and Rapid Fire 4 uses, exact pet compatibility.
-The complete written review is being finalized.
-The new owner-aura receipt directly proves one remaining loss: Furious Howl
-24604 is absent across all 260,913 samples (maximum gap 43 ms). Mastery aura
-76659 is active in every sample. DPS-018 is proven: grouped PetAI omits its owner from the friendly-target
-list, while Howl cannot target the remaining pet. The owner-list repair and
-portable regression tests are independently approved. Grouped lists continue
-to refresh periodically, including same-size membership/filter changes.
-Build the bounded repair once, then validate owner-buff coverage and DPS.
-Keep the raw3e run until its DPS reviewer finishes; native causal reads are done.
+Independent review accepts the restored owner buff and the configured Hunter
+role target (86.8581% of exact). Two disjoint repairs are in implementation:
+DPS-019 makes the existing cast-time previews account for native instant-cast
+procs; DPS-020 restores Vial of Shadows' reference attack-power contribution
+using the triggering attack type. Both have closed-run counterexamples.
+
+Readiness ordering remains a separate open edge, DPS-021. Counts alone do not
+prove the correct sequence. It does not block implementing the two proven
+repairs. Both runs remain available to their final diagnostic readers. No
+worldserver is running; the next validation will join reviewed repairs.
+
+The preceding Hunter3e run measured 28,122.61 DPS / 0 HPS over 300 seconds.
+Independent review accepted Wild Quiver (110 hits / 931,396 damage), the
+Readiness hostile-health gate, exact pet compatibility, and full-window aura
+observation. It proved the absent Howl that DPS-018 has now repaired.
+Its complete transport, native exit, binary verification and cleanup passed;
+qualification identity remains incomplete. These development runs are excluded
+from training data. Keep their raw evidence until all current readers finish.
 
 The v4 pet-identity reference cohort is DVC-published, freshly reconstructed,
 promoted and clean-verified on 47e8dffab0. All 16 simulator request byte hashes
