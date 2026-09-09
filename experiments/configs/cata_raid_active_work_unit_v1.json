@@ -8,7 +8,7 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Orb straight collision implementation independently approved; Hunter canonical identity diagnosis and Affliction review pending",
+  "gate_state": "979f5c832f Orb build passed; live pending. Hunter identity design open; Affliction throughput passes but actual Tailoring is missing.",
   "first_broken_edge": {
     "id": "orb_ground_navmesh_rewrites_forward_projectile_destination",
     "owner_classification": "raid_class_mechanics_implementation",
@@ -17,7 +17,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "d5fc39b6ad4f394285452d689015c95f9da93aac67a898f5da34874c63a4cfaf"
+    "sha256": "5d4bf99e863d55d2aa985aa8300094fbbb2562b7b8ca16038f37163b29d12b80"
   },
   "scope_lock": {
     "objective": "Preserve existing collision clipping and default movement behavior while Orb uses a straight native projectile path.",
@@ -46,8 +46,8 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
-  "ready_for_live_verification": false,
+  "ready_for_build": false,
+  "ready_for_live_verification": true,
   "next_action": "Freeze reviewed Orb repair, build, and verify matched Fire trajectory, snare and landed damage while independent Hunter identity diagnosis continues.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
@@ -171,5 +171,12 @@
     "raw_payloads_evicted": true,
     "review_state": "frozen",
     "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_ec02d7196a_20260909.tar.gz.dvc"
-  }
+  },
+  "error_ledger": "docs/bot_raids/error_ledger.md",
+  "error_id": "DPS-006",
+  "related_open_error_ids": [
+    "DPS-007",
+    "DPS-008",
+    "OBS-001"
+  ]
 }

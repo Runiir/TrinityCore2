@@ -5,6 +5,11 @@ description: Coordinate TrinityCore repair workers and serialized builds/live ex
 
 # Trinity orchestrator
 
+Use the [error ledger](../../../docs/bot_raids/error_ledger.md) before dispatch or
+retry. Give workers the relevant error ID and its current evidence, rejected
+approaches and affected callers. Update that entry when the result changes;
+do not restart a closed edge or copy the ledger into another handoff document.
+
 Use the user's current objective and the latest compact run evidence. Correct stale
 status in place; do not stop to produce authorization-only documents. Finish the requested
 objective across worker and attempt boundaries. An agent finishing or a canary exposing

@@ -8,6 +8,13 @@ description: Coordinate bounded raid and class repairs, join specialist results,
 Read the current result at the top of
 [`shared_worldserver_workflow_20260907.md`](../../../docs/bot_raids/shared_worldserver_workflow_20260907.md)
 before choosing work; its historical entries do not override the current result.
+Use the matching entry in the [error ledger](../../../docs/bot_raids/error_ledger.md)
+to retain failed assumptions and distinguish implementation, review, build and
+live acceptance. Update it after each bounded attempt rather than creating a
+new narrative history. A passing DPS threshold does not prove declared
+professions or enchant applicability; read back the selected actor's actual
+requirements. Normal native load/save transformations must also be reconciled
+before requiring a persisted identity on the next launch.
 
 Keep the active-work-unit status consistent with that result. When a repair is
 accepted, replace its active edge with the newly observed edge; do not leave

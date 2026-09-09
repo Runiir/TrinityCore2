@@ -1,6 +1,7 @@
 # Shared-worldserver workflow status
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
+Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
 Source `ec02d7196a` is committed, pushed and built. Three exact 300-second
 calibrations completed on that immutable build with full exports and verified
@@ -18,8 +19,9 @@ native exit, offline character cleanup and post-run binary receipts:
   review is determining the correct canonical identity before implementation.
   Actual low DPS remains unresolved. Raw evidence is retained for closure.
 - Affliction: 8,772,073 damage / 29,240.243 DPS, about 93.4% of reference.
-  Complete export and role checks pass; corrected profession/pet setup and HPS
-  review is pending. Raw evidence is retained until review and publication.
+  Complete export and throughput checks pass; review reports 388.6 self-healing
+  HPS. Fresh actor 1306 database readback has no Tailoring 197 row, so corrected
+  profession setup is NOT accepted (DPS-008). Raw evidence is retained for closure.
 
 Next approved implementation is native Orb straight movement. The forward
 endpoint currently passes through ground-navmesh routing, followed by a second
@@ -28,8 +30,8 @@ native helper while preserving Object.h and every default caller. Orb explicitly
 uses collision-clipped straight movement at destination production and both
 MovePoint submissions. Static/dynamic obstacles, allowed-Z behavior, spell
 parameters, target rules, timers and no-follow remain unchanged. Five focused
-behavioral tests and independent Sol review pass. Build and matched Fire live
-validation remain required, including 82736 and attributable 82739 damage.
+behavioral tests and independent Sol review pass. Source `979f5c832f` is pushed and its native build passed. Matched Fire live
+validation remains required, including 82736 and attributable 82739 damage.
 
 Elemental's accepted 88.9522% calibration remains closed. Latest canonical
 Magmaw remains the accepted `090f24f4b8` clear: 128,636.918 DPS and 19,225.751 HPS
@@ -125,6 +127,7 @@ publish/clean, then route remaining losses.
 ## Earlier result: 816 setup accepted, DPS unresolved
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
+Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
 Source `8160201cb1` passed independent review and one verified build. Its exact
 300-second Elemental calibration is closed: 6,729,475 damage, 22,431.583 DPS,
