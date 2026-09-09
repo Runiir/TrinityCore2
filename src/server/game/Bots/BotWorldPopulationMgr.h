@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_H
 
 #include "ObjectGuid.h"
+#include "SharedDefines.h"
 #include "Bots/BotWorldPopulationMgrConfig.h"
 #include "Bots/BotWorldPopulationMgrRouteState.h"
 #include "Bots/BotWorldPopulationMgrBotState.h"

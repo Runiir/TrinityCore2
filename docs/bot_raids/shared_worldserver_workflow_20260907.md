@@ -19,7 +19,9 @@ Current work: combine the independently approved boss-health potion gate,
 all-bot effective-stat observation and Fire moving Scorch repair with the
 independently approved Drudge backline correction. Both movement directions
 require source-union path checks. Build once and run bounded live validation
-for every represented actor. The a152 evidence
+for every represented actor. The aba37 build failed before live startup on a
+missing SharedDefines.h dependency; the one-line include repair is independently
+approved. The a152 evidence
 is DVC-published, fresh-remote verified and exact large payloads evicted.
 Heart Strike and Shadowflame remain blocked by area protection; the proposed
 shared replacement lacks a native target-scope guarantee and is deferred.

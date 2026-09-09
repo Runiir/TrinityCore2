@@ -105,7 +105,9 @@ an aggregate raid DPS number or rerun a boss merely to regenerate available data
 
 Give one owner the evidence, one hypothesis, production files plus directly affected
 tests, forbidden changes, command, and expected outcome. Include all affected callers
-before dispatch. Label observed facts separately from inferred event ordering. A new
+before dispatch. When a header adds a native type or constant, include its defining
+header in the owning scope; an extracted fixture that supplies stub declarations
+does not verify the real include chain. Label observed facts separately from inferred event ordering. A new
 admission predicate must be supported by the trace or by the production contract;
 do not require an unobserved intermediate state merely to make a fixture pass.
 Exercise the actual caller and each valid ordering when asynchronous submission,

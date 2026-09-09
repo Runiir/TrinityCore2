@@ -8,7 +8,7 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "four-part batch independently approved; native build pending",
+  "gate_state": "aba37 build failed on missing header dependency; reviewed include repair ready",
   "first_broken_edge": {
     "id": "multi_class_throughput_losses",
     "owner_classification": "parallel_role_review",
@@ -17,7 +17,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "12b7492da8b3d4b030f5ea9cc673567c208984de06435edd1af68f0b7be22e68"
+    "sha256": "9905b56ee446661056c1df3352fae5d26b4670b2e63521f50903d2bab9d3edb8"
   },
   "scope_lock": {
     "objective": "Resolve performance losses across all represented classes; preserve accepted DK/MT improvements and fix misleading diagnostic publication.",
