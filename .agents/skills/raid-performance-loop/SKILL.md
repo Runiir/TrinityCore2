@@ -116,6 +116,9 @@ For profile migrations, test native storage semantics, including FLOAT precision
 SQLite replay alone does not prove a MySQL predicate matches. Read back the intended
 rows after native updates and before the encounter. An applied migration receipt
 with zero affected rows does not prove the repair was installed.
+After regenerating routes, refresh the `validation_routes` inventory and DVC
+binding in the runtime asset manifests, preserve other asset classes, normalize
+route file modes to the declared 0644, and verify closure before building.
 Use Luna max for exact narrow implementation, Sol high for ambiguous
 causal diagnosis and independent review of risky runtime/encounter changes. Work directly
 when delegation would add more coordination than useful work. Serialize builds, shared
