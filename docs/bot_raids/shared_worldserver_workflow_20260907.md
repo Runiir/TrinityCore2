@@ -29,8 +29,11 @@ Next source batch: DPS-011 Blacksmithing socket creators and actual-actor
 reconciliation passes 27 focused tests and is independently approved. Regenerated
 metadata and directly affected socket test fixtures are approved. It affects
 nine specs, including Marksmanship, and accounts for the exact remaining 100
-raw primary-stat gap. Generated inputs and a new full 16-spec reference cohort
-must be produced before acceptance. Preserve approved Hunter parent 87506 and
+raw primary-stat gap. The new full 16-spec professions_v3 cohort is generated, DVC published,
+freshly reconstructed and promoted. Final clean promotion verification remains.
+The REF-001 status/workspace repair selects current catalog publication paths;
+19 focused tests and production status now show all 16 current references.
+Independent review approves the repair. Preserve approved Hunter parent 87506 and
 the exact 14-row pet fixture; neither has full native Hunter acceptance yet.
 The small PERF-001 calibration startup change is independently approved: ordinary
 population readiness no longer gates the separate native calibration population.

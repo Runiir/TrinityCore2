@@ -23,6 +23,8 @@ what has already failed. Do not create a new handoff document merely to copy it.
 | PERF-002 | Independently approved; live pending | Affliction waits for pet resources during warmup before a final reset that can recover its persistent mana pet natively. | Review bounded self-provided summon bypass; preserve Hunter/Ghoul waits and final exact resource checks. |
 | SETUP-001 | Independently approved; live pending | First scored reset erases warmup flask/food receipts while their auras persist, causing a second native use (20 restocked, final receipt 19 to 18). | Preserve current-attempt flask/food receipt state across self-provided reset; test pending and completed native use without preserving scored metrics or potion receipts. |
 
+| REF-001 | Independently approved; current status passes | Status and workspace commands read hardcoded v1 reference paths after the request catalog promotes a newer cohort. | Resolve one coherent current publication from catalog evidence for status and workspace operations; reject mixed/missing authority and preserve path protections. |
+
 CAP-001 closes the observed equal-partition truncation. The 64 MiB capture cap
 remains bounded; it is not a promise that every larger future payload fits. A
 separate audit is checking remaining silent-loss paths without reopening the

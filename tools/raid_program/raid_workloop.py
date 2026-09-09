@@ -29,13 +29,6 @@ REFERENCE_CATALOG_PATH = Path("experiments/configs/all_spec_references_cata_p4_v
 WOWSIMS_REQUESTS_PATH = Path(
     "experiments/configs/wowsims_cata_dps_reference_requests_v1.json"
 )
-WOWSIMS_PROMOTION_PATH = Path(
-    "experiments/configs/wowsims_cata_dps_reference_promotion_index_v1.json"
-)
-WOWSIMS_BUNDLE = Path("artifacts/all_spec_program/wowsims_exact_reference_bundle_v1")
-WOWSIMS_DVC_POINTER = Path(
-    "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1.dvc"
-)
 STRATEGY_CATALOG_PATH = Path("experiments/configs/cata_raid_strategy_catalog_v1.json")
 SCRIPT_READINESS_PATH = Path("experiments/configs/cata_raid_script_readiness_v1.json")
 ACTIVE_WORK_UNIT_PATH = Path(
@@ -271,8 +264,102 @@ def roster_status(root: Path = ROOT) -> dict[str, Any]:
     }
 
 
+def current_reference_cohort(root: Path = ROOT) -> dict[str, Any]:
+    """Resolve the promoted catalog's publication, never a historical default."""
+    catalog = _load_json(root / WOWSIMS_REQUESTS_PATH)
+    rows = catalog.get("requests") or []
+    pending_sha = _canonical_sha256(pending_catalog_projection(catalog))
+    publication = None
+    entries = []
+    specs = set()
+    reconstruction = None
+
+    def require(condition: bool, reason: str) -> None:
+        if not condition:
+            raise ValueError("current_reference_cohort:" + reason)
+
+    def relative(value: Any) -> Path:
+        require(isinstance(value, str) and bool(value), "path_missing")
+        path = Path(value)
+        require(not path.is_absolute() and ".." not in path.parts
+                and len(path.parts) >= 3 and path.parts[0] == "artifacts",
+                "path_outside_artifacts")
+        require((root.resolve() / path).resolve() == root.resolve() / path,
+                "path_symlink_forbidden")
+        return path
+
+    require(len(rows) == 16, "request_count")
+    for row in rows:
+        require(isinstance(row, dict), "request_invalid")
+        result = row.get("result") or {}
+        require(isinstance(result, dict), "result_invalid")
+        domain = result.get("publication_domain")
+        require(result.get("status") == "generated_verified" and isinstance(domain, dict),
+                "promoted_publication_missing")
+        require(bool(domain.get("repository_url"))
+                and bool(re.fullmatch(r"[0-9a-f]{40}", str(domain.get("repository_revision") or "")))
+                and domain.get("control_plane_policy") ==
+                    "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion",
+                "publication_identity_invalid")
+        require(domain.get("pending_request_catalog_sha256") == pending_sha,
+                "pending_catalog_mismatch")
+        if publication is None:
+            publication = domain
+        require(domain == publication, "mixed_publication")
+        bundle = relative(domain.get("bundle_root"))
+        pointer = relative(domain.get("dvc_pointer_path"))
+        require(pointer == bundle.with_name(bundle.name + ".dvc"), "pointer_bundle_mismatch")
+        spec = row.get("target_spec")
+        require(isinstance(spec, str) and bool(spec) and spec not in specs, "target_duplicate_or_missing")
+        specs.add(spec)
+        artifacts = result.get("artifacts") or {}
+        require(isinstance(artifacts, dict), "artifacts_invalid")
+        generation = artifacts.get("generation_receipt")
+        rebuilt = artifacts.get("dvc_reconstruction_receipt")
+        for descriptor in (generation, rebuilt):
+            require(isinstance(descriptor, dict), "descriptor_missing")
+            relative(descriptor.get("path"))
+            require(bool(re.fullmatch(r"[0-9a-f]{64}", str(descriptor.get("sha256") or ""))),
+                    "descriptor_hash_missing")
+            require(type(descriptor.get("byte_count")) is int and descriptor["byte_count"] > 0
+                    and Path(descriptor["path"]).stem == descriptor["sha256"],
+                    "descriptor_identity_invalid")
+            local = root / descriptor["path"]
+            if local.exists():
+                require(local.is_file() and local.stat().st_size == descriptor["byte_count"]
+                        and _descriptor_file(root, descriptor) is not None,
+                        "descriptor_content_invalid")
+        require(Path(generation["path"]).parent == bundle / "generation_receipts",
+                "generation_bundle_mismatch")
+        require(_descriptor_file(root, rebuilt) is not None, "reconstruction_missing_or_invalid")
+        if reconstruction is None:
+            reconstruction = rebuilt
+        require(rebuilt == reconstruction, "mixed_reconstruction")
+        entries.append({"target_spec": spec, "generation_receipt": generation,
+                        "dvc_reconstruction_receipt": rebuilt})
+    rebuilt_document = _load_json(root / reconstruction["path"])
+    require(rebuilt_document.get("schema") == "wowsims_dvc_reconstruction_receipt_v1"
+            and rebuilt_document.get("status") == "published_and_freshly_reconstructed"
+            and rebuilt_document.get("dvc_target") == pointer.as_posix(),
+            "reconstruction_status_invalid")
+    for key in ("bundle_root", "repository_url", "repository_revision"):
+        require(rebuilt_document.get(key) == publication.get(key), "reconstruction_publication_mismatch")
+    pointer_record = rebuilt_document.get("dvc_pointer") or {}
+    require(pointer_record.get("path") == pointer.as_posix()
+            and pointer_record.get("bundle_root") == bundle.as_posix(),
+            "reconstruction_pointer_mismatch")
+    require(_descriptor_file(root, pointer_record) is not None, "pointer_missing_or_invalid")
+    listed = rebuilt_document.get("generation_receipts") or []
+    require(len(listed) == len(entries) and
+            {(entry.get("target_spec"), entry.get("sha256")) for entry in listed}
+            == {(entry["target_spec"], entry["generation_receipt"]["sha256"]) for entry in entries},
+            "reconstruction_cohort_mismatch")
+    return {"bundle": bundle, "pointer": pointer, "publication_domain": publication,
+            "entries": entries}
+
+
 def _candidate_receipts(root: Path, request_catalog_sha256: str) -> dict[str, Any]:
-    receipt_dir = root / WOWSIMS_BUNDLE / "generation_receipts"
+    receipt_dir = root / current_reference_cohort(root)["bundle"] / "generation_receipts"
     current: dict[str, dict[str, Any]] = {}
     stale: dict[str, dict[str, Any]] = {}
     invalid: list[str] = []
@@ -347,7 +434,12 @@ def _promotion_state(
 def wowsims_status(root: Path = ROOT) -> dict[str, Any]:
     roster = roster_status(root)
     requests = _load_json(root / WOWSIMS_REQUESTS_PATH)
-    promotion = _load_json(root / WOWSIMS_PROMOTION_PATH)
+    cohort_error = None
+    try:
+        promotion = current_reference_cohort(root)
+    except ValueError as exc:
+        cohort_error = str(exc)
+        promotion = {"entries": []}
     request_rows = requests.get("requests") or []
     reference_class = str(requests.get("reference_class") or "")
     request_specs = {
@@ -356,8 +448,9 @@ def wowsims_status(root: Path = ROOT) -> dict[str, Any]:
     pending_requests = pending_catalog_projection(requests)
     request_catalog_sha256 = _canonical_sha256(pending_requests)
     request_catalog_file_sha256 = _file_sha256(root / WOWSIMS_REQUESTS_PATH)
-    candidates = _candidate_receipts(root, request_catalog_sha256)
-    dvc_digest = _dvc_digest(root / WOWSIMS_DVC_POINTER)
+    candidates = (_candidate_receipts(root, request_catalog_sha256) if not cohort_error
+                  else {"current": {}, "stale": {}, "invalid": []})
+    dvc_digest = _dvc_digest(root / promotion["pointer"]) if not cohort_error else None
     promotion_rows = [
         _promotion_state(
             root,
@@ -374,7 +467,7 @@ def wowsims_status(root: Path = ROOT) -> dict[str, Any]:
         for row in promotion_rows
         if row["state"] == "locally_reconstructed_current"
     }
-    issues: list[str] = []
+    issues: list[str] = [cohort_error] if cohort_error else []
     if request_specs != set(roster["dps_targets"]):
         issues.append("request_target_universe_mismatch")
     if reference_class not in {
@@ -405,7 +498,7 @@ def wowsims_status(root: Path = ROOT) -> dict[str, Any]:
             "work_unit": "wowsims:hydrate:current_promoted_reference_cohort",
             "owner_skill": "raid-wowsims-reference",
             "classification": "required_local_materialization",
-            "dvc_pointer": WOWSIMS_DVC_POINTER.as_posix(),
+            "dvc_pointer": promotion["pointer"].as_posix(),
             "dvc_bundle_digest": dvc_digest,
             "target_count": len(roster["dps_targets"]),
             "commands": {
@@ -654,7 +747,14 @@ def _promoted_reference_artifacts(
             descriptor = descriptor.get("path")
         if not isinstance(descriptor, str) or not descriptor.strip():
             return None
-        return (WOWSIMS_BUNDLE / descriptor).as_posix()
+        path = Path(descriptor)
+        bundle = current_reference_cohort(root)["bundle"]
+        if path.is_absolute() or ".." in path.parts:
+            return None
+        candidate = path if path.is_relative_to(bundle) else bundle / path
+        if (root.resolve() / candidate).resolve() != root.resolve() / candidate:
+            return None
+        return candidate.as_posix()
 
     debug = receipt.get("debug_result") or {}
     proto = receipt.get("request_proto_validation") or {}

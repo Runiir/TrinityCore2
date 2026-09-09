@@ -8,16 +8,16 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "CAP-002/CAP-003 and Affliction role/setup live accepted. DPS-011 source and generated metadata approved; exact reference generation pending. DPS-012 Fire temporal consumer repair independently approved with retained evidence replay.",
+  "gate_state": "DPS-011 source, generated metadata and reference cohort reconstruction approved; REF-001 current cohort resolver approved and reports16current. Clean promotion check then one native build/Hunter validation pending.",
   "first_broken_edge": {
     "id": "extra_socket_gems_lack_native_creators",
     "owner_classification": "raid_wowsims_reference",
     "cause": "Nine specs have wrist/hands extra gems without native prismatic creators or Blacksmithing requirements.",
-    "review_state": "source_and_metadata_approved"
+    "review_state": "approved_native_validation_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "2cf31e34fdb7d970e4e033413c43e945c63b57799ba9a476306b79f10306ee01"
+    "sha256": "41e3424d731ae5ae139a8a751e7e9ae4caf35b64d8d7600e8e726b7402218c8a"
   },
   "scope_lock": {
     "objective": "Apply exact player-obtainable Blacksmithing socket setup through shared materialization and selected-actor readback.",
@@ -44,9 +44,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Generate, publish, reconstruct and promote the corrected exact reference cohort, then build approved source once and validate Hunter native setup and DPS.",
+  "next_action": "Commit promotion, verify clean reference cohort, freeze/build once, then validate Hunter exact native setup and DPS.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,

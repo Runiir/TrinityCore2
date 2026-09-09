@@ -16,8 +16,6 @@ from tools.raid_program import raid_workloop
 
 
 ROOT = Path(__file__).resolve().parents[2]
-POINTER = raid_workloop.WOWSIMS_DVC_POINTER
-BUNDLE = raid_workloop.WOWSIMS_BUNDLE
 
 
 class WorkspaceError(RuntimeError):
@@ -31,12 +29,17 @@ def _require(condition: bool, reason: str) -> None:
 
 def _safe_paths(root: Path) -> tuple[Path, Path]:
     root = root.resolve()
-    pointer = (root / POINTER).resolve()
-    bundle = root / BUNDLE
-    _require(pointer == root / POINTER, "dvc_pointer_symlink_forbidden")
+    try:
+        cohort = raid_workloop.current_reference_cohort(root)
+    except ValueError as exc:
+        raise WorkspaceError(str(exc)) from exc
+    pointer = root / cohort["pointer"]
+    bundle = root / cohort["bundle"]
+    _require(pointer.resolve() == pointer, "dvc_pointer_symlink_forbidden")
     _require(pointer.is_file(), "dvc_pointer_missing")
-    _require(bundle.parent.resolve() == (root / BUNDLE.parent).resolve(), "bundle_parent")
+    _require(bundle.parent.resolve() == bundle.parent, "bundle_parent")
     _require(not bundle.is_symlink(), "bundle_symlink_forbidden")
+    _pointer_metadata(pointer)
     return pointer, bundle
 
 
@@ -48,7 +51,7 @@ def _pointer_metadata(pointer: Path) -> dict[str, Any]:
         _require(match is not None, f"dvc_pointer_{key}_missing")
         values[key] = match.group(1)
     _require(values["md5"].endswith(".dir"), "dvc_pointer_directory_digest")
-    _require(values["path"] == BUNDLE.name, "dvc_pointer_bundle_path")
+    _require(values["path"] == pointer.stem, "dvc_pointer_bundle_path")
     return {
         "digest": values["md5"],
         "size": int(values["size"]),
@@ -110,8 +113,8 @@ def status(root: Path) -> dict[str, Any]:
         "action": "status",
         "state": state,
         "root": str(root.resolve()),
-        "dvc_pointer": POINTER.as_posix(),
-        "bundle": BUNDLE.as_posix(),
+        "dvc_pointer": _safe_paths(root)[0].relative_to(root.resolve()).as_posix(),
+        "bundle": _safe_paths(root)[1].relative_to(root.resolve()).as_posix(),
         "observation": observation,
         "next_command": (
             "pixi run python -m tools.raid_program.wowsims_reference_workspace hydrate"
@@ -125,7 +128,7 @@ def verify(root: Path) -> dict[str, Any]:
     pointer, bundle = _safe_paths(root)
     pointer_metadata = _pointer_metadata(pointer)
     _require(bundle.is_dir(), "reference_bundle_not_hydrated")
-    cloud = _dvc_command(root, "status", "--cloud", POINTER.as_posix())
+    cloud = _dvc_command(root, "status", "--cloud", _safe_paths(root)[0].relative_to(root.resolve()).as_posix())
     _run(
         [
             sys.executable,
@@ -154,8 +157,8 @@ def verify(root: Path) -> dict[str, Any]:
         "action": "verify",
         "state": "locally_verified",
         "root": str(root.resolve()),
-        "dvc_pointer": POINTER.as_posix(),
-        "bundle": BUNDLE.as_posix(),
+        "dvc_pointer": _safe_paths(root)[0].relative_to(root.resolve()).as_posix(),
+        "bundle": _safe_paths(root)[1].relative_to(root.resolve()).as_posix(),
         "cloud_status": (cloud.stdout + cloud.stderr).strip(),
         "dvc_pointer_metadata": pointer_metadata,
         "observation": observation,
@@ -169,7 +172,7 @@ def verify(root: Path) -> dict[str, Any]:
 def hydrate(root: Path, *, jobs: int) -> dict[str, Any]:
     _safe_paths(root)
     _require(1 <= jobs <= 8, "dvc_jobs_out_of_range")
-    _dvc_command(root, "pull", "--jobs", str(jobs), POINTER.as_posix())
+    _dvc_command(root, "pull", "--jobs", str(jobs), _safe_paths(root)[0].relative_to(root.resolve()).as_posix())
     receipt = verify(root)
     receipt["action"] = "hydrate"
     return receipt
@@ -193,8 +196,8 @@ def evict(root: Path) -> dict[str, Any]:
         "action": "evict",
         "state": "workspace_evicted_remote_verified",
         "root": str(root.resolve()),
-        "dvc_pointer": POINTER.as_posix(),
-        "bundle": BUNDLE.as_posix(),
+        "dvc_pointer": _safe_paths(root)[0].relative_to(root.resolve()).as_posix(),
+        "bundle": _safe_paths(root)[1].relative_to(root.resolve()).as_posix(),
         "verified_before_eviction": verified["observation"],
         "observation": observation,
         "shared_dvc_cache_evicted": False,
