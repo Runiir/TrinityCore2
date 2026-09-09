@@ -525,7 +525,7 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
                 spell,
                 target && target->GetMaxHealth()
                     ? float(target->GetHealth()) / float(target->GetMaxHealth())
-                    : 0.0f))
+                    : 0.0f, target != nullptr))
             candidate.RejectReason = "hostile_target_health_gate";
         else if (profile.Role == "healer"
             && healerTriageInjuredPlayers

@@ -221,7 +221,7 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
             candidate.RejectReason = "target_health_gate";
             continue;
         }
-        if (!MeetsHostileTargetHealthGate(candidate.Profile, UnitHealthPct(target)))
+        if (!MeetsHostileTargetHealthGate(candidate.Profile, UnitHealthPct(target), target != nullptr))
         {
             candidate.RejectReason = "hostile_target_health_gate";
             continue;

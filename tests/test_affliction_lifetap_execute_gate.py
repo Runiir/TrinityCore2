@@ -35,11 +35,11 @@ def test_gate_is_typed_and_reusable_not_spell_hardcoded() -> None:
         CONTROLLER,
         COMBAT_RESOLVER,
         COMBAT_SPELL,
-        CALIBRATION,
     ):
         text = source.read_text(encoding="utf-8")
         assert "MeetsHostileTargetHealthGate" in text
         assert "1454" not in text
+    assert "ResolveProfileCombatAction(" in CALIBRATION.read_text(encoding="utf-8")
     assert "float MinHostileTargetHealthPct = 0.0f;" in header
     assert "hostileTargetHealthPct > spell.MinHostileTargetHealthPct" in header
 

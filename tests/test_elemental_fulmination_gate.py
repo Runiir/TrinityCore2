@@ -174,7 +174,7 @@ def test_charge_columns_keep_select_load_snapshot_and_dump_identity():
     source = (BOT / "BotClassSpecActionProfileDb.cpp").read_text()
     query = source[source.index('"SELECT p.id'):source.index('"FROM bot_rotation_profile p')]
     columns = re.findall(r'\b[pa]\.([a-z_]+)', query)
-    assert len(columns) == 80
+    assert len(columns) == 81
     for column, member, index, kind in (
         ('required_self_aura_charges', 'RequiredSelfAuraCharges', 77, 'UInt8'),
         ('max_self_aura_charges', 'MaxSelfAuraCharges', 78, 'UInt8'),

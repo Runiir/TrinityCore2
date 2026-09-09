@@ -68,6 +68,7 @@ TYPED_COLUMNS = {
     "target_creature_type_mask",
     "requires_ground_target",
     "min_hostile_target_health_pct",
+    "max_hostile_target_health_pct",
 }
 KNOWN_CATEGORIES = {
     "movement",

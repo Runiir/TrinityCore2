@@ -3,6 +3,7 @@
 
 #include "Bots/BotCombatActionCatalog.h"
 #include "Define.h"
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -32,6 +33,8 @@ struct BotActionProfileSpell
     // from the action target so self-targeted resource actions can preserve
     // the enemy-health predicate from the source APL.
     float MinHostileTargetHealthPct = 0.0f;
+    // Inclusive upper bound; zero disables it.
+    float MaxHostileTargetHealthPct = 0.0f;
     float MinSelfHealthPct = 0.0f;
     float MaxSelfHealthPct = 1.0f;
     uint32 RequiredSelfAura = 0;
@@ -85,10 +88,26 @@ struct BotActionProfileSpell
     bool RequiresGroundTarget = false;
 };
 
-inline bool MeetsHostileTargetHealthGate(BotActionProfileSpell const& spell, float hostileTargetHealthPct)
+inline bool ValidHostileTargetHealthRange(BotActionProfileSpell const& spell)
 {
-    return spell.MinHostileTargetHealthPct <= 0.0f
-        || hostileTargetHealthPct > spell.MinHostileTargetHealthPct;
+    return std::isfinite(spell.MinHostileTargetHealthPct)
+        && std::isfinite(spell.MaxHostileTargetHealthPct)
+        && spell.MinHostileTargetHealthPct >= 0.0f && spell.MinHostileTargetHealthPct <= 1.0f
+        && spell.MaxHostileTargetHealthPct >= 0.0f && spell.MaxHostileTargetHealthPct <= 1.0f
+        && (!spell.MaxHostileTargetHealthPct
+            || spell.MinHostileTargetHealthPct < spell.MaxHostileTargetHealthPct);
+}
+
+inline bool MeetsHostileTargetHealthGate(BotActionProfileSpell const& spell,
+    float hostileTargetHealthPct, bool hostileTargetPresent)
+{
+    return ValidHostileTargetHealthRange(spell)
+        && (spell.MinHostileTargetHealthPct <= 0.0f
+            || hostileTargetHealthPct > spell.MinHostileTargetHealthPct)
+        && (spell.MaxHostileTargetHealthPct <= 0.0f
+            || (hostileTargetPresent && std::isfinite(hostileTargetHealthPct)
+                && hostileTargetHealthPct >= 0.0f
+                && hostileTargetHealthPct <= spell.MaxHostileTargetHealthPct));
 }
 
 struct BotActionCandidate

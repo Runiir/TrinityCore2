@@ -300,7 +300,7 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
             candidate.RejectReason = "target_health_gate";
             continue;
         }
-        if (!MeetsHostileTargetHealthGate(candidate.Profile, state.TargetHpPct))
+        if (!MeetsHostileTargetHealthGate(candidate.Profile, state.TargetHpPct, !state.TargetGuid.IsEmpty()))
         {
             candidate.RejectReason = "hostile_target_health_gate";
             continue;
