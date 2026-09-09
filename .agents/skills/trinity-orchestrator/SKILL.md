@@ -19,6 +19,11 @@ Work directly by default. Delegate one bounded implementation when useful; use a
 agent for independent review of risky runtime/encounter changes. Multiple implementation
 workers require explicit user authorization and disjoint ownership. No nested workers.
 Worker prompts include: "Work directly. Do not launch another model or subprocess agent."
+Keep the causal handoff short: one proven edge, exact evidence/file locations,
+owned files, the behavioral counterexample, command and acceptance conditions.
+Link existing receipts instead of restating them or the program charter. Send
+decisive findings when proven; a long narrative report must not delay the next
+bounded implementation or independent review.
 
 When replacing or resuming a worker, name the latest implementation review and
 its unresolved findings explicitly. The worker must reconcile those findings

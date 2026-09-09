@@ -11,12 +11,17 @@ role stages passed, native exit 0 and fresh cleanup passed. Overall evidence
 qualification still rejects `incomplete_evidence_identity`; training is forbidden.
 
 Wild Quiver, Readiness and exact pet-consumer repairs were independently approved
-before this run. Dedicated DPS review is now checking their native outcomes.
+before this run. Dedicated DPS review accepts their native outcomes: Wild Quiver 110 hits /
+931,396 damage, Readiness 2 and Rapid Fire 4 uses, exact pet compatibility.
+The complete written review is being finalized.
 The new owner-aura receipt directly proves one remaining loss: Furious Howl
 24604 is absent across all 260,913 samples (maximum gap 43 ms). Mastery aura
-76659 is active in every sample. Native autocast diagnosis owns DPS-018; the
-previous t0 timing explanation cannot explain full-window absence. Do not change
-coefficients or manufacture a buff. Keep the raw run until both readers finish.
+76659 is active in every sample. DPS-018 is proven: grouped PetAI omits its owner from the friendly-target
+list, while Howl cannot target the remaining pet. The owner-list repair and
+portable regression tests are independently approved. Grouped lists continue
+to refresh periodically, including same-size membership/filter changes.
+Build the bounded repair once, then validate owner-buff coverage and DPS.
+Keep the raw3e run until its DPS reviewer finishes; native causal reads are done.
 
 The v4 pet-identity reference cohort is DVC-published, freshly reconstructed,
 promoted and clean-verified on 47e8dffab0. All 16 simulator request byte hashes

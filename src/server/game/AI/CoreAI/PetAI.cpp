@@ -359,12 +359,10 @@ void PetAI::UpdateAllies()
     if (m_AllySet.size() == 2 && !group)
         return;
 
-    //owner is in group; group members filled in already (no raid -> subgroupcount = whole count)
-    if (group && !group->isRaidGroup() && m_AllySet.size() == (group->GetMembersCount() + 2))
-        return;
-
+    // Group membership and eligibility can change without changing its size.
     m_AllySet.clear();
     m_AllySet.insert(me->GetGUID());
+    m_AllySet.insert(owner->GetGUID());
     if (group)                                              //add group
     {
         for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
@@ -379,8 +377,6 @@ void PetAI::UpdateAllies()
             m_AllySet.insert(Target->GetGUID());
         }
     }
-    else                                                    //remove group
-        m_AllySet.insert(owner->GetGUID());
 }
 
 void PetAI::KilledUnit(Unit* victim)

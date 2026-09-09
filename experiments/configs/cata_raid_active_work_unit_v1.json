@@ -8,16 +8,16 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Hunter3e completed at 28,122.61 DPS / 0 HPS; role gates pass. Full-window Furious Howl absence proven; repair review and native autocast diagnosis active.",
+  "gate_state": "DPS-018 owner-list repair independently approved with portable actual-body tests; ready for bounded build and Hunter validation.",
   "first_broken_edge": {
     "id": "furious_howl_absent_through_scored_window",
     "owner_classification": "raid_class_mechanics",
-    "cause": "Owner aura24604 absent across260913samples/maxgap43ms despite stable enabledwolfidentity; exact native selection/application edge underdiagnosis.",
-    "review_state": "causal_diagnosis_active"
+    "cause": "Grouped PetAI excludes owner from friendly targets; 24604 excludes the remaining player-controlled pet, leaving no valid autocast candidate.",
+    "review_state": "implementation_independently_approved_live_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "c4f54e16288ce3f05d95d9d2f6e686e66d1eb95ddaaf102cd1162f649c0f1f3c"
+    "sha256": "9fcaf4ec1e7f09d303f8f2ccc59181794d5c413c5fe54829bda5fc282b0c1ce6"
   },
   "scope_lock": {
     "objective": "Locate and repair the proven native pet-autocast failure without changing coefficients or manually installing auras.",
@@ -39,9 +39,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Review repaired native actions and diagnose the first native Furious Howl failure from the closed run; no unchanged live retry.",
+  "next_action": "Build reviewed owner-list repair once and run exact 300-second Hunter validation; retain native aura coverage and DPS review.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -86,7 +86,7 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "pending",
+    "verdict": "APPROVE",
     "scope": "DPS-018 native Furious Howl absence",
     "live_verified": false
   },

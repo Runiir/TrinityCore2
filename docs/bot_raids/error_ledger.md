@@ -35,7 +35,7 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | OBS-002 | Independently approved; joined native validation pending | Initial Hunter stats precede pet combat/autocast eligibility; the t0 crit gap does not prove Furious Howl failed. Full-window owner aura presence is unobserved. | Add fixed aggregate native aura receipts for 24604 and 76659 to the joined validation. No pet AI or coefficient change. |
 
-| DPS-018 | Full-window absence proven; native diagnosis active | Hunter3e has no owner Furious Howl aura in 260,913 samples spanning 300 seconds (maximum gap 43 ms), despite the exact enabled wolf spellbook. | Trace native autocast selection/target/application. Earlier t0 timing explanation does not explain full-window absence. No coefficient or manual-aura repair. |
+| DPS-018 | Native owner-list repair independently approved | Hunter3e has no owner Furious Howl aura in 260,913 samples spanning 300 seconds (maximum gap 43 ms), despite the exact enabled wolf spellbook. | Grouped PetAI omitted the owner; Howl cannot target the remaining player-controlled pet. Include the owner and retain periodic grouped refresh. Reject cardinality-only caching, which retains stale equal-size membership. Portable actual-body tests and independent review pass; next live pending. |
 
 CAP-001 closes the observed equal-partition truncation. The 64 MiB capture cap
 remains bounded; it is not a promise that every larger future payload fits. A

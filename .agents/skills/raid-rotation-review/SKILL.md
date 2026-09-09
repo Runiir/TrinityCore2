@@ -8,6 +8,10 @@ description: Translate and compare TrinityCore bot rotation code, database actio
 Build an attributable comparison from simulator policy to native outcome. Keep
 simulation, Trinity selection, movement, submission, landing, and encounter
 mechanics as separate layers.
+For pet support spells, inspect the owner's actual group/subgroup state and
+the native friendly-target list. A one-bot or "solo" fixture can still create
+a group. Enabled autocast proves configuration, not target eligibility or a
+landed owner buff; join native target restrictions and aura coverage.
 
 A target damage row can be a forwarded/shared-health callback. Before claiming
 direct target selection, join the actor's selected target and ordinary native
