@@ -17,6 +17,8 @@ and server-side `CastSpell` need not apply the same replacement logic.
 Derive effective cast time through native scaling and modifier precedence; a
 zero base cast-time entry does not prove an instant spell. Fixtures must retain
 the actual inputs to that calculation instead of stubbing its expected result.
+A current-spell ID can remain during projectile flight. Join native spell state
+and blocked-action results before treating its presence as casting time.
 
 For pet support spells, inspect the owner's actual group/subgroup state and
 the native friendly-target list. A one-bot or "solo" fixture can still create

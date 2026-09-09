@@ -17,7 +17,10 @@ For qualification or explicit sealed fixture replay, retain their existing stric
 
 Verify cheap configuration and affected behavioral tests before a build. Reuse verified
 assets and binaries when their relevant inputs have not changed. Do not repeatedly hydrate
-large inputs. cache:false DVC outputs need exact locked-byte reproduction/copy, not dvc pull.
+large inputs. Cold-source fixtures must reproduce the declared asset closure,
+including any small offline-tooling subset; do not require declared inputs to
+be absent or add undeclared native data dependencies to identity-only readers.
+cache:false DVC outputs need exact locked-byte reproduction/copy, not dvc pull.
 Use independent files where source and runtime permissions differ; never flip aliased modes.
 
 Before manually applying a tracked migration, inspect the server's ordinary

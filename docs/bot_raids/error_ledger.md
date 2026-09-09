@@ -8,6 +8,7 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | ID | Status | Proven failure / limit | Next action |
 | --- | --- | --- | --- |
+| CAP-004 | Pure identity repair independently approved; live pending | Frozen raid validator calls full native gear materialization and reads absent source/data/dbc/enUS/SkillLineAbility.dbc despite valid configuredDataDir and passed provisioning/readback. | Magmaw9ed ends before any boss attempt; native exit0 and fresh13actor cleanup pass. Pure projection matches all70 BWD actor identities. Four cold/caller tests and selected strictness checks pass independent review. Retry raid; native gameplay is unchanged. |
 | DPS-006 | Straight trajectory live accepted | Orb's forward destination and execution both use ground pathfinding; it leaves damage range before the first tick. | `979f5c832f` completed: 29,706.767 DPS and nonzero Orb damage. All five trajectories and 82736 accepted; remaining lifetime failure is DPS-009. |
 | DPS-007 | Native admission identity accepted on Hunter927 | Hunter compares an 11-row catalog with a 14-row loaded pet spellbook. Normal saving also persists those 14 rows. | All 14 admission rows and their hash match throughout the live window. Remaining Python compatibility mismatch is DPS-017; do not reset the pet baseline. |
 | DPS-008 | Affliction and Fire setup live accepted | Fire and Affliction (and other audited specs) declare required professions absent from actual `character_skills` rows. | Affliction90 has actual Tailoring 525, matching stats and 90.6387% reference DPS; independent review accepts setup and calibration. Fire also has native Tailoring 525 and applicable enchant4115; exact Fire compatibility awaits DPS-012 consumer repair. Do not tune Affliction coefficients. |
@@ -43,7 +44,8 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | OBS-003 | Full-window proc observation live accepted on e562 | Fixed aggregates retain native stack aura 82925 and Fire 82926 presence. | Both activate 12 times; Fire is present in 89,761/260,927 samples. Presence transitions do not measure individual stack increments. |
 
-| DPS-022 | Exact correction independently approved; live pending | Replacement Aimed 82928 has zero base cast time but ScalingID 578 overrides it with 2,400 ms. The below-E90 1,000 ms gate correctly rejects it. | Correct only the native instant variant, preserve normal 19434 and GCD, exercise actual scaling precedence, then require post-30-second landed 82928. Previous base-only fixture missed this causal input. |
+| DPS-022 | Independently live accepted on Hunter9ed | Replacement Aimed 82928 has zero base cast time but ScalingID 578 overrides it with 2,400 ms. The below-E90 1,000 ms gate correctly rejects it. | Hunter9ed lands12 instant82928 casts after30seconds, with12/12 Fire activations/deactivations; combined Aimed damage1,037,243 is98.528% of exact. 30,568.92DPS/0HPS. Previous base-only fixture missed scaling precedence. |
+
 
 CAP-001 closes the observed equal-partition truncation. The 64 MiB capture cap
 remains bounded; it is not a promise that every larger future payload fits. A

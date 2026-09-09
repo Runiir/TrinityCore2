@@ -3,6 +3,30 @@
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
+Source `9ed497d8c4` built on its first attempt and completed Hunter's exact
+300-second window: 30,568.92 DPS / 0 HPS, 2,992 decisions, 1,325 successful
+actions. Independent decisive review accepts DPS-022: twelve post-30-second
+instant82928 casts all land and consume twelve Fire procs. Combined Aimed
+damage is 98.528% of exact. All1,745 chunks/21,440,203 bytes, native exit0,
+binary verification and fresh13actor cleanup pass. Final independent DPS review
+approves progression to Magmaw; qualification identity remains incomplete and
+training is forbidden. Hunter9ed is DVC-published, remotely verified and raw evicted.
+
+The same build's Magmaw launch passed canonical provisioning and readback but
+aborted during frozen roster identity construction: a full gear materializer
+reads absent source/data/dbc/enUS/SkillLineAbility.dbc instead of the verified
+runtime data. CAP-004 owns this separate Python validator edge. There was no
+boss attempt; five initial native decisions and no combat DPS/HPS result.
+Native exit0 and fresh13actor cleanup pass. No worldserver is running. Preserve
+accepted Hunter mechanics and the earlier valid Magmaw kill; fix the actual
+identity consumer before retrying the raid. Failed startup evidence is also
+DVC-published, remotely verified and raw evicted after both readers finished.
+CAP-004 pure identity projection now passes independent review: all70 BWD actor
+identities match, the exact missing-file counterexample fails on the old loader,
+and the repaired actual capture loop and strict rejection checks pass. Six
+legacy recurrence-fixture setup failures precede this validator and are outside
+the development canary gate. Refresh the clean build receipt and retry Magmaw.
+
 Latest source `e562e9229d` completed the exact 300-second Hunter window:
 28,345.67 DPS / 0 HPS, 2,992 decisions and 1,224 successful actions.
 All 1,744 chunks / 21,428,947 bytes reassembled; native exit 0, verified binary

@@ -1,36 +1,36 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "hunter:native_instant_aimed_cast_time",
+  "work_unit": "raid_capture:frozen_identity_ambient_dbc",
   "owner_skill": "raid-performance-loop",
-  "classification": "native_class_mechanics",
+  "classification": "capture_infrastructure",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "e562e9229d721416b7de04c76598853bc749fcb0",
+  "observed_at_commit": "9ed497d8c45716aa1c6700c9c09a57d2011af47b",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Exact82928 scaling correction and mechanical SpellMgr split independently approved; build and matched native validation next.",
+  "gate_state": "CAP-004 pure identity projection independently approved; refresh clean receipt and retry Magmaw.",
   "first_broken_edge": {
-    "id": "native_82928_scaling_cast_time",
-    "owner_classification": "raid_class_mechanics",
-    "cause": "ScalingID578 positive2400ms overrides zero base cast time; actual native below-E90 gate rejects it.",
+    "id": "frozen_raid_identity_reads_ambient_dbc",
+    "owner_classification": "raid_evidence_lifecycle",
+    "cause": "_provisioned_bwd_bots invokes full gear/profession materialization using absent source/dataDBC instead of a valid identity projection.",
     "review_state": "implementation_independently_approved_live_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "4fa5988542468213948ab3ca79cfdc16033b5b4faa75d7011b7990b6f39aae97"
+    "sha256": "9a89bd384f29d254729ee5c31318c15659e3a2037bf60a7402e7b10d874d36b1"
   },
   "scope_lock": {
-    "objective": "Restore native instant Aimed Shot82928 cast-time behavior proven wrong on e562, preserve accepted override/proc/Vial/setup, then remeasure roster throughput on Magmaw.",
+    "objective": "Remove the proven frozen raid validator ambientDBC dependency while preserving all exact native identity checks; then measure Magmaw throughput on accepted class repairs.",
     "owned_files": [],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Exact native scaling correction makes82928 instant while19434 remains2900ms, preserving effects, cost, aura restriction and normal GCD.",
-    "Implement only a proven bounded repair, pass behavioral fixtures and independent review.",
-    "Build once and validate the repaired edge with the existing fixed owner-aura receipt and exact 300-second Hunter score.",
-    "Publish and clean closed attributable evidence after all readers finish."
+    "Actual frozen raid roster and identity consumers preserve all ten canonical identities with the verified offline DBC subset present and undeclared native-only DBC files absent.",
+    "Missing profiles, conflicting equipped gear and malformed identity continue to reject.",
+    "Focused fixtures and independent review pass; native runtime configuration and verified build remain attributable.",
+    "Retry Magmaw with completion watchdog, review all bot DPS/HPS, publish closed evidence and clean exact payloads."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -41,7 +41,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Correct exact native82928 cast-time scaling, test actual calculation, independently review, build and require post-E90 native82928.",
+  "next_action": "Run frozen identity preflight, refresh verified build receipt and execute canonical Magmaw watchdog.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -87,7 +87,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approve",
-    "scope": "DPS-022 instant82928 correction and separately reviewed mechanical SpellMgr split",
+    "scope": "CAP-004 pure frozen raid identity projection",
     "live_verified": false
   },
   "related_edges": [
@@ -166,9 +166,9 @@
     "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_ec02d7196a_20260909.tar.gz.dvc"
   },
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-022",
+  "error_id": "CAP-004",
   "related_open_error_ids": [
-    "DPS-022",
+    "CAP-004",
     "DPS-021",
     "OBS-001"
   ]

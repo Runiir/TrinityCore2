@@ -51,29 +51,31 @@ def expected_bwd_10n_roster(
 
 
 def _provisioned_bwd_bots(profile_name: str = "blackwing_descent_10n") -> list[dict[str, Any]]:
-    """Load the checked-in, post-normalization BWD provisioning roster.
+    """Load exact declared roster/gear identity without native SQL materialization.
 
-    The capture verifier must not silently fall back to a partial roster when
-    provisioning data is unavailable.  The builder's loader is used here so
-    talent defaults and the checked-in gear profile overlay are represented by
-    the same canonical values that generated the provisioning SQL.
+    Talent defaults and gear overlay precedence still follow provisioning.
+    Capture compares item identities, not native enchant/socket creator fields;
+    those are validated by the separately bound provisioning and asset receipts.
     """
 
     try:
         from tools.bot_ml.build_validation_provisioning import (
             DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE,
-            apply_gear_profiles,
             load_config_with_bwd_diagnostic_shards,
-            load_gear_profiles,
         )
 
         config = load_config_with_bwd_diagnostic_shards(
             ROOT / "experiments/configs/validation_provisioning_cata_001.json",
             DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE,
         )
-        config = apply_gear_profiles(
-            config,
-            load_gear_profiles(ROOT / "dataset/validation_gear_profiles/profiles.json"),
+        from tools.bot_ml.generate_bot_admission_identities import (
+            canonical_gear_manifest,
+            load_gear_profiles as load_identity_gear_profiles,
+        )
+
+        profiles = load_identity_gear_profiles(
+            ROOT / "dataset/validation_gear_profiles/profiles.json",
+            ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         )
         scenario = next(
             row for row in config["scenarios"] if row.get("id") == profile_name
@@ -81,7 +83,31 @@ def _provisioned_bwd_bots(profile_name: str = "blackwing_descent_10n") -> list[d
         bots = scenario.get("bots")
         if not isinstance(bots, list) or len(bots) != 10:
             raise ValueError(f"frozen BWD provisioning roster is missing for {profile_name}")
-        return [row for row in bots if isinstance(row, dict)]
+        for bot in bots:
+            if not isinstance(bot, dict):
+                raise ValueError("invalid frozen roster member")
+            explicit = str(bot.get("gear_profile_id") or "")
+            legacy = str(bot.get("gear_profile") or "")
+            if explicit and legacy and explicit != legacy:
+                raise ValueError("canonical gear profile identity mismatch")
+            gear_profile_name = explicit or legacy or str(bot.get("class_spec") or "")
+            canonical = str((bot.get("canonical_setup") or {}).get("gear_profile_id") or "")
+            if canonical and canonical != gear_profile_name:
+                raise ValueError("resolved canonical gear profile identity mismatch")
+            profile = profiles.get(gear_profile_name)
+            equipment = bot.get("equipment")
+            if equipment:
+                equipped = canonical_gear_manifest(equipment, label="equipped")
+                if canonical and (not profile or equipped != canonical_gear_manifest(
+                    profile.get("equipment"), label="canonical"
+                )):
+                    raise ValueError("canonical gear equipment mismatch")
+            elif profile:
+                canonical_gear_manifest(profile.get("equipment"), label="canonical")
+                bot["equipment"] = profile["equipment"]
+            else:
+                raise ValueError(f"unknown canonical gear profile {gear_profile_name!r}")
+        return bots
     except (ImportError, KeyError, OSError, StopIteration, TypeError, ValueError) as error:
         raise ValueError(f"frozen BWD identity manifest unavailable for {profile_name}: {error}") from error
 
