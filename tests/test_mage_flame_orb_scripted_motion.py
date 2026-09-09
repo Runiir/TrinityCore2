@@ -35,7 +35,7 @@ def test_split_preserves_original_bodies_and_registration_identity():
     for group, digest in hashes.items():
         text = (WORLD / f'npcs_special_{group}.cpp').read_text()
         body = text.split('namespace NpcSpecial\n{', 1)[1].split('\n}\n\nvoid AddSC_', 1)[0]
-        assert hashlib.sha256(body.replace(OVERRIDE, '').encode()).hexdigest() == digest
+        assert hashlib.sha256(body.replace(OVERRIDE, '').replace('MovePoint(0, pos, false);', 'MovePoint(0, pos);').replace('WorldObjectMovement::MovePositionToFirstCollision(*summoner, pos, 100.0f, 0.0f, false);', 'summoner->MovePositionToFirstCollision(pos, 100.0f, 0.0f);').encode()).hexdigest() == digest
         registrations += re.findall(r'^    (?:new \w+\(\);|RegisterCreatureAI\(\w+\);)$', text, re.M)
         assert len(text.splitlines()) < 1000
     expected = '''npc_air_force_bots npc_chicken_cluck npc_dancing_flames
@@ -93,7 +93,7 @@ struct MotionMaster {
  bool IsInvalidMovementSlot(MovementSlot s)const{return s>=MAX_MOTION_SLOT;}
  MovementGeneratorType GetMotionSlotType(MovementSlot)const;
  void MoveFollow(Unit*){delete _slot[0];_slot[0]=new MovementGenerator{};_slot[0]->type=FOLLOW_MOTION_TYPE;}
- void MovePoint(uint32,Position const& p){++pointCalls;destination=p;delete _slot[1];_slot[1]=new MovementGenerator{};_slot[1]->type=POINT_MOTION_TYPE;_top=1;}
+ void MovePoint(uint32,Position const& p,bool generatePath=true){assert(!generatePath);++pointCalls;destination=p;delete _slot[1];_slot[1]=new MovementGenerator{};_slot[1]->type=POINT_MOTION_TYPE;_top=1;}
 };
 ''' + functions + r'''
 enum { SUMMON_CATEGORY_PET=2,SUMMON_CATEGORY_WILD=0,SUMMON_CATEGORY_ALLY=1,SUMMON_CATEGORY_UNK=3,SUMMON_PROP_FLAG_UNK14=8192,UNIT_FIELD_HOVERHEIGHT=0 };
@@ -104,7 +104,7 @@ struct TempSummon;
 struct Unit {MotionMaster motion{this};Position position;Aura* talent=nullptr;int explosionCasts=0;
  virtual ~Unit()=default;virtual TempSummon* ToTempSummon(){return nullptr;}
  MotionMaster* GetMotionMaster(){return &motion;}Position GetPosition(){return position;}
- void MovePositionToFirstCollision(Position& p,float distance,float angle){assert(distance==100 && angle==0);p.m_positionX=10;}
+ void MovePositionToFirstCollision(Position& p,float distance,float angle,bool usePathfinding=true){assert(!usePathfinding);assert(distance==100 && angle==0);p.m_positionX=10;}
  Aura* GetAuraOfRankedSpell(int){return talent;}void CastSpell(Position const&,int,bool){++explosionCasts;}
 };
 struct Creature:Unit {uint32 entry=44214;bool combat=false;int despawns=0;std::vector<int> casts;
@@ -127,6 +127,7 @@ struct EventMap {uint32 time=0;std::vector<std::pair<uint32,uint32>> rows;
 };
 struct ScriptedAI:CreatureAI {using CreatureAI::CreatureAI;void DoCastSelf(int id,bool){me->casts.push_back(id);}};
 bool roll_chance_i(int chance){return chance==100;}
+''' + r'''namespace WorldObjectMovement { void MovePositionToFirstCollision(Unit& unit,Position& pos,float distance,float angle,bool path) { unit.MovePositionToFirstCollision(pos,distance,angle,path); } }
 ''' + orb + r'''
 int main(){
  Unit owner;
@@ -135,7 +136,7 @@ int main(){
  TempSummon legacy(&owner);CreatureAI baseAI(&legacy);baseAI.JustAppeared();
  assert(legacy.motion.GetMotionSlotType(MOTION_SLOT_IDLE)==FOLLOW_MOTION_TYPE);
  legacy.motion.Clear();assert(legacy.motion.GetMotionSlotType(MOTION_SLOT_IDLE)==FOLLOW_MOTION_TYPE);
- legacy.motion.MovePoint(0,{});legacy.motion.top()->done=true;legacy.motion.UpdateMotion(1);
+ legacy.motion.MovePoint(0,{},false);legacy.motion.top()->done=true;legacy.motion.UpdateMotion(1);
  assert(legacy.motion.GetMotionSlotType(MOTION_SLOT_ACTIVE)==MAX_MOTION_TYPE);
  assert(legacy.motion.GetMotionSlotType(MOTION_SLOT_IDLE)==FOLLOW_MOTION_TYPE);
  for(uint32 entry:{44214u,45322u}){
@@ -143,6 +144,7 @@ int main(){
   assert(orb.motion.GetMotionSlotType(MOTION_SLOT_IDLE)==IDLE_MOTION_TYPE);
   ai.UpdateAI(1);assert(orb.motion.pointCalls==1);assert(orb.motion.destination.m_positionX==10 && orb.motion.destination.m_positionZ==2);
   assert(orb.motion.GetMotionSlotType(MOTION_SLOT_ACTIVE)==POINT_MOTION_TYPE);
+  ai.AttackStart(&owner);assert(orb.motion.pointCalls==2);
   ai.UpdateAI(398);assert(orb.casts.empty());ai.UpdateAI(1);
   assert(orb.casts.size()==1 && orb.casts[0]==(entry==44214?82690:84717));
   orb.motion.top()->done=true;orb.motion.UpdateMotion(1);

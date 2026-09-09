@@ -39,6 +39,7 @@
 #include "SpellMgr.h"
 #include "Vehicle.h"
 #include "World.h"
+#include "WorldObjectMovement.h"
 
 namespace NpcSpecial
 {/*######
@@ -342,14 +343,14 @@ enum MageOrb
      {
          // Calling MovePoint again to apply movement speed changes
          if (me->isMoving())
-             me->GetMotionMaster()->MovePoint(0, pos);
+             me->GetMotionMaster()->MovePoint(0, pos, false);
      }
 
      void IsSummonedBy(Unit* summoner) override
      {
          pos = summoner->GetPosition();
          pos.m_positionZ += 2.0f; // increasing the height to avoid terrain hickups
-         summoner->MovePositionToFirstCollision(pos, 100.0f, 0.0f);
+         WorldObjectMovement::MovePositionToFirstCollision(*summoner, pos, 100.0f, 0.0f, false);
          events.ScheduleEvent(EVENT_MOVE_FORWARD, Milliseconds(1));
          events.ScheduleEvent(EVENT_APPLY_PERIODIC_EFFECT, Milliseconds(400));
          events.ScheduleEvent(EVENT_EARLY_EXPLOSION, Seconds(5));
@@ -366,7 +367,7 @@ enum MageOrb
              {
                  case EVENT_MOVE_FORWARD:
                      me->GetMotionMaster()->Clear();
-                     me->GetMotionMaster()->MovePoint(0, pos);
+                     me->GetMotionMaster()->MovePoint(0, pos, false);
                      break;
                  case EVENT_APPLY_PERIODIC_EFFECT:
                      DoCastSelf(me->GetEntry() == NPC_FLAME_ORB ? SPELL_FLAME_ORB_AURA : SPELL_FROSTFIRE_ORB_AURA, true);

@@ -2,50 +2,42 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
-Source `a3d0719729` is committed and pushed. Its build passed. The actual Fire
-launch learned Wizardry 89744 for actor 1304, with fresh database readback and a
-native 1.05 intellect multiplier. The retained 2,998 decisions average 100.087 ms.
-Do not repeat these repaired setup and scheduler edges unchanged.
+Source `ec02d7196a` is committed, pushed and built. Three exact 300-second
+calibrations completed on that immutable build with full exports and verified
+native exit, offline character cleanup and post-run binary receipts:
 
-The final export exceeded a fixed 20 MiB heartbeat partition despite unused
-capacity in the shared budget. Only 1,265 of 1,376 chunks survived. Exact native
-prefix fields report 8,646,505 damage over 300 seconds, or 28,821.683 DPS, with
-169 successful actions and zero recorded HPS, movement loss or deaths. This is
-partial evidence, not an accepted calibration. Native exit, cleanup and post-run
-binary verification passed. The frozen partial review and 4,194,504-byte archive
-are remotely verified, and exact raw payloads are evicted. The terminal reason
-is infrastructure loss; the old controller incorrectly reported a role failure.
+- Fire: 8,706,311 damage / 29,021.037 DPS / 0 HPS, 82.5893% of reference.
+  Setup and cadence pass. The 75% floor passes; 85% target misses by 847.081 DPS.
+  Both reviews are frozen; evidence is remotely verified and exact raw payloads
+  evicted. Capture and no-follow repairs are live-accepted. Orb damage is zero.
+- Marksmanship: 6,932,030 damage / 23,106.767 DPS / 0 HPS. The pet operates,
+  but native and Python compare an old 11-row persisted catalog with a loaded
+  14-row spellbook. A fresh post-run database SELECT also sees those 14 rows.
+  The first proposed loader-receipt design is paused: it would require old
+  persisted input that normal native saving replaces. A bounded source/DBC
+  review is determining the correct canonical identity before implementation.
+  Actual low DPS remains unresolved. Raw evidence is retained for closure.
+- Affliction: 8,772,073 damage / 29,240.243 DPS, about 93.4% of reference.
+  Complete export and role checks pass; corrected profession/pet setup and HPS
+  review is pending. Raw evidence is retained until review and publication.
 
-Both next-batch repairs are independently approved:
-- Capture shares the existing 40 MiB heartbeat budget while preserving the
-  8 MiB startup and 16 MiB cleanup reservations and 64 MiB total cap. Truncated
-  or malformed exports remain infrastructure failures through final acceptance,
-  including late cleanup output and rejected completion markers. The actual
-  full-size controller and final-assembly regression suite passes 30 tests.
-- Flame Orb suppresses inherited idle owner-follow initialization. Native
-  lifecycle code, current DBC/WorldDB inputs and all five recorded return paths
-  prove the defect. Aura, targeting, damage, pathing and timers are unchanged.
-  Four mechanical NPC modules plus a compact loader preserve all 28 script
-  registrations and all other bodies; each changed C++ file is below 1,000 lines.
-  Native idle/active motion observations will verify the repaired lifecycle.
-  Its four focused tests and independent review pass; native compilation and
-  live damage remain unverified.
+Next approved implementation is native Orb straight movement. The forward
+endpoint currently passes through ground-navmesh routing, followed by a second
+pathfinding pass. The repair shares existing collision logic through a small
+native helper while preserving Object.h and every default caller. Orb explicitly
+uses collision-clipped straight movement at destination production and both
+MovePoint submissions. Static/dynamic obstacles, allowed-Z behavior, spell
+parameters, target rules, timers and no-follow remain unchanged. Five focused
+behavioral tests and independent Sol review pass. Build and matched Fire live
+validation remain required, including 82736 and attributable 82739 damage.
 
-Next: freeze this bounded batch, build once, and run exact Fire calibration.
-Require a complete export, normalized stats, 100 ms decision cadence, no latent
-Orb owner-follow and attributable 82739 damage. The unchanged promoted reference
-is 35,138.962 DPS; its 85% optimization target is 29,868.118 DPS. No guessed
-coefficients, manual auras, dummy exceptions or bot terrain workarounds.
-
-The preceding `2b661e8b67` Fire archive is remotely verified and evicted. It
-measured 23,839.46 DPS while missing Wizardry; owned aura validation passed.
-Latest canonical Magmaw remains the accepted `090f24f4b8` clear: 128,636.918 DPS
-and 19,225.751 HPS over 233 damage-bearing seconds. Exact hostile span is
-233.490 seconds; encounter-start to death is 271.011 seconds. Two trash deaths
-recovered, zero boss deaths, all ten alive, and all loadouts matched canonical
-inputs. Its archive is remotely verified and evicted. Path containment, Hunter
-head autorepeat and Fire native landings remain accepted. Do not rerun Magmaw
-merely to repeat those observations.
+Elemental's accepted 88.9522% calibration remains closed. Latest canonical
+Magmaw remains the accepted `090f24f4b8` clear: 128,636.918 DPS and 19,225.751 HPS
+over 233 damage-bearing seconds, two recovered trash deaths, zero boss deaths,
+all ten alive, exact canonical loadouts. Its evidence is remotely verified and
+evicted. Retained WCL has 1 tank, 1 healer and 8 DPS versus our 2/3/5; its
+aggregate is not a roster floor. No current development calibration is training
+eligible because its external evidence identity remains incomplete.
 
 ## Prior accepted calibration and raid evidence
 

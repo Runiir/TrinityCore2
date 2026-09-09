@@ -1,46 +1,43 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "capture:calibration_heartbeat_partition",
+  "work_unit": "fire:orb_straight_collision_motion",
   "owner_skill": "raid-performance-loop",
-  "classification": "calibration_capture_and_native_orb_lifecycle",
+  "classification": "native_projectile_destination_and_execution",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "a3d0719729e86a6a00ef5ea46a2b2ee957e2d500",
+  "observed_at_commit": "ec02d7196a279d069ffac6c32f4ec4a99a39f404",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Capture and Orb implementations independently approved; freeze and queued build next",
+  "gate_state": "Orb straight collision implementation independently approved; Hunter canonical identity diagnosis and Affliction review pending",
   "first_broken_edge": {
-    "id": "fixed_heartbeat_partition_truncates_complete_native_calibration",
-    "owner_classification": "raid_evidence_lifecycle",
-    "cause": "Final1376chunk Fire export exceeded one20MiB partition while shared40MiB heartbeat budget had unused space;111suffixchunks/footer were lost.",
-    "review_state": "implementation_independently_approved_live_validation_pending"
+    "id": "orb_ground_navmesh_rewrites_forward_projectile_destination",
+    "owner_classification": "raid_class_mechanics_implementation",
+    "cause": "Ground-summoner endpoint calculation and second MovePoint pathfinding produce a route outside damage radius before its first tick.",
+    "review_state": "implementation_independently_approved_live_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "24ea008b53873e83f988e067e886caf11964fcb0bc0cd16202a3c62f007519cf"
+    "sha256": "d5fc39b6ad4f394285452d689015c95f9da93aac67a898f5da34874c63a4cfaf"
   },
   "scope_lock": {
-    "objective": "Retain complete bounded calibration exports and prevent native Flame Orb idle owner-follow from resuming after scripted point motion.",
+    "objective": "Preserve existing collision clipping and default movement behavior while Orb uses a straight native projectile path.",
     "owned_files": [
-      "tools/bot_ml/run_live_bot_validation.py",
-      "src/server/game/Bots/BotCalibrationSummonObservation.h",
-      "src/server/scripts/World/npcs_special.cpp",
-      "src/server/scripts/World/npcs_special_care.cpp",
-      "src/server/scripts/World/npcs_special_services.cpp",
-      "src/server/scripts/World/npcs_special_toys.cpp",
-      "src/server/scripts/World/npcs_special_summons.cpp"
+      "src/server/game/Entities/Object/WorldObjectMovement.h",
+      "src/server/game/Entities/Object/WorldObjectMovement.cpp",
+      "src/server/scripts/World/npcs_special_summons.cpp",
+      "tests/test_mage_flame_orb_scripted_motion.py",
+      "tests/test_worldobject_straight_collision.py"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Full1376chunk-sized calibration exports survive actual controller retention under unchanged64MiB cap with cleanup retained.",
-    "Any truncated or malformed attempted export is explicitly infrastructure loss before role evaluation; complete payload DPS failures remain role failures.",
-    "Only Orb inherited follow initialization changes; all moved NPC bodies and28registration identities/order remain identical; changedC++filesbelow1000lines.",
-    "Independent reviews, focused actual-caller fixtures and one queued native build pass.",
-    "Exact300s Fire window retains normalized stats/cadence/movement/deaths/DPS/HPS, no resumed ownerFollow and nonzero attributable82739 damage.",
-    "Publish closed evidence, verify fresh remote reconstruction, then evict exact payloads after raw reads complete."
+    "Default callers retain existing native pathfinding/collision behavior.",
+    "Orb producer and both movement submissions use collision-clipped straight motion; no spell, target, timer or coefficient changes.",
+    "Focused behavioral tests and independent review pass; changed C++ files remain below 1000 lines.",
+    "Matched 300-second Fire run retains complete evidence, accepted stats/cadence and idle motion zero; Orb gains 82736 and nonzero owner-attributed 82739.",
+    "Publish closed evidence and verify remote reconstruction before exact raw eviction."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -51,7 +48,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Freeze reviewed capture/Orb batch, build once, run exact 300-second Fire calibration with complete export and native Orb motion/damage verification.",
+  "next_action": "Freeze reviewed Orb repair, build, and verify matched Fire trajectory, snare and landed damage while independent Hunter identity diagnosis continues.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -97,7 +94,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approved_for_build",
-    "scope": "Retain complete bounded calibration exports and prevent native Flame Orb idle owner-follow from resuming after scripted point motion.",
+    "scope": "Preserve existing collision clipping and default movement behavior while Orb uses a straight native projectile path.",
     "live_verified": false
   },
   "related_edges": [
@@ -156,25 +153,23 @@
     "dvc_pointer": "artifacts/cata_raid_program/elemental_calibration_27200f36cc_20260908.tar.gz.dvc"
   },
   "latest_fire_calibration": {
-    "source_commit": "a3d0719729e86a6a00ef5ea46a2b2ee957e2d500",
-    "scoring_started": true,
-    "native_window_complete_observed": true,
+    "source_commit": "ec02d7196a279d069ffac6c32f4ec4a99a39f404",
+    "window_complete": true,
     "scored_seconds": 300,
-    "measured_dps": 28821.683333333334,
-    "measurement_basis": "exact native prefix fields; full export incomplete",
-    "calibration_transport_complete": false,
+    "measured_damage": 8706311,
+    "measured_dps": 29021.036666666667,
+    "measured_hps": 0,
+    "decision_count": 2998,
+    "calibration_transport_complete": true,
+    "received_chunks": 1399,
     "dps_accepted": false,
-    "failure": "infrastructure_loss",
-    "learned_wizardry_present": true,
-    "native_intellect_multiplier": 1.05,
+    "hard_floor_passed": true,
+    "optimization_target_passed": false,
     "cleanup_passed": true,
     "postrun_build_verified": true,
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_a3d0719729_20260909.tar.gz.dvc",
-    "measured_hps": 0,
-    "decision_count": 2998,
-    "native_successful_actions": 169,
-    "observed_mean_decision_interval_ms": 100.087
+    "review_state": "frozen",
+    "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_ec02d7196a_20260909.tar.gz.dvc"
   }
 }

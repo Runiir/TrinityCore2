@@ -16,6 +16,7 @@
  */
 
 #include "Object.h"
+#include "WorldObjectMovement.h"
 #include "BattlefieldMgr.h"
 #include "Battleground.h"
 #include "CellImpl.h"
@@ -230,7 +231,13 @@ void WorldObject::MovePosition(Position &pos, float dist, float angle)
 
 void WorldObject::MovePositionToFirstCollision(Position &pos, float dist, float angle)
 {
-    angle += GetOrientation();
+    WorldObjectMovement::MovePositionToFirstCollision(*this, pos, dist, angle, true);
+}
+
+void WorldObjectMovement::MovePositionToFirstCollision(WorldObject& object, Position& pos,
+    float dist, float angle, bool usePathfinding)
+{
+    angle += object.GetOrientation();
     float destx, desty, destz;
     destx = pos.m_positionX + dist * std::cos(angle);
     desty = pos.m_positionY + dist * std::sin(angle);
@@ -243,32 +250,38 @@ void WorldObject::MovePositionToFirstCollision(Position &pos, float dist, float 
         return;
     }
 
-    // Use a detour raycast to get our first collision point
-    PathGenerator path(this);
-    path.SetUseRaycast(true);
-    path.CalculatePath(destx, desty, destz, false);
-
-    // We have a invalid path result. Skip further processing.
-    if (!(path.GetPathType() & PATHFIND_NOT_USING_PATH))
+    bool checkStaticCollision = !usePathfinding;
+    if (usePathfinding)
     {
-        // Then check if we have any other flag that makes the result invalid
-        if (path.GetPathType() & ~(PATHFIND_NORMAL | PATHFIND_SHORTCUT | PATHFIND_INCOMPLETE | PATHFIND_FARFROMPOLY_END | PATHFIND_NOT_USING_PATH))
-            return;
+        // Use a detour raycast to get our first collision point
+        PathGenerator path(&object);
+        path.SetUseRaycast(true);
+        path.CalculatePath(destx, desty, destz, false);
+
+        // We have a invalid path result. Skip further processing.
+        if (!(path.GetPathType() & PATHFIND_NOT_USING_PATH))
+        {
+            // Then check if we have any other flag that makes the result invalid
+            if (path.GetPathType() & ~(PATHFIND_NORMAL | PATHFIND_SHORTCUT | PATHFIND_INCOMPLETE | PATHFIND_FARFROMPOLY_END | PATHFIND_NOT_USING_PATH))
+                return;
+        }
+
+        G3D::Vector3 result = path.GetPath().back();
+        destx = result.x;
+        desty = result.y;
+        destz = result.z;
+
+        checkStaticCollision = path.GetPathType() & PATHFIND_NOT_USING_PATH;
     }
 
-    G3D::Vector3 result = path.GetPath().back();
-    destx = result.x;
-    desty = result.y;
-    destz = result.z;
-
     // Object is using a shortcut. Check static LOS
-    float halfHeight = GetCollisionHeight() * 0.5f;
+    float halfHeight = object.GetCollisionHeight() * 0.5f;
     bool col = false;
 
-    // Unit is flying. Do a VMap check to avoid moving the position into walls or obstacles
-    if (path.GetPathType() & PATHFIND_NOT_USING_PATH)
+    // Flying or explicit straight movement still clips against static obstacles.
+    if (checkStaticCollision)
     {
-        uint32 terrainMapId = PhasingHandler::GetTerrainMapId(GetPhaseShift(), GetMapId(), GetMap()->GetTerrain(), pos.m_positionX, pos.m_positionY);
+        uint32 terrainMapId = PhasingHandler::GetTerrainMapId(object.GetPhaseShift(), object.GetMapId(), object.GetMap()->GetTerrain(), pos.m_positionX, pos.m_positionY);
         col = VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(terrainMapId,
             pos.m_positionX, pos.m_positionY, pos.m_positionZ + halfHeight,
             destx, desty, destz + halfHeight,
@@ -286,7 +299,7 @@ void WorldObject::MovePositionToFirstCollision(Position &pos, float dist, float 
     }
 
     // check dynamic collision
-    col = GetMap()->getObjectHitPos(GetPhaseShift(),
+    col = object.GetMap()->getObjectHitPos(object.GetPhaseShift(),
         pos.m_positionX, pos.m_positionY, pos.m_positionZ + halfHeight,
         destx, desty, destz + halfHeight,
         destx, desty, destz, -0.5f);
@@ -304,22 +317,22 @@ void WorldObject::MovePositionToFirstCollision(Position &pos, float dist, float 
     float groundZ = VMAP_INVALID_HEIGHT_VALUE;
     Trinity::NormalizeMapCoord(pos.m_positionX);
     Trinity::NormalizeMapCoord(pos.m_positionY);
-    UpdateAllowedPositionZ(destx, desty, destz, &groundZ);
+    object.UpdateAllowedPositionZ(destx, desty, destz, &groundZ);
 
-    pos.SetOrientation(GetOrientation());
+    pos.SetOrientation(object.GetOrientation());
     pos.Relocate(destx, desty, destz);
 
     // position has no ground under it (or is too far away)
     if (groundZ <= INVALID_HEIGHT)
     {
-        if (Unit const* unit = ToUnit())
+        if (Unit const* unit = object.ToUnit())
         {
             // flying, ignore.
             if (unit->CanFly())
                 return;
 
             // fall back to gridHeight if any
-            float gridHeight = GetMap()->GetGridHeight(GetPhaseShift(), pos.m_positionX, pos.m_positionY);
+            float gridHeight = object.GetMap()->GetGridHeight(object.GetPhaseShift(), pos.m_positionX, pos.m_positionY);
             if (gridHeight > INVALID_HEIGHT)
                 pos.m_positionZ = gridHeight + unit->GetHoverOffset();
         }

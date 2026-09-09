@@ -1,0 +1,232 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "ec02d7196a279d069ffac6c32f4ec4a99a39f404",
+  "archive_sha256": "80a0d62bb7c4399bdb4d42a76e827c6b07972d2efc5498f444258d44b87f5ce2",
+  "archive_bytes": 6210009,
+  "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_ec02d7196a_20260909.tar.gz.dvc",
+  "remote_download_sha256": "80a0d62bb7c4399bdb4d42a76e827c6b07972d2efc5498f444258d44b87f5ce2",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "terminal_reason": "combat_calibration_complete",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-ec02d7196a/configure.log",
+      "bytes": 15529,
+      "sha256": "c654e99c46559b9828e0ebeac4294ec581dae6aadb74f774a775cfd1e848080c"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/configure_receipt.json",
+      "bytes": 13611,
+      "sha256": "7e38776599f76e8adeaf91066a335f2a9ef111028175118d38edc9c89ba34178"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/configure_verification.json",
+      "bytes": 536,
+      "sha256": "3d60d54d25ddde3f65354f368e85ad168339db402a903ee90109af501546d730"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/map-0-asset-preflight.json",
+      "bytes": 6041883,
+      "sha256": "97f8979301b8839aee30553c3e31d6abed33dad22a2393c62b0c9fde1aa7c245"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/map-669-asset-preflight.json",
+      "bytes": 5454509,
+      "sha256": "f6615fdc89c34356ea4d129c19379ed21db98bea9ef53e93dc991c3ad6a8dd40"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "aa69ec8cb354647580ed43ba7f0af30018843631bd8ba0297b97b3623d361e3f"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/review-context/fire-a3-capture-implementation-review-addendum.md",
+      "bytes": 2276,
+      "sha256": "a58a365906052aec215546d6322e7f76d2f7982f30cf8fa39697f78b3b5bbcbd"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/review-context/fire-a3-capture-repair.md",
+      "bytes": 8877,
+      "sha256": "2756e46444f7a1d99477e2336cfd977d1cb8ac21d89a1a9c6b53d0ed838d7c45"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/review-context/flame-orb-2b-native-diagnosis.md",
+      "bytes": 10266,
+      "sha256": "222887d86a31706a49bacc05f0ec5098aee923eb6fccbe86a2b9d2056fa05835"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/review-context/flame-orb-implementation-review.md",
+      "bytes": 5095,
+      "sha256": "31a2dbf2ffefe1c12fe366eeea51e5d040e6a4f1b3acfd16b1793f5a07973c6b"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/review-context/flame-orb-implementation.md",
+      "bytes": 3995,
+      "sha256": "979adc6e470b8aadfbd4aae42ea13ae89edb2fd9c3eeeba21eacf09caff3faed"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "d484e7a5bce8b9def077e1cabf5de035d3d027950a63dfe49dd9c79b470e787f"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/worldserver_build.log",
+      "bytes": 32223,
+      "sha256": "d0ec9245e7f070fa6e9127058bbe2c3fe13262fe55a268c6b1184b3a2661ebb4"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/worldserver_build_receipt.json",
+      "bytes": 24244,
+      "sha256": "c75d935b154e7cd9e0985c02ebe169cd7637256dddaeb8ac9e778925d292e7f5"
+    },
+    {
+      "path": "build-preflight-ec02d7196a/worldserver_build_verification.json",
+      "bytes": 536,
+      "sha256": "f0a3f0df83fd0eb1d2530405efabb4638ec1e89e51a29219017f55308d2ddb47"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/bot_pool_reset/reset_bot_pool.sql",
+      "bytes": 7817,
+      "sha256": "7a69716b1ffebac975da291391005a779903730028d28855f352968aff012af0"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/calibration_consumable_restock/fire_mage.sql",
+      "bytes": 1732,
+      "sha256": "70898035eac06f50a36eb043c931dec9aa6f837af7a99dcf5f5d4ae918876d89"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/calibration_known_spells.json",
+      "bytes": 1348,
+      "sha256": "640d86860b610ca0544da0ac3489667ef8cdc13f906853545a719cc2d09da0af"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/cleanup_readback.json",
+      "bytes": 731,
+      "sha256": "2257d8eb6874a2061c268962458807805322e559991cf3c0f737c3ccb106d57f"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/closed_summary.json",
+      "bytes": 861,
+      "sha256": "9ce15706172216740e9e9547516dc2cc9b14a6d931bbf2b5ec1f2542dc1bdede"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/combat_analysis.json",
+      "bytes": 295,
+      "sha256": "886c54a50dc61c67ee6bc92dd09dbeb963332ec8b043efd78eca7d516c7c4fc1"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/combat_log.json",
+      "bytes": 674,
+      "sha256": "1cda442a918bebc7145d88877edf6567354af3fa4b3dd4b43377eaf22c40f374"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/commands.txt",
+      "bytes": 193,
+      "sha256": "a74fa5945658361c59cf7ce2536eda0146de81f02a33608bd504b4538cfe9875"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/dps-review/fire-calibration-compact.json",
+      "bytes": 8934,
+      "sha256": "adf9923281615d0ddbccda3f4a0bc4d99489f379aaab0c676f5acfb1185f984d"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/dps-review/fire-calibration-review.md",
+      "bytes": 7420,
+      "sha256": "e7c97de1f2d021494b803e72b36131a38d4e9cd06f3175ea2b5cc88805a4ba8c"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/dps-review/flame-orb-live-compact.json",
+      "bytes": 8407,
+      "sha256": "720240ac2b880a187e5bea9bd4fb25cefa7375982353c9e122be360ae70cf7c3"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/dps-review/flame-orb-live-review.md",
+      "bytes": 9517,
+      "sha256": "0e3d8e9f0d147d3f87c0de98bb574a281e57ed3f7fbc141605dc465c64b30ede"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/heartbeat_events.jsonl",
+      "bytes": 8739,
+      "sha256": "f2b3eac74861b6dcdf3fdbe8d1824d861cbbb3af1a5de03a54cd63771ec709bf"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/heartbeat_manifest.json",
+      "bytes": 374,
+      "sha256": "a78d7447b0cb36032cf121b218854281dd448abb27e1b7f823a2b4de23fca951"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/latest.json",
+      "bytes": 33599477,
+      "sha256": "92e50dd93b28247c2ee788784859adcd87d1831290ddf76365bba5616f59d1b8"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/report.json",
+      "bytes": 75392866,
+      "sha256": "272d7c2ab24ded1c4222e5778eb6964cc1d2756287971dc042c4cf78570e15b3"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/review_freeze.json",
+      "bytes": 978,
+      "sha256": "e9b9c5adaede536f00de97580b9c6dcfd6c1ce7871b8ea77dad448b9f26e73c4"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/worldserver.validation.conf",
+      "bytes": 156993,
+      "sha256": "90a34382278bfa71faa94a07ad98aa8b89c4d8debad0101d451b25756cfa30dd"
+    },
+    {
+      "path": "calibration-fire_mage-ec02d7196a/worldserver_output.log",
+      "bytes": 24043777,
+      "sha256": "61a00b8ed21df253c7e13e8e986b5f0e3e4f2720a06e0f519ac0c873e791cacb"
+    },
+    {
+      "path": "run-spec-calibration.py",
+      "bytes": 2696,
+      "sha256": "67b80e243b7b52b421c46f08be89263f0c8e58a8a99087fedc53aa1ec4503ae9"
+    },
+    {
+      "path": "publish-spec-calibration.py",
+      "bytes": 3613,
+      "sha256": "25e94de1679a437657eb563091dbd3c488703480d5ce6db8076039d730a087cc"
+    },
+    {
+      "path": "evict-spec-calibration.py",
+      "bytes": 1782,
+      "sha256": "770d48354a214610a8de89064d49168c991544a5c0ee1758cd2bd3e5af68471c"
+    },
+    {
+      "path": "calibration-fire_mage-launch-ec02d7196a.json",
+      "bytes": 2286,
+      "sha256": "df8e1e23cb1897014084cc4608f449d019fd7da31507bf4e0aa9f9a2ecdbc22f"
+    },
+    {
+      "path": "calibration-fire_mage-console-ec02d7196a.log",
+      "bytes": 75392866,
+      "sha256": "272d7c2ab24ded1c4222e5778eb6964cc1d2756287971dc042c4cf78570e15b3"
+    },
+    {
+      "path": "calibration-fire_mage-postbuild-ec02d7196a.json",
+      "bytes": 537,
+      "sha256": "43a5161bce9b0e1fd410bf81b1acb13d595db4efb355b7327fc6e1daa0822f6f"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    "calibration-fire_mage-ec02d7196a/report.json",
+    "calibration-fire_mage-ec02d7196a/latest.json",
+    "calibration-fire_mage-ec02d7196a/worldserver_output.log"
+  ]
+}
