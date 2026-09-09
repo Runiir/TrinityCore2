@@ -123,6 +123,12 @@ the item manifest matches.
 Use `tools.bot_ml.run_wowsims_exact_references` for build, materialization,
 generation, DVC reconstruction, promotion-index construction, and promotion.
 Inspect each subcommand's `--help`; never handcraft receipt JSON.
+Generation and reconstruction require a clean evidence checkout at their exact
+admission or pointer commit. During parallel implementation, use the existing
+idle frozen checkout for this work; do not point reconstruction at the dirty
+worker checkout. Resolve abbreviated Git names to full commit hashes before
+calling the CLI. An unpublished generation receipt is intentionally not
+gate-bearing; validate its candidate classification before publication.
 
 Generate all 16 DPS specs as one cohort per reference class because promotion
 is all-or-nothing. Do not mix reference classes in one promotion. One owner

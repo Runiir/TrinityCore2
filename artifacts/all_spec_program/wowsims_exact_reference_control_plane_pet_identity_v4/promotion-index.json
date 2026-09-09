@@ -1,0 +1,222 @@
+{
+  "schema": "wowsims_generated_reference_promotion_index_v1",
+  "publication_domain": {
+    "repository_url": "git@github.com:Runiir/TrinityCore2.git",
+    "repository_revision": "b4ae797840fa5961099226d932585952b324a0e0",
+    "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4.dvc",
+    "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4",
+    "pending_request_catalog_sha256": "7b82da539607058244373e9893a0ba269d696f314feffd74d29bdaa762467d3c",
+    "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
+  },
+  "entries": [
+    {
+      "target_spec": "affliction_warlock",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/9126135e27571fd7e287e5bfdc2efb5cee996efc023b2f7d57822dfbf3db0eb8.json",
+        "sha256": "9126135e27571fd7e287e5bfdc2efb5cee996efc023b2f7d57822dfbf3db0eb8",
+        "byte_count": 16723
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "arms_warrior",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/4db0edc26dc70d354a646686eb210620bedb1700200bf3689a8ca3ce18e0ebae.json",
+        "sha256": "4db0edc26dc70d354a646686eb210620bedb1700200bf3689a8ca3ce18e0ebae",
+        "byte_count": 11679
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "assassination_rogue",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/c7c73206fb3f1850f0d3ee1a26681fb118c011be94ae9d7481e617d730522e3c.json",
+        "sha256": "c7c73206fb3f1850f0d3ee1a26681fb118c011be94ae9d7481e617d730522e3c",
+        "byte_count": 11440
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "balance_druid",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/4c5e60d9ede1172c23c173c57bd962468f30b9e169e6624aee285a8ac0afcba9.json",
+        "sha256": "4c5e60d9ede1172c23c173c57bd962468f30b9e169e6624aee285a8ac0afcba9",
+        "byte_count": 11451
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "combat_rogue",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/5882e73dc94eeb4827a83e27f7e253f7096433d34800543ac2cb3c1c85f9bdc8.json",
+        "sha256": "5882e73dc94eeb4827a83e27f7e253f7096433d34800543ac2cb3c1c85f9bdc8",
+        "byte_count": 11452
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "demonology_warlock",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/51ced8b45239fdd0a8270b913b8c93a04fdcd2cd8c3bf07fbc9e7c0705031ab2.json",
+        "sha256": "51ced8b45239fdd0a8270b913b8c93a04fdcd2cd8c3bf07fbc9e7c0705031ab2",
+        "byte_count": 16782
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "elemental_shaman",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/f6d140e04683287f7a48571bf00aef0933231618e6b7b252ef1d123de9d4c8ab.json",
+        "sha256": "f6d140e04683287f7a48571bf00aef0933231618e6b7b252ef1d123de9d4c8ab",
+        "byte_count": 11266
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "feral_druid_dps",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/50739721cf5d24115e2279865ba7a193bbe895161ccfa0b1ac2df9696e4da3c0.json",
+        "sha256": "50739721cf5d24115e2279865ba7a193bbe895161ccfa0b1ac2df9696e4da3c0",
+        "byte_count": 11423
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "fire_mage",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/2fe743a52883e4e100f2be0a3e2a531f14eb97be57e429224f3a8a2c265c0d22.json",
+        "sha256": "2fe743a52883e4e100f2be0a3e2a531f14eb97be57e429224f3a8a2c265c0d22",
+        "byte_count": 11432
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "frost_death_knight",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/5181bace450f6f7aaaf0b4ee7d9daa28fb78a342af8c344313e134a6529d3d70.json",
+        "sha256": "5181bace450f6f7aaaf0b4ee7d9daa28fb78a342af8c344313e134a6529d3d70",
+        "byte_count": 11590
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "fury_warrior",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/519b709787b8cd999af474cf520bb735f5606c10fd6119c59fcc8b7d11b1e137.json",
+        "sha256": "519b709787b8cd999af474cf520bb735f5606c10fd6119c59fcc8b7d11b1e137",
+        "byte_count": 11671
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "marksmanship_hunter",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/962ee11fb614dafd940ceda96d225dfb56953979f45d3e547b63d4978ea613c0.json",
+        "sha256": "962ee11fb614dafd940ceda96d225dfb56953979f45d3e547b63d4978ea613c0",
+        "byte_count": 16290
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "retribution_paladin",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/9a3c88b219c93d8e2fdd1c391e575889901f59df3e3007b8be3fa9f968b2179f.json",
+        "sha256": "9a3c88b219c93d8e2fdd1c391e575889901f59df3e3007b8be3fa9f968b2179f",
+        "byte_count": 11646
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "shadow_priest",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/3e76f8596934a5e67e328f786fb14ec6959a261af034a4b37dc8213464d7f7d7.json",
+        "sha256": "3e76f8596934a5e67e328f786fb14ec6959a261af034a4b37dc8213464d7f7d7",
+        "byte_count": 11362
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "survival_hunter",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/931c62dd4068dd6502dca869a9d9dcad5934aaa587474d31ac9b5ecbef67eb65.json",
+        "sha256": "931c62dd4068dd6502dca869a9d9dcad5934aaa587474d31ac9b5ecbef67eb65",
+        "byte_count": 16346
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    },
+    {
+      "target_spec": "unholy_death_knight",
+      "generation_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/generation_receipts/0b09feddb5f4e544d349753e236a1e44bb45d831e2266b3afc3acbf80bb69336.json",
+        "sha256": "0b09feddb5f4e544d349753e236a1e44bb45d831e2266b3afc3acbf80bb69336",
+        "byte_count": 16014
+      },
+      "dvc_reconstruction_receipt": {
+        "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5.json",
+        "sha256": "a98f4d1e91da48b9dc25fe5048915caee6f92ae5441cdb4919e26e156c0c17d5",
+        "byte_count": 115166
+      }
+    }
+  ],
+  "index_sha256": "751e7ad52253c05de5d82335e95a7dcfa1de417705a10d0e4dcf152670fb5836"
+}
