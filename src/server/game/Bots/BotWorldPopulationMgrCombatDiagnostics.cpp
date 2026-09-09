@@ -105,6 +105,9 @@ std::string BotWorldPopulationMgr::BuildCombatAttemptJson(WorldBotState::CombatA
          << ",\"target_attackable\":" << (diagnostic.TargetAttackable ? "true" : "false") << "}}"
          << ",\"uptime\":{\"melee_auto_attacking\":" << (diagnostic.MeleeAutoAttacking ? "true" : "false")
          << ",\"ranged_auto_active\":" << (diagnostic.RangedAutoActive ? "true" : "false")
+         << ",\"ranged_auto_spell_id\":" << diagnostic.RangedAutoSpellId
+         << ",\"ranged_auto_target_guid\":" << diagnostic.RangedAutoTargetGuid.GetCounter()
+         << ",\"ranged_auto_target_entry\":" << diagnostic.RangedAutoTargetEntry
          << ",\"pet_attacking\":" << (diagnostic.PetAttacking ? "true" : "false") << "}"
          << ",\"pet\":{\"guid\":" << diagnostic.PetGuid
          << ",\"entry\":" << diagnostic.PetEntry
@@ -186,7 +189,18 @@ void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bo
             || (spellInfo ? bot->IsValidAttackTarget(actionTarget, spellInfo)
                 : bot->IsValidAttackTarget(actionTarget)));
     diagnostic.MeleeAutoAttacking = bot && bot->HasUnitState(UNIT_STATE_MELEE_ATTACKING) && bot->GetVictim();
-    diagnostic.RangedAutoActive = bot && bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
+    if (Spell* repeat = bot ? bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL) : nullptr)
+    {
+        diagnostic.RangedAutoActive = true;
+        if (SpellInfo const* repeatInfo = repeat->GetSpellInfo())
+            diagnostic.RangedAutoSpellId = repeatInfo->Id;
+        if (Unit* repeatTarget = repeat->m_targets.GetUnitTarget())
+        {
+            diagnostic.RangedAutoTargetGuid = repeatTarget->GetGUID();
+            if (Creature const* creature = repeatTarget->ToCreature())
+                diagnostic.RangedAutoTargetEntry = creature->GetEntry();
+        }
+    }
     if (bot)
         if (Pet* pet = bot->GetPet())
         {

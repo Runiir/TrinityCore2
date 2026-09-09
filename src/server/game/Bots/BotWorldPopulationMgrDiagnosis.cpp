@@ -119,6 +119,17 @@ std::string BuildServerVehicleExitLandingJson(
          << episode.BoundGroundingReceiptId
          << ",\"bound_grounding_receipt_armed_at_ms\":"
          << episode.BoundGroundingReceiptArmedAtMs
+         << ",\"submitted_ground_receipt_id\":" << episode.SubmittedGroundReceiptId
+         << ",\"ground_submitted_at_ms\":" << episode.GroundSubmittedAtMs
+         << ",\"awaiting_ground_receipt\":" << (episode.AwaitingGroundReceipt ? "true" : "false")
+         << ",\"submitted_bot_guid\":" << episode.SubmittedBotGuid
+         << ",\"submitted_map_id\":" << episode.SubmittedMapId
+         << ",\"submitted_instance_id\":" << episode.SubmittedInstanceId
+         << ",\"submitted_scope\":{\"attempt_id\":" << episode.SubmittedScope.AttemptId
+         << ",\"wipe_generation\":" << episode.SubmittedScope.WipeGeneration
+         << ",\"route_generation\":" << episode.SubmittedScope.RouteGeneration
+         << ",\"map_id\":" << episode.SubmittedScope.MapId
+         << ",\"instance_id\":" << episode.SubmittedScope.InstanceId << "}"
          << ",\"native_fall\":{\"attempted\":" << (episode.LastFall.Attempted ? "true" : "false")
          << ",\"submitted_at_ms\":" << episode.LastFall.SubmittedAtMs
          << ",\"spline_id\":" << episode.LastFall.SplineId

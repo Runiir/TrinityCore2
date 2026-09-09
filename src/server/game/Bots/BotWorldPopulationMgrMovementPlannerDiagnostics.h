@@ -44,10 +44,13 @@ inline PrimaryDisposition ClassifyPrimaryDisposition(
 
 struct NativePathControlSequence
 {
+    static constexpr std::size_t MaxRetainedControls = 32;
     bool Available = false;
     std::string CoordinateSpace = "unavailable";
     std::size_t ControlCount = 0;
     std::uint64_t Fingerprint = 0;
+    // Ordered prefix copied from the actual producer, never reconstructed.
+    std::vector<NativePathControl> OrderedControls;
 };
 
 struct NativePathPosition

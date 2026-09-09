@@ -150,7 +150,12 @@ int main()
     launchContext.Observer->OnPointGeneratorInitialize(launchContext);
     launchContext.Observer->OnSplinePreparation(launchContext, true, true, 1,
         planned, false, false);
-    launchContext.Observer->OnSplineLaunch(launchContext, planned,
+    // Distinct native inputs: these are synthetic producer values, not the
+    // seven hidden coordinates from the closed Magmaw report.
+    std::vector<NativePathControl> nativeControls;
+    for (int index = 0; index < 7; ++index)
+        nativeControls.emplace_back(float(100 + index), float(-40 + index), float(211 - index));
+    launchContext.Observer->OnSplineLaunch(launchContext, nativeControls,
         Movement::NativePathLaunchCoordinateSpace::World, true, false,
         true, 44, intent.X, intent.Y, intent.Z,
         -311.814f, -32.2758f, 211.39f);
@@ -427,6 +432,20 @@ int main()
         .LaunchReceipt.ProgressCaptureEnabled);
 
     std::string const serialized = MovementPlannerObservationJson(traced);
+    MovementPlannerObservation unavailable = traced;
+    unavailable.LaunchReceipt.PlannerControls = {};
+    std::string const unavailableJson = MovementPlannerObservationJson(unavailable);
+    std::vector<NativePathControl> longControls;
+    for (std::size_t index = 0; index < NativePathControlSequence::MaxRetainedControls + 3; ++index)
+        longControls.emplace_back(float(index), float(index + 1), float(index + 2));
+    MovementPlannerObservation truncated = traced;
+    truncated.LaunchReceipt.PlannerControls = ObserveNativePathControls(longControls, "transport_local");
+    assert(truncated.LaunchReceipt.PlannerControls.Fingerprint == NativePathControlsFingerprint(longControls));
+    // The snapshot owns its copied coordinates; later source changes cannot
+    // rewrite an already retained receipt or its fingerprint.
+    longControls[0].z = -999;
+    std::string const truncatedJson = MovementPlannerObservationJson(truncated);
+
 
     // Planner selection has moved to newerId, so its selected observation no
     // longer publishes the retained terminal progress for receiptId.
@@ -607,7 +626,9 @@ int main()
         .RequestedReceiptId == retryId);
 
     std::cout << "{\"planner\":" << serialized
-        << ",\"receipt_progress\":" << receipt598HistoryJson << "}";
+        << ",\"receipt_progress\":" << receipt598HistoryJson
+        << ",\"unavailable\":" << unavailableJson
+        << ",\"truncated\":" << truncatedJson << "}";
 }
 """
 
@@ -695,6 +716,11 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
         "coordinate_space": "world",
         "count": 2,
         "fingerprint": "0f6c4d95882b3e0f",
+        "retained_count": 2, "capacity": 32, "complete": True, "truncated": False,
+        "ordered_controls": [
+            {"x": -311, "y": -32, "z": 211.5},
+            {"x": -308.910004, "y": -36.4524002, "z": 211.580994},
+        ],
     }
     assert receipt["planner_path"]["floor_observation_conflict"] is True
     assert receipt["executor"]["generate_path"] is True
@@ -729,7 +755,25 @@ def test_native_path_launch_receipt_value_and_schema(tmp_path):
     assert receipt["progress"]["samples"][1]["endpoint_progress"][
         "reached"
     ] is True
-    assert "ordered_controls" not in json.dumps(receipt)
+    planner_controls = receipt["planner_path"]["controls"]
+    second_controls = receipt["launches"][0]["second_path"]["controls"]
+    native_controls = receipt["launches"][0]["spline_launch"]["controls"]
+    assert second_controls == planner_controls
+    assert native_controls["ordered_controls"] == [
+        {"x": 100 + index, "y": -40 + index, "z": 211 - index} for index in range(7)]
+    assert native_controls["count"] == native_controls["retained_count"] == 7
+    assert native_controls["complete"] is True and native_controls["truncated"] is False
+    assert native_controls["fingerprint"] != planner_controls["fingerprint"]
+    unavailable = output["unavailable"]["launch_receipt"]["planner_path"]["controls"]
+    assert unavailable["available"] is False and unavailable["complete"] is False
+    assert unavailable["truncated"] is False
+    assert unavailable["ordered_controls"] == [] and unavailable["retained_count"] == 0
+    truncated = output["truncated"]["launch_receipt"]["planner_path"]["controls"]
+    assert truncated["coordinate_space"] == "transport_local"
+    assert truncated["count"] == 35 and truncated["retained_count"] == truncated["capacity"] == 32
+    assert truncated["complete"] is False and truncated["truncated"] is True
+    assert truncated["ordered_controls"] == [
+        {"x": index, "y": index + 1, "z": index + 2} for index in range(32)]
     assert receipt_progress["bot_guid"] == 30007
     assert receipt_progress["active_receipt_id"] == 599
     assert receipt_progress["ordering"] == "active_then_newest"

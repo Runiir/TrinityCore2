@@ -994,3 +994,76 @@ int main() {
                     '-I', str(ROOT / 'src/server/game'), '-I', str(ROOT / 'src/common'),
                     str(source), '-o', str(binary)], check=True)
     subprocess.run([str(binary)], check=True)
+
+
+def test_vehicle_exit_diagnosis_serializes_submitted_receipt_identity(tmp_path):
+    import json
+
+    # Execute the production episode JSON stream, including last_evaluation.
+    # The remaining current-player/progress serializers are independent inputs.
+    diagnosis = DIAGNOSIS.read_text()
+    start = diagnosis.index('    std::ostringstream json;', diagnosis.index('episode.BoundGroundingReceiptId'))
+    end = diagnosis.index('         << ",\\\"current\\\":', start)
+    stream = diagnosis[start:end] + ' << "}"; return json.str();'
+    source = tmp_path / 'submitted_diagnosis.cpp'
+    source.write_text(r'''
+#include "Bots/BotServerVehicleExitLanding.h"
+#include <cassert>
+#include <iostream>
+#include <sstream>
+using namespace BotServerVehicleExitLanding;
+std::string VehicleExitJsonEscape(std::string const& value) { return value; }
+std::string Serialize(Episode const& episode) {
+''' + stream + r'''
+}
+struct Progress {
+    bool Available=true, Terminal=false, LaunchedSplineInitialized=true;
+    uint64_t ReceiptId=393, SupersededByReceiptId=0, ArmedAtMs=1800, BotGuid=30007;
+    uint32_t MapId=669, InstanceId=2, LaunchedSplineId=4936;
+    std::string TerminalOutcome="pending";
+    BotMovementArbitration::Scope Scope;
+};
+int main() {
+    Episode episode;
+    std::cout << Serialize(episode) << '\n';
+    episode.ExitPending=true; episode.ExitObservedAtMs=1000;
+    episode.ExitBotGuid=30007; episode.ExitMapId=669; episode.ExitInstanceId=2;
+    episode.ExitScopeAvailable=true;
+    episode.ExitScope.AttemptId=7; episode.ExitScope.WipeGeneration=3;
+    episode.ExitScope.RouteGeneration=4; episode.ExitScope.MapId=669;
+    episode.ExitScope.InstanceId=2;
+    assert(RememberGroundPointSubmission(episode,393,30007,669,2,1200,episode.ExitScope));
+    episode.LastReceiptId=391; episode.LastReceiptArmedAtMs=900;
+    episode.LastObservedAtMs=1500;
+    episode.LastReason="vehicle_exit_landing_ground_receipt_pending";
+    std::cout << Serialize(episode) << '\n';
+    Progress progress; progress.Scope=episode.ExitScope;
+    assert(BindSubmittedGroundReceipt(episode,progress));
+    std::cout << Serialize(episode) << '\n';
+}
+''')
+    binary = tmp_path / 'submitted_diagnosis'
+    subprocess.run(['g++', '-std=c++17', '-Wall', '-Wextra', '-Werror',
+                    '-I', str(ROOT / 'src/server/game'), '-I', str(ROOT / 'src/common'),
+                    str(source), '-o', str(binary)], check=True)
+    empty, pending, bound = map(json.loads, subprocess.check_output([str(binary)], text=True).splitlines())
+    fields = dict(submitted_ground_receipt_id=393, ground_submitted_at_ms=1200,
+                  submitted_bot_guid=30007, submitted_map_id=669, submitted_instance_id=2)
+    scope = dict(attempt_id=7, wipe_generation=3, route_generation=4, map_id=669, instance_id=2)
+    for key, value in fields.items():
+        assert empty[key] == 0
+        assert pending[key] == bound[key] == value
+    # Native Scope uses the invalid-map sentinel even with no submission.
+    assert empty['submitted_scope'] == dict(dict.fromkeys(scope, 0), map_id=0xFFFFFFFF)
+    assert pending['submitted_scope'] == bound['submitted_scope'] == scope
+    assert not empty['awaiting_ground_receipt']
+    assert pending['awaiting_ground_receipt'] and not bound['awaiting_ground_receipt']
+    assert pending['bound_grounding_receipt_id'] == 0
+    assert pending['bound_grounding_receipt_armed_at_ms'] == 0
+    assert bound['bound_grounding_receipt_id'] == 393
+    assert bound['bound_grounding_receipt_armed_at_ms'] == 1800
+    assert pending['exit_observed_at_ms'] == bound['exit_observed_at_ms'] == 1000
+    for snapshot in (pending, bound):
+        assert snapshot['last_evaluation']['receipt_id'] == 391
+        assert snapshot['last_evaluation']['receipt_armed_at_ms'] == 900
+        assert snapshot['last_evaluation']['observed_at_ms'] == 1500

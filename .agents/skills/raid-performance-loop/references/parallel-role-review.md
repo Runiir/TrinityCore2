@@ -10,6 +10,11 @@ and known telemetry limitations. Give each worker explicit actors and separate
 output files using exact absolute paths, not placeholders such as `OUT`.
 Reuse available evidence; do not regenerate simulator catalogs.
 
+Derive actor class/spec labels from the actual admission or loadout receipt,
+not remembered names or a prior handoff. If prose disagrees with that receipt,
+correct the shared context and notify affected reviewers; do not misclassify a
+handwritten label error as an actual roster change.
+
 Use Sol high for causal diagnosis. Group duplicate DPS specs under one reviewer;
 assign tank and healer review coverage too. Split a role group further when its
 distinct class failures warrant independent work. A worker applies one shared

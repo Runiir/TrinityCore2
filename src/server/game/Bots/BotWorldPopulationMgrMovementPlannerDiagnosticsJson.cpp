@@ -72,7 +72,23 @@ void AppendControlsJson(std::ostringstream& json,
          << JsonEscape(sequence.CoordinateSpace) << "\",\"count\":"
          << sequence.ControlCount << ",\"fingerprint\":\"" << std::hex
          << std::setw(16) << std::setfill('0') << sequence.Fingerprint
-         << std::dec << std::setfill(' ') << "\"}";
+         << std::dec << std::setfill(' ') << "\",\"retained_count\":"
+         << sequence.OrderedControls.size() << ",\"capacity\":"
+         << BotWorldMovement::NativePathControlSequence::MaxRetainedControls
+         << ",\"complete\":" << (sequence.Available
+             && sequence.OrderedControls.size() == sequence.ControlCount ? "true" : "false")
+         << ",\"truncated\":" << (sequence.Available
+             && sequence.OrderedControls.size() < sequence.ControlCount ? "true" : "false")
+         << ",\"ordered_controls\":[";
+    for (std::size_t index = 0; index < sequence.OrderedControls.size(); ++index)
+    {
+        BotWorldMovement::NativePathControl const& point = sequence.OrderedControls[index];
+        if (index)
+            json << ',';
+        json << "{\"x\":" << point.x << ",\"y\":" << point.y
+             << ",\"z\":" << point.z << '}';
+    }
+    json << "]}";
 }
 
 void AppendNativeProofJson(std::ostringstream& json,

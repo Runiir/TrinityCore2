@@ -1027,7 +1027,8 @@ def test_persistent_pet_guid_uses_creature_entry_not_database_pet_id():
 
     assert "Object::_Create(guidlow, Entry, HighGuid::Pet)" in create
     assert "Object::_Create(guidlow, petId, HighGuid::Pet)" not in create
-    assert "m_charmInfo->SetPetNumber(petId" in function_body(pet_cpp, "bool Pet::LoadPetData")
+    assert "m_charmInfo->SetPetNumber(petId" in function_body(
+        read(PET_CPP.with_name("PetPersistence.cpp")), "bool Pet::LoadPetData")
 
 
 def test_shaman_totems_are_combat_entry_setup_without_spam():

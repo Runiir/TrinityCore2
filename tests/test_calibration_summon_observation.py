@@ -53,7 +53,7 @@ struct Unit{
  ObjectGuid guid;Unit* owner=nullptr;Unit* victim=nullptr;Unit* helper=nullptr;std::set<Unit*> m_Controlled;
  float spellTime=0.8f,minDamage=17.25f,maxDamage=29.5f,attackPower=432.5f;int firePower=111;uint32 level=85;uint64 health=1234,maxHealth=2345;
  float GetFloatValue(int field)const{return field==UNIT_FIELD_MINDAMAGE?minDamage:(field==UNIT_FIELD_MAXDAMAGE?maxDamage:spellTime);}
- uint32 getLevel(){return level;}uint64 GetHealth(){return health;}uint64 GetMaxHealth(){return maxHealth;}
+ uint32 getLevel(){return level;}uint64 GetHealth(){return health;}uint64 GetMaxHealth()const{return maxHealth;}uint64 createHealth=1987;uint64 GetCreateHealth()const{return createHealth;}
  float GetTotalAttackPowerValue(int type){return attackPower;}int SpellBaseDamageBonusDone(int school)const{return firePower;}
  uint32 deathState=0;bool inWorld=true;uint32 getDeathState()const{return deathState;}bool IsInWorld()const{return inWorld;}
  bool alive=true,valid=true,engaged=true,guardian=false,pet=false,totem=false,ai=true;uint32 created=0;Spell* current=nullptr;
@@ -83,7 +83,7 @@ struct CalibrationMetrics{struct DecisionTimelineEntry{
 '''+header+r'''
 int main(){
  Player spellOwner;spellOwner.guid.raw=8589934599ULL;
- Player owner;owner.firePower=9999;owner.guid.raw=4294967297ULL;Player foreign;foreign.guid.raw=4294967300ULL;
+ Player owner;owner.maxHealth=120004;owner.firePower=9999;owner.guid.raw=4294967297ULL;Player foreign;foreign.guid.raw=4294967300ULL;
  Unit target;target.guid.raw=99;owner.helper=&target;
  Totem fire;fire.guid.raw=500;fire.entry=15439;fire.created=2894;fire.nativeOwner=&owner;fire.summoner=&owner;
  owner.m_SummonSlot[0]=fire.guid;owner.map.creatures[500]=&fire;
@@ -146,6 +146,9 @@ int main(){
     assert abs(idle["owner_spell_speed_multiplier"]-1.25)<0.000001
     assert active["owner_spell_speed_multiplier"]==2.0
     assert all(sample["owner_spell_speed_multiplier"] is None for sample in samples[4:])
+    assert idle['owner_max_health']==120004
+    assert active['owner_max_health']==120004
+    assert idle['guardians'][0]['create_health']==1987
     assert idle['owner_guid']==4294967297
     assert idle['owner_victim_guid']==0 and not idle['owner_victim_valid']
     assert idle['owner_helper_target_guid']==99
@@ -174,6 +177,7 @@ int main(){
     assert guardian['spell_mod_owner_guid']==0
     assert active['guardians'][0]['spell_mod_owner_guid']==8589934599
     assert active['guardians'][0]['spell_mod_owner_guid'] not in guardian['summoner_chain']
+    assert samples[-2]['owner_max_health'] is None
     assert samples[-2]['owner_fire_spell_power'] is None
     assert samples[-2]['owner_guid']==0 and samples[-2]['guardians']==[]
     assert samples[-2]['observed_elapsed_ms']==2500

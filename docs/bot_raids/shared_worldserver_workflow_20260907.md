@@ -33,37 +33,48 @@ verification pass. Prior 77 and startup-only 272 evidence are
 remotely verified and exact raw payloads evicted. Source 77 fixed ordinary
 updater replay of the tracked spell bindings; that accepted edge is closed.
 
-The latest Magmaw clear is source 798: 29,548,680 originated damage over 227
-combat seconds gives 130,170.396 DPS and 17,952.198 HPS. The 264.809-second elapsed
-span gives 111,584.878 DPS and 15,389.012 HPS. Ten bots survived the boss; two trash
-casualties recovered before it. Native death, route completion, cleanup and binary
-checks passed. Independent role reviews and correction addenda are frozen. The
-28,069,273-byte raid archive is remotely reconstructed and verified. Exact raw
-payloads and duplicate archive copies are evicted after all required trace reads.
-Actual composition remains 2 tanks / 3 healers / 5 DPS. The retained 378,849 DPS
-WCL kill used 1/1/8 and a different duration, so its total is not a matching floor.
+The latest Magmaw development clear is `d701b55d64`, with verified binary
+`b5987fe2569dcb3fdc0855ef41862039229b8b16b4785414b0eaf61f95673a14`.
+No worldserver is running. Native death, controller exit 0, fresh cleanup and
+post-run build verification passed. All ten actual provisioned loadouts matched.
+The canonical roster is 2 tanks / 3 healers / 5 DPS; actor 30003 is Restoration
+Druid. A handwritten Shaman label in the review handoff was corrected against
+actual admission data. The retained WCL kill used 1/1/8 and a Restoration Shaman.
 
-The current joined batch addresses two observed execution losses:
-- Fire actor 30007 remained 2.747315 yards above the sampled floor after vehicle
-  ejection; 16 Fireball attempts returned local casting over 17.001 seconds.
-  The corrected repair requires a real native fall and same-spline terminal floor
-  proof. Direct FALLING clearance is withdrawn in the frozen Fire addendum.
-- An in-range exposed-head DPS retained Mechanic ranged_formation_restore
-  movement, blocking hardcasts. The repair uses role, configured target range,
-  authoritative movement purpose and exact scope, preserving safety movement.
+Originated damage is 29,449,693 over 233 combat seconds: 126,393.532 DPS and
+13,558.386 HPS. Hostile events span 232.443 seconds. Boss death was 264.100 seconds after the
+first encounter event, giving 111,509.629 DPS over that span. The broader 339.660-second
+report span includes precombat and recovery healing and is not boss kill time.
+One late Protection Paladin death recovered; all ten were alive at cleanup.
+Overall DPS remains unresolved. Source and prior 798 raid/calibration evidence
+are pushed. All current reviews are frozen; the 28,016,939-byte raid archive
+is remotely reconstructed and verified, and exact raw/duplicate payloads evicted.
 
-Both repairs passed independent Sol review and actual-caller fixtures. Formation
-verification passes 15 tests; landing and related movement/interaction verification
-passes 10 tests. The formation test now represents MoveIdle accurately: native
-StopMoving is required, and controlled or replacement paths remain untouched.
-Batch `2a9f81ddc1` reached native compilation but missed the GridDefines include
-for floor constants. The include-only correction preserves reviewed behavior;
-the failed build receipt is retained with the subsequent build context. Next:
-freeze the correction, finish the incremental build and validate Magmaw. The separately approved observation patch captures native
-owned-guardian state during normal raids: Elemental's guardian stopped damage
-before boss death, but current traces cannot establish why. Direct head attacks
-are proven for both Fire bots, Affliction and Hunter. Heroism submission and self
-coverage are proven; all-party coverage remains unobserved. Overall DPS is open.
+Independent reviews identify the next bounded batch:
+- Hunter Auto Shot retains the body target while selected head actions are legal.
+  Rebind only wrong-target native autorepeat and retain actual repeat target in
+  existing diagnostics. Already-launched projectiles may land after a rebind.
+- Fire Elemental's existing 75% owner-health initialization misses the player
+  behind its Totem through generic GetOwner. Use the native stat owner for this
+  branch; preserve coefficients and initialization order. Massive Crash killed
+  the observed 8,507-health guardian. Survival after repair is not yet proven.
+- All three healers follow the same seven-control native POINT path below the
+  arena, interrupting external healing before the second Mangle tank death.
+  Retain actual planner and native control coordinates to distinguish a bad
+  path from native execution. No terrain or Z workaround is admitted.
+- Fire 30007's first exit waits 66.398 seconds for a ground receipt, losing its
+  first head hardcast window. Serialize submitted receipt identity and scope
+  before choosing a further behavior repair. Native fall is independently
+  accepted on Affliction 30008, spline 4195, with terminal floor proof.
+
+Formation changes restore stationary Hunter head casts and preserve hazards,
+but the precise native stop branch remains unobserved. Do not label it fully
+accepted from aggregate DPS. Guardian lifecycle capture is accepted. The prior
+2a compile failure was a missing GridDefines include, corrected in d701. Review
+of the next health split caught a unity constant collision before building;
+its correction passed independent review. The joined affected suite passes
+23 tests. All four bounded patches passed independent review;
+build once, validate canonical Magmaw, publish/clean, then route remaining losses.
 
 ## Earlier result: 816 setup accepted, DPS unresolved
 

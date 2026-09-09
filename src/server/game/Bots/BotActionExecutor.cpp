@@ -316,9 +316,14 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         if (action.AutoAttackMode == "melee"
             && !action.MeleeAutoAttackExternallyReconciled)
             SubmitMeleeAutoAttack(bot, target);
-        else if (action.AutoAttackMode == "ranged" && bot->getClass() == CLASS_HUNTER
-            && !bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
-            bot->CastSpell(target, 75, false); // Auto Shot
+        else if (action.AutoAttackMode == "ranged" && bot->getClass() == CLASS_HUNTER)
+        {
+            if (Spell* repeat = bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
+                if (repeat->m_targets.GetUnitTarget() != target)
+                    bot->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
+            if (!bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
+                bot->CastSpell(target, 75, false); // Auto Shot
+        }
 
         // Command the player's primary pet through the same validated handler
         // used by CMSG_PET_ACTION. Guardians and totems retain their native AI;

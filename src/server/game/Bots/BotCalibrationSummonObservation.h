@@ -48,6 +48,11 @@ inline std::string Capture(Player const* owner, Unit* offensiveTarget, uint64 el
         json << owner->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_FIRE);
     else
         json << "null";
+    json << ",\"owner_max_health\":";
+    if (owner)
+        json << owner->GetMaxHealth();
+    else
+        json << "null";
     ObjectGuid slotGuid = owner ? owner->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] : ObjectGuid::Empty;
     Creature* fire = owner && owner->GetMap() && slotGuid
         ? owner->GetMap()->GetCreature(slotGuid) : nullptr;
@@ -139,6 +144,7 @@ inline std::string Capture(Player const* owner, Unit* offensiveTarget, uint64 el
         json << ",\"level\":" << uint32(unit->getLevel())
              << ",\"health\":" << unit->GetHealth()
              << ",\"max_health\":" << unit->GetMaxHealth()
+             << ",\"create_health\":" << unit->GetCreateHealth()
              << ",\"melee_attack_power\":" << unit->GetTotalAttackPowerValue(BASE_ATTACK)
              << ",\"base_attack_min_damage\":" << unit->GetFloatValue(UNIT_FIELD_MINDAMAGE)
              << ",\"base_attack_max_damage\":" << unit->GetFloatValue(UNIT_FIELD_MAXDAMAGE)

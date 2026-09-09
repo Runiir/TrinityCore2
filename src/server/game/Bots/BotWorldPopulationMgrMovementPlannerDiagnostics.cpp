@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -124,6 +125,9 @@ NativePathControlSequence ObserveNativePathControls(
         ? coordinateSpace : "unavailable";
     sequence.ControlCount = controls.size();
     sequence.Fingerprint = NativePathControlsFingerprint(controls);
+    std::size_t const retained = std::min(controls.size(),
+        NativePathControlSequence::MaxRetainedControls);
+    sequence.OrderedControls.assign(controls.begin(), controls.begin() + retained);
     return sequence;
 }
 std::uint64_t MovementPlannerDiagnosticSidecar::BeginReceipt(

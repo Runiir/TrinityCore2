@@ -94,6 +94,9 @@ namespace BotWorldPopulationMgrBotState
             bool TargetAttackable = false;
             bool MeleeAutoAttacking = false;
             bool RangedAutoActive = false;
+            uint32 RangedAutoSpellId = 0;
+            ObjectGuid RangedAutoTargetGuid;
+            uint32 RangedAutoTargetEntry = 0;
             bool PetAttacking = false;
             // Keep pet identity beside an owner combat attempt so a spell seen
             // in combat can be attributed to this pet instead of an NPC with

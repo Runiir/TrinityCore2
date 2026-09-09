@@ -2,50 +2,49 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:roster_execution_review",
   "owner_skill": "raid-performance-loop",
-  "classification": "execution_repairs_approved_build_pending",
+  "classification": "closed_run_repairs_and_missing_observations",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "798a115d45",
+  "observed_at_commit": "d701b55d643f56bbaf12d59557e3a9f06d5f19b6",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Joined movement repairs and guardian observation independently approved; affected fixtures pass; build and live pending.",
+  "gate_state": "Four bounded patches independently approved; joined23tests passed; commit and queuedbuild next",
   "first_broken_edge": {
-    "id": "server_vehicle_exit_native_fall_missing",
-    "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Finalized server ejection left actor 30007 2.747315 yards above observed floor; no actual bot POINT launch, then 17.001 seconds of hardcast rejection. Require native fall and same-spline terminal floor proof.",
+    "id": "hunter_autorepeat_retains_wrong_target",
+    "owner_classification": "raid_role_implementation",
+    "cause": "Valid exposed-head actions preserve existing body Auto Shot because executor tests presence but not native repeat target.",
     "review_state": "implementation_approved_live_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "4d07bd54f31c1903622d614fdf40e23360df40bc74ae3a30b62ca54831d2d3d7"
+    "sha256": "26f57427f66afb1d16842b88d5b6c31c1c8b289b4a5aab18cfd2cd821d015332"
   },
   "scope_lock": {
-    "objective": "Repair proven vehicle-exit and retained formation execution losses, add approved guardian observation, build once and validate canonical Magmaw.",
+    "objective": "Repair proven Hunter targeting and guardian health owner lookup; observe exact healer native controls and pending Fire grounding receipt.",
     "owned_files": [
-      "src/server/game/Bots/BotServerVehicleExitLanding.h",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotPreparation.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrDiagnosis.cpp",
-      "src/server/game/Bots/BotCalibrationSummonObservation.h",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
+      "src/server/game/Bots/BotActionExecutor.cpp",
       "src/server/game/Bots/BotWorldPopulationMgrBotState.h",
-      "src/server/game/Bots/BotWorldPopulationMgrMovementEvidence.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrMovementExecutor.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrEncounterBlackboard.cpp",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHazard.h",
-      "src/server/game/Bots/Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilPassiveSwarmStaging.cpp"
+      "src/server/game/Bots/BotWorldPopulationMgrCombatDiagnostics.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrDiagnosis.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h",
+      "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnosticsJson.cpp",
+      "src/server/game/Bots/BotCalibrationSummonObservation.h",
+      "src/server/game/Entities/Pet/Pet.cpp",
+      "src/server/game/Entities/Pet/GuardianInitialization.cpp",
+      "src/server/game/Entities/Pet/PetPersistence.cpp"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Native fall is invoked for the recorded airborne exit, bound to its actual spline, and clears falling only after same-spline terminal floor proof.",
-    "Formation release preserves safety movement and can stop only the matching unfinished native formation path; stale metadata cannot cancel other motion.",
-    "Normal raid diagnosis retains attributable owned guardian native lifecycle state without changing gameplay.",
-    "Affected actual-caller fixtures and independent implementation review pass before one joined build.",
-    "Canonical Magmaw reaches a typed watchdog terminal with all-actor DPS/HPS, direct head events, movement, deaths, route progress and fresh cleanup retained.",
-    "Publish and verify closed evidence before exact eviction; development remains separate from qualification and training."
+    "Valid Hunter target change rebinds native autorepeat once; same or invalid target never triggers unnecessary cancellation.",
+    "Fire Elemental initialization resolves native Totem player owner and preserves existing 75% health contract and all other branches.",
+    "Existing diagnostics retain actual ordered native controls and exact submitted grounding receipt scope without gameplay mutation.",
+    "Affected production behavior fixtures and independent review pass before one joined build.",
+    "Canonical Magmaw reaches typed terminal with all-bot DPS/HPS, head events, movement, deaths and cleanup; review unresolved losses.",
+    "Publish closed evidence, verify remote bytes and evict exact payloads; development is not qualification or training."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -56,7 +55,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Freeze include-only compilation correction, finish incremental build and run canonical Magmaw.",
+  "next_action": "Join Hunter autorepeat and guardian health repairs with exact path/submitted-receipt capture, review, build once, run canonical Magmaw.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -72,24 +71,24 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "798a115d4507c51c1aff2d0f33bd5827f2c9aae5",
+    "source_commit": "d701b55d643f56bbaf12d59557e3a9f06d5f19b6",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
     "terminal_reason": "clear",
     "cleanup_passed": true,
     "training_eligible": false,
-    "recorded_casualties": 2,
-    "boss_fight_casualties": 0,
-    "hostile_only_party_dps": 130170.396,
-    "party_hps": 17952.198,
-    "combat_duration_sec": 227,
+    "recorded_casualties": 1,
+    "boss_fight_casualties": 1,
+    "hostile_only_party_dps": 126393.532,
+    "party_hps": 13558.386,
+    "combat_duration_sec": 233,
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_798a115d45_20260908.tar.gz.dvc"
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_d701b55d64_20260908.tar.gz.dvc"
   },
   "latest_analysis": {
-    "review_directory": "elemental-calibration-798a115d45/dps-review",
+    "review_directory": "magmaw-development-d701b55d64/dps-review",
     "publication_state": "remote_verified_raw_evicted",
     "calibration_dps": 32911.683333333334,
     "calibration_reference_dps": 36999.280400830605,
@@ -102,7 +101,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approved",
-    "scope": "Native server-exit fall, exact native retained formation cancellation, normal raid owned guardian observation",
+    "scope": "Repair proven Hunter targeting and guardian health owner lookup; observe exact healer native controls and pending Fire grounding receipt.",
     "live_verified": false
   },
   "related_edges": [
@@ -128,11 +127,23 @@
     },
     {
       "id": "in_range_head_dps_retains_ranged_formation_restore",
-      "review": "implementation_approved_live_pending"
+      "review": "stationary_head_casts_observed_exact_native_stop_branch_unobserved"
     },
     {
       "id": "raid_guardian_lifecycle_unobserved",
-      "review": "observation_implementation_approved_live_pending"
+      "review": "native_capture_accepted_guardian_death_attributed"
+    },
+    {
+      "id": "fire_elemental_totem_health_owner_unresolved",
+      "review": "native_cause_proven_implementation_review_correction"
+    },
+    {
+      "id": "healer_native_point_descends_below_arena",
+      "review": "actual_controls_capture_required"
+    },
+    {
+      "id": "fire_exit_submitted_ground_receipt_unobserved",
+      "review": "capture_required"
     }
   ],
   "reference_fixture_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
