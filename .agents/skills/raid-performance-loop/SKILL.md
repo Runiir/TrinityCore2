@@ -56,6 +56,18 @@ Class tuning requires exact current WoWSims reference and gear/effective-stat co
 Use the promoted catalog, never an obsolete embedded DPS value. Movement-only work does
 not require a new simulator run. Missing evidence is a bounded capture task, not a reason
 to guess coefficients. Dummy calibration alone uses exactly 300 scoring seconds.
+When a stat gap matches a passive multiplier, verify the learned spellbook and
+native aura ledger before changing coefficients or retrying unchanged role code.
+
+When repairing self-provided calibration admission, inspect both player and target
+aura rules at reset and during scoring in the same work unit. Presence alone does
+not prove an external buff or debuff: retain native caster ownership and reject
+foreign, mixed or unknown sources. Cover the corresponding owned class effects
+in both consumers before rebuilding. Preserve native consumable receipts and the
+self-baseline return before fixture aura writers; do not invent cast provenance.
+Follow the observed row through its Python projection and final role gate too.
+Serialize the failing spec's actual fixture row into that consumer; a different
+spec's passing row cannot validate the repaired path.
 
 Keep typed arbitration and persistent tasks. Native pathing owns terrain; no bot Z
 steering, teleportation, global tolerance relaxation, or encounter MMAP workaround.

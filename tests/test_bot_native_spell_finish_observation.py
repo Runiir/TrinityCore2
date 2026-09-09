@@ -10,9 +10,13 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_native_finish_callback_retained_observation(tmp_path):
     source = (ROOT / 'src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp').read_text()
     callback = source[source.index('void BotWorldPopulationMgr::NotifyBotSpellFinished('):source.index('void BotWorldPopulationMgr::NotifyBotItemSpellFinished(')]
-    diagnosis = (ROOT / 'src/server/game/Bots/BotWorldPopulationMgrDiagnosis.cpp').read_text()
-    emission = re.search(r'\s*<< ",\\"native_spell_finish\\":".*?\n', diagnosis)
-    serializer = 'json ' + emission.group().strip() + ';' if emission else 'json << "";'
+    serializers = []
+    for filename in ['BotWorldPopulationMgrDiagnosis.cpp', 'BotWorldPopulationMgrStatus.cpp']:
+        source_json = (ROOT / 'src/server/game/Bots' / filename).read_text()
+        emission = re.search(r'\s*<< ",\\"native_spell_finish\\":".*?\n', source_json)
+        # An absent delta field produces an empty object before the repair.
+        serializers.append('json ' + emission.group().strip() + ';' if emission else 'json << "";')
+    serializer = 'if (delta) {' + serializers[1] + '} else {' + serializers[0] + '}'
     cpp = r'''
 #include <array>
 #include <algorithm>
@@ -66,6 +70,7 @@ int main(){
  mgr.NotifyBotSpellFinished(nullptr,133,true);mgr.NotifyBotSpellFinished(&caster,0,true);caster.guid.raw=40000;mgr.NotifyBotSpellFinished(&caster,133,true);
  if(mgr.party.Bots[0].DecisionTrace.size()!=n)return 4;
  mgr.party.Bots[0].DecisionTrace.push_back({}); // ordinary trace has no finish observation
+ for(bool delta : {false,true})
  for(auto itr=mgr.party.Bots[0].DecisionTrace.begin();itr!=mgr.party.Bots[0].DecisionTrace.end();++itr){std::ostringstream json;json<<"{\"fixture\":true";
 '''+serializer+r'''
  json<<"}";std::cout<<json.str()<<'\n';}
@@ -76,7 +81,12 @@ int main(){
     assert built.returncode==0,built.stderr
     run=subprocess.run([str(binary)],capture_output=True,text=True)
     assert run.returncode==0,run.stderr
-    rows=[json.loads(line)['native_spell_finish'] for line in run.stdout.splitlines()]
+    exported = list(map(json.loads, run.stdout.splitlines()))
+    full, delta = exported[:5], exported[5:]
+    assert len(full)==len(delta)==5
+    assert all('native_spell_finish' in row for row in delta)
+    assert full == delta
+    rows=[row['native_spell_finish'] for row in full]
     assert rows.pop() is None
     assert len(rows)==4
     assert [r['success'] for r in rows]==[True,False,True,False]

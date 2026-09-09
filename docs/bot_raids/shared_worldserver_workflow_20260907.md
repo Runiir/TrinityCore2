@@ -2,43 +2,50 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
-Source `9423ec8a17` cleared canonical Magmaw with native exit 0, fresh cleanup
-and post-run build verification. Two hook-DPS trash deaths recovered; no boss
-fight deaths occurred and all ten were alive at clear. The frozen review records
-30,028,750 damage / 282 combat seconds = 106,484.929 DPS and 18,176.723 HPS.
-DPS regressed 15.75% from d701 on that denominator and remains unresolved.
-All role reviews are frozen. The 29,755,175-byte archive was reconstructed from
-the DVC remote and verified before exact payload eviction.
+Latest source `090f24f4b8` is committed and pushed. Its queued native build,
+canonical Magmaw clear, cleanup and post-run binary verification passed. Two
+trash deaths recovered; all ten survived the boss. Damage was 29,972,402 over
+233 combat seconds: 128,636.918 DPS and 19,225.751 HPS. The exact hostile bounds
+span 233.490 seconds; encounter-start to boss death is 271.011 seconds. All ten
+loadouts matched canonical inputs. All role reviews are frozen, and the
+31,710,917-byte archive was remotely reconstructed and exact raw payloads evicted.
 
-Live evidence accepts Fire Elemental health initialization (120,363 from
-160,485 owner max health), survival beyond the previous Massive Crash death,
-and Hunter autorepeat rebinding to head 76 with direct head Auto Shot outcomes.
-Fire hook landings also completed with terminal floor proof. These accepted
-repairs do not establish overall roster performance.
+The same-level path guard is live-accepted as containment: 14 unsafe boss-route
+planner evaluations stopped before submission, while the role slice retained
+97 safe native launches. Discipline's prior 83.862-second underground healing
+outage did not recur. Native path production remains an unresolved separate
+cause, with no current stall. Hunter head autorepeat and Fire native landings
+remain accepted. Fire's prior extended head-Fireball loss did not recur.
 
-Discipline actor 30005 followed receipt 453 below the arena: an actual native
-intermediate control at Z -105.142822 lies between controls near Z 211. The
-bounded containment rejects unsafe controls for declared same-level movement;
-it does not repair the unknown PathGenerator producer. Independent Sol review
-approved the corrected full-planner fixture and guard ordering (21 tests pass).
-Native cross-level movement and existing floor-sample exceptions are preserved.
+Fire's isolated run completed 300.000 scored seconds with 7,507,785 damage /
+25,025.95 measured DPS versus the promoted 35,138.962 reference. It is not accepted:
+its own target debuff 22959 was wrongly rejected, and learned Wizardry 89744 was
+missing. The native unprocced intellect 7714 times 1.05 exactly equals the
+reference 8099.7; the spell-power and mana gaps agree. Fresh DB readback confirms
+no persisted Wizardry for the calibration actor or raid Mages. Gear, ratings,
+talents and consumables are unchanged. Native exit 0, cleanup and post-run build
+verification passed. The frozen 4,318,037-byte archive is remotely verified;
+exact raw payloads are evicted after completed diagnostic reads.
 
-Fire Mage calibration on the same binary failed before scoring because the
-validator classified its own native class buff 79058 as an external aura.
-No 300-second DPS result exists. Native exit 0, fresh offline readback and
-post-run build verification passed. Its 3,758,781-byte archive is remotely
-verified and exact payloads evicted. The patch shares the existing native
-self-buff contract across reset and scored checks and exposes the hidden
-pre-score predicates. Independent Sol review approved it (62 focused tests pass).
+Next reviewed batch:
+- Provision ordinary learned Wizardry for all three Mage specs. No manual aura,
+  coefficient or core cloth-lifecycle change. Regenerate current admission
+  authority, including independently reviewed pre-existing stale gear hashes;
+  no actual gear inputs change.
+- Make both native calibration consumers and Python acceptance classify owned
+  class effects consistently. The captured Fire row now passes the full setup
+  gate; foreign, mixed, unknown and malformed controls fail. The pre-score
+  target predicate is named compatible rather than falsely claiming absence.
+- Preserve native spell-finish payloads in delta as well as full trace exports.
+- Observe owned summon geometry, target eligibility, script identity and active
+  auras. Flame Orb deliberately has no victim; its proximity logic needs these
+  observations before any gameplay repair. Preserve existing admission filters.
 
-The joined batch also retains actual native spell-finish callbacks to diagnose
-accepted Fireballs without damage, and timestamps actual cached candidate
-evaluations to distinguish Affliction's stale masks from current rejection
-reasons. Both are passive observations; no guessed coefficient or priority
-change is admitted. All four implementation reviews are approved. Build once,
-then run Fire calibration and canonical
-Magmaw sequentially on that verified binary. Keep all-bot DPS/HPS and individual
-repair acceptance separate from a boss clear.
+All four implementation reviews are approved. Build once, then run exact Fire calibration.
+Require learned spell and native 1.05 stat application before comparing throughput.
+Use the new orb observations to route any remaining zero-damage failure. A separate
+read-only audit is checking shared polling cadence; it does not hold this build.
+Do not rerun Magmaw merely to repeat accepted movement or targeting evidence.
 
 ## Prior accepted calibration and raid evidence
 

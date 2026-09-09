@@ -2574,6 +2574,8 @@ def test_owned_wrath_air_rejects_incomplete_foreign_unknown_and_wrong_binding(mo
         inputs = _own_wrath_air_inputs()
         row = next(row for row in inputs["target_observation"]["reference_condition_observation"]["player_auras"] if row["spell_id"] == spell_id)
         row.update(active_samples=1, inactive_samples=600)
+        # The compiled native classifier reports this non-class setup sample.
+        inputs["target_observation"]["reference_condition_observation"]["unexpected_player_aura_active_samples"] = 1
         assert derive_reference_condition_compatibility(**inputs)["checks"]["runtime_prepull_setup_receipts_valid"] is False
     binding = conditions.load_fixture_contract_binding("elemental_shaman")
     for mutation in ("hash", "option", "native_option", "invalid"):
@@ -2588,3 +2590,123 @@ def test_owned_wrath_air_rejects_incomplete_foreign_unknown_and_wrong_binding(mo
             changed["valid"] = False
         monkeypatch.setattr(conditions, "load_fixture_contract_binding", lambda _spec: changed)
         assert derive_reference_condition_compatibility(**_own_wrath_air_inputs())["checks"]["runtime_prepull_setup_receipts_valid"] is False
+
+
+def _closed_fire_090f_inputs():
+    frozen = json.loads((Path(__file__).parent / "fixtures" /
+                         "fire_090f_prepull_observation.json").read_text())
+    assert frozen["source_report_sha256"] == "83183cc3a207d622aea8d07bb45b6c8334a929610e8772ead3cd81e8ded89c41"
+    calibration, target, setup, runtime, manifest = _compatible_fixture()
+    target.update(frozen["target"])
+    calibration.update(frozen["calibration"])
+    runtime["fixture_contract_sha256"] = frozen["fixture_contract_sha256"]
+    runtime["reference_gear_manifest_sha256"] = target["item_swap_observation"]["initial_gear_manifest_sha256"]
+    manifest["target_spec"] = "fire_mage"
+    return dict(target_spec="fire_mage", reference_setup=setup,
+                reference_conditions=EXPECTED_REFERENCE_CONDITIONS, calibration=calibration,
+                runtime_normalization=calibration["normalization"], target_observation=target,
+                runtime_facts=runtime, expected_manifest=manifest,
+                reference_class="self_provided_baseline")
+
+
+def _assert_fire_reference_gate(inputs, expected):
+    calibration = inputs["calibration"]
+    _, valid = reference_condition_projections(
+        inputs["target_spec"], inputs["target_observation"],
+        fixture_target_guid=calibration["fixture_target"]["runtime_guid"],
+        fixture_contract_sha256=inputs["runtime_facts"]["fixture_contract_sha256"],
+        scored_started_at_ms=calibration["scored_started_at_ms"],
+        scored_ended_at_ms=calibration["scored_ended_at_ms"])
+    assert valid is expected
+    result = derive_reference_condition_compatibility(**inputs)
+    assert result["checks"]["runtime_prepull_setup_receipts_valid"] is expected
+
+
+def _assert_malformed_owned_target_rows_rejected(inputs):
+    for field in ("spell_id", "caster_guid", "active_samples", "inactive_samples",
+                  "owner_match_samples", "owner_mismatch_samples"):
+        for value in (None, True, False, "490", 490.0, -1):
+            bad = copy.deepcopy(inputs)
+            row = next(row for row in bad["target_observation"]["reference_condition_observation"]["target_auras"]
+                       if row["spell_id"] == 22959)
+            if value is None:
+                del row[field]
+            else:
+                row[field] = value
+            _assert_fire_reference_gate(bad, False)
+    for changes in ({"caster_guid": 1305}, {"owner_match_samples": 489},
+                    {"owner_mismatch_samples": 1}, {"inactive_samples": 110}):
+        bad = copy.deepcopy(inputs)
+        row = next(row for row in bad["target_observation"]["reference_condition_observation"]["target_auras"]
+                   if row["spell_id"] == 22959)
+        row.update(changes)
+        _assert_fire_reference_gate(bad, False)
+
+
+def _assert_synthetic_owned_aura_projection_variants(inputs):
+    # Class-neutral consumer variants supplement the actual Fire observation.
+    # These are not additional captured runs or spell-submission receipts.
+    for spell_id in (1490, 22959, 81326):
+        variant = copy.deepcopy(inputs)
+        raw = variant["target_observation"]["reference_condition_observation"]
+        for row in raw["target_auras"]:
+            if row["spell_id"] in (1490, 22959, 81326):
+                active = 490 if row["spell_id"] == spell_id else 0
+                row.update(active_samples=active, inactive_samples=601-active,
+                           caster_guid=1304 if active else 0,
+                           owner_match_samples=active, owner_mismatch_samples=0)
+        _assert_fire_reference_gate(variant, True)
+    for spell_id in (20217, 79063):
+        variant = copy.deepcopy(inputs)
+        variant["target_spec"] = "retribution_paladin"
+        variant["target_observation"]["class_id"] = 2
+        raw = variant["target_observation"]["reference_condition_observation"]
+        for row in raw["player_auras"]:
+            if row["spell_id"] == 79058:
+                row.update(active_samples=0, inactive_samples=601)
+            if row["spell_id"] == spell_id:
+                row.update(active_samples=601, inactive_samples=0)
+        _assert_fire_reference_gate(variant, True)
+
+
+def test_closed_fire_090f_unexpected_target_counter_remains_rejected():
+    # Closed evidence stays immutable: only the compiled observer test supplies
+    # the replacement observation after executing the repaired native caller.
+    _assert_fire_reference_gate(_closed_fire_090f_inputs(), False)
+
+
+def test_self_provided_sunder_keeps_owned_stack_consistency():
+    # Controlled synthetic stack cases supplement the captured Fire observer replay.
+    inputs = _own_wrath_air_inputs()
+    raw = inputs["target_observation"]["reference_condition_observation"]
+    row = next(row for row in raw["target_auras"] if row["spell_id"] == 58567)
+    stacked = raw["target_stacked_auras"][0]
+    count = raw["sample_count"]
+    actor = inputs["target_observation"]["guid"]
+    def valid():
+        return derive_reference_condition_compatibility(**inputs)["checks"]["runtime_prepull_setup_receipts_valid"]
+    assert valid()
+    row.update(active_samples=count, inactive_samples=0, caster_guid=actor,
+               owner_match_samples=count, owner_mismatch_samples=0)
+    stacked.update(matching_samples=0, mismatch_samples=count, minimum_observed_stacks=1,
+                   maximum_observed_stacks=2, caster_guid=0, owner_match_samples=count)
+    assert valid()  # Native partial-stack row has no matching-stack caster yet.
+    stacked.update(matching_samples=count, mismatch_samples=0, minimum_observed_stacks=3,
+                   maximum_observed_stacks=3, caster_guid=actor)
+    assert valid()
+    for field, value in (("matching_samples", -1), ("mismatch_samples", -1),
+                         ("maximum_observed_stacks", 4), ("minimum_observed_stacks", 0),
+                         ("caster_guid", actor+1), ("owner_match_samples", count-1),
+                         ("owner_mismatch_samples", 1), ("matching_samples", True)):
+        previous = stacked[field]
+        stacked[field] = value
+        assert not valid(), (field, value)
+        stacked[field] = previous
+    row.update(active_samples=490, inactive_samples=count-490, owner_match_samples=490)
+    stacked.update(matching_samples=300, mismatch_samples=count-300,
+                   minimum_observed_stacks=0, maximum_observed_stacks=3,
+                   owner_match_samples=490)
+    assert valid()
+    stacked["matching_samples"] = 491
+    stacked["mismatch_samples"] = count-491
+    assert not valid()  # Cannot observe more full stacks than active owned aura samples.

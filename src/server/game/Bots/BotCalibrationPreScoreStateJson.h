@@ -31,8 +31,8 @@ std::string BotCalibrationPreScoreStateJson(Metrics const* metrics)
              << (metrics && metrics->PreScoreExternalBleedAbsent ? "true" : "false")
              << ",\"self_provided_player_auras_compatible\":"
              << (metrics && metrics->PreScoreSelfProvidedPlayerAurasCompatible ? "true" : "false")
-             << ",\"self_provided_target_auras_absent\":"
-             << (metrics && metrics->PreScoreSelfProvidedTargetAurasAbsent ? "true" : "false")
+             << ",\"self_provided_target_auras_compatible\":"
+             << (metrics && metrics->PreScoreSelfProvidedTargetAurasCompatible ? "true" : "false")
              << ",\"self_provided_player_aura_spell_id\":" << (metrics ? metrics->PreScoreSelfProvidedPlayerAuraSpellId : 0)
              << ",\"self_provided_player_aura_source\":\"" << (metrics ? metrics->PreScoreSelfProvidedPlayerAuraSource : "unobserved") << "\""
              << ",\"self_provided_target_aura_spell_id\":" << (metrics ? metrics->PreScoreSelfProvidedTargetAuraSpellId : 0)

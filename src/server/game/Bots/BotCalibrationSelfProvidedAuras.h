@@ -87,15 +87,33 @@ Result PlayerAuras(PlayerT* bot, std::string const& role, std::string const& spe
     return {};
 }
 
-template<class UnitT>
-Result TargetAuras(UnitT* target)
+template<class PlayerT, class UnitT>
+Result TargetAuras(PlayerT* actor, UnitT* target)
 {
+    if (!actor)
+        return { false, 0, "actor_unavailable" };
     if (!target)
         return { false, 0, "target_unavailable" };
     for (uint32 spellId : TargetAuraIds)
-        if (target->HasAura(spellId))
-            return { false, spellId, "forbidden_target_aura" };
-    return { true, 0, "absent" };
+    {
+        if (!target->HasAura(spellId))
+            continue;
+        bool observed = false;
+        auto const range = target->GetAppliedAuras().equal_range(spellId);
+        for (auto itr = range.first; itr != range.second; ++itr)
+        {
+            auto const* aura = itr->second ? itr->second->GetBase() : nullptr;
+            auto* caster = aura ? aura->GetCaster() : nullptr;
+            if (!caster || aura->GetCasterGUID().IsEmpty())
+                return { false, spellId, "unknown_source" };
+            if (caster != actor || aura->GetCasterGUID() != actor->GetGUID())
+                return { false, spellId, "foreign_source" };
+            observed = true;
+        }
+        if (!observed)
+            return { false, spellId, "unknown_source" };
+    }
+    return { true, 0, "absent_or_owned_effect" };
 }
 }
 #endif

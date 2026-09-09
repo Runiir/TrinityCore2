@@ -18,7 +18,7 @@ def test_actual_reference_observer_attributes_every_wrath_air_application(tmp_pa
     reset_end = reset_source.index("            bool const selfProvidedConsumablesReady", reset_start)
     reset = reset_source[reset_start:reset_end]
     assert "&& metrics.PreScoreSelfProvidedPlayerAurasCompatible" in reset_source
-    assert "&& metrics.PreScoreSelfProvidedTargetAurasAbsent" in reset_source
+    assert "&& metrics.PreScoreSelfProvidedTargetAurasCompatible" in reset_source
     pre_score_json = (ROOT / "src/server/game/Bots/BotCalibrationPreScoreStateJson.h").read_text()
     fields = sorted(set(re.findall(r"metrics(?:\.|->)([A-Za-z0-9_]+)", observer + reset + pre_score_json)))
     header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h").read_text()
@@ -29,6 +29,9 @@ def test_actual_reference_observer_attributes_every_wrath_air_application(tmp_pa
     json_start = json_source.index("            std::set<uint32> observedPlayerAuraSpellIds;")
     json_end = json_source.index('            json << "],\\\"target_auras', json_start)
     serializer = json_source[json_start:json_end]
+    target_start = json_source.index("            std::set<uint32> observedTargetAuraSpellIds;")
+    target_end = json_source.index('            json << "],\\\"target_stacked_auras', target_start)
+    target_serializer = json_source[target_start:target_end]
     cpp = r'''
 #include <algorithm>
 #include <array>
@@ -51,7 +54,8 @@ struct Unit {
  uint32 created=3738; uint32 GetUInt32Value(int) const { return created; }
  uint64 guid=1; bool totem=false; Unit* owner=nullptr;
  std::multimap<uint32,AuraApplication*> auras;
- bool HasAura(uint32 id) const { return auras.count(id); }
+ std::set<uint32> unavailableApplications;
+ bool HasAura(uint32 id) const { return auras.count(id) || unavailableApplications.count(id); }
  auto const& GetAppliedAuras() const { return auras; }
  bool IsTotem() const { return totem; } Unit* ToTotem() { return this; }
  Unit* GetOwner() { return owner; } uint64 GetGUID() const { return guid; }
@@ -82,6 +86,12 @@ std::string serialize(CalibrationMetrics const* metrics) {
  SERIALIZER
  json << "]"; return json.str();
 }
+std::string serializeTargets(CalibrationMetrics const* metrics) {
+ struct { struct { uint32 GetCounter() const { return 1304; } } Guid; } state;
+ std::ostringstream json; json << "["; bool firstReferenceAura=true;
+ TARGET_SERIALIZER
+ json << "]"; return json.str();
+}
 int main() {
  BotWorldPopulationMgr manager; Player player; Unit target, other;
  target.guid=2; other.guid=3;
@@ -95,7 +105,7 @@ int main() {
  auto observe=[&]() { CalibrationMetrics m; manager.ObserveCalibrationReferenceConditions(m,&player,&target,100);
  manager.ObservePreScore(m,&player,&target);
  assert(m.PreScoreSelfProvidedPlayerAurasCompatible == !m.UnexpectedSelfProvidedPlayerAuraActiveSamples);
- assert(m.PreScoreSelfProvidedTargetAurasAbsent == !m.UnexpectedSelfProvidedTargetAuraActiveSamples);
+ assert(m.PreScoreSelfProvidedTargetAurasCompatible == !m.UnexpectedSelfProvidedTargetAuraActiveSamples);
  return m; };
  // Recorded first broken predicate: an already-active native Mage alternate buff.
  player.classId=CLASS_MAGE; manager.state.CalibrationTargetSpec="fire_mage";
@@ -153,12 +163,68 @@ int main() {
  player.classId=CLASS_PALADIN; manager.state.CalibrationTargetSpec="retribution_paladin";
  for(uint32 id:{20217,79063}) { player.auras.clear();player.auras.emplace(id,&e);assert(observe().PreScoreSelfProvidedPlayerAurasCompatible); }
  player.auras.clear(); player.auras.emplace(79058,&e); assert(!observe().PreScoreSelfProvidedPlayerAurasCompatible);
- player.auras.clear();target.auras.emplace(1490,&e); m=observe();
- assert(!m.PreScoreSelfProvidedTargetAurasAbsent && m.PreScoreSelfProvidedTargetAuraSpellId==1490);
- assert(m.PreScoreSelfProvidedTargetAuraSource=="forbidden_target_aura");
- std::cout << "[" << failedJson << "," << BotCalibrationPreScoreStateJson(&m) << "," << window.UnexpectedSelfProvidedPlayerAuraActiveSamples << "," << serialize(&window) << "]";
+ player.auras.clear(); player.classId=CLASS_MAGE; manager.state.CalibrationTargetSpec="fire_mage";
+ player.guid=1304; direct.guid=1304; player.auras.emplace(79058,&e);
+ target.auras.emplace(22959,&e);
+ assert(observe().PreScoreSelfProvidedTargetAurasCompatible);
+ CalibrationMetrics fireWindow;
+ for(int i=0;i<601;++i) {
+  target.auras.clear(); if(i>=111) target.auras.emplace(22959,&e);
+  manager.ObserveCalibrationReferenceConditions(fireWindow,&player,&target,1000+i);
+  manager.ObservePreScore(fireWindow,&player,&target);
+  assert(fireWindow.PreScoreSelfProvidedTargetAurasCompatible);
+ }
+ assert(fireWindow.ReferenceTargetAuraActiveSamples[22959]==490);
+ assert(fireWindow.ReferenceTargetAuraOwnerMatchSamples[22959]==490);
+ assert(!fireWindow.ReferenceTargetAuraOwnerMismatchSamples[22959]);
+ assert(!fireWindow.UnexpectedSelfProvidedTargetAuraActiveSamples);
+ std::ostringstream badWindows; badWindows << "[";
+ bool firstBad=true;
+ for(auto app:{&b,&c}) {
+  CalibrationMetrics bad;
+  for(int i=0;i<601;++i) { target.auras.clear(); target.auras.emplace(22959,app);
+   manager.ObserveCalibrationReferenceConditions(bad,&player,&target,1000+i); }
+  if(!firstBad) badWindows << ",";
+  firstBad=false;
+  badWindows << "[" << bad.UnexpectedSelfProvidedTargetAuraActiveSamples << "," << serializeTargets(&bad) << "]";
+ }
+ CalibrationMetrics mixedWindow;
+ target.auras.clear(); target.auras.emplace(22959,&e); target.auras.emplace(22959,&b);
+ for(int i=0;i<601;++i) manager.ObserveCalibrationReferenceConditions(mixedWindow,&player,&target,1000+i);
+ badWindows << ",[" << mixedWindow.UnexpectedSelfProvidedTargetAuraActiveSamples << "," << serializeTargets(&mixedWindow) << "]]";
+ std::ostringstream badPlayerCounts; badPlayerCounts << "[";
+ for(int source=0;source<3;++source) {
+  player.auras.clear(); player.auras.emplace(79058, source==1 ? &c : &b);
+  if(source==2) player.auras.emplace(79058,&e);
+  CalibrationMetrics bad;
+  for(int i=0;i<601;++i) manager.ObserveCalibrationReferenceConditions(bad,&player,&target,1000+i);
+  if(source) badPlayerCounts << ",";
+  badPlayerCounts << bad.UnexpectedSelfProvidedPlayerAuraActiveSamples;
+ }
+ badPlayerCounts << "]"; player.auras.clear();
+ Aura forgedGuid{&other,1304}, wrongGuid{&player,42};
+ AuraApplication forged{&forgedGuid}, wrong{&wrongGuid}, noBase{nullptr};
+ for(uint32 id:{1490,22959,81326,58567}) {
+  target.auras.clear(); target.auras.emplace(id,&e);
+  assert(observe().PreScoreSelfProvidedTargetAurasCompatible);
+  for(auto app:{&b,&c,&forged,&wrong,&noBase,&emptyGuidApplication,static_cast<AuraApplication*>(nullptr)}) {
+   target.auras.clear(); target.auras.emplace(id,app);
+   m=observe(); assert(!m.PreScoreSelfProvidedTargetAurasCompatible && m.PreScoreSelfProvidedTargetAuraSpellId==id);
+   target.auras.emplace(id,&e); // Mixed own/foreign or own/unknown remains rejected.
+   assert(!observe().PreScoreSelfProvidedTargetAurasCompatible);
+  }
+  target.auras.clear(); target.unavailableApplications.insert(id);
+  m=observe(); assert(!m.PreScoreSelfProvidedTargetAurasCompatible && m.PreScoreSelfProvidedTargetAuraSource=="unknown_source");
+  target.unavailableApplications.clear();
+ }
+ assert(!BotCalibrationSelfProvidedAuras::TargetAuras(static_cast<Player*>(nullptr),&target).Compatible);
+ assert(!BotCalibrationSelfProvidedAuras::TargetAuras(&player,static_cast<Unit*>(nullptr)).Compatible);
+ target.auras.clear(); target.auras.emplace(1490,&b); m=observe();
+ assert(!m.PreScoreSelfProvidedTargetAurasCompatible && m.PreScoreSelfProvidedTargetAuraSpellId==1490);
+ assert(m.PreScoreSelfProvidedTargetAuraSource=="foreign_source");
+ std::cout << "[" << failedJson << "," << BotCalibrationPreScoreStateJson(&m) << "," << window.UnexpectedSelfProvidedPlayerAuraActiveSamples << "," << serialize(&window) << "," << fireWindow.UnexpectedSelfProvidedTargetAuraActiveSamples << "," << serializeTargets(&fireWindow) << "," << badWindows.str() << "," << badPlayerCounts.str() << "]";
 }
-'''.replace("RESET", reset).replace("METRICS", metrics).replace("OBSERVER", observer).replace("SERIALIZER", serializer)
+'''.replace("RESET", reset).replace("METRICS", metrics).replace("OBSERVER", observer).replace("TARGET_SERIALIZER", target_serializer).replace("SERIALIZER", serializer)
     # Only dependency enums are stubbed; contract and classifier headers are compiled verbatim.
     shared = (ROOT / "src/server/shared/SharedDefines.h").read_text()
     classes = shared[shared.index("enum Classes\n"):shared.index("// max+1 for player class")]
@@ -168,13 +234,13 @@ int main() {
     path.write_text(cpp)
     binary = tmp_path / "observer"
     subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-I", str(tmp_path), "-I", str(ROOT / "src/server/game"), str(path), "-o", str(binary)], check=True)
-    failed, target_failed, unexpected, rows = json.loads(subprocess.check_output([str(binary)], text=True))
+    failed, target_failed, unexpected, rows, fire_unexpected, fire_rows, bad_windows, bad_player_counts = json.loads(subprocess.check_output([str(binary)], text=True))
     assert failed["self_provided_player_auras_compatible"] is False
     assert failed["self_provided_player_aura_spell_id"] == 79058
     assert failed["self_provided_player_aura_source"] == "foreign_source"
-    assert target_failed["self_provided_target_auras_absent"] is False
+    assert target_failed["self_provided_target_auras_compatible"] is False
     assert target_failed["self_provided_target_aura_spell_id"] == 1490
-    assert target_failed["self_provided_target_aura_source"] == "forbidden_target_aura"
+    assert target_failed["self_provided_target_aura_source"] == "foreign_source"
     assert unexpected == 0
     row = next(row for row in rows if row["spell_id"] == 2895)
     assert row == {"spell_id": 2895, "active_samples": 589, "inactive_samples": 12,
@@ -187,3 +253,44 @@ int main() {
     raw["unexpected_player_aura_active_samples"] = unexpected
     result = fixture["derive_reference_condition_compatibility"](**inputs)
     assert result["checks"]["runtime_prepull_setup_receipts_valid"] is True
+
+    fire_inputs = fixture["_closed_fire_090f_inputs"]()
+    fire_raw = fire_inputs["target_observation"]["reference_condition_observation"]
+    assert fire_raw["unexpected_target_aura_active_samples"] == 490
+    fire_raw["target_auras"] = fire_rows
+    fire_raw["unexpected_target_aura_active_samples"] = fire_unexpected
+    assert fire_unexpected == 0
+    fire_row = next(row for row in fire_rows if row["spell_id"] == 22959)
+    assert fire_row == dict(spell_id=22959, caster_guid=1304, active_samples=490,
+                           inactive_samples=111, owner_match_samples=490, owner_mismatch_samples=0)
+    fixture["_assert_fire_reference_gate"](fire_inputs, True)
+    import copy
+    for counter, target_rows in bad_windows:
+        rejected = copy.deepcopy(fire_inputs)
+        rejected_raw = rejected["target_observation"]["reference_condition_observation"]
+        rejected_raw["target_auras"] = target_rows
+        rejected_raw["unexpected_target_aura_active_samples"] = counter
+        assert counter == 601
+        fixture["_assert_fire_reference_gate"](rejected, False)
+    fixture["_assert_malformed_owned_target_rows_rejected"](fire_inputs)
+    fixture["_assert_synthetic_owned_aura_projection_variants"](fire_inputs)
+
+    for counter in bad_player_counts:
+        assert counter == 601
+        rejected = copy.deepcopy(fire_inputs)
+        rejected["target_observation"]["reference_condition_observation"]["unexpected_player_aura_active_samples"] = counter
+        fixture["_assert_fire_reference_gate"](rejected, False)
+    for counter in (None, True, False, "0", 0.0, -1):
+        rejected = copy.deepcopy(fire_inputs)
+        rejected_raw = rejected["target_observation"]["reference_condition_observation"]
+        if counter is None:
+            del rejected_raw["unexpected_player_aura_active_samples"]
+        else:
+            rejected_raw["unexpected_player_aura_active_samples"] = counter
+        fixture["_assert_fire_reference_gate"](rejected, False)
+    for spell_id in (1126, 79061, 57669, 79102):
+        rejected = copy.deepcopy(fire_inputs)
+        raw = rejected["target_observation"]["reference_condition_observation"]
+        row = next(row for row in raw["player_auras"] if row["spell_id"] == spell_id)
+        row.update(active_samples=1, inactive_samples=600)
+        fixture["_assert_fire_reference_gate"](rejected, False)

@@ -1,55 +1,50 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "runtime:roster_execution_review",
+  "work_unit": "class:fire_mage_passive_normalization",
   "owner_skill": "raid-performance-loop",
-  "classification": "closed_raid_path_containment_calibration_validator_and_native_observation",
+  "classification": "learned_passive_setup_and_calibration_consumer_repair",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "9423ec8a17039b337f568000976a8cbb5c447486",
+  "observed_at_commit": "090f24f4b811d5fe322398bcd3cc4c85a167bd04",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "All four implementation reviews approved; stale test-location cleanup passes all22tests; ready for frozen source queued build",
+  "gate_state": "All four next-batch implementation reviews approved; source freeze and queued build pending",
   "first_broken_edge": {
-    "id": "same_level_native_path_controls_leave_declared_floor",
-    "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Disc30005 receipt453 actual native four-control POINT spline includes -105.142822 Z between211-level controls; complete endpoint admission ignores diagnostic SampleFloorGap. Native producer cause remains unproven.",
-    "review_state": "containment_independently_approved_native_validation_pending"
+    "id": "missing_learned_mage_wizardry_89744",
+    "owner_classification": "raid_role_implementation",
+    "cause": "Closed Fire baselineINT7714 lacks native1.05 multiplier and persisted89744; exact normalized referenceINT8099.7. Native class effect must be learned through ordinary provisioning.",
+    "review_state": "implementation_independently_approved_native_validation_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "7c9dd7dcfc5cbd92c640bdda7e24a83586a8a02124a19aab39913014e2cabb65"
+    "sha256": "7ea630f3b04692ace74aeb84d940d9ed547f7ec97fa6fca5c8bac4abd325cd43"
   },
   "scope_lock": {
-    "objective": "Contain unsafe same-level native controls, accept attributable native class self-buffs in Fire calibration, and capture actual native spell finishes and candidate evaluation freshness before further class tuning.",
+    "objective": "Restore legitimate Mage learned passive and complete native/Python self-provided validation; retain exact delta and summon observations for remaining throughput diagnosis.",
     "owned_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h",
-      "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp",
-      "src/server/game/Bots/BotPersistentSelfBuffContract.h",
-      "src/server/game/Bots/BotCalibrationSelfProvidedAuras.h",
+      "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "experiments/configs/cata_434_action_profiles.json",
+      "src/server/game/Bots/BotAdmissionIdentityGenerated.h",
       "src/server/game/Bots/BotCalibrationPreScoreStateJson.h",
-      "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCalibrationReference.cpp",
+      "src/server/game/Bots/BotCalibrationSelfProvidedAuras.h",
+      "src/server/game/Bots/BotCalibrationSummonObservation.h",
       "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h",
-      "src/server/game/Bots/BotWorldPopulationMgrCalibrationRows.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrBotState.h",
-      "src/server/game/Bots/BotWorldPopulationMgrDiagnosis.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatSupport.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp",
-      "src/server/game/Bots/BotCombatMaskEvaluation.h"
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationReference.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp",
+      "tools/bot_ml/build_all_spec_phase1_catalogs.py",
+      "tools/bot_ml/phase8_reference_conditions.py"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Exact captured receipt453 control counterexample fails before repair and rejects before native submission after repair; safe376 and every reachable primary/connected/bounded/local candidate path are covered.",
-    "Preserve native cross-level/descent/long paths, native floor-sample exceptions and existing tolerances; no Z steering or MMAP workaround.",
-    "Independent review and affected production fixtures pass, then one queued build and bounded canonical run.",
-    "Fire exact300s scoring retains attributable effective stats, gear and action outcomes for current promoted reference comparison.",
-    "All-bot DPS/HPS, native outcomes, deaths, route progress and cleanup remain separate from boss clear; publish/verify before exact eviction."
+    "All Mage specs provision89744 through ordinary character_spell(active1,disabled0), without changing gear/talents/glyphs/consumes/APL or manual aura writers.",
+    "Actual Fire observer row reaches Python setup gate; foreign/mixed/unknown and malformed aura controls remain rejected; controlled baseline semantics preserved.",
+    "Full/delta native finish payloads match; summon observation preserves native object-type and ownership filters and uses actual API signatures.",
+    "Independent reviews and focused tests pass, then one queued build and exact300s Fire scoring with observed Wizardry aura and normalizedINT8099.7/SP11528.242/mana140759.5.",
+    "Report DPS/HPS/cadence/movement/deaths and normalization separately from acceptance; publish/verify before exact eviction."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -60,7 +55,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Join reviewed path containment, shared self-buff validator and native cast/candidate observations; build once, then Fire exact300s calibration and canonical Magmaw sequentially.",
+  "next_action": "Freeze reviewed Wizardry, full calibration-consumer and native observation batch; queued build then exact300s Fire validation. Route remaining Orb/cadence failures from matched-stat evidence.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -76,7 +71,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "9423ec8a17039b337f568000976a8cbb5c447486",
+    "source_commit": "090f24f4b811d5fe322398bcd3cc4c85a167bd04",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -85,16 +80,16 @@
     "training_eligible": false,
     "recorded_casualties": 2,
     "boss_fight_casualties": 0,
-    "hostile_only_party_dps": 106484.929,
-    "party_hps": 18176.723,
-    "combat_duration_sec": 282,
+    "hostile_only_party_dps": 128636.918,
+    "party_hps": 19225.751,
+    "combat_duration_sec": 233,
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_9423ec8a17_20260908.tar.gz.dvc"
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_090f24f4b8_20260908.tar.gz.dvc"
   },
   "latest_analysis": {
-    "review_directory": "magmaw-development-9423ec8a17/dps-review",
-    "publication_state": "closed_reviews_frozen_remote_verified",
+    "review_directory": "magmaw-development-090f24f4b8/dps-review",
+    "publication_state": "090f_all_role_reviews_frozen_remote_verified_raw_evicted",
     "calibration_dps": 32911.683333333334,
     "calibration_reference_dps": 36999.280400830605,
     "calibration_publication_state": "remote_verified_raw_evicted",
@@ -106,7 +101,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approved_for_build",
-    "scope": "Contain unsafe same-level native controls, accept attributable native class self-buffs in Fire calibration, and capture actual native spell finishes and candidate evaluation freshness before further class tuning.",
+    "scope": "Restore legitimate Mage learned passive and complete native/Python self-provided validation; retain exact delta and summon observations for remaining throughput diagnosis.",
     "live_verified": false
   },
   "related_edges": [
@@ -165,15 +160,17 @@
     "dvc_pointer": "artifacts/cata_raid_program/elemental_calibration_27200f36cc_20260908.tar.gz.dvc"
   },
   "latest_fire_calibration": {
-    "source_commit": "9423ec8a17039b337f568000976a8cbb5c447486",
-    "scoring_started": false,
-    "dps": null,
-    "failure": "calibration_pre_score_state_contract_mismatch",
-    "cause": "own_native_class_buff_79058_rejected_as_external",
+    "source_commit": "090f24f4b811d5fe322398bcd3cc4c85a167bd04",
+    "scoring_started": true,
+    "scored_seconds": 300,
+    "measured_dps": 25025.95,
+    "dps_accepted": false,
+    "failure": "combat_calibration_role_gate_failed",
+    "next_proven_validator_edge": "actor_owned_target_aura_22959_rejected_as_external",
     "cleanup_passed": true,
     "postrun_build_verified": true,
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_9423ec8a17_20260909.tar.gz.dvc"
+    "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_090f24f4b8_20260909.tar.gz.dvc"
   }
 }

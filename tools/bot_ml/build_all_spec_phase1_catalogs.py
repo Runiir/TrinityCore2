@@ -410,9 +410,9 @@ QUALIFICATION_TUNED_ACTION_SPELL_IDS = {
     "demonology_warlock": [603, 6353, 18540, 29722, 33697, 47897, 50589, 74434],
 }
 
-# BotWorldPopulationMgr's persistent setup casts these spells before choosing a
-# rotation action. Missing setup spells can invalidate an otherwise complete
-# profile, such as Shield Block outside Defensive Stance.
+# Known spells required by persistent setup, including ordinary learned passives.
+# The runtime setup table chooses explicit casts; learning a passive does not add
+# a rotation action. Missing setup can invalidate an otherwise complete profile.
 PERSISTENT_SETUP_SPELL_IDS = {
     "protection_warrior": [71],
     "arms_warrior": [2457],
@@ -428,9 +428,10 @@ PERSISTENT_SETUP_SPELL_IDS = {
     "unholy_death_knight": [46584, 48265],
     "feral_druid_tank": [5487],
     "feral_druid_dps": [768, 20484],
-    "arcane_mage": [1459, 30482],
-    "fire_mage": [759, 1459, 30482],
-    "frost_mage": [1459, 30482],
+    # Wizardry is the ordinary learned Mage cloth intellect passive.
+    "arcane_mage": [1459, 30482, 89744],
+    "fire_mage": [759, 1459, 30482, 89744],
+    "frost_mage": [1459, 30482, 89744],
     "beast_mastery_hunter": [13165],
     "marksmanship_hunter": [13165],
     "survival_hunter": [13165],
@@ -1409,6 +1410,27 @@ def reconcile_elemental_setup_spell_catalogs(
     spells = sorted(set(linked) | set(PERSISTENT_SETUP_SPELL_IDS["elemental_shaman"]))
     target["action_profile_spell_ids"] = spells
     actions["action_profile_spells_by_spec"]["elemental_shaman"] = list(spells)
+    return targets, actions
+
+
+def reconcile_mage_setup_spell_catalogs(
+    target_catalog: dict[str, Any], action_profiles: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Reconcile learned Mage setup only; preserve frozen reference inputs."""
+    targets = json.loads(json.dumps(target_catalog))
+    actions = json.loads(json.dumps(action_profiles))
+    mage_specs = {"arcane_mage", "fire_mage", "frost_mage"}
+    selected = [row for row in targets["targets"] if row["spec_target_id"] in mage_specs]
+    if len(selected) != 3 or {row["spec_target_id"] for row in selected} != mage_specs:
+        raise ValueError("expected exactly three Mage setup targets")
+    for target in selected:
+        spec = target["spec_target_id"]
+        linked = actions["action_profile_spells_by_spec"][spec]
+        if target["action_profile_spell_ids"] != linked:
+            raise ValueError(f"{spec} target/action spell lists are not linked")
+        spells = sorted(set(linked) | set(PERSISTENT_SETUP_SPELL_IDS[spec]))
+        target["action_profile_spell_ids"] = spells
+        actions["action_profile_spells_by_spec"][spec] = list(spells)
     return targets, actions
 
 

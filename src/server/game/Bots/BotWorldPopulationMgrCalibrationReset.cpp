@@ -706,10 +706,10 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
 
             auto const selfProvidedPlayerAuras = BotCalibrationSelfProvidedAuras::PlayerAuras(
                 bot, GetDungeonRole(bot), Cohort().CalibrationTargetSpec);
-            auto const selfProvidedTargetAuras = BotCalibrationSelfProvidedAuras::TargetAuras(fixtureTarget);
+            auto const selfProvidedTargetAuras = BotCalibrationSelfProvidedAuras::TargetAuras(bot, fixtureTarget);
             metrics.PreScoreSelfProvidedPlayerAurasCompatible = !IsSelfProvidedCalibrationBaseline()
                 || selfProvidedPlayerAuras.Compatible;
-            metrics.PreScoreSelfProvidedTargetAurasAbsent = !IsSelfProvidedCalibrationBaseline()
+            metrics.PreScoreSelfProvidedTargetAurasCompatible = !IsSelfProvidedCalibrationBaseline()
                 || selfProvidedTargetAuras.Compatible;
             metrics.PreScoreSelfProvidedPlayerAuraSpellId = selfProvidedPlayerAuras.SpellId;
             metrics.PreScoreSelfProvidedPlayerAuraSource = selfProvidedPlayerAuras.SourceClassification;
@@ -820,7 +820,7 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
                 && metrics.PreScoreTemporalExternalsAbsent
                 && metrics.PreScoreExternalBleedAbsent
                 && metrics.PreScoreSelfProvidedPlayerAurasCompatible
-                && metrics.PreScoreSelfProvidedTargetAurasAbsent
+                && metrics.PreScoreSelfProvidedTargetAurasCompatible
                 && (IsSelfProvidedCalibrationBaseline()
                     ? selfProvidedConsumablesReady
                     : !metrics.PreScoreLastPotionItemId)

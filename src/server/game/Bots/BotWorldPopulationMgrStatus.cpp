@@ -403,6 +403,7 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                          << "\",\"encounter_role_responsibility\":\"" << JsonEscape(state.LastEncounterRoleResponsibility)
                          << "\",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction)
                          << "\",\"combat_attempt\":" << BuildCombatAttemptJson(itr->CombatAttempt)
+                         << ",\"native_spell_finish\":" << (itr->NativeSpellFinishJson.empty() ? "null" : itr->NativeSpellFinishJson)
                          << ",\"route_progress\":" << BuildRouteProgressJson(itr->RouteProgress) << "}";
                 }
                 json << "]";

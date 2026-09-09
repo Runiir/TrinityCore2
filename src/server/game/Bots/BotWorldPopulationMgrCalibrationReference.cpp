@@ -598,7 +598,7 @@ void BotWorldPopulationMgr::ObserveCalibrationReferenceConditions(
         if (!BotCalibrationSelfProvidedAuras::PlayerAuras(
                 bot, GetDungeonRole(bot), Cohort().CalibrationTargetSpec).Compatible)
             ++metrics.UnexpectedSelfProvidedPlayerAuraActiveSamples;
-        if (!BotCalibrationSelfProvidedAuras::TargetAuras(target).Compatible)
+        if (!BotCalibrationSelfProvidedAuras::TargetAuras(bot, target).Compatible)
             ++metrics.UnexpectedSelfProvidedTargetAuraActiveSamples;
     }
 }

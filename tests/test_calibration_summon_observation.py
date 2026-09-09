@@ -37,6 +37,7 @@ def test_native_guardian_timeline_without_primary_pet(tmp_path, diagnostic_path)
     assert callsites[1:] == ['capturePetTimelineState(entry, target);'] * 2
     cpp = r'''
 #include <cstdint>
+#include <cmath>
 #include <map>
 #include <set>
 #include <string>
@@ -45,10 +46,19 @@ def test_native_guardian_timeline_without_primary_pet(tmp_path, diagnostic_path)
 using uint64=uint64_t;using uint32=uint32_t;using uint8=uint8_t;
 struct ObjectGuid {uint64 raw=0;uint64 GetRawValue()const{return raw;}uint32 GetCounter()const{return raw;}explicit operator bool()const{return raw!=0;}static ObjectGuid const Empty;};
 ObjectGuid const ObjectGuid::Empty{};
-constexpr int BASE_ATTACK=0,SPELL_SCHOOL_MASK_FIRE=4,UNIT_FIELD_MINDAMAGE=3,UNIT_FIELD_MAXDAMAGE=4,UNIT_MOD_CAST_HASTE=2,SUMMON_SLOT_TOTEM_FIRE=0,UNIT_CREATED_BY_SPELL=0,CURRENT_GENERIC_SPELL=0,CURRENT_CHANNELED_SPELL=1,CURRENT_AUTOREPEAT_SPELL=2;
+constexpr int UNIT_STATE_ROOT=1,BASE_ATTACK=0,SPELL_SCHOOL_MASK_FIRE=4,UNIT_FIELD_MINDAMAGE=3,UNIT_FIELD_MAXDAMAGE=4,UNIT_MOD_CAST_HASTE=2,SUMMON_SLOT_TOTEM_FIRE=0,UNIT_CREATED_BY_SPELL=0,CURRENT_GENERIC_SPELL=0,CURRENT_CHANNELED_SPELL=1,CURRENT_AUTOREPEAT_SPELL=2;
 struct SpellInfo{uint32 Id=12345;};struct Spell{SpellInfo info;SpellInfo const* GetSpellInfo(){return &info;}};
 struct Creature;struct TempSummon;struct Totem;struct Player;
+struct Aura{uint32 id;uint32 GetId()const{return id;}};
+struct AuraApplication{Aura* base;Aura* GetBase()const{return base;}};
 struct Unit{
+ bool moving=true,rooted=false;bool isMoving()const{return moving;}bool HasUnitState(int)const{return rooted;}
+ float x=0,y=0,z=0,o=0;bool los=true;std::map<int,AuraApplication*> auras;
+ auto const& GetAppliedAuras()const{return auras;}
+ float GetPositionX()const{return x;}float GetPositionY()const{return y;}float GetPositionZ()const{return z;}float GetOrientation()const{return o;}
+ float GetExactDist(Unit const* t)const{return std::sqrt((x-t->x)*(x-t->x)+(y-t->y)*(y-t->y)+(z-t->z)*(z-t->z));}
+ bool IsWithinLOSInMap(Unit const*)const{return los;}
+
  Player* spellModOwner=nullptr;Player* GetSpellModOwner()const{return spellModOwner;}
  ObjectGuid guid;Unit* owner=nullptr;Unit* victim=nullptr;Unit* helper=nullptr;std::set<Unit*> m_Controlled;
  float spellTime=0.8f,minDamage=17.25f,maxDamage=29.5f,attackPower=432.5f;int firePower=111;uint32 level=85;uint64 health=1234,maxHealth=2345;
@@ -65,7 +75,7 @@ struct Unit{
  virtual Creature* ToCreature(){return nullptr;}virtual TempSummon* ToTempSummon(){return nullptr;}
  uint32 GetUInt32Value(int){return created;}Spell* GetCurrentSpell(int type){return type==0?current:nullptr;}
 };
-struct Creature:Unit{uint32 entry=0;Creature* ToCreature()override{return this;}uint32 GetEntry(){return entry;}};
+struct Creature:Unit{uint32 entry=0;uint32 scriptId=17;std::string scriptName="native";uint32 GetScriptId()const{return scriptId;}std::string GetScriptName()const{return scriptName;}Creature* ToCreature()override{return this;}uint32 GetEntry(){return entry;}};
 struct TempSummon:Creature{uint32 summonType=1,timer=120000,lifetime=120000;uint32 const& GetSummonType(){return summonType;}uint32 GetTimer()const{return timer;}uint32 GetLifetime()const{return lifetime;}Unit* summoner=nullptr;TempSummon* ToTempSummon()override{return this;}Unit* GetSummoner(){return summoner;}};
 // Native Minion owner is separate from WorldObject owner-GUID lookup.
 // Totem InitStats skips SetMinion, so only nativeOwner is populated.
@@ -112,6 +122,14 @@ int main(){
  bot=&owner;fire.nativeOwner=&owner;owner.m_Controlled.clear();owner.m_Controlled.insert(&guardian);
  guardian.alive=false;guardian.health=0;guardian.deathState=2;guardian.inWorld=false;guardian.timer=38000;entry.ElapsedMs=3500;
  capturePetTimelineState(entry);std::cout<<entry.SummonObservationJson<<'\n';
+ Guardian orb;orb.guardian=true;orb.entry=44214;orb.created=84765;orb.guid.raw=900;orb.owner=&owner;orb.x=1;orb.y=2;orb.z=3;orb.o=0.5;orb.scriptName="npc_\"orb\\\n";
+ owner.m_Controlled.clear();fire.m_Controlled.clear();owner.m_Controlled.insert(&orb);owner.victim=&target;
+ target.x=4;target.y=6;target.z=3;target.o=1;owner.x=8;owner.o=2;
+ Aura a{82690},b{123};AuraApplication aa{&a},bb{&b};orb.auras={{3,&aa},{1,&bb},{2,&aa}};
+ capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
+ target.valid=false;orb.los=false;orb.auras.clear();orb.moving=false;orb.rooted=true;
+ capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
+ owner.victim=nullptr;capturePetTimelineState(entry);std::cout<<entry.SummonObservationJson<<'\n';
 }
 '''
     # Use actual production target-passing expressions in both alive paths.
@@ -138,6 +156,24 @@ int main(){
             samples[index] = sample['summon_observation']['state']
         assert samples[0]['offensive_target_guid'] == 0
         assert samples[1]['offensive_target_guid'] == 99
+    orb_valid, orb_invalid, orb_missing = samples[-3:]
+    del samples[-3:]
+    orb = orb_valid['guardians'][0]
+    assert orb['entry']==44214 and orb['runtime_type']=='guardian'
+    assert orb['victim_guid']==0 and not orb['victim_valid']
+    assert orb['offensive_target_distance']==5 and orb['offensive_target_los'] and orb['offensive_target_attackable']
+    assert orb['position']==dict(x=1,y=2,z=3,orientation=0.5)
+    assert orb_valid['owner_position']==dict(x=8,y=0,z=0,orientation=2)
+    assert orb_valid['offensive_target_position']==dict(x=4,y=6,z=3,orientation=1)
+    assert orb['aura_spell_ids']==[123,82690]
+    assert orb['moving'] and not orb['rooted']
+    assert not orb_invalid['guardians'][0]['moving'] and orb_invalid['guardians'][0]['rooted']
+    assert orb['script_id']==17 and orb['script_name']=='npc_"orb\\\n'
+    assert orb_invalid['guardians'][0]['aura_spell_ids']==[]
+    assert not orb_invalid['guardians'][0]['offensive_target_attackable']
+    assert not orb_invalid['guardians'][0]['offensive_target_los']
+    assert orb_missing['offensive_target_position'] is None
+    assert all(orb_missing['guardians'][0][k] is None for k in ['offensive_target_distance','offensive_target_los','offensive_target_attackable'])
     dead = samples.pop()['guardians'][0]
     assert not dead['alive'] and not dead['in_world'] and dead['health']==0
     assert dead['death_state']==2 and dead['summon_timer_ms']==38000
@@ -179,6 +215,7 @@ int main(){
     assert active['guardians'][0]['spell_mod_owner_guid'] not in guardian['summoner_chain']
     assert samples[-2]['owner_max_health'] is None
     assert samples[-2]['owner_fire_spell_power'] is None
+    assert samples[-2]['owner_position'] is None and samples[-2]['offensive_target_position'] is None
     assert samples[-2]['owner_guid']==0 and samples[-2]['guardians']==[]
     assert samples[-2]['observed_elapsed_ms']==2500
     assert samples[-1]['observed_elapsed_ms']==3000

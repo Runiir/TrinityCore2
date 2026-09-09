@@ -1203,6 +1203,7 @@ def _continuous_aura_rows(
         inactive = row.get("inactive_samples")
         valid = bool(
             valid
+            and type(row.get("spell_id")) is int
             and spell_id > prior_spell_id
             and type(active) is int
             and type(inactive) is int
@@ -1438,14 +1439,32 @@ def reference_condition_projections(
             and all(type(value) is int and value >= 0 for value in source_counts)
             and source_counts == [wrath_of_air.get("active_samples"), 0, 0]
         )
+    # The versioned native observer evaluates the shared persistent-self-buff
+    # classifier once per sample. Its exact zero counter proves current owned
+    # class setup across this universe; full-window/row coverage is checked below.
+    # Wrath retains its stronger, already-serialized per-source proof.
+    native_self_buff_ids = {53646, 79058, 24932, 2895, 8515, 8076, 82930,
+                            57669, 20217, 79063, 79102}
+    native_self_buffs_valid = bool(
+        type(raw.get("unexpected_player_aura_active_samples")) is int
+        and raw["unexpected_player_aura_active_samples"] == 0
+    )
+
+    def compatible_self_buff(spell_id: int) -> bool:
+        return continuously_inactive(player_auras, spell_id) or bool(
+            spell_id in native_self_buff_ids
+            and player_rows_valid and spell_id in player_auras
+            and native_self_buffs_valid
+            and (spell_id != 2895 or own_wrath_of_air_valid)
+        )
+
     raid_required_valid = all(
-        (continuously_inactive(player_auras, spell_id)
-         or (spell_id == 2895 and own_wrath_of_air_valid))
+        compatible_self_buff(spell_id)
         if self_provided else continuously_active(player_auras, spell_id)
         for spell_id in RAID_REQUIRED_PLAYER_AURA_IDS
     )
     primary_states_valid = all(
-        continuously_inactive(player_auras, spell_id)
+        compatible_self_buff(spell_id)
         if self_provided else (
             continuously_active(player_auras, spell_id)
             or continuously_inactive(player_auras, spell_id)
@@ -1471,7 +1490,7 @@ def reference_condition_projections(
     raid_buffs_valid = bool(
         raid_required_valid
         and primary_states_valid
-        and (primary_active_count == 0 if self_provided else primary_active_count == 1)
+        and (self_provided or primary_active_count == 1)
         and (replenishment_inactive if self_provided else (replenishment_active or replenishment_inactive))
         and (might_inactive if self_provided else (might_active or might_inactive))
     )
@@ -1487,7 +1506,7 @@ def reference_condition_projections(
     }
 
     target_required_valid = all(
-        continuously_inactive(target_auras, spell_id)
+        (target_rows_valid and spell_id in target_auras)
         if self_provided else continuously_active(target_auras, spell_id)
         for spell_id in REQUIRED_TARGET_DEBUFF_AURA_IDS
     )
@@ -1518,13 +1537,37 @@ def reference_condition_projections(
             )
         )
         and _integer(sunder.get("required_stacks")) == 3
-        and _integer(sunder.get("matching_samples")) == (0 if self_provided else sample_count)
-        and _integer(sunder.get("mismatch_samples")) == (sample_count if self_provided else 0)
-        and _integer(sunder.get("minimum_observed_stacks")) == (0 if self_provided else 3)
-        and _integer(sunder.get("maximum_observed_stacks")) == (0 if self_provided else 3)
-        and _integer(sunder.get("caster_guid")) == (0 if self_provided else player_guid)
-        and _integer(sunder.get("owner_match_samples")) == (0 if self_provided else sample_count)
-        and _integer(sunder.get("owner_mismatch_samples")) == 0
+        and (
+            (
+                self_provided
+                and target_rows_valid
+                and SUNDER_ARMOR_AURA_ID in target_auras
+                and 0 <= sunder["matching_samples"] <= target_auras[SUNDER_ARMOR_AURA_ID]["active_samples"]
+                and sunder["matching_samples"] + sunder["mismatch_samples"] == sample_count
+                and 0 <= sunder["minimum_observed_stacks"] <= sunder["maximum_observed_stacks"] <= 3
+                and (sunder["maximum_observed_stacks"] == 0)
+                    == (target_auras[SUNDER_ARMOR_AURA_ID]["active_samples"] == 0)
+                and (sunder["minimum_observed_stacks"] == 0)
+                    == (target_auras[SUNDER_ARMOR_AURA_ID]["inactive_samples"] > 0)
+                and (sunder["maximum_observed_stacks"] == 3) == (sunder["matching_samples"] > 0)
+                and (sunder["minimum_observed_stacks"] == 3) == (sunder["matching_samples"] == sample_count)
+                # Native stacked-row caster is populated only for a full-stack sample.
+                # The ordinary target row carries ownership at partial stacks too.
+                and sunder["caster_guid"] == (player_guid if sunder["matching_samples"] else 0)
+                and sunder["owner_match_samples"] == target_auras[SUNDER_ARMOR_AURA_ID]["active_samples"]
+                and sunder["owner_mismatch_samples"] == 0
+            )
+            or (
+                not self_provided
+                and sunder["matching_samples"] == sample_count
+                and sunder["mismatch_samples"] == 0
+                and sunder["minimum_observed_stacks"] == 3
+                and sunder["maximum_observed_stacks"] == 3
+                and sunder["caster_guid"] == player_guid
+                and sunder["owner_match_samples"] == sample_count
+                and sunder["owner_mismatch_samples"] == 0
+            )
+        )
     )
     bleed_ids = raw.get("external_bleed_aura_spell_ids")
     bleed_ids = bleed_ids if isinstance(bleed_ids, list) else []

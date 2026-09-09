@@ -32,6 +32,10 @@ fixtures do not compile that native include chain. In this core, Pet.h depends
 on Common.h being available first; a plausible shortened include list can fail
 after all behavioral fixtures pass. Keep native compilation a separate claim.
 
+For retained telemetry changes, locate both full and delta serializers and test
+the same native record through each. A field visible in a full snapshot can still
+be lost after ring eviction if the delta export omits it.
+
 Use Luna max for exact narrow implementation with immutable evidence, owned production
 and affected test files, one hypothesis, excluded changes, a focused command, and concrete
 acceptance. Use Sol high for causal ambiguity, architecture, or independent risky-change

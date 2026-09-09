@@ -5,6 +5,7 @@
 #include "Player.h"
 #include "Spell.h"
 #include "SpellInfo.h"
+#include "SpellAuras.h"
 #include "TemporarySummon.h"
 #include "Totem.h"
 #include <algorithm>
@@ -22,6 +23,22 @@ namespace BotCalibrationSummonObservation
 inline std::string Capture(Player const* owner, Unit* offensiveTarget, uint64 elapsedMs)
 {
     std::ostringstream json;
+    auto position = [&](Unit const* unit)
+    {
+        if (!unit) { json << "null"; return; }
+        json << "{\"x\":" << unit->GetPositionX() << ",\"y\":" << unit->GetPositionY()
+             << ",\"z\":" << unit->GetPositionZ() << ",\"orientation\":" << unit->GetOrientation() << '}';
+    };
+    auto quoted = [&](std::string const& value)
+    {
+        char const* hex = "0123456789abcdef";
+        json << '"';
+        for (unsigned char c : value)
+            if (c == '"' || c == '\\') json << '\\' << c;
+            else if (c < 0x20) json << "\\u00" << hex[c >> 4] << hex[c & 15];
+            else json << c;
+        json << '"';
+    };
     Unit* victim = owner ? owner->GetVictim() : nullptr;
     Unit* helperTarget = owner ? owner->getAttackerForHelper() : nullptr;
     auto guid = [](Unit const* unit) { return unit ? unit->GetGUID().GetRawValue() : uint64(0); };
@@ -35,6 +52,8 @@ inline std::string Capture(Player const* owner, Unit* offensiveTarget, uint64 el
          << ",\"owner_helper_target_valid\":" << (valid(helperTarget) ? "true" : "false")
          << ",\"offensive_target_guid\":" << guid(offensiveTarget)
          << ",\"offensive_target_valid\":" << (valid(offensiveTarget) ? "true" : "false");
+    json << ",\"owner_position\":"; position(owner);
+    json << ",\"offensive_target_position\":"; position(offensiveTarget);
     // Match ObserveCalibrationEffectiveStats: inverse native cast-haste time.
     // Missing/invalid observations are null rather than a fabricated 1.0.
     float const spellTime = owner ? owner->GetFloatValue(UNIT_MOD_CAST_HASTE) : 0.0f;
@@ -123,6 +142,25 @@ inline std::string Capture(Player const* owner, Unit* offensiveTarget, uint64 el
              << ",\"ai_enabled\":" << (unit->IsAIEnabled() ? "true" : "false")
              << ",\"victim_guid\":" << guid(guardianVictim)
              << ",\"victim_valid\":" << (guardianVictim && guardianVictim->IsAlive() && unit->IsValidAttackTarget(guardianVictim) ? "true" : "false");
+        json << ",\"position\":"; position(unit);
+        json << ",\"moving\":" << (unit->isMoving() ? "true" : "false")
+             << ",\"rooted\":" << (unit->HasUnitState(UNIT_STATE_ROOT) ? "true" : "false");
+        json << ",\"offensive_target_distance\":";
+        if (offensiveTarget) json << unit->GetExactDist(offensiveTarget); else json << "null";
+        json << ",\"offensive_target_los\":";
+        if (offensiveTarget) json << (unit->IsWithinLOSInMap(offensiveTarget) ? "true" : "false"); else json << "null";
+        json << ",\"offensive_target_attackable\":";
+        if (offensiveTarget) json << (unit->IsValidAttackTarget(offensiveTarget) ? "true" : "false"); else json << "null";
+        json << ",\"script_id\":" << creature->GetScriptId() << ",\"script_name\":";
+        quoted(creature->GetScriptName());
+        std::set<uint32> auraIds;
+        for (auto const& application : unit->GetAppliedAuras())
+            if (application.second && application.second->GetBase())
+                auraIds.insert(application.second->GetBase()->GetId());
+        json << ",\"aura_spell_ids\":[";
+        bool firstAura = true;
+        for (uint32 id : auraIds) { json << (firstAura ? "" : ",") << id; firstAura = false; }
+        json << ']';
         TempSummon* summon = unit->ToTempSummon();
         json << ",\"in_world\":" << (unit->IsInWorld() ? "true" : "false")
              << ",\"death_state\":" << uint32(unit->getDeathState())

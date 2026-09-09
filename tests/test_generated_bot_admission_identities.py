@@ -66,9 +66,11 @@ def test_any_pinned_source_byte_change_requires_header_regeneration(
 
 
 def test_native_admission_uses_only_the_generated_all_spec_table() -> None:
-    source = (
-        ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
-    ).read_text(encoding="utf-8")
+    # Admission consumers were split out of the manager translation unit.
+    # Keep the contract over all manager modules, including forbidden copies.
+    modules = sorted((ROOT / "src/server/game/Bots").glob("BotWorldPopulationMgr*.cpp"))
+    assert modules
+    source = "\n".join(path.read_text(encoding="utf-8") for path in modules)
     assert '#include "Bots/BotAdmissionIdentityGenerated.h"' in source
     assert "BotAdmissionIdentityGenerated::Identities" in source
     assert "BotAdmissionIdentityGenerated::TalentSpellIds" in source
