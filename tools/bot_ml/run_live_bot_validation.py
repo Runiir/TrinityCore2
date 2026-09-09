@@ -2538,17 +2538,44 @@ def should_observe_before_command(command_text: str) -> bool:
 
 
 def bot_status_snapshot(output: str) -> dict[str, Any] | None:
-    """Return the latest bot status, preserving an explicit inactive state."""
-    payloads = parse_json_objects(output)
-    for row in reversed(payloads):
+    """Return the latest typed status; other bot arrays are not count aliases."""
+    def count(row: Mapping[str, Any], aliases: tuple[str, ...]) -> int | None:
+        for key in aliases:
+            if key not in row:
+                continue
+            value = row[key]
+            if type(value) is int:
+                return value if value >= 0 else None
+            if isinstance(value, str) and re.fullmatch(r"\+?\d+", value.strip()):
+                return int(value)
+            if type(value) is float and value >= 0 and value.is_integer():
+                return int(value)
+            return None
+        return 0
+
+    for row in reversed(parse_json_objects(output)):
         if not isinstance(row, dict):
             continue
-        if row.get("action") not in {"botexp_status", "botauto_status"} and not ({"active", "active_bots", "target_bots", "bots"} & set(row)):
+        action = row.get("action")
+        if action not in (None, "botexp_status", "botauto_status"):
             continue
-        active_bots = int(row.get("active_bots") or row.get("bots") or row.get("activeBots") or 0)
-        target_bots = int(row.get("target_bots") or row.get("targetBots") or 0)
-        active_value = row.get("active")
-        active = bool(active_value) if active_value is not None else active_bots > 0
+        if action is None and not ({"active", "active_bots", "target_bots", "bots", "activeBots", "targetBots"} & row.keys()):
+            continue
+        active_bots = count(row, ("active_bots", "bots", "activeBots"))
+        target_bots = count(row, ("target_bots", "targetBots"))
+        if active_bots is None or target_bots is None:
+            if action in ("botexp_status", "botauto_status"):
+                return None  # A malformed newer status invalidates older readiness.
+            continue
+        value = row.get("active")
+        if "active" not in row:
+            active = active_bots > 0
+        elif type(value) is bool or type(value) is int and value in (0, 1):
+            active = bool(value)
+        else:
+            if action in ("botexp_status", "botauto_status"):
+                return None
+            continue
         return {"active": active, "active_bots": active_bots, "target_bots": target_bots, "payload": row}
     return None
 

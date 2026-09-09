@@ -1,0 +1,233 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "905a5213f27d23d6b768a5aa2dceaeec97b339c0",
+  "archive_sha256": "43707f7f8ccdb7b799f423a69b17f9c0736cbb5b64270aa5d5dbf4c660cb69a3",
+  "archive_bytes": 1834988,
+  "dvc_pointer": "artifacts/cata_raid_program/calibration_affliction_warlock_905a5213f2_20260909.tar.gz.dvc",
+  "remote_download_sha256": "43707f7f8ccdb7b799f423a69b17f9c0736cbb5b64270aa5d5dbf4c660cb69a3",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "terminal_reason": "infrastructure_loss",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-905a5213f2/configure.log",
+      "bytes": 15532,
+      "sha256": "103b4c69f605a66e3f5ad9dee913c4ca7a507c9de01b01050301d202d94a756a"
+    },
+    {
+      "path": "build-preflight-905a5213f2/configure_receipt.json",
+      "bytes": 13614,
+      "sha256": "bca27f9b6001f6d4bfb15f73a01baa4c12412758d87d2a54e8bd3d07773e6bf5"
+    },
+    {
+      "path": "build-preflight-905a5213f2/configure_verification.json",
+      "bytes": 536,
+      "sha256": "e1767b7694602fd01792904ba4200ca8c42c55bea075301a84343b8478f18ae4"
+    },
+    {
+      "path": "build-preflight-905a5213f2/failed-build-attempt-1/worldserver_build.log",
+      "bytes": 92375,
+      "sha256": "8847e05951fd331403175c60259496ea2d51b0d0051db1dd47489b14b2d7594e"
+    },
+    {
+      "path": "build-preflight-905a5213f2/failed-build-attempt-1/worldserver_build_receipt.json",
+      "bytes": 22996,
+      "sha256": "37000832a3fc8e68c49a488df3711f112c74611ce15df7eba8f2fb05055eba3f"
+    },
+    {
+      "path": "build-preflight-905a5213f2/map-0-asset-preflight.json",
+      "bytes": 6041883,
+      "sha256": "8f3cb9b023592cc39717bc0590b548e57e0ac588759ed8f8a7594e3c220bae42"
+    },
+    {
+      "path": "build-preflight-905a5213f2/map-669-asset-preflight.json",
+      "bytes": 5454509,
+      "sha256": "40b4d5a2587e6136d60796155d7fd8a2f28c2059cb687c12db709c017ce00150"
+    },
+    {
+      "path": "build-preflight-905a5213f2/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-905a5213f2/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "ae2cfbbaa40989952bc1b1ec43ad5dc1132d5d0a5785e898a1085b0a5d8b09a7"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/diagnostic-truncation-audit.md",
+      "bytes": 8320,
+      "sha256": "c9843e8b6bf1b438af147f2e4c2c6306905e065dd16b99f63b2f875606789758"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/hunter-mail-specialization-implementation-review.md",
+      "bytes": 3302,
+      "sha256": "cef36959faaecc5430a6c7c8f099ea817ba33dd843388cd9ba0ef58201c6bd4a"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/hunter-mail-specialization-implementation.md",
+      "bytes": 3417,
+      "sha256": "516a6d95944a577d6df8d27febf68a92a6c88da2e1c438605e8f7cb850f1a22a"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/hunter-owner-agility-gap-addendum.md",
+      "bytes": 5968,
+      "sha256": "029a73a8cda06d0ef6dcd06f675205bd18f475bb90892270e14ebefb9f363b7e"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/hunter-owner-dps-diagnosis.md",
+      "bytes": 16818,
+      "sha256": "c2434e70b698880ab75c2a8c649105769e946c0eb90dc50092810ede4c71baa0"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/hunter-pet-fixed-point-implementation-review.md",
+      "bytes": 3062,
+      "sha256": "b583ee90c20da01af8d62959769babdf08fc5098fde0cce8295252b6a648139a"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/hunter-pet-fixed-point-implementation.md",
+      "bytes": 2935,
+      "sha256": "2121febaf4a14479f8e6198276f1e0b13862c004c4ef3c4906dbb59385c091d2"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/hunter-pet-identity-design-addendum.md",
+      "bytes": 8904,
+      "sha256": "1af6ea59cbac722bd3753e47dfde7098b09adc121b5fcca6116323d3f6ab58ed"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/orb-successful-hit-lifetime-implementation-review.md",
+      "bytes": 6328,
+      "sha256": "36a459be5a2c3d8ebf795a76ff0163d3088ed473ad13fba27c3337da795f8433"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/orb-successful-hit-lifetime-implementation.md",
+      "bytes": 2508,
+      "sha256": "1cc7f17d1ffd4f0669c793ca27f44327989e2d99fe558bdc966d090df6d372c1"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/profession-launch-implementation-review-addendum.md",
+      "bytes": 2595,
+      "sha256": "553d3bc7cfd239ea01c22d21543cfb8a66213ff8c0197dee9f6d0c37500ab4ed"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/profession-launch-implementation-review.md",
+      "bytes": 3622,
+      "sha256": "5c8115544219267576d0c485c5ba0ff8f0c0511ab53bd7b9311353aefde0ec2d"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/profession-launch-implementation.md",
+      "bytes": 4697,
+      "sha256": "4828fa5139853f09e668f4242b4cd328b4da8a99ea1231404aee3e51731a5a0d"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/soulburn-diagnostic-retention-implementation-review.md",
+      "bytes": 5656,
+      "sha256": "4af89444d66cfba372be9056ef642806de20a4e133165ebbd9fafd900096e2e8"
+    },
+    {
+      "path": "build-preflight-905a5213f2/review-context/soulburn-diagnostic-retention-implementation.md",
+      "bytes": 7971,
+      "sha256": "03365ce72a8f62f201bc68be04d24485af7b1d76062d361dfd0c522066654fd6"
+    },
+    {
+      "path": "build-preflight-905a5213f2/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "d484e7a5bce8b9def077e1cabf5de035d3d027950a63dfe49dd9c79b470e787f"
+    },
+    {
+      "path": "build-preflight-905a5213f2/worldserver_build.log",
+      "bytes": 43806,
+      "sha256": "38c11d1aad9675bad24fa2b8b678998adba957623ba11a30a72ce1a9ab522ce2"
+    },
+    {
+      "path": "build-preflight-905a5213f2/worldserver_build_receipt.json",
+      "bytes": 23898,
+      "sha256": "886fc72b60f490dca6bba9a979386ef74cb9f090a9da72fb6cad97582e962672"
+    },
+    {
+      "path": "build-preflight-905a5213f2/worldserver_build_verification.json",
+      "bytes": 537,
+      "sha256": "a113e0c7a48ffa02008340b62736432c399b0728412b4d834edea67f93348e75"
+    },
+    {
+      "path": "calibration-affliction_warlock-905a5213f2/bot_pool_reset/reset_bot_pool.sql",
+      "bytes": 7817,
+      "sha256": "7a69716b1ffebac975da291391005a779903730028d28855f352968aff012af0"
+    },
+    {
+      "path": "calibration-affliction_warlock-905a5213f2/calibration_consumable_restock/affliction_warlock.sql",
+      "bytes": 1732,
+      "sha256": "bce040db005bb9dc89824e16506e0ba54bd54d7c917635f35a4a7e812c039e72"
+    },
+    {
+      "path": "calibration-affliction_warlock-905a5213f2/calibration_known_spells.json",
+      "bytes": 2463,
+      "sha256": "1de0d08148e70ba427d6ee492abffe11c337d0a2434ef2a0765eb8ae1931eb73"
+    },
+    {
+      "path": "calibration-affliction_warlock-905a5213f2/cleanup_readback.json",
+      "bytes": 1423,
+      "sha256": "dc7dc234223275fc69336894cf6dc0ef70aa92fbcc9286e658a2c22efde1a114"
+    },
+    {
+      "path": "calibration-affliction_warlock-905a5213f2/closed_summary.json",
+      "bytes": 853,
+      "sha256": "bfc97e2d51ac1c7c7139972542f67dc5cd995583068b53adf21e3a6042c905e5"
+    },
+    {
+      "path": "calibration-affliction_warlock-905a5213f2/commands.txt",
+      "bytes": 202,
+      "sha256": "668723cea6db7cf93a5251b61f734341f18c6ac72a5fa9cea2013d2da5219b2c"
+    },
+    {
+      "path": "calibration-affliction_warlock-905a5213f2/dps-review/failed-startup-review.md",
+      "bytes": 4362,
+      "sha256": "ae74bbcf423ce11082c51b9d154423141c2e75d3c7e8eaf0b7684d7687e7eba9"
+    },
+    {
+      "path": "calibration-affliction_warlock-905a5213f2/worldserver.validation.conf",
+      "bytes": 156993,
+      "sha256": "90a34382278bfa71faa94a07ad98aa8b89c4d8debad0101d451b25756cfa30dd"
+    },
+    {
+      "path": "run-spec-calibration.py",
+      "bytes": 2696,
+      "sha256": "67b80e243b7b52b421c46f08be89263f0c8e58a8a99087fedc53aa1ec4503ae9"
+    },
+    {
+      "path": "publish-spec-calibration.py",
+      "bytes": 3613,
+      "sha256": "25e94de1679a437657eb563091dbd3c488703480d5ce6db8076039d730a087cc"
+    },
+    {
+      "path": "evict-spec-calibration.py",
+      "bytes": 1782,
+      "sha256": "770d48354a214610a8de89064d49168c991544a5c0ee1758cd2bd3e5af68471c"
+    },
+    {
+      "path": "calibration-affliction_warlock-launch-905a5213f2.json",
+      "bytes": 2304,
+      "sha256": "e8d945473aa2942edb36c68c7e758c2c8c83be71b0635619bfb7a77d49101230"
+    },
+    {
+      "path": "calibration-affliction_warlock-console-905a5213f2.log",
+      "bytes": 1908,
+      "sha256": "5b04c0283169bd13e3ebc57c095f14b953e7a68ad63b3b0871d836089ffa2f11"
+    },
+    {
+      "path": "calibration-affliction_warlock-postbuild-905a5213f2.json",
+      "bytes": 537,
+      "sha256": "a113e0c7a48ffa02008340b62736432c399b0728412b4d834edea67f93348e75"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": []
+}

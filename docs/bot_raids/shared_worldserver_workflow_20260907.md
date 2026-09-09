@@ -14,8 +14,13 @@ The next single build batches reviewed profession reconciliation (DPS-008,
 successful-hit lifetime guard (DPS-009, five tests). All three have independent
 approval; native validation remains pending. Hunter Mail Specialization parent
 87506 is now a proven missing setup input (DPS-010) and its implementation and independent review pass 24 focused checks.
-The full batch is approved for one native build, then Affliction first to prove
-CAP-002 over the full scoring window.
+Source `905a5213f2` is committed and pushed. Its native build is verified after
+one unchanged incremental retry for an internal GCC crash (BUILD-002). Affliction
+startup failed without a scoring result on a list-to-integer status parser error (CAP-003).
+No DPS/HPS result or native report was produced. Native cleanup failed; parent
+verified the server absent and cleared only actor 1306 stale online/lease fields.
+CAP-003 passes 48 focused tests and independent review. Its corrected controller
+is ready for the next CAP-002 live check.
 
 Latest Fire source `979f5c832f` completed 300 seconds with 29,706.767 DPS and
 0 HPS, all 1,399 chunks retained, verified exit, cleanup and binary receipt.

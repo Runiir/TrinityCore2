@@ -8,13 +8,16 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | ID | Status | Proven failure / limit | Next action |
 | --- | --- | --- | --- |
-| CAP-002 | Independently approved; native validation pending; user priority | Native Affliction Soulburn diagnostic silently stops at 2,048 rows around 205 seconds although transport and the 300-second primary timeline are complete. | Review the 4,096-row producer, explicit completeness receipt and final rejection path; 44 focused checks pass, including the enlarged actual export. |
+| CAP-002 | Independently approved; live blocked by CAP-003 | Native Affliction Soulburn diagnostic silently stops at 2,048 rows around 205 seconds although transport and the 300-second primary timeline are complete. | Review the 4,096-row producer, explicit completeness receipt and final rejection path; 44 focused checks pass, including the enlarged actual export. |
 | DPS-006 | Straight trajectory live accepted | Orb's forward destination and execution both use ground pathfinding; it leaves damage range before the first tick. | `979f5c832f` completed: 29,706.767 DPS and nonzero Orb damage. All five trajectories and 82736 accepted; remaining lifetime failure is DPS-009. |
 | DPS-007 | Implementation independently approved; live pending | Hunter compares an 11-row catalog with a 14-row loaded pet spellbook. Normal saving also persists those 14 rows. | Stable native 14-row fixture is implemented with six focused tests; independent review approved; validate exact consumers live. The rejected loader-receipt design remains abandoned. |
 | DPS-008 | Implementation independently approved; live pending | Fire and Affliction (and other audited specs) declare required professions absent from actual `character_skills` rows. | Reconcile actual selected-actor profession setup from the canonical requirements, verify readback, then validate native applicability. Do not tune Affliction coefficients. |
 | OBS-001 | Observation gap; no repair admitted | Current complete calibration exports have no aggregate `native_spell_finish` series, although full/delta serialization was repaired. | Inspect producer/capture mode if a future diagnosis needs cast-finish joins. Do not rebuild only to repeat the serializer change. |
 | DPS-009 | Implementation independently approved; live pending | After straight-motion repair, all five successful-hit Orbs still disappear around five seconds, before their remaining summon timer expires. | Successful-hit aura excludes early explosion; five focused checks and independent review pass. Validate survival to the normal lifecycle event. |
 | DPS-010 | Independently approved; native validation pending | All three Hunter setup lists omit Mail Specialization parent 87506; native Agility multiplier is 1.0 instead of 1.05. | Add the learned parent through existing provisioning, preserve the native child and exact pet fixture, then review and measure native stats. |
+| DPS-011 | Proven setup defect; packet review active | Two Hunter Blacksmithing socket gems are serialized without native socket creators; exactly 100 raw Agility is lost. | Correct profession/socket materialization and actual-actor reconciliation; establish reference metadata consequences before the next Hunter run. |
+| BUILD-002 | Retry succeeded; binary verified | GCC 15 internally segfaulted compiling unchanged ValidationRouteTrashThreatControl.cpp; no source drift or memory-pressure violation. | Failed receipt retained; unchanged incremental retry compiled and linked successfully. No source workaround admitted. |
+| CAP-003 | Independently approved; retry pending | Startup accepts a list-bearing payload as bot status and calls int(list); 905a5213f2 ended during startup readiness, with no native report. | Typed status and explicit zero/null handling pass 48 focused tests and independent review; parent recovery verified. Retry CAP-002 native validation. |
 
 CAP-001 closes the observed equal-partition truncation. The 64 MiB capture cap
 remains bounded; it is not a promise that every larger future payload fits. A
@@ -33,6 +36,27 @@ fixed partition bug. Any new counterexample receives a new entry.
 | BUILD-001 | Preserve real native prerequisite includes when splitting translation units. | `9423ec8a17` repaired the earlier missing Common.h/Pet.h build failure. | Extracted-body fixtures do not compile the real include chain. The actual build uses non-unity mode. |
 
 ## Active error details
+
+### CAP-003: Status parser accepts a non-count bot list
+
+- The first `905a5213f2` Affliction launch failed inside startup readiness:
+  `bot_status_snapshot` used `int(active_bots or bots or activeBots or 0)`.
+  A list reached `int`, raising TypeError without a retained scoring result. Which startup command
+  preceded the failure and whether scoring started are unknown.
+- Recognition allowed any JSON object containing `bots`; calibration and
+  diagnosis rows also use that key for arrays. The fallback also discards
+  explicit zero counts. Exact offending native bytes were lost by the exception
+  path; do not invent which row supplied them.
+- Native build and post-run binary verification pass. The process disappeared,
+  but actor 1306 retained online/in_use state. Parent verified no worldserver,
+  cleared only those stale actor fields and recorded before/after readback.
+  Native cleanup did not pass; explicit parent recovery did.
+- Reviewed repair recognizes typed status and supported scalar aliases, rejects malformed
+  counts, and tests real startup readiness plus transport-neutral polling with
+  mixed list-bearing diagnostics and inactive/active statuses. No gameplay change.
+- Evidence: `calibration-affliction_warlock-console-905a5213f2.log`, failed
+  `closed_summary.json` and `cleanup_readback.json` under the validation root.
+  This attempt has no DPS/HPS result and does not accept or reject CAP-002 live.
 
 ### CAP-002: Native diagnostic truncation hidden by complete transport
 
@@ -166,10 +190,27 @@ fixed partition bug. Any new counterexample receives a new entry.
   independent review passes.
 - This does not explain the whole DPS deficit. Subtracting the pre-pot leaves
   native Agility 7,782; applying 1.05 gives 8,171.1 versus simulator 8,276.1.
-  The remaining 100 raw / 105 multiplied Agility is under separate diagnosis.
+  The remaining 100 raw / 105 multiplied Agility is now attributed to DPS-011.
   Weapon effective stats and sustained class-buff uptime remain observation limits.
 - Compact diagnosis: `hunter-owner-dps-diagnosis.md` under the validation root;
   immutable raw source is the Hunter ec02 DVC archive linked above.
+
+### DPS-011: Blacksmithing socket gems lack native creators
+
+- The exact Marksmanship profile adds a +50 Agility gem beyond native sockets
+  on bracers 78430 and gloves 78362. Materialization emits their gem enchants
+  but no prismatic creator; the native applicability guard rejects both.
+- Required creators are 3717 (bracer) and 3723 (gloves), associated with
+  Blacksmithing 164. Belt creator 3729 already works. Existing profession
+  inference inspects ordinary permanent enchants and misses extra sockets.
+- Exact decomposition reproduces simulator raw gear Agility 7,492 and native
+  7,392, closing the 100-point gap without a new run or coefficient change.
+- Next packet must cover actual selected-actor equipment reconciliation,
+  player-obtainable profession rank and exact simulator metadata consequences.
+  DBC applicability rank alone is not proof of obtainable crafting rank.
+  Do not run another Hunter calibration on the known incomplete input.
+- Evidence: `hunter-owner-agility-gap-addendum.md` under the validation root,
+  retained with the `905a5213f2` build review context for DVC publication.
 
 ## Run index and acceptance boundaries
 

@@ -51,6 +51,10 @@ Permanent rejection regressions must run after raw evidence eviction. Use a smal
 repository-owned fixture for final acceptance; keep optional hydrated-payload
 size checks separate and label skips explicitly.
 
+For mixed console JSON, identify the message type before interpreting shared
+field names. A diagnostic `bots` array is not a status count. Preserve explicit
+zero values and test newer inactive or malformed status after older readiness.
+
 Review the actual launch-to-consumer path, including every identity used to select
 the runtime actor and its inputs. Return all known blocking findings together;
 do not end the first review after checking only one identity field.
