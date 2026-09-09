@@ -3,6 +3,22 @@
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
+Latest source `c87cba4c4b` built on its first attempt and completed the exact
+300-second Hunter window: 8,661,280 damage, 28,870.93 DPS / 0 HPS, 2,988
+decisions and 1,226 successful actions. All 1,741 chunks / 21,385,282 bytes reassembled. Native exit 0,
+verified binary, role checks and fresh 13-actor cleanup pass. Qualification
+still rejects only `incomplete_evidence_identity`; training is forbidden.
+
+Vial now contributes 458,341 damage / 28 events; independent review is checking
+its native acceptance. Aimed remains at ten events. The prior fixture assumed
+a simulator-like cast-time modifier without proving the native spell variant.
+Native source distinguishes stack aura 82925, Fire 82926 and replacement Aimed
+82928. Diagnose the actual override through eligibility and direct execution
+before another build. DPS-019 remains open; the two-helper improvement alone
+did not meet live acceptance. Review/implementation skills now require native
+variant mapping. No server is running, and raw c87 evidence is retained for
+its two active reviewers.
+
 Latest source `5c1d8e430a` built on its first attempt and completed Hunter's
 exact300-second score: 8,556,790 damage, 28,522.63DPS, 0HPS and2,984decisions.
 Furious Howl reached the owner111ms after scoring began and was active in all
@@ -22,8 +38,7 @@ Readiness ordering remains a separate open edge, DPS-021. Counts alone do not
 prove the correct sequence. It does not block implementing the two proven
 repairs. Both prior Hunter runs are now DVC-published, freshly downloaded and hash-verified.
 All reviewers finished before exact raw payload eviction. No worldserver is
-running. Commit the reviewed source, build once, apply/read back the exact
-heroic Vial script binding and run the joined 300-second Hunter validation.
+running. That joined build and validation is now recorded above as c87.
 
 The preceding Hunter3e run measured 28,122.61 DPS / 0 HPS over 300 seconds.
 Independent review accepted Wild Quiver (110 hits / 931,396 damage), the

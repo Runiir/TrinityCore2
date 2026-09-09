@@ -2,22 +2,22 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "hunter:remaining_cadence_and_item_damage",
   "owner_skill": "raid-performance-loop",
-  "classification": "role_and_native_implementation",
+  "classification": "native_variant_diagnosis",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "5c1d8e430a40d9ca162368e165b69d2d33057f09",
+  "observed_at_commit": "c87cba4c4bc65ee25aba811afb979ed2a37f874f",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Aimed preview and heroic Vial AP repairs independently approved; prior Hunter evidence remotely verified and evicted. Ready for joined build and exact live validation.",
+  "gate_state": "c87 closed at 28,870.93 DPS / 0 HPS with Vial damage recovered; Aimed acceptance failed and native variant path is under diagnosis.",
   "first_broken_edge": {
-    "id": "aimed_instant_proc_cast_time_preview_ignores_modifiers",
+    "id": "aimed_native_variant_not_proven_by_cast_time_fixture",
     "owner_classification": "raid_role",
-    "cause": "Both preview helpers use unmodified cast time, rejecting the below-E90 Aimed row even with Master Marksman Fire82925.",
-    "review_state": "independently_approved_live_pending"
+    "cause": "The synthetic modifier fixture did not represent native Fire/replacement Aimed identity. Post-E90 Aimed remained absent on c87.",
+    "review_state": "native_variant_diagnosis_active"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "df973fdc7d0bd090b34d6e0a8920dadb746de03e9f340be6873c46f0805eadf7"
+    "sha256": "731296a2d67233143670140acb0fbac249852259f84bc991664af7754a5139ac"
   },
   "scope_lock": {
     "objective": "Diagnose the remaining trace-backed Aimed cadence and Lightning item-damage discrepancies after restoring native owner buffs.",
@@ -39,9 +39,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Join independently reviewed Aimed preview and Vial AP repairs, then build once and validate the exact Hunter window.",
+  "next_action": "Bind native proc/override identity through candidate and executor, repair only the proven path, and preserve Vial outcome acceptance.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,

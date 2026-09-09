@@ -74,6 +74,12 @@ a simulator's "stacks" label does not identify the server accessor. Fixtures
 must preserve that distinction, and relevant inherited/nonvirtual accessors,
 instead of flattening them into a convenient successful stub.
 
+For proc-driven spell variants, require the actual native aura effect and
+replacement identity in the packet. A made-up cast-time modifier can prove a
+helper works while leaving the real override unreachable. The regression must
+exercise the observed native mechanism through eligibility and execution;
+retain the requested action identity separately when resolving its native form.
+
 Use the supplied rotation review; request only the evidence missing for this
 repair. For stat-sensitive DPS tuning, require its `gear_parity.status` and
 `effective_stat_parity.status` to be `match`, and require

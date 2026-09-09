@@ -8,6 +8,13 @@ description: Translate and compare TrinityCore bot rotation code, database actio
 Build an attributable comparison from simulator policy to native outcome. Keep
 simulation, Trinity selection, movement, submission, landing, and encounter
 mechanics as separate layers.
+Before diagnosing a proc-gated action, map simulator action/aura IDs to native
+DBC effects, replacement spells and script bindings. A simulator can represent
+several native spell forms with one ID. Prove the actual native modifier or
+action-bar override before building a synthetic proc fixture, and trace both
+candidate eligibility and the direct bot cast path. Client opcode processing
+and server-side `CastSpell` need not apply the same replacement logic.
+
 For pet support spells, inspect the owner's actual group/subgroup state and
 the native friendly-target list. A one-bot or "solo" fixture can still create
 a group. Enabled autocast proves configuration, not target eligibility or a
