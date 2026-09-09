@@ -348,6 +348,9 @@ namespace BotWorldPopulationMgrBotState
         bool ActivePathSegmentValid = false;
         std::string ActivePathTraversalMode;
         bool ActivePathValid = false;
+        // Authoritative purpose is bound only after native submission.
+        bool ActivePathPurposeValid = false;
+        std::string ActivePathPurpose;
         ObjectGuid ActivePathTargetGuid;
         uint64 ActivePathAttemptId = 0;
         uint32 ActivePathWipeGeneration = 0;
@@ -757,6 +760,7 @@ namespace BotWorldPopulationMgrBotState
         WorldBotState& state, std::string_view reason, uint64 nowMs)
     {
         state.ActivePathValid = false;
+        state.ActivePathPurposeValid = false;
         state.ActivePathSegmentValid = false;
         state.ActivePathTraversalMode.clear();
         state.ActivePathTargetGuid.Clear();

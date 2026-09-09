@@ -890,7 +890,7 @@ int main()
     assert(magmawCrashMove);
     assert(std::hypot(magmawCrashMove->X - crashBoss.Position.X,
         magmawCrashMove->Y - crashBoss.Position.Y) < 12.0f);
-    assert(magmawCrashMove->Z == 210.521393f);
+    assert(magmawCrashMove->Z == magmawCrash.Route.NavigationHints.front().Z);
 
     BotEncounter::Blackboard magmawParasite = magmaw;
     magmawParasite.Summons.clear();
@@ -1777,9 +1777,9 @@ int main()
         && immediateCrashMove->Y == 24.0f);
     assert(immediateCrashNonownerMove->X == 12.0f
         && immediateCrashNonownerMove->Y == 8.0f);
-    assert(immediateCrashMove->Z == immediateCrash.Players[1].Position.Z);
+    assert(immediateCrashMove->Z == immediateCrash.Route.NavigationHints.front().Z);
     assert(immediateCrashNonownerMove->Z
-        == immediateCrash.Players[2].Position.Z);
+        == immediateCrash.Route.NavigationHints.front().Z);
     assert(immediateCrashPlan.ParasiteCombat.FireMageGuid == hookBot.Guid);
     assert(immediateCrashPlan.ParasiteCombat.MarksmanshipHunterGuid
         == secondHookBot.Guid);
@@ -2374,6 +2374,8 @@ def test_magmaw_pillar_bait_uses_summon_lease_and_bounded_replan() -> None:
 def test_magmaw_parasite_baiters_keep_persistent_lane_paths(tmp_path: Path) -> None:
     source = tmp_path / "magmaw_parasite_replay.cpp"
     binary = tmp_path / "magmaw_parasite_replay"
+    settle = "template<class State, class Actor> void SettleRetainedMagmawFormation(State& state, Actor* bot) {" + function_body(bot_source("BotWorldPopulationMgrUpdateBotKernelPreparation.cpp"),
+                          "template<class State, class Actor>") + "}"
     source.write_text(
         r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
@@ -2390,6 +2392,41 @@ std::string ObjectGuid::ToString() const
 {
     return std::to_string(GetRawValue());
 }
+
+#define MOTION_SLOT_ACTIVE 1
+#define MOTION_SLOT_CONTROLLED 2
+#define MAX_MOTION_TYPE 99
+#define POINT_MOTION_TYPE 8
+#define UNIT_STATE_MOVING 1
+''' + settle + r'''
+#undef MOTION_SLOT_ACTIVE
+#undef MOTION_SLOT_CONTROLLED
+#undef MAX_MOTION_TYPE
+#undef POINT_MOTION_TYPE
+#undef UNIT_STATE_MOVING
+struct RetainedState {
+ float ActivePathSegmentToX=1, ActivePathSegmentToY=2, ActivePathSegmentToZ=3;
+ bool ActivePathValid=true, ActivePathPurposeValid=true, ActivePathSegmentValid=true;
+ std::string ActivePathTraversalMode="ground";
+ ObjectGuid ActivePathTargetGuid;
+ BotMovementArbitration::Lease MovementLease;
+ bool IsMoving=true;
+};
+struct NativeActor {
+ bool moving=true, falling=true, independentMotion=false;
+ int clears=0, idles=0, stops=0, activeType=8, currentType=8, controlledType=99;
+ bool unfinished=true; float x=1,y=2,z=3;
+ int GetMotionSlotType(int slot)const{return slot==2 ? controlledType : activeType;}
+ int GetCurrentMovementGeneratorType()const{return currentType;}
+ bool GetDestination(float& a,float& b,float& c){a=x;b=y;c=z;return unfinished;}
+ NativeActor* GetMotionMaster(){return this;}
+ void Clear(int slot){assert(slot==1 && stops==1);++clears;}
+ // Clear leaves initialized static idle: MoveIdle does not stop its spline.
+ void MoveIdle(){assert(clears==1);++idles;}
+ void StopMoving(){++stops;moving=false;unfinished=false;}
+ bool isMoving()const{return moving;}
+ bool HasUnitState(int)const{return independentMotion;}
+};
 
 static ActorSnapshot Player(uint32 guid, char const* role,
     char const* spec, Vector3 position)
@@ -2502,6 +2539,114 @@ int main()
     ObjectGuid const hunterGuid = board.Players[2].Guid;
     ObjectGuid const ordinaryGuid = board.Players[3].Guid;
     MagmawParasiteHazardState mageHazard;
+
+    // Exposed-head hold uses configured range and role, never a class exception.
+    Blackboard burn = board;
+    burn.Hostiles.resize(1);
+    ActorSnapshot head = burn.Hostiles.front();
+    head.Guid = ObjectGuid(HighGuid::Unit, uint32(42347), uint32(76));
+    head.Entry = 42347;
+    burn.Hostiles.push_back(head);
+    burn.ProfileGeneration = 9;
+    burn.ProfileContentHash = "range_fixture";
+    for (size_t actorIndex : {size_t(1), size_t(2), size_t(3)})
+    {
+        auto& actor = burn.Players[actorIndex];
+        actor.PreferredCombatRange = ConfiguredCombatRange{
+            head.Guid, head.Entry, actorIndex==2 ? 56641u : 133u, 9, "range_fixture",
+            actorIndex==2 ? 5.0f : 0.0f, 40, 12 };
+        MagmawRetainedFormationPath retained{true, "ranged_formation_restore",
+            burn.CurrentScope.AttemptId, burn.CurrentScope.WipeGeneration,
+            burn.CurrentScope.RouteGeneration, burn.CurrentScope.NodeId};
+        BotMovementArbitration::Lease lease;
+        lease.MovementOwner = BotMovementArbitration::Owner::Mechanic;
+        lease.MovementScope = {burn.CurrentScope.AttemptId,
+            burn.CurrentScope.WipeGeneration, burn.CurrentScope.RouteGeneration,
+            burn.CurrentScope.MapId, burn.CurrentScope.InstanceId};
+        auto propose = [&]() { return strategy.Propose(burn, actor.Guid, "dps",
+            &lease, true, true, nullptr, nullptr, nullptr, std::nullopt,
+            AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+            nullptr, nullptr, nullptr, &retained); };
+        auto hold = propose();
+        assert(hold.ReleaseRetainedRangedFormation);
+        assert(hold.Movement.Empty());
+        BotActionArbitration::Kernel holdKernel;
+        holdKernel.Begin(burn.ObservedAtMs);
+        MagmawMovementKernelAdapterContext holdAdapter;
+        holdAdapter.ObservedAtMs=burn.ObservedAtMs;
+        assert(SubmitMagmawMovementKernelCandidates(holdKernel,hold.Movement,
+            std::move(holdAdapter))==0);
+        assert(!holdKernel.Resolve().AnyCommitted);
+
+        RetainedState retainedState;
+        retainedState.MovementLease=lease;
+        NativeActor native;
+        if (hold.ReleaseRetainedRangedFormation)
+            SettleRetainedMagmawFormation(retainedState,&native);
+        assert(native.clears==1 && native.idles==1 && native.stops==1 && native.falling);
+        assert(!retainedState.ActivePathValid && !retainedState.ActivePathPurposeValid);
+        assert(!retainedState.IsMoving);
+        assert(retainedState.MovementLease.MovementOwner==BotMovementArbitration::Owner::None);
+        NativeActor independentlyMoving; independentlyMoving.independentMotion=true;
+        SettleRetainedMagmawFormation(retainedState,&independentlyMoving);
+        assert(retainedState.IsMoving); // preserve actual independent native motion
+
+        // Exercise the actual consumer against stale native identity, not a model.
+        for (int mismatch=0; mismatch<7; ++mismatch)
+        {
+            RetainedState stale; stale.MovementLease=lease;
+            NativeActor other;
+            if(mismatch==0) other.unfinished=false; // completed point
+            if(mismatch==1) other.activeType=other.currentType=5; // chase
+            if(mismatch==2) other.currentType=10; // controlled overlay
+            if(mismatch==3) other.x+=1; // replacement point, same logical scope
+            if(mismatch==4) stale.ActivePathSegmentValid=false;
+            if(mismatch==5) other.activeType=other.currentType=0; // idle
+            if(mismatch==6) other.controlledType=8; // controlled POINT, identical endpoint
+            SettleRetainedMagmawFormation(stale,&other);
+            assert(other.clears==0 && other.idles==0 && other.stops==0 && other.moving && other.falling);
+            assert(!stale.ActivePathValid && !stale.ActivePathPurposeValid);
+            assert(!stale.ActivePathSegmentValid && stale.ActivePathTraversalMode.empty());
+            assert(stale.MovementLease.MovementOwner==BotMovementArbitration::Owner::None);
+            assert(stale.IsMoving);
+        }
+        float const minimum=actor.PreferredCombatRange->MinRange;
+        actor.PreferredCombatRange->MinRange=-1;
+        assert(!propose().ReleaseRetainedRangedFormation);
+        actor.PreferredCombatRange->MinRange=minimum;
+
+        retained.PurposeValid = false; assert(!propose().ReleaseRetainedRangedFormation);
+        retained.PurposeValid = true;
+        retained.Purpose = "hook_approach"; assert(!propose().ReleaseRetainedRangedFormation);
+        retained.Purpose = "ranged_formation_restore";
+        ++retained.RouteGeneration; assert(!propose().ReleaseRetainedRangedFormation);
+        --retained.RouteGeneration;
+        ++lease.MovementScope.InstanceId; assert(!propose().ReleaseRetainedRangedFormation);
+        --lease.MovementScope.InstanceId;
+        ++lease.MovementScope.MapId; assert(!propose().ReleaseRetainedRangedFormation);
+        --lease.MovementScope.MapId;
+        ++retained.AttemptId; assert(!propose().ReleaseRetainedRangedFormation);
+        --retained.AttemptId;
+        ++retained.WipeGeneration; assert(!propose().ReleaseRetainedRangedFormation);
+        --retained.WipeGeneration;
+        retained.NodeId="different_node"; assert(!propose().ReleaseRetainedRangedFormation);
+        retained.NodeId=burn.CurrentScope.NodeId;
+
+        lease.MovementOwner = BotMovementArbitration::Owner::Hazard;
+        assert(!propose().ReleaseRetainedRangedFormation);
+        lease.MovementOwner = BotMovementArbitration::Owner::Mechanic;
+        actor.PreferredCombatRange->MaxRange = 10;
+        assert(!propose().ReleaseRetainedRangedFormation);
+        actor.PreferredCombatRange->MaxRange = 40;
+        burn.Hostiles.back().Selectable = false;
+        assert(!propose().ReleaseRetainedRangedFormation);
+        burn.Hostiles.back().Selectable = true;
+        auto healer = strategy.Propose(burn, actor.Guid, "healer", &lease, true,
+            true, nullptr, nullptr, nullptr, std::nullopt,
+            AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+            nullptr, nullptr, nullptr, &retained);
+        assert(!healer.ReleaseRetainedRangedFormation);
+    }
 
     // Retained local escape identity belongs to the moving bot. Two baiters
     // reacting to one parasite remain distinct, and replacing that parasite
@@ -2989,3 +3134,23 @@ def test_dungeon_intro_activation_uses_native_area_trigger_opcode() -> None:
         assert "interaction_contract" not in stonecore_routes["Corborus"]
         assert "completion_contract" not in stonecore_routes["Corborus"]
         assert "mechanic_contract" not in stonecore_routes["Corborus"]
+
+
+def test_retained_movement_purpose_submission_sites_preserve_retention():
+    executor = bot_source("BotWorldPopulationMgrMovementExecutor.cpp")
+    evidence = bot_source("BotWorldPopulationMgrMovementEvidence.cpp")
+    state_source = bot_source("BotWorldPopulationMgrBotState.h")
+    azil = bot_source("Content/Dungeons/Stonecore/Encounters/HighPriestessAzil/HighPriestessAzilPassiveSwarmStaging.cpp")
+    accepted = "state.ActivePathPurpose = intent.IntentReason;\n        state.ActivePathPurposeValid = true;"
+    assert accepted in executor
+    assert accepted.replace("        state.ActivePathPurposeValid", "    state.ActivePathPurposeValid") in executor
+    # Retention exits precede Commit replacement; they must not erase purpose.
+    retained = executor.index('"native_movement_retained"')
+    commit = executor.index("CommitMovementEvidence(state")
+    assert executor.index("return true;", retained) < commit
+    assert "ActivePathPurposeValid = false" not in executor[:commit]
+    commit_body = function_body(evidence, "void BotWorldPopulationMgr::CommitMovementEvidence(")
+    assert commit_body.index("ActivePathPurposeValid = false") < commit_body.index("ActivePathValid = true")
+    rejected = function_body(state_source, "inline void ApplyOwnedMovementPathRejection(")
+    assert "state.ActivePathPurposeValid = false;" in rejected
+    assert "state.ActivePathValid = true;\n                state.ActivePathPurposeValid = false;" in azil

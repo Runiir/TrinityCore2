@@ -129,6 +129,20 @@ scoped execution state instead of substituting a short-lived generic spline.
 Expose current/active motion type, spline-finalized state, flight/gravity
 flags, actual position, requested destination, and exact recovery episode.
 
+A finalized ejection spline does not prove the actor reached the floor. Compare
+actual position with an authoritative native floor observation before calling
+FALLING stale. If still airborne, repair the missing native fall transition;
+do not clear movement flags to make casts eligible. Bind any landing clearance
+to the actual launched spline and terminal floor proof. A finalized native fall
+may retain its spline falling attribute; inspect the native lifecycle before
+requiring that attribute to clear as a prerequisite.
+
+When cancelling a retained POINT, verify the current native slots and destination,
+not only the stored request owner. A controlled POINT can share the active slot's
+type. In this core, `Clear(slot)` followed by `MoveIdle()` can leave an unfinished
+spline moving when idle is already initialized. Use the native stop operation
+for an admitted cancellation, and make fixture mocks preserve these semantics.
+
 Treat an execution-capability change during a retained task as its own traced
 lifecycle edge. For cross-map corpse recovery, record flight eligibility before
 and after the tick plus the retained owner, traversal mode, attempt/wipe/route

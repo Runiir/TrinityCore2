@@ -52,9 +52,12 @@ std::optional<BotEncounter::ConfiguredCombatRange> ObserveConfiguredCombatRange(
         if (!bot->HasSpell(action.SpellId) || action.TargetSelector != "enemy"
             || action.RequiresMeleeRange || action.RequiresGroundTarget
             || action.RequiresInterruptibleTarget || !(action.DamageWeight > 0.0f)
-            || !BotRaidCooldownReservation::HasTag(action.MechanicTags, "filler"))
+            || !(BotRaidCooldownReservation::HasTag(action.MechanicTags, "filler")
+                || BotRaidCooldownReservation::HasTag(action.MechanicTags, "focus_builder")))
             continue;
-        if (filler)
+        if (filler && (filler->SpellId != action.SpellId
+            || filler->MinRange != action.MinRange || filler->MaxRange != action.MaxRange
+            || filler->RequiresRangedRange != action.RequiresRangedRange))
             return std::nullopt;
         filler = &action;
     }

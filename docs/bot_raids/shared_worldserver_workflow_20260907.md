@@ -2,51 +2,65 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
-Source `77bfc3c064` completed the exact 300-second Elemental calibration with
-8,842,292 damage / 29,474.307 DPS, up from 28,940.363 on 80. Current reference
-is 36,999.280 DPS; role calibration and the 75% hard floor pass at 79.662%, while
-the 85% optimization target remains unmet. All 199 submissions succeeded across
-2,998 samples with zero HPS, recorded deaths, cast failures or movement loss.
-Native exit 0, fresh cleanup and post-run build verification pass.
+Source `798a115d45` completed the exact 300-second Elemental calibration with
+9,873,505 damage / 32,911.683 DPS, versus 29,474.307 on 77. The promoted reference
+is 36,999.280 DPS: 88.9522%, passing both the 75% hard floor and 85% optimization
+target. All 200 native submissions succeeded across 2,998 samples with zero HPS,
+recorded deaths, cast failures or movement loss. Native exit 0, fresh cleanup
+and post-run build verification pass. All 1,013 chunks reassembled completely.
 
-All 1,000 chunks reassembled into the complete 12,287,702-byte payload. The new
-snapshot distinguishes owner fire spell power 12127, guardian inherited bonus 6063, local
-fire spell power 0 / local bonus 0, level 85, AP 602 and published melee damage 5191.800–5361.800.
-Those terms match the repaired native 0.5 inheritance / 0.4 melee formulas. Guardian
-originated damage rose from 31,907 to 400,197; Searing contributes 224,587 separately.
-The remaining guardian stat model and cadence are under independent review.
-Closed DPS and native reviews are frozen; the 5,334,825-byte evidence archive
-is remotely verified and exact raw payloads are evicted.
+Independent native review accepts the bounded Fire Elemental repair: all 1,679
+samples resolve spell-mod owner 1301, AP 63008 and melee range 9256.143–9426.143
+from initial owner fire spell power 12736. The separate stored spell bonus is
+6368; local fire power and local guardian bonus are zero. This verifies the
+estimated 4.9 owner-SP-to-AP contribution, not full simulator/historical parity.
+Guardian damage is 664,045 versus 400,197 on 77. Different owner proc timing
+also affected the run; the total gain is not an isolated patch effect estimate.
 
-Source 27200 built the reviewed C++ repair but failed before scoring because
-manual SQL application was replayed by the ordinary updater. That startup-only
-failure is remotely published, verified and evicted. The 77 SQL-only amendment
-passed independent replay/partial-state tests and actual MariaDB EXPLAIN. Native
-startup now applies it successfully. No gameplay code changed between 272 and 77.
+Closed calibration reviews and addenda are frozen. Its 5,373,643-byte archive
+is remotely verified and exact duplicate/raw payloads are evicted. Generic qualification still rejects
+four missing external identity hashes; this is a development calibration and
+is not training data. Canonical Magmaw has cleared on the same verified build. All ten actual
+provisioned loadouts matched canonical gear, enchants, spells, skills and consumes. Do not keep
+repeating Elemental dummy windows after this accepted optimization target.
+Fulmination per-event provenance remains an observation gap, not an admitted
+coefficient repair. Calibration action_attempts are valid selections; only
+result=ok decision rows count successful native submissions.
 
-Generic qualification remains rejected for four missing external identity
-manifest hashes. The native role pass remains valid as a development result;
-this run is ineligible for qualification and training. The C++ patch preserves
-existing coefficients, local spell power and stat-update timing, and changes
-only Greater Fire Elemental inheritance/consumption. Other guardian code was
-mechanically preserved. All changed C++ files remain below 1,000 lines.
+Source 798 is pushed to `codex/dps-canary-20260908`; remote master has not been
+updated. No worldserver is running; native exit, cleanup and post-run binary
+verification pass. Prior 77 and startup-only 272 evidence are
+remotely verified and exact raw payloads evicted. Source 77 fixed ordinary
+updater replay of the tracked spell bindings; that accepted edge is closed.
 
-The next Astra batch passed independent review and nine focused tests: exact
-Fire Elemental spell-modifier ownership, a separately observed native owner GUID,
-and the pinned simulator's estimated 4.9 owner-spell-power-to-AP contribution.
-It preserves native local AP and the 0.5 spell snapshot, removing the old 0.4
-direct melee term to avoid double-counting. This is partial reference alignment,
-not full stat parity or a claim of historical coefficient accuracy. The Object
-source split preserves all 192 method bodies except the intended owner getter.
+The latest Magmaw clear is source 798: 29,548,680 originated damage over 227
+combat seconds gives 130,170.396 DPS and 17,952.198 HPS. The 264.809-second elapsed
+span gives 111,584.878 DPS and 15,389.012 HPS. Ten bots survived the boss; two trash
+casualties recovered before it. Native death, route completion, cleanup and binary
+checks passed. Independent role reviews and correction addenda are frozen. The
+28,069,273-byte raid archive is remotely reconstructed and verified. Exact raw
+payloads and duplicate archive copies are evicted after all required trace reads.
+Actual composition remains 2 tanks / 3 healers / 5 DPS. The retained 378,849 DPS
+WCL kill used 1/1/8 and a different duration, so its total is not a matching floor.
 
-Next: commit/freeze, build once and run the next exact calibration.
-No worldserver is running. Source 77 is pushed to `codex/dps-canary-20260908`;
-remote master has not been updated.
+The current joined batch addresses two observed execution losses:
+- Fire actor 30007 remained 2.747315 yards above the sampled floor after vehicle
+  ejection; 16 Fireball attempts returned local casting over 17.001 seconds.
+  The corrected repair requires a real native fall and same-spline terminal floor
+  proof. Direct FALLING clearance is withdrawn in the frozen Fire addendum.
+- An in-range exposed-head DPS retained Mechanic ranged_formation_restore
+  movement, blocking hardcasts. The repair uses role, configured target range,
+  authoritative movement purpose and exact scope, preserving safety movement.
 
-The latest Magmaw clear remains source 18ff, 118,358.965 hostile DPS and 20,110.681
-HPS with zero deaths and actual 2 tank / 3 healer / 5 DPS. Raid-wide throughput,
-direct head targeting and all-party Heroism coverage remain open. The 378,849 WCL
-kill has a different 1/1/8 composition and duration; it is not the raid DPS floor.
+Both repairs passed independent Sol review and actual-caller fixtures. Formation
+verification passes 15 tests; landing and related movement/interaction verification
+passes 10 tests. The formation test now represents MoveIdle accurately: native
+StopMoving is required, and controlled or replacement paths remain untouched.
+Next: commit/freeze, one joined build and bounded Magmaw validation. The separately approved observation patch captures native
+owned-guardian state during normal raids: Elemental's guardian stopped damage
+before boss death, but current traces cannot establish why. Direct head attacks
+are proven for both Fire bots, Affliction and Hunter. Heroism submission and self
+coverage are proven; all-party coverage remains unobserved. Overall DPS is open.
 
 ## Earlier result: 816 setup accepted, DPS unresolved
 

@@ -76,7 +76,7 @@ struct Player:Unit {
  bool IsValidAttackTarget(Unit const* u)const{return u->Attackable;}
 };
 struct BotActionProfileSpell {uint32 SpellId=403; std::string TargetSelector="enemy";
- bool RequiresMeleeRange=false,RequiresGroundTarget=false,RequiresInterruptibleTarget=false;
+ bool RequiresRangedRange=false, RequiresMeleeRange=false,RequiresGroundTarget=false,RequiresInterruptibleTarget=false;
  float DamageWeight=1,MinRange=12,MaxRange=35; std::string MechanicTags="lightning_bolt,filler";};
 struct BotClassSpecActionProfile {bool MissingProfile=false; uint64 SnapshotGeneration=1;
  std::string SnapshotContentHash="pinned"; float MinRange=0,MaxRange=35;
@@ -127,7 +127,18 @@ int main(){
  assert(ObserveConfiguredCombatRange(&player,&target,profile)->MinRange==14);
  assert(ObserveConfiguredCombatRange(&player,&target,profile)->PreferredRange==18);
  profile.MinRange=0; profile.Spells[0].MinRange=12;
- profile.Spells.push_back(profile.Spells[0]); assert(!ObserveConfiguredCombatRange(&player,&target,profile));
+ profile.Spells.push_back(profile.Spells[0]); assert(ObserveConfiguredCombatRange(&player,&target,profile));
+ profile.Spells.back().RequiresRangedRange=true; assert(!ObserveConfiguredCombatRange(&player,&target,profile));
+ profile.Spells.back().RequiresRangedRange=false;
+ profile.Spells.back().MaxRange=34; assert(!ObserveConfiguredCombatRange(&player,&target,profile));
+ profile.Spells.back().MaxRange=35; profile.Spells.back().SpellId=421;
+ assert(!ObserveConfiguredCombatRange(&player,&target,profile));
+ profile.Spells.back()=profile.Spells.front();
+ profile.Spells[0].SpellId=56641; profile.Spells[1].SpellId=56641;
+ profile.Spells[0].MechanicTags="steady_shot,focus_builder,apl_inactive";
+ profile.Spells[1].MechanicTags="steady_shot,focus_builder,apl_expiring";
+ assert(ObserveConfiguredCombatRange(&player,&target,profile)->SourceSpellId==56641);
+ profile.Spells[0].SpellId=403; profile.Spells[1].SpellId=403;
  profile.Spells.pop_back(); profile.Spells[0].MechanicTags="not_filler";
  assert(!ObserveConfiguredCombatRange(&player,&target,profile));
  profile.Spells[0].MechanicTags="lightning_bolt,filler";

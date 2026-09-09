@@ -68,6 +68,7 @@ BotServerVehicleExitLanding::LandingEvidence BuildVehicleExitLandingEvidence(
     evidence.GravityDisabled = bot->IsGravityDisabled();
     evidence.NativeFlight = bot->IsInFlight() || bot->IsFlying();
     evidence.ControlledState = bot->HasUnitState(UNIT_STATE_CONTROLLED);
+    evidence.Rooted = bot->HasUnitState(UNIT_STATE_ROOT | UNIT_STATE_STUNNED);
     evidence.FlagsBefore = bot->GetUnitMovementFlags();
     evidence.FallingFlagsPresent = evidence.FlagsBefore
         & (MOVEMENTFLAG_FALLING | MOVEMENTFLAG_FALLING_FAR);
@@ -79,6 +80,10 @@ BotServerVehicleExitLanding::LandingEvidence BuildVehicleExitLandingEvidence(
         || (evidence.FlagsBefore
             & (MOVEMENTFLAG_ASCENDING | MOVEMENTFLAG_DESCENDING
                 | MOVEMENTFLAG_SPLINE_ELEVATION));
+    evidence.VerticalMovementFlags = evidence.FlagsBefore
+        & (MOVEMENTFLAG_ASCENDING | MOVEMENTFLAG_DESCENDING | MOVEMENTFLAG_SPLINE_ELEVATION);
+    evidence.SplineInitialized = bot->movespline && bot->movespline->Initialized();
+    evidence.SplineId = evidence.SplineInitialized ? bot->movespline->GetId() : 0;
 
     MotionMaster const* motion = bot->GetMotionMaster();
     if (motion)
@@ -99,7 +104,33 @@ BotServerVehicleExitLanding::LandingEvidence BuildVehicleExitLandingEvidence(
     std::uint64_t const receiptId = state.ServerVehicleExitLanding
         .BoundGroundingReceiptId;
     if (!receiptId)
+    {
+        evidence.NativeFallObservation = true;
+        if (evidence.ActorInWorld && evidence.ActorAlive)
+        {
+            // Use exactly MoveFall's native floor search and hover adjustment.
+            float const floor = bot->GetMapHeight(bot->GetPositionX(),
+                bot->GetPositionY(), bot->GetPositionZ(), true, MAX_FALL_DISTANCE);
+            evidence.NativeFloorValid = std::isfinite(floor) && floor > INVALID_HEIGHT;
+            evidence.NativeFloorZ = std::isfinite(floor) ? floor : 0.0f;
+            float const gap = bot->GetPositionZ() - (floor + bot->GetHoverOffset());
+            evidence.NativeFloorGap = std::isfinite(gap) ? gap : 0.0f;
+            evidence.NativeFloorValid = evidence.NativeFloorValid
+                && std::isfinite(gap);
+        }
+        auto const& fall = state.ServerVehicleExitLanding.Fall;
+        if (fall.SplineId && evidence.SplineInitialized)
+        {
+            auto const destination = bot->movespline->FinalDestination();
+            evidence.NativeFallDestinationMatches = destination.x == fall.DestinationX
+                && destination.y == fall.DestinationY && destination.z == fall.DestinationZ;
+            float const dx = bot->GetPositionX() - fall.DestinationX;
+            float const dy = bot->GetPositionY() - fall.DestinationY;
+            evidence.NativeFallEndpointMatches = BotWorldMovement::NativePathEndpointComponentsMatch(
+                std::sqrt(dx * dx + dy * dy), std::fabs(bot->GetPositionZ() - fall.DestinationZ));
+        }
         return evidence;
+    }
 
     BotWorldMovement::NativeMovementProgressObservation const progress =
         BotWorldMovement::MovementProgressDiagnostics().ForReceipt(receiptId);
@@ -141,6 +172,64 @@ BotServerVehicleExitLanding::LandingEvidence BuildVehicleExitLandingEvidence(
     return evidence;
 }
 
+BotServerVehicleExitLanding::ReconciliationResult StartVehicleExitNativeFall(
+    BotServerVehicleExitLanding::Episode& episode, Player* bot,
+    BotServerVehicleExitLanding::LandingEvidence const& evidence, uint64 observedAtMs)
+{
+    // Recheck the exact admission before the only native movement side effect.
+    if (!bot || BotServerVehicleExitLanding::Resolve(episode, evidence).Decision
+        != BotServerVehicleExitLanding::Decision::StartNativeFall)
+        return BotServerVehicleExitLanding::Keep("vehicle_exit_native_fall_not_admitted");
+    auto& fall = episode.Fall;
+    fall.Attempted = true;
+    MotionMaster* motion = bot->GetMotionMaster();
+    motion->MoveFall();
+    // From admitted empty slots, Mutate initializes CONTROLLED/EFFECT now.
+    // If native launch declines/defers, never invent or later guess its ID.
+    if (bot->movespline && bot->movespline->Initialized()
+        && bot->movespline->GetId() && bot->movespline->GetId() != evidence.SplineId
+        && bot->movespline->isFalling()
+        && motion->GetMotionSlotType(MOTION_SLOT_CONTROLLED) == EFFECT_MOTION_TYPE)
+    {
+        auto const destination = bot->movespline->FinalDestination();
+        if (std::isfinite(destination.x) && std::isfinite(destination.y) && std::isfinite(destination.z))
+        {
+            fall.SplineId = bot->movespline->GetId();
+            fall.SubmittedAtMs = observedAtMs;
+            fall.DestinationX = destination.x;
+            fall.DestinationY = destination.y;
+            fall.DestinationZ = destination.z;
+        }
+    }
+    return BotServerVehicleExitLanding::Keep(fall.SplineId
+        ? "vehicle_exit_native_fall_launched" : "vehicle_exit_native_fall_launch_unobserved");
+}
+
+bool VehicleExitNativeFallOwnsMotion(
+    BotWorldPopulationMgrBotState::WorldBotState const& state, Player const* bot,
+    bool scopeAvailable, BotServerVehicleExitLanding::Scope const& scope)
+{
+    auto const& episode = state.ServerVehicleExitLanding;
+    if (!episode.ExitPending || !episode.Fall.SplineId)
+        return false;
+    // Read back again after a synchronous launch: the admission sample still
+    // describes the finalized ejection, not the new native fall.
+    auto const evidence = BuildVehicleExitLandingEvidence(state, bot, scopeAvailable, scope);
+    return evidence.BotGuid == episode.ExitBotGuid && evidence.MapId == episode.ExitMapId
+        && evidence.InstanceId == episode.ExitInstanceId
+        && scopeAvailable == episode.ExitScopeAvailable
+        && (!scopeAvailable || BotServerVehicleExitLanding::SameEpisodeScope(scope, episode.ExitScope))
+        && evidence.ActorAlive && evidence.ActorInWorld
+        && !evidence.HasVehicle && !evidence.HasTransport && !evidence.ControlledState
+        && !evidence.Rooted && !evidence.GravityDisabled && !evidence.NativeFlight
+        && !evidence.VerticalMovementFlags && evidence.SplineInitialized
+        && evidence.SplineId == episode.Fall.SplineId && evidence.NativeFallDestinationMatches
+        && !evidence.CurrentSplineFinalized && evidence.NativeFalling
+        && evidence.CurrentMotionType == std::uint32_t(EFFECT_MOTION_TYPE)
+        && evidence.ControlledMotionType == std::uint32_t(EFFECT_MOTION_TYPE)
+        && evidence.ActiveMotionType == std::uint32_t(MAX_MOTION_TYPE);
+}
+
 std::string BuildVehicleExitLandingEventJson(
     BotServerVehicleExitLanding::Episode const& episode,
     BotServerVehicleExitLanding::LandingEvidence const& evidence,
@@ -151,6 +240,13 @@ std::string BuildVehicleExitLandingEventJson(
          << ",\"result\":\"" << (result ? result : "unknown") << "\""
          << ",\"observed_vehicle_guid\":" << episode.ObservedVehicleGuid
          << ",\"exit_observed_at_ms\":" << episode.ExitObservedAtMs
+         << ",\"native_fall_spline_id\":" << episode.Fall.SplineId
+         << ",\"native_fall_submitted_at_ms\":" << episode.Fall.SubmittedAtMs
+         << ",\"native_fall_destination\":{\"x\":" << episode.Fall.DestinationX
+         << ",\"y\":" << episode.Fall.DestinationY << ",\"z\":" << episode.Fall.DestinationZ << "}"
+         << ",\"native_floor_valid\":" << (evidence.NativeFloorValid ? "true" : "false")
+         << ",\"native_floor_z\":" << evidence.NativeFloorZ
+         << ",\"native_floor_gap\":" << evidence.NativeFloorGap
          << ",\"receipt_id\":" << evidence.ReceiptId
          << ",\"receipt_armed_at_ms\":" << evidence.ReceiptArmedAtMs
          << ",\"receipt_terminal_outcome\":\"" << escapedOutcome << "\""
@@ -369,13 +465,20 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
         BindPendingVehicleExitReceipt(context.State.ServerVehicleExitLanding,
             context.Bot, vehicleExitScopeAvailable, vehicleExitScope);
         uint64 const landingObservedAtMs = NowMs();
-        BotServerVehicleExitLanding::LandingEvidence const landingEvidence =
+        BotServerVehicleExitLanding::LandingEvidence landingEvidence =
             BuildVehicleExitLandingEvidence(context.State, context.Bot,
                 vehicleExitScopeAvailable, vehicleExitScope);
-        BotServerVehicleExitLanding::ReconciliationResult const landingResult =
+        BotServerVehicleExitLanding::ReconciliationResult landingResult =
             BotServerVehicleExitLanding::Reconcile(
                 context.State.ServerVehicleExitLanding, landingEvidence,
                 context.Bot);
+        if (landingResult.Decision == BotServerVehicleExitLanding::Decision::StartNativeFall)
+        {
+            landingResult = StartVehicleExitNativeFall(context.State.ServerVehicleExitLanding,
+                context.Bot, landingEvidence, landingObservedAtMs);
+            landingEvidence = BuildVehicleExitLandingEvidence(context.State, context.Bot,
+                vehicleExitScopeAvailable, vehicleExitScope);
+        }
         uint32 const landingFlagsAfter = context.Bot->GetUnitMovementFlags();
         BotServerVehicleExitLanding::RecordEvaluation(
             context.State.ServerVehicleExitLanding, landingEvidence,
@@ -404,6 +507,15 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
                 == BotServerVehicleExitLanding::Decision::CloseEpisode)
                 BotServerVehicleExitLanding::CloseEpisode(
                     context.State.ServerVehicleExitLanding);
+        }
+        // Protect only observed owned in-flight motion. Unobserved/replaced
+        // launches stay diagnostic pending without blocking other recovery.
+        if (VehicleExitNativeFallOwnsMotion(context.State, context.Bot,
+                vehicleExitScopeAvailable, vehicleExitScope))
+        {
+            context.State.LastDecisionResult = landingResult.Reason;
+            context.State.LastDecisionReason = landingResult.Reason;
+            return false;
         }
     }
 

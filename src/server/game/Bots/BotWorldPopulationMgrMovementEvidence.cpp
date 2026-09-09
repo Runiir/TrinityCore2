@@ -54,6 +54,7 @@ void BotWorldPopulationMgr::CommitMovementEvidence(
     BotWorldMovement::PathPlan const& plan,
     BotMovementArbitration::Request const& request, uint64 nowMs)
 {
+    state.ActivePathPurposeValid = false;
     state.ActivePathFromX = bot->GetPositionX();
     state.ActivePathFromY = bot->GetPositionY();
     state.ActivePathFromZ = bot->GetPositionZ();

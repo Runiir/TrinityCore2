@@ -15,15 +15,51 @@
 #include "GossipDef.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
+#include "MotionMaster.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <string>
 #include <variant>
 
 using BotWorldPopulationMgrSpellSemantics::NowMs;
+
+namespace
+{
+// Called only after the pure plan matched the authoritative path purpose/scope.
+template<class State, class Actor>
+void SettleRetainedMagmawFormation(State& state, Actor* bot)
+{
+    auto* motion = bot->GetMotionMaster();
+    float x = 0.0f, y = 0.0f, z = 0.0f;
+    constexpr float ActiveDestinationEpsilon = 0.1f;
+    bool const matchingNativePath = state.ActivePathSegmentValid
+        && motion->GetMotionSlotType(MOTION_SLOT_ACTIVE) == POINT_MOTION_TYPE
+        && motion->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE
+        && motion->GetMotionSlotType(MOTION_SLOT_CONTROLLED) == MAX_MOTION_TYPE
+        && motion->GetDestination(x, y, z)
+        && std::fabs(x - state.ActivePathSegmentToX) <= ActiveDestinationEpsilon
+        && std::fabs(y - state.ActivePathSegmentToY) <= ActiveDestinationEpsilon
+        && std::fabs(z - state.ActivePathSegmentToZ) <= ActiveDestinationEpsilon;
+    if (matchingNativePath)
+    {
+        bot->StopMoving();
+        motion->Clear(MOTION_SLOT_ACTIVE);
+        motion->MoveIdle();
+    }
+    // A replaced or completed native path only retires stale formation evidence.
+    state.ActivePathValid = false;
+    state.ActivePathPurposeValid = false;
+    state.ActivePathSegmentValid = false;
+    state.ActivePathTraversalMode.clear();
+    state.ActivePathTargetGuid.Clear();
+    state.MovementLease = {};
+    state.IsMoving = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
+}
+}
 
 void BotWorldPopulationMgr::PrepareValidationKernel(
     BotUpdateContext& context)
@@ -449,6 +485,10 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                                 spellId, info->GetRecoveryTime() };
             }
 
+            BotEncounter::MagmawRetainedFormationPath const retainedFormation{
+                context.State.ActivePathPurposeValid, context.State.ActivePathPurpose,
+                context.State.ActivePathAttemptId, context.State.ActivePathWipeGeneration,
+                context.State.ActivePathRouteGeneration, context.State.ActivePathRouteNodeId };
             BotEncounter::AdaptiveMagmawStrategy magmawStrategy;
             BotEncounter::AdaptiveMagmawPlan magmawPlan = magmawStrategy.Propose(
                 *Cohort().EncounterSnapshot, context.Bot->GetGUID(),
@@ -462,7 +502,10 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 Cohort().MagmawFacts
                     ? &Cohort().MagmawFacts->Facts() : nullptr,
                 &context.State.MagmawPersonalParasiteEscape,
-                &Cohort().MagmawParasiteWave);
+                &Cohort().MagmawParasiteWave, &retainedFormation);
+            if (magmawPlan.ReleaseRetainedRangedFormation)
+                SettleRetainedMagmawFormation(context.State, context.Bot);
+
             static std::vector<BotEncounter::MagmawTransferLaneTask> const
                 noMagmawTransferLaneTasks;
             auto const& transferLaneShadow =

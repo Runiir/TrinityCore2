@@ -752,3 +752,245 @@ int main() {
                     '-I', str(ROOT / 'src/server/game'), '-I', str(ROOT / 'src/common'),
                     str(source), '-o', str(binary)], check=True)
     subprocess.run([str(binary)], check=True)
+
+
+def test_suspended_exit_runs_actual_native_fall_before_terminal_clear(tmp_path):
+    """Recorded no-POINT exit through actual preparation and MoveFall bodies."""
+    preparation = PREPARATION.read_text()
+    helpers = preparation[preparation.index('void BindPendingVehicleExitReceipt('):
+                          preparation.index('std::string BuildVehicleExitLandingEventJson(')]
+    event = preparation[preparation.index('std::string BuildVehicleExitLandingEventJson('):
+                        preparation.index('\n}\n\nvoid BotWorldPopulationMgr::BotUpdateContext')]
+    start = preparation.index('    if (context.State.ServerProvisioned\n        && context.State.ServerVehicleExitLanding.ExitPending)')
+    caller = preparation[start:preparation.index('    float moved =', start)]
+    motion = (ROOT / 'src/server/game/Movement/MotionMaster.cpp').read_text()
+    fall = motion[motion.index('void MotionMaster::MoveFall('):motion.index('void MotionMaster::MoveSeekAssistance(')]
+    generic = (ROOT / 'src/server/game/Movement/MovementGenerators/GenericMovementGenerator.cpp').read_text()
+    initialize = generic[generic.index('void GenericMovementGenerator::Initialize('):generic.index('bool GenericMovementGenerator::Update(')]
+    source = tmp_path / 'native_fall.cpp'
+    source.write_text(r'''
+#include "Bots/BotServerVehicleExitLanding.h"
+#include <cassert>
+#include <cmath>
+#include <sstream>
+#include <vector>
+using uint64=std::uint64_t; using uint32=std::uint32_t;
+using namespace BotServerVehicleExitLanding;
+constexpr int TYPEID_PLAYER=1, MOTION_SLOT_ACTIVE=1, MOTION_SLOT_CONTROLLED=2;
+constexpr int IDLE_MOTION_TYPE=0, EFFECT_MOTION_TYPE=16, MAX_MOTION_TYPE=19;
+constexpr uint32 MOVEMENTFLAG_FALLING=2048, MOVEMENTFLAG_FALLING_FAR=4096;
+constexpr uint32 MOVEMENTFLAG_ASCENDING=8192, MOVEMENTFLAG_DESCENDING=16384, MOVEMENTFLAG_SPLINE_ELEVATION=32768;
+constexpr uint32 UNIT_STATE_CONTROLLED=1, UNIT_STATE_ROOT=2, UNIT_STATE_STUNNED=4;
+constexpr float MAX_FALL_DISTANCE=250000, INVALID_HEIGHT=-100000;
+#define TC_LOG_DEBUG(...) ((void)0)
+struct Vec { float x=0,y=0,z=0; };
+struct Spline {
+    uint32 Id=700; bool Init=true, Final=true, Falling=false; Vec End;
+    bool Initialized() const { return Init; } bool Finalized() const { return Final; }
+    bool isFalling() const { return Falling; } uint32 GetId() const { return Id; }
+    Vec FinalDestination() const { return End; }
+};
+struct Map { uint32 GetId() const { return 669; } };
+struct Guid { uint64 Value=30007; uint64 GetCounter() const { return Value; } std::string ToString() const { return "actor"; } };
+struct Unit; struct Player; struct GenericMovementGenerator;
+namespace Movement {
+struct MoveSplineInit {
+    Unit* Owner; Vec Destination; bool Falling=false;
+    MoveSplineInit(Unit* owner):Owner(owner){}
+    void MoveTo(float x,float y,float z,bool path) { assert(!path); Destination={x,y,z}; }
+    void SetFall() { Falling=true; }
+    uint32 Launch();
+};
+}
+struct GenericMovementGenerator {
+    Movement::MoveSplineInit _splineInit;
+    struct { void Reset(uint32) {} } _duration;
+    GenericMovementGenerator(Movement::MoveSplineInit&& init,int type,uint32):_splineInit(std::move(init)) { assert(type==EFFECT_MOTION_TYPE); }
+    void Initialize(Unit* owner);
+};
+struct MotionMaster {
+    Unit* _owner=nullptr; int Current=0,Active=19,Controlled=19; int FallCalls=0;
+    bool Defer=false;
+    int GetCurrentMovementGeneratorType() const { return Current; }
+    int GetMotionSlotType(int slot) const { return slot==MOTION_SLOT_ACTIVE?Active:Controlled; }
+    void Mutate(GenericMovementGenerator* generator,int slot) {
+        assert(slot==MOTION_SLOT_CONTROLLED); ++FallCalls;
+        Current=Controlled=EFFECT_MOTION_TYPE;
+        if (!Defer) generator->Initialize(_owner);
+        delete generator;
+    }
+    void MoveFall(uint32 id=0);
+};
+struct Unit {
+    Guid GuidValue; uint32 MapId=669,Instance=2,Flags=MOVEMENTFLAG_FALLING,StateFlags=0;
+    bool Alive=true,InWorld=true,Vehicle=false,Transport=false,Gravity=false,Flight=false,FailLaunch=false;
+    float X=-311.464996f,Y=-48.5971985f,Z=214.838013f,Floor=212.090698f,Hover=0;
+    Spline Storage; Spline* movespline=&Storage; MotionMaster Motion; Map WorldMap;
+    struct { void SetFallTime(int) {} } m_movementInfo;
+    unsigned Clears=0;
+    Unit() { Motion._owner=this; }
+    Guid GetGUID() const { return GuidValue; } uint32 GetMapId() const { return MapId; }
+    uint32 GetInstanceId() const { return Instance; } Map* GetMap() const { return const_cast<Map*>(&WorldMap); }
+    int GetTypeId() const { return TYPEID_PLAYER; }
+    bool IsInWorld() const { return InWorld; } bool IsAlive() const { return Alive; }
+    void* GetVehicle() const { return Vehicle?(void*)this:nullptr; }
+    void* GetTransport() const { return Transport?(void*)this:nullptr; }
+    bool IsGravityDisabled() const { return Gravity; } bool IsInFlight() const { return Flight; }
+    bool IsFlying() const { return Flight; } bool HasUnitState(uint32 mask) const { return StateFlags&mask; }
+    uint32 GetUnitMovementFlags() const { return Flags; }
+    void AddUnitMovementFlag(uint32 f) { Flags|=f; }
+    void SetFall(bool enable) { if (enable) Flags|=MOVEMENTFLAG_FALLING; else { ++Clears; Flags &= ~(MOVEMENTFLAG_FALLING|MOVEMENTFLAG_FALLING_FAR); } }
+    float GetPositionX() const { return X; } float GetPositionY() const { return Y; } float GetPositionZ() const { return Z; }
+    float GetHoverOffset() const { return Hover; }
+    float GetMapHeight(float x,float y,float z,bool vmap,float distance) const {
+        assert(x==X && y==Y && z==Z && vmap && distance==MAX_FALL_DISTANCE); return Floor;
+    }
+    MotionMaster* GetMotionMaster() const { return const_cast<MotionMaster*>(&Motion); }
+};
+struct Player:Unit {};
+uint32 Movement::MoveSplineInit::Launch() {
+    if (Owner->FailLaunch) return 0;
+    ++Owner->Storage.Id; Owner->Storage.Init=true; Owner->Storage.Final=false;
+    Owner->Storage.Falling=Falling; Owner->Storage.End=Destination; return 700;
+}
+namespace BotWorldPopulationMgrBotState { struct WorldBotState {
+    bool ServerProvisioned=true; Episode ServerVehicleExitLanding;
+    std::string LastDecisionResult,LastDecisionReason;
+}; }
+namespace BotWorldMovement {
+struct NativeMovementProgressSample { bool Terminal=false,ActorAlive=false,ActorInWorld=false,EndpointReached=false,FloorValid=false,SelectedPlatformCompatible=false; uint64 ReceiptId=0; };
+struct NativeMovementProgressObservation {
+    bool Available=false,Terminal=false,LaunchedSplineInitialized=false;
+    uint64 ReceiptId=0,BotGuid=0,ArmedAtMs=0,SupersededByReceiptId=0;
+    uint32 MapId=0,InstanceId=0,LaunchedSplineId=0;
+    BotServerVehicleExitLanding::Scope Scope;
+    std::string TerminalOutcome="pending"; std::vector<NativeMovementProgressSample> Samples;
+    float SelectedX=0,SelectedY=0,SelectedZ=0;
+};
+struct Sidecar { NativeMovementProgressObservation ForReceipt(uint64) { return {}; } };
+Sidecar& MovementProgressDiagnostics() { static Sidecar s; return s; }
+}
+''' + fall + initialize + helpers + event + r'''
+using State=BotWorldPopulationMgrBotState::WorldBotState;
+struct Context { ::State& State; Player* Bot; };
+uint64 NowMs() { return 1788909135381ULL; }
+std::string JsonEscape(std::string const& x) { return x; }
+void RecordEvent(State&,Player*,char const*,Player*,char const*,char const*,char const*) {}
+bool Prepare(Context& context,Scope vehicleExitScope={1,0,4,669,2}) {
+    bool vehicleExitScopeAvailable=true;
+''' + caller + r'''
+    return true;
+}
+void Exit(State& state) {
+    VehicleTransitionObservation v{true,17388577643665817675ULL,30007,669,2,1788909126021ULL,true,{1,0,4,669,2}};
+    ObserveVehicleTransition(state.ServerVehicleExitLanding,v);
+    v.HasVehicle=false; v.ObservedAtMs=1788909129530ULL;
+    ObserveVehicleTransition(state.ServerVehicleExitLanding,v);
+}
+void Land(Player& bot) {
+    bot.X=bot.Storage.End.x; bot.Y=bot.Storage.End.y; bot.Z=bot.Storage.End.z;
+    bot.Storage.Final=true; // Native fall attribute deliberately stays true.
+    bot.Motion.Current=IDLE_MOTION_TYPE; bot.Motion.Active=bot.Motion.Controlled=MAX_MOTION_TYPE;
+}
+int main() {
+    State state; Player bot; Context context{state,&bot}; Exit(state);
+    // Active ejection cannot prove a landing or be replaced by our fall.
+    bot.Storage.Final=false; bot.Motion.Current=bot.Motion.Controlled=EFFECT_MOTION_TYPE;
+    Prepare(context); assert(bot.Clears==0 && bot.Motion.FallCalls==0);
+    bot.Storage.Final=true; bot.Motion.Current=0;bot.Motion.Controlled=19;
+    uint32 ejectId=bot.Storage.Id;
+    assert(!Prepare(context));
+    assert(bot.Motion.FallCalls==1); // RED before repair: no native fall invoked.
+    assert(bot.Clears==0 && bot.Storage.Id!=ejectId && bot.Storage.Falling);
+    assert(bot.Storage.End.x==bot.X && bot.Storage.End.y==bot.Y && bot.Storage.End.z==bot.Floor);
+    assert(state.ServerVehicleExitLanding.Fall.SplineId==bot.Storage.Id);
+    assert(state.ServerVehicleExitLanding.Fall.SubmittedAtMs!=0);
+    assert(state.ServerVehicleExitLanding.LastNativeSplineId==bot.Storage.Id);
+    assert(!state.ServerVehicleExitLanding.LastSplineFinalized);
+    assert(!state.ServerVehicleExitLanding.BoundGroundingReceiptId && !state.ServerVehicleExitLanding.SubmittedGroundReceiptId);
+    assert(!Prepare(context)); assert(bot.Clears==0 && bot.Motion.FallCalls==1);
+    Land(bot); assert(Prepare(context)); assert(bot.Clears==1 && !state.ServerVehicleExitLanding.ExitPending);
+    Prepare(context); assert(bot.Clears==1);
+    for (int failure=0;failure<15;++failure) {
+        State s; Player p; Context c{s,&p}; Exit(s);
+        switch(failure) {
+        case 0:p.Floor=INVALID_HEIGHT;break;
+        case 1:p.Floor=p.Z-0.05f;break;
+        case 2:p.Alive=false;break;
+        case 3:p.InWorld=false;break;
+        case 4:p.StateFlags=UNIT_STATE_CONTROLLED;break;
+        case 5:p.Flight=true;break;
+        case 6:p.Gravity=true;break;
+        case 7:p.Vehicle=true;break;
+        case 8:p.Transport=true;break;
+        case 9:p.StateFlags=UNIT_STATE_ROOT;break;
+        case 10:p.Motion.Active=EFFECT_MOTION_TYPE;break;
+        case 11:p.GuidValue.Value++;break;
+        case 12:p.MapId++;break;
+        case 13:p.Instance++;break;
+        case 14:p.Floor=p.Z+3;break;
+        }
+        assert(Prepare(c)); assert(p.Clears==0 && p.Motion.FallCalls==0);
+    }
+    for(int failure=0;failure<17;++failure) {
+        State s; Player p; Context c{s,&p}; Exit(s); Prepare(c); assert(p.Motion.FallCalls==1);
+        Land(p);
+        Scope scope{1,0,4,669,2};
+        switch(failure) {
+        case 0:p.Storage.Id++;break;
+        case 1:p.Z+=2.747315f;break;
+        case 2:p.Floor=INVALID_HEIGHT;break;
+        case 3:p.Motion.Controlled=EFFECT_MOTION_TYPE;break;
+        case 4:p.Storage.Final=false;break;
+        case 5:p.Alive=false;break;
+        case 6:p.InWorld=false;break;
+        case 7:p.StateFlags=UNIT_STATE_CONTROLLED;break;
+        case 8:p.Flight=true;break;
+        case 9:p.Gravity=true;break;
+        case 10:p.GuidValue.Value++;break;
+        case 11:scope.AttemptId++;break;
+        case 12:scope.WipeGeneration++;break;
+        case 13:scope.RouteGeneration++;break;
+        case 14:p.Storage.End.z+=4;break;
+        case 15:p.MapId++;break;
+        case 16:p.Instance++;break;
+        }
+        assert(Prepare(c,scope));assert(p.Clears==0 && p.Motion.FallCalls==1);
+    }
+    // A replaced active spline or newly controlled actor cannot be held by
+    // an old launch attempt; ordinary recovery retains the preparation turn.
+    for(int changed=0;changed<3;++changed) {
+        State s; Player p; Context c{s,&p}; Exit(s); assert(!Prepare(c));
+        if(changed==0) ++p.Storage.Id;
+        if(changed==1) p.StateFlags=UNIT_STATE_CONTROLLED;
+        if(changed==2) p.Vehicle=true;
+        assert(Prepare(c)); assert(p.Clears==0 && p.Motion.FallCalls==1);
+    }
+    // Native hover is part of the actual MoveFall destination, not bot Z correction.
+    {
+        State s; Player p; p.Hover=0.5f; Context c{s,&p}; Exit(s);
+        assert(!Prepare(c)); assert(p.Storage.End.z==p.Floor+p.Hover);
+        Land(p); assert(Prepare(c)); assert(p.Clears==1);
+    }
+    for(int deferred=0;deferred<2;++deferred) {
+        State s; Player p; Context c{s,&p}; Exit(s);
+        p.FailLaunch=!deferred;p.Motion.Defer=deferred;
+        uint32 oldId=p.Storage.Id;assert(Prepare(c));
+        assert(p.Motion.FallCalls==1 && p.Storage.Id==oldId && p.Clears==0);
+        // Never bind an unrelated later fall after a declined/deferred call.
+        ++p.Storage.Id;p.Storage.Falling=true;
+        p.Storage.End={p.X,p.Y,p.Floor+p.Hover};
+        Land(p);assert(Prepare(c));
+        assert(!s.ServerVehicleExitLanding.Fall.SplineId);
+        assert(!s.ServerVehicleExitLanding.Fall.SubmittedAtMs);
+        assert(s.ServerVehicleExitLanding.LastReason=="vehicle_exit_native_fall_launch_unobserved");
+        assert(p.Clears==0 && p.Motion.FallCalls==1);
+    }
+}
+''')
+    binary = tmp_path / 'native_fall'
+    subprocess.run(['g++', '-std=c++17', '-Wall', '-Wextra', '-Werror',
+                    '-Wno-unused-parameter', '-Wno-unused-variable',
+                    '-I', str(ROOT / 'src/server/game'), '-I', str(ROOT / 'src/common'),
+                    str(source), '-o', str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)

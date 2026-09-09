@@ -44,8 +44,16 @@ Record hashes and identities before comparing:
 - Whether the task is a static review, non-ledger diagnostic, or qualification
   audit. Never promote an exploratory UI run into qualification evidence.
 
+Reference generated receipts for shared source/binary identity instead of
+retyping long digests in every class report. Verify any repeated digest against
+its actual file or receipt programmatically before freezing the report.
+
 If a required identity is absent, continue a static review but label the result
 `informational_only_identity_incomplete`.
+
+For a growing live log, use the latest complete status matching the active
+epoch/attempt for current progress. An earlier parsed prefix is history, not
+the live state. After closure, use the final report for run-level outcomes.
 
 Report parity per actor and field: proved match, measured mismatch, or missing
 observation. Do not inherit a roster-wide mismatch from an earlier run. Normalize
@@ -221,6 +229,12 @@ primary impacts, periodic ticks, triggered effects and per-target AoE impacts
 separate; event counts are not cast counts. A no-impact interval can contain
 useful instant actions or required movement. Join native terminal outcomes before
 classifying a missing impact as a failed cast or idle time.
+
+Inspect counter producers before using their labels. In the current DPS/tank
+calibration collector, `action_attempts` counts valid selections even when the
+outcome is casting, global cooldown, or no action; it is not a cast-start count.
+Use per-spell `decision_timeline` rows with `result=ok` for successful submissions,
+retain excluded outcomes separately, and still distinguish submission from landing.
 
 Do not treat aggregate reasons such as `no_trained_heal` or
 `no_instant_heal_while_moving` as the first broken edge. Correlate the exact

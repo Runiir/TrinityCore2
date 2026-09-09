@@ -295,6 +295,8 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         state.LastMovementExecution.Disposition =
             BotWorldMovement::ExecutionDisposition::Submitted;
         state.LastMovementExecution.NativeSubmitted = true;
+        state.ActivePathPurpose = intent.IntentReason;
+        state.ActivePathPurposeValid = true;
         return true;
     }
     else if (plan.NativeLongPath)
@@ -308,6 +310,8 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
     state.LastMovementExecution.Disposition =
         BotWorldMovement::ExecutionDisposition::Submitted;
     state.LastMovementExecution.NativeSubmitted = true;
+    state.ActivePathPurpose = intent.IntentReason;
+    state.ActivePathPurposeValid = true;
     RecordMovementPlannerExecutorOutcome(MovementExecutorBotGuid(bot),
         MovementExecutorMapId(bot), intent, "native_path_submission", "submitted",
         "native_movement_submitted", plan.LaunchReceiptId);

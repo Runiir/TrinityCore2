@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotCalibrationSummonObservation.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -118,6 +119,16 @@ std::string BuildServerVehicleExitLandingJson(
          << episode.BoundGroundingReceiptId
          << ",\"bound_grounding_receipt_armed_at_ms\":"
          << episode.BoundGroundingReceiptArmedAtMs
+         << ",\"native_fall\":{\"attempted\":" << (episode.LastFall.Attempted ? "true" : "false")
+         << ",\"submitted_at_ms\":" << episode.LastFall.SubmittedAtMs
+         << ",\"spline_id\":" << episode.LastFall.SplineId
+         << ",\"destination\":{\"x\":" << episode.LastFall.DestinationX
+         << ",\"y\":" << episode.LastFall.DestinationY
+         << ",\"z\":" << episode.LastFall.DestinationZ << "}"
+         << ",\"current_spline_id\":" << episode.LastNativeSplineId
+         << ",\"floor_valid\":" << (episode.LastNativeFloorValid ? "true" : "false")
+         << ",\"floor_z\":" << episode.LastNativeFloorZ
+         << ",\"floor_gap\":" << episode.LastNativeFloorGap << "}"
          << ",\"last_evaluation\":{\"timestamp_ms\":"
          << episode.LastReconciliationAtMs
          << ",\"observed_at_ms\":" << episode.LastObservedAtMs
@@ -670,7 +681,13 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << ",\"server_vehicle_exit_landing\":"
          << BuildServerVehicleExitLandingJson(state, bot, nowMs)
          << ",\"next_expected_action\":\"" << JsonEscape(diagnosis.NextExpectedAction) << "\""
-         << ",\"suggested_investigation\":\"" << JsonEscape(diagnosis.SuggestedInvestigation) << "\"}";
+         << ",\"suggested_investigation\":\"" << JsonEscape(diagnosis.SuggestedInvestigation) << "\"";
+    // Begin native summon observation
+    json << ",\"summon_observation\":{\"observed_at_ms\":" << nowMs
+         << ",\"elapsed_time_basis\":\"cohort\",\"target_source\":\"owner_native_victim\",\"state\":"
+         << BotCalibrationSummonObservation::Capture(bot, bot ? bot->GetVictim() : nullptr, Cohort().ElapsedMs) << "}";
+    // End native summon observation
+    json << "}";
     return json.str();
 }
 

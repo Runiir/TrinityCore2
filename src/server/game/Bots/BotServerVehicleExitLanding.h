@@ -11,6 +11,16 @@ namespace BotServerVehicleExitLanding
 {
 using Scope = BotMovementArbitration::Scope;
 
+struct NativeFall
+{
+    bool Attempted = false;
+    std::uint64_t SubmittedAtMs = 0;
+    std::uint32_t SplineId = 0;
+    float DestinationX = 0.0f;
+    float DestinationY = 0.0f;
+    float DestinationZ = 0.0f;
+};
+
 struct Episode
 {
     // Occupancy is sampled on the bot's update cadence.  The previous-tick
@@ -42,6 +52,12 @@ struct Episode
     std::uint32_t SubmittedMapId = 0;
     std::uint32_t SubmittedInstanceId = 0;
     Scope SubmittedScope;
+    NativeFall Fall;
+    NativeFall LastFall;
+    bool LastNativeFloorValid = false;
+    float LastNativeFloorZ = 0.0f;
+    float LastNativeFloorGap = 0.0f;
+    std::uint32_t LastNativeSplineId = 0;
 
     // The latest guard evaluation is retained for diagnosis even when it
     // rejects reconciliation.  These values are bounded latest-value state;
@@ -180,6 +196,7 @@ inline void BeginVehicleOccupancy(Episode& episode,
     episode.ExitInstanceId = 0;
     episode.ExitScopeAvailable = false;
     episode.ExitScope = Scope();
+    episode.Fall = NativeFall();
     ResetBoundReceipt(episode);
     if (!carrySubmission)
         ResetSubmittedReceipt(episode);
@@ -228,6 +245,7 @@ inline void ObserveVehicleTransition(Episode& episode,
     episode.ExitInstanceId = observation.InstanceId;
     episode.ExitScopeAvailable = observation.ScopeAvailable;
     episode.ExitScope = observation.CurrentScope;
+    episode.Fall = NativeFall();
     ResetBoundReceipt(episode);
     if (!carrySubmission)
         ResetSubmittedReceipt(episode);
@@ -343,6 +361,16 @@ struct LandingEvidence
     bool NativeFalling = false;
     bool CurrentSplineFinalized = false;
     bool MotionSlotsSettled = false;
+    bool Rooted = false;
+    bool NativeFallObservation = false;
+    bool VerticalMovementFlags = false;
+    bool SplineInitialized = false;
+    std::uint32_t SplineId = 0;
+    bool NativeFloorValid = false;
+    float NativeFloorZ = 0.0f;
+    float NativeFloorGap = 0.0f;
+    bool NativeFallEndpointMatches = false;
+    bool NativeFallDestinationMatches = false;
 
     bool ReceiptAvailable = false;
     std::uint64_t ReceiptId = 0;
@@ -374,6 +402,7 @@ enum class Decision : std::uint8_t
     NoEpisode,
     KeepPending,
     CloseEpisode,
+    StartNativeFall,
     ClearStaleLandingFlag
 };
 
@@ -421,6 +450,41 @@ inline ReconciliationResult Resolve(Episode const& episode,
         return Keep("vehicle_exit_landing_aerial_state");
     if (evidence.ControlledState)
         return Keep("vehicle_exit_landing_controlled_state");
+    // No POINT was submitted for this server exit. A finalized ejection
+    // above the floor is not landing proof: first perform a native fall.
+    // POINT/deferred/occupied receipt resolution below remains unchanged.
+    if (evidence.NativeFallObservation
+        && !episode.BoundGroundingReceiptId && !episode.SubmittedGroundReceiptId)
+    {
+        if (evidence.Rooted || evidence.VerticalMovementFlags)
+            return Keep("vehicle_exit_native_fall_controlled_motion");
+        if (episode.Fall.Attempted && !episode.Fall.SplineId)
+            return Keep("vehicle_exit_native_fall_launch_unobserved");
+        if (episode.Fall.SplineId
+            && (evidence.SplineId != episode.Fall.SplineId
+                || !evidence.NativeFallDestinationMatches))
+            return Keep("vehicle_exit_native_fall_spline_replaced");
+        if (!evidence.CurrentSplineFinalized || !evidence.SplineInitialized)
+            return Keep("vehicle_exit_native_fall_motion_unsettled");
+        if (!evidence.MotionSlotsSettled)
+            return Keep("vehicle_exit_native_fall_slots_active");
+        if (!evidence.NativeFloorValid)
+            return Keep("vehicle_exit_native_fall_floor_unavailable");
+        if (!episode.Fall.Attempted)
+        {
+            if (evidence.NativeFloorGap <= BotWorldMovement::NativePathEndpointVerticalTolerance)
+                return Keep("vehicle_exit_native_fall_no_material_gap");
+            return { Decision::StartNativeFall, false,
+                "vehicle_exit_native_fall_required" };
+        }
+        // Finalized native fall splines retain their falling attribute. The
+        // exact spline, settled slots and current floor establish termination.
+        if (!evidence.NativeFallEndpointMatches
+            || std::fabs(evidence.NativeFloorGap) > BotWorldMovement::NativePathEndpointVerticalTolerance)
+            return Keep("vehicle_exit_native_fall_not_on_floor");
+        return { Decision::ClearStaleLandingFlag, false,
+            "vehicle_exit_native_fall_reconciled" };
+    }
     if (!evidence.CurrentSplineFinalized || evidence.NativeFalling)
         return Keep("vehicle_exit_landing_native_motion_unsettled");
     if (!evidence.MotionSlotsSettled)
@@ -509,6 +573,11 @@ inline void RecordEvaluation(Episode& episode, LandingEvidence const& evidence,
     episode.LastControlledMotionType = evidence.ControlledMotionType;
     episode.LastTerminalOutcome = evidence.ReceiptTerminalOutcome;
     episode.LastReason = result.Reason ? result.Reason : "unknown";
+    episode.LastNativeFloorValid = evidence.NativeFloorValid;
+    episode.LastNativeFloorZ = evidence.NativeFloorZ;
+    episode.LastNativeFloorGap = evidence.NativeFloorGap;
+    episode.LastNativeSplineId = evidence.SplineId;
+    episode.LastFall = episode.Fall;
 }
 
 inline void CloseEpisode(Episode& episode)
@@ -520,6 +589,7 @@ inline void CloseEpisode(Episode& episode)
     episode.ExitInstanceId = 0;
     episode.ExitScopeAvailable = false;
     episode.ExitScope = Scope();
+    episode.Fall = NativeFall();
     ResetBoundReceipt(episode);
     ResetSubmittedReceipt(episode);
 }

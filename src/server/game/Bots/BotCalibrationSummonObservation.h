@@ -19,7 +19,7 @@ namespace BotCalibrationSummonObservation
 {
 // A point-in-time observation. GUIDs are full raw GUIDs; elapsed time is the
 // timeline sampling time, never an inferred spawn or cast-completion time.
-inline std::string Capture(Player* owner, Unit* offensiveTarget, uint64 elapsedMs)
+inline std::string Capture(Player const* owner, Unit* offensiveTarget, uint64 elapsedMs)
 {
     std::ostringstream json;
     Unit* victim = owner ? owner->GetVictim() : nullptr;
@@ -118,6 +118,24 @@ inline std::string Capture(Player* owner, Unit* offensiveTarget, uint64 elapsedM
              << ",\"ai_enabled\":" << (unit->IsAIEnabled() ? "true" : "false")
              << ",\"victim_guid\":" << guid(guardianVictim)
              << ",\"victim_valid\":" << (guardianVictim && guardianVictim->IsAlive() && unit->IsValidAttackTarget(guardianVictim) ? "true" : "false");
+        TempSummon* summon = unit->ToTempSummon();
+        json << ",\"in_world\":" << (unit->IsInWorld() ? "true" : "false")
+             << ",\"death_state\":" << uint32(unit->getDeathState())
+             << ",\"summon_type\":";
+        if (summon)
+            json << uint32(summon->GetSummonType());
+        else
+            json << "null";
+        json << ",\"summon_timer_ms\":";
+        if (summon)
+            json << summon->GetTimer();
+        else
+            json << "null";
+        json << ",\"summon_lifetime_ms\":";
+        if (summon)
+            json << summon->GetLifetime();
+        else
+            json << "null";
         json << ",\"level\":" << uint32(unit->getLevel())
              << ",\"health\":" << unit->GetHealth()
              << ",\"max_health\":" << unit->GetMaxHealth()

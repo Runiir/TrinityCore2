@@ -254,6 +254,7 @@ bool Context::Run(PassiveSwarmStagingRequest const& request)
                 state.ActivePathToY = densityTank->GetPositionY();
                 state.ActivePathToZ = densityTank->GetPositionZ();
                 state.ActivePathValid = true;
+                state.ActivePathPurposeValid = false;
                 state.LastPathRejectReason.clear();
                 state.LastPathChangeMs = NowMs();
                 bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);

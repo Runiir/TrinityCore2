@@ -392,3 +392,26 @@
             "ranged_formation_restore",
             BotActionArbitration::Priority::Mechanic, 275.0f);
     }
+
+    static bool InConfiguredHeadRange(Blackboard const& board,
+        ActorSnapshot const& bot, ActorSnapshot const* head, std::string_view role)
+    {
+        if (role != "dps" || !head || !head->Alive || !head->Selectable
+            || !head->Attackable || !bot.PreferredCombatRange)
+            return false;
+        ConfiguredCombatRange const& range = *bot.PreferredCombatRange;
+        if (range.TargetGuid != head->Guid || range.TargetEntry != HeadEntry
+            || !range.SourceSpellId || !range.ProfileGeneration
+            || range.ProfileGeneration != board.ProfileGeneration
+            || range.ProfileContentHash.empty()
+            || range.ProfileContentHash != board.ProfileContentHash
+            || !std::isfinite(range.MinRange) || !std::isfinite(range.MaxRange)
+            || range.MinRange < 0.0f || range.MaxRange <= range.MinRange)
+            return false;
+        float const dx = bot.Position.X - head->Position.X;
+        float const dy = bot.Position.Y - head->Position.Y;
+        float const dz = bot.Position.Z - head->Position.Z;
+        float const distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+        return std::isfinite(distance) && distance >= range.MinRange
+            && distance <= range.MaxRange;
+    }

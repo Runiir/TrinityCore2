@@ -19,9 +19,20 @@
 #include <vector>
 namespace BotEncounter
 {
+struct MagmawRetainedFormationPath
+{
+    bool PurposeValid = false;
+    std::string_view Purpose;
+    uint64 AttemptId = 0;
+    uint32 WipeGeneration = 0;
+    uint64 RouteGeneration = 0;
+    std::string_view NodeId;
+};
+
 struct AdaptiveMagmawPlan
 {
     bool OwnsNode = false;
+    bool ReleaseRetainedRangedFormation = false;
     bool SuppressOffense = false;
     std::string_view SuppressReason;
     MagmawParasiteCombatContract ParasiteCombat;
@@ -82,7 +93,8 @@ public:
             DefaultMovementProducerOrder,
         MagmawFacts const* facts = nullptr,
         MagmawPersonalParasiteEscapeTask* personalEscapeTask = nullptr,
-        MagmawParasiteWaveTask* parasiteWaveTask = nullptr) const
+        MagmawParasiteWaveTask* parasiteWaveTask = nullptr,
+        MagmawRetainedFormationPath const* retainedPath = nullptr) const
     {
         AdaptiveMagmawPlan plan;
         if (board.Route.NodeId != "bwd.magmaw.encounter")
@@ -189,8 +201,29 @@ public:
             hookApproach = ProposeHookApproach(board, *bot, *observed.Boss,
                 botGuid);
         }
+        bool const holdHeadPosition = observed.Head
+            && plan.DamageTarget == observed.Head->Guid && !hazard && !hookPreposition && !hookApproach
+            && !plan.Interaction && !plan.DirectionalMobility
+            && !crashSideHold && !pincerWindow && !pincerWarning
+            && !HasActivePillar(board)
+            && (!HasLivingParasite(board) || !IsPillarBaiter(board, botGuid))
+            && !HasActiveHazardPath(board, movementLease, activePathValid, moving)
+            && InConfiguredHeadRange(board, *bot, observed.Head, role);
+        plan.ReleaseRetainedRangedFormation = holdHeadPosition
+            && activePathValid && retainedPath && retainedPath->PurposeValid
+            && retainedPath->Purpose == "ranged_formation_restore"
+            && retainedPath->NodeId == board.CurrentScope.NodeId
+            && retainedPath->AttemptId == board.CurrentScope.AttemptId
+            && retainedPath->WipeGeneration == board.CurrentScope.WipeGeneration
+            && retainedPath->RouteGeneration == board.CurrentScope.RouteGeneration
+            && movementLease
+            && movementLease->MovementOwner == BotMovementArbitration::Owner::Mechanic
+            && BotMovementArbitration::SameScope(movementLease->MovementScope,
+                { board.CurrentScope.AttemptId, board.CurrentScope.WipeGeneration,
+                    board.CurrentScope.RouteGeneration, board.CurrentScope.MapId,
+                    board.CurrentScope.InstanceId });
         std::optional<BotNativeAction::Candidate> formationRestore;
-        if (!crashSideHold && !pincerWindow && !pincerWarning
+        if (!holdHeadPosition && !crashSideHold && !pincerWindow && !pincerWarning
             && !(IsPillarBaiter(board, botGuid) && HasActivePillar(board))
             && (!HasLivingParasite(board) || !IsPillarBaiter(board, botGuid))
             && !HasActiveHazardPath(board, movementLease, activePathValid,
@@ -223,6 +256,8 @@ public:
         }
         EmitPersonalParasiteEscape(board, *bot, observed, facts,
             personalEscapeTask, parasiteWaveTask, hazardState, plan.Movement);
+        if (!plan.Movement.Empty())
+            plan.ReleaseRetainedRangedFormation = false;
         return plan;
     }
 private:
