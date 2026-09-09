@@ -314,9 +314,15 @@ def _historical_target_catalog_bytes(current, materialization):
         frozen = pinned["selected_rows"].get(row["spec_target_id"])
         if frozen is not None:
             row["action_profile_spell_ids"] = frozen["action_profile_spell_ids"]
+        elif (pinned["sha256"] == "0a5fec51ef7c6a35a5a9f13e4e8e59e2c0190df506283eb897581df909a82108"
+              and row["spec_target_id"] in ("arcane_mage", "frost_mage")):
+            # Wizardry provisioning also changed these two unsupported rows.
+            # Reverse only that sanctioned addition for this historical catalog.
+            if 89744 in row["action_profile_spell_ids"]:
+                row["action_profile_spell_ids"].remove(89744)
     payload = (json.dumps(historical, indent=2) + "\n").encode("utf-8")
     # This is the original WHOLE source catalog identity, not a projection
-    # digest. Every non-spell field and unsupported-spec row remains guarded.
+    # digest. Every other field and unsupported-spec spell remains guarded.
     assert hashlib.sha256(payload).hexdigest() == pinned["sha256"]
     return payload
 
@@ -360,6 +366,17 @@ def test_historical_reconstruction_rejects_non_spell_reference_input_drift():
     elemental = next(row for row in current["targets"]
                      if row["spec_target_id"] == "elemental_shaman")
     elemental["provisioning_bot"]["race"] = 2
+    with pytest.raises(AssertionError):
+        _historical_target_catalog_bytes(current, contract["materialization"])
+
+
+@pytest.mark.parametrize("spec", ["arcane_mage", "frost_mage"])
+def test_historical_reconstruction_rejects_unrelated_unsupported_spell_drift(spec):
+    contract, _ = load_fixture_contract(DEFAULT_MATERIALIZED_CONTRACT_PATH)
+    current = json.loads(DEFAULT_TARGET_CATALOG_PATH.read_text())
+    row = next(row for row in current["targets"] if row["spec_target_id"] == spec)
+    assert 999999 not in row["action_profile_spell_ids"]
+    row["action_profile_spell_ids"].append(999999)
     with pytest.raises(AssertionError):
         _historical_target_catalog_bytes(current, contract["materialization"])
 
@@ -607,3 +624,26 @@ def test_profession_materialization_still_requires_actual_dbc(tmp_path, monkeypa
     dbc.write_bytes(b"WDBC" + struct.pack("<4I", 0, field_count, field_count * 4, 0))
     with pytest.raises(ValueError, match="profession_unknown_enchant"):
         build_materialized_fixture_contract()
+
+
+@pytest.mark.parametrize("value", [None, True, False, "10", 0, -1, 1.5, 10.0, 0x100000000])
+def test_generated_scheduler_rejects_invalid_reference_reaction(value):
+    from tools.bot_ml.phase8_fixture_contract import render_generated_header
+    contract, digest = load_fixture_contract()
+    policy = contract["specs"]["fire_mage"]["native_request"]["reference_execution_policy"]
+    if value is None:
+        policy.pop("reaction_time_ms")
+    else:
+        policy["reaction_time_ms"] = value
+    with pytest.raises(ValueError, match="native_reference_reaction_time_ms"):
+        render_generated_header(contract, digest)
+
+
+def test_generated_scheduler_projects_validated_fixture_policy():
+    from tools.bot_ml.phase8_fixture_contract import render_generated_header
+    contract, digest = load_fixture_contract()
+    rendered = render_generated_header(contract, digest)
+    assert "uint32_t ReferenceReactionTimeMs;" in rendered
+    for spec, row in contract["specs"].items():
+        assert f'"{row["source_test_sha256"]}", 10,' in rendered
+    assert HEADER.read_text() == rendered

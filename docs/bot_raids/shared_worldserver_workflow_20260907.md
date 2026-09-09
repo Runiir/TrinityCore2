@@ -2,50 +2,46 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
-Latest source `090f24f4b8` is committed and pushed. Its queued native build,
-canonical Magmaw clear, cleanup and post-run binary verification passed. Two
-trash deaths recovered; all ten survived the boss. Damage was 29,972,402 over
-233 combat seconds: 128,636.918 DPS and 19,225.751 HPS. The exact hostile bounds
-span 233.490 seconds; encounter-start to boss death is 271.011 seconds. All ten
-loadouts matched canonical inputs. All role reviews are frozen, and the
-31,710,917-byte archive was remotely reconstructed and exact raw payloads evicted.
+Source `2b661e8b67` is committed and pushed. Its queued native build and exact
+300.000-second Fire calibration completed. Native exit, cleanup and post-run
+binary verification passed. Fire dealt 7,151,838 damage / 23,839.46 DPS with zero
+HPS. The owned player/target aura gate now passes; the only role rejection is
+`reference_hard_floor`. Performance is not accepted.
 
-The same-level path guard is live-accepted as containment: 14 unsafe boss-route
-planner evaluations stopped before submission, while the role slice retained
-97 safe native launches. Discipline's prior 83.862-second underground healing
-outage did not recur. Native path production remains an unresolved separate
-cause, with no current stall. Hunter head autorepeat and Fire native landings
-remain accepted. Fire's prior extended head-Fireball loss did not recur.
+The learned-passive repair did not reach the live actor. The actual calibration
+launch reset the pool and restocked consumables but never applied the generated
+spell catalog. Fresh database readback still has no Wizardry 89744 for actor1304;
+the native intellect multiplier remains1.0. Generating correct SQL was insufficient.
+The next controller repair reconciles canonical learned spells for the selected
+offline actor and verifies readback before startup. Native class, canonical spec,
+pool identity and idle state must agree. No manual aura or gear changes.
 
-Fire's isolated run completed 300.000 scored seconds with 7,507,785 damage /
-25,025.95 measured DPS versus the promoted 35,138.962 reference. It is not accepted:
-its own target debuff 22959 was wrongly rejected, and learned Wizardry 89744 was
-missing. The native unprocced intellect 7714 times 1.05 exactly equals the
-reference 8099.7; the spell-power and mana gaps agree. Fresh DB readback confirms
-no persisted Wizardry for the calibration actor or raid Mages. Gear, ratings,
-talents and consumables are unchanged. Native exit 0, cleanup and post-run build
-verification passed. The frozen 4,318,037-byte archive is remotely verified;
-exact raw payloads are evicted after completed diagnostic reads.
+The separate shared scheduler repair projects each promoted reference policy into
+a native interval with a100ms floor. Fire previously used500ms, confirmed in live
+decision timelines. WoWSims is event-driven: this projection is an approximation,
+not exact10ms simulator scheduling. Preserve channel-interrupt semantics and
+legacy unknown/noncombat/healer/tank calibration branches. Independent scheduler
+review approved; live cadence and performance remain unproven.
 
-Next reviewed batch:
-- Provision ordinary learned Wizardry for all three Mage specs. No manual aura,
-  coefficient or core cloth-lifecycle change. Regenerate current admission
-  authority, including independently reviewed pre-existing stale gear hashes;
-  no actual gear inputs change.
-- Make both native calibration consumers and Python acceptance classify owned
-  class effects consistently. The captured Fire row now passes the full setup
-  gate; foreign, mixed, unknown and malformed controls fail. The pre-score
-  target predicate is named compatible rather than falsely claiming absence.
-- Preserve native spell-finish payloads in delta as well as full trace exports.
-- Observe owned summon geometry, target eligibility, script identity and active
-  auras. Flame Orb deliberately has no victim; its proximity logic needs these
-  observations before any gameplay repair. Preserve existing admission filters.
+Flame Orb observations show its82690 aura applies and a sampled distance falls
+below10yards before it moves back toward the owner; it still deals zero damage.
+Victimless AI is intentional. No Orb gameplay repair is admitted from these facts
+alone. The closed role review is frozen. Its 4,468,975-byte archive was remotely
+reconstructed and exact raw payloads evicted.
 
-All four implementation reviews are approved. Build once, then run exact Fire calibration.
-Require learned spell and native 1.05 stat application before comparing throughput.
-Use the new orb observations to route any remaining zero-damage failure. A separate
-read-only audit is checking shared polling cadence; it does not hold this build.
-Do not rerun Magmaw merely to repeat accepted movement or targeting evidence.
+Both implementations are independently approved. Freeze this bounded batch,
+build once, then run Fire again. Require persisted89744 and native1.05 application
+before comparing normalized stats and DPS. The historical catalog test now
+reverses only the known Wizardry additions and preserves exact original bytes;
+the reset-admission test now reaches its intended guard after asset admission.
+
+Latest canonical Magmaw remains the accepted `090f24f4b8` clear:29,972,402 damage
+/233 damage-bearing seconds =128,636.918 DPS and19,225.751 HPS. Exact hostile span
+233.490s; encounter-start to death271.011s. Two trash deaths recovered, zero boss
+deaths, all ten alive. All ten loadouts matched canonical inputs. Its archive and
+the earlier Fire calibration are remotely verified and exact raw payloads evicted.
+Path containment, Hunter head autorepeat and Fire native landings remain accepted.
+Do not rerun Magmaw merely to repeat those accepted observations.
 
 ## Prior accepted calibration and raid evidence
 

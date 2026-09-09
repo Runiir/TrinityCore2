@@ -34,7 +34,7 @@ try:
     )
     from .audit_role_efficiency import build_audit
     from .batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
-    from .build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
+    from .build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, bot_known_spell_ids, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
     from .calibration_consumable_provisioning import (
         prepare_calibration_consumables as _prepare_calibration_consumables,
     )
@@ -57,7 +57,7 @@ except ImportError:
     )
     from audit_role_efficiency import build_audit
     from batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
-    from build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
+    from build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, bot_known_spell_ids, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
     from calibration_consumable_provisioning import (
         prepare_calibration_consumables as _prepare_calibration_consumables,
     )
@@ -1400,6 +1400,98 @@ def prepare_validation_provisioning(
     if apply:
         report["executed_account_statements"] = execute_sql_text(auth_url, account_sql)
         report["executed_character_statements"] = execute_sql_text(character_url, character_sql)
+    return report
+
+
+def validate_calibration_pool_binding(target_catalog_path: Path, pool_tags: Sequence[str]) -> str:
+    catalog = json.loads(target_catalog_path.read_text(encoding="utf-8"))
+    canonical_pool = catalog.get("candidate_pool_scenario_id")
+    if (not isinstance(canonical_pool, str) or not canonical_pool
+            or list(pool_tags) != [canonical_pool]):
+        raise RuntimeError("calibration requires exactly the canonical candidate pool")
+    return canonical_pool
+
+
+def prepare_calibration_known_spells(
+    output_dir: Path, worldserver_conf: Path, target_spec: str,
+    target_catalog_path: Path, apply: bool = False, *, pool_tag: str,
+) -> dict[str, Any]:
+    """Reconcile the selected offline candidate's ordinary learned spellbook."""
+    try:
+        from .validation_profile_manifests import load_action_profile_manifest
+    except ImportError:
+        from validation_profile_manifests import load_action_profile_manifest
+    bound_pool = validate_calibration_pool_binding(target_catalog_path, [pool_tag])
+    catalog = json.loads(target_catalog_path.read_text(encoding="utf-8"))
+    targets = [row for row in catalog["targets"] if row["spec_target_id"] == target_spec]
+    if len(targets) != 1:
+        raise RuntimeError(f"{target_spec}: expected one canonical spellbook target")
+    target = targets[0]
+    bot = target["provisioning_bot"]
+    if bot.get("class_spec") != target_spec:
+        raise RuntimeError(f"{target_spec}: canonical target/provisioning spec mismatch")
+    class_id = target.get("class_id")
+    if (isinstance(class_id, bool) or not isinstance(class_id, int) or class_id <= 0
+            or type(bot.get("class")) is not int or bot["class"] != class_id):
+        raise RuntimeError(f"{target_spec}: canonical target/provisioning class mismatch")
+    manifest_path = target_catalog_path.parent / "cata_434_action_profiles.json"
+    profiles = load_action_profile_manifest(manifest_path)
+    if profiles["action_profile_spells_by_spec"][target_spec] != target["action_profile_spell_ids"]:
+        raise RuntimeError(f"{target_spec}: target/action spell lists are not linked")
+    spells = bot_known_spell_ids(bot, profiles)
+    report: dict[str, Any] = {
+        "schema": "bot_calibration_known_spells_v1", "target_spec": target_spec,
+        "character_name": bot["name"], "pool_tag": bound_pool,
+        "target_catalog": str(target_catalog_path),
+        "action_profile_manifest": str(manifest_path), "expected_spell_ids": spells,
+        "target_catalog_sha256": sha256_file(target_catalog_path),
+        "action_profile_manifest_sha256": sha256_file(manifest_path),
+        "applied": apply,
+    }
+    if not apply:
+        report["preflight"] = "deferred_until_database_apply"
+        return report
+    url = database_url_from_worldserver_conf(worldserver_conf, "CharacterDatabaseInfo")
+    conn = connect_mysql(url)
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT c.guid, c.class, c.online, p.enabled, p.in_use FROM characters c "
+                "JOIN character_bot_pool p ON p.guid = c.guid "
+                "WHERE c.name = %s AND p.class_spec = %s AND p.experiment_tags = %s",
+                (bot["name"], target_spec, bound_pool),
+            )
+            rows = cursor.fetchall()
+            if (len(rows) != 1 or rows[0].get("enabled") != 1
+                    or rows[0].get("in_use") != 0 or rows[0].get("online") != 0
+                    or rows[0].get("class") != class_id):
+                raise RuntimeError(f"{target_spec}: expected one offline idle enabled calibration actor")
+            guid = int(rows[0]["guid"])
+            report["character_guid"] = guid
+            cursor.execute("SELECT spell, active, disabled FROM character_spell WHERE guid = %s", (guid,))
+            before = {int(row["spell"]): row for row in cursor.fetchall()}
+            missing = [spell for spell in spells if spell not in before
+                       or before[spell]["active"] != 1 or before[spell]["disabled"] != 0]
+            report["reconciled_spell_ids"] = missing
+            for spell in missing:
+                cursor.execute(
+                    "INSERT INTO character_spell (guid, spell, active, disabled) VALUES (%s, %s, 1, 0) "
+                    "ON DUPLICATE KEY UPDATE active = 1, disabled = 0", (guid, spell),
+                )
+            cursor.execute("SELECT spell, active, disabled FROM character_spell WHERE guid = %s", (guid,))
+            after = {int(row["spell"]): row for row in cursor.fetchall()}
+            failed = [spell for spell in spells if spell not in after
+                      or after[spell]["active"] != 1 or after[spell]["disabled"] != 0]
+            report["readback"] = {"passed": not failed, "missing_or_disabled_spell_ids": failed}
+            if failed:
+                raise RuntimeError(f"{target_spec}: ordinary spellbook readback failed: {failed}")
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+    write_json(output_dir / "calibration_known_spells.json", report)
     return report
 
 
@@ -7946,6 +8038,12 @@ def main() -> int:
     (args.output_dir / "commands.txt").write_text(script, encoding="utf-8")
     preparation: dict[str, Any] = {}
     scenario_reports = load_scenario_reports(args.scenario_report_dir)
+    if (args.calibration_only and args.calibration_self_provided_baseline
+            and args.transport != "session"):
+        bound_calibration_pool = validate_calibration_pool_binding(
+            args.all_spec_target_catalog.resolve(), bot_pool_tags)
+        if pool_tag_filter != bound_calibration_pool:
+            raise RuntimeError("calibration runtime pool differs from canonical candidate pool")
     if args.reset_bot_pool:
         preparation["bot_pool_reset"] = prepare_bot_pool_reset(
             args.output_dir,
@@ -7981,6 +8079,11 @@ def main() -> int:
                 reset_quests=not args.keep_bot_pool_quests,
                 reset_memory=not args.keep_bot_pool_memory,
             )
+        preparation["calibration_known_spells"] = prepare_calibration_known_spells(
+            args.output_dir, args.config, args.calibration_target_spec,
+            args.all_spec_target_catalog.resolve(), apply=not args.dry_run,
+            pool_tag=pool_tag_filter,
+        )
         preparation["calibration_consumables"] = prepare_calibration_consumables(
             args.output_dir,
             args.config,

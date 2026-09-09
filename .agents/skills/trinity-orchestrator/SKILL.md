@@ -36,6 +36,10 @@ For retained telemetry changes, locate both full and delta serializers and test
 the same native record through each. A field visible in a full snapshot can still
 be lost after ring eviction if the delta export omits it.
 
+Review the actual launch-to-consumer path, including every identity used to select
+the runtime actor and its inputs. Return all known blocking findings together;
+do not end the first review after checking only one identity field.
+
 Use Luna max for exact narrow implementation with immutable evidence, owned production
 and affected test files, one hypothesis, excluded changes, a focused command, and concrete
 acceptance. Use Sol high for causal ambiguity, architecture, or independent risky-change

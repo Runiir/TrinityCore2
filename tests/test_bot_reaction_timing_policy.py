@@ -23,6 +23,7 @@ def test_production_reaction_policy_and_both_timer_callers(tmp_path):
     preparation = (BOT_DIR / "BotWorldPopulationMgrUpdateBotPreparation.cpp").read_text()
     canonical = function(internal, "inline std::string CanonicalSpecTag")
     policy = function(profile, "uint32 BotClassSpecActionProfileStore::ReactionTimeMsForSpec")
+    scheduler = function(profile, "uint32 BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec")
     # Compile the actual caller statements; stubs supply observations only.
     calibration_timer = calibration[calibration.index("    uint32 const reactionTimeMs ="):
                                     calibration.index("\n\n    if (!bot", calibration.index("    uint32 const reactionTimeMs ="))]
@@ -30,6 +31,7 @@ def test_production_reaction_policy_and_both_timer_callers(tmp_path):
     ordinary_timer = preparation[start:preparation.index("\n\n    context.EnsureProgressionScored", start)]
     source = tmp_path / "reaction.cpp"
     source.write_text('''
+#include "BotCalibrationFixtureContractGenerated.h"
 #include <algorithm>
 #include <cassert>
 #include <cctype>
@@ -44,9 +46,10 @@ struct Bot { bool combat; std::string spec; bool IsInCombat() const { return com
 struct BotClassSpecActionProfile { std::string SpecTag; };
 struct BotClassSpecActionProfileStore {
  static uint32 ReactionTimeMsForSpec(char const*);
+ static uint32 ReferenceDecisionIntervalMsForSpec(char const*);
  static BotClassSpecActionProfile Build(Bot* b, char const*) { return {b->spec}; }
 };
-''' + policy + '''
+''' + policy + scheduler + '''
 struct State { uint32 DecisionTimer = 0; };
 struct CohortState { std::string CalibrationTargetSpec; std::string CalibrationMode;
  struct { bool ValidationRouteEnable = false; } Config; } cohort;
@@ -54,7 +57,7 @@ CohortState& Cohort() { return cohort; }
 struct Config { uint32 tick; uint32 GetIntDefault(char const*, uint32) { return tick; } } config;
 Config* sConfigMgr = &config;
 char const* GetDungeonRole(Bot*) { return "dps"; }
-uint32 Calibration(std::string spec, std::string mode = "single_target") {
+uint32 Calibration(std::string spec, std::string mode = "single_target_300") {
  cohort.CalibrationTargetSpec = spec; cohort.CalibrationMode = mode; State state;
 ''' + calibration_timer + '''
  return state.DecisionTimer;
@@ -76,7 +79,7 @@ int main() {
   assert(Ordinary(spec,false,3000,true) == 1000);
   assert(Ordinary(spec,false,1) == 500);
  }
- for (auto spec : {"fire_mage", "Fire-Mage", "unknown", ""}) {
+ for (auto spec : {"unknown", ""}) {
   assert(BotClassSpecActionProfileStore::ReactionTimeMsForSpec(spec) == 500);
   assert(Calibration(spec) == 500);
   assert(Ordinary(spec,true,3000) == 1000);
@@ -84,14 +87,27 @@ int main() {
   assert(Ordinary(spec,false,3000) == 3000);
  }
  assert(BotClassSpecActionProfileStore::ReactionTimeMsForSpec(nullptr) == 500);
- assert(Calibration("survival_hunter") == 250);
+ for (auto const& row : BotCalibrationFixtureContractGenerated::SpecContracts) {
+  assert(row.ReferenceReactionTimeMs == 10);
+  assert(BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec(row.Spec) == 100);
+  assert(Calibration(row.Spec) == 100);
+  assert(Ordinary(row.Spec,true,3000) == 100);
+  assert(Ordinary(row.Spec,true,1) == 100);
+  assert(Ordinary(row.Spec,false,3000) == 3000);
+  assert(Ordinary(row.Spec,false,3000,true) == 1000);
+ }
+ assert(Calibration("Fire-Mage") == 100);
+ assert(Calibration("survival_hunter","other_mode") == 250);
+ assert(Calibration("fire_mage","other_mode") == 500);
+ assert(BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec(nullptr) == 0);
+ assert(BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec("restoration_shaman") == 0);
  assert(Calibration("fire_mage","healer_controlled_damage_300") == 250);
  assert(Calibration("fire_mage","tank_threat_300") == 250);
 }
 ''')
     binary = tmp_path / "reaction"
     subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
-                    str(source), "-o", str(binary)], check=True)
+                    "-I", str(BOT_DIR), str(source), "-o", str(binary)], check=True)
     subprocess.run([str(binary)], check=True)
 
 
@@ -105,3 +121,44 @@ def test_tracked_elemental_rows_do_not_enable_channel_interrupt_timing():
     assert all("interruptible_channel" not in statement for statement in statements)
     candidates = (BOT_DIR / "BotClassSpecActionProfileCandidates.cpp").read_text()
     assert 'HasMechanicTag(profileSpell.MechanicTags, "interruptible_channel")' in candidates
+
+
+def test_channel_policy_stays_on_legacy_accessor():
+    candidates = (BOT_DIR / "BotClassSpecActionProfileCandidates.cpp").read_text()
+    assert "ReactionTimeMsForSpec(profile.SpecTag.c_str())" in candidates
+    assert "ReferenceDecisionIntervalMsForSpec" not in candidates
+
+
+def test_scheduler_policy_above_floor_and_missing_value(tmp_path):
+    profile = (BOT_DIR / "BotClassSpecActionProfile.cpp").read_text()
+    internal = (BOT_DIR / "BotClassSpecActionProfileInternal.h").read_text()
+    policy = function(profile, "uint32 BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec")
+    canonical = function(internal, "inline std::string CanonicalSpecTag")
+    source = tmp_path / "policy.cpp"
+    source.write_text('''
+#include <algorithm>
+#include <cassert>
+#include <cctype>
+#include <cstdint>
+#include <map>
+#include <string>
+using uint32=uint32_t;
+namespace BotClassSpecActionProfileDetail {
+''' + canonical + '''
+}
+namespace BotCalibrationFixtureContractGenerated {
+struct Row { char const* Spec; uint32 ReferenceReactionTimeMs; };
+constexpr Row SpecContracts[]={{"fire_mage",225},{"survival_hunter",0}};
+}
+struct BotClassSpecActionProfileStore { static uint32 ReferenceDecisionIntervalMsForSpec(char const*); };
+''' + policy + '''
+int main() {
+ assert(BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec("fire") == 225);
+ assert(BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec("survival") == 0);
+ assert(BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec("unknown") == 0);
+}
+''')
+    binary = tmp_path / "policy"
+    subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
+                    str(source), "-o", str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)

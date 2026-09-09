@@ -619,7 +619,11 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
     bool const responsiveSpecCombat = context.Bot->IsInCombat() && reactionTimeMs == 100;
     if (context.Bot->IsInCombat() || Cohort().Config.ValidationRouteEnable)
         decisionTickMs = std::min<uint32>(decisionTickMs, responsiveSpecCombat ? reactionTimeMs : 1000);
-    context.State.DecisionTimer = std::max<uint32>(responsiveSpecCombat ? reactionTimeMs : 500, decisionTickMs);
+    uint32 const referenceDecisionMs = context.Bot->IsInCombat()
+        ? BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec(
+            cadenceProfile.SpecTag.c_str()) : 0;
+    context.State.DecisionTimer = referenceDecisionMs ? referenceDecisionMs
+        : std::max<uint32>(responsiveSpecCombat ? reactionTimeMs : 500, decisionTickMs);
 
     context.EnsureProgressionScored();
 

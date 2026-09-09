@@ -58,6 +58,9 @@ not require a new simulator run. Missing evidence is a bounded capture task, not
 to guess coefficients. Dummy calibration alone uses exactly 300 scoring seconds.
 When a stat gap matches a passive multiplier, verify the learned spellbook and
 native aura ledger before changing coefficients or retrying unchanged role code.
+Catalog SQL generation does not prove an existing calibration actor was updated.
+Trace the actual launch's provisioning path and require selected-actor spellbook
+readback before starting a window intended to validate a learned passive.
 
 When repairing self-provided calibration admission, inspect both player and target
 aura rules at reset and during scoring in the same work unit. Presence alone does

@@ -158,6 +158,12 @@ def test_applied_restock_reads_back_before_calibration(tmp_path, monkeypatch) ->
 
 
 def test_self_provided_baseline_requires_per_attempt_pool_reset(monkeypatch) -> None:
+    # This case tests reset admission after asset admission. The real asset
+    # rejection boundary is covered in test_runtime_asset_closure.py.
+    monkeypatch.setattr(
+        live_validation, "enforce_runtime_asset_closure_from_args",
+        lambda *args, **kwargs: {"complete": True},
+    )
     monkeypatch.setattr(
         sys,
         "argv",

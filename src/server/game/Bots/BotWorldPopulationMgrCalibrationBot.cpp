@@ -368,12 +368,14 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         // by the live controller more often than the generic world-bot interval.
         // Match that responsiveness so a ready shot is not delayed by 500 ms.
         || Cohort().CalibrationTargetSpec == "survival_hunter"
-        // Match pinned fixtures that use a 100 ms reaction time. Hasted channels,
-        // short Wrath casts, and sub-1.5-second GCDs otherwise lose a material
-        // fraction of their throughput waiting for the generic polling tick.
+        // Preserve the legacy responsive-spec fallback for other modes.
         || reactionTimeMs == 100;
+    uint32 const referenceDecisionMs = Cohort().CalibrationMode == "single_target_300"
+        ? BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec(
+            Cohort().CalibrationTargetSpec.c_str()) : 0;
     bool const fixtureReactionTime = reactionTimeMs == 100;
-    state.DecisionTimer = fixtureReactionTime ? reactionTimeMs : (responsiveCalibration ? 250 : 500);
+    state.DecisionTimer = referenceDecisionMs ? referenceDecisionMs
+        : (fixtureReactionTime ? reactionTimeMs : (responsiveCalibration ? 250 : 500));
 
     if (!bot || Cohort().CalibrationWindowComplete)
         return;

@@ -1458,6 +1458,7 @@ def validate_fixture_contract(contract: Mapping[str, Any]) -> None:
             ),
             f"{spec}:native_apl_transform_policy",
         )
+        _validated_reaction_time_ms(native_request.get("reference_execution_policy"), spec)
         _require(
             native_request.get("reference_execution_policy")
             == REFERENCE_EXECUTION_POLICY,
@@ -1571,7 +1572,15 @@ def _cpp_string(value: str) -> str:
     return json.dumps(value, ensure_ascii=True)
 
 
+def _validated_reaction_time_ms(policy: Any, spec: str) -> int:
+    value = policy.get("reaction_time_ms") if isinstance(policy, Mapping) else None
+    _require(type(value) is int and 0 < value <= 0xFFFFFFFF,
+             f"{spec}:native_reference_reaction_time_ms")
+    return value
+
+
 def render_generated_header(contract: Mapping[str, Any], content_sha256: str) -> str:
+    validate_fixture_contract(contract)
     target = contract["target"]
     encounter = contract["encounter"]
     distances = contract["distance_contracts"]
@@ -1597,6 +1606,7 @@ def render_generated_header(contract: Mapping[str, Any], content_sha256: str) ->
                 "spec": spec,
                 "lane": row["lane"],
                 "source_sha": row["source_test_sha256"],
+                "reaction_time_ms": _validated_reaction_time_ms(row["native_request"]["reference_execution_policy"], spec),
                 "offset": offset,
                 "count": len(power_rows) - offset,
                 "runes": int(row.get("runes_ready_mask", 0)),
@@ -1694,6 +1704,7 @@ def render_generated_header(contract: Mapping[str, Any], content_sha256: str) ->
         "    char const* Spec;",
         "    char const* Lane;",
         "    char const* SourceTestSha256;",
+        "    uint32_t ReferenceReactionTimeMs;",
         "    uint16_t PowerOffset;",
         "    uint8_t PowerCount;",
         "    uint8_t RunesReadyMask;",
@@ -1748,7 +1759,7 @@ def render_generated_header(contract: Mapping[str, Any], content_sha256: str) ->
         lines.append(
             "    { "
             f"{_cpp_string(row['spec'])}, {_cpp_string(row['lane'])}, {_cpp_string(row['source_sha'])}, "
-            f"{row['offset']}, {row['count']}, {row['runes']}, {row['combo']}, "
+            f"{row['reaction_time_ms']}, {row['offset']}, {row['count']}, {row['runes']}, {row['combo']}, "
             f"{'true' if row['neutral_eclipse'] else 'false'}, "
             f"{'true' if row['pet_required'] else 'false'}, "
             f"{row['setup_aura_offset']}, {row['setup_aura_count']}, "

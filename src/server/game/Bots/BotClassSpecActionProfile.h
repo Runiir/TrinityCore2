@@ -143,6 +143,8 @@ public:
     static BotClassSpecActionProfile BuildForSpec(Player const* bot, char const* roleHint,
         char const* specTag);
     static uint32 ReactionTimeMsForSpec(char const* specTag);
+    // Zero means no validated reference scheduler policy; retain caller fallback.
+    static uint32 ReferenceDecisionIntervalMsForSpec(char const* specTag);
     static std::vector<BotActionCandidate> BuildCandidates(Player const* bot, Unit const* target, BotClassSpecActionProfile const& profile);
     static std::string CandidateMaskJson(std::vector<BotActionCandidate> const& candidates, BotClassSpecActionProfile const& profile, char const* roleGoal, char const* saturationJson, char const* profileSourceOverride = nullptr);
     static std::string ChosenActionJson(BotActionCandidate const* candidate, BotClassSpecActionProfile const& profile, char const* roleGoal, char const* balanceMode, float confidence);

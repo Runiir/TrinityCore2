@@ -1,4 +1,5 @@
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Cryptography/CryptoHash.h"
 #include "DataStores/DBCStores.h"
 #include "DatabaseEnv.h"
@@ -149,6 +150,18 @@ uint32 BotClassSpecActionProfileStore::ReactionTimeMsForSpec(char const* specTag
         || canonicalSpecTag == "shadow_priest"
         || canonicalSpecTag == "elemental_shaman"
         || canonicalSpecTag == "balance_druid" ? 100 : 500;
+}
+
+uint32 BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec(char const* specTag)
+{
+    std::string const canonicalSpecTag = BotClassSpecActionProfileDetail::CanonicalSpecTag(specTag ? specTag : "");
+    // Native polling approximation, not WoWSims event-driven readiness or
+    // reaction-aware aura/channel semantics. Preserve the native 100 ms floor.
+    for (auto const& contract : BotCalibrationFixtureContractGenerated::SpecContracts)
+        if (BotClassSpecActionProfileDetail::CanonicalSpecTag(contract.Spec) == canonicalSpecTag)
+            return contract.ReferenceReactionTimeMs
+                ? std::max<uint32>(100, contract.ReferenceReactionTimeMs) : 0;
+    return 0;
 }
 
 BotClassSpecActionProfile BotClassSpecActionProfileStore::BuildForSpec(
