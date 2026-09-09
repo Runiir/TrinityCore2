@@ -3,32 +3,28 @@
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
-Current frozen source `92787b59c4` built and completed Hunter's exact 300-second
-window: 7,052,069 damage, 23,506.897 DPS, 0 HPS, 2,997 decisions, all 1,744
-chunks retained, native exit 0 and fresh cleanup passed. DPS remains below the
-32,838.198 exact reference. The live launch data-path repair is accepted.
-The pure gear identity repair (DPS-014) is independently approved: seven tests,
-all 16 manifest identities preserved, and retained Hunter replay passes from the
-actual frozen-source working directory with native data absent. Original reports
-remain unchanged. Hunter's Agility is correct: scoring-start 9,536.1 includes
-1,260 from the pre-pot, leaving the exact 8,276.1 baseline; native passive 86538
-provides the five-percent multiplier. Pet admission matches all 14 expected rows.
+Current source `3e0b48374e` built and completed Hunter's exact 300-second
+window: 8,436,783 damage, 28,122.61 DPS, 0 HPS, 2,983 decisions. This is a
+19.6% increase over Hunter927's 23,506.897 DPS and 85.640% of the unchanged
+32,838.198 reference. All 1,738 chunks / 21,347,218 bytes reassembled, both
+role stages passed, native exit 0 and fresh cleanup passed. Overall evidence
+qualification still rejects `incomplete_evidence_identity`; training is forbidden.
 
-Next repairs are Wild Quiver's wrong proc phase (DPS-015) and Readiness checking
-self health instead of hostile health (DPS-016). Both repairs are independently approved and committed.
-The pet compatibility producer/consumer repair (DPS-017) is also independently
-approved; all 83 affected tests pass after rematerialization. Its corrected
-16-spec pet_identity_v4 reference cohort is generated, DVC-published, freshly
-reconstructed and clean-promotion-verified on 47e8dffab0. All simulator request
-bytes are unchanged; Hunter remains 32,838.198 DPS.
-The fixed aggregate owner-aura receipt (OBS-002) is independently approved.
-The joined source batch is ready for one native build and Hunter validation.
-The initial crit gap reflects pre-combat sampling; it does not prove a missing
-Furious Howl cast. No pet AI or damage coefficient repair is admitted.
-No unchanged server retry is needed for post-processing defects.
-Hunter927 review is complete: setup accepted, DPS rejected. Its evidence is
-DVC-published, freshly remote-verified, and exact raw payloads are evicted. Prior runs are remotely
-archived; the new 16-spec reference cohort is fully promoted and clean-verified.
+Wild Quiver, Readiness and exact pet-consumer repairs were independently approved
+before this run. Dedicated DPS review is now checking their native outcomes.
+The new owner-aura receipt directly proves one remaining loss: Furious Howl
+24604 is absent across all 260,913 samples (maximum gap 43 ms). Mastery aura
+76659 is active in every sample. Native autocast diagnosis owns DPS-018; the
+previous t0 timing explanation cannot explain full-window absence. Do not change
+coefficients or manufacture a buff. Keep the raw run until both readers finish.
+
+The v4 pet-identity reference cohort is DVC-published, freshly reconstructed,
+promoted and clean-verified on 47e8dffab0. All 16 simulator request byte hashes
+match v3. The earlier Hunter927 evidence is published, remote-verified and raw
+evicted. Its gear/socket/Mail passive and 14-row pet identity remain accepted.
+Build3e's first compiler attempt hit the known GCC segmentation fault; the
+unchanged incremental retry passed. Both receipts are retained. No worldserver
+is running. Magmaw's provisioning dry-run also passed without database apply.
 
 Source `90a181db01` is committed, pushed and built. Affliction and Fire each
 completed exactly 300 scoring seconds with native exit 0, fresh offline/idle

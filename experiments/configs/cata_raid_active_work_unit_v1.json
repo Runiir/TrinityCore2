@@ -1,36 +1,36 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "hunter:wild_quiver_proc_phase",
+  "work_unit": "hunter:furious_howl_native_absence",
   "owner_skill": "raid-performance-loop",
-  "classification": "native_class_proc_dispatch",
+  "classification": "native_pet_autocast",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "ec02d7196a279d069ffac6c32f4ec4a99a39f404",
+  "observed_at_commit": "3e0b48374e9e66b85ef79f9f97535851be29b32d",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "DPS-015/016/017 and OBS-002 independently approved; all 16 v4 references clean-promoted. Ready for one joined native build and Hunter calibration.",
+  "gate_state": "Hunter3e completed at 28,122.61 DPS / 0 HPS; role gates pass. Full-window Furious Howl absence proven; repair review and native autocast diagnosis active.",
   "first_broken_edge": {
-    "id": "wild_quiver_cast_phase_has_no_action_target",
+    "id": "furious_howl_absent_through_scored_window",
     "owner_classification": "raid_class_mechanics",
-    "cause": "CAST phase proc has null actionTarget; handler requires it. HIT phase supplies target but current mask excludes it.",
-    "review_state": "implementation_independently_approved_live_pending"
+    "cause": "Owner aura24604 absent across260913samples/maxgap43ms despite stable enabledwolfidentity; exact native selection/application edge underdiagnosis.",
+    "review_state": "causal_diagnosis_active"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "9611caf4d31664948c31a4c693b566cda28d46037720abd3f9e5d8508874629d"
+    "sha256": "c4f54e16288ce3f05d95d9d2f6e686e66d1eb95ddaaf102cd1162f649c0f1f3c"
   },
   "scope_lock": {
-    "objective": "Restore Wild Quiver native proc dispatch and Readiness hostile-health policy; preserve measured identity and coefficient semantics.",
+    "objective": "Locate and repair the proven native pet-autocast failure without changing coefficients or manually installing auras.",
     "owned_files": [],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Wild Quiver HIT proc retains native flags, chance and coefficient; CAST no longer consumes the proc.",
-    "Readiness checks hostile health in all candidate consumers while unrelated target gates remain unchanged.",
-    "Independent review and behavioral fixtures pass before one joined build and exact 300-second Hunter validation.",
-    "Re-evaluate consumer-only defects against retained immutable evidence; publish and clean after all readers finish."
+    "Identify the first native autocast selection, targeting or application mismatch from attributable evidence.",
+    "Implement only a proven bounded repair, pass behavioral fixtures and independent review.",
+    "Build once and validate the repaired edge with the existing fixed owner-aura receipt and exact 300-second Hunter score.",
+    "Publish and clean closed attributable evidence after all readers finish."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -39,9 +39,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Build joined reviewed source once; verify binary, then one exact 300-second Hunter run with dedicated DPS/aura review.",
+  "next_action": "Review repaired native actions and diagnose the first native Furious Howl failure from the closed run; no unchanged live retry.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -86,8 +86,8 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "APPROVE",
-    "scope": "DPS-015 and DPS-016",
+    "verdict": "pending",
+    "scope": "DPS-018 native Furious Howl absence",
     "live_verified": false
   },
   "related_edges": [
@@ -166,14 +166,11 @@
     "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_ec02d7196a_20260909.tar.gz.dvc"
   },
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-015",
+  "error_id": "DPS-018",
   "related_open_error_ids": [
+    "DPS-018",
     "DPS-015",
     "DPS-016",
-    "DPS-017",
-    "OBS-002",
-    "PERF-002",
-    "SETUP-001",
     "OBS-001"
   ]
 }
