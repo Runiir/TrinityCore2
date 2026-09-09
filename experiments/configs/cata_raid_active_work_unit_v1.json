@@ -1,41 +1,36 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "setup:blacksmithing_socket_creators",
+  "work_unit": "hunter:wild_quiver_proc_phase",
   "owner_skill": "raid-performance-loop",
-  "classification": "native_equipment_profession_application",
+  "classification": "native_class_proc_dispatch",
   "epoch_id": "roster_execution_review_20260908",
   "observed_at_commit": "ec02d7196a279d069ffac6c32f4ec4a99a39f404",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Reference cohort and native build70f70 pass. Hunter stopped in prelaunch beforeDB/server. DPS013 configured-data caller repair independently approved;90tests and actualdrypreparation pass. Retry nativeHunter with clean correctedsource.",
+  "gate_state": "Hunter927 complete: 23,506.897 DPS, 0 HPS. Correct stats and pet admission; Wild Quiver and Readiness repairs active. DPS-014 independently approved.",
   "first_broken_edge": {
-    "id": "extra_socket_gems_lack_native_creators",
-    "owner_classification": "raid_wowsims_reference",
-    "cause": "Nine specs have wrist/hands extra gems without native prismatic creators or Blacksmithing requirements.",
-    "review_state": "approved_native_validation_pending"
+    "id": "wild_quiver_cast_phase_has_no_action_target",
+    "owner_classification": "raid_class_mechanics",
+    "cause": "CAST phase proc has null actionTarget; handler requires it. HIT phase supplies target but current mask excludes it.",
+    "review_state": "causal_diagnosis_complete_implementation_active"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "67ec4b725ea516928aea8cea070549a4417d3d2b083dd58981881c30df199281"
+    "sha256": "6944ce03e79eae04c1822eb35d6ed1cfd93b1b02817bae8f4d1904dad2426487"
   },
   "scope_lock": {
-    "objective": "Apply exact player-obtainable Blacksmithing socket setup through shared materialization and selected-actor readback.",
-    "owned_files": [
-      "tools/bot_ml/wowsims_gear_binding.py",
-      "tools/bot_ml/build_validation_provisioning.py",
-      "tools/bot_ml/run_live_bot_validation.py",
-      "tools/bot_ml/phase8_fixture_contract.py"
-    ],
+    "objective": "Restore Wild Quiver native proc dispatch and Readiness hostile-health policy; preserve measured identity and coefficient semantics.",
+    "owned_files": [],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Exact nine-spec/18-item creator closure with craft rank400, provisioning525 and separately recorded native applicability rank1.",
-    "Selected actor item/skill transaction preserves all unrelated fields and rejects identity/readback mismatches with rollback.",
-    "Frozen validation does not read ambient DBC.",
-    "Independent review, coordinated generated inputs and full exact reference cohort promotion pass before Hunter native acceptance."
+    "Wild Quiver HIT proc retains native flags, chance and coefficient; CAST no longer consumes the proc.",
+    "Readiness checks hostile health in all candidate consumers while unrelated target gates remain unchanged.",
+    "Independent review and behavioral fixtures pass before one joined build and exact 300-second Hunter validation.",
+    "Re-evaluate consumer-only defects against retained immutable evidence; publish and clean after all readers finish."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -44,9 +39,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Freeze corrected Python launch source, refresh build receipt using cached native objects, then run exact Hunter calibration.",
+  "next_action": "Join independently reviewed Wild Quiver, Readiness and postprocessor repairs; build once and run one bounded Hunter calibration.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -92,7 +87,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "pending",
-    "scope": "DPS-011 exact Blacksmithing socket setup",
+    "scope": "DPS-015 and DPS-016",
     "live_verified": false
   },
   "related_edges": [
@@ -171,14 +166,13 @@
     "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_ec02d7196a_20260909.tar.gz.dvc"
   },
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-011",
+  "error_id": "DPS-015",
   "related_open_error_ids": [
-    "DPS-007",
-    "DPS-008",
-    "DPS-009",
-    "DPS-010",
-    "DPS-012",
-    "PERF-001",
+    "DPS-015",
+    "DPS-016",
+    "DPS-017",
+    "PERF-002",
+    "SETUP-001",
     "OBS-001"
   ]
 }

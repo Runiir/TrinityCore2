@@ -3,14 +3,24 @@
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
-Current frozen source `70f70a9be6` built successfully. The first Hunter launch
-stopped before worldserver startup, scoring or database mutation because new
-profession admission still reads DBC from the frozen checkout (DPS-013).
-Fresh cleanup readback passes. The repaired full preparation caller uses frozen
-profession authority and configured native DBC through nested gear loaders.
-Independent review, 90 tests and the actual selected-Hunter dry preparation
-pass; no class DPS result exists for the failed attempt. The new 16-spec reference cohort is fully promoted,
-clean-verified and remotely reconstructed. Its four canary DPS values are unchanged.
+Current frozen source `92787b59c4` built and completed Hunter's exact 300-second
+window: 7,052,069 damage, 23,506.897 DPS, 0 HPS, 2,997 decisions, all 1,744
+chunks retained, native exit 0 and fresh cleanup passed. DPS remains below the
+32,838.198 exact reference. The live launch data-path repair is accepted.
+The pure gear identity repair (DPS-014) is independently approved: seven tests,
+all 16 manifest identities preserved, and retained Hunter replay passes from the
+actual frozen-source working directory with native data absent. Original reports
+remain unchanged. Hunter's Agility is correct: scoring-start 9,536.1 includes
+1,260 from the pre-pot, leaving the exact 8,276.1 baseline; native passive 86538
+provides the five-percent multiplier. Pet admission matches all 14 expected rows.
+
+Next repairs are Wild Quiver's wrong proc phase (DPS-015) and Readiness checking
+self health instead of hostile health (DPS-016). Separate implementations are
+active and require independent review before one joined build/live attempt.
+A pet compatibility consumer/manifest inconsistency (DPS-017) is under diagnosis.
+No unchanged server retry is needed for post-processing defects.
+Hunter927 raw evidence remains available to reviewers. Prior runs are remotely
+archived; the new 16-spec reference cohort is fully promoted and clean-verified.
 
 Source `90a181db01` is committed, pushed and built. Affliction and Fire each
 completed exactly 300 scoring seconds with native exit 0, fresh offline/idle
@@ -34,16 +44,16 @@ independent review approves it. Detailed setup receipts remain required.
 Both evidence bundles are DVC published and remotely verified, with exact raw
 payloads evicted after all readers finished. Compact reviews and fixtures remain.
 
-Next source batch: DPS-011 Blacksmithing socket creators and actual-actor
+Implemented source batch: DPS-011 Blacksmithing socket creators and actual-actor
 reconciliation passes 27 focused tests and is independently approved. Regenerated
 metadata and directly affected socket test fixtures are approved. It affects
 nine specs, including Marksmanship, and accounts for the exact remaining 100
 raw primary-stat gap. The new full 16-spec professions_v3 cohort is generated, DVC published,
-freshly reconstructed and promoted. Final clean promotion verification remains.
+freshly reconstructed and promoted. Final clean promotion verification passed on 70f70a9be6.
 The REF-001 status/workspace repair selects current catalog publication paths;
 19 focused tests and production status now show all 16 current references.
 Independent review approves the repair. Preserve approved Hunter parent 87506 and
-the exact 14-row pet fixture; neither has full native Hunter acceptance yet.
+the exact 14-row pet fixture; native Hunter927 confirms both setup identities; throughput remains below target.
 The small PERF-001 calibration startup change is independently approved: ordinary
 population readiness no longer gates the separate native calibration population.
 Affliction's redundant native pet-resource wait has a bounded independently

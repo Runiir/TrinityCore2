@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 try:
-    from .build_validation_provisioning import load_gear_profiles
+    from .wowsims_gear_binding import canonical_wowsims_manifest
     from .live_validation_session import canonical_sha256
     from .phase8_reference_conditions import (
         EXPECTED_REFERENCE_CONDITIONS,
@@ -19,7 +19,7 @@ try:
     )
     from .role_calibration_harness import evaluate_calibration, load_policy
 except ImportError:
-    from build_validation_provisioning import load_gear_profiles
+    from wowsims_gear_binding import canonical_wowsims_manifest
     from live_validation_session import canonical_sha256
     from phase8_reference_conditions import (
         EXPECTED_REFERENCE_CONDITIONS,
@@ -37,6 +37,7 @@ DEFAULT_REFERENCES = REPO_ROOT / "experiments/configs/all_spec_references_cata_p
 DEFAULT_SCENARIOS = REPO_ROOT / "experiments/configs/all_spec_calibration_scenarios_v1.json"
 DEFAULT_POLICY = REPO_ROOT / "experiments/configs/all_spec_role_calibration_policy_v1.json"
 DEFAULT_GEAR_PROFILES = REPO_ROOT / "dataset/validation_gear_profiles/profiles.json"
+DEFAULT_WOWSIMS_GEAR_PROFILES = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
 
 
 class Phase8CalibrationNormalizationError(ValueError):
@@ -187,8 +188,21 @@ def canonical_gear_manifest(items: Any, *, label: str) -> list[dict[str, Any]]:
 
 @functools.lru_cache(maxsize=64)
 def _expected_gear_manifest_json(gear_profile_id: str) -> str:
-    profiles = load_gear_profiles(DEFAULT_GEAR_PROFILES)
-    profile = profiles.get(gear_profile_id)
+    payload = (json.loads(DEFAULT_GEAR_PROFILES.read_text(encoding="utf-8"))
+               if DEFAULT_GEAR_PROFILES.is_file() else {})
+    profile = payload.get("profiles", {}).get(gear_profile_id)
+    # Match provisioning's overlay precedence without constructing native
+    # enchant fields: this consumer needs only the declared item identity.
+    overlay = payload if payload.get("slot_map") else (
+        json.loads(DEFAULT_WOWSIMS_GEAR_PROFILES.read_text(encoding="utf-8"))
+        if DEFAULT_GEAR_PROFILES.is_file() and DEFAULT_WOWSIMS_GEAR_PROFILES.is_file() else {})
+    if gear_profile_id in overlay.get("profiles", {}):
+        try:
+            profile = {"equipment": canonical_wowsims_manifest(
+                overlay["profiles"][gear_profile_id], overlay.get("slot_map", []))}
+        except (ValueError, TypeError, KeyError, IndexError) as exc:
+            raise Phase8CalibrationNormalizationError(
+                f"invalid_field:gear_profile:{gear_profile_id}.items") from exc
     if not isinstance(profile, Mapping):
         raise Phase8CalibrationNormalizationError(
             f"unknown_gear_profile_id:{gear_profile_id}"

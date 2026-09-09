@@ -25,7 +25,13 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | REF-001 | Independently approved; current status passes | Status and workspace commands read hardcoded v1 reference paths after the request catalog promotes a newer cohort. | Resolve one coherent current publication from catalog evidence for status and workspace operations; reject mixed/missing authority and preserve path protections. |
 
-| DPS-013 | Independently approved; actual dry preparation passed | Hunter prelaunch profession checks call ambient DBC loaders in the frozen checkout, before server launch or DB mutation. | Use frozen profession/socket authority and explicitly configured native DBC for exact bonuses/gem colors; test full preparation with default checkout data absent. Failed prelaunch published, remote verified and exact payloads evicted. |
+| DPS-013 | Live launch accepted on 92787b59c4 | Hunter prelaunch profession checks call ambient DBC loaders in the frozen checkout, before server launch or DB mutation. | Use frozen profession/socket authority and explicitly configured native DBC for exact bonuses/gem colors; test full preparation with default checkout data absent. Failed prelaunch published, remote verified and exact payloads evicted. |
+
+| DPS-014 | Independently approved; cold retained replay passes | Post-run gear identity projection calls the full native gear materializer and fails on absent default DBC after a completed Hunter window. | Pure canonical identity preserves all 16 manifests; seven tests and independent cold frozen-source replay pass. Preserve original report; commit a separate re-evaluation receipt. |
+
+| DPS-015 | Cause proven; implementation active | Wild Quiver proc uses CAST phase, whose native event has no action target; its handler silently does nothing. HIT phase has the target but is excluded. | Change only spell_proc 76659 phase mask from 1 to 2, test native proc semantics, independently review, then measure. Exact reference contribution is about 3,975 DPS; no coefficient change. |
+| DPS-016 | Cause proven; implementation active | Self-targeted Readiness checks its legacy maximum-health gate against the healthy Hunter instead of the hostile target. | Add a typed hostile maximum-health gate alongside the existing minimum gate; migrate Readiness and test all consumers. |
+| DPS-017 | Diagnosis active | Pet manifest lists three autocasts but its own 14-row spellbook has seven active-193 rows; native admission hash matches. | Reconcile producer/consumer semantics before changing the contract. Do not replace observed native identity with expected fields. |
 
 CAP-001 closes the observed equal-partition truncation. The 64 MiB capture cap
 remains bounded; it is not a promise that every larger future payload fits. A
