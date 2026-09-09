@@ -1,3 +1,4 @@
+#include "Bots/BotSpellResolution.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Cryptography/CryptoHash.h"
 #include "DataStores/DBCStores.h"
@@ -392,7 +393,8 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
     {
         if (spell.CooldownGroup.empty() || !spell.SpellId)
             continue;
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId);
+        SpellInfo const* spellInfo = BotSpellResolution::Resolve(bot, spell.SpellId,
+            spell.Category == BotCombatActionCategory::UseItem).Effective;
         bool ready = spellInfo && bot->GetSpellHistory()->IsReady(spellInfo);
         auto [itr, inserted] = cooldownGroupsReady.emplace(spell.CooldownGroup, ready);
         if (!inserted)
@@ -508,7 +510,11 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             candidate.ObservationJson = observation.str();
         }
 
-        SpellInfo const* spellInfo = spell.SpellId ? sSpellMgr->GetSpellInfo(spell.SpellId) : nullptr;
+        auto const resolved = BotSpellResolution::Resolve(bot, spell.SpellId,
+            spell.Category == BotCombatActionCategory::UseItem);
+        SpellInfo const* spellInfo = resolved.Effective;
+        candidate.ResolvedSpellId = spellInfo ? spellInfo->Id : 0;
+        candidate.ResolvedTriggerFlags = uint32(resolved.Flags);
         candidate.CastTimeMs = ProfileSpellCastTimeMs(bot, spellInfo);
         Unit const* comboTarget = selfTarget ? target : actionTarget;
         std::string conditionRejection = EvaluateCompiledConditions(bot, actionTarget, comboTarget, spell);
@@ -520,6 +526,9 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             candidate.RejectReason = allyTarget ? "missing_ally_target" : "missing_enemy_target";
         else if (spell.SpellId && !spellInfo)
             candidate.RejectReason = "missing_spell_info";
+        else if (spell.SpellId && spell.Category != BotCombatActionCategory::UseItem
+            && !bot->HasSpell(spell.SpellId))
+            candidate.RejectReason = "unknown_requested_spell";
         else if (spell.Category == BotCombatActionCategory::UseItem
             && !FindOnUseItemForSpell(bot, spell.SpellId))
             candidate.RejectReason = "missing_or_depleted_item";
@@ -602,7 +611,8 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
                 std::max(5.0f, ProfileSpellMaximumRange(
                     bot, actionTarget, spellInfo))))
             candidate.RejectReason = "out_of_range";
-        else if (spellInfo && !HasEnoughPowerForProfileSpell(bot, spellInfo))
+        else if (spellInfo && !(resolved.Flags & TRIGGERED_IGNORE_POWER_COST)
+            && !HasEnoughPowerForProfileSpell(bot, spellInfo))
             candidate.RejectReason = "insufficient_resource";
 
         if (candidate.RejectReason.empty() && interruptsCurrentChanneledSpell)
@@ -633,6 +643,7 @@ std::string BotClassSpecActionProfileStore::CandidateMaskJson(std::vector<BotAct
         first = false;
         json << "{\"action_id\":" << candidate.ActionId
              << ",\"spell_id\":" << candidate.SpellId
+             << ",\"resolved_spell_id\":" << candidate.ResolvedSpellId
              << ",\"action_category\":\"" << BotClassSpecActionProfileDetail::ClassSpecProfileEscape(BotCombatActionCatalog::ToString(candidate.Category)) << "\""
              << ",\"target_guid\":" << candidate.TargetGuid
              << ",\"target_entry\":" << candidate.TargetEntry

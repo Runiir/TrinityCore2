@@ -1,3 +1,4 @@
+#include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotNativeMovementOutcome.h"
 
@@ -434,7 +435,12 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             Unit* target = action.Target.IsEmpty() ? bot : ObjectAccessor::GetUnit(*bot, action.Target);
             if (!target || !target->IsInWorld())
                 return BotActionArbitration::Outcome::Retryable("native_cast_target_unavailable");
-            SpellCastResult result = bot->CastSpell(target, action.SpellId, false);
+            auto const resolved = BotSpellResolution::Resolve(bot, action.SpellId);
+            if (!resolved.Effective
+                || (resolved.Effective != resolved.Requested && !bot->HasSpell(action.SpellId)))
+                return BotActionArbitration::Outcome::Retryable("native_cast_unknown_spell");
+            SpellCastResult result = bot->CastSpell(target, resolved.Effective->Id,
+                CastSpellExtraArgs(resolved.Flags));
             return result == SPELL_CAST_OK
                 ? BotActionArbitration::Outcome::Submitted("native_cast_submitted")
                 : BotActionArbitration::Outcome::Retryable("native_cast_rejected");

@@ -2,22 +2,22 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "hunter:remaining_cadence_and_item_damage",
   "owner_skill": "raid-performance-loop",
-  "classification": "native_variant_diagnosis",
+  "classification": "native_variant_implementation",
   "epoch_id": "roster_execution_review_20260908",
   "observed_at_commit": "c87cba4c4bc65ee25aba811afb979ed2a37f874f",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "c87 closed at 28,870.93 DPS / 0 HPS with Vial damage recovered; Aimed acceptance failed and native variant path is under diagnosis.",
+  "gate_state": "Native override correction and fixed proc observations independently approved; ready for joined native build and matched Hunter verification.",
   "first_broken_edge": {
-    "id": "aimed_native_variant_not_proven_by_cast_time_fixture",
+    "id": "native_actionbar_override_omitted_by_bot_pipeline",
     "owner_classification": "raid_role",
-    "cause": "The synthetic modifier fixture did not represent native Fire/replacement Aimed identity. Post-E90 Aimed remained absent on c87.",
-    "review_state": "native_variant_diagnosis_active"
+    "cause": "Bot preview and direct executor used requested19434 instead of native Fire82926 replacement82928. Corrected shared resolution now covers the actual calibration and controller paths.",
+    "review_state": "corrected_implementation_independently_approved_live_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "731296a2d67233143670140acb0fbac249852259f84bc991664af7754a5139ac"
+    "sha256": "a9ff1807478bad61964f79d32b4d9a2841875c761c3fc87573b10b343763dda4"
   },
   "scope_lock": {
     "objective": "Diagnose the remaining trace-backed Aimed cadence and Lightning item-damage discrepancies after restoring native owner buffs.",
@@ -39,7 +39,7 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
   "next_action": "Bind native proc/override identity through candidate and executor, repair only the proven path, and preserve Vial outcome acceptance.",
   "accepted_isolation": {
@@ -87,7 +87,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approve",
-    "scope": "DPS-019 cast preview and DPS-020 heroic Vial AP",
+    "scope": "DPS-019 native actionbar override and OBS-003 proc observation",
     "live_verified": false
   },
   "related_edges": [
@@ -169,8 +169,8 @@
   "error_id": "DPS-019",
   "related_open_error_ids": [
     "DPS-019",
-    "DPS-020",
     "DPS-021",
+    "OBS-003",
     "OBS-001"
   ]
 }

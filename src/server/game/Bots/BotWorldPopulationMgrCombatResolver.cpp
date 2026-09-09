@@ -1,3 +1,4 @@
+#include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotCombatMaskEvaluation.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
@@ -156,7 +157,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     };
     auto effectiveSpellMinRange = [bot, target](BotActionCandidate const& candidate, float configuredMinRange) -> float
     {
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId);
         if (!spellInfo)
             return configuredMinRange;
 
@@ -168,7 +169,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     auto effectiveSpellMaxRange = [bot, target](BotActionCandidate const& candidate,
         float configuredMaxRange) -> float
     {
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId);
         if (!spellInfo)
             return configuredMaxRange;
 
@@ -367,7 +368,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             continue;
         }
 
-        SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+        SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId);
         bool const candidateHasCastTime = candidateSpellInfo
             && candidateSpellInfo->CalcCastTime(bot->getLevel()) > 0;
         bool const candidateIsChanneled = candidateSpellInfo
@@ -672,7 +673,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             minRange = effectiveSpellMinRange(candidate, minRange);
         float maxRange = candidate.Profile.MaxRange > 0.0f ? candidate.Profile.MaxRange : profile.MaxRange;
         if (candidate.Profile.MaxRange <= 0.0f)
-            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId))
+            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId))
                 maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
         if (!selfTarget)
             maxRange = effectiveSpellMaxRange(candidate, maxRange);
@@ -873,7 +874,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     // envelope. Shadowflame and Holy Wrath are cast on the player, while the
     // selected hostile remains the movement/facing anchor. Positive self-target
     // actions have no hostile range envelope and therefore resolve to zero.
-    SpellInfo const* selectedSpellInfo = sSpellMgr->GetSpellInfo(best->SpellId);
+    SpellInfo const* selectedSpellInfo = sSpellMgr->GetSpellInfo(best->ResolvedSpellId);
     bool const selectedSpellIsHostile = selectedSpellInfo
         && !selectedSpellInfo->IsPositive();
     float const selfCenteredHostileMaxRange =
@@ -886,7 +887,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             ? best->Profile.MaxRange : profile.MaxRange);
     action.SuppressAreaDamage = forbidArea;
     if (!selfTarget && best->Profile.MaxRange <= 0.0f)
-        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
+        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->ResolvedSpellId))
             action.MaxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
     if (!selfTarget)
         action.MaxRange = effectiveSpellMaxRange(*best, action.MaxRange);

@@ -487,7 +487,7 @@
             int32 MinimumAmount = 0, MaximumAmount = 0;
             EffectiveStatVector FirstActivePlayerStats;
         };
-        std::array<OwnerAuraObservation, 2> OwnerAuraObservations;
+        std::array<OwnerAuraObservation, 4> OwnerAuraObservations;
         EffectiveStatVector ScoringStartPlayerStats;
         EffectiveStatVector ScoringStartPetStats;
         bool PreScorePersistentSetupReady = false;

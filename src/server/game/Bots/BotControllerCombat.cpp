@@ -1,3 +1,4 @@
+#include "Bots/BotSpellResolution.h"
 #include "Bots/BotController.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotWorldPopulationMgr.h"
@@ -364,7 +365,7 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
         float minRange = candidate.Profile.MinRange > 0.0f ? candidate.Profile.MinRange : profile.MinRange;
         float maxRange = candidate.Profile.MaxRange > 0.0f ? candidate.Profile.MaxRange : profile.MaxRange;
         if (candidate.Profile.MaxRange <= 0.0f)
-            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId))
+            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId))
                 maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
         if (minRange > 0.0f && targetDistance < minRange)
         {
@@ -377,9 +378,10 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
             continue;
         }
         if (candidate.SpellId)
-            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId))
+            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId))
             {
-                if (!RotationHasEnoughPower(bot, spellInfo))
+                if (!(candidate.ResolvedTriggerFlags & TRIGGERED_IGNORE_POWER_COST)
+                    && !RotationHasEnoughPower(bot, spellInfo))
                 {
                     candidate.RejectReason = "insufficient_spell_power_type_resource";
                     continue;
@@ -488,7 +490,7 @@ ResolvedCombatAction BotController::ResolveProfileCombat(BotCombatDecision const
     action.MinRange = best->Profile.MinRange > 0.0f ? best->Profile.MinRange : profile.MinRange;
     action.MaxRange = best->Profile.MaxRange > 0.0f ? best->Profile.MaxRange : profile.MaxRange;
     if (best->Profile.MaxRange <= 0.0f)
-        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
+        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->ResolvedSpellId))
             action.MaxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
     return action;

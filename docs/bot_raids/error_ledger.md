@@ -37,10 +37,11 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | DPS-018 | Owner buff independently live accepted on Hunter5c | Hunter3e has no owner Furious Howl aura in 260,913 samples spanning 300 seconds (maximum gap 43 ms), despite the exact enabled wolf spellbook. | Grouped PetAI omitted the owner; Howl cannot target the remaining player-controlled pet. Include the owner and retain periodic grouped refresh. Reject cardinality-only caching, which retains stale equal-size membership. Portable actual-body tests and independent review pass. Hunter5c owner Howl starts111ms and is present in every subsequent sample; 28,522.63DPS/0HPS, complete transport and cleanup. |
 
-| DPS-019 | c87 live acceptance failed; native variant diagnosis active | Aimed Shot stops at the 30-second E90 boundary in both runs; exact reference has later instant casts after Master Marksman Fire 82925. Both profile preview helpers omit caster cast-time modifiers, permanently rejecting the below-E90 row's 1,000 ms limit. | c87 still has ten Aimed events. The preview improvement passed tests but the fixture assumed a cast-time modifier; native Fire has a separate replacement-spell path. Map native aura/replacement and both admission/execution before another repair. One matched acceptance failure recorded; do not repeat unchanged. |
-| DPS-020 | c87 damage recovered; independent live review active | Heroic Vial of Shadows 77999 triggers 109724 at matching cadence, but native damage lacks the pinned simulator's 0.339 attack-power term. Restored-buff5c still averages 5,425.63 per event. | c87 has 28 procs / 458,341 damage, averaging 16,369.32 versus prior 5,425.63. Exact binding, native shutdown and complete transport pass; independent outcome review pending. Coefficient authority remains pinned simulator, with outcome variance explicit. |
+| DPS-019 | Native override correction independently approved; live pending | Aimed Shot stops at the 30-second E90 boundary in both runs; exact reference has later instant casts after Master Marksman Fire 82925. Both profile preview helpers omit caster cast-time modifiers, permanently rejecting the below-E90 row's 1,000 ms limit. | c87 still has ten Aimed events. The preview improvement passed tests but the fixture assumed a cast-time modifier; native Fire has a separate replacement-spell path. Map native aura/replacement and both admission/execution before another repair. One matched acceptance failure recorded; do not repeat unchanged. |
+| DPS-020 | Independently live accepted on c87 | Heroic Vial of Shadows 77999 triggers 109724 at matching cadence, but native damage lacks the pinned simulator's 0.339 attack-power term. Restored-buff5c still averages 5,425.63 per event. | c87 has 28 procs / 458,341 damage, averaging 16,369.32 versus prior 5,425.63. Exact binding, native shutdown and complete transport pass; independent outcome review accepts the repair. Coefficient authority remains pinned simulator, with outcome variance explicit. |
 | DPS-021 | Sequencing mismatch proven; repair not yet admitted | Hunter5c selects Readiness before Chimera and submits Rapid Fire three times versus four exact. | Preserve accepted DPS-016 health gate. Determine whether an existing prerequisite can express the reference sequence; a spell merely being on cooldown may not prove the intended ordering. Do not expand DPS-019 into a new policy framework. |
 
+| OBS-003 | Independently approved; joined live pending | c87 has no full-window observation of native Master Marksman stack aura 82925 or Fire 82926. | Append these two IDs to the existing fixed owner-aura aggregate, preserving Howl/mastery indices and bounded storage. Two actual aggregation/serializer tests and independent review pass. |
 
 CAP-001 closes the observed equal-partition truncation. The 64 MiB capture cap
 remains bounded; it is not a promise that every larger future payload fits. A
@@ -271,9 +272,10 @@ denominator with 233 damage-bearing seconds. Retained WCL uses 1 tank / 1 healer
 All current development calibrations remain training-ineligible because the
 qualification identity and non-certifying fixture boundaries are unresolved.
 
-Hunter3e and Hunter5c closed evidence is remotely verified and exact raw payloads
+Hunter3e, Hunter5c and Hunterc87 closed evidence is remotely verified and exact raw payloads
 are evicted after all causal reviewers finished:
 
+- [Hunterc87 DVC pointer](../../artifacts/cata_raid_program/calibration_marksmanship_hunter_c87cba4c4b_20260909.tar.gz.dvc)
 - [Hunter3e DVC pointer](../../artifacts/cata_raid_program/calibration_marksmanship_hunter_3e0b48374e_20260909.tar.gz.dvc)
 - [Hunter5c DVC pointer](../../artifacts/cata_raid_program/calibration_marksmanship_hunter_5c1d8e430a_20260909.tar.gz.dvc)
 

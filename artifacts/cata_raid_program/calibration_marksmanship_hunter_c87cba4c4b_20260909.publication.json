@@ -1,0 +1,247 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "c87cba4c4bc65ee25aba811afb979ed2a37f874f",
+  "archive_sha256": "fe5bdfd8efb9db26242e76659cf1265f2ca5960cee61db2d39077c52387d0783",
+  "archive_bytes": 6569532,
+  "dvc_pointer": "artifacts/cata_raid_program/calibration_marksmanship_hunter_c87cba4c4b_20260909.tar.gz.dvc",
+  "remote_download_sha256": "fe5bdfd8efb9db26242e76659cf1265f2ca5960cee61db2d39077c52387d0783",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "terminal_reason": "combat_calibration_complete",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-c87cba4c4b/configure.log",
+      "bytes": 15529,
+      "sha256": "a276dd57ff89fe2846f55bd35584762a10aae2b019c1771b4689d8a795b69d3d"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/configure_receipt.json",
+      "bytes": 13611,
+      "sha256": "e3c6bf511a430f37dbca6868d1681c5765e399d693d20b9fb46734ccf7cd22e4"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/configure_verification.json",
+      "bytes": 536,
+      "sha256": "c8282d76d2fc4ef1a245dbffe8ba7b105f109b1c58ecc2ee008c8526b6c4f918"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/map-0-asset-preflight.json",
+      "bytes": 6041883,
+      "sha256": "d5c6268ea314f2564914c36ea4c0196e0c949efc0e7d399e62b0a573797bb67a"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/map-669-asset-preflight.json",
+      "bytes": 5454509,
+      "sha256": "40aad2770ab2ad9cdc5fac7165be4d9908a1fa82abfa5be5ed6e881326d7da95"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "5454c07dc453155d8bfa699768ab9555da541388a446b04c2f0c15316b3e2d50"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/review-context/apply-reviewed-vial-binding.py",
+      "bytes": 1648,
+      "sha256": "08cc512260d0106f67146e9b8b0d6f279621b0ae2600bfaf8ccc057eb00d2268"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/review-context/hunter-aimed-cadence-diagnosis.md",
+      "bytes": 7141,
+      "sha256": "0fd950011f43a576c3fb5013c8c682aa6a3a03e19a5e66726a06f04ad07e8405"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/review-context/hunter-aimed-cast-preview-implementation.md",
+      "bytes": 4113,
+      "sha256": "466c143b6ff3f46f9128946187765a03deb1524da3d57e68042eb593e49be40e"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/review-context/hunter-aimed-cast-preview-review.md",
+      "bytes": 3184,
+      "sha256": "aa3cbc0e15d63e5745fbdf6ab73363644b8bb88a9dbbc1c3d40b0ad7a9c37ce3"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/review-context/hunter-lightning-strike-diagnosis.md",
+      "bytes": 10734,
+      "sha256": "3ac2f9e23d5ed355ca5dfb849dac3c566e8d09365c838c3d4ea89b51516c2cec"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/review-context/hunter-vial-ap-implementation.md",
+      "bytes": 2773,
+      "sha256": "992ec1559fae30a56608e38324953dae8356188e8c8669b081d4d8a8cd2628f0"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/review-context/hunter-vial-ap-review.md",
+      "bytes": 3029,
+      "sha256": "d4a62f96ae74bb76c9c11162d2edc20e03fc707c191d32b812d1b5d32d886434"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "d484e7a5bce8b9def077e1cabf5de035d3d027950a63dfe49dd9c79b470e787f"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/vial-binding-database-readback.json",
+      "bytes": 342,
+      "sha256": "5a0a509dcd1d5ed0417f064ac4551071c5c009b9a2477a9036aea52846a52dfb"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/worldserver_build.log",
+      "bytes": 26541,
+      "sha256": "3e62fb094eb37bc4eeefff54d0ef08cb59f1c84ea3a44a3c99a139d683000d2c"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/worldserver_build_receipt.json",
+      "bytes": 24243,
+      "sha256": "522028c1ac5696082823d220d66c0127b92c1c4c617550897a26061b7249c21b"
+    },
+    {
+      "path": "build-preflight-c87cba4c4b/worldserver_build_verification.json",
+      "bytes": 536,
+      "sha256": "1619b6e2d9c2e0d24cdf90516011e41867f2376ddc3739bd1a28c772e0e73e9b"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/bot_pool_reset/reset_bot_pool.sql",
+      "bytes": 7817,
+      "sha256": "7a69716b1ffebac975da291391005a779903730028d28855f352968aff012af0"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/calibration_consumable_restock/marksmanship_hunter.sql",
+      "bytes": 1732,
+      "sha256": "6535a5112f814e8ade2e11f809c76e13e15802c07e8837da04040516a1169b63"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/calibration_known_spells.json",
+      "bytes": 5244,
+      "sha256": "4740f9fdb8f99942d894a885a804d70585f50e21e8b52061208d976b1f43c6dc"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/cleanup_readback.json",
+      "bytes": 1177,
+      "sha256": "f718cb66ce1f483e742e05e75a2e40fd558dfc1918d75f6ae5a5300fe8cad9fe"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/closed_summary.json",
+      "bytes": 1204,
+      "sha256": "5d7649f10aac4768d7b03bcc5145cd05962dab4295f1950c1a5199f59114fd3b"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/combat_analysis.json",
+      "bytes": 295,
+      "sha256": "886c54a50dc61c67ee6bc92dd09dbeb963332ec8b043efd78eca7d516c7c4fc1"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/combat_log.json",
+      "bytes": 674,
+      "sha256": "fe90bf9f29fe517d6342280dc1259bd9e83da0af7bcfcef123726271596e0cc0"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/commands.txt",
+      "bytes": 203,
+      "sha256": "9548b79c11c9d5735e9f7152f16d90026c3d0e2006bdb2fb329dd3d2e9135852"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/dps-review/close-reviewed-hunter-run.py",
+      "bytes": 2407,
+      "sha256": "d7ced5eab199d8a61f2b53b4b969ff7f1ef732ef934c8118b5294f2553cf9df0"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/dps-review/hunter-calibration-review.json",
+      "bytes": 5572,
+      "sha256": "5dc923ff331c5b790fa97c5fa08faeb289687b45f34b7d663b5bbcfc1571fe7f"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/dps-review/hunter-calibration-review.md",
+      "bytes": 6249,
+      "sha256": "89a7de44fe0170233372ebc4a5bc62b267593fbd93cd6f309a25b7d60c16e010"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/dps-review/hunter-native-variant-correction.md",
+      "bytes": 11463,
+      "sha256": "e43a70921b1158a741019c9fdc73fbc64e546cc17429c9a59f3d724080f1dd2d"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/heartbeat_events.jsonl",
+      "bytes": 19215,
+      "sha256": "fd75775adbe943b8bc8c97258b2d009be876dac4bd22722a23b644b10d708efd"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/heartbeat_manifest.json",
+      "bytes": 375,
+      "sha256": "20888f89b7bc252f6400d55d58bb785d36991aba102083394c90c0913ee4a260"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/latest.json",
+      "bytes": 47445480,
+      "sha256": "92014aeddea20225b8580e3d97ab157c91c9e9b043ddc2597b33b2950a5a7377"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/report.json",
+      "bytes": 103983058,
+      "sha256": "1e13b377c87cd8e3b176d30a65ef425ef644139332249147de26f8d439c0e94c"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/reviewed_summary.json",
+      "bytes": 686,
+      "sha256": "9df64d14e501d777a4a123027c8b03b35ad2a6d49bbd64d7650fb841fcf2585b"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/worldserver.validation.conf",
+      "bytes": 156993,
+      "sha256": "90a34382278bfa71faa94a07ad98aa8b89c4d8debad0101d451b25756cfa30dd"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-c87cba4c4b/worldserver_output.log",
+      "bytes": 28948109,
+      "sha256": "73e1fd5e1567b3c3aa27d355ccf4ce2e1af2d7a029f2dd885e0850a1a103f190"
+    },
+    {
+      "path": "run-spec-calibration.py",
+      "bytes": 2696,
+      "sha256": "67b80e243b7b52b421c46f08be89263f0c8e58a8a99087fedc53aa1ec4503ae9"
+    },
+    {
+      "path": "publish-spec-calibration.py",
+      "bytes": 3613,
+      "sha256": "25e94de1679a437657eb563091dbd3c488703480d5ce6db8076039d730a087cc"
+    },
+    {
+      "path": "evict-spec-calibration.py",
+      "bytes": 1782,
+      "sha256": "770d48354a214610a8de89064d49168c991544a5c0ee1758cd2bd3e5af68471c"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-launch-c87cba4c4b.json",
+      "bytes": 2346,
+      "sha256": "6372e85f033e760e4ed2516eecb77c39ad022f46740bbc8f5e92aa8c976bf927"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-console-c87cba4c4b.log",
+      "bytes": 103983058,
+      "sha256": "1e13b377c87cd8e3b176d30a65ef425ef644139332249147de26f8d439c0e94c"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-postbuild-c87cba4c4b.json",
+      "bytes": 537,
+      "sha256": "23ff414e7ae5df40f48ed8855f1eaacc9788fc2f2389a6c9c4d71100e5aea9c6"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    "calibration-marksmanship_hunter-c87cba4c4b/report.json",
+    "calibration-marksmanship_hunter-c87cba4c4b/latest.json",
+    "calibration-marksmanship_hunter-c87cba4c4b/worldserver_output.log"
+  ]
+}

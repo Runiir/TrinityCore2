@@ -9,15 +9,18 @@ decisions and 1,226 successful actions. All 1,741 chunks / 21,385,282 bytes reas
 verified binary, role checks and fresh 13-actor cleanup pass. Qualification
 still rejects only `incomplete_evidence_identity`; training is forbidden.
 
-Vial now contributes 458,341 damage / 28 events; independent review is checking
-its native acceptance. Aimed remains at ten events. The prior fixture assumed
+Vial now contributes 458,341 damage / 28 events; independent review accepts
+its native outcome. Aimed remains at ten events. The prior fixture assumed
 a simulator-like cast-time modifier without proving the native spell variant.
 Native source distinguishes stack aura 82925, Fire 82926 and replacement Aimed
 82928. Diagnose the actual override through eligibility and direct execution
 before another build. DPS-019 remains open; the two-helper improvement alone
 did not meet live acceptance. Review/implementation skills now require native
-variant mapping. No server is running, and raw c87 evidence is retained for
-its two active reviewers.
+variant mapping. No server is running. c87 is DVC-published, freshly reconstructed and hash-verified;
+all readers finished before exact raw eviction. Native variant script bindings
+are present. The corrected override implementation passed 21 affected tests and independent
+Sol review. Fixed proc observations also passed review. Build these together
+and validate native Fire presence followed by post-30-second landed spell 82928.
 
 Latest source `5c1d8e430a` built on its first attempt and completed Hunter's
 exact300-second score: 8,556,790 damage, 28,522.63DPS, 0HPS and2,984decisions.

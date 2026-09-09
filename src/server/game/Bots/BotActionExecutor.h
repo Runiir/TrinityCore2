@@ -8,6 +8,7 @@
 
 class Player;
 class Unit;
+namespace BotSpellResolution { struct Resolved; }
 
 class BotActionExecutor
 {
@@ -43,7 +44,7 @@ public:
 private:
     BotActionResult CheckSpell(Player* owner, Player* bot, Unit* target, uint32 spellId) const;
     BotActionResult CheckHostileSpell(Player* owner, Player* bot, Unit* target,
-        uint32 spellId, bool interruptCurrentChanneledSpell = false) const;
+        BotSpellResolution::Resolved const& resolved, bool interruptCurrentChanneledSpell = false) const;
     BotActionResult CheckRecipe(Player* owner, Player* bot, uint32 recipeSpellId) const;
     bool IsThrottled(ObjectGuid botGuid, uint32 spellId, ObjectGuid targetGuid);
     void RecordFailure(ObjectGuid botGuid, uint32 spellId, ObjectGuid targetGuid);

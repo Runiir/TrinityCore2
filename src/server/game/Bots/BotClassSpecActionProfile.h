@@ -114,6 +114,8 @@ struct BotActionCandidate
 {
     uint32 ActionId = 0;
     uint32 SpellId = 0;
+    uint32 ResolvedSpellId = 0;
+    uint32 ResolvedTriggerFlags = 0;
     BotCombatActionCategory Category = BotCombatActionCategory::Wait;
     std::string TargetType = "enemy";
     uint64 TargetGuid = 0;

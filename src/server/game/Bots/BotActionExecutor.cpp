@@ -1,3 +1,4 @@
+#include "Bots/BotSpellResolution.h"
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotCastWhileMoving.h"
 #include "Bots/BotRaidAreaAuthority.h"
@@ -298,9 +299,10 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     }
     if (!action.SpellId)
         return BotActionResult::NoAction;
+    auto const preview = BotSpellResolution::Resolve(bot, action.SpellId, action.Type == "use_item");
     if ((action.SuppressAreaDamage
             || HasNearbyProtectedEncounterTarget(bot, target))
-        && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(action.SpellId)))
+        && SpellHasHostileMultiTargetSemantics(preview.Effective))
         return BotActionResult::NoAction;
 
     if (!target || !target->IsAlive() || (target != bot && !bot->IsValidAttackTarget(target)))
@@ -389,7 +391,13 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         return BotActionResult::Ok;
     }
 
-    BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId,
+    // Auto Shot/pet startup above can change auras. Resolve again for submission
+    // and carry this one result through every remaining gate and the cast.
+    auto const resolved = BotSpellResolution::Resolve(bot, action.SpellId);
+    if ((action.SuppressAreaDamage || HasNearbyProtectedEncounterTarget(bot, target))
+        && SpellHasHostileMultiTargetSemantics(resolved.Effective))
+        return BotActionResult::NoAction;
+    BotActionResult check = CheckHostileSpell(owner, bot, target, resolved,
         action.InterruptCurrentChanneledSpell);
     if (check != BotActionResult::Ok)
     {
@@ -401,7 +409,9 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (IsThrottled(bot->GetGUID(), action.SpellId, action.TargetGuid))
         return BotActionResult::Throttled;
 
-    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(action.SpellId);
+    SpellInfo const* spellInfo = resolved.Effective;
+    if (!spellInfo)
+        return BotActionResult::BadSpell;
     if (spellInfo && spellInfo->CalcCastTime(bot->getLevel()) > 0
         && (bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING))
         && BotCastWhileMoving::StopUncoveredMovingCast(bot, spellInfo,
@@ -425,15 +435,15 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (action.SpellId == ShadowfiendSpellId && target != bot)
         bot->SetTarget(target->GetGUID());
 
-    CastSpellExtraArgs castArgs(TRIGGERED_NONE);
+    CastSpellExtraArgs castArgs(resolved.Flags);
     // Let native Spell::prepare/Unit::SetCurrentCastSpell interrupt the
     // channel only after the replacement cast has passed its checks.  The
     // candidate is admitted immediately after a landed periodic tick, which
     // matches WoWSims' tick-then-interruptIf ordering and avoids discarding a
     // channel tick before a failed replacement submission.
     SpellCastResult result = spellInfo && (spellInfo->GetExplicitTargetMask() & TARGET_FLAG_DEST_LOCATION)
-        ? bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, action.SpellId, castArgs)
-        : bot->CastSpell(target, action.SpellId, castArgs);
+        ? bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, spellInfo->Id, castArgs)
+        : bot->CastSpell(target, spellInfo->Id, castArgs);
     _lastSpellCastResult = uint32(result);
     if (result != SPELL_CAST_OK)
     {
@@ -799,10 +809,11 @@ BotActionResult BotActionExecutor::CheckSpell(Player* owner, Player* bot, Unit* 
 }
 
 BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot, Unit* target,
-    uint32 spellId, bool interruptCurrentChanneledSpell) const
+    BotSpellResolution::Resolved const& resolved, bool interruptCurrentChanneledSpell) const
 {
-    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-    if (!spellInfo)
+    SpellInfo const* spellInfo = resolved.Effective;
+    if (!spellInfo || !resolved.Requested
+        || (spellInfo != resolved.Requested && !bot->HasSpell(resolved.Requested->Id)))
         return BotActionResult::BadSpell;
     if (!target)
         return BotActionResult::InvalidTarget;
@@ -848,7 +859,8 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
     if (spellInfo->NeedsComboPoints()
         && (!bot->GetComboPoints() || (target != bot && bot->GetComboTarget() != target->GetGUID())))
         return BotActionResult::NoMana;
-    if (!HasEnoughPowerForSpell(bot, spellInfo))
+    if (!(resolved.Flags & TRIGGERED_IGNORE_POWER_COST)
+        && !HasEnoughPowerForSpell(bot, spellInfo))
         return BotActionResult::NoMana;
     if (owner && bot->GetMap() != owner->GetMap())
         return BotActionResult::NoOwner;
