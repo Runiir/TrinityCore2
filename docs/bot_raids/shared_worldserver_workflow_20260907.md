@@ -1,7 +1,36 @@
 # Shared-worldserver workflow status
 
-Current objective: resolve roster DPS, continuing past individual repair acceptance.
+Current objective: resume the wider raid program after the accepted Magmaw DPS
+canary. Next bounded scope is Maloriak encounter readiness: reconcile current
+source, bindings, research and retained evidence before admitting a repair.
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
+
+Magmaw 10N on `21c640739d` is independently accepted as a development canary.
+All ten bots survived the entire route with zero deaths. The exact native
+pull-to-death duration was 152.412 seconds. Unique hostile party damage was
+28,313,610: 183,854.610 DPS on 154 damage-bearing seconds versus 128,636.918
+before, a 42.925% increase. Over the exact pull-to-death window it was
+185,769.839 DPS. The five DPS actors contributed 24,669,813 damage:
+160,193.591 DPS on 154 seconds. The 173.806-second route-event span includes
+approach and post-kill healing and is not the WCL kill denominator.
+Party HPS was 13,463.903 on the damage-bearing denominator.
+
+Independent reviews accept all five DPS actors' improvements, tank/healer
+outcomes, direct exposed-head targeting and Bloodlust timing. Mirrored spell
+79010 shared-health callbacks are excluded from damage totals. No persistent
+action loop or new blocking class defect was proven. CAP-004 passes live.
+The binary, configuration, roster/readback, native exit 0 and fresh cleanup
+of 13 scoped actors all pass.
+
+Evidence is DVC-published, verified through a fresh remote reconstruction,
+and exact raw payloads and duplicate archives are evicted after all reviewers
+finished. This remains development evidence, not full-raid or training
+qualification. Do not rerun Magmaw without a newly proven edge. Separate
+Readiness optimization DPS-021 remains deferred.
+
+TEST-001 fixes the stale temporary recurrence-bank identity in unit tests;
+24 affected tests pass independent review. The real qualification bank and its
+strict gates remain unchanged and require current evidence before promotion.
 
 Source `9ed497d8c4` built on its first attempt and completed Hunter's exact
 300-second window: 30,568.92 DPS / 0 HPS, 2,992 decisions, 1,325 successful
@@ -15,17 +44,18 @@ training is forbidden. Hunter9ed is DVC-published, remotely verified and raw evi
 The same build's Magmaw launch passed canonical provisioning and readback but
 aborted during frozen roster identity construction: a full gear materializer
 reads absent source/data/dbc/enUS/SkillLineAbility.dbc instead of the verified
-runtime data. CAP-004 owns this separate Python validator edge. There was no
+runtime data. CAP-004 identified this separate Python validator edge, since accepted on 21c. There was no
 boss attempt; five initial native decisions and no combat DPS/HPS result.
 Native exit0 and fresh13actor cleanup pass. No worldserver is running. Preserve
-accepted Hunter mechanics and the earlier valid Magmaw kill; fix the actual
-identity consumer before retrying the raid. Failed startup evidence is also
+accepted Hunter mechanics and the earlier valid Magmaw kill; the identity
+consumer repair and successful retry are recorded above. Failed startup evidence is also
 DVC-published, remotely verified and raw evicted after both readers finished.
 CAP-004 pure identity projection now passes independent review: all70 BWD actor
 identities match, the exact missing-file counterexample fails on the old loader,
 and the repaired actual capture loop and strict rejection checks pass. Six
 legacy recurrence-fixture setup failures precede this validator and are outside
-the development canary gate. Refresh the clean build receipt and retry Magmaw.
+the development canary gate. The later 21c retry passed; TEST-001 repairs the
+temporary test fixture separately.
 
 Latest source `e562e9229d` completed the exact 300-second Hunter window:
 28,345.67 DPS / 0 HPS, 2,992 decisions and 1,224 successful actions.
