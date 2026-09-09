@@ -4,20 +4,20 @@
   "owner_skill": "raid-rotation-review",
   "classification": "multi_class_repair_review",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "a152fb20ef7563309b7a3084a7161f272e752a50",
+  "observed_at_commit": "ff34bce50a2220c4c9074fe0eaeb757251786e7e",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "aba37 build failed on missing header dependency; reviewed include repair ready",
+  "gate_state": "Fire FLOAT correction and Magmaw swap contract independently approved",
   "first_broken_edge": {
-    "id": "multi_class_throughput_losses",
+    "id": "fire_moving_scorch_migration_float_predicate",
     "owner_classification": "parallel_role_review",
-    "cause": "Fire moving filler gated above 40% mana; Affliction potion reads add health; Drudge fixed backline anchor remains unsafe after rush; all-class effective stats missing.",
-    "review_state": "implementation_and_independent_review"
+    "cause": "Native FLOAT comparison matched zero source rows; intended moving Scorch row absent during ff34.",
+    "review_state": "correction_independently_approved"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "9905b56ee446661056c1df3352fae5d26b4670b2e63521f50903d2bab9d3edb8"
+    "sha256": "dca435e2273aa304e1301a7d7cf64fe1e9fe2053f88e71e41469a8eea410c225"
   },
   "scope_lock": {
     "objective": "Resolve performance losses across all represented classes; preserve accepted DK/MT improvements and fix misleading diagnostic publication.",
@@ -40,7 +40,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Build once, verify receipt, run bounded Magmaw and review all represented actors.",
+  "next_action": "Build reviewed source, verify native post-update Fire rows, run bounded Magmaw and review all bots plus repaired edges.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -80,7 +80,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approve",
-    "scope": "boss-health potion gate, raid effective stats, Fire moving Scorch, Drudge safe backline recovery and return",
+    "scope": "Fire migration08 FLOAT predicate and Magmaw existing debuff swap contract",
     "live_verified": false
   },
   "related_edges": [
@@ -127,18 +127,17 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-032",
+  "error_id": "DPS-035",
   "related_open_error_ids": [
-    "DPS-023",
     "DPS-021",
+    "DPS-023",
     "DPS-026",
     "DPS-029",
-    "DPS-032",
+    "DPS-035",
     "ENC-001",
-    "OBS-007",
+    "ENC-002",
     "HEAL-001",
-    "OBS-006",
-    "DPS-033"
+    "OBS-006"
   ],
   "requested_tank_assignment": {
     "main_tank": {

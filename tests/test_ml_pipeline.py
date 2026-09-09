@@ -2226,6 +2226,9 @@ def test_bwd_magmaw_preserves_boss_source_and_uses_db_ground_anchor():
         "allow_multidot": False,
         "main_tank_roster_slot": 2,
         "off_tank_roster_slot": 1,
+        "tank_swap_trigger": "debuff_stacks",
+        "tank_swap_aura_id": 78199,
+        "tank_swap_aura_stacks": 1,
     }
 
 

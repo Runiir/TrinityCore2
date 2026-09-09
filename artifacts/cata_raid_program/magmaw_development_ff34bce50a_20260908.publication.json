@@ -1,0 +1,413 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "ff34bce50a2220c4c9074fe0eaeb757251786e7e",
+  "archive_sha256": "830795307712301d551fc3e7986ea40f49e718c35ea1e4ec1b656c38f0528b8a",
+  "archive_bytes": 145595037,
+  "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_ff34bce50a_20260908.tar.gz.dvc",
+  "remote_download_sha256": "830795307712301d551fc3e7986ea40f49e718c35ea1e4ec1b656c38f0528b8a",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": true,
+  "terminal_reason": "clear",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-ff34bce50a/configure.log",
+      "bytes": 15532,
+      "sha256": "5fb0f4214e09f27c5a32e914c89cbb3ca2f75b6fdd08af81e12cc44303e7aff8"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/configure_receipt.json",
+      "bytes": 13614,
+      "sha256": "028f9e75d83141328e80d5b824ed1ac0504f8f14684a60b5dee8eb9113c9edb8"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/configure_verification.json",
+      "bytes": 536,
+      "sha256": "faa0cbd37b7fbfbc80e57c54ec85eaab044290556078541dff300b487f4f205d"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/configure.log",
+      "bytes": 15529,
+      "sha256": "e84b576a16d5ae0c8a015f54e5a8272bf0da088a30ee103f8a654233430784a8"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/configure_receipt.json",
+      "bytes": 13611,
+      "sha256": "198b3ce4fa3039b2db412b690074c64da1de5e818333268b09b966e2c6b7aa49"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/configure_verification.json",
+      "bytes": 536,
+      "sha256": "219e780c7f4168f37890186c4b00a20c9401afa3e4e0296228ec2bd2567c1fdb"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/map-0-asset-preflight.json",
+      "bytes": 6041883,
+      "sha256": "dde5e1633ee2a9f3ac7d1c6220a4b0be37435d9f59934cacd24ce1e7b2c899bb"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/map-669-asset-preflight.json",
+      "bytes": 5454509,
+      "sha256": "da146534ffc16927ce4f22935044815b11d53a00a414f6bad241c32b7f2da25e"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "1ba8e761123041249134e1119f6e780a956e95b17a2b1c95e5fc28a7d1ef75cf"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/reviews/affliction-combat-potion-health-owner-implementation.md",
+      "bytes": 5734,
+      "sha256": "a5497db7d290ab635df1daec568defe77f7c0a83d458d748dcfbcbc55a979400"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/reviews/affliction-combat-potion-health-owner-independent-review.md",
+      "bytes": 4403,
+      "sha256": "11b4f78b2977708f804cdd6d3bca203f3503a8eae6403f91d93adfe4c8e95147"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/reviews/bounded-area-safety-design.md",
+      "bytes": 5157,
+      "sha256": "bd9ac5f7586bf18af1a87e4be8cabbd6d1afaa68a54bed14b4493f39f303a07d"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/reviews/drudge-backline-anchor-independent-review.md",
+      "bytes": 3537,
+      "sha256": "492f04cd82c2c453024de165f0eafb87f940326c6933c646991f58e20368aa51"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/reviews/effective-stats-diagnosis-implementation.md",
+      "bytes": 4210,
+      "sha256": "888506906fdc0272369ce749552c3da00326b33bba6459ff09b069498739bda8"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/reviews/effective-stats-diagnosis-independent-review.md",
+      "bytes": 5293,
+      "sha256": "2a24093a27db8da4b36d92e440a8c704f5580960f4e87201c4ebbecc8e0700cb"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/reviews/fire-moving-scorch-implementation.md",
+      "bytes": 3821,
+      "sha256": "984fd741686683440b7216a80478a0595b28856add856c79ec422a05b5a56444"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/reviews/fire-moving-scorch-independent-review.md",
+      "bytes": 5265,
+      "sha256": "4d4dc7a52dcb8fff427bac78a647d61b88c71201c6dbef9ad39a373f76390db2"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "98a84eb1c2eab5a7a55b92643ae1e5b1c123afae3eae39144cf8e1f26ecfc70c"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/worldserver_build.log",
+      "bytes": 34933,
+      "sha256": "18270c812bc466ffdc4d7db761b8c7be941e78945d4ea4232f6bf6fb83babccb"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/failed-build-aba37d6dac/worldserver_build_receipt.json",
+      "bytes": 22991,
+      "sha256": "7b1f3943a8c8a4697b99592d3724e741ad67ab0dcbe0a7e84182e4db778d3bea"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/map-0-asset-preflight.json",
+      "bytes": 6041883,
+      "sha256": "666da5cfb7548878d905a1c27a15a017902e5c98d1f680fe66da476b63debbf2"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/map-669-asset-preflight.json",
+      "bytes": 5454509,
+      "sha256": "285d30a01aed1eea1e61d43ce31466eda5d3247784fb0d0b4eb420a649c9ec21"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "ec1c99259d458ae2e7af0f93c007894560a57c91e159532cf2ead40c03152b92"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/reviews/affliction-combat-potion-health-owner-implementation.md",
+      "bytes": 5734,
+      "sha256": "a5497db7d290ab635df1daec568defe77f7c0a83d458d748dcfbcbc55a979400"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/reviews/affliction-combat-potion-health-owner-independent-review.md",
+      "bytes": 4403,
+      "sha256": "11b4f78b2977708f804cdd6d3bca203f3503a8eae6403f91d93adfe4c8e95147"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/reviews/bounded-area-safety-design.md",
+      "bytes": 5157,
+      "sha256": "bd9ac5f7586bf18af1a87e4be8cabbd6d1afaa68a54bed14b4493f39f303a07d"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/reviews/drudge-backline-anchor-independent-review.md",
+      "bytes": 3537,
+      "sha256": "492f04cd82c2c453024de165f0eafb87f940326c6933c646991f58e20368aa51"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/reviews/effective-stats-diagnosis-implementation.md",
+      "bytes": 4210,
+      "sha256": "888506906fdc0272369ce749552c3da00326b33bba6459ff09b069498739bda8"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/reviews/effective-stats-diagnosis-independent-review.md",
+      "bytes": 5293,
+      "sha256": "2a24093a27db8da4b36d92e440a8c704f5580960f4e87201c4ebbecc8e0700cb"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/reviews/effective-stats-header-dependency-review.md",
+      "bytes": 2330,
+      "sha256": "4e9b7620ddecc91ca6f1c0d48867e5447e51a9c69c15a40226fbf07e91bc746e"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/reviews/fire-moving-scorch-implementation.md",
+      "bytes": 3821,
+      "sha256": "984fd741686683440b7216a80478a0595b28856add856c79ec422a05b5a56444"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/reviews/fire-moving-scorch-independent-review.md",
+      "bytes": 5265,
+      "sha256": "4d4dc7a52dcb8fff427bac78a647d61b88c71201c6dbef9ad39a373f76390db2"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "98a84eb1c2eab5a7a55b92643ae1e5b1c123afae3eae39144cf8e1f26ecfc70c"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/worldserver_build.log",
+      "bytes": 114416,
+      "sha256": "dbfe66616231a3b43b8f523cc28bead2ecb0d9c9fb634c100aa4406ef9b5beb2"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/worldserver_build_receipt.json",
+      "bytes": 23903,
+      "sha256": "0fcd7f36842c9eec8ad5391844df8c9a4c1ca0ec473e0f728117c05bf43ebf4e"
+    },
+    {
+      "path": "build-preflight-ff34bce50a/worldserver_build_verification.json",
+      "bytes": 536,
+      "sha256": "60cc1ef9a5ccb50f1aa88be27377a63631f466e58d5188a528d297f9a60730c4"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/base-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/base-worldserver.conf.receipt.json",
+      "bytes": 8776,
+      "sha256": "8befb904c791d1f7dfb431a5a8c7b343faaa125521416848ed94551c22501bd2"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/capture.console.log",
+      "bytes": 7550716,
+      "sha256": "44dd203e3f4b35598de69dde66ae03acc5152d1fcfe582c48432599f75691d54"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/closed_summary.json",
+      "bytes": 5398,
+      "sha256": "ceefdced24bda1853d67aab47fbbf0f604e60091676fd3c1284465beea172099"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/database_readback.json",
+      "bytes": 27722,
+      "sha256": "445dee818b9979bafa384a8329a57a848c31d2874cfc2cf249501ec10ed14a0e"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/affliction-performance.json",
+      "bytes": 10273,
+      "sha256": "ff625b0e4d76bfa43374b6a362bca2129c62214f4085a9870bf4138a12e44b5f"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/affliction-performance.md",
+      "bytes": 8445,
+      "sha256": "8ca7b06d330936e5ea3eb8329098dc92729664140033af09dcd4c2eeffd2c5f3"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/dps_review-specialist-join.json",
+      "bytes": 5929,
+      "sha256": "a8f563a3a1b76d58724a8999963d68e847e980392676efb0f403888739fc656c"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/dps_review-specialist-join.md",
+      "bytes": 6140,
+      "sha256": "11eb7678eacc2495fe585e3b7b161c78ad711ff1abb6d81eed90c3404cc05d8f"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/dps_review.json",
+      "bytes": 51563,
+      "sha256": "9983374bc5e25283cfd1e20833eb192f78ac6c5e2e56a346f3342079a305930a"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/dps_review.md",
+      "bytes": 7207,
+      "sha256": "239929b09bed13370c4803dc04c66a9c9ca5393e8f7c9ca67cd16a87cc681aea"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/effective-stats-acceptance.json",
+      "bytes": 8288,
+      "sha256": "9459fc9e33c063b57e6d2a949e9b860d2f813d9e82b08cf4c71d258a14344cdf"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/effective-stats-acceptance.md",
+      "bytes": 7927,
+      "sha256": "da0be6f81b712804247224deac126df8325e5984b528412a38e388c9121bb208"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/fire-pair-performance.json",
+      "bytes": 1964,
+      "sha256": "fb60ede1437432e5a6035d50058da215b2dc278061e6af8a502be8ade5f0da76"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/fire-pair-performance.md",
+      "bytes": 1889,
+      "sha256": "10649423d7bed5c84e09ca36f99bd3c65fec9648928b2096b38772e11ec43c59"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/mm-elemental-targeting-review.json",
+      "bytes": 10449,
+      "sha256": "9e23e44a852457394cb5a93bb8b11d66c1e703214c001627910592204fb6012d"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/mm-elemental-targeting-review.md",
+      "bytes": 4544,
+      "sha256": "fc3c2ac5397302d5c9db821fef20f27a139490582ee8716f6e90bfb86ec7b3db"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/tank-healer-survival.json",
+      "bytes": 6317,
+      "sha256": "dba8863c04c7f6e42b8bae9546900fd280635446fdba5c23b30f3986b76fb6de"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/tank-healer-survival.md",
+      "bytes": 6951,
+      "sha256": "fd1014445a20eabeb3693437125e7864a66c882c36adf78a7361ffe8fdd9fba6"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/trash-death-recovery-excerpt.json",
+      "bytes": 133955,
+      "sha256": "6ddd487502daf4949fcb991bf0435f32cc4953382b70ac36a0017809477f6a42"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/dps-review/trash-death-recovery-review.md",
+      "bytes": 6547,
+      "sha256": "77b27e83070e5035c2b1491eeea4679662c9dce64983e702340d881e2d678d67"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/fire_float_correction_select_readback.json",
+      "bytes": 2556,
+      "sha256": "c72db5234de271975aa4efd3238568b7d1f14748dc3fafb2884318f1d9680fc5"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/fire_float_predicate_readback.json",
+      "bytes": 213,
+      "sha256": "ec0bc57abd090ed7233323823e743169510f5be6348c99f206c8b4fc1e12087e"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/launch.json",
+      "bytes": 2108,
+      "sha256": "c57379a3a66c5cc5805fa9327bd7aeee2d2736561d740798a452db2f2d90b5ea"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/loadout_database_readback.json",
+      "bytes": 147540,
+      "sha256": "bf7cbf0d398a88d8c6a61be66cfa1c8c1554af3c50cf7c1573bf2ba4b63d61a5"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/postrun_build_verification.json",
+      "bytes": 537,
+      "sha256": "743c4e973e1a6a6994c0dfbdccbc83a3dbf4bb1ee0e84ef7b5dc40b75e218936"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/postrun_world_profile_readback.json",
+      "bytes": 4659,
+      "sha256": "76060d0b1593a13713591fee28c82baf16001e250dddd3309ec7121dce203263"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/provisioning.json",
+      "bytes": 1381,
+      "sha256": "07615e06b08bb5f028e3752af6f15517a92d2d76c47bd50761f23e91425b23a5"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/raw.jsonl",
+      "bytes": 680385819,
+      "sha256": "16d89678f4e52e8f956b832ee8a3c3b953864277d3d0ebf45af6023d6ea15648"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/readback.console.log",
+      "bytes": 20594,
+      "sha256": "0dc1a1a670a8dbaee01a13672ac4f163a859f3f2a14436db0782bdf74e212200"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/report.json",
+      "bytes": 7550716,
+      "sha256": "44dd203e3f4b35598de69dde66ae03acc5152d1fcfe582c48432599f75691d54"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/validation_provisioning_apply/provision_accounts.sql",
+      "bytes": 4068,
+      "sha256": "689fc5fd368cc4dc8e19c689471e579c80d1af762747fcc7b6f510fd66d114e7"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/validation_provisioning_apply/provision_characters.sql",
+      "bytes": 322830,
+      "sha256": "7058e052af9a302f297a77dfc50a5e26c9ab3c69d953ace29d6eed65697f8166"
+    },
+    {
+      "path": "magmaw-development-ff34bce50a/worldserver.log",
+      "bytes": 674151201,
+      "sha256": "5e779374a13f3836b6262f373e3b5505bee2808151f73c55b62ee0bb6a083970"
+    },
+    {
+      "path": "run-development.py",
+      "bytes": 6040,
+      "sha256": "1720c153a57ac3e7eb0f6eb2d9e4b76bde36080d17d28f82ed014f7fe0c746de"
+    },
+    {
+      "path": "publish-development.py",
+      "bytes": 3420,
+      "sha256": "a805aa003260ea44013efeea8ab1851c97ce3e9a41bf2c7348212af3aad86427"
+    },
+    {
+      "path": "summarize-development.py",
+      "bytes": 3667,
+      "sha256": "af052e2feef7ebb5ee57a8f6497d310396cc35d1917881ad9fea317d13796980"
+    },
+    {
+      "path": "observe-magmaw.py",
+      "bytes": 1813,
+      "sha256": "2e6bc09d2e2d7a33fa2686d5c3a44e18614eb279a98a0d88b1dc7f30cca66569"
+    },
+    {
+      "path": "evict-development.py",
+      "bytes": 1545,
+      "sha256": "cc0cbc399b0a8877bc933c849ff13f22ae7ace87eebcaf7cc64a7e641709615c"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    "magmaw-development-ff34bce50a/raw.jsonl",
+    "magmaw-development-ff34bce50a/worldserver.log",
+    "magmaw-development-ff34bce50a/capture.console.log",
+    "magmaw-development-ff34bce50a/readback.console.log"
+  ]
+}

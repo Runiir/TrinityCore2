@@ -9,6 +9,11 @@ reference lookup, actual Warcraft Logs comparison, previous accepted repairs,
 and known telemetry limitations. Give each worker explicit actors and separate
 output files using exact absolute paths, not placeholders such as `OUT`.
 Reuse available evidence; do not regenerate simulator catalogs.
+Use the all-bot review's native pull/death timestamps and casualty ledger for
+shared timing and survival claims. A route's first event may precede hostile
+damage, and final alive count may include resurrection. Reconcile any conflicting
+phase intervals or timestamps before freezing a specialist report; do not copy
+the previous run's survival conclusion.
 
 Derive actor class/spec labels from the actual admission or loadout receipt,
 not remembered names or a prior handoff. If prose disagrees with that receipt,

@@ -1,5 +1,32 @@
 # Shared-worldserver workflow status
 
+Current result: `ff34bce50a` cleared Magmaw 10N in 212.621 seconds, with
+29,179,044 hostile damage (137,235.005 DPS) and 3,992,946 effective healing
+through death (18,779.641 HPS). The five DPS actors produced 106,504.910 DPS
+over 212 damage-bearing seconds. Three bots died on Drudges and DK 30002 died
+during Magmaw; all recovered before cleanup. Native exit, binary verification
+and cleanup passed. This is a development clear, not performance acceptance.
+
+All-bot and specialist reviews are closed. Affliction's boss-health potion,
+MM haste/filler, Elemental moving Lava Burst, first head-to-body return, and
+all-ten effective-stat publication pass. Gear and owner stat joins found no
+missing native passive. No coefficient change is admitted. Fire migration07
+inserted no moving Scorch row because exact native FLOAT equality matched zero.
+The missing Sweltering Armor swap contract left DK taking both Mangles.
+
+Next batch: independently approved Fire corrective migration08 and Magmaw
+swap contract debuff_stacks/78199/1. The storage-precision counterexample and
+two-tank production-policy replay pass. Generated route manifests are pushed
+and remote-synchronized. Verify actual Fire rows after native startup before
+starting the next encounter. No additional native class/runtime changes.
+
+Drudge survival remains unresolved: fallback positions violate Rush-bait
+isolation. Existing destination-owner reuse is documented but deferred; do not
+claim a native escape path was proven. The ff34 evidence is DVC-published,
+fresh-remote verified, and exact large payloads evicted after all readers ended.
+
+Prior result follows for comparison.
+
 Current result: source `a152fb20ef` built on its first attempt and cleared
 Magmaw 10N in 186.544 seconds with ten survivors and no boss-fight deaths.
 Fire hook 30007 and Affliction 30008 died on Drudges and recovered before the
@@ -15,7 +42,7 @@ The observed head-return transition passed with valid targets; the earlier
 intermittent outage is not declared universally repaired. The proposed MM
 maintenance-priority change was rejected after exact APL review.
 
-Current work: combine the independently approved boss-health potion gate,
+Previous implementation batch: combined the independently approved boss-health potion gate,
 all-bot effective-stat observation and Fire moving Scorch repair with the
 independently approved Drudge backline correction. Both movement directions
 require source-union path checks. Build once and run bounded live validation

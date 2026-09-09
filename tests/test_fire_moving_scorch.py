@@ -6,11 +6,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "sql/custom/world/2026_09_09_07_fire_moving_scorch.sql"
+MIGRATION_07 = ROOT / "sql/custom/world/2026_09_09_07_fire_moving_scorch.sql"
+MIGRATION_08 = ROOT / "sql/custom/world/2026_09_09_08_fire_moving_scorch_float_predicate.sql"
 RESOLVER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
 
 FALLBACK_TAGS = "scorch,firestarter,moving_filler,resource_fallback"
 MOVING_TAGS = "scorch,firestarter,moving_filler,movement_only"
+MYSQL_FLOAT32_40_PERCENT = 0.4000000059604645
 
 
 def make_profile_db() -> sqlite3.Connection:
@@ -99,10 +101,10 @@ def make_profile_db() -> sqlite3.Connection:
            enabled)
         VALUES
           (1, 55, 2948, 'resource_generator', ?, 0.74, 0.17, 5, 1, 1,
-           'enemy', 'ranged', 'none', 0, 35, 0.03, 0.40, 0.02, 0.98,
+           'enemy', 'ranged', 'none', 0, 35, 0.03, ?, 0.02, 0.98,
            0, 3, 0, 0, 'fire_filler', 1)
         """,
-        (FALLBACK_TAGS,),
+        (FALLBACK_TAGS, MYSQL_FLOAT32_40_PERCENT),
     )
     db.executemany(
         """
@@ -138,11 +140,21 @@ def semantic_rows(db: sqlite3.Connection, profile_id: int = 1) -> list[tuple[obj
     ).fetchall()
 
 
-def test_scoped_migration_clones_all_typed_gates_and_replays_idempotently() -> None:
+def test_float_safe_correction_clones_all_typed_gates_and_replays_idempotently() -> None:
     db = make_profile_db()
-    migration = MIGRATION.read_text(encoding="utf-8")
+    original = semantic_rows(db)
     untouched = {profile_id: semantic_rows(db, profile_id) for profile_id in range(2, 6)}
 
+    # Migration 07 used exact equality and matched zero rows against MySQL's
+    # observed FLOAT representation even though its readback displays 0.4.
+    db.executescript(MIGRATION_07.read_text(encoding="utf-8"))
+    assert semantic_rows(db) == original
+    assert db.execute(
+        "SELECT COUNT(*) FROM bot_rotation_action WHERE mechanic_tags = ?",
+        (MOVING_TAGS,),
+    ).fetchone()[0] == 0
+
+    migration = MIGRATION_08.read_text(encoding="utf-8")
     db.executescript(migration)
     once = semantic_rows(db)
     db.executescript(migration)
@@ -157,7 +169,7 @@ def test_scoped_migration_clones_all_typed_gates_and_replays_idempotently() -> N
     fallback, moving = scorch
     assert (fallback["sort_order"], fallback["mechanic_tags"], fallback["max_mana_pct"],
             fallback["requires_stationary"], fallback["requires_moving"]) == (
-        55, FALLBACK_TAGS, 0.40, 0, 0
+        55, FALLBACK_TAGS, MYSQL_FLOAT32_40_PERCENT, 0, 0
     )
     assert (moving["sort_order"], moving["mechanic_tags"], moving["max_mana_pct"],
             moving["requires_stationary"], moving["requires_moving"]) == (
@@ -168,14 +180,20 @@ def test_scoped_migration_clones_all_typed_gates_and_replays_idempotently() -> N
         if key not in intentional:
             assert moving[key] == fallback[key], key
 
-    for line in migration.splitlines():
-        if line.lstrip().startswith("--"):
-            assert line.lstrip().startswith("-- ")
+    for sql in (MIGRATION_07, MIGRATION_08):
+        for line in sql.read_text(encoding="utf-8").splitlines():
+            if line.lstrip().startswith("--"):
+                assert line.lstrip().startswith("-- ")
 
 
 def test_production_movement_gate_and_ranking_replay(tmp_path: Path) -> None:
     db = make_profile_db()
-    db.executescript(MIGRATION.read_text(encoding="utf-8"))
+    db.executescript(MIGRATION_07.read_text(encoding="utf-8"))
+    assert db.execute(
+        "SELECT COUNT(*) FROM bot_rotation_action WHERE mechanic_tags = ?",
+        (MOVING_TAGS,),
+    ).fetchone()[0] == 0
+    db.executescript(MIGRATION_08.read_text(encoding="utf-8"))
     rows = {
         (row["spell_id"], row["mechanic_tags"]): row
         for row in db.execute("SELECT * FROM bot_rotation_action WHERE profile_id = 1")

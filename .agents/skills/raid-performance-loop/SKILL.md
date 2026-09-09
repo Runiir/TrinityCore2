@@ -112,6 +112,10 @@ admission predicate must be supported by the trace or by the production contract
 do not require an unobserved intermediate state merely to make a fixture pass.
 Exercise the actual caller and each valid ordering when asynchronous submission,
 observation and native execution can occur on different ticks.
+For profile migrations, test native storage semantics, including FLOAT precision;
+SQLite replay alone does not prove a MySQL predicate matches. Read back the intended
+rows after native updates and before the encounter. An applied migration receipt
+with zero affected rows does not prove the repair was installed.
 Use Luna max for exact narrow implementation, Sol high for ambiguous
 causal diagnosis and independent review of risky runtime/encounter changes. Work directly
 when delegation would add more coordination than useful work. Serialize builds, shared
