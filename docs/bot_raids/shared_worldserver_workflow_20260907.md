@@ -1,15 +1,24 @@
 # Shared-worldserver workflow status
 
-Current objective: diagnose DPS-023 from the user's manual spectator run.
-Bots reportedly retain the exposed-head target after it disappears, recovering
-only after the next Pillar/add target. This newly observed transition reopens
-bounded Magmaw work; the accepted earlier kill ended during head exposure.
-Maloriak readiness is deferred until this target lifecycle edge is resolved.
-Independent Sol reviews approve the native melee admission repair, scoped Rune
-Strike catalog migration, 4.3 Vengeance recurrence, configured Blood DK main tank
-(slot 2) / Paladin off tank (slot 1), and bounded target/AP observations. Focused
-fixtures pass. Build and live verification remain pending. Head-return behavior
-is not repaired yet; capture diagnose every second to prove the internal failure.
+Current result: source `4b24d7242f` built successfully and cleared Magmaw 10N
+with zero deaths, ten survivors, native exit 0 and verified cleanup. Unique
+hostile party DPS was 198,543.127 on 142 damage-bearing seconds, HPS 12,615.120.
+Blood DK was the actual main tank, including Mangle, and reached 17,075.296 DPS
+with 19 Death Strikes and 20 Rune Strikes. Self-owned Vengeance was observed.
+Independent all-bot review and evidence publication are closing.
+
+Current work: parallel Fire (both actors), Affliction, Marksmanship, Elemental,
+Protection Paladin and healer-team reviews. Five DPS actors together declined
+4.642% versus21c despite the tank-driven party gain; overall roster throughput
+is not accepted. Join independent class repairs into one reviewed build batch.
+Heart Strike is one proven shared encounter-policy loss: authoritative
+forbid_area=true rejects its native cleave. Preserve current safety protection
+until a reviewed replacement exists. Passive range previews overwrite combat
+masks; a non-publishing preview repair is in progress. The false spell0 fallback
+cooldown label has a minimal independently approved diagnostic repair.
+DPS-023 head return remains UNEXERCISED: this kill ended during the first head
+exposure. Valid diagnostic observations do not prove a surviving head-to-body
+transition. Do not repeat this unchanged canary hoping it lasts longer.
 
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 

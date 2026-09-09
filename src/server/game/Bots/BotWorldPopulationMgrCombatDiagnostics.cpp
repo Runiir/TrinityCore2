@@ -232,9 +232,9 @@ void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bo
         diagnostic.Reason = "already_casting";
     else if (diagnostic.GlobalCooldown)
         diagnostic.Reason = "global_cooldown";
-    else if (!diagnostic.CooldownReady)
+    else if (spellInfo && !diagnostic.CooldownReady)
         diagnostic.Reason = "cooldown";
-    else if (!diagnostic.HasPower)
+    else if (spellInfo && !diagnostic.HasPower)
         diagnostic.Reason = "no_power";
     diagnostic.DiagnosticReason = diagnosticReason && *diagnosticReason
         ? diagnosticReason : diagnostic.Reason;

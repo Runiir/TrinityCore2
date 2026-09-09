@@ -6,6 +6,7 @@ Use these as class-specific checks after binding the current exact request, runt
 
 - For the current P4 exact reference, glyph items are prime `41531,41524,71155`, major `41537,41533,45778`, and minor `44923,43385,43386`.
 - Pinned DBC maps item `71155` to glyph property `950`, aura `101052`; its effect is `SPELL_AURA_CAST_WHILE_WALKING` (330) with a Shaman spell-family mask.
+- Glyph of Unleashed Lightning permits moving **Lightning Bolt**, not Lava Burst. A rejected moving Lava Burst does not prove glyph application failed; verify another applicable capability such as Spiritwalker's Grace. [Native glyph description](https://www.wowhead.com/cata/spell=101052/glyph-of-unleashed-lightning).
 - Movement compatibility is per spell. Check `HasAuraTypeWithAffectMask(SPELL_AURA_CAST_WHILE_WALKING, spellInfo)` at candidate admission and again before executor stop/yield. Glyph presence alone does not prove the bot caller honors it.
 - Generated character glyph slots are grouped by DBC type: major properties occupy `glyph1,glyph4,glyph6`; minor `glyph2,glyph3,glyph5`; prime `glyph7,glyph8,glyph9`.
 - Prefer the exact target catalog as the provisioning source. Preserve an explicitly configured role fallback when no promoted exact target exists.

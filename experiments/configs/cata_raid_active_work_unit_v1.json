@@ -1,35 +1,35 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:head_return_target_lifecycle",
+  "work_unit": "magmaw:multi_class_performance_batch",
   "owner_skill": "raid-rotation-review",
-  "classification": "causal_diagnosis",
+  "classification": "parallel_role_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "21c640739d4788b69cb0fe5ef33555544b8706b9",
+  "observed_at_commit": "4b24d7242f81aadeb53149d5fe2f6e9c284afefd",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": true,
-  "evidence_contract_change": true,
-  "gate_state": "Joined repairs and observation independently approved; native build pending",
+  "behavior_change": false,
+  "evidence_contract_change": false,
+  "gate_state": "MT/native melee/Vengeance accepted; all represented DPS and support roles under review",
   "first_broken_edge": {
-    "id": "head_return_target_outage",
-    "owner_classification": "unresolved_role_or_shared_runtime",
-    "cause": "User reports stale target after exposed head ends, recovering at next Pillar/add switch. Causal proof pending.",
-    "review_state": "diagnosis_only"
+    "id": "multi_class_throughput_losses",
+    "owner_classification": "parallel_role_review",
+    "cause": "Five DPS actors declined4.642% while tank gains raised party output7.989%. HS encounter mask and preview diagnostic overwrite proven; other class losses under independent review.",
+    "review_state": "parallel_diagnosis"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "62f02f661c4e4d00a8c1b55d2f378e2e1af8b2efee40cc09298c3865833521f3"
+    "sha256": "eec3c635a43cbfd78e778e4d340579358db05f39133a20b3574d6806e36fc31f"
   },
   "scope_lock": {
-    "objective": "Resolve observed head-to-body target outage; compare coherent damage windows before further tuning.",
+    "objective": "Resolve performance losses across all represented classes; preserve accepted DK/MT improvements and fix misleading diagnostic publication.",
     "owned_files": [],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Prove the first causal target mismatch.",
-    "Exercise head exposure ending while the body is alive and attackable through the actual target-selection path.",
-    "Pass independent review and bounded live transition validation before acceptance."
+    "Identify exact candidate/native failure from the closed run.",
+    "Exercise smallest repair through the actual production caller with a deterministic fixture.",
+    "Pass independent review and one bounded native validation."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -38,9 +38,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Build once, capture canonical Magmaw with one-second diagnose, inspect DK ownership/cadence/Vengeance and head-return transition.",
+  "next_action": "Join six bounded class/role reviews, deduplicate shared losses, implement independent proven repairs, review once and build one combined batch.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -127,12 +127,11 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-023",
+  "error_id": "DPS-026",
   "related_open_error_ids": [
+    "DPS-023",
     "DPS-021",
-    "OBS-001",
-    "DPS-024",
-    "DPS-025"
+    "OBS-001"
   ],
   "requested_tank_assignment": {
     "main_tank": {
@@ -143,7 +142,33 @@
       "guid": 30001,
       "spec": "protection_paladin"
     },
-    "state": "independently_approved_pending_native_verification",
+    "state": "native_main_tank_and_vengeance_observed",
     "reason": "Sustain Blood DK boss ownership and native Vengeance; validate taunts and swaps, not just pull ownership."
+  },
+  "active_review_actors": {
+    "fire": [
+      30006,
+      30007
+    ],
+    "affliction": [
+      30008
+    ],
+    "marksmanship": [
+      30009
+    ],
+    "elemental": [
+      30010
+    ],
+    "protection_paladin": [
+      30001
+    ],
+    "healers": [
+      30003,
+      30004,
+      30005
+    ],
+    "blood_death_knight": [
+      30002
+    ]
   }
 }

@@ -63,6 +63,16 @@ movement uptime; a DOT ticking while
 moving does not prove a lost hard cast. Boss vulnerability phases also prevent
 direct damage-per-event comparison with an unmodified dummy reference.
 
+For missing actions, inspect full diagnose snapshots before declaring candidate
+telemetry absent. `snapshot.policy.valid_action_mask_json.actions` retains each
+spell's eligibility, rejection reason and score; `chosen_action_json` retains the
+resolver choice. Join them with `snapshot.combat_attempt`, native outcomes and
+matching attempt/route/decision timestamps. Check evaluation purpose and
+selector filters: passive range previews in older builds can overwrite the
+execution mask with a different, never-submitted choice. A melee fallback can overwrite the
+failed spell in the compact attempt summary. Compact trace rows alone do not
+establish that a spell was never selected or that a new observer is needed.
+
 Trace the largest suspicious loss through observation, eligible candidates,
 selected candidate, resource claims, native submission, and landed outcome.
 Distinguish established defects, plausible leads, and unavailable evidence.

@@ -679,7 +679,8 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 return decision;
 
             ResolvedCombatAction profileAction = ResolveProfileCombatAction(
-                context.Bot, target);
+                context.Bot, target, 0, false, 0, false, false, false,
+                true, false, false, nullptr, /*publishDiagnostics=*/false);
             decision.Distance = context.Bot->GetExactDist(target);
             decision.MinRange = profileAction.MinRange;
             decision.MaxRange = profileAction.MaxRange;
@@ -752,7 +753,8 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 ResolvedCombatAction const preview = ResolveProfileCombatAction(
                     context.Bot, context.Target, 0, false, 0, false, false,
                     magmawProfile.ForbidAreaDamage,
-                    magmawProfile.AllowMultidot);
+                    magmawProfile.AllowMultidot, false, false, nullptr,
+                    /*publishDiagnostics=*/false);
                 bool const outsideLegalMaxRange = preview.MaxRange > 0.0f
                     && context.Bot->GetExactDist(context.Target)
                         > preview.MaxRange;

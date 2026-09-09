@@ -98,7 +98,7 @@ bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
 
 }
 
-ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly, char const* specTagOverride) const
+ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly, char const* specTagOverride, bool publishDiagnostics) const
 {
     ResolvedCombatAction action;
     action.Valid = false;
@@ -793,41 +793,44 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                     : (bestDensityFallback ? bestDensityFallback : bestDensityGenerator)));
     }
 
-    uint32 botKey = bot->GetGUID().GetCounter();
-    std::ostringstream rejectionJson;
-    rejectionJson << '[';
-    bool firstReject = true;
-    for (BotActionCandidate const& candidate : candidates)
+    if (publishDiagnostics)
     {
-        if (!candidate.SpellId || candidate.RejectReason.empty())
-            continue;
-        if (!firstReject)
-            rejectionJson << ',';
-        firstReject = false;
-        rejectionJson << "{\"spell_id\":" << candidate.SpellId
-                      << ",\"reason\":\"" << JsonEscape(candidate.RejectReason) << "\"}";
+        uint32 botKey = bot->GetGUID().GetCounter();
+        std::ostringstream rejectionJson;
+        rejectionJson << '[';
+        bool firstReject = true;
+        for (BotActionCandidate const& candidate : candidates)
+        {
+            if (!candidate.SpellId || candidate.RejectReason.empty())
+                continue;
+            if (!firstReject)
+                rejectionJson << ',';
+            firstReject = false;
+            rejectionJson << "{\"spell_id\":" << candidate.SpellId
+                          << ",\"reason\":\"" << JsonEscape(candidate.RejectReason) << "\"}";
+        }
+        rejectionJson << ']';
+        Party().LastCombatRejectsByBot[botKey] = rejectionJson.str();
+        Party().LastSaturationByBot[botKey] = saturation;
+        std::ostringstream maskFilters;
+        maskFilters << std::boolalpha << "{\"hostile_count\":" << requestedHostileCount
+            << ",\"effective_hostile_count\":" << hostileCount
+            << ",\"density_only\":" << densityOnly
+            << ",\"excluded_spell_id\":" << excludedSpellId
+            << ",\"area_only\":" << areaOnly
+            << ",\"self_centered_only\":" << selfCenteredOnly
+            << ",\"forbid_area\":" << forbidArea
+            << ",\"allow_multidot\":" << allowMultidot
+            << ",\"hostile_target_only\":" << hostileTargetOnly
+            << ",\"movement_compatible_only\":" << movementCompatibleOnly
+            << ",\"spec_tag_override\":" << BotCombatMaskEvaluation::Quote(specTagOverride ? specTagOverride : "") << "}";
+        Party().LastCombatMaskByBot[botKey] = BotCombatMaskEvaluation::Append(
+            BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile,
+                roleGoal.c_str(), saturation.ToJson().c_str()), maskEvaluation,
+            maskFilters.str());
+        Party().LastChosenCombatByBot[botKey] = BotClassSpecActionProfileStore::ChosenActionJson(best, profile, roleGoal.c_str(), BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), saturation.ExperimentConfidence);
+        Party().LastActionCategoryByBot[botKey] = best ? BotCombatActionCatalog::ToString(best->Category) : "wait";
     }
-    rejectionJson << ']';
-    Party().LastCombatRejectsByBot[botKey] = rejectionJson.str();
-    Party().LastSaturationByBot[botKey] = saturation;
-    std::ostringstream maskFilters;
-    maskFilters << std::boolalpha << "{\"hostile_count\":" << requestedHostileCount
-        << ",\"effective_hostile_count\":" << hostileCount
-        << ",\"density_only\":" << densityOnly
-        << ",\"excluded_spell_id\":" << excludedSpellId
-        << ",\"area_only\":" << areaOnly
-        << ",\"self_centered_only\":" << selfCenteredOnly
-        << ",\"forbid_area\":" << forbidArea
-        << ",\"allow_multidot\":" << allowMultidot
-        << ",\"hostile_target_only\":" << hostileTargetOnly
-        << ",\"movement_compatible_only\":" << movementCompatibleOnly
-        << ",\"spec_tag_override\":" << BotCombatMaskEvaluation::Quote(specTagOverride ? specTagOverride : "") << "}";
-    Party().LastCombatMaskByBot[botKey] = BotCombatMaskEvaluation::Append(
-        BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile,
-            roleGoal.c_str(), saturation.ToJson().c_str()), maskEvaluation,
-        maskFilters.str());
-    Party().LastChosenCombatByBot[botKey] = BotClassSpecActionProfileStore::ChosenActionJson(best, profile, roleGoal.c_str(), BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), saturation.ExperimentConfidence);
-    Party().LastActionCategoryByBot[botKey] = best ? BotCombatActionCatalog::ToString(best->Category) : "wait";
 
     if (!best || !best->SpellId)
     {
