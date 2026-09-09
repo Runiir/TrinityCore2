@@ -2,13 +2,13 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "magmaw:multi_class_performance_batch",
   "owner_skill": "raid-rotation-review",
-  "classification": "parallel_role_diagnosis",
+  "classification": "reviewed_combined_class_repair",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "4b24d7242f81aadeb53149d5fe2f6e9c284afefd",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "MT/native melee/Vengeance accepted; all represented DPS and support roles under review",
+  "gate_state": "Three class repairs plus OBS004/005 independently approved; combined build pending",
   "first_broken_edge": {
     "id": "multi_class_throughput_losses",
     "owner_classification": "parallel_role_review",
@@ -17,7 +17,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "eec3c635a43cbfd78e778e4d340579358db05f39133a20b3574d6806e36fc31f"
+    "sha256": "d9b20942d0bef9c585da28de885bb1ebd170f6597c07825e9ed39f2af0d8fa83"
   },
   "scope_lock": {
     "objective": "Resolve performance losses across all represented classes; preserve accepted DK/MT improvements and fix misleading diagnostic publication.",
@@ -38,9 +38,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Join six bounded class/role reviews, deduplicate shared losses, implement independent proven repairs, review once and build one combined batch.",
+  "next_action": "Build the reviewed combined batch once, verify actual provisioned capability/profile rows, run one completion-watchdog Magmaw validation and review every actor.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -80,8 +80,8 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approve",
-    "scope": "CAP-004 pure frozen raid identity projection",
-    "live_verified": true
+    "scope": "MM aura/filler, Elemental movement capability, Affliction combat potion, OBS004/005 diagnostics",
+    "live_verified": false
   },
   "related_edges": [
     {
@@ -131,7 +131,15 @@
   "related_open_error_ids": [
     "DPS-023",
     "DPS-021",
-    "OBS-001"
+    "DPS-026",
+    "DPS-027",
+    "DPS-028",
+    "DPS-029",
+    "OBS-004",
+    "OBS-005",
+    "DPS-030",
+    "HEAL-001",
+    "OBS-006"
   ],
   "requested_tank_assignment": {
     "main_tank": {

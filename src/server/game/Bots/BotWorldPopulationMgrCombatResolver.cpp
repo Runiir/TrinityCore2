@@ -5,6 +5,7 @@
 
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotCastWhileMoving.h"
+#include "Bots/BotElementalSpiritwalkersGrace.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotRoleSaturationPolicy.h"
@@ -316,6 +317,9 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     bool const exactSingleTargetCalibration =
         Cohort().CalibrationMode == "single_target_300"
         && bot->GetGUID() == Cohort().CalibrationTargetGuid;
+    if (profile.SpecTag == BotElementalSpiritwalkersGrace::ElementalSpec)
+        BotElementalSpiritwalkersGrace::EvaluateGraceAfterDamageOpportunities(
+            candidates);
     for (BotActionCandidate& candidate : candidates)
     {
         if (hostileTargetOnly && candidate.Profile.TargetSelector != "enemy")
@@ -379,9 +383,13 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             && candidateSpellInfo->CalcCastTime(bot->getLevel()) > 0;
         bool const candidateIsChanneled = candidateSpellInfo
             && candidateSpellInfo->IsChanneled();
-        if (BotCastWhileMoving::RejectMovingCandidate(bot, candidateSpellInfo,
-                movementCompatibleOnly, candidateHasCastTime,
-                candidateIsChanneled))
+        bool const rejectedByMovement = BotCastWhileMoving::RejectMovingCandidate(
+            bot, candidateSpellInfo, movementCompatibleOnly,
+            candidateHasCastTime, candidateIsChanneled);
+        bool const deferLavaBurstMovementRejection =
+            BotElementalSpiritwalkersGrace::DeferLavaBurstMovementRejection(
+                profile.SpecTag, candidate.SpellId, rejectedByMovement);
+        if (rejectedByMovement && !deferLavaBurstMovementRejection)
         {
             candidate.RejectReason = "movement_requires_instant_action";
             continue;
@@ -702,6 +710,19 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (maxRange > 0.0f && distance > maxRange)
         {
             candidate.RejectReason = "max_range_exceeded";
+            continue;
+        }
+        if (deferLavaBurstMovementRejection)
+        {
+            candidate.RejectReason = std::string(
+                BotElementalSpiritwalkersGrace::MovementRejection);
+            continue;
+        }
+        if (profile.SpecTag == BotElementalSpiritwalkersGrace::ElementalSpec
+            && candidate.SpellId == BotElementalSpiritwalkersGrace::SpiritwalkersGraceSpellId
+            && !BotElementalSpiritwalkersGrace::HasMovementBlockedLavaBurst(candidates))
+        {
+            candidate.RejectReason = "no_movement_blocked_lava_burst";
             continue;
         }
         if (!candidate.RejectReason.empty())

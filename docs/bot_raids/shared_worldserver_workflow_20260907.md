@@ -5,16 +5,22 @@ with zero deaths, ten survivors, native exit 0 and verified cleanup. Unique
 hostile party DPS was 198,543.127 on 142 damage-bearing seconds, HPS 12,615.120.
 Blood DK was the actual main tank, including Mangle, and reached 17,075.296 DPS
 with 19 Death Strikes and 20 Rune Strikes. Self-owned Vengeance was observed.
-Independent all-bot review and evidence publication are closing.
+All-bot and six specialist reviews are complete. Evidence is DVC-published,
+fresh-remote verified, and exact large local payloads evicted.
 
-Current work: parallel Fire (both actors), Affliction, Marksmanship, Elemental,
-Protection Paladin and healer-team reviews. Five DPS actors together declined
-4.642% versus21c despite the tank-driven party gain; overall roster throughput
-is not accepted. Join independent class repairs into one reviewed build batch.
+Current work: one combined Marksmanship, Elemental and Affliction repair batch
+from completed Fire, Affliction, Marksmanship, Elemental, Protection and healer reviews. Five DPS actors together declined
+4.642% versus 21c despite the tank-driven party gain; overall roster throughput
+is not accepted. Join independent class repairs into one reviewed build batch. Marksmanship
+checks talent53221 instead of native haste53220; its scoped aura/final-filler repair is independently approved. Elemental lacks Spiritwalker's Grace79206 in its learned spells
+and profile; normal provisioning and a movement-opportunity candidate are independently
+approved. Affliction's missing execute-window combat potion action is implemented
+and independently approved. The combined batch is ready for its one native build. Affliction has zero Shadowflame casts, but preview validity
+does not prove a lost production choice; inspect corrected execution masks.
 Heart Strike is one proven shared encounter-policy loss: authoritative
 forbid_area=true rejects its native cleave. Preserve current safety protection
 until a reviewed replacement exists. Passive range previews overwrite combat
-masks; a non-publishing preview repair is in progress. The false spell0 fallback
+masks; a non-publishing preview repair is independently approved for the next build. The false spell0 fallback
 cooldown label has a minimal independently approved diagnostic repair.
 DPS-023 head return remains UNEXERCISED: this kill ended during the first head
 exposure. Valid diagnostic observations do not prove a surviving head-to-body

@@ -455,6 +455,7 @@ PERSISTENT_SETUP_SPELL_IDS = {
 # 17 Phase 0 profile gaps and are also provisioned as known spells. Later
 # calibration phases may tune priorities without changing the canonical links.
 RUNTIME_ACTION_SPELL_IDS = {
+    "elemental_shaman": [79206],
     "feral_druid_tank": [99, 6795, 779, 22812, 33745, 33878, 77758, 77761, 80313],
     "restoration_shaman": [331, 1064, 8004, 51886, 61295, 77472],
     "arms_warrior": [772, 1464, 5308, 6552, 7384, 12294, 86346],
@@ -1419,6 +1420,26 @@ def reconcile_elemental_setup_spell_catalogs(
     return targets, actions
 
 
+def reconcile_elemental_runtime_action_catalogs(
+    target_catalog: dict[str, Any], action_profiles: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Add only declared Elemental runtime actions to the linked catalogs."""
+    targets = json.loads(json.dumps(target_catalog))
+    actions = json.loads(json.dumps(action_profiles))
+    selected = [row for row in targets["targets"]
+                if row["spec_target_id"] == "elemental_shaman"]
+    if len(selected) != 1:
+        raise ValueError("expected exactly one Elemental runtime target")
+    target = selected[0]
+    linked = actions["action_profile_spells_by_spec"]["elemental_shaman"]
+    if target["action_profile_spell_ids"] != linked:
+        raise ValueError("Elemental target/action spell lists are not linked")
+    spells = sorted(set(linked) | set(RUNTIME_ACTION_SPELL_IDS["elemental_shaman"]))
+    target["action_profile_spell_ids"] = spells
+    actions["action_profile_spells_by_spec"]["elemental_shaman"] = list(spells)
+    return targets, actions
+
+
 def reconcile_mage_setup_spell_catalogs(
     target_catalog: dict[str, Any], action_profiles: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -1598,6 +1619,26 @@ def reconcile_checked_in_profession_catalogs():
     return reconciled
 
 
+def reconcile_checked_in_elemental_runtime_actions():
+    originals = [
+        json.loads(TARGET_CATALOG_PATH.read_text(encoding="utf-8")),
+        json.loads(ACTION_PROFILES_PATH.read_text(encoding="utf-8")),
+    ]
+    reconciled = reconcile_elemental_runtime_action_catalogs(*originals)
+    for path, original, payload in zip(
+            (TARGET_CATALOG_PATH, ACTION_PROFILES_PATH), originals, reconciled):
+        if original == payload:
+            continue
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", dir=path.parent,
+            prefix=f".{path.name}.", suffix=".tmp", delete=False,
+        ) as temporary:
+            temporary.write(json.dumps(payload, indent=2) + "\n")
+            temporary_path = Path(temporary.name)
+        temporary_path.replace(path)
+    return reconciled
+
+
 def write_bundle(output_dir: Path, payloads: dict[str, dict[str, Any]]) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     for stale in output_dir.glob("*.json"):
@@ -1625,7 +1666,20 @@ def main() -> int:
     parser.add_argument("--reconcile-rogue-poisons", action="store_true")
     parser.add_argument("--reconcile-controlled-consumables", action="store_true")
     parser.add_argument("--reconcile-professions", action="store_true")
+    parser.add_argument("--reconcile-elemental-runtime-actions", action="store_true")
     args = parser.parse_args()
+    if args.reconcile_elemental_runtime_actions:
+        if (args.refresh_sources or args.reconcile_rogue_poisons
+                or args.reconcile_controlled_consumables
+                or args.reconcile_professions):
+            parser.error("Elemental runtime action reconciliation is exclusive")
+        targets, _ = reconcile_checked_in_elemental_runtime_actions()
+        print(json.dumps({
+            "elemental_runtime_actions_valid": True,
+            "target_count": len(targets["targets"]),
+            "reconciled": [str(TARGET_CATALOG_PATH), str(ACTION_PROFILES_PATH)],
+        }, sort_keys=True))
+        return 0
     if args.reconcile_professions:
         if args.refresh_sources or args.reconcile_rogue_poisons or args.reconcile_controlled_consumables:
             parser.error("profession reconciliation is exclusive")

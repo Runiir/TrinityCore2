@@ -1,0 +1,353 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "4b24d7242f81aadeb53149d5fe2f6e9c284afefd",
+  "archive_sha256": "8117683b1e9e3dcaf8a3970e3b698028778f869c6248702e518e8044d503b242",
+  "archive_bytes": 82291301,
+  "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_4b24d7242f_20260908.tar.gz.dvc",
+  "remote_download_sha256": "8117683b1e9e3dcaf8a3970e3b698028778f869c6248702e518e8044d503b242",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": true,
+  "terminal_reason": "clear",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-4b24d7242f/configure.log",
+      "bytes": 15533,
+      "sha256": "21e0e0a1ccb0c3fb586e3924706cd34cc07b9f086ece7371b5bf7ced9a2f025b"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/configure_receipt.json",
+      "bytes": 13615,
+      "sha256": "9514496876e0fc145d29ec04e57335582ec6401e6e8db2613267bc8e66bb27e7"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/configure_verification.json",
+      "bytes": 536,
+      "sha256": "843a684cb3e7187a71bc57f11cf82d842ad6a5e0a510c2335d78bbdb040b1268"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/map-0-asset-preflight.json",
+      "bytes": 6041883,
+      "sha256": "f0fd4198f560639c5d7b730e9525900185c59730b447145a2c839c2e3bcfafd9"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/map-669-asset-preflight.json",
+      "bytes": 5454509,
+      "sha256": "f124d05c8179e1a44eb1aa9b0244297bf8f438514479d18524acb3e851fe94b1"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "8528413e2fac375e9b9f6ac55b70bc7c6c38d3cf8c663b9d1847b5c0e87f3b97"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/blood-dk-melee-range-independent-review.md",
+      "bytes": 832,
+      "sha256": "bfbadf71702c54a1451b71f6f3d3a41b9f782f411140ae1ff911ec5d6f9584f0"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/blood-dk-vengeance-implementation.md",
+      "bytes": 5207,
+      "sha256": "2fccba72d6c9f3cc752eee68e05b50f160567cb7cfb36e9b6383d2a29466cdd7"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/blood-rune-strike-catalog-independent-review.md",
+      "bytes": 2371,
+      "sha256": "63d002231358ae7b973f3d69a9429ad51a78b8ba542fc228f4c588fed9ac5c9b"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/generic-spell-split-independent-review-accepted-addendum.md",
+      "bytes": 2039,
+      "sha256": "341555a6e1b736f1706798152c3f138e5194d9c0344557563c0087efd522c52c"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/generic-spell-split-independent-review.md",
+      "bytes": 2644,
+      "sha256": "18ec3e5fc31c121264fc8c0b2a3b7acf884d9b4839322b778d1f652fff2ddc4f"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/magmaw-head-return-observation-implementation.md",
+      "bytes": 2151,
+      "sha256": "f6585801a3eccb33475b49fb877ee45d59c4696db83ceee5ebe13293d6e1dd06"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/magmaw-head-return-observation-independent-review.md",
+      "bytes": 4630,
+      "sha256": "3ea3ce8c065e9744e380b6b0a7929f6fab7ae708989005009420aaa77c59b2d8"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/magmaw-head-return-target-diagnosis.md",
+      "bytes": 7138,
+      "sha256": "e48d0fff7b1139bf0cb27f018a55d1587fd5584ff783692de4fb1c09bcc695f4"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/magmaw-main-tank-assignment-implementation.md",
+      "bytes": 7041,
+      "sha256": "f0270c4063eb07da5f54e69de502e553bf80325e14abfaa8c6ef255279b581dd"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/magmaw-main-tank-independent-review.md",
+      "bytes": 4788,
+      "sha256": "336c7e1df912a52879b606862c8840544ac9e8ec9da762cd8dcfea562b97bffa"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/routes-4b24d7242f-remote-verification.json",
+      "bytes": 751,
+      "sha256": "2931fe95b5e2340f1469cc759d0662c7b35fadcc99a4cc82164b10265fa8a54f"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/reviews/vengeance-434-independent-review.md",
+      "bytes": 4722,
+      "sha256": "dee49dc0e7c0b7a6c61e54be5727e4db00d1b621a099fe51c205be824b8ffb64"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "98a84eb1c2eab5a7a55b92643ae1e5b1c123afae3eae39144cf8e1f26ecfc70c"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/worldserver_build.log",
+      "bytes": 110730,
+      "sha256": "427c81c4cdcb282116d3f4528dedf84632092c288d495bf74a0a347743550405"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/worldserver_build_receipt.json",
+      "bytes": 24243,
+      "sha256": "eeecaf971d7db81df0db1a03a99ec4ebeb2075bc814bdb4e11c410c65cfe36ce"
+    },
+    {
+      "path": "build-preflight-4b24d7242f/worldserver_build_verification.json",
+      "bytes": 536,
+      "sha256": "c5b282ad6883d4bfccd5f54d2eb4f617b676b769a8fb99e711a3f94cdc9bc565"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/base-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/base-worldserver.conf.receipt.json",
+      "bytes": 8776,
+      "sha256": "f7dd602215ea1e54f8d2bb4e357e70674bab1bc1873d4b75fe81696c17e47664"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/blood_action_catalog_readback.json",
+      "bytes": 9001,
+      "sha256": "0a6d9b8a115ea4b42e2e243a7a053b7c0003264fa97ac68fa06b01c3803ac04b"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/capture.console.log",
+      "bytes": 6987067,
+      "sha256": "3819823c61a1a4d00819f7cd5823d91400e8cb6ab5ea6559a73616e87bdc9166"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/closed_summary.json",
+      "bytes": 4731,
+      "sha256": "c6416492a982c0c8fe2af2ac1703e8d72d001796190fcd2795ccc11c5532eaff"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/database_readback.json",
+      "bytes": 27722,
+      "sha256": "445dee818b9979bafa384a8329a57a848c31d2874cfc2cf249501ec10ed14a0e"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/affliction-performance.json",
+      "bytes": 8534,
+      "sha256": "daf454eebdc7c464511f89e8d14b659ddcc763f2153d5bd48182a552cba71ef8"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/affliction-performance.md",
+      "bytes": 8613,
+      "sha256": "ce55e192d2b7c7a3ef6588072c2fb99ec02434666d726d2aa68d75541c0db4e2"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/dps_review.json",
+      "bytes": 46505,
+      "sha256": "442c55c00f5b88d9da971718a03283eec71d8b2ee872196ba631fa2739e06e9f"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/dps_review.md",
+      "bytes": 10205,
+      "sha256": "3e7b662f4bae13d47fbe2b9d212250ee7035b39ded9aa8b38ad5d77b6cf22281"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/elemental-performance.json",
+      "bytes": 9550,
+      "sha256": "d79f18d44c9acf2801f62986905d2ac57021afc799d42e41c40d15b5a9bc3564"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/elemental-performance.md",
+      "bytes": 10910,
+      "sha256": "1f998a6a11f47578f34c41140d746278d67e30068bf8d2a4ed337c6410ad5f0b"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/fire-pair-performance.json",
+      "bytes": 10707,
+      "sha256": "9dc2fe8c202b7f66ca14f8ce15bc3de20b41bfa74e90d09c390eadde8e4ffd0c"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/fire-pair-performance.md",
+      "bytes": 8904,
+      "sha256": "78e3e67784d9d1b5952c4267845361ac48b35cc743684e4ae2da82320d6e1143"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/head-return-observation-review.md",
+      "bytes": 3994,
+      "sha256": "8807b1779e55225b5576f170542242802ee506c167dddd9ac2d13843822f4ebf"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/healer-team-performance.json",
+      "bytes": 16739,
+      "sha256": "ea9ffd980999848bfeda38c439ae02bd4862d9feb6e833ae0de7aa7af3386adb"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/healer-team-performance.md",
+      "bytes": 6281,
+      "sha256": "6d64236ac9d2b56556dce2a7bb4f397e1415f197f929f805ab4f355b54d029fe"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/marksmanship-performance.json",
+      "bytes": 9639,
+      "sha256": "bc76af71534bdc138936310abf8deaf85f40eff9cc72b94b113519e9d3d06791"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/marksmanship-performance.md",
+      "bytes": 11906,
+      "sha256": "b9165ca237962ad2dce3d1861343686dc21d4efef38e7af089b8b9b31348749d"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/multi-class-review.json",
+      "bytes": 23753,
+      "sha256": "74c4ef903ad5ae719f3d5ce781a0bf9b10848fcf7b7c0136981b7601210ef41e"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/multi-class-review.md",
+      "bytes": 10102,
+      "sha256": "67f7bc61e7519b42d2a7ad0086b1170346bd1280b3d13d293bfadf0c1351c696"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/paladin-tank-performance.json",
+      "bytes": 8050,
+      "sha256": "4a1773afd6c319f7c81f74e6bee0eb2b10db3d80678ba9ce9c5a76af5ffa9051"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/paladin-tank-performance.md",
+      "bytes": 4365,
+      "sha256": "b33be142bdb1dc80c88425a75fb886e0b9a7ff2e358c707074f0967a60089722"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/dps-review/parallel-review-context.json",
+      "bytes": 4555,
+      "sha256": "00127c346fc6786c557ec1cded0d42df4263584ee9b57caa9adeb4178087ffa6"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/launch.json",
+      "bytes": 2108,
+      "sha256": "f36caed5d6efe1827b57a6be89187f0c8d7cd3ed5e85d1331ca38d21bd3ce727"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/loadout_database_readback.json",
+      "bytes": 147433,
+      "sha256": "24e2e54fa71a218df7d7c589896578676d560c26b186a8ab038a82ce37dc82ca"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/postrun_build_verification.json",
+      "bytes": 537,
+      "sha256": "8f9ecf275900860da64380b433ab891740ead1635a28674ace98def4a05351bd"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/provisioning.json",
+      "bytes": 1381,
+      "sha256": "e7643c5cdfd31a034462bd54ace549d753d31ab839ed051dc1bb3593a53ba375"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/raw.jsonl",
+      "bytes": 435302193,
+      "sha256": "581f081a6c3ba67a6ba9e9ed069a7abed8491add3bd8eb59ddf434d47aa9be58"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/readback.console.log",
+      "bytes": 20594,
+      "sha256": "0dc1a1a670a8dbaee01a13672ac4f163a859f3f2a14436db0782bdf74e212200"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/report.json",
+      "bytes": 6987067,
+      "sha256": "3819823c61a1a4d00819f7cd5823d91400e8cb6ab5ea6559a73616e87bdc9166"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/run/dps-review/blood-heart-strike-first-edge.md",
+      "bytes": 6921,
+      "sha256": "637779b445a3da5b4351ccc7bb6ab39440422732c99eefd0cf3874dfefa15f08"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/run/dps-review/blood-heart-strike-trace-excerpt.json",
+      "bytes": 16444,
+      "sha256": "aecd6b613b7916ce95ad402535ccb5bbdfb354988a7ba0a2273fd7ad9496db13"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/rune_strike_postrun_database_readback.json",
+      "bytes": 179,
+      "sha256": "8cb4b1554e0dcac7bf65e78e7680ff9b569f11d03789e7ed53b3f81ed7cdc39d"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/validation_provisioning_apply/provision_accounts.sql",
+      "bytes": 4068,
+      "sha256": "689fc5fd368cc4dc8e19c689471e579c80d1af762747fcc7b6f510fd66d114e7"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/validation_provisioning_apply/provision_characters.sql",
+      "bytes": 322572,
+      "sha256": "5ece9ff50a53ce8392c42618976a55eebc1c7a971b8a3ff1e32981942c172c24"
+    },
+    {
+      "path": "magmaw-development-4b24d7242f/worldserver.log",
+      "bytes": 431490997,
+      "sha256": "e9c02f5ef772fb1e5a135544f470e08adab96b57bd050b57ef4bde77db73e20e"
+    },
+    {
+      "path": "run-development.py",
+      "bytes": 6040,
+      "sha256": "1720c153a57ac3e7eb0f6eb2d9e4b76bde36080d17d28f82ed014f7fe0c746de"
+    },
+    {
+      "path": "publish-development.py",
+      "bytes": 3420,
+      "sha256": "a805aa003260ea44013efeea8ab1851c97ce3e9a41bf2c7348212af3aad86427"
+    },
+    {
+      "path": "summarize-development.py",
+      "bytes": 3667,
+      "sha256": "af052e2feef7ebb5ee57a8f6497d310396cc35d1917881ad9fea317d13796980"
+    },
+    {
+      "path": "observe-magmaw.py",
+      "bytes": 1813,
+      "sha256": "2e6bc09d2e2d7a33fa2686d5c3a44e18614eb279a98a0d88b1dc7f30cca66569"
+    },
+    {
+      "path": "evict-development.py",
+      "bytes": 1545,
+      "sha256": "cc0cbc399b0a8877bc933c849ff13f22ae7ace87eebcaf7cc64a7e641709615c"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    "magmaw-development-4b24d7242f/raw.jsonl",
+    "magmaw-development-4b24d7242f/worldserver.log",
+    "magmaw-development-4b24d7242f/capture.console.log",
+    "magmaw-development-4b24d7242f/readback.console.log"
+  ]
+}
