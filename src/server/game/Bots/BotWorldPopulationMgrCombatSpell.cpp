@@ -1,3 +1,4 @@
+#include "Bots/BotRaidCombatPotionHealthOwner.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotCombatMaskEvaluation.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
@@ -112,7 +113,8 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     std::string const maskEvaluation = BotCombatMaskEvaluation::Context(
         BotWorldPopulationMgrSpellSemantics::NowMs(), bot, target, Cohort(), Party(),
         "SelectCombatSpell");
-    std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+    auto const potionHealthOwner = BotRaidCombatPotionHealthOwner::Resolve(bot, Cohort(), Party());
+    std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile, potionHealthOwner);
     BotRaidCooldownReservation::RouteContext const cooldownRoute{
         Cohort().Config.ValidationRouteEnable,
         Cohort().Raid.RaidInstance,
@@ -221,7 +223,7 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
             candidate.RejectReason = "target_health_gate";
             continue;
         }
-        if (!MeetsHostileTargetHealthGate(candidate.Profile, UnitHealthPct(target), target != nullptr))
+        if (!BotRaidCombatPotionHealthOwner::MeetsHostileTargetHealthGate(candidate.Profile, target, potionHealthOwner))
         {
             candidate.RejectReason = "hostile_target_health_gate";
             continue;

@@ -162,7 +162,7 @@ def test_native_item_lifecycle_health_ranking_and_reservation(tmp_path: Path) ->
     # A self-target action still evaluates its separate hostile target gate.
     assert "Unit const* actionTarget = selfTarget ?" in candidates
     assert "MeetsHostileTargetHealthGate(" in candidates
-    assert "float(target->GetHealth()) / float(target->GetMaxHealth())" in candidates
+    assert "float(hostileHealthTarget->GetHealth()) / float(hostileHealthTarget->GetMaxHealth())" in candidates
 
     program = r'''
 #include <array>
@@ -188,6 +188,7 @@ enum class BotCombatActionCategory {
     Wait, UseItem, Defensive, Mitigation, HealEfficient, HealFast, HealAoe,
     ExternalDefensive, ResurrectRecover, DispelCleanse, OffensiveCooldown
 };
+struct Unit;
 struct BotActionProfileSpell {
     float MinHostileTargetHealthPct = 0.0f;
     float MaxHostileTargetHealthPct = 0.0f;
@@ -343,4 +344,130 @@ NATIVE_COMPARATOR
     subprocess.run(
         ["g++", "-std=c++17", str(source), "-o", str(binary)], check=True
     )
+    subprocess.run([str(binary)], check=True)
+
+
+def test_raid_potion_health_owner_actual_callers_and_gate(tmp_path):
+    bots = ROOT / "src/server/game/Bots"
+    header = (bots / "BotClassSpecActionProfile.h").read_text()
+    health = _between(header, "inline bool ValidHostileTargetHealthRange", "struct BotActionCandidate")
+    owner = _between((bots / "BotRaidCombatPotionHealthOwner.h").read_text(),
+                     "namespace BotRaidCombatPotionHealthOwner", "#endif")
+    candidates = (bots / "BotClassSpecActionProfileCandidates.cpp").read_text()
+    tags = _between(candidates, "bool HasMechanicTag(", "\n}\n") + "\n}"
+    selection = _between(candidates, "        bool const requiresPotionHealthOwner", "        bool const interruptsCurrentChanneledSpell")
+    gate = _between(candidates, "        else if ((requiresPotionHealthOwner", "        else if (profile.Role")
+    gate = gate.replace("else if", "if", 1)
+    callers = []
+    downstream = []
+    for name in ("BotWorldPopulationMgrCombatResolver.cpp", "BotWorldPopulationMgrCombatSpell.cpp"):
+        text = (bots / name).read_text()
+        callers.append(_between(text, "    auto const potionHealthOwner =", "    BotRaidCooldownReservation::RouteContext"))
+        downstream.append(_between(text, "        if (!BotRaidCombatPotionHealthOwner::MeetsHostileTargetHealthGate", "        float selfHealthPct"))
+    # The multidot rebuild must carry the same boss owner despite a different damage target.
+    assert "BuildCandidates(bot, spreadTarget, profile, potionHealthOwner)" in (bots / "BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    program = r'''
+#include <cassert>
+#include <cmath>
+#include <string>
+#include <vector>
+using uint32 = unsigned;
+struct Unit {
+    unsigned Entry=1, Health=19, MaxHealth=100; bool Alive=true, Phase=true;
+    unsigned GetEntry() const { return Entry; }
+    unsigned GetHealth() const { return Health; }
+    unsigned GetMaxHealth() const { return MaxHealth; }
+    bool IsAlive() const { return Alive; }
+};
+struct Player : Unit {
+    unsigned GetMapId() const { return 669; }
+    unsigned GetInstanceId() const { return 42; }
+    bool IsInMap(Unit const*) const { return true; }
+    bool IsInPhase(Unit const* u) const { return u->Phase; }
+};
+Unit const* engagedBoss=nullptr;
+namespace ObjectAccessor { Unit const* GetUnit(Player const&, unsigned guid) { return guid==7 ? engagedBoss : nullptr; } }
+enum class BotCombatActionCategory { UseItem, Damage };
+struct BotActionProfileSpell {
+    float MinHostileTargetHealthPct=0, MaxHostileTargetHealthPct=.25f;
+    BotCombatActionCategory Category=BotCombatActionCategory::UseItem;
+    std::string MechanicTags="volcanic_potion,combat_potion", TargetSelector="self";
+};
+HEALTH
+OWNER
+TAGS
+struct BotActionCandidate { std::string RejectReason; Unit const* ActionTarget; BotActionProfileSpell Profile; };
+using BotClassSpecActionProfile=BotActionProfileSpell;
+struct BotClassSpecActionProfileStore {
+static std::vector<BotActionCandidate> BuildCandidates(Player const* bot, Unit const* target,
+    BotClassSpecActionProfile const& spell, BotCombatPotionHealthOwner potionHealthOwner) {
+    bool selfTarget=spell.TargetSelector=="self";
+    BotActionCandidate candidate{"", selfTarget ? bot : target, spell};
+SELECTION
+GATE
+    return {candidate};
+}
+};
+struct Config { bool ValidationRouteEnable=true; std::string ValidationRouteKind="boss"; unsigned ValidationRouteTargetEntry=41570; };
+struct Raid { bool RaidInstance=true, EncounterInProgress=true; };
+struct CohortState { ::Config Config; ::Raid Raid; bool CalibrationActive=false; };
+struct PartyState { unsigned ValidationRouteEngagedBossGeneration=3, ValidationRouteGeneration=3,
+    ValidationRouteEngagedBossMapId=669, ValidationRouteEngagedBossInstanceId=42,
+    ValidationRouteEngagedBossGuid=7; };
+struct Caller {
+    CohortState cohort; PartyState party;
+    CohortState const& Cohort() { return cohort; }
+    PartyState const& Party() { return party; }
+    std::vector<BotActionCandidate> Resolve(Player* bot, Unit* target, BotClassSpecActionProfile profile) {
+CALLER0
+        for (auto& candidate : candidates) {
+DOWNSTREAM0
+        }
+        return candidates;
+    }
+    std::vector<BotActionCandidate> Select(Player* bot, Unit* target, BotClassSpecActionProfile profile) {
+CALLER1
+        for (auto& candidate : candidates) {
+DOWNSTREAM1
+        }
+        return candidates;
+    }
+};
+int main() {
+    Player bot; Unit add, head; Unit boss; boss.Entry=41570; boss.Health=66; engagedBoss=&boss;
+    Caller caller; BotClassSpecActionProfile potion;
+    for (auto call : {&Caller::Resolve, &Caller::Select}) {
+        auto check=[&](Unit* target, bool allowed) {
+            auto result=(caller.*call)(&bot,target,potion);
+            assert(result[0].RejectReason.empty()==allowed);
+            assert(result[0].ActionTarget==&bot);
+        };
+        check(&add,false); check(&head,false);
+        boss.Health=25; check(&add,true);
+        add.Health=26; check(&add,true); head.Health=90; check(&head,true);
+        boss.Health=26; check(&add,false); add.Health=19;
+        engagedBoss=nullptr; check(&add,false); engagedBoss=&boss;
+        caller.party.ValidationRouteEngagedBossGeneration=2; check(&add,false);
+        caller.party.ValidationRouteEngagedBossGeneration=3;
+        caller.party.ValidationRouteEngagedBossInstanceId=43; check(&add,false);
+        caller.party.ValidationRouteEngagedBossInstanceId=42;
+        boss.Alive=false; check(&add,false); boss.Alive=true;
+        boss.Phase=false; check(&add,false); boss.Phase=true;
+        caller.cohort.CalibrationActive=true; check(&add,true); caller.cohort.CalibrationActive=false;
+        caller.cohort.Raid.RaidInstance=false; check(&add,true); caller.cohort.Raid.RaidInstance=true;
+        auto damage=potion; damage.Category=BotCombatActionCategory::Damage; damage.TargetSelector="enemy";
+        auto result=(caller.*call)(&bot,&add,damage);
+        assert(result[0].RejectReason.empty() && result[0].ActionTarget==&add);
+    }
+}
+'''
+    for name, value in {"HEALTH": health, "OWNER": owner, "TAGS": tags,
+                        "SELECTION": selection, "GATE": gate,
+                        "CALLER0": callers[0], "CALLER1": callers[1],
+                        "DOWNSTREAM0": downstream[0], "DOWNSTREAM1": downstream[1]}.items():
+        program = program.replace(name, value)
+    source = tmp_path / "raid_potion_owner.cpp"
+    source.write_text(program)
+    binary = tmp_path / "raid_potion_owner"
+    subprocess.run(["g++", "-std=c++17", str(source), "-o", str(binary)], check=True)
     subprocess.run([str(binary)], check=True)

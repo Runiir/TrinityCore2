@@ -16,6 +16,11 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntranceMovement(
 {
     using namespace BotRaidDrudgeEntranceMovement;
 
+    MemberAnchor const* recovery = AssignedTank
+        ? nullptr : DeclaredRecoveryMemberAnchorFor(OneBasedSlot);
+    bool const recoveryDestination = recovery && anchor == recovery;
+    bool const sourceUnionRequired = RequiresSourceUnionPath(
+        AssignedTank, recoveryDestination, moveResult);
     float const distance = Bot->GetExactDist(anchor->X, anchor->Y, anchor->Z);
     bool moved = false;
     bool nativeAttempted = false;
@@ -23,13 +28,18 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntranceMovement(
     bool const shouldSubmit = ShouldSubmitNativeMovement(
         arrived, false, distance);
     if (shouldSubmit && StrictNativePath(anchor->X, anchor->Y, anchor->Z,
-            true, false, &rejection))
+            true, sourceUnionRequired, &rejection))
     {
         nativeAttempted = true;
         moved = Manager.MoveBotToPointWithReferenceFloor(State, Bot,
             anchor->X, anchor->Y, anchor->Z, anchor->Z, false,
             BotMovementArbitration::Owner::Mechanic,
-            BotMovementArbitration::Priority::Mechanic);
+            BotMovementArbitration::Priority::Mechanic,
+            nullptr, 0.0f, recoveryDestination
+                ? "drudge_entrance_backline_escape"
+                : sourceUnionRequired
+                    ? "drudge_entrance_backline_return"
+                    : "drudge_entrance_anchor");
     }
 
     bool const higherPriority = nativeAttempted && !moved
@@ -57,7 +67,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntranceMovement(
     }
 
     bool const continueCombat = ContinuePackCombat(outcome, packLinked,
-        !HasMeaningfulDistance(distance));
+        arrived);
     if (!continueCombat)
         HoldOffense();
 

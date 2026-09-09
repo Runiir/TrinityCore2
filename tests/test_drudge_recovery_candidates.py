@@ -359,8 +359,9 @@ def test_recovery_candidate_contract_is_persistent_and_native_strict_for_tanks_a
     assert "dynamicCandidate && !tank" in selector
     assert "NativePathIsComplete(pathOk, path)" in geometry
     assert "BotWorldPopulationMgrNativePathValidation.h" in planner
-    assert "NativePathFloorsValid(bot, candidatePath)" in planner
-    assert "NativePathIsComplete(pathOk, path)" in planner
+    assert "DiagnoseNativePathFloors(bot, candidatePath," in planner
+    assert "DiagnoseCompleteNativePathProof(calculated," in planner
+    assert "if (!proof.Accepted || !controlAdmission(candidatePath).Accepted)" in planner
     assert "NativePathPointFloorValid" in path_validation
     assert "NativePathFloorsValid" in path_validation
     assert "SourceUnionSafeAt" in spacing

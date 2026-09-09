@@ -1,30 +1,35 @@
 # Shared-worldserver workflow status
 
-Current result: source `4b24d7242f` built successfully and cleared Magmaw 10N
-with zero deaths, ten survivors, native exit 0 and verified cleanup. Unique
-hostile party DPS was 198,543.127 on 142 damage-bearing seconds, HPS 12,615.120.
-Blood DK was the actual main tank, including Mangle, and reached 17,075.296 DPS
-with 19 Death Strikes and 20 Rune Strikes. Self-owned Vengeance was observed.
-All-bot and six specialist reviews are complete. Evidence is DVC-published,
-fresh-remote verified, and exact large local payloads evicted.
+Current result: source `a152fb20ef` built on its first attempt and cleared
+Magmaw 10N in 186.544 seconds with ten survivors and no boss-fight deaths.
+Fire hook 30007 and Affliction 30008 died on Drudges and recovered before the
+boss. Native exit, binary verification and cleanup passed. Unique hostile
+damage was 29,303,759, or 157,087.652 DPS over native pull to death.
+Effective healing through death was 3,133,778, or 16,799.136 HPS. The slower
+kill is not roster-throughput acceptance.
 
-Current work: one combined Marksmanship, Elemental and Affliction repair batch
-from completed Fire, Affliction, Marksmanship, Elemental, Protection and healer reviews. Five DPS actors together declined
-4.642% versus 21c despite the tank-driven party gain; overall roster throughput
-is not accepted. Join independent class repairs into one reviewed build batch. Marksmanship
-checks talent53221 instead of native haste53220; its scoped aura/final-filler repair is independently approved. Elemental lacks Spiritwalker's Grace79206 in its learned spells
-and profile; normal provisioning and a movement-opportunity candidate are independently
-approved. Affliction's missing execute-window combat potion action is implemented
-and independently approved. The combined batch is ready for its one native build. Affliction has zero Shadowflame casts, but preview validity
-does not prove a lost production choice; inspect corrected execution masks.
-Heart Strike is one proven shared encounter-policy loss: authoritative
-forbid_area=true rejects its native cleave. Preserve current safety protection
-until a reviewed replacement exists. Passive range previews overwrite combat
-masks; a non-publishing preview repair is independently approved for the next build. The false spell0 fallback
-cooldown label has a minimal independently approved diagnostic repair.
-DPS-023 head return remains UNEXERCISED: this kill ended during the first head
-exposure. Valid diagnostic observations do not prove a surviving head-to-body
-transition. Do not repeat this unchanged canary hoping it lasts longer.
+The MM native haste aura and final Steady filler executed correctly. Elemental
+Spiritwalker's Grace enabled a successful moving Lava Burst. Affliction used
+its combat potion, but its execute gate incorrectly used a low-health add.
+The observed head-return transition passed with valid targets; the earlier
+intermittent outage is not declared universally repaired. The proposed MM
+maintenance-priority change was rejected after exact APL review.
+
+Current work: combine the independently approved boss-health potion gate,
+all-bot effective-stat observation and Fire moving Scorch repair with the
+independently approved Drudge backline correction. Both movement directions
+require source-union path checks. Build once and run bounded live validation
+for every represented actor. The a152 evidence
+is DVC-published, fresh-remote verified and exact large payloads evicted.
+Heart Strike and Shadowflame remain blocked by area protection; the proposed
+shared replacement lacks a native target-scope guarantee and is deferred.
+The proposed DK post-Mangle reclaim was rejected: native Sweltering Armor
+lasts 90 seconds and Paladin coverage is appropriate. No coefficient changes
+are supported yet.
+
+Prior source `4b24d7242f` accepted native tank melee/Vengeance and initial Blood
+DK main-tank ownership. Its evidence is DVC-published, fresh-remote verified
+and exact large payloads evicted. All represented classes remain under review.
 
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 

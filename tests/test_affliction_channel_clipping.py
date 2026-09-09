@@ -90,10 +90,12 @@ def test_channel_clip_is_typed_through_resolution_and_native_cast_owns_interrupt
     assert "GetCurrentSpell(CURRENT_CHANNELED_SPELL)" in preflight_body
     assert "GetCurrentSpell(CURRENT_GENERIC_SPELL)" in preflight_body
     assert "action.InterruptCurrentChanneledSpell" in executor[
-        executor.index("CheckHostileSpell(owner, bot, target, action.SpellId") : preflight
+        executor.index("CheckHostileSpell(owner, bot, target,") : preflight
     ]
 
-    native_cast = executor.index("bot->CastSpell(target, action.SpellId, castArgs)")
+    native_cast_match = re.search(r"bot->CastSpell\(target,\s*[^,()]+,\s*castArgs\)", executor)
+    assert native_cast_match is not None
+    native_cast = native_cast_match.start()
     native_submission = executor[executor.rfind("CastSpellExtraArgs", 0, native_cast) : native_cast]
     assert "action.InterruptCurrentChanneledSpell" not in native_submission
     assert "InterruptSpell(CURRENT_CHANNELED_SPELL, false);" not in native_submission

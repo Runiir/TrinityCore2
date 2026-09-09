@@ -1,3 +1,4 @@
+#include "Bots/BotRaidCombatPotionHealthOwner.h"
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotCombatMaskEvaluation.h"
@@ -131,7 +132,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         BotWorldPopulationMgrSpellSemantics::NowMs(), bot, target, Cohort(), Party(),
         "ResolveProfileCombatAction");
     uint32 const requestedHostileCount = hostileCount;
-    std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+    auto const potionHealthOwner = BotRaidCombatPotionHealthOwner::Resolve(bot, Cohort(), Party());
+    std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile, potionHealthOwner);
     BotRaidCooldownReservation::RouteContext const cooldownRoute{
         Cohort().Config.ValidationRouteEnable,
         Cohort().Raid.RaidInstance,
@@ -255,7 +257,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                 if (spreadTarget->HasAura(44457, bot->GetGUID()))
                     continue;
                 std::vector<BotActionCandidate> spreadCandidates =
-                    BotClassSpecActionProfileStore::BuildCandidates(bot, spreadTarget, profile);
+                    BotClassSpecActionProfileStore::BuildCandidates(bot, spreadTarget, profile, potionHealthOwner);
                 auto livingBomb = std::find_if(spreadCandidates.begin(), spreadCandidates.end(), [excludedSpellId](BotActionCandidate const& candidate)
                 {
                     return candidate.SpellId == 44457 && candidate.SpellId != excludedSpellId
@@ -652,7 +654,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "target_health_gate";
             continue;
         }
-        if (!MeetsHostileTargetHealthGate(candidate.Profile, UnitHealthPct(target), target != nullptr))
+        if (!BotRaidCombatPotionHealthOwner::MeetsHostileTargetHealthGate(candidate.Profile, target, potionHealthOwner))
         {
             candidate.RejectReason = "hostile_target_health_gate";
             continue;

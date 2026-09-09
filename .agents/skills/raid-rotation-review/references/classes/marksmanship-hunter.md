@@ -16,6 +16,14 @@ Use these notes only after confirming the live actor is Marksmanship and recordi
 
 ## Measurement traps
 
+- Native Improved Steady Shot applies haste aura `53220`; the talent aura
+  `53221` and the simulator's tagged aura are different identities. Observe
+  the triggered aura for maintenance and preserve an unconditional final
+  Steady Shot when maintenance is not due.
+- Compare the exact eligible APL branch before calling a priority inversion.
+  Conditional Aimed Shot can precede Steady maintenance; an Aimed win with a
+  missing haste buff alone does not prove a defect. A low paired-shot count
+  also needs the intervening movement and native casts, not just total procs.
 - Record selection, movement permission, native submission, completion, and landed damage as separate edges.
 - `cast_combat_spell` for spell 75 can mean keeping ranged auto enabled. It is not proof that an Auto Shot fired.
 - Diagnose Auto Shot cadence from native swing fire and suppress reasons, with target, movement, and death windows joined.

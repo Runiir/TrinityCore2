@@ -871,10 +871,12 @@ private:
         uint64 timestampMs, bool sharedDamage = false);
 
 #include "Bots/BotWorldPopulationMgrCalibrationMetrics.h"
-    static void ObserveCalibrationEffectiveStats(Unit* unit,
+    static void ObserveCalibrationEffectiveStats(Unit const* unit,
         uint64 observedAtMs, CalibrationMetrics::EffectiveStatVector& stats);
     static void AppendCalibrationEffectiveStatsJson(std::ostringstream& json,
         CalibrationMetrics::EffectiveStatVector const& stats);
+    static std::string BuildEffectiveStatsSnapshotJson(Player const* bot,
+        uint64 observedAtMs);
     static void ObserveCalibrationOwnerAuras(CalibrationMetrics& metrics,
         Player* bot, uint64 observedAtMs, bool scoringStart = false);
     static void AppendCalibrationOwnerAurasJson(std::ostringstream& json,

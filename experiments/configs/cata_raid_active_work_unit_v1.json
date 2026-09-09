@@ -2,22 +2,22 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "magmaw:multi_class_performance_batch",
   "owner_skill": "raid-rotation-review",
-  "classification": "reviewed_combined_class_repair",
+  "classification": "multi_class_repair_review",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "4b24d7242f81aadeb53149d5fe2f6e9c284afefd",
+  "observed_at_commit": "a152fb20ef7563309b7a3084a7161f272e752a50",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Three class repairs plus OBS004/005 independently approved; combined build pending",
+  "gate_state": "four-part batch independently approved; native build pending",
   "first_broken_edge": {
     "id": "multi_class_throughput_losses",
     "owner_classification": "parallel_role_review",
-    "cause": "Five DPS actors declined4.642% while tank gains raised party output7.989%. HS encounter mask and preview diagnostic overwrite proven; other class losses under independent review.",
-    "review_state": "parallel_diagnosis"
+    "cause": "Fire moving filler gated above 40% mana; Affliction potion reads add health; Drudge fixed backline anchor remains unsafe after rush; all-class effective stats missing.",
+    "review_state": "implementation_and_independent_review"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "d9b20942d0bef9c585da28de885bb1ebd170f6597c07825e9ed39f2af0d8fa83"
+    "sha256": "12b7492da8b3d4b030f5ea9cc673567c208984de06435edd1af68f0b7be22e68"
   },
   "scope_lock": {
     "objective": "Resolve performance losses across all represented classes; preserve accepted DK/MT improvements and fix misleading diagnostic publication.",
@@ -40,7 +40,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Build the reviewed combined batch once, verify actual provisioned capability/profile rows, run one completion-watchdog Magmaw validation and review every actor.",
+  "next_action": "Build once, verify receipt, run bounded Magmaw and review all represented actors.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -80,7 +80,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approve",
-    "scope": "MM aura/filler, Elemental movement capability, Affliction combat potion, OBS004/005 diagnostics",
+    "scope": "boss-health potion gate, raid effective stats, Fire moving Scorch, Drudge safe backline recovery and return",
     "live_verified": false
   },
   "related_edges": [
@@ -127,19 +127,18 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-026",
+  "error_id": "DPS-032",
   "related_open_error_ids": [
     "DPS-023",
     "DPS-021",
     "DPS-026",
-    "DPS-027",
-    "DPS-028",
     "DPS-029",
-    "OBS-004",
-    "OBS-005",
-    "DPS-030",
+    "DPS-032",
+    "ENC-001",
+    "OBS-007",
     "HEAL-001",
-    "OBS-006"
+    "OBS-006",
+    "DPS-033"
   ],
   "requested_tank_assignment": {
     "main_tank": {

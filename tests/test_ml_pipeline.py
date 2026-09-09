@@ -9755,9 +9755,10 @@ def test_pet_spell_crit_observation_uses_native_autocast_identity():
         "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp"
     ).read_text(encoding="utf-8")
 
-    pet_observation = ledger[ledger.index("if (Pet* pet = unit->ToPet())") : ledger.index(
+    pet_start = "if (Pet const* pet = unit->ToPet())"
+    pet_observation = ledger[ledger.index(pet_start) : ledger.index(
         "    static constexpr std::array<AuraType, 3> AuraTypes", ledger.index(
-            "if (Pet* pet = unit->ToPet())"
+            pet_start
         )
     )]
     assert "GetPetAutoSpellSize()" in pet_observation

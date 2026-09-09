@@ -106,6 +106,13 @@
 
         struct EffectiveStatVector
         {
+            struct SpellSchoolObservation
+            {
+                int32 SpellPower = 0;
+                float CritPct = 0.0f;
+                bool CritObserved = false;
+                uint32 CritSourceSpellId = 0;
+            };
             struct AuraContribution
             {
                 uint16 AuraType = 0;
@@ -158,6 +165,7 @@
             float MeleeSpeedMultiplier = 1.0f;
             float RangedSpeedMultiplier = 1.0f;
             float SpellSpeedMultiplier = 1.0f;
+            std::array<SpellSchoolObservation, MAX_SPELL_SCHOOL> SpellSchools;
             std::array<PrimaryStatLedger, 5> PrimaryStatLedgerEntries;
         };
         struct InitialPowerObservation

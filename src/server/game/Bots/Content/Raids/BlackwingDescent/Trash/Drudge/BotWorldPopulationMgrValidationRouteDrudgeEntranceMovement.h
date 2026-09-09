@@ -19,6 +19,44 @@ enum class Outcome : std::uint8_t
     NoProgress,
 };
 
+enum class LogicalDestination : std::uint8_t
+{
+    Canonical,
+    Recovery,
+    Unavailable,
+};
+
+struct DestinationObservation
+{
+    bool Tank = false;
+    bool CanonicalSafe = false;
+    bool RecoveryAvailable = false;
+    bool RecoverySafe = false;
+    bool MatchingRecoveryPathActive = false;
+    bool RecoveryArrived = false;
+};
+
+// A submitted recovery path remains the logical destination through arrival.
+// Once there, an unsafe canonical anchor keeps the member at recovery. Missing
+// or newly unsafe recovery geometry fails closed instead of falling back to
+// the same unsafe point.
+constexpr LogicalDestination SelectLogicalDestination(
+    DestinationObservation const& observation)
+{
+    if (observation.Tank)
+        return LogicalDestination::Canonical;
+
+    bool const usableRecovery = observation.RecoveryAvailable
+        && observation.RecoverySafe;
+    if (observation.MatchingRecoveryPathActive && usableRecovery
+        && !observation.RecoveryArrived)
+        return LogicalDestination::Recovery;
+    if (observation.CanonicalSafe)
+        return LogicalDestination::Canonical;
+    return usableRecovery ? LogicalDestination::Recovery
+                          : LogicalDestination::Unavailable;
+}
+
 struct Observation
 {
     bool Arrived = false;
@@ -62,6 +100,16 @@ constexpr bool ShouldSubmitNativeMovement(bool arrived,
         && HasMeaningfulDistance(distance, epsilon);
 }
 
+// Both directions of the temporary combat-time backline transition must
+// preserve source-union clearance. Pre-pull staging and tank movement retain
+// their existing native path contract.
+constexpr bool RequiresSourceUnionPath(bool tank, bool recoveryDestination,
+    std::string_view moveResult)
+{
+    return !tank && (recoveryDestination
+        || moveResult == "drudge_entrance_return_move");
+}
+
 // These waits are position contracts, not failed movement attempts. During
 // exact pre-pull staging the member is already at its declared anchor and must
 // retain the route movement lane while another roster member catches up.
@@ -74,18 +122,17 @@ constexpr bool IsExactDrudgePositionHold(std::string_view action)
 }
 
 // A pack-linked pull may keep its ordinary combat lane while native movement
-// is already doing the work. A same-anchor no-progress observation can still
-// continue combat when the bot is physically at its declared anchor; the
-// tactical arrival predicate may be false only because a Drudge entered the
-// safety radius. A rejected native path remains fail-closed.
+// is already doing the work. No-progress is eligible only at a safe logical
+// destination; reaching a canonical point that became unsafe is not arrival.
+// A rejected native path remains fail-closed.
 constexpr bool ContinuePackCombat(Outcome outcome, bool packLinked,
-    bool physicallyAtAnchor = false)
+    bool safeLogicalDestinationReached = false)
 {
     if (!packLinked)
         return false;
 
     if (outcome == Outcome::NoProgress)
-        return physicallyAtAnchor;
+        return safeLogicalDestinationReached;
 
     return outcome == Outcome::Arrived
         || outcome == Outcome::ActivePathRetained

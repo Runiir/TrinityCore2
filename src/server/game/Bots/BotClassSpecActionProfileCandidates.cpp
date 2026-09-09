@@ -361,7 +361,8 @@ std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, Un
 
 }
 
-std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(Player const* bot, Unit const* target, BotClassSpecActionProfile const& profile)
+std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(Player const* bot, Unit const* target, BotClassSpecActionProfile const& profile,
+    BotCombatPotionHealthOwner potionHealthOwner)
 {
     std::vector<BotActionCandidate> candidates;
     if (!bot)
@@ -518,6 +519,10 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
         candidate.CastTimeMs = ProfileSpellCastTimeMs(bot, spellInfo);
         Unit const* comboTarget = selfTarget ? target : actionTarget;
         std::string conditionRejection = EvaluateCompiledConditions(bot, actionTarget, comboTarget, spell);
+        bool const requiresPotionHealthOwner = potionHealthOwner.Required && selfTarget
+            && spell.Category == BotCombatActionCategory::UseItem
+            && HasMechanicTag(spell.MechanicTags, "combat_potion");
+        Unit const* hostileHealthTarget = requiresPotionHealthOwner ? potionHealthOwner.Target : target;
         bool const interruptsCurrentChanneledSpell = postChannelTickInterruptWindow
             && spell.SpellId != currentChanneledSpellId
             && spell.PriorityBucket < currentChanneledProfileSpell->PriorityBucket
@@ -534,11 +539,12 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             candidate.RejectReason = "missing_or_depleted_item";
         else if (!conditionRejection.empty())
             candidate.RejectReason = conditionRejection;
-        else if (!MeetsHostileTargetHealthGate(
+        else if ((requiresPotionHealthOwner && !hostileHealthTarget)
+            || !MeetsHostileTargetHealthGate(
                 spell,
-                target && target->GetMaxHealth()
-                    ? float(target->GetHealth()) / float(target->GetMaxHealth())
-                    : 0.0f, target != nullptr))
+                hostileHealthTarget && hostileHealthTarget->GetMaxHealth()
+                    ? float(hostileHealthTarget->GetHealth()) / float(hostileHealthTarget->GetMaxHealth())
+                    : 0.0f, hostileHealthTarget != nullptr))
             candidate.RejectReason = "hostile_target_health_gate";
         else if (profile.Role == "healer"
             && healerTriageInjuredPlayers

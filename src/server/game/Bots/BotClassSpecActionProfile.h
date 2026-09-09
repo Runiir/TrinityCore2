@@ -110,6 +110,13 @@ inline bool MeetsHostileTargetHealthGate(BotActionProfileSpell const& spell,
                 && hostileTargetHealthPct <= spell.MaxHostileTargetHealthPct));
 }
 
+// A required owner with no target deliberately fails closed in raid combat.
+struct BotCombatPotionHealthOwner
+{
+    bool Required = false;
+    Unit const* Target = nullptr;
+};
+
 struct BotActionCandidate
 {
     uint32 ActionId = 0;
@@ -166,7 +173,8 @@ public:
     static uint32 ReactionTimeMsForSpec(char const* specTag);
     // Zero means no validated reference scheduler policy; retain caller fallback.
     static uint32 ReferenceDecisionIntervalMsForSpec(char const* specTag);
-    static std::vector<BotActionCandidate> BuildCandidates(Player const* bot, Unit const* target, BotClassSpecActionProfile const& profile);
+    static std::vector<BotActionCandidate> BuildCandidates(Player const* bot, Unit const* target, BotClassSpecActionProfile const& profile,
+        BotCombatPotionHealthOwner potionHealthOwner = {});
     static std::string CandidateMaskJson(std::vector<BotActionCandidate> const& candidates, BotClassSpecActionProfile const& profile, char const* roleGoal, char const* saturationJson, char const* profileSourceOverride = nullptr);
     static std::string ChosenActionJson(BotActionCandidate const* candidate, BotClassSpecActionProfile const& profile, char const* roleGoal, char const* balanceMode, float confidence);
     static uint64 ActiveDbGeneration();

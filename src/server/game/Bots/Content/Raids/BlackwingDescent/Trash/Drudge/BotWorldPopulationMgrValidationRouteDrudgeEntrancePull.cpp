@@ -2,12 +2,14 @@
 
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeEntranceMovement.h"
 
 #include "Creature.h"
 #include "Player.h"
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 
 namespace BotWorldPopulationMgrValidationRoute
 {
@@ -81,7 +83,8 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
                    : config.ValidationRouteSplitArrivalToleranceYards;
         return member->GetExactDist(anchor->X, anchor->Y, anchor->Z) <= tolerance;
     };
-    auto rushBaitIsolationSafe = [&](Player const* member, uint32 slot)
+    auto rushBaitIsolationSafeAt = [&](Player const* member, uint32 slot,
+        float x, float y)
     {
         if (!member)
             return false;
@@ -100,11 +103,17 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
             if (otherSlot == slot || otherRoster->second.Role == "tank"
                 || (!isRushBaitSlot(slot) && !isRushBaitSlot(otherSlot)))
                 continue;
-            if (member->GetExactDist2d(other)
+            if (std::hypot(x - other->GetPositionX(),
+                    y - other->GetPositionY())
                 < DrudgeThunderclapSafeDistanceYards)
                 return false;
         }
         return true;
+    };
+    auto rushBaitIsolationSafe = [&](Player const* member, uint32 slot)
+    {
+        return member && rushBaitIsolationSafeAt(member, slot,
+            member->GetPositionX(), member->GetPositionY());
     };
     auto exactRosterAtEntrance = [&]
     {
@@ -152,15 +161,21 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
     bool const source1Engaged = NativeEngaged(*this, Sources[1]);
     bool const pullStarted = source0Engaged || source1Engaged;
     bool const packLinked = source0Engaged && source1Engaged;
-    auto outsideBothDrudges = [&](Player const* member)
+    auto outsideBothDrudgesAt = [&](float x, float y)
     {
-        return member && std::all_of(Sources.begin(), Sources.end(),
-            [member](Creature const* source)
+        return std::all_of(Sources.begin(), Sources.end(),
+            [x, y](Creature const* source)
             {
                 return !source || !source->IsAlive()
-                    || member->GetExactDist2d(source)
+                    || std::hypot(x - source->GetPositionX(),
+                        y - source->GetPositionY())
                         >= DrudgeThunderclapSafeDistanceYards;
             });
+    };
+    auto outsideBothDrudges = [&](Player const* member)
+    {
+        return member && outsideBothDrudgesAt(
+            member->GetPositionX(), member->GetPositionY());
     };
     MemberAnchor const* entrance = recoveryAnchorFor(OneBasedSlot);
     if (!entrance)
@@ -192,19 +207,79 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
             if (taunt == PhaseResult::Handled)
                 return taunt;
         }
+        MemberAnchor const* logicalAnchor = entrance;
+        bool recoveryDestination = false;
+        if (!AssignedTank)
+        {
+            using namespace BotRaidDrudgeEntranceMovement;
+            MemberAnchor const* recovery =
+                DeclaredRecoveryMemberAnchorFor(OneBasedSlot);
+            bool const recoveryAvailable = recovery;
+            bool const recoverySafe = recoveryAvailable
+                && recovery->Y <= RangedDoorwaySafeMaximumY
+                && outsideBothDrudgesAt(recovery->X, recovery->Y)
+                && rushBaitIsolationSafeAt(Bot, OneBasedSlot,
+                    recovery->X, recovery->Y)
+                && NonTankEntranceEnvelopeSafe(OneBasedSlot,
+                    recovery->X, recovery->Y);
+            bool const recoveryArrived = recoveryAvailable
+                && atAnchor(Bot, recovery, false);
+            bool const matchingRecoveryPathActive = recoveryAvailable
+                && State.ActivePathValid && State.ActivePathPurposeValid
+                && State.ActivePathPurpose
+                    == "drudge_entrance_backline_escape"
+                && State.ActivePathAttemptId == Manager.Cohort().AttemptId
+                && State.ActivePathWipeGeneration
+                    == Manager.Cohort().Raid.WipeGeneration
+                && State.ActivePathRouteGeneration
+                    == Manager.Party().ValidationRouteGeneration
+                && State.ActivePathRouteNodeId
+                    == config.ValidationRouteNodeId
+                && std::hypot(State.ActivePathToX - recovery->X,
+                    State.ActivePathToY - recovery->Y) <= 0.01f
+                && std::fabs(State.ActivePathToZ - recovery->Z) <= 0.01f;
+            bool const canonicalSafe = entrance->Y
+                    <= RangedDoorwaySafeMaximumY
+                && outsideBothDrudgesAt(entrance->X, entrance->Y)
+                && rushBaitIsolationSafeAt(Bot, OneBasedSlot,
+                    entrance->X, entrance->Y);
+            LogicalDestination const destination = SelectLogicalDestination({
+                false, canonicalSafe, recoveryAvailable, recoverySafe,
+                matchingRecoveryPathActive, recoveryArrived });
+            if (destination == LogicalDestination::Unavailable)
+            {
+                HoldOffense();
+                Record(Sources[0],
+                    "drudge_entrance_backline_escape_unavailable");
+                Target = Sources[0];
+                State.TargetGuid = Sources[0]->GetGUID();
+                return PhaseResult::Handled;
+            }
+            recoveryDestination = destination
+                == LogicalDestination::Recovery;
+            if (recoveryDestination)
+                logicalAnchor = recovery;
+        }
         bool const safeBackline = AssignedTank
             || (Bot->GetPositionY() <= RangedDoorwaySafeMaximumY
                 && rushBaitIsolationSafe(Bot, OneBasedSlot)
                 && outsideBothDrudges(Bot));
         float const combatTolerance = AssignedTank
             ? TankDoorwayCombatToleranceYards
-            : doorwayToleranceFor(false, OneBasedSlot);
-        if (!safeBackline || !atAnchor(Bot, entrance, AssignedTank,
+            : recoveryDestination
+                ? config.ValidationRouteSplitArrivalToleranceYards
+                : doorwayToleranceFor(false, OneBasedSlot);
+        if (!safeBackline || !atAnchor(Bot, logicalAnchor, AssignedTank,
                 combatTolerance))
-            return RunEntranceMovement(entrance,
-                "drudge_entrance_return_move",
-                "drudge_entrance_return_wait", packLinked,
-                entranceArrived(entrance, combatTolerance));
+            return RunEntranceMovement(logicalAnchor,
+                recoveryDestination
+                    ? "drudge_entrance_backline_escape_move"
+                    : "drudge_entrance_return_move",
+                recoveryDestination
+                    ? "drudge_entrance_backline_escape_wait"
+                    : "drudge_entrance_return_wait",
+                packLinked,
+                entranceArrived(logicalAnchor, combatTolerance));
         if (!packLinked)
         {
             HoldOffense();

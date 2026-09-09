@@ -36,7 +36,7 @@ bool AuraAffectsStat(AuraEffect const* effect, Stats stat)
         || effect->GetMiscValue() == AsUnderlyingType(stat);
 }
 
-int32 EffectiveSingleSchoolSpellPower(Unit* unit)
+int32 EffectiveSingleSchoolSpellPower(Unit const* unit)
 {
     int32 spellPower = 0;
     for (uint8 school = SPELL_SCHOOL_HOLY; school < MAX_SPELL_SCHOOL; ++school)
@@ -44,10 +44,18 @@ int32 EffectiveSingleSchoolSpellPower(Unit* unit)
             SpellSchoolMask(1 << school), true));
     return spellPower;
 }
+
+char const* SpellSchoolName(uint8 school)
+{
+    static constexpr std::array<char const*, MAX_SPELL_SCHOOL> Names = {
+        "physical", "holy", "fire", "nature", "frost", "shadow", "arcane"
+    };
+    return school < Names.size() ? Names[school] : "unknown";
+}
 }
 
 void BotWorldPopulationMgr::ObserveCalibrationEffectiveStats(
-    Unit* unit, uint64 observedAtMs,
+    Unit const* unit, uint64 observedAtMs,
     CalibrationMetrics::EffectiveStatVector& stats)
 {
     if (!unit)
@@ -83,7 +91,11 @@ void BotWorldPopulationMgr::ObserveCalibrationEffectiveStats(
         SPELL_AURA_MOD_SPELL_HIT_CHANCE);
     stats.MeleeCritPct = unit->GetUnitCriticalChanceDone(BASE_ATTACK);
 
-    if (Player* player = unit->ToPlayer())
+    for (uint8 school = SPELL_SCHOOL_HOLY; school < MAX_SPELL_SCHOOL; ++school)
+        stats.SpellSchools[school].SpellPower =
+            unit->SpellBaseDamageBonusDone(SpellSchoolMask(1 << school), true);
+
+    if (Player const* player = unit->ToPlayer())
     {
         auto rating = [player](CombatRating type)
         {
@@ -102,9 +114,16 @@ void BotWorldPopulationMgr::ObserveCalibrationEffectiveStats(
             PLAYER_RANGED_CRIT_PERCENTAGE);
         stats.SpellCritPct = player->GetFloatValue(
             PLAYER_SPELL_CRIT_PERCENTAGE1 + SPELL_SCHOOL_SHADOW);
+        for (uint8 school = SPELL_SCHOOL_HOLY; school < MAX_SPELL_SCHOOL; ++school)
+        {
+            auto& schoolStats = stats.SpellSchools[school];
+            schoolStats.CritPct = player->GetFloatValue(
+                PLAYER_SPELL_CRIT_PERCENTAGE1 + school);
+            schoolStats.CritObserved = true;
+        }
         stats.MasteryPoints = player->GetRatingBonusValue(CR_MASTERY);
     }
-    if (Pet* pet = unit->ToPet())
+    if (Pet const* pet = unit->ToPet())
     {
         stats.BonusDamage = pet->GetBonusDamage();
         stats.SpellPower = stats.BonusDamage;
@@ -118,8 +137,21 @@ void BotWorldPopulationMgr::ObserveCalibrationEffectiveStats(
             if (BotWorldPopulationMgrSpellSemantics::SpellLooksDangerous(
                     spellInfo))
             {
-                petDamageSpell = spellInfo;
-                break;
+                if (!petDamageSpell)
+                    petDamageSpell = spellInfo;
+                float const spellCrit = pet->SpellCritChanceDone(
+                    spellInfo, spellInfo->GetSchoolMask());
+                for (uint8 school = SPELL_SCHOOL_HOLY;
+                     school < MAX_SPELL_SCHOOL; ++school)
+                {
+                    auto& schoolStats = stats.SpellSchools[school];
+                    if (!(spellInfo->GetSchoolMask() & (1 << school))
+                        || schoolStats.CritObserved)
+                        continue;
+                    schoolStats.CritPct = spellCrit;
+                    schoolStats.CritObserved = true;
+                    schoolStats.CritSourceSpellId = spellId;
+                }
             }
         }
         if (petDamageSpell)
@@ -204,6 +236,23 @@ void BotWorldPopulationMgr::AppendCalibrationEffectiveStatsJson(
          << ",\"melee_crit_pct\":" << stats.MeleeCritPct
          << ",\"ranged_crit_pct\":" << stats.RangedCritPct
          << ",\"spell_crit_pct\":" << stats.SpellCritPct
+         << ",\"spell_schools\":{";
+    bool firstSchool = true;
+    for (uint8 school = SPELL_SCHOOL_HOLY; school < MAX_SPELL_SCHOOL; ++school)
+    {
+        if (!firstSchool)
+            json << ',';
+        firstSchool = false;
+        auto const& schoolStats = stats.SpellSchools[school];
+        json << '\"' << SpellSchoolName(school) << "\":{\"spell_power\":"
+             << schoolStats.SpellPower
+             << ",\"crit_pct\":" << schoolStats.CritPct
+             << ",\"crit_observed\":"
+             << (schoolStats.CritObserved ? "true" : "false")
+             << ",\"crit_source_spell_id\":"
+             << schoolStats.CritSourceSpellId << '}';
+    }
+    json << '}'
          << ",\"mastery_points\":" << stats.MasteryPoints
          << ",\"melee_speed_multiplier\":"
          << stats.MeleeSpeedMultiplier
@@ -248,4 +297,31 @@ void BotWorldPopulationMgr::AppendCalibrationEffectiveStatsJson(
         json << "]}";
     }
     json << "]}}";
+}
+
+std::string BotWorldPopulationMgr::BuildEffectiveStatsSnapshotJson(
+    Player const* bot, uint64 observedAtMs)
+{
+    CalibrationMetrics::EffectiveStatVector ownerStats;
+    ObserveCalibrationEffectiveStats(bot, observedAtMs, ownerStats);
+
+    Pet const* pet = bot ? bot->GetPet() : nullptr;
+    bool const persistentPetPresent = pet && pet->GetOwner() == bot
+        && pet->IsPermanentPetFor(const_cast<Player*>(bot));
+    CalibrationMetrics::EffectiveStatVector petStats;
+    if (persistentPetPresent)
+        ObserveCalibrationEffectiveStats(pet, observedAtMs, petStats);
+
+    std::ostringstream json;
+    json << "{\"observed_at_ms\":" << observedAtMs << ",\"owner\":";
+    AppendCalibrationEffectiveStatsJson(json, ownerStats);
+    json << ",\"persistent_pet\":{\"present\":"
+         << (persistentPetPresent ? "true" : "false")
+         << ",\"observed_at_ms\":" << observedAtMs
+         << ",\"guid\":" << (persistentPetPresent ? pet->GetGUID().GetCounter() : 0)
+         << ",\"entry\":" << (persistentPetPresent ? pet->GetEntry() : 0)
+         << ",\"effective_stats\":";
+    AppendCalibrationEffectiveStatsJson(json, petStats);
+    json << "}}";
+    return json.str();
 }

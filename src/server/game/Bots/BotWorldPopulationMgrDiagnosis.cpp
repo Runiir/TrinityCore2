@@ -789,6 +789,7 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"progress_before\":" << state.QuestWork.ProgressBefore
          << ",\"progress_after\":" << state.QuestWork.ProgressAfter << "}"
          << ",\"native_combat_stats\":" << BotNativeCombatStatsObservation::BuildJson(bot)
+         << ",\"effective_stats\":" << BuildEffectiveStatsSnapshotJson(bot, nowMs)
          << ",\"target\":{\"target_guid\":" << state.LastDecisionTargetGuid.GetCounter()
          << ",\"observed_at_ms\":" << nowMs
          << ",\"health_available\":" << (observedTarget ? "true" : "false")
