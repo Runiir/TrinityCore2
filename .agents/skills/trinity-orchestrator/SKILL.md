@@ -35,6 +35,9 @@ after all behavioral fixtures pass. Keep native compilation a separate claim.
 For retained telemetry changes, locate both full and delta serializers and test
 the same native record through each. A field visible in a full snapshot can still
 be lost after ring eviction if the delta export omits it.
+When increasing decision or sampling frequency, test the resulting full-size
+export through controller retention, parsing and final acceptance recomputation.
+Incomplete transport is an infrastructure failure, not a class-tuning signal.
 
 Review the actual launch-to-consumer path, including every identity used to select
 the runtime actor and its inputs. Return all known blocking findings together;

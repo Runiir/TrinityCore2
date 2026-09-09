@@ -142,7 +142,7 @@ class BoundedOutputParts(list[str]):
             return
         marker = WORLDSERVER_OUTPUT_TRUNCATED_MARKER.encode("utf-8")
         prefix = encoded[: max(0, remaining - len(marker))].decode("utf-8", errors="ignore")
-        super().append(prefix + WORLDSERVER_OUTPUT_TRUNCATED_MARKER)
+        super().append(prefix + marker[:remaining].decode("utf-8", errors="ignore"))
         self.written_bytes = self.max_bytes
         self.truncated = True
 
@@ -169,8 +169,8 @@ class WatchdogOutputBuffer:
         max_bytes: int = DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES,
         heartbeat_commands: tuple[str, ...] | list[str] = (),
     ) -> None:
-        if max_bytes <= 0:
-            raise ValueError("max_bytes must be positive")
+        if max_bytes < 4 * len(WORLDSERVER_OUTPUT_TRUNCATED_MARKER.encode("utf-8")):
+            raise ValueError("output budget cannot reserve complete truncation markers")
         self.max_bytes = max_bytes
         prefix_bytes = min(WATCHDOG_PREFIX_OUTPUT_BYTES, max(1, max_bytes // 4))
         cleanup_bytes = min(
@@ -181,9 +181,7 @@ class WatchdogOutputBuffer:
             cleanup_bytes = max(0, max_bytes - prefix_bytes - 1)
         heartbeat_bytes = max(0, max_bytes - prefix_bytes - cleanup_bytes)
         keys = tuple(dict.fromkeys(str(command) for command in heartbeat_commands))
-        self._heartbeat_section_bytes = (
-            heartbeat_bytes // max(1, len(keys)) if heartbeat_bytes else 0
-        )
+        self._heartbeat_budget_bytes = heartbeat_bytes - len(WORLDSERVER_OUTPUT_TRUNCATED_MARKER.encode("utf-8"))
         self._prefix = BoundedOutputParts(max_bytes=prefix_bytes)
         self._cleanup = BoundedOutputParts(max_bytes=cleanup_bytes)
         self._heartbeat: dict[str, BoundedOutputParts] = {}
@@ -203,12 +201,11 @@ class WatchdogOutputBuffer:
         key = str(command)
         if key in self._heartbeat:
             self._compacted = True
-        # A new key is allowed for custom scripts, but never gets an
-        # unbounded allocation.  Known keys share the heartbeat budget;
-        # unknown keys use the smallest known section budget.
-        section_bytes = self._heartbeat_section_bytes
-        if key not in self._known_heartbeat_commands and not section_bytes:
-            section_bytes = 1
+        # Share the fixed heartbeat budget across latest responses. Calibration
+        # exports grow with the timeline while status remains small; equal
+        # partitions truncated a 1376-chunk reply despite unused budget.
+        other_bytes = sum(part.written_bytes for name, part in self._heartbeat.items() if name != key)
+        section_bytes = max(0, self._heartbeat_budget_bytes - other_bytes)
         section = BoundedOutputParts(max_bytes=section_bytes)
         section.append(value)
         self._heartbeat[key] = section
@@ -222,6 +219,7 @@ class WatchdogOutputBuffer:
             [
                 *self._prefix,
                 *(value for part in self._heartbeat.values() for value in part),
+                WORLDSERVER_OUTPUT_TRUNCATED_MARKER if any(part.truncated for part in self._heartbeat.values()) else "",
                 *self._cleanup,
             ]
         )
@@ -1694,6 +1692,7 @@ def strip_calibration_status_chunks(output: str) -> str:
 def combined_calibration_status(
     payloads: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    attempted = False
     latest: dict[str, Any] = {}
     transport: dict[str, Any] = {
         "direct": False,
@@ -1710,6 +1709,7 @@ def combined_calibration_status(
     for row in payloads:
         action = str(row.get("action") or "")
         if action == "botauto_calibrate_status":
+            attempted = False
             latest = row
             chunks = {}
             expected = 0
@@ -1724,12 +1724,21 @@ def combined_calibration_status(
             }
             continue
         if action == "botauto_calibrate_status_chunk":
+            attempted = True
+            if transport.get("direct") or transport.get("complete_marker"):
+                chunks = {}
+                expected = 0
+            latest = {}
+            transport = {"direct": False, "complete_marker": False, "expected_chunks": 0,
+                         "received_chunks": 0, "total_bytes": 0, "reassembled": False}
             try:
                 sequence = int(row.get("sequence"))
                 chunk_count = int(row.get("chunk_count"))
+                schema_version = int(row.get("calibration_status_chunk_schema_version") or 0)
             except (TypeError, ValueError):
                 latest = {}
-                transport["reassembled"] = False
+                chunks = {}
+                expected = 0
                 continue
             row_cohort = str(row.get("cohort_id") or "")
             if sequence == 0:
@@ -1744,7 +1753,7 @@ def combined_calibration_status(
                 or sequence >= expected
                 or row_cohort != cohort_id
                 or row.get("encoding") != "base64"
-                or int(row.get("calibration_status_chunk_schema_version") or 0) != 1
+                or schema_version != 1
             ):
                 latest = {}
                 transport = {
@@ -1755,6 +1764,8 @@ def combined_calibration_status(
                     "total_bytes": 0,
                     "reassembled": False,
                 }
+                chunks = {}
+                expected = 0
                 continue
             chunks[sequence] = row
             transport = {
@@ -1769,14 +1780,23 @@ def combined_calibration_status(
         if action != "botauto_calibrate_status_complete":
             continue
 
+        attempted = True
+        if transport.get("direct") or transport.get("reassembled"):
+            chunks = {}
+            expected = 0
+        latest = {}
+        transport = {"direct": False, "complete_marker": True, "expected_chunks": 0,
+                     "received_chunks": len(chunks), "total_bytes": 0, "reassembled": False}
         try:
             completion_expected = int(row.get("chunk_count"))
             total_bytes = int(row.get("total_bytes"))
+            schema_version = int(row.get("calibration_status_chunk_schema_version") or 0)
         except (TypeError, ValueError):
             completion_expected = 0
             total_bytes = 0
+            schema_version = 0
         complete = (
-            int(row.get("calibration_status_chunk_schema_version") or 0) == 1
+            schema_version == 1
             and str(row.get("cohort_id") or "") == cohort_id
             and completion_expected == expected
             and expected > 0
@@ -1809,7 +1829,12 @@ def combined_calibration_status(
             "total_bytes": total_bytes,
             "reassembled": complete,
         }
+        # A completion closes this assembly, including a rejected completion.
+        # A later footer cannot revive it without a fresh sequence-zero frame.
+        chunks = {}
+        expected = 0
 
+    transport["attempted"] = attempted
     return latest, transport
 
 
@@ -1909,6 +1934,8 @@ def enrich_combat_calibration_reference(
 
 def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
     """Evaluate one explicit Phase 8 calibration window's transport integrity."""
+    if "worldserver_output_truncated" in (report.get("failure_labels") or []):
+        report.setdefault("combat_calibration_transport", {})["capture_truncated"] = True
     calibration = report.get("combat_calibration") or {}
     requested = report.get("requested_calibration") or {}
     rejections: list[str] = []
@@ -1994,6 +2021,28 @@ def attach_phase8_role_calibration(
     policy_path: Path = Path("experiments/configs/all_spec_role_calibration_policy_v1.json"),
 ) -> dict[str, Any]:
     """Attach canonical target normalization and independent role acceptance."""
+    native_transport = report.get("combat_calibration_transport") or {}
+    incomplete_transport = (
+        any(native_transport.get(key) for key in
+            ("expected_chunks", "received_chunks", "complete_marker", "attempted"))
+        and not native_transport.get("reassembled")
+        and not native_transport.get("direct")
+    )
+    if incomplete_transport or native_transport.get("capture_truncated"):
+        reason = ("combat_calibration_transport_incomplete" if incomplete_transport
+                  else "worldserver_output_truncated")
+        report.update(completion_reason="infrastructure_loss", failure_reason=reason,
+                      failure_labels=[reason], final_evidence_rejections=[reason],
+                      passed=0, failed=1, acceptable_final_evidence=False, all_passed=False)
+        report["role_calibration_record"] = None
+        report["role_calibration_identity"] = {}
+        report["role_calibration_evaluation"] = {"passed": False, "evaluated": False,
+                                                "failure_reasons": [reason]}
+        report["calibration_acceptance"] = {"passed": False, "transport_passed": False,
+                                             "role_calibration_passed": False, "rejections": [reason]}
+        report.setdefault("stages", []).append({"stage": "calibration_transport",
+                                                "passed": False, "missing": [reason]})
+        return report
     requested = report.get("requested_calibration") or {}
     calibration = report.get("combat_calibration") or {}
     record: dict[str, Any] | None = None
@@ -8306,6 +8355,10 @@ def main() -> int:
             max_repeated_decisions=args.max_repeated_decision_count,
             max_death_loops=args.max_death_loop_count,
         )
+    # The saved watchdog report predates cleanup and the final console drain.
+    # Inspect the final bytes too, before calibration acceptance rewrites labels.
+    if WORLDSERVER_OUTPUT_TRUNCATED_MARKER in output:
+        report.setdefault("combat_calibration_transport", {})["capture_truncated"] = True
     report["generated_at_unix"] = int(time.time())
     report["config_autostart"] = config_autostart
     report["config"] = str(effective_config)

@@ -1,45 +1,46 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "class:fire_mage_passive_normalization",
+  "work_unit": "capture:calibration_heartbeat_partition",
   "owner_skill": "raid-performance-loop",
-  "classification": "calibration_spellbook_consumption_and_shared_scheduler",
+  "classification": "calibration_capture_and_native_orb_lifecycle",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "2b661e8b6745a73f477625ed6b6b7df55221aa05",
+  "observed_at_commit": "a3d0719729e86a6a00ef5ea46a2b2ee957e2d500",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Actual-launch spellbook and shared scheduler independently approved; freeze and queued build next",
+  "gate_state": "Capture and Orb implementations independently approved; freeze and queued build next",
   "first_broken_edge": {
-    "id": "calibration_reset_does_not_consume_updated_known_spell_catalog",
-    "owner_classification": "raid_role_implementation",
-    "cause": "Actual reset-only launch never applied catalog spell89744 to actor1304; fresh database and native stat ledger remain unchanged.",
+    "id": "fixed_heartbeat_partition_truncates_complete_native_calibration",
+    "owner_classification": "raid_evidence_lifecycle",
+    "cause": "Final1376chunk Fire export exceeded one20MiB partition while shared40MiB heartbeat budget had unused space;111suffixchunks/footer were lost.",
     "review_state": "implementation_independently_approved_live_validation_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "84e0a82810d3aef3ee88e913f317ece2d589badb81ed595cc1e8a48187f4a5ae"
+    "sha256": "24ea008b53873e83f988e067e886caf11964fcb0bc0cd16202a3c62f007519cf"
   },
   "scope_lock": {
-    "objective": "Consume canonical learned spells in actual calibration preparation, then validate bounded reference-driven native combat cadence.",
+    "objective": "Retain complete bounded calibration exports and prevent native Flame Orb idle owner-follow from resuming after scripted point motion.",
     "owned_files": [
       "tools/bot_ml/run_live_bot_validation.py",
-      "tools/bot_ml/phase8_fixture_contract.py",
-      "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h",
-      "src/server/game/Bots/BotClassSpecActionProfile.h",
-      "src/server/game/Bots/BotClassSpecActionProfile.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotPreparation.cpp"
+      "src/server/game/Bots/BotCalibrationSummonObservation.h",
+      "src/server/scripts/World/npcs_special.cpp",
+      "src/server/scripts/World/npcs_special_care.cpp",
+      "src/server/scripts/World/npcs_special_services.cpp",
+      "src/server/scripts/World/npcs_special_toys.cpp",
+      "src/server/scripts/World/npcs_special_summons.cpp"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Selected offline canonical actor receives expected learned spells through ordinary character_spell provisioning and successful readback before server startup.",
-    "Native Wizardry89744 and1.05 intellect multiplier are observed; compare normalized INT8099.7/SP11528.242/mana140759.5 allowing native integer rounding.",
-    "Promoted combat specs use validated native interval with100ms floor; preserve channel semantics and fallback/noncombat controls.",
-    "Focused actual-caller fixtures and independent review pass; one queued build and exact300s Fire window measures DPS/HPS, cadence, movement and deaths.",
-    "Publish closed evidence, verify fresh remote reconstruction and evict exact payloads after raw review."
+    "Full1376chunk-sized calibration exports survive actual controller retention under unchanged64MiB cap with cleanup retained.",
+    "Any truncated or malformed attempted export is explicitly infrastructure loss before role evaluation; complete payload DPS failures remain role failures.",
+    "Only Orb inherited follow initialization changes; all moved NPC bodies and28registration identities/order remain identical; changedC++filesbelow1000lines.",
+    "Independent reviews, focused actual-caller fixtures and one queued native build pass.",
+    "Exact300s Fire window retains normalized stats/cadence/movement/deaths/DPS/HPS, no resumed ownerFollow and nonzero attributable82739 damage.",
+    "Publish closed evidence, verify fresh remote reconstruction, then evict exact payloads after raw reads complete."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -50,7 +51,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Freeze reviewed spellbook and scheduler batch, build once, verify Wizardry and native100ms cadence in exact300s Fire scoring.",
+  "next_action": "Freeze reviewed capture/Orb batch, build once, run exact 300-second Fire calibration with complete export and native Orb motion/damage verification.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -96,7 +97,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approved_for_build",
-    "scope": "Consume canonical learned spells in actual calibration preparation, then validate bounded reference-driven native combat cadence.",
+    "scope": "Retain complete bounded calibration exports and prevent native Flame Orb idle owner-follow from resuming after scripted point motion.",
     "live_verified": false
   },
   "related_edges": [
@@ -155,18 +156,25 @@
     "dvc_pointer": "artifacts/cata_raid_program/elemental_calibration_27200f36cc_20260908.tar.gz.dvc"
   },
   "latest_fire_calibration": {
-    "source_commit": "2b661e8b6745a73f477625ed6b6b7df55221aa05",
+    "source_commit": "a3d0719729e86a6a00ef5ea46a2b2ee957e2d500",
     "scoring_started": true,
+    "native_window_complete_observed": true,
     "scored_seconds": 300,
-    "measured_dps": 23839.46,
+    "measured_dps": 28821.683333333334,
+    "measurement_basis": "exact native prefix fields; full export incomplete",
+    "calibration_transport_complete": false,
     "dps_accepted": false,
-    "failure": "reference_hard_floor",
-    "owned_aura_setup_gate_passed": true,
-    "learned_wizardry_present": false,
+    "failure": "infrastructure_loss",
+    "learned_wizardry_present": true,
+    "native_intellect_multiplier": 1.05,
     "cleanup_passed": true,
     "postrun_build_verified": true,
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_2b661e8b67_20260909.tar.gz.dvc"
+    "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_a3d0719729_20260909.tar.gz.dvc",
+    "measured_hps": 0,
+    "decision_count": 2998,
+    "native_successful_actions": 169,
+    "observed_mean_decision_interval_ms": 100.087
   }
 }

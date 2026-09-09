@@ -2,6 +2,7 @@
 #define TRINITY_BOT_CALIBRATION_SUMMON_OBSERVATION_H
 
 #include "Map.h"
+#include "MotionMaster.h"
 #include "Player.h"
 #include "Spell.h"
 #include "SpellInfo.h"
@@ -145,6 +146,8 @@ inline std::string Capture(Player const* owner, Unit* offensiveTarget, uint64 el
         json << ",\"position\":"; position(unit);
         json << ",\"moving\":" << (unit->isMoving() ? "true" : "false")
              << ",\"rooted\":" << (unit->HasUnitState(UNIT_STATE_ROOT) ? "true" : "false");
+        json << ",\"idle_motion_type\":" << uint32(unit->GetMotionMaster()->GetMotionSlotType(MOTION_SLOT_IDLE))
+             << ",\"active_motion_type\":" << uint32(unit->GetMotionMaster()->GetMotionSlotType(MOTION_SLOT_ACTIVE));
         json << ",\"offensive_target_distance\":";
         if (offensiveTarget) json << unit->GetExactDist(offensiveTarget); else json << "null";
         json << ",\"offensive_target_los\":";

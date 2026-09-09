@@ -51,7 +51,10 @@ struct SpellInfo{uint32 Id=12345;};struct Spell{SpellInfo info;SpellInfo const* 
 struct Creature;struct TempSummon;struct Totem;struct Player;
 struct Aura{uint32 id;uint32 GetId()const{return id;}};
 struct AuraApplication{Aura* base;Aura* GetBase()const{return base;}};
+enum MovementSlot { MOTION_SLOT_IDLE, MOTION_SLOT_ACTIVE };
+struct MotionMaster { uint32 idle=14,active=8;uint32 GetMotionSlotType(MovementSlot slot)const{return slot==MOTION_SLOT_IDLE?idle:active;} };
 struct Unit{
+ MotionMaster motion;MotionMaster* GetMotionMaster(){return &motion;}
  bool moving=true,rooted=false;bool isMoving()const{return moving;}bool HasUnitState(int)const{return rooted;}
  float x=0,y=0,z=0,o=0;bool los=true;std::map<int,AuraApplication*> auras;
  auto const& GetAppliedAuras()const{return auras;}
@@ -127,7 +130,7 @@ int main(){
  target.x=4;target.y=6;target.z=3;target.o=1;owner.x=8;owner.o=2;
  Aura a{82690},b{123};AuraApplication aa{&a},bb{&b};orb.auras={{3,&aa},{1,&bb},{2,&aa}};
  capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
- target.valid=false;orb.los=false;orb.auras.clear();orb.moving=false;orb.rooted=true;
+ target.valid=false;orb.los=false;orb.auras.clear();orb.moving=false;orb.rooted=true;orb.motion.idle=0;orb.motion.active=19;
  capturePetTimelineState(entry,&target);std::cout<<entry.SummonObservationJson<<'\n';
  owner.victim=nullptr;capturePetTimelineState(entry);std::cout<<entry.SummonObservationJson<<'\n';
 }
@@ -167,6 +170,8 @@ int main(){
     assert orb_valid['offensive_target_position']==dict(x=4,y=6,z=3,orientation=1)
     assert orb['aura_spell_ids']==[123,82690]
     assert orb['moving'] and not orb['rooted']
+    assert orb_invalid['guardians'][0]['idle_motion_type']==0
+    assert orb_invalid['guardians'][0]['active_motion_type']==19  # native MAX_MOTION_TYPE: vacant slot
     assert not orb_invalid['guardians'][0]['moving'] and orb_invalid['guardians'][0]['rooted']
     assert orb['script_id']==17 and orb['script_name']=='npc_"orb\\\n'
     assert orb_invalid['guardians'][0]['aura_spell_ids']==[]
@@ -194,6 +199,7 @@ int main(){
     assert idle['fire_slot']=={'guid':500,'present':True,'owned':True,'entry':15439,'created_by_spell':2894,'alive':True}
     assert idle['foreign_guardians_excluded']==1
     guardian=idle['guardians'][0]
+    assert guardian['idle_motion_type']==14 and guardian['active_motion_type']==8
     assert guardian['in_world'] and guardian['death_state']==0
     assert guardian['summon_type']==1 and guardian['summon_timer_ms']==120000
     assert guardian['summon_lifetime_ms']==120000

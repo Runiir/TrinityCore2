@@ -2,46 +2,50 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
-Source `2b661e8b67` is committed and pushed. Its queued native build and exact
-300.000-second Fire calibration completed. Native exit, cleanup and post-run
-binary verification passed. Fire dealt 7,151,838 damage / 23,839.46 DPS with zero
-HPS. The owned player/target aura gate now passes; the only role rejection is
-`reference_hard_floor`. Performance is not accepted.
+Source `a3d0719729` is committed and pushed. Its build passed. The actual Fire
+launch learned Wizardry 89744 for actor 1304, with fresh database readback and a
+native 1.05 intellect multiplier. The retained 2,998 decisions average 100.087 ms.
+Do not repeat these repaired setup and scheduler edges unchanged.
 
-The learned-passive repair did not reach the live actor. The actual calibration
-launch reset the pool and restocked consumables but never applied the generated
-spell catalog. Fresh database readback still has no Wizardry 89744 for actor1304;
-the native intellect multiplier remains1.0. Generating correct SQL was insufficient.
-The next controller repair reconciles canonical learned spells for the selected
-offline actor and verifies readback before startup. Native class, canonical spec,
-pool identity and idle state must agree. No manual aura or gear changes.
+The final export exceeded a fixed 20 MiB heartbeat partition despite unused
+capacity in the shared budget. Only 1,265 of 1,376 chunks survived. Exact native
+prefix fields report 8,646,505 damage over 300 seconds, or 28,821.683 DPS, with
+169 successful actions and zero recorded HPS, movement loss or deaths. This is
+partial evidence, not an accepted calibration. Native exit, cleanup and post-run
+binary verification passed. The frozen partial review and 4,194,504-byte archive
+are remotely verified, and exact raw payloads are evicted. The terminal reason
+is infrastructure loss; the old controller incorrectly reported a role failure.
 
-The separate shared scheduler repair projects each promoted reference policy into
-a native interval with a100ms floor. Fire previously used500ms, confirmed in live
-decision timelines. WoWSims is event-driven: this projection is an approximation,
-not exact10ms simulator scheduling. Preserve channel-interrupt semantics and
-legacy unknown/noncombat/healer/tank calibration branches. Independent scheduler
-review approved; live cadence and performance remain unproven.
+Both next-batch repairs are independently approved:
+- Capture shares the existing 40 MiB heartbeat budget while preserving the
+  8 MiB startup and 16 MiB cleanup reservations and 64 MiB total cap. Truncated
+  or malformed exports remain infrastructure failures through final acceptance,
+  including late cleanup output and rejected completion markers. The actual
+  full-size controller and final-assembly regression suite passes 30 tests.
+- Flame Orb suppresses inherited idle owner-follow initialization. Native
+  lifecycle code, current DBC/WorldDB inputs and all five recorded return paths
+  prove the defect. Aura, targeting, damage, pathing and timers are unchanged.
+  Four mechanical NPC modules plus a compact loader preserve all 28 script
+  registrations and all other bodies; each changed C++ file is below 1,000 lines.
+  Native idle/active motion observations will verify the repaired lifecycle.
+  Its four focused tests and independent review pass; native compilation and
+  live damage remain unverified.
 
-Flame Orb observations show its82690 aura applies and a sampled distance falls
-below10yards before it moves back toward the owner; it still deals zero damage.
-Victimless AI is intentional. No Orb gameplay repair is admitted from these facts
-alone. The closed role review is frozen. Its 4,468,975-byte archive was remotely
-reconstructed and exact raw payloads evicted.
+Next: freeze this bounded batch, build once, and run exact Fire calibration.
+Require a complete export, normalized stats, 100 ms decision cadence, no latent
+Orb owner-follow and attributable 82739 damage. The unchanged promoted reference
+is 35,138.962 DPS; its 85% optimization target is 29,868.118 DPS. No guessed
+coefficients, manual auras, dummy exceptions or bot terrain workarounds.
 
-Both implementations are independently approved. Freeze this bounded batch,
-build once, then run Fire again. Require persisted89744 and native1.05 application
-before comparing normalized stats and DPS. The historical catalog test now
-reverses only the known Wizardry additions and preserves exact original bytes;
-the reset-admission test now reaches its intended guard after asset admission.
-
-Latest canonical Magmaw remains the accepted `090f24f4b8` clear:29,972,402 damage
-/233 damage-bearing seconds =128,636.918 DPS and19,225.751 HPS. Exact hostile span
-233.490s; encounter-start to death271.011s. Two trash deaths recovered, zero boss
-deaths, all ten alive. All ten loadouts matched canonical inputs. Its archive and
-the earlier Fire calibration are remotely verified and exact raw payloads evicted.
-Path containment, Hunter head autorepeat and Fire native landings remain accepted.
-Do not rerun Magmaw merely to repeat those accepted observations.
+The preceding `2b661e8b67` Fire archive is remotely verified and evicted. It
+measured 23,839.46 DPS while missing Wizardry; owned aura validation passed.
+Latest canonical Magmaw remains the accepted `090f24f4b8` clear: 128,636.918 DPS
+and 19,225.751 HPS over 233 damage-bearing seconds. Exact hostile span is
+233.490 seconds; encounter-start to death is 271.011 seconds. Two trash deaths
+recovered, zero boss deaths, all ten alive, and all loadouts matched canonical
+inputs. Its archive is remotely verified and evicted. Path containment, Hunter
+head autorepeat and Fire native landings remain accepted. Do not rerun Magmaw
+merely to repeat those observations.
 
 ## Prior accepted calibration and raid evidence
 
