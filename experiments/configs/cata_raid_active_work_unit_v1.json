@@ -8,7 +8,7 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Four bounded patches independently approved; joined23tests passed; commit and queuedbuild next",
+  "gate_state": "2751 native build failed extracted guardian include prerequisites; Common.h-before-Pet.h correction pending build",
   "first_broken_edge": {
     "id": "hunter_autorepeat_retains_wrong_target",
     "owner_classification": "raid_role_implementation",
@@ -17,7 +17,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "26f57427f66afb1d16842b88d5b6c31c1c8b289b4a5aab18cfd2cd821d015332"
+    "sha256": "fe5f717f5e9de27f13efb359b04191a63ac86ceb94d6bb22337b8cb3dc76e7dd"
   },
   "scope_lock": {
     "objective": "Repair proven Hunter targeting and guardian health owner lookup; observe exact healer native controls and pending Fire grounding receipt.",
@@ -55,7 +55,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Join Hunter autorepeat and guardian health repairs with exact path/submitted-receipt capture, review, build once, run canonical Magmaw.",
+  "next_action": "Finish include-only correction review, commit and resume incremental queued build, then canonical Magmaw.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,

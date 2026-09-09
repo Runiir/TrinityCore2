@@ -73,8 +73,12 @@ accepted from aggregate DPS. Guardian lifecycle capture is accepted. The prior
 2a compile failure was a missing GridDefines include, corrected in d701. Review
 of the next health split caught a unity constant collision before building;
 its correction passed independent review. The joined affected suite passes
-23 tests. All four bounded patches passed independent review;
-build once, validate canonical Magmaw, publish/clean, then route remaining losses.
+23 tests. All four bounded patches passed independent review. Source 2751 was
+committed and pushed, but native compilation found that the extracted guardian
+file included Pet.h before its Common.h prerequisites (uint8 and M_PI). The
+include-only correction restores that order; no gameplay or fixture behavior
+changes. Retain the failed build receipt, finish the corrected incremental build,
+validate canonical Magmaw, publish/clean, then route remaining losses.
 
 ## Earlier result: 816 setup accepted, DPS unresolved
 

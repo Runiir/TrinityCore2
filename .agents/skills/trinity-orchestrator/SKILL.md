@@ -25,6 +25,13 @@ For a critical regression, run its explicit pytest node ID or verify that the
 focused selector actually collects it. A passing filtered suite is not evidence
 for a new test whose name the filter excludes.
 
+When splitting a native translation unit, preserve its prerequisite include order
+and check file-local names if unity is enabled in the actual build receipt/cache;
+a dormant CMake unity branch does not prove the active configuration. Extracted-body
+fixtures do not compile that native include chain. In this core, Pet.h depends
+on Common.h being available first; a plausible shortened include list can fail
+after all behavioral fixtures pass. Keep native compilation a separate claim.
+
 Use Luna max for exact narrow implementation with immutable evidence, owned production
 and affected test files, one hypothesis, excluded changes, a focused command, and concrete
 acceptance. Use Sol high for causal ambiguity, architecture, or independent risky-change

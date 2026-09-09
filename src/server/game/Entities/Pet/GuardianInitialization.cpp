@@ -16,6 +16,7 @@
  */
 
 
+#include "Common.h"
 #include "Pet.h"
 #include "Player.h"
 #include "ObjectMgr.h"
