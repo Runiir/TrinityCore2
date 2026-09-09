@@ -324,6 +324,7 @@ enum MageOrb
 
     SPELL_FLAME_ORB_AURA        = 82690,
     SPELL_FROSTFIRE_ORB_AURA    = 84717,
+    SPELL_ORB_SELF_SNARE        = 82736,
     SPELL_FIRE_POWER_EXPLOSION  = 83619,
     SPELL_FIRE_POWER_R1         = 18459,
     NPC_FLAME_ORB               = 44214,
@@ -373,7 +374,7 @@ enum MageOrb
                      DoCastSelf(me->GetEntry() == NPC_FLAME_ORB ? SPELL_FLAME_ORB_AURA : SPELL_FROSTFIRE_ORB_AURA, true);
                      break;
                  case EVENT_EARLY_EXPLOSION:
-                     if (!me->IsInCombat())
+                     if (!me->IsInCombat() && !me->HasAura(SPELL_ORB_SELF_SNARE))
                          if (Unit* summoner = me->ToTempSummon()->GetSummoner())
                              if (Aura* aura = summoner->GetAuraOfRankedSpell(SPELL_FIRE_POWER_R1))
                                  if (roll_chance_i(aura->GetSpellInfo()->ProcChance))

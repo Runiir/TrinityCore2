@@ -1,43 +1,45 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "fire:orb_straight_collision_motion",
+  "work_unit": "capture:soulburn_native_diagnostic_completeness",
   "owner_skill": "raid-performance-loop",
-  "classification": "native_projectile_destination_and_execution",
+  "classification": "native_diagnostic_completeness",
   "epoch_id": "roster_execution_review_20260908",
   "observed_at_commit": "ec02d7196a279d069ffac6c32f4ec4a99a39f404",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "979f5c832f Orb build passed; live pending. Hunter identity design open; Affliction throughput passes but actual Tailoring is missing.",
+  "gate_state": "CAP-002 and DPS-007 through DPS-010 independently approved. Freeze batch and build once.",
   "first_broken_edge": {
-    "id": "orb_ground_navmesh_rewrites_forward_projectile_destination",
-    "owner_classification": "raid_class_mechanics_implementation",
-    "cause": "Ground-summoner endpoint calculation and second MovePoint pathfinding produce a route outside damage radius before its first tick.",
-    "review_state": "implementation_independently_approved_live_pending"
+    "id": "native_soulburn_diagnostic_silently_drops_scoring_tail",
+    "owner_classification": "raid_evidence_lifecycle",
+    "cause": "Native 2,048 cap omits about 95 seconds although all 2,239 output chunks reassemble.",
+    "review_state": "independently_approved_native_validation_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "5d4bf99e863d55d2aa985aa8300094fbbb2562b7b8ca16038f37163b29d12b80"
+    "sha256": "3bda3e0a360ce67b12030d5fc3c4c434dc3bc745509d33d2bb053917262004ef"
   },
   "scope_lock": {
-    "objective": "Preserve existing collision clipping and default movement behavior while Orb uses a straight native projectile path.",
+    "objective": "Retain and prove complete native diagnostics across the supported scoring window.",
     "owned_files": [
-      "src/server/game/Entities/Object/WorldObjectMovement.h",
-      "src/server/game/Entities/Object/WorldObjectMovement.cpp",
-      "src/server/scripts/World/npcs_special_summons.cpp",
-      "tests/test_mage_flame_orb_scripted_motion.py",
-      "tests/test_worldobject_straight_collision.py"
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h",
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrAfflictionLandedEvent.cpp",
+      "tools/bot_ml/run_live_bot_validation.py",
+      "tests/test_affliction_landed_event_telemetry.py",
+      "tests/test_calibration_chunk_capture.py",
+      "tests/test_rotation_mechanics_review.py"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Default callers retain existing native pathfinding/collision behavior.",
-    "Orb producer and both movement submissions use collision-clipped straight motion; no spell, target, timer or coefficient changes.",
-    "Focused behavioral tests and independent review pass; changed C++ files remain below 1000 lines.",
-    "Matched 300-second Fire run retains complete evidence, accepted stats/cadence and idle motion zero; Orb gains 82736 and nonzero owner-attributed 82739.",
-    "Publish closed evidence and verify remote reconstruction before exact raw eviction."
+    "3,001 eligible observations retained without loss; 4,097 attempts explicitly report one dropped row.",
+    "Actual final evidence acceptance rejects missing or incomplete native diagnostics while preserving independent DPS/HPS and transport results.",
+    "Full-size export survives existing bounded controller capture and parsing.",
+    "Independent review and native build pass; matched Affliction window has complete native coverage and verified profession setup.",
+    "Publish closed evidence, verify remote reconstruction and evict exact payloads after readers finish."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -46,9 +48,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
-  "ready_for_live_verification": true,
-  "next_action": "Freeze reviewed Orb repair, build, and verify matched Fire trajectory, snare and landed damage while independent Hunter identity diagnosis continues.",
+  "ready_for_build": true,
+  "ready_for_live_verification": false,
+  "next_action": "Freeze reviewed batch, build once, then Affliction 300-second validation first for CAP-002 and DPS-008.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -94,7 +96,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approved_for_build",
-    "scope": "Preserve existing collision clipping and default movement behavior while Orb uses a straight native projectile path.",
+    "scope": "CAP-002 native diagnostic completeness",
     "live_verified": false
   },
   "related_edges": [
@@ -173,10 +175,12 @@
     "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_ec02d7196a_20260909.tar.gz.dvc"
   },
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-006",
+  "error_id": "CAP-002",
   "related_open_error_ids": [
     "DPS-007",
     "DPS-008",
+    "DPS-009",
+    "DPS-010",
     "OBS-001"
   ]
 }

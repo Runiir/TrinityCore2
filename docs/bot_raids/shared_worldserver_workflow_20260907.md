@@ -3,43 +3,40 @@
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
-Source `ec02d7196a` is committed, pushed and built. Three exact 300-second
-calibrations completed on that immutable build with full exports and verified
-native exit, offline character cleanup and post-run binary receipts:
+Immediate priority CAP-002 is implemented and independently approved. The native
+Soulburn diagnostic stopped at 2,048 rows around 205 seconds despite complete
+transport. The repair retains the supported 300-second window, records explicit
+loss counters and rejects incomplete diagnostics independently of DPS/HPS.
+Its 44 focused checks include final acceptance and enlarged actual capture.
 
-- Fire: 8,706,311 damage / 29,021.037 DPS / 0 HPS, 82.5893% of reference.
-  Setup and cadence pass. The 75% floor passes; 85% target misses by 847.081 DPS.
-  Both reviews are frozen; evidence is remotely verified and exact raw payloads
-  evicted. Capture and no-follow repairs are live-accepted. Orb damage is zero.
-- Marksmanship: 6,932,030 damage / 23,106.767 DPS / 0 HPS. The pet operates,
-  but native and Python compare an old 11-row persisted catalog with a loaded
-  14-row spellbook. A fresh post-run database SELECT also sees those 14 rows.
-  The first proposed loader-receipt design is paused: it would require old
-  persisted input that normal native saving replaces. A bounded source/DBC
-  review is determining the correct canonical identity before implementation.
-  Actual low DPS remains unresolved. Raw evidence is retained for closure.
-- Affliction: 8,772,073 damage / 29,240.243 DPS, about 93.4% of reference.
-  Complete export and throughput checks pass; review reports 388.6 self-healing
-  HPS. Fresh actor 1306 database readback has no Tailoring 197 row, so corrected
-  profession setup is NOT accepted (DPS-008). Raw evidence is retained for closure.
+The next single build batches reviewed profession reconciliation (DPS-008,
+73 tests), the stable Hunter pet fixture (DPS-007, six tests), and the Orb
+successful-hit lifetime guard (DPS-009, five tests). All three have independent
+approval; native validation remains pending. Hunter Mail Specialization parent
+87506 is now a proven missing setup input (DPS-010) and its implementation and independent review pass 24 focused checks.
+The full batch is approved for one native build, then Affliction first to prove
+CAP-002 over the full scoring window.
 
-Next approved implementation is native Orb straight movement. The forward
-endpoint currently passes through ground-navmesh routing, followed by a second
-pathfinding pass. The repair shares existing collision logic through a small
-native helper while preserving Object.h and every default caller. Orb explicitly
-uses collision-clipped straight movement at destination production and both
-MovePoint submissions. Static/dynamic obstacles, allowed-Z behavior, spell
-parameters, target rules, timers and no-follow remain unchanged. Five focused
-behavioral tests and independent Sol review pass. Source `979f5c832f` is pushed and its native build passed. Matched Fire live
-validation remains required, including 82736 and attributable 82739 damage.
+Latest Fire source `979f5c832f` completed 300 seconds with 29,706.767 DPS and
+0 HPS, all 1,399 chunks retained, verified exit, cleanup and binary receipt.
+All five Orb trajectories and successful-hit snares are accepted. The remaining
+five-second despawn is DPS-009. Required Tailoring was absent. Reviews are frozen;
+evidence is remotely verified and exact raw payloads are evicted. This is not
+complete DPS acceptance.
 
-Elemental's accepted 88.9522% calibration remains closed. Latest canonical
-Magmaw remains the accepted `090f24f4b8` clear: 128,636.918 DPS and 19,225.751 HPS
-over 233 damage-bearing seconds, two recovered trash deaths, zero boss deaths,
-all ten alive, exact canonical loadouts. Its evidence is remotely verified and
-evicted. Retained WCL has 1 tank, 1 healer and 8 DPS versus our 2/3/5; its
-aggregate is not a roster floor. No current development calibration is training
-eligible because its external evidence identity remains incomplete.
+Earlier `ec02d7196a` windows measured Fire 29,021.037 DPS / 0 HPS, Hunter
+23,106.767 / 0, and Affliction 29,240.243 / 388.6. All three transports are
+complete. Affliction's native diagnostic and missing profession prevent full
+acceptance despite its passing throughput. Their archives are remotely verified;
+all three exact raw payloads are evicted after completed reviews.
+
+Elemental's accepted 32,911.683 DPS (88.9522% of reference) remains closed.
+Latest canonical Magmaw is the accepted `090f24f4b8` clear: 128,636.918 DPS and
+19,225.751 HPS over 233 damage-bearing seconds, two recovered trash deaths,
+zero boss deaths, all ten alive and exact canonical loadouts. Its evidence is
+remotely verified and evicted. Retained WCL has 1 tank / 1 healer / 8 DPS versus
+our 2 / 3 / 5; that aggregate is not a matched roster floor. Development evidence
+remains training-ineligible pending full qualification identity.
 
 ## Prior accepted calibration and raid evidence
 
@@ -128,6 +125,9 @@ publish/clean, then route remaining losses.
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
+Immediate priority CAP-002: the native Soulburn diagnostic silently stops at
+2,048 rows despite complete transport. Its bounded retention, completeness
+receipt and final evidence rejection repair is in progress.
 
 Source `8160201cb1` passed independent review and one verified build. Its exact
 300-second Elemental calibration is closed: 6,729,475 damage, 22,431.583 DPS,

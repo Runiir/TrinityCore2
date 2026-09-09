@@ -12698,9 +12698,11 @@ def test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance(tmp
             for spell in pet["spells"]
         }
         assert pet_spells == {
-            2649: 1,
-            17253: 1,
+            1742: 193,
+            2649: 193,
+            17253: 193,
             23145: 193,
+            24604: 193,
             53184: 1,
             53186: 1,
             53205: 1,
@@ -12709,6 +12711,7 @@ def test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance(tmp
             61681: 1,
             61683: 1,
             62760: 1,
+            65220: 1,
         }
     assert hunter_pet_offsets == {113, 114, 115}
     survival_pet_spells = {

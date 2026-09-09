@@ -43,6 +43,13 @@ be lost after ring eviction if the delta export omits it.
 When increasing decision or sampling frequency, test the resulting full-size
 export through controller retention, parsing and final acceptance recomputation.
 Incomplete transport is an infrastructure failure, not a class-tuning signal.
+Complete transport does not prove that native diagnostic arrays are complete.
+Check bounded producers across the full scoring window at the current cadence;
+retain explicit attempted/retained/dropped receipts for a repaired loss path.
+Keep diagnostic-loss rejection separate from the measured DPS/HPS result.
+Permanent rejection regressions must run after raw evidence eviction. Use a small
+repository-owned fixture for final acceptance; keep optional hydrated-payload
+size checks separate and label skips explicitly.
 
 Review the actual launch-to-consumer path, including every identity used to select
 the runtime actor and its inputs. Return all known blocking findings together;

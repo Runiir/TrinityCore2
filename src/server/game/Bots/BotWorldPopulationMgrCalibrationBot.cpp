@@ -424,7 +424,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         {
             ++metrics.DeathCount;
             metrics.DeathRecorded = true;
-            if (metrics.DecisionTimeline.size() < 4096)
+            if (metrics.DecisionTimeline.size() < CalibrationMetrics::MaxDecisionObservations)
             {
                 CalibrationMetrics::DecisionTimelineEntry entry;
                 entry.ElapsedMs = NowMs() - Cohort().CalibrationScoredStartedMs;
@@ -827,7 +827,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         if (scored)
         {
             ++metrics.MovementRangeLossTicks;
-            if (metrics.DecisionTimeline.size() < 4096)
+            if (metrics.DecisionTimeline.size() < CalibrationMetrics::MaxDecisionObservations)
             {
                 CalibrationMetrics::DecisionTimelineEntry entry;
                 entry.ElapsedMs = NowMs() - Cohort().CalibrationScoredStartedMs;
@@ -899,7 +899,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
             if (result == BotActionResult::Ok)
                 ++metrics.Successes;
         }
-        if (metrics.DecisionTimeline.size() < 4096)
+        if (metrics.DecisionTimeline.size() < CalibrationMetrics::MaxDecisionObservations)
         {
             CalibrationMetrics::DecisionTimelineEntry entry;
             entry.ElapsedMs = NowMs() - Cohort().CalibrationScoredStartedMs;

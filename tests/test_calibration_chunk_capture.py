@@ -313,3 +313,201 @@ def test_attempted_incomplete_export_keeps_specific_reason_with_truncation(monke
     capture.AcceptanceRecomputer().recompute(report, identity_required=False, session_required=False)
     assert report['completion_reason'] == 'infrastructure_loss'
     assert report['failure_reason'] == 'combat_calibration_transport_incomplete'
+
+
+def soulburn_receipt(retained, dropped=0):
+    return {'schema': 'trinity_affliction_soulburn_decision_telemetry_v1',
+            'capacity': 4096, 'attempted': retained + dropped, 'retained': retained,
+            'dropped': dropped, 'first_attempted_elapsed_ms': 0,
+            'last_attempted_elapsed_ms': (retained + dropped - 1) * 100,
+            'first_retained_elapsed_ms': 0, 'last_retained_elapsed_ms': (retained - 1) * 100,
+            'complete': dropped == 0}
+
+
+def frame_calibration_payload(payload):
+    raw = json.dumps(payload, separators=(',', ':')).encode()
+    parts = [raw[i:i+12288] for i in range(0, len(raw), 12288)]
+    frames = [json.dumps({'action': 'botauto_calibrate_status_chunk', 'ok': True,
+        'cohort_id': 'default', 'calibration_status_chunk_schema_version': 1,
+        'sequence': i, 'chunk_count': len(parts), 'encoding': 'base64',
+        'data': base64.b64encode(part).decode()}, separators=(',', ':')) for i, part in enumerate(parts)]
+    frames.append(json.dumps({'action': 'botauto_calibrate_status_complete', 'ok': True,
+        'cohort_id': 'default', 'calibration_status_chunk_schema_version': 1,
+        'chunk_count': len(parts), 'total_bytes': len(raw), 'payload_ok': True}, separators=(',', ':')))
+    return '\n'.join(frames) + '\n'
+
+
+@pytest.fixture(scope='module')
+def retained_affliction_payload():
+    import os
+    directory = Path(os.environ.get('CAP002_CLOSED_AFFLICTION_DIR',
+        '/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/calibration-affliction_warlock-ec02d7196a'))
+    log = directory/'worldserver_output.log'
+    if not log.is_file():
+        pytest.skip('CAP-002 retained closed native payload not available; no hydration')
+    output = log.read_text()
+    payloads = capture.parse_json_objects(output)
+    payload, transport = capture.combined_calibration_status(payloads)
+    assert transport['reassembled'] and transport['total_bytes'] == 27504954
+    assert len(payload['previous_window']['bots'][0]['affliction_soulburn_decisions']) == 2048
+    statuses = [row for row in payloads if row.get('action') == 'botauto_status']
+    status = json.dumps(statuses[-1], separators=(',', ':')) + '\n' if statuses else ''
+    return payload, status
+
+
+def extend_closed_soulburn_fixture(payload, dropped=0):
+    import copy
+    extended = copy.deepcopy(payload)
+    # Synthetic size/acceptance fixture only. This does not repair historical
+    # evidence or claim these unobserved decisions occurred during that run.
+    for bot in [extended['bots'][0], extended['previous_window']['bots'][0],
+                extended['best_windows']['single_target'][0]]:
+        retained = 4096 if dropped else 3001
+        original = bot['affliction_soulburn_decisions']
+        bot['affliction_soulburn_decisions'] = [
+            {**original[min(i, len(original)-1)], 'elapsed_ms': i * 100}
+            for i in range(retained)]
+        bot['affliction_soulburn_decision_telemetry'] = soulburn_receipt(retained, dropped)
+    return extended
+
+
+def test_full_300s_affliction_fixture_fits_actual_bounded_controller(retained_affliction_payload):
+    original, status = retained_affliction_payload
+    payload = extend_closed_soulburn_fixture(original)
+    output = frame_calibration_payload(payload)
+    buffer = capture.WatchdogOutputBuffer(heartbeat_commands=['status', 'calibration'])
+    buffer.append_heartbeat('status', status)
+    buffer.append_heartbeat('calibration', output)
+    buffer.append_cleanup('cleanup-preserved\n')
+    assert not buffer.truncated
+    assert len(buffer.render().encode()) <= capture.DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES
+    decoded, transport = capture.combined_calibration_status(capture.parse_json_objects(buffer.render()))
+    assert decoded == payload and transport['reassembled']
+    print({'synthetic_full_affliction_json_bytes': transport['total_bytes'],
+           'chunk_count': transport['received_chunks'], 'framed_bytes': len(output.encode()),
+           'latest_status_bytes': len(status.encode()), 'heartbeat_budget_bytes': buffer._heartbeat_budget_bytes,
+           'heartbeat_headroom_bytes': buffer._heartbeat_budget_bytes - len(output.encode()) - len(status.encode())})
+
+
+def assemble_affliction_final_report(tmp_path, payload):
+    output = frame_calibration_payload(payload)
+    # Direct framing here tests producer loss independently of console capacity.
+    # The supported 3,001-row full response has its own bounded-controller test.
+    saved_report = capture.live_validation_report(output)
+    assert saved_report['combat_calibration_transport']['reassembled']
+    source = inspect.getsource(capture.main)
+    start = source.index('    if watchdog_report:', source.index('    retained_console_output ='))
+    end = source.index('    if args.transport == "session":\n        attempt =', start)
+    namespace = dict(vars(capture))
+    namespace.update(
+        watchdog_report=saved_report, output=output, parsed_output_payloads=capture.parse_json_objects(output),
+        returncode=0, timed_out=False, command=[], incomplete_combat_transport=False,
+        config_autostart=False, effective_config=tmp_path/'world.conf', pool_tag_filter='all_spec_candidate_pool',
+        exact_party_specs=[], validation_route=None, validation_route_manifest=None, validation_route_manifest_path=None,
+        send_start_command=True, calibration_reference_preflight={}, validation_scenario_stage_preflight={},
+        runtime_asset_closure={}, preparation={}, session_lifecycle={}, validation_context={},
+        args=SimpleNamespace(config=tmp_path/'world.conf', party_pool_tag='all_spec_candidate_pool',
+            calibration_only=True, calibration_reference_conditions=False, calibration_self_provided_baseline=True,
+            preserve_worldserver=False, run_to_completion=False, timeout_sec=900,
+            calibration_mode='single_target_300', calibration_target_spec='affliction_warlock',
+            calibration_seed=1, transport='process', output_dir=tmp_path,
+            role_calibration_policy=Path('experiments/configs/all_spec_role_calibration_policy_v1.json')),
+        enrich_combat_calibration_reference=lambda value: value,
+        build_live_validation_standard_marker=lambda *a: {}, attach_stonecore_role_quality_audit=lambda *a: None,
+        attempt_evidence_envelope=lambda *a: {"identity_complete": True,
+            "evidence_class": "synthetic_test_only", "excluded_from_training_corpus": True},
+    )
+    exec(compile(textwrap.dedent(source[start:end]), str(Path(capture.__file__)), 'exec'), namespace)
+    return namespace['report']
+
+
+@pytest.mark.parametrize('dropped', [0, 1])
+def test_closed_affliction_chunks_to_actual_final_acceptance_preserve_diagnostic_gate(
+        tmp_path, retained_affliction_payload, dropped):
+    payload = extend_closed_soulburn_fixture(retained_affliction_payload[0], dropped)
+    report = assemble_affliction_final_report(tmp_path, payload)
+    assert report['combat_calibration_transport']['reassembled']
+    assert report['role_calibration_evaluation']['passed']
+    assert report['role_calibration_record']['metrics']['measured_value'] == pytest.approx(29240.243333333332)
+    target = report['combat_calibration']['previous_window']['bots'][0]
+    assert target['healer_metrics'] == payload['previous_window']['bots'][0]['healer_metrics']
+    assert report['calibration_acceptance']['transport_passed']
+    assert report['calibration_acceptance']['diagnostics_passed'] is (dropped == 0)
+    assert report['all_passed'] is (dropped == 0)
+    assert report['failure_labels'] == (['affliction_soulburn_diagnostics_incomplete'] if dropped else [])
+
+
+@pytest.mark.parametrize('mutation', [
+    lambda bot: bot.pop('affliction_soulburn_decision_telemetry'),
+    lambda bot: bot['affliction_soulburn_decision_telemetry'].update(attempted=3002),
+    lambda bot: bot['affliction_soulburn_decision_telemetry'].update(retained=1),
+    lambda bot: bot['affliction_soulburn_decision_telemetry'].update(complete=False),
+    lambda bot: bot['affliction_soulburn_decision_telemetry'].update(dropped=True),
+    lambda bot: bot['affliction_soulburn_decision_telemetry'].update(last_retained_elapsed_ms=10),
+])
+def test_missing_or_inconsistent_soulburn_receipt_is_not_complete(mutation):
+    bot = {'guid': 1306, 'attempts': 3001, 'affliction_soulburn_decisions': [
+        {'elapsed_ms': i*100} for i in range(3001)],
+        'affliction_soulburn_decision_telemetry': soulburn_receipt(3001)}
+    mutation(bot)
+    report = {'requested_calibration': {'target_spec': 'affliction_warlock', 'mode': 'single_target_300'},
+              'combat_calibration': {'target_guid': 1306, 'previous_window': {'bots': [bot]}}}
+    capture.apply_calibration_only_acceptance(report)
+    assert 'affliction_soulburn_diagnostics_incomplete' in report['failure_labels']
+
+
+@pytest.mark.parametrize('spec,mode', [('fire_mage', 'single_target_300'),
+                                      ('affliction_warlock', 'aoe_300')])
+def test_soulburn_receipt_requirement_preserves_other_specs_and_modes(spec, mode):
+    report = {'requested_calibration': {'target_spec': spec, 'mode': mode},
+              'combat_calibration': {'target_guid': 1306,
+                                    'previous_window': {'bots': [{'guid': 1306, 'attempts': 1}]}}}
+    capture.apply_calibration_only_acceptance(report)
+    assert 'affliction_soulburn_diagnostics_incomplete' not in report['failure_labels']
+
+
+@pytest.mark.parametrize('dropped', [0, 1])
+def test_synthetic_affliction_final_assembly_keeps_diagnostic_gate_without_raw_artifacts(
+        tmp_path, monkeypatch, dropped):
+    # Permanent compact fixture, never experiment or training evidence. It owns
+    # its structural contract and does not read retained/evicted raw artifacts.
+    retained = 4096 if dropped else 3001
+    bot = {'guid': 1306, 'attempts': retained, 'dps': 29000.0,
+           'healer_metrics': {'hps': 388.6},
+           'affliction_soulburn_decisions': [{'elapsed_ms': i * 100} for i in range(retained)],
+           'affliction_soulburn_decision_telemetry': soulburn_receipt(retained, dropped)}
+    payload = {'action': 'botauto_calibrate_status', 'ok': True, 'cohort_id': 'default',
+               'window_complete': True, 'phase': 'complete', 'mode': 'single_target_300',
+               'target_spec': 'affliction_warlock', 'seed': 1, 'target_guid': 1306,
+               'runtime_authority': 'explicit_sql_rule_profiles', 'runtime_mode': 'calibration_fixture',
+               'non_certifying_assistance': True, 'generic_ml_runtime_authority': False,
+               'reset_applied': True, 'reset_id': 'synthetic-cap002', 'cross_window_event_count': 0,
+               'scored_seconds': 300.0, 'scored_started_at_ms': 1000, 'scored_ended_at_ms': 301000,
+               'profile_generation': 1, 'profile_content_hash': 'a' * 64,
+               'previous_window': {'bots': [bot]}}
+    evaluations = []
+    record = {'identity': {}, 'metrics': {'measured_value': 29000.0, 'hps': 388.6},
+              'evidence_class': 'synthetic_test_only', 'excluded_from_training_corpus': True}
+    evaluation = {'passed': True, 'failure_reasons': [], 'reference_ratio': 0.93}
+
+    def evaluate(calibration, **kwargs):
+        # Stub only the independent numeric/reference service; production
+        # framing, parsing, diagnostics, attachment and final recomputation run.
+        assert calibration == payload
+        assert kwargs['target_spec'] == 'affliction_warlock'
+        evaluations.append(True)
+        return record, evaluation
+
+    monkeypatch.setattr(capture, 'evaluate_runtime_calibration', evaluate)
+    report = assemble_affliction_final_report(tmp_path, payload)
+    assert evaluations == [True]
+    assert report['combat_calibration_transport']['reassembled']
+    assert report['calibration_acceptance']['transport_passed']
+    assert report['role_calibration_record'] == record
+    assert report['role_calibration_evaluation'] == evaluation
+    assert report['combat_calibration']['previous_window']['bots'][0]['healer_metrics'] == {'hps': 388.6}
+    assert report['calibration_acceptance']['diagnostics_passed'] is (dropped == 0)
+    assert report['calibration_acceptance']['passed'] is (dropped == 0)
+    assert report['all_passed'] is (dropped == 0)
+    assert report['acceptable_final_evidence'] is (dropped == 0)
+    assert report['failure_labels'] == (['affliction_soulburn_diagnostics_incomplete'] if dropped else [])

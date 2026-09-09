@@ -8,10 +8,18 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | ID | Status | Proven failure / limit | Next action |
 | --- | --- | --- | --- |
-| DPS-006 | Build passed; live pending | Orb's forward destination and execution both use ground pathfinding; it leaves damage range before the first tick. | Run the already reviewed `979f5c832f` Fire canary. Require native 82736 and owner-attributed 82739 damage, not just movement. |
-| DPS-007 | Diagnosis open; implementation paused | Hunter compares an 11-row catalog with a 14-row loaded pet spellbook. Normal saving also persists those 14 rows. | Establish the canonical native spell/actionbar fixed point before changing the producer or consumer. Do not build the rejected 11-row launch requirement. |
-| DPS-008 | Setup failure confirmed | Affliction actor 1306 has enchant 4115 and a catalog Tailoring requirement, but a fresh `character_skills` readback has no skill 197 row. | Reconcile actual selected-actor profession setup from the canonical requirements, verify readback, then validate native applicability. Do not tune Affliction coefficients. |
+| CAP-002 | Independently approved; native validation pending; user priority | Native Affliction Soulburn diagnostic silently stops at 2,048 rows around 205 seconds although transport and the 300-second primary timeline are complete. | Review the 4,096-row producer, explicit completeness receipt and final rejection path; 44 focused checks pass, including the enlarged actual export. |
+| DPS-006 | Straight trajectory live accepted | Orb's forward destination and execution both use ground pathfinding; it leaves damage range before the first tick. | `979f5c832f` completed: 29,706.767 DPS and nonzero Orb damage. All five trajectories and 82736 accepted; remaining lifetime failure is DPS-009. |
+| DPS-007 | Implementation independently approved; live pending | Hunter compares an 11-row catalog with a 14-row loaded pet spellbook. Normal saving also persists those 14 rows. | Stable native 14-row fixture is implemented with six focused tests; independent review approved; validate exact consumers live. The rejected loader-receipt design remains abandoned. |
+| DPS-008 | Implementation independently approved; live pending | Fire and Affliction (and other audited specs) declare required professions absent from actual `character_skills` rows. | Reconcile actual selected-actor profession setup from the canonical requirements, verify readback, then validate native applicability. Do not tune Affliction coefficients. |
 | OBS-001 | Observation gap; no repair admitted | Current complete calibration exports have no aggregate `native_spell_finish` series, although full/delta serialization was repaired. | Inspect producer/capture mode if a future diagnosis needs cast-finish joins. Do not rebuild only to repeat the serializer change. |
+| DPS-009 | Implementation independently approved; live pending | After straight-motion repair, all five successful-hit Orbs still disappear around five seconds, before their remaining summon timer expires. | Successful-hit aura excludes early explosion; five focused checks and independent review pass. Validate survival to the normal lifecycle event. |
+| DPS-010 | Independently approved; native validation pending | All three Hunter setup lists omit Mail Specialization parent 87506; native Agility multiplier is 1.0 instead of 1.05. | Add the learned parent through existing provisioning, preserve the native child and exact pet fixture, then review and measure native stats. |
+
+CAP-001 closes the observed equal-partition truncation. The 64 MiB capture cap
+remains bounded; it is not a promise that every larger future payload fits. A
+separate audit is checking remaining silent-loss paths without reopening the
+fixed partition bug. Any new counterexample receives a new entry.
 
 ## Closed blockers
 
@@ -25,6 +33,39 @@ what has already failed. Do not create a new handoff document merely to copy it.
 | BUILD-001 | Preserve real native prerequisite includes when splitting translation units. | `9423ec8a17` repaired the earlier missing Common.h/Pet.h build failure. | Extracted-body fixtures do not compile the real include chain. The actual build uses non-unity mode. |
 
 ## Active error details
+
+### CAP-002: Native diagnostic truncation hidden by complete transport
+
+- Complete `ec02d7196a` Affliction has 2,048 Soulburn diagnostic rows ending at
+  204,900 ms; its primary 2,998-row decision timeline ends at 299,977 ms.
+  `ObserveAfflictionSoulburnDecision` silently returns at a separate 2,048 cap.
+  The artifact cannot tell how many qualifying later rows were discarded.
+- CAP-001 did not fail: every one of the 2,239 chunks reassembled. Data omitted
+  by the native producer never reaches the transport parser.
+- Bounded repair: use the existing primary 4,096 decision capacity, count
+  eligible attempts, retained and dropped records plus coverage timestamps,
+  and serialize a completeness receipt. Overall evidence must reject a missing
+  or incomplete required diagnostic while preserving the independent DPS/HPS
+  measurement. Do not label native omission as missing transport chunks.
+- First independent review found the final-assembly regression would skip after
+  raw evidence eviction. A permanent compact clean/drop fixture now passes;
+  optional full-size archived-payload checks cannot replace that regression.
+- Required counterexamples: 3,001 eligible observations fully retained;
+  4,097 observations yield exactly one explicit drop; complete chunk transport
+  with a dropped diagnostic must fail final evidence acceptance. Test the
+  enlarged real-shape final payload under the existing capture budget too.
+- Independent review approves the repair, including permanent regressions with
+  raw unavailable (43 passed; three optional raw integrations skipped). The
+  actual enlarged export was also reproduced with 1,614,345 bytes headroom.
+  Native build and live acceptance remain pending.
+- Adjacent caps are audit limits, not claimed fixes: primary decisions 4,096,
+  Affliction landed events 2,048, pet bite and off-target events 128. Current
+  evidence did not fill these arrays. Any future change to duration or sampling
+  must account for their coverage; complete transport alone is insufficient.
+- Evidence: [Affliction ec02 archive](../../artifacts/cata_raid_program/calibration_affliction_warlock_ec02d7196a_20260909.tar.gz.dvc),
+  member `calibration-affliction_warlock-ec02d7196a/report.json`, plus local
+  `diagnostic-truncation-audit.md` under the validation root. The old controller
+  passed its role checks; program-level complete-diagnostic acceptance is withdrawn.
 
 ### DPS-006: Orb destination and execution
 
@@ -40,7 +81,10 @@ what has already failed. Do not create a new handoff document merely to copy it.
   default behavior; only Orb requests straight collision calculation and
   straight native movement at both submissions. `Object.h` remains unchanged
   to avoid broad recompilation. Five focused tests and independent Sol review
-  pass; native build passes. Live damage is not yet accepted.
+  pass; native build passes. `979f5c832f` then completed 300 seconds: 29,706.767 DPS, 85,322 damage
+  from 22 Orb events and 36,304 Fire Power damage from six events. All 1,399
+  chunks survived. Independent review accepts the trajectory and snare; the
+  remaining early despawn is DPS-009. Missing Tailoring prevents a complete setup claim.
 - Reject: victim requirements, radius/tick/coefficient changes, dummy-position
   changes, bot Z steering, collision bypass, or treating no-follow as DPS repair.
 - Evidence: [Fire ec02 archive](../../artifacts/cata_raid_program/calibration_fire_mage_ec02d7196a_20260909.tar.gz.dvc),
@@ -57,8 +101,11 @@ what has already failed. Do not create a new handoff document merely to copy it.
 - A fresh parent SELECT after normal native saving found that same 14-row
   state in `pet_spell`. The report's first proposed requirement to see 11 rows
   before every launch is therefore paused. A new loader-receipt subsystem has
-  **not** been implemented. Prove the native derivation and stable canonical
-  setup first; do not merely bless an observed spellbook or delete valid spells.
+  **not** been implemented. The superseding DBC/native design addendum proves
+  the stable 14-row projection and saved actionbar. The upstream producer,
+  three Hunter catalog rows and generated header now encode that fixed point;
+  exact native comparisons remain unchanged. Six focused tests and independent
+  review pass; native live acceptance remains pending. Do not bless arbitrary extra spells.
 - Affected callers are duplicated in CalibrationReset.cpp, CalibrationBot.cpp
   and CalibrationCompletion.cpp. Rows already uses the shared
   BotWorldPopulationMgrCalibrationIdentity helper. A Completion-only patch
@@ -68,10 +115,11 @@ what has already failed. Do not create a new handoff document merely to copy it.
   landed. The retained WCL raid has Survival, not Marksmanship.
 - Closed evidence is currently under
   `/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/calibration-marksmanship_hunter-ec02d7196a/dps-review/`.
-  Publication remains pending. The design addendum must supersede the original
-  repair packet explicitly before dispatch.
+  Publication is remotely verified; all readers finished and exact raw payloads
+  were evicted. The owner-DPS diagnosis establishes DPS-010. The archived design addendum explicitly supersedes the original
+  repair packet. Reference: [Hunter ec02 archive](../../artifacts/cata_raid_program/calibration_marksmanship_hunter_ec02d7196a_20260909.tar.gz.dvc).
 
-### DPS-008: Affliction profession setup
+### DPS-008: Required professions missing at actual launch
 
 - `ec02d7196a` Affliction: complete 300 seconds, 29,240.243 DPS (93.3806% of
   reference), 388.6 self-healing HPS, no deaths or movement loss. Throughput
@@ -82,10 +130,46 @@ what has already failed. Do not create a new handoff document merely to copy it.
 - Reject the earlier statement that the corrected profession setup was
   accepted. Equipped enchant identity is not native enchant applicability.
   The launch currently reconciles learned spells, not profession requirements.
+- Expanded current database audit: Fire, Affliction, Demonology, Shadow and
+  Balance lack required skill 197; Enhancement lacks required skill 165.
+  Elemental already has its correct required profession and remains accepted.
+  Native static-stat parity alone did not detect the missing dynamic enchant.
+  See `calibration-profession-database-audit.json` under the validation root.
+- Generic launch reconciliation passes 73 tests and independent review;
+  no database mutation or new live acceptance has occurred.
 - Evidence: local `calibration-affliction_warlock-ec02d7196a/report.json`,
   `dps-review/affliction-calibration-review.md`, and
   `profession_postrun_readback.json` under the same validation root.
-  Publication remains pending; no claim of an observed Lightweave proc.
+  Publication is remotely verified; CAP-002 raw reads are DONE and exact raw payloads are evicted. No claim of an observed Lightweave proc.
+
+### DPS-009: Successful Orb hit still enters early despawn
+
+- `979f5c832f` has five successful-hit Orbs, all disappearing at 4.901–4.905
+  seconds with about 13.1 seconds on the summon timer. Every Orb acquires
+  native self-snare 82736 but remains victimless.
+- The existing `!IsInCombat()` early branch does not recognize that successful
+  proximity hit. Add the existing 82736 aura exclusion, whose pinned duration
+  covers the normal 15.4-second lifecycle. Never-hit behavior remains unchanged.
+- Implementation and independent review pass five focused checks. Native build
+  and matched live survival/damage validation remain pending. No coefficients,
+  target rules, timer values or native combat state were changed.
+
+### DPS-010: Hunter learned Mail Specialization absent
+
+- The exact owner-stat review of `ec02d7196a` finds Agility multiplier 1.0;
+  WoWSims applies 1.05 for full mail. The three Hunter setup lists contain
+  Aspect 13165 but omit learned parent 87506. Native spell learning owns child
+  86528, and ordinary player load applies the armor specialization.
+- Add parent 87506 to producer and linked action lists using an idempotent
+  reconciliation. Preserve the approved 14-row pet fixture. Do not persist the
+  child or install its aura manually. Implementation passes 24 focused checks;
+  independent review passes.
+- This does not explain the whole DPS deficit. Subtracting the pre-pot leaves
+  native Agility 7,782; applying 1.05 gives 8,171.1 versus simulator 8,276.1.
+  The remaining 100 raw / 105 multiplied Agility is under separate diagnosis.
+  Weapon effective stats and sustained class-buff uptime remain observation limits.
+- Compact diagnosis: `hunter-owner-dps-diagnosis.md` under the validation root;
+  immutable raw source is the Hunter ec02 DVC archive linked above.
 
 ## Run index and acceptance boundaries
 
@@ -94,7 +178,7 @@ what has already failed. Do not create a new handoff document merely to copy it.
 | `798a115d45` Elemental | 32,911.683 | 0 | 88.9522% of reference, optimization accepted. Preserve this result. |
 | `2b661e8b67` Fire | 23,839.460 | 0 | Missing actual Wizardry; owned-aura repair passed. |
 | `a3d0719729` Fire | 28,821.683 | 0 | Partial native prefix only; final capture truncated. Not accepted full-window evidence. |
-| `ec02d7196a` Fire | 29,021.037 | 0 | Complete; setup/cadence pass; below 85%; Orb still zero. |
+| `ec02d7196a` Fire | 29,021.037 | 0 | Complete; Wizardry/cadence pass; Tailoring missing; Orb still zero. |
 | `ec02d7196a` Hunter | 23,106.767 | 0 | Complete; pet identity incompatibility and hard-floor failure. |
 | `ec02d7196a` Affliction | 29,240.243 | 388.6 | Complete; throughput passes; actual profession setup incomplete. |
 | `090f24f4b8` Magmaw 10N | 128,636.918 | 19,225.751 | Native clear; 233 damage-bearing seconds, zero boss deaths. Roster DPS objective remains open. |

@@ -1414,7 +1414,7 @@ def prepare_calibration_known_spells(
     output_dir: Path, worldserver_conf: Path, target_spec: str,
     target_catalog_path: Path, apply: bool = False, *, pool_tag: str,
 ) -> dict[str, Any]:
-    """Reconcile the selected offline candidate's ordinary learned spellbook."""
+    """Reconcile the selected offline candidate's spellbook and required professions."""
     try:
         from .validation_profile_manifests import load_action_profile_manifest
     except ImportError:
@@ -1437,6 +1437,26 @@ def prepare_calibration_known_spells(
     if profiles["action_profile_spells_by_spec"][target_spec] != target["action_profile_spell_ids"]:
         raise RuntimeError(f"{target_spec}: target/action spell lists are not linked")
     spells = bot_known_spell_ids(bot, profiles)
+    try:
+        from .wowsims_gear_binding import resolve_profession_setup, merge_profession_skills
+    except ImportError:
+        from wowsims_gear_binding import resolve_profession_setup, merge_profession_skills
+    # Both absent is the catalog's no-required-profession representation.
+    # A declared pair remains authoritative; bot.skills is not its substitute.
+    if "profession_setup" not in bot and "profession_equipment" not in bot:
+        profession_equipment = []
+        declared_setup = {"requirements": [], "wowsims_professions": ["ProfessionUnknown", "ProfessionUnknown"]}
+    else:
+        if not isinstance(bot.get("profession_setup"), dict) or not isinstance(bot.get("profession_equipment"), list):
+            raise ValueError(f"{target_spec}: missing canonical profession setup/equipment")
+        profession_equipment = bot["profession_equipment"]
+        declared_setup = bot["profession_setup"]
+    profession_setup = resolve_profession_setup(
+        profession_equipment, declared=declared_setup,
+    )
+    if json.dumps(profession_setup, sort_keys=True) != json.dumps(declared_setup, sort_keys=True):
+        raise ValueError(f"{target_spec}: profession metadata types do not match canonical requirements")
+    profession_skills = merge_profession_skills([], profession_setup)
     report: dict[str, Any] = {
         "schema": "bot_calibration_known_spells_v1", "target_spec": target_spec,
         "character_name": bot["name"], "pool_tag": bound_pool,
@@ -1444,6 +1464,12 @@ def prepare_calibration_known_spells(
         "action_profile_manifest": str(manifest_path), "expected_spell_ids": spells,
         "target_catalog_sha256": sha256_file(target_catalog_path),
         "action_profile_manifest_sha256": sha256_file(manifest_path),
+        "profession_setup": profession_setup,
+        "expected_profession_skills": profession_skills,
+        "profession_setup_sha256": hashlib.sha256(json.dumps(
+            profession_setup, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+        "profession_equipment_sha256": hashlib.sha256(json.dumps(
+            profession_equipment, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
         "applied": apply,
     }
     if not apply:
@@ -1466,6 +1492,7 @@ def prepare_calibration_known_spells(
                 raise RuntimeError(f"{target_spec}: expected one offline idle enabled calibration actor")
             guid = int(rows[0]["guid"])
             report["character_guid"] = guid
+            report["character_class"] = class_id
             cursor.execute("SELECT spell, active, disabled FROM character_spell WHERE guid = %s", (guid,))
             before = {int(row["spell"]): row for row in cursor.fetchall()}
             missing = [spell for spell in spells if spell not in before
@@ -1483,6 +1510,41 @@ def prepare_calibration_known_spells(
             report["readback"] = {"passed": not failed, "missing_or_disabled_spell_ids": failed}
             if failed:
                 raise RuntimeError(f"{target_spec}: ordinary spellbook readback failed: {failed}")
+            report["reconciled_profession_skills"] = []
+            report["profession_skills_before"] = []
+            report["profession_skills_readback"] = []
+            if profession_skills:
+                skill_ids = [row["id"] for row in profession_skills]
+                query = ("SELECT skill, value, max FROM character_skills WHERE guid = %s "
+                         "AND skill IN (" + ", ".join(["%s"] * len(skill_ids)) + ") ORDER BY skill")
+                params = (guid, *skill_ids)
+                cursor.execute(query, params)
+                before_skills = cursor.fetchall()
+                report["profession_skills_before"] = before_skills
+                by_skill = {int(row["skill"]): row for row in before_skills}
+                for expected in profession_skills:
+                    actual = by_skill.get(expected["id"])
+                    if actual and actual["value"] == expected["value"] and actual["max"] == expected["max"]:
+                        continue
+                    report["reconciled_profession_skills"].append(expected)
+                    cursor.execute(
+                        "INSERT INTO character_skills (guid, skill, value, max) VALUES (%s, %s, %s, %s) "
+                        "ON DUPLICATE KEY UPDATE value = VALUES(value), max = VALUES(max)",
+                        (guid, expected["id"], expected["value"], expected["max"]),
+                    )
+                cursor.execute(query, params)
+                actual_skills = cursor.fetchall()
+                report["profession_skills_readback"] = actual_skills
+                by_skill = {int(row["skill"]): row for row in actual_skills}
+                failed_skills = [row["id"] for row in profession_skills
+                                 if by_skill.get(row["id"]) != {
+                                     "skill": row["id"], "value": row["value"], "max": row["max"]}]
+                if failed_skills:
+                    raise RuntimeError(f"{target_spec}: profession skill readback failed: {failed_skills}")
+            report["profession_skills_readback_sha256"] = hashlib.sha256(json.dumps(
+                report["profession_skills_readback"], sort_keys=True,
+                separators=(",", ":")).encode()).hexdigest()
+            report["readback"]["profession_skills_passed"] = True
         conn.commit()
     except Exception:
         conn.rollback()
@@ -1932,6 +1994,33 @@ def enrich_combat_calibration_reference(
     return calibration
 
 
+def affliction_soulburn_diagnostics_complete(target: Mapping[str, Any] | None) -> bool:
+    """Validate producer coverage independently of transport and role metrics."""
+    if not isinstance(target, Mapping):
+        return False
+    receipt = target.get("affliction_soulburn_decision_telemetry")
+    rows = target.get("affliction_soulburn_decisions")
+    if not isinstance(receipt, Mapping) or not isinstance(rows, list):
+        return False
+    fields = ("capacity", "attempted", "retained", "dropped",
+              "first_attempted_elapsed_ms", "last_attempted_elapsed_ms",
+              "first_retained_elapsed_ms", "last_retained_elapsed_ms")
+    if any(type(receipt.get(key)) is not int or receipt[key] < 0 for key in fields):
+        return False
+    if (receipt.get("schema") != "trinity_affliction_soulburn_decision_telemetry_v1"
+            or receipt.get("complete") is not True or receipt["capacity"] != 4096
+            or receipt["dropped"] != 0 or receipt["retained"] != len(rows)
+            or receipt["retained"] > receipt["capacity"]
+            or receipt["attempted"] != receipt["retained"] + receipt["dropped"]):
+        return False
+    times = [row.get("elapsed_ms") if isinstance(row, Mapping) else None for row in rows]
+    if any(type(value) is not int or value < 0 for value in times) or times != sorted(times):
+        return False
+    first, last = (times[0], times[-1]) if times else (0, 0)
+    return (receipt["first_attempted_elapsed_ms"] == receipt["first_retained_elapsed_ms"] == first
+            and receipt["last_attempted_elapsed_ms"] == receipt["last_retained_elapsed_ms"] == last)
+
+
 def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
     """Evaluate one explicit Phase 8 calibration window's transport integrity."""
     if "worldserver_output_truncated" in (report.get("failure_labels") or []):
@@ -1990,11 +2079,19 @@ def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
     elif int(target.get("attempts") or 0) <= 0:
         rejections.append("missing_target_actions")
 
+    transport_passed = not rejections
+    diagnostics_required = (requested.get("target_spec") == "affliction_warlock"
+                            and requested.get("mode") == "single_target_300")
+    diagnostics_passed = not diagnostics_required or affliction_soulburn_diagnostics_complete(target)
+    if not diagnostics_passed:
+        rejections.append("affliction_soulburn_diagnostics_incomplete")
     rejections = list(dict.fromkeys(rejections))
     passed = not rejections
     report["calibration_acceptance"] = {
         "schema": "bot_combat_calibration_acceptance_v2",
         "passed": passed,
+        "transport_passed": transport_passed,
+        "diagnostics_passed": diagnostics_passed,
         "requested": requested,
         "scored_window_seconds": scored_seconds,
         "window_tolerance_seconds": 5,
@@ -2098,9 +2195,10 @@ def attach_phase8_role_calibration(
             ]
         )
     )
-    transport["transport_passed"] = bool(transport.get("passed"))
+    transport["transport_passed"] = bool(transport.get("transport_passed", transport.get("passed")))
     transport["role_calibration_passed"] = role_passed
-    transport["passed"] = bool(transport["transport_passed"] and role_passed)
+    transport["passed"] = bool(transport["transport_passed"] and role_passed
+                               and transport.get("diagnostics_passed", True))
     transport["rejections"] = combined_rejections
     report["calibration_acceptance"] = transport
     report["failure_labels"] = combined_rejections
@@ -8093,6 +8191,12 @@ def main() -> int:
             args.all_spec_target_catalog.resolve(), bot_pool_tags)
         if pool_tag_filter != bound_calibration_pool:
             raise RuntimeError("calibration runtime pool differs from canonical candidate pool")
+        # Reject invalid selected setup before reset/provisioning can mutate DBs.
+        prepare_calibration_known_spells(
+            args.output_dir, args.config, args.calibration_target_spec,
+            args.all_spec_target_catalog.resolve(), apply=False,
+            pool_tag=pool_tag_filter,
+        )
     if args.reset_bot_pool:
         preparation["bot_pool_reset"] = prepare_bot_pool_reset(
             args.output_dir,

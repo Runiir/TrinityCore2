@@ -14,7 +14,6 @@
 namespace
 {
 constexpr size_t MaxAfflictionLandedEvents = 2048;
-constexpr size_t MaxAfflictionSoulburnDecisions = 2048;
 
 bool IsAfflictionLandedEventSpell(uint32 spellId)
 {
@@ -149,9 +148,7 @@ void BotWorldPopulationMgr::ObserveAfflictionSoulburnDecision(
     uint32 soulburnPowerBefore, uint32 soulburnPowerAfter, char const* result,
     std::string const& candidateRejectionsJson, uint64 elapsedMs)
 {
-    if (!bot || bot->getClass() != CLASS_WARLOCK
-        || metrics.AfflictionSoulburnDecisions.size()
-            >= MaxAfflictionSoulburnDecisions)
+    if (!bot || bot->getClass() != CLASS_WARLOCK)
         return;
 
     bool const soulburnSelected = chosenSpellId == 74434;
@@ -163,6 +160,22 @@ void BotWorldPopulationMgr::ObserveAfflictionSoulburnDecision(
     if (!soulburnSelected && !soulFireSelected
         && !soulburnCandidateObserved && !soulFireCandidateObserved)
         return;
+
+    auto& telemetry = metrics.SoulburnDecisionTelemetry;
+    if (!telemetry.Attempted)
+        telemetry.FirstAttemptedElapsedMs = elapsedMs;
+    ++telemetry.Attempted;
+    telemetry.LastAttemptedElapsedMs = elapsedMs;
+    if (metrics.AfflictionSoulburnDecisions.size()
+        >= CalibrationMetrics::MaxDecisionObservations)
+    {
+        ++telemetry.Dropped;
+        return;
+    }
+    if (!telemetry.Retained)
+        telemetry.FirstRetainedElapsedMs = elapsedMs;
+    ++telemetry.Retained;
+    telemetry.LastRetainedElapsedMs = elapsedMs;
 
     CalibrationMetrics::AfflictionSoulburnDecision event;
     event.ElapsedMs = elapsedMs;
@@ -295,6 +308,23 @@ std::string BotWorldPopulationMgr::AppendAfflictionLandedEventJson(
                  << "\",\"candidate_rejections\":"
                  << event.CandidateRejectionsJson << '}';
         }
-    json << ']';
+    CalibrationMetrics::AfflictionSoulburnDecisionTelemetry const telemetry = metrics
+        ? metrics->SoulburnDecisionTelemetry
+        : CalibrationMetrics::AfflictionSoulburnDecisionTelemetry{};
+    size_t const retainedRows = metrics ? metrics->AfflictionSoulburnDecisions.size() : 0;
+    bool const complete = telemetry.Dropped == 0
+        && telemetry.Retained == retainedRows
+        && telemetry.Attempted == telemetry.Retained + telemetry.Dropped;
+    json << "],\"affliction_soulburn_decision_telemetry\":{"
+         << "\"schema\":\"trinity_affliction_soulburn_decision_telemetry_v1\""
+         << ",\"capacity\":" << CalibrationMetrics::MaxDecisionObservations
+         << ",\"attempted\":" << telemetry.Attempted
+         << ",\"retained\":" << telemetry.Retained
+         << ",\"dropped\":" << telemetry.Dropped
+         << ",\"first_attempted_elapsed_ms\":" << telemetry.FirstAttemptedElapsedMs
+         << ",\"last_attempted_elapsed_ms\":" << telemetry.LastAttemptedElapsedMs
+         << ",\"first_retained_elapsed_ms\":" << telemetry.FirstRetainedElapsedMs
+         << ",\"last_retained_elapsed_ms\":" << telemetry.LastRetainedElapsedMs
+         << ",\"complete\":" << BoolJson(complete) << '}';
     return json.str();
 }

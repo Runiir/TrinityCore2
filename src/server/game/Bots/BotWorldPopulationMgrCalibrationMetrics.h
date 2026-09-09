@@ -6,6 +6,7 @@
 // declaration order.
     struct CalibrationMetrics
     {
+        static constexpr size_t MaxDecisionObservations = 4096;
         struct AfflictionDamageStageObservation
         {
             uint32 EventCount = 0;
@@ -339,6 +340,16 @@
             bool ShadowEmbraceCasterActive = false;
             bool ProcSnapshotAvailable = false;
         };
+        struct AfflictionSoulburnDecisionTelemetry
+        {
+            uint64 Attempted = 0;
+            uint64 Retained = 0;
+            uint64 Dropped = 0;
+            uint64 FirstAttemptedElapsedMs = 0;
+            uint64 LastAttemptedElapsedMs = 0;
+            uint64 FirstRetainedElapsedMs = 0;
+            uint64 LastRetainedElapsedMs = 0;
+        };
         struct AfflictionSoulburnDecision
         {
             // Captured at the calibration decision boundary, not used for
@@ -573,6 +584,7 @@
         // those unavailable dimensions are explicit in each record.
         std::vector<AfflictionLandedEvent> AfflictionLandedEvents;
         std::vector<AfflictionSoulburnDecision> AfflictionSoulburnDecisions;
+        AfflictionSoulburnDecisionTelemetry SoulburnDecisionTelemetry;
         // Raw server observations for the isolated single-target fixture's
         // five WoWSims execute-threshold bands. Evidence reconstructs the
         // schedule from these integers; it does not trust an aggregate flag.

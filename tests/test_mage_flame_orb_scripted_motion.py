@@ -3,13 +3,11 @@
 Does not simulate terrain, periodic target selection, native spell casts or DPS.
 """
 from pathlib import Path
-import hashlib
 import re
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / 'src/server/scripts/World'
-OVERRIDE = '     // This summon owns its motion; do not install generic idle owner-follow.\n     void JustAppeared() override { }\n\n'
 
 
 def function(source, signature):
@@ -22,20 +20,13 @@ def function(source, signature):
     return source[start:end]
 
 
-def test_split_preserves_original_bodies_and_registration_identity():
-    # Body SHA256s captured before splitting original source SHA135519aa...;
-    # removing only the authorized override must reproduce every original byte.
-    hashes = {
-        'care': '2a6f7c29ff5492f4bf34b904c05610b57b8dd4d4f2be371876a26c41f5fc1f87',
-        'services': 'ef6549d61aede348868f10c18d4c9b3330603c3e02b01cd9555bcdb0d52d6af9',
-        'toys': 'fd0673fab4cecef50eba7f593d44f880cb7667ad1d5e55944dfae2b375d94d04',
-        'summons': '3d7c2c9a9c4d7deaf68b56792b1f55ea96b1353e2a2f7d166631ade4f1927f97',
-    }
+def test_world_npc_registration_identity_and_module_limits():
+    # Historical split byte-equivalence was verified when that refactor landed.
+    # Keep runtime registration identities without forbidding future NPC fixes.
+    groups = ['care', 'services', 'toys', 'summons']
     registrations = []
-    for group, digest in hashes.items():
+    for group in groups:
         text = (WORLD / f'npcs_special_{group}.cpp').read_text()
-        body = text.split('namespace NpcSpecial\n{', 1)[1].split('\n}\n\nvoid AddSC_', 1)[0]
-        assert hashlib.sha256(body.replace(OVERRIDE, '').replace('MovePoint(0, pos, false);', 'MovePoint(0, pos);').replace('WorldObjectMovement::MovePositionToFirstCollision(*summoner, pos, 100.0f, 0.0f, false);', 'summoner->MovePositionToFirstCollision(pos, 100.0f, 0.0f);').encode()).hexdigest() == digest
         registrations += re.findall(r'^    (?:new \w+\(\);|RegisterCreatureAI\(\w+\);)$', text, re.M)
         assert len(text.splitlines()) < 1000
     expected = '''npc_air_force_bots npc_chicken_cluck npc_dancing_flames
@@ -48,7 +39,7 @@ npc_bountiful_table npc_mage_orb npc_druid_treant npc_darkmoon_island_gnoll'''.s
     macros = {'npc_training_dummy', 'npc_mage_orb', 'npc_darkmoon_island_gnoll'}
     assert registrations == [f'    RegisterCreatureAI({name});' if name in macros else f'    new {name}();' for name in expected]
     loader = (WORLD / 'npcs_special.cpp').read_text()
-    assert re.findall(r'^    AddSC_npcs_special_(\w+)\(\);$', loader, re.M) == list(hashes)
+    assert re.findall(r'^    AddSC_npcs_special_(\w+)\(\);$', loader, re.M) == groups
 
 
 def test_actual_orb_and_base_motion_lifecycle(tmp_path):
@@ -107,9 +98,10 @@ struct Unit {MotionMaster motion{this};Position position;Aura* talent=nullptr;in
  void MovePositionToFirstCollision(Position& p,float distance,float angle,bool usePathfinding=true){assert(!usePathfinding);assert(distance==100 && angle==0);p.m_positionX=10;}
  Aura* GetAuraOfRankedSpell(int){return talent;}void CastSpell(Position const&,int,bool){++explosionCasts;}
 };
-struct Creature:Unit {uint32 entry=44214;bool combat=false;int despawns=0;std::vector<int> casts;
+struct Creature:Unit {uint32 entry=44214;bool combat=false;int despawns=0;std::vector<int> casts;std::vector<uint32> auras;
  bool isMoving(){return motion.GetMotionSlotType(MOTION_SLOT_ACTIVE)==POINT_MOTION_TYPE;}
  uint32 GetEntry(){return entry;}bool IsInCombat(){return combat;}float GetFloatValue(int){return 2;}
+ bool HasAura(uint32 id){return std::find(auras.begin(),auras.end(),id)!=auras.end();}
  void DespawnOrUnsummon(){++despawns;}
 };
 struct TempSummon:Creature {Unit* owner;SummonPropertiesEntry properties;SummonPropertiesEntry* m_Properties=&properties;
@@ -153,7 +145,25 @@ int main(){
   int points=orb.motion.pointCalls;ai.AttackStart(&owner);assert(orb.motion.pointCalls==points);
   Aura talent;owner.talent=&talent;int casts=owner.explosionCasts;
   ai.UpdateAI(4600);assert(owner.explosionCasts==casts+1 && orb.despawns==1);
-  ai.UpdateAI(10400);assert(owner.explosionCasts==casts+2 && orb.despawns==2);owner.talent=nullptr;
+  owner.talent=nullptr; // Native removal stops future updates for this summon.
+ }
+ // Both variants receive native self-snare 82736 on a successful target hit.
+ // A successful-hit Orb can remain victimless and out of combat. It must live
+ // through the 5s branch and retain the ordinary 15.4s explosion.
+ for(uint32 entry:{44214u,45322u}){
+  for(bool engaged:{false,true}){
+   TempSummon orb(&owner);orb.entry=entry;orb.combat=engaged;
+   npc_mage_orb ai(&orb);ai.IsSummonedBy(&owner);ai.JustAppeared();
+   ai.UpdateAI(1);ai.UpdateAI(399);
+   // The non-combat case supplies the observed native hit receipt. The combat
+   // case independently preserves the original exclusion, without a hit aura.
+   if(!engaged)orb.auras.push_back(SPELL_ORB_SELF_SNARE);
+   Aura talent;owner.talent=&talent;int casts=owner.explosionCasts;
+   ai.UpdateAI(4600);assert(orb.despawns==0 && owner.explosionCasts==casts);
+   ai.UpdateAI(10399);assert(orb.despawns==0 && owner.explosionCasts==casts);
+   ai.UpdateAI(1);assert(orb.despawns==1 && owner.explosionCasts==casts+1);
+   owner.talent=nullptr;
+  }
  }
 }
 '''

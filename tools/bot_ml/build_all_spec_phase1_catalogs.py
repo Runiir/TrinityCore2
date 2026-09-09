@@ -432,9 +432,11 @@ PERSISTENT_SETUP_SPELL_IDS = {
     "arcane_mage": [1459, 30482, 89744],
     "fire_mage": [759, 1459, 30482, 89744],
     "frost_mage": [1459, 30482, 89744],
-    "beast_mastery_hunter": [13165],
-    "marksmanship_hunter": [13165],
-    "survival_hunter": [13165],
+    # Native spell_learn_spell expands Hunter parent 87506 -> child 86528;
+    # equipped armor owns the child aura, so persist only the learned parent.
+    "beast_mastery_hunter": [13165, 87506],
+    "marksmanship_hunter": [13165, 87506],
+    "survival_hunter": [13165, 87506],
     # WoWSims applies Fel Armor permanently for every Cataclysm warlock and
     # includes its spell-power bonus in the generated reference. Provision the
     # ordinary learned spell so runtime can establish the same aura with a
@@ -803,20 +805,24 @@ def pet_for(target_id: str, index: int) -> dict[str, Any] | None:
         "level": 85,
         "slot": 0,
         "active": 1,
-        # Match sim/hunter/survival/survival_test.go's numeric fixture rather
-        # than the UI preset's different ferocityDefault allocation.
+        # Native level-85 wolf ordinary save/load fixed point. Family passives
+        # are excluded by native persistence and admission observation.
+        "actionbar": "7 2 7 1 7 4 193 2649 193 17253 193 23145 193 53401 6 3 6 1 6 0",
         "spells": [
-            2649,
-            17253,
-            61683,
+            {"id": 1742, "active": 193},
+            {"id": 2649, "active": 193},
+            {"id": 17253, "active": 193},
             {"id": 23145, "active": 193},
+            {"id": 24604, "active": 193},
             53184,
             53186,
-            61681,
             53205,
             {"id": 53401, "active": 193},
             {"id": 53434, "active": 193},
+            61681,
+            61683,
             62760,
+            65220,
         ],
     }
 
@@ -1423,6 +1429,27 @@ def reconcile_mage_setup_spell_catalogs(
     selected = [row for row in targets["targets"] if row["spec_target_id"] in mage_specs]
     if len(selected) != 3 or {row["spec_target_id"] for row in selected} != mage_specs:
         raise ValueError("expected exactly three Mage setup targets")
+    for target in selected:
+        spec = target["spec_target_id"]
+        linked = actions["action_profile_spells_by_spec"][spec]
+        if target["action_profile_spell_ids"] != linked:
+            raise ValueError(f"{spec} target/action spell lists are not linked")
+        spells = sorted(set(linked) | set(PERSISTENT_SETUP_SPELL_IDS[spec]))
+        target["action_profile_spell_ids"] = spells
+        actions["action_profile_spells_by_spec"][spec] = list(spells)
+    return targets, actions
+
+
+def reconcile_hunter_setup_spell_catalogs(
+    target_catalog: dict[str, Any], action_profiles: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Reconcile Hunter learned parents without refreshing frozen references."""
+    targets = json.loads(json.dumps(target_catalog))
+    actions = json.loads(json.dumps(action_profiles))
+    hunter_specs = {"beast_mastery_hunter", "marksmanship_hunter", "survival_hunter"}
+    selected = [row for row in targets["targets"] if row["spec_target_id"] in hunter_specs]
+    if len(selected) != 3 or {row["spec_target_id"] for row in selected} != hunter_specs:
+        raise ValueError("expected exactly three Hunter setup targets")
     for target in selected:
         spec = target["spec_target_id"]
         linked = actions["action_profile_spells_by_spec"][spec]

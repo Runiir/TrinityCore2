@@ -191,3 +191,84 @@ def test_affliction_landed_review_compares_cadence_and_damage_per_event() -> Non
     assert record["runtime_event_count"] == 1
     assert record["wowsims_damage_per_event"] == 300.0
     assert record["runtime_damage_per_event"] == 300.0
+
+
+def test_actual_soulburn_recorder_and_full_serializer_account_for_every_eligible_sample(tmp_path):
+    import json
+    import re
+    import subprocess
+
+    def block(source, marker):
+        start = source.index(marker)
+        opening = source.index('{', start)
+        depth = 1
+        end = opening + 1
+        # These selected declarations/methods contain balanced JSON braces in
+        # string literals, so the lexical brace balance preserves their body.
+        while depth:
+            depth += (source[end] == '{') - (source[end] == '}')
+            end += 1
+        return source[start:end]
+
+    metrics = METRICS.read_text()
+    module = MODULE.read_text()
+    types = '\n'.join(block(metrics, 'struct ' + name) + ';' for name in (
+        'AfflictionLandedEvent\n', 'AfflictionSoulburnDecisionTelemetry\n', 'AfflictionSoulburnDecision\n'))
+    capacity = re.search(r'static constexpr size_t MaxDecisionObservations = \d+;', metrics)[0]
+    recorder = block(module, 'void BotWorldPopulationMgr::ObserveAfflictionSoulburnDecision(')
+    serializer = block(module, 'std::string BotWorldPopulationMgr::AppendAfflictionLandedEventJson(')
+    source = '''
+#include <cstdint>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+using uint64 = uint64_t; using uint32 = uint32_t; using uint8 = uint8_t; using int32 = int32_t;
+constexpr int CLASS_WARLOCK = 9, POWER_SOUL_SHARDS = 7;
+constexpr size_t MaxAfflictionLandedEvents = 2048;
+char const* BoolJson(bool value) { return value ? "true" : "false"; }
+std::string JsonEscape(std::string const& value) { return value; }
+struct Player { int getClass() { return CLASS_WARLOCK; } int GetMaxPower(int) { return 3; } };
+struct BotWorldPopulationMgr {
+struct CalibrationMetrics {
+''' + capacity + types + '''
+std::vector<AfflictionLandedEvent> AfflictionLandedEvents;
+std::vector<AfflictionSoulburnDecision> AfflictionSoulburnDecisions;
+AfflictionSoulburnDecisionTelemetry SoulburnDecisionTelemetry;
+};
+static void ObserveAfflictionSoulburnDecision(CalibrationMetrics&, Player*, uint32, uint32, uint32, char const*, std::string const&, uint64);
+static std::string AppendAfflictionLandedEventJson(CalibrationMetrics const*);
+};
+''' + recorder + '\n' + serializer + '''
+int main() {
+  for (uint32 count : {3001u, 4097u}) {
+    BotWorldPopulationMgr::CalibrationMetrics metrics;
+    Player player;
+    for (uint32 i = 0; i < count; ++i) {
+      BotWorldPopulationMgr::ObserveAfflictionSoulburnDecision(metrics, &player, 686, 3, 3, "ok", "[]", i * 100);
+      BotWorldPopulationMgr::ObserveAfflictionSoulburnDecision(metrics, &player, i % 2 ? 74434 : 686, 3, 3, "ok", R"([{"spell_id":6353}])", i * 100);
+    }
+    BotWorldPopulationMgr::ObserveAfflictionSoulburnDecision(metrics, &player, 686, 3, 3, "ok", "[]", 999999);
+    std::cout << "{\\"fixture\\":true" << BotWorldPopulationMgr::AppendAfflictionLandedEventJson(&metrics) << "}\\n";
+  }
+}
+'''
+    fixture = tmp_path/'soulburn.cpp'
+    fixture.write_text(source)
+    binary = tmp_path/'soulburn'
+    subprocess.run(['c++', '-std=c++17', str(fixture), '-o', str(binary)], check=True, capture_output=True)
+    output = subprocess.run([str(binary)], check=True, capture_output=True, text=True).stdout
+    for count, line in zip((3001, 4097), output.splitlines(), strict=True):
+        payload = json.loads(line)
+        rows = payload['affliction_soulburn_decisions']
+        receipt = payload['affliction_soulburn_decision_telemetry']
+        assert receipt['schema'] == 'trinity_affliction_soulburn_decision_telemetry_v1'
+        assert receipt['capacity'] == 4096
+        assert receipt['attempted'] == count
+        assert receipt['retained'] == len(rows) == min(count, 4096)
+        assert receipt['dropped'] == max(count - 4096, 0)
+        assert receipt['attempted'] == receipt['retained'] + receipt['dropped']
+        assert receipt['first_attempted_elapsed_ms'] == receipt['first_retained_elapsed_ms'] == 0
+        assert receipt['last_attempted_elapsed_ms'] == (count - 1) * 100
+        assert receipt['last_retained_elapsed_ms'] == rows[-1]['elapsed_ms'] == (min(count, 4096) - 1) * 100
+        assert receipt['complete'] is (count == 3001)

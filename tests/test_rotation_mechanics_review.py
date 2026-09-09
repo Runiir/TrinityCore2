@@ -1226,7 +1226,7 @@ def test_runtime_timeline_is_bounded_and_observation_only_in_native_source():
     assert "struct EffectiveStatVector" in header
     assert "EffectiveStatVector ScoringStartPlayerStats;" in header
     assert "EffectiveStatVector ScoringStartPetStats;" in header
-    assert "metrics.DecisionTimeline.size() < 4096" in source
+    assert "metrics.DecisionTimeline.size() < CalibrationMetrics::MaxDecisionObservations" in source
     assert "calibration->second.OffTargetDamageEvents.size() < 128" in source
     assert '\\\"decision_timeline\\\"' in source
     assert '\\\"off_target_damage_events\\\"' in source
