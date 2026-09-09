@@ -182,7 +182,11 @@ uint32 ProfileSpellCastTimeMs(Player const* bot, SpellInfo const* spellInfo)
 {
     if (!bot || !spellInfo)
         return 0;
-    return uint32(std::max<int32>(0, spellInfo->CalcCastTime(bot->getLevel())));
+    int32 castTime = int32(spellInfo->CalcCastTime(bot->getLevel()));
+    // Decision-time preview has no active native cast: do not register spell mods.
+    if (castTime > 0)
+        const_cast<Player*>(bot)->ModSpellCastTime(spellInfo, castTime, nullptr);
+    return uint32(std::max<int32>(0, castTime));
 }
 
 float ProfileSpellMaximumRange(Player const* bot, Unit const* target,

@@ -8,16 +8,16 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Hunter5c owner buff and role target accepted. Two bounded implementation workers repair Aimed preview and Vial AP term; Readiness sequencing stays separate.",
+  "gate_state": "Aimed preview and heroic Vial AP repairs independently approved; prior Hunter evidence remotely verified and evicted. Ready for joined build and exact live validation.",
   "first_broken_edge": {
     "id": "aimed_instant_proc_cast_time_preview_ignores_modifiers",
     "owner_classification": "raid_role",
     "cause": "Both preview helpers use unmodified cast time, rejecting the below-E90 Aimed row even with Master Marksman Fire82925.",
-    "review_state": "implementation_active"
+    "review_state": "independently_approved_live_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "8f7ea30d9a331aed9e519a65b3db820059ceb45d53a8aa647391a08c5bc274da"
+    "sha256": "df973fdc7d0bd090b34d6e0a8920dadb746de03e9f340be6873c46f0805eadf7"
   },
   "scope_lock": {
     "objective": "Diagnose the remaining trace-backed Aimed cadence and Lightning item-damage discrepancies after restoring native owner buffs.",
@@ -39,7 +39,7 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
   "next_action": "Join independently reviewed Aimed preview and Vial AP repairs, then build once and validate the exact Hunter window.",
   "accepted_isolation": {
@@ -86,8 +86,8 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "pending",
-    "scope": "DPS-019/020 bounded diagnosis",
+    "verdict": "approve",
+    "scope": "DPS-019 cast preview and DPS-020 heroic Vial AP",
     "live_verified": false
   },
   "related_edges": [

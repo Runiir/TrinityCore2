@@ -1,0 +1,10 @@
+{
+  "fixture_kind": "pinned_vial_contract_not_training_evidence",
+  "native": {"item": 77999, "aura": 109725, "child": 109724, "base_points": 4545, "die_sides": 2274, "spell_ap_coefficient": 0, "effect_bonus_coefficient": 0},
+  "reference": {"revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6", "source_sha256": "ce9bfadb448a1aceccb5b2753ff4d931d35351f43581d998f76eed57ab393097", "minimum": 4546, "maximum": 6819, "ap_coefficient": 0.339, "caveat": "Pinned simulator PTR-derived coefficient, not inferred from DPS"},
+  "dbc_source_sha256": {"Item-sparse.db2": "bd21d2a012c4a983dc3179de84d63abd1cfcd1f7063d0785426d75636dd24c06", "Spell.dbc": "088a14963d3f81a10963702c760215f49ff73132bea751306c57aae0dae9f39f", "SpellEffect.dbc": "e3d9a470bbcb5cea4e3f2947911a908b816cc60e6ffeb9f70b4cfb123bad6252"},
+  "closed_observations": [
+    {"source": "3e0b48374e9e66b85ef79f9f97535851be29b32d", "report_sha256": "2a77e1eea61f6d11955d82910d4cdc94edd30a6d4e36f278c498cd1ec81211e6", "events": 29, "damage": 160412},
+    {"source": "5c1d8e430a40d9ca162368e165b69d2d33057f09", "report_sha256": "ed01532567a5c0b4ff0b38233c242872c0927466e2f66fb47f7d4ee534c7e272", "events": 30, "damage": 162769}
+  ]
+}

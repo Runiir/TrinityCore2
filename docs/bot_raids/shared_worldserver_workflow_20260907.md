@@ -13,15 +13,17 @@ verification and fresh cleanup pass. Overall qualification still rejects only
 `incomplete_evidence_identity`, so this is not training data.
 
 Independent review accepts the restored owner buff and the configured Hunter
-role target (86.8581% of exact). Two disjoint repairs are in implementation:
+role target (86.8581% of exact). Two disjoint repairs passed focused tests and independent Sol review:
 DPS-019 makes the existing cast-time previews account for native instant-cast
 procs; DPS-020 restores Vial of Shadows' reference attack-power contribution
 using the triggering attack type. Both have closed-run counterexamples.
 
 Readiness ordering remains a separate open edge, DPS-021. Counts alone do not
 prove the correct sequence. It does not block implementing the two proven
-repairs. Both runs remain available to their final diagnostic readers. No
-worldserver is running; the next validation will join reviewed repairs.
+repairs. Both prior Hunter runs are now DVC-published, freshly downloaded and hash-verified.
+All reviewers finished before exact raw payload eviction. No worldserver is
+running. Commit the reviewed source, build once, apply/read back the exact
+heroic Vial script binding and run the joined 300-second Hunter validation.
 
 The preceding Hunter3e run measured 28,122.61 DPS / 0 HPS over 300 seconds.
 Independent review accepted Wild Quiver (110 hits / 931,396 damage), the
@@ -29,7 +31,8 @@ Readiness hostile-health gate, exact pet compatibility, and full-window aura
 observation. It proved the absent Howl that DPS-018 has now repaired.
 Its complete transport, native exit, binary verification and cleanup passed;
 qualification identity remains incomplete. These development runs are excluded
-from training data. Keep their raw evidence until all current readers finish.
+from training data. Compact reviews and original review-input snapshots remain available; raw evidence
+is recoverable from the committed DVC pointers.
 
 The v4 pet-identity reference cohort is DVC-published, freshly reconstructed,
 promoted and clean-verified on 47e8dffab0. All 16 simulator request byte hashes

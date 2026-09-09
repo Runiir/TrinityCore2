@@ -1,0 +1,282 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "3e0b48374e9e66b85ef79f9f97535851be29b32d",
+  "archive_sha256": "fa759e8443934ae56154cb47cba4f7c0de4d26e0dc424ffbccc62c95c8005ec6",
+  "archive_bytes": 6547937,
+  "dvc_pointer": "artifacts/cata_raid_program/calibration_marksmanship_hunter_3e0b48374e_20260909.tar.gz.dvc",
+  "remote_download_sha256": "fa759e8443934ae56154cb47cba4f7c0de4d26e0dc424ffbccc62c95c8005ec6",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "terminal_reason": "combat_calibration_complete",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-3e0b48374e/configure.log",
+      "bytes": 15534,
+      "sha256": "9e543c43658fb243af45a1b6631e30317c226f17fa1e791fb8e6972b12cffbcd"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/configure_receipt.json",
+      "bytes": 13616,
+      "sha256": "031a8f35b5807aed62de4adc15a7e97c7c29a5a99101b09440a5336775c198be"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/configure_verification.json",
+      "bytes": 536,
+      "sha256": "a9936f79984fe9fb48abed915effd65c9eca9cc10a2bec2c884484a03a1bdedb"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/failed-compiler-attempt-1/configure.log",
+      "bytes": 15532,
+      "sha256": "baa05ca20079fd0b5f9e1a508b5a77a59c50d66c81ee417124f0d44b7fc6c4d8"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/failed-compiler-attempt-1/configure_receipt.json",
+      "bytes": 13614,
+      "sha256": "679113609c53da907a01969865987296b8d199210e19d2c0143980ed8635c4ac"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/failed-compiler-attempt-1/configure_verification.json",
+      "bytes": 536,
+      "sha256": "5dcc62bae71edaa658ea7d7c89067df86c52a0149105094d591437e8bbbd213d"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/failed-compiler-attempt-1/worldserver_build.log",
+      "bytes": 35780,
+      "sha256": "0ec5dd8506efa55ce3ff1dcec0e78cb6a219d7f6ce6d202f5bcb82312f30b13d"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/failed-compiler-attempt-1/worldserver_build_receipt.json",
+      "bytes": 22989,
+      "sha256": "e3fba76be461840151df83d022a08e4f0f07ed5f25609d269b6e3a01dd058877"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/map-0-asset-preflight.json",
+      "bytes": 6041883,
+      "sha256": "f11e25864b48af1246640e39f7d62d743f35c7777cba361c748c56aa9f7299c5"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/map-669-asset-preflight.json",
+      "bytes": 5454509,
+      "sha256": "14910322ca2d0763fd1cbeb52f02599f92d21146c0aa00c2e848aa5480c11806"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "e8b8c9e2d5eecd0fe488ce123a822c694ef0438b33fdf01f27548c2a0cd2509e"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/review-and-reference-context/frozen-gear-normalization-implementation-review.md",
+      "bytes": 5729,
+      "sha256": "60b34b6096c8ae99da175bdf307fa90f2fbb028f7632cbac3112fd1bfc40e976"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/review-and-reference-context/hunter-crit-buff-diagnosis.md",
+      "bytes": 13234,
+      "sha256": "63d6bc269476982d065721a0da064e2bd4ed1be891bc77d01360a877cde3d314"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/review-and-reference-context/hunter-owner-aura-observation-implementation-review.md",
+      "bytes": 4531,
+      "sha256": "af0af471533f0ee81092447973f6b8176c37d45dcd4695af615d19d6550091e3"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/review-and-reference-context/hunter-pet-compatibility-generated-review.md",
+      "bytes": 3059,
+      "sha256": "49fbd7a8669328be115d1e55be3b276cc990445838fe7bc17f2807b393da5767"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/review-and-reference-context/hunter-pet-compatibility-implementation-review.md",
+      "bytes": 3848,
+      "sha256": "97a0bdc8409609af5705f4662c0cd2a491517d7b1d66dd2e4e3d73a70e2b030d"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/review-and-reference-context/hunter-readiness-implementation-review.md",
+      "bytes": 3519,
+      "sha256": "d805947b806bf5ae714c8c765bf5958e87bb8d19fffbf78b3adc771414ba7296"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/review-and-reference-context/hunter-wild-quiver-diagnosis.md",
+      "bytes": 10235,
+      "sha256": "13e8de0cdaf50f9a1598a34f708e2a903dfd0995c060d8358213aae729ce134e"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/review-and-reference-context/hunter-wild-quiver-implementation-review.md",
+      "bytes": 2434,
+      "sha256": "ac958ec9be45ae7db40ec919e323f655626d79afea292580b12abb94360c33a7"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/review-and-reference-context/reference-v4-clean-check.log",
+      "bytes": 35,
+      "sha256": "531f073f9a63bd14c3e4fbbfffefeeef5d0e6439b5c176a5a694c052043330b8"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "d484e7a5bce8b9def077e1cabf5de035d3d027950a63dfe49dd9c79b470e787f"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/worldserver_build.log",
+      "bytes": 105178,
+      "sha256": "40b5cfb01008193872208ff2557f828fe85202d842a7213c6ee1cd9cafe7d79f"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/worldserver_build_receipt.json",
+      "bytes": 23904,
+      "sha256": "11a518bd28b9322a77dd7d1d0fcf3f8b610754104a6ef75106f05360f97f286f"
+    },
+    {
+      "path": "build-preflight-3e0b48374e/worldserver_build_verification.json",
+      "bytes": 536,
+      "sha256": "2a1a2b9f09c96c6ecf9d408fe200e696ea174537931b14d9162cdaf238052ca0"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/bot_pool_reset/reset_bot_pool.sql",
+      "bytes": 7817,
+      "sha256": "7a69716b1ffebac975da291391005a779903730028d28855f352968aff012af0"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/calibration_consumable_restock/marksmanship_hunter.sql",
+      "bytes": 1732,
+      "sha256": "1ef047a3d667c2213b87d8591ad21eb7facdedeed0fc4473c7e4d3cfdfb2d545"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/calibration_known_spells.json",
+      "bytes": 5244,
+      "sha256": "4740f9fdb8f99942d894a885a804d70585f50e21e8b52061208d976b1f43c6dc"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/cleanup_readback.json",
+      "bytes": 1176,
+      "sha256": "1efa33ec337edfcaa961ef5a8636c995bcc5f4832d994fdb0cc6a55e0f69c455"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/closed_summary.json",
+      "bytes": 1293,
+      "sha256": "7330a0ae4e22006f5ad7d6dc646263d764b1db312957bdf0939a5520fff07e5d"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/combat_analysis.json",
+      "bytes": 295,
+      "sha256": "886c54a50dc61c67ee6bc92dd09dbeb963332ec8b043efd78eca7d516c7c4fc1"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/combat_log.json",
+      "bytes": 674,
+      "sha256": "1006983b1a74ec42ac87c20714946582d0e75d34c3eeab41de089bef16c4b0fe"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/commands.txt",
+      "bytes": 203,
+      "sha256": "9548b79c11c9d5735e9f7152f16d90026c3d0e2006bdb2fb329dd3d2e9135852"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/dps-review/hunter-aimed-cadence-diagnosis.md",
+      "bytes": 7141,
+      "sha256": "0fd950011f43a576c3fb5013c8c682aa6a3a03e19a5e66726a06f04ad07e8405"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/dps-review/hunter-calibration-review.json",
+      "bytes": 6576,
+      "sha256": "3c42029356e52c61cce4c02d1c1329006ddeef66a692049dc727cfa655a0e83a"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/dps-review/hunter-calibration-review.md",
+      "bytes": 5253,
+      "sha256": "ca72afa6b7d147bd741d7d3ef92fab8f62eb777f3d29f8a87f6285f639e9e2d1"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/dps-review/hunter-lightning-strike-diagnosis.md",
+      "bytes": 10734,
+      "sha256": "3ac2f9e23d5ed355ca5dfb849dac3c566e8d09365c838c3d4ea89b51516c2cec"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/heartbeat_events.jsonl",
+      "bytes": 19215,
+      "sha256": "7d101b86a3d755d35d66938e09e09aab32fba51338dda0cc21a14848b6c18086"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/heartbeat_manifest.json",
+      "bytes": 375,
+      "sha256": "ca82c7612c13b2f9df419127d7b531e0ef279ae99de0764a0ad4bed2b5e353f2"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/latest.json",
+      "bytes": 47363104,
+      "sha256": "a1302ad7d69b3f008cd82cbdd9e1dc6936ad9856d22869196fbe538fd1897055"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/repair_database_readback.json",
+      "bytes": 810,
+      "sha256": "1cb91267d4f6adde299e16dea121d0e263c0265725b1a1305042a669aac6dc87"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/report.json",
+      "bytes": 103813973,
+      "sha256": "2a77e1eea61f6d11955d82910d4cdc94edd30a6d4e36f278c498cd1ec81211e6"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/reviewed_summary.json",
+      "bytes": 722,
+      "sha256": "59ed8f3c4263a9380e1e7071986f82f47fb463bff181bc766c48eb2757d6dac9"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/worldserver.validation.conf",
+      "bytes": 156993,
+      "sha256": "90a34382278bfa71faa94a07ad98aa8b89c4d8debad0101d451b25756cfa30dd"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-3e0b48374e/worldserver_output.log",
+      "bytes": 28896956,
+      "sha256": "9d5a3eda89e41ef3d43bd50a716a9fa31f4b981281d9e42b2b2bc9a93474ef86"
+    },
+    {
+      "path": "run-spec-calibration.py",
+      "bytes": 2696,
+      "sha256": "67b80e243b7b52b421c46f08be89263f0c8e58a8a99087fedc53aa1ec4503ae9"
+    },
+    {
+      "path": "publish-spec-calibration.py",
+      "bytes": 3613,
+      "sha256": "25e94de1679a437657eb563091dbd3c488703480d5ce6db8076039d730a087cc"
+    },
+    {
+      "path": "evict-spec-calibration.py",
+      "bytes": 1782,
+      "sha256": "770d48354a214610a8de89064d49168c991544a5c0ee1758cd2bd3e5af68471c"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-launch-3e0b48374e.json",
+      "bytes": 2346,
+      "sha256": "81dc5937923db106bb9bfa8f520967558e5f3f224f01205e9037b2e657505daf"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-console-3e0b48374e.log",
+      "bytes": 103813973,
+      "sha256": "2a77e1eea61f6d11955d82910d4cdc94edd30a6d4e36f278c498cd1ec81211e6"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-postbuild-3e0b48374e.json",
+      "bytes": 537,
+      "sha256": "54f5ba750c168b5692cec69c5d19e7ed998f576cf2e4504e6b2c2a095a675624"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    "calibration-marksmanship_hunter-3e0b48374e/report.json",
+    "calibration-marksmanship_hunter-3e0b48374e/latest.json",
+    "calibration-marksmanship_hunter-3e0b48374e/worldserver_output.log"
+  ]
+}

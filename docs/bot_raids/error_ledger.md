@@ -37,8 +37,8 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | DPS-018 | Owner buff independently live accepted on Hunter5c | Hunter3e has no owner Furious Howl aura in 260,913 samples spanning 300 seconds (maximum gap 43 ms), despite the exact enabled wolf spellbook. | Grouped PetAI omitted the owner; Howl cannot target the remaining player-controlled pet. Include the owner and retain periodic grouped refresh. Reject cardinality-only caching, which retains stale equal-size membership. Portable actual-body tests and independent review pass. Hunter5c owner Howl starts111ms and is present in every subsequent sample; 28,522.63DPS/0HPS, complete transport and cleanup. |
 
-| DPS-019 | Bounded implementation active | Aimed Shot stops at the 30-second E90 boundary in both runs; exact reference has later instant casts after Master Marksman Fire 82925. Both profile preview helpers omit caster cast-time modifiers, permanently rejecting the below-E90 row's 1,000 ms limit. | Apply non-consuming native cast-time modifiers in the two existing helpers; execute their real bodies in focused regressions and independently review. |
-| DPS-020 | Bounded implementation active | Heroic Vial of Shadows 77999 triggers 109724 at matching cadence, but native damage lacks the pinned simulator's 0.339 attack-power term. Restored-buff5c still averages 5,425.63 per event. | Add a focused item proc script preserving trigger-time ranged/melee AP choice, native random roll and existing proc behavior. The coefficient is pinned simulator authority, not inferred from aggregate DPS. |
+| DPS-019 | Independently approved; joined live pending | Aimed Shot stops at the 30-second E90 boundary in both runs; exact reference has later instant casts after Master Marksman Fire 82925. Both profile preview helpers omit caster cast-time modifiers, permanently rejecting the below-E90 row's 1,000 ms limit. | Apply non-consuming native cast-time modifiers in the two existing helpers; execute their real bodies in focused regressions and independently review. |
+| DPS-020 | Independently approved; joined live pending | Heroic Vial of Shadows 77999 triggers 109724 at matching cadence, but native damage lacks the pinned simulator's 0.339 attack-power term. Restored-buff5c still averages 5,425.63 per event. | Add a focused item proc script preserving trigger-time ranged/melee AP choice, native random roll and existing proc behavior. The coefficient is pinned simulator authority, not inferred from aggregate DPS. |
 | DPS-021 | Sequencing mismatch proven; repair not yet admitted | Hunter5c selects Readiness before Chimera and submits Rapid Fire three times versus four exact. | Preserve accepted DPS-016 health gate. Determine whether an existing prerequisite can express the reference sequence; a spell merely being on cooldown may not prove the intended ordering. Do not expand DPS-019 into a new policy framework. |
 
 
@@ -269,6 +269,15 @@ denominator with 233 damage-bearing seconds. Retained WCL uses 1 tank / 1 healer
 8 DPS versus our 2 / 3 / 5; its 378,849 aggregate DPS is not a matched roster floor.
 All current development calibrations remain training-ineligible because the
 qualification identity and non-certifying fixture boundaries are unresolved.
+
+Hunter3e and Hunter5c closed evidence is remotely verified and exact raw payloads
+are evicted after all causal reviewers finished:
+
+- [Hunter3e DVC pointer](../../artifacts/cata_raid_program/calibration_marksmanship_hunter_3e0b48374e_20260909.tar.gz.dvc)
+- [Hunter5c DVC pointer](../../artifacts/cata_raid_program/calibration_marksmanship_hunter_5c1d8e430a_20260909.tar.gz.dvc)
+
+Original summary bytes used by the reviews are preserved as `reviewed_summary.json`
+inside each archive; final closure records that input mapping explicitly.
 
 ## Updating and using the ledger
 
