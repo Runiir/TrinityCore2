@@ -48,6 +48,12 @@ first_broken_edge = native_class_damage_model or native_pet_damage_model
 In `damage_outcome`, wrong owner or pet cadence, target uptime, action
 selection, resources, range, or rejections returns the work unit to
 `raid-role-implementation`.
+A proven native cast-time, cost, or spell-legality defect belongs here even
+when it changes cadence. Require the exact native spell variant, attributable
+state and an executable counterexample through the actual calculation; preserve
+role priorities and unrelated spell behavior. This is a mechanics repair, not
+permission to tune coefficients before cadence matches.
+
 A native ownership or damage-consumer contract defect may be repaired before
 numeric stat parity is available when an attributable runtime identity/state
 and an executable counterexample through the actual native function prove the

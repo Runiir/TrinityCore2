@@ -1,33 +1,33 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "hunter:remaining_cadence_and_item_damage",
+  "work_unit": "hunter:native_instant_aimed_cast_time",
   "owner_skill": "raid-performance-loop",
-  "classification": "native_variant_implementation",
+  "classification": "native_class_mechanics",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "c87cba4c4bc65ee25aba811afb979ed2a37f874f",
+  "observed_at_commit": "e562e9229d721416b7de04c76598853bc749fcb0",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Native override correction and fixed proc observations independently approved; ready for joined native build and matched Hunter verification.",
+  "gate_state": "Exact82928 scaling correction and mechanical SpellMgr split independently approved; build and matched native validation next.",
   "first_broken_edge": {
-    "id": "native_actionbar_override_omitted_by_bot_pipeline",
-    "owner_classification": "raid_role",
-    "cause": "Bot preview and direct executor used requested19434 instead of native Fire82926 replacement82928. Corrected shared resolution now covers the actual calibration and controller paths.",
-    "review_state": "corrected_implementation_independently_approved_live_pending"
+    "id": "native_82928_scaling_cast_time",
+    "owner_classification": "raid_class_mechanics",
+    "cause": "ScalingID578 positive2400ms overrides zero base cast time; actual native below-E90 gate rejects it.",
+    "review_state": "implementation_independently_approved_live_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "a9ff1807478bad61964f79d32b4d9a2841875c761c3fc87573b10b343763dda4"
+    "sha256": "4fa5988542468213948ab3ca79cfdc16033b5b4faa75d7011b7990b6f39aae97"
   },
   "scope_lock": {
-    "objective": "Diagnose the remaining trace-backed Aimed cadence and Lightning item-damage discrepancies after restoring native owner buffs.",
+    "objective": "Restore native instant Aimed Shot82928 cast-time behavior proven wrong on e562, preserve accepted override/proc/Vial/setup, then remeasure roster throughput on Magmaw.",
     "owned_files": [],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Bind the precise role sequencing or native item damage mismatch to source and closed-run evidence before implementation.",
+    "Exact native scaling correction makes82928 instant while19434 remains2900ms, preserving effects, cost, aura restriction and normal GCD.",
     "Implement only a proven bounded repair, pass behavioral fixtures and independent review.",
     "Build once and validate the repaired edge with the existing fixed owner-aura receipt and exact 300-second Hunter score.",
     "Publish and clean closed attributable evidence after all readers finish."
@@ -41,7 +41,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Bind native proc/override identity through candidate and executor, repair only the proven path, and preserve Vial outcome acceptance.",
+  "next_action": "Correct exact native82928 cast-time scaling, test actual calculation, independently review, build and require post-E90 native82928.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -87,7 +87,7 @@
     "model": "gpt-5.6-sol",
     "reasoning": "high",
     "verdict": "approve",
-    "scope": "DPS-019 native actionbar override and OBS-003 proc observation",
+    "scope": "DPS-022 instant82928 correction and separately reviewed mechanical SpellMgr split",
     "live_verified": false
   },
   "related_edges": [
@@ -166,11 +166,10 @@
     "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_ec02d7196a_20260909.tar.gz.dvc"
   },
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-019",
+  "error_id": "DPS-022",
   "related_open_error_ids": [
-    "DPS-019",
+    "DPS-022",
     "DPS-021",
-    "OBS-003",
     "OBS-001"
   ]
 }

@@ -26,7 +26,7 @@ def read_world_headers() -> str:
 
 
 def test_missing_cataclysm_warlock_coefficients_use_native_spell_info_corrections() -> None:
-    source = (ROOT / "src/server/game/Spells/SpellMgr.cpp").read_text()
+    source = "\n".join(path.read_text(encoding="utf-8") for path in sorted((ROOT / "src/server/game/Spells").glob("SpellMgr*.cpp")))
 
     assert "ApplySpellFix({ 6353 }" in source
     assert "BonusMultiplier = 0.726f" in source
@@ -39,7 +39,7 @@ def test_missing_cataclysm_warlock_coefficients_use_native_spell_info_correction
 def test_warlock_owner_crit_damage_uses_native_passive_without_spell_override() -> None:
     spell_info = (ROOT / "src/server/game/Spells/SpellInfo.h").read_text()
     unit = (ROOT / "src/server/game/Entities/Unit/Unit.cpp").read_text()
-    spell_mgr = (ROOT / "src/server/game/Spells/SpellMgr.cpp").read_text()
+    spell_mgr = "\n".join(path.read_text(encoding="utf-8") for path in sorted((ROOT / "src/server/game/Spells").glob("SpellMgr*.cpp")))
 
     assert "float CritDamageMultiplier = 1.5f;" in spell_info
     assert "if (spellProto->CritDamageMultiplier == 1.5f)" in unit
@@ -244,7 +244,7 @@ def test_drain_soul_execute_multiplier_restores_combined_deaths_embrace_bonus() 
 
 
 def test_deaths_embrace_done_mod_includes_drain_soul_family_flag() -> None:
-    source = (ROOT / "src/server/game/Spells/SpellMgr.cpp").read_text()
+    source = "\n".join(path.read_text(encoding="utf-8") for path in sorted((ROOT / "src/server/game/Spells").glob("SpellMgr*.cpp")))
     correction_start = source.index("ApplySpellFix({ 47198, 47199, 47200 }")
     correction = source[correction_start : source.index("ApplySpellFix({", correction_start + 1)]
 
@@ -324,7 +324,7 @@ def test_profile_range_prefilter_preserves_native_combat_reach() -> None:
     assert "maxRange += bot->GetCombatReach() + target->GetCombatReach();" in executor_source
 
 
-def test_higher_priority_short_range_action_moves_before_long_range_filler() -> None:
+def test_short_range_action_recovery_source_contract() -> None:
     source = "\n".join(
         (
             (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text(),
@@ -354,7 +354,10 @@ def test_higher_priority_short_range_action_moves_before_long_range_filler() -> 
     assert source.index("PathGenerator approachPath(bot);") < source.index(
         "for (float const nativePathSegment : { 1.5f, 3.0f, 5.0f, 7.0f })"
     )
-    assert "BotMovementArbitration::Priority::Combat))" in source
+    movement_call = source[source.index("return annotateProfileRangeReceipt(MoveBotToPoint("):]
+    movement_call = movement_call[:movement_call.index(";")]
+    assert "BotMovementArbitration::Owner::CombatRange" in movement_call
+    assert "BotMovementArbitration::Priority::Combat" in movement_call
     assert "moveToTerrainProjectedPoint(x, y, bot->GetPositionZ())" in source
 
 

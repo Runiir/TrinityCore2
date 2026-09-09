@@ -7,7 +7,6 @@ SQL = (
     / "sql/custom/world/2026_08_23_03_affliction_everlasting_affliction_native_binding.sql"
 )
 SPELL = ROOT / "src/server/scripts/Spells/spell_warlock.cpp"
-SPELL_MGR = ROOT / "src/server/game/Spells/SpellMgr.cpp"
 PLAYER = ROOT / "src/server/game/Entities/Player/Player.cpp"
 UNIT = ROOT / "src/server/game/Entities/Unit/Unit.cpp"
 
@@ -63,7 +62,7 @@ def test_native_refresh_trigger_uses_owned_corruption_and_refreshes_duration() -
 
 
 def test_everlasting_affliction_ranks_route_to_corruption_class_mask() -> None:
-    source = SPELL_MGR.read_text()
+    source = "\n".join(path.read_text(encoding="utf-8") for path in sorted((ROOT / "src/server/game/Spells").glob("SpellMgr*.cpp")))
     start = source.index("// Everlasting Affliction")
     end = source.index("// Summon Ravenous Worgen", start)
     fix = source[start:end]

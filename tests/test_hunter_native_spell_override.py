@@ -22,6 +22,7 @@ def test_native_override_admission_and_fresh_direct_submission(tmp_path):
     assert (effect[3], effect[5], effect[12], effect[18], effect[24]) == (333, 82928, 10, 131072, 82926)
     unit = (ROOT / "src/server/game/Entities/Unit/Unit.cpp").read_text()
     executor = (BOT / "BotActionExecutor.cpp").read_text()
+    spell_source = (ROOT / "src/server/game/Spells/SpellInfo.cpp").read_text()
     controller = (BOT / "BotControllerCombat.cpp").read_text()
     candidates = (BOT / "BotClassSpecActionProfileCandidates.cpp").read_text()
     source = r'''
@@ -41,11 +42,15 @@ constexpr int SPELL_RANGE_MELEE=1,SPELL_RANGE_RANGED=2,UNIT_STATE_CONTROLLED=1,U
 constexpr int CURRENT_CHANNELED_SPELL=1,CURRENT_GENERIC_SPELL=2,MOTION_SLOT_ACTIVE=0;
 constexpr uint32 TARGET_FLAG_DEST_LOCATION=64, ShadowfiendSpellId=34433;
 struct Guid {uint32 id=1; bool IsEmpty() const{return !id;} bool operator!=(Guid b)const{return id!=b.id;}};
+struct Spell;
 struct SpellInfo {
- uint32 Id=0; int32 castTime=0,cost=0; uint32 CasterAuraSpell=0; bool ignoreCost=false;
+ struct ScalingFields {int32 CastTimeMin=0,CastTimeMax=0,CastTimeMaxLevel=0,Class=3;float NerfFactor=1;int32 NerfMaxLevel=0;} Scaling;
+ struct Effect {struct ScalingData {float Coefficient=0,Variance=0,ComboPointsCoefficient=0;} Scaling;} Effects[3];
+ struct CastEntry {int32 Base=0;} castTimeEntry; CastEntry* CastTimeEntry=&castTimeEntry;
+ uint32 Id=0; int32 cost=0; uint32 CasterAuraSpell=0; bool ignoreCost=false;
  uint32 CasterAuraState=0,CasterAuraStateNot=0,ExcludeCasterAuraSpell=0,TargetAuraState=0,TargetAuraStateNot=0,TargetAuraSpell=0,ExcludeTargetAuraSpell=0;
  struct Range {int Flags=0;} range; Range* RangeEntry=&range; uint32 destination=0;
- bool HasAttribute(int)const{return ignoreCost;} uint32 CalcCastTime(int)const{return castTime;}
+ bool HasAttribute(int)const{return ignoreCost;} uint32 CalcCastTime(uint8 level,Spell* spell=nullptr)const;
  bool NeedsComboPoints()const{return false;} uint32 GetExplicitTargetMask()const{return destination;}
 };
 struct AuraEffect {
@@ -72,6 +77,7 @@ struct Unit {
  mutable uint32 resolveCalls=0; uint32 castId=0,castFlags=0,checkedId=0; int casts=0; Motion motion;
  AuraEffectList const& GetAuraEffectsByType(int type)const{return type==332?swaps:swaps2;}
  SpellInfo const* GetCastSpellInfo(SpellInfo const* spellInfo,TriggerCastFlags& triggerFlag)const;
+ bool IsUnit()const{return true;}Unit* ToUnit(){return this;}
  bool HasSpell(uint32 id)const{return learned.count(id);} bool IsAlive()const{return alive;}
  bool IsInWorld()const{return true;} bool IsValidAttackTarget(Unit*,SpellInfo const* s=nullptr){if(s)checkedId=s->Id;return true;}
  bool IsWithinLOSInMap(Unit*)const{return true;} float GetExactDist(Unit*)const{return distance;}
@@ -97,9 +103,14 @@ struct Unit {
  SpellCastResult CastSpell(Position,uint32 id,CastSpellExtraArgs args){return CastSpell(this,id,args);}
 };
 using Player=Unit;
+struct Spell {Unit* caster;Unit* GetCaster()const{return caster;}};
 using AuraStateType=uint32;
 '''
     source += "SpellInfo const* Unit::GetCastSpellInfo(SpellInfo const* spellInfo,TriggerCastFlags& triggerFlag)const" + body(unit, "SpellInfo const* Unit::GetCastSpellInfo(")
+    source += "\nuint32 SpellInfo::CalcCastTime(uint8 level, Spell* spell) const" + body(spell_source, "uint32 SpellInfo::CalcCastTime(")
+    correction_source = (ROOT / "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp").read_text()
+    correction = body(correction_source[correction_source.index("ApplySpellFix({ 82928 }"):], "[](SpellInfo* spellInfo)")
+    source += "\nvoid CorrectAimedInstant(SpellInfo* spellInfo)" + correction
     # Compile the shared production helper against fixture native adapters.
     helper = (BOT / "BotSpellResolution.h").read_text()
     source += "\n" + "\n".join(line for line in helper.splitlines() if not line.startswith("#include"))
@@ -160,9 +171,28 @@ BotActionArbitration::Outcome Typed(Player* bot,Action const& action)
 ''' + typed
     source += r'''
 int main(){
- manager.spells[19434].Id=19434;manager.spells[19434].castTime=2900;manager.spells[19434].cost=50;
+ manager.spells[19434].Id=19434;manager.spells[19434].castTimeEntry.Base=2900;manager.spells[19434].cost=50;
  manager.spells[82928].Id=82928;manager.spells[82928].CasterAuraSpell=82926;
  manager.spells[82926].Id=82926;manager.spells[777].Id=777;
+ manager.spells[19434].Scaling={BASE_MIN,BASE_MAX,BASE_MAX_LEVEL};
+ manager.spells[82928].Scaling={OVERRIDE_MIN,OVERRIDE_MAX,OVERRIDE_MAX_LEVEL};
+ assert(manager.spells[19434].CalcCastTime(85)==2900);
+ assert(manager.spells[82928].CastTimeEntry->Base==0);
+ assert(manager.spells[82928].CalcCastTime(85)==2400); // historical scaling wins over Base0
+ EFFECT_SCALING_INPUTS
+ auto oldScaling=manager.spells[82928].Scaling;
+ auto oldEffects=manager.spells[82928].Effects;
+ float coefficient=oldEffects[0].Scaling.Coefficient,variance=oldEffects[0].Scaling.Variance;
+ CorrectAimedInstant(&manager.spells[82928]);
+ assert(manager.spells[82928].Scaling.Class==oldScaling.Class);
+ assert(manager.spells[82928].Scaling.NerfFactor==oldScaling.NerfFactor);
+ assert(manager.spells[82928].Scaling.NerfMaxLevel==oldScaling.NerfMaxLevel);
+ assert(manager.spells[82928].Effects[0].Scaling.Coefficient==coefficient);
+ assert(manager.spells[82928].Effects[0].Scaling.Variance==variance);
+ assert(manager.spells[82928].CalcCastTime(85)==0);
+ assert(manager.spells[19434].CalcCastTime(85)==2900);
+ assert(manager.spells[82928].cost==0&&manager.spells[82928].CasterAuraSpell==82926);
+
  Player bot,owner;Unit target;AuraEffect aura{&manager.spells[82926]};BotActionExecutor executor;Action action;
  BotActionProfileSpell gate;ProfileSpell profile;typedTarget=&target;
  auto base=BotSpellResolution::Resolve(&bot,19434);assert(base.Effective->Id==19434&&base.Flags==TRIGGERED_NONE);
@@ -206,11 +236,21 @@ int main(){
     # hand-authored instant-spell approximation.
     source=source.replace("uint32 amount=82928,mask=131072; int misc=10; int charges=1;",
         f"uint32 amount={effect[5]},mask={effect[18]}; int misc={effect[12]}; int charges={fixture['aura_options_row'][3]};")
-    source=source.replace("manager.spells[19434].castTime=2900;manager.spells[19434].cost=50;",
-        f"manager.spells[19434].castTime={fixture['base_cast_time_row'][1]};manager.spells[19434].cost={fixture['base_power_row'][1]};")
+    source=source.replace("manager.spells[19434].castTimeEntry.Base=2900;manager.spells[19434].cost=50;",
+        f"manager.spells[19434].castTimeEntry.Base={fixture['base_cast_time_row'][1]};manager.spells[19434].cost={fixture['base_power_row'][1]};")
     source=source.replace("manager.spells[82928].CasterAuraSpell=82926;",
         f"manager.spells[82928].CasterAuraSpell={fixture['override_aura_restrictions_row'][5]};"
-        f"manager.spells[82928].castTime={fixture['override_cast_time_row'][1]};")
+        f"manager.spells[82928].castTimeEntry.Base={fixture['override_cast_time_row'][1]};")
+    for prefix,key in (("BASE", "base_scaling_row"), ("OVERRIDE", "override_scaling_row")):
+        row=fixture[key]
+        for token,value in (("MAX_LEVEL",row[3]),("MIN",row[1]),("MAX",row[2])):
+            source=source.replace(prefix+"_"+token,str(value))
+    import struct
+    scaling=fixture["override_scaling_row"]
+    coefficient,variance=(struct.unpack("<f",struct.pack("<I",scaling[index]))[0] for index in (5,8))
+    source=source.replace("EFFECT_SCALING_INPUTS",
+        f"manager.spells[82928].Effects[0].Scaling.Coefficient={coefficient}f;"
+        f"manager.spells[82928].Effects[0].Scaling.Variance={variance}f;")
     assert fixture["effective_power_entry"] == 0
     path=tmp_path/"override.cpp";path.write_text(source);binary=tmp_path/"override"
     subprocess.run(["c++","-std=c++17",str(path),"-o",str(binary)],check=True)

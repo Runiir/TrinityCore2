@@ -3,6 +3,25 @@
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
+Latest source `e562e9229d` completed the exact 300-second Hunter window:
+28,345.67 DPS / 0 HPS, 2,992 decisions and 1,224 successful actions.
+All 1,744 chunks / 21,428,947 bytes reassembled; native exit 0, verified binary
+and fresh 13-actor cleanup pass. Qualification still rejects only
+`incomplete_evidence_identity`; training remains forbidden.
+
+Independent review accepts native override execution (DPS-019), fixed proc
+observations (OBS-003), retained Vial damage and setup. Complete Aimed recovery
+fails: replacement 82928 lands once before 30 seconds and never afterward,
+despite 12 Fire activations. Native ScalingID 578 sets its cast time to 2,400 ms,
+overriding the zero base entry used by the prior fixture. The profile correctly
+rejects that value after E90. DPS-022 owns the exact native instant-variant
+correction and an actual scaling-calculation regression. Five focused tests and
+independent Sol review pass. The required mechanical SpellMgr split preserves
+all original corrections and passes separate review plus 29 affected tests.
+The joined source is ready for one native build and matched Hunter validation.
+No priority change is admitted. e562 evidence is DVC-published, freshly reconstructed and hash-verified;
+all readers finished before exact raw eviction. No worldserver is running.
+
 Latest source `c87cba4c4b` built on its first attempt and completed the exact
 300-second Hunter window: 8,661,280 damage, 28,870.93 DPS / 0 HPS, 2,988
 decisions and 1,226 successful actions. All 1,741 chunks / 21,385,282 bytes reassembled. Native exit 0,

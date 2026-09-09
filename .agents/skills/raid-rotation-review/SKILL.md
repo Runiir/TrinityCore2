@@ -14,6 +14,9 @@ several native spell forms with one ID. Prove the actual native modifier or
 action-bar override before building a synthetic proc fixture, and trace both
 candidate eligibility and the direct bot cast path. Client opcode processing
 and server-side `CastSpell` need not apply the same replacement logic.
+Derive effective cast time through native scaling and modifier precedence; a
+zero base cast-time entry does not prove an instant spell. Fixtures must retain
+the actual inputs to that calculation instead of stubbing its expected result.
 
 For pet support spells, inspect the owner's actual group/subgroup state and
 the native friendly-target list. A one-bot or "solo" fixture can still create

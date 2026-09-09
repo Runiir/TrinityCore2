@@ -4,7 +4,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SPELL_INFO = ROOT / "src/server/game/Spells/SpellInfo.h"
 UNIT = ROOT / "src/server/game/Entities/Unit/Unit.cpp"
-SPELL_MGR = ROOT / "src/server/game/Spells/SpellMgr.cpp"
 
 
 def _magic_critical_damage(base_damage: int, multiplier: float) -> int:
@@ -14,7 +13,7 @@ def _magic_critical_damage(base_damage: int, multiplier: float) -> int:
 def test_shadow_bite_uses_two_x_crit_without_changing_normal_magic_crits() -> None:
     spell_info = SPELL_INFO.read_text(encoding="utf-8")
     unit = UNIT.read_text(encoding="utf-8")
-    spell_mgr = SPELL_MGR.read_text(encoding="utf-8")
+    spell_mgr = "\n".join(path.read_text(encoding="utf-8") for path in sorted((ROOT / "src/server/game/Spells").glob("SpellMgr*.cpp")))
 
     assert "float CritDamageMultiplier = 1.5f;" in spell_info
     assert "if (spellProto->CritDamageMultiplier == 1.5f)" in unit

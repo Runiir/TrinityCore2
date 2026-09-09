@@ -56,7 +56,7 @@ def _body(source, signature):
 
 
 def test_native_filter_and_target_handler_cross_cast_to_hit(tmp_path):
-    mgr = (ROOT / "src/server/game/Spells/SpellMgr.cpp").read_text()
+    mgr = "\n".join(path.read_text(encoding="utf-8") for path in sorted((ROOT / "src/server/game/Spells").glob("SpellMgr*.cpp")))
     header = (ROOT / "src/server/game/Spells/SpellMgr.h").read_text()
     hunter = (ROOT / "src/server/scripts/Spells/spell_hunter.cpp").read_text()
     spell = (ROOT / "src/server/game/Spells/Spell.cpp").read_text()
