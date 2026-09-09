@@ -9,6 +9,7 @@ SUPPORT = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatSupport.cpp"
 RESOLVER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
 SPELL = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp"
 BOSS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrBossMechanics.cpp"
+SWAP = ROOT / "src/server/game/Bots/BotWorldPopulationMgrTankSwap.cpp"
 
 
 def _extract_function(source: str, signature: str) -> str:
@@ -266,9 +267,11 @@ def test_encounter_swap_executor_remains_outside_generic_taunt_filter() -> None:
     boss = BOSS.read_text(encoding="utf-8")
     assert "HasOtherLiveCohortTankVictim(bot, target)" in resolver
     assert "HasOtherLiveCohortTankVictim(bot, target)" in spell
-    swap_start = boss.index("    if (tankSwapTriggered && std::string(role) == \"tank\"")
-    swap_end = boss.index("    if (result.Features.MoveOut", swap_start)
-    swap = boss[swap_start:swap_end]
-    assert "TryCastCombatSpell(bot, result.Target, candidate.SpellId)" in swap
+    assert "TryBossTankSwap(state, bot, role, result, raidAssignment, raidAdapter, recordTankSwap)" in boss
+    swap_owner = SWAP.read_text(encoding="utf-8")
+    swap_start = swap_owner.index("    if (tankSwapTriggered && std::string(role) == \"tank\"")
+    swap_end = swap_owner.index("\nvoid BotWorldPopulationMgr::SubmitAdaptiveTankSwapCandidate", swap_start)
+    swap = swap_owner[swap_start:swap_end]
+    assert "TryCastCombatSpell(bot, result.Target, candidate.SpellId, forceFacing)" in swap
     assert "ResolveProfileCombatAction(" not in swap
     assert "HasOtherLiveCohortTankVictim" not in swap

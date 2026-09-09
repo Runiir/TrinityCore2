@@ -1,5 +1,29 @@
 # Shared-worldserver workflow status
 
+Current result: `41266a508c` built and cleared Magmaw 10N in exactly
+151.420 seconds with zero bot deaths during the boss. All ten bots survived; Fire
+hook 30007, Affliction 30008 and Paladin tank 30001 died on Drudges earlier.
+Native exit, build verification and cleanup passed. Hostile party damage was
+28,270,614, or 186,703.302 DPS over the native fight. All-bot and changed-edge
+review is complete: effective healing through death was 2,371,058, or
+15,658.817 HPS. Neither changed behavior passed native acceptance. Moving
+Scorch56 is installed, but bait 30006 has 47 accepted submissions, zero
+successful native finishes and zero Scorch damage. The swap contract loads,
+but adaptive ownership bypasses its callers; the generic candidate also
+conflicts with movement. No boss-fight taunt was submitted.
+
+Next batch repairs the proven hazard executor cancellation using native spell
+and movement-generator permissions, and exposes the existing swap as a narrow
+typed candidate alongside movement. Twenty affected tests pass and both repairs have independent approval.
+The combined build and native validation remain. Elemental's artificial
+12-yard Lightning Bolt minimum is also proven, but the same field controls
+positioning. That separate repair remains queued. All ten actors remain in the
+performance review; no coefficient change is admitted. All raw readers are
+done. Evidence is DVC-published, freshly remote-verified, and exact large
+local payloads are evicted.
+
+Previous closed result follows.
+
 Current result: `ff34bce50a` cleared Magmaw 10N in 212.621 seconds, with
 29,179,044 hostile damage (137,235.005 DPS) and 3,992,946 effective healing
 through death (18,779.641 HPS). The five DPS actors produced 106,504.910 DPS

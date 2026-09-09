@@ -10,6 +10,7 @@ CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 SUPPORT = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatSupport.cpp"
 SPELL = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp"
 BOSS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrBossMechanics.cpp"
+SWAP = ROOT / "src/server/game/Bots/BotWorldPopulationMgrTankSwap.cpp"
 
 
 def test_combat_resolver_module_is_narrow_and_registered() -> None:
@@ -76,8 +77,10 @@ def test_generic_taunt_ownership_gate_is_shared_with_select_combat_spell() -> No
     spell_order = spell.index("threat_already_established")
     assert spell_order < spell.index("HasOtherLiveCohortTankVictim(bot, target)")
 
-    swap_start = boss.index("    if (tankSwapTriggered && std::string(role) == \"tank\"")
-    swap_end = boss.index("    if (result.Features.MoveOut", swap_start)
-    swap = boss[swap_start:swap_end]
-    assert "TryCastCombatSpell(bot, result.Target, candidate.SpellId)" in swap
+    assert "TryBossTankSwap(state, bot, role, result, raidAssignment, raidAdapter, recordTankSwap)" in boss
+    swap_owner = SWAP.read_text(encoding="utf-8")
+    swap_start = swap_owner.index("    if (tankSwapTriggered && std::string(role) == \"tank\"")
+    swap_end = swap_owner.index("\nvoid BotWorldPopulationMgr::SubmitAdaptiveTankSwapCandidate", swap_start)
+    swap = swap_owner[swap_start:swap_end]
+    assert "TryCastCombatSpell(bot, result.Target, candidate.SpellId, forceFacing)" in swap
     assert "HasOtherLiveCohortTankVictim" not in swap

@@ -344,6 +344,7 @@ private:
         bool success, ObjectGuid castItemGuid, uint32 castItemEntry);
     void SubmitMagmawBloodlustCandidate(BotUpdateContext& context);
     void SubmitAdaptiveKernelCandidates(BotUpdateContext& context);
+    void SubmitAdaptiveTankSwapCandidate(BotUpdateContext& context);
     void SubmitAfflictionPetAttackCandidate(BotUpdateContext& context);
     void SubmitValidationKernelFallbackCandidates(BotUpdateContext& context);
     bool RunLegacyBotDecision(BotUpdateContext& context);
@@ -690,6 +691,10 @@ private:
     void ReconcileRaidAreaAutocasts(Player* bot, bool suppress) const;
     bool PrepareBossMechanicAction(WorldBotState& state, Player* bot,
         Unit* boundRouteTarget, BossMechanicActionResult& result);
+    bool TryBossTankSwap(WorldBotState& state, Player* bot, char const* role,
+        BossMechanicActionResult& result, RaidRoleAssignment const& raidAssignment,
+        RaidMechanicAdapter const& raidAdapter, std::function<void(uint32)> const& recordSwap,
+        bool forceFacing = true);
     bool TryBossHealer(WorldBotState& state, Player* bot, char const* role,
         BossMechanicActionResult& result,
         RaidRoleAssignment const& raidAssignment,
@@ -746,7 +751,7 @@ private:
         ResolvedCombatAction const* action = nullptr,
         bool forceRangedReposition = false,
         std::string_view diagnosticCandidateKey = {});
-    bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
+    bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId, bool forceFacing = true) const;
     void MarkBotBlocked(WorldBotState& state, Player* bot, char const* reason) const;
     void ObserveBotCandidateFailure(WorldBotState& state, Player* bot,
         std::string const& key, std::string const& reason,

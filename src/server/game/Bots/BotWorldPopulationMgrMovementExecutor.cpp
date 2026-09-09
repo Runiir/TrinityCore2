@@ -7,10 +7,12 @@
 #include "MotionMaster.h"
 #include "Movement/Spline/MoveSpline.h"
 #include "Player.h"
+#include "Spell.h"
 #include "Unit.h"
 
 #include <chrono>
 #include <cmath>
+#include <initializer_list>
 
 namespace
 {
@@ -148,13 +150,22 @@ bool BotWorldPopulationMgr::ExecuteMovementIntent(
         return false;
     }
 
-    // A player immediately cancels a hard cast when reacting to a lethal
-    // ground mechanic. The encounter brain expresses that decision through
-    // the Hazard owner/priority pair; the movement service performs only the
-    // native interruption required to make the admitted path start now.
+    // Abandon movement-forbidden casts for an admitted hazard. Native
+    // cast-while-moving permissions also apply when retaining a hazard path;
+    // cancelling those spells on every tick prevents them from ever finishing.
     if (BotWorldMovement::InterruptsActiveCast(intent.Owner, intent.Priority)
         && bot->HasUnitState(UNIT_STATE_CASTING))
-        bot->InterruptNonMeleeSpells(false);
+    {
+        // Spell legality and the native movement generator must both permit
+        // progress (triggered channels can differ between these two checks).
+        bool movementPermitted = !bot->IsMovementPreventedByCasting();
+        for (CurrentSpellTypes slot : {CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL})
+            if (Spell* spell = bot->GetCurrentSpell(slot))
+                if (spell->CheckMovement() != SPELL_CAST_OK)
+                    movementPermitted = false;
+        if (!movementPermitted)
+            bot->InterruptNonMeleeSpells(false);
+    }
 
     BotWorldMovement::ActivePathObservation const active =
         ObserveActiveMovement(state, bot, intent, request);

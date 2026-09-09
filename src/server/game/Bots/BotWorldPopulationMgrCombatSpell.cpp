@@ -296,7 +296,7 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     return best ? best->SpellId : 0;
 }
 
-bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const
+bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId, bool forceFacing) const
 {
     if (!bot || !target || !spellId || !target->IsAlive() || !bot->IsValidAttackTarget(target))
         return false;
@@ -326,7 +326,7 @@ bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32
     if (!bot->IsWithinDistInMap(target, maxRange))
         return false;
 
-    bot->SetFacingToObject(target);
+    bot->SetFacingToObject(target, forceFacing);
     if (bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
         return false;
 

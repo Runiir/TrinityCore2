@@ -491,88 +491,17 @@ raid_cooldown_complete:
             }
     }
 
-    Unit* currentTank = result.Target->GetVictim();
-    bool tankSwapConditionActive = false;
-    bool tankSwapTimerTrigger = false;
-    std::string tankSwapTriggerKey;
-    if (result.Features.RaidEncounter && raidAdapter.ContractResolved && currentTank)
+    auto recordTankSwap = [this, &state, bot, &result, &raidAssignment, &raidAnchors,
+        &raidAdapter, &raidGearPlan, &heroicProgression, &raw, &semantic](uint32 spellId)
     {
-        if (raidAdapter.TankSwapTrigger == "debuff_stacks")
-            if (Aura const* aura = currentTank->GetAura(raidAdapter.TankSwapAuraId))
-                if (aura->GetStackAmount() >= raidAdapter.TankSwapAuraStacks)
-                {
-                    tankSwapConditionActive = true;
-                    tankSwapTriggerKey = "debuff:" + std::to_string(raidAdapter.TankSwapAuraId)
-                        + ":" + std::to_string(currentTank->GetGUID().GetCounter());
-                }
-        if (raidAdapter.TankSwapTrigger == "timer")
-            tankSwapTimerTrigger = state.LastRaidTankSwapMs
-                && NowMs() >= state.LastRaidTankSwapMs + raidAdapter.TankSwapIntervalMs;
-        if (raidAdapter.TankSwapTrigger == "boss_cast")
-            if (result.Features.CastSpellId == raidAdapter.TankSwapTriggerSpellId)
-            {
-                tankSwapConditionActive = true;
-                tankSwapTriggerKey = "cast:" + std::to_string(result.Features.CastSpellId);
-            }
-        if (raidAdapter.TankSwapTrigger == "add_spawn" && !result.Features.PriorityAddGuid.IsEmpty())
-            if (Unit* add = ObjectAccessor::GetUnit(*bot, result.Features.PriorityAddGuid))
-                if (add->GetEntry() == raidAdapter.TankSwapAddEntry)
-                {
-                    tankSwapConditionActive = true;
-                    tankSwapTriggerKey = "add:" + std::to_string(add->GetGUID().GetCounter());
-                }
-        if (raidAdapter.TankSwapTrigger == "phase_transition")
-            if (Cohort().Raid.EncounterPhase == raidAdapter.TankSwapPhase)
-            {
-                tankSwapConditionActive = true;
-                tankSwapTriggerKey = "phase:" + raidAdapter.TankSwapPhase;
-            }
-    }
-    if (!tankSwapConditionActive && raidAdapter.TankSwapTrigger != "timer")
-        state.LastRaidTankSwapTriggerKey.clear();
-    bool const tankSwapTriggered = tankSwapTimerTrigger
-        || (tankSwapConditionActive && !tankSwapTriggerKey.empty()
-            && state.LastRaidTankSwapTriggerKey != tankSwapTriggerKey);
-    ObjectGuid nextTankGuid;
-    if (currentTank)
-    {
-        if (currentTank->GetGUID() == raidAssignment.MainTankGuid)
-            nextTankGuid = raidAssignment.OffTankGuid;
-        else if (currentTank->GetGUID() == raidAssignment.OffTankGuid)
-            nextTankGuid = raidAssignment.MainTankGuid;
-    }
-    if (tankSwapTriggered && std::string(role) == "tank"
-        && !nextTankGuid.IsEmpty() && bot->GetGUID() == nextTankGuid && currentTank != bot)
-    {
-        BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role);
-        std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, result.Target, profile);
-        for (BotActionCandidate const& candidate : candidates)
-        {
-            if (candidate.Category != BotCombatActionCategory::Taunt || !candidate.RejectReason.empty())
-                continue;
-            bool swapped = TryCastCombatSpell(bot, result.Target, candidate.SpellId);
-            result.Action = swapped ? "raid_tank_swap_taunt" : "raid_tank_swap_taunt_failed";
-            result.SpellId = swapped ? candidate.SpellId : 0;
-            result.Failure = !swapped;
-            result.Rare = true;
-            if (swapped)
-            {
-                uint64 const swapAtMs = NowMs();
-                for (WorldBotState& memberState : Party().Bots)
-                    if (memberState.Guid == raidAssignment.MainTankGuid || memberState.Guid == raidAssignment.OffTankGuid)
-                    {
-                        memberState.LastRaidTankSwapTriggerSpellId = result.Features.CastSpellId;
-                        memberState.LastRaidTankSwapTriggerKey = tankSwapTriggerKey;
-                        memberState.LastRaidTankSwapWipeGeneration = Cohort().Raid.WipeGeneration;
-                        memberState.LastRaidTankSwapMs = swapAtMs;
-                    }
-            }
-            RecordRaidTelemetry(state, bot, result.Target, "raid_tank_swap", swapped ? "native_taunt" : "native_taunt_failed",
-                result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression,
-                raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, candidate.SpellId);
-            return result;
-        }
-    }
+        RecordRaidTelemetry(state, bot, result.Target, "raid_tank_swap",
+            result.Failure ? "native_taunt_failed" : "native_taunt", result.Features,
+            raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression,
+            raw.c_str(), semantic.c_str(), result.Features.DangerScore,
+            result.Features.CastSpellId, spellId);
+    };
+    if (TryBossTankSwap(state, bot, role, result, raidAssignment, raidAdapter, recordTankSwap))
+        return result;
 
     if (result.Features.MoveOut && result.Features.DangerScore >= 0.25f)
     {

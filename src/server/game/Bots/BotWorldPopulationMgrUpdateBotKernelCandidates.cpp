@@ -24,6 +24,7 @@ using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
     BotUpdateContext& context)
 {
+        SubmitAdaptiveTankSwapCandidate(context);
         SubmitMagmawBloodlustCandidate(context);
         bool const typedDrudgeValidationRoute =
             Cohort().Config.ValidationRouteMechanicProfile

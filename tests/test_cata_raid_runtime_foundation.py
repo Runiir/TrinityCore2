@@ -2584,6 +2584,10 @@ def test_phase1_target_transfer_and_swap_controls_are_executable():
 
 
 def test_tank_swap_level_triggers_are_edge_latched_until_the_condition_clears():
+    boss = (BOT_DIR / "BotWorldPopulationMgrBossMechanics.cpp").read_text(encoding="utf-8")
+    assert "TryBossTankSwap(state, bot, role, result, raidAssignment, raidAdapter, recordTankSwap)" in boss
+    swap = (BOT_DIR / "BotWorldPopulationMgrTankSwap.cpp").read_text(encoding="utf-8")
+    assert "TryCastCombatSpell(bot, result.Target, candidate.SpellId, forceFacing)" in swap
     assert "std::string LastRaidTankSwapTriggerKey" in HEADER
     assert "uint64 LastRaidTankSwapWipeGeneration" in HEADER
     for token in (

@@ -2,22 +2,22 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "magmaw:multi_class_performance_batch",
   "owner_skill": "raid-rotation-review",
-  "classification": "multi_class_repair_review",
+  "classification": "bounded_shared_execution_repair_batch",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "ff34bce50a2220c4c9074fe0eaeb757251786e7e",
+  "observed_at_commit": "41266a508c9c362f8c15a33b11921691ab5aa77e",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Fire FLOAT correction and Magmaw swap contract independently approved",
+  "gate_state": "41266 development clear; Fire native completion and tank swap rejected; all-class review continues",
   "first_broken_edge": {
-    "id": "fire_moving_scorch_migration_float_predicate",
-    "owner_classification": "parallel_role_review",
-    "cause": "Native FLOAT comparison matched zero source rows; intended moving Scorch row absent during ff34.",
-    "review_state": "correction_independently_approved"
+    "id": "fire_moving_scorch_native_completion",
+    "owner_classification": "shared_execution_diagnosis",
+    "cause": "Hazard movement unconditionally interrupts moving-permitted Scorch every26-300ms, including retained paths; 47 submissions yield zero successful finishes.",
+    "review_state": "native_cause_proven_repair_independently_approved"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "dca435e2273aa304e1301a7d7cf64fe1e9fe2053f88e71e41469a8eea410c225"
+    "sha256": "a101cb293159211fa0a71c0a38e8090d6795212ebfacb6aec8150be956aada54"
   },
   "scope_lock": {
     "objective": "Resolve performance losses across all represented classes; preserve accepted DK/MT improvements and fix misleading diagnostic publication.",
@@ -40,7 +40,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Build reviewed source, verify native post-update Fire rows, run bounded Magmaw and review all bots plus repaired edges.",
+  "next_action": "Build the two independently approved runtime repairs once and validate native completion/movement and tank ownership; Elemental range coupling remains queued.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -176,5 +176,10 @@
     "blood_death_knight": [
       30002
     ]
+  },
+  "review": {
+    "verdict": "approve",
+    "scope": "native hazard moving-cast permissions and narrow tank-swap outer admission",
+    "live_verified": false
   }
 }

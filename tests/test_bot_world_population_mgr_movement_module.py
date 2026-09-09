@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -134,6 +135,64 @@ def test_hazard_movement_interrupts_active_cast_before_path_reconciliation() -> 
     submission = executor.index("bot->GetMotionMaster()->Clear", active_path)
     assert interrupt < active_path < submission
     assert "bot->InterruptNonMeleeSpells(false);" in executor[interrupt:active_path]
+    assert "spell->CheckMovement() != SPELL_CAST_OK" in executor[interrupt:active_path]
+
+
+def test_hazard_executor_preserves_native_moving_casts(tmp_path: Path) -> None:
+    """Execute the production interrupt branch through repeated hazard ticks.
+
+    Native spell legality and movement-generator eligibility are stubbed here.
+    Path planning and native landed effects require live proof.
+    """
+    executor = EXECUTOR.read_text(encoding="utf-8")
+    start = executor.index("    if (BotWorldMovement::InterruptsActiveCast")
+    end = executor.index("    BotWorldMovement::ActivePathObservation", start)
+    branch = executor[start:end]
+    source = r'''
+#include <cassert>
+#include <initializer_list>
+enum CurrentSpellTypes { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL };
+constexpr int UNIT_STATE_CASTING=1, SPELL_CAST_OK=0;
+struct Spell { int result; int checks=0; int CheckMovement(){++checks;return result;} };
+struct Player {
+    Spell* spells[2]={nullptr,nullptr}; int interrupts=0;
+    bool movementBlocked=false;
+    bool HasUnitState(int) const {return spells[0] || spells[1];}
+    bool IsMovementPreventedByCasting() const {return movementBlocked;}
+    Spell* GetCurrentSpell(CurrentSpellTypes slot){return spells[slot];}
+    void InterruptNonMeleeSpells(bool delayed){assert(!delayed);++interrupts;spells[0]=spells[1]=nullptr;}
+};
+namespace BotWorldMovement { bool InterruptsActiveCast(int owner,int priority){return owner==1 && priority==1;} }
+struct Intent {int Owner=1, Priority=1;};
+void tick(Player* bot,Intent const& intent,int& pathTicks){
+''' + branch + r'''
+    ++pathTicks; // Both retained and fresh paths continue after this branch.
+}
+int main(){
+    Spell covered{0}, forbidden{1}; Player bot; Intent hazard; int paths=0;
+    bot.spells[0]=&covered;
+    for(int i=0;i<15;++i)tick(&bot,hazard,paths);
+    assert(paths==15 && bot.interrupts==0 && covered.checks==15);
+    covered.result=1; tick(&bot,hazard,paths); // Permission expires mid-cast.
+    assert(bot.interrupts==1 && !bot.spells[0]);
+    covered.result=0; bot.spells[1]=&covered;tick(&bot,hazard,paths);
+    assert(bot.interrupts==1 && bot.spells[1]==&covered);
+    bot.spells[0]=&covered;bot.spells[1]=&forbidden;tick(&bot,hazard,paths);
+    assert(bot.interrupts==2 && !bot.spells[0] && !bot.spells[1]);
+    // Triggered channel: spell check permits it, native point movement blocks.
+    bot.spells[1]=&covered;bot.movementBlocked=true;tick(&bot,hazard,paths);
+    assert(bot.interrupts==3 && !bot.spells[1]);bot.movementBlocked=false;
+    bot.spells[0]=&forbidden; tick(&bot,Intent{0,1},paths);
+    tick(&bot,Intent{1,0},paths);
+    assert(bot.interrupts==3 && bot.spells[0]==&forbidden);
+    bot.spells[0]=nullptr;tick(&bot,hazard,paths);assert(bot.interrupts==3);
+}
+'''
+    cpp = tmp_path / "hazard_cast.cpp"
+    binary = tmp_path / "hazard_cast"
+    cpp.write_text(source, encoding="utf-8")
+    subprocess.run(["c++", "-std=c++17", str(cpp), "-o", str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)
 
 
 def test_route_and_recovery_progressive_admission_is_bounded() -> None:
