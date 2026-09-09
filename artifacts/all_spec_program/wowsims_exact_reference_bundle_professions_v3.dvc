@@ -1,0 +1,6 @@
+outs:
+- md5: 05121d6a3dc4692d3059abb64b850aee.dir
+  size: 75197127
+  nfiles: 181
+  hash: md5
+  path: wowsims_exact_reference_bundle_professions_v3
