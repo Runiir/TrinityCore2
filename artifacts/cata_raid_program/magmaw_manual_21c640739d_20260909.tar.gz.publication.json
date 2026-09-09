@@ -1,0 +1,71 @@
+{
+  "classification": "manual_spectator_diagnostic",
+  "source_commit": "21c640739d4788b69cb0fe5ef33555544b8706b9",
+  "training_eligible": false,
+  "archive_sha256": "3f72e1b1af3f547b30e12622c9ce1a6467f42d9ce78c3de6771b9463914f6962",
+  "remote_download_sha256": "3f72e1b1af3f547b30e12622c9ce1a6467f42d9ce78c3de6771b9463914f6962",
+  "fresh_empty_cache": true,
+  "raw_review_complete": true,
+  "closure": {
+    "source_commit": "21c640739d4788b69cb0fe5ef33555544b8706b9",
+    "classification": "manual_spectator_diagnostic",
+    "training_eligible": false,
+    "worldserver_exited": true,
+    "fresh_database_readback": [
+      {
+        "guid": 30001,
+        "name": "Mgwtanka",
+        "online": 0
+      },
+      {
+        "guid": 30002,
+        "name": "Mgwtankb",
+        "online": 0
+      },
+      {
+        "guid": 30003,
+        "name": "Mgwheala",
+        "online": 0
+      },
+      {
+        "guid": 30004,
+        "name": "Mgwhealb",
+        "online": 0
+      },
+      {
+        "guid": 30005,
+        "name": "Mgwhealc",
+        "online": 0
+      },
+      {
+        "guid": 30006,
+        "name": "Mgwdpsa",
+        "online": 0
+      },
+      {
+        "guid": 30007,
+        "name": "Mgwdpsb",
+        "online": 0
+      },
+      {
+        "guid": 30008,
+        "name": "Mgwdpsc",
+        "online": 0
+      },
+      {
+        "guid": 30009,
+        "name": "Mgwdpsd",
+        "online": 0
+      },
+      {
+        "guid": 30010,
+        "name": "Mgwdpse",
+        "online": 0
+      }
+    ],
+    "cleanup_passed": true
+  },
+  "local_dvc_status": "Data and pipelines are up to date.\n",
+  "remote_dvc_status": "Cache and remote 'object' are in sync.\n",
+  "verified_raw_payloads_evicted": true
+}
