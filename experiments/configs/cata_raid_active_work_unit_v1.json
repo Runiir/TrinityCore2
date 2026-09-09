@@ -1,23 +1,24 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "magmaw:multi_class_performance_batch",
-  "owner_skill": "raid-rotation-review",
-  "classification": "bounded_shared_execution_repair_batch",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "trace_backed_shared_target_admission_repair",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "41266a508c9c362f8c15a33b11921691ab5aa77e",
+  "observed_at_commit": "6882d0c20447283a9c97f006cdae2c7ea136a9db",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "41266 development clear; Fire native completion and tank swap rejected; all-class review continues",
+  "gate_state": "6882 clear; tank swap and early moving-cast interruption repair accepted; throughput unresolved due shared target admission and native terminal-failure observation gaps",
   "first_broken_edge": {
-    "id": "fire_moving_scorch_native_completion",
-    "owner_classification": "shared_execution_diagnosis",
-    "cause": "Hazard movement unconditionally interrupts moving-permitted Scorch every26-300ms, including retained paths; 47 submissions yield zero successful finishes.",
-    "review_state": "native_cause_proven_repair_independently_approved"
+    "id": "optional_parasite_support_without_spatial_legality",
+    "owner_classification": "raid_bot_runtime_implementation",
+    "cause": "Optional support selects a live parasite without actor-target LOS/range admission, while its movement contract forbids repairing LOS/max range; valid target can leave no executable offense.",
+    "review_state": "trace_and_actual_caller_mismatch_proven",
+    "ledger_id": "ENC-003"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "a101cb293159211fa0a71c0a38e8090d6795212ebfacb6aec8150be956aada54"
+    "sha256": "869a557f19e3b175910e11d6ea8323a9cc3bbac96eee29916d7df77ccc9b2da2"
   },
   "scope_lock": {
     "objective": "Resolve performance losses across all represented classes; preserve accepted DK/MT improvements and fix misleading diagnostic publication.",
@@ -38,9 +39,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Build the two independently approved runtime repairs once and validate native completion/movement and tank ownership; Elemental range coupling remains queued.",
+  "next_action": "Implement bounded optional-support spatial admission from observed native facts, preserving personal threats, bait and hazard ownership; retain OBS-008 before guessing Scorch terminal failure.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -79,8 +80,8 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "approve",
-    "scope": "Fire migration08 FLOAT predicate and Magmaw existing debuff swap contract",
+    "verdict": "not_started",
+    "scope": "New ENC-003 optional support-target spatial admission; previous6882 repair acceptance is recorded in the closed evidence.",
     "live_verified": false
   },
   "related_edges": [
@@ -127,15 +128,15 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-035",
+  "error_id": "ENC-003",
   "related_open_error_ids": [
+    "OBS-008",
+    "DPS-037",
     "DPS-021",
     "DPS-023",
     "DPS-026",
     "DPS-029",
-    "DPS-035",
     "ENC-001",
-    "ENC-002",
     "HEAL-001",
     "OBS-006"
   ],
@@ -176,10 +177,5 @@
     "blood_death_knight": [
       30002
     ]
-  },
-  "review": {
-    "verdict": "approve",
-    "scope": "native hazard moving-cast permissions and narrow tank-swap outer admission",
-    "live_verified": false
   }
 }

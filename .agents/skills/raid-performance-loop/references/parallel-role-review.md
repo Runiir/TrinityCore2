@@ -14,6 +14,10 @@ shared timing and survival claims. A route's first event may precede hostile
 damage, and final alive count may include resurrection. Reconcile any conflicting
 phase intervals or timestamps before freezing a specialist report; do not copy
 the previous run's survival conclusion.
+For recent-event subtotals, reconstruct actor ownership and hostile target
+identity when the stream omits perspective. Do not sum damage-taken or friendly
+events as outgoing damage. Reconcile interval totals with canonical cumulative
+metrics before publishing them; matching timestamps alone do not establish attribution.
 
 Derive actor class/spec labels from the actual admission or loadout receipt,
 not remembered names or a prior handoff. If prose disagrees with that receipt,
