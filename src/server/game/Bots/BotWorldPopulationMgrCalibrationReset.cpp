@@ -338,7 +338,20 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
         {
             CalibrationMetrics& metrics =
                 Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
+            // These native uses belong to this attempt's warmup. Their
+            // inventory/aura effects survive the scored reset, as can a
+            // pending native completion. Keep the complete receipts too.
+            bool const preserveWarmupConsumables = firstResetPass
+                && IsSelfProvidedCalibrationBaseline();
+            auto flask = preserveWarmupConsumables
+                ? std::move(metrics.FlaskConsumable)
+                : CalibrationMetrics::NativeConsumableReceipt();
+            auto food = preserveWarmupConsumables
+                ? std::move(metrics.FoodConsumable)
+                : CalibrationMetrics::NativeConsumableReceipt();
             metrics = CalibrationMetrics();
+            metrics.FlaskConsumable = std::move(flask);
+            metrics.FoodConsumable = std::move(food);
             auto& petSetup = state.PersistentPetSetup;
             petSetup.PreScoreResummonRequestedAtMs = 0;
             petSetup.PreScoreResummonSubmittedAtMs = 0;

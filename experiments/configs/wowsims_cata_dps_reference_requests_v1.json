@@ -5,7 +5,7 @@
   "provider_repository": "https://github.com/wowsims/cata",
   "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
   "fixture_contract_path": "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json",
-  "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+  "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
   "request_count": 16,
   "requests": [
     {
@@ -15,7 +15,7 @@
         "target_spec": "affliction_warlock",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/warlock/affliction/affliction_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/affliction_warlock.test.go",
@@ -40,13 +40,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "92606cdfe3a7a58ac8552e7758c2f1ee8bba03768442c4446b47fce6f1034adf",
+      "source_contract_sha256": "e881d5c338bcba6c0d151bd7e8c71b2ee3119b1951c1e1c195d844f68ca02317",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "affliction_warlock",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "92606cdfe3a7a58ac8552e7758c2f1ee8bba03768442c4446b47fce6f1034adf",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "e881d5c338bcba6c0d151bd7e8c71b2ee3119b1951c1e1c195d844f68ca02317",
         "source_selector": {
           "test_path": "sim/warlock/affliction/affliction_test.go",
           "suite_name": "TestAffliction",
@@ -1784,200 +1784,37 @@
           }
         }
       },
-      "request_sha256": "11318b2c4283553a9e3f9110f3e098d3950b60f0d9d6d0fa937ca6157c462c42",
+      "request_sha256": "d251418c1b684dd4b8efdd62c815a4f285f48dc5039940bdefb12b64a4c4bcf2",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:affliction_warlock:b358d889ba75edaf0cc031d4a3abb923b6877b9c3f5955138d7d82f7f17ec41f",
-        "dps": 31312.966894306235,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "spell",
-          "content_sha256": "b62ee272ae42417a62e849bd6765a1022de7db3a898d0ffe46c54dab3202a93f",
-          "primary_stat": "intellect",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 0.0,
-            "main_hand_dps": 0.0,
-            "melee_haste_pct": 23.95805123274637,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 0.0,
-            "parry_pct": 0.0,
-            "physical_crit_pct": 8.105042060900924,
-            "physical_hit_pct": 14.511842596046252,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 23.95805123274637,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 19.364092060900923,
-            "spell_haste_pct": 23.95805123274637,
-            "spell_hit_pct": 17.01388461833552
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 91.0,
-            "arcane_resistance": 0.0,
-            "armor": 10254.0,
-            "attack_power": 73.0,
-            "bonus_armor": 0.0,
-            "crit_rating": 983.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 0.0,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 3068.0,
-            "health": 155440.0,
-            "hit_rating": 1743.0,
-            "intellect": 8120.700000000001,
-            "mana": 144209.5,
-            "mastery_rating": 1014.0,
-            "mp5": 1353.65,
-            "nature_resistance": 0.0,
-            "parry_rating": 0.0,
-            "ranged_attack_power": 0.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 11534.7,
-            "spirit": 186.43,
-            "stamina": 8394.0,
-            "strength": 83.0
-          }
-        },
-        "pet_stat_reference": {
-          "pet_inherited_stats": {
-            "kind": "pet_inherited_stats",
-            "line_index": 14,
-            "source_entity": "phase8_affliction_warlock (#1) - Felhunter",
-            "stat_vector": {
-              "armor": 10254.0,
-              "attack_power": 12262.114,
-              "expertise_rating": 781.645,
-              "haste_rating": 3068.0,
-              "hit_rating": 1743.0,
-              "mana": 271309.398,
-              "mastery_rating": 1014.0,
-              "physical_crit_percent": 19.364,
-              "physical_hit_percent": 14.512,
-              "spell_crit_percent": 19.364,
-              "spell_hit_percent": 17.014,
-              "spell_power": 6131.057
-            },
-            "timestamp_seconds": 0.0
-          },
-          "pet_stats": {
-            "kind": "pet_stats",
-            "line_index": 13,
-            "source_entity": "phase8_affliction_warlock (#1) - Felhunter",
-            "stat_vector": {
-              "agility": 883.0,
-              "armor": 10254.0,
-              "attack_power": 13148.114,
-              "expertise_rating": 781.645,
-              "haste_rating": 3068.0,
-              "health": 4682.0,
-              "hit_rating": 1743.0,
-              "intellect": 159.0,
-              "mana": 296354.848,
-              "mastery_rating": 1014.0,
-              "mp5": 1171.0,
-              "physical_crit_percent": 24.343,
-              "physical_hit_percent": 14.512,
-              "spell_crit_percent": 22.938,
-              "spell_hit_percent": 17.014,
-              "spell_power": 6131.057,
-              "spirit": 225.0,
-              "stamina": 353.0,
-              "strength": 453.0
-            },
-            "timestamp_seconds": 0.0
-          }
-        },
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "11318b2c4283553a9e3f9110f3e098d3950b60f0d9d6d0fa937ca6157c462c42",
+          "request_contract_sha256": "d251418c1b684dd4b8efdd62c815a4f285f48dc5039940bdefb12b64a4c4bcf2",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/e283421f5f45003db98f957ea1c7f758c8ce10d67266602442d28ae35c18d994.json",
-            "sha256": "e283421f5f45003db98f957ea1c7f758c8ce10d67266602442d28ae35c18d994",
-            "byte_count": 5978
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/b358d889ba75edaf0cc031d4a3abb923b6877b9c3f5955138d7d82f7f17ec41f.json",
-            "sha256": "b358d889ba75edaf0cc031d4a3abb923b6877b9c3f5955138d7d82f7f17ec41f",
-            "byte_count": 267810
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/6a0d06a89ec53df026b371e63b5082b8b5d8d143a075bbc9e48daf9d15e7dd60.json",
-            "sha256": "6a0d06a89ec53df026b371e63b5082b8b5d8d143a075bbc9e48daf9d15e7dd60",
-            "byte_count": 16597
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -1985,12 +1822,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "affliction_warlock",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:affliction_warlock:b358d889ba75edaf0cc031d4a3abb923b6877b9c3f5955138d7d82f7f17ec41f",
-        "reference_dps": 31312.966894306235,
-        "source_contract_sha256": "92606cdfe3a7a58ac8552e7758c2f1ee8bba03768442c4446b47fce6f1034adf",
-        "request_sha256": "11318b2c4283553a9e3f9110f3e098d3950b60f0d9d6d0fa937ca6157c462c42",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "e881d5c338bcba6c0d151bd7e8c71b2ee3119b1951c1e1c195d844f68ca02317",
+        "request_sha256": "d251418c1b684dd4b8efdd62c815a4f285f48dc5039940bdefb12b64a4c4bcf2",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -4234,7 +4071,7 @@
         "target_spec": "arms_warrior",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/warrior/arms/arms_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/arms_warrior.test.go",
@@ -4259,13 +4096,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "ec18b8efac38f902c5248472936cb22d05d729e427aba65c0ed2b44c461cd2bc",
+      "source_contract_sha256": "f96f9aba8d6b60e58e02f5d567b376f67e162ae4125e7ed1736a840b4337976e",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "arms_warrior",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "ec18b8efac38f902c5248472936cb22d05d729e427aba65c0ed2b44c461cd2bc",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "f96f9aba8d6b60e58e02f5d567b376f67e162ae4125e7ed1736a840b4337976e",
         "source_selector": {
           "test_path": "sim/warrior/arms/arms_test.go",
           "suite_name": "TestArms",
@@ -5359,7 +5196,7 @@
           },
           "player_spec_key": "arms_warrior",
           "professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ],
           "race_id": 1,
@@ -5675,152 +5512,37 @@
           }
         }
       },
-      "request_sha256": "b95d5a78956917a204ede4b72a17e0308b4d5b9745312604a47562c5e72d6963",
+      "request_sha256": "eebe4fffa0db77c0e9c370442febad92d7c8b4dc8e2066a4b77a7324f3b3e7e1",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:arms_warrior:27ea32a4e9b01ccfed4263c7a53d28bec16d3db60818d9a46d72d531b0d72009",
-        "dps": 38550.51428921151,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "melee",
-          "content_sha256": "981abb1162aff616d657b8f2f9d21c4ee9cce0932e8c16d6ccec547a418c7594",
-          "primary_stat": "strength",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 3.6639999999999997,
-            "main_hand_dps": 1060.138888888889,
-            "melee_haste_pct": 1.9366351713562935,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 0.0,
-            "parry_pct": 16.81551175961607,
-            "physical_crit_pct": 16.61452847449164,
-            "physical_hit_pct": 8.01773059093089,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 1.9366351713562935,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 13.77732847449164,
-            "spell_haste_pct": 1.9366351713562935,
-            "spell_hit_pct": 9.400098042144066
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 692.0,
-            "arcane_resistance": 0.0,
-            "armor": 23689.0,
-            "attack_power": 18835.7,
-            "bonus_armor": 0.0,
-            "crit_rating": 2470.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 871.081591,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 248.0,
-            "health": 170565.0,
-            "hit_rating": 963.0,
-            "intellect": 57.0,
-            "mana": 0.0,
-            "mastery_rating": 1798.0,
-            "mp5": 0.0,
-            "nature_resistance": 0.0,
-            "parry_rating": 2434.4145,
-            "ranged_attack_power": 190.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 0.0,
-            "spirit": 85.49000000000001,
-            "stamina": 9110.0,
-            "strength": 9205.35
-          }
-        },
-        "pet_stat_reference": null,
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "b95d5a78956917a204ede4b72a17e0308b4d5b9745312604a47562c5e72d6963",
+          "request_contract_sha256": "eebe4fffa0db77c0e9c370442febad92d7c8b4dc8e2066a4b77a7324f3b3e7e1",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/2328882702a0bddd42b459cd180264662301bdfcd89e47132cd2abb7a179288d.json",
-            "sha256": "2328882702a0bddd42b459cd180264662301bdfcd89e47132cd2abb7a179288d",
-            "byte_count": 11429
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/27ea32a4e9b01ccfed4263c7a53d28bec16d3db60818d9a46d72d531b0d72009.json",
-            "sha256": "27ea32a4e9b01ccfed4263c7a53d28bec16d3db60818d9a46d72d531b0d72009",
-            "byte_count": 370786
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/42dc0e578d74d38c0b42ab8119f9988503358bd6a683f20848d3469448e74140.json",
-            "sha256": "42dc0e578d74d38c0b42ab8119f9988503358bd6a683f20848d3469448e74140",
-            "byte_count": 11595
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -5828,12 +5550,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "arms_warrior",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:arms_warrior:27ea32a4e9b01ccfed4263c7a53d28bec16d3db60818d9a46d72d531b0d72009",
-        "reference_dps": 38550.51428921151,
-        "source_contract_sha256": "ec18b8efac38f902c5248472936cb22d05d729e427aba65c0ed2b44c461cd2bc",
-        "request_sha256": "b95d5a78956917a204ede4b72a17e0308b4d5b9745312604a47562c5e72d6963",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "f96f9aba8d6b60e58e02f5d567b376f67e162ae4125e7ed1736a840b4337976e",
+        "request_sha256": "eebe4fffa0db77c0e9c370442febad92d7c8b4dc8e2066a4b77a7324f3b3e7e1",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -6789,7 +6511,7 @@
             },
             "player_spec_key": "arms_warrior",
             "professions": [
-              "ProfessionUnknown",
+              "Blacksmithing",
               "ProfessionUnknown"
             ],
             "race_id": 1,
@@ -6874,8 +6596,8 @@
             }
           }
         },
-        "source_setup_sha256": "87ed58bc1260ebf832f922584d41eac2d0347bea42ef3c518175f4821b599768",
-        "request_condition_projection_sha256": "30d25356dbf217f0808294c25e04e355ab382f35f58a23f580cafaa7d31b3682",
+        "source_setup_sha256": "41e0a58e273eb9576f4b9b8a5a22eed5df6ccbc750a80a94197d12756df25945",
+        "request_condition_projection_sha256": "95e27848a25f8cb07cd93faaa87813eec0106339bb272ca61207d88839ad1cff",
         "requirements": [
           {
             "id": "gear_manifest",
@@ -7599,7 +7321,7 @@
         "target_spec": "assassination_rogue",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/rogue/assassination/assassination_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/assassination_rogue.test.go",
@@ -7624,13 +7346,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "87c4c2fc4de0a4088740cb5e36047709cbb8987769420abd54fa5eb4292630f5",
+      "source_contract_sha256": "a92864e0270d27ec43aff6d6ffa6e3245c94f894f0dab752f556d4d5e613d22c",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "assassination_rogue",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "87c4c2fc4de0a4088740cb5e36047709cbb8987769420abd54fa5eb4292630f5",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "a92864e0270d27ec43aff6d6ffa6e3245c94f894f0dab752f556d4d5e613d22c",
         "source_selector": {
           "test_path": "sim/rogue/assassination/assassination_test.go",
           "suite_name": "TestAssassination",
@@ -8731,7 +8453,7 @@
           },
           "player_spec_key": "assassination_rogue",
           "professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ],
           "race_id": 1,
@@ -9044,152 +8766,37 @@
           }
         }
       },
-      "request_sha256": "971fda76ad640e2a09a6a6626757d51b631e1dd78f7a5c3a94d5406776364876",
+      "request_sha256": "e891803ae072c0c705be03b7304b03a0b7ffb26cdd8321df38b8250287008096",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:assassination_rogue:51f0d44c3d39bc476923812b948f117248242c2276f02b65e73c3375fcb71452",
-        "dps": 33424.70092562295,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "melee",
-          "content_sha256": "e7c6d0cafc9a5eced9f141b15bed23631c3a4c9b67566dd80b0ad840fa2d1355",
-          "primary_stat": "agility",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 0.0,
-            "main_hand_dps": 786.1111111111111,
-            "melee_haste_pct": 15.680497677755767,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 786.0714285714287,
-            "parry_pct": 0.0,
-            "physical_crit_pct": 30.62673943693788,
-            "physical_hit_pct": 15.04831619331806,
-            "ranged_dps": 1002.6470588235294,
-            "ranged_haste_pct": 15.680497677755767,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 5.633644436937877,
-            "spell_haste_pct": 15.680497677755767,
-            "spell_hit_pct": 16.953198444366745
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 8157.450000000001,
-            "arcane_resistance": 0.0,
-            "armor": 12816.0,
-            "attack_power": 16796.9,
-            "bonus_armor": 0.0,
-            "crit_rating": 1010.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 740.0,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 2008.0,
-            "health": 157141.0,
-            "hit_rating": 1327.0,
-            "intellect": 66.0,
-            "mana": 0.0,
-            "mastery_rating": 2146.0,
-            "mp5": 0.0,
-            "nature_resistance": 0.0,
-            "parry_rating": 0.0,
-            "ranged_attack_power": 190.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 0.0,
-            "spirit": 93.73,
-            "stamina": 8348.0,
-            "strength": 142.0
-          }
-        },
-        "pet_stat_reference": null,
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "971fda76ad640e2a09a6a6626757d51b631e1dd78f7a5c3a94d5406776364876",
+          "request_contract_sha256": "e891803ae072c0c705be03b7304b03a0b7ffb26cdd8321df38b8250287008096",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/ba8d36858f5cb5ec73be5aa54bb6fe6947a32f29daa198b56260a1efdf6c06f4.json",
-            "sha256": "ba8d36858f5cb5ec73be5aa54bb6fe6947a32f29daa198b56260a1efdf6c06f4",
-            "byte_count": 6528
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/51f0d44c3d39bc476923812b948f117248242c2276f02b65e73c3375fcb71452.json",
-            "sha256": "51f0d44c3d39bc476923812b948f117248242c2276f02b65e73c3375fcb71452",
-            "byte_count": 70417
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/c82d49d8624ef85adecd5935144dd226bccbb82f65c6b85b8a11dbc361c328c4.json",
-            "sha256": "c82d49d8624ef85adecd5935144dd226bccbb82f65c6b85b8a11dbc361c328c4",
-            "byte_count": 11356
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -9197,12 +8804,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "assassination_rogue",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:assassination_rogue:51f0d44c3d39bc476923812b948f117248242c2276f02b65e73c3375fcb71452",
-        "reference_dps": 33424.70092562295,
-        "source_contract_sha256": "87c4c2fc4de0a4088740cb5e36047709cbb8987769420abd54fa5eb4292630f5",
-        "request_sha256": "971fda76ad640e2a09a6a6626757d51b631e1dd78f7a5c3a94d5406776364876",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "a92864e0270d27ec43aff6d6ffa6e3245c94f894f0dab752f556d4d5e613d22c",
+        "request_sha256": "e891803ae072c0c705be03b7304b03a0b7ffb26cdd8321df38b8250287008096",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -10152,7 +9759,7 @@
             },
             "player_spec_key": "assassination_rogue",
             "professions": [
-              "ProfessionUnknown",
+              "Blacksmithing",
               "ProfessionUnknown"
             ],
             "race_id": 1,
@@ -10223,8 +9830,8 @@
             }
           }
         },
-        "source_setup_sha256": "c35837e8829af5c0bcbba5464edd4bdad423cd8c96748bc5d84374fcc0ba545c",
-        "request_condition_projection_sha256": "a276e705de18537f0a190d1b55bfbc73835eea84a2639a715028183b36f64a2d",
+        "source_setup_sha256": "2b8ef89d8adb80ddaf57c9e7c9bf00907e8b81e6f45fba5cf0d7946108acab40",
+        "request_condition_projection_sha256": "25d41f3d60888287958c384d9fd3d7c5e44870a57648c06b07777fbf031407ee",
         "requirements": [
           {
             "id": "gear_manifest",
@@ -10952,7 +10559,7 @@
         "target_spec": "balance_druid",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/druid/balance/balance_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_balance_druid.test.go",
@@ -10977,13 +10584,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "a57d6e73e3056557b75fffdd59043e7e13c0eae912df463bef85e9a9f4737aec",
+      "source_contract_sha256": "8bc899caf3ff5f7eb9d7337e67d48baff09daba09c7a151868e560ebcefc90bb",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "balance_druid",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "a57d6e73e3056557b75fffdd59043e7e13c0eae912df463bef85e9a9f4737aec",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "8bc899caf3ff5f7eb9d7337e67d48baff09daba09c7a151868e560ebcefc90bb",
         "source_selector": {
           "test_path": "sim/druid/balance/balance_test.go",
           "suite_name": "TestBalance",
@@ -12412,152 +12019,37 @@
           }
         }
       },
-      "request_sha256": "67c472164e2082f4109e61a8bedbf7afb2358d81f6157f4aba2e0c885fce96af",
+      "request_sha256": "67be97ea85b96f6dbedec74a151f3aa2fcc089cc32662ed406338f41e19fb739",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:balance_druid:97403a90ab88f284e002455793ddc3bb0e484a28ad2f79fa6933eea313bfe631",
-        "dps": 35447.58892725215,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "spell",
-          "content_sha256": "0ffe01af79edecd28e32d0c95005aef7e5bd808d98725ed57a1a56a9c89d8dcd",
-          "primary_stat": "intellect",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.05,
-            "dodge_pct": 5.449344686103252,
-            "main_hand_dps": 0.0,
-            "melee_haste_pct": 20.83444611765559,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 0.0,
-            "parry_pct": 0.0,
-            "physical_crit_pct": 9.131801994982823,
-            "physical_hit_pct": 2.4061517557414613,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 20.83444611765559,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 20.63789449498282,
-            "spell_haste_pct": 26.87616842353837,
-            "spell_hit_pct": 17.00412335349425
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 118.65,
-            "arcane_resistance": 0.0,
-            "armor": 12803.0,
-            "attack_power": 362.6,
-            "bonus_armor": 0.0,
-            "crit_rating": 231.0,
-            "dodge_rating": 85.9675596885,
-            "expertise_rating": 0.0,
-            "fire_resistance": 97.0,
-            "frost_resistance": 97.0,
-            "haste_rating": 2668.0,
-            "health": 161782.80000000002,
-            "hit_rating": 289.0,
-            "intellect": 8998.605,
-            "mana": 161000.77875,
-            "mastery_rating": 2257.0,
-            "mp5": 931.75,
-            "nature_resistance": 97.0,
-            "parry_rating": 0.0,
-            "ranged_attack_power": 0.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 97.0,
-            "spell_penetration": 0.0,
-            "spell_power": 11774.605,
-            "spirit": 1626.0,
-            "stamina": 8750.7,
-            "strength": 117.60000000000001
-          }
-        },
-        "pet_stat_reference": null,
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "67c472164e2082f4109e61a8bedbf7afb2358d81f6157f4aba2e0c885fce96af",
+          "request_contract_sha256": "67be97ea85b96f6dbedec74a151f3aa2fcc089cc32662ed406338f41e19fb739",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/0c4c602061353354f051e04c9c218c00a50cecdff78c21d36b060023b70fa379.json",
-            "sha256": "0c4c602061353354f051e04c9c218c00a50cecdff78c21d36b060023b70fa379",
-            "byte_count": 8141
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/97403a90ab88f284e002455793ddc3bb0e484a28ad2f79fa6933eea313bfe631.json",
-            "sha256": "97403a90ab88f284e002455793ddc3bb0e484a28ad2f79fa6933eea313bfe631",
-            "byte_count": 98670
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/deca1e32620f7070c637e4c3371ac3eb53eddd6b798d89e5736c7eadaf5873bc.json",
-            "sha256": "deca1e32620f7070c637e4c3371ac3eb53eddd6b798d89e5736c7eadaf5873bc",
-            "byte_count": 11367
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -12565,12 +12057,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "balance_druid",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:balance_druid:97403a90ab88f284e002455793ddc3bb0e484a28ad2f79fa6933eea313bfe631",
-        "reference_dps": 35447.58892725215,
-        "source_contract_sha256": "a57d6e73e3056557b75fffdd59043e7e13c0eae912df463bef85e9a9f4737aec",
-        "request_sha256": "67c472164e2082f4109e61a8bedbf7afb2358d81f6157f4aba2e0c885fce96af",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "8bc899caf3ff5f7eb9d7337e67d48baff09daba09c7a151868e560ebcefc90bb",
+        "request_sha256": "67be97ea85b96f6dbedec74a151f3aa2fcc089cc32662ed406338f41e19fb739",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 4,
@@ -14364,7 +13856,7 @@
         "target_spec": "combat_rogue",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/rogue/combat/combat_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/combat_rogue.test.go",
@@ -14389,13 +13881,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "95927e76380011dcb6cec3faee693747ac24df05bbe2e3818b1e480eabcac233",
+      "source_contract_sha256": "df1f40599fd629fe629f620f17db098d496ca6f40102f8cd596380db4b0cd18a",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "combat_rogue",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "95927e76380011dcb6cec3faee693747ac24df05bbe2e3818b1e480eabcac233",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "df1f40599fd629fe629f620f17db098d496ca6f40102f8cd596380db4b0cd18a",
         "source_selector": {
           "test_path": "sim/rogue/combat/combat_test.go",
           "suite_name": "TestCombat",
@@ -15489,7 +14981,7 @@
           },
           "player_spec_key": "combat_rogue",
           "professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ],
           "race_id": 1,
@@ -15802,152 +15294,37 @@
           }
         }
       },
-      "request_sha256": "c2e00353940c964dbef13ec1464234d01e522ad81c01b575a8c7939526d65559",
+      "request_sha256": "ee004e9a6639d3f63837fed950ba22068052f9f226d9ec39ed2fc345443c127d",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:combat_rogue:e363bc7e97d0e94b307a9f1fc57836b84528ece300b6fe8a4874a50403e35a16",
-        "dps": 33820.25404170618,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "melee",
-          "content_sha256": "a0102ed96f6ea2b3c0cbb271dfaf00df454195c30de7d129c15b76987179f670",
-          "primary_stat": "agility",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 0.0,
-            "main_hand_dps": 786.1111111111111,
-            "melee_haste_pct": 28.779827383334133,
-            "melee_speed_multiplier": 1.06,
-            "off_hand_dps": 786.0714285714287,
-            "parry_pct": 0.0,
-            "physical_crit_pct": 30.594189436937878,
-            "physical_hit_pct": 15.391485053551447,
-            "ranged_dps": 1002.6470588235294,
-            "ranged_haste_pct": 21.490403191824647,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 5.633644436937877,
-            "spell_haste_pct": 21.490403191824647,
-            "spell_hit_pct": 17.010706740953797
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 8146.950000000001,
-            "arcane_resistance": 0.0,
-            "armor": 12816.0,
-            "attack_power": 23117.190200000005,
-            "bonus_armor": 0.0,
-            "crit_rating": 1010.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 787.0,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 2752.0,
-            "health": 157141.0,
-            "hit_rating": 1128.0,
-            "intellect": 66.0,
-            "mana": 0.0,
-            "mastery_rating": 1554.0,
-            "mp5": 0.0,
-            "nature_resistance": 0.0,
-            "parry_rating": 0.0,
-            "ranged_attack_power": 190.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 0.0,
-            "spirit": 93.73,
-            "stamina": 8348.0,
-            "strength": 142.0
-          }
-        },
-        "pet_stat_reference": null,
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "c2e00353940c964dbef13ec1464234d01e522ad81c01b575a8c7939526d65559",
+          "request_contract_sha256": "ee004e9a6639d3f63837fed950ba22068052f9f226d9ec39ed2fc345443c127d",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/34f571cc88306a670940a56d9e530a275accb534c96fb2fac4ab337b4b1b33a9.json",
-            "sha256": "34f571cc88306a670940a56d9e530a275accb534c96fb2fac4ab337b4b1b33a9",
-            "byte_count": 5967
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/e363bc7e97d0e94b307a9f1fc57836b84528ece300b6fe8a4874a50403e35a16.json",
-            "sha256": "e363bc7e97d0e94b307a9f1fc57836b84528ece300b6fe8a4874a50403e35a16",
-            "byte_count": 71726
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/68eaeebc061a27ff5f826a1831036d1a005b73d62859e58020b9fe96f9312e99.json",
-            "sha256": "68eaeebc061a27ff5f826a1831036d1a005b73d62859e58020b9fe96f9312e99",
-            "byte_count": 11368
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -15955,12 +15332,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "combat_rogue",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:combat_rogue:e363bc7e97d0e94b307a9f1fc57836b84528ece300b6fe8a4874a50403e35a16",
-        "reference_dps": 33820.25404170618,
-        "source_contract_sha256": "95927e76380011dcb6cec3faee693747ac24df05bbe2e3818b1e480eabcac233",
-        "request_sha256": "c2e00353940c964dbef13ec1464234d01e522ad81c01b575a8c7939526d65559",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "df1f40599fd629fe629f620f17db098d496ca6f40102f8cd596380db4b0cd18a",
+        "request_sha256": "ee004e9a6639d3f63837fed950ba22068052f9f226d9ec39ed2fc345443c127d",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -16904,7 +16281,7 @@
             },
             "player_spec_key": "combat_rogue",
             "professions": [
-              "ProfessionUnknown",
+              "Blacksmithing",
               "ProfessionUnknown"
             ],
             "race_id": 1,
@@ -16975,8 +16352,8 @@
             }
           }
         },
-        "source_setup_sha256": "a6e2a39be71b26d64993dce61b57df81790b4ac3769f4791aff7ecfb4348b449",
-        "request_condition_projection_sha256": "858b16ace111af8b580b17aa8bce5204ff9a66c896aac85025fbc2f7a66d8e93",
+        "source_setup_sha256": "bde18c258a5c675e8bc01b83912c2c86fb43da5be17b48d02004575e9b73f5b6",
+        "request_condition_projection_sha256": "1ba40defc8fd34f520c74b5afccb360ebc8069f7d8606fe9a21713c63e7a04b2",
         "requirements": [
           {
             "id": "gear_manifest",
@@ -17699,7 +17076,7 @@
         "target_spec": "demonology_warlock",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/warlock/demonology/demonology_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/demonology_warlock.test.go",
@@ -17724,13 +17101,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "894da2407f9d67be9184b271110301d87ecd486b93a24a74e0ebc35d3a9af54c",
+      "source_contract_sha256": "698cd7db24869ac707c36d725b826adafc5a84f65e0429412b14f4deb9a189ae",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "demonology_warlock",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "894da2407f9d67be9184b271110301d87ecd486b93a24a74e0ebc35d3a9af54c",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "698cd7db24869ac707c36d725b826adafc5a84f65e0429412b14f4deb9a189ae",
         "source_selector": {
           "test_path": "sim/warlock/demonology/demonology_test.go",
           "suite_name": "TestDemonology",
@@ -19456,200 +18833,37 @@
           }
         }
       },
-      "request_sha256": "42cecebc0f7ff071af17b6d46f378171d7d369338985deefce4c304f92907e91",
+      "request_sha256": "d4965848aec2b2a1db6746998d07496704f75e8b689ce917a7c04f8156049a88",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:demonology_warlock:dab36a4e1797ab476a2313fdf458668d677e7e327b16bd4e98a26b0e59ed3518",
-        "dps": 38037.94632292361,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "spell",
-          "content_sha256": "0d727dce4f3b9726221fea0913823abd73da758111b02345c4069b1d8ea8a2b0",
-          "primary_stat": "intellect",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 0.0,
-            "main_hand_dps": 0.0,
-            "melee_haste_pct": 23.583218618935486,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 0.0,
-            "parry_pct": 0.0,
-            "physical_crit_pct": 7.636501335452625,
-            "physical_hit_pct": 14.511842596046252,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 23.583218618935486,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 18.890826335452623,
-            "spell_haste_pct": 23.583218618935486,
-            "spell_hit_pct": 17.01388461833552
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 88.0,
-            "arcane_resistance": 0.0,
-            "armor": 10254.0,
-            "attack_power": 76.0,
-            "bonus_armor": 0.0,
-            "crit_rating": 899.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 0.0,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 3020.0,
-            "health": 167207.0,
-            "hit_rating": 1743.0,
-            "intellect": 8117.55,
-            "mana": 142036.25,
-            "mastery_rating": 1146.0,
-            "mp5": 1027.65,
-            "nature_resistance": 0.0,
-            "parry_rating": 0.0,
-            "ranged_attack_power": 0.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 12684.705,
-            "spirit": 183.0,
-            "stamina": 9234.5,
-            "strength": 86.0
-          }
-        },
-        "pet_stat_reference": {
-          "pet_inherited_stats": {
-            "kind": "pet_inherited_stats",
-            "line_index": 17,
-            "source_entity": "phase8_demonology_warlock (#1) - Felguard",
-            "stat_vector": {
-              "armor": 10254.0,
-              "attack_power": 13484.641,
-              "expertise_rating": 781.645,
-              "haste_rating": 3020.0,
-              "hit_rating": 1743.0,
-              "mana": 267220.742,
-              "mastery_rating": 1146.0,
-              "physical_crit_percent": 18.891,
-              "physical_hit_percent": 14.512,
-              "spell_crit_percent": 18.891,
-              "spell_hit_percent": 17.014,
-              "spell_power": 6742.321
-            },
-            "timestamp_seconds": 0.0
-          },
-          "pet_stats": {
-            "kind": "pet_stats",
-            "line_index": 16,
-            "source_entity": "phase8_demonology_warlock (#1) - Felguard",
-            "stat_vector": {
-              "agility": 883.0,
-              "armor": 10254.0,
-              "attack_power": 14370.641,
-              "expertise_rating": 781.645,
-              "haste_rating": 3020.0,
-              "health": 4682.0,
-              "hit_rating": 1743.0,
-              "intellect": 159.0,
-              "mana": 292266.192,
-              "mastery_rating": 1146.0,
-              "mp5": 1171.0,
-              "physical_crit_percent": 23.87,
-              "physical_hit_percent": 14.512,
-              "spell_crit_percent": 22.465,
-              "spell_hit_percent": 17.014,
-              "spell_power": 6742.321,
-              "spirit": 225.0,
-              "stamina": 353.0,
-              "strength": 453.0
-            },
-            "timestamp_seconds": 0.0
-          }
-        },
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "42cecebc0f7ff071af17b6d46f378171d7d369338985deefce4c304f92907e91",
+          "request_contract_sha256": "d4965848aec2b2a1db6746998d07496704f75e8b689ce917a7c04f8156049a88",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/9cb4c80e91fd39d5e727ca73b270a1312b661bdbec9e0afae11bf1d57de191a0.json",
-            "sha256": "9cb4c80e91fd39d5e727ca73b270a1312b661bdbec9e0afae11bf1d57de191a0",
-            "byte_count": 8685
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/dab36a4e1797ab476a2313fdf458668d677e7e327b16bd4e98a26b0e59ed3518.json",
-            "sha256": "dab36a4e1797ab476a2313fdf458668d677e7e327b16bd4e98a26b0e59ed3518",
-            "byte_count": 288018
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/257cc803668582304f3dcc9d46c9ed72c88f793c1750f214695f4d3b9cbefbb2.json",
-            "sha256": "257cc803668582304f3dcc9d46c9ed72c88f793c1750f214695f4d3b9cbefbb2",
-            "byte_count": 16656
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -19657,12 +18871,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "demonology_warlock",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:demonology_warlock:dab36a4e1797ab476a2313fdf458668d677e7e327b16bd4e98a26b0e59ed3518",
-        "reference_dps": 38037.94632292361,
-        "source_contract_sha256": "894da2407f9d67be9184b271110301d87ecd486b93a24a74e0ebc35d3a9af54c",
-        "request_sha256": "42cecebc0f7ff071af17b6d46f378171d7d369338985deefce4c304f92907e91",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "698cd7db24869ac707c36d725b826adafc5a84f65e0429412b14f4deb9a189ae",
+        "request_sha256": "d4965848aec2b2a1db6746998d07496704f75e8b689ce917a7c04f8156049a88",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 2,
@@ -21892,7 +21106,7 @@
         "target_spec": "elemental_shaman",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/shaman/elemental/elemental_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/elemental_shaman.test.go",
@@ -21917,13 +21131,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "b0f16dcaf8e7373949ea08becb35921553b3e8bf2f5b200c0087a59990a8f04c",
+      "source_contract_sha256": "234c4d707fe25652c8e94d3c256edcc55ecad3a7e03c3eac5b50b36b6455fc47",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "elemental_shaman",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "b0f16dcaf8e7373949ea08becb35921553b3e8bf2f5b200c0087a59990a8f04c",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "234c4d707fe25652c8e94d3c256edcc55ecad3a7e03c3eac5b50b36b6455fc47",
         "source_selector": {
           "test_path": "sim/shaman/elemental/elemental_test.go",
           "suite_name": "TestElemental",
@@ -23426,152 +22640,37 @@
           }
         }
       },
-      "request_sha256": "6d36258ce93e99c100ab7dee802d09665da4b5ad8d330fe25fce83e5039ade53",
+      "request_sha256": "7b441c24b8db1240d6bbfb9ee7ffe6eb4199a2c3961b40de4c03088ab8e36027",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:elemental_shaman:4b70feaaebceabfaf23b99e25b85b0e58c964dacbf238a98ba7476580105294f",
-        "dps": 36999.280400830605,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "spell",
-          "content_sha256": "3fbb991db94f37ab3649129a1e072cab88c141987b80987a04407cac0202ee36",
-          "primary_stat": "intellect",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.05,
-            "dodge_pct": 0.0,
-            "main_hand_dps": 0.0,
-            "melee_haste_pct": 23.270858107426395,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 0.0,
-            "parry_pct": 0.0,
-            "physical_crit_pct": 11.417925302270124,
-            "physical_hit_pct": 2.573573293547184,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 23.270858107426395,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 22.533175302270124,
-            "spell_haste_pct": 29.43440101279773,
-            "spell_hit_pct": 18.043168412859334
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 97.0,
-            "arcane_resistance": 0.0,
-            "armor": 17547.0,
-            "attack_power": 334.0,
-            "bonus_armor": 0.0,
-            "crit_rating": 35.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 0.0,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 2980.0,
-            "health": 154745.0,
-            "hit_rating": 189.0,
-            "intellect": 8091.3,
-            "mana": 144519.5,
-            "mastery_rating": 2217.0,
-            "mp5": 1497.5,
-            "nature_resistance": 0.0,
-            "parry_rating": 0.0,
-            "ranged_attack_power": 0.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 11954.03,
-            "spirit": 1715.0,
-            "stamina": 8422.0,
-            "strength": 152.0
-          }
-        },
-        "pet_stat_reference": null,
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "6d36258ce93e99c100ab7dee802d09665da4b5ad8d330fe25fce83e5039ade53",
+          "request_contract_sha256": "7b441c24b8db1240d6bbfb9ee7ffe6eb4199a2c3961b40de4c03088ab8e36027",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/1cf388b3f92f3b482d4c27364b383eeabe9afa10d6461903e1de0d0d6b4653a4.json",
-            "sha256": "1cf388b3f92f3b482d4c27364b383eeabe9afa10d6461903e1de0d0d6b4653a4",
-            "byte_count": 7086
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/4b70feaaebceabfaf23b99e25b85b0e58c964dacbf238a98ba7476580105294f.json",
-            "sha256": "4b70feaaebceabfaf23b99e25b85b0e58c964dacbf238a98ba7476580105294f",
-            "byte_count": 134644
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/12941b06e3763180f02cbe5d88f68389afa57a74d389e549c6608899ee10a043.json",
-            "sha256": "12941b06e3763180f02cbe5d88f68389afa57a74d389e549c6608899ee10a043",
-            "byte_count": 11182
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -23579,12 +22678,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "elemental_shaman",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:elemental_shaman:4b70feaaebceabfaf23b99e25b85b0e58c964dacbf238a98ba7476580105294f",
-        "reference_dps": 36999.280400830605,
-        "source_contract_sha256": "b0f16dcaf8e7373949ea08becb35921553b3e8bf2f5b200c0087a59990a8f04c",
-        "request_sha256": "6d36258ce93e99c100ab7dee802d09665da4b5ad8d330fe25fce83e5039ade53",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "234c4d707fe25652c8e94d3c256edcc55ecad3a7e03c3eac5b50b36b6455fc47",
+        "request_sha256": "7b441c24b8db1240d6bbfb9ee7ffe6eb4199a2c3961b40de4c03088ab8e36027",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 11,
@@ -25470,7 +24569,7 @@
         "target_spec": "feral_druid_dps",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/druid/feral/feral_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/feral_druid_dps.test.go",
@@ -25495,13 +24594,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "6dc57585e1dd215a6d76cfd8a5c3eea9435ce964ee23896a60dec5d0c5402058",
+      "source_contract_sha256": "c11cb178591cbbad44c3a2f75cb8e3ba5f81ca7d4e768aa3348824c47a7958fe",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "feral_druid_dps",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "6dc57585e1dd215a6d76cfd8a5c3eea9435ce964ee23896a60dec5d0c5402058",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "c11cb178591cbbad44c3a2f75cb8e3ba5f81ca7d4e768aa3348824c47a7958fe",
         "source_selector": {
           "test_path": "sim/druid/feral/feral_test.go",
           "suite_name": "TestFeral",
@@ -26917,152 +26016,37 @@
           }
         }
       },
-      "request_sha256": "5c39b12786589649512faf066b2f466157e082adc2f5aa412644ee52f18b8923",
+      "request_sha256": "208d9e824a8651a05599695acbb6e1c282954b79a63357a618745e22c160a2d6",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:feral_druid_dps:e69c52ea14e386fe20b21077d8fcf5f21b38b19272f12e54ac5e178ee2ffd217",
-        "dps": 37945.8639836858,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "melee",
-          "content_sha256": "e657e63ed9bbfde0e48f4145e1be2f1a995aa809210f063ea7dfb93e7bedf796",
-          "primary_stat": "agility",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 36.386838213603724,
-            "main_hand_dps": 1060.142857142857,
-            "melee_haste_pct": 7.8871029156042605,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 0.0,
-            "parry_pct": 0.0,
-            "physical_crit_pct": 51.90370023845036,
-            "physical_hit_pct": 7.976101667821176,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 7.8871029156042605,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 16.24078908845036,
-            "spell_haste_pct": 7.8871029156042605,
-            "spell_hit_pct": 9.35129171793771
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 8499.1725,
-            "arcane_resistance": 0.0,
-            "armor": 13606.0,
-            "attack_power": 24105.049375000002,
-            "bonus_armor": 790.0,
-            "crit_rating": 1628.0,
-            "dodge_rating": 6158.054101952025,
-            "expertise_rating": 771.0,
-            "fire_resistance": 97.0,
-            "frost_resistance": 97.0,
-            "haste_rating": 1010.0,
-            "health": 163091.09999999998,
-            "hit_rating": 958.0,
-            "intellect": 205.68240000000003,
-            "mana": 24656.271399999998,
-            "mastery_rating": 1797.0,
-            "mp5": 931.75,
-            "nature_resistance": 97.0,
-            "parry_rating": 0.0,
-            "ranged_attack_power": 190.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 97.0,
-            "spell_penetration": 0.0,
-            "spell_power": 195.68240000000003,
-            "spirit": 193.0,
-            "stamina": 8844.15,
-            "strength": 117.60000000000001
-          }
-        },
-        "pet_stat_reference": null,
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "5c39b12786589649512faf066b2f466157e082adc2f5aa412644ee52f18b8923",
+          "request_contract_sha256": "208d9e824a8651a05599695acbb6e1c282954b79a63357a618745e22c160a2d6",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/55874690bb1d33e9d4e66aa44d96d5074bac5e2e0b75014de1a438f37be403c7.json",
-            "sha256": "55874690bb1d33e9d4e66aa44d96d5074bac5e2e0b75014de1a438f37be403c7",
-            "byte_count": 4009
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/e69c52ea14e386fe20b21077d8fcf5f21b38b19272f12e54ac5e178ee2ffd217.json",
-            "sha256": "e69c52ea14e386fe20b21077d8fcf5f21b38b19272f12e54ac5e178ee2ffd217",
-            "byte_count": 49227
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/91b3b4a889eb31bfaff4e5070ae1e2c3ac954d6f7a2b597682aff5a9d18501c0.json",
-            "sha256": "91b3b4a889eb31bfaff4e5070ae1e2c3ac954d6f7a2b597682aff5a9d18501c0",
-            "byte_count": 11339
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -27070,12 +26054,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "feral_druid_dps",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:feral_druid_dps:e69c52ea14e386fe20b21077d8fcf5f21b38b19272f12e54ac5e178ee2ffd217",
-        "reference_dps": 37945.8639836858,
-        "source_contract_sha256": "6dc57585e1dd215a6d76cfd8a5c3eea9435ce964ee23896a60dec5d0c5402058",
-        "request_sha256": "5c39b12786589649512faf066b2f466157e082adc2f5aa412644ee52f18b8923",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "c11cb178591cbbad44c3a2f75cb8e3ba5f81ca7d4e768aa3348824c47a7958fe",
+        "request_sha256": "208d9e824a8651a05599695acbb6e1c282954b79a63357a618745e22c160a2d6",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 4,
@@ -28845,7 +27829,7 @@
         "target_spec": "fire_mage",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/mage/fire/fire_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_fire_mage.test.go",
@@ -28870,13 +27854,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "b5108cc8228b40f02cb2173df6cbfd34945b43911c8b4aa005a1143dd8329e64",
+      "source_contract_sha256": "bf0e1f5273919a5463e8c9fb1a23fcf0f7faae6d648cc8f3f0a897e47d14e3fa",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "fire_mage",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "b5108cc8228b40f02cb2173df6cbfd34945b43911c8b4aa005a1143dd8329e64",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "bf0e1f5273919a5463e8c9fb1a23fcf0f7faae6d648cc8f3f0a897e47d14e3fa",
         "source_selector": {
           "test_path": "sim/mage/fire/fire_test.go",
           "suite_name": "TestFire",
@@ -30282,152 +29266,37 @@
           }
         }
       },
-      "request_sha256": "e34db7e28fc50e69640077dd1d0b03d9eae88869c78c76655594ec3e3ce9e666",
+      "request_sha256": "5a93cdb6640c61cc7bd48c3c4246f467a0ab778f7212b35a5b1dd3154cb3b6f3",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:fire_mage:d6a086100a45c7031c04ec56a57f39c51dfd3acda4679e38e1210fe6ed3f4eab",
-        "dps": 35138.962327354595,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "spell",
-          "content_sha256": "b2564878fce0d606fc91cf9f4ee0f899c2548e63885c0294b1df3942a867c692",
-          "primary_stat": "intellect",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.03,
-            "dodge_pct": 0.0,
-            "main_hand_dps": 0.0,
-            "melee_haste_pct": 16.6097701994953,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 0.0,
-            "parry_pct": 0.0,
-            "physical_crit_pct": 15.591435935422595,
-            "physical_hit_pct": 14.50351681142431,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 16.6097701994953,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 28.194485935422595,
-            "spell_haste_pct": 20.10806330548016,
-            "spell_hit_pct": 17.00412335349425
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 66.0,
-            "arcane_resistance": 0.0,
-            "armor": 10254.0,
-            "attack_power": 0.0,
-            "bonus_armor": 0.0,
-            "crit_rating": 2176.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 0.0,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 2127.0,
-            "health": 153095.0,
-            "hit_rating": 1742.0,
-            "intellect": 8099.700000000001,
-            "mana": 140759.5,
-            "mastery_rating": 796.0,
-            "mp5": 870.9000000000001,
-            "nature_resistance": 0.0,
-            "parry_rating": 0.0,
-            "ranged_attack_power": 0.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 11528.242000000002,
-            "spirit": 272.95,
-            "stamina": 8303.0,
-            "strength": 57.0
-          }
-        },
-        "pet_stat_reference": null,
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "e34db7e28fc50e69640077dd1d0b03d9eae88869c78c76655594ec3e3ce9e666",
+          "request_contract_sha256": "5a93cdb6640c61cc7bd48c3c4246f467a0ab778f7212b35a5b1dd3154cb3b6f3",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/b03ce304d50276dbac2782dbf50a3cf25c28a4bdce64936285a0df1fffa8a1d1.json",
-            "sha256": "b03ce304d50276dbac2782dbf50a3cf25c28a4bdce64936285a0df1fffa8a1d1",
-            "byte_count": 6606
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/d6a086100a45c7031c04ec56a57f39c51dfd3acda4679e38e1210fe6ed3f4eab.json",
-            "sha256": "d6a086100a45c7031c04ec56a57f39c51dfd3acda4679e38e1210fe6ed3f4eab",
-            "byte_count": 123097
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/99ec1c97d0584dba59c4fba2304e2cb9552cd689ee05d75508568dcb02aaf98e.json",
-            "sha256": "99ec1c97d0584dba59c4fba2304e2cb9552cd689ee05d75508568dcb02aaf98e",
-            "byte_count": 11348
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -30435,12 +29304,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "fire_mage",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:fire_mage:d6a086100a45c7031c04ec56a57f39c51dfd3acda4679e38e1210fe6ed3f4eab",
-        "reference_dps": 35138.962327354595,
-        "source_contract_sha256": "b5108cc8228b40f02cb2173df6cbfd34945b43911c8b4aa005a1143dd8329e64",
-        "request_sha256": "e34db7e28fc50e69640077dd1d0b03d9eae88869c78c76655594ec3e3ce9e666",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "bf0e1f5273919a5463e8c9fb1a23fcf0f7faae6d648cc8f3f0a897e47d14e3fa",
+        "request_sha256": "5a93cdb6640c61cc7bd48c3c4246f467a0ab778f7212b35a5b1dd3154cb3b6f3",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -32187,7 +31056,7 @@
         "target_spec": "frost_death_knight",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/death_knight/frost/frost_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/frost_death_knight.test.go",
@@ -32212,13 +31081,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "a2b607907df90564827a43ed6d368b1188b79e715fc5968312f2fc40855f6dcd",
+      "source_contract_sha256": "f248e8e687bc2c7b09c1ecb50c979c2049305dbe5e8d87ca4da8900837b2f715",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "frost_death_knight",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "a2b607907df90564827a43ed6d368b1188b79e715fc5968312f2fc40855f6dcd",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "f248e8e687bc2c7b09c1ecb50c979c2049305dbe5e8d87ca4da8900837b2f715",
         "source_selector": {
           "test_path": "sim/death_knight/frost/frost_test.go",
           "suite_name": "TestFrost",
@@ -33315,7 +32184,7 @@
           },
           "player_spec_key": "frost_death_knight",
           "professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ],
           "race_id": 1,
@@ -33631,152 +32500,37 @@
           }
         }
       },
-      "request_sha256": "8f3c27e187fedfc474286ae9a3523d3e778b5015a775b1c936d13be77da3fde0",
+      "request_sha256": "4d75353ea2e60e284c2e6050dceb412c748f33916f7fe477014cc83f131e8913",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:frost_death_knight:9a22c69935f6b23e7627177d2c00ded447bf96e75c9b67a3162296f1a3a7b39d",
-        "dps": 36245.07913573735,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "melee",
-          "content_sha256": "504f9cf0bedd10c6aff939e0d527e852f2a716e3f119af2636f9312ad94b84d1",
-          "primary_stat": "strength",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 5.0,
-            "main_hand_dps": 786.3461538461538,
-            "melee_haste_pct": 58.75296918969624,
-            "melee_speed_multiplier": 1.3860000000000001,
-            "off_hand_dps": 743.4615384615385,
-            "parry_pct": 16.59561587061799,
-            "physical_crit_pct": 8.741537725895197,
-            "physical_hit_pct": 9.827143389993074,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 25.994419991822415,
-            "ranged_speed_multiplier": 1.1,
-            "spell_crit_pct": 5.912537725895198,
-            "spell_haste_pct": 14.540381810747638,
-            "spell_hit_pct": 17.0042371698423
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 690.0,
-            "arcane_resistance": 0.0,
-            "armor": 23689.0,
-            "attack_power": 19221.713333333337,
-            "bonus_armor": 0.0,
-            "crit_rating": 1060.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 162.0,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 1862.0,
-            "health": 160359.0,
-            "hit_rating": 820.0,
-            "intellect": 56.0,
-            "mana": 0.0,
-            "mastery_rating": 2653.0,
-            "mp5": 0.0,
-            "nature_resistance": 0.0,
-            "parry_rating": 2379.3858,
-            "ranged_attack_power": 190.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 0.0,
-            "spirit": 85.49000000000001,
-            "stamina": 8381.0,
-            "strength": 9003.54
-          }
-        },
-        "pet_stat_reference": null,
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "8f3c27e187fedfc474286ae9a3523d3e778b5015a775b1c936d13be77da3fde0",
+          "request_contract_sha256": "4d75353ea2e60e284c2e6050dceb412c748f33916f7fe477014cc83f131e8913",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/60f8310411575e47fac7aa0b074dda8a77d82091c3b1e387f1899b988a3d8c71.json",
-            "sha256": "60f8310411575e47fac7aa0b074dda8a77d82091c3b1e387f1899b988a3d8c71",
-            "byte_count": 16677
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/9a22c69935f6b23e7627177d2c00ded447bf96e75c9b67a3162296f1a3a7b39d.json",
-            "sha256": "9a22c69935f6b23e7627177d2c00ded447bf96e75c9b67a3162296f1a3a7b39d",
-            "byte_count": 334615
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/2a706585d11eb72826ee2a054d178e0bd5062d2f033753713d98182d143b5441.json",
-            "sha256": "2a706585d11eb72826ee2a054d178e0bd5062d2f033753713d98182d143b5441",
-            "byte_count": 11506
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -33784,12 +32538,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "frost_death_knight",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:frost_death_knight:9a22c69935f6b23e7627177d2c00ded447bf96e75c9b67a3162296f1a3a7b39d",
-        "reference_dps": 36245.07913573735,
-        "source_contract_sha256": "a2b607907df90564827a43ed6d368b1188b79e715fc5968312f2fc40855f6dcd",
-        "request_sha256": "8f3c27e187fedfc474286ae9a3523d3e778b5015a775b1c936d13be77da3fde0",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "f248e8e687bc2c7b09c1ecb50c979c2049305dbe5e8d87ca4da8900837b2f715",
+        "request_sha256": "4d75353ea2e60e284c2e6050dceb412c748f33916f7fe477014cc83f131e8913",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -34739,7 +33493,7 @@
             },
             "player_spec_key": "frost_death_knight",
             "professions": [
-              "ProfessionUnknown",
+              "Blacksmithing",
               "ProfessionUnknown"
             ],
             "race_id": 1,
@@ -34824,8 +33578,8 @@
             }
           }
         },
-        "source_setup_sha256": "4b217adb88508ae7ff6caffc829a6e4cea23ded408403d384cdadda517929957",
-        "request_condition_projection_sha256": "2835a0804929fc004951404032d8a02d97a39774221dc2a773a1b08498083fab",
+        "source_setup_sha256": "a2f39fa67c198efb5584c57f45b0a70069d1ce002746225965cef77dafcf82c8",
+        "request_condition_projection_sha256": "ad493810394bc4eb000523d7ea54e6fd801f6188d1b87bf23f864b98d249186e",
         "requirements": [
           {
             "id": "gear_manifest",
@@ -35544,7 +34298,7 @@
         "target_spec": "fury_warrior",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/warrior/fury/fury_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/fury_warrior.test.go",
@@ -35569,13 +34323,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "f18747f4dda01f375d9152ab219ff7d9dd36d1bf93c93b492db3b4dec60b242c",
+      "source_contract_sha256": "938fc4b3ce2315e6d2daf1f0ff130bbea03c3f1df68c58830ac680a6862c93db",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "fury_warrior",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "f18747f4dda01f375d9152ab219ff7d9dd36d1bf93c93b492db3b4dec60b242c",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "938fc4b3ce2315e6d2daf1f0ff130bbea03c3f1df68c58830ac680a6862c93db",
         "source_selector": {
           "test_path": "sim/warrior/fury/fury_test.go",
           "suite_name": "TestFury",
@@ -36673,7 +35427,7 @@
           },
           "player_spec_key": "fury_warrior",
           "professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ],
           "race_id": 1,
@@ -36989,152 +35743,37 @@
           }
         }
       },
-      "request_sha256": "f6c9e3ddaa58384d7ae7542e7d9061d34a565f873ea9c3289c0f7bfaa2f526c0",
+      "request_sha256": "9ce5e924dd032931ee05383d96355f9aed18210d61aaced209765bf57759ae47",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:fury_warrior:5c3d057161004061cb616e41bea4e3dda1ef6da385ad8d9196da61359f83c8a0",
-        "dps": 35365.45069151961,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "melee",
-          "content_sha256": "63674a40cbc3a0df0883ad67db1802db96d86688e5e9e230475e8ba519c500b6",
-          "primary_stat": "strength",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 3.6639999999999997,
-            "main_hand_dps": 1060.138888888889,
-            "melee_haste_pct": 3.217313268543509,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 1060.138888888889,
-            "parry_pct": 17.463143343341304,
-            "physical_crit_pct": 23.74281938741201,
-            "physical_hit_pct": 14.223157670378857,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 3.217313268543509,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 18.905619387412006,
-            "spell_haste_pct": 3.217313268543509,
-            "spell_hit_pct": 13.158185006033438
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 692.0,
-            "arcane_resistance": 0.0,
-            "armor": 23689.0,
-            "attack_power": 20055.800000000003,
-            "bonus_armor": 0.0,
-            "crit_rating": 2493.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 782.081591,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 412.0,
-            "health": 182759.0,
-            "hit_rating": 1348.0,
-            "intellect": 57.0,
-            "mana": 0.0,
-            "mastery_rating": 1315.0,
-            "mp5": 0.0,
-            "nature_resistance": 0.0,
-            "parry_rating": 2599.128,
-            "ranged_attack_power": 190.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 0.0,
-            "spirit": 85.49000000000001,
-            "stamina": 9981.0,
-            "strength": 9815.400000000001
-          }
-        },
-        "pet_stat_reference": null,
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "f6c9e3ddaa58384d7ae7542e7d9061d34a565f873ea9c3289c0f7bfaa2f526c0",
+          "request_contract_sha256": "9ce5e924dd032931ee05383d96355f9aed18210d61aaced209765bf57759ae47",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/d0a3458f5c5e2537afa5eeafdc6ffcd5ec2b24fd1f6804695cffea526467d524.json",
-            "sha256": "d0a3458f5c5e2537afa5eeafdc6ffcd5ec2b24fd1f6804695cffea526467d524",
-            "byte_count": 7477
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/5c3d057161004061cb616e41bea4e3dda1ef6da385ad8d9196da61359f83c8a0.json",
-            "sha256": "5c3d057161004061cb616e41bea4e3dda1ef6da385ad8d9196da61359f83c8a0",
-            "byte_count": 373592
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/ba55b3bda168276a6e46e38aee44e86dd78e62ca1754cc62cc684829c5b23fba.json",
-            "sha256": "ba55b3bda168276a6e46e38aee44e86dd78e62ca1754cc62cc684829c5b23fba",
-            "byte_count": 11587
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -37142,12 +35781,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "fury_warrior",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:fury_warrior:5c3d057161004061cb616e41bea4e3dda1ef6da385ad8d9196da61359f83c8a0",
-        "reference_dps": 35365.45069151961,
-        "source_contract_sha256": "f18747f4dda01f375d9152ab219ff7d9dd36d1bf93c93b492db3b4dec60b242c",
-        "request_sha256": "f6c9e3ddaa58384d7ae7542e7d9061d34a565f873ea9c3289c0f7bfaa2f526c0",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "938fc4b3ce2315e6d2daf1f0ff130bbea03c3f1df68c58830ac680a6862c93db",
+        "request_sha256": "9ce5e924dd032931ee05383d96355f9aed18210d61aaced209765bf57759ae47",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -38103,7 +36742,7 @@
             },
             "player_spec_key": "fury_warrior",
             "professions": [
-              "ProfessionUnknown",
+              "Blacksmithing",
               "ProfessionUnknown"
             ],
             "race_id": 1,
@@ -38188,8 +36827,8 @@
             }
           }
         },
-        "source_setup_sha256": "a981ce6069966a9d71c74956f1b6ce703025dd0e18d26cbf9a1b5c1a633ca507",
-        "request_condition_projection_sha256": "feb53fc03a82ae3465e046c1f45849ef6ff03fa361c7b0f12f05a28a7b62eb7f",
+        "source_setup_sha256": "48f5c6b3b8cb0dd939a1d69e886194d53ee751bf2950d8189a2ced286da1acd7",
+        "request_condition_projection_sha256": "bdc12c993a135227d47fde2456274cf13f7b710e364a23da5388994f36484b48",
         "requirements": [
           {
             "id": "gear_manifest",
@@ -38913,7 +37552,7 @@
         "target_spec": "marksmanship_hunter",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/hunter/marksmanship/marksmanship_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/marksmanship_hunter.test.go",
@@ -38938,13 +37577,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "a5d2f8740293e4dd2352a03efa78ade5d8535edba6b14f421ae805c5e407e6c2",
+      "source_contract_sha256": "497782d99202a6d6d634f3ea981fa3326257e5e96161ff3749e43b2cab749bd3",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "marksmanship_hunter",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "a5d2f8740293e4dd2352a03efa78ade5d8535edba6b14f421ae805c5e407e6c2",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "497782d99202a6d6d634f3ea981fa3326257e5e96161ff3749e43b2cab749bd3",
         "source_selector": {
           "test_path": "sim/hunter/marksmanship/marksmanship_test.go",
           "suite_name": "TestMM",
@@ -40085,7 +38724,7 @@
           },
           "player_spec_key": "marksmanship_hunter",
           "professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ],
           "race_id": 3,
@@ -40337,16 +38976,24 @@
             "slot": 0,
             "spellbook": [
               {
-                "active": 1,
+                "active": 193,
+                "spell_id": 1742
+              },
+              {
+                "active": 193,
                 "spell_id": 2649
               },
               {
-                "active": 1,
+                "active": 193,
                 "spell_id": 17253
               },
               {
                 "active": 193,
                 "spell_id": 23145
+              },
+              {
+                "active": 193,
+                "spell_id": 24604
               },
               {
                 "active": 1,
@@ -40379,9 +39026,13 @@
               {
                 "active": 1,
                 "spell_id": 62760
+              },
+              {
+                "active": 1,
+                "spell_id": 65220
               }
             ],
-            "spellbook_sha256": "be83c8a872bfb2b7fca6d9fb26d6aa1a0ebb1e9b00eb93d36d1f2ffa36254b74",
+            "spellbook_sha256": "bc3322f102216e3308dc94e4fa30e2960641678949109ccbda1a90063e684ce8",
             "talents": {
               "bloodthirsty": 1,
               "call_of_the_wild": true,
@@ -40508,193 +39159,37 @@
           }
         }
       },
-      "request_sha256": "9c30e17273ec05933fca974c04fd8a1ecc1d8387761b56431ba91ff2986470c6",
+      "request_sha256": "682a3cbd45c18cca70b140105590b40fd0e761af426f2b14acc80519075f5cdb",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:marksmanship_hunter:19ebaf2047add4f5625282ac254c1cc053c88198f92b835c94572d83a7e9c729",
-        "dps": 32838.198347018646,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "melee",
-          "content_sha256": "9c3b939155962ed78e75ae0aa6b1472c2391e807e650fdae6e9baf16a49d6463",
-          "primary_stat": "agility",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 0.0,
-            "main_hand_dps": 1060.142857142857,
-            "melee_haste_pct": 7.55912437851971,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 0.0,
-            "parry_pct": 0.0,
-            "physical_crit_pct": 44.396106503302875,
-            "physical_hit_pct": 8.01773059093089,
-            "ranged_dps": 1060.1666666666667,
-            "ranged_haste_pct": 10.785898109875314,
-            "ranged_speed_multiplier": 1.03,
-            "spell_crit_pct": 20.27219650330288,
-            "spell_haste_pct": 7.55912437851971,
-            "spell_hit_pct": 9.400098042144066
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 8276.1,
-            "arcane_resistance": 0.0,
-            "armor": 17489.0,
-            "attack_power": 20270.64,
-            "bonus_armor": 790.0,
-            "crit_rating": 2738.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 111.0,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 968.0,
-            "health": 157455.0,
-            "hit_rating": 963.0,
-            "intellect": 124.0,
-            "mana": 0.0,
-            "mastery_rating": 1223.0,
-            "mp5": 0.0,
-            "nature_resistance": 0.0,
-            "parry_rating": 0.0,
-            "ranged_attack_power": 18592.420000000002,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 0.0,
-            "spirit": 116.0,
-            "stamina": 8477.0,
-            "strength": 105.0
-          }
-        },
-        "pet_stat_reference": {
-          "pet_inherited_stats": {
-            "kind": "pet_inherited_stats",
-            "line_index": 14,
-            "source_entity": "phase8_marksmanship_hunter (#1) - Wolf",
-            "stat_vector": {
-              "armor": 6121.15,
-              "attack_power": 7901.779,
-              "expertise_rating": 3129.75,
-              "haste_rating": 968.0,
-              "health": 35603.4,
-              "physical_crit_percent": 44.396,
-              "physical_hit_percent": 8.018,
-              "ranged_attack_power": 18592.42,
-              "spell_crit_percent": 44.396,
-              "spell_hit_percent": 8.018,
-              "stamina": 2543.1
-            },
-            "timestamp_seconds": 0.0
-          },
-          "pet_stats": {
-            "kind": "pet_stats",
-            "line_index": 13,
-            "source_entity": "phase8_marksmanship_hunter (#1) - Wolf",
-            "stat_vector": {
-              "agility": 438.0,
-              "armor": 6121.15,
-              "attack_power": 8833.779,
-              "expertise_rating": 3129.75,
-              "haste_rating": 968.0,
-              "health": 35343.4,
-              "physical_crit_percent": 59.745,
-              "physical_hit_percent": 8.018,
-              "ranged_attack_power": 19544.42,
-              "spell_crit_percent": 53.396,
-              "spell_hit_percent": 8.018,
-              "stamina": 2543.1,
-              "strength": 476.0
-            },
-            "timestamp_seconds": 0.0
-          }
-        },
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "9c30e17273ec05933fca974c04fd8a1ecc1d8387761b56431ba91ff2986470c6",
+          "request_contract_sha256": "682a3cbd45c18cca70b140105590b40fd0e761af426f2b14acc80519075f5cdb",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/45e46c0a8ea87f61ce50f862bc5fc2300b55f42c1ff0bebdb1e343ad386bd6d0.json",
-            "sha256": "45e46c0a8ea87f61ce50f862bc5fc2300b55f42c1ff0bebdb1e343ad386bd6d0",
-            "byte_count": 5193
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/19ebaf2047add4f5625282ac254c1cc053c88198f92b835c94572d83a7e9c729.json",
-            "sha256": "19ebaf2047add4f5625282ac254c1cc053c88198f92b835c94572d83a7e9c729",
-            "byte_count": 60961
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/35a174ce4de759de18cca42df6dea1a98ed5e5ae81a6942c8f1b496258122f06.json",
-            "sha256": "35a174ce4de759de18cca42df6dea1a98ed5e5ae81a6942c8f1b496258122f06",
-            "byte_count": 16164
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -40702,12 +39197,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "marksmanship_hunter",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:marksmanship_hunter:19ebaf2047add4f5625282ac254c1cc053c88198f92b835c94572d83a7e9c729",
-        "reference_dps": 32838.198347018646,
-        "source_contract_sha256": "a5d2f8740293e4dd2352a03efa78ade5d8535edba6b14f421ae805c5e407e6c2",
-        "request_sha256": "9c30e17273ec05933fca974c04fd8a1ecc1d8387761b56431ba91ff2986470c6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "497782d99202a6d6d634f3ea981fa3326257e5e96161ff3749e43b2cab749bd3",
+        "request_sha256": "682a3cbd45c18cca70b140105590b40fd0e761af426f2b14acc80519075f5cdb",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 3,
@@ -41716,7 +40211,7 @@
             },
             "player_spec_key": "marksmanship_hunter",
             "professions": [
-              "ProfessionUnknown",
+              "Blacksmithing",
               "ProfessionUnknown"
             ],
             "race_id": 3,
@@ -41801,8 +40296,8 @@
             }
           }
         },
-        "source_setup_sha256": "87a4a2f4bb082c8605d1ebf3adced03180942c77106d7411479daa4452d1546d",
-        "request_condition_projection_sha256": "87b344318c664afa4fad2992d28deac9ccfdfe8e0a7a5338db9c3dfc93e8243f",
+        "source_setup_sha256": "bfd191505d72f4ed753ef75a17618e4543e61ecc6258fa2cfbd6ebe0de159998",
+        "request_condition_projection_sha256": "1e45f0dc732c0e8cab505411c3d75e1d8f4a0e6e5c965c3581176236b43b8927",
         "requirements": [
           {
             "id": "gear_manifest",
@@ -42423,16 +40918,24 @@
               "slot": 0,
               "spellbook": [
                 {
-                  "active": 1,
+                  "active": 193,
+                  "spell_id": 1742
+                },
+                {
+                  "active": 193,
                   "spell_id": 2649
                 },
                 {
-                  "active": 1,
+                  "active": 193,
                   "spell_id": 17253
                 },
                 {
                   "active": 193,
                   "spell_id": 23145
+                },
+                {
+                  "active": 193,
+                  "spell_id": 24604
                 },
                 {
                   "active": 1,
@@ -42465,9 +40968,13 @@
                 {
                   "active": 1,
                   "spell_id": 62760
+                },
+                {
+                  "active": 1,
+                  "spell_id": 65220
                 }
               ],
-              "spellbook_sha256": "be83c8a872bfb2b7fca6d9fb26d6aa1a0ebb1e9b00eb93d36d1f2ffa36254b74",
+              "spellbook_sha256": "bc3322f102216e3308dc94e4fa30e2960641678949109ccbda1a90063e684ce8",
               "talents": {
                 "bloodthirsty": 1,
                 "call_of_the_wild": true,
@@ -42504,16 +41011,24 @@
               "slot": 0,
               "spellbook": [
                 {
-                  "active": 1,
+                  "active": 193,
+                  "spell_id": 1742
+                },
+                {
+                  "active": 193,
                   "spell_id": 2649
                 },
                 {
-                  "active": 1,
+                  "active": 193,
                   "spell_id": 17253
                 },
                 {
                   "active": 193,
                   "spell_id": 23145
+                },
+                {
+                  "active": 193,
+                  "spell_id": 24604
                 },
                 {
                   "active": 1,
@@ -42546,9 +41061,13 @@
                 {
                   "active": 1,
                   "spell_id": 62760
+                },
+                {
+                  "active": 1,
+                  "spell_id": 65220
                 }
               ],
-              "spellbook_sha256": "be83c8a872bfb2b7fca6d9fb26d6aa1a0ebb1e9b00eb93d36d1f2ffa36254b74",
+              "spellbook_sha256": "bc3322f102216e3308dc94e4fa30e2960641678949109ccbda1a90063e684ce8",
               "talents": {
                 "bloodthirsty": 1,
                 "call_of_the_wild": true,
@@ -42722,7 +41241,7 @@
         "target_spec": "retribution_paladin",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/paladin/retribution/retribution_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/retribution_paladin.test.go",
@@ -42747,13 +41266,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "4d0a77accca8938ca3fd677a81d68a5f68f3a9c761f8960769ccf9c08d3b4218",
+      "source_contract_sha256": "2f2d49f13e89456ac8e8de3bff92ebd790f1b1fe7cc7f23b1cd311f26087fd56",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "retribution_paladin",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "4d0a77accca8938ca3fd677a81d68a5f68f3a9c761f8960769ccf9c08d3b4218",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "2f2d49f13e89456ac8e8de3bff92ebd790f1b1fe7cc7f23b1cd311f26087fd56",
         "source_selector": {
           "test_path": "sim/paladin/retribution/retribution_test.go",
           "suite_name": "TestRetribution",
@@ -43875,7 +42394,7 @@
           },
           "player_spec_key": "retribution_paladin",
           "professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ],
           "race_id": 1,
@@ -44188,152 +42707,37 @@
           }
         }
       },
-      "request_sha256": "e59d3859a0f058d7ba02e7c783772c4dc9f2401e67a2818e5b9ab6e96236b928",
+      "request_sha256": "64c6d00c5a2061f828291a44ccff843afcd1eaeb7e18108d62b58e411909b23f",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:retribution_paladin:93e0973d1850d42dac37ffee002e21959a476c94a62409fbec79cd0f9b563903",
-        "dps": 33127.75754759756,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "melee",
-          "content_sha256": "4f2c6e0c613a76cd968fdd7dc9a6c4a91afa1c4603816938ebd751bc8c9c3593",
-          "primary_stat": "strength",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 5.0,
-            "main_hand_dps": 1060.138888888889,
-            "melee_haste_pct": 5.224229554989357,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 0.0,
-            "parry_pct": 15.642846560184667,
-            "physical_crit_pct": 9.887725555014379,
-            "physical_hit_pct": 8.001079021687005,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 5.224229554989357,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 12.186925555014378,
-            "spell_haste_pct": 5.224229554989357,
-            "spell_hit_pct": 17.380575512461526
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 117.0,
-            "arcane_resistance": 0.0,
-            "armor": 23689.0,
-            "attack_power": 16649.6,
-            "bonus_armor": 0.0,
-            "crit_rating": 1553.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 573.081591,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 669.0,
-            "health": 162137.0,
-            "hit_rating": 961.0,
-            "intellect": 126.0,
-            "mana": 25032.0,
-            "mastery_rating": 2634.0,
-            "mp5": 1171.1000000000001,
-            "nature_resistance": 0.0,
-            "parry_rating": 2146.041,
-            "ranged_attack_power": 190.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 5110.879999999999,
-            "spirit": 141.11,
-            "stamina": 8508.0,
-            "strength": 8112.3
-          }
-        },
-        "pet_stat_reference": null,
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "e59d3859a0f058d7ba02e7c783772c4dc9f2401e67a2818e5b9ab6e96236b928",
+          "request_contract_sha256": "64c6d00c5a2061f828291a44ccff843afcd1eaeb7e18108d62b58e411909b23f",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/69b449252a253d632cee99c9b7ee9c24a9d567f0c63d3970ed6e83e8537b2ee1.json",
-            "sha256": "69b449252a253d632cee99c9b7ee9c24a9d567f0c63d3970ed6e83e8537b2ee1",
-            "byte_count": 13308
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/93e0973d1850d42dac37ffee002e21959a476c94a62409fbec79cd0f9b563903.json",
-            "sha256": "93e0973d1850d42dac37ffee002e21959a476c94a62409fbec79cd0f9b563903",
-            "byte_count": 390842
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/56bff9dbc17ccf9b470cebf14a97ca01959bd18ac5df071ac1f5d81bc8cbcb54.json",
-            "sha256": "56bff9dbc17ccf9b470cebf14a97ca01959bd18ac5df071ac1f5d81bc8cbcb54",
-            "byte_count": 11562
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -44341,12 +42745,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "retribution_paladin",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:retribution_paladin:93e0973d1850d42dac37ffee002e21959a476c94a62409fbec79cd0f9b563903",
-        "reference_dps": 33127.75754759756,
-        "source_contract_sha256": "4d0a77accca8938ca3fd677a81d68a5f68f3a9c761f8960769ccf9c08d3b4218",
-        "request_sha256": "e59d3859a0f058d7ba02e7c783772c4dc9f2401e67a2818e5b9ab6e96236b928",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "2f2d49f13e89456ac8e8de3bff92ebd790f1b1fe7cc7f23b1cd311f26087fd56",
+        "request_sha256": "64c6d00c5a2061f828291a44ccff843afcd1eaeb7e18108d62b58e411909b23f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -45328,7 +43732,7 @@
             },
             "player_spec_key": "retribution_paladin",
             "professions": [
-              "ProfessionUnknown",
+              "Blacksmithing",
               "ProfessionUnknown"
             ],
             "race_id": 1,
@@ -45399,8 +43803,8 @@
             }
           }
         },
-        "source_setup_sha256": "ab46e43fb855fa76f8a17f1d3a08966fe8a3f75b121dfb4d7a49168ec05f9b7d",
-        "request_condition_projection_sha256": "5b515088041777ee0fdaa4ad73a18bba10ae413da82e120d193a88fab8c3e55c",
+        "source_setup_sha256": "027a00f05eb4cf6c5d60ce5437aad1dd41fe8cc4ba1e18d8935c764bf80b08b1",
+        "request_condition_projection_sha256": "a790ed62a03bc96ecd52c4a2eb95413fc60dd72dc8f440950a6bbaa247cace3d",
         "requirements": [
           {
             "id": "gear_manifest",
@@ -46149,7 +44553,7 @@
         "target_spec": "shadow_priest",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/priest/shadow/shadow_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_shadow_priest.test.go",
@@ -46174,13 +44578,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "938d7e140f03431d86fdaa95b967b10a80bb3a4d81d2e207f67f3beb91446ef1",
+      "source_contract_sha256": "feb0fd3f20cf820d3d63dc4a6cc31ceccd5d7a80227fef403b4c42388077dc4f",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "shadow_priest",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "938d7e140f03431d86fdaa95b967b10a80bb3a4d81d2e207f67f3beb91446ef1",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "feb0fd3f20cf820d3d63dc4a6cc31ceccd5d7a80227fef403b4c42388077dc4f",
         "source_selector": {
           "test_path": "sim/priest/shadow/shadow_test.go",
           "suite_name": "TestShadow",
@@ -47591,152 +45995,37 @@
           }
         }
       },
-      "request_sha256": "659caf332c0fc0e15743b4c411c551b57814d909fe06eed27f0576b70ad9d248",
+      "request_sha256": "643fb12643a3e70ddf3e84c032ec4526bfb3a06c5c1e99627f6fec118ce3d4ed",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:shadow_priest:60e0e2966f46690fa0e52c32c09e1fc8b6295ada0c0c716699647fd0fe7ad089",
-        "dps": 32856.90793393632,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "spell",
-          "content_sha256": "93e6553afe29e7645d0596237ee0c4643f13f5d5013d1ae48f11d4cf88225471",
-          "primary_stat": "intellect",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.03,
-            "dodge_pct": 0.0,
-            "main_hand_dps": 0.0,
-            "melee_haste_pct": 18.56983240921477,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 0.0,
-            "parry_pct": 0.0,
-            "physical_crit_pct": 7.4770345157218845,
-            "physical_hit_pct": 4.1212633878616725,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 18.56983240921477,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 17.723809515721886,
-            "spell_haste_pct": 22.126927381491225,
-            "spell_hit_pct": 17.00412335349425
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 76.0,
-            "arcane_resistance": 0.0,
-            "armor": 16406.4,
-            "attack_power": 0.0,
-            "bonus_armor": 0.0,
-            "crit_rating": 771.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 0.0,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 2378.0,
-            "health": 160121.0,
-            "hit_rating": 495.0,
-            "intellect": 8123.85,
-            "mana": 142167.75,
-            "mastery_rating": 2106.0,
-            "mp5": 1029.5,
-            "nature_resistance": 0.0,
-            "parry_rating": 0.0,
-            "ranged_attack_power": 0.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 11430.85,
-            "spirit": 1446.0,
-            "stamina": 8364.0,
-            "strength": 67.0
-          }
-        },
-        "pet_stat_reference": null,
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "659caf332c0fc0e15743b4c411c551b57814d909fe06eed27f0576b70ad9d248",
+          "request_contract_sha256": "643fb12643a3e70ddf3e84c032ec4526bfb3a06c5c1e99627f6fec118ce3d4ed",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/96ec3db91fcce0a930f1e763c0469481c4865ce6137e06a9a3518acc04c6b747.json",
-            "sha256": "96ec3db91fcce0a930f1e763c0469481c4865ce6137e06a9a3518acc04c6b747",
-            "byte_count": 7549
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/60e0e2966f46690fa0e52c32c09e1fc8b6295ada0c0c716699647fd0fe7ad089.json",
-            "sha256": "60e0e2966f46690fa0e52c32c09e1fc8b6295ada0c0c716699647fd0fe7ad089",
-            "byte_count": 52592
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/03e618f3b80394b89f25c662cfd9b66d9aa27cfd937d0519485fb97e49aeb0be.json",
-            "sha256": "03e618f3b80394b89f25c662cfd9b66d9aa27cfd937d0519485fb97e49aeb0be",
-            "byte_count": 11278
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -47744,12 +46033,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "shadow_priest",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:shadow_priest:60e0e2966f46690fa0e52c32c09e1fc8b6295ada0c0c716699647fd0fe7ad089",
-        "reference_dps": 32856.90793393632,
-        "source_contract_sha256": "938d7e140f03431d86fdaa95b967b10a80bb3a4d81d2e207f67f3beb91446ef1",
-        "request_sha256": "659caf332c0fc0e15743b4c411c551b57814d909fe06eed27f0576b70ad9d248",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "feb0fd3f20cf820d3d63dc4a6cc31ceccd5d7a80227fef403b4c42388077dc4f",
+        "request_sha256": "643fb12643a3e70ddf3e84c032ec4526bfb3a06c5c1e99627f6fec118ce3d4ed",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 8,
@@ -49512,7 +47801,7 @@
         "target_spec": "survival_hunter",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/hunter/survival/survival_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_survival_hunter.test.go",
@@ -49537,13 +47826,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "0ecfa23b00d58f7dd30f17e288cec425786db993e85b1730858b72e8e15180bd",
+      "source_contract_sha256": "334d7203aaf6b3f38510df4db392f1fbf3bed16a65e35d2c3eeccd2e3d40d26f",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "survival_hunter",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "0ecfa23b00d58f7dd30f17e288cec425786db993e85b1730858b72e8e15180bd",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "334d7203aaf6b3f38510df4db392f1fbf3bed16a65e35d2c3eeccd2e3d40d26f",
         "source_selector": {
           "test_path": "sim/hunter/survival/survival_test.go",
           "suite_name": "TestSV",
@@ -50699,7 +48988,7 @@
           },
           "player_spec_key": "survival_hunter",
           "professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ],
           "race_id": 2,
@@ -50954,16 +49243,24 @@
             "slot": 0,
             "spellbook": [
               {
-                "active": 1,
+                "active": 193,
+                "spell_id": 1742
+              },
+              {
+                "active": 193,
                 "spell_id": 2649
               },
               {
-                "active": 1,
+                "active": 193,
                 "spell_id": 17253
               },
               {
                 "active": 193,
                 "spell_id": 23145
+              },
+              {
+                "active": 193,
+                "spell_id": 24604
               },
               {
                 "active": 1,
@@ -50996,9 +49293,13 @@
               {
                 "active": 1,
                 "spell_id": 62760
+              },
+              {
+                "active": 1,
+                "spell_id": 65220
               }
             ],
-            "spellbook_sha256": "be83c8a872bfb2b7fca6d9fb26d6aa1a0ebb1e9b00eb93d36d1f2ffa36254b74",
+            "spellbook_sha256": "bc3322f102216e3308dc94e4fa30e2960641678949109ccbda1a90063e684ce8",
             "talents": {
               "bloodthirsty": 1,
               "call_of_the_wild": true,
@@ -51136,193 +49437,37 @@
           }
         }
       },
-      "request_sha256": "5708413bb4c6e6fd8a4a40c3c77b9a0f9d47cc0f53b5fe118cd3665b951d9e6e",
+      "request_sha256": "77f99a92ef036ff5d285316dd07bddff4d72081f28900a8bfb1742e8516a1312",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:survival_hunter:652120c66f93382553a1326c8e92879851e7a385548a1ea6c026aeebbcf87d04",
-        "dps": 36534.93193894304,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "ranged",
-          "content_sha256": "deee153f54b74c03088995787ff2ad443b161024dc002ab858cfb6606d7d7e21",
-          "primary_stat": "agility",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 0.0,
-            "main_hand_dps": 1060.142857142857,
-            "melee_haste_pct": 18.3150368163717,
-            "melee_speed_multiplier": 1.1,
-            "off_hand_dps": 0.0,
-            "parry_pct": 0.0,
-            "physical_crit_pct": 47.52977963330288,
-            "physical_hit_pct": 8.01773059093089,
-            "ranged_dps": 1060.1666666666667,
-            "ranged_haste_pct": 21.864487920862864,
-            "ranged_speed_multiplier": 1.1330000000000002,
-            "spell_crit_pct": 20.27219650330288,
-            "spell_haste_pct": 7.55912437851971,
-            "spell_hit_pct": 9.400098042144066
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 9286.962300000001,
-            "arcane_resistance": 0.0,
-            "armor": 17489.0,
-            "attack_power": 18913.924600000002,
-            "bonus_armor": 790.0,
-            "crit_rating": 2738.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 111.0,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 968.0,
-            "health": 169322.80000000002,
-            "hit_rating": 963.0,
-            "intellect": 122.0,
-            "mana": 0.0,
-            "mastery_rating": 1223.0,
-            "mp5": 0.0,
-            "nature_resistance": 0.0,
-            "parry_rating": 0.0,
-            "ranged_attack_power": 18923.924600000002,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 0.0,
-            "spirit": 119.0,
-            "stamina": 9324.7,
-            "strength": 103.0
-          }
-        },
-        "pet_stat_reference": {
-          "pet_inherited_stats": {
-            "kind": "pet_inherited_stats",
-            "line_index": 12,
-            "source_entity": "phase8_survival_hunter (#1) - Wolf",
-            "stat_vector": {
-              "armor": 6121.15,
-              "attack_power": 8042.668,
-              "expertise_rating": 3129.75,
-              "haste_rating": 968.0,
-              "health": 39163.74,
-              "physical_crit_percent": 47.53,
-              "physical_hit_percent": 8.018,
-              "ranged_attack_power": 18923.925,
-              "spell_crit_percent": 47.53,
-              "spell_hit_percent": 8.018,
-              "stamina": 2797.41
-            },
-            "timestamp_seconds": 0.0
-          },
-          "pet_stats": {
-            "kind": "pet_stats",
-            "line_index": 11,
-            "source_entity": "phase8_survival_hunter (#1) - Wolf",
-            "stat_vector": {
-              "agility": 438.0,
-              "armor": 6121.15,
-              "attack_power": 8974.668,
-              "expertise_rating": 3129.75,
-              "haste_rating": 968.0,
-              "health": 38903.74,
-              "physical_crit_percent": 62.879,
-              "physical_hit_percent": 8.018,
-              "ranged_attack_power": 19875.925,
-              "spell_crit_percent": 56.53,
-              "spell_hit_percent": 8.018,
-              "stamina": 2797.41,
-              "strength": 476.0
-            },
-            "timestamp_seconds": 0.0
-          }
-        },
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "5708413bb4c6e6fd8a4a40c3c77b9a0f9d47cc0f53b5fe118cd3665b951d9e6e",
+          "request_contract_sha256": "77f99a92ef036ff5d285316dd07bddff4d72081f28900a8bfb1742e8516a1312",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/e21acfb9c12c33aefc9834b99a41c52a2a66ed01d3e5635656eba4e96e04787a.json",
-            "sha256": "e21acfb9c12c33aefc9834b99a41c52a2a66ed01d3e5635656eba4e96e04787a",
-            "byte_count": 5034
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/652120c66f93382553a1326c8e92879851e7a385548a1ea6c026aeebbcf87d04.json",
-            "sha256": "652120c66f93382553a1326c8e92879851e7a385548a1ea6c026aeebbcf87d04",
-            "byte_count": 58049
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/941b7abc7ebea6f41be14f2158130623883e3c4973711f66a8e66b4964dcdad7.json",
-            "sha256": "941b7abc7ebea6f41be14f2158130623883e3c4973711f66a8e66b4964dcdad7",
-            "byte_count": 16220
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -51330,12 +49475,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "survival_hunter",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:survival_hunter:652120c66f93382553a1326c8e92879851e7a385548a1ea6c026aeebbcf87d04",
-        "reference_dps": 36534.93193894304,
-        "source_contract_sha256": "0ecfa23b00d58f7dd30f17e288cec425786db993e85b1730858b72e8e15180bd",
-        "request_sha256": "5708413bb4c6e6fd8a4a40c3c77b9a0f9d47cc0f53b5fe118cd3665b951d9e6e",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "334d7203aaf6b3f38510df4db392f1fbf3bed16a65e35d2c3eeccd2e3d40d26f",
+        "request_sha256": "77f99a92ef036ff5d285316dd07bddff4d72081f28900a8bfb1742e8516a1312",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 2,
@@ -52359,7 +50504,7 @@
             },
             "player_spec_key": "survival_hunter",
             "professions": [
-              "ProfessionUnknown",
+              "Blacksmithing",
               "ProfessionUnknown"
             ],
             "race_id": 2,
@@ -52444,8 +50589,8 @@
             }
           }
         },
-        "source_setup_sha256": "9ffd534f558dfc9be1191a50bb0553c184b775bdca63fa0a21eb22273aa72a5b",
-        "request_condition_projection_sha256": "7ab47d2310b65ddc45966efd5d707f5e086c3de9fa5f3619201a7b5eb1a2d2ba",
+        "source_setup_sha256": "4bb316e521bfa51bc830d5929671b1bc7fce8f3872e90b49a5702d004d25eb97",
+        "request_condition_projection_sha256": "09055c0f85fd08f6de962a30eadc000827ed47506a4f36a427c606ed2394a30c",
         "requirements": [
           {
             "id": "gear_manifest",
@@ -53072,16 +51217,24 @@
               "slot": 0,
               "spellbook": [
                 {
-                  "active": 1,
+                  "active": 193,
+                  "spell_id": 1742
+                },
+                {
+                  "active": 193,
                   "spell_id": 2649
                 },
                 {
-                  "active": 1,
+                  "active": 193,
                   "spell_id": 17253
                 },
                 {
                   "active": 193,
                   "spell_id": 23145
+                },
+                {
+                  "active": 193,
+                  "spell_id": 24604
                 },
                 {
                   "active": 1,
@@ -53114,9 +51267,13 @@
                 {
                   "active": 1,
                   "spell_id": 62760
+                },
+                {
+                  "active": 1,
+                  "spell_id": 65220
                 }
               ],
-              "spellbook_sha256": "be83c8a872bfb2b7fca6d9fb26d6aa1a0ebb1e9b00eb93d36d1f2ffa36254b74",
+              "spellbook_sha256": "bc3322f102216e3308dc94e4fa30e2960641678949109ccbda1a90063e684ce8",
               "talents": {
                 "bloodthirsty": 1,
                 "call_of_the_wild": true,
@@ -53153,16 +51310,24 @@
               "slot": 0,
               "spellbook": [
                 {
-                  "active": 1,
+                  "active": 193,
+                  "spell_id": 1742
+                },
+                {
+                  "active": 193,
                   "spell_id": 2649
                 },
                 {
-                  "active": 1,
+                  "active": 193,
                   "spell_id": 17253
                 },
                 {
                   "active": 193,
                   "spell_id": 23145
+                },
+                {
+                  "active": 193,
+                  "spell_id": 24604
                 },
                 {
                   "active": 1,
@@ -53195,9 +51360,13 @@
                 {
                   "active": 1,
                   "spell_id": 62760
+                },
+                {
+                  "active": 1,
+                  "spell_id": 65220
                 }
               ],
-              "spellbook_sha256": "be83c8a872bfb2b7fca6d9fb26d6aa1a0ebb1e9b00eb93d36d1f2ffa36254b74",
+              "spellbook_sha256": "bc3322f102216e3308dc94e4fa30e2960641678949109ccbda1a90063e684ce8",
               "talents": {
                 "bloodthirsty": 1,
                 "call_of_the_wild": true,
@@ -53391,7 +51560,7 @@
         "target_spec": "unholy_death_knight",
         "repository": "https://github.com/wowsims/cata",
         "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "upstream_test": {
           "path": "sim/death_knight/unholy/unholy_test.go",
           "snapshot_path": "experiments/configs/wowsims_cata_p4_gear_sources/unholy_death_knight.test.go",
@@ -53416,13 +51585,13 @@
           "usage": "provenance_only_not_an_acceptance_denominator"
         }
       },
-      "source_contract_sha256": "52ea94043154038ede574ef65500a1688b195c13f0f6784bc16f197bffb6edd6",
+      "source_contract_sha256": "05b71debc2c535f35dcf5ff90c7e18e8b7789ce284e2e73fe5e7adb3a1dd156c",
       "request": {
         "schema": "wowsims_live_compatible_request_contract_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "unholy_death_knight",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
-        "source_contract_sha256": "52ea94043154038ede574ef65500a1688b195c13f0f6784bc16f197bffb6edd6",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "source_contract_sha256": "05b71debc2c535f35dcf5ff90c7e18e8b7789ce284e2e73fe5e7adb3a1dd156c",
         "source_selector": {
           "test_path": "sim/death_knight/unholy/unholy_test.go",
           "suite_name": "TestUnholy",
@@ -54687,7 +52856,7 @@
           },
           "player_spec_key": "unholy_death_knight",
           "professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ],
           "race_id": 1,
@@ -55173,186 +53342,37 @@
           }
         }
       },
-      "request_sha256": "a46c3ee20ef5820e6f7ce79827ea63a05a23efcb301bdcb30e3ae64c61c0e47b",
+      "request_sha256": "f07a135429366c1fdf80ca570e72ef3eb438eb1802d0c5a164dcf369ef2ca90a",
       "result": {
-        "status": "generated_verified",
-        "result_key": "generated:unholy_death_knight:569f526bc06896f14d5c5fec6652c901164c7effd0cac6961c92baab7dd1cadc",
-        "dps": 36764.780256209764,
-        "authority_scope": "offline_denominator_only",
-        "live_fixture_join_status": "pending_physical_raw_capture",
-        "effective_stat_reference": {
-          "api_version": 5,
-          "archetype": "melee",
-          "content_sha256": "e4aa0d10bcb70d5b7276015c3784fa9aa6644f9f13d8dc2e6efadf8c952c5b80",
-          "primary_stat": "strength",
-          "pseudo_stats": {
-            "block_pct": 5.0,
-            "cast_speed_multiplier": 1.0,
-            "dodge_pct": 5.0,
-            "main_hand_dps": 1060.138888888889,
-            "melee_haste_pct": 17.156401094636166,
-            "melee_speed_multiplier": 1.0,
-            "off_hand_dps": 0.0,
-            "parry_pct": 18.571218322543842,
-            "physical_crit_pct": 12.14403585117451,
-            "physical_hit_pct": 8.001079021687005,
-            "ranged_dps": 0.0,
-            "ranged_haste_pct": 17.156401094636166,
-            "ranged_speed_multiplier": 1.0,
-            "spell_crit_pct": 9.315035851174509,
-            "spell_haste_pct": 17.156401094636166,
-            "spell_hit_pct": 18.380575512461526
-          },
-          "schema": "wowsims_scoring_start_effective_stats_v1",
-          "stage": "final_stats_before_dynamic_combat_procs",
-          "stat_index_schema": {
-            "pseudo_stats": {
-              "block_pct": 5,
-              "cast_speed_multiplier": 8,
-              "dodge_pct": 3,
-              "main_hand_dps": 0,
-              "melee_haste_pct": 9,
-              "melee_speed_multiplier": 6,
-              "off_hand_dps": 1,
-              "parry_pct": 4,
-              "physical_crit_pct": 14,
-              "physical_hit_pct": 12,
-              "ranged_dps": 2,
-              "ranged_haste_pct": 10,
-              "ranged_speed_multiplier": 7,
-              "spell_crit_pct": 15,
-              "spell_haste_pct": 11,
-              "spell_hit_pct": 13
-            },
-            "stats": {
-              "agility": 1,
-              "arcane_resistance": 17,
-              "armor": 22,
-              "attack_power": 12,
-              "bonus_armor": 23,
-              "crit_rating": 6,
-              "dodge_rating": 9,
-              "expertise_rating": 8,
-              "fire_resistance": 18,
-              "frost_resistance": 19,
-              "haste_rating": 7,
-              "health": 24,
-              "hit_rating": 5,
-              "intellect": 3,
-              "mana": 25,
-              "mastery_rating": 11,
-              "mp5": 26,
-              "nature_resistance": 20,
-              "parry_rating": 10,
-              "ranged_attack_power": 13,
-              "resilience_rating": 16,
-              "shadow_resistance": 21,
-              "spell_penetration": 15,
-              "spell_power": 14,
-              "spirit": 4,
-              "stamina": 2,
-              "strength": 0
-            }
-          },
-          "stats": {
-            "agility": 690.0,
-            "arcane_resistance": 0.0,
-            "armor": 23689.0,
-            "attack_power": 23007.383333333335,
-            "bonus_armor": 0.0,
-            "crit_rating": 1670.0,
-            "dodge_rating": 0.0,
-            "expertise_rating": 252.081591,
-            "fire_resistance": 0.0,
-            "frost_resistance": 0.0,
-            "haste_rating": 2197.0,
-            "health": 162389.0,
-            "hit_rating": 961.0,
-            "intellect": 56.0,
-            "mana": 0.0,
-            "mastery_rating": 1273.0,
-            "mp5": 0.0,
-            "nature_resistance": 0.0,
-            "parry_rating": 2890.45125,
-            "ranged_attack_power": 190.0,
-            "resilience_rating": 0.0,
-            "shadow_resistance": 0.0,
-            "spell_penetration": 0.0,
-            "spell_power": 0.0,
-            "spirit": 85.49000000000001,
-            "stamina": 8526.0,
-            "strength": 10896.375
-          }
-        },
-        "pet_stat_reference": {
-          "pet_inherited_stats": {
-            "kind": "pet_inherited_stats",
-            "line_index": 11,
-            "source_entity": "phase8_unholy_death_knight (#1) - Ghoul",
-            "stat_vector": {
-              "attack_power": 31281.313,
-              "expertise_rating": 780.812,
-              "haste_rating": 2197.0,
-              "health": 151067.078,
-              "physical_crit_percent": 12.144,
-              "physical_hit_percent": 8.001,
-              "stamina": 10790.506,
-              "strength": 15640.657
-            },
-            "timestamp_seconds": 0.0
-          },
-          "pet_stats": {
-            "kind": "pet_stats",
-            "line_index": 10,
-            "source_entity": "phase8_unholy_death_knight (#1) - Ghoul",
-            "stat_vector": {
-              "agility": 3333.0,
-              "attack_power": 32213.313,
-              "expertise_rating": 780.812,
-              "haste_rating": 2197.0,
-              "health": 156239.078,
-              "physical_crit_percent": 17.144,
-              "physical_hit_percent": 8.001,
-              "stamina": 11178.506,
-              "strength": 16116.657
-            },
-            "timestamp_seconds": 0.0
-          }
-        },
-        "publication_domain": {
-          "repository_url": "git@github.com:Runiir/TrinityCore2.git",
-          "repository_revision": "cf3e9b89c8f78a31ce3a68dc5536f6d940e6a8b4",
-          "dvc_pointer_path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2.dvc",
-          "bundle_root": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2",
-          "pending_request_catalog_sha256": "628665a31fe469f9bf48e8a9cb96562749b2a4720ddbf13ad21ff60db025bb74",
-          "control_plane_policy": "commit_a_pointer_then_commit_b_reconstruction_receipt_and_promotion"
-        },
+        "status": "requires_generation",
+        "result_key": null,
+        "dps": null,
         "artifacts": {
-          "request_contract_sha256": "a46c3ee20ef5820e6f7ce79827ea63a05a23efcb301bdcb30e3ae64c61c0e47b",
+          "request_contract_sha256": "f07a135429366c1fdf80ca570e72ef3eb438eb1802d0c5a164dcf369ef2ca90a",
           "native_request": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_requests/6211304fb6237939e74fa4f02d3072c102bb274c4faedd1389be31a19d40d20d.json",
-            "sha256": "6211304fb6237939e74fa4f02d3072c102bb274c4faedd1389be31a19d40d20d",
-            "byte_count": 21992
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "native_result": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/native_results/569f526bc06896f14d5c5fec6652c901164c7effd0cac6961c92baab7dd1cadc.json",
-            "sha256": "569f526bc06896f14d5c5fec6652c901164c7effd0cac6961c92baab7dd1cadc",
-            "byte_count": 943391
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "build_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/build_receipts/ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b.json",
-            "sha256": "ce3c5b4490ca38f55c4fa5e766563a92b215895df91ea815b0a874efe2a5ed8b",
-            "byte_count": 9134
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "generation_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_professions_v2/generation_receipts/e117764f363d8770173332ba30714709c39cca59bdb81063147bdd5672de25c6.json",
-            "sha256": "e117764f363d8770173332ba30714709c39cca59bdb81063147bdd5672de25c6",
-            "byte_count": 15888
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           },
           "dvc_reconstruction_receipt": {
-            "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_professions_v2/dvc_reconstruction_receipts/0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea.json",
-            "sha256": "0e47fadca5d341b1af94701ba2d52a506b332d7afaf71f715e78106acb36e5ea",
-            "byte_count": 114370
+            "path": null,
+            "sha256": null,
+            "byte_count": null
           }
         }
       },
@@ -55360,12 +53380,12 @@
         "schema": "phase8_wowsims_reference_setup_manifest_v1",
         "reference_class": "self_provided_baseline",
         "target_spec": "unholy_death_knight",
-        "result_status": "generated_verified",
-        "reference_result_key": "generated:unholy_death_knight:569f526bc06896f14d5c5fec6652c901164c7effd0cac6961c92baab7dd1cadc",
-        "reference_dps": 36764.780256209764,
-        "source_contract_sha256": "52ea94043154038ede574ef65500a1688b195c13f0f6784bc16f197bffb6edd6",
-        "request_sha256": "a46c3ee20ef5820e6f7ce79827ea63a05a23efcb301bdcb30e3ae64c61c0e47b",
-        "fixture_contract_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+        "result_status": "requires_generation",
+        "reference_result_key": null,
+        "reference_dps": null,
+        "source_contract_sha256": "05b71debc2c535f35dcf5ff90c7e18e8b7789ce284e2e73fe5e7adb3a1dd156c",
+        "request_sha256": "f07a135429366c1fdf80ca570e72ef3eb438eb1802d0c5a164dcf369ef2ca90a",
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
         "source_setup": {
           "reference_class": "self_provided_baseline",
           "race": 1,
@@ -56486,7 +54506,7 @@
             },
             "player_spec_key": "unholy_death_knight",
             "professions": [
-              "ProfessionUnknown",
+              "Blacksmithing",
               "ProfessionUnknown"
             ],
             "race_id": 1,
@@ -56571,8 +54591,8 @@
             }
           }
         },
-        "source_setup_sha256": "13c6ab8d484a605db499f449c542ef8b01219b034ccc9da1fa9aa9ee59b1c8f4",
-        "request_condition_projection_sha256": "795e7ac771fb11837983a6abe3196e8e34bd5f50cfa631e3888d33906e8b403e",
+        "source_setup_sha256": "9dcc0bdf6fb06fa19d723733b8a3301341c5d52809e7f0f71a35ae3fbe580389",
+        "request_condition_projection_sha256": "a90ffc3e1eb6693a03cdae381005431cb7e0b2c9a9a2f226d2ff718d9dcfa6a3",
         "requirements": [
           {
             "id": "gear_manifest",

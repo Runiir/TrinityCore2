@@ -1,0 +1,232 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "90a181db0135aef332eecdcdde298c842fb3ffe6",
+  "archive_sha256": "862101bf5522199d6e5873901ef68345142ff62000e93ef35131baaff2bbfc7e",
+  "archive_bytes": 6853229,
+  "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_90a181db01_20260909.tar.gz.dvc",
+  "remote_download_sha256": "862101bf5522199d6e5873901ef68345142ff62000e93ef35131baaff2bbfc7e",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "terminal_reason": "combat_calibration_role_gate_failed",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-90a181db01/configure.log",
+      "bytes": 15535,
+      "sha256": "2a41f83b24da5d3c0d890e7e3ad32886f19d3ce2829e521f6c30218470aab3ec"
+    },
+    {
+      "path": "build-preflight-90a181db01/configure_receipt.json",
+      "bytes": 13617,
+      "sha256": "5d85142beb1e78165eb3b45ffa826faaacff4c6cfe8338ee03ffa185405b3fb3"
+    },
+    {
+      "path": "build-preflight-90a181db01/configure_verification.json",
+      "bytes": 536,
+      "sha256": "5d18b3e3253df8874825cb332ac3f83f8965120e1fdacad629e1c43a06d35ff2"
+    },
+    {
+      "path": "build-preflight-90a181db01/map-0-asset-preflight.json",
+      "bytes": 6041883,
+      "sha256": "9ba047d1364c731208297fa0ae0872cd3d64455fca25088490efc36d968ae3b3"
+    },
+    {
+      "path": "build-preflight-90a181db01/map-669-asset-preflight.json",
+      "bytes": 5454509,
+      "sha256": "8339fd3455f11deeb8ca809ba214ba6c4d83835a907cc52635e8373e5767e203"
+    },
+    {
+      "path": "build-preflight-90a181db01/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-90a181db01/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "973a36162dac02b01cc98199f271db097f465c79ab681d70cde089bc1544b452"
+    },
+    {
+      "path": "build-preflight-90a181db01/review-context/dps-011-blacksmithing-socket-packet-addendum.md",
+      "bytes": 9742,
+      "sha256": "9a2ed6670a231e270bd1267c91e7a5ce8b59d892be9b40155dfe75725aeea58b"
+    },
+    {
+      "path": "build-preflight-90a181db01/review-context/orb-successful-hit-lifetime-implementation-review.md",
+      "bytes": 6328,
+      "sha256": "36a459be5a2c3d8ebf795a76ff0163d3088ed473ad13fba27c3337da795f8433"
+    },
+    {
+      "path": "build-preflight-90a181db01/review-context/profession-launch-implementation-review-addendum.md",
+      "bytes": 2595,
+      "sha256": "553d3bc7cfd239ea01c22d21543cfb8a66213ff8c0197dee9f6d0c37500ab4ed"
+    },
+    {
+      "path": "build-preflight-90a181db01/review-context/soulburn-diagnostic-retention-implementation-review.md",
+      "bytes": 5656,
+      "sha256": "4af89444d66cfba372be9056ef642806de20a4e133165ebbd9fafd900096e2e8"
+    },
+    {
+      "path": "build-preflight-90a181db01/review-context/status-snapshot-parser-implementation-review.md",
+      "bytes": 4362,
+      "sha256": "ae74bbcf423ce11082c51b9d154423141c2e75d3c7e8eaf0b7684d7687e7eba9"
+    },
+    {
+      "path": "build-preflight-90a181db01/review-context/status-snapshot-parser-implementation.md",
+      "bytes": 5531,
+      "sha256": "0d258e42fe6c99b8e94651c0f390aa2a30e8cdb35fdf15af2f8773fad86fae84"
+    },
+    {
+      "path": "build-preflight-90a181db01/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "d484e7a5bce8b9def077e1cabf5de035d3d027950a63dfe49dd9c79b470e787f"
+    },
+    {
+      "path": "build-preflight-90a181db01/worldserver_build.log",
+      "bytes": 25020,
+      "sha256": "78492af62cb9b38f68afa40473664a5e77fcaf555b50f6f1be989579da86868b"
+    },
+    {
+      "path": "build-preflight-90a181db01/worldserver_build_receipt.json",
+      "bytes": 24236,
+      "sha256": "b300c35ea5257ef5ad36228a2a4c8f557a82d45ee895c3dace7a335b4f9fea49"
+    },
+    {
+      "path": "build-preflight-90a181db01/worldserver_build_verification.json",
+      "bytes": 536,
+      "sha256": "607a9de66e660f223a9e0bd863f4350c8f607f1baed7d25f35bb3d18e062dca0"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/bot_pool_reset/reset_bot_pool.sql",
+      "bytes": 7817,
+      "sha256": "7a69716b1ffebac975da291391005a779903730028d28855f352968aff012af0"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/calibration_consumable_restock/fire_mage.sql",
+      "bytes": 1732,
+      "sha256": "9ebed5a4cc50a000ba9ff2536085b12d6b1d8d39dca93b9fea763dc32485158e"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/calibration_known_spells.json",
+      "bytes": 2451,
+      "sha256": "cc8a943f61928d7464fb03b6b516aa8ecd76bc2f22390b8e8d9d8717f962bfb6"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/cleanup_readback.json",
+      "bytes": 1120,
+      "sha256": "8573291c08f60b0fc72f96647d6f995eacfacab316d1788dd04aabd59975ffae"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/closed_summary.json",
+      "bytes": 1296,
+      "sha256": "c9080aaf5fe5e56a30496ed4e51810aee5d8d3b2d5a68d41a6d9a0bd9a8a42da"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/combat_analysis.json",
+      "bytes": 295,
+      "sha256": "886c54a50dc61c67ee6bc92dd09dbeb963332ec8b043efd78eca7d516c7c4fc1"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/combat_log.json",
+      "bytes": 673,
+      "sha256": "372e239c35a1a1461bacf9c54cd622dcbe5518ef07d2018e68e901d2c63c065b"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/commands.txt",
+      "bytes": 193,
+      "sha256": "a74fa5945658361c59cf7ce2536eda0146de81f02a33608bd504b4538cfe9875"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/dps-review/fire-calibration-review.md",
+      "bytes": 18415,
+      "sha256": "4ca626188daea6332b970dcde01c0bbc2ad0a241ac5e3db68f0f343d6864fbfb"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/dps-review/fire90-prepull-regression-fixture.json",
+      "bytes": 109286,
+      "sha256": "d8845b5b025190434a2bfaaf7c0fa37be9ac8eb4141e729771970a4c64201f9b"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/dps-review/prepull-observation-implementation.md",
+      "bytes": 4917,
+      "sha256": "cedf0fa9980676c97178e593ea2f32208c0fed21018f5664542f32e45b593c7e"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/heartbeat_events.jsonl",
+      "bytes": 8732,
+      "sha256": "55f6ea97e3fb5be4c94c9d2a7e70283cb610ba63673357d68f345a249cfb1602"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/heartbeat_manifest.json",
+      "bytes": 374,
+      "sha256": "da500be5ade751e8cda35570415b14519adaf2ae96c6b754788faf06145950a5"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/latest.json",
+      "bytes": 36932901,
+      "sha256": "df2ff26be5a04123f301082ccf33c3bda28ed27984e344fcc7aa60b500882362"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/report.json",
+      "bytes": 82230216,
+      "sha256": "2dc507b5d42a277af3f376a95b4aaed4852ab7d2871f2167140b6faede52855e"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/reviewed_summary.json",
+      "bytes": 774,
+      "sha256": "2e4add0707ec95ce275914be7ccf4afd1744b17f41ae0ee0da0a337f68ec3ee5"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/worldserver.validation.conf",
+      "bytes": 156993,
+      "sha256": "90a34382278bfa71faa94a07ad98aa8b89c4d8debad0101d451b25756cfa30dd"
+    },
+    {
+      "path": "calibration-fire_mage-90a181db01/worldserver_output.log",
+      "bytes": 26118180,
+      "sha256": "51e648b691f5daebd3e22e6c49ad90ae22f5acfb58c6038b1b2872422914de3c"
+    },
+    {
+      "path": "run-spec-calibration.py",
+      "bytes": 2696,
+      "sha256": "67b80e243b7b52b421c46f08be89263f0c8e58a8a99087fedc53aa1ec4503ae9"
+    },
+    {
+      "path": "publish-spec-calibration.py",
+      "bytes": 3613,
+      "sha256": "25e94de1679a437657eb563091dbd3c488703480d5ce6db8076039d730a087cc"
+    },
+    {
+      "path": "evict-spec-calibration.py",
+      "bytes": 1782,
+      "sha256": "770d48354a214610a8de89064d49168c991544a5c0ee1758cd2bd3e5af68471c"
+    },
+    {
+      "path": "calibration-fire_mage-launch-90a181db01.json",
+      "bytes": 2286,
+      "sha256": "a45c1aff7488f42fb27f94d4d942c426718ab965d3bc62b200d45bc209efd7dd"
+    },
+    {
+      "path": "calibration-fire_mage-console-90a181db01.log",
+      "bytes": 82230216,
+      "sha256": "2dc507b5d42a277af3f376a95b4aaed4852ab7d2871f2167140b6faede52855e"
+    },
+    {
+      "path": "calibration-fire_mage-postbuild-90a181db01.json",
+      "bytes": 537,
+      "sha256": "8966c7373f84d88ec0b5c72963c0fcb88971c3d0f36882b5e7db45fd276bfe3d"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    "calibration-fire_mage-90a181db01/report.json",
+    "calibration-fire_mage-90a181db01/latest.json",
+    "calibration-fire_mage-90a181db01/worldserver_output.log"
+  ]
+}

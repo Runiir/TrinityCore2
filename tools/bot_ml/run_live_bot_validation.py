@@ -1438,9 +1438,9 @@ def prepare_calibration_known_spells(
         raise RuntimeError(f"{target_spec}: target/action spell lists are not linked")
     spells = bot_known_spell_ids(bot, profiles)
     try:
-        from .wowsims_gear_binding import resolve_profession_setup, merge_profession_skills
+        from .wowsims_gear_binding import resolve_profession_setup, merge_profession_skills, canonical_wowsims_manifest
     except ImportError:
-        from wowsims_gear_binding import resolve_profession_setup, merge_profession_skills
+        from wowsims_gear_binding import resolve_profession_setup, merge_profession_skills, canonical_wowsims_manifest
     # Both absent is the catalog's no-required-profession representation.
     # A declared pair remains authoritative; bot.skills is not its substitute.
     if "profession_setup" not in bot and "profession_equipment" not in bot:
@@ -1457,6 +1457,29 @@ def prepare_calibration_known_spells(
     if json.dumps(profession_setup, sort_keys=True) != json.dumps(declared_setup, sort_keys=True):
         raise ValueError(f"{target_spec}: profession metadata types do not match canonical requirements")
     profession_skills = merge_profession_skills([], profession_setup)
+    socket_items = []
+    socket_profile_path = target_catalog_path.parent / "wowsims_cata_p4_gear_profiles.json"
+    profiles_document = (json.loads(socket_profile_path.read_text(encoding="utf-8"))
+                         if socket_profile_path.is_file() else None)
+    profile_id = target.get("gear_profile_id")
+    source_profile = (profiles_document or {}).get("profiles", {}).get(profile_id)
+    source_requires_sockets = bool(source_profile and any(row.get("socket_creators") for row in
+        resolve_profession_setup(source_profile["items"])["requirements"]))
+    if source_requires_sockets or any(row.get("socket_creators") for row in profession_setup["requirements"]):
+        if profiles_document is None:
+            raise ValueError(f"{target_spec}: missing canonical socket profile")
+        if not profile_id or bot.get("gear_profile_id") != profile_id or bot.get("gear_profile") != profile_id:
+            raise ValueError(f"{target_spec}: socket profile identity mismatch")
+        profile = profiles_document["profiles"][profile_id]
+        if canonical_sha256(canonical_wowsims_manifest(profile, profiles_document["slot_map"])) != profile.get("transformed_manifest_sha256"):
+            raise ValueError(f"{target_spec}: socket profile manifest hash mismatch")
+        if profile.get("items") != profession_equipment or profile.get("profession_setup") != profession_setup:
+            raise ValueError(f"{target_spec}: socket profile/catalog equipment mismatch")
+        materialized = load_gear_profiles(socket_profile_path)[profile_id]["equipment"]
+        socket_items = [item for item in materialized if int(item["slot"]) in (8, 9)
+                        and int(item["enchantments"].split()[18]) in (3717, 3723)]
+        if not socket_items:
+            raise ValueError(f"{target_spec}: missing materialized socket items")
     report: dict[str, Any] = {
         "schema": "bot_calibration_known_spells_v1", "target_spec": target_spec,
         "character_name": bot["name"], "pool_tag": bound_pool,
@@ -1464,6 +1487,9 @@ def prepare_calibration_known_spells(
         "action_profile_manifest": str(manifest_path), "expected_spell_ids": spells,
         "target_catalog_sha256": sha256_file(target_catalog_path),
         "action_profile_manifest_sha256": sha256_file(manifest_path),
+        "expected_socket_items": [{"slot": item["slot"], "item_entry": item["item_id"],
+                                   "enchantments": item["enchantments"]} for item in socket_items],
+        "socket_profile_sha256": sha256_file(socket_profile_path) if socket_items else None,
         "profession_setup": profession_setup,
         "expected_profession_skills": profession_skills,
         "profession_setup_sha256": hashlib.sha256(json.dumps(
@@ -1493,6 +1519,42 @@ def prepare_calibration_known_spells(
             guid = int(rows[0]["guid"])
             report["character_guid"] = guid
             report["character_class"] = class_id
+            report["socket_items_before"] = []
+            report["reconciled_socket_item_guids"] = []
+            report["socket_items_readback"] = []
+            if socket_items:
+                slots = [item["slot"] for item in socket_items]
+                item_query = ("SELECT ci.slot, ci.item AS item_guid, ii.itemEntry AS item_entry, "
+                    "ii.owner_guid, ii.enchantments FROM character_inventory ci "
+                    "JOIN item_instance ii ON ii.guid = ci.item "
+                    "WHERE ci.guid = %s AND ci.bag = 0 AND ci.slot IN (" +
+                    ", ".join(["%s"] * len(slots)) + ") ORDER BY ci.slot FOR UPDATE")
+                item_params = (guid, *slots)
+                cursor.execute(item_query, item_params)
+                item_rows = cursor.fetchall()
+                report["socket_items_before"] = item_rows
+                if (len(item_rows) != len(socket_items)
+                        or {row["slot"] for row in item_rows} != set(slots)
+                        or len({row["item_guid"] for row in item_rows}) != len(socket_items)):
+                    raise RuntimeError(f"{target_spec}: socket inventory topology mismatch")
+                expected_by_slot = {item["slot"]: item for item in socket_items}
+                item_updates = []
+                for row in item_rows:
+                    expected_item = expected_by_slot[row["slot"]]
+                    if (row["owner_guid"] != guid or row["item_guid"] <= 0
+                            or row["item_entry"] != expected_item["item_id"]):
+                        raise RuntimeError(f"{target_spec}: socket item identity/owner mismatch")
+                    actual_fields = str(row["enchantments"]).split()
+                    expected_fields = expected_item["enchantments"].split()
+                    if (len(actual_fields) != 45 or len(expected_fields) != 45
+                            or any(actual_fields[i] != expected_fields[i] for i in range(45) if i != 18)):
+                        raise RuntimeError(f"{target_spec}: socket non-creator enchant fields mismatch")
+                    if actual_fields != expected_fields:
+                        item_updates.append((expected_item["enchantments"], row["item_guid"], guid))
+                for fields, item_guid, owner in item_updates:
+                    cursor.execute("UPDATE item_instance SET enchantments = %s WHERE guid = %s AND owner_guid = %s",
+                                   (fields, item_guid, owner))
+                    report["reconciled_socket_item_guids"].append(item_guid)
             cursor.execute("SELECT spell, active, disabled FROM character_spell WHERE guid = %s", (guid,))
             before = {int(row["spell"]): row for row in cursor.fetchall()}
             missing = [spell for spell in spells if spell not in before
@@ -1545,6 +1607,19 @@ def prepare_calibration_known_spells(
                 report["profession_skills_readback"], sort_keys=True,
                 separators=(",", ":")).encode()).hexdigest()
             report["readback"]["profession_skills_passed"] = True
+            if socket_items:
+                cursor.execute(item_query, item_params)
+                readback = cursor.fetchall()
+                expected_rows = [{**row, "enchantments": (
+                    expected_by_slot[row["slot"]]["enchantments"]
+                    if row["item_guid"] in report["reconciled_socket_item_guids"] else row["enchantments"])}
+                    for row in item_rows]
+                if readback != expected_rows:
+                    raise RuntimeError(f"{target_spec}: socket item readback failed")
+                report["socket_items_readback"] = readback
+                report["socket_items_readback_sha256"] = hashlib.sha256(json.dumps(
+                    readback, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+            report["readback"]["socket_items_passed"] = True
         conn.commit()
     except Exception:
         conn.rollback()
@@ -6496,6 +6571,7 @@ def run_worldserver_completion_watchdog(
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
+    calibration_startup = any(is_calibration_start_command(value) for value in startup_commands)
     expected_cohort_id = expected_cohort_id_from_heartbeat_commands(heartbeat_commands)
     output_parts = WatchdogOutputBuffer(heartbeat_commands=heartbeat_commands)
     heartbeat_index = 0
@@ -6605,7 +6681,10 @@ def run_worldserver_completion_watchdog(
             if process.poll() is not None:
                 break
             send_command(command_text)
-            output_parts.append(wait_for_bot_status_ready(process, deadline))
+            # Calibration owns a separate population and native readiness gate.
+            # Its deliberately empty ordinary population cannot become ready.
+            if not calibration_startup:
+                output_parts.append(wait_for_bot_status_ready(process, deadline))
 
         while time.monotonic() < deadline:
             if process.poll() is not None:

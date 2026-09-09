@@ -1051,6 +1051,19 @@ def prepull_setup_projection(
     target = target_observation if isinstance(target_observation, Mapping) else {}
     setup = target.get("persistent_setup")
     setup = setup if isinstance(setup, Mapping) else {}
+    # Readiness belongs to the frozen scoring-start observation. The final
+    # serializer recomputes setup after consumable resources may have been used.
+    pre_score = target.get("pre_score_state")
+    pre_score = pre_score if isinstance(pre_score, Mapping) else {}
+    observed_at_ms = pre_score.get("observed_at_ms")
+    prepull_ready = bool(
+        pre_score.get("schema") == "phase8_pre_score_state_observation_v1"
+        and pre_score.get("observed_before_scoring") is True
+        and pre_score.get("persistent_setup_ready") is True
+        and type(observed_at_ms) is int
+        and type(scored_started_at_ms) is int
+        and 0 < observed_at_ms <= scored_started_at_ms
+    )
     required_presence_spell_id = _integer(
         setup.get("required_presence_spell_id")
     )
@@ -1163,7 +1176,7 @@ def prepull_setup_projection(
         enchant = setup.get("mainhand_temp_enchant")
         elemental_imbue_valid = bool(
             type(target.get("class_id")) is int and target["class_id"] == 7
-            and setup.get("ready") is True
+            and prepull_ready
             and setup.get("poison_setup_required") is False
             and type(item_entry) is int and item_entry > 0
             and len(mainhands) == 1
@@ -1180,7 +1193,7 @@ def prepull_setup_projection(
     projection: dict[str, Any] = {"form_presence": presence}
     if weapon_imbues:
         projection["weapon_imbues"] = weapon_imbues
-    return projection, bool(setup.get("ready") is True and presence_valid
+    return projection, bool(prepull_ready and presence_valid
                             and poison_valid and elemental_imbue_valid)
 
 

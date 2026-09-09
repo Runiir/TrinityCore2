@@ -360,3 +360,91 @@ def test_evidence_identity_builder_selects_one_exact_profile_target() -> None:
     assert target["runtime_join_key"] == "affliction_warlock"
     with pytest.raises(RuntimeError, match="must resolve exactly once"):
         _profile_target(catalog, "missing_spec")
+
+
+def test_first_scored_reset_preserves_only_current_attempt_native_food_and_flask(tmp_path) -> None:
+    """Compile the actual reset branch and native receipt type, with actor plumbing stubbed."""
+    import re
+    import subprocess
+
+    reset = _source("src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp")
+    branch = _between(reset, "if (firstResetPass || !IsSelfProvidedCalibrationBaseline())",
+                      "            auto& petSetup = state.PersistentPetSetup;") + "}\n"
+    header = _source("src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h")
+    receipt = _between(header, "struct NativeConsumableReceipt", "        struct ScoredOtherItemUse")
+    fields = re.findall(r"^\s*(uint32|uint64|bool|ObjectGuid|std::string) (\w+)(?:\s*=.*)?;", receipt, re.M)
+    assert len(fields) == 27
+    assignments = "\n".join(
+        f'r.{name} = ' + ('"native-phase";' if kind == 'std::string' else
+                         'true;' if kind == 'bool' else '37;')
+        for kind, name in fields
+    )
+    comparisons = " && ".join(f"a.{name} == b.{name}" for _, name in fields)
+    control = _source("src/server/game/Bots/BotWorldPopulationMgrCalibrationControl.cpp")
+    start = control[control.index("std::string BotWorldPopulationMgr::StartCombatCalibration"):
+                    control.index("std::string BotWorldPopulationMgr::StopCombatCalibration")]
+    attempt_clear = _between(start, "Cohort().CalibrationMetricsByGuid.clear();",
+                             "    Cohort().CalibrationPreviousMetrics.clear();")
+    source = tmp_path / "consumable_reset.cpp"
+    source.write_text(r'''
+#include <cassert>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+using uint32=unsigned; using uint64=unsigned long long; using ObjectGuid=unsigned;
+struct CalibrationMetrics {
+''' + receipt + r'''
+ NativeConsumableReceipt FlaskConsumable, FoodConsumable, PrepotConsumable, CombatPotionConsumable;
+ unsigned Damage=0;
+};
+struct Guid { unsigned GetCounter() const {return 1;} };
+struct WorldBotState { struct Guid Guid; };
+struct Group { std::vector<WorldBotState> CalibrationBots{{}}; } party;
+struct Run { std::map<unsigned,CalibrationMetrics> CalibrationMetricsByGuid; } cohort;
+Group& Party(){return party;} Run& Cohort(){return cohort;}
+bool selfProvided=true;
+bool IsSelfProvidedCalibrationBaseline(){return selfProvided;}
+void reset(bool firstResetPass) {
+''' + branch + r'''
+}
+void startAttempt() {
+''' + attempt_clear + r'''
+}
+using Receipt=CalibrationMetrics::NativeConsumableReceipt;
+Receipt populated() { Receipt r;
+''' + assignments + r'''
+return r; }
+bool equal(Receipt const& a, Receipt const& b) {return ''' + comparisons + r''';}
+int main() {
+ for(unsigned phase=0; phase<3; ++phase) {
+  startAttempt();
+  auto& metrics=cohort.CalibrationMetricsByGuid[1];
+  auto expected=populated();
+  expected.SubmittedAtMs=10;
+  expected.FinishedAtMs=phase ? 20 : 0;
+  expected.SuccessfulUseCount=phase==2 ? 1 : 0;
+  expected.NativeUseFinishedSuccessfully=phase==2;
+  expected.NativeUseAwaitingAura=phase==1;
+  metrics.FlaskConsumable=expected; metrics.FoodConsumable=expected;
+  metrics.PrepotConsumable=populated(); metrics.CombatPotionConsumable=populated(); metrics.Damage=900;
+  selfProvided=true; reset(true);
+  assert(equal(metrics.FlaskConsumable,expected)); assert(equal(metrics.FoodConsumable,expected));
+  assert(equal(metrics.PrepotConsumable,Receipt{}));
+  assert(equal(metrics.CombatPotionConsumable,Receipt{})); assert(metrics.Damage==0);
+  reset(false); // Subsequent self-provided passes retain the pending/current receipt.
+  assert(equal(metrics.FoodConsumable,expected));
+  selfProvided=false; reset(true);
+  assert(equal(metrics.FlaskConsumable,Receipt{})); assert(equal(metrics.FoodConsumable,Receipt{}));
+  metrics.FoodConsumable=expected; reset(false);
+  assert(equal(metrics.FoodConsumable,Receipt{}));
+  metrics.FoodConsumable=expected; metrics.FlaskConsumable=expected;
+  startAttempt(); selfProvided=true; reset(true);
+  assert(equal(cohort.CalibrationMetricsByGuid[1].FoodConsumable,Receipt{}));
+  assert(equal(cohort.CalibrationMetricsByGuid[1].FlaskConsumable,Receipt{}));
+ }
+}
+''')
+    binary = tmp_path / "consumable_reset"
+    subprocess.run(["c++", "-std=c++17", str(source), "-o", str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)

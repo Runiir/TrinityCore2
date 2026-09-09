@@ -1,39 +1,41 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "capture:typed_startup_status",
+  "work_unit": "setup:blacksmithing_socket_creators",
   "owner_skill": "raid-performance-loop",
-  "classification": "startup_status_parser",
+  "classification": "native_equipment_profession_application",
   "epoch_id": "roster_execution_review_20260908",
   "observed_at_commit": "ec02d7196a279d069ffac6c32f4ec4a99a39f404",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "CAP-003 passes independent review and 48 focused tests; freeze corrected controller and retry Affliction.",
+  "gate_state": "CAP-002/CAP-003 and Affliction role/setup live accepted. DPS-011 source and generated metadata approved; exact reference generation pending. DPS-012 Fire temporal consumer repair independently approved with retained evidence replay.",
   "first_broken_edge": {
-    "id": "status_snapshot_coerces_diagnostic_bot_list",
-    "owner_classification": "raid_evidence_lifecycle",
-    "cause": "Startup status recognizer admits unrelated bots arrays and fallback discards explicit zero. int(list) crashes during startup readiness.",
-    "review_state": "independently_approved_retry_pending"
+    "id": "extra_socket_gems_lack_native_creators",
+    "owner_classification": "raid_wowsims_reference",
+    "cause": "Nine specs have wrist/hands extra gems without native prismatic creators or Blacksmithing requirements.",
+    "review_state": "source_and_metadata_approved"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "e416fd7e6d48803e4fffb12ba5e8cdd346f80d4b13ed11a7f1470ad3ddeb3896"
+    "sha256": "2cf31e34fdb7d970e4e033413c43e945c63b57799ba9a476306b79f10306ee01"
   },
   "scope_lock": {
-    "objective": "Recognize typed status payloads and preserve supported scalar count semantics through real readiness callers.",
+    "objective": "Apply exact player-obtainable Blacksmithing socket setup through shared materialization and selected-actor readback.",
     "owned_files": [
+      "tools/bot_ml/wowsims_gear_binding.py",
+      "tools/bot_ml/build_validation_provisioning.py",
       "tools/bot_ml/run_live_bot_validation.py",
-      "tests/test_bot_status_snapshot.py"
+      "tools/bot_ml/phase8_fixture_contract.py"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Mixed diagnostic arrays and inactive/active status responses do not crash or create false readiness.",
-    "Explicit zero counts remain authoritative; supported legacy scalar aliases remain valid.",
-    "Actual startup readiness and polling fixtures pass independent review.",
-    "Retry complete native Affliction scoring and require CAP-002 diagnostic coverage; preserve DPS/HPS independently."
+    "Exact nine-spec/18-item creator closure with craft rank400, provisioning525 and separately recorded native applicability rank1.",
+    "Selected actor item/skill transaction preserves all unrelated fields and rejects identity/readback mismatches with rollback.",
+    "Frozen validation does not read ambient DBC.",
+    "Independent review, coordinated generated inputs and full exact reference cohort promotion pass before Hunter native acceptance."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -42,9 +44,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Repair and review typed startup status parsing, then retry Affliction CAP-002 validation.",
+  "next_action": "Generate, publish, reconstruct and promote the corrected exact reference cohort, then build approved source once and validate Hunter native setup and DPS.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -89,8 +91,8 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "approved",
-    "scope": "CAP-003 typed startup status recognition",
+    "verdict": "pending",
+    "scope": "DPS-011 exact Blacksmithing socket setup",
     "live_verified": false
   },
   "related_edges": [
@@ -169,14 +171,14 @@
     "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_ec02d7196a_20260909.tar.gz.dvc"
   },
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "CAP-003",
+  "error_id": "DPS-011",
   "related_open_error_ids": [
     "DPS-007",
     "DPS-008",
     "DPS-009",
     "DPS-010",
-    "OBS-001",
-    "DPS-011",
-    "CAP-002"
+    "DPS-012",
+    "PERF-001",
+    "OBS-001"
   ]
 }

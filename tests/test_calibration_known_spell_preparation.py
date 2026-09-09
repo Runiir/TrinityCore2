@@ -311,3 +311,142 @@ def test_every_current_canonical_target_passes_readonly_preflight(tmp_path, monk
         apply=False, pool_tag='all_spec_candidate_pool',
     )
     assert result['target_spec'] == spec and result['applied'] is False
+
+
+class SocketDatabase(Database):
+    def __init__(self, spells, item_rows, *, discard_items=False):
+        super().__init__(spells, skills={})
+        self.actor.update(guid=1294, **{'class': 3})
+        self.spec, self.name = 'marksmanship_hunter', 'Markshunter'
+        self.items = copy.deepcopy(item_rows)
+        self.original_items = copy.deepcopy(item_rows)
+        self.item_writes = []
+        self.discard_items = discard_items
+    def execute(self, sql, params):
+        if sql.startswith('SELECT ci.slot'):
+            assert params == (1294, 8, 9)
+            assert 'ci.bag = 0' in sql and 'FOR UPDATE' in sql
+            self.rows = copy.deepcopy(self.items)
+        elif sql.startswith('UPDATE item_instance'):
+            fields, item_guid, owner = params
+            assert owner == 1294
+            self.item_writes.append(params)
+            if not self.discard_items:
+                next(row for row in self.items if row['item_guid'] == item_guid)['enchantments'] = fields
+        else:
+            super().execute(sql, params)
+    def rollback(self):
+        super().rollback()
+        self.items = copy.deepcopy(self.original_items)
+
+
+def dps011_preparation_fixture(tmp_path):
+    from test_profession_enchant_setup import dps011_corrected_documents
+    from tools.bot_ml.build_validation_provisioning import load_gear_profiles
+    paths, catalog, _ = dps011_corrected_documents(tmp_path)
+    target = next(row for row in catalog['targets'] if row['spec_target_id'] == 'marksmanship_hunter')
+    items = load_gear_profiles(paths[1])[target['gear_profile_id']]['equipment']
+    rows = []
+    for item in items:
+        if item['slot'] not in (8, 9):
+            continue
+        fields = item['enchantments'].split()
+        fields[18] = '0'
+        rows.append(dict(slot=item['slot'], item_guid=90000+item['slot'], item_entry=item['item_id'],
+                         owner_guid=1294, enchantments=' '.join(fields)))
+    expected = live.prepare_calibration_known_spells(tmp_path, tmp_path/'world.conf', 'marksmanship_hunter',
+        paths[0], pool_tag='all_spec_candidate_pool')
+    return paths[0], target, rows, expected
+
+
+def test_dps011_actual_main_repairs_socket_items_and_skill_atomically_then_noop(tmp_path, monkeypatch):
+    path, target, rows, expected = dps011_preparation_fixture(tmp_path)
+    db = SocketDatabase(expected['expected_spell_ids'], rows)
+    db.name = target['provisioning_bot']['name']
+    report = replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)['calibration_known_spells']
+    assert db.commits == 1 and not db.rollbacks
+    assert db.skill_writes == [(1294, 164, 525, 525)]
+    assert report['reconciled_socket_item_guids'] == [90008, 90009]
+    assert [int(row['enchantments'].split()[18]) for row in report['socket_items_readback']] == [3717, 3723]
+    assert len(report['socket_items_readback_sha256']) == 64
+    assert all(report['readback'][key] for key in ('passed', 'profession_skills_passed', 'socket_items_passed'))
+    again = replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)['calibration_known_spells']
+    assert again['reconciled_socket_item_guids'] == again['reconciled_profession_skills'] == []
+    assert len(db.item_writes) == 2 and len(db.skill_writes) == 1
+
+
+@pytest.mark.parametrize('failure', ['owner', 'entry', 'duplicate', 'missing', 'other_field', 'item_readback', 'skill_readback'])
+def test_dps011_item_identity_and_combined_readback_fail_closed(tmp_path, monkeypatch, failure):
+    path, target, rows, expected = dps011_preparation_fixture(tmp_path)
+    if failure == 'owner': rows[0]['owner_guid'] = 99
+    if failure == 'entry': rows[0]['item_entry'] = 1
+    if failure == 'duplicate': rows[1]['item_guid'] = rows[0]['item_guid']
+    if failure == 'missing': rows.pop()
+    if failure == 'other_field':
+        fields = rows[0]['enchantments'].split(); fields[0] = '1'; rows[0]['enchantments'] = ' '.join(fields)
+    db = SocketDatabase([], rows, discard_items=failure == 'item_readback')
+    db.name = target['provisioning_bot']['name']
+    db.discard_skills = failure == 'skill_readback'
+    with pytest.raises(RuntimeError):
+        replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)
+    assert db.commits == 0 and db.rollbacks == 1
+    assert db.items == rows and db.spells == {} and db.skills == {}
+    if failure not in ('item_readback', 'skill_readback'):
+        assert not db.item_writes and not db.writes and not db.skill_writes
+
+
+def test_dps011_profile_drift_preflight_has_no_database_or_reset(tmp_path, monkeypatch):
+    path, target, rows, _ = dps011_preparation_fixture(tmp_path)
+    catalog = json.loads(path.read_text())
+    next(row for row in catalog['targets'] if row['spec_target_id'] == 'marksmanship_hunter')['provisioning_bot']['profession_equipment'][0]['id'] = 1
+    path.write_text(json.dumps(catalog))
+    db = SocketDatabase([], rows)
+    db.name = target['provisioning_bot']['name']
+    with pytest.raises(ValueError):
+        replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)
+    assert db.preparation_order == [] and db.connections == 0 and not db.item_writes
+
+
+def test_dps011_dry_run_socket_plan_has_no_database_access(tmp_path, monkeypatch):
+    path, target, rows, _ = dps011_preparation_fixture(tmp_path)
+    db = SocketDatabase([], rows); db.name = target['provisioning_bot']['name']
+    result = replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path, dry_run=True)['calibration_known_spells']
+    assert len(result['expected_socket_items']) == 2
+    assert not db.connections and not db.item_writes and not db.skill_writes and not db.writes
+
+
+def test_dps011_correct_creators_with_native_trailing_separator_are_noop(tmp_path, monkeypatch):
+    path, target, rows, expected = dps011_preparation_fixture(tmp_path)
+    by_slot = {item['slot']: item for item in expected['expected_socket_items']}
+    for row in rows:
+        row['enchantments'] = by_slot[row['slot']]['enchantments'] + ' '
+    db = SocketDatabase(expected['expected_spell_ids'], rows)
+    db.name = target['provisioning_bot']['name']
+    db.skills = {164: {'skill': 164, 'value': 525, 'max': 525}}
+    report = replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)['calibration_known_spells']
+    assert not db.item_writes and not db.skill_writes and not db.writes
+    assert report['socket_items_readback'] == rows
+
+
+def test_dps011_profile_manifest_hash_drift_rejects_before_reset(tmp_path, monkeypatch):
+    path, target, rows, _ = dps011_preparation_fixture(tmp_path)
+    profile_path = tmp_path/'wowsims_cata_p4_gear_profiles.json'
+    profiles = json.loads(profile_path.read_text())
+    profiles['profiles'][target['gear_profile_id']]['transformed_manifest_sha256'] = '0' * 64
+    profile_path.write_text(json.dumps(profiles))
+    db = SocketDatabase([], rows); db.name = target['provisioning_bot']['name']
+    with pytest.raises(ValueError, match='manifest hash mismatch'):
+        replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)
+    assert db.connections == 0 and db.preparation_order == []
+
+
+def test_dps011_missing_both_profession_fields_cannot_hide_profile_socket_requirement(tmp_path, monkeypatch):
+    path, target, rows, _ = dps011_preparation_fixture(tmp_path)
+    catalog = json.loads(path.read_text())
+    bot = next(row for row in catalog['targets'] if row['spec_target_id'] == 'marksmanship_hunter')['provisioning_bot']
+    bot.pop('profession_setup'); bot.pop('profession_equipment')
+    path.write_text(json.dumps(catalog))
+    db = SocketDatabase([], rows); db.name = target['provisioning_bot']['name']
+    with pytest.raises(ValueError, match='profile/catalog equipment mismatch'):
+        replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)
+    assert db.connections == 0 and db.preparation_order == []

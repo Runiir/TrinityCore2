@@ -13703,3 +13703,41 @@ def test_phase8_contract_reconstructs_all_attempts_and_rejects_duplicate_state(t
     rejected = phase8_contract.build_contract(tmp_path)
     assert rejected["checks"]["unique_receipt_hashes"] is False
     assert rejected["checks"]["unique_batch_identities"] is False
+
+
+def test_dps011_socket_materializer_writes_only_exact_wrist_hands_creators_and_keeps_belt():
+    from tools.bot_ml import build_validation_provisioning as provisioning
+    profiles = provisioning.load_gear_profiles(Path('experiments/configs/wowsims_cata_p4_gear_profiles.json'))
+    expected = {8: 3717, 9: 3723, 5: 3729}
+    for item in profiles['marksmanship_hunter']['equipment']:
+        if item['slot'] not in expected:
+            continue
+        fields = item['enchantments'].split()
+        assert len(fields) == 45 and int(fields[18]) == expected[item['slot']]
+        before = fields.copy()
+        before[18] = '0'
+        rebuilt = provisioning.runtime_safe_enchantments({**item, 'enchantments': ' '.join(before)}).split()
+        assert rebuilt == fields
+        assert all(rebuilt[i] == before[i] for i in range(45) if i != 18)
+
+
+@pytest.mark.parametrize('mutation', [
+    lambda item: item.update(prismatic_enchant_id=3723),
+    lambda item: item.update(gems=[71879, 71879, 71879]),
+    lambda item: item.update(gems=[71879, 999999]),
+])
+def test_dps011_actual_profile_loader_rejects_invalid_socket_input(tmp_path, mutation):
+    from tools.bot_ml import build_validation_provisioning as provisioning
+    document = json.loads(Path('experiments/configs/wowsims_cata_p4_gear_profiles.json').read_text())
+    bracer = next(item for item in document['profiles']['marksmanship_hunter']['items'] if item.get('id') == 78430)
+    mutation(bracer)
+    path = tmp_path/'profiles.json'; path.write_text(json.dumps(document))
+    with pytest.raises(ValueError):
+        provisioning.load_gear_profiles(path)
+
+
+def test_dps011_actual_materializer_rejects_wrong_gem_mapping():
+    from tools.bot_ml.build_validation_provisioning import runtime_safe_enchantments
+    with pytest.raises(ValueError, match='gem mapping'):
+        runtime_safe_enchantments({'slot': 8, 'item_id': 78430,
+            'gem_item_ids': [71879, 71879], 'gem_enchant_ids': [4329, 0]})

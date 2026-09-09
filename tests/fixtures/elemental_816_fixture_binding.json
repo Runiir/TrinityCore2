@@ -1,0 +1,59 @@
+{
+  "binding": {
+    "content_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+    "projection": {
+      "spec": {
+        "native_request": {
+          "player_spec": {
+            "options": {
+              "class_options": {
+                "imbue_mh": 2,
+                "shield": 2,
+                "totems": {
+                  "air": 3,
+                  "ancestors": {
+                    "earth": 4,
+                    "fire": 4
+                  },
+                  "earth": 2,
+                  "elements": {
+                    "air": 3,
+                    "earth": 2,
+                    "fire": 2,
+                    "water": 1
+                  },
+                  "fire": 2,
+                  "spirits": {
+                    "air": 3,
+                    "earth": 2,
+                    "fire": 2,
+                    "water": 1
+                  },
+                  "water": 1
+                }
+              }
+            }
+          }
+        },
+        "simulator_options": {
+          "class_options": {
+            "shield": "lightning_shield",
+            "totems": {
+              "air": "wrath_of_air",
+              "earth": "tremor",
+              "fire": "searing",
+              "fire_elemental": true,
+              "water": "mana_spring"
+            }
+          },
+          "starting_distance_yards": 15.0,
+          "target_auto_attacks": false
+        }
+      }
+    },
+    "target_spec": "elemental_shaman",
+    "valid": true
+  },
+  "schema": "phase8_frozen_test_fixture_binding_v1",
+  "source_git_blob": "bbf958c40c091eea0a96fed24052c6c729a96885"
+}

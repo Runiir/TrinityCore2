@@ -71,21 +71,21 @@ def test_every_spec_has_exact_native_start_and_controlled_consumables() -> None:
     # DK Runeforging is a class skill, not a primary profession.
     expected_professions = {
         "affliction_warlock": "Tailoring",
-        "arms_warrior": "ProfessionUnknown",
-        "assassination_rogue": "ProfessionUnknown",
+        "arms_warrior": "Blacksmithing",
+        "assassination_rogue": "Blacksmithing",
         "balance_druid": "Tailoring",
-        "combat_rogue": "ProfessionUnknown",
+        "combat_rogue": "Blacksmithing",
         "demonology_warlock": "Tailoring",
         "elemental_shaman": "Tailoring",
         "feral_druid_dps": "ProfessionUnknown",
         "fire_mage": "Tailoring",
-        "frost_death_knight": "ProfessionUnknown",
-        "fury_warrior": "ProfessionUnknown",
-        "marksmanship_hunter": "ProfessionUnknown",
-        "retribution_paladin": "ProfessionUnknown",
+        "frost_death_knight": "Blacksmithing",
+        "fury_warrior": "Blacksmithing",
+        "marksmanship_hunter": "Blacksmithing",
+        "retribution_paladin": "Blacksmithing",
         "shadow_priest": "Tailoring",
-        "survival_hunter": "ProfessionUnknown",
-        "unholy_death_knight": "ProfessionUnknown",
+        "survival_hunter": "Blacksmithing",
+        "unholy_death_knight": "Blacksmithing",
     }
     assert set(contract["specs"]) == set(expected_professions)
     for spec, row in contract["specs"].items():
@@ -647,3 +647,45 @@ def test_generated_scheduler_projects_validated_fixture_policy():
     for spec, row in contract["specs"].items():
         assert f'"{row["source_test_sha256"]}", 10,' in rendered
     assert HEADER.read_text() == rendered
+
+
+def test_dps011_frozen_socket_authority_validates_without_ambient_data_and_rejects_drift(tmp_path, monkeypatch):
+    import copy
+    import json
+    import pytest
+    from test_profession_enchant_setup import dps011_corrected_documents
+    from tools.bot_ml import phase8_fixture_contract as fixture
+    from tools.bot_ml import wowsims_gear_binding as gear
+    paths, _, _ = dps011_corrected_documents(tmp_path)
+    authored = json.loads(fixture.DEFAULT_AUTHORED_CONTRACT_PATH.read_text())
+    contract = fixture.materialize_fixture_contract(authored, target_catalog_path=paths[0])
+    authority = contract['materialization']['profession_enchant_authority']
+    sockets = authority['socket_authority']
+    assert authority['schema'] == 'trinity_cata_profession_enchant_authority_v2'
+    assert sockets['creators']['8']['required_rank'] == 400
+    assert sockets['creators']['8']['native_applicability_rank'] == 1
+    assert authority['enchant_requirements']['3717'] == authority['enchant_requirements']['3723'] == [164, 1]
+    assert contract['specs']['marksmanship_hunter']['native_request']['professions'] == ['Blacksmithing', 'ProfessionUnknown']
+    empty = tmp_path/'empty-checkout'; empty.mkdir()
+    monkeypatch.setattr(gear, 'REPO_ROOT', empty)
+    def forbidden(*args, **kwargs):
+        raise AssertionError('frozen socket validation read ambient data')
+    gear.native_socket_authority.cache_clear()
+    for module in (gear, fixture):
+        monkeypatch.setattr(module, 'native_socket_authority', forbidden)
+        monkeypatch.setattr(module, 'profession_enchant_rows', forbidden)
+    fixture.validate_fixture_contract(contract)
+    for section, key, value in (
+        ('creators', '8', {**sockets['creators']['8'], 'required_rank': 1}),
+        ('items', '78430', {'socket_colors': [2, 2, 0], 'inventory_type': 9}),
+        ('gem_enchantments', '71879', 1),
+        ('sources', 'data/dbc/enUS/SpellEffect.dbc', '0' * 64),
+    ):
+        drifted = copy.deepcopy(contract)
+        drifted['materialization']['profession_enchant_authority']['socket_authority'][section][key] = value
+        with pytest.raises(ValueError):
+            fixture.validate_fixture_contract(drifted)
+    drifted = copy.deepcopy(contract)
+    drifted['materialization']['profession_enchant_authority']['enchant_requirements']['3717'] = [164, 400]
+    with pytest.raises(ValueError, match='socket_native_applicability'):
+        fixture.validate_fixture_contract(drifted)

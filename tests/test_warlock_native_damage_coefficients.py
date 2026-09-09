@@ -449,3 +449,100 @@ def test_shadowflame_periodic_child_rounds_to_the_nearest_haste_tick() -> None:
     assert rounded_duration == 6448
     assert rounded_duration // hasted_period == 4
     assert "hitInfo.AuraSpellInfo->Id == 47897" not in rounding
+
+
+def test_native_mana_pet_warmup_reaches_reset_without_relaxing_other_contracts(tmp_path) -> None:
+    """Execute the production identity/resource branch with native boundaries stubbed."""
+    update = (BOT_DIR / "BotWorldPopulationMgrUpdate.cpp").read_text()
+    branch = update[update.index("bool const calibrationPetRequired ="):
+                    update.index("bool const calibrationRoguePoisonRequired =")]
+    reset_call = update[update.index("if (!Cohort().CalibrationScoredStartedMs\n"):
+                        update.index("if (Cohort().CalibrationScoredStartedMs &&") ]
+    reset = (BOT_DIR / "BotWorldPopulationMgrCalibrationReset.cpp").read_text()
+    final_gate = reset[reset.index("bool const resourcesReady = std::all_of("):
+                       reset.index("if (!allPreScoreStateReady)")]
+    source = tmp_path / "warmup.cpp"
+    source.write_text(r'''
+#include "BotCalibrationFixtureContractGenerated.h"
+#include <algorithm>
+#include <cassert>
+#include <map>
+#include <string>
+using uint32 = unsigned; using int32 = int; using Powers = int;
+constexpr int POWER_MANA=0, ENTRY_FELHUNTER=417;
+struct Pet { int type=0, power=1; int GetMaxPower(int){return 100;}
+ int GetPower(int){return power;} int GetPowerType(){return type;} };
+struct Player { Pet pet; bool HasSpell(unsigned){return true;} Pet* GetPet(){return &pet;} };
+struct WorldBotState {
+ struct NativePersistentPetSetupReceipt {
+ unsigned RequiredSummonSpellId=691, RequiredCreatedBySpellId=691, RequiredEntry=417,
+ RequiredFamilyId=15, RequiredPetType=0, RequiredPowerType=0;
+ bool SummonSpellKnown=true, NativeCastFinishedSuccessfully=true;
+ unsigned NativeCastSubmittedAtMs=1, NativeCastFinishedAtMs=2, NativeCastObservedAtMs=3,
+ PreScoreResummonRequestedAtMs=0, PreScoreResummonObservedAtMs=0;
+ } PersistentPetSetup;
+};
+struct Metric { bool InitialResourcesMatchContract=false; };
+struct State { std::string CalibrationTargetSpec, CalibrationMode="single_target_300";
+ std::map<int,Metric> CalibrationMetricsByGuid{{1,{false}}};
+ std::string LastPopulationFailureReason, CalibrationFailureReason;
+ bool CalibrationWindowComplete=false;
+ unsigned CalibrationScoredStartedMs=0, CalibrationStartedMs=0;
+} cohort;
+State& Cohort(){return cohort;}
+bool selfProvided=true, exactIdentity=true;
+bool IsSelfProvidedCalibrationBaseline(){return selfProvided;}
+int ObserveOrdinaryPetSetup(Player*){return 0;}
+bool OrdinaryPersistentPetMatches(int,unsigned,unsigned,unsigned,unsigned,unsigned){return exactIdentity;}
+unsigned resetCalls=0;
+unsigned NowMs(){return 15000;}
+void ResetCalibrationScoredWindow(){++resetCalls;}
+bool ready(Player* calibrationBot, WorldBotState const& calibrationState) {
+ resetCalls=0;
+ bool populationReady=true;
+''' + branch + reset_call + r'''
+ assert(resetCalls==unsigned(populationReady));
+ return resetCalls!=0;
+}
+bool scoring=false;
+void publish() {
+''' + final_gate + r'''
+ scoring=true;
+}
+int main() {
+ using namespace BotCalibrationFixtureContractGenerated;
+ unsigned contracts=0;
+ for(auto const& contract : SpecContracts) {
+  if(!contract.PetResourceRequired) continue;
+  ++contracts;
+  cohort.CalibrationTargetSpec=contract.Spec;
+  Player player; WorldBotState state;
+  for(unsigned i=0;i<contract.PowerCount;++i) {
+   auto const& power=PowerContracts[contract.PowerOffset+i];
+   if(std::string_view(power.UnitKind)=="pet") player.pet.type=power.PowerType;
+  }
+  state.PersistentPetSetup.RequiredPowerType=player.pet.type;
+  bool mana=player.pet.type==POWER_MANA;
+  selfProvided=true; exactIdentity=true;
+  assert(ready(&player,state)==mana);
+  selfProvided=false; assert(!ready(&player,state));
+  selfProvided=true;
+  if(mana) {
+   exactIdentity=false; assert(!ready(&player,state)); exactIdentity=true;
+   state.PersistentPetSetup.NativeCastObservedAtMs=0;
+   assert(!ready(&player,state));
+   state.PersistentPetSetup.NativeCastObservedAtMs=3;
+  }
+  player.pet.power=100; assert(ready(&player,state));
+ }
+ assert(contracts==5);
+ publish(); assert(!scoring && cohort.CalibrationWindowComplete);
+ assert(cohort.CalibrationFailureReason=="calibration_initial_resource_contract_mismatch");
+ cohort.CalibrationWindowComplete=false;
+ cohort.CalibrationMetricsByGuid[1].InitialResourcesMatchContract=true;
+ publish(); assert(scoring && !cohort.CalibrationWindowComplete);
+}
+''')
+    binary = tmp_path / "warmup"
+    subprocess.run(["c++", "-std=c++17", "-I", str(BOT_DIR), str(source), "-o", str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)

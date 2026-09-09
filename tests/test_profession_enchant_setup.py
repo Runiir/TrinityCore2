@@ -104,12 +104,18 @@ def test_materialization_to_native_raid_request_all_four_specs(tmp_path):
     path.write_text(json.dumps(catalog))
     raw = json.loads((ROOT/'experiments/configs/phase8_calibration_fixture_contract_v1.json').read_text())
     contract = materialize_fixture_contract(raw,target_catalog_path=path)
+    expected_professions = {
+        'fire_mage': 'Tailoring',
+        'affliction_warlock': 'Tailoring',
+        'elemental_shaman': 'Tailoring',
+        'marksmanship_hunter': 'Blacksmithing',
+    }
     for spec in selected:
         native = build_native_raid_sim_request(target_spec=spec, request={},
             native_contract=contract['specs'][spec]['native_request'], class_name='ClassShaman',race_name='RaceDraenei',
             equipment_items=[],talents_string='',glyphs={},rotation={})
         player = native['raid']['parties'][0]['players'][0]
-        assert player['profession1'] == ('ProfessionUnknown' if spec=='marksmanship_hunter' else 'Tailoring')
+        assert player['profession1'] == expected_professions[spec]
         assert player['profession2'] == 'ProfessionUnknown'
 
 
@@ -253,3 +259,88 @@ def test_profession_names_belong_to_pinned_proto_enum():
     assert set(PRIMARY_PROFESSIONS.values()) <= names
     assert 'ProfessionUnknown' in names
     assert PRIMARY_PROFESSIONS[197] == 'Tailoring'
+
+
+DPS011_ITEMS = {
+    'arms_warrior': (78373, 78668), 'fury_warrior': (78373, 78668),
+    'retribution_paladin': (78373, 78675), 'frost_death_knight': (78373, 78670),
+    'unholy_death_knight': (78373, 78670), 'marksmanship_hunter': (78430, 78362),
+    'survival_hunter': (78430, 78362), 'assassination_rogue': (78446, 78679),
+    'combat_rogue': (78446, 78679),
+}
+
+
+def dps011_corrected_documents(tmp_path):
+    """Temporary proposed inputs only; never rewrite promoted reference identity."""
+    catalog = json.loads((ROOT/'experiments/configs/all_spec_targets_cata_p4_v1.json').read_text())
+    gear = json.loads((ROOT/'experiments/configs/wowsims_cata_p4_gear_profiles.json').read_text())
+    for profile in gear['profiles'].values():
+        profile['profession_setup'] = resolve_profession_setup(profile['items'])
+    for target in catalog['targets']:
+        bot = target['provisioning_bot']
+        if 'profession_equipment' in bot:
+            bot['profession_setup'] = resolve_profession_setup(bot['profession_equipment'])
+    paths = (tmp_path/'targets.json', tmp_path/'wowsims_cata_p4_gear_profiles.json')
+    for path, value in zip(paths, (catalog, gear)):
+        path.write_text(json.dumps(value))
+    (tmp_path/'cata_434_action_profiles.json').write_bytes(
+        (ROOT/'experiments/configs/cata_434_action_profiles.json').read_bytes())
+    return paths, catalog, gear
+
+
+def test_dps011_exact_nine_spec_eighteen_item_closure_and_rank_authority():
+    from tools.bot_ml.wowsims_gear_binding import resolve_prismatic_socket, native_socket_authority
+    targets = json.loads((ROOT/'experiments/configs/all_spec_targets_cata_p4_v1.json').read_text())['targets']
+    affected = {}
+    for target in targets:
+        equipment = target['provisioning_bot'].get('profession_equipment', [])
+        sockets = [value for item in equipment
+                   if (value := resolve_prismatic_socket(item)) and value['slot'] in (8, 9)]
+        if not sockets:
+            continue
+        affected[target['spec_target_id']] = tuple(row['item_id'] for row in sorted(sockets, key=lambda row: row['slot']))
+        assert [(row['slot'], row['creator_enchant_id'], row['creator_spell_id']) for row in sockets] == [
+            (8, 3717, 55628), (9, 3723, 55641)]
+        assert all(row['required_rank'] == 400 and row['native_applicability_rank'] == 1 for row in sockets)
+        setup = resolve_profession_setup(equipment)
+        row = next(row for row in setup['requirements'] if row['native_skill_id'] == 164)
+        assert (row['required_rank'], row['provisioned_value'], row['provisioned_max']) == (400, 525, 525)
+        assert row['source_enchant_ids'] == [3717, 3723]
+        assert 'Blacksmithing' in setup['wowsims_professions']
+    assert affected == DPS011_ITEMS
+    sources = native_socket_authority()['sources']
+    assert any(path.endswith('089_npc_trainer.sql') for path in sources)
+    assert all(len(digest) == 64 for digest in sources.values())
+
+
+@pytest.mark.parametrize('mutation', [
+    lambda item: item.update(slot=5),
+    lambda item: item.update(gem_item_ids=[71879, 71879, 71879], gem_enchant_ids=[4329]*3),
+    lambda item: item.update(gem_item_ids=[71879, 999999]),
+    lambda item: item.update(gem_enchant_ids=[4329, 1]),
+    lambda item: item.update(prismatic_enchant_id=3723),
+    lambda item: item.update(gem_item_ids=[71879], gem_enchant_ids=[4329], prismatic_enchant_id=3717),
+])
+def test_dps011_resolver_rejects_topology_mapping_and_creator_drift(mutation):
+    from tools.bot_ml.wowsims_gear_binding import resolve_prismatic_socket
+    item = {'slot': 8, 'item_id': 78430, 'gem_item_ids': [71879, 71879], 'gem_enchant_ids': [4329, 4329]}
+    mutation(item)
+    with pytest.raises(ValueError):
+        resolve_prismatic_socket(item)
+
+
+def test_dps011_fresh_provisioning_sql_uses_creator_payloads_and_blacksmithing(tmp_path):
+    paths, targets, _ = dps011_corrected_documents(tmp_path)
+    target = next(row for row in targets['targets'] if row['spec_target_id'] == 'marksmanship_hunter')
+    config = {'scenarios': [{'id': 'socket_fixture',
+        'start_position': {'map_id': 0, 'x': 1, 'y': 2, 'z': 3},
+        'bots': [target['provisioning_bot']]}]}
+    equipped = provisioning.apply_gear_profiles(config, provisioning.load_gear_profiles(paths[1]))
+    bot = equipped['scenarios'][0]['bots'][0]
+    sql = provisioning.build_character_insert_sql(equipped)
+    for item in bot['equipment']:
+        if item['slot'] in (8, 9):
+            assert item['enchantments'] in sql
+            assert int(item['enchantments'].split()[18]) == {8: 3717, 9: 3723}[item['slot']]
+    assert {'id': 164, 'value': 525, 'max': 525} in bot['skills']
+    assert 'SELECT c.`guid`, 164, 525, 525' in sql

@@ -30,10 +30,10 @@ struct Identity
     char const* PetSpellbookSha256;
 };
 
-inline constexpr char SourceContentSha256[] = "fabba7cb2436b98c8671ac890dc7f8b3036b4832726d238e6cd016b2fe85af12";
-inline constexpr char TargetsSourceSha256[] = "454c360f822b106f025a5fce96813fd424dbaa127e76e8a2052785615639af54";
+inline constexpr char SourceContentSha256[] = "e332375879f6aef9b14d26db5237f66fc0d4cb272d32c9222bedd748352c6d1b";
+inline constexpr char TargetsSourceSha256[] = "0d40dda89bebac1c97f643a09813fb0cae423294a0996b3292ea27a9f016a562";
 inline constexpr char GearProfilesSourceSha256[] = "8a2efd464a0e4c20a453c46beacffc0803468941a37c270c6e1e892e2b7bdfa4";
-inline constexpr char WowsimsGearProfilesSourceSha256[] = "37d6d0b10ea0684b07dd76a6a6b3d034e78728f31ae75a08df76912e3b4e71ac";
+inline constexpr char WowsimsGearProfilesSourceSha256[] = "698aedd547eed9000eaa67d9fab2c1781e369c4d528897088ca0b38b02e58b9b";
 
 inline constexpr std::array<std::uint32_t, 618> TalentSpellIds =
 {{

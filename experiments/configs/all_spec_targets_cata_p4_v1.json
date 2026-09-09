@@ -3164,9 +3164,35 @@
           }
         ],
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         },
@@ -3680,9 +3706,35 @@
           }
         ],
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         },
@@ -4205,9 +4257,35 @@
           }
         ],
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         },
@@ -5143,9 +5221,35 @@
           }
         ],
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         },
@@ -5699,9 +5803,35 @@
           }
         ],
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         },
@@ -6219,9 +6349,35 @@
           ]
         },
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         },
@@ -6738,9 +6894,35 @@
           ]
         },
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         },
@@ -7537,9 +7719,35 @@
           }
         ],
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         },
@@ -8061,9 +8269,35 @@
           }
         ],
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         },

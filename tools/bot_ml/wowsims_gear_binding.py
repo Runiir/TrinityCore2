@@ -547,7 +547,96 @@ def permanent_equipment_enchant_id(item):
     return enchant
 
 
-def resolve_profession_setup(equipment, *, enchant_rows=None, declared=None, configured_skills=()):
+# Player-obtainable socket creators: craft rank is deliberately distinct from
+# the DBC's rank-1 applicability gate. Never substitute one for the other.
+BLACKSMITH_SOCKET_CREATORS = {
+    8: {'creator_spell_id': 55628, 'creator_enchant_id': 3717, 'native_skill_id': 164,
+        'required_rank': 400, 'native_applicability_rank': 1, 'creator_effect_id': 156, 'enchant_effect_type': 8},
+    9: {'creator_spell_id': 55641, 'creator_enchant_id': 3723, 'native_skill_id': 164,
+        'required_rank': 400, 'native_applicability_rank': 1, 'creator_effect_id': 156, 'enchant_effect_type': 8},
+}
+SOCKET_TRAINER_PATH = 'sql/old/4.3.4/TDB01_to_TDB02_updates/world/089_npc_trainer.sql'
+
+
+@functools.lru_cache(maxsize=4)
+def native_socket_authority(dbc_dir=REPO_ROOT / 'data/dbc/enUS'):
+    from .build_validation_provisioning import item_socket_metadata
+    items = {int(row['ID']): row for row in load_db2_item_rows(dbc_dir)}
+    items.update(validated_hotfix_item_rows())
+    effects = {row[0]: row for row in load_wdbc_values(
+        dbc_dir / 'SpellEffect.dbc', 'nifiiiffiiiiiifiifiiiiiiiix')}
+    abilities = {row[0]: row for row in load_wdbc_values(
+        dbc_dir / 'SkillLineAbility.dbc', 'niiiixxiiiiiii')}
+    enchants = profession_enchant_rows(dbc_dir)
+    enchant_effects = {int(row['values'][0]): row['values'][2:5]
+                      for row in load_wdbc(dbc_dir / 'SpellItemEnchantment.dbc', SPELL_ITEM_ENCHANTMENT_FMT)}
+    trainer = (REPO_ROOT / SOCKET_TRAINER_PATH).read_text()
+    for slot, effect, ability in ((8, 69747, 19376), (9, 69751, 19378)):
+        rule = BLACKSMITH_SOCKET_CREATORS[slot]
+        row, learn = effects[effect], abilities[ability]
+        if (row[1], row[12], row[24]) != (156, rule['creator_enchant_id'], rule['creator_spell_id']):
+            raise ValueError('socket creator native effect mismatch')
+        if (learn[1], learn[2], learn[7], learn[10], learn[11]) != (164, rule['creator_spell_id'], 1, 400, 400):
+            raise ValueError('socket creator skill-line mismatch')
+        if (enchants[rule['creator_enchant_id']] != (164, 1)
+                or enchant_effects[rule['creator_enchant_id']] != [8, 0, 0]):
+            raise ValueError('socket creator applicability mismatch')
+        if f"(@Blacksmithing, {rule['creator_spell_id']}, 45000, 164, 400, 0)" not in trainer:
+            raise ValueError('socket creator trainer craft rank mismatch')
+    metadata = item_socket_metadata(dbc_dir)
+    paths = ['data/dbc/enUS/' + name for name in (
+        'Item.db2', 'Item-sparse.db2', 'SpellEffect.dbc', 'SpellItemEnchantment.dbc', 'SkillLineAbility.dbc')]
+    paths.append(SOCKET_TRAINER_PATH)
+    return {'creators': {str(slot): dict(rule) for slot, rule in BLACKSMITH_SOCKET_CREATORS.items()},
+            'sources': {path: hashlib.sha256((REPO_ROOT / path).read_bytes()).hexdigest() for path in paths},
+            'items': {str(key): {'socket_colors': row['socket_colors'],
+                                'inventory_type': int(items[key]['InventoryType'])}
+                      for key, row in metadata.items() if key in items},
+            'gem_enchantments': {str(key): value for key, value in gem_item_enchant_map(dbc_dir).items()}}
+
+
+def resolve_prismatic_socket(item, *, socket_authority=None):
+    """Resolve one extra socket from native topology and exact gem mappings."""
+    gems = item.get('gem_item_ids', item.get('gems', []))
+    raw = str(item.get('enchantments') or '').split()
+    creator = int(item.get('prismatic_enchant_id') or (raw[18] if len(raw) > 18 else 0))
+    if not any(gems) and not creator:
+        return None
+    authority = native_socket_authority() if socket_authority is None else socket_authority
+    item_id = int(item.get('item_id', item.get('id', 0)))
+    metadata = authority['items'].get(str(item_id))
+    if not metadata:
+        raise ValueError(f'unknown socket item: {item_id}')
+    colors = metadata['socket_colors']
+    native = next((i for i, color in enumerate(colors) if not color), len(colors))
+    if any(colors[native:]):
+        raise ValueError('non-contiguous native socket topology')
+    extras = [i for i, gem in enumerate(gems) if gem and i >= native]
+    slot = {6: 5, 9: 8, 10: 9}.get(metadata['inventory_type'], -1)
+    if 'slot' in item and (extras or creator) and int(item['slot']) != slot:
+        raise ValueError('extra socket equipment slot mismatch')
+    expected = {5: 3729, 8: 3717, 9: 3723}.get(slot)
+    if not extras:
+        if creator:
+            raise ValueError('socket creator without extra gem topology')
+        return None
+    if slot not in (5, 8, 9) or native not in (1, 2) or extras != [native] or len(gems) > 3:
+        raise ValueError('unsupported extra socket topology')
+    mapped = [authority['gem_enchantments'].get(str(gem), 0) if gem else 0 for gem in gems]
+    if any(gem and not enchant for gem, enchant in zip(gems, mapped)):
+        raise ValueError('missing extra socket gem mapping')
+    if 'gem_enchant_ids' in item and item['gem_enchant_ids'] != mapped:
+        raise ValueError('extra socket gem mapping mismatch')
+    if raw and any(int(raw[offset]) != enchant for offset, enchant in zip((6, 9, 12), mapped)):
+        raise ValueError('extra socket serialized gem mismatch')
+    if creator not in (0, expected):
+        raise ValueError('socket creator/topology disagreement')
+    return {'slot': slot, 'item_id': item_id, 'creator_enchant_id': expected,
+            'extra_gem_index': native, 'extra_gem_item_id': gems[native],
+            **(BLACKSMITH_SOCKET_CREATORS[slot] if slot in BLACKSMITH_SOCKET_CREATORS else {})}
+
+
+def resolve_profession_setup(equipment, *, enchant_rows=None, declared=None, configured_skills=(), socket_authority=None):
     """Union explicit primary skills with gear requirements in native skill-ID order."""
     if enchant_rows is None:
         enchant_rows = profession_enchant_rows(REPO_ROOT / 'data/dbc/enUS')
@@ -572,6 +661,20 @@ def resolve_profession_setup(equipment, *, enchant_rows=None, declared=None, con
             'wowsims_profession': PRIMARY_PROFESSIONS[skill]})
         row['required_rank'] = max(row['required_rank'], rank)
         row['source_enchant_ids'] = sorted(set(row['source_enchant_ids']) | {enchant})
+    for item in equipment:
+        socket = resolve_prismatic_socket(item, socket_authority=socket_authority)
+        if not socket or socket['slot'] not in BLACKSMITH_SOCKET_CREATORS:
+            continue
+        row = requirements.setdefault(164, {'source_enchant_ids': [], 'native_skill_id': 164,
+            'required_rank': 0, 'provisioned_value': 525, 'provisioned_max': 525,
+            'wowsims_profession': 'Blacksmithing'})
+        row['required_rank'] = max(row['required_rank'], socket['required_rank'])
+        row['source_enchant_ids'] = sorted(set(row['source_enchant_ids']) | {socket['creator_enchant_id']})
+        sources = row.setdefault('socket_creators', [])
+        source = {key: socket[key] for key in ('slot', 'creator_spell_id', 'creator_enchant_id', 'native_applicability_rank')}
+        if source not in sources:
+            sources.append(source)
+        sources.sort(key=lambda value: value['slot'])
     if len(requirements) > 2:
         raise ValueError('more than two required primary professions')
     rows = [requirements[key] for key in sorted(requirements)]
@@ -606,7 +709,7 @@ def merge_profession_skills(skills, setup):
     return result
 
 
-def provisioning_professions(provisioning, *, enchant_rows=None):
+def provisioning_professions(provisioning, *, enchant_rows=None, socket_authority=None):
     """Validate serialized setup against its exact resolved gear input."""
     setup = provisioning.get('profession_setup')
     if setup is None:
@@ -617,6 +720,6 @@ def provisioning_professions(provisioning, *, enchant_rows=None):
     equipment = provisioning.get('profession_equipment')
     if equipment is None:
         raise ValueError('profession setup missing equipped enchant identity')
-    resolved = resolve_profession_setup(equipment, enchant_rows=enchant_rows, declared=setup,
+    resolved = resolve_profession_setup(equipment, enchant_rows=enchant_rows, declared=setup, socket_authority=socket_authority,
                                         configured_skills=provisioning.get("skills", []))
     return resolved['wowsims_professions']

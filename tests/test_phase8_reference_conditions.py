@@ -157,6 +157,8 @@ def _compatible_fixture() -> tuple[dict, dict, dict, dict, dict]:
         "pre_score_state": {
             "schema": "phase8_pre_score_state_observation_v1",
             "observed_at_ms": 900,
+            "observed_before_scoring": True,
+            "persistent_setup_ready": True,
             "heroism_ready": False,
             "temporal_external_auras_absent": True,
         },
@@ -607,6 +609,15 @@ def test_tampered_glyph_translation_authority_fails_closed() -> None:
     )
 
 
+def _prepull_snapshot(observed_at_ms: int) -> dict:
+    return {
+        "schema": "phase8_pre_score_state_observation_v1",
+        "observed_at_ms": observed_at_ms,
+        "observed_before_scoring": True,
+        "persistent_setup_ready": True,
+    }
+
+
 def test_frost_presence_requires_native_receipt_before_scoring() -> None:
     setup = {
         "ready": True,
@@ -622,7 +633,8 @@ def test_frost_presence_requires_native_receipt_before_scoring() -> None:
     }
 
     projection, valid = prepull_setup_projection(
-        {"persistent_setup": setup}, scored_started_at_ms=300
+        {"persistent_setup": setup, "pre_score_state": _prepull_snapshot(300)},
+        scored_started_at_ms=300
     )
     assert valid is True
     assert projection["form_presence"] == {
@@ -631,7 +643,8 @@ def test_frost_presence_requires_native_receipt_before_scoring() -> None:
 
     setup["presence_native_cast_observed_at_ms"] = 301
     _projection, valid = prepull_setup_projection(
-        {"persistent_setup": setup}, scored_started_at_ms=300
+        {"persistent_setup": setup, "pre_score_state": _prepull_snapshot(300)},
+        scored_started_at_ms=300
     )
     assert valid is False
 
@@ -674,6 +687,7 @@ def test_rogue_poison_projection_rejects_weapon_guid_swap() -> None:
     }
     target = {
         "persistent_setup": setup,
+        "pre_score_state": _prepull_snapshot(300),
         "gear_profile_observation": {
             "items": [
                 {"slot": 15, "item_id": 20},
@@ -2424,7 +2438,7 @@ def test_elemental_imbue_requires_native_equipped_state():
         "slot", "cast_spell_id", "temp_enchant_id"}
     cases = [
         (("class_id",), [None, 1, True, 7.0, "7"]),
-        (("persistent_setup", "ready"), [None, False, 1, 1.0, "true"]),
+        (("pre_score_state", "persistent_setup_ready"), [None, False, 1, 1.0, "true"]),
         (("persistent_setup", "poison_setup_required"), [None, True, 0, 0.0]),
         (("persistent_setup", "mainhand_item_entry"), [None, 0, 1, True, 71086.0, "71086"]),
         (("persistent_setup", "mainhand_temp_enchant"), [None, 0, 7, True, 5.0, "5"]),
@@ -2541,7 +2555,24 @@ def test_closed_816_missing_aura_source_provenance_stays_rejected():
     assert derive_reference_condition_compatibility(**inputs)["checks"]["runtime_prepull_setup_receipts_valid"] is False
 
 
-def test_native_owned_wrath_air_flows_through_derive_with_frozen_reference_binding():
+def _bind_closed_elemental_816_authority(monkeypatch):
+    import tools.bot_ml.phase8_reference_conditions as conditions
+
+    frozen = json.loads((Path(__file__).parent / "fixtures" /
+                         "elemental_816_fixture_binding.json").read_text())
+    assert frozen["source_git_blob"] == "bbf958c40c091eea0a96fed24052c6c729a96885"
+    binding = frozen["binding"]
+    original = _closed_elemental_816_inputs()
+    assert binding["content_sha256"] == original["target_observation"][
+        "reference_condition_observation"]["fixture_contract_sha256"]
+    current_loader = conditions.load_fixture_contract_binding
+    monkeypatch.setattr(conditions, "load_fixture_contract_binding",
+                        lambda spec: copy.deepcopy(binding) if spec == "elemental_shaman"
+                        else current_loader(spec))
+
+
+def test_native_owned_wrath_air_flows_through_derive_with_frozen_reference_binding(monkeypatch):
+    _bind_closed_elemental_816_authority(monkeypatch)
     result = derive_reference_condition_compatibility(**_own_wrath_air_inputs())
     assert result["checks"]["manifest_requirement:prepull_setup"] is True
     assert result["checks"]["runtime_prepull_setup_receipts_valid"] is True
@@ -2549,6 +2580,10 @@ def test_native_owned_wrath_air_flows_through_derive_with_frozen_reference_bindi
 
 def test_owned_wrath_air_rejects_incomplete_foreign_unknown_and_wrong_binding(monkeypatch):
     import tools.bot_ml.phase8_reference_conditions as conditions
+
+    _bind_closed_elemental_816_authority(monkeypatch)
+    assert derive_reference_condition_compatibility(**_own_wrath_air_inputs())[
+        "checks"]["runtime_prepull_setup_receipts_valid"] is True
 
     for key, values in (
         ("own_totem_samples", [None, 588, 590, True, 589.0, "589", -1]),
@@ -2675,7 +2710,8 @@ def test_closed_fire_090f_unexpected_target_counter_remains_rejected():
     _assert_fire_reference_gate(_closed_fire_090f_inputs(), False)
 
 
-def test_self_provided_sunder_keeps_owned_stack_consistency():
+def test_self_provided_sunder_keeps_owned_stack_consistency(monkeypatch):
+    _bind_closed_elemental_816_authority(monkeypatch)
     # Controlled synthetic stack cases supplement the captured Fire observer replay.
     inputs = _own_wrath_air_inputs()
     raw = inputs["target_observation"]["reference_condition_observation"]
@@ -2710,3 +2746,81 @@ def test_self_provided_sunder_keeps_owned_stack_consistency():
     stacked["matching_samples"] = 491
     stacked["mismatch_samples"] = count-491
     assert not valid()  # Cannot observe more full stacks than active owned aura samples.
+
+
+def test_prepull_readiness_requires_frozen_typed_ordered_snapshot():
+    target = {"persistent_setup": {"ready": False},
+              "pre_score_state": _prepull_snapshot(300)}
+    assert prepull_setup_projection(target, scored_started_at_ms=300)[1] is True
+    for field, values in {
+        "schema": [None, "wrong"],
+        "observed_before_scoring": [None, False, 1],
+        "persistent_setup_ready": [None, False, 1],
+        "observed_at_ms": [None, True, False, 0, -1, 301, 300.0, "300"],
+    }.items():
+        for value in values:
+            observed = copy.deepcopy(target)
+            if value is None:
+                observed["pre_score_state"].pop(field)
+            else:
+                observed["pre_score_state"][field] = value
+            assert prepull_setup_projection(observed, scored_started_at_ms=300)[1] is False
+    for snapshot in (None, [], "ready", {}):
+        observed = {"persistent_setup": {"ready": True}, "pre_score_state": snapshot}
+        assert prepull_setup_projection(observed, scored_started_at_ms=300)[1] is False
+    assert prepull_setup_projection({"persistent_setup": {"ready": True}},
+                                    scored_started_at_ms=300)[1] is False
+    for scored in (None, True, False, 0, -1, 299, 300.0, "300"):
+        assert prepull_setup_projection(target, scored_started_at_ms=scored)[1] is False
+
+
+def _closed_fire90_inputs():
+    frozen = json.loads((Path(__file__).parent / "fixtures" /
+                         "fire_90a181db01_prepull_observation.json").read_text())
+    return {**frozen["inputs"], "reference_conditions": EXPECTED_REFERENCE_CONDITIONS}
+
+
+def test_closed_fire90_consumed_setup_uses_frozen_pre_score_readiness():
+    inputs = _closed_fire90_inputs()
+    target = inputs["target_observation"]
+    assert target["persistent_setup"]["ready"] is False
+    assert target["persistent_setup"]["mana_gem_ready"] is False
+    assert target["pre_score_state"]["persistent_setup_ready"] is True
+    assert target["pre_score_state"]["observed_at_ms"] == 1788937196588
+    result = derive_reference_condition_compatibility(**inputs)
+    assert result["conditions_compatible"] is True
+    assert all(result["checks"].values())
+
+
+def test_closed_fire90_composition_rejects_invalid_pre_score_snapshot():
+    inputs = _closed_fire90_inputs()
+    start = inputs["calibration"]["scored_started_at_ms"]
+    for field, value in (
+        ("schema", "wrong"), ("persistent_setup_ready", False),
+        ("observed_before_scoring", False), ("observed_at_ms", start + 1),
+        ("observed_at_ms", True), ("observed_at_ms", 0),
+    ):
+        bad = copy.deepcopy(inputs)
+        bad["target_observation"]["pre_score_state"][field] = value
+        result = derive_reference_condition_compatibility(**bad)
+        assert result["checks"]["runtime_prepull_setup_receipts_valid"] is False
+        assert result["conditions_compatible"] is False
+    for field in (None, "schema", "persistent_setup_ready", "observed_before_scoring",
+                  "observed_at_ms"):
+        bad = copy.deepcopy(inputs)
+        if field is None:
+            bad["target_observation"].pop("pre_score_state")
+        else:
+            bad["target_observation"]["pre_score_state"].pop(field)
+        result = derive_reference_condition_compatibility(**bad)
+        assert result["checks"]["runtime_prepull_setup_receipts_valid"] is False
+        assert result["conditions_compatible"] is False
+
+
+def test_closed_fire90_frozen_readiness_preserves_continuous_aura_gate():
+    inputs = _closed_fire90_inputs()
+    inputs["target_observation"]["reference_condition_observation"][
+        "unexpected_player_aura_active_samples"] = 1
+    result = derive_reference_condition_compatibility(**inputs)
+    assert result["checks"]["runtime_prepull_setup_receipts_valid"] is False
+    assert result["conditions_compatible"] is False

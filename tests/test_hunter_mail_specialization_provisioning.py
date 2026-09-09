@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from tools.bot_ml import build_all_spec_phase1_catalogs as catalogs
 from tools.bot_ml import run_live_bot_validation as live
-from test_calibration_known_spell_preparation import Database, replay_main_preparation
+from test_calibration_known_spell_preparation import Database, SocketDatabase, replay_main_preparation
 
 ROOT = Path(__file__).resolve().parents[1]
 HUNTERS = {'beast_mastery_hunter', 'marksmanship_hunter', 'survival_hunter'}
@@ -82,13 +82,35 @@ def test_actual_hunter_launch_repairs_parent_and_repeated_launch_is_noop(tmp_pat
     assert db.writes == [(1294, 87506)]
     assert result['reconciled_spell_ids'] == [87506] and result['readback']['passed']
     assert db.commits == 1 and not db.rollbacks
+    assert not getattr(db, 'item_writes', [])
     replay_main_preparation(tmp_path, monkeypatch, db)
     assert db.writes == [(1294, 87506)] and not db.skill_writes
+    assert not getattr(db, 'item_writes', [])
 
 
 def hunter_database(spec, spells, **kwargs):
-    db = Database(spells, spec=spec, **kwargs)
     target = next(t for t in documents()[0]['targets'] if t['spec_target_id'] == spec)
+    if spec in {'marksmanship_hunter', 'survival_hunter'}:
+        plan = live.prepare_calibration_known_spells(
+            ROOT, ROOT/'unused-world.conf', spec, catalogs.TARGET_CATALOG_PATH,
+            pool_tag='all_spec_candidate_pool')
+        rows = [
+            {
+                'slot': item['slot'],
+                'item_guid': 90000 + item['slot'],
+                'item_entry': item['item_entry'],
+                'owner_guid': 1294,
+                'enchantments': item['enchantments'],
+            }
+            for item in plan['expected_socket_items']
+        ]
+        db = SocketDatabase(spells, rows)
+        db.spec = spec
+        db.discard = bool(kwargs.get('discard', False))
+        db.skills = {164: {'skill': 164, 'value': 525, 'max': 525}}
+        db.original_skills = deepcopy(db.skills)
+    else:
+        db = Database(spells, spec=spec, **kwargs)
     db.name = target['provisioning_bot']['name']
     db.actor.update(guid=1294, **{'class': 3})
     return db
@@ -111,6 +133,7 @@ def test_hunter_actual_preparation_rejects_actor_or_readback_and_rolls_back(tmp_
     assert db.rollbacks == 1 and db.commits == 0 and db.spells == before
     assert db.writes == ([(1294, 87506)] if guard == 'failed_readback' else [])
     assert not db.skill_writes
+    assert not getattr(db, 'item_writes', [])
 
 
 def test_unlinked_hunter_metadata_rejects_reconciliation_and_main_before_reset(tmp_path, monkeypatch):

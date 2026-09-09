@@ -25,6 +25,8 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(ROOT))
 from tools.bot_ml.wowsims_gear_binding import (
     PRIMARY_PROFESSIONS,
+    BLACKSMITH_SOCKET_CREATORS, SOCKET_TRAINER_PATH,
+    native_socket_authority, resolve_prismatic_socket,
     permanent_equipment_enchant_id,
     profession_enchant_rows,
     provisioning_professions,
@@ -744,16 +746,52 @@ def _apl_transform_policy(
     return policy
 
 
-def _selected_profession_enchant_ids(target_rows: Mapping[str, Any]) -> set[int]:
+def _selected_profession_enchant_ids(target_rows: Mapping[str, Any], socket_authority=None) -> set[int]:
     ids = set()
     for row in target_rows.values():
         equipment = (row.get("provisioning_bot") or {}).get("profession_equipment", [])
         _require(isinstance(equipment, list) and all(isinstance(item, dict) for item in equipment),
                  "materialization:profession_equipment")
         ids.update(permanent_equipment_enchant_id(item) for item in equipment)
+        for item in equipment:
+            socket = resolve_prismatic_socket(item, socket_authority=socket_authority)
+            if socket:
+                ids.add(socket['creator_enchant_id'])
     ids.discard(0)
     _require(all(value > 0 for value in ids), "materialization:profession_enchant_id")
     return ids
+
+
+def _materialize_socket_authority(target_rows):
+    authority = copy.deepcopy(native_socket_authority())
+    equipment = [item for row in target_rows.values()
+                 for item in row.get('provisioning_bot', {}).get('profession_equipment', [])]
+    item_ids = {str(item.get('item_id', item.get('id', 0))) for item in equipment
+                if any(item.get('gem_item_ids', item.get('gems', [])))}
+    gem_ids = {str(gem) for item in equipment
+               for gem in item.get('gem_item_ids', item.get('gems', [])) if gem}
+    authority['items'] = {key: authority['items'][key] for key in sorted(item_ids)}
+    authority['gem_enchantments'] = {key: authority['gem_enchantments'][key] for key in sorted(gem_ids)}
+    authority['content_sha256'] = canonical_sha256(authority)
+    return authority
+
+
+def _frozen_socket_authority(authority):
+    _require(isinstance(authority, dict) and set(authority) == {
+        'creators', 'sources', 'items', 'gem_enchantments', 'content_sha256'},
+        'materialization:socket_authority_fields')
+    _require(authority['content_sha256'] == canonical_sha256({
+        key: value for key, value in authority.items() if key != 'content_sha256'}),
+        'materialization:socket_authority_hash')
+    _require(authority['creators'] == {str(key): value for key, value in BLACKSMITH_SOCKET_CREATORS.items()},
+        'materialization:socket_creator_authority')
+    paths = {'data/dbc/enUS/' + name for name in (
+        'Item.db2', 'Item-sparse.db2', 'SpellEffect.dbc', 'SpellItemEnchantment.dbc', 'SkillLineAbility.dbc')}
+    paths.add(SOCKET_TRAINER_PATH)
+    _require(set(authority['sources']) == paths and all(
+        isinstance(value, str) and re.fullmatch('[0-9a-f]{64}', value)
+        for value in authority['sources'].values()), 'materialization:socket_sources')
+    return authority
 
 
 def _materialize_profession_enchant_authority(target_rows: Mapping[str, Any]) -> dict[str, Any]:
@@ -762,10 +800,12 @@ def _materialize_profession_enchant_authority(target_rows: Mapping[str, Any]) ->
     # read cached by a provisioning check in the same process.
     profession_enchant_rows.cache_clear()
     rows = profession_enchant_rows((ROOT / logical_path).parent)
-    selected_ids = _selected_profession_enchant_ids(target_rows)
+    sockets = _materialize_socket_authority(target_rows)
+    selected_ids = _selected_profession_enchant_ids(target_rows, sockets)
     _require(selected_ids <= rows.keys(), "materialization:profession_unknown_enchant")
     return {
-        "schema": "trinity_cata_profession_enchant_authority_v1",
+        "schema": "trinity_cata_profession_enchant_authority_v2",
+        "socket_authority": sockets,
         "logical_path": logical_path,
         "source_file_sha256": hashlib.sha256((ROOT / logical_path).read_bytes()).hexdigest(),
         "enchant_requirements": {str(key): list(rows[key]) for key in sorted(selected_ids)},
@@ -777,9 +817,9 @@ def _frozen_profession_enchant_rows(
 ) -> dict[int, tuple[int, int]]:
     authority = materialization.get("profession_enchant_authority")
     _require(isinstance(authority, dict) and set(authority) == {
-        "schema", "logical_path", "source_file_sha256", "enchant_requirements",
+        "schema", "logical_path", "source_file_sha256", "enchant_requirements", "socket_authority",
     }, "materialization:profession_authority_fields")
-    _require(authority["schema"] == "trinity_cata_profession_enchant_authority_v1",
+    _require(authority["schema"] == "trinity_cata_profession_enchant_authority_v2",
              "materialization:profession_schema")
     _require(authority["logical_path"] == "data/dbc/enUS/SpellItemEnchantment.dbc",
              "materialization:profession_source_path")
@@ -787,7 +827,8 @@ def _frozen_profession_enchant_rows(
              and re.fullmatch(r"[0-9a-f]{64}", authority["source_file_sha256"]) is not None,
              "materialization:profession_source_sha")
     captured = authority["enchant_requirements"]
-    selected_ids = _selected_profession_enchant_ids(target_rows)
+    sockets = _frozen_socket_authority(authority["socket_authority"])
+    selected_ids = _selected_profession_enchant_ids(target_rows, sockets)
     _require(isinstance(captured, dict) and set(captured) == {str(key) for key in selected_ids},
              "materialization:profession_enchant_ids")
     for value in captured.values():
@@ -796,6 +837,11 @@ def _frozen_profession_enchant_rows(
                  and value[0] in {0, 776, *PRIMARY_PROFESSIONS}
                  and 0 <= value[1] <= 525,
                  "materialization:profession_enchant_requirement")
+    _require(authority['source_file_sha256'] == sockets['sources']['data/dbc/enUS/SpellItemEnchantment.dbc'],
+             'materialization:socket_enchant_source_hash')
+    for creator in (3717, 3723):
+        if str(creator) in captured:
+            _require(captured[str(creator)] == [164, 1], 'materialization:socket_native_applicability')
     return {int(key): tuple(value) for key, value in captured.items()}
 
 
@@ -1427,7 +1473,8 @@ def validate_fixture_contract(contract: Mapping[str, Any]) -> None:
         )
         _require(
             native_request.get("professions")
-            == provisioning_professions(live_provisioning, enchant_rows=frozen_profession_rows),
+            == provisioning_professions(live_provisioning, enchant_rows=frozen_profession_rows,
+                socket_authority=materialization["profession_enchant_authority"]["socket_authority"]),
             f"{spec}:native_professions",
         )
         _require(

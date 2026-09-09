@@ -565,6 +565,10 @@ def runtime_safe_enchantments(
             values[PRISMATIC_ENCHANTMENT_FIELD_OFFSET] = EBONSTEEL_BELT_BUCKLE_ENCHANT_ID
         else:
             values[PRISMATIC_ENCHANTMENT_FIELD_OFFSET] = 0
+    if int(item.get("slot", -1)) in (8, 9):
+        from tools.bot_ml.wowsims_gear_binding import resolve_prismatic_socket
+        socket = resolve_prismatic_socket(item)
+        values[PRISMATIC_ENCHANTMENT_FIELD_OFFSET] = socket['creator_enchant_id'] if socket else 0
     if int(item.get("reforge_id") or 0):
         values[24] = int(item["reforge_id"])
     return " ".join(str(value) for value in values)
@@ -668,6 +672,8 @@ def load_gear_profiles(path: Path | None) -> dict[str, Any]:
                 if not source_item or int(source_item.get("id") or 0) <= 0:
                     continue
                 slot = slot_map[index]
+                from tools.bot_ml.wowsims_gear_binding import resolve_prismatic_socket
+                resolve_prismatic_socket({**source_item, "slot": slot})
                 gem_items = [int(gem) for gem in source_item.get("gems", [])]
                 gem_enchant_ids = [gem_enchantments.get(gem, 0) for gem in gem_items]
                 runtime_temp_enchant = int(source_item.get("runtime_temp_enchant") or source_item.get("temp_enchant") or 0)

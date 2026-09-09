@@ -366,7 +366,16 @@ void BotWorldPopulationMgr::UpdateCohort(uint32 diff)
                 using namespace BotCalibrationFixtureContractGenerated;
                 SpecContract const* fixtureContract = FindSpec(
                     Cohort().CalibrationTargetSpec);
-                if (fixtureContract && fixtureContract->PetResourceRequired)
+                // Final self-provided reset refreshes persistent mana summons
+                // and owns their native resummon/finish/resource readback.
+                // Other pets still need the ordinary warmup resource wait.
+                bool const nativeResetOwnsPetResources =
+                    IsSelfProvidedCalibrationBaseline()
+                    && calibrationPetRequired
+                    && calibrationState.PersistentPetSetup.RequiredPowerType
+                        == POWER_MANA;
+                if (fixtureContract && fixtureContract->PetResourceRequired
+                    && !nativeResetOwnsPetResources)
                 {
                     Pet* pet = calibrationBot->GetPet();
                     bool petResourceReady = pet

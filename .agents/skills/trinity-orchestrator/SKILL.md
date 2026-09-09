@@ -49,14 +49,18 @@ retain explicit attempted/retained/dropped receipts for a repaired loss path.
 Keep diagnostic-loss rejection separate from the measured DPS/HPS result.
 Permanent rejection regressions must run after raw evidence eviction. Use a small
 repository-owned fixture for final acceptance; keep optional hydrated-payload
-size checks separate and label skips explicitly.
+size checks separate and label skips explicitly. Bind historical regression fixtures
+to their original reference and fixture authority, not the mutable current catalog.
+A new catalog must not relabel old observations or break unrelated replay tests.
 
 For mixed console JSON, identify the message type before interpreting shared
 field names. A diagnostic `bots` array is not a status count. Preserve explicit
 zero values and test newer inactive or malformed status after older readiness.
 
 Review the actual launch-to-consumer path, including every identity used to select
-the runtime actor and its inputs. Return all known blocking findings together;
+the runtime actor and its inputs. Match each check to its observation time: prepull
+readiness uses the scoring-start snapshot; consuming an item during combat does
+not invalidate that earlier readiness. Return all known blocking findings together;
 do not end the first review after checking only one identity field.
 
 Use Luna max for exact narrow implementation with immutable evidence, owned production

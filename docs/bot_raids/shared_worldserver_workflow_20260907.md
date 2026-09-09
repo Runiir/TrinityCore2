@@ -3,37 +3,41 @@
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
-Immediate priority CAP-002 is implemented and independently approved. The native
-Soulburn diagnostic stopped at 2,048 rows around 205 seconds despite complete
-transport. The repair retains the supported 300-second window, records explicit
-loss counters and rejects incomplete diagnostics independently of DPS/HPS.
-Its 44 focused checks include final acceptance and enlarged actual capture.
+Source `90a181db01` is committed, pushed and built. Affliction and Fire each
+completed exactly 300 scoring seconds with native exit 0, fresh offline/idle
+cleanup and verified post-run binary receipts. No worldserver is running.
 
-The next single build batches reviewed profession reconciliation (DPS-008,
-73 tests), the stable Hunter pet fixture (DPS-007, six tests), and the Orb
-successful-hit lifetime guard (DPS-009, five tests). All three have independent
-approval; native validation remains pending. Hunter Mail Specialization parent
-87506 is now a proven missing setup input (DPS-010) and its implementation and independent review pass 24 focused checks.
-Source `905a5213f2` is committed and pushed. Its native build is verified after
-one unchanged incremental retry for an internal GCC crash (BUILD-002). Affliction
-startup failed without a scoring result on a list-to-integer status parser error (CAP-003).
-No DPS/HPS result or native report was produced. Native cleanup failed; parent
-verified the server absent and cleared only actor 1306 stale online/lease fields.
-CAP-003 passes 48 focused tests and independent review. Its corrected controller
-is ready for the next CAP-002 live check.
+CAP-002 diagnostic truncation is independently live accepted: all 2,997 eligible
+Soulburn rows through 299,911 ms retained, zero drops, all 2,430 chunks received.
+CAP-003 typed startup parsing also passed live. The earlier failed `905a5213f2`
+startup is published, remotely verified and cleaned; its scoring start is unknown.
 
-Latest Fire source `979f5c832f` completed 300 seconds with 29,706.767 DPS and
-0 HPS, all 1,399 chunks retained, verified exit, cleanup and binary receipt.
-All five Orb trajectories and successful-hit snares are accepted. The remaining
-five-second despawn is DPS-009. Required Tailoring was absent. Reviews are frozen;
-evidence is remotely verified and exact raw payloads are evicted. This is not
-complete DPS acceptance.
+Affliction measured 28,381.68 DPS / 388.6 HPS (90.6387% of exact reference).
+Transport, diagnostics, role thresholds and independent DPS/profession review pass;
+only generic qualification identity rejects the final evidence envelope.
+Fire measured 32,288.553 DPS / 0 HPS (91.8882%). All 1,524 chunks survived,
+with 61 Orb damage events versus 22 previously. The native Orb lifetime and
+profession applicability are independently accepted. Full setup fails a prepull receipt check (DPS-012),
+whose cause is now proven: final Mana Gem readiness is false after a valid
+combat use, despite a ready pre-score snapshot. The temporal-observation
+consumer repair passes the real retained Fire fixture and 51 regressions; final
+independent review approves it. Detailed setup receipts remain required.
+Both evidence bundles are DVC published and remotely verified, with exact raw
+payloads evicted after all readers finished. Compact reviews and fixtures remain.
 
-Earlier `ec02d7196a` windows measured Fire 29,021.037 DPS / 0 HPS, Hunter
-23,106.767 / 0, and Affliction 29,240.243 / 388.6. All three transports are
-complete. Affliction's native diagnostic and missing profession prevent full
-acceptance despite its passing throughput. Their archives are remotely verified;
-all three exact raw payloads are evicted after completed reviews.
+Next source batch: DPS-011 Blacksmithing socket creators and actual-actor
+reconciliation passes 27 focused tests and is independently approved. Regenerated
+metadata and directly affected socket test fixtures are approved. It affects
+nine specs, including Marksmanship, and accounts for the exact remaining 100
+raw primary-stat gap. Generated inputs and a new full 16-spec reference cohort
+must be produced before acceptance. Preserve approved Hunter parent 87506 and
+the exact 14-row pet fixture; neither has full native Hunter acceptance yet.
+The small PERF-001 calibration startup change is independently approved: ordinary
+population readiness no longer gates the separate native calibration population.
+Affliction's redundant native pet-resource wait has a bounded independently
+review-approved repair (PERF-002). Duplicate warmup flask/food consumption has a
+separate independently approved reset receipt repair (SETUP-001); no damage
+coefficients are being changed.
 
 Elemental's accepted 32,911.683 DPS (88.9522% of reference) remains closed.
 Latest canonical Magmaw is the accepted `090f24f4b8` clear: 128,636.918 DPS and

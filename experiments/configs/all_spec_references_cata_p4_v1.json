@@ -1056,9 +1056,35 @@
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/arms_warrior.test.go",
         "numeric_fixture_gear_label": "p4_arms_bis",
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         }
@@ -1184,9 +1210,35 @@
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/fury_warrior.test.go",
         "numeric_fixture_gear_label": "p4_fury_tg",
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         }
@@ -1312,9 +1364,35 @@
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/retribution_paladin.test.go",
         "numeric_fixture_gear_label": "p4_bis",
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         }
@@ -1554,9 +1632,35 @@
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/marksmanship_hunter.test.go",
         "numeric_fixture_gear_label": "preraid_mm",
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         }
@@ -1683,9 +1787,35 @@
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/wowsims_cata_p4_survival_hunter.test.go",
         "numeric_fixture_gear_label": "p4_sv",
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         }
@@ -1812,9 +1942,35 @@
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/assassination_rogue.test.go",
         "numeric_fixture_gear_label": "p4_assassination",
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         }
@@ -1940,9 +2096,35 @@
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/combat_rogue.test.go",
         "numeric_fixture_gear_label": "p4_combat",
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         }
@@ -2181,9 +2363,35 @@
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/frost_death_knight.test.go",
         "numeric_fixture_gear_label": "p4.masterfrost",
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         }
@@ -2310,9 +2518,35 @@
         "numeric_fixture_test_snapshot": "experiments/configs/wowsims_cata_p4_gear_sources/unholy_death_knight.test.go",
         "numeric_fixture_gear_label": "p4.bis",
         "profession_setup": {
-          "requirements": [],
+          "requirements": [
+            {
+              "source_enchant_ids": [
+                3717,
+                3723
+              ],
+              "native_skill_id": 164,
+              "required_rank": 400,
+              "provisioned_value": 525,
+              "provisioned_max": 525,
+              "wowsims_profession": "Blacksmithing",
+              "socket_creators": [
+                {
+                  "slot": 8,
+                  "creator_spell_id": 55628,
+                  "creator_enchant_id": 3717,
+                  "native_applicability_rank": 1
+                },
+                {
+                  "slot": 9,
+                  "creator_spell_id": 55641,
+                  "creator_enchant_id": 3723,
+                  "native_applicability_rank": 1
+                }
+              ]
+            }
+          ],
           "wowsims_professions": [
-            "ProfessionUnknown",
+            "Blacksmithing",
             "ProfessionUnknown"
           ]
         }
