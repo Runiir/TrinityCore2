@@ -2,6 +2,46 @@
 
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 
+Source `9423ec8a17` cleared canonical Magmaw with native exit 0, fresh cleanup
+and post-run build verification. Two hook-DPS trash deaths recovered; no boss
+fight deaths occurred and all ten were alive at clear. The frozen review records
+30,028,750 damage / 282 combat seconds = 106,484.929 DPS and 18,176.723 HPS.
+DPS regressed 15.75% from d701 on that denominator and remains unresolved.
+All role reviews are frozen. The 29,755,175-byte archive was reconstructed from
+the DVC remote and verified before exact payload eviction.
+
+Live evidence accepts Fire Elemental health initialization (120,363 from
+160,485 owner max health), survival beyond the previous Massive Crash death,
+and Hunter autorepeat rebinding to head 76 with direct head Auto Shot outcomes.
+Fire hook landings also completed with terminal floor proof. These accepted
+repairs do not establish overall roster performance.
+
+Discipline actor 30005 followed receipt 453 below the arena: an actual native
+intermediate control at Z -105.142822 lies between controls near Z 211. The
+bounded containment rejects unsafe controls for declared same-level movement;
+it does not repair the unknown PathGenerator producer. Independent Sol review
+approved the corrected full-planner fixture and guard ordering (21 tests pass).
+Native cross-level movement and existing floor-sample exceptions are preserved.
+
+Fire Mage calibration on the same binary failed before scoring because the
+validator classified its own native class buff 79058 as an external aura.
+No 300-second DPS result exists. Native exit 0, fresh offline readback and
+post-run build verification passed. Its 3,758,781-byte archive is remotely
+verified and exact payloads evicted. The patch shares the existing native
+self-buff contract across reset and scored checks and exposes the hidden
+pre-score predicates. Independent Sol review approved it (62 focused tests pass).
+
+The joined batch also retains actual native spell-finish callbacks to diagnose
+accepted Fireballs without damage, and timestamps actual cached candidate
+evaluations to distinguish Affliction's stale masks from current rejection
+reasons. Both are passive observations; no guessed coefficient or priority
+change is admitted. All four implementation reviews are approved. Build once,
+then run Fire calibration and canonical
+Magmaw sequentially on that verified binary. Keep all-bot DPS/HPS and individual
+repair acceptance separate from a boss clear.
+
+## Prior accepted calibration and raid evidence
+
 Source `798a115d45` completed the exact 300-second Elemental calibration with
 9,873,505 damage / 32,911.683 DPS, versus 29,474.307 on 77. The promoted reference
 is 36,999.280 DPS: 88.9522%, passing both the 75% hard floor and 85% optimization
@@ -33,7 +73,7 @@ verification pass. Prior 77 and startup-only 272 evidence are
 remotely verified and exact raw payloads evicted. Source 77 fixed ordinary
 updater replay of the tracked spell bindings; that accepted edge is closed.
 
-The latest Magmaw development clear is `d701b55d64`, with verified binary
+The preceding Magmaw development clear is `d701b55d64`, with verified binary
 `b5987fe2569dcb3fdc0855ef41862039229b8b16b4785414b0eaf61f95673a14`.
 No worldserver is running. Native death, controller exit 0, fresh cleanup and
 post-run build verification passed. All ten actual provisioned loadouts matched.
@@ -76,9 +116,12 @@ its correction passed independent review. The joined affected suite passes
 23 tests. All four bounded patches passed independent review. Source 2751 was
 committed and pushed, but native compilation found that the extracted guardian
 file included Pet.h before its Common.h prerequisites (uint8 and M_PI). The
-include-only correction restores that order; no gameplay or fixture behavior
-changes. Retain the failed build receipt, finish the corrected incremental build,
-validate canonical Magmaw, publish/clean, then route remaining losses.
+include-only correction `9423ec8a17` restores that order and built successfully
+with provenance verified; both commits are pushed. Canonical Magmaw preparation
+is running. The failed build receipt and corrected configuration review are
+retained: fast4 actually has UNITY_BUILDS=OFF, so the earlier unity collision
+claim was hypothetical. Observe the bounded native run, review all actors,
+publish/clean, then route remaining losses.
 
 ## Earlier result: 816 setup accepted, DPS unresolved
 

@@ -12,6 +12,7 @@
 #include "Log.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
+#include "Spell.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
@@ -123,6 +124,51 @@ void BotWorldPopulationMgr::NotifyBotSpellFinished(Player* caster, uint32 spellI
     CohortScope scope = ScopeCallbackCohort(caster);
     if (!scope)
         return;
+
+    // Observe the callback itself, including synchronous finishes. Neither an
+    // executor Ok nor a matching current spell ID identifies this Spell instance.
+    auto recordNativeFinish = [&](std::vector<WorldBotState>& states)
+    {
+        for (WorldBotState& state : states)
+        {
+            if (state.Guid != caster->GetGUID())
+                continue;
+            std::ostringstream raw;
+            raw << "{\"schema\":\"native_spell_finish_v1\",\"observed_at_ms\":" << NowMs()
+                << ",\"caster_guid\":" << caster->GetGUID().GetRawValue()
+                << ",\"spell_id\":" << spellId << ",\"success\":" << (success ? "true" : "false")
+                << ",\"server_epoch\":" << _serverEpoch
+                << ",\"cohort_id\":\"" << JsonEscape(Cohort().Id) << "\",\"attempt_id\":" << Cohort().AttemptId
+                << ",\"wipe_generation\":" << Cohort().Raid.WipeGeneration
+                << ",\"route_node_id\":\"" << JsonEscape(Cohort().Config.ValidationRouteNodeId) << "\""
+                << ",\"route_generation\":" << Party().ValidationRouteGeneration
+                << ",\"map_id\":" << caster->GetMapId() << ",\"instance_id\":" << caster->GetInstanceId()
+                << ",\"cast_instance_correlation\":\"unavailable\",\"current_spells\":[";
+            bool first = true;
+            for (auto slot : {CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL, CURRENT_AUTOREPEAT_SPELL})
+                if (Spell* current = caster->GetCurrentSpell(slot))
+                {
+                    raw << (first ? "" : ",") << "{\"slot\":" << uint32(slot)
+                        << ",\"spell_id\":" << current->GetSpellInfo()->Id
+                        << ",\"state\":" << uint32(current->getState())
+                        << ",\"target_guid\":" << current->m_targets.GetUnitTargetGUID().GetRawValue() << "}";
+                    first = false;
+                }
+            raw << "]}";
+            uint64 const previousSequence = state.TraceSequence;
+            RecordDecisionTrace(state, "native_callback", "native_spell_finished", nullptr, 0,
+                success ? "native_finish_success" : "native_finish_unsuccessful",
+                "callback_instance_unavailable", false);
+            if (state.TraceSequence != previousSequence && !state.DecisionTrace.empty()
+                && state.DecisionTrace.back().Sequence == state.TraceSequence
+                && state.DecisionTrace.back().Action == "native_spell_finished")
+                state.DecisionTrace.back().NativeSpellFinishJson = raw.str();
+            return true;
+        }
+        return false;
+    };
+    if (!recordNativeFinish(Party().Bots))
+        recordNativeFinish(Party().CalibrationBots);
 
     if (success && Cohort().CalibrationActive
         && Cohort().CalibrationScoredStartedMs

@@ -78,7 +78,10 @@ def test_warlock_fel_armor_is_native_persistent_setup_and_observed() -> None:
         source, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
     )
 
-    assert '{ CLASS_WARLOCK, nullptr, nullptr, 28176, 28176, 0, "fel_armor" }' in setup
+    contract = (PERSISTENT_SETUP.parent / "BotPersistentSelfBuffContract.h").read_text()
+    assert '{ CLASS_WARLOCK, nullptr, nullptr, 28176, 28176, 0, "fel_armor" }' in contract
+    assert "BotPersistentSelfBuffContract::Buffs" in setup
+    assert "BotPersistentSelfBuffContract::Matches" in setup
     assert "bot->HasSpell(buff.SpellId)" in setup
     assert "executor.ExecuteCombat(bot, bot, action)" in setup
     assert "49> PlayerAuraUniverse" in source
@@ -232,7 +235,7 @@ def test_affliction_calibration_accepts_exact_preexisting_felhunter_observation(
     )
     assert "persistent_preexisting_affliction_pet_observed" in resolver
 
-    update = _function_body(source, "void BotWorldPopulationMgr::Update(uint32 diff)")
+    update = _function_body(source, "void BotWorldPopulationMgr::UpdateCohort(uint32 diff)")
     readiness = update[
         update.index("bool const nativePetReady") : update.index(
             "if (populationReady && calibrationBot\n                && Cohort().CalibrationMode"

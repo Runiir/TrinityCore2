@@ -1,4 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotCombatMaskEvaluation.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotMgr.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotHealSelectionDiagnostic.h"
@@ -208,6 +210,9 @@ uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot, Unit* target,
     BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
     RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
+    std::string const maskEvaluation = BotCombatMaskEvaluation::Context(
+        BotWorldPopulationMgrSpellSemantics::NowMs(), bot, target, Cohort(), Party(),
+        "SelectHealSpell");
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
     BotActionCandidate* best = nullptr;
     for (BotActionCandidate& candidate : candidates)
@@ -274,7 +279,10 @@ uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot, Unit* target,
     rejectionJson << ']';
     Party().LastCombatRejectsByBot[botKey] = rejectionJson.str();
     Party().LastSaturationByBot[botKey] = saturation;
-    Party().LastCombatMaskByBot[botKey] = BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile, roleGoal.c_str(), saturation.ToJson().c_str());
+    Party().LastCombatMaskByBot[botKey] = BotCombatMaskEvaluation::Append(
+        BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile,
+            roleGoal.c_str(), saturation.ToJson().c_str()), maskEvaluation,
+        instantOnly ? "{\"instant_only\":true}" : "{\"instant_only\":false}");
     Party().LastChosenCombatByBot[botKey] = BotClassSpecActionProfileStore::ChosenActionJson(best, profile, roleGoal.c_str(), BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), saturation.ExperimentConfidence);
     Party().LastActionCategoryByBot[botKey] = best ? BotCombatActionCatalog::ToString(best->Category) : "wait";
     if (selectionDiagnostic)

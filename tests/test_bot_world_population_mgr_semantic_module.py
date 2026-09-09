@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp"
 HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
+CALIBRATION_METRICS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 
 
@@ -68,7 +69,7 @@ def test_semantic_module_preserves_outcome_feature_contract() -> None:
 
 def test_semantic_module_attributes_scored_other_item_uses() -> None:
     module = MODULE.read_text(encoding="utf-8")
-    header = HEADER.read_text(encoding="utf-8")
+    header = CALIBRATION_METRICS.read_text(encoding="utf-8")
     spell_finished = module[
         module.index("void BotWorldPopulationMgr::NotifyBotSpellFinished") :
         module.index("void BotWorldPopulationMgr::NotifyBotItemSpellFinished")

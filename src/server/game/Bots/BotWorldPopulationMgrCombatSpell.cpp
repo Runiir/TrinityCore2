@@ -1,4 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotCombatMaskEvaluation.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
@@ -107,6 +109,9 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
 
     RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
+    std::string const maskEvaluation = BotCombatMaskEvaluation::Context(
+        BotWorldPopulationMgrSpellSemantics::NowMs(), bot, target, Cohort(), Party(),
+        "SelectCombatSpell");
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
     BotRaidCooldownReservation::RouteContext const cooldownRoute{
         Cohort().Config.ValidationRouteEnable,
@@ -279,7 +284,10 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
 
     uint32 botKey = bot->GetGUID().GetCounter();
     Party().LastSaturationByBot[botKey] = saturation;
-    Party().LastCombatMaskByBot[botKey] = BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile, roleGoal.c_str(), saturation.ToJson().c_str());
+    Party().LastCombatMaskByBot[botKey] = BotCombatMaskEvaluation::Append(
+        BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile,
+            roleGoal.c_str(), saturation.ToJson().c_str()), maskEvaluation,
+        "{}");
     Party().LastChosenCombatByBot[botKey] = BotClassSpecActionProfileStore::ChosenActionJson(best, profile, roleGoal.c_str(), BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), saturation.ExperimentConfidence);
     Party().LastActionCategoryByBot[botKey] = best ? BotCombatActionCatalog::ToString(best->Category) : "wait";
 

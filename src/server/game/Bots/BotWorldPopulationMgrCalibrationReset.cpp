@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
+#include "Bots/BotCalibrationSelfProvidedAuras.h"
 #include "Bots/BotClassSpecActionProfile.h"
 
 #include "CharmInfo.h"
@@ -17,6 +18,7 @@
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "TemporarySummon.h"
+#include "Totem.h"
 #include "Unit.h"
 #include "Util.h"
 
@@ -702,28 +704,17 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
             auto [referenceBuffsReady, referenceTargetDebuffsReady] =
                 ApplyCalibrationReferenceConditions(bot, fixtureTarget);
 
-            static constexpr std::array<uint32, 11>
-                SelfProvidedForbiddenPlayerAuras = {
-                    53646, 79058, 24932, 2895, 8515, 8076, 82930,
-                    57669, 20217, 79063, 79102,
-                };
-            static constexpr std::array<uint32, 4>
-                SelfProvidedForbiddenTargetAuras = {
-                    1490, 22959, 81326, 58567,
-                };
-            bool const selfProvidedExternalAurasAbsent =
-                !IsSelfProvidedCalibrationBaseline()
-                || std::none_of(SelfProvidedForbiddenPlayerAuras.begin(),
-                    SelfProvidedForbiddenPlayerAuras.end(),
-                    [bot](uint32 spellId) { return bot->HasAura(spellId); });
-            bool const selfProvidedTargetAurasAbsent =
-                !IsSelfProvidedCalibrationBaseline()
-                || std::none_of(SelfProvidedForbiddenTargetAuras.begin(),
-                    SelfProvidedForbiddenTargetAuras.end(),
-                    [fixtureTarget](uint32 spellId)
-                    {
-                        return fixtureTarget->HasAura(spellId);
-                    });
+            auto const selfProvidedPlayerAuras = BotCalibrationSelfProvidedAuras::PlayerAuras(
+                bot, GetDungeonRole(bot), Cohort().CalibrationTargetSpec);
+            auto const selfProvidedTargetAuras = BotCalibrationSelfProvidedAuras::TargetAuras(fixtureTarget);
+            metrics.PreScoreSelfProvidedPlayerAurasCompatible = !IsSelfProvidedCalibrationBaseline()
+                || selfProvidedPlayerAuras.Compatible;
+            metrics.PreScoreSelfProvidedTargetAurasAbsent = !IsSelfProvidedCalibrationBaseline()
+                || selfProvidedTargetAuras.Compatible;
+            metrics.PreScoreSelfProvidedPlayerAuraSpellId = selfProvidedPlayerAuras.SpellId;
+            metrics.PreScoreSelfProvidedPlayerAuraSource = selfProvidedPlayerAuras.SourceClassification;
+            metrics.PreScoreSelfProvidedTargetAuraSpellId = selfProvidedTargetAuras.SpellId;
+            metrics.PreScoreSelfProvidedTargetAuraSource = selfProvidedTargetAuras.SourceClassification;
             bool const selfProvidedConsumablesReady =
                 !IsSelfProvidedCalibrationBaseline()
                 || (metrics.FlaskConsumable.NativeUseFinishedSuccessfully
@@ -828,8 +819,8 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
                 && metrics.PreScoreReferenceTargetDebuffsReady
                 && metrics.PreScoreTemporalExternalsAbsent
                 && metrics.PreScoreExternalBleedAbsent
-                && selfProvidedExternalAurasAbsent
-                && selfProvidedTargetAurasAbsent
+                && metrics.PreScoreSelfProvidedPlayerAurasCompatible
+                && metrics.PreScoreSelfProvidedTargetAurasAbsent
                 && (IsSelfProvidedCalibrationBaseline()
                     ? selfProvidedConsumablesReady
                     : !metrics.PreScoreLastPotionItemId)

@@ -34,10 +34,7 @@ def test_self_provided_requests_disable_every_external_condition() -> None:
         assert native["individual_buffs"] == {}
         assert all(value is False for value in native["raid_buffs"].values())
         assert all(value is False for value in native["target_debuffs"].values())
-        assert native["professions"] == [
-            "ProfessionUnknown",
-            "ProfessionUnknown",
-        ]
+        # Legal professions are self-provided inputs, not external raid buffs.
         assert native["consumables"]["tinker_id"] == 0
 
 

@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_NATIVE_PATH_VALIDATION_H
 
 #include "BotWorldPopulationMgrNativeFloor.h"
+#include "BotMovementArbiter.h"
 #include "Map.h"
 #include "PathGenerator.h"
 
@@ -11,6 +12,44 @@
 
 namespace BotWorldMovement
 {
+// Validate authoritative controls against a declared actor-level envelope.
+// This does not interpret height probes or change native path completeness.
+inline bool NativePathControlsMatchReferenceLevel(
+    Movement::PointsArray const& controls, float actorReferenceZ)
+{
+    return !controls.empty() && std::all_of(controls.begin(), controls.end(),
+        [actorReferenceZ](G3D::Vector3 const& point)
+        {
+            return std::isfinite(point.x) && std::isfinite(point.y)
+                && std::isfinite(point.z)
+                && NativePathReferenceFloorValid(point.z, actorReferenceZ);
+        });
+}
+
+struct NativePathControlAdmission
+{
+    bool Accepted = true;
+    bool Terminal = false;
+    char const* RejectReason = nullptr;
+    char const* Gate = nullptr;
+};
+
+inline NativePathControlAdmission AdmitNativePathControls(
+    Movement::PointsArray const& controls, BotMovementArbitration::Owner owner,
+    float actorZ, float requestedZ, bool strictNativeDescent,
+    bool nativeLongPath, bool completePrimary = false)
+{
+    bool const required = (owner == BotMovementArbitration::Owner::Mechanic
+            || owner == BotMovementArbitration::Owner::Hazard)
+        && std::isfinite(actorZ) && std::isfinite(requestedZ)
+        && std::fabs(actorZ - requestedZ) <= NativeFloorTolerance
+        && !strictNativeDescent && !nativeLongPath;
+    if (!required || NativePathControlsMatchReferenceLevel(controls, actorZ))
+        return {};
+    return { false, completePrimary,
+        "route_destination_path_control_level_gap", "path_controls" };
+}
+
 inline bool NativePathHasForbiddenAdmissionFlag(PathType type)
 {
     return (type & PATHFIND_NOPATH)

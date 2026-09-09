@@ -460,6 +460,12 @@
         bool PreScorePersistentSetupReady = false;
         bool PreScoreReferenceBuffsReady = false;
         bool PreScoreReferenceTargetDebuffsReady = false;
+        bool PreScoreSelfProvidedPlayerAurasCompatible = false;
+        bool PreScoreSelfProvidedTargetAurasAbsent = false;
+        uint32 PreScoreSelfProvidedPlayerAuraSpellId = 0;
+        uint32 PreScoreSelfProvidedTargetAuraSpellId = 0;
+        std::string PreScoreSelfProvidedPlayerAuraSource;
+        std::string PreScoreSelfProvidedTargetAuraSource;
         bool PreScoreHeroismReady = false;
         bool PreScoreNoActiveCast = false;
         bool PreScoreNoCombat = false;

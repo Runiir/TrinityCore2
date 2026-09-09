@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotCalibrationPreScoreStateJson.h"
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotWorldPopulationMgrCalibrationIdentity.h"
@@ -538,38 +539,7 @@ void BotWorldPopulationMgr::AppendCombatCalibrationBotRowsJson(
                         == metrics->LastObservedGearManifestSha256
                     && !metrics->GearIdentityMismatchSampleCount
                     ? "true" : "false") << '}'
-             << ",\"pre_score_state\":{\"schema\":\"phase8_pre_score_state_observation_v1\""
-             << ",\"observed_at_ms\":"
-             << (metrics ? metrics->PreScoreStateObservedAtMs : 0)
-             << ",\"observed_before_scoring\":"
-             << (metrics && metrics->PreScoreStateObservedAtMs
-                    && metrics->WindowStartedMs
-                    && metrics->PreScoreStateObservedAtMs
-                        <= metrics->WindowStartedMs ? "true" : "false")
-             << ",\"persistent_setup_ready\":"
-             << (metrics && metrics->PreScorePersistentSetupReady ? "true" : "false")
-             << ",\"reference_buffs_ready\":"
-             << (metrics && metrics->PreScoreReferenceBuffsReady ? "true" : "false")
-             << ",\"reference_target_debuffs_ready\":"
-             << (metrics && metrics->PreScoreReferenceTargetDebuffsReady ? "true" : "false")
-             << ",\"heroism_ready\":"
-             << (metrics && metrics->PreScoreHeroismReady ? "true" : "false")
-             << ",\"temporal_external_auras_absent\":"
-             << (metrics && metrics->PreScoreTemporalExternalsAbsent ? "true" : "false")
-             << ",\"external_bleed_auras_absent\":"
-             << (metrics && metrics->PreScoreExternalBleedAbsent ? "true" : "false")
-             << ",\"last_potion_item_id\":"
-             << (metrics ? metrics->PreScoreLastPotionItemId : 0)
-             << ",\"no_active_cast\":"
-             << (metrics && metrics->PreScoreNoActiveCast ? "true" : "false")
-             << ",\"no_combat\":"
-             << (metrics && metrics->PreScoreNoCombat ? "true" : "false")
-             << ",\"global_cooldown_clear\":"
-             << (metrics && metrics->PreScoreGlobalCooldownClear ? "true" : "false")
-             << ",\"cooldown_reset_applied\":"
-             << (metrics && metrics->PreScoreCooldownResetApplied ? "true" : "false")
-             << ",\"warmup_profile_actions_suppressed\":"
-             << (metrics && metrics->WarmupProfileActionsSuppressed ? "true" : "false") << '}'
+             << ",\"pre_score_state\":" << BotCalibrationPreScoreStateJson(metrics)
              << ",\"external_window_observation\":{\"schema\":\"phase8_external_windows_observation_v1\""
              << ",\"target_guid\":" << state.Guid.GetCounter()
              << ",\"window_started_at_ms\":"

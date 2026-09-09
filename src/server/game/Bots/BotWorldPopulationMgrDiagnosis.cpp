@@ -970,6 +970,7 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
              << ",\"mechanic_family\":\"" << JsonEscape(state.LastMechanicFamily) << "\""
              << ",\"encounter_role_responsibility\":\"" << JsonEscape(state.LastEncounterRoleResponsibility) << "\""
              << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\""
+             << ",\"native_spell_finish\":" << (itr->NativeSpellFinishJson.empty() ? "null" : itr->NativeSpellFinishJson)
              << ",\"combat_attempt\":" << BuildCombatAttemptJson(itr->CombatAttempt)
              << ",\"route_progress\":" << BuildRouteProgressJson(itr->RouteProgress) << "}";
     }

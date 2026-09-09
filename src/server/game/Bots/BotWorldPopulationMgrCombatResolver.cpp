@@ -1,4 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotCombatMaskEvaluation.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotCastWhileMoving.h"
@@ -123,6 +125,10 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
 
     RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
+    std::string const maskEvaluation = BotCombatMaskEvaluation::Context(
+        BotWorldPopulationMgrSpellSemantics::NowMs(), bot, target, Cohort(), Party(),
+        "ResolveProfileCombatAction");
+    uint32 const requestedHostileCount = hostileCount;
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
     BotRaidCooldownReservation::RouteContext const cooldownRoute{
         Cohort().Config.ValidationRouteEnable,
@@ -797,7 +803,22 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     rejectionJson << ']';
     Party().LastCombatRejectsByBot[botKey] = rejectionJson.str();
     Party().LastSaturationByBot[botKey] = saturation;
-    Party().LastCombatMaskByBot[botKey] = BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile, roleGoal.c_str(), saturation.ToJson().c_str());
+    std::ostringstream maskFilters;
+    maskFilters << std::boolalpha << "{\"hostile_count\":" << requestedHostileCount
+        << ",\"effective_hostile_count\":" << hostileCount
+        << ",\"density_only\":" << densityOnly
+        << ",\"excluded_spell_id\":" << excludedSpellId
+        << ",\"area_only\":" << areaOnly
+        << ",\"self_centered_only\":" << selfCenteredOnly
+        << ",\"forbid_area\":" << forbidArea
+        << ",\"allow_multidot\":" << allowMultidot
+        << ",\"hostile_target_only\":" << hostileTargetOnly
+        << ",\"movement_compatible_only\":" << movementCompatibleOnly
+        << ",\"spec_tag_override\":" << BotCombatMaskEvaluation::Quote(specTagOverride ? specTagOverride : "") << "}";
+    Party().LastCombatMaskByBot[botKey] = BotCombatMaskEvaluation::Append(
+        BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile,
+            roleGoal.c_str(), saturation.ToJson().c_str()), maskEvaluation,
+        maskFilters.str());
     Party().LastChosenCombatByBot[botKey] = BotClassSpecActionProfileStore::ChosenActionJson(best, profile, roleGoal.c_str(), BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), saturation.ExperimentConfidence);
     Party().LastActionCategoryByBot[botKey] = best ? BotCombatActionCatalog::ToString(best->Category) : "wait";
 

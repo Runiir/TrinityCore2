@@ -2,49 +2,54 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "runtime:roster_execution_review",
   "owner_skill": "raid-performance-loop",
-  "classification": "closed_run_repairs_and_missing_observations",
+  "classification": "closed_raid_path_containment_calibration_validator_and_native_observation",
   "epoch_id": "roster_execution_review_20260908",
-  "observed_at_commit": "d701b55d643f56bbaf12d59557e3a9f06d5f19b6",
+  "observed_at_commit": "9423ec8a17039b337f568000976a8cbb5c447486",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "2751 native build failed extracted guardian include prerequisites; Common.h-before-Pet.h correction pending build",
+  "gate_state": "All four implementation reviews approved; stale test-location cleanup passes all22tests; ready for frozen source queued build",
   "first_broken_edge": {
-    "id": "hunter_autorepeat_retains_wrong_target",
-    "owner_classification": "raid_role_implementation",
-    "cause": "Valid exposed-head actions preserve existing body Auto Shot because executor tests presence but not native repeat target.",
-    "review_state": "implementation_approved_live_pending"
+    "id": "same_level_native_path_controls_leave_declared_floor",
+    "owner_classification": "raid_bot_runtime_implementation",
+    "cause": "Disc30005 receipt453 actual native four-control POINT spline includes -105.142822 Z between211-level controls; complete endpoint admission ignores diagnostic SampleFloorGap. Native producer cause remains unproven.",
+    "review_state": "containment_independently_approved_native_validation_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "fe5f717f5e9de27f13efb359b04191a63ac86ceb94d6bb22337b8cb3dc76e7dd"
+    "sha256": "7c9dd7dcfc5cbd92c640bdda7e24a83586a8a02124a19aab39913014e2cabb65"
   },
   "scope_lock": {
-    "objective": "Repair proven Hunter targeting and guardian health owner lookup; observe exact healer native controls and pending Fire grounding receipt.",
+    "objective": "Contain unsafe same-level native controls, accept attributable native class self-buffs in Fire calibration, and capture actual native spell finishes and candidate evaluation freshness before further class tuning.",
     "owned_files": [
-      "src/server/game/Bots/BotActionExecutor.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrNativePathValidation.h",
+      "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp",
+      "src/server/game/Bots/BotPersistentSelfBuffContract.h",
+      "src/server/game/Bots/BotCalibrationSelfProvidedAuras.h",
+      "src/server/game/Bots/BotCalibrationPreScoreStateJson.h",
+      "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationReset.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationReference.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h",
+      "src/server/game/Bots/BotWorldPopulationMgrCalibrationRows.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp",
       "src/server/game/Bots/BotWorldPopulationMgrBotState.h",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatDiagnostics.cpp",
       "src/server/game/Bots/BotWorldPopulationMgrDiagnosis.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h",
-      "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrMovementPlannerDiagnosticsJson.cpp",
-      "src/server/game/Bots/BotCalibrationSummonObservation.h",
-      "src/server/game/Entities/Pet/Pet.cpp",
-      "src/server/game/Entities/Pet/GuardianInitialization.cpp",
-      "src/server/game/Entities/Pet/PetPersistence.cpp"
+      "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatSupport.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp",
+      "src/server/game/Bots/BotCombatMaskEvaluation.h"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Valid Hunter target change rebinds native autorepeat once; same or invalid target never triggers unnecessary cancellation.",
-    "Fire Elemental initialization resolves native Totem player owner and preserves existing 75% health contract and all other branches.",
-    "Existing diagnostics retain actual ordered native controls and exact submitted grounding receipt scope without gameplay mutation.",
-    "Affected production behavior fixtures and independent review pass before one joined build.",
-    "Canonical Magmaw reaches typed terminal with all-bot DPS/HPS, head events, movement, deaths and cleanup; review unresolved losses.",
-    "Publish closed evidence, verify remote bytes and evict exact payloads; development is not qualification or training."
+    "Exact captured receipt453 control counterexample fails before repair and rejects before native submission after repair; safe376 and every reachable primary/connected/bounded/local candidate path are covered.",
+    "Preserve native cross-level/descent/long paths, native floor-sample exceptions and existing tolerances; no Z steering or MMAP workaround.",
+    "Independent review and affected production fixtures pass, then one queued build and bounded canonical run.",
+    "Fire exact300s scoring retains attributable effective stats, gear and action outcomes for current promoted reference comparison.",
+    "All-bot DPS/HPS, native outcomes, deaths, route progress and cleanup remain separate from boss clear; publish/verify before exact eviction."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -55,7 +60,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Finish include-only correction review, commit and resume incremental queued build, then canonical Magmaw.",
+  "next_action": "Join reviewed path containment, shared self-buff validator and native cast/candidate observations; build once, then Fire exact300s calibration and canonical Magmaw sequentially.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -71,25 +76,25 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "d701b55d643f56bbaf12d59557e3a9f06d5f19b6",
+    "source_commit": "9423ec8a17039b337f568000976a8cbb5c447486",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
     "terminal_reason": "clear",
     "cleanup_passed": true,
     "training_eligible": false,
-    "recorded_casualties": 1,
-    "boss_fight_casualties": 1,
-    "hostile_only_party_dps": 126393.532,
-    "party_hps": 13558.386,
-    "combat_duration_sec": 233,
+    "recorded_casualties": 2,
+    "boss_fight_casualties": 0,
+    "hostile_only_party_dps": 106484.929,
+    "party_hps": 18176.723,
+    "combat_duration_sec": 282,
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_d701b55d64_20260908.tar.gz.dvc"
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_9423ec8a17_20260908.tar.gz.dvc"
   },
   "latest_analysis": {
-    "review_directory": "magmaw-development-d701b55d64/dps-review",
-    "publication_state": "remote_verified_raw_evicted",
+    "review_directory": "magmaw-development-9423ec8a17/dps-review",
+    "publication_state": "closed_reviews_frozen_remote_verified",
     "calibration_dps": 32911.683333333334,
     "calibration_reference_dps": 36999.280400830605,
     "calibration_publication_state": "remote_verified_raw_evicted",
@@ -100,8 +105,8 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "approved",
-    "scope": "Repair proven Hunter targeting and guardian health owner lookup; observe exact healer native controls and pending Fire grounding receipt.",
+    "verdict": "approved_for_build",
+    "scope": "Contain unsafe same-level native controls, accept attributable native class self-buffs in Fire calibration, and capture actual native spell finishes and candidate evaluation freshness before further class tuning.",
     "live_verified": false
   },
   "related_edges": [
@@ -135,15 +140,15 @@
     },
     {
       "id": "fire_elemental_totem_health_owner_unresolved",
-      "review": "native_cause_proven_implementation_review_correction"
+      "review": "native_accepted_9423_owner_health_and_crash_survival"
     },
     {
       "id": "healer_native_point_descends_below_arena",
-      "review": "actual_controls_capture_required"
+      "review": "actual_unsafe_controls_proven_containment_approved"
     },
     {
       "id": "fire_exit_submitted_ground_receipt_unobserved",
-      "review": "capture_required"
+      "review": "native_capture_and_landing_accepted_9423"
     }
   ],
   "reference_fixture_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
@@ -158,5 +163,17 @@
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
     "dvc_pointer": "artifacts/cata_raid_program/elemental_calibration_27200f36cc_20260908.tar.gz.dvc"
+  },
+  "latest_fire_calibration": {
+    "source_commit": "9423ec8a17039b337f568000976a8cbb5c447486",
+    "scoring_started": false,
+    "dps": null,
+    "failure": "calibration_pre_score_state_contract_mismatch",
+    "cause": "own_native_class_buff_79058_rejected_as_external",
+    "cleanup_passed": true,
+    "postrun_build_verified": true,
+    "remote_reconstruction_verified": true,
+    "raw_payloads_evicted": true,
+    "dvc_pointer": "artifacts/cata_raid_program/calibration_fire_mage_9423ec8a17_20260909.tar.gz.dvc"
   }
 }

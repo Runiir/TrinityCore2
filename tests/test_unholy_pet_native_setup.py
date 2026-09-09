@@ -4,8 +4,16 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
-HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
+BOTS = ROOT / "src/server/game/Bots"
+PERSISTENT_SETUP = BOTS / "BotWorldPopulationMgrPersistentSetup.cpp"
+SELF_BUFF_CONTRACT = BOTS / "BotPersistentSelfBuffContract.h"
+SEMANTIC = BOTS / "BotWorldPopulationMgrSemantic.cpp"
+UPDATE = BOTS / "BotWorldPopulationMgrUpdate.cpp"
+CALIBRATION_BOT = BOTS / "BotWorldPopulationMgrCalibrationBot.cpp"
+CALIBRATION_ROWS = BOTS / "BotWorldPopulationMgrCalibrationRows.cpp"
+CALIBRATION_RESET = BOTS / "BotWorldPopulationMgrCalibrationReset.cpp"
+CALIBRATION_RESOURCES_RESET = BOTS / "BotWorldPopulationMgrCalibrationResourcesReset.cpp"
+HEADER = BOTS / "BotWorldPopulationMgrBotState.h"
 SPELL = ROOT / "src/server/game/Spells/Spell.cpp"
 CATALOG_BUILDER = ROOT / "tools/bot_ml/build_all_spec_phase1_catalogs.py"
 
@@ -34,14 +42,16 @@ def test_unholy_uses_learned_raise_dead_and_unholy_presence() -> None:
     assert '"unholy_death_knight": [46584, 48265]' in setup_catalog
 
     setup = _function_body(
-        WORLD.read_text(encoding="utf-8"),
+        PERSISTENT_SETUP.read_text(encoding="utf-8"),
         "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup",
     )
     assert 'profile.SpecTag == "unholy_death_knight"' in setup
     assert (
         '{ CLASS_DEATH_KNIGHT, "dps", "unholy_death_knight", '
         '48265, 48265, 0, "unholy_presence" }'
-    ) in setup
+    ) in SELF_BUFF_CONTRACT.read_text(encoding="utf-8")
+    assert "for (auto const& buff : BotPersistentSelfBuffContract::Buffs)" in setup
+    assert "BotPersistentSelfBuffContract::Matches(buff, bot->getClass(), role, profile.SpecTag)" in setup
     assert "requiredPet.RequiredSummonSpellId = 46584" in setup
     assert "requiredPet.RequiredEntry = ENTRY_GHOUL" in setup
     assert "requiredPet.RequiredPetType = uint32(SUMMON_PET)" in setup
@@ -52,7 +62,7 @@ def test_unholy_uses_learned_raise_dead_and_unholy_presence() -> None:
 
 def test_unholy_pet_created_by_and_family_come_from_runtime_authority() -> None:
     setup = _function_body(
-        WORLD.read_text(encoding="utf-8"),
+        PERSISTENT_SETUP.read_text(encoding="utf-8"),
         "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup",
     )
     assert "sObjectMgr->GetCreatureTemplate(" in setup
@@ -64,13 +74,13 @@ def test_unholy_pet_created_by_and_family_come_from_runtime_authority() -> None:
 
 
 def test_native_pet_receipt_is_submit_finish_then_later_observation() -> None:
-    world = WORLD.read_text(encoding="utf-8")
+    world = PERSISTENT_SETUP.read_text(encoding="utf-8")
     header = HEADER.read_text(encoding="utf-8")
     setup = _function_body(
         world, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
     )
     finished = _function_body(
-        world, "void BotWorldPopulationMgr::NotifyBotSpellFinished"
+        SEMANTIC.read_text(encoding="utf-8"), "void BotWorldPopulationMgr::NotifyBotSpellFinished"
     )
 
     assert "struct NativePersistentPetSetupReceipt" in header
@@ -89,14 +99,14 @@ def test_native_pet_receipt_is_submit_finish_then_later_observation() -> None:
 
 
 def test_unholy_native_pet_setup_never_manufactures_or_refills_state() -> None:
-    world = WORLD.read_text(encoding="utf-8")
+    world = PERSISTENT_SETUP.read_text(encoding="utf-8")
     setup = _function_body(
         world,
         "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup",
     )
     native_pet = setup[
         setup.index("if (petSetup.RequiredSummonSpellId)") : setup.index(
-            "if (bot->getClass() == CLASS_MAGE"
+            "// Mana Gem creation is optional consumable preparation"
         )
     ]
     assert "persistent_setup_preexisting_pet_without_native_receipt" in native_pet
@@ -114,21 +124,28 @@ def test_unholy_native_pet_setup_never_manufactures_or_refills_state() -> None:
     ):
         assert forbidden not in native_pet
 
-    reset = _function_body(world, "void BotWorldPopulationMgr::ResetCalibrationScoredWindow")
+    reset = _function_body(CALIBRATION_RESET.read_text(encoding="utf-8"), "void BotWorldPopulationMgr::ResetCalibrationScoredWindow")
     pet_reset = reset[
         reset.index("if (pet)") : reset.index(
             "std::vector<Unit*> controlledUnits"
         )
     ]
     assert "pet->SetFullHealth()" not in pet_reset
-    assert 'std::string_view(unitKind) != "pet"' in reset
+    resources = _function_body(
+        CALIBRATION_RESOURCES_RESET.read_text(encoding="utf-8"),
+        "void BotWorldPopulationMgr::ResetCalibrationInitialResources",
+    )
+    assert "ResetCalibrationInitialResources(bot, metrics);" in reset
+    assert 'std::string_view(unitKind) != "pet"' in resources
 
 
 def test_unholy_pet_readiness_gates_scoring_and_emits_identity_uptime() -> None:
-    world = WORLD.read_text(encoding="utf-8")
-    update = _function_body(world, "void BotWorldPopulationMgr::Update(uint32 diff)")
+    update_source = UPDATE.read_text(encoding="utf-8")
+    dispatcher = _function_body(update_source, "void BotWorldPopulationMgr::Update(uint32 diff)")
+    assert "UpdateCohort(diff);" in dispatcher
+    update = _function_body(update_source, "void BotWorldPopulationMgr::UpdateCohort(uint32 diff)")
     calibration = _function_body(
-        world, "void BotWorldPopulationMgr::UpdateCalibrationBot"
+        CALIBRATION_BOT.read_text(encoding="utf-8"), "void BotWorldPopulationMgr::UpdateCalibrationBot"
     )
 
     assert 'CalibrationTargetSpec == "unholy_death_knight"' in update
@@ -141,6 +158,7 @@ def test_unholy_pet_readiness_gates_scoring_and_emits_identity_uptime() -> None:
     assert "ObserveOrdinaryPetSetup(bot)" in calibration
     assert "CalibrationPetObservationReady(petObservation" in calibration
 
+    rows = CALIBRATION_ROWS.read_text(encoding="utf-8")
     for field in (
         "required_pet_created_by_spell_id",
         "required_pet_type",
@@ -161,4 +179,4 @@ def test_unholy_pet_readiness_gates_scoring_and_emits_identity_uptime() -> None:
         "pet_observation_ticks",
         "pet_uptime_ratio",
     ):
-        assert f'\\"{field}\\"' in world
+        assert f'\\"{field}\\"' in rows

@@ -687,6 +687,7 @@ namespace BotWorldPopulationMgrBotState
             std::string BlockedCurrentReason;
             std::string BlockedResolution;
             std::string BlockedResolvedBy;
+            std::string NativeSpellFinishJson; // Callback facts; cached CombatAttempt is not its identity.
             CombatAttemptDiagnostic CombatAttempt;
             RouteProgressDiagnostic RouteProgress;
         };

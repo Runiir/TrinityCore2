@@ -147,6 +147,13 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         bot->GetPositionZ()) && std::isfinite(intent.Z)
         && std::fabs(bot->GetPositionZ() - intent.Z)
             <= BotWorldMovement::NativeFloorTolerance;
+    auto controlAdmission = [&](PathGenerator const& candidatePath,
+        bool completePrimary = false)
+    {
+        return BotWorldMovement::AdmitNativePathControls(candidatePath.GetPath(),
+            intent.Owner, bot->GetPositionZ(), intent.Z, strictNativeDescent,
+            intent.AllowNativeLongPath, completePrimary);
+    };
     bool const sameLevelLocalMechanicProgress =
         BotWorldMovement::AllowsSameLevelLocalMechanicProgress(intent.Owner,
             sameLevelDeclaredFloorFallback, currentGoalDistance,
@@ -214,7 +221,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         controls = BotWorldMovement::ObserveNativePathControls(
             proofPath.GetPath(), "world");
         observation = diagnoseCompleteNativePath(pathOk, proofPath, point);
-        if (!observation.Calculated || !observation.Complete)
+        if (!observation.Calculated || !observation.Complete
+            || !controlAdmission(proofPath).Accepted)
             return false;
         verifiedEndpoint = proofPath.GetActualEndPosition();
         bool const boundedEndpoint =
@@ -282,7 +290,7 @@ bool BotWorldPopulationMgr::PlanMovementPath(
         BotWorldMovement::NativePathProofObservation proof;
         proof = diagnoseCompleteNativePath(true, candidatePath,
             G3D::Vector3(intent.X, intent.Y, intent.Z));
-        if (!proof.Accepted)
+        if (!proof.Accepted || !controlAdmission(candidatePath).Accepted)
             return false;
         verifiedEndpoint = candidatePath.GetActualEndPosition();
         if (!acceptPoint(verifiedEndpoint))
@@ -302,6 +310,10 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     nativeProof = diagnoseCompleteNativePath(pathOk, path,
         G3D::Vector3(intent.X, intent.Y, intent.Z));
     primaryNativeProof = nativeProof;
+    BotWorldMovement::NativePathControlAdmission const primaryControls =
+        controlAdmission(path, nativeProof.Complete);
+    if (primaryControls.Terminal)
+        return reject(primaryControls.RejectReason, primaryControls.Gate);
     if (intent.HazardEscape)
     {
         G3D::Vector3 const& endpoint = path.GetActualEndPosition();
@@ -486,7 +498,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                     candidateZ, false))
                     continue;
                 PathType const stepType = stepPath.GetPathType();
-                if (!BotWorldMovement::NativePathCanProvideProgress(stepType))
+                if (!BotWorldMovement::NativePathCanProvideProgress(stepType)
+                    || !controlAdmission(stepPath).Accepted)
                     continue;
                 auto considerStepPoint = [&](G3D::Vector3 const& point,
                     bool backedOff)
