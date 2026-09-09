@@ -1,0 +1,173 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "70f70a9be6990bb83cdba622cbd89085d4a01374",
+  "archive_sha256": "872ad51f3bd8e5dc42d00922e9502a3f920b24b98f903302f3d4e454d64e515c",
+  "archive_bytes": 1804640,
+  "dvc_pointer": "artifacts/cata_raid_program/calibration_marksmanship_hunter_70f70a9be6_20260909.tar.gz.dvc",
+  "remote_download_sha256": "872ad51f3bd8e5dc42d00922e9502a3f920b24b98f903302f3d4e454d64e515c",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "terminal_reason": "infrastructure_loss",
+  "cleanup_passed": true,
+  "postrun_build_receipt_verified": true,
+  "members": [
+    {
+      "path": "build-preflight-70f70a9be6/configure.log",
+      "bytes": 15534,
+      "sha256": "d237846229830fa201945d21a05b390579fa8f71b5bbb49aa1987bca1d811ea9"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/configure_receipt.json",
+      "bytes": 13616,
+      "sha256": "1071a43da0663779fd40bae2e40c4dc4239f2a001f22738fe5361f7ac37c3bc5"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/configure_verification.json",
+      "bytes": 536,
+      "sha256": "fadf4109ed6368e3544c5b41247e6b9fb4475e325523526cffbf5a90dd24ee35"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/map-0-asset-preflight.json",
+      "bytes": 6041883,
+      "sha256": "1f31f2305ae19a04b026d1beb2196f4135392aed0b92a4223aef21f05108f841"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/map-669-asset-preflight.json",
+      "bytes": 5454509,
+      "sha256": "2909aa51dc4bed43029d4f67a6407721957615235722abf6b36d06f34588ff3b"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "a40285656f70802adb6c09539905115bad3442c0141f5c560654e5853d144040"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/review-and-reference-context/blacksmithing-socket-implementation-review.md",
+      "bytes": 4650,
+      "sha256": "fa31c3a10c571688a01dc1f7e4e90ca4a401630854b4a920be043089f183f363"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/review-and-reference-context/blacksmithing-socket-rematerialization-review.md",
+      "bytes": 7073,
+      "sha256": "0f8c6ef0acd0993bdea714ff58004f8716af2c58f85f4cb8371838e5ff08b7fc"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/review-and-reference-context/calibration-consumable-reset-implementation-review.md",
+      "bytes": 2988,
+      "sha256": "f6c68dd2737552e2640918d5feb13d9adae5b5f57226f05fcd1a69db2549edd2"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/review-and-reference-context/calibration-startup-readiness-implementation-review.md",
+      "bytes": 4282,
+      "sha256": "fcce2e6bb07c7ab98160214e727b14efdf686439052ebb2eb766bb5a6d03257b"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/review-and-reference-context/current-reference-workspace-implementation-review.md",
+      "bytes": 3304,
+      "sha256": "d7d73b58601cfd951076ab83196d81697f61855d74066c733dcabca0914b582d"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/review-and-reference-context/native-pet-warmup-implementation-review.md",
+      "bytes": 3030,
+      "sha256": "0af7f96c5cd40e5489cea9143e611c6bdea1d066d565e098faa753a01a275d05"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/review-and-reference-context/prepull-observation-implementation-review.md",
+      "bytes": 5208,
+      "sha256": "4095c7f6c54645027203f6ef61da73703034c07859c9d37b4d5316641dc698db"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/review-and-reference-context/reference-v3-clean-check-complete.log",
+      "bytes": 35,
+      "sha256": "531f073f9a63bd14c3e4fbbfffefeeef5d0e6439b5c176a5a694c052043330b8"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "d484e7a5bce8b9def077e1cabf5de035d3d027950a63dfe49dd9c79b470e787f"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/worldserver_build.log",
+      "bytes": 31157,
+      "sha256": "9a22f3f33e0ce97361e35ca00c74fefb873b00ec2b1d6bf30514256d7b7b16c0"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/worldserver_build_receipt.json",
+      "bytes": 24242,
+      "sha256": "16110a336baf313bca3a91d8a975612bf7435fb465c7bfde11dbe5eb616858ee"
+    },
+    {
+      "path": "build-preflight-70f70a9be6/worldserver_build_verification.json",
+      "bytes": 536,
+      "sha256": "f30f20ac5f2157a350e4ac3b63ef868b14710f7dc9e41e75e5813d02da943ce4"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-70f70a9be6/cleanup_readback.json",
+      "bytes": 1024,
+      "sha256": "f085bc226d7e809989357a55054e0d89a14081928db39ce6660763554d2e7991"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-70f70a9be6/closed_summary.json",
+      "bytes": 687,
+      "sha256": "a988a5e822544aaea109d462e9f900be5e55585f227cfc9e60455b7feb92830d"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-70f70a9be6/commands.txt",
+      "bytes": 203,
+      "sha256": "9548b79c11c9d5735e9f7152f16d90026c3d0e2006bdb2fb329dd3d2e9135852"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-70f70a9be6/dps-review/failed-prelaunch-review.md",
+      "bytes": 3363,
+      "sha256": "30d089dd1de198e0af848af96c984fc961476f72c75c5c7d5242e8245da23ea6"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-70f70a9be6/worldserver.validation.conf",
+      "bytes": 156993,
+      "sha256": "90a34382278bfa71faa94a07ad98aa8b89c4d8debad0101d451b25756cfa30dd"
+    },
+    {
+      "path": "run-spec-calibration.py",
+      "bytes": 2696,
+      "sha256": "67b80e243b7b52b421c46f08be89263f0c8e58a8a99087fedc53aa1ec4503ae9"
+    },
+    {
+      "path": "publish-spec-calibration.py",
+      "bytes": 3613,
+      "sha256": "25e94de1679a437657eb563091dbd3c488703480d5ce6db8076039d730a087cc"
+    },
+    {
+      "path": "evict-spec-calibration.py",
+      "bytes": 1782,
+      "sha256": "770d48354a214610a8de89064d49168c991544a5c0ee1758cd2bd3e5af68471c"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-launch-70f70a9be6.json",
+      "bytes": 2306,
+      "sha256": "7830deebdb1a100788e5cbf2d3a827b90e51d186ec3fe492d9953580a6889fc9"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-console-70f70a9be6.log",
+      "bytes": 2912,
+      "sha256": "f7f2e68716c9fe37e1a33c317f2c20c1655d073125b840fe3d9877b5a2181527"
+    },
+    {
+      "path": "calibration-marksmanship_hunter-postbuild-70f70a9be6.json",
+      "bytes": 537,
+      "sha256": "45f220d68a571e4cb7b738bb2d81718ceacdd2c3ec0d4bda0db4eaca2ee62816"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": []
+}

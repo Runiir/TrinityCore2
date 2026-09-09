@@ -495,6 +495,7 @@ def runtime_safe_enchantments(
     item: dict[str, Any],
     gem_mapping: dict[int, int] | None = None,
     dbc_dir: Path = DEFAULT_DBC_DIR,
+    *, socket_authority=None,
 ) -> str:
     values = [0] * 45
     raw = str(item.get("enchantments") or "").split()
@@ -505,7 +506,7 @@ def runtime_safe_enchantments(
         values[0] = int(item.get("enchant_id") or 0)
     gem_item_ids = [int(value or 0) for value in item.get("gem_item_ids", [])]
     gem_enchant_ids = [int(value or 0) for value in item.get("gem_enchant_ids", [])]
-    gem_mapping = gem_mapping if gem_mapping is not None else gem_item_enchant_map()
+    gem_mapping = gem_mapping if gem_mapping is not None else gem_item_enchant_map(dbc_dir)
     gem_pairs = list(zip(gem_item_ids, gem_enchant_ids))
     verified_socket_mapping = any(gem_item_id > 0 for gem_item_id, _ in gem_pairs) \
         and len(gem_item_ids) <= 3 \
@@ -567,7 +568,7 @@ def runtime_safe_enchantments(
             values[PRISMATIC_ENCHANTMENT_FIELD_OFFSET] = 0
     if int(item.get("slot", -1)) in (8, 9):
         from tools.bot_ml.wowsims_gear_binding import resolve_prismatic_socket
-        socket = resolve_prismatic_socket(item)
+        socket = resolve_prismatic_socket(item, socket_authority=socket_authority)
         values[PRISMATIC_ENCHANTMENT_FIELD_OFFSET] = socket['creator_enchant_id'] if socket else 0
     if int(item.get("reforge_id") or 0):
         values[24] = int(item["reforge_id"])
@@ -656,16 +657,19 @@ def load_config_with_bwd_diagnostic_shards(path: Path, fixture_path: Path) -> di
     return build_diagnostic_provisioning_config(config, fixture)
 
 
-def load_gear_profiles(path: Path | None) -> dict[str, Any]:
+def load_gear_profiles(path: Path | None, *, socket_authority=None, profile_ids=None, dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[str, Any]:
     if not path or not path.exists():
         return {}
     payload = json.loads(path.read_text(encoding="utf-8"))
-    profiles = dict(payload.get("profiles", {}))
+    profiles = {key: value for key, value in payload.get("profiles", {}).items()
+                if profile_ids is None or key in profile_ids}
     if payload.get("slot_map") or DEFAULT_WOWSIMS_GEAR_PROFILES.is_file():
         overlay = payload if payload.get("slot_map") else json.loads(DEFAULT_WOWSIMS_GEAR_PROFILES.read_text(encoding="utf-8"))
         slot_map = [int(slot) for slot in overlay.get("slot_map", [])]
         gem_enchantments = {int(item): int(enchant) for item, enchant in overlay.get("gem_enchantments", {}).items()}
         for name, source_profile in overlay.get("profiles", {}).items():
+            if profile_ids is not None and name not in profile_ids:
+                continue
             equipment = []
             inventory_types = {int(slot): int(value) for slot, value in source_profile.get("inventory_types", {}).items()}
             for index, source_item in enumerate(source_profile.get("items", [])):
@@ -673,7 +677,7 @@ def load_gear_profiles(path: Path | None) -> dict[str, Any]:
                     continue
                 slot = slot_map[index]
                 from tools.bot_ml.wowsims_gear_binding import resolve_prismatic_socket
-                resolve_prismatic_socket({**source_item, "slot": slot})
+                resolve_prismatic_socket({**source_item, "slot": slot}, socket_authority=socket_authority)
                 gem_items = [int(gem) for gem in source_item.get("gems", [])]
                 gem_enchant_ids = [gem_enchantments.get(gem, 0) for gem in gem_items]
                 runtime_temp_enchant = int(source_item.get("runtime_temp_enchant") or source_item.get("temp_enchant") or 0)
@@ -699,7 +703,9 @@ def load_gear_profiles(path: Path | None) -> dict[str, Any]:
                     "inventory_type": inventory_types.get(slot, 0),
                     "preserve_socket_enchantments": True,
                 }
-                item["enchantments"] = runtime_safe_enchantments(item)
+                item["enchantments"] = runtime_safe_enchantments(
+                    item, gem_mapping=gem_item_enchant_map(dbc_dir),
+                    dbc_dir=dbc_dir, socket_authority=socket_authority)
                 equipment.append(item)
             profiles[name] = {"equipment": equipment, "source": source_profile.get("source", {}), **({"profession_setup": source_profile["profession_setup"]} if "profession_setup" in source_profile else {})}
     return profiles

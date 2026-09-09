@@ -3,6 +3,15 @@
 Current objective: resolve roster DPS, continuing past individual repair acceptance.
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
+Current frozen source `70f70a9be6` built successfully. The first Hunter launch
+stopped before worldserver startup, scoring or database mutation because new
+profession admission still reads DBC from the frozen checkout (DPS-013).
+Fresh cleanup readback passes. The repaired full preparation caller uses frozen
+profession authority and configured native DBC through nested gear loaders.
+Independent review, 90 tests and the actual selected-Hunter dry preparation
+pass; no class DPS result exists for the failed attempt. The new 16-spec reference cohort is fully promoted,
+clean-verified and remotely reconstructed. Its four canary DPS values are unchanged.
+
 Source `90a181db01` is committed, pushed and built. Affliction and Fire each
 completed exactly 300 scoring seconds with native exit 0, fresh offline/idle
 cleanup and verified post-run binary receipts. No worldserver is running.

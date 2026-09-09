@@ -58,7 +58,11 @@ field names. A diagnostic `bots` array is not a status count. Preserve explicit
 zero values and test newer inactive or malformed status after older readiness.
 
 Review the actual launch-to-consumer path, including every identity used to select
-the runtime actor and its inputs. Match each check to its observation time: prepull
+the runtime actor and its inputs. For frozen-checkout admission, exercise the
+complete preparation caller with default checkout data absent, including nested
+gear loaders and both dry-run and apply paths. Offline reference validation uses
+frozen authority; native preparation may use the actual configured, verified
+DataDir. A fixture-loader-only test does not prove the launch binds its data root. Match each check to its observation time: prepull
 readiness uses the scoring-start snapshot; consuming an item during combat does
 not invalidate that earlier readiness. Return all known blocking findings together;
 do not end the first review after checking only one identity field.

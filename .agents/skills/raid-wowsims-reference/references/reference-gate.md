@@ -15,6 +15,9 @@ Advance only in this order:
    object verified.
 5. `reconstructed`: fresh checkout, targeted DVC hydration, source rebuild,
    request validation, and result re-execution reproduce the recorded identity.
+   Reconstruction receipt path arguments are relative to the repository. Commit
+   every referenced process log, including files covered by general log ignores,
+   before running the final promotion check from a clean later commit.
 6. `promoted`: all 16 entries bind the same request catalog and DVC bundle.
 
 Fail closed on a missing receipt, mixed catalog hash, changed DVC directory

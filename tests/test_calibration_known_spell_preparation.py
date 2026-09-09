@@ -6,6 +6,8 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+from tools.bot_ml.phase8_fixture_contract import load_materialized_fixture_contract
 from tools.bot_ml import run_live_bot_validation as live
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -260,7 +262,7 @@ def test_invalid_profession_requirements_main_rejects_before_any_mutation(tmp_pa
     assert db.commits == db.rollbacks == 0
 
 
-def test_other_canonical_profession_is_reconciled_and_correct_row_is_noop(tmp_path, monkeypatch):
+def test_profession_outside_frozen_authority_rejects_before_mutation(tmp_path, monkeypatch):
     catalog = json.loads(TARGETS.read_text())
     enhancement = next(t['provisioning_bot'] for t in catalog['targets'] if t['spec_target_id'] == 'enhancement_shaman')
     def leatherworking(bot):
@@ -268,11 +270,10 @@ def test_other_canonical_profession_is_reconciled_and_correct_row_is_noop(tmp_pa
         bot['profession_equipment'] = enhancement['profession_equipment']
     path = mutated_catalog(tmp_path, leatherworking)
     db = Database(expected_spells(tmp_path), skills={})
-    replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)
-    assert db.skill_writes == [(1304, 165, 525, 525)]
-    report = replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)['calibration_known_spells']
-    assert report['reconciled_profession_skills'] == []
-    assert db.skill_writes == [(1304, 165, 525, 525)]
+    with pytest.raises(ValueError, match='unknown permanent enchant: 4190'):
+        replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)
+    assert db.connections == 0 and not db.skill_writes and not db.writes
+
 
 
 @pytest.mark.parametrize('dry_run', [False, True])
@@ -301,11 +302,12 @@ def test_session_does_not_add_profession_preflight_owner(tmp_path, monkeypatch):
     assert db.connections == 0 and not db.skill_writes
 
 
-@pytest.mark.parametrize('spec', [t['spec_target_id'] for t in json.loads(TARGETS.read_text())['targets']])
-def test_every_current_canonical_target_passes_readonly_preflight(tmp_path, monkeypatch, spec):
+@pytest.mark.parametrize('spec', sorted(load_materialized_fixture_contract()[0]['specs']))
+def test_every_frozen_cohort_target_passes_readonly_preflight(tmp_path, monkeypatch, spec):
     monkeypatch.setattr(live, 'connect_mysql', lambda _: pytest.fail('preflight connected to database'))
     monkeypatch.setattr(live, 'database_url_from_worldserver_conf',
                         lambda *_: pytest.fail('preflight resolved database configuration'))
+    (tmp_path / "world.conf").write_text(f'DataDir = "{ROOT / "data"}"\n')
     result = live.prepare_calibration_known_spells(
         tmp_path, tmp_path/'world.conf', spec, TARGETS,
         apply=False, pool_tag='all_spec_candidate_pool',
@@ -341,6 +343,7 @@ class SocketDatabase(Database):
 
 
 def dps011_preparation_fixture(tmp_path):
+    (tmp_path / "world.conf").write_text(f'DataDir = "{ROOT / "data"}"\n')
     from test_profession_enchant_setup import dps011_corrected_documents
     from tools.bot_ml.build_validation_provisioning import load_gear_profiles
     paths, catalog, _ = dps011_corrected_documents(tmp_path)
@@ -450,3 +453,79 @@ def test_dps011_missing_both_profession_fields_cannot_hide_profile_socket_requir
     with pytest.raises(ValueError, match='profile/catalog equipment mismatch'):
         replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)
     assert db.connections == 0 and db.preparation_order == []
+
+
+@pytest.mark.parametrize('dry_run', [True, False])
+def test_frozen_socket_preparation_uses_validated_authority_without_ambient_data(tmp_path, monkeypatch, dry_run):
+    from tools.bot_ml import wowsims_gear_binding as binding
+    from tools.bot_ml import build_validation_provisioning as provisioning
+    from tools.bot_ml.phase8_fixture_contract import load_materialized_fixture_contract
+    path, target, rows, expected = dps011_preparation_fixture(tmp_path)
+    contract, digest = load_materialized_fixture_contract()
+    def forbidden(*args, **kwargs):
+        pytest.fail('frozen preparation attempted ambient DBC access')
+    monkeypatch.setattr(binding, 'native_socket_authority', forbidden)
+    monkeypatch.setattr(binding, 'profession_enchant_rows', forbidden)
+    monkeypatch.setattr(binding, 'load_wdbc', forbidden)
+    for loader in ('gem_item_enchant_map', 'item_socket_metadata', 'gem_enchant_color_map'):
+        original = getattr(provisioning, loader)
+        def bound_reader(dbc_dir=None, *, original=original):
+            assert dbc_dir == ROOT / 'data/dbc/enUS'
+            return original(dbc_dir)
+        monkeypatch.setattr(provisioning, loader, bound_reader)
+    monkeypatch.setattr(binding, 'REPO_ROOT', tmp_path / 'frozen_without_data')
+    db = SocketDatabase(expected['expected_spell_ids'], rows)
+    db.name = target['provisioning_bot']['name']
+    report = replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path,
+                                     dry_run=dry_run)['calibration_known_spells']
+    assert report['profession_fixture_contract_sha256'] == digest
+    assert report['profession_socket_authority_sha256'] == contract['materialization']['profession_enchant_authority']['socket_authority']['content_sha256']
+    assert len(report['expected_socket_items']) == 2
+    if dry_run:
+        assert not db.connections and not db.item_writes and not db.skill_writes
+    else:
+        assert db.commits == 1 and not db.rollbacks
+        assert db.skill_writes == [(1294, 164, 525, 525)]
+        assert all(report['readback'][key] for key in ('passed', 'profession_skills_passed', 'socket_items_passed'))
+
+
+@pytest.mark.parametrize('damage', ['missing', 'wrong_hash'])
+def test_configured_socket_data_rejects_before_database_access(tmp_path, monkeypatch, damage):
+    path, target, rows, _ = dps011_preparation_fixture(tmp_path)
+    data = tmp_path / 'configured_data'
+    dbc = data / 'dbc/enUS'
+    dbc.mkdir(parents=True)
+    if damage == 'wrong_hash':
+        (dbc / 'Item-sparse.db2').write_bytes(b'wrong client data')
+    # Exercise the existing config-relative DataDir parser.
+    (tmp_path / 'world.conf').write_text('DataDir = "configured_data"\n')
+    db = SocketDatabase([], rows)
+    db.name = target['provisioning_bot']['name']
+    with pytest.raises(ValueError, match='configured socket data'):
+        replay_main_preparation(tmp_path, monkeypatch, db, catalog_path=path)
+    assert db.connections == 0 and not db.preparation_order
+
+
+@pytest.mark.parametrize('spec', [
+    spec for spec, row in load_materialized_fixture_contract()[0]['materialization']['live_target_catalog']['selected_rows'].items()
+    if any(requirement.get('socket_creators') for requirement in
+           row['provisioning_bot'].get('profession_setup', {}).get('requirements', []))
+])
+def test_selected_frozen_socket_materialization_preserves_all_native_enchantment_fields(tmp_path, spec):
+    from tools.bot_ml.build_validation_provisioning import load_gear_profiles
+    catalog = json.loads(TARGETS.read_text())
+    target = next(row for row in catalog['targets'] if row['spec_target_id'] == spec)
+    profiles = TARGETS.parent / 'wowsims_cata_p4_gear_profiles.json'
+    profile_id = target['gear_profile_id']
+    canonical = load_gear_profiles(profiles)[profile_id]['equipment']
+    (tmp_path / 'world.conf').write_text(f'DataDir = "{ROOT / "data"}"\n')
+    report = live.prepare_calibration_known_spells(tmp_path, tmp_path/'world.conf', spec,
+        TARGETS, pool_tag='all_spec_candidate_pool')
+    expected = {row['slot']: row for row in canonical}
+    assert len(report['expected_socket_items']) == 2
+    for item in report['expected_socket_items']:
+        assert item == {'slot': item['slot'], 'item_entry': expected[item['slot']]['item_id'],
+                        'enchantments': expected[item['slot']]['enchantments']}
+        assert len(item['enchantments'].split()) == 45
+    assert set(report['runtime_socket_data']['source_sha256']) == {
+        'Item-sparse.db2', 'SpellItemEnchantment.dbc', 'GemProperties.dbc'}

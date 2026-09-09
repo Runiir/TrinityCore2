@@ -1441,6 +1441,15 @@ def prepare_calibration_known_spells(
         from .wowsims_gear_binding import resolve_profession_setup, merge_profession_skills, canonical_wowsims_manifest
     except ImportError:
         from wowsims_gear_binding import resolve_profession_setup, merge_profession_skills, canonical_wowsims_manifest
+    try:
+        from .phase8_fixture_contract import load_materialized_fixture_contract
+    except ImportError:
+        from phase8_fixture_contract import load_materialized_fixture_contract
+    fixture_contract, fixture_sha256 = load_materialized_fixture_contract()
+    profession_authority = fixture_contract["materialization"]["profession_enchant_authority"]
+    socket_authority = profession_authority["socket_authority"]
+    enchant_rows = {int(key): tuple(value) for key, value in
+                    profession_authority["enchant_requirements"].items()}
     # Both absent is the catalog's no-required-profession representation.
     # A declared pair remains authoritative; bot.skills is not its substitute.
     if "profession_setup" not in bot and "profession_equipment" not in bot:
@@ -1453,18 +1462,21 @@ def prepare_calibration_known_spells(
         declared_setup = bot["profession_setup"]
     profession_setup = resolve_profession_setup(
         profession_equipment, declared=declared_setup,
+        enchant_rows=enchant_rows, socket_authority=socket_authority,
     )
     if json.dumps(profession_setup, sort_keys=True) != json.dumps(declared_setup, sort_keys=True):
         raise ValueError(f"{target_spec}: profession metadata types do not match canonical requirements")
     profession_skills = merge_profession_skills([], profession_setup)
     socket_items = []
+    runtime_socket_data = None
     socket_profile_path = target_catalog_path.parent / "wowsims_cata_p4_gear_profiles.json"
     profiles_document = (json.loads(socket_profile_path.read_text(encoding="utf-8"))
                          if socket_profile_path.is_file() else None)
     profile_id = target.get("gear_profile_id")
     source_profile = (profiles_document or {}).get("profiles", {}).get(profile_id)
     source_requires_sockets = bool(source_profile and any(row.get("socket_creators") for row in
-        resolve_profession_setup(source_profile["items"])["requirements"]))
+        resolve_profession_setup(source_profile["items"], enchant_rows=enchant_rows,
+                                 socket_authority=socket_authority)["requirements"]))
     if source_requires_sockets or any(row.get("socket_creators") for row in profession_setup["requirements"]):
         if profiles_document is None:
             raise ValueError(f"{target_spec}: missing canonical socket profile")
@@ -1475,7 +1487,21 @@ def prepare_calibration_known_spells(
             raise ValueError(f"{target_spec}: socket profile manifest hash mismatch")
         if profile.get("items") != profession_equipment or profile.get("profession_setup") != profession_setup:
             raise ValueError(f"{target_spec}: socket profile/catalog equipment mismatch")
-        materialized = load_gear_profiles(socket_profile_path)[profile_id]["equipment"]
+        from tools.raid_program.runtime_asset_closure import data_dir_from_worldserver_config
+        dbc_dir = data_dir_from_worldserver_config(worldserver_conf) / "dbc/enUS"
+        runtime_hashes = {}
+        for name in ("Item-sparse.db2", "SpellItemEnchantment.dbc", "GemProperties.dbc"):
+            data_path = dbc_dir / name
+            if not data_path.is_file():
+                raise ValueError(f"{target_spec}: configured socket data missing: {data_path}")
+            digest = sha256_file(data_path)
+            frozen_digest = socket_authority["sources"].get("data/dbc/enUS/" + name)
+            if frozen_digest is not None and digest != frozen_digest:
+                raise ValueError(f"{target_spec}: configured socket data hash mismatch: {name}")
+            runtime_hashes[name] = digest
+        runtime_socket_data = {"dbc_dir": str(dbc_dir), "source_sha256": runtime_hashes}
+        materialized = load_gear_profiles(socket_profile_path, socket_authority=socket_authority,
+                                          profile_ids={profile_id}, dbc_dir=dbc_dir)[profile_id]["equipment"]
         socket_items = [item for item in materialized if int(item["slot"]) in (8, 9)
                         and int(item["enchantments"].split()[18]) in (3717, 3723)]
         if not socket_items:
@@ -1484,6 +1510,9 @@ def prepare_calibration_known_spells(
         "schema": "bot_calibration_known_spells_v1", "target_spec": target_spec,
         "character_name": bot["name"], "pool_tag": bound_pool,
         "target_catalog": str(target_catalog_path),
+        "profession_fixture_contract_sha256": fixture_sha256,
+        "runtime_socket_data": runtime_socket_data,
+        "profession_socket_authority_sha256": socket_authority["content_sha256"],
         "action_profile_manifest": str(manifest_path), "expected_spell_ids": spells,
         "target_catalog_sha256": sha256_file(target_catalog_path),
         "action_profile_manifest_sha256": sha256_file(manifest_path),
