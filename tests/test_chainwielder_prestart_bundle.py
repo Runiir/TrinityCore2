@@ -413,6 +413,12 @@ def _generic_profile_range_fixture(tmp_path: Path) -> dict[str, object]:
         Path(__file__).resolve().parents[1] / TRACKED_LEDGER_RELATIVE_PATH,
         tracked_ledger,
     )
+    # Bind the copied bank to this fixture's canonical config before sealing
+    # its source identity; the evolving tracked ledger may name an older config.
+    config_identity = recurrence_ledger._canonical_config_identity()
+    ledger_value = json.loads(tracked_ledger.read_text(encoding="utf-8"))
+    ledger_value["regression_bank"]["current_identity"]["config_identity"] = config_identity
+    _write_json(tracked_ledger, ledger_value)
     _git(root, "add", TRACKED_LEDGER_RELATIVE_PATH.as_posix())
     _git(root, "commit", "-m", "track generic recurrence ledger")
 
@@ -444,7 +450,6 @@ def _generic_profile_range_fixture(tmp_path: Path) -> dict[str, object]:
     assert generic_row["revision"] == 1
     assert generic_row["command"] == PROFILE_COMBAT_RANGE_FIXTURE_COMMAND
 
-    config_identity = recurrence_ledger._canonical_config_identity()
     stdout_sha256 = hashlib.sha256(b"manifest-derived fixture stdout").hexdigest()
     stderr_sha256 = hashlib.sha256(b"manifest-derived fixture stderr").hexdigest()
     suite_rows = []

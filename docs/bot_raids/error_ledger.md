@@ -47,6 +47,8 @@ what has already failed. Do not create a new handoff document merely to copy it.
 | DPS-022 | Independently live accepted on Hunter9ed | Replacement Aimed 82928 has zero base cast time but ScalingID 578 overrides it with 2,400 ms. The below-E90 1,000 ms gate correctly rejects it. | Hunter9ed lands12 instant82928 casts after30seconds, with12/12 Fire activations/deactivations; combined Aimed damage1,037,243 is98.528% of exact. 30,568.92DPS/0HPS. Previous base-only fixture missed scaling precedence. |
 
 
+| TEST-001 | Test-only repair independently accepted | Six capture tests copied a live recurrence bank with an old declared config identity, then supplied the current identity; the real evaluator correctly rejected that mismatch before capture. | Rebind only the temporary fixture bank before committing/sealing it. All24 affected cases pass with negative checks intact. Production gates and the real qualification bank remain unchanged; real qualification requires current evidence. |
+
 CAP-001 closes the observed equal-partition truncation. The 64 MiB capture cap
 remains bounded; it is not a promise that every larger future payload fits. A
 separate audit is checking remaining silent-loss paths without reopening the
