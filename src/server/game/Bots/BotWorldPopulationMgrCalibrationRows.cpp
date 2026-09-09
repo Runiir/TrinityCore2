@@ -839,8 +839,9 @@ void BotWorldPopulationMgr::AppendCombatCalibrationBotRowsJson(
         else
             AppendCalibrationEffectiveStatsJson(
                 json, CalibrationMetrics::EffectiveStatVector());
-        json << "}"
-             << ",\"stats\":{\"strength\":" << (bot ? bot->GetStat(STAT_STRENGTH) : 0.0f)
+        json << "}";
+        AppendCalibrationOwnerAurasJson(json, metrics);
+        json << ",\"stats\":{\"strength\":" << (bot ? bot->GetStat(STAT_STRENGTH) : 0.0f)
              << ",\"agility\":" << (bot ? bot->GetStat(STAT_AGILITY) : 0.0f)
              << ",\"intellect\":" << (bot ? bot->GetStat(STAT_INTELLECT) : 0.0f)
              << ",\"melee_attack_power\":" << (bot ? bot->GetTotalAttackPowerValue(BASE_ATTACK) : 0.0f)

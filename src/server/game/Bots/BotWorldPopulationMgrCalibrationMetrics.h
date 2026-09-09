@@ -466,6 +466,28 @@
         bool InitialNeutralEclipseObserved = false;
         bool InitialPetResourceRequired = false;
         bool InitialPetResourceObserved = false;
+        struct OwnerAuraObservation
+        {
+            uint32 SpellId = 0;
+            uint32 SampleCount = 0, ActiveSamples = 0, InactiveSamples = 0;
+            uint32 NonIncreasingTimestampSamples = 0;
+            uint64 FirstSampleAtMs = 0, LastSampleAtMs = 0, MaximumSampleGapMs = 0;
+            bool LastActive = false, ScoringStartObserved = false, ScoringStartActive = false;
+            uint64 ScoringStartCasterGuid = 0;
+            bool ScoringStartEffect0Present = false;
+            uint32 ScoringStartAuraType = 0;
+            int32 ScoringStartAmount = 0;
+            uint8 ScoringStartActiveEffectMask = 0, LastActiveEffectMask = 0;
+            uint64 FirstActiveAtMs = 0, LastActiveAtMs = 0;
+            uint32 ActivationTransitionCount = 0, DeactivationTransitionCount = 0;
+            uint32 OwnerCasterSamples = 0, PrimaryPetCasterSamples = 0, OtherOrMissingCasterSamples = 0;
+            uint64 FirstCasterGuid = 0, LastCasterGuid = 0;
+            uint32 Effect0Samples = 0, MissingEffect0Samples = 0;
+            uint32 MinimumAuraType = 0, MaximumAuraType = 0;
+            int32 MinimumAmount = 0, MaximumAmount = 0;
+            EffectiveStatVector FirstActivePlayerStats;
+        };
+        std::array<OwnerAuraObservation, 2> OwnerAuraObservations;
         EffectiveStatVector ScoringStartPlayerStats;
         EffectiveStatVector ScoringStartPetStats;
         bool PreScorePersistentSetupReady = false;

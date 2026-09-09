@@ -873,6 +873,10 @@ private:
         uint64 observedAtMs, CalibrationMetrics::EffectiveStatVector& stats);
     static void AppendCalibrationEffectiveStatsJson(std::ostringstream& json,
         CalibrationMetrics::EffectiveStatVector const& stats);
+    static void ObserveCalibrationOwnerAuras(CalibrationMetrics& metrics,
+        Player* bot, uint64 observedAtMs, bool scoringStart = false);
+    static void AppendCalibrationOwnerAurasJson(std::ostringstream& json,
+        CalibrationMetrics const* metrics);
     void AppendCombatCalibrationSummaryJson(std::ostringstream& json,
         uint64 nowMs,
         std::function<void(std::map<uint32, CalibrationMetrics> const&, bool)> const& writeBots) const;

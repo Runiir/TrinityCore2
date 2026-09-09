@@ -396,6 +396,7 @@ void BotWorldPopulationMgr::CompleteCalibrationScoredWindow()
         metrics.LastExternalWindowObservedAtMs = endedMs;
         ObserveCalibrationReferenceConditions(
             metrics, bot, scoredTarget, endedMs);
+        ObserveCalibrationOwnerAuras(metrics, bot, endedMs);
         std::vector<RaidRosterItemIdentity> observedGear;
         std::string observedGearSha256;
         ++metrics.GearIdentitySampleCount;

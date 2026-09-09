@@ -18,8 +18,11 @@ Next repairs are Wild Quiver's wrong proc phase (DPS-015) and Readiness checking
 self health instead of hostile health (DPS-016). Both repairs are independently approved and committed.
 The pet compatibility producer/consumer repair (DPS-017) is also independently
 approved; all 83 affected tests pass after rematerialization. Its corrected
-immutable reference cohort must be generated and promoted before the next run.
-A fixed aggregate owner-aura receipt (OBS-002) is being added to the same build.
+16-spec pet_identity_v4 reference cohort is generated, DVC-published, freshly
+reconstructed and clean-promotion-verified on 47e8dffab0. All simulator request
+bytes are unchanged; Hunter remains 32,838.198 DPS.
+The fixed aggregate owner-aura receipt (OBS-002) is independently approved.
+The joined source batch is ready for one native build and Hunter validation.
 The initial crit gap reflects pre-combat sampling; it does not prove a missing
 Furious Howl cast. No pet AI or damage coefficient repair is admitted.
 No unchanged server retry is needed for post-processing defects.

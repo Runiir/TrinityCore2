@@ -8,7 +8,7 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "DPS-015/016 independently approved and committed; DPS-017 approved and rematerialized; new reference cohort and OBS-002 observation pending before joined build.",
+  "gate_state": "DPS-015/016/017 and OBS-002 independently approved; all 16 v4 references clean-promoted. Ready for one joined native build and Hunter calibration.",
   "first_broken_edge": {
     "id": "wild_quiver_cast_phase_has_no_action_target",
     "owner_classification": "raid_class_mechanics",
@@ -17,7 +17,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "4ff5c84f45a19d785e83ccc945e23777b13081b58f9570b2082e9fc8ec7a6181"
+    "sha256": "9611caf4d31664948c31a4c693b566cda28d46037720abd3f9e5d8508874629d"
   },
   "scope_lock": {
     "objective": "Restore Wild Quiver native proc dispatch and Readiness hostile-health policy; preserve measured identity and coefficient semantics.",
@@ -39,9 +39,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Join independently reviewed Wild Quiver, Readiness and postprocessor repairs; build once and run one bounded Hunter calibration.",
+  "next_action": "Build joined reviewed source once; verify binary, then one exact 300-second Hunter run with dedicated DPS/aura review.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,

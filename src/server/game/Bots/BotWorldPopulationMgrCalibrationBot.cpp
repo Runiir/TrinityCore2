@@ -342,7 +342,10 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         && observationNowMs >= Cohort().CalibrationScoredStartedMs
         && observationNowMs - Cohort().CalibrationScoredStartedMs
             < CalibrationSingleTargetDurationMs)
+    {
         ObserveWillOfUnbinding(metrics, bot, observationNowMs);
+        ObserveCalibrationOwnerAuras(metrics, bot, observationNowMs);
+    }
     if (bot && !Cohort().CalibrationScoredStartedMs
         && !Cohort().CalibrationWindowComplete)
         ++metrics.WarmupUpdateOrdinal;

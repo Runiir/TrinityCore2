@@ -906,6 +906,7 @@ void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
             bot, startedMs, metrics.ScoringStartPlayerStats);
         ObserveCalibrationEffectiveStats(
             bot->GetPet(), startedMs, metrics.ScoringStartPetStats);
+        ObserveCalibrationOwnerAuras(metrics, bot, startedMs, true);
         metrics.WillOfUnbinding =
             CalibrationMetrics::WillOfUnbindingObservation();
         metrics.WillOfUnbinding.ScoringStartIntellect =
