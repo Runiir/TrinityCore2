@@ -574,6 +574,15 @@ def _hunter_pet_projection(
                 {"spell_id": int(raw["id"]), "active": int(raw.get("active", 1))}
             )
     spellbook.sort(key=lambda entry: (entry["spell_id"], entry["active"]))
+    autocasts = [row["spell_id"] for row in spellbook if row["active"] == 193]
+    required_autocasts = pet_setup.get("required_autocast_spell_ids")
+    _require(
+        isinstance(required_autocasts, list)
+        and all(type(value) is int and value > 0 for value in required_autocasts)
+        and required_autocasts == sorted(set(required_autocasts))
+        and set(required_autocasts).issubset(autocasts),
+        "hunter:required_autocasts_not_sorted_unique_enabled_subset",
+    )
     canonical = ";".join(
         f"{entry['spell_id']}:{entry['active']}" for entry in spellbook
     )
@@ -583,16 +592,11 @@ def _hunter_pet_projection(
         "runtime_projection_complete": True,
         "pet_id": 8_700_000 + int(pet["id_offset"]),
         "creature_entry": int(pet["entry"]),
-        "model_id": int(pet["modelid"]),
         "created_by_spell_id": int(pet["created_by_spell"]),
-        "level": int(pet["level"]),
-        "slot": int(pet["slot"]),
-        "active": int(pet["active"]),
         "uptime": 1.0,
-        "talents": copy.deepcopy(pet_setup["talents"]),
         "spellbook": spellbook,
         "spellbook_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
-        "autocast_spell_ids": [23145, 53401, 53434],
+        "autocast_spell_ids": autocasts,
         "power": {"power_type": 2, "mode": "maximum"},
     }
 

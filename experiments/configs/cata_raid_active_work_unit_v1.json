@@ -8,16 +8,16 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": true,
-  "gate_state": "Hunter927 complete: 23,506.897 DPS, 0 HPS. Correct stats and pet admission; Wild Quiver and Readiness repairs active. DPS-014 independently approved.",
+  "gate_state": "DPS-015/016 independently approved and committed; DPS-017 approved and rematerialized; new reference cohort and OBS-002 observation pending before joined build.",
   "first_broken_edge": {
     "id": "wild_quiver_cast_phase_has_no_action_target",
     "owner_classification": "raid_class_mechanics",
     "cause": "CAST phase proc has null actionTarget; handler requires it. HIT phase supplies target but current mask excludes it.",
-    "review_state": "causal_diagnosis_complete_implementation_active"
+    "review_state": "implementation_independently_approved_live_pending"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "6944ce03e79eae04c1822eb35d6ed1cfd93b1b02817bae8f4d1904dad2426487"
+    "sha256": "4ff5c84f45a19d785e83ccc945e23777b13081b58f9570b2082e9fc8ec7a6181"
   },
   "scope_lock": {
     "objective": "Restore Wild Quiver native proc dispatch and Readiness hostile-health policy; preserve measured identity and coefficient semantics.",
@@ -86,7 +86,7 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "pending",
+    "verdict": "APPROVE",
     "scope": "DPS-015 and DPS-016",
     "live_verified": false
   },
@@ -132,7 +132,7 @@
       "review": "native_capture_and_landing_accepted_9423"
     }
   ],
-  "reference_fixture_sha256": "0a8f4cf3ef92e179700e97fc4c7535e2e591f2cb0d0cc9d15245b8bbe283849f",
+  "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "latest_startup_attempt": {
     "source_commit": "27200f36cc",
     "terminal_reason": "infrastructure_loss",
@@ -171,6 +171,7 @@
     "DPS-015",
     "DPS-016",
     "DPS-017",
+    "OBS-002",
     "PERF-002",
     "SETUP-001",
     "OBS-001"

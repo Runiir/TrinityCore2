@@ -1,0 +1,3993 @@
+{
+  "inputs": {
+    "calibration": {
+      "fixture_contract": {
+        "content_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "schema": "phase8_calibration_fixture_contract_v1",
+        "upstream_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6"
+      },
+      "fixture_target": {
+        "bot_spawn_x": -9153.86,
+        "bot_spawn_y": 514.26,
+        "bot_spawn_z": 145.909,
+        "bot_target_distance": 15.0031,
+        "entry": 44548,
+        "expected": {
+          "armor": 11977,
+          "creature_type": 9,
+          "entry": 44548,
+          "level": 88,
+          "max_health": 1000000000,
+          "passive": true,
+          "runtime_max_distance_yards": 15.5,
+          "runtime_min_distance_yards": 14.5
+        },
+        "geometry_validated": true,
+        "isolated_single_target": true,
+        "map_id": 0,
+        "native_dry_land": true,
+        "native_line_of_sight": true,
+        "native_melee_reachable": false,
+        "native_path_reachable": true,
+        "nearest_other_hostile_clearance": 107.1,
+        "observed_at_provisioning": {
+          "armor": 11977,
+          "creature_type": 9,
+          "creature_type_mask": 256,
+          "entry": 44548,
+          "guid": 226,
+          "level": 88,
+          "map_id": 0,
+          "max_health": 1000000000,
+          "observed_at_ms": 1788941592459,
+          "x": -9140,
+          "y": 520,
+          "z": 146.203
+        },
+        "observed_before_scoring": {
+          "armor": 11977,
+          "before_scoring": true,
+          "bot_target_distance": 15.0031,
+          "creature_type": 9,
+          "creature_type_mask": 256,
+          "entry": 44548,
+          "guid": 226,
+          "has_victim": false,
+          "in_combat": false,
+          "level": 88,
+          "map_id": 0,
+          "max_health": 1000000000,
+          "observed_at_ms": 1788941607462,
+          "x": -9140,
+          "y": 520,
+          "z": 146.203
+        },
+        "profile_lane": "ranged",
+        "provisioned_at_ms": 1788941592459,
+        "provisioned_before_scoring": true,
+        "runtime_guid": 226,
+        "scored_passive_observation": {
+          "first_sample_at_ms": 1788941607462,
+          "last_sample_at_ms": 1788941907462,
+          "maximum_sample_gap_ms": 44,
+          "passive": true,
+          "sample_count": 282909,
+          "target_attack_attempt_event_count": 0,
+          "target_attack_event_count": 0,
+          "target_guid": 226,
+          "target_originated_damage_event_count": 0,
+          "victim_observation_sample_count": 0,
+          "window_ended_at_ms": 1788941907462,
+          "window_started_at_ms": 1788941607462
+        },
+        "target_attack_event_count": 0,
+        "target_attack_observation_sample_count": 282909,
+        "x": -9140,
+        "y": 520,
+        "z": 146.203
+      },
+      "normalization": {
+        "buff_basis": "self_provided_consumables",
+        "comparison_policy": "sustained_completed_windows_only",
+        "consumables": true,
+        "dark_intent_base": false,
+        "dark_intent_proc_uptime_pct": 0,
+        "dispersion_cast_cap": 0,
+        "dynamic_consumable_actions": true,
+        "engineering_cooldowns": false,
+        "execute_threshold_windows": {
+          "fixture_only": true,
+          "interval_semantics": "start_inclusive_end_exclusive",
+          "non_certifying": true,
+          "schema": "wowsims_cata_single_target_health_schedule_v1",
+          "source_authority": "pinned_wowsims_cata_core_test_utils_make_single_target_encounter",
+          "source_duration_ms": 300000,
+          "source_duration_variation_ms": 0,
+          "source_execute_proportions": {
+            "20": 0.2,
+            "25": 0.25,
+            "35": 0.35,
+            "90": 0.9
+          },
+          "windows": [
+            {
+              "configured_target_health_pct": 95,
+              "end_ms": 30000,
+              "health_pct_lower_bound": 90,
+              "health_pct_upper_bound": 100,
+              "lower_bound_inclusive": false,
+              "observation": {
+                "damage_event_sample_count": 95,
+                "first_damage_event_elapsed_ms": 335,
+                "first_elapsed_ms": 0,
+                "last_damage_event_elapsed_ms": 29941,
+                "last_elapsed_ms": 29998,
+                "maximum_damage_event": 57892,
+                "maximum_damage_event_max_health": 1000000000,
+                "maximum_observed_health": 950000000,
+                "maximum_observed_max_health": 1000000000,
+                "maximum_pre_damage_health": 950000000,
+                "maximum_projected_post_damage_health": 949999437,
+                "minimum_damage_event_max_health": 1000000000,
+                "minimum_observed_health": 950000000,
+                "minimum_observed_max_health": 1000000000,
+                "minimum_pre_damage_health": 950000000,
+                "minimum_projected_post_damage_health": 949942108,
+                "sample_count": 28295
+              },
+              "phase": "above_90",
+              "start_ms": 0,
+              "upper_bound_inclusive": true
+            },
+            {
+              "configured_target_health_pct": 50,
+              "end_ms": 195000,
+              "health_pct_lower_bound": 35,
+              "health_pct_upper_bound": 90,
+              "lower_bound_inclusive": false,
+              "observation": {
+                "damage_event_sample_count": 650,
+                "first_damage_event_elapsed_ms": 30182,
+                "first_elapsed_ms": 30000,
+                "last_damage_event_elapsed_ms": 194782,
+                "last_elapsed_ms": 194999,
+                "maximum_damage_event": 65205,
+                "maximum_damage_event_max_health": 1000000000,
+                "maximum_observed_health": 500000000,
+                "maximum_observed_max_health": 1000000000,
+                "maximum_pre_damage_health": 500000000,
+                "maximum_projected_post_damage_health": 499999472,
+                "minimum_damage_event_max_health": 1000000000,
+                "minimum_observed_health": 500000000,
+                "minimum_observed_max_health": 1000000000,
+                "minimum_pre_damage_health": 500000000,
+                "minimum_projected_post_damage_health": 499934795,
+                "sample_count": 155666
+              },
+              "phase": "between_35_90",
+              "start_ms": 30000,
+              "upper_bound_inclusive": true
+            },
+            {
+              "configured_target_health_pct": 30,
+              "end_ms": 225000,
+              "health_pct_lower_bound": 25,
+              "health_pct_upper_bound": 35,
+              "lower_bound_inclusive": false,
+              "observation": {
+                "damage_event_sample_count": 128,
+                "first_damage_event_elapsed_ms": 195147,
+                "first_elapsed_ms": 195000,
+                "last_damage_event_elapsed_ms": 224788,
+                "last_elapsed_ms": 224999,
+                "maximum_damage_event": 57428,
+                "maximum_damage_event_max_health": 1000000000,
+                "maximum_observed_health": 300000000,
+                "maximum_observed_max_health": 1000000000,
+                "maximum_pre_damage_health": 300000000,
+                "maximum_projected_post_damage_health": 299999463,
+                "minimum_damage_event_max_health": 1000000000,
+                "minimum_observed_health": 300000000,
+                "minimum_observed_max_health": 1000000000,
+                "minimum_pre_damage_health": 300000000,
+                "minimum_projected_post_damage_health": 299942572,
+                "sample_count": 28204
+              },
+              "phase": "between_25_35",
+              "start_ms": 195000,
+              "upper_bound_inclusive": true
+            },
+            {
+              "configured_target_health_pct": 22,
+              "end_ms": 240000,
+              "health_pct_lower_bound": 20,
+              "health_pct_upper_bound": 25,
+              "lower_bound_inclusive": false,
+              "observation": {
+                "damage_event_sample_count": 61,
+                "first_damage_event_elapsed_ms": 225121,
+                "first_elapsed_ms": 225001,
+                "last_damage_event_elapsed_ms": 239904,
+                "last_elapsed_ms": 239999,
+                "maximum_damage_event": 62984,
+                "maximum_damage_event_max_health": 1000000000,
+                "maximum_observed_health": 220000000,
+                "maximum_observed_max_health": 1000000000,
+                "maximum_pre_damage_health": 220000000,
+                "maximum_projected_post_damage_health": 219999467,
+                "minimum_damage_event_max_health": 1000000000,
+                "minimum_observed_health": 220000000,
+                "minimum_observed_max_health": 1000000000,
+                "minimum_pre_damage_health": 220000000,
+                "minimum_projected_post_damage_health": 219937016,
+                "sample_count": 14146
+              },
+              "phase": "between_20_25",
+              "start_ms": 225000,
+              "upper_bound_inclusive": true
+            },
+            {
+              "configured_target_health_pct": 19,
+              "end_ms": 300000,
+              "health_pct_lower_bound": 0,
+              "health_pct_upper_bound": 20,
+              "lower_bound_inclusive": true,
+              "observation": {
+                "damage_event_sample_count": 229,
+                "first_damage_event_elapsed_ms": 240343,
+                "first_elapsed_ms": 240000,
+                "last_damage_event_elapsed_ms": 299973,
+                "last_elapsed_ms": 299999,
+                "maximum_damage_event": 64603,
+                "maximum_damage_event_max_health": 1000000000,
+                "maximum_observed_health": 190000000,
+                "maximum_observed_max_health": 1000000000,
+                "maximum_pre_damage_health": 190000000,
+                "maximum_projected_post_damage_health": 189999465,
+                "minimum_damage_event_max_health": 1000000000,
+                "minimum_observed_health": 190000000,
+                "minimum_observed_max_health": 1000000000,
+                "minimum_pre_damage_health": 190000000,
+                "minimum_projected_post_damage_health": 189935397,
+                "sample_count": 56596
+              },
+              "phase": "below_20",
+              "start_ms": 240000,
+              "upper_bound_inclusive": false
+            }
+          ]
+        },
+        "external_bis_target_configured": false,
+        "external_power_infusion_source_count": 0,
+        "external_power_infusion_windows_seconds": [],
+        "flask": true,
+        "food_buff_spell_id": 87546,
+        "gear_basis": "equipped_clone_average_item_level",
+        "heroism_window_seconds": 0,
+        "potions": true,
+        "racial_cooldowns": false,
+        "reference_class": "self_provided_baseline",
+        "reference_conditions": false,
+        "synapse_springs_windows_seconds": [],
+        "target_debuffs": false
+      },
+      "scored_ended_at_ms": 1788941907462,
+      "scored_seconds": 300.0,
+      "scored_started_at_ms": 1788941607462,
+      "window_complete": true
+    },
+    "expected_manifest": {
+      "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+      "reference_class": "self_provided_baseline",
+      "reference_dps": 32838.198347018646,
+      "reference_result_key": "generated:marksmanship_hunter:27d8103faf03cfffa87f66f42bbf028639ad91878eae0836d79404178d478826",
+      "request_condition_projection_sha256": "1e45f0dc732c0e8cab505411c3d75e1d8f4a0e6e5c965c3581176236b43b8927",
+      "request_sha256": "682a3cbd45c18cca70b140105590b40fd0e761af426f2b14acc80519075f5cdb",
+      "requirements": [
+        {
+          "condition_class": "gear_source_manifest",
+          "equals": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1",
+          "id": "gear_manifest",
+          "path": "runtime.reference_gear_manifest_sha256",
+          "planned_equals": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1",
+          "planned_path": "reference.gear.transformed_manifest_sha256",
+          "static_verifiability": "catalog_exact"
+        },
+        {
+          "condition_class": "gear_source_manifest",
+          "equals": {
+            "enabled": false,
+            "items": []
+          },
+          "id": "item_swap",
+          "path": "runtime.item_swap_projection",
+          "planned_equals": {
+            "enabled": false,
+            "items": []
+          },
+          "planned_path": "fixture.runtime_expected.item_swap",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "race",
+          "equals": 3,
+          "id": "race",
+          "path": "target.race_id",
+          "planned_equals": 3,
+          "planned_path": "target.provisioning_bot.race",
+          "static_verifiability": "catalog_exact"
+        },
+        {
+          "condition_class": "talents_glyphs",
+          "equals": [
+            19418,
+            19506,
+            19592,
+            19622,
+            23989,
+            34483,
+            34487,
+            34954,
+            35102,
+            35110,
+            52786,
+            53209,
+            53224,
+            53232,
+            53238,
+            82684,
+            83356,
+            83490,
+            83560
+          ],
+          "id": "talents",
+          "path": "target.active_talent_spell_ids",
+          "planned_equals": [
+            {
+              "spell_id": 19418,
+              "talent_id": 9380
+            },
+            {
+              "spell_id": 34954,
+              "talent_id": 9390
+            },
+            {
+              "spell_id": 83356,
+              "talent_id": 9396
+            },
+            {
+              "spell_id": 34483,
+              "talent_id": 9398
+            },
+            {
+              "spell_id": 53224,
+              "talent_id": 9402
+            },
+            {
+              "spell_id": 23989,
+              "talent_id": 9404
+            },
+            {
+              "spell_id": 35102,
+              "talent_id": 9406
+            },
+            {
+              "spell_id": 35110,
+              "talent_id": 9408
+            },
+            {
+              "spell_id": 19506,
+              "talent_id": 9412
+            },
+            {
+              "spell_id": 83490,
+              "talent_id": 9416
+            },
+            {
+              "spell_id": 34487,
+              "talent_id": 9418
+            },
+            {
+              "spell_id": 53232,
+              "talent_id": 9422
+            },
+            {
+              "spell_id": 83560,
+              "talent_id": 9426
+            },
+            {
+              "spell_id": 53209,
+              "talent_id": 9430
+            },
+            {
+              "spell_id": 52786,
+              "talent_id": 9432
+            },
+            {
+              "spell_id": 82684,
+              "talent_id": 9490
+            },
+            {
+              "spell_id": 19592,
+              "talent_id": 9492
+            },
+            {
+              "spell_id": 19622,
+              "talent_id": 9512
+            },
+            {
+              "spell_id": 53238,
+              "talent_id": 11225
+            }
+          ],
+          "planned_path": "target.talent_build.talents",
+          "static_verifiability": "catalog_exact",
+          "translation_authority": {
+            "ordering": "TalentTab.OrderIndex_then_Talent.TierID_ColumnIndex",
+            "schema": "trinity_cata_talent_string_dbc_roundtrip_v1",
+            "source_file_sha256": {
+              "Talent.dbc": "2be38998466f8d7e43a41929d72312347e34363c7f4036f61be3b9fea3105354",
+              "TalentTab.dbc": "ac65d16ed750e722f60cf0ab330a0eb08de17f9e4db4a792ed6ff1043896f4e1",
+              "TalentTreePrimarySpells.dbc": "599b001613a636f087b938deb9dabbef56e96b24ca780a614fd3d0a2d5ae56bc"
+            }
+          }
+        },
+        {
+          "condition_class": "talents_glyphs",
+          "equals": {
+            "aura_spell_ids": [
+              56826,
+              56828,
+              56841,
+              56844,
+              56857,
+              63086
+            ],
+            "property_ids": [
+              352,
+              353,
+              358,
+              365,
+              368,
+              695
+            ]
+          },
+          "id": "glyphs",
+          "path": "runtime.glyph_identity",
+          "planned_equals": [
+            42898,
+            42911,
+            42914,
+            42904,
+            45735,
+            42899
+          ],
+          "planned_path": "target.glyph_item_ids",
+          "static_verifiability": "catalog_exact",
+          "translation_authority": {
+            "schema": "trinity_cata_glyph_item_property_aura_v1",
+            "source_file_sha256": {
+              "GlyphProperties.dbc": "6b87e0a493da5eb92b43e637b0afdbda716eddeb8b8b16cf1f38687d9b06083d",
+              "Item-sparse.db2": "bd21d2a012c4a983dc3179de84d63abd1cfcd1f7063d0785426d75636dd24c06",
+              "SpellEffect.dbc": "e3d9a470bbcb5cea4e3f2947911a908b816cc60e6ffeb9f70b4cfb123bad6252"
+            }
+          }
+        },
+        {
+          "condition_class": "consumes_prepot_tinker_racial",
+          "equals": {
+            "item_id": 58087,
+            "item_spell_id": 79471,
+            "observed_aura_spell_id": 79471
+          },
+          "id": "flask",
+          "path": "runtime.flask_projection",
+          "planned_equals": {
+            "item_id": 58087,
+            "item_spell_id": 79471,
+            "observed_aura_spell_id": 79471
+          },
+          "planned_path": "fixture.runtime_expected.flask",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "consumes_prepot_tinker_racial",
+          "equals": {
+            "item_id": 62669,
+            "item_spell_id": 87586,
+            "observed_aura_spell_id": 87546
+          },
+          "id": "food",
+          "path": "runtime.food_projection",
+          "planned_equals": {
+            "item_id": 62669,
+            "item_spell_id": 87586,
+            "observed_aura_spell_id": 87546
+          },
+          "planned_path": "fixture.runtime_expected.food",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "consumes_prepot_tinker_racial",
+          "equals": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633,
+            "use_count": 1
+          },
+          "id": "prepot",
+          "path": "runtime.prepot_projection",
+          "planned_equals": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633,
+            "use_count": 1
+          },
+          "planned_path": "fixture.runtime_expected.prepot",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "consumes_prepot_tinker_racial",
+          "equals": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633,
+            "use_count": 1
+          },
+          "id": "combat_potion",
+          "path": "runtime.combat_potion_projection",
+          "planned_equals": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633,
+            "use_count": 1
+          },
+          "planned_path": "fixture.runtime_expected.combat_potion",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "consumes_prepot_tinker_racial",
+          "equals": {
+            "item_id": 0,
+            "use_count": 0
+          },
+          "id": "tinker",
+          "path": "runtime.tinker_projection",
+          "planned_equals": {
+            "item_id": 0,
+            "use_count": 0
+          },
+          "planned_path": "fixture.runtime_expected.tinker",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "consumes_prepot_tinker_racial",
+          "equals": {
+            "race": "dwarf",
+            "race_id": 3,
+            "spell_id": 0,
+            "use_count": 0
+          },
+          "id": "racial",
+          "path": "runtime.racial_projection",
+          "planned_equals": {
+            "race": "dwarf",
+            "race_id": 3,
+            "spell_id": 0,
+            "use_count": 0
+          },
+          "planned_path": "fixture.runtime_expected.racial",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "buffs_debuffs",
+          "equals": {
+            "mana_player_aura_spell_ids": [],
+            "non_paladin_player_aura_spell_ids": [],
+            "primary_stat_aura_any_of_spell_ids": [],
+            "required_player_aura_spell_ids": []
+          },
+          "id": "raid_buffs",
+          "path": "runtime.raid_buffs_projection",
+          "planned_equals": {
+            "mana_player_aura_spell_ids": [],
+            "non_paladin_player_aura_spell_ids": [],
+            "primary_stat_aura_any_of_spell_ids": [],
+            "required_player_aura_spell_ids": []
+          },
+          "planned_path": "fixture.runtime_expected.raid_buffs",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "buffs_debuffs",
+          "equals": {
+            "required_aura_spell_ids": [],
+            "required_stacked_auras": []
+          },
+          "id": "target_debuffs",
+          "path": "runtime.target_debuffs_projection",
+          "planned_equals": {
+            "required_aura_spell_ids": [],
+            "required_stacked_auras": []
+          },
+          "planned_path": "fixture.runtime_expected.target_debuffs",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "buffs_debuffs",
+          "equals": {
+            "windows_ms": []
+          },
+          "id": "heroism",
+          "path": "runtime.heroism_projection",
+          "planned_equals": {
+            "windows_ms": []
+          },
+          "planned_path": "fixture.runtime_expected.heroism",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "duration_execute",
+          "equals": {
+            "duration_seconds": 300,
+            "duration_variation_seconds": 0
+          },
+          "id": "duration",
+          "path": "runtime.duration_projection",
+          "planned_equals": {
+            "duration_seconds": 300,
+            "duration_variation_seconds": 0
+          },
+          "planned_path": "fixture.runtime_expected.duration",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "duration_execute",
+          "equals": {
+            "20": 0.2,
+            "25": 0.25,
+            "35": 0.35,
+            "90": 0.9
+          },
+          "id": "execute",
+          "path": "runtime.execute_projection",
+          "planned_equals": {
+            "20": 0.2,
+            "25": 0.25,
+            "35": 0.35,
+            "90": 0.9
+          },
+          "planned_path": "fixture.runtime_expected.execute",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "duration_execute",
+          "equals": {
+            "armor": 11977,
+            "creature_type": 9,
+            "creature_type_name": "mechanical",
+            "entry": 44548,
+            "level": 88,
+            "live_max_health": 1000000000,
+            "live_target_attacks": false,
+            "simulator_attack_power": 0,
+            "simulator_damage_spread": 0,
+            "simulator_min_base_damage": 0,
+            "simulator_mob_type": 7,
+            "simulator_parry_haste": false,
+            "simulator_swing_speed_seconds": 0
+          },
+          "id": "fixture_target",
+          "path": "runtime.fixture_target_projection",
+          "planned_equals": {
+            "armor": 11977,
+            "creature_type": 9,
+            "creature_type_name": "mechanical",
+            "entry": 44548,
+            "level": 88,
+            "live_max_health": 1000000000,
+            "live_target_attacks": false,
+            "simulator_attack_power": 0,
+            "simulator_damage_spread": 0,
+            "simulator_min_base_damage": 0,
+            "simulator_mob_type": 7,
+            "simulator_parry_haste": false,
+            "simulator_swing_speed_seconds": 0
+          },
+          "planned_path": "fixture.runtime_expected.fixture_target",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "duration_execute",
+          "equals": {
+            "runtime_max_yards": 15.5,
+            "runtime_min_yards": 14.5,
+            "simulator_yards": 15.0
+          },
+          "id": "target_distance",
+          "path": "runtime.target_distance_projection",
+          "planned_equals": {
+            "runtime_max_yards": 15.5,
+            "runtime_min_yards": 14.5,
+            "simulator_yards": 15.0
+          },
+          "planned_path": "fixture.runtime_expected.target_distance",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "form_presence_pet",
+          "equals": {
+            "authority": "phase8_fixture_explicit_reset_v1",
+            "combo_points": null,
+            "persistent_setup_at_scoring_start": {
+              "authority": "fixture_native_setup_then_resource_reset_v1",
+              "form_presence": {
+                "required_aura_spell_ids": [
+                  13165
+                ]
+              },
+              "pet_setup": {
+                "creature_entry": 8959,
+                "kind": "wolf",
+                "required": true,
+                "required_autocast_spell_ids": [
+                  23145,
+                  53401,
+                  53434
+                ],
+                "talents": {
+                  "bloodthirsty": 1,
+                  "call_of_the_wild": true,
+                  "culling_the_herd": 3,
+                  "dive": true,
+                  "rabid": true,
+                  "serpent_swiftness": 2,
+                  "shark_attack": 2,
+                  "spiders_bite": 3,
+                  "spiked_collar": 3
+                },
+                "uptime": 1.0
+              }
+            },
+            "pet_power": {
+              "mode": "maximum",
+              "name": "focus",
+              "power_type": 2
+            },
+            "player_powers": [
+              {
+                "mode": "maximum",
+                "name": "focus",
+                "power_type": 2
+              }
+            ],
+            "required_absent_auras": [],
+            "runes_ready_mask": null,
+            "simulator_representation": {
+              "explicit_options": {
+                "class_options": {
+                  "pet_talents": {
+                    "bloodthirsty": 1,
+                    "call_of_the_wild": true,
+                    "culling_the_herd": 3,
+                    "dive": true,
+                    "rabid": true,
+                    "serpent_swiftness": 2,
+                    "shark_attack": 2,
+                    "spiders_bite": 3,
+                    "spiked_collar": 3
+                  },
+                  "pet_type": 31,
+                  "pet_uptime": 1.0,
+                  "time_to_trap_weave_ms": 0
+                }
+              },
+              "maximum_resources": "pinned_engine_default_at_reset"
+            }
+          },
+          "id": "initial_resources",
+          "path": "runtime.initial_resources_projection",
+          "planned_equals": {
+            "authority": "phase8_fixture_explicit_reset_v1",
+            "combo_points": null,
+            "persistent_setup_at_scoring_start": {
+              "authority": "fixture_native_setup_then_resource_reset_v1",
+              "form_presence": {
+                "required_aura_spell_ids": [
+                  13165
+                ]
+              },
+              "pet_setup": {
+                "creature_entry": 8959,
+                "kind": "wolf",
+                "required": true,
+                "required_autocast_spell_ids": [
+                  23145,
+                  53401,
+                  53434
+                ],
+                "talents": {
+                  "bloodthirsty": 1,
+                  "call_of_the_wild": true,
+                  "culling_the_herd": 3,
+                  "dive": true,
+                  "rabid": true,
+                  "serpent_swiftness": 2,
+                  "shark_attack": 2,
+                  "spiders_bite": 3,
+                  "spiked_collar": 3
+                },
+                "uptime": 1.0
+              }
+            },
+            "pet_power": {
+              "mode": "maximum",
+              "name": "focus",
+              "power_type": 2
+            },
+            "player_powers": [
+              {
+                "mode": "maximum",
+                "name": "focus",
+                "power_type": 2
+              }
+            ],
+            "required_absent_auras": [],
+            "runes_ready_mask": null,
+            "simulator_representation": {
+              "explicit_options": {
+                "class_options": {
+                  "pet_talents": {
+                    "bloodthirsty": 1,
+                    "call_of_the_wild": true,
+                    "culling_the_herd": 3,
+                    "dive": true,
+                    "rabid": true,
+                    "serpent_swiftness": 2,
+                    "shark_attack": 2,
+                    "spiders_bite": 3,
+                    "spiked_collar": 3
+                  },
+                  "pet_type": 31,
+                  "pet_uptime": 1.0,
+                  "time_to_trap_weave_ms": 0
+                }
+              },
+              "maximum_resources": "pinned_engine_default_at_reset"
+            }
+          },
+          "planned_path": "fixture.runtime_expected.initial_resources",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "form_presence_pet",
+          "equals": {
+            "required_aura_spell_ids": [
+              13165
+            ]
+          },
+          "id": "form_presence",
+          "path": "runtime.prepull_setup_projection.form_presence",
+          "planned_equals": {
+            "required_aura_spell_ids": [
+              13165
+            ]
+          },
+          "planned_path": "fixture.runtime_expected.form_presence",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "form_presence_pet",
+          "equals": {
+            "active": 1,
+            "autocast_spell_ids": [
+              23145,
+              53401,
+              53434
+            ],
+            "created_by_spell_id": 0,
+            "creature_entry": 8959,
+            "level": 85,
+            "model_id": 4124,
+            "pet_id": 8700114,
+            "power": {
+              "mode": "maximum",
+              "power_type": 2
+            },
+            "required": true,
+            "runtime_projection_complete": true,
+            "schema": "hunter_admission_pet_identity_v1",
+            "slot": 0,
+            "spellbook": [
+              {
+                "active": 193,
+                "spell_id": 1742
+              },
+              {
+                "active": 193,
+                "spell_id": 2649
+              },
+              {
+                "active": 193,
+                "spell_id": 17253
+              },
+              {
+                "active": 193,
+                "spell_id": 23145
+              },
+              {
+                "active": 193,
+                "spell_id": 24604
+              },
+              {
+                "active": 1,
+                "spell_id": 53184
+              },
+              {
+                "active": 1,
+                "spell_id": 53186
+              },
+              {
+                "active": 1,
+                "spell_id": 53205
+              },
+              {
+                "active": 193,
+                "spell_id": 53401
+              },
+              {
+                "active": 193,
+                "spell_id": 53434
+              },
+              {
+                "active": 1,
+                "spell_id": 61681
+              },
+              {
+                "active": 1,
+                "spell_id": 61683
+              },
+              {
+                "active": 1,
+                "spell_id": 62760
+              },
+              {
+                "active": 1,
+                "spell_id": 65220
+              }
+            ],
+            "spellbook_sha256": "bc3322f102216e3308dc94e4fa30e2960641678949109ccbda1a90063e684ce8",
+            "talents": {
+              "bloodthirsty": 1,
+              "call_of_the_wild": true,
+              "culling_the_herd": 3,
+              "dive": true,
+              "rabid": true,
+              "serpent_swiftness": 2,
+              "shark_attack": 2,
+              "spiders_bite": 3,
+              "spiked_collar": 3
+            },
+            "uptime": 1.0
+          },
+          "id": "pet_setup",
+          "path": "runtime.pet_setup_projection",
+          "planned_equals": {
+            "active": 1,
+            "autocast_spell_ids": [
+              23145,
+              53401,
+              53434
+            ],
+            "created_by_spell_id": 0,
+            "creature_entry": 8959,
+            "level": 85,
+            "model_id": 4124,
+            "pet_id": 8700114,
+            "power": {
+              "mode": "maximum",
+              "power_type": 2
+            },
+            "required": true,
+            "runtime_projection_complete": true,
+            "schema": "hunter_admission_pet_identity_v1",
+            "slot": 0,
+            "spellbook": [
+              {
+                "active": 193,
+                "spell_id": 1742
+              },
+              {
+                "active": 193,
+                "spell_id": 2649
+              },
+              {
+                "active": 193,
+                "spell_id": 17253
+              },
+              {
+                "active": 193,
+                "spell_id": 23145
+              },
+              {
+                "active": 193,
+                "spell_id": 24604
+              },
+              {
+                "active": 1,
+                "spell_id": 53184
+              },
+              {
+                "active": 1,
+                "spell_id": 53186
+              },
+              {
+                "active": 1,
+                "spell_id": 53205
+              },
+              {
+                "active": 193,
+                "spell_id": 53401
+              },
+              {
+                "active": 193,
+                "spell_id": 53434
+              },
+              {
+                "active": 1,
+                "spell_id": 61681
+              },
+              {
+                "active": 1,
+                "spell_id": 61683
+              },
+              {
+                "active": 1,
+                "spell_id": 62760
+              },
+              {
+                "active": 1,
+                "spell_id": 65220
+              }
+            ],
+            "spellbook_sha256": "bc3322f102216e3308dc94e4fa30e2960641678949109ccbda1a90063e684ce8",
+            "talents": {
+              "bloodthirsty": 1,
+              "call_of_the_wild": true,
+              "culling_the_herd": 3,
+              "dive": true,
+              "rabid": true,
+              "serpent_swiftness": 2,
+              "shark_attack": 2,
+              "spiders_bite": 3,
+              "spiked_collar": 3
+            },
+            "uptime": 1.0
+          },
+          "planned_path": "fixture.runtime_expected.pet_setup",
+          "static_verifiability": "fixture_contract_exact"
+        },
+        {
+          "condition_class": "consumes_prepot_tinker_racial",
+          "equals": {
+            "combat_potion": {
+              "item_id": 58145,
+              "item_spell_id": 79633,
+              "observed_aura_spell_id": 79633
+            },
+            "external_windows": {
+              "dark_intent_proc": {
+                "base_enabled": false,
+                "base_spell_id": 85767,
+                "proc_spell_id": 85759,
+                "uptime_pct": 0
+              },
+              "heroism": {
+                "source_count": 0,
+                "spell_id": 2825,
+                "windows_ms": []
+              },
+              "power_infusion": {
+                "source_count": 0,
+                "spell_id": 10060,
+                "windows_ms": []
+              },
+              "schema": "phase8_external_windows_v1",
+              "synapse_springs": {
+                "spell_id": 96230,
+                "windows_ms": []
+              }
+            },
+            "flask": {
+              "item_id": 58087,
+              "item_spell_id": 79471,
+              "observed_aura_spell_id": 79471
+            },
+            "food": {
+              "item_id": 62669,
+              "item_spell_id": 87586,
+              "observed_aura_spell_id": 87546
+            },
+            "form_presence": {
+              "required_aura_spell_ids": [
+                13165
+              ]
+            },
+            "heroism": {
+              "authority": "reference_environment"
+            },
+            "item_swap": {
+              "enabled": false,
+              "items": []
+            },
+            "prepot": {
+              "item_id": 58145,
+              "item_spell_id": 79633,
+              "observed_aura_spell_id": 79633
+            },
+            "racial": {
+              "race": "dwarf",
+              "race_id": 3,
+              "spell_id": 0
+            },
+            "raid_buffs": {
+              "authority": "reference_environment"
+            },
+            "target_debuffs": {
+              "authority": "reference_environment"
+            },
+            "tinker": {
+              "item_id": 0
+            }
+          },
+          "id": "prepull_setup",
+          "path": "runtime.prepull_setup_projection",
+          "planned_equals": {
+            "combat_potion": {
+              "item_id": 58145,
+              "item_spell_id": 79633,
+              "observed_aura_spell_id": 79633
+            },
+            "external_windows": {
+              "dark_intent_proc": {
+                "base_enabled": false,
+                "base_spell_id": 85767,
+                "proc_spell_id": 85759,
+                "uptime_pct": 0
+              },
+              "heroism": {
+                "source_count": 0,
+                "spell_id": 2825,
+                "windows_ms": []
+              },
+              "power_infusion": {
+                "source_count": 0,
+                "spell_id": 10060,
+                "windows_ms": []
+              },
+              "schema": "phase8_external_windows_v1",
+              "synapse_springs": {
+                "spell_id": 96230,
+                "windows_ms": []
+              }
+            },
+            "flask": {
+              "item_id": 58087,
+              "item_spell_id": 79471,
+              "observed_aura_spell_id": 79471
+            },
+            "food": {
+              "item_id": 62669,
+              "item_spell_id": 87586,
+              "observed_aura_spell_id": 87546
+            },
+            "form_presence": {
+              "required_aura_spell_ids": [
+                13165
+              ]
+            },
+            "heroism": {
+              "authority": "reference_environment"
+            },
+            "item_swap": {
+              "enabled": false,
+              "items": []
+            },
+            "prepot": {
+              "item_id": 58145,
+              "item_spell_id": 79633,
+              "observed_aura_spell_id": 79633
+            },
+            "racial": {
+              "race": "dwarf",
+              "race_id": 3,
+              "spell_id": 0
+            },
+            "raid_buffs": {
+              "authority": "reference_environment"
+            },
+            "target_debuffs": {
+              "authority": "reference_environment"
+            },
+            "tinker": {
+              "item_id": 0
+            }
+          },
+          "planned_path": "fixture.runtime_expected.prepull_setup",
+          "static_verifiability": "fixture_contract_exact"
+        }
+      ],
+      "result_status": "generated_verified",
+      "schema": "phase8_wowsims_reference_setup_manifest_v1",
+      "source_contract_sha256": "497782d99202a6d6d634f3ea981fa3326257e5e96161ff3749e43b2cab749bd3",
+      "source_setup": {
+        "consumes": {
+          "battle_elixir_id": 0,
+          "conjured_id": 0,
+          "explosive_id": 0,
+          "flask_id": 58087,
+          "food_id": 62669,
+          "guardian_elixir_id": 0,
+          "pot_id": 58145,
+          "prepot_id": 58145,
+          "tinker_id": 0
+        },
+        "encounter": {
+          "duration_seconds": 300,
+          "duration_variation_seconds": 0,
+          "execute_proportions": {
+            "20": 0.2,
+            "25": 0.25,
+            "35": 0.35,
+            "90": 0.9
+          },
+          "health_windows": [
+            {
+              "end_ms": 30000,
+              "lower_pct": 90,
+              "phase": "above_90",
+              "start_ms": 0,
+              "target_health_pct": 95,
+              "upper_pct": 100
+            },
+            {
+              "end_ms": 195000,
+              "lower_pct": 35,
+              "phase": "between_35_90",
+              "start_ms": 30000,
+              "target_health_pct": 50,
+              "upper_pct": 90
+            },
+            {
+              "end_ms": 225000,
+              "lower_pct": 25,
+              "phase": "between_25_35",
+              "start_ms": 195000,
+              "target_health_pct": 30,
+              "upper_pct": 35
+            },
+            {
+              "end_ms": 240000,
+              "lower_pct": 20,
+              "phase": "between_20_25",
+              "start_ms": 225000,
+              "target_health_pct": 22,
+              "upper_pct": 25
+            },
+            {
+              "end_ms": 300000,
+              "lower_pct": 0,
+              "phase": "below_20",
+              "start_ms": 240000,
+              "target_health_pct": 19,
+              "upper_pct": 20
+            }
+          ]
+        },
+        "fixture_target": {
+          "armor": 11977,
+          "creature_type": 9,
+          "creature_type_name": "mechanical",
+          "entry": 44548,
+          "level": 88,
+          "live_max_health": 1000000000,
+          "live_target_attacks": false,
+          "simulator_attack_power": 0,
+          "simulator_damage_spread": 0,
+          "simulator_min_base_damage": 0,
+          "simulator_mob_type": 7,
+          "simulator_parry_haste": false,
+          "simulator_swing_speed_seconds": 0
+        },
+        "gear": {
+          "applicability_authority": "pinned_wowsims_preset_exact",
+          "gear_profile_id": "marksmanship_hunter",
+          "source_sha256": "67a4682a2c8213028ee05979205f972daca4082fd71f19313712151e5a680691",
+          "transform_schema": "wowsims_cata_equipment_manifest_v1",
+          "transformed_manifest_sha256": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1"
+        },
+        "glyphs": {
+          "item_ids": [
+            42898,
+            42911,
+            42914,
+            42904,
+            45735,
+            42899
+          ],
+          "runtime_identity": {
+            "aura_spell_ids": [
+              56826,
+              56828,
+              56841,
+              56844,
+              56857,
+              63086
+            ],
+            "property_ids": [
+              352,
+              353,
+              358,
+              365,
+              368,
+              695
+            ]
+          },
+          "translation_authority": {
+            "schema": "trinity_cata_glyph_item_property_aura_v1",
+            "source_file_sha256": {
+              "GlyphProperties.dbc": "6b87e0a493da5eb92b43e637b0afdbda716eddeb8b8b16cf1f38687d9b06083d",
+              "Item-sparse.db2": "bd21d2a012c4a983dc3179de84d63abd1cfcd1f7063d0785426d75636dd24c06",
+              "SpellEffect.dbc": "e3d9a470bbcb5cea4e3f2947911a908b816cc60e6ffeb9f70b4cfb123bad6252"
+            }
+          }
+        },
+        "initial_resources": {
+          "combo_points": null,
+          "pet_power": {
+            "mode": "maximum",
+            "name": "focus",
+            "power_type": 2
+          },
+          "player_powers": [
+            {
+              "mode": "maximum",
+              "name": "focus",
+              "power_type": 2
+            }
+          ],
+          "required_absent_auras": [],
+          "runes_ready_mask": null
+        },
+        "item_swap": {
+          "enabled": false,
+          "items": []
+        },
+        "native_request": {
+          "apl_transform_policy": {
+            "allowed_cast_item_ids": [
+              58145
+            ],
+            "combat_tree_policy": "preserve_allowed_nodes_and_order",
+            "condition_rewrite_policy": {
+              "authority": "materialized_live_fixture_absence",
+              "boolean_folding": "deterministic_recursive_not_and_or_constant_fold",
+              "compute_stats_warning_or_error_policy": "reject",
+              "false_row_policy": "remove_action_row",
+              "forbidden_executable_cast_spell_ids": [
+                57933,
+                58984
+              ],
+              "matching_semantics": "canonical_full_native_payload_equality",
+              "numeric_folding": "deterministic_recursive_arithmetic_and_comparison_constant_fold",
+              "preserved_target_references": [
+                {
+                  "index": 1,
+                  "owner": "Self",
+                  "type": "Pet"
+                }
+              ],
+              "provenance_policy": "record_path_before_after_reason_and_hashes",
+              "schema": "phase8_exact_native_condition_payload_rewrite_v2",
+              "single_target_numeric_rewrites": [
+                {
+                  "field": "max_dots",
+                  "native_action_field": "multidot",
+                  "replacement": 1,
+                  "source_value": 2
+                }
+              ],
+              "single_target_predicate_rewrites": [
+                {
+                  "constant": 2,
+                  "native_value_field": "number_targets",
+                  "observed_target_count": 1,
+                  "operator": "OpEq",
+                  "reason": "fixture_has_exactly_one_hostile_target",
+                  "replacement": false
+                }
+              ],
+              "true_condition_policy": "remove_condition_field",
+              "unavailable_condition_leaves": [
+                {
+                  "native_field": "aura_is_active",
+                  "payloads": [
+                    {
+                      "aura_id": {
+                        "item_id": 62464
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "item_id": 69002
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "item_id": 77116
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 26297
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 33697
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 96229
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 96929
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 98971
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 99049
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 99234
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 2825,
+                        "tag": -1
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 16511
+                      },
+                      "source_unit": {
+                        "type": "CurrentTarget"
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 29859
+                      },
+                      "source_unit": {
+                        "type": "CurrentTarget"
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 33876
+                      },
+                      "source_unit": {
+                        "type": "CurrentTarget"
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 57386
+                      },
+                      "source_unit": {
+                        "type": "CurrentTarget"
+                      }
+                    }
+                  ],
+                  "replacement": false
+                },
+                {
+                  "native_field": "aura_is_known",
+                  "payloads": [
+                    {
+                      "aura_id": {
+                        "item_id": 62464
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "item_id": 69002
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "item_id": 77114
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "item_id": 77116
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 26297
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 96923
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 99116
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 107970
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 109793
+                      }
+                    }
+                  ],
+                  "replacement": false
+                },
+                {
+                  "native_field": "aura_remaining_time",
+                  "payloads": [
+                    {
+                      "aura_id": {
+                        "spell_id": 26297
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 96229
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 96230
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 109844
+                      }
+                    },
+                    {
+                      "aura_id": {
+                        "spell_id": 2825,
+                        "tag": -1
+                      }
+                    }
+                  ],
+                  "replacement": 0,
+                  "replacement_type": "number"
+                },
+                {
+                  "native_field": "dot_is_active",
+                  "payloads": [
+                    {
+                      "spell_id": {
+                        "spell_id": 98957
+                      }
+                    }
+                  ],
+                  "replacement": false
+                },
+                {
+                  "native_field": "spell_time_to_ready",
+                  "payloads": [
+                    {
+                      "spell_id": {
+                        "item_id": 62464
+                      }
+                    },
+                    {
+                      "spell_id": {
+                        "item_id": 69002
+                      }
+                    },
+                    {
+                      "spell_id": {
+                        "item_id": 77114
+                      }
+                    },
+                    {
+                      "spell_id": {
+                        "item_id": 77116
+                      }
+                    },
+                    {
+                      "spell_id": {
+                        "spell_id": 33697
+                      }
+                    },
+                    {
+                      "spell_id": {
+                        "spell_id": 82174
+                      }
+                    }
+                  ],
+                  "replacement": 0,
+                  "replacement_type": "number"
+                },
+                {
+                  "native_field": "spell_is_ready",
+                  "payloads": [
+                    {
+                      "spell_id": {
+                        "item_id": 68972
+                      }
+                    },
+                    {
+                      "spell_id": {
+                        "item_id": 69113
+                      }
+                    }
+                  ],
+                  "replacement": false
+                },
+                {
+                  "native_field": "spell_is_known",
+                  "payloads": [
+                    {
+                      "spell_id": {
+                        "item_id": 68972
+                      }
+                    },
+                    {
+                      "spell_id": {
+                        "item_id": 69113
+                      }
+                    }
+                  ],
+                  "replacement": false
+                }
+              ],
+              "unknown_condition_leaf_policy": "reject",
+              "unresolved_target_reference_policy": "reject",
+              "unsupported_target_references": [
+                {
+                  "index": 1,
+                  "replacement": false,
+                  "row_policy": "remove_after_false_fold",
+                  "type": "Target"
+                }
+              ]
+            },
+            "empty_node_policy": "remove_empty_sequence_or_strict_sequence_parent_recursively",
+            "forbidden_action_kinds": [],
+            "forbidden_cast_item_ids": [
+              36799,
+              58091,
+              58146,
+              59461,
+              62464,
+              62469,
+              68972,
+              69002,
+              69113,
+              70142,
+              77116
+            ],
+            "forbidden_cast_spell_ids": [
+              2825,
+              10060,
+              20572,
+              26297,
+              28730,
+              33697,
+              33702,
+              57933,
+              58984,
+              69041,
+              82174
+            ],
+            "forbidden_generic_operations": [
+              {
+                "native_field": "autocast_other_cooldowns",
+                "semantic_name": "autocastOtherCooldowns"
+              },
+              {
+                "native_field": "cast_all_stat_buff_cooldowns",
+                "semantic_name": "castAllStatBuffCooldowns"
+              },
+              {
+                "native_field": "activate_all_stat_buff_proc_auras",
+                "semantic_name": "activate_all_stat_buff_proc_auras"
+              },
+              {
+                "native_field": "item_swap",
+                "semantic_name": "item_swap"
+              },
+              {
+                "native_field": "activate_aura",
+                "semantic_name": "activateAura"
+              },
+              {
+                "native_field": "activate_aura_with_stacks",
+                "semantic_name": "activateAuraWithStacks"
+              },
+              {
+                "native_field": "trigger_icd",
+                "semantic_name": "triggerIcd"
+              },
+              {
+                "native_field": "cancel_aura",
+                "semantic_name": "cancelAura"
+              }
+            ],
+            "forbidden_state_mutation_instances": [
+              {
+                "native_field": "activate_aura",
+                "spell_id": 1784
+              },
+              {
+                "native_field": "activate_aura",
+                "spell_id": 74221,
+                "tag": 2
+              },
+              {
+                "native_field": "activate_aura_with_stacks",
+                "spell_id": 96929,
+                "stacks": 5
+              },
+              {
+                "native_field": "trigger_icd",
+                "spell_id": 97125
+              },
+              {
+                "native_field": "cancel_aura",
+                "spell_id": 45529
+              }
+            ],
+            "matching_semantics": "exact_native_field_and_canonical_full_payload",
+            "policy": "recursive_remove_matching_action",
+            "prepull_replacement_policy": {
+              "mode": "replace_entire_source_with_fixture_exact_list",
+              "pet_or_option_setup_policy": "represent_at_start_and_do_not_recast",
+              "replacement_order_policy": "preserve_declared_order",
+              "replacement_reason": "live_native_persistent_setup_then_resource_cooldown_clean_edge",
+              "replacement_source_field": "native_request.rotation_prepull_actions",
+              "source_prepull_policy": "record_and_remove_all",
+              "source_provenance": "hash_bytes_count_and_action_identities"
+            },
+            "preserve_surviving_action_order": true,
+            "provenance_policy": "hash_input_output_removed_and_added_actions",
+            "schema": "phase8_forbidden_dynamic_actions_transform_v1",
+            "unknown_generic_operation_policy": "reject",
+            "unlisted_cast_item_policy": "reject",
+            "unlisted_state_mutation_instance_policy": "reject"
+          },
+          "consumables": {
+            "battle_elixir_id": 0,
+            "conjured_id": 0,
+            "explosive_id": 0,
+            "flask_id": 58087,
+            "food_id": 62669,
+            "guardian_elixir_id": 0,
+            "pot_id": 58145,
+            "prepot_id": 58145,
+            "tinker_id": 0
+          },
+          "external_windows": {
+            "dark_intent_proc": {
+              "base_enabled": false,
+              "base_spell_id": 85767,
+              "proc_spell_id": 85759,
+              "uptime_pct": 0
+            },
+            "heroism": {
+              "source_count": 0,
+              "spell_id": 2825,
+              "windows_ms": []
+            },
+            "power_infusion": {
+              "source_count": 0,
+              "spell_id": 10060,
+              "windows_ms": []
+            },
+            "schema": "phase8_external_windows_v1",
+            "synapse_springs": {
+              "spell_id": 96230,
+              "windows_ms": []
+            }
+          },
+          "glyph_aura_spell_ids": [
+            56826,
+            56828,
+            56841,
+            56844,
+            56857,
+            63086
+          ],
+          "glyph_item_ids": [
+            42898,
+            42911,
+            42914,
+            42904,
+            45735,
+            42899
+          ],
+          "glyph_property_ids": [
+            352,
+            353,
+            358,
+            365,
+            368,
+            695
+          ],
+          "individual_buffs": {},
+          "initial_state": {
+            "authority": "phase8_fixture_explicit_reset_v1",
+            "combo_points": null,
+            "persistent_setup_at_scoring_start": {
+              "authority": "fixture_native_setup_then_resource_reset_v1",
+              "form_presence": {
+                "required_aura_spell_ids": [
+                  13165
+                ]
+              },
+              "pet_setup": {
+                "creature_entry": 8959,
+                "kind": "wolf",
+                "required": true,
+                "required_autocast_spell_ids": [
+                  23145,
+                  53401,
+                  53434
+                ],
+                "talents": {
+                  "bloodthirsty": 1,
+                  "call_of_the_wild": true,
+                  "culling_the_herd": 3,
+                  "dive": true,
+                  "rabid": true,
+                  "serpent_swiftness": 2,
+                  "shark_attack": 2,
+                  "spiders_bite": 3,
+                  "spiked_collar": 3
+                },
+                "uptime": 1.0
+              }
+            },
+            "pet_power": {
+              "mode": "maximum",
+              "name": "focus",
+              "power_type": 2
+            },
+            "player_powers": [
+              {
+                "mode": "maximum",
+                "name": "focus",
+                "power_type": 2
+              }
+            ],
+            "required_absent_auras": [],
+            "runes_ready_mask": null,
+            "simulator_representation": {
+              "explicit_options": {
+                "class_options": {
+                  "pet_talents": {
+                    "bloodthirsty": 1,
+                    "call_of_the_wild": true,
+                    "culling_the_herd": 3,
+                    "dive": true,
+                    "rabid": true,
+                    "serpent_swiftness": 2,
+                    "shark_attack": 2,
+                    "spiders_bite": 3,
+                    "spiked_collar": 3
+                  },
+                  "pet_type": 31,
+                  "pet_uptime": 1.0,
+                  "time_to_trap_weave_ms": 0
+                }
+              },
+              "maximum_resources": "pinned_engine_default_at_reset"
+            }
+          },
+          "party_buffs": {},
+          "player_fields": {
+            "dark_intent_uptime": 0.0
+          },
+          "player_spec": {
+            "options": {
+              "class_options": {
+                "pet_talents": {
+                  "bloodthirsty": 1,
+                  "call_of_the_wild": true,
+                  "culling_the_herd": 3,
+                  "dive": true,
+                  "rabid": true,
+                  "serpent_swiftness": 2,
+                  "shark_attack": 2,
+                  "spiders_bite": 3,
+                  "spiked_collar": 3
+                },
+                "pet_type": 31,
+                "pet_uptime": 1.0,
+                "time_to_trap_weave_ms": 0
+              }
+            }
+          },
+          "player_spec_key": "marksmanship_hunter",
+          "professions": [
+            "Blacksmithing",
+            "ProfessionUnknown"
+          ],
+          "race_id": 3,
+          "raid_buffs": {
+            "arcane_brilliance": false,
+            "arcane_tactics": false,
+            "blessing_of_kings": false,
+            "bloodlust": false,
+            "demonic_pact": false,
+            "leader_of_the_pack": false,
+            "strength_of_earth_totem": false,
+            "windfury_totem": false,
+            "wrath_of_air_totem": false
+          },
+          "reference_execution_policy": {
+            "bonus_stats": {
+              "pseudo_stats": [],
+              "stats": []
+            },
+            "channel_clip_delay_ms": 0,
+            "cooldowns": {},
+            "database": {},
+            "healing_model": {},
+            "in_front_of_target": false,
+            "raid_topology": {
+              "num_active_parties": 1,
+              "party_count": 1,
+              "players_per_party": [
+                1
+              ],
+              "stagger_stormstrikes": false,
+              "tanks": [],
+              "target_dummies": 0
+            },
+            "reaction_time_ms": 10,
+            "target_flags": {
+              "disabled_at_start": false,
+              "dual_wield": false,
+              "dual_wield_penalty": false,
+              "parry_haste": false,
+              "second_tank_index": -1,
+              "suppress_dodge": false,
+              "tank_index": -1,
+              "target_inputs": []
+            }
+          },
+          "rotation_prepull_actions": [
+            {
+              "action": {
+                "cast_spell": {
+                  "spell_id": {
+                    "spell_id": 13165
+                  }
+                }
+              },
+              "do_at_value": {
+                "const": {
+                  "val": "-10s"
+                }
+              }
+            },
+            {
+              "action": {
+                "cast_spell": {
+                  "spell_id": {
+                    "other_id": "OtherActionPotion"
+                  }
+                }
+              },
+              "do_at_value": {
+                "const": {
+                  "val": "-1s"
+                }
+              }
+            }
+          ],
+          "target_debuffs": {
+            "brittle_bones": false,
+            "critical_mass": false,
+            "curse_of_elements": false,
+            "sunder_armor": false
+          }
+        },
+        "pet_setup": {
+          "creature_entry": 8959,
+          "kind": "wolf",
+          "required": true,
+          "required_autocast_spell_ids": [
+            23145,
+            53401,
+            53434
+          ],
+          "talents": {
+            "bloodthirsty": 1,
+            "call_of_the_wild": true,
+            "culling_the_herd": 3,
+            "dive": true,
+            "rabid": true,
+            "serpent_swiftness": 2,
+            "shark_attack": 2,
+            "spiders_bite": 3,
+            "spiked_collar": 3
+          },
+          "uptime": 1.0
+        },
+        "prepull_setup": {
+          "combat_potion": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "external_windows": {
+            "dark_intent_proc": {
+              "base_enabled": false,
+              "base_spell_id": 85767,
+              "proc_spell_id": 85759,
+              "uptime_pct": 0
+            },
+            "heroism": {
+              "source_count": 0,
+              "spell_id": 2825,
+              "windows_ms": []
+            },
+            "power_infusion": {
+              "source_count": 0,
+              "spell_id": 10060,
+              "windows_ms": []
+            },
+            "schema": "phase8_external_windows_v1",
+            "synapse_springs": {
+              "spell_id": 96230,
+              "windows_ms": []
+            }
+          },
+          "flask": {
+            "item_id": 58087,
+            "item_spell_id": 79471,
+            "observed_aura_spell_id": 79471
+          },
+          "food": {
+            "item_id": 62669,
+            "item_spell_id": 87586,
+            "observed_aura_spell_id": 87546
+          },
+          "form_presence": {
+            "required_aura_spell_ids": [
+              13165
+            ]
+          },
+          "heroism": {
+            "authority": "reference_environment"
+          },
+          "item_swap": {
+            "enabled": false,
+            "items": []
+          },
+          "prepot": {
+            "item_id": 58145,
+            "item_spell_id": 79633,
+            "observed_aura_spell_id": 79633
+          },
+          "racial": {
+            "race": "dwarf",
+            "race_id": 3,
+            "spell_id": 0
+          },
+          "raid_buffs": {
+            "authority": "reference_environment"
+          },
+          "target_debuffs": {
+            "authority": "reference_environment"
+          },
+          "tinker": {
+            "item_id": 0
+          }
+        },
+        "race": 3,
+        "raid_buffs": {
+          "arcane_brilliance": false,
+          "arcane_tactics": false,
+          "blessing_of_kings": false,
+          "bloodlust": false,
+          "demonic_pact": false,
+          "leader_of_the_pack": false,
+          "strength_of_earth_totem": false,
+          "windfury_totem": false,
+          "wrath_of_air_totem": false
+        },
+        "reference_class": "self_provided_baseline",
+        "rotation": {
+          "path": "ui/hunter/marksmanship/apls/mm.apl.json",
+          "policy": "pinned_upstream_apl_benchmark_policy",
+          "sha256": "60aedd1aba0b508a4eedaf1a741fb568af1d508213804b1f675511b2c4f92ec6"
+        },
+        "simulator_option_leaf_classification": {
+          "atomic_runtime_requirements": {
+            "class_options.pet_type": "pet_setup",
+            "class_options.pet_uptime": "pet_setup",
+            "starting_distance_yards": "target_distance",
+            "target_auto_attacks": "fixture_target"
+          },
+          "reference_execution_policy": [
+            "class_options.time_to_trap_weave_ms"
+          ],
+          "schema": "phase8_simulator_option_leaf_classification_v1",
+          "unclassified": []
+        },
+        "spec_options": {
+          "options": {
+            "class_options": {
+              "pet_talents": {
+                "bloodthirsty": 1,
+                "call_of_the_wild": true,
+                "culling_the_herd": 3,
+                "dive": true,
+                "rabid": true,
+                "serpent_swiftness": 2,
+                "shark_attack": 2,
+                "spiders_bite": 3,
+                "spiked_collar": 3
+              },
+              "pet_type": 31,
+              "pet_uptime": 1.0,
+              "time_to_trap_weave_ms": 0
+            }
+          }
+        },
+        "talents": {
+          "active_spell_ids": [
+            19418,
+            19506,
+            19592,
+            19622,
+            23989,
+            34483,
+            34487,
+            34954,
+            35102,
+            35110,
+            52786,
+            53209,
+            53224,
+            53232,
+            53238,
+            82684,
+            83356,
+            83490,
+            83560
+          ],
+          "decoded_talents": [
+            {
+              "rank": 3,
+              "spell_id": 19418,
+              "talent_id": 9380
+            },
+            {
+              "rank": 2,
+              "spell_id": 34954,
+              "talent_id": 9390
+            },
+            {
+              "rank": 2,
+              "spell_id": 83356,
+              "talent_id": 9396
+            },
+            {
+              "rank": 2,
+              "spell_id": 34483,
+              "talent_id": 9398
+            },
+            {
+              "rank": 3,
+              "spell_id": 53224,
+              "talent_id": 9402
+            },
+            {
+              "rank": 1,
+              "spell_id": 23989,
+              "talent_id": 9404
+            },
+            {
+              "rank": 2,
+              "spell_id": 35102,
+              "talent_id": 9406
+            },
+            {
+              "rank": 2,
+              "spell_id": 35110,
+              "talent_id": 9408
+            },
+            {
+              "rank": 1,
+              "spell_id": 19506,
+              "talent_id": 9412
+            },
+            {
+              "rank": 2,
+              "spell_id": 83490,
+              "talent_id": 9416
+            },
+            {
+              "rank": 3,
+              "spell_id": 34487,
+              "talent_id": 9418
+            },
+            {
+              "rank": 2,
+              "spell_id": 53232,
+              "talent_id": 9422
+            },
+            {
+              "rank": 2,
+              "spell_id": 83560,
+              "talent_id": 9426
+            },
+            {
+              "rank": 1,
+              "spell_id": 53209,
+              "talent_id": 9430
+            },
+            {
+              "rank": 3,
+              "spell_id": 52786,
+              "talent_id": 9432
+            },
+            {
+              "rank": 3,
+              "spell_id": 82684,
+              "talent_id": 9490
+            },
+            {
+              "rank": 2,
+              "spell_id": 19592,
+              "talent_id": 9492
+            },
+            {
+              "rank": 2,
+              "spell_id": 19622,
+              "talent_id": 9512
+            },
+            {
+              "rank": 3,
+              "spell_id": 53238,
+              "talent_id": 11225
+            }
+          ],
+          "primary_talent_tree_id": 807,
+          "primary_tree_spells": [
+            19434,
+            87326
+          ],
+          "talent_string": "032002-2302320232120231201-03",
+          "translation_authority": {
+            "ordering": "TalentTab.OrderIndex_then_Talent.TierID_ColumnIndex",
+            "schema": "trinity_cata_talent_string_dbc_roundtrip_v1",
+            "source_file_sha256": {
+              "Talent.dbc": "2be38998466f8d7e43a41929d72312347e34363c7f4036f61be3b9fea3105354",
+              "TalentTab.dbc": "ac65d16ed750e722f60cf0ab330a0eb08de17f9e4db4a792ed6ff1043896f4e1",
+              "TalentTreePrimarySpells.dbc": "599b001613a636f087b938deb9dabbef56e96b24ca780a614fd3d0a2d5ae56bc"
+            }
+          }
+        },
+        "target_debuffs": {
+          "brittle_bones": false,
+          "critical_mass": false,
+          "curse_of_elements": false,
+          "sunder_armor": false
+        },
+        "target_distance_yards": {
+          "lane": "ranged",
+          "runtime_max_yards": 15.5,
+          "runtime_min_yards": 14.5,
+          "simulator_yards": 15.0
+        }
+      },
+      "source_setup_sha256": "bfd191505d72f4ed753ef75a17618e4543e61ecc6258fa2cfbd6ebe0de159998",
+      "target_spec": "marksmanship_hunter"
+    },
+    "reference_class": "self_provided_baseline",
+    "reference_setup": {
+      "balance_mushroom_preplant_count": 0,
+      "balance_mushrooms_preplanted": false,
+      "buff_auras": {
+        "24932": false,
+        "2895": false,
+        "53646": false,
+        "57669": false,
+        "79058": false,
+        "79102": false,
+        "79470": false,
+        "79471": true,
+        "79472": false,
+        "8076": false,
+        "82930": false,
+        "8515": false,
+        "85767": false,
+        "87547": false,
+        "kings_or_mark": false
+      },
+      "buffs_ready": true,
+      "enabled": false,
+      "heroism_window_observed": false,
+      "replenishment_required": false,
+      "target_debuffs_ready": true
+    },
+    "runtime_facts": {
+      "fixture_contract_binding_valid": true,
+      "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+      "gear_source_sha256": "67a4682a2c8213028ee05979205f972daca4082fd71f19313712151e5a680691",
+      "gear_transform_authority": "pinned_wowsims_preset_exact",
+      "gear_transform_schema": "wowsims_cata_equipment_manifest_v1",
+      "reference_gear_manifest_sha256": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1",
+      "reference_request_binding_valid": true,
+      "reference_request_catalog_sha256": "63e7fea4014b1a958c10cfcb1957271a08942aa23e3339fb9f6fcf54e27e9794",
+      "reference_result_key": "generated:marksmanship_hunter:27d8103faf03cfffa87f66f42bbf028639ad91878eae0836d79404178d478826",
+      "reference_value": 32838.198347018646,
+      "request_sha256": "682a3cbd45c18cca70b140105590b40fd0e761af426f2b14acc80519075f5cdb",
+      "result_status": "generated_verified",
+      "source_contract_sha256": "497782d99202a6d6d634f3ea981fa3326257e5e96161ff3749e43b2cab749bd3"
+    },
+    "runtime_normalization": {
+      "buff_basis": "self_provided_consumables",
+      "comparison_policy": "sustained_completed_windows_only",
+      "consumables": true,
+      "dark_intent_base": false,
+      "dark_intent_proc_uptime_pct": 0,
+      "dispersion_cast_cap": 0,
+      "dynamic_consumable_actions": true,
+      "engineering_cooldowns": false,
+      "execute_threshold_windows": {
+        "fixture_only": true,
+        "interval_semantics": "start_inclusive_end_exclusive",
+        "non_certifying": true,
+        "schema": "wowsims_cata_single_target_health_schedule_v1",
+        "source_authority": "pinned_wowsims_cata_core_test_utils_make_single_target_encounter",
+        "source_duration_ms": 300000,
+        "source_duration_variation_ms": 0,
+        "source_execute_proportions": {
+          "20": 0.2,
+          "25": 0.25,
+          "35": 0.35,
+          "90": 0.9
+        },
+        "windows": [
+          {
+            "configured_target_health_pct": 95,
+            "end_ms": 30000,
+            "health_pct_lower_bound": 90,
+            "health_pct_upper_bound": 100,
+            "lower_bound_inclusive": false,
+            "observation": {
+              "damage_event_sample_count": 95,
+              "first_damage_event_elapsed_ms": 335,
+              "first_elapsed_ms": 0,
+              "last_damage_event_elapsed_ms": 29941,
+              "last_elapsed_ms": 29998,
+              "maximum_damage_event": 57892,
+              "maximum_damage_event_max_health": 1000000000,
+              "maximum_observed_health": 950000000,
+              "maximum_observed_max_health": 1000000000,
+              "maximum_pre_damage_health": 950000000,
+              "maximum_projected_post_damage_health": 949999437,
+              "minimum_damage_event_max_health": 1000000000,
+              "minimum_observed_health": 950000000,
+              "minimum_observed_max_health": 1000000000,
+              "minimum_pre_damage_health": 950000000,
+              "minimum_projected_post_damage_health": 949942108,
+              "sample_count": 28295
+            },
+            "phase": "above_90",
+            "start_ms": 0,
+            "upper_bound_inclusive": true
+          },
+          {
+            "configured_target_health_pct": 50,
+            "end_ms": 195000,
+            "health_pct_lower_bound": 35,
+            "health_pct_upper_bound": 90,
+            "lower_bound_inclusive": false,
+            "observation": {
+              "damage_event_sample_count": 650,
+              "first_damage_event_elapsed_ms": 30182,
+              "first_elapsed_ms": 30000,
+              "last_damage_event_elapsed_ms": 194782,
+              "last_elapsed_ms": 194999,
+              "maximum_damage_event": 65205,
+              "maximum_damage_event_max_health": 1000000000,
+              "maximum_observed_health": 500000000,
+              "maximum_observed_max_health": 1000000000,
+              "maximum_pre_damage_health": 500000000,
+              "maximum_projected_post_damage_health": 499999472,
+              "minimum_damage_event_max_health": 1000000000,
+              "minimum_observed_health": 500000000,
+              "minimum_observed_max_health": 1000000000,
+              "minimum_pre_damage_health": 500000000,
+              "minimum_projected_post_damage_health": 499934795,
+              "sample_count": 155666
+            },
+            "phase": "between_35_90",
+            "start_ms": 30000,
+            "upper_bound_inclusive": true
+          },
+          {
+            "configured_target_health_pct": 30,
+            "end_ms": 225000,
+            "health_pct_lower_bound": 25,
+            "health_pct_upper_bound": 35,
+            "lower_bound_inclusive": false,
+            "observation": {
+              "damage_event_sample_count": 128,
+              "first_damage_event_elapsed_ms": 195147,
+              "first_elapsed_ms": 195000,
+              "last_damage_event_elapsed_ms": 224788,
+              "last_elapsed_ms": 224999,
+              "maximum_damage_event": 57428,
+              "maximum_damage_event_max_health": 1000000000,
+              "maximum_observed_health": 300000000,
+              "maximum_observed_max_health": 1000000000,
+              "maximum_pre_damage_health": 300000000,
+              "maximum_projected_post_damage_health": 299999463,
+              "minimum_damage_event_max_health": 1000000000,
+              "minimum_observed_health": 300000000,
+              "minimum_observed_max_health": 1000000000,
+              "minimum_pre_damage_health": 300000000,
+              "minimum_projected_post_damage_health": 299942572,
+              "sample_count": 28204
+            },
+            "phase": "between_25_35",
+            "start_ms": 195000,
+            "upper_bound_inclusive": true
+          },
+          {
+            "configured_target_health_pct": 22,
+            "end_ms": 240000,
+            "health_pct_lower_bound": 20,
+            "health_pct_upper_bound": 25,
+            "lower_bound_inclusive": false,
+            "observation": {
+              "damage_event_sample_count": 61,
+              "first_damage_event_elapsed_ms": 225121,
+              "first_elapsed_ms": 225001,
+              "last_damage_event_elapsed_ms": 239904,
+              "last_elapsed_ms": 239999,
+              "maximum_damage_event": 62984,
+              "maximum_damage_event_max_health": 1000000000,
+              "maximum_observed_health": 220000000,
+              "maximum_observed_max_health": 1000000000,
+              "maximum_pre_damage_health": 220000000,
+              "maximum_projected_post_damage_health": 219999467,
+              "minimum_damage_event_max_health": 1000000000,
+              "minimum_observed_health": 220000000,
+              "minimum_observed_max_health": 1000000000,
+              "minimum_pre_damage_health": 220000000,
+              "minimum_projected_post_damage_health": 219937016,
+              "sample_count": 14146
+            },
+            "phase": "between_20_25",
+            "start_ms": 225000,
+            "upper_bound_inclusive": true
+          },
+          {
+            "configured_target_health_pct": 19,
+            "end_ms": 300000,
+            "health_pct_lower_bound": 0,
+            "health_pct_upper_bound": 20,
+            "lower_bound_inclusive": true,
+            "observation": {
+              "damage_event_sample_count": 229,
+              "first_damage_event_elapsed_ms": 240343,
+              "first_elapsed_ms": 240000,
+              "last_damage_event_elapsed_ms": 299973,
+              "last_elapsed_ms": 299999,
+              "maximum_damage_event": 64603,
+              "maximum_damage_event_max_health": 1000000000,
+              "maximum_observed_health": 190000000,
+              "maximum_observed_max_health": 1000000000,
+              "maximum_pre_damage_health": 190000000,
+              "maximum_projected_post_damage_health": 189999465,
+              "minimum_damage_event_max_health": 1000000000,
+              "minimum_observed_health": 190000000,
+              "minimum_observed_max_health": 1000000000,
+              "minimum_pre_damage_health": 190000000,
+              "minimum_projected_post_damage_health": 189935397,
+              "sample_count": 56596
+            },
+            "phase": "below_20",
+            "start_ms": 240000,
+            "upper_bound_inclusive": false
+          }
+        ]
+      },
+      "external_bis_target_configured": false,
+      "external_power_infusion_source_count": 0,
+      "external_power_infusion_windows_seconds": [],
+      "flask": true,
+      "food_buff_spell_id": 87546,
+      "gear_basis": "equipped_clone_average_item_level",
+      "heroism_window_seconds": 0,
+      "potions": true,
+      "racial_cooldowns": false,
+      "reference_class": "self_provided_baseline",
+      "reference_conditions": false,
+      "synapse_springs_windows_seconds": [],
+      "target_debuffs": false
+    },
+    "target_observation": {
+      "active_talent_spell_ids": [
+        19418,
+        19506,
+        19592,
+        19622,
+        23989,
+        34483,
+        34487,
+        34954,
+        35102,
+        35110,
+        52786,
+        53209,
+        53224,
+        53232,
+        53238,
+        82684,
+        83356,
+        83490,
+        83560
+      ],
+      "external_window_observation": {
+        "dark_intent_proc": {
+          "base_enabled": false,
+          "base_spell_id": 85767,
+          "expected_uptime_pct": 0,
+          "proc_spell_id": 85759,
+          "unexpected_active_samples": 0,
+          "unexpected_base_active_samples": 0,
+          "uptime_pct": 0
+        },
+        "first_sample_at_ms": 1788941607462,
+        "heroism": {
+          "expected_active_samples": 0,
+          "mismatch_samples": 0,
+          "observed_active_samples": 0,
+          "source_count": 0,
+          "spell_id": 2825,
+          "windows_ms": []
+        },
+        "last_sample_at_ms": 1788941907462,
+        "maximum_sample_gap_ms": 201,
+        "power_infusion": {
+          "expected_active_samples": 0,
+          "mismatch_samples": 0,
+          "observed_active_samples": 0,
+          "source_count": 0,
+          "spell_id": 10060,
+          "windows_ms": []
+        },
+        "sample_count": 3000,
+        "schema": "phase8_external_windows_observation_v1",
+        "synapse_springs": {
+          "expected_windows_ms": [],
+          "spell_id": 96230,
+          "unexpected_active_samples": 0,
+          "windows_ms": []
+        },
+        "target_guid": 1294,
+        "window_ended_at_ms": 1788941907462,
+        "window_started_at_ms": 1788941607462
+      },
+      "fixture_contract": {
+        "content_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "schema": "phase8_calibration_fixture_contract_v1",
+        "upstream_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6"
+      },
+      "gear_profile_observation": {
+        "items": [
+          {
+            "enchant_id": 4209,
+            "gem_item_ids": [
+              68778,
+              71840,
+              0
+            ],
+            "item_id": 78698,
+            "reforge_id": 165,
+            "slot": 0
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              0,
+              0,
+              0
+            ],
+            "item_id": 71610,
+            "reforge_id": 152,
+            "slot": 1
+          },
+          {
+            "enchant_id": 4204,
+            "gem_item_ids": [
+              71879,
+              71879,
+              0
+            ],
+            "item_id": 78737,
+            "reforge_id": 154,
+            "slot": 2
+          },
+          {
+            "enchant_id": 4102,
+            "gem_item_ids": [
+              71879,
+              71879,
+              71840
+            ],
+            "item_id": 78661,
+            "reforge_id": 152,
+            "slot": 4
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              71879,
+              71879,
+              71879
+            ],
+            "item_id": 78447,
+            "reforge_id": 151,
+            "slot": 5
+          },
+          {
+            "enchant_id": 4126,
+            "gem_item_ids": [
+              71879,
+              71879,
+              71879
+            ],
+            "item_id": 78709,
+            "reforge_id": 165,
+            "slot": 6
+          },
+          {
+            "enchant_id": 4105,
+            "gem_item_ids": [
+              71879,
+              71879,
+              0
+            ],
+            "item_id": 78415,
+            "reforge_id": 154,
+            "slot": 7
+          },
+          {
+            "enchant_id": 4258,
+            "gem_item_ids": [
+              71879,
+              71879,
+              0
+            ],
+            "item_id": 78430,
+            "reforge_id": 165,
+            "slot": 8
+          },
+          {
+            "enchant_id": 4107,
+            "gem_item_ids": [
+              71879,
+              71879,
+              71879
+            ],
+            "item_id": 78362,
+            "reforge_id": 151,
+            "slot": 9
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              71879,
+              0,
+              0
+            ],
+            "item_id": 78413,
+            "reforge_id": 151,
+            "slot": 10
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              71879,
+              0,
+              0
+            ],
+            "item_id": 78489,
+            "reforge_id": 159,
+            "slot": 11
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              0,
+              0,
+              0
+            ],
+            "item_id": 77994,
+            "reforge_id": 0,
+            "slot": 12
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              0,
+              0,
+              0
+            ],
+            "item_id": 77999,
+            "reforge_id": 0,
+            "slot": 13
+          },
+          {
+            "enchant_id": 4100,
+            "gem_item_ids": [
+              71879,
+              71879,
+              0
+            ],
+            "item_id": 71415,
+            "reforge_id": 137,
+            "slot": 14
+          },
+          {
+            "enchant_id": 4227,
+            "gem_item_ids": [
+              0,
+              0,
+              0
+            ],
+            "item_id": 78473,
+            "reforge_id": 0,
+            "slot": 15
+          },
+          {
+            "enchant_id": 4267,
+            "gem_item_ids": [
+              0,
+              0,
+              0
+            ],
+            "item_id": 78471,
+            "reforge_id": 0,
+            "slot": 17
+          }
+        ]
+      },
+      "glyph_aura_spell_ids": [
+        56826,
+        56828,
+        56841,
+        56844,
+        56857,
+        63086
+      ],
+      "glyph_property_ids": [
+        352,
+        353,
+        358,
+        365,
+        368,
+        695
+      ],
+      "guid": 1294,
+      "initial_resources": {
+        "combo_points": {
+          "expected": 0,
+          "observed": 0,
+          "required": false
+        },
+        "matches_contract": true,
+        "neutral_eclipse": {
+          "observed": false,
+          "required": false
+        },
+        "observed_at_ms": 1788941607462,
+        "observed_before_scoring": true,
+        "pet_resource": {
+          "observed": true,
+          "required": true
+        },
+        "powers": [
+          {
+            "expected_display_value": 100,
+            "expected_mode": "maximum",
+            "expected_native_value": 100,
+            "matches_contract": true,
+            "name": "focus",
+            "observed_display_value": 100,
+            "observed_maximum_native_value": 100,
+            "observed_native_value": 100,
+            "power_type": 2,
+            "unit_guid": 1294,
+            "unit_kind": "player"
+          },
+          {
+            "expected_display_value": 100,
+            "expected_mode": "maximum",
+            "expected_native_value": 100,
+            "matches_contract": true,
+            "name": "focus",
+            "observed_display_value": 100,
+            "observed_maximum_native_value": 100,
+            "observed_native_value": 100,
+            "power_type": 2,
+            "unit_guid": 1,
+            "unit_kind": "pet"
+          }
+        ],
+        "reset_applied": true,
+        "runes": {
+          "expected_ready_mask": 0,
+          "observed_ready_mask": 0,
+          "required": false
+        },
+        "schema": "phase8_initial_resources_observation_v1",
+        "source_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52"
+      },
+      "item_swap_observation": {
+        "current_gear_manifest_sha256": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1",
+        "enabled": false,
+        "first_sample_at_ms": 1788941607462,
+        "initial_gear_manifest_sha256": "ee445820a89cd272bbe71674e1b2f535277400d90fd220ac8734f780a20b16f1",
+        "last_sample_at_ms": 1788941907462,
+        "maximum_sample_gap_ms": 113,
+        "mismatch_sample_count": 0,
+        "no_drift": true,
+        "sample_count": 3001,
+        "schema": "phase8_no_item_swap_observation_v1",
+        "target_guid": 1294,
+        "window_ended_at_ms": 1788941907462,
+        "window_started_at_ms": 1788941607462
+      },
+      "persistent_setup": {
+        "arcane_brilliance": false,
+        "aspect_of_the_hawk": true,
+        "dragonwrath_proc_aura": false,
+        "fire_totem": {
+          "active": false,
+          "alive": false,
+          "attack_spell": 0,
+          "autorepeat_spell": 0,
+          "cast_attempts": 0,
+          "cast_successes": 0,
+          "casting_skips": 0,
+          "channeled_spell": 0,
+          "created_by_spell": 0,
+          "entry": 0,
+          "generic_spell": 0,
+          "last_cast_result": 28,
+          "missing_spell_skips": 0,
+          "no_target_skips": 0,
+          "owner_target_valid": false,
+          "totem_target_valid": false,
+          "update_calls": 0,
+          "uses_totem_ai": false
+        },
+        "lightning_shield": false,
+        "mage_armor": false,
+        "mainhand_item_entry": 78473,
+        "mainhand_temp_enchant": 0,
+        "mana_gem_ready": true,
+        "molten_armor": false,
+        "offhand_temp_enchant": 0,
+        "pet_admission_spellbook": [
+          {
+            "active": 193,
+            "spell_id": 1742
+          },
+          {
+            "active": 193,
+            "spell_id": 2649
+          },
+          {
+            "active": 193,
+            "spell_id": 17253
+          },
+          {
+            "active": 193,
+            "spell_id": 23145
+          },
+          {
+            "active": 193,
+            "spell_id": 24604
+          },
+          {
+            "active": 1,
+            "spell_id": 53184
+          },
+          {
+            "active": 1,
+            "spell_id": 53186
+          },
+          {
+            "active": 1,
+            "spell_id": 53205
+          },
+          {
+            "active": 193,
+            "spell_id": 53401
+          },
+          {
+            "active": 193,
+            "spell_id": 53434
+          },
+          {
+            "active": 1,
+            "spell_id": 61681
+          },
+          {
+            "active": 1,
+            "spell_id": 61683
+          },
+          {
+            "active": 1,
+            "spell_id": 62760
+          },
+          {
+            "active": 1,
+            "spell_id": 65220
+          }
+        ],
+        "pet_admission_spellbook_sha256": "bc3322f102216e3308dc94e4fa30e2960641678949109ccbda1a90063e684ce8",
+        "pet_alive": true,
+        "pet_autocast_spell_ids": [
+          1742,
+          2649,
+          17253,
+          23145,
+          24604,
+          53401,
+          53434
+        ],
+        "pet_created_by_spell_id": 0,
+        "pet_entry": 8959,
+        "pet_execution_observation": {
+          "alive_ratio": 1.0,
+          "alive_samples": 2997,
+          "attacking_ratio": 1.0,
+          "attacking_samples": 2996,
+          "command_attack_ratio": 1.0,
+          "command_attack_samples": 2996,
+          "diagnostic_basis": "decision_timeline_pet_state",
+          "last_victim_guid": 226,
+          "sample_count": 2997,
+          "target_match_ratio": 1.0,
+          "target_match_samples": 2996
+        },
+        "pet_family_id": 1,
+        "pet_first_observation_at_ms": 1788941607462,
+        "pet_first_observed_guid": 1,
+        "pet_guid": 1,
+        "pet_guid_mismatch_sample_count": 0,
+        "pet_health": 117414,
+        "pet_id": 8700114,
+        "pet_identity_mismatch_sample_count": 0,
+        "pet_in_world": true,
+        "pet_last_observation_at_ms": 1788941907462,
+        "pet_last_observed_guid": 1,
+        "pet_max_health": 117414,
+        "pet_max_power": 100,
+        "pet_maximum_observation_gap_ms": 113,
+        "pet_native_cast_finished": false,
+        "pet_native_cast_finished_at_ms": 0,
+        "pet_native_cast_observed": false,
+        "pet_native_cast_observed_at_ms": 0,
+        "pet_native_cast_submitted": false,
+        "pet_native_cast_submitted_at_ms": 0,
+        "pet_observation_ticks": 3001,
+        "pet_observation_window_ended_at_ms": 1788941907462,
+        "pet_observation_window_started_at_ms": 1788941607462,
+        "pet_observed_owner_guid": 1294,
+        "pet_owned": true,
+        "pet_permanent": true,
+        "pet_power": 100,
+        "pet_power_type": 2,
+        "pet_pre_score_resummon": {
+          "failed": false,
+          "finished": false,
+          "finished_at_ms": 0,
+          "finished_successfully": false,
+          "observed": false,
+          "observed_at_ms": 0,
+          "requested": false,
+          "requested_at_ms": 0,
+          "resource_after": 0,
+          "resource_before": 0,
+          "resource_maximum_after": 0,
+          "resource_maximum_before": 0,
+          "submitted": false,
+          "submitted_at_ms": 0
+        },
+        "pet_present": true,
+        "pet_ready_ticks": 3001,
+        "pet_spell_known": false,
+        "pet_spellbook": [
+          {
+            "active": 193,
+            "spell_id": 1742,
+            "type": 0
+          },
+          {
+            "active": 193,
+            "spell_id": 2649,
+            "type": 0
+          },
+          {
+            "active": 1,
+            "spell_id": 8875,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 17223,
+            "type": 1
+          },
+          {
+            "active": 193,
+            "spell_id": 17253,
+            "type": 0
+          },
+          {
+            "active": 1,
+            "spell_id": 19580,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 19581,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 19582,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 19589,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 19591,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 20782,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 20784,
+            "type": 1
+          },
+          {
+            "active": 193,
+            "spell_id": 23145,
+            "type": 0
+          },
+          {
+            "active": 193,
+            "spell_id": 24604,
+            "type": 0
+          },
+          {
+            "active": 1,
+            "spell_id": 34666,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 34667,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 34675,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 53184,
+            "type": 0
+          },
+          {
+            "active": 1,
+            "spell_id": 53186,
+            "type": 0
+          },
+          {
+            "active": 1,
+            "spell_id": 53205,
+            "type": 0
+          },
+          {
+            "active": 1,
+            "spell_id": 53397,
+            "type": 1
+          },
+          {
+            "active": 193,
+            "spell_id": 53401,
+            "type": 0
+          },
+          {
+            "active": 193,
+            "spell_id": 53434,
+            "type": 0
+          },
+          {
+            "active": 1,
+            "spell_id": 55566,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 61681,
+            "type": 0
+          },
+          {
+            "active": 1,
+            "spell_id": 61683,
+            "type": 0
+          },
+          {
+            "active": 1,
+            "spell_id": 62760,
+            "type": 0
+          },
+          {
+            "active": 1,
+            "spell_id": 65220,
+            "type": 0
+          },
+          {
+            "active": 1,
+            "spell_id": 83408,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 83727,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 87887,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 88680,
+            "type": 1
+          },
+          {
+            "active": 1,
+            "spell_id": 94003,
+            "type": 1
+          }
+        ],
+        "pet_spellbook_sha256": "906160c91e9bd0bc2bb24b90cf6381155406bb20a92a55a96b0ac74ad9e2f6d8",
+        "pet_type": 1,
+        "pet_uptime_ratio": 1.0,
+        "poison_setup_required": false,
+        "poisons": {
+          "mainhand": {
+            "enchant_observed": false,
+            "enchant_observed_at_ms": 0,
+            "equipment_slot": 0,
+            "item_available": false,
+            "native_use_finished": false,
+            "native_use_finished_at_ms": 0,
+            "native_use_finished_item_guid": 0,
+            "native_use_finished_weapon_guid": 0,
+            "native_use_submitted": false,
+            "native_use_submitted_at_ms": 0,
+            "observed_enchant_duration_ms": 0,
+            "observed_enchant_id": 0,
+            "observed_weapon_guid": 0,
+            "observed_weapon_item_entry": 0,
+            "required_enchant_id": 0,
+            "required_item_entry": 0,
+            "required_spell_id": 0,
+            "spell_available": false,
+            "submitted_item_guid": 0,
+            "submitted_weapon_guid": 0
+          },
+          "offhand": {
+            "enchant_observed": false,
+            "enchant_observed_at_ms": 0,
+            "equipment_slot": 0,
+            "item_available": false,
+            "native_use_finished": false,
+            "native_use_finished_at_ms": 0,
+            "native_use_finished_item_guid": 0,
+            "native_use_finished_weapon_guid": 0,
+            "native_use_submitted": false,
+            "native_use_submitted_at_ms": 0,
+            "observed_enchant_duration_ms": 0,
+            "observed_enchant_id": 0,
+            "observed_weapon_guid": 0,
+            "observed_weapon_item_entry": 0,
+            "required_enchant_id": 0,
+            "required_item_entry": 0,
+            "required_spell_id": 0,
+            "spell_available": false,
+            "submitted_item_guid": 0,
+            "submitted_weapon_guid": 0
+          }
+        },
+        "presence_aura_active": false,
+        "presence_native_cast_observed": false,
+        "presence_native_cast_observed_at_ms": 0,
+        "presence_native_cast_submitted": false,
+        "presence_native_cast_submitted_at_ms": 0,
+        "presence_spell_known": false,
+        "ready": true,
+        "required_pet_created_by_spell_id": 0,
+        "required_pet_entry": 0,
+        "required_pet_family_id": 0,
+        "required_pet_power_type": 0,
+        "required_pet_spell_id": 0,
+        "required_pet_type": 0,
+        "required_presence_aura_id": 0,
+        "required_presence_spell_id": 0,
+        "water_shield": false
+      },
+      "pre_score_state": {
+        "cooldown_reset_applied": true,
+        "external_bleed_auras_absent": true,
+        "global_cooldown_clear": true,
+        "heroism_ready": false,
+        "last_potion_item_id": 0,
+        "no_active_cast": true,
+        "no_combat": true,
+        "observed_at_ms": 1788941607462,
+        "observed_before_scoring": true,
+        "persistent_setup_ready": true,
+        "reference_buffs_ready": true,
+        "reference_target_debuffs_ready": true,
+        "schema": "phase8_pre_score_state_observation_v1",
+        "self_provided_player_aura_source": "absent_or_own_class_setup",
+        "self_provided_player_aura_spell_id": 0,
+        "self_provided_player_auras_compatible": true,
+        "self_provided_target_aura_source": "absent_or_owned_effect",
+        "self_provided_target_aura_spell_id": 0,
+        "self_provided_target_auras_compatible": true,
+        "temporal_external_auras_absent": true,
+        "warmup_profile_actions_suppressed": true
+      },
+      "race_id": 3,
+      "reference_condition_observation": {
+        "configured": {
+          "combat_potion_aura_spell_id": 79633,
+          "combat_potion_item_id": 58145,
+          "combat_potion_item_spell_id": 79633,
+          "flask_aura_spell_id": 79471,
+          "flask_item_id": 58087,
+          "flask_item_spell_id": 79471,
+          "food_aura_spell_id": 87546,
+          "food_item_id": 62669,
+          "food_item_spell_id": 87586,
+          "prepot_aura_spell_id": 79633,
+          "prepot_item_id": 58145,
+          "prepot_item_spell_id": 79633,
+          "required_setup_aura_spell_ids": [
+            13165
+          ]
+        },
+        "dynamic_disabled": {
+          "combat_potion_item_id": 58145,
+          "combat_potion_use_count": 1,
+          "last_potion_id_nonzero_samples": 2980,
+          "other_item_use_count": 0,
+          "other_item_uses": [],
+          "prepot_item_id": 58145,
+          "prepot_use_count": 1,
+          "racial_spell_id": 0,
+          "racial_use_count": 0,
+          "tinker_item_id": 0,
+          "tinker_spell_id": 0,
+          "tinker_use_count": 0,
+          "unexpected_dynamic_aura_active_samples": 0
+        },
+        "external_bleed_aura_spell_ids": [
+          16511,
+          33876,
+          46857
+        ],
+        "first_sample_at_ms": 1788941607462,
+        "fixture_contract_sha256": "5af4fb6686135038463e12f3739aff93f29787767aae6a1e7ff9b639488efb52",
+        "fixture_target_guid": 226,
+        "last_sample_at_ms": 1788941907462,
+        "maximum_sample_gap_ms": 201,
+        "native_consumables": {
+          "enabled": true,
+          "receipts": [
+            {
+              "finished_at_ms": 1788941592754,
+              "finished_item_guid": 9702202,
+              "item_id": 58087,
+              "native_use_finished_successfully": true,
+              "phase": "flask_before_scoring",
+              "post_use_item_count": 19,
+              "pre_use_item_count": 20,
+              "required_uses": 1,
+              "spell_id": 79471,
+              "submission_count": 1,
+              "submitted_at_ms": 1788941592754,
+              "submitted_item_guid": 9702202,
+              "successful_use_count": 1,
+              "timing_gate_blocked_sample_count": 0,
+              "timing_gate_first_eligible_at_ms": 0,
+              "timing_gate_last_blocked_at_ms": 0,
+              "timing_gate_last_prepot_aura_blocked_at_ms": 0,
+              "timing_gate_passed": false,
+              "timing_gate_prepot_aura_blocked_sample_count": 0,
+              "timing_gate_prepot_aura_clear_at_submission": false,
+              "timing_gate_remaining_ms_at_submission": 0,
+              "timing_gate_target_health_pct_at_submission": 0
+            },
+            {
+              "finished_at_ms": 1788941592855,
+              "finished_item_guid": 9702203,
+              "item_id": 62669,
+              "native_use_finished_successfully": true,
+              "phase": "food_before_scoring",
+              "post_use_item_count": 19,
+              "pre_use_item_count": 20,
+              "required_uses": 1,
+              "spell_id": 87586,
+              "submission_count": 1,
+              "submitted_at_ms": 1788941592855,
+              "submitted_item_guid": 9702203,
+              "successful_use_count": 1,
+              "timing_gate_blocked_sample_count": 0,
+              "timing_gate_first_eligible_at_ms": 0,
+              "timing_gate_last_blocked_at_ms": 0,
+              "timing_gate_last_prepot_aura_blocked_at_ms": 0,
+              "timing_gate_passed": false,
+              "timing_gate_prepot_aura_blocked_sample_count": 0,
+              "timing_gate_prepot_aura_clear_at_submission": false,
+              "timing_gate_remaining_ms_at_submission": 0,
+              "timing_gate_target_health_pct_at_submission": 0
+            },
+            {
+              "finished_at_ms": 1788941607459,
+              "finished_item_guid": 9702204,
+              "item_id": 58145,
+              "native_use_finished_successfully": true,
+              "phase": "prepot_before_combat",
+              "post_use_item_count": 19,
+              "pre_use_item_count": 20,
+              "required_uses": 1,
+              "spell_id": 79633,
+              "submission_count": 1,
+              "submitted_at_ms": 1788941607459,
+              "submitted_item_guid": 9702204,
+              "successful_use_count": 1,
+              "timing_gate_blocked_sample_count": 0,
+              "timing_gate_first_eligible_at_ms": 0,
+              "timing_gate_last_blocked_at_ms": 0,
+              "timing_gate_last_prepot_aura_blocked_at_ms": 0,
+              "timing_gate_passed": false,
+              "timing_gate_prepot_aura_blocked_sample_count": 0,
+              "timing_gate_prepot_aura_clear_at_submission": false,
+              "timing_gate_remaining_ms_at_submission": 0,
+              "timing_gate_target_health_pct_at_submission": 0
+            },
+            {
+              "finished_at_ms": 1788941609363,
+              "finished_item_guid": 9702204,
+              "item_id": 58145,
+              "native_use_finished_successfully": true,
+              "phase": "combat_potion_during_combat",
+              "post_use_item_count": 18,
+              "pre_use_item_count": 19,
+              "required_uses": 1,
+              "spell_id": 79633,
+              "submission_count": 1,
+              "submitted_at_ms": 1788941609363,
+              "submitted_item_guid": 9702204,
+              "successful_use_count": 1,
+              "timing_gate_blocked_sample_count": 0,
+              "timing_gate_first_eligible_at_ms": 0,
+              "timing_gate_last_blocked_at_ms": 0,
+              "timing_gate_last_prepot_aura_blocked_at_ms": 0,
+              "timing_gate_passed": false,
+              "timing_gate_prepot_aura_blocked_sample_count": 0,
+              "timing_gate_prepot_aura_clear_at_submission": false,
+              "timing_gate_remaining_ms_at_submission": 0,
+              "timing_gate_target_health_pct_at_submission": 0
+            }
+          ]
+        },
+        "player_auras": [
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 324
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 588
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 768
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 1126
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 2457
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 2458
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 2825
+          },
+          {
+            "active_samples": 0,
+            "foreign_source_samples": 0,
+            "inactive_samples": 3000,
+            "own_totem_samples": 0,
+            "spell_id": 2895,
+            "unknown_source_samples": 0
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 7294
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 8076
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 8515
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 10060
+          },
+          {
+            "active_samples": 3000,
+            "inactive_samples": 0,
+            "spell_id": 13165
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 15473
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 20217
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 20572
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 24858
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 24932
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 26297
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 28176
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 28730
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 30482
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 31801
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 33697
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 33702
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 48265
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 53646
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 57669
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 58984
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 64420
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 69041
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 79058
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 79061
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 79063
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 79102
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 79470
+          },
+          {
+            "active_samples": 3000,
+            "inactive_samples": 0,
+            "spell_id": 79471
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 79472
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 79476
+          },
+          {
+            "active_samples": 269,
+            "inactive_samples": 2731,
+            "spell_id": 79633
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 79634
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 82174
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 82930
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 85759
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 85767
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 87545
+          },
+          {
+            "active_samples": 3000,
+            "inactive_samples": 0,
+            "spell_id": 87546
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 87547
+          },
+          {
+            "active_samples": 0,
+            "inactive_samples": 3000,
+            "spell_id": 96230
+          }
+        ],
+        "player_guid": 1294,
+        "reference_class": "self_provided_baseline",
+        "sample_count": 3000,
+        "schema": "phase8_reference_condition_observation_v1",
+        "target_auras": [
+          {
+            "active_samples": 0,
+            "caster_guid": 0,
+            "inactive_samples": 3000,
+            "owner_match_samples": 0,
+            "owner_mismatch_samples": 0,
+            "spell_id": 1490
+          },
+          {
+            "active_samples": 0,
+            "caster_guid": 0,
+            "inactive_samples": 3000,
+            "owner_match_samples": 0,
+            "owner_mismatch_samples": 0,
+            "spell_id": 16511
+          },
+          {
+            "active_samples": 0,
+            "caster_guid": 0,
+            "inactive_samples": 3000,
+            "owner_match_samples": 0,
+            "owner_mismatch_samples": 0,
+            "spell_id": 22959
+          },
+          {
+            "active_samples": 0,
+            "caster_guid": 0,
+            "inactive_samples": 3000,
+            "owner_match_samples": 0,
+            "owner_mismatch_samples": 0,
+            "spell_id": 33876
+          },
+          {
+            "active_samples": 0,
+            "caster_guid": 0,
+            "inactive_samples": 3000,
+            "owner_match_samples": 0,
+            "owner_mismatch_samples": 0,
+            "spell_id": 46857
+          },
+          {
+            "active_samples": 0,
+            "caster_guid": 0,
+            "inactive_samples": 3000,
+            "owner_match_samples": 0,
+            "owner_mismatch_samples": 0,
+            "spell_id": 58567
+          },
+          {
+            "active_samples": 0,
+            "caster_guid": 0,
+            "inactive_samples": 3000,
+            "owner_match_samples": 0,
+            "owner_mismatch_samples": 0,
+            "spell_id": 81326
+          }
+        ],
+        "target_stacked_auras": [
+          {
+            "caster_guid": 0,
+            "matching_samples": 0,
+            "maximum_observed_stacks": 0,
+            "minimum_observed_stacks": 0,
+            "mismatch_samples": 3000,
+            "owner_match_samples": 0,
+            "owner_mismatch_samples": 0,
+            "required_stacks": 3,
+            "spell_id": 58567
+          }
+        ],
+        "unexpected_external_bleed_active_samples": 0,
+        "unexpected_player_aura_active_samples": 0,
+        "unexpected_target_aura_active_samples": 0,
+        "window_ended_at_ms": 1788941907462,
+        "window_started_at_ms": 1788941607462
+      }
+    },
+    "target_spec": "marksmanship_hunter"
+  },
+  "original_checks": {
+    "comparison_manifest_condition_class_coverage": true,
+    "comparison_manifest_present": true,
+    "comparison_manifest_required_fact_coverage": true,
+    "comparison_manifest_schema": true,
+    "comparison_manifest_target_spec": true,
+    "exact_settings_reference_value_matches": true,
+    "exact_settings_result_key_matches_reference": true,
+    "fixture_contract_hash_matches_reference": true,
+    "glyph_item_property_aura_translation_pinned": true,
+    "manifest_requirement:combat_potion": true,
+    "manifest_requirement:duration": true,
+    "manifest_requirement:execute": true,
+    "manifest_requirement:fixture_target": true,
+    "manifest_requirement:flask": true,
+    "manifest_requirement:food": true,
+    "manifest_requirement:form_presence": true,
+    "manifest_requirement:gear_manifest": true,
+    "manifest_requirement:glyphs": true,
+    "manifest_requirement:heroism": true,
+    "manifest_requirement:initial_resources": true,
+    "manifest_requirement:item_swap": true,
+    "manifest_requirement:pet_setup": false,
+    "manifest_requirement:prepot": true,
+    "manifest_requirement:prepull_setup": true,
+    "manifest_requirement:race": true,
+    "manifest_requirement:racial": true,
+    "manifest_requirement:raid_buffs": true,
+    "manifest_requirement:talents": true,
+    "manifest_requirement:target_debuffs": true,
+    "manifest_requirement:target_distance": true,
+    "manifest_requirement:tinker": true,
+    "reference_gear_source_pinned": true,
+    "reference_gear_transform_authority_pinned": true,
+    "reference_gear_transform_schema_pinned": true,
+    "reference_request_binding_valid": true,
+    "reference_result_status_acceptable": true,
+    "replenishment_requirement_matches_spec": true,
+    "request_hash_matches_reference": true,
+    "runtime_duration_observation_valid": true,
+    "runtime_execute_threshold_windows_valid": true,
+    "runtime_external_windows_observation_valid": true,
+    "runtime_fixture_target_observation_valid": true,
+    "runtime_form_presence_pet_observed": true,
+    "runtime_gear_manifest_matches_reference": true,
+    "runtime_glyphs_observed": true,
+    "runtime_initial_resources_observation_valid": true,
+    "runtime_item_swap_observation_valid": true,
+    "runtime_pet_setup_receipts_valid": false,
+    "runtime_prepull_setup_receipts_valid": true,
+    "runtime_race_observed": true,
+    "runtime_reference_not_declared_mismatched": true,
+    "runtime_talents_observed": true,
+    "source_contract_hash_matches_reference": true,
+    "source_setup_complete": true,
+    "source_setup_sha256_valid": true,
+    "supported_target_spec": true
+  },
+  "producer_inputs": {
+    "marksmanship_hunter": {
+      "pet_setup": {
+        "creature_entry": 8959,
+        "kind": "wolf",
+        "required": true,
+        "required_autocast_spell_ids": [
+          23145,
+          53401,
+          53434
+        ],
+        "talents": {
+          "bloodthirsty": 1,
+          "call_of_the_wild": true,
+          "culling_the_herd": 3,
+          "dive": true,
+          "rabid": true,
+          "serpent_swiftness": 2,
+          "shark_attack": 2,
+          "spiders_bite": 3,
+          "spiked_collar": 3
+        },
+        "uptime": 1.0
+      },
+      "provisioning": {
+        "pet": {
+          "actionbar": "7 2 7 1 7 4 193 2649 193 17253 193 23145 193 53401 6 3 6 1 6 0",
+          "active": 1,
+          "created_by_spell": 0,
+          "entry": 8959,
+          "id_offset": 114,
+          "level": 85,
+          "modelid": 4124,
+          "name": "Specwolf14",
+          "slot": 0,
+          "spells": [
+            {
+              "active": 193,
+              "id": 1742
+            },
+            {
+              "active": 193,
+              "id": 2649
+            },
+            {
+              "active": 193,
+              "id": 17253
+            },
+            {
+              "active": 193,
+              "id": 23145
+            },
+            {
+              "active": 193,
+              "id": 24604
+            },
+            53184,
+            53186,
+            53205,
+            {
+              "active": 193,
+              "id": 53401
+            },
+            {
+              "active": 193,
+              "id": 53434
+            },
+            61681,
+            61683,
+            62760,
+            65220
+          ]
+        }
+      }
+    },
+    "survival_hunter": {
+      "pet_setup": {
+        "creature_entry": 8959,
+        "kind": "wolf",
+        "required": true,
+        "required_autocast_spell_ids": [
+          23145,
+          53401,
+          53434
+        ],
+        "talents": {
+          "bloodthirsty": 1,
+          "call_of_the_wild": true,
+          "culling_the_herd": 3,
+          "dive": true,
+          "rabid": true,
+          "serpent_swiftness": 2,
+          "shark_attack": 2,
+          "spiders_bite": 3,
+          "spiked_collar": 3
+        },
+        "uptime": 1.0
+      },
+      "provisioning": {
+        "pet": {
+          "actionbar": "7 2 7 1 7 4 193 2649 193 17253 193 23145 193 53401 6 3 6 1 6 0",
+          "active": 1,
+          "created_by_spell": 0,
+          "entry": 8959,
+          "id_offset": 115,
+          "level": 85,
+          "modelid": 4124,
+          "name": "Specwolf15",
+          "slot": 0,
+          "spells": [
+            {
+              "active": 193,
+              "id": 1742
+            },
+            {
+              "active": 193,
+              "id": 2649
+            },
+            {
+              "active": 193,
+              "id": 17253
+            },
+            {
+              "active": 193,
+              "id": 23145
+            },
+            {
+              "active": 193,
+              "id": 24604
+            },
+            53184,
+            53186,
+            53205,
+            {
+              "active": 193,
+              "id": 53401
+            },
+            {
+              "active": 193,
+              "id": 53434
+            },
+            61681,
+            61683,
+            62760,
+            65220
+          ]
+        }
+      }
+    }
+  },
+  "producer_source_sha256": {
+    "experiments/configs/all_spec_targets_cata_p4_v1.json": "0d40dda89bebac1c97f643a09813fb0cae423294a0996b3292ea27a9f016a562",
+    "experiments/configs/phase8_calibration_fixture_contract_v1.json": "159329e72214987678ef1394a6dcf5bda17a8ec280cd24e28294646e2c66a925"
+  },
+  "schema": "hunter927_pet_compatibility_regression_v1",
+  "source_adapter_sha256": "33f3511345e9c34d748700e150759c3b7e19e6bfefc17a4120b035321f585900",
+  "source_report_sha256": "c1786ac02dc1c707d0c844bc94822bfc77c8e3e98b25880f29107a9252e21def"
+}

@@ -689,3 +689,42 @@ def test_dps011_frozen_socket_authority_validates_without_ambient_data_and_rejec
     drifted['materialization']['profession_enchant_authority']['enchant_requirements']['3717'] = [164, 400]
     with pytest.raises(ValueError, match='socket_native_applicability'):
         fixture.validate_fixture_contract(drifted)
+
+
+def test_hunter_runtime_pet_projection_uses_complete_enabled_spellbook():
+    from tools.bot_ml.phase8_fixture_contract import _hunter_pet_projection
+
+    frozen = json.loads((ROOT / "tests/fixtures/hunter_927_pet_compatibility.json").read_text())
+    for spec, inputs in frozen["producer_inputs"].items():
+        expected = _hunter_pet_projection(**inputs)
+        assert len(expected["spellbook"]) == 14, spec
+        assert expected["spellbook_sha256"] == "bc3322f102216e3308dc94e4fa30e2960641678949109ccbda1a90063e684ce8"
+        assert expected["autocast_spell_ids"] == [1742, 2649, 17253, 23145, 24604, 53401, 53434]
+        assert inputs["pet_setup"]["required_autocast_spell_ids"] == [23145, 53401, 53434]
+        assert set(expected) == {
+            "schema", "required", "runtime_projection_complete", "pet_id", "creature_entry",
+            "created_by_spell_id", "uptime", "spellbook", "spellbook_sha256",
+            "autocast_spell_ids", "power",
+        }
+        # Provisioning and simulator talent authority survive outside the runtime view.
+        assert all(key in inputs["provisioning"]["pet"] for key in ("modelid", "level", "slot", "active"))
+        assert inputs["pet_setup"]["talents"]
+
+
+def test_hunter_required_autocasts_must_be_sorted_unique_enabled_subset():
+    import copy
+    from tools.bot_ml.phase8_fixture_contract import _hunter_pet_projection
+
+    frozen = json.loads((ROOT / "tests/fixtures/hunter_927_pet_compatibility.json").read_text())
+    for original in frozen["producer_inputs"].values():
+        for bad_ids in ([23145, 53434, 53401], [23145, 53401, 53401], [999999],
+                        [True], [23145.0], ["23145"], None):
+            inputs = copy.deepcopy(original)
+            inputs["pet_setup"]["required_autocast_spell_ids"] = bad_ids
+            with pytest.raises(ValueError, match="required_autocasts"):
+                _hunter_pet_projection(**inputs)
+        inputs = copy.deepcopy(original)
+        row = next(row for row in inputs["provisioning"]["pet"]["spells"] if row["id"] == 23145)
+        row["active"] = 129
+        with pytest.raises(ValueError, match="required_autocasts"):
+            _hunter_pet_projection(**inputs)

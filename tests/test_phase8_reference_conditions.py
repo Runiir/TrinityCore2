@@ -900,6 +900,7 @@ def test_provisioned_hunter_pet_binds_admission_identity_without_summon_receipt(
         "runtime_projection_complete": True,
         "pet_id": 8_700_114,
         "creature_entry": 8_959,
+        "created_by_spell_id": 0,
         "uptime": 1.0,
         "spellbook": admission_spellbook,
         "spellbook_sha256": admission_sha,
@@ -912,6 +913,7 @@ def test_provisioned_hunter_pet_binds_admission_identity_without_summon_receipt(
         "pet_guid": 20,
         "pet_id": 8_700_114,
         "pet_entry": 8_959,
+        "pet_created_by_spell_id": 0,
         "pet_present": True,
         "pet_in_world": True,
         "pet_alive": True,
@@ -2824,3 +2826,68 @@ def test_closed_fire90_frozen_readiness_preserves_continuous_aura_gate():
     result = derive_reference_condition_compatibility(**inputs)
     assert result["checks"]["runtime_prepull_setup_receipts_valid"] is False
     assert result["conditions_compatible"] is False
+
+
+def _hunter927_corrected_inputs():
+    from tools.bot_ml.phase8_fixture_contract import _hunter_pet_projection
+
+    frozen = json.loads((Path(__file__).parent / "fixtures/hunter_927_pet_compatibility.json").read_text())
+    assert frozen["source_report_sha256"] == "c1786ac02dc1c707d0c844bc94822bfc77c8e3e98b25880f29107a9252e21def"
+    inputs = frozen["inputs"]
+    inputs["reference_conditions"] = EXPECTED_REFERENCE_CONDITIONS
+    original = derive_reference_condition_compatibility(**inputs)
+    assert original["checks"] == frozen["original_checks"]
+    expected = _hunter_pet_projection(**frozen["producer_inputs"]["marksmanship_hunter"])
+    requirement = next(row for row in inputs["expected_manifest"]["requirements"] if row["id"] == "pet_setup")
+    requirement["equals"] = expected
+    return inputs, original
+
+
+def test_hunter927_exact_producer_consumer_composition_preserves_v3_rejection():
+    inputs, original = _hunter927_corrected_inputs()
+    assert [key for key, value in original["checks"].items() if not value] == [
+        "runtime_pet_setup_receipts_valid", "manifest_requirement:pet_setup"]
+    corrected = derive_reference_condition_compatibility(**inputs)
+    assert corrected["conditions_compatible"] is True
+    assert all(corrected["checks"].values())
+    for key, value in original["checks"].items():
+        if key not in ("runtime_pet_setup_receipts_valid", "manifest_requirement:pet_setup"):
+            assert corrected["checks"][key] == value
+    assert corrected["runtime_reference_facts"] == original["runtime_reference_facts"]
+
+
+def test_hunter927_pet_identity_drift_remains_rejected():
+    inputs, _ = _hunter927_corrected_inputs()
+    original = inputs["target_observation"]["persistent_setup"]
+    mutations = {
+        "pet_id": [original["pet_id"] + 1],
+        "pet_entry": [original["pet_entry"] + 1],
+        "pet_created_by_spell_id": [None, 1, False, "0", 0.0],
+        "pet_power_type": [0], "pet_power": [-1, original["pet_max_power"] + 1],
+        "pet_owned": [False], "pet_permanent": [False], "pet_alive": [False],
+        "pet_observed_owner_guid": [1], "pet_ready_ticks": [0],
+        "pet_first_observed_guid": [original["pet_first_observed_guid"] + 1],
+        "pet_last_observed_guid": [original["pet_last_observed_guid"] + 1],
+        "pet_identity_mismatch_sample_count": [1], "pet_uptime_ratio": [0.99],
+        "pet_admission_spellbook_sha256": ["0" * 64],
+        "pet_spellbook_sha256": ["0" * 64],
+        "pet_autocast_spell_ids": [original["pet_autocast_spell_ids"][:-1],
+                                   original["pet_autocast_spell_ids"] + [999999]],
+        "pet_admission_spellbook": [original["pet_admission_spellbook"][:-1],
+                                    list(reversed(original["pet_admission_spellbook"])),
+                                    original["pet_admission_spellbook"] + [{"spell_id": 999999, "active": 193}]],
+    }
+    changed = copy.deepcopy(original["pet_admission_spellbook"])
+    changed[0]["active"] = 129
+    mutations["pet_admission_spellbook"].append(changed)
+    for field, values in mutations.items():
+        for value in values:
+            bad = copy.deepcopy(inputs)
+            setup = bad["target_observation"]["persistent_setup"]
+            if value is None:
+                setup.pop(field)
+            else:
+                setup[field] = value
+            result = derive_reference_condition_compatibility(**bad)
+            assert result["checks"]["runtime_pet_setup_receipts_valid"] is False, (field, value)
+            assert result["conditions_compatible"] is False, (field, value)

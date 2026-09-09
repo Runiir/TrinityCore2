@@ -821,6 +821,7 @@ def pet_setup_projection(
             "runtime_projection_complete": True,
             "pet_id": _integer(setup.get("pet_id")),
             "creature_entry": _integer(setup.get("pet_entry")),
+            "created_by_spell_id": setup.get("pet_created_by_spell_id"),
             "uptime": uptime,
             "spellbook": admission_spellbook,
             "spellbook_sha256": setup.get("pet_admission_spellbook_sha256"),
@@ -832,6 +833,7 @@ def pet_setup_projection(
         }
         valid = bool(
             observation_window_valid
+            and type(setup.get("pet_created_by_spell_id")) is int
             and _integer(setup.get("required_pet_spell_id")) == 0
             and _integer(setup.get("required_pet_entry")) == 0
             and _integer(setup.get("pet_guid")) > 0

@@ -68,6 +68,12 @@ launch binds its data root. Match each check to its observation time: prepull
 readiness uses the scoring-start snapshot; consuming an item during combat does
 not invalidate that earlier readiness. Return all known blocking findings together;
 do not end the first review after checking only one identity field.
+For exact runtime identity comparisons, test the complete emitted dictionary
+against the real materialized expectation. Keep provisioning-only fields in
+their own authority, and distinguish required subsets from complete observed
+sets. A fixture that manually trims expected fields cannot prove the production
+comparison passes. Correct immutable contract identities through a new cohort;
+never fill missing observations from expected values.
 
 Use Luna max for exact narrow implementation with immutable evidence, owned production
 and affected test files, one hypothesis, excluded changes, a focused command, and concrete

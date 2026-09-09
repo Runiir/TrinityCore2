@@ -15,11 +15,16 @@ remain unchanged. Hunter's Agility is correct: scoring-start 9,536.1 includes
 provides the five-percent multiplier. Pet admission matches all 14 expected rows.
 
 Next repairs are Wild Quiver's wrong proc phase (DPS-015) and Readiness checking
-self health instead of hostile health (DPS-016). Separate implementations are
-active and require independent review before one joined build/live attempt.
-A pet compatibility consumer/manifest inconsistency (DPS-017) is under diagnosis.
+self health instead of hostile health (DPS-016). Both repairs are independently approved and committed.
+The pet compatibility producer/consumer repair (DPS-017) is also independently
+approved; all 83 affected tests pass after rematerialization. Its corrected
+immutable reference cohort must be generated and promoted before the next run.
+A fixed aggregate owner-aura receipt (OBS-002) is being added to the same build.
+The initial crit gap reflects pre-combat sampling; it does not prove a missing
+Furious Howl cast. No pet AI or damage coefficient repair is admitted.
 No unchanged server retry is needed for post-processing defects.
-Hunter927 raw evidence remains available to reviewers. Prior runs are remotely
+Hunter927 review is complete: setup accepted, DPS rejected. Its evidence is
+DVC-published, freshly remote-verified, and exact raw payloads are evicted. Prior runs are remotely
 archived; the new 16-spec reference cohort is fully promoted and clean-verified.
 
 Source `90a181db01` is committed, pushed and built. Affliction and Fire each
