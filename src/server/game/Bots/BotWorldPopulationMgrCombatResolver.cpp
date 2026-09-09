@@ -180,6 +180,12 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                 bot->GetMeleeRange(target));
         else
             nativeMaxRange += bot->GetCombatReach() + target->GetCombatReach();
+        // An unset melee action maximum inherits native reach. The profile
+        // range and raw DBC melee range are approach defaults, not explicit
+        // action caps; clipping to them rejects legal large-hitbox attacks.
+        if (spellInfo->RangeEntry && (spellInfo->RangeEntry->Flags & SPELL_RANGE_MELEE)
+            && candidate.Profile.MaxRange <= 0.0f)
+            return nativeMaxRange;
         // A profile maximum is a policy cap, never permission to extend the
         // native spell envelope.  Shadowflame exposed the distinction: its
         // profile allowed a 15-yard approach while the core rejected that

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "target_patch": "4.3.4",
+  "official_source": "https://worldofwarcraft.blizzard.com/en-us/news/3964563",
+  "official_design_source": "https://worldofwarcraft.blizzard.com/en-us/news/3300854",
+  "official_pvp_source": "https://worldofwarcraft.blizzard.com/en-us/news/4389517",
+  "official_contract": "The first melee hit grants 33% of its damage (described by the developer as one third); periodic updates retain that floor while continuing the prior accumulation and decay behavior, and player damage does not trigger it in 4.3.2 onward.",
+  "wowsims_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+  "wowsims_source": "sim/core/vengeance.go",
+  "wowsims_source_sha256": "9739ed0b6a7c4b140dc1948d966836efc50e93a8c6a0c4a364b790a52d7544e5",
+  "passive_spell_ids": [93098, 93099, 84839, 84840],
+  "triggered_spell_id": 76691,
+  "cases": {
+    "initial_hit": {"damage": 30000, "cap": 50000, "expected_attack_power": 10000},
+    "hit_update": {"prior_attack_power": 10000, "prior_recent_max": 10000, "damage": 6000, "expected_attack_power": 9800},
+    "first_periodic_boundary": {"timestamp_ms": 3000, "expected_attack_power": 9000},
+    "no_hit_update": {"timestamp_ms": 5000, "expected_attack_power": 8000},
+    "cap_update": {"initial_attack_power": 40000, "damage": 300000, "cap": 50000, "expected_attack_power": 50000}
+  }
+}

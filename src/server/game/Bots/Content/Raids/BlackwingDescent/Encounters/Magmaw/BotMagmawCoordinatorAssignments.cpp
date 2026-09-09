@@ -49,7 +49,8 @@ bool MatchesRule(MagmawRosterMember const& member,
 
 CandidatePool BuildCandidates(std::vector<MagmawRosterMember> const& members,
     MagmawRosterObservations const& observations, Slot slot,
-    bool authoritative)
+    bool authoritative, bool mainTankConfigured = false,
+    ObjectGuid configuredMainTank = {})
 {
     CandidatePool pool;
     AssignmentRule const* rule = FindRule(slot);
@@ -58,6 +59,9 @@ CandidatePool BuildCandidates(std::vector<MagmawRosterMember> const& members,
     for (MagmawRosterMember const& member : members)
     {
         if (!MatchesRule(member, *rule))
+            continue;
+        if (slot == Slot::MainPullTank && mainTankConfigured
+            && member.Guid != configuredMainTank)
             continue;
         ++pool.IdentityCount;
         MagmawRosterLiveness const liveness = ObserveMagmawRosterMember(
@@ -107,12 +111,14 @@ void ReconcileStandardSlots(MagmawRaidPlan& plan,
     MagmawRaidPlan const& before,
     std::vector<MagmawRosterMember> const& members,
     MagmawRosterObservations const& observations, bool authoritative,
-    bool scopeChanged)
+    bool scopeChanged, bool mainTankConfigured,
+    ObjectGuid configuredMainTank)
 {
     for (Slot slot : { Slot::FireMageBaiter,
         Slot::MarksmanshipHunterBaiter, Slot::MainPullTank })
         ReconcileSlot(plan, before, slot,
-            BuildCandidates(members, observations, slot, authoritative),
+            BuildCandidates(members, observations, slot, authoritative,
+                mainTankConfigured, configuredMainTank),
             scopeChanged);
 }
 
@@ -202,12 +208,14 @@ void ReconcileMagmawAssignments(MagmawRaidPlan& plan,
     MagmawRaidPlan const& before,
     std::vector<MagmawRosterMember> const& members,
     MagmawRosterObservations const& observations, bool authoritative,
-    bool scopeChanged)
+    bool scopeChanged, bool mainTankConfigured,
+    ObjectGuid configuredMainTank)
 {
     if (!authoritative && !scopeChanged)
         return;
     ReconcileStandardSlots(plan, before, members, observations,
-        authoritative, scopeChanged);
+        authoritative, scopeChanged, mainTankConfigured,
+        configuredMainTank);
     ReconcileHooks(plan, before, members, observations, authoritative,
         scopeChanged);
     ReconcileLane(plan, before, observations, authoritative, scopeChanged);

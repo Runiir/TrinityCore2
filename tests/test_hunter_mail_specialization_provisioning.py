@@ -160,7 +160,7 @@ def test_native_specialization_child_and_equipped_armor_keep_ownership():
     assert 'if (HasSpell(ArmorSpecializationIds[id]))' in body
     assert 'CastSpell(this, ArmorSpecializationIds[id], TRIGGERED_FULL_MASK);' in body
     assert 'SPELL_ATTR8_REQUIRES_EQUIPPED_INV_TYPES' in body
-    script = (ROOT/'src/server/scripts/Spells/spell_generic.cpp').read_text()
+    script = (ROOT/'src/server/scripts/Spells/spell_generic_bonuses_utilities.cpp').read_text()
     begin = script.index('class spell_gen_armor_specialization')
     body = script[begin:script.index('\nenum PvPTrinket', begin)]
     assert 'if (player->HasAllItemsToFitToSpellRequirements(spellInfo))' in body

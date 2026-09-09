@@ -13,6 +13,42 @@
 #include <string>
 #include <vector>
 
+bool BotWorldPopulationMgr::ResolveConfiguredRaidTankAssignment(
+    ObjectGuid& mainTankGuid, ObjectGuid& offTankGuid) const
+{
+    mainTankGuid.Clear();
+    offTankGuid.Clear();
+    if (Party().ValidationRouteManifestIndex >= Party().ValidationRouteManifest.size())
+        return false;
+    ValidationRouteManifestNode const& node =
+        Party().ValidationRouteManifest[Party().ValidationRouteManifestIndex];
+    if (!node.MainTankRosterSlot && !node.OffTankRosterSlot)
+        return false;
+    if (!node.MechanicContractResolved || !node.MainTankRosterSlot
+        || !node.OffTankRosterSlot || node.MainTankRosterSlot == node.OffTankRosterSlot
+        || !Cohort().Raid.RosterComplete || !Cohort().Raid.UniqueLeases
+        || !Cohort().Raid.AssignmentGeneration)
+        return true;
+
+    for (auto const& [_, slot] : Cohort().Raid.RosterByGuid)
+    {
+        if (!slot.Active || !slot.LeaseOwned || slot.Role != "tank")
+            continue;
+        uint32 const rosterSlot = slot.SlotIndex + 1;
+        if (rosterSlot == node.MainTankRosterSlot)
+            mainTankGuid = slot.Guid;
+        else if (rosterSlot == node.OffTankRosterSlot)
+            offTankGuid = slot.Guid;
+    }
+    if (mainTankGuid.IsEmpty() || offTankGuid.IsEmpty()
+        || mainTankGuid == offTankGuid)
+    {
+        mainTankGuid.Clear();
+        offTankGuid.Clear();
+    }
+    return true;
+}
+
 BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAssignment(Player* bot) const
 {
     RaidRoleAssignment assignment;
@@ -90,6 +126,15 @@ BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAs
 
     if (assignment.MainTankGuid.IsEmpty() && assignment.Role == "tank")
         assignment.MainTankGuid = bot->GetGUID();
+
+    ObjectGuid configuredMainTank;
+    ObjectGuid configuredOffTank;
+    if (ResolveConfiguredRaidTankAssignment(configuredMainTank,
+        configuredOffTank))
+    {
+        assignment.MainTankGuid = configuredMainTank;
+        assignment.OffTankGuid = configuredOffTank;
+    }
 
     if (!assignment.RosterSlotId.empty())
         for (RaidRosterPlanSlot const& slot : BuildRosterPlan())
@@ -420,4 +465,3 @@ BotWorldPopulationMgr::RaidGearTargetPlan BotWorldPopulationMgr::BuildRaidGearTa
         plan.RecommendedActivity = "heroic_raid";
     return plan;
 }
-

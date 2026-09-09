@@ -47,5 +47,8 @@ def test_validation_route_manifest_preserves_mechanic_and_native_contracts() -> 
         "native_interaction_contract_invalid",
         "native_completion_contract_invalid",
         "ApplyValidationRouteManifestNode(0, \"manifest_load\")",
+        "main_tank_roster_slot",
+        "off_tank_roster_slot",
+        "tankAssignmentResolved",
     ):
         assert marker in module

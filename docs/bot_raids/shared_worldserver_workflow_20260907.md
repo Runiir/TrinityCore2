@@ -1,8 +1,16 @@
 # Shared-worldserver workflow status
 
-Current objective: resume the wider raid program after the accepted Magmaw DPS
-canary. Next bounded scope is Maloriak encounter readiness: reconcile current
-source, bindings, research and retained evidence before admitting a repair.
+Current objective: diagnose DPS-023 from the user's manual spectator run.
+Bots reportedly retain the exposed-head target after it disappears, recovering
+only after the next Pillar/add target. This newly observed transition reopens
+bounded Magmaw work; the accepted earlier kill ended during head exposure.
+Maloriak readiness is deferred until this target lifecycle edge is resolved.
+Independent Sol reviews approve the native melee admission repair, scoped Rune
+Strike catalog migration, 4.3 Vengeance recurrence, configured Blood DK main tank
+(slot 2) / Paladin off tank (slot 1), and bounded target/AP observations. Focused
+fixtures pass. Build and live verification remain pending. Head-return behavior
+is not repaired yet; capture diagnose every second to prove the internal failure.
+
 Known failures, rejected assumptions and next actions: [error ledger](error_ledger.md).
 
 Magmaw 10N on `21c640739d` is independently accepted as a development canary.

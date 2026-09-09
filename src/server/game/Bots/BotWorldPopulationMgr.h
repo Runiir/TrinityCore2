@@ -699,6 +699,8 @@ private:
         char const* rawJson, char const* semanticJson);
     BossMechanicActionResult TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, Unit* boundRouteTarget = nullptr);
     RaidRoleAssignment BuildRaidRoleAssignment(Player* bot) const;
+    bool ResolveConfiguredRaidTankAssignment(ObjectGuid& mainTankGuid,
+        ObjectGuid& offTankGuid) const;
     RaidPositioningAnchors BuildRaidPositioningAnchors(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;
     RaidMechanicAdapter BuildRaidMechanicAdapter(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;
     RaidGearTargetPlan BuildRaidGearTargetPlan(Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;

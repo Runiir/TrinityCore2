@@ -78,3 +78,14 @@ def test_magmaw_routes_declare_passive_hook_spike():
     assert len(magmaw_nodes) == 2
     assert all(node.get("scripted_event_entries") == [41767]
         for node in magmaw_nodes)
+    assert all(node["mechanic_contract"]["main_tank_roster_slot"] == 2
+        and node["mechanic_contract"]["off_tank_roster_slot"] == 1
+        for node in magmaw_nodes)
+
+
+def test_encounter_blackboard_publishes_configured_tank_assignment_lease():
+    text = MODULE.read_text()
+    assert "ResolveConfiguredRaidTankAssignment(mainTankGuid, offTankGuid)" in text
+    assert 'lease.Slot = "main_tank"' in text
+    assert "lease.AssigneeGuid = mainTankGuid" in text
+    assert "lease.BackupGuid = offTankGuid" in text

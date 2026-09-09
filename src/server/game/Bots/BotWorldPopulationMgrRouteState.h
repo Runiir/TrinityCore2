@@ -108,6 +108,8 @@ namespace BotWorldPopulationMgrRouteState
         uint32 TankSwapTriggerSpellId = 0;
         uint32 TankSwapAddEntry = 0;
         std::string TankSwapPhase;
+        uint32 MainTankRosterSlot = 0;
+        uint32 OffTankRosterSlot = 0;
         uint32 InterruptOwnerSlot = 0;
         uint32 InterruptBackupSlot = 0;
         uint32 InterruptTriggerSpellId = 0;

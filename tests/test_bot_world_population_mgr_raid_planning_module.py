@@ -50,3 +50,22 @@ def test_raid_planning_keeps_native_assignment_and_formation_contract():
         "ReadyForHeroicRaid",
     ):
         assert marker in text
+
+
+def test_configured_tank_slots_replace_group_order_for_existing_consumers():
+    text = MODULE.read_text()
+    resolver = text[
+        text.index("BotWorldPopulationMgr::ResolveConfiguredRaidTankAssignment"):
+        text.index("BotWorldPopulationMgr::BuildRaidRoleAssignment")
+    ]
+    assert "slot.SlotIndex + 1" in resolver
+    assert 'slot.Role != "tank"' in resolver
+    assert "slot.Active" in resolver and "slot.LeaseOwned" in resolver
+    assignment = text[
+        text.index("BotWorldPopulationMgr::BuildRaidRoleAssignment"):
+        text.index("BotWorldPopulationMgr::BuildRaidPositioningAnchors")
+    ]
+    assert "assignment.MainTankGuid = configuredMainTank" in assignment
+    assert "assignment.OffTankGuid = configuredOffTank" in assignment
+    formation = text[text.index("BotWorldPopulationMgr::BuildRaidPositioningAnchors"):]
+    assert "ObjectAccessor::FindPlayer(assignment.MainTankGuid)" in formation

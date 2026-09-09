@@ -2224,6 +2224,8 @@ def test_bwd_magmaw_preserves_boss_source_and_uses_db_ground_anchor():
         "target_entries": [41570, 42347, 41806, 42321],
         "allow_area_damage": False,
         "allow_multidot": False,
+        "main_tank_roster_slot": 2,
+        "off_tank_roster_slot": 1,
     }
 
 

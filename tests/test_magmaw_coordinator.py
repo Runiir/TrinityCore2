@@ -232,6 +232,22 @@ static void AssertModesInitialAndSafeAccess()
     }
 }
 
+static void AssertConfiguredMainTankOverridesRosterOrder()
+{
+    Blackboard board = Board();
+    board.Assignments.push_back({ AssignmentKind::Tank, "main_tank",
+        PlayerGuid(101), {}, PlayerGuid(100), 3, 0 });
+    MagmawRosterView roster = Roster(board.CurrentScope);
+    auto plan = Reconcile(nullptr, board, roster);
+    assert(plan->Plan().Authoritative);
+    assert(Assigned(plan->Plan(), Slot::MainPullTank) == PlayerGuid(101));
+
+    PlayerState(board, 101).Alive = false;
+    ++board.Revision;
+    auto unavailable = Reconcile(plan, board, roster);
+    assert(Assigned(unavailable->Plan(), Slot::MainPullTank).IsEmpty());
+}
+
 static void AssertRecurringCyclesPermutationAndPartialSnapshot()
 {
     Blackboard board = Board();
@@ -580,6 +596,7 @@ int main()
 {
     AssertProductionLifecycleFailsClosed();
     AssertModesInitialAndSafeAccess();
+    AssertConfiguredMainTankOverridesRosterOrder();
     AssertRecurringCyclesPermutationAndPartialSnapshot();
     AssertSameGenerationRosterMutationsInvalidateReuse();
     AssertInitialPartialAndTransientObservationLoss();

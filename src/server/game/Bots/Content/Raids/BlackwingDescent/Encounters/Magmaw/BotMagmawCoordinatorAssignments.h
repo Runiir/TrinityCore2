@@ -27,7 +27,8 @@ void ReconcileMagmawAssignments(MagmawRaidPlan& plan,
     MagmawRaidPlan const& before,
     std::vector<MagmawRosterMember> const& members,
     MagmawRosterObservations const& observations, bool authoritative,
-    bool scopeChanged);
+    bool scopeChanged, bool mainTankConfigured,
+    ObjectGuid configuredMainTank);
 }
 
 #endif

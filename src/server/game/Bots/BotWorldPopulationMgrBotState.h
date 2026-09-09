@@ -14,6 +14,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTargetReturnObservation.h"
 #include "ObjectGuid.h"
 
 #include <deque>
@@ -506,6 +507,8 @@ namespace BotWorldPopulationMgrBotState
         BotEncounter::MagmawParasiteHazardState MagmawParasiteHazard;
         BotEncounter::MagmawPersonalParasiteEscapeTask
             MagmawPersonalParasiteEscape;
+        BotEncounter::MagmawTargetReturnObservation::Record
+            MagmawTargetReturn;
         std::string LastDecisionKernelJson = "{}";
         std::string LastActionCategory = "wait";
         std::string LastClassSpecProfile = "{}";

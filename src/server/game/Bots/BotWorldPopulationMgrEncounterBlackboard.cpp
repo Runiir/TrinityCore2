@@ -275,6 +275,18 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
         snapshot->Route.CompletionKind = routeNode.NativeCompletionKind;
         snapshot->Route.CompletionEntry = routeNode.NativeCompletionEntry;
         snapshot->Route.CompletionSpellId = routeNode.NativeCompletionSpellId;
+        ObjectGuid mainTankGuid;
+        ObjectGuid offTankGuid;
+        if (ResolveConfiguredRaidTankAssignment(mainTankGuid, offTankGuid))
+        {
+            BotEncounter::AssignmentLease lease;
+            lease.Kind = BotEncounter::AssignmentKind::Tank;
+            lease.Slot = "main_tank";
+            lease.AssigneeGuid = mainTankGuid;
+            lease.BackupGuid = offTankGuid;
+            lease.Generation = Cohort().Raid.AssignmentGeneration;
+            snapshot->Assignments.push_back(std::move(lease));
+        }
     }
     snapshot->Route.Complete = Party().ValidationRouteManifestComplete;
     snapshot->Route.NavigationHints.push_back({ Cohort().Config.ValidationRouteX,

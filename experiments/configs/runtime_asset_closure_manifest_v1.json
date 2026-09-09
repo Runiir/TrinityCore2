@@ -32,8 +32,8 @@
       "class_id": "validation_routes",
       "stage": "validation_scenarios",
       "output_path": "dataset/validation_scenarios",
-      "md5": "6cb956b1b19a09ab17d7fadf025ffca0.dir",
-      "size": 548644,
+      "md5": "917fd6bb79811eec98be5327cc0fe384.dir",
+      "size": 548754,
       "nfiles": 5
     },
     {
@@ -108,9 +108,9 @@
       "audit_inventory_sha256": "bd23bc7cc3e018f542e54acb63d787bdab7bae98a2bf00249411fdb1754565be",
       "expected_inventory": {
         "file_count": 5,
-        "size_bytes": 548644,
+        "size_bytes": 548754,
         "path_set_sha256": "a1b9f088efb02f9b70174ab228d7146d4fd31128ce4009f3ec9c9c64a7e057f1",
-        "inventory_sha256": "ad678ce80e195493cd6413fa6c66abac9a524bfb88d1f0475eb68c515c75c077"
+        "inventory_sha256": "1b17800a1782473fe45c21280e024257b57a62dd343f2114c0f705c857e4099f"
       },
       "expected_files": [
         {
@@ -118,7 +118,7 @@
           "type": "file",
           "mode": "0644",
           "size_bytes": 764,
-          "sha256": "2bd453d6cbfd147449dbc2de454be45f230265e33c42e1bbfe300e14ed282bd8"
+          "sha256": "3852fc2279cadca64eeeb0bae459e312495c7757640ef51e74c835df2e4546bf"
         },
         {
           "path": "dataset/validation_scenarios/report.json",
@@ -138,8 +138,8 @@
           "path": "dataset/validation_scenarios/validation_routes.jsonl",
           "type": "file",
           "mode": "0644",
-          "size_bytes": 483655,
-          "sha256": "406527cc6e274fd010520f5b1bd21b86c3d79ca042b4bfd2a5833025be2d45e5"
+          "size_bytes": 483765,
+          "sha256": "1e5221132e848339f73eda635ce38562e2ea17a1c01b32f80662e911537a758d"
         },
         {
           "path": "dataset/validation_scenarios/validation_scenarios.jsonl",

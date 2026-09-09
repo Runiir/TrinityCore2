@@ -219,8 +219,18 @@ std::shared_ptr<MagmawCoordinator const> MagmawCoordinator::Reconcile(
 
     MagmawRosterObservations const observations =
         BuildMagmawRosterObservations(board);
+    bool mainTankConfigured = false;
+    ObjectGuid configuredMainTank;
+    for (AssignmentLease const& lease : board.Assignments)
+        if (lease.Kind == AssignmentKind::Tank && lease.Slot == "main_tank")
+        {
+            mainTankConfigured = true;
+            configuredMainTank = lease.AssigneeGuid;
+            break;
+        }
     ReconcileMagmawAssignments(next->_plan, before, admission.Members,
-        observations, authoritative, scopeChanged);
+        observations, authoritative, scopeChanged, mainTankConfigured,
+        configuredMainTank);
     ObserveMangleOwner(next->_plan, facts, admission.Members, observations);
     FinalizePlan(next->_plan, before, scopeChanged);
     return std::shared_ptr<MagmawCoordinator const>(next.release());

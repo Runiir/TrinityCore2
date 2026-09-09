@@ -2197,6 +2197,8 @@ def test_phase1_magmaw_engagement_contract_has_explicit_safe_target_authority():
         "target_entries": [41570, 42347, 41806, 42321],
         "allow_area_damage": False,
         "allow_multidot": False,
+        "main_tank_roster_slot": 2,
+        "off_tank_roster_slot": 1,
     }
     assert 'adapter.TargetControl = contract->TargetControl.empty() ? "focus_fire"' in IMPL
     assert 'raidAdapter.TargetControl == "focus_fire"' in IMPL

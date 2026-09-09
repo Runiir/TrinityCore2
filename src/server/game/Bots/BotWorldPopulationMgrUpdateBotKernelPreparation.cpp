@@ -489,6 +489,11 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 context.State.ActivePathPurposeValid, context.State.ActivePathPurpose,
                 context.State.ActivePathAttemptId, context.State.ActivePathWipeGeneration,
                 context.State.ActivePathRouteGeneration, context.State.ActivePathRouteNodeId };
+            ObjectGuid const magmawStateTargetBefore = context.State.TargetGuid;
+            ObjectGuid const magmawContextTargetBefore = context.Target
+                ? context.Target->GetGUID() : ObjectGuid::Empty;
+            BotEncounter::MagmawFacts const* magmawFacts = Cohort().MagmawFacts
+                ? &Cohort().MagmawFacts->Facts() : nullptr;
             BotEncounter::AdaptiveMagmawStrategy magmawStrategy;
             BotEncounter::AdaptiveMagmawPlan magmawPlan = magmawStrategy.Propose(
                 *Cohort().EncounterSnapshot, context.Bot->GetGUID(),
@@ -499,8 +504,7 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 &context.State.MagmawEventMovement, magmawMobility,
                 BotEncounter::AdaptiveMagmawStrategy::
                     DefaultMovementProducerOrder,
-                Cohort().MagmawFacts
-                    ? &Cohort().MagmawFacts->Facts() : nullptr,
+                magmawFacts,
                 &context.State.MagmawPersonalParasiteEscape,
                 &Cohort().MagmawParasiteWave, &retainedFormation);
             if (magmawPlan.ReleaseRetainedRangedFormation)
@@ -537,15 +541,67 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             context.AdaptiveMagmawDirectionalMobility =
                 std::move(magmawPlan.DirectionalMobility);
             context.AdaptiveMagmawInteraction = std::move(magmawPlan.Interaction);
+            BotEncounter::MagmawTargetReturnObservation::Record* targetReturn =
+                nullptr;
+            if (Cohort().EncounterSnapshot->Route.NodeId
+                == "bwd.magmaw.encounter")
+            {
+                context.State.MagmawTargetReturn =
+                    BotEncounter::MagmawTargetReturnObservation::Begin(
+                        *Cohort().EncounterSnapshot, magmawFacts,
+                        Cohort().AttemptId, Party().ValidationRouteGeneration,
+                        magmawPlan.OwnsNode, magmawPlan.DamageTarget,
+                        magmawStateTargetBefore, magmawContextTargetBefore,
+                        context.State.DesiredMeleeAttackTargetGuid);
+                targetReturn = &context.State.MagmawTargetReturn;
+            }
+            auto observeNative = [this, &context](
+                BotEncounter::MagmawTargetReturnObservation::Actor& actor)
+            {
+                Unit* unit = actor.Guid.IsEmpty() ? nullptr
+                    : ObjectAccessor::GetUnit(*context.Bot, actor.Guid);
+                BotEncounter::MagmawTargetReturnObservation::ObserveNative(
+                    actor, unit != nullptr, unit && unit->IsAlive(),
+                    unit && context.Bot->IsValidAttackTarget(unit));
+            };
+            if (targetReturn)
+            {
+                observeNative(targetReturn->Body);
+                observeNative(targetReturn->Head);
+            }
+            using TargetBindResult =
+                BotEncounter::MagmawTargetReturnObservation::BindResult;
+            TargetBindResult bindResult = targetReturn
+                ? targetReturn->Result : TargetBindResult::NotEvaluated;
             if (!magmawPlan.DamageTarget.IsEmpty())
-                if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*context.Bot,
-                        magmawPlan.DamageTarget);
-                    adaptiveTarget && adaptiveTarget->IsAlive()
-                        && context.Bot->IsValidAttackTarget(adaptiveTarget))
+            {
+                Unit* adaptiveTarget = ObjectAccessor::GetUnit(*context.Bot,
+                    magmawPlan.DamageTarget);
+                if (targetReturn)
+                    BotEncounter::MagmawTargetReturnObservation::
+                        ObserveProposedNative(*targetReturn,
+                            adaptiveTarget != nullptr,
+                            adaptiveTarget && adaptiveTarget->IsAlive(),
+                            adaptiveTarget && context.Bot->IsValidAttackTarget(
+                                adaptiveTarget));
+                if (!adaptiveTarget)
+                    bindResult = TargetBindResult::NativeMissing;
+                else if (!adaptiveTarget->IsAlive())
+                    bindResult = TargetBindResult::NativeDead;
+                else if (!context.Bot->IsValidAttackTarget(adaptiveTarget))
+                    bindResult = TargetBindResult::NativeInvalid;
+                else
                 {
                     context.Target = adaptiveTarget;
                     context.State.TargetGuid = magmawPlan.DamageTarget;
+                    bindResult = TargetBindResult::Bound;
                 }
+            }
+            if (targetReturn)
+                BotEncounter::MagmawTargetReturnObservation::Finish(
+                    *targetReturn, bindResult, context.State.TargetGuid,
+                    context.Target ? context.Target->GetGUID()
+                        : ObjectGuid::Empty);
 
             BotEncounter::AdaptiveOmnotronStrategy omnotronStrategy;
             BotEncounter::AdaptiveOmnotronPlan omnotronPlan =

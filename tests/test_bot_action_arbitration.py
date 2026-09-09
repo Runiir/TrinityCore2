@@ -829,6 +829,25 @@ int main()
         stagedDpsWaitPlan.OwnsNode, stagedDpsWaitPlan.SuppressOffense,
         stagedDpsWaitPlan.SuppressReason));
 
+    BotEncounter::Blackboard configuredTankStage = magmawHealthyStage;
+    configuredTankStage.Assignments.push_back({
+        BotEncounter::AssignmentKind::Tank, "main_tank", tankB.Guid,
+        {}, tankA.Guid, 1, 0 });
+    auto configuredMainTankPull = magmawStrategy.Propose(
+        configuredTankStage, tankB.Guid, "tank");
+    auto configuredOffTankWait = magmawStrategy.Propose(
+        configuredTankStage, tankA.Guid, "tank");
+    assert(!configuredMainTankPull.SuppressOffense);
+    assert(configuredMainTankPull.DamageTarget == magmawBoss.Guid);
+    assert(configuredOffTankWait.SuppressOffense);
+    assert(configuredOffTankWait.DamageTarget.IsEmpty());
+    configuredTankStage.Hostiles.front().InCombat = true;
+    configuredTankStage.Hostiles.front().VictimGuid = tankB.Guid;
+    auto configuredOffTankCombat = magmawStrategy.Propose(
+        configuredTankStage, tankA.Guid, "tank");
+    assert(!configuredOffTankCombat.SuppressOffense);
+    assert(configuredOffTankCombat.DamageTarget == magmawBoss.Guid);
+
     // The persistent helper dummy is not a lethal observation. Only the
     // simultaneous Pillar supplies movement here.
     BotEncounter::Blackboard magmawPillarPriority = magmaw;

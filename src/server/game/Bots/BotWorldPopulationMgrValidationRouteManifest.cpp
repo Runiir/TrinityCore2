@@ -463,7 +463,8 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
                 "allow_multidot", "controlled_aoe_minimum_targets", "kill_sync_tolerance_pct",
                 "kill_sync_execution_floor_pct", "tank_swap_trigger", "tank_swap_aura_id",
                 "tank_swap_aura_stacks", "tank_swap_interval_ms", "tank_swap_trigger_spell_id",
-                "tank_swap_add_entry", "tank_swap_phase", "interrupt_owner_slot", "interrupt_backup_slot",
+                "tank_swap_add_entry", "tank_swap_phase", "main_tank_roster_slot", "off_tank_roster_slot",
+                "interrupt_owner_slot", "interrupt_backup_slot",
                 "interrupt_trigger_spell_id", "dispel_aura_id", "dispel_owner_slot", "dispel_backup_slot",
                 "healer_ownership", "healer_owner_slots", "cooldown_category", "cooldown_owner_slot",
                 "cooldown_backup_slot", "cooldown_trigger_spell_id", "cooldown_target", "soak_roster_slots",
@@ -507,6 +508,8 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             node.TankSwapTriggerSpellId = uint32(std::max(0, readInt(mechanicContract, "tank_swap_trigger_spell_id")));
             node.TankSwapAddEntry = uint32(std::max(0, readInt(mechanicContract, "tank_swap_add_entry")));
             node.TankSwapPhase = ExtractJsonStringField(mechanicContract, "tank_swap_phase");
+            node.MainTankRosterSlot = uint32(std::max(0, readInt(mechanicContract, "main_tank_roster_slot")));
+            node.OffTankRosterSlot = uint32(std::max(0, readInt(mechanicContract, "off_tank_roster_slot")));
             node.InterruptOwnerSlot = uint32(std::max(0, readInt(mechanicContract, "interrupt_owner_slot")));
             node.InterruptBackupSlot = uint32(std::max(0, readInt(mechanicContract, "interrupt_backup_slot")));
             node.InterruptTriggerSpellId = uint32(std::max(0, readInt(mechanicContract, "interrupt_trigger_spell_id")));
@@ -593,6 +596,11 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
                 || (node.TankSwapTrigger == "boss_cast" && node.TankSwapTriggerSpellId > 0)
                 || (node.TankSwapTrigger == "add_spawn" && node.TankSwapAddEntry > 0)
                 || (node.TankSwapTrigger == "phase_transition" && !node.TankSwapPhase.empty());
+            bool const tankAssignmentResolved = (!node.MainTankRosterSlot && !node.OffTankRosterSlot)
+                || (node.MainTankRosterSlot > 0 && node.OffTankRosterSlot > 0
+                    && node.MainTankRosterSlot != node.OffTankRosterSlot
+                    && node.MainTankRosterSlot <= Cohort().Config.RaidSize
+                    && node.OffTankRosterSlot <= Cohort().Config.RaidSize);
             bool const interruptResolved = !node.InterruptOwnerSlot
                 || (node.InterruptBackupSlot > 0 && node.InterruptOwnerSlot != node.InterruptBackupSlot
                     && node.InterruptTriggerSpellId > 0);
@@ -645,6 +653,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             node.MechanicContractResolved = !node.MechanicContractId.empty()
                 && node.MechanicContractError.empty() && knownFormation && knownAnchor && knownScope
                 && knownOrientation && formationResolved && targetResolved && tankSwapResolved
+                && tankAssignmentResolved
                 && interruptResolved && dispelResolved && cooldownResolved && soakResolved
                 && knownHealerOwnership && knownBattleRes && battleResResolved
                 && knownInteraction && interactionResolved

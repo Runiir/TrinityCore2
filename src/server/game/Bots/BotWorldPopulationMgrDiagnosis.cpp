@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotCalibrationSummonObservation.h"
+#include "Bots/BotNativeCombatStatsObservation.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -532,6 +533,12 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << BotEncounter::BuildMagmawPersonalParasiteEscapeDiagnosticsJson(
                 state.MagmawPersonalParasiteEscape,
                 &Cohort().MagmawParasiteWave)
+         << ",\"magmaw_target_return\":"
+         << BotEncounter::MagmawTargetReturnObservation::BuildJson(
+                state.MagmawTargetReturn, Cohort().AttemptId,
+                Party().ValidationRouteGeneration,
+                Cohort().EncounterSnapshot ? Cohort().EncounterSnapshot->Revision : 0,
+                Cohort().Config.ValidationRouteNodeId)
          << ",\"evidence\":["
          << "{\"name\":\"loaded\",\"value\":" << (bot ? "true" : "false") << "},"
          << "{\"name\":\"in_world\",\"value\":" << (bot && bot->IsInWorld() ? "true" : "false") << "},"
@@ -781,6 +788,7 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"objective_type\":\"" << JsonEscape(state.QuestWork.ObjectiveType) << "\""
          << ",\"progress_before\":" << state.QuestWork.ProgressBefore
          << ",\"progress_after\":" << state.QuestWork.ProgressAfter << "}"
+         << ",\"native_combat_stats\":" << BotNativeCombatStatsObservation::BuildJson(bot)
          << ",\"target\":{\"target_guid\":" << state.LastDecisionTargetGuid.GetCounter()
          << ",\"observed_at_ms\":" << nowMs
          << ",\"health_available\":" << (observedTarget ? "true" : "false")

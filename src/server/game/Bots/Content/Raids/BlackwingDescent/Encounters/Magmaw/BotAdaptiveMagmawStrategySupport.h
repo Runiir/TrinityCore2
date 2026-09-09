@@ -86,6 +86,18 @@
     {
         if (role != "tank")
             return false;
+        auto configured = std::find_if(board.Assignments.begin(),
+            board.Assignments.end(), [](AssignmentLease const& lease)
+            {
+                return lease.Kind == AssignmentKind::Tank
+                    && lease.Slot == "main_tank";
+            });
+        if (configured != board.Assignments.end())
+        {
+            ActorSnapshot const* actor = board.FindActor(configured->AssigneeGuid);
+            return actor && actor->Alive && actor->Role == "tank"
+                && configured->AssigneeGuid == botGuid;
+        }
         ObjectGuid pullTank;
         for (ActorSnapshot const& member : board.Players)
             if (member.Alive && member.Role == "tank"
