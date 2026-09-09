@@ -7,6 +7,7 @@
 #include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 
 #include "Config.h"
+#include "GridDefines.h"
 #include "MotionMaster.h"
 #include "Movement/Spline/MoveSpline.h"
 #include "ObjectAccessor.h"

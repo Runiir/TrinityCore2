@@ -56,7 +56,10 @@ Both repairs passed independent Sol review and actual-caller fixtures. Formation
 verification passes 15 tests; landing and related movement/interaction verification
 passes 10 tests. The formation test now represents MoveIdle accurately: native
 StopMoving is required, and controlled or replacement paths remain untouched.
-Next: commit/freeze, one joined build and bounded Magmaw validation. The separately approved observation patch captures native
+Batch `2a9f81ddc1` reached native compilation but missed the GridDefines include
+for floor constants. The include-only correction preserves reviewed behavior;
+the failed build receipt is retained with the subsequent build context. Next:
+freeze the correction, finish the incremental build and validate Magmaw. The separately approved observation patch captures native
 owned-guardian state during normal raids: Elemental's guardian stopped damage
 before boss death, but current traces cannot establish why. Direct head attacks
 are proven for both Fire bots, Affliction and Hunter. Heroism submission and self

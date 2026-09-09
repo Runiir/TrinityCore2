@@ -17,7 +17,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "bef543ebf068ac545e0a7f43baa193faa038fc1dbb98fe1768d5fc7b75bae177"
+    "sha256": "4d07bd54f31c1903622d614fdf40e23360df40bc74ae3a30b62ca54831d2d3d7"
   },
   "scope_lock": {
     "objective": "Repair proven vehicle-exit and retained formation execution losses, add approved guardian observation, build once and validate canonical Magmaw.",
@@ -56,7 +56,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Commit/freeze the reviewed batch, build once and run canonical Magmaw with closed all-actor DPS review.",
+  "next_action": "Freeze include-only compilation correction, finish incremental build and run canonical Magmaw.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
