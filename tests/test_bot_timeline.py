@@ -1,12 +1,19 @@
 import base64
+import gzip
 import json
 
 from tools.raid_program.bot_timeline import build_timeline_from_rows
-from tools.raid_program.bot_timeline_html import render_timeline_html
+from tools.raid_program.bot_timeline_html import browser_safe_model, render_timeline_html
 
 
 IDENTITY = {"cohort_id": "raid", "server_epoch": 11, "attempt_id": 2}
 PROFILE = {"profile_generation": 8, "profile_content_hash": "profile-hash"}
+
+
+def _embedded_model(html):
+    marker = '<script id="model-gzip" type="application/gzip">'
+    encoded = html.split(marker, 1)[1].split("</script>", 1)[0]
+    return json.loads(gzip.decompress(base64.b64decode(encoded)))
 
 
 def _bound(channel, payload):
@@ -76,7 +83,7 @@ def test_join_deduplicates_snapshots_isolates_identity_and_marks_legacy_fields()
     assert not [event for event in model["events"] if event["kind"] == "movement"]
     assert summary["clear_accepted"] is True
     assert summary["accounting"]["hostile_originated_damage"] == 10
-    assert "application/json" in render_timeline_html(model)
+    assert "application/gzip" in render_timeline_html(model)
 
 
 def test_full_and_delta_union_and_periodic_pet_output_mask_fresh_outage():
@@ -112,7 +119,8 @@ def test_html_preserves_large_identities_and_escapes_untrusted_event_text():
              "events": [{"at_ms": 1, "actor_guid": 1, "kind": "decision",
                          "result": "</script><img src=x onerror=alert(1)>"}], "completeness": {}}
     html = render_timeline_html(model)
-    assert '"14864252641801830"' in html
+    assert _embedded_model(html) == browser_safe_model(model)
+    assert _embedded_model(html)["identity"]["server_epoch"] == "14864252641801830"
     assert "</script><img" not in html
     assert "full event" in html
 
@@ -252,8 +260,28 @@ def test_html_shows_legacy_warning_missing_fields_and_phase_conflicts():
              "completeness": {"legacy_historical_metadata_warning": "legacy warning",
                               "missing_observations": ["native_target"]}}
     html = render_timeline_html(model)
-    assert "legacy warning" in html and "native_target" in html
+    embedded = _embedded_model(html)
+    assert embedded["completeness"]["legacy_historical_metadata_warning"] == "legacy warning"
+    assert embedded["completeness"]["missing_observations"] == ["native_target"]
     assert "Conflicting attributable phase observations" in html
+
+
+def test_html_payload_is_deterministic_offline_and_lazily_renders_event_detail():
+    model = {"identity": {"server_epoch": 2**63 + 1}, "events": [
+        {"at_ms": 1, "actor_guid": 7, "kind": "decision", "result": "<hostile>"}],
+        "actors": {}, "window": {}, "completeness": {}}
+    first = render_timeline_html(model)
+    second = render_timeline_html(model)
+    assert first == second
+    assert _embedded_model(first) == browser_safe_model(model)
+    assert "<hostile>" not in first
+    assert "DecompressionStream('gzip')" in first
+    assert "Loading compressed timeline model" in first
+    assert "Unable to load compressed timeline" in first
+    assert "data-event-index" in first and "createElement('pre')" in first
+    assert "events.reduce((b,e)" in first
+    assert "Math.min(...events" not in first and "Math.max(...events" not in first
+    assert "<script src=" not in first and "fetch(" not in first and "http://" not in first and "https://" not in first
 
 
 def test_actor_role_comes_from_identity_scoped_admission_receipt():

@@ -289,6 +289,25 @@ def test_clear_with_thirty_percent_decline_fails_performance_independently() -> 
     assert report["single_pair_uncertainty"] is True
 
 
+def test_material_decline_requires_diagnosis_when_missing_data_is_inconclusive() -> None:
+    baseline = _summary(party_dps=100.0)
+    candidate = _summary(party_dps=70.0, actors={"30006": _actor(dps=70.0)})
+    del candidate["actors"]["30006"]["activity"]["active_seconds"]
+
+    report = compare_optimization_acceptance(
+        baseline,
+        candidate,
+        _setup(baseline, candidate),
+        _repair(requested=True),
+    )
+
+    assert report["performance_verdict"] == "inconclusive"
+    assert report["performance_accepted"] is None
+    assert report["diagnosis_required"] is True
+    assert "party_exact_dps_material_decline" in report["material_decline_reasons"]
+    assert "candidate_actor_30006_activity_missing" in report["sufficiency_reasons"]
+
+
 def test_setup_mismatch_is_inconclusive() -> None:
     baseline = _summary(party_dps=100.0)
     candidate = _summary(party_dps=101.0, actors={"30006": _actor(dps=101.0)})

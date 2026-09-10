@@ -980,7 +980,7 @@ def compare_optimization_acceptance(
         "performance_accepted": True if performance_verdict == "pass" else (
             False if performance_verdict == "fail" else None
         ),
-        "diagnosis_required": performance_verdict == "fail",
+        "diagnosis_required": bool(material_reasons),
         "sufficiency_reasons": sufficiency_reasons,
         "material_decline_reasons": list(dict.fromkeys(material_reasons)),
         "comparisons": comparisons,
