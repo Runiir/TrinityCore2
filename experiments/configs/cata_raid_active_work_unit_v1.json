@@ -82,8 +82,10 @@
     "diagnosis_required": true,
     "primary_baseline_source": "6882d0c20447283a9c97f006cdae2c7ea136a9db",
     "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_b1132dd087_20260910.tar.gz.dvc",
-    "publication_state": "see_adjacent_publication_receipt",
-    "historical_head_return_cause": "DPS-023 unresolved; current return does not disprove original occurrence"
+    "publication_state": "remote_verified_and_exact_duplicates_evicted",
+    "historical_head_return_cause": "DPS-023 unresolved; current return does not disprove original occurrence",
+    "remote_reconstruction_verified": true,
+    "raw_payloads_evicted": true
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
